@@ -1,8 +1,8 @@
 # 一个小中型 app 的服务端应该怎么设计？
 
-> Version: v3.2 (MVP-Only)
+> Version: v3.5 (MVP-Only)
 >
-> Last Updated: 2026-03-04
+> Last Updated: 2026-03-06
 >
 > Scope: 架构与实施规范文档（不含业务代码）
 >
@@ -11,6 +11,15 @@
 ## 0. 本版说明
 
 本版只保留“当前就要实施”的 MVP 方案，不包含增强阶段内容。
+补充产品统计与服务器日志基线方案。
+统一工程约定为 TypeScript 优先开发。
+
+### 0.1 开发语言约定
+
+1. 后续业务开发默认使用 TypeScript。
+2. 新增应用代码、模块、DTO、配置对象与基础设施适配层，均优先使用 `.ts`。
+3. 当前仓库若存在少量 `.js` 启动骨架或历史文件，可暂时保留，但在相关模块发生实质性变更时，应优先迁移为 `.ts`。
+4. 本机可使用全局 `tsc` / `tsx` 提升开发效率，但项目本身仍应在依赖中固定 TypeScript 版本，保证团队与 CI 一致性。
 
 ## 1. 一句话结论
 
@@ -33,8 +42,10 @@
 2. 异步：BullMQ 直投，失败写 `failed_events` 并定时重投。
 3. 凭证：仅密码登录，`password_hash` 存在 `users` 表。
 4. 审计：`AuditInterceptor + audit_logs`。
-5. 通知：`notification.service`。
-6. 配置：`app-config.service + app_configs`。
+5. 产品统计：`analytics_events + metrics API`（DAU / 新用户注册数 / 页面停留时长）。
+6. 通知：`notification.service`。
+7. 配置：`app-config.service + app_configs`。
+8. 运行日志：API + Worker 结构化日志与查看方式。
 
 ## 4. MVP 架构总览
 
@@ -43,10 +54,15 @@ flowchart LR
   A["Web / Mobile App"] --> B["Fastify Adapter"]
   B --> C["NestJS App"]
   C --> D["Auth/User/IAM/AppRegistry"]
+  C --> I["Analytics API"]
   D --> E["Postgres"]
   D --> F["Redis"]
   D --> G["BullMQ"]
   G --> H["Worker"]
+  I --> J["Postgres (analytics_events)"]
+  C --> K["stdout / stderr"]
+  H --> K
+  K --> L["Docker Logging"]
 ```
 
 ## 5. MVP 目录结构（精简版）
@@ -65,14 +81,17 @@ flowchart LR
 │   │   │   ├── auth.guard.ts
 │   │   │   ├── app-access.guard.ts
 │   │   │   └── rbac.guard.ts
-│   │   ├── interceptors/audit.interceptor.ts
+│   │   ├── interceptors/
+│   │   │   ├── audit.interceptor.ts
+│   │   │   └── request-logging.interceptor.ts
 │   │   ├── filters/http-exception.filter.ts
 │   │   └── pipes/validation.pipe.ts
 │   ├── modules/
 │   │   ├── auth/
 │   │   ├── user/
 │   │   ├── iam/
-│   │   └── app-registry/
+│   │   ├── app-registry/
+│   │   └── analytics/
 │   ├── services/
 │   │   ├── app-config.service.ts
 │   │   └── notification.service.ts
@@ -80,7 +99,8 @@ flowchart LR
 │   │   ├── database/prisma/
 │   │   ├── cache/redis/
 │   │   ├── queue/bullmq/
-│   │   └── files/storage.service.ts
+│   │   ├── files/storage.service.ts
+│   │   └── logging/pino-logger.module.ts
 │   └── integrations/
 │       ├── email/
 │       ├── sms/
@@ -96,6 +116,8 @@ flowchart LR
 1. `main.ts` 启动 API。
 2. `worker.ts` 启动 BullMQ worker。
 3. API 与 Worker 共用同一代码库，不同入口独立部署。
+4. `modules/analytics` 负责行为事件采集与指标查询。
+5. `infrastructure/logging` 负责 `nestjs-pino` 集成与结构化日志输出。
 
 ## 6. 共享账号策略（固定）
 
@@ -156,12 +178,22 @@ flowchart LR
 1. 域名映射（优先）。
 2. 可信网关 `X-App-Id`。
 3. 登录前请求体/参数中的 `appId`（仅识别用途）。
+4. 单域名部署时，默认使用登录前请求体中的 `appId`；`X-App-Id` 仅作为可信代理透传或校验字段。
 
 ### 8.2 真值规则
 
 1. 登录后以 token 中 `app_id` 为真值。
 2. 外部请求中的 `X-App-Id` 默认忽略或覆盖。
 3. app 作用域查询必须带 `app_id` 过滤。
+
+### 8.3 单域名部署规则
+
+1. 当所有 app 共用一个 API 域名时，不通过 URL 路径区分 app。
+2. 登录前接口（如 `POST /api/v1/auth/login`）由请求体中的 `appId` 识别目标 app；若存在可信代理注入的 `X-App-Id`，仅用于校验或透传。
+3. 登录成功后，服务端必须将 `app_id` 写入 access token 与 refresh token。
+4. 登录后接口统一以 token 中的 `app_id` 为真值，不以请求体、查询参数或普通客户端自带 header 为真值。
+5. 若请求中同时出现 `X-App-Id` 与 token `app_id`，且两者不一致，则返回 `403`。
+6. 单域名 `MVP` 默认规则：登录前看 `body.appId`，登录后看 `token.app_id`，`X-App-Id` 为可选校验字段。
 
 ## 9. IAM 作用域与权限规则
 
@@ -186,6 +218,7 @@ flowchart LR
 11. `files(id, app_id, owner_user_id, storage_key, mime_type, size_bytes, status, created_at)`。
 12. `failed_events(id, app_id, event_type, payload, error_message, retry_count, next_retry_at, created_at)`。
 13. `app_configs(id, app_id, config_key, config_value, updated_at)`。
+14. `analytics_events(id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata)`。
 
 ### 10.1 必要索引
 
@@ -195,6 +228,21 @@ flowchart LR
 4. `permissions(code)` 唯一。
 5. `user_roles(app_id, user_id, role_id)` 唯一。
 6. `refresh_tokens(app_id, token_hash)` 唯一。
+7. `analytics_events(app_id, occurred_at)`。
+8. `analytics_events(app_id, user_id, occurred_at)`。
+9. `analytics_events(app_id, page_key, occurred_at)`。
+
+### 10.2 统计口径与边界
+
+1. `MVP` 统计默认按 `app` 维度，不提供全局账号口径作为主定义。
+2. `DAU`：按 `app_id + 自然日`，从 `analytics_events` 去重 `user_id`。
+3. `新用户注册数`：按 `app_id + 自然日`，以 `app_users.joined_at` 为真值；`MVP` 主口径定义为首次加入当前 app 的用户数。
+4. 页面概念统一为 `page_key`；Web 路由与 App screen 均映射到该字段。
+5. `页面停留时长`：按 `app_id + platform + page_key + 自然日` 聚合 `duration_ms`。
+6. 事件模型固定包含 `page_view`、`page_leave`、`page_heartbeat`；默认心跳间隔 `15s`。
+7. 默认时区使用 `Asia/Shanghai`。
+8. `audit_logs` 仅用于审计，不用于产品统计。
+9. `MVP` 仅统计已登录用户行为，不纳入匿名访客。
 
 ## 11. 异步机制（BullMQ 直投）
 
@@ -352,6 +400,110 @@ flowchart LR
 }
 ```
 
+### 12.4 产品统计
+
+#### 12.4.1 事件上报
+
+`POST /api/v1/analytics/events/batch`
+
+请求：
+
+```json
+{
+  "appId": "app_a",
+  "events": [
+    {
+      "platform": "web",
+      "sessionId": "sess_123",
+      "pageKey": "/home",
+      "eventName": "page_view",
+      "occurredAt": "2026-03-06T10:00:00+08:00"
+    }
+  ]
+}
+```
+
+说明：
+
+1. `eventName` 固定支持 `page_view`、`page_leave`、`page_heartbeat`。
+2. `durationMs` 仅在 `page_leave`、`page_heartbeat` 中使用。
+3. `pageKey` 同时承载 Web 路由与 App screen 标识。
+4. 客户端默认每 `15s` 上报一次 `page_heartbeat`。
+
+响应：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "accepted": 1
+  },
+  "requestId": "req_123"
+}
+```
+
+#### 12.4.2 概览查询
+
+`GET /api/v1/admin/metrics/overview`
+
+查询参数：`appId`、`dateFrom`、`dateTo`。
+
+响应轮廓：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "timezone": "Asia/Shanghai",
+    "items": [
+      {
+        "date": "2026-03-06",
+        "dau": 1200,
+        "newUsers": 80
+      }
+    ]
+  },
+  "requestId": "req_123"
+}
+```
+
+#### 12.4.3 页面统计查询
+
+`GET /api/v1/admin/metrics/pages`
+
+查询参数：`appId`、`dateFrom`、`dateTo`、`platform`（可选）。
+
+响应轮廓：
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "timezone": "Asia/Shanghai",
+    "items": [
+      {
+        "pageKey": "/home",
+        "platform": "web",
+        "uv": 300,
+        "sessionCount": 420,
+        "totalDurationMs": 840000,
+        "avgDurationMs": 2800
+      }
+    ]
+  },
+  "requestId": "req_123"
+}
+```
+
+规则：
+
+1. 统计查询必须基于当前 `appId`，不能跨 app 聚合。
+2. 统计查询受既有 Bearer 鉴权与 `app_id` 作用域约束。
+3. 报表时间边界默认按 `Asia/Shanghai` 解释。
+
 ## 13. 文件上传流程
 
 ### 13.1 预签名
@@ -410,7 +562,7 @@ flowchart LR
 ### 15.1 Migration
 
 1. 本地：`prisma migrate dev`。
-2. 生产：`prisma migrate deploy`（仅 CI 可执行）。
+2. 生产：默认由 CI 执行 `prisma migrate deploy`；紧急人工发布时允许在服务器受控执行同一命令。
 3. 结构变更采用 Expand-Contract。
 
 ### 15.2 Seed
@@ -423,19 +575,63 @@ flowchart LR
 
 ### 16.1 拓扑
 
-1. API：2-4 实例。
-2. Worker：独立 deployment（同仓库 `worker.ts` 启动）。
-3. Postgres：托管主备。
-4. Redis：单主 + 持久化。
+1. `MVP` 默认部署目标为 1 台 Linux 小型服务器，使用 Docker/Compose 管理应用层服务。
+2. 反向代理：Nginx 或 Caddy，负责 TLS、单域名入口与转发。
+3. API：默认 1 个容器实例；资源允许时可扩为同机 2 实例。
+4. Worker：同机独立容器，使用同仓库 `worker.ts` 启动。
+5. 生产长期方案固定为“应用在 Compose，Postgres / Redis 分离”；Postgres 与 Redis 独立部署，优先使用托管服务。
+6. 生产 `compose` 默认编排 `proxy`、`api`、`worker`；需要网页查看日志时可增加 `dozzle` 作为运维辅助容器，不在同一 `compose` 中承载 Postgres / Redis。
+7. 应用通过 `.env` 中的连接串访问外部 Postgres / Redis。
+8. 发布单位固定为 Git tag 或镜像 tag，不直接在生产机手改代码。
 
-### 16.2 CI/CD
+### 16.2 手动部署（默认兜底）
 
-`lint -> test -> build -> migrate deploy -> deploy(api+worker) -> health check`
+1. 适用场景：早期 MVP、低频发布、紧急修复。
+2. 服务器长期保存：`.env`、`compose.yaml`、反向代理配置、`appRunData/`。
+3. `appRunData/` 仅保存应用运行所需的动态数据，例如 `uploads/`、`backups/`、`proxy/`、`exports/`；不保存 Postgres / Redis 数据目录，不保存 API / Worker 原始运行日志文件。
+4. 发布前先确认目标版本号，并记录当前稳定版本号用于回滚。
+5. 若本次包含 migration，发布前必须先备份外部 Postgres。
+6. 登录服务器后，拉取目标版本代码或目标镜像。
+7. 更新容器：优先 `docker compose pull`；若采用服务器本地构建，则执行 `docker compose build`。
+8. 在 API 容器上下文执行 `prisma migrate deploy`，该命令连接外部 Postgres。
+9. 执行 `docker compose up -d api worker` 完成发布。
+10. 发布后必须执行健康检查，并查看最近日志确认启动成功。
+11. 回滚时优先切回上一个 Git tag 或镜像 tag，再重新执行 `docker compose up -d`；不在生产直接做破坏性 schema 回滚。
 
-### 16.3 备份
+### 16.3 自动化部署（推荐）
 
-1. 每日全量 + 每小时增量。
-2. 每月恢复演练。
+1. 触发方式：合并到主分支后的 CI，或手动触发指定 tag 发布。
+2. 推荐流水线：`lint -> test -> build image -> push image -> ssh server -> docker compose pull -> prisma migrate deploy -> docker compose up -d api worker -> health check`。
+3. 自动化部署默认采用“构建镜像并推送镜像仓库”的方式，不推荐 CI 直接在生产机执行 `git pull` 作为长期方案。
+4. 服务器只保留：`.env`、`compose.yaml`、反向代理配置、`appRunData/`；业务版本通过镜像 tag 切换。
+5. CI 需要保管的敏感信息仅包括：镜像仓库凭证、服务器 SSH 凭证、必要的部署变量。
+6. 外部 Postgres / Redis 的生命周期不与应用容器发布绑定；CI 不负责重建数据库或缓存实例。
+7. 自动化回滚方式与手动一致：重新发布上一个稳定镜像 tag。
+8. 若 health check 失败，流水线应停止并保留回滚入口，不继续覆盖后续服务。
+
+### 16.4 备份
+
+1. 外部 Postgres 执行每日全量 + 每小时增量备份。
+2. 外部 Redis 使用托管备份能力，或开启持久化并按日导出快照。
+3. 每月恢复演练。
+4. 涉及 migration 的发布前必须额外执行一次外部 Postgres 即时备份。
+
+### 16.5 日志与网页查看方式
+
+1. Nest 日志方案固定采用 `nestjs-pino`。
+2. API 与 Worker 统一输出结构化 JSON 日志到 `stdout/stderr`，不以业务应用直接写文件作为主方案。
+3. API 日志最少包含：`timestamp`、`level`、`service`、`requestId`、`appId`、`userId`、`path`、`statusCode`、`latencyMs`。
+4. Worker 日志在上述基础上额外包含：`jobName`、`jobId`。
+5. `requestId` 必须贯穿请求链路；优先复用入口请求头中的 `X-Request-Id`，无值时由服务端生成。
+6. 运行日志由 Docker logging driver 管理，默认启用日志轮转；建议 `max-size=100m`、`max-file=7`。
+7. 不建议将应用运行日志写入容器内文件，也不建议在业务系统中自行开发日志前端页面作为 `MVP` 方案。
+8. 网页查看日志默认采用 Dozzle；Dozzle 直接读取 Docker 容器日志，适合单机实时查看。
+9. Dozzle 必须放在反向代理和鉴权之后，不直接裸暴露到公网。
+10. `MVP` 的网页日志能力目标为实时 tail、按容器筛选、按关键字搜索、按时间查看；不将复杂日志检索系统纳入当前范围。
+11. Dozzle 仅作为轻量查看层，不替代长期归档与专业日志平台。
+12. 常用命令行查看命令：`docker compose logs -f api`。
+13. 常用命令行查看命令：`docker compose logs -f worker`。
+14. 常用命令行查看命令：`docker compose logs --since 1h api`。
 
 ## 17. 错误码体系
 
@@ -466,12 +662,17 @@ flowchart LR
 1. auth use-case。
 2. rbac policy。
 3. app-access guard。
+4. analytics 指标口径（DAU 去重 / 新用户口径 / 页面时长聚合）。
 
 ### 18.2 Integration
 
 1. Prisma repository。
 2. queue producer/worker。
 3. failed_events 重投任务。
+4. analytics events 写入与聚合查询。
+5. API / Worker `nestjs-pino` 结构化日志字段输出。
+6. Docker/Compose 日志可查看。
+7. Dozzle 可实时查看 API / Worker 日志。
 
 ### 18.3 E2E
 
@@ -480,6 +681,10 @@ flowchart LR
 3. `users.status` 与 `app_users.status` 优先级。
 4. app 作用域越权访问拦截。
 5. 文件上传 presign -> upload -> confirm -> download。
+6. analytics events 上报 -> overview/pages 查询。
+7. analytics 跨 app 隔离。
+8. 页面时长心跳补偿。
+9. Dozzle 页面可查看 API / Worker 最新日志。
 
 ## 19. ADR 快照
 
@@ -499,6 +704,18 @@ flowchart LR
 
 异步机制采用 BullMQ 直投 + `failed_events` 补偿。
 
+### ADR-0005（Accepted）
+
+产品统计采用独立 `analytics_events`，不复用 `audit_logs`。
+
+### ADR-0006（Accepted）
+
+运行日志采用 `nestjs-pino` 输出结构化 JSON 到 `stdout/stderr`，默认由 Docker 采集并通过 Dozzle 网页查看。
+
+### ADR-0007（Accepted）
+
+生产长期部署形态采用“应用在 Compose，Postgres / Redis 分离”。
+
 ## 20. Decision Backlog
 
 | ID | 项目 | 默认建议 | Owner | Due Date | Status |
@@ -512,6 +729,11 @@ flowchart LR
 ## 21. Definition of Done
 
 1. MVP 范围内的架构决策完整且可实现。
-2. 核心 API（login/refresh/logout/files）有明确输入输出。
+2. 核心 API（login/refresh/logout/files/analytics）有明确输入输出。
 3. 认证、异步、迁移、部署策略都可直接执行。
-4. 文档可直接指导当前阶段实现。
+4. 读者可明确区分 `audit_logs`、`analytics_events`、运行日志三类数据边界。
+5. 可按 app 查询 `DAU`、新用户注册数、页面停留时长。
+6. 可通过 Docker/Compose 与 Dozzle 查看 API 与 Worker 日志。
+7. 单机服务器的手动部署、自动化部署与回滚路径明确。
+8. 生产长期部署形态已明确为“应用在 Compose，Postgres / Redis 分离”。
+9. 文档可直接指导当前阶段实现。
