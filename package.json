@@ -1,0 +1,14 @@
+{
+  "name": "zook-backend-scaffold",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-transform-types src/main.ts",
+    "worker": "node --experimental-transform-types src/worker.ts",
+    "test": "node --experimental-transform-types --test test/unit/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5"
+  }
+}
