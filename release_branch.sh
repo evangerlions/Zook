@@ -35,28 +35,33 @@ else
   git checkout -B "${TARGET_BRANCH}" "${REMOTE}/${SOURCE_BRANCH}"
 fi
 
-git merge --no-ff --no-edit "${REMOTE}/${SOURCE_BRANCH}"
+date_stamp="$(date '+%Y%m%d')"
+max_index=0
+
+while IFS= read -r tag_name; do
+  tag_number="${tag_name#version/${date_stamp}-}"
+  if [[ "${tag_number}" =~ ^[0-9]{3}$ ]]; then
+    tag_value=$((10#${tag_number}))
+    if (( tag_value > max_index )); then
+      max_index=${tag_value}
+    fi
+  fi
+done < <(git tag --list "version/${date_stamp}-*")
+
+next_index="$(printf '%03d' "$((max_index + 1))")"
+version_core="${date_stamp}-${next_index}"
+planned_version_tag="version/${version_core}"
+
+git merge --no-ff -m "Merge ${REMOTE}/${SOURCE_BRANCH} into ${TARGET_BRANCH}
+
+release: ${version_core}" "${REMOTE}/${SOURCE_BRANCH}"
 
 existing_tag="$(git tag --points-at HEAD --list 'version/*' | head -n 1)"
 if [[ -n "${existing_tag}" ]]; then
   version_tag="${existing_tag}"
   echo "Reusing existing version tag on HEAD: ${version_tag}"
 else
-  date_stamp="$(date '+%Y%m%d')"
-  max_index=0
-
-  while IFS= read -r tag_name; do
-    tag_number="${tag_name#version/${date_stamp}-}"
-    if [[ "${tag_number}" =~ ^[0-9]{3}$ ]]; then
-      tag_value=$((10#${tag_number}))
-      if (( tag_value > max_index )); then
-        max_index=${tag_value}
-      fi
-    fi
-  done < <(git tag --list "version/${date_stamp}-*")
-
-  next_index="$(printf '%03d' "$((max_index + 1))")"
-  version_tag="version/${date_stamp}-${next_index}"
+  version_tag="${planned_version_tag}"
   git tag -a "${version_tag}" -m "Release ${TARGET_BRANCH} from ${SOURCE_BRANCH}"
   echo "Created version tag: ${version_tag}"
 fi
