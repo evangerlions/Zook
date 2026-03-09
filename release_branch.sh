@@ -24,6 +24,13 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
+ORIGINAL_REF_TYPE="branch"
+ORIGINAL_REF_NAME="$(git symbolic-ref --quiet --short HEAD || true)"
+if [[ -z "${ORIGINAL_REF_NAME}" ]]; then
+  ORIGINAL_REF_TYPE="detached"
+  ORIGINAL_REF_NAME="$(git rev-parse HEAD)"
+fi
+
 echo "Using remote: ${REMOTE}"
 echo "Using push remote: ${PUSH_REMOTE}"
 echo "Merging ${REMOTE}/${SOURCE_BRANCH} into ${TARGET_BRANCH}"
@@ -78,7 +85,14 @@ fi
 
 git push "${PUSH_REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
 
+if [[ "${ORIGINAL_REF_TYPE}" == "branch" ]]; then
+  git checkout "${ORIGINAL_REF_NAME}"
+else
+  git checkout --detach "${ORIGINAL_REF_NAME}"
+fi
+
 echo "Release branch updated successfully."
 echo "  branch: ${TARGET_BRANCH}"
 echo "  source: ${SOURCE_BRANCH}"
 echo "  tag:    ${version_tag}"
+echo "  returned to: ${ORIGINAL_REF_NAME}"
