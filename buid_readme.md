@@ -84,8 +84,6 @@ python3 build_scripts/build_and_push_docker.py --branch release-online --commit 
 ```text
 20260310_001
 version/20260310_001
-20260310-001
-version/20260310-001
 1.2.3
 v1.2.3
 version/1.2.3
@@ -98,9 +96,6 @@ version/v1.2.3
 release: 20260310_001
 version: 20260310_001
 chore: publish version/20260310_001
-release: 20260310-001
-version: 20260310-001
-chore: publish version/20260310-001
 release: 1.2.3
 version: 1.2.3
 chore: publish version/1.2.3

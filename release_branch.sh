@@ -57,16 +57,13 @@ max_index=0
 
 while IFS= read -r tag_name; do
   tag_number="${tag_name#version/${date_stamp}_}"
-  if [[ "${tag_number}" == "${tag_name}" ]]; then
-    tag_number="${tag_name#version/${date_stamp}-}"
-  fi
   if [[ "${tag_number}" =~ ^[0-9]{3}$ ]]; then
     tag_value=$((10#${tag_number}))
     if (( tag_value > max_index )); then
       max_index=${tag_value}
     fi
   fi
-done < <(printf '%s\n%s\n' "$(git tag --list "version/${date_stamp}_*")" "$(git tag --list "version/${date_stamp}-*")")
+done < <(git tag --list "version/${date_stamp}_*")
 
 next_index="$(printf '%03d' "$((max_index + 1))")"
 version_core="${date_stamp}_${next_index}"
