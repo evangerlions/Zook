@@ -1,0 +1,32 @@
+services:
+  api:
+    image: "${DEPLOY_IMAGE:?DEPLOY_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}"
+    pull_policy: never
+    restart: unless-stopped
+    env_file:
+      - "${APP_ENV_FILE:-.env}"
+    environment:
+      PORT: "${CONTAINER_PORT:-3100}"
+    ports:
+      - "${HOST_BIND_IP:-127.0.0.1}:${HOST_PORT:-3100}:${CONTAINER_PORT:-3100}"
+    command: ["node", "--experimental-transform-types", "src/main.ts"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:${CONTAINER_PORT:-3100}/${HEALTH_PATH:-health} >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  worker:
+    image: "${DEPLOY_IMAGE:?DEPLOY_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}"
+    pull_policy: never
+    restart: unless-stopped
+    env_file:
+      - "${APP_ENV_FILE:-.env}"
+    environment:
+      PORT: "${CONTAINER_PORT:-3100}"
+    command: ["node", "--experimental-transform-types", "src/worker.ts"]

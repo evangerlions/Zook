@@ -22,6 +22,8 @@
    [docs/current-backend-implementation-overview.md](/Users/zhoukai/Projects/AI/codex/Zook/docs/current-backend-implementation-overview.md)
 3. 构建与服务端常用命令：
    [buid_readme.md](/Users/zhoukai/Projects/AI/codex/Zook/buid_readme.md)
+4. 同机构建 + 同机发布的本地 CI/CD 方案：
+   [docs/local-cicd-deploy.md](/Users/zhoukai/Projects/AI/codex/Zook/docs/local-cicd-deploy.md)
 
 ## 目录概览
 

@@ -1,0 +1,12 @@
+node_modules
+.git
+.DS_Store
+.env
+.env.*
+build_scripts
+db_doc
+docs
+test
+README.md
+buid_readme.md
+npm-debug.log*
