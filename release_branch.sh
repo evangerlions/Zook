@@ -9,6 +9,7 @@ fi
 TARGET_BRANCH="$1"
 SOURCE_BRANCH="${2:-main}"
 REMOTE="${REMOTE:-origin}"
+PUSH_REMOTE="gitee"
 
 if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
   echo "Current directory is not inside a Git repository." >&2
@@ -23,12 +24,28 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
+ORIGINAL_REF_TYPE="branch"
+ORIGINAL_REF_NAME="$(git symbolic-ref --quiet --short HEAD || true)"
+if [[ -z "${ORIGINAL_REF_NAME}" ]]; then
+  ORIGINAL_REF_TYPE="detached"
+  ORIGINAL_REF_NAME="$(git rev-parse HEAD)"
+fi
+
 echo "Using remote: ${REMOTE}"
+echo "Using push remote: ${PUSH_REMOTE}"
 echo "Merging ${REMOTE}/${SOURCE_BRANCH} into ${TARGET_BRANCH}"
 
-git fetch "${REMOTE}" --tags
+if ! git remote get-url "${PUSH_REMOTE}" >/dev/null 2>&1; then
+  echo "Required push remote '${PUSH_REMOTE}' is not configured." >&2
+  exit 1
+fi
 
-if git show-ref --verify --quiet "refs/remotes/${REMOTE}/${TARGET_BRANCH}"; then
+git fetch "${REMOTE}" --tags
+git fetch "${PUSH_REMOTE}" --tags
+
+if git show-ref --verify --quiet "refs/remotes/${PUSH_REMOTE}/${TARGET_BRANCH}"; then
+  git checkout -B "${TARGET_BRANCH}" "${PUSH_REMOTE}/${TARGET_BRANCH}"
+elif git show-ref --verify --quiet "refs/remotes/${REMOTE}/${TARGET_BRANCH}"; then
   git checkout -B "${TARGET_BRANCH}" "${REMOTE}/${TARGET_BRANCH}"
 else
   echo "Remote branch ${REMOTE}/${TARGET_BRANCH} not found. Creating it from ${REMOTE}/${SOURCE_BRANCH}."
@@ -39,17 +56,17 @@ date_stamp="$(date '+%Y%m%d')"
 max_index=0
 
 while IFS= read -r tag_name; do
-  tag_number="${tag_name#version/${date_stamp}-}"
+  tag_number="${tag_name#version/${date_stamp}_}"
   if [[ "${tag_number}" =~ ^[0-9]{3}$ ]]; then
     tag_value=$((10#${tag_number}))
     if (( tag_value > max_index )); then
       max_index=${tag_value}
     fi
   fi
-done < <(git tag --list "version/${date_stamp}-*")
+done < <(git tag --list "version/${date_stamp}_*")
 
 next_index="$(printf '%03d' "$((max_index + 1))")"
-version_core="${date_stamp}-${next_index}"
+version_core="${date_stamp}_${next_index}"
 planned_version_tag="version/${version_core}"
 
 git merge --no-ff -m "Merge ${REMOTE}/${SOURCE_BRANCH} into ${TARGET_BRANCH}
@@ -66,9 +83,16 @@ else
   echo "Created version tag: ${version_tag}"
 fi
 
-git push "${REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
+git push "${PUSH_REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
+
+if [[ "${ORIGINAL_REF_TYPE}" == "branch" ]]; then
+  git checkout "${ORIGINAL_REF_NAME}"
+else
+  git checkout --detach "${ORIGINAL_REF_NAME}"
+fi
 
 echo "Release branch updated successfully."
 echo "  branch: ${TARGET_BRANCH}"
 echo "  source: ${SOURCE_BRANCH}"
 echo "  tag:    ${version_tag}"
+echo "  returned to: ${ORIGINAL_REF_NAME}"
