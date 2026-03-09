@@ -420,7 +420,7 @@ def check_http_health(bind_ip: str, host_port: str, health_path: str) -> bool:
     try:
         with urlopen(url, timeout=2) as response:
             return 200 <= response.status < 400
-    except (HTTPError, URLError, TimeoutError, OSError):
+    except Exception:
         return False
 
 
