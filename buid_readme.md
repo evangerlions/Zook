@@ -75,9 +75,9 @@ python3 build_scripts/build_and_push_docker.py --branch release-online --commit 
 
 版本号默认按下面顺序自动识别：
 
-1. `HEAD` 上的版本 tag
-2. 当前分支可达的最近版本 tag
-3. 最近一次提交信息中的版本标记
+1. 最近一次提交信息中的版本标记
+2. `HEAD` 上的版本 tag
+3. 当前分支可达的最近版本 tag
 
 支持的版本 tag 例子：
 

@@ -272,15 +272,6 @@ def resolve_version(repo_root: Path, version_source: str) -> tuple[str | None, s
     if version_source == "none":
         return None, None
 
-    if version_source in {"auto", "tag"}:
-        version, source = find_version_from_git_tags(repo_root)
-        if version:
-            return version, source
-        if version_source == "tag":
-            raise ScriptError(
-                "No version tag found. Supported tag formats include version/20260310_001, 1.2.3, v1.2.3, version/1.2.3, version/v1.2.3."
-            )
-
     if version_source in {"auto", "commit"}:
         version, source = find_version_from_git_commit(repo_root)
         if version:
@@ -288,6 +279,15 @@ def resolve_version(repo_root: Path, version_source: str) -> tuple[str | None, s
         if version_source == "commit":
             raise ScriptError(
                 "No version marker found in the latest commit message. Supported examples: version/20260310_001, version/1.2.3, version: 1.2.3."
+            )
+
+    if version_source in {"auto", "tag"}:
+        version, source = find_version_from_git_tags(repo_root)
+        if version:
+            return version, source
+        if version_source == "tag":
+            raise ScriptError(
+                "No version tag found. Supported tag formats include version/20260310_001, 1.2.3, v1.2.3, version/1.2.3, version/v1.2.3."
             )
 
     return None, None
