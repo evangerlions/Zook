@@ -9,6 +9,7 @@ fi
 TARGET_BRANCH="$1"
 SOURCE_BRANCH="${2:-main}"
 REMOTE="${REMOTE:-origin}"
+PUSH_REMOTE="gitee"
 
 if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
   echo "Current directory is not inside a Git repository." >&2
@@ -24,11 +25,20 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 echo "Using remote: ${REMOTE}"
+echo "Using push remote: ${PUSH_REMOTE}"
 echo "Merging ${REMOTE}/${SOURCE_BRANCH} into ${TARGET_BRANCH}"
 
-git fetch "${REMOTE}" --tags
+if ! git remote get-url "${PUSH_REMOTE}" >/dev/null 2>&1; then
+  echo "Required push remote '${PUSH_REMOTE}' is not configured." >&2
+  exit 1
+fi
 
-if git show-ref --verify --quiet "refs/remotes/${REMOTE}/${TARGET_BRANCH}"; then
+git fetch "${REMOTE}" --tags
+git fetch "${PUSH_REMOTE}" --tags
+
+if git show-ref --verify --quiet "refs/remotes/${PUSH_REMOTE}/${TARGET_BRANCH}"; then
+  git checkout -B "${TARGET_BRANCH}" "${PUSH_REMOTE}/${TARGET_BRANCH}"
+elif git show-ref --verify --quiet "refs/remotes/${REMOTE}/${TARGET_BRANCH}"; then
   git checkout -B "${TARGET_BRANCH}" "${REMOTE}/${TARGET_BRANCH}"
 else
   echo "Remote branch ${REMOTE}/${TARGET_BRANCH} not found. Creating it from ${REMOTE}/${SOURCE_BRANCH}."
@@ -66,7 +76,7 @@ else
   echo "Created version tag: ${version_tag}"
 fi
 
-git push "${REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
+git push "${PUSH_REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
 
 echo "Release branch updated successfully."
 echo "  branch: ${TARGET_BRANCH}"
