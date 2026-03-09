@@ -42,10 +42,14 @@ LOCK_FILE_NAME = "deploy.lock"
 COMPOSE_ENV_FILE_NAME = "compose.env"
 DEFAULT_SLOT = "default"
 TAG_VERSION_PATTERNS = (
+    re.compile(r"^(?:version/)?(?P<version>\d{8}_\d{3})$", re.IGNORECASE),
     re.compile(r"^(?:version/)?(?P<version>\d{8}-\d{3})$", re.IGNORECASE),
     re.compile(r"^(?:version/)?v?(?P<version>\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?)$", re.IGNORECASE),
 )
 COMMIT_VERSION_PATTERNS = (
+    re.compile(r"\bversion/(?P<version>\d{8}_\d{3})\b", re.IGNORECASE),
+    re.compile(r"\bversion[:=\s]+(?P<version>\d{8}_\d{3})\b", re.IGNORECASE),
+    re.compile(r"\brelease[:=\s]+(?P<version>\d{8}_\d{3})\b", re.IGNORECASE),
     re.compile(r"\bversion/(?P<version>\d{8}-\d{3})\b", re.IGNORECASE),
     re.compile(r"\bversion[:=\s]+(?P<version>\d{8}-\d{3})\b", re.IGNORECASE),
     re.compile(r"\brelease[:=\s]+(?P<version>\d{8}-\d{3})\b", re.IGNORECASE),
@@ -278,7 +282,7 @@ def resolve_version(repo_root: Path, version_source: str) -> tuple[str | None, s
             return version, source
         if version_source == "tag":
             raise ScriptError(
-                "No version tag found. Supported tag formats include version/20260310-001, 1.2.3, v1.2.3, version/1.2.3, version/v1.2.3."
+                "No version tag found. Supported tag formats include version/20260310_001, version/20260310-001, 1.2.3, v1.2.3, version/1.2.3, version/v1.2.3."
             )
 
     if version_source in {"auto", "commit"}:
@@ -287,7 +291,7 @@ def resolve_version(repo_root: Path, version_source: str) -> tuple[str | None, s
             return version, source
         if version_source == "commit":
             raise ScriptError(
-                "No version marker found in the latest commit message. Supported examples: version/20260310-001, version/1.2.3, version: 1.2.3."
+                "No version marker found in the latest commit message. Supported examples: version/20260310_001, version/20260310-001, version/1.2.3, version: 1.2.3."
             )
 
     return None, None

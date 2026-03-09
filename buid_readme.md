@@ -82,6 +82,8 @@ python3 build_scripts/build_and_push_docker.py --branch release-online --commit 
 支持的版本 tag 例子：
 
 ```text
+20260310_001
+version/20260310_001
 20260310-001
 version/20260310-001
 1.2.3
@@ -93,6 +95,9 @@ version/v1.2.3
 支持的提交信息例子：
 
 ```text
+release: 20260310_001
+version: 20260310_001
+chore: publish version/20260310_001
 release: 20260310-001
 version: 20260310-001
 chore: publish version/20260310-001
@@ -101,10 +106,10 @@ version: 1.2.3
 chore: publish version/1.2.3
 ```
 
-例如识别到 `version/20260310-001` 后，镜像 tag 会得到类似：
+例如识别到 `version/20260310_001` 后，镜像 tag 会得到类似：
 
 ```text
-main-20260310-001-133581-localdeploy
+main-20260310_001-133581-localdeploy
 ```
 
 如果暂时没有版本 tag 或版本提交信息，脚本会回退为：
