@@ -263,6 +263,10 @@ export class AuthService {
     )}`;
   }
 
+  issueSession(userId: string, appId: string, now = new Date()): AuthSession {
+    return this.issueSessionForUser(userId, appId, now);
+  }
+
   private issueSessionForUser(userId: string, appId: string, now = new Date()): AuthSession {
     const accessToken = this.tokenService.issueAccessToken(userId, appId, now);
     const { rawToken: refreshToken } = this.issueRefreshToken(userId, appId, now);

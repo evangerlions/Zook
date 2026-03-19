@@ -209,6 +209,9 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `POST` | `/api/v1/auth/login` | 登录 |
 | `POST` | `/api/v1/auth/register/email-code` | 发送注册邮箱验证码 |
 | `POST` | `/api/v1/auth/register` | 邮箱注册并创建账号 |
+| `POST` | `/api/v1/auth/qr-logins` | 创建扫码登录会话并生成二维码内容 |
+| `POST` | `/api/v1/auth/qr-logins/{loginId}/confirm` | 移动端确认扫码登录 |
+| `GET` | `/api/v1/auth/qr-logins/{loginId}` | PC 端轮询扫码登录结果 |
 | `POST` | `/api/v1/auth/refresh` | 刷新 Access Token |
 | `POST` | `/api/v1/auth/logout` | 登出 |
 | `POST` | `/api/v1/analytics/events/batch` | 行为事件上报 |
@@ -261,7 +264,11 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `401` | `AUTH_REFRESH_TOKEN_REVOKED` | Refresh Token 已失效或已撤销 |
 | `401` | `AUTH_VERIFICATION_CODE_REQUIRED` | 注册验证码缺失 |
 | `401` | `AUTH_VERIFICATION_CODE_INVALID` | 注册验证码错误、过期或已失效 |
+| `401` | `AUTH_QR_LOGIN_TOKEN_REQUIRED` | 扫码登录所需的一次性 token 缺失 |
+| `401` | `AUTH_QR_LOGIN_INVALID` | 扫码登录会话或 token 非法 |
+| `401` | `AUTH_QR_LOGIN_EXPIRED` | 扫码登录二维码已过期 |
 | `409` | `AUTH_ACCOUNT_ALREADY_EXISTS` | 邮箱已注册 |
+| `409` | `AUTH_QR_LOGIN_ALREADY_USED` | 扫码登录会话已确认或已消费 |
 | `429` | `AUTH_RATE_LIMITED` | 注册发送或提交频率过高 |
 | `403` | `AUTH_APP_SCOPE_MISMATCH` | Header、Path、Token 的产品标识不一致 |
 | `403` | `IAM_PERMISSION_DENIED` | 当前用户没有对应权限 |

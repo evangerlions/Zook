@@ -24,6 +24,10 @@ export type ErrorCode =
   | "AUTH_VERIFICATION_CODE_INVALID"
   | "AUTH_ACCOUNT_ALREADY_EXISTS"
   | "AUTH_RATE_LIMITED"
+  | "AUTH_QR_LOGIN_TOKEN_REQUIRED"
+  | "AUTH_QR_LOGIN_INVALID"
+  | "AUTH_QR_LOGIN_EXPIRED"
+  | "AUTH_QR_LOGIN_ALREADY_USED"
   | "AUTH_APP_SCOPE_MISMATCH"
   | "AUTH_LOGIN_TEMPORARILY_LOCKED"
   | "AUTH_USER_BLOCKED"
@@ -277,6 +281,48 @@ export interface RegisterEmailCodeResult {
   cooldownSeconds: number;
   expiresInSeconds: number;
 }
+
+export interface CreateQrLoginCommand {
+  appId: string;
+}
+
+export interface ConfirmQrLoginCommand {
+  appId: string;
+  loginId: string;
+  scanToken: string;
+  userId: string;
+}
+
+export interface PollQrLoginCommand {
+  appId: string;
+  loginId: string;
+  pollToken: string;
+}
+
+export interface QrLoginCreateResult {
+  loginId: string;
+  qrContent: string;
+  pollToken: string;
+  expiresInSeconds: number;
+  pollIntervalMs: number;
+}
+
+export interface QrLoginConfirmResult {
+  confirmed: true;
+}
+
+export type QrLoginPollResult =
+  | {
+      status: "PENDING";
+      expiresInSeconds: number;
+      pollIntervalMs: number;
+    }
+  | {
+      status: "CONFIRMED";
+      accessToken: string;
+      refreshToken: string;
+      expiresIn: number;
+    };
 
 export interface AnalyticsEventInput {
   platform: Platform;
