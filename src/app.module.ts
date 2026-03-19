@@ -30,6 +30,7 @@ export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;
+  registrationCodeGenerator?: () => string;
 }
 
 /**
@@ -85,6 +86,14 @@ export class BackendApplication {
 
     if (request.method === "POST" && request.path === "/api/v1/auth/login") {
       return this.handleLogin(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/register/email-code") {
+      return this.handleRegisterEmailCode(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/register") {
+      return this.handleRegister(request);
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/refresh") {
@@ -146,6 +155,100 @@ export class BackendApplication {
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
+  }
+
+  private handleRegisterEmailCode(request: HttpRequest): HttpResponse<unknown> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = this.authService.registerEmailCode({
+        appId,
+        email,
+        ipAddress,
+      });
+
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.register.email_code",
+        resourceType: "user_registration",
+        payload: {
+          email,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.register.email_code",
+        resourceType: "user_registration",
+        payload: {
+          email,
+          ipAddress,
+          accepted: false,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private handleRegister(request: HttpRequest): HttpResponse<unknown> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const password = this.validationPipe.requireString(body, "password");
+    const emailCode = this.validationPipe.requireString(body, "emailCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const session = this.authService.register({
+        appId,
+        email,
+        password,
+        emailCode,
+        ipAddress,
+      });
+
+      this.auditInterceptor.record({
+        appId: session.appId,
+        actorUserId: session.userId,
+        action: "auth.register",
+        resourceType: "user",
+        resourceId: session.userId,
+        resourceOwnerUserId: session.userId,
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+        },
+      });
+
+      return this.ok(
+        this.toAuthPayload(session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(session.refreshToken, clientType),
+      );
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.register",
+        resourceType: "user_registration",
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
   }
 
   private handleRefresh(request: HttpRequest): HttpResponse<unknown> {
@@ -375,10 +478,12 @@ export function createApplication(options: CreateApplicationOptions = {}) {
   const tokenService = new TokenService("zook-local-secret");
   const authService = new AuthService(
     database,
+    cache,
     userService,
     appRegistryService,
     passwordHasher,
     tokenService,
+    options.registrationCodeGenerator,
   );
   const analyticsService = new AnalyticsService(database, appRegistryService);
   const rbacService = new RbacService(database);

@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomInt, randomUUID } from "node:crypto";
 
 const DEFAULT_TIMEZONE = "Asia/Shanghai";
 
@@ -14,6 +14,11 @@ export function randomId(prefix = "id"): string {
  */
 export function createOpaqueToken(prefix = "rt"): string {
   return `${prefix}_${randomBytes(24).toString("base64url")}`;
+}
+
+export function randomNumericCode(length = 6): string {
+  const max = 10 ** length;
+  return randomInt(0, max).toString().padStart(length, "0");
 }
 
 export function sha256(value: string): string {
@@ -73,6 +78,21 @@ export function toDateKey(input: string | Date, timeZone = DEFAULT_TIMEZONE): st
 
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+export function toHourKey(input: string | Date, timeZone = DEFAULT_TIMEZONE): string {
+  const date = input instanceof Date ? input : new Date(input);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}-${values.hour}`;
 }
 
 /**

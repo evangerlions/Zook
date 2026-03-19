@@ -20,6 +20,10 @@ export type ErrorCode =
   | "AUTH_INVALID_TOKEN"
   | "AUTH_REFRESH_TOKEN_REQUIRED"
   | "AUTH_REFRESH_TOKEN_REVOKED"
+  | "AUTH_VERIFICATION_CODE_REQUIRED"
+  | "AUTH_VERIFICATION_CODE_INVALID"
+  | "AUTH_ACCOUNT_ALREADY_EXISTS"
+  | "AUTH_RATE_LIMITED"
   | "AUTH_APP_SCOPE_MISMATCH"
   | "AUTH_LOGIN_TEMPORARILY_LOCKED"
   | "AUTH_USER_BLOCKED"
@@ -207,6 +211,7 @@ export interface HttpRequest {
   query?: Record<string, string | undefined>;
   body?: unknown;
   hostname?: string;
+  ipAddress?: string;
   trustedProxy?: boolean;
   requestId?: string;
   cookies?: Record<string, string>;
@@ -245,12 +250,32 @@ export interface LogoutCommand {
   cookieRefreshToken?: string;
 }
 
+export interface RegisterEmailCodeCommand {
+  appId: string;
+  email: string;
+  ipAddress: string;
+}
+
+export interface RegisterCommand {
+  appId: string;
+  email: string;
+  password: string;
+  emailCode: string;
+  ipAddress: string;
+}
+
 export interface AuthSession {
   userId: string;
   appId: string;
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+}
+
+export interface RegisterEmailCodeResult {
+  accepted: true;
+  cooldownSeconds: number;
+  expiresInSeconds: number;
 }
 
 export interface AnalyticsEventInput {
