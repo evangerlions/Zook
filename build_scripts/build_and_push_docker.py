@@ -295,9 +295,20 @@ def resolve_version(repo_root: Path, version_source: str) -> tuple[str | None, s
     return None, None
 
 
-def normalize_health_path(raw_value: str | None) -> str:
-    cleaned = (raw_value or DEFAULT_HEALTH_PATH).strip().strip("/")
-    return cleaned or DEFAULT_HEALTH_PATH
+def normalize_health_path(
+    raw_value: str | None,
+    default_value: str = DEFAULT_HEALTH_PATH,
+    legacy_aliases: dict[str, str] | None = None,
+) -> str:
+    cleaned = (raw_value or default_value).strip().strip("/")
+    if not cleaned:
+        return default_value
+
+    aliases = legacy_aliases or {}
+    normalized = aliases.get(cleaned, cleaned)
+    if normalized != cleaned:
+        print(f"warning: normalize legacy health path {cleaned!r} -> {normalized!r}")
+    return normalized
 
 
 def ensure_existing_file(path: Path, description: str) -> Path:
@@ -858,9 +869,17 @@ def main() -> int:
         container_port = os.getenv("DEPLOY_CONTAINER_PORT", os.getenv("PORT", DEFAULT_PORT)).strip() or DEFAULT_PORT
         admin_host_port = os.getenv("ADMIN_HOST_PORT", DEFAULT_ADMIN_PORT).strip() or DEFAULT_ADMIN_PORT
         admin_container_port = os.getenv("ADMIN_CONTAINER_PORT", DEFAULT_ADMIN_PORT).strip() or DEFAULT_ADMIN_PORT
-        health_path = normalize_health_path(os.getenv("HEALTH_PATH", DEFAULT_HEALTH_PATH))
+        health_path = normalize_health_path(
+            os.getenv("HEALTH_PATH", DEFAULT_HEALTH_PATH),
+            DEFAULT_HEALTH_PATH,
+            {
+                "health": DEFAULT_HEALTH_PATH,
+                "api/v1/health": DEFAULT_HEALTH_PATH,
+            },
+        )
         admin_health_path = normalize_health_path(
-            os.getenv("ADMIN_HEALTH_PATH", DEFAULT_ADMIN_HEALTH_PATH)
+            os.getenv("ADMIN_HEALTH_PATH", DEFAULT_ADMIN_HEALTH_PATH),
+            DEFAULT_ADMIN_HEALTH_PATH,
         )
 
         print(f"use repo root: {repo_root}")
