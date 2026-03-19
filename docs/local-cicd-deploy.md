@@ -42,8 +42,8 @@ python3 build_scripts/build_and_push_docker.py --branch <branch> --commit <commi
 
 这套方案现在支持同机双槽位部署。推荐直接约定：
 
-1. `release-online -> slot=online -> COMPOSE_PROJECT_NAME=zook-online -> HOST_PORT=3100 -> ADMIN_HOST_PORT=3200`
-2. `release-dev -> slot=dev -> COMPOSE_PROJECT_NAME=zook-dev -> HOST_PORT=3101 -> ADMIN_HOST_PORT=3201`
+1. `release-online -> slot=online -> COMPOSE_PROJECT_NAME=zook-online -> HOST_PORT=3100 -> ADMIN_HOST_PORT=3110`
+2. `release-dev -> slot=dev -> COMPOSE_PROJECT_NAME=zook-dev -> HOST_PORT=3101 -> ADMIN_HOST_PORT=3111`
 
 仓库里已经提供了两个示例配置文件：
 

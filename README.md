@@ -80,6 +80,6 @@ npm test
 ```
 
 默认 API 端口是 `3100`，也可以通过 `PORT` 环境变量覆盖。
-默认 Admin Web 端口是 `3200`。
+默认 Admin Web 端口是 `3110`。
 
 健康检查路径为 `/api/health`。

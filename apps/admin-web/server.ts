@@ -23,7 +23,7 @@ const CONTENT_TYPES: Record<string, string> = {
 
 const DEFAULT_PROXY_TARGET = "http://127.0.0.1:3100";
 const DEFAULT_BRAND_NAME = "Zook Control Room";
-const DEFAULT_PORT = 3200;
+const DEFAULT_PORT = 3110;
 
 function getStaticRoot(): string {
   return fileURLToPath(new URL("./", import.meta.url));

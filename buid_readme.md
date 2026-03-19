@@ -212,7 +212,7 @@ docker compose logs --since 1h api
 
 ```bash
 curl http://127.0.0.1:3100/api/health
-curl http://127.0.0.1:3200/setup
+curl http://127.0.0.1:3110/setup
 ```
 
 按上一个稳定镜像 tag 回滚后重新拉起服务：
