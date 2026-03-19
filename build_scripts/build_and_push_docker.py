@@ -33,7 +33,9 @@ DEFAULT_APP_ENV_FILE = ".env"
 DEFAULT_COMPOSE_FILE = "compose.yaml"
 DEFAULT_BIND_IP = "127.0.0.1"
 DEFAULT_PORT = "3100"
-DEFAULT_HEALTH_PATH = "health"
+DEFAULT_ADMIN_PORT = "3200"
+DEFAULT_HEALTH_PATH = "api/health"
+DEFAULT_ADMIN_HEALTH_PATH = "setup"
 DEFAULT_KEEP_RELEASES = 5
 DEFAULT_BUILDER_PRUNE_UNTIL = "168h"
 STATE_DIR_NAME = ".deploy"
@@ -413,7 +415,18 @@ def compose_command(project_name: str, compose_file: Path, compose_env_file: Pat
 def collect_compose_logs(project_name: str, compose_file: Path, compose_env_file: Path) -> str:
     try:
         return command_output(
-            compose_command(project_name, compose_file, compose_env_file, "logs", "--no-color", "--tail", "200", "api", "worker")
+            compose_command(
+                project_name,
+                compose_file,
+                compose_env_file,
+                "logs",
+                "--no-color",
+                "--tail",
+                "200",
+                "api",
+                "worker",
+                "admin-web",
+            )
         )
     except subprocess.CalledProcessError:
         return ""
@@ -428,18 +441,37 @@ def check_http_health(bind_ip: str, host_port: str, health_path: str) -> bool:
         return False
 
 
-def wait_for_release(project_name: str, bind_ip: str, host_port: str, health_path: str, timeout_seconds: int = 60) -> bool:
+def wait_for_release(
+    project_name: str,
+    bind_ip: str,
+    host_port: str,
+    health_path: str,
+    admin_host_port: str,
+    admin_health_path: str,
+    timeout_seconds: int = 60,
+) -> bool:
     deadline = time.monotonic() + timeout_seconds
     last_state = ""
     while time.monotonic() < deadline:
         api_status = get_service_status(project_name, "api")
         worker_status = get_service_status(project_name, "worker")
+        admin_status = get_service_status(project_name, "admin-web")
         healthy = check_http_health(bind_ip, host_port, health_path)
-        current_state = f"api={api_status} worker={worker_status} healthy={healthy}"
+        admin_healthy = check_http_health(bind_ip, admin_host_port, admin_health_path)
+        current_state = (
+            f"api={api_status} worker={worker_status} admin={admin_status} "
+            f"healthy={healthy} adminHealthy={admin_healthy}"
+        )
         if current_state != last_state:
             print(f"wait release status: {current_state}")
             last_state = current_state
-        if api_status == "running" and worker_status == "running" and healthy:
+        if (
+            api_status == "running"
+            and worker_status == "running"
+            and admin_status == "running"
+            and healthy
+            and admin_healthy
+        ):
             return True
         time.sleep(2)
     return False
@@ -650,8 +682,11 @@ def build_compose_env(
     app_env_file: Path,
     host_port: str,
     container_port: str,
+    admin_host_port: str,
+    admin_container_port: str,
     bind_ip: str,
     health_path: str,
+    admin_health_path: str,
 ) -> dict[str, str]:
     return {
         "DEPLOY_IMAGE": image_name,
@@ -661,7 +696,10 @@ def build_compose_env(
         "HOST_BIND_IP": bind_ip,
         "HOST_PORT": host_port,
         "CONTAINER_PORT": container_port,
+        "ADMIN_HOST_PORT": admin_host_port,
+        "ADMIN_CONTAINER_PORT": admin_container_port,
         "HEALTH_PATH": health_path,
+        "ADMIN_HEALTH_PATH": admin_health_path,
     }
 
 
@@ -818,7 +856,12 @@ def main() -> int:
         bind_ip = os.getenv("DEPLOY_HOST_BIND_IP", DEFAULT_BIND_IP).strip() or DEFAULT_BIND_IP
         host_port = os.getenv("DEPLOY_HOST_PORT", os.getenv("PORT", DEFAULT_PORT)).strip() or DEFAULT_PORT
         container_port = os.getenv("DEPLOY_CONTAINER_PORT", os.getenv("PORT", DEFAULT_PORT)).strip() or DEFAULT_PORT
+        admin_host_port = os.getenv("ADMIN_HOST_PORT", DEFAULT_ADMIN_PORT).strip() or DEFAULT_ADMIN_PORT
+        admin_container_port = os.getenv("ADMIN_CONTAINER_PORT", DEFAULT_ADMIN_PORT).strip() or DEFAULT_ADMIN_PORT
         health_path = normalize_health_path(os.getenv("HEALTH_PATH", DEFAULT_HEALTH_PATH))
+        admin_health_path = normalize_health_path(
+            os.getenv("ADMIN_HEALTH_PATH", DEFAULT_ADMIN_HEALTH_PATH)
+        )
 
         print(f"use repo root: {repo_root}")
         print(f"use slot: {slot_name}")
@@ -842,8 +885,11 @@ def main() -> int:
             app_env_file=app_env_file,
             host_port=host_port,
             container_port=container_port,
+            admin_host_port=admin_host_port,
+            admin_container_port=admin_container_port,
             bind_ip=bind_ip,
             health_path=health_path,
+            admin_health_path=admin_health_path,
         )
 
         if args.dry_run:
@@ -862,7 +908,14 @@ def main() -> int:
         print("===== START DEPLOY LOCAL RELEASE =====")
         deploy_release(repo_root, project_name, compose_file, compose_env_file)
 
-        if wait_for_release(project_name, bind_ip, host_port, health_path):
+        if wait_for_release(
+            project_name,
+            bind_ip,
+            host_port,
+            health_path,
+            admin_host_port,
+            admin_health_path,
+        ):
             write_state(
                 state_file,
                 {
@@ -926,13 +979,23 @@ def main() -> int:
                 app_env_file=app_env_file,
                 host_port=host_port,
                 container_port=container_port,
+                admin_host_port=admin_host_port,
+                admin_container_port=admin_container_port,
                 bind_ip=bind_ip,
                 health_path=health_path,
+                admin_health_path=admin_health_path,
             )
             print(f"attempt rollback to: {previous_release['image']}")
             write_compose_env(compose_env_file, previous_compose_env)
             deploy_release(repo_root, project_name, compose_file, compose_env_file)
-            rollback_ok = wait_for_release(project_name, bind_ip, host_port, health_path)
+            rollback_ok = wait_for_release(
+                project_name,
+                bind_ip,
+                host_port,
+                health_path,
+                admin_host_port,
+                admin_health_path,
+            )
             if rollback_ok:
                 write_state(
                     state_file,

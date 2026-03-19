@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --experimental-transform-types src/main.ts",
+    "admin": "node --experimental-transform-types apps/admin-web/server.ts",
     "worker": "node --experimental-transform-types src/worker.ts",
     "test": "node --experimental-transform-types --test test/unit/*.test.ts"
   },

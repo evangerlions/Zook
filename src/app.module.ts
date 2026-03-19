@@ -83,7 +83,7 @@ export class BackendApplication {
   }
 
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    if (request.method === "GET" && request.path === "/health") {
+    if (request.method === "GET" && request.path === "/api/health") {
       return this.ok({ status: "ok" }, request.requestId as string);
     }
 

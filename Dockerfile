@@ -24,6 +24,7 @@ LABEL org.opencontainers.image.created=$BUILD_DATE
 
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json package-lock.json ./
+COPY --chown=node:node apps ./apps
 COPY --chown=node:node src ./src
 
 USER node

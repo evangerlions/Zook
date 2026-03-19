@@ -5,6 +5,7 @@
 
 ```bash
 npm test
+npm run admin
 npm run dev
 npm run worker
 ```
@@ -15,6 +16,12 @@ npm run worker
 
 ```bash
 npm run dev
+```
+
+启动 Admin Web：
+
+```bash
+npm run admin
 ```
 
 启动 Worker：
@@ -164,7 +171,7 @@ prisma migrate deploy
 发布 API 和 Worker：
 
 ```bash
-docker compose up -d api worker
+docker compose up -d api worker admin-web
 ```
 
 查看容器状态：
@@ -187,6 +194,12 @@ docker compose logs -f api
 docker compose logs -f worker
 ```
 
+实时查看 Admin Web 日志：
+
+```bash
+docker compose logs -f admin-web
+```
+
 查看最近 1 小时 API 日志：
 
 ```bash
@@ -198,11 +211,12 @@ docker compose logs --since 1h api
 健康检查：
 
 ```bash
-curl http://127.0.0.1:3100/health
+curl http://127.0.0.1:3100/api/health
+curl http://127.0.0.1:3200/setup
 ```
 
 按上一个稳定镜像 tag 回滚后重新拉起服务：
 
 ```bash
-docker compose up -d api worker
+docker compose up -d api worker admin-web
 ```

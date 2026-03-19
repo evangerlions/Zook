@@ -19,7 +19,7 @@
 健康检查独立使用：
 
 ```text
-/health
+/api/health
 ```
 
 ## 2. 路径分层
@@ -205,7 +205,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
-| `GET` | `/health` | 健康检查 |
+| `GET` | `/api/health` | 健康检查 |
 | `POST` | `/api/v1/auth/login` | 登录 |
 | `POST` | `/api/v1/auth/register/email-code` | 发送注册邮箱验证码 |
 | `POST` | `/api/v1/auth/register` | 邮箱注册并创建账号 |
@@ -225,6 +225,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 
 1. 当前脚手架尚未挂出 `novel`、`pomodoro`、`ppt`、`my-todo` 这类产品业务路由。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
+3. 扫码登录的对外接入说明见 [doc/public-api-spec.md](doc/public-api-spec.md)。
 
 ## 7. 统一响应格式
 
