@@ -9,14 +9,16 @@
 
 ## 2. 当前已完成的主要功能
 
-### 2.1 API 与 Worker 双入口
+### 2.1 API / Worker / Admin Web 三入口
 
-当前项目已经具备两个入口：
+当前项目已经具备三个入口：
 
 1. `src/main.ts`
    用于启动 API 服务，对外提供 HTTP 接口。
 2. `src/worker.ts`
    用于启动 Worker，负责异步任务处理和失败事件重投。
+3. `apps/admin-web/server.ts`
+   用于启动后台管理前端服务，对浏览器提供控制台页面，并把 `/api/*` 请求代理到 API 服务。
 
 ### 2.2 认证与鉴权
 
@@ -128,7 +130,7 @@
 
 当前已经接入到应用入口中的接口包括：
 
-1. `GET /health`
+1. `GET /api/health`
 2. `POST /api/v1/auth/login`
 3. `POST /api/v1/auth/refresh`
 4. `POST /api/v1/auth/logout`
@@ -147,6 +149,7 @@
 
 ```text
 .
+├── apps/
 ├── docs/
 ├── src/
 ├── test/
@@ -190,17 +193,19 @@ src/
    API 进程入口，启动 HTTP 服务。
 2. `src/worker.ts`
    Worker 进程入口，处理后台任务。
-3. `src/app.module.ts`
+3. `apps/admin-web/server.ts`
+   Admin Web 进程入口，负责控制台页面静态分发和 API 代理。
+4. `src/app.module.ts`
    项目运行时装配中心，负责把各模块和路由串起来。
-4. `src/core/`
+5. `src/core/`
    放守卫、拦截器、过滤器、上下文解析和基础校验。
-5. `src/modules/`
+6. `src/modules/`
    放核心业务能力模块。
-6. `src/services/`
+7. `src/services/`
    放跨模块服务，例如配置服务、通知服务、失败事件重投服务。
-7. `src/infrastructure/`
+8. `src/infrastructure/`
    放基础设施适配层，例如内存数据库、缓存、队列、日志、文件服务。
-8. `src/shared/`
+9. `src/shared/`
    放共享类型、错误定义和公共工具函数。
 
 ### 4.4 test 目录说明
@@ -208,6 +213,7 @@ src/
 ```text
 test/
 └── unit/
+    ├── admin-web.server.test.ts
     ├── analytics.service.test.ts
     ├── app-access.guard.test.ts
     ├── auth.service.test.ts
@@ -227,11 +233,13 @@ test/
 
 ```bash
 npm run dev
+npm run admin
 npm run worker
 npm test
 ```
 
 默认 API 端口当前为 `3100`，也可以通过环境变量 `PORT` 覆盖。
+Admin Web 默认端口当前为 `3110`。
 
 ## 6. 当前实现边界
 

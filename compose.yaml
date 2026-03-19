@@ -14,7 +14,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget -qO- http://127.0.0.1:${CONTAINER_PORT:-3100}/${HEALTH_PATH:-health} >/dev/null 2>&1 || exit 1",
+          "wget -qO- http://127.0.0.1:${CONTAINER_PORT:-3100}/${HEALTH_PATH:-api/health} >/dev/null 2>&1 || exit 1",
         ]
       interval: 5s
       timeout: 3s
@@ -30,3 +30,30 @@ services:
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
+
+  admin-web:
+    image: "${DEPLOY_IMAGE:?DEPLOY_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}"
+    pull_policy: never
+    restart: unless-stopped
+    env_file:
+      - "${APP_ENV_FILE:-.env}"
+    environment:
+      PORT: "${ADMIN_CONTAINER_PORT:-3110}"
+      ADMIN_API_PROXY_TARGET: "http://api:${CONTAINER_PORT:-3100}"
+      ADMIN_BRAND_NAME: "${ADMIN_BRAND_NAME:-Zook Control Room}"
+      ADMIN_DEFAULT_APP_ID: "${ADMIN_DEFAULT_APP_ID:-}"
+    ports:
+      - "${HOST_BIND_IP:-127.0.0.1}:${ADMIN_HOST_PORT:-3110}:${ADMIN_CONTAINER_PORT:-3110}"
+    command: ["node", "--experimental-transform-types", "apps/admin-web/server.ts"]
+    depends_on:
+      - api
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:${ADMIN_CONTAINER_PORT:-3110}/${ADMIN_HEALTH_PATH:-setup} >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s

@@ -23,7 +23,7 @@ python3 build_scripts/build_and_push_docker.py --branch <branch> --commit <commi
    - `git fetch` + `git checkout`
    - 本地 `docker build`
    - `docker compose up -d`
-   - `/health` 健康检查
+   - `/api/health` 和 Admin Web `/setup` 健康检查
    - 失败回滚到上一个成功版本
    - 成功后保留少量最近镜像并清理更早的旧镜像
 
@@ -42,8 +42,8 @@ python3 build_scripts/build_and_push_docker.py --branch <branch> --commit <commi
 
 这套方案现在支持同机双槽位部署。推荐直接约定：
 
-1. `release-online -> slot=online -> COMPOSE_PROJECT_NAME=zook-online -> HOST_PORT=3100`
-2. `release-dev -> slot=dev -> COMPOSE_PROJECT_NAME=zook-dev -> HOST_PORT=3101`
+1. `release-online -> slot=online -> COMPOSE_PROJECT_NAME=zook-online -> HOST_PORT=3100 -> ADMIN_HOST_PORT=3110`
+2. `release-dev -> slot=dev -> COMPOSE_PROJECT_NAME=zook-dev -> HOST_PORT=3101 -> ADMIN_HOST_PORT=3111`
 
 仓库里已经提供了两个示例配置文件：
 
@@ -135,7 +135,7 @@ python3 build_scripts/build_and_push_docker.py --branch main --skip-git-sync --a
 5. 本地构建镜像。
 6. 按槽位写入 `.deploy/<slot>/compose.env`
 7. 执行 `docker compose up -d --force-recreate --remove-orphans`
-8. 轮询 `http://127.0.0.1:<port>/<health_path>`
+8. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
 9. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`
 10. 成功后默认保留最近 `5` 个本地发布镜像，并额外保留各槽位当前与上一个回滚点
 11. 成功后再执行一次温和的 `docker builder prune`

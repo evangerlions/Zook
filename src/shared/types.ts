@@ -20,6 +20,14 @@ export type ErrorCode =
   | "AUTH_INVALID_TOKEN"
   | "AUTH_REFRESH_TOKEN_REQUIRED"
   | "AUTH_REFRESH_TOKEN_REVOKED"
+  | "AUTH_VERIFICATION_CODE_REQUIRED"
+  | "AUTH_VERIFICATION_CODE_INVALID"
+  | "AUTH_ACCOUNT_ALREADY_EXISTS"
+  | "AUTH_RATE_LIMITED"
+  | "AUTH_QR_LOGIN_TOKEN_REQUIRED"
+  | "AUTH_QR_LOGIN_INVALID"
+  | "AUTH_QR_LOGIN_EXPIRED"
+  | "AUTH_QR_LOGIN_ALREADY_USED"
   | "AUTH_APP_SCOPE_MISMATCH"
   | "AUTH_LOGIN_TEMPORARILY_LOCKED"
   | "AUTH_USER_BLOCKED"
@@ -207,6 +215,7 @@ export interface HttpRequest {
   query?: Record<string, string | undefined>;
   body?: unknown;
   hostname?: string;
+  ipAddress?: string;
   trustedProxy?: boolean;
   requestId?: string;
   cookies?: Record<string, string>;
@@ -245,6 +254,20 @@ export interface LogoutCommand {
   cookieRefreshToken?: string;
 }
 
+export interface RegisterEmailCodeCommand {
+  appId: string;
+  email: string;
+  ipAddress: string;
+}
+
+export interface RegisterCommand {
+  appId: string;
+  email: string;
+  password: string;
+  emailCode: string;
+  ipAddress: string;
+}
+
 export interface AuthSession {
   userId: string;
   appId: string;
@@ -252,6 +275,54 @@ export interface AuthSession {
   refreshToken: string;
   expiresIn: number;
 }
+
+export interface RegisterEmailCodeResult {
+  accepted: true;
+  cooldownSeconds: number;
+  expiresInSeconds: number;
+}
+
+export interface CreateQrLoginCommand {
+  appId: string;
+}
+
+export interface ConfirmQrLoginCommand {
+  appId: string;
+  loginId: string;
+  scanToken: string;
+  userId: string;
+}
+
+export interface PollQrLoginCommand {
+  appId: string;
+  loginId: string;
+  pollToken: string;
+}
+
+export interface QrLoginCreateResult {
+  loginId: string;
+  qrContent: string;
+  pollToken: string;
+  expiresInSeconds: number;
+  pollIntervalMs: number;
+}
+
+export interface QrLoginConfirmResult {
+  confirmed: true;
+}
+
+export type QrLoginPollResult =
+  | {
+      status: "PENDING";
+      expiresInSeconds: number;
+      pollIntervalMs: number;
+    }
+  | {
+      status: "CONFIRMED";
+      accessToken: string;
+      refreshToken: string;
+      expiresIn: number;
+    };
 
 export interface AnalyticsEventInput {
   platform: Platform;

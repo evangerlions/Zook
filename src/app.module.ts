@@ -16,6 +16,7 @@ import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
 import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
+import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
@@ -30,6 +31,7 @@ export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;
+  registrationCodeGenerator?: () => string;
 }
 
 /**
@@ -38,6 +40,7 @@ export interface CreateApplicationOptions {
 export class BackendApplication {
   constructor(
     private readonly authService: AuthService,
+    private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
@@ -71,6 +74,7 @@ export class BackendApplication {
   get runtimeServices() {
     return {
       authService: this.authService,
+      qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
       storageService: this.storageService,
       notificationService: this.notificationService,
@@ -79,12 +83,34 @@ export class BackendApplication {
   }
 
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    if (request.method === "GET" && request.path === "/health") {
+    if (request.method === "GET" && request.path === "/api/health") {
       return this.ok({ status: "ok" }, request.requestId as string);
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/login") {
       return this.handleLogin(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/register/email-code") {
+      return this.handleRegisterEmailCode(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/register") {
+      return this.handleRegister(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/qr-logins") {
+      return this.handleCreateQrLogin(request);
+    }
+
+    const qrLoginConfirmMatch = request.path.match(/^\/api\/v1\/auth\/qr-logins\/([^/]+)\/confirm$/);
+    if (request.method === "POST" && qrLoginConfirmMatch) {
+      return this.handleConfirmQrLogin(request, decodeURIComponent(qrLoginConfirmMatch[1] as string));
+    }
+
+    const qrLoginPollMatch = request.path.match(/^\/api\/v1\/auth\/qr-logins\/([^/]+)$/);
+    if (request.method === "GET" && qrLoginPollMatch) {
+      return this.handlePollQrLogin(request, decodeURIComponent(qrLoginPollMatch[1] as string));
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/refresh") {
@@ -146,6 +172,222 @@ export class BackendApplication {
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
+  }
+
+  private handleRegisterEmailCode(request: HttpRequest): HttpResponse<unknown> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = this.authService.registerEmailCode({
+        appId,
+        email,
+        ipAddress,
+      });
+
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.register.email_code",
+        resourceType: "user_registration",
+        payload: {
+          email,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.register.email_code",
+        resourceType: "user_registration",
+        payload: {
+          email,
+          ipAddress,
+          accepted: false,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private handleRegister(request: HttpRequest): HttpResponse<unknown> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const password = this.validationPipe.requireString(body, "password");
+    const emailCode = this.validationPipe.requireString(body, "emailCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const session = this.authService.register({
+        appId,
+        email,
+        password,
+        emailCode,
+        ipAddress,
+      });
+
+      this.auditInterceptor.record({
+        appId: session.appId,
+        actorUserId: session.userId,
+        action: "auth.register",
+        resourceType: "user",
+        resourceId: session.userId,
+        resourceOwnerUserId: session.userId,
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+        },
+      });
+
+      return this.ok(
+        this.toAuthPayload(session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(session.refreshToken, clientType),
+      );
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.register",
+        resourceType: "user_registration",
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private handleCreateQrLogin(request: HttpRequest): HttpResponse<unknown> {
+    const appId = this.appContextResolver.resolvePreAuth(request);
+
+    try {
+      const result = this.qrLoginService.createSession({ appId });
+
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.qr_login.create",
+        resourceType: "qr_login_session",
+        resourceId: result.loginId,
+        payload: {
+          expiresInSeconds: result.expiresInSeconds,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.qr_login.create",
+        resourceType: "qr_login_session",
+        payload: {
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private handleConfirmQrLogin(request: HttpRequest, loginId: string): HttpResponse<unknown> {
+    const auth = this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
+    const scanToken = this.validationPipe.requireString(body, "scanToken");
+
+    try {
+      const result = this.qrLoginService.confirm({
+        appId,
+        loginId,
+        scanToken,
+        userId: auth.userId,
+      });
+
+      this.auditInterceptor.record({
+        appId: auth.appId,
+        actorUserId: auth.userId,
+        action: "auth.qr_login.confirm",
+        resourceType: "qr_login_session",
+        resourceId: loginId,
+        resourceOwnerUserId: auth.userId,
+        payload: {
+          confirmed: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId: auth.appId,
+        actorUserId: auth.userId,
+        action: "auth.qr_login.confirm",
+        resourceType: "qr_login_session",
+        resourceId: loginId,
+        resourceOwnerUserId: auth.userId,
+        payload: {
+          confirmed: false,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private handlePollQrLogin(request: HttpRequest, loginId: string): HttpResponse<unknown> {
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const pollToken = this.validationPipe.requireQueryString(request.query, "pollToken");
+
+    try {
+      const result = this.qrLoginService.poll({
+        appId,
+        loginId,
+        pollToken,
+      });
+
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.qr_login.poll",
+        resourceType: "qr_login_session",
+        resourceId: loginId,
+        payload: {
+          status: result.status,
+        },
+      });
+
+      if (result.status === "CONFIRMED") {
+        return this.ok(
+          {
+            status: "CONFIRMED" as const,
+            accessToken: result.accessToken,
+            expiresIn: result.expiresIn,
+          },
+          request.requestId as string,
+          this.buildAuthHeaders(result.refreshToken, "web"),
+        );
+      }
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.qr_login.poll",
+        resourceType: "qr_login_session",
+        resourceId: loginId,
+        payload: {
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
   }
 
   private handleRefresh(request: HttpRequest): HttpResponse<unknown> {
@@ -375,11 +617,14 @@ export function createApplication(options: CreateApplicationOptions = {}) {
   const tokenService = new TokenService("zook-local-secret");
   const authService = new AuthService(
     database,
+    cache,
     userService,
     appRegistryService,
     passwordHasher,
     tokenService,
+    options.registrationCodeGenerator,
   );
+  const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
   const rbacService = new RbacService(database);
   const storageService = new StorageService(database);
@@ -402,6 +647,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
 
   const app = new BackendApplication(
     authService,
+    qrLoginService,
     analyticsService,
     storageService,
     notificationService,
@@ -429,6 +675,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
       userService,
       tokenService,
       authService,
+      qrLoginService,
       analyticsService,
       rbacService,
       storageService,
