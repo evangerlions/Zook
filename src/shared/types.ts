@@ -15,6 +15,8 @@ export type ClientType = "web" | "app";
 export type EventName = "page_view" | "page_leave" | "page_heartbeat";
 export type Platform = "web" | "ios" | "android";
 export type ErrorCode =
+  | "ADMIN_BASIC_AUTH_REQUIRED"
+  | "ADMIN_CONFIG_INVALID_JSON"
   | "AUTH_INVALID_CREDENTIAL"
   | "AUTH_BEARER_REQUIRED"
   | "AUTH_INVALID_TOKEN"
@@ -266,6 +268,25 @@ export interface RegisterCommand {
   password: string;
   emailCode: string;
   ipAddress: string;
+}
+
+export interface AdminAppSummary {
+  appId: string;
+  appCode: string;
+  appName: string;
+  status: AppStatus;
+}
+
+export interface AdminBootstrapResult {
+  adminUser: string;
+  apps: AdminAppSummary[];
+}
+
+export interface AdminConfigDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  rawJson: string;
+  updatedAt?: string;
 }
 
 export interface AuthSession {

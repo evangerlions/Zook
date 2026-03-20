@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { AppContextResolver } from "./core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
@@ -13,6 +14,7 @@ import { StorageService } from "./infrastructure/files/storage.service.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
+import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
 import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
@@ -32,6 +34,65 @@ export interface CreateApplicationOptions {
   serviceName?: string;
   emitLogs?: boolean;
   registrationCodeGenerator?: () => string;
+  adminBasicAuth?: {
+    username: string;
+    password: string;
+  };
+}
+
+interface ResolvedAdminBasicAuth {
+  username: string;
+  password: string;
+}
+
+function resolveAdminBasicAuth(options: CreateApplicationOptions): ResolvedAdminBasicAuth | null {
+  const username = options.adminBasicAuth?.username ?? process.env.ADMIN_BASIC_AUTH_USERNAME ?? "";
+  const password = options.adminBasicAuth?.password ?? process.env.ADMIN_BASIC_AUTH_PASSWORD ?? "";
+
+  if (!username && !password) {
+    return null;
+  }
+
+  if (!username || !password) {
+    throw new Error("ADMIN_BASIC_AUTH_USERNAME and ADMIN_BASIC_AUTH_PASSWORD must be configured together.");
+  }
+
+  return {
+    username,
+    password,
+  };
+}
+
+function safeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function parseBasicAuthorization(headerValue?: string): { username: string; password: string } | null {
+  if (!headerValue || !headerValue.startsWith("Basic ")) {
+    return null;
+  }
+
+  try {
+    const decoded = Buffer.from(headerValue.slice("Basic ".length), "base64").toString("utf8");
+    const separatorIndex = decoded.indexOf(":");
+    if (separatorIndex <= 0) {
+      return null;
+    }
+
+    return {
+      username: decoded.slice(0, separatorIndex),
+      password: decoded.slice(separatorIndex + 1),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -42,6 +103,8 @@ export class BackendApplication {
     private readonly authService: AuthService,
     private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
+    private readonly adminConsoleService: AdminConsoleService,
+    private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
@@ -76,6 +139,7 @@ export class BackendApplication {
       authService: this.authService,
       qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
+      adminConsoleService: this.adminConsoleService,
       storageService: this.storageService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
@@ -85,6 +149,19 @@ export class BackendApplication {
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
     if (request.method === "GET" && request.path === "/api/health") {
       return this.ok({ status: "ok" }, request.requestId as string);
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/admin/bootstrap") {
+      return this.handleAdminBootstrap(request);
+    }
+
+    const adminConfigMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/config$/);
+    if (request.method === "GET" && adminConfigMatch) {
+      return this.handleAdminGetConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
+    }
+
+    if (request.method === "PUT" && adminConfigMatch) {
+      return this.handleAdminUpdateConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/login") {
@@ -489,6 +566,49 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private handleAdminBootstrap(request: HttpRequest): HttpResponse<unknown> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = this.adminConsoleService.getBootstrap(adminUser);
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private handleAdminGetConfig(request: HttpRequest, appId: string): HttpResponse<unknown> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = this.adminConsoleService.getConfig(appId);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.config.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private handleAdminUpdateConfig(request: HttpRequest, appId: string): HttpResponse<unknown> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const rawJson = this.validationPipe.requireString(body, "rawJson");
+    const result = this.adminConsoleService.updateConfig(appId, rawJson);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.config.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private handleFilePresign(request: HttpRequest): HttpResponse<unknown> {
     const auth = this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
@@ -562,6 +682,26 @@ export class BackendApplication {
     return auth;
   }
 
+  private authenticateAdmin(request: HttpRequest): string {
+    if (!this.adminBasicAuth) {
+      throw new ApplicationError(401, "ADMIN_BASIC_AUTH_REQUIRED", "Admin basic authentication is required.");
+    }
+
+    const credentials = parseBasicAuthorization(request.headers.authorization);
+    if (!credentials) {
+      throw new ApplicationError(401, "ADMIN_BASIC_AUTH_REQUIRED", "Admin basic authentication is required.");
+    }
+
+    if (
+      !safeEqual(credentials.username, this.adminBasicAuth.username) ||
+      !safeEqual(credentials.password, this.adminBasicAuth.password)
+    ) {
+      throw new ApplicationError(401, "ADMIN_BASIC_AUTH_REQUIRED", "Admin basic authentication is required.");
+    }
+
+    return credentials.username;
+  }
+
   private getClientType(body: Record<string, unknown>): ClientType {
     return body.clientType === "app" ? "app" : "web";
   }
@@ -626,6 +766,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
+  const adminConsoleService = new AdminConsoleService(database, appConfigService);
   const rbacService = new RbacService(database);
   const storageService = new StorageService(database);
   const notificationService = new NotificationService(database, queue, logger);
@@ -644,11 +785,14 @@ export function createApplication(options: CreateApplicationOptions = {}) {
   const auditInterceptor = new AuditInterceptor(database);
   const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
   const httpExceptionFilter = new HttpExceptionFilter();
+  const adminBasicAuth = resolveAdminBasicAuth(options);
 
   const app = new BackendApplication(
     authService,
     qrLoginService,
     analyticsService,
+    adminConsoleService,
+    adminBasicAuth,
     storageService,
     notificationService,
     failedEventRetryService,
@@ -677,6 +821,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
       authService,
       qrLoginService,
       analyticsService,
+      adminConsoleService,
       rbacService,
       storageService,
       notificationService,
