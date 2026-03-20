@@ -7,8 +7,11 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
+      ZOOK_STATE_FILE: "${ZOOK_STATE_FILE:-/data/zook-state.json}"
     ports:
       - "${HOST_BIND_IP:-127.0.0.1}:${HOST_PORT:-3100}:${CONTAINER_PORT:-3100}"
+    volumes:
+      - zook_data:/data
     command: ["node", "--experimental-transform-types", "src/main.ts"]
     healthcheck:
       test:
@@ -29,6 +32,9 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
+      ZOOK_STATE_FILE: "${ZOOK_STATE_FILE:-/data/zook-state.json}"
+    volumes:
+      - zook_data:/data
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
 
   admin-web:
@@ -58,3 +64,6 @@ services:
       timeout: 3s
       retries: 12
       start_period: 5s
+
+volumes:
+  zook_data:

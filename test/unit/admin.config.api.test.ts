@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 
@@ -25,11 +28,12 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
 
   assert.equal(bootstrapResponse.statusCode, 200);
   assert.equal(bootstrapResponse.body.data.adminUser, "admin");
-  assert.equal(bootstrapResponse.body.data.apps.length, 2);
+  assert.equal(bootstrapResponse.body.data.apps.length, 3);
   assert.deepEqual(
     bootstrapResponse.body.data.apps.map((item) => item.appId),
-    ["app_a", "app_b"],
+    ["common", "app_a", "app_b"],
   );
+  assert.equal(bootstrapResponse.body.data.apps[0]?.canDelete, false);
 
   const configResponse = await runtime.app.handle({
     method: "GET",
@@ -124,4 +128,188 @@ test("admin config API rejects invalid JSON and missing basic auth", async () =>
 
   assert.equal(invalidJsonResponse.statusCode, 400);
   assert.equal(invalidJsonResponse.body.code, "ADMIN_CONFIG_INVALID_JSON");
+});
+
+test("admin app APIs can add new apps and only delete apps with empty config", async () => {
+  const runtime = createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const createResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps",
+    headers,
+    body: {
+      appId: "app_c",
+      appName: "App C",
+    },
+  });
+
+  assert.equal(createResponse.statusCode, 200);
+  assert.equal(createResponse.body.data.appId, "app_c");
+  assert.equal(createResponse.body.data.appName, "App C");
+  assert.equal(createResponse.body.data.canDelete, true);
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.app.create" && item.appId === "app_c"),
+  );
+
+  const createdConfigResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_c/config",
+    headers,
+  });
+
+  assert.equal(createdConfigResponse.statusCode, 200);
+  assert.equal(createdConfigResponse.body.data.rawJson, "{}");
+
+  const blockedDeleteResponse = await runtime.app.handle({
+    method: "DELETE",
+    path: "/api/v1/admin/apps/app_a",
+    headers,
+  });
+
+  assert.equal(blockedDeleteResponse.statusCode, 409);
+  assert.equal(blockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
+
+  const deleteResponse = await runtime.app.handle({
+    method: "DELETE",
+    path: "/api/v1/admin/apps/app_c",
+    headers,
+  });
+
+  assert.equal(deleteResponse.statusCode, 200);
+  assert.equal(deleteResponse.body.data.deleted, true);
+  assert.equal(runtime.database.findApp("app_c"), undefined);
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.app.delete" && item.appId === "app_c"),
+  );
+});
+
+test("admin email service API stores common config and exposes resolved region", async () => {
+  const runtime = createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      provider: "tencent_ses",
+      regionMode: "manual",
+      manualRegion: "ap-hongkong",
+      secretId: "sid-demo",
+      secretKey: "sk-demo",
+      fromEmailAddress: "Admin <noreply@example.com>",
+      replyToAddresses: "support@example.com",
+      verification: {
+        subject: "验证码",
+        templateId: 100001,
+        templateDataKey: "code",
+        triggerType: 1,
+      },
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.app.appId, "common");
+  assert.equal(updateResponse.body.data.resolvedRegion, "ap-hongkong");
+  assert.equal(updateResponse.body.data.config.enabled, true);
+  assert.equal(updateResponse.body.data.config.verification.templateId, 100001);
+
+  const fetchResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+  });
+
+  assert.equal(fetchResponse.statusCode, 200);
+  assert.equal(fetchResponse.body.data.config.secretId, "sid-demo");
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.email_service.update" && item.appId === "common"),
+  );
+});
+
+test("managed app state persists app and config changes to disk", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "zook-state-"));
+  const persistedStateFile = join(directory, "state.json");
+
+  try {
+    const firstRuntime = createApplication({
+      adminBasicAuth: {
+        username: "admin",
+        password: "AdminPass123!",
+      },
+      persistedStateFile,
+    });
+    const headers = {
+      authorization: createAdminAuthHeader(),
+    };
+
+    const createResponse = await firstRuntime.app.handle({
+      method: "POST",
+      path: "/api/v1/admin/apps",
+      headers,
+      body: {
+        appId: "app_persisted",
+        appName: "Persisted App",
+      },
+    });
+
+    assert.equal(createResponse.statusCode, 200);
+
+    const configResponse = await firstRuntime.app.handle({
+      method: "PUT",
+      path: "/api/v1/admin/apps/app_persisted/config",
+      headers,
+      body: {
+        rawJson: '{"mail":{"enabled":true}}',
+      },
+    });
+
+    assert.equal(configResponse.statusCode, 200);
+
+    const secondRuntime = createApplication({
+      adminBasicAuth: {
+        username: "admin",
+        password: "AdminPass123!",
+      },
+      persistedStateFile,
+    });
+
+    const bootstrapResponse = await secondRuntime.app.handle({
+      method: "GET",
+      path: "/api/v1/admin/bootstrap",
+      headers,
+    });
+
+    assert.equal(bootstrapResponse.statusCode, 200);
+    assert.ok(
+      bootstrapResponse.body.data.apps.some((item) => item.appId === "app_persisted"),
+    );
+
+    const persistedConfigResponse = await secondRuntime.app.handle({
+      method: "GET",
+      path: "/api/v1/admin/apps/app_persisted/config",
+      headers,
+    });
+
+    assert.equal(persistedConfigResponse.statusCode, 200);
+    assert.match(persistedConfigResponse.body.data.rawJson, /"enabled": true/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

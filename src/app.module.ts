@@ -10,6 +10,7 @@ import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
 import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { InMemoryDatabase } from "./infrastructure/database/prisma/in-memory-database.ts";
+import { applyManagedState, createManagedStatePersistence } from "./infrastructure/database/prisma/managed-state.persistence.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
@@ -23,10 +24,12 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AppConfigService } from "./services/app-config.service.ts";
+import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { NotificationService } from "./services/notification.service.ts";
+import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
-import type { AnalyticsEventInput, ClientType, DatabaseSeed, HttpRequest, HttpResponse, Platform } from "./shared/types.ts";
+import type { AdminEmailServiceDocument, AnalyticsEventInput, ClientType, DatabaseSeed, HttpRequest, HttpResponse, Platform } from "./shared/types.ts";
 import { parseCookies, randomId } from "./shared/utils.ts";
 
 export interface CreateApplicationOptions {
@@ -34,6 +37,8 @@ export interface CreateApplicationOptions {
   serviceName?: string;
   emitLogs?: boolean;
   registrationCodeGenerator?: () => string;
+  registrationEmailSender?: RegistrationEmailSender;
+  persistedStateFile?: string;
   adminBasicAuth?: {
     username: string;
     password: string;
@@ -155,6 +160,23 @@ export class BackendApplication {
       return this.handleAdminBootstrap(request);
     }
 
+    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/email-service") {
+      return this.handleAdminGetEmailService(request);
+    }
+
+    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/email-service") {
+      return this.handleAdminUpdateEmailService(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/apps") {
+      return this.handleAdminCreateApp(request);
+    }
+
+    const adminAppMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)$/);
+    if (request.method === "DELETE" && adminAppMatch) {
+      return this.handleAdminDeleteApp(request, decodeURIComponent(adminAppMatch[1] as string));
+    }
+
     const adminConfigMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/config$/);
     if (request.method === "GET" && adminConfigMatch) {
       return this.handleAdminGetConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
@@ -251,14 +273,14 @@ export class BackendApplication {
     );
   }
 
-  private handleRegisterEmailCode(request: HttpRequest): HttpResponse<unknown> {
+  private async handleRegisterEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
     const email = this.validationPipe.requireString(body, "email");
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
-      const result = this.authService.registerEmailCode({
+      const result = await this.authService.registerEmailCode({
         appId,
         email,
         ipAddress,
@@ -573,6 +595,78 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private handleAdminCreateApp(request: HttpRequest): HttpResponse<unknown> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.validationPipe.requireString(body, "appId");
+    const appName = this.validationPipe.optionalString(body, "appName");
+    const result = this.adminConsoleService.createApp(appId, appName);
+
+    this.auditInterceptor.record({
+      appId: result.appId,
+      action: "admin.app.create",
+      resourceType: "app",
+      resourceId: result.appId,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private handleAdminDeleteApp(request: HttpRequest, appId: string): HttpResponse<unknown> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = this.adminConsoleService.deleteApp(appId);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.app.delete",
+      resourceType: "app",
+      resourceId: appId,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private handleAdminGetEmailService(request: HttpRequest): HttpResponse<unknown> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = this.adminConsoleService.getEmailServiceConfig();
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.email_service.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private handleAdminUpdateEmailService(request: HttpRequest): HttpResponse<unknown> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const result = this.adminConsoleService.updateEmailServiceConfig(body as AdminEmailServiceDocument["config"]);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.email_service.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private handleAdminGetConfig(request: HttpRequest, appId: string): HttpResponse<unknown> {
     const adminUser = this.authenticateAdmin(request);
     const result = this.adminConsoleService.getConfig(appId);
@@ -744,17 +838,28 @@ export class BackendApplication {
 export function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
   const seed = options.seed ?? buildDefaultSeed(passwordHasher);
-  const database = new InMemoryDatabase(seed);
+  const managedStatePersistence = createManagedStatePersistence(
+    options.persistedStateFile ?? process.env.ZOOK_STATE_FILE,
+  );
+  const database = new InMemoryDatabase(
+    applyManagedState(seed, managedStatePersistence.load()),
+  );
   const cache = new InMemoryCache();
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger(options.serviceName ?? "api", {
     emitToConsole: options.emitLogs ?? false,
   });
 
-  const appConfigService = new AppConfigService(database, cache);
+  const appConfigService = new AppConfigService(database, cache, managedStatePersistence);
+  const commonEmailConfigService = new CommonEmailConfigService(appConfigService);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
   const tokenService = new TokenService("zook-local-secret");
+  const registrationEmailSender =
+    options.registrationEmailSender ??
+    (options.serviceName === "api"
+      ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
+      : new NoopRegistrationEmailSender());
   const authService = new AuthService(
     database,
     cache,
@@ -762,11 +867,12 @@ export function createApplication(options: CreateApplicationOptions = {}) {
     appRegistryService,
     passwordHasher,
     tokenService,
+    registrationEmailSender,
     options.registrationCodeGenerator,
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const adminConsoleService = new AdminConsoleService(database, appConfigService);
+  const adminConsoleService = new AdminConsoleService(database, appConfigService, commonEmailConfigService);
   const rbacService = new RbacService(database);
   const storageService = new StorageService(database);
   const notificationService = new NotificationService(database, queue, logger);
@@ -815,6 +921,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
     passwordHasher,
     services: {
       appConfigService,
+      commonEmailConfigService,
       appRegistryService,
       userService,
       tokenService,

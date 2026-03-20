@@ -1,10 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
+import { type RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
+
+function createFakeSender(sent: Array<{ appId: string; email: string; code: string }>): RegistrationEmailSender {
+  return {
+    async sendRegistrationCode(command) {
+      sent.push(command);
+    },
+  };
+}
 
 test("register email-code and register APIs create a new account and issue tokens", async () => {
+  const sent: Array<{ appId: string; email: string; code: string }> = [];
   const runtime = createApplication({
     registrationCodeGenerator: () => "123456",
+    registrationEmailSender: createFakeSender(sent),
   });
 
   const sendCodeResponse = await runtime.app.handle({
@@ -25,6 +36,13 @@ test("register email-code and register APIs create a new account and issue token
     cooldownSeconds: 60,
     expiresInSeconds: 600,
   });
+  assert.deepEqual(sent, [
+    {
+      appId: "app_a",
+      email: "carol@example.com",
+      code: "123456",
+    },
+  ]);
 
   const registerResponse = await runtime.app.handle({
     method: "POST",
@@ -65,13 +83,15 @@ test("register email-code and register APIs create a new account and issue token
   );
 });
 
-test("registerEmailCode enforces resend cooldown per app, email and IP", () => {
+test("registerEmailCode enforces resend cooldown per app, email and IP", async () => {
+  const sent: Array<{ appId: string; email: string; code: string }> = [];
   const runtime = createApplication({
     registrationCodeGenerator: () => "123456",
+    registrationEmailSender: createFakeSender(sent),
   });
   const baseTime = new Date("2026-03-19T10:00:00+08:00");
 
-  const first = runtime.services.authService.registerEmailCode(
+  const first = await runtime.services.authService.registerEmailCode(
     {
       appId: "app_a",
       email: "cooldown@example.com",
@@ -80,17 +100,17 @@ test("registerEmailCode enforces resend cooldown per app, email and IP", () => {
     baseTime,
   );
   assert.equal(first.accepted, true);
+  assert.equal(sent.length, 1);
 
-  assert.throws(
-    () =>
-      runtime.services.authService.registerEmailCode(
-        {
-          appId: "app_a",
-          email: "cooldown@example.com",
-          ipAddress: "203.0.113.11",
-        },
-        new Date(baseTime.getTime() + 30 * 1000),
-      ),
+  await assert.rejects(
+    runtime.services.authService.registerEmailCode(
+      {
+        appId: "app_a",
+        email: "cooldown@example.com",
+        ipAddress: "203.0.113.11",
+      },
+      new Date(baseTime.getTime() + 30 * 1000),
+    ),
     (error: unknown) =>
       error instanceof Error &&
       "code" in error &&
@@ -100,15 +120,17 @@ test("registerEmailCode enforces resend cooldown per app, email and IP", () => {
   );
 });
 
-test("registerEmailCode enforces daily email limit and hourly IP limit", () => {
+test("registerEmailCode enforces daily email limit and hourly IP limit", async () => {
+  const sent: Array<{ appId: string; email: string; code: string }> = [];
   const runtime = createApplication({
     registrationCodeGenerator: () => "123456",
+    registrationEmailSender: createFakeSender(sent),
   });
   const baseTime = new Date("2026-03-19T08:00:00+08:00");
 
   for (let index = 0; index < 5; index += 1) {
     const now = new Date(baseTime.getTime() + index * 11 * 60 * 1000);
-    const result = runtime.services.authService.registerEmailCode(
+    const result = await runtime.services.authService.registerEmailCode(
       {
         appId: "app_a",
         email: "daily-limit@example.com",
@@ -119,28 +141,29 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", () => {
     assert.equal(result.accepted, true);
   }
 
-  assert.throws(
-    () =>
-      runtime.services.authService.registerEmailCode(
-        {
-          appId: "app_a",
-          email: "daily-limit@example.com",
-          ipAddress: "203.0.113.12",
-        },
-        new Date(baseTime.getTime() + 55 * 60 * 1000),
-      ),
+  await assert.rejects(
+    runtime.services.authService.registerEmailCode(
+      {
+        appId: "app_a",
+        email: "daily-limit@example.com",
+        ipAddress: "203.0.113.12",
+      },
+      new Date(baseTime.getTime() + 55 * 60 * 1000),
+    ),
     (error: unknown) =>
       error instanceof Error &&
       "code" in error &&
       error.code === "AUTH_RATE_LIMITED",
   );
 
+  const ipSent: Array<{ appId: string; email: string; code: string }> = [];
   const ipRuntime = createApplication({
     registrationCodeGenerator: () => "123456",
+    registrationEmailSender: createFakeSender(ipSent),
   });
   for (let index = 0; index < 20; index += 1) {
     const now = new Date(baseTime.getTime() + index * 2 * 60 * 1000);
-    const result = ipRuntime.services.authService.registerEmailCode(
+    const result = await ipRuntime.services.authService.registerEmailCode(
       {
         appId: "app_a",
         email: `ip-hour-${index}@example.com`,
@@ -151,16 +174,15 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", () => {
     assert.equal(result.accepted, true);
   }
 
-  assert.throws(
-    () =>
-      ipRuntime.services.authService.registerEmailCode(
-        {
-          appId: "app_a",
-          email: "ip-hour-overflow@example.com",
-          ipAddress: "203.0.113.13",
-        },
-        new Date(baseTime.getTime() + 40 * 60 * 1000),
-      ),
+  await assert.rejects(
+    ipRuntime.services.authService.registerEmailCode(
+      {
+        appId: "app_a",
+        email: "ip-hour-overflow@example.com",
+        ipAddress: "203.0.113.13",
+      },
+      new Date(baseTime.getTime() + 40 * 60 * 1000),
+    ),
     (error: unknown) =>
       error instanceof Error &&
       "code" in error &&
@@ -168,13 +190,15 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", () => {
   );
 });
 
-test("register rejects expired or reused verification codes", () => {
+test("register rejects expired or reused verification codes", async () => {
+  const sent: Array<{ appId: string; email: string; code: string }> = [];
   const runtime = createApplication({
     registrationCodeGenerator: () => "123456",
+    registrationEmailSender: createFakeSender(sent),
   });
   const baseTime = new Date("2026-03-19T12:00:00+08:00");
 
-  runtime.services.authService.registerEmailCode(
+  await runtime.services.authService.registerEmailCode(
     {
       appId: "app_a",
       email: "expired@example.com",
@@ -201,12 +225,14 @@ test("register rejects expired or reused verification codes", () => {
       error.code === "AUTH_VERIFICATION_CODE_INVALID",
   );
 
+  const secondSent: Array<{ appId: string; email: string; code: string }> = [];
   const secondRuntime = createApplication({
     registrationCodeGenerator: () => "654321",
+    registrationEmailSender: createFakeSender(secondSent),
   });
   const issueTime = new Date("2026-03-19T14:00:00+08:00");
 
-  secondRuntime.services.authService.registerEmailCode(
+  await secondRuntime.services.authService.registerEmailCode(
     {
       appId: "app_a",
       email: "single-use@example.com",
