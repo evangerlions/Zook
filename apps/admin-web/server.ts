@@ -55,6 +55,8 @@ function createRuntimeConfig(options: AdminServerOptions) {
     brandName: options.brandName ?? process.env.ADMIN_BRAND_NAME ?? DEFAULT_BRAND_NAME,
     defaultAppId: options.defaultAppId ?? process.env.ADMIN_DEFAULT_APP_ID ?? "",
     healthPath: "/api/health",
+    analyticsUrl: process.env.ADMIN_ANALYTICS_URL ?? "https://analytics.youwoai.net",
+    logsUrl: process.env.ADMIN_LOG_URL ?? "https://log.youwoai.net",
   };
 }
 
