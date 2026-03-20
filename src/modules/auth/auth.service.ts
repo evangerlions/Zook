@@ -13,6 +13,7 @@ import type {
   RegisterEmailCodeResult,
 } from "../../shared/types.ts";
 import { createOpaqueToken, randomId, randomNumericCode, sha256, toDateKey, toHourKey } from "../../shared/utils.ts";
+import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
 import { DevelopmentPasswordHasher } from "./password-hasher.ts";
@@ -57,6 +58,7 @@ export class AuthService {
     private readonly appRegistryService: AppRegistryService,
     private readonly passwordHasher: DevelopmentPasswordHasher,
     private readonly tokenService: TokenService,
+    private readonly registrationEmailSender: RegistrationEmailSender,
     private readonly registrationCodeGenerator: () => string = () => randomNumericCode(6),
   ) {}
 
@@ -81,10 +83,10 @@ export class AuthService {
     return this.issueSessionForUser(user.id, app.id, now);
   }
 
-  registerEmailCode(
+  async registerEmailCode(
     command: RegisterEmailCodeCommand,
     now = new Date(),
-  ): RegisterEmailCodeResult {
+  ): Promise<RegisterEmailCodeResult> {
     const app = this.assertSelfRegistrationAllowed(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
@@ -105,17 +107,30 @@ export class AuthService {
       throw new Error("Registration code generator must return a 6-digit numeric string.");
     }
 
+    const entry = {
+      codeHash: sha256(rawCode),
+      expiresAt: new Date(now.getTime() + this.registrationCodeTtlMs).toISOString(),
+      sentAt: now.toISOString(),
+      failedAttempts: 0,
+    } satisfies EmailVerificationCacheEntry;
+
     this.cache.set(
       cacheKey,
-      {
-        codeHash: sha256(rawCode),
-        expiresAt: new Date(now.getTime() + this.registrationCodeTtlMs).toISOString(),
-        sentAt: now.toISOString(),
-        failedAttempts: 0,
-      } satisfies EmailVerificationCacheEntry,
+      entry,
       Math.ceil(this.registrationCodeTtlMs / 1000),
       now,
     );
+
+    try {
+      await this.registrationEmailSender.sendRegistrationCode({
+        appId: app.id,
+        email,
+        code: rawCode,
+      });
+    } catch (error) {
+      this.cache.delete(cacheKey);
+      throw error;
+    }
 
     return {
       accepted: true,

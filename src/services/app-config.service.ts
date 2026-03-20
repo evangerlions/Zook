@@ -1,5 +1,7 @@
 import { InMemoryCache } from "../infrastructure/cache/redis/in-memory-cache.ts";
 import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
+import type { ManagedStatePersistence } from "../infrastructure/database/prisma/managed-state.persistence.ts";
+import type { AppConfigRecord } from "../shared/types.ts";
 import { randomId } from "../shared/utils.ts";
 
 /**
@@ -11,6 +13,7 @@ export class AppConfigService {
   constructor(
     private readonly database: InMemoryDatabase,
     private readonly cache: InMemoryCache,
+    private readonly managedStatePersistence?: ManagedStatePersistence,
   ) {}
 
   getValue(appId: string, configKey: string, now = new Date()): string | undefined {
@@ -32,6 +35,12 @@ export class AppConfigService {
     return record.configValue;
   }
 
+  getRecord(appId: string, configKey: string): AppConfigRecord | undefined {
+    return this.database.appConfigs.find(
+      (item) => item.appId === appId && item.configKey === configKey,
+    );
+  }
+
   setValue(appId: string, configKey: string, configValue: string): void {
     const existing = this.database.appConfigs.find(
       (item) => item.appId === appId && item.configKey === configKey,
@@ -51,6 +60,19 @@ export class AppConfigService {
     }
 
     this.cache.delete(this.buildCacheKey(appId, configKey));
+    this.managedStatePersistence?.save(this.database);
+  }
+
+  deleteByApp(appId: string): void {
+    const keys = this.database.appConfigs
+      .filter((item) => item.appId === appId)
+      .map((item) => item.configKey);
+
+    this.database.appConfigs = this.database.appConfigs.filter((item) => item.appId !== appId);
+    keys.forEach((configKey) => {
+      this.cache.delete(this.buildCacheKey(appId, configKey));
+    });
+    this.managedStatePersistence?.save(this.database);
   }
 
   getDefaultRoleCode(appId: string): string {

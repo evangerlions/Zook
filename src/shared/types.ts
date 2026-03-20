@@ -14,9 +14,16 @@ export type NotificationStatus =
 export type ClientType = "web" | "app";
 export type EventName = "page_view" | "page_leave" | "page_heartbeat";
 export type Platform = "web" | "ios" | "android";
+export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
+export type EmailProvider = "tencent_ses";
+export type EmailRegionMode = "auto" | "manual";
 export type ErrorCode =
   | "ADMIN_BASIC_AUTH_REQUIRED"
   | "ADMIN_CONFIG_INVALID_JSON"
+  | "ADMIN_APP_ALREADY_EXISTS"
+  | "ADMIN_APP_ID_RESERVED"
+  | "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG"
+  | "ADMIN_EMAIL_SERVICE_INVALID"
   | "AUTH_INVALID_CREDENTIAL"
   | "AUTH_BEARER_REQUIRED"
   | "AUTH_INVALID_TOKEN"
@@ -39,6 +46,8 @@ export type ErrorCode =
   | "APP_MEMBER_BLOCKED"
   | "IAM_PERMISSION_DENIED"
   | "FILE_ACCESS_DENIED"
+  | "EMAIL_SERVICE_NOT_CONFIGURED"
+  | "EMAIL_PROVIDER_REQUEST_FAILED"
   | "REQ_INVALID_BODY"
   | "REQ_INVALID_QUERY"
   | "REQ_INVALID_EVENT"
@@ -275,6 +284,7 @@ export interface AdminAppSummary {
   appCode: string;
   appName: string;
   status: AppStatus;
+  canDelete: boolean;
 }
 
 export interface AdminBootstrapResult {
@@ -287,6 +297,38 @@ export interface AdminConfigDocument {
   configKey: string;
   rawJson: string;
   updatedAt?: string;
+}
+
+export interface EmailServiceVerificationConfig {
+  subject: string;
+  templateId: number;
+  templateDataKey: string;
+  triggerType: 0 | 1;
+}
+
+export interface EmailServiceConfig {
+  enabled: boolean;
+  provider: EmailProvider;
+  regionMode: EmailRegionMode;
+  manualRegion?: TencentSesRegion;
+  secretId: string;
+  secretKey: string;
+  fromEmailAddress: string;
+  replyToAddresses?: string;
+  verification: EmailServiceVerificationConfig;
+}
+
+export interface AdminEmailServiceDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: EmailServiceConfig;
+  resolvedRegion: TencentSesRegion;
+  updatedAt?: string;
+}
+
+export interface AdminDeleteAppResult {
+  deleted: true;
+  appId: string;
 }
 
 export interface AuthSession {
