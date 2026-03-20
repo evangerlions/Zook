@@ -42,6 +42,7 @@ test("admin web serves SPA routes and runtime config", async (t) => {
   const adminServer = createAdminServer({
     defaultAppId: "app_a",
     brandName: "Zook Test Console",
+    assetVersion: "test-build-001",
   });
   let admin;
 
@@ -66,7 +67,10 @@ test("admin web serves SPA routes and runtime config", async (t) => {
 
     assert.equal(setupResponse.status, 200);
     assert.match(setupHtml, /<div id="app"><\/div>/);
-    assert.match(setupHtml, /_admin\/runtime-config\.js/);
+    assert.match(setupHtml, /_admin\/runtime-config\.test-build-001\.js/);
+    assert.match(setupHtml, /assets\/styles\.test-build-001\.css/);
+    assert.match(setupHtml, /assets\/app\.test-build-001\.js/);
+    assert.match(setupResponse.headers.get("cache-control") ?? "", /max-age=60/);
 
     const runtimeResponse = await fetch(`${admin.baseUrl}/_admin/runtime-config.js`);
     const runtimeScript = await runtimeResponse.text();
@@ -74,6 +78,14 @@ test("admin web serves SPA routes and runtime config", async (t) => {
     assert.equal(runtimeResponse.status, 200);
     assert.match(runtimeScript, /app_a/);
     assert.match(runtimeScript, /Zook Test Console/);
+    assert.match(runtimeResponse.headers.get("cache-control") ?? "", /max-age=60/);
+
+    const assetResponse = await fetch(`${admin.baseUrl}/assets/app.test-build-001.js`);
+    const assetBody = await assetResponse.text();
+
+    assert.equal(assetResponse.status, 200);
+    assert.match(assetBody, /window\.__ADMIN_RUNTIME_CONFIG__/m, "app bundle should be served from fingerprinted URL");
+    assert.match(assetResponse.headers.get("cache-control") ?? "", /immutable/);
   } finally {
     await admin.close();
   }
@@ -118,6 +130,7 @@ test("admin web proxies API responses and preserves set-cookie", async (t) => {
 
   const adminServer = createAdminServer({
     proxyTarget: upstream.baseUrl,
+    assetVersion: "test-build-002",
   });
   let admin;
 
@@ -191,6 +204,7 @@ test("admin web basic auth protects pages and proxy routes while keeping interna
 
   const adminServer = createAdminServer({
     proxyTarget: upstream.baseUrl,
+    assetVersion: "test-build-003",
     basicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -240,6 +254,7 @@ test("admin web basic auth protects pages and proxy routes while keeping interna
 
     assert.equal(authorizedPage.status, 200);
     assert.match(authorizedHtml, /<div id="app"><\/div>/);
+    assert.match(authorizedHtml, /assets\/app\.test-build-003\.js/);
 
     const authorizedApi = await fetch(`${admin.baseUrl}/api/health`, {
       headers: authorizedHeaders,
