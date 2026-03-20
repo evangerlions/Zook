@@ -35,7 +35,7 @@ DEFAULT_BIND_IP = "127.0.0.1"
 DEFAULT_PORT = "3100"
 DEFAULT_ADMIN_PORT = "3110"
 DEFAULT_HEALTH_PATH = "api/health"
-DEFAULT_ADMIN_HEALTH_PATH = "setup"
+DEFAULT_ADMIN_HEALTH_PATH = "_admin/health"
 DEFAULT_KEEP_RELEASES = 5
 DEFAULT_BUILDER_PRUNE_UNTIL = "168h"
 STATE_DIR_NAME = ".deploy"
@@ -880,6 +880,10 @@ def main() -> int:
         admin_health_path = normalize_health_path(
             os.getenv("ADMIN_HEALTH_PATH", DEFAULT_ADMIN_HEALTH_PATH),
             DEFAULT_ADMIN_HEALTH_PATH,
+            {
+                "setup": DEFAULT_ADMIN_HEALTH_PATH,
+                "_admin/health": DEFAULT_ADMIN_HEALTH_PATH,
+            },
         )
 
         print(f"use repo root: {repo_root}")
