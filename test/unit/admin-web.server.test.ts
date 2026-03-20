@@ -152,3 +152,104 @@ test("admin web proxies API responses and preserves set-cookie", async (t) => {
     await upstream.close();
   }
 });
+
+test("admin web basic auth protects pages and proxy routes while keeping internal health public", async (t) => {
+  const upstreamServer = createServer((request, response) => {
+    if (request.url === "/api/health") {
+      response.statusCode = 200;
+      response.setHeader("Content-Type", "application/json; charset=utf-8");
+      response.end(
+        JSON.stringify({
+          code: "OK",
+          message: "success",
+          data: { status: "ok" },
+          requestId: "req_upstream_auth",
+        }),
+      );
+      return;
+    }
+
+    response.statusCode = 404;
+    response.end("not found");
+  });
+  let upstream;
+
+  try {
+    upstream = await listen(upstreamServer);
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "EPERM" || error.code === "EACCES")
+    ) {
+      t.skip("Socket listen is not permitted in the current test sandbox.");
+      return;
+    }
+    throw error;
+  }
+
+  const adminServer = createAdminServer({
+    proxyTarget: upstream.baseUrl,
+    basicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+      realm: "Zook Admin Test",
+    },
+  });
+  let admin;
+
+  try {
+    admin = await listen(adminServer);
+  } catch (error) {
+    await upstream.close();
+
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "EPERM" || error.code === "EACCES")
+    ) {
+      t.skip("Socket listen is not permitted in the current test sandbox.");
+      return;
+    }
+    throw error;
+  }
+
+  try {
+    const healthResponse = await fetch(`${admin.baseUrl}/_admin/health`);
+    const healthPayload = await healthResponse.json();
+
+    assert.equal(healthResponse.status, 200);
+    assert.equal(healthPayload.data.status, "ok");
+
+    const unauthorizedPage = await fetch(`${admin.baseUrl}/setup`, {
+      redirect: "manual",
+    });
+    assert.equal(unauthorizedPage.status, 401);
+    assert.match(unauthorizedPage.headers.get("www-authenticate") ?? "", /Basic realm="Zook Admin Test"/);
+
+    const authorizedHeaders = {
+      Authorization: `Basic ${Buffer.from("admin:AdminPass123!").toString("base64")}`,
+    };
+
+    const authorizedPage = await fetch(`${admin.baseUrl}/setup`, {
+      headers: authorizedHeaders,
+    });
+    const authorizedHtml = await authorizedPage.text();
+
+    assert.equal(authorizedPage.status, 200);
+    assert.match(authorizedHtml, /<div id="app"><\/div>/);
+
+    const authorizedApi = await fetch(`${admin.baseUrl}/api/health`, {
+      headers: authorizedHeaders,
+    });
+    const authorizedPayload = await authorizedApi.json();
+
+    assert.equal(authorizedApi.status, 200);
+    assert.equal(authorizedPayload.data.status, "ok");
+  } finally {
+    await admin.close();
+    await upstream.close();
+  }
+});

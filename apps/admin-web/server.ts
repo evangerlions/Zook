@@ -1,12 +1,20 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+interface AdminBasicAuthOptions {
+  username?: string;
+  password?: string;
+  realm?: string;
+}
 
 interface AdminServerOptions {
   proxyTarget?: string;
   brandName?: string;
   defaultAppId?: string;
+  basicAuth?: AdminBasicAuthOptions;
 }
 
 const STATIC_FILE_MAP = new Map<string, string>([
@@ -24,6 +32,14 @@ const CONTENT_TYPES: Record<string, string> = {
 const DEFAULT_PROXY_TARGET = "http://127.0.0.1:3100";
 const DEFAULT_BRAND_NAME = "Zook Control Room";
 const DEFAULT_PORT = 3110;
+const DEFAULT_BASIC_AUTH_REALM = "Zook Admin";
+const INTERNAL_HEALTH_PATH = "/_admin/health";
+
+interface ResolvedAdminBasicAuth {
+  username: string;
+  password: string;
+  realm: string;
+}
 
 function getStaticRoot(): string {
   return fileURLToPath(new URL("./", import.meta.url));
@@ -39,6 +55,61 @@ function createRuntimeConfig(options: AdminServerOptions) {
     defaultAppId: options.defaultAppId ?? process.env.ADMIN_DEFAULT_APP_ID ?? "",
     healthPath: "/api/health",
   };
+}
+
+function resolveAdminBasicAuth(options: AdminServerOptions): ResolvedAdminBasicAuth | null {
+  const username = options.basicAuth?.username ?? process.env.ADMIN_BASIC_AUTH_USERNAME ?? "";
+  const password = options.basicAuth?.password ?? process.env.ADMIN_BASIC_AUTH_PASSWORD ?? "";
+  const realm = options.basicAuth?.realm ?? process.env.ADMIN_BASIC_AUTH_REALM ?? DEFAULT_BASIC_AUTH_REALM;
+
+  if (!username && !password) {
+    return null;
+  }
+
+  if (!username || !password) {
+    throw new Error("ADMIN_BASIC_AUTH_USERNAME and ADMIN_BASIC_AUTH_PASSWORD must be configured together.");
+  }
+
+  return {
+    username,
+    password,
+    realm,
+  };
+}
+
+function safeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function isAuthorized(request: IncomingMessage, auth: ResolvedAdminBasicAuth): boolean {
+  const header = request.headers.authorization;
+  if (!header || !header.startsWith("Basic ")) {
+    return false;
+  }
+
+  let decoded = "";
+  try {
+    decoded = Buffer.from(header.slice("Basic ".length), "base64").toString("utf8");
+  } catch {
+    return false;
+  }
+
+  const separatorIndex = decoded.indexOf(":");
+  if (separatorIndex <= 0) {
+    return false;
+  }
+
+  const username = decoded.slice(0, separatorIndex);
+  const password = decoded.slice(separatorIndex + 1);
+
+  return safeEqual(username, auth.username) && safeEqual(password, auth.password);
 }
 
 function sanitizeProxyHeaders(request: IncomingMessage): Headers {
@@ -138,6 +209,29 @@ function serveRuntimeConfig(response: ServerResponse, options: AdminServerOption
   response.end(`window.__ADMIN_RUNTIME_CONFIG__ = ${payload};\n`);
 }
 
+function serveInternalHealth(response: ServerResponse): void {
+  response.statusCode = 200;
+  response.setHeader("Content-Type", "application/json; charset=utf-8");
+  response.setHeader("Cache-Control", "no-store");
+  response.end(
+    JSON.stringify({
+      code: "OK",
+      message: "success",
+      data: {
+        status: "ok",
+      },
+      requestId: "admin_health",
+    }),
+  );
+}
+
+function challengeBasicAuth(response: ServerResponse, realm: string): void {
+  response.statusCode = 401;
+  response.setHeader("WWW-Authenticate", `Basic realm="${realm}", charset="UTF-8"`);
+  response.setHeader("Content-Type", "text/plain; charset=utf-8");
+  response.end("Authentication required.");
+}
+
 function notFound(response: ServerResponse): void {
   response.statusCode = 404;
   response.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -151,6 +245,17 @@ async function handleRequest(
 ): Promise<void> {
   const url = new URL(request.url ?? "/", "http://admin.local");
   const pathname = url.pathname;
+  const basicAuth = resolveAdminBasicAuth(options);
+
+  if (pathname === INTERNAL_HEALTH_PATH) {
+    serveInternalHealth(response);
+    return;
+  }
+
+  if (basicAuth && !isAuthorized(request, basicAuth)) {
+    challengeBasicAuth(response, basicAuth.realm);
+    return;
+  }
 
   if (pathname.startsWith("/api/")) {
     await proxyApiRequest(
@@ -209,6 +314,7 @@ export function startAdminServer(options: AdminServerOptions = {}): Server {
 
   server.listen(port, () => {
     const runtimeConfig = createRuntimeConfig(options);
+    const basicAuth = resolveAdminBasicAuth(options);
     console.log(
       JSON.stringify(
         {
@@ -218,6 +324,7 @@ export function startAdminServer(options: AdminServerOptions = {}): Server {
           proxyTarget:
             options.proxyTarget ?? process.env.ADMIN_API_PROXY_TARGET ?? DEFAULT_PROXY_TARGET,
           brandName: runtimeConfig.brandName,
+          basicAuthEnabled: Boolean(basicAuth),
         },
         null,
         2,
