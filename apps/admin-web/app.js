@@ -9,6 +9,7 @@ const appRoot = document.getElementById("app");
 const state = {
   busy: false,
   notice: null,
+  pendingPath: "",
   workspace: loadWorkspace(),
   session: loadSession(),
   metricsOverview: null,
@@ -55,10 +56,6 @@ appRoot.addEventListener("submit", (event) => {
 boot().catch(handleUnexpectedError);
 
 async function boot() {
-  if (state.workspace.appId && !state.session.accessToken && isConsoleRoute(currentPath())) {
-    await tryRestoreSession();
-  }
-
   await render();
 }
 
@@ -187,6 +184,20 @@ function isConsoleRoute(path) {
   return path.startsWith("/console");
 }
 
+function requiresBusinessSession(path) {
+  return path === "/console/metrics" || path === "/console/pages";
+}
+
+function defaultEntryPath() {
+  return state.workspace.appId ? "/console/workspace" : "/setup";
+}
+
+function queueBusinessLogin(path, message) {
+  state.pendingPath = requiresBusinessSession(path) ? path : "/console";
+  setNotice("info", message || "当前页面会读取受保护的业务接口，请先接管当前 app 的业务账号。");
+  navigate("/login");
+}
+
 function workspaceLabel() {
   return state.workspace.workspaceName || state.workspace.appId || "未命名工作区";
 }
@@ -200,15 +211,20 @@ async function render() {
     return;
   }
 
-  if (isConsoleRoute(path) && !state.session.accessToken) {
+  if (path === "/") {
+    navigate(defaultEntryPath());
+    return;
+  }
+
+  if (requiresBusinessSession(path) && !state.session.accessToken) {
     const restored = await tryRestoreSession();
     if (!restored) {
-      navigate("/login");
+      queueBusinessLogin(path, "读取指标前，需要先接管当前工作区的业务账号。");
       return;
     }
   }
 
-  if (path === "/" || path === "/login") {
+  if (path === "/login") {
     appRoot.innerHTML = renderAuthScreen("login");
     return;
   }
@@ -248,7 +264,7 @@ async function render() {
     return;
   }
 
-  navigate("/console");
+  navigate(defaultEntryPath());
 }
 
 function renderNotice() {
@@ -274,10 +290,10 @@ function renderNotice() {
 
 function renderAuthScreen(mode) {
   const isSetup = mode === "setup";
-  const title = isSetup ? "先设定工作区" : "登录到管理后台";
+  const title = isSetup ? "先设定工作区" : "按需接管业务账号";
   const description = isSetup
     ? "先录入一个默认 appId。后续所有后台请求都会以这个工作区作为作用域。"
-    : "当前后台会通过同域代理访问 API，你只需要选择 appId 并使用现有账号登录。";
+    : "你已经通过超级管理员入口。只有访问受保护的业务接口时，才需要为当前工作区接入一个 app 内账号。";
   const activeAppId = state.workspace.appId || runtimeConfig.defaultAppId || "未设置";
 
   return `
@@ -296,15 +312,15 @@ function renderAuthScreen(mode) {
             <div class="summary-grid">
               ${renderStatCard("默认工作区", activeAppId, "当前后台的 app 作用域入口。", "primary")}
               ${renderStatCard("健康检查", runtimeConfig.healthPath || "/api/health", "部署、Caddy 和容器探活统一使用。", "accent")}
-              ${renderStatCard("认证方式", "同域 Cookie", "Web 登录后通过 refresh 自动续期。", "success")}
+              ${renderStatCard("入口门禁", "超级管理员", "进入 admin-web 后可直接维护工作区配置。", "success")}
             </div>
 
             <section class="panel note-card">
               <span class="eyebrow">接入原则</span>
               <ul class="bullet-list">
                 <li>所有 API 统一走 <code>/api/v1</code> 前缀，心跳单独走 <code>/api/health</code>。</li>
-                <li>工作区只负责保存当前 <code>appId</code>，不会改变后端鉴权模型。</li>
-                <li>切换 <code>appId</code> 后会清空当前会话，避免把管理动作误打到错误 app。</li>
+                <li>超级管理员进入后台后，可以先维护当前工作区配置，不必先接业务账号。</li>
+                <li>切换 <code>appId</code> 后会断开业务账号接管，避免把管理动作误打到错误 app。</li>
               </ul>
             </section>
           </div>
@@ -349,10 +365,10 @@ function renderAuthScreen(mode) {
                       <p class="field-hint">只影响后台前端显示，不会写入后端配置。</p>
                     </div>
                     <div class="footer-actions">
-                      <button class="button button-primary" type="submit">${state.busy ? "保存中..." : "保存并进入登录"}</button>
+                      <button class="button button-primary" type="submit">${state.busy ? "保存中..." : "保存并进入控制台"}</button>
                       ${
                         state.workspace.appId
-                          ? '<button class="button button-secondary" type="button" data-link="/login">已有配置，直接去登录</button>'
+                          ? '<button class="button button-secondary" type="button" data-link="/console/workspace">已有配置，直接进控制台</button>'
                           : ""
                       }
                     </div>
@@ -360,17 +376,14 @@ function renderAuthScreen(mode) {
                 `
                 : `
                   <form class="form-grid" data-form="login">
-                    <div class="field">
-                      <label for="login-app-id">当前 appId</label>
-                      <input
-                        id="login-app-id"
-                        name="appId"
-                        value="${escapeHtml(state.workspace.appId)}"
-                        spellcheck="false"
-                        required
-                      />
-                      <p class="field-hint">所有后台请求都会继承这个工作区作用域。</p>
-                    </div>
+                    <section class="panel note-card">
+                      <span class="eyebrow">Scope</span>
+                      <div class="info-grid">
+                        ${renderInfoLine("当前工作区", state.workspace.appId)}
+                        ${renderInfoLine("接入类型", "业务账号")}
+                        ${renderInfoLine("使用时机", "读取受保护接口时")}
+                      </div>
+                    </section>
                     <div class="field">
                       <label for="login-account">账号</label>
                       <input
@@ -393,11 +406,11 @@ function renderAuthScreen(mode) {
                         autocomplete="current-password"
                         required
                       />
-                      <p class="field-hint">登录成功后，refresh token 会继续走同域 Cookie 续期。</p>
+                      <p class="field-hint">超级管理员入口已经通过，这里只是在需要时接管 app 内的业务账号。</p>
                     </div>
                     <div class="footer-actions">
-                      <button class="button button-primary" type="submit">${state.busy ? "登录中..." : "登录后台"}</button>
-                      <button class="button button-secondary" type="button" data-link="/setup">调整工作区</button>
+                      <button class="button button-primary" type="submit">${state.busy ? "连接中..." : "连接业务账号"}</button>
+                      <button class="button button-secondary" type="button" data-link="/console/workspace">返回工作区配置</button>
                     </div>
                   </form>
                 `
@@ -444,15 +457,24 @@ function renderConsoleScreen(activeView) {
           <section class="panel sidebar-note">
             <p class="meta-label">当前会话</p>
             <div class="info-grid">
-              ${renderInfoLine("状态", state.session.accessToken ? "已登录" : "未登录")}
-              ${renderInfoLine("续期方式", "Refresh Cookie")}
+              ${renderInfoLine("入口门禁", "已通过")}
+              ${renderInfoLine("业务账号", state.session.accessToken ? "已接管" : "按需连接")}
               ${renderInfoLine("健康检查", runtimeConfig.healthPath || "/api/health")}
             </div>
           </section>
 
           <div class="footer-actions">
-            <button class="button button-secondary" type="button" data-link="/login">重新登录</button>
-            <button class="button button-danger" type="button" data-action="logout">退出</button>
+            ${
+              state.session.accessToken
+                ? `
+                  <button class="button button-secondary" type="button" data-link="/login">切换业务账号</button>
+                  <button class="button button-danger" type="button" data-action="logout">断开业务账号</button>
+                `
+                : `
+                  <button class="button button-secondary" type="button" data-link="/login">连接业务账号</button>
+                  <button class="button button-secondary" type="button" data-link="/console/workspace">修改工作区</button>
+                `
+            }
           </div>
         </aside>
 
@@ -506,7 +528,7 @@ function renderConsoleContent(activeView) {
 
 function renderHomeView() {
   const health = getHealthState();
-  const sessionState = state.session.accessToken ? "已接管" : "等待登录";
+  const sessionState = state.session.accessToken ? "已接管业务账号" : "超级管理员直达";
 
   return `
     <section class="view-stack">
@@ -514,14 +536,16 @@ function renderHomeView() {
         <div class="stack">
           <div class="stack-tight">
             <span class="eyebrow">Mission Snapshot</span>
-            <h3 class="panel-title">先确认作用域、心跳和会话，再进入具体诊断。</h3>
+            <h3 class="panel-title">先确认工作区和 API，再决定要不要接管业务账号。</h3>
             <p class="section-subtitle">
-              这个首页被设计成后台值班台：你可以一眼确认当前 appId、API 是否在线，以及接下来最值得点击的分析入口。
+              你已经通过超级管理员门禁，所以默认先进入控制台。工作区配置和 API 连通性可以直接看，只有受保护的指标接口才需要业务账号。
             </p>
           </div>
           <div class="inline-actions">
-            <button class="button button-primary" type="button" data-link="/console/metrics">查看概览指标</button>
-            <button class="button button-secondary" type="button" data-link="/console/pages">查看页面表现</button>
+            <button class="button button-primary" type="button" data-link="/console/workspace">修改工作区配置</button>
+            <button class="button button-secondary" type="button" data-link="${state.session.accessToken ? "/console/metrics" : "/login"}">${
+              state.session.accessToken ? "查看概览指标" : "连接业务账号"
+            }</button>
             <button class="button button-secondary" type="button" data-action="refresh-health">刷新 API 状态</button>
           </div>
         </div>
@@ -551,9 +575,9 @@ function renderHomeView() {
               <h3 class="panel-title">进入操作前，先看这 3 件事</h3>
             </div>
             <div class="check-list">
+              ${renderCheckItem("超级管理员入口已通过", "你可以直接进入工作区配置，不必先登录业务账号。", "success")}
               ${renderCheckItem("作用域已锁定", `当前后台默认操作 ${state.workspace.appId}`, "primary")}
               ${renderCheckItem("API 心跳可见", `健康检查路径 ${runtimeConfig.healthPath || "/api/health"}`, health.tone)}
-              ${renderCheckItem("登录链路已接通", "需要时可通过 refresh 自动恢复会话。", state.session.accessToken ? "success" : "accent")}
             </div>
           </div>
         </section>
@@ -566,16 +590,22 @@ function renderHomeView() {
             </div>
             <div class="quick-grid">
               <article class="quick-card">
-                <p class="quick-kicker">Overview Metrics</p>
-                <h4 class="quick-title">读 DAU 和新增趋势</h4>
-                <p class="quick-copy">直接命中 <code>/api/v1/admin/metrics/overview</code>，适合先看整体波动。</p>
-                <button class="button button-primary" type="button" data-link="/console/metrics">进入概览页</button>
+                <p class="quick-kicker">Workspace Control</p>
+                <h4 class="quick-title">先改当前工作区配置</h4>
+                <p class="quick-copy">先确认 <code>appId</code>、名称和 API 连通性，这一步不需要接业务账号。</p>
+                <button class="button button-primary" type="button" data-link="/console/workspace">打开工作区配置</button>
               </article>
               <article class="quick-card">
-                <p class="quick-kicker">Page Analytics</p>
-                <h4 class="quick-title">看页面表现拆分</h4>
-                <p class="quick-copy">按页面与平台切开 UV、Session 和停留时长，适合定位问题页面。</p>
-                <button class="button button-secondary" type="button" data-link="/console/pages">进入页面指标</button>
+                <p class="quick-kicker">Protected Metrics</p>
+                <h4 class="quick-title">${state.session.accessToken ? "进入受保护指标页" : "按需接管业务账号"}</h4>
+                <p class="quick-copy">${
+                  state.session.accessToken
+                    ? "当前已经接管业务账号，可以直接进入概览指标或页面分析。"
+                    : "概览指标和页面分析会读取受保护 API，只有在需要这些视图时才需要接业务账号。"
+                }</p>
+                <button class="button button-secondary" type="button" data-link="${
+                  state.session.accessToken ? "/console/metrics" : "/login"
+                }">${state.session.accessToken ? "进入概览指标" : "连接业务账号"}</button>
               </article>
             </div>
           </div>
@@ -793,9 +823,9 @@ function renderWorkspaceView() {
   return `
     <section class="view-stack">
       <div class="summary-grid">
-        ${renderStatCard("默认 appId", state.workspace.appId, "切换后会清空当前登录态。", "primary")}
+        ${renderStatCard("默认 appId", state.workspace.appId, "切换后如已接管业务账号，会自动断开。", "primary")}
         ${renderStatCard("工作区名称", state.workspace.workspaceName || "未命名", "只影响后台展示文案。", "accent")}
-        ${renderStatCard("统一前缀", "/api/v1", "页面通过同域代理访问 API。", "success")}
+        ${renderStatCard("业务账号", state.session.accessToken ? "已接管" : "按需连接", "只有读取受保护接口时才需要。", "success")}
       </div>
 
       <div class="content-grid">
@@ -804,7 +834,7 @@ function renderWorkspaceView() {
             <div class="stack-tight">
               <span class="eyebrow">Workspace Settings</span>
               <h3 class="panel-title">维护当前后台默认工作区</h3>
-              <p class="section-subtitle">这里保存的是前端本地配置，用于减少你在每个页面重复输入 <code>appId</code>。</p>
+              <p class="section-subtitle">你已经通过超级管理员门禁，所以这里可以直接维护当前工作区；业务账号只在读取受保护接口时再接入。</p>
             </div>
             <form class="form-grid" data-form="workspace">
               <div class="field">
@@ -824,6 +854,9 @@ function renderWorkspaceView() {
               </div>
               <div class="footer-actions">
                 <button class="button button-primary" type="submit">${state.busy ? "保存中..." : "保存工作区"}</button>
+                <button class="button button-secondary" type="button" data-link="/login">${
+                  state.session.accessToken ? "切换业务账号" : "连接业务账号"
+                }</button>
               </div>
             </form>
           </div>
@@ -841,9 +874,10 @@ function renderWorkspaceView() {
               ${renderInfoLine("代理方式", "同域 /api/*")}
             </div>
             <ul class="bullet-list bullet-list-compact">
-              <li>切换 <code>appId</code> 后会清空当前 session，防止跨 app 误操作。</li>
+              <li>超级管理员进入后台后，可以先在这里改工作区配置，不必先接业务账号。</li>
+              <li>切换 <code>appId</code> 后会断开当前业务账号接管，防止跨 app 误操作。</li>
               <li>浏览器只访问当前域名，跨域和 Cookie 由同域代理统一收口。</li>
-              <li>如果要检查部署链路，先看 <code>/api/health</code>，再看登录和指标接口。</li>
+              <li>如果要检查部署链路，先看 <code>/api/health</code>；只有指标接口才需要继续接业务账号。</li>
             </ul>
             <div class="footer-actions">
               <button class="button button-secondary" type="button" data-action="refresh-health">检测 API 连通性</button>
@@ -859,8 +893,8 @@ function renderWorkspaceView() {
 function syncDocumentTitle(path) {
   const base = runtimeConfig.brandName || "Zook Control Room";
   const map = {
-    "/": "后台登录",
-    "/login": "后台登录",
+    "/": "工作区配置",
+    "/login": "业务账号接管",
     "/setup": "工作区设置",
     "/console": "控制台总览",
     "/console/metrics": "概览指标",
@@ -892,14 +926,14 @@ function getConsoleMeta(activeView) {
     return {
       eyebrow: "Workspace Configuration",
       title: "工作区配置",
-      description: "维护默认 appId，让后台操作始终带着正确作用域。",
+      description: "超级管理员可直接维护默认 appId；只有读取受保护接口时才需要接业务账号。",
     };
   }
 
   return {
     eyebrow: "Mission Control",
     title: "控制台总览",
-    description: "先确认作用域、健康状态和登录链路，再深入具体视图。",
+    description: "先确认工作区和健康状态，再决定是否需要接管业务账号。",
   };
 }
 
@@ -1077,8 +1111,8 @@ async function handleFormSubmit(form) {
       lastAccount: state.workspace.lastAccount,
     });
     state.busy = false;
-    setNotice("success", "工作区已保存。现在可以直接登录后台。");
-    navigate("/login");
+    setNotice("success", "工作区已保存。你现在可以直接维护配置，需要受保护接口时再连接业务账号。");
+    navigate("/console/workspace");
     return;
   }
 
@@ -1088,9 +1122,9 @@ async function handleFormSubmit(form) {
     await render();
 
     try {
-      const appId = String(data.get("appId") ?? "").trim();
       const account = String(data.get("account") ?? "").trim();
       const password = String(data.get("password") ?? "");
+      const appId = state.workspace.appId;
 
       saveWorkspace({
         appId,
@@ -1116,8 +1150,10 @@ async function handleFormSubmit(form) {
         issuedAt: new Date().toISOString(),
       });
 
-      setNotice("success", "登录成功，已进入后台控制台。");
-      navigate("/console");
+      const nextPath = state.pendingPath || "/console";
+      state.pendingPath = "";
+      setNotice("success", "业务账号已接管。现在可以继续访问受保护接口。");
+      navigate(nextPath);
     } catch (error) {
       state.busy = false;
       setNotice("error", formatError(error));
@@ -1141,8 +1177,9 @@ async function handleFormSubmit(form) {
 
     if (appChanged) {
       clearSession();
-      setNotice("info", "工作区已切换，登录态已清空，请重新登录。");
-      navigate("/login");
+      state.pendingPath = "";
+      setNotice("info", "工作区已切换，业务账号接管已断开；需要受保护接口时再重新连接。");
+      navigate("/console/workspace");
       return;
     }
 
@@ -1191,14 +1228,16 @@ async function handleAction(action) {
     }
 
     clearSession();
-    setNotice("success", "已退出后台登录。");
-    navigate("/login");
+    state.pendingPath = "";
+    setNotice("success", "已断开业务账号，你仍可继续维护当前工作区。");
+    navigate("/console/workspace");
     return;
   }
 
   if (action === "reset-workspace") {
     localStorage.removeItem(STORAGE_KEYS.workspace);
     clearSession();
+    state.pendingPath = "";
     state.workspace = loadWorkspace();
     state.health = null;
     setNotice("success", "工作区已清空，请重新配置。");
@@ -1252,6 +1291,15 @@ async function loadOverviewMetrics() {
     };
     clearNotice();
   } catch (error) {
+    if (error?.statusCode === 401) {
+      clearSession();
+      state.metricsOverview = {
+        loading: false,
+        items: [],
+      };
+      queueBusinessLogin("/console/metrics", "概览指标会读取受保护接口，请先连接业务账号。");
+      return;
+    }
     state.metricsOverview = {
       loading: false,
       items: [],
@@ -1280,6 +1328,15 @@ async function loadPageMetrics() {
     };
     clearNotice();
   } catch (error) {
+    if (error?.statusCode === 401) {
+      clearSession();
+      state.pageMetrics = {
+        loading: false,
+        items: [],
+      };
+      queueBusinessLogin("/console/pages", "页面指标会读取受保护接口，请先连接业务账号。");
+      return;
+    }
     state.pageMetrics = {
       loading: false,
       items: [],

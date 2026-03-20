@@ -15,6 +15,7 @@ interface AdminServerOptions {
   brandName?: string;
   defaultAppId?: string;
   basicAuth?: AdminBasicAuthOptions;
+  assetVersion?: string;
 }
 
 const STATIC_FILE_MAP = new Map<string, string>([
@@ -55,6 +56,53 @@ function createRuntimeConfig(options: AdminServerOptions) {
     defaultAppId: options.defaultAppId ?? process.env.ADMIN_DEFAULT_APP_ID ?? "",
     healthPath: "/api/health",
   };
+}
+
+function resolveAssetVersion(options: AdminServerOptions): string {
+  const rawValue =
+    options.assetVersion ??
+    process.env.ADMIN_ASSET_VERSION ??
+    process.env.APP_VERSION ??
+    process.env.GIT_SHA ??
+    "dev";
+
+  return rawValue.trim() || "dev";
+}
+
+function createAssetFingerprint(assetVersion: string): string {
+  return assetVersion.replace(/[^a-zA-Z0-9._-]/g, "-") || "dev";
+}
+
+function createVersionedAssetPath(pathname: string, assetVersion: string): string {
+  const fingerprint = createAssetFingerprint(assetVersion);
+
+  if (pathname === "/app.js") {
+    return `/assets/app.${fingerprint}.js`;
+  }
+
+  if (pathname === "/styles.css") {
+    return `/assets/styles.${fingerprint}.css`;
+  }
+
+  if (pathname === "/_admin/runtime-config.js") {
+    return `/_admin/runtime-config.${fingerprint}.js`;
+  }
+
+  return pathname;
+}
+
+function resolveVersionedStaticAsset(pathname: string): string | null {
+  const assetMatch = pathname.match(/^\/assets\/(app|styles)\.[a-zA-Z0-9._-]+\.(js|css)$/);
+  if (assetMatch) {
+    return assetMatch[1] === "app" ? "app.js" : "styles.css";
+  }
+
+  const runtimeMatch = pathname.match(/^\/_admin\/runtime-config\.[a-zA-Z0-9._-]+\.js$/);
+  if (runtimeMatch) {
+    return "_admin/runtime-config.js";
+  }
+
+  return null;
 }
 
 function resolveAdminBasicAuth(options: AdminServerOptions): ResolvedAdminBasicAuth | null {
@@ -193,11 +241,36 @@ async function serveStaticFile(response: ServerResponse, pathname: string): Prom
   const body = await readFile(filePath);
   response.statusCode = 200;
   response.setHeader("Content-Type", toContentType(pathname));
+  if (pathname.endsWith(".js") || pathname.endsWith(".css")) {
+    response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+  } else if (pathname.endsWith(".html")) {
+    response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+  }
   response.end(body);
 }
 
-async function serveIndex(response: ServerResponse): Promise<void> {
-  await serveStaticFile(response, "index.html");
+async function serveVersionedStaticFile(response: ServerResponse, pathname: string): Promise<void> {
+  const filePath = new URL(`./${pathname}`, import.meta.url);
+  const body = await readFile(filePath);
+  response.statusCode = 200;
+  response.setHeader("Content-Type", toContentType(pathname));
+  response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  response.end(body);
+}
+
+async function serveIndex(response: ServerResponse, options: AdminServerOptions): Promise<void> {
+  const assetVersion = resolveAssetVersion(options);
+  const filePath = new URL("./index.html", import.meta.url);
+  const template = await readFile(filePath, "utf8");
+  const html = template
+    .replaceAll("__ADMIN_STYLES_URL__", createVersionedAssetPath("/styles.css", assetVersion))
+    .replaceAll("__ADMIN_RUNTIME_CONFIG_URL__", createVersionedAssetPath("/_admin/runtime-config.js", assetVersion))
+    .replaceAll("__ADMIN_APP_SCRIPT_URL__", createVersionedAssetPath("/app.js", assetVersion));
+
+  response.statusCode = 200;
+  response.setHeader("Content-Type", "text/html; charset=utf-8");
+  response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+  response.end(html);
 }
 
 function serveRuntimeConfig(response: ServerResponse, options: AdminServerOptions): void {
@@ -205,7 +278,7 @@ function serveRuntimeConfig(response: ServerResponse, options: AdminServerOption
 
   response.statusCode = 200;
   response.setHeader("Content-Type", "application/javascript; charset=utf-8");
-  response.setHeader("Cache-Control", "no-store");
+  response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
   response.end(`window.__ADMIN_RUNTIME_CONFIG__ = ${payload};\n`);
 }
 
@@ -271,6 +344,12 @@ async function handleRequest(
     return;
   }
 
+  const versionedStaticFile = resolveVersionedStaticAsset(pathname);
+  if (versionedStaticFile === "_admin/runtime-config.js") {
+    serveRuntimeConfig(response, options);
+    return;
+  }
+
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.statusCode = 405;
     response.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -281,6 +360,11 @@ async function handleRequest(
   if (pathname === "/favicon.ico") {
     response.statusCode = 204;
     response.end();
+    return;
+  }
+
+  if (versionedStaticFile) {
+    await serveVersionedStaticFile(response, versionedStaticFile);
     return;
   }
 
@@ -295,7 +379,7 @@ async function handleRequest(
     return;
   }
 
-  await serveIndex(response);
+  await serveIndex(response, options);
 }
 
 export function createAdminServer(options: AdminServerOptions = {}): Server {
