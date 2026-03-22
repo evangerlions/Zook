@@ -24,8 +24,10 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AppConfigService } from "./services/app-config.service.ts";
+import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
+import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
@@ -110,6 +112,7 @@ export class BackendApplication {
     private readonly analyticsService: AnalyticsService,
     private readonly adminConsoleService: AdminConsoleService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
+    private readonly llmManager: LLMManager,
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
@@ -145,6 +148,7 @@ export class BackendApplication {
       qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
+      llmManager: this.llmManager,
       storageService: this.storageService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
@@ -874,6 +878,9 @@ export function createApplication(options: CreateApplicationOptions = {}) {
   const analyticsService = new AnalyticsService(database, appRegistryService);
   const adminConsoleService = new AdminConsoleService(database, appConfigService, commonEmailConfigService);
   const rbacService = new RbacService(database);
+  const llmManager = new LLMManager({
+    bailian: new BailianOpenAICompatibleProvider(),
+  });
   const storageService = new StorageService(database);
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
@@ -899,6 +906,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
     analyticsService,
     adminConsoleService,
     adminBasicAuth,
+    llmManager,
     storageService,
     notificationService,
     failedEventRetryService,
@@ -929,6 +937,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
       qrLoginService,
       analyticsService,
       adminConsoleService,
+      llmManager,
       rbacService,
       storageService,
       notificationService,
