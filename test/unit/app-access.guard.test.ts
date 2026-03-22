@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 
-test("app access guard rejects explicit appId mismatches against the bearer token", () => {
-  const runtime = createApplication();
+test("app access guard rejects explicit appId mismatches against the bearer token", async () => {
+  const runtime = await createApplication();
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "app_a");
   const request = {
     method: "GET",
@@ -26,8 +26,8 @@ test("app access guard rejects explicit appId mismatches against the bearer toke
   );
 });
 
-test("app context resolver rejects X-App-Id mismatches after authentication", () => {
-  const runtime = createApplication();
+test("app context resolver rejects X-App-Id mismatches after authentication", async () => {
+  const runtime = await createApplication();
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "app_a");
   const request = {
     method: "GET",

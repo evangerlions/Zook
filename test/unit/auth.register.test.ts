@@ -13,7 +13,7 @@ function createFakeSender(sent: Array<{ appId: string; email: string; code: stri
 
 test("register email-code and register APIs create a new account and issue tokens", async () => {
   const sent: Array<{ appId: string; email: string; code: string }> = [];
-  const runtime = createApplication({
+  const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),
   });
@@ -85,7 +85,7 @@ test("register email-code and register APIs create a new account and issue token
 
 test("registerEmailCode enforces resend cooldown per app, email and IP", async () => {
   const sent: Array<{ appId: string; email: string; code: string }> = [];
-  const runtime = createApplication({
+  const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),
   });
@@ -122,7 +122,7 @@ test("registerEmailCode enforces resend cooldown per app, email and IP", async (
 
 test("registerEmailCode enforces daily email limit and hourly IP limit", async () => {
   const sent: Array<{ appId: string; email: string; code: string }> = [];
-  const runtime = createApplication({
+  const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),
   });
@@ -157,7 +157,7 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
   );
 
   const ipSent: Array<{ appId: string; email: string; code: string }> = [];
-  const ipRuntime = createApplication({
+  const ipRuntime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(ipSent),
   });
@@ -192,7 +192,7 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
 
 test("register rejects expired or reused verification codes", async () => {
   const sent: Array<{ appId: string; email: string; code: string }> = [];
-  const runtime = createApplication({
+  const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),
   });
@@ -226,7 +226,7 @@ test("register rejects expired or reused verification codes", async () => {
   );
 
   const secondSent: Array<{ appId: string; email: string; code: string }> = [];
-  const secondRuntime = createApplication({
+  const secondRuntime = await createApplication({
     registrationCodeGenerator: () => "654321",
     registrationEmailSender: createFakeSender(secondSent),
   });

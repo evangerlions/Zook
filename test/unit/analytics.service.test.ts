@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 
-test("analytics service calculates DAU, new users and page duration metrics per app", () => {
-  const runtime = createApplication();
+test("analytics service calculates DAU, new users and page duration metrics per app", async () => {
+  const runtime = await createApplication();
 
   runtime.database.appUsers.push({
     id: "app_user_bob_a",

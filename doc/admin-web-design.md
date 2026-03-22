@@ -152,11 +152,7 @@ admin.delivery_config
 
 当前后台不再依赖纯内存状态。
 
-可变管理数据会落到本地文件：
-
-```text
-/data/zook-state.json
-```
+可变管理数据会通过 Redis-backed `KVManager` 持久化。
 
 当前持久化内容包括：
 
@@ -173,14 +169,15 @@ admin.delivery_config
 
 ## 8. 部署约定
 
-`compose.yaml` 默认给 `api` 和 `worker` 共享一个持久化卷：
+运行时默认依赖外部 Redis：
 
-1. `ZOOK_STATE_FILE=/data/zook-state.json`
-2. volume 名称为 `zook_data`
+1. `REDIS_URL`
+2. API / Worker 启动时会强检测 Redis 连通性
+3. 如果配置了 `DATABASE_URL`，也会在启动时做强检测
 
 这意味着：
 
-1. 配置变更由 API 写入磁盘
+1. 配置变更由 API 写入 Redis
 2. Worker 重启后也能看到同一份状态
 
 ## 9. 前端设计原则

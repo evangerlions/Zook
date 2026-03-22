@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 
-test("rbac service grants admin permissions through app-scoped roles", () => {
-  const runtime = createApplication();
+test("rbac service grants admin permissions through app-scoped roles", async () => {
+  const runtime = await createApplication();
 
   assert.equal(runtime.services.rbacService.hasPermission("app_a", "user_alice", "metrics:read"), true);
   assert.equal(runtime.services.rbacService.hasPermission("app_a", "user_alice", "notification:send"), true);
 });
 
-test("rbac service keeps member permissions narrower than admin permissions", () => {
-  const runtime = createApplication();
+test("rbac service keeps member permissions narrower than admin permissions", async () => {
+  const runtime = await createApplication();
   runtime.services.authService.login({
     appId: "app_a",
     account: "bob@example.com",

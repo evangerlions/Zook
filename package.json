@@ -11,5 +11,9 @@
   },
   "devDependencies": {
     "@types/node": "^25.3.5"
+  },
+  "dependencies": {
+    "pg": "^8.20.0",
+    "redis": "^5.11.0"
   }
 }

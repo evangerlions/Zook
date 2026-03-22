@@ -22,45 +22,38 @@ export class CommonEmailConfigService {
   constructor(private readonly appConfigService: AppConfigService) {}
 
   getDocument(): AdminEmailServiceDocument {
-    const stored = this.appConfigService.getValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
-    const config = stored ? this.parseConfig(stored) : this.createDefaultConfig();
-
-    return {
-      app: COMMON_APP_SUMMARY,
-      configKey: EMAIL_SERVICE_CONFIG_KEY,
-      config,
-      resolvedRegion: this.resolveRegion(config),
-      updatedAt: this.getUpdatedAt(),
-    };
+    const config = this.getStoredConfig();
+    return this.toDocument(this.maskSensitiveConfig(config));
   }
 
   updateConfig(input: unknown): AdminEmailServiceDocument {
-    const normalized = this.validateInput(input);
+    const existingConfig = this.getStoredConfig();
+    const normalized = this.validateInput(input, existingConfig);
     this.appConfigService.setValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY, JSON.stringify(normalized, null, 2));
     return this.getDocument();
   }
 
   getRuntimeConfig(): { config: EmailServiceConfig; resolvedRegion: TencentSesRegion } {
-    const document = this.getDocument();
+    const config = this.getStoredConfig();
 
-    if (!document.config.enabled) {
+    if (!config.enabled) {
       throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service is not enabled.");
     }
 
     if (
-      !document.config.secretId ||
-      !document.config.secretKey ||
-      !document.config.fromEmailAddress ||
-      !document.config.verification.subject ||
-      !document.config.verification.templateId ||
-      !document.config.verification.templateDataKey
+      !config.secretId ||
+      !config.secretKey ||
+      !config.fromEmailAddress ||
+      !config.verification.subject ||
+      !config.verification.templateId ||
+      !config.verification.templateDataKey
     ) {
       throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service is not fully configured.");
     }
 
     return {
-      config: document.config,
-      resolvedRegion: document.resolvedRegion,
+      config,
+      resolvedRegion: this.resolveRegion(config),
     };
   }
 
@@ -86,6 +79,21 @@ export class CommonEmailConfigService {
     return this.appConfigService.getRecord(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY)?.updatedAt;
   }
 
+  private getStoredConfig(): EmailServiceConfig {
+    const stored = this.appConfigService.getValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
+    return stored ? this.parseConfig(stored) : this.createDefaultConfig();
+  }
+
+  private toDocument(config: EmailServiceConfig): AdminEmailServiceDocument {
+    return {
+      app: COMMON_APP_SUMMARY,
+      configKey: EMAIL_SERVICE_CONFIG_KEY,
+      config,
+      resolvedRegion: this.resolveRegion(config),
+      updatedAt: this.getUpdatedAt(),
+    };
+  }
+
   private parseConfig(raw: string): EmailServiceConfig {
     let parsed: unknown;
 
@@ -98,7 +106,7 @@ export class CommonEmailConfigService {
     return this.validateInput(parsed);
   }
 
-  private validateInput(input: unknown): EmailServiceConfig {
+  private validateInput(input: unknown, existingConfig?: EmailServiceConfig): EmailServiceConfig {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
       badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Email service config must be a JSON object.");
     }
@@ -114,8 +122,8 @@ export class CommonEmailConfigService {
       provider: "tencent_ses",
       regionMode: source.regionMode === "manual" ? "manual" : "auto",
       manualRegion: source.manualRegion === "ap-hongkong" ? "ap-hongkong" : "ap-guangzhou",
-      secretId: this.optionalString(source.secretId),
-      secretKey: this.optionalString(source.secretKey),
+      secretId: this.resolveSensitiveInput(source.secretId, existingConfig?.secretId),
+      secretKey: this.resolveSensitiveInput(source.secretKey, existingConfig?.secretKey),
       fromEmailAddress: this.optionalString(source.fromEmailAddress),
       replyToAddresses: this.optionalString(source.replyToAddresses),
       verification: {
@@ -182,5 +190,33 @@ export class CommonEmailConfigService {
 
   private optionalNumber(value: unknown): number {
     return typeof value === "number" && Number.isFinite(value) ? value : 0;
+  }
+
+  private resolveSensitiveInput(value: unknown, existingValue?: string): string {
+    const normalized = this.optionalString(value);
+    if (existingValue && normalized === this.maskSecret(existingValue)) {
+      return existingValue;
+    }
+
+    return normalized;
+  }
+
+  private maskSensitiveConfig(config: EmailServiceConfig): EmailServiceConfig {
+    return {
+      ...config,
+      secretId: this.maskSecret(config.secretId),
+      secretKey: this.maskSecret(config.secretKey),
+    };
+  }
+
+  private maskSecret(value: string): string {
+    const normalized = this.optionalString(value);
+    if (!normalized) {
+      return "";
+    }
+
+    const visibleLength = Math.min(4, normalized.length);
+    const maskedLength = Math.max(4, normalized.length - visibleLength);
+    return `${normalized.slice(0, visibleLength)}${"*".repeat(maskedLength)}`;
   }
 }
