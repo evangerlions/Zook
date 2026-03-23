@@ -62,6 +62,10 @@ function rewriteLoopbackRuntimeUrl(rawValue?: string): string | undefined {
     return normalized;
   }
 
+  if (resolveContainerNetworkMode() === "host") {
+    return normalized;
+  }
+
   if (url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1") {
     url.hostname = process.env.RUNTIME_HOST_GATEWAY?.trim() || "host.docker.internal";
   }
@@ -71,4 +75,12 @@ function rewriteLoopbackRuntimeUrl(rawValue?: string): string | undefined {
 
 function isContainerRuntime(): boolean {
   return existsSync("/.dockerenv") || process.env.CONTAINERIZED_RUNTIME === "1";
+}
+
+function resolveContainerNetworkMode(rawValue = process.env.CONTAINER_NETWORK_MODE): string {
+  const normalized = rawValue?.trim().toLowerCase();
+  if (normalized === "host") {
+    return "host";
+  }
+  return "bridge";
 }
