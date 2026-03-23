@@ -7,6 +7,10 @@ export interface RegistrationEmailSender {
     appId: string;
     email: string;
     code: string;
+    locale: string;
+    senderId: string;
+    replyToAddresses?: string;
+    subject: string;
   }): Promise<void>;
 }
 
@@ -21,26 +25,33 @@ export class TencentSesRegistrationEmailSender implements RegistrationEmailSende
     appId: string;
     email: string;
     code: string;
+    locale: string;
+    senderId: string;
+    replyToAddresses?: string;
+    subject: string;
   }): Promise<void> {
-    const { config, resolvedRegion } = this.commonEmailConfigService.getRuntimeConfig();
+    const { config, resolvedRegion, sender, template } = this.commonEmailConfigService.getRuntimeConfig(
+      command.locale,
+      command.senderId,
+    );
     const host = "ses.tencentcloudapi.com";
     const service = "ses";
     const action = "SendEmail";
     const version = "2020-10-02";
     const body = JSON.stringify({
-      FromEmailAddress: config.fromEmailAddress,
-      ReplyToAddresses: config.replyToAddresses || undefined,
+      FromEmailAddress: sender.address,
+      ReplyToAddresses: command.replyToAddresses || undefined,
       Destination: [command.email],
-      Subject: config.verification.subject,
+      Subject: command.subject,
       Template: {
-        TemplateID: config.verification.templateId,
+        TemplateID: template.templateId,
         TemplateData: JSON.stringify({
-          [config.verification.templateDataKey]: command.code,
+          code: command.code,
           appId: command.appId,
           email: command.email,
         }),
       },
-      TriggerType: config.verification.triggerType,
+      TriggerType: 1,
     });
 
     const timestamp = Math.floor(Date.now() / 1000);

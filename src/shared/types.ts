@@ -15,8 +15,6 @@ export type ClientType = "web" | "app";
 export type EventName = "page_view" | "page_leave" | "page_heartbeat";
 export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
-export type EmailProvider = "tencent_ses";
-export type EmailRegionMode = "auto" | "manual";
 export type ErrorCode =
   | "ADMIN_BASIC_AUTH_REQUIRED"
   | "ADMIN_CONFIG_INVALID_JSON"
@@ -302,23 +300,23 @@ export interface AdminConfigDocument {
   updatedAt?: string;
 }
 
-export interface EmailServiceVerificationConfig {
-  subject: string;
+export interface EmailServiceTemplateConfig {
+  locale: string;
   templateId: number;
-  templateDataKey: string;
-  triggerType: 0 | 1;
+  name: string;
+}
+
+export interface EmailSenderConfig {
+  id: string;
+  address: string;
 }
 
 export interface EmailServiceConfig {
   enabled: boolean;
-  provider: EmailProvider;
-  regionMode: EmailRegionMode;
-  manualRegion?: TencentSesRegion;
   secretId: string;
   secretKey: string;
-  fromEmailAddress: string;
-  replyToAddresses?: string;
-  verification: EmailServiceVerificationConfig;
+  senders: EmailSenderConfig[];
+  templates: EmailServiceTemplateConfig[];
 }
 
 export interface AdminEmailServiceDocument {

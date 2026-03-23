@@ -926,3 +926,211 @@ a:focus-visible {
     min-height: 480px;
   }
 }
+
+/* ===== 登录页面动画增强 ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.login-shell {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.login-panel {
+  animation: fadeInUp 0.8s ease-out;
+  animation-delay: 0.1s;
+  animation-fill-mode: backwards;
+}
+
+.login-brand {
+  position: relative;
+  overflow: hidden;
+}
+
+.login-brand::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.login-brand-top {
+  animation: fadeInLeft 0.6s ease-out;
+  animation-delay: 0.3s;
+  animation-fill-mode: backwards;
+}
+
+.login-brand-body {
+  animation: fadeInUp 0.6s ease-out;
+  animation-delay: 0.5s;
+  animation-fill-mode: backwards;
+}
+
+.login-card {
+  animation: fadeInUp 0.8s ease-out;
+  animation-delay: 0.4s;
+  animation-fill-mode: backwards;
+}
+
+.login-header {
+  animation: fadeInUp 0.6s ease-out;
+  animation-delay: 0.6s;
+  animation-fill-mode: backwards;
+}
+
+.login-form .field {
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: backwards;
+}
+
+.login-form .field:nth-child(1) {
+  animation-delay: 0.7s;
+}
+
+.login-form .field:nth-child(2) {
+  animation-delay: 0.8s;
+}
+
+.login-form button[type="submit"] {
+  animation: fadeInUp 0.5s ease-out;
+  animation-delay: 0.9s;
+  animation-fill-mode: backwards;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-form button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+}
+
+.login-form button[type="submit"]:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.login-form button[type="submit"]::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+}
+
+.login-form button[type="submit"]:active::after {
+  width: 200%;
+  height: 200%;
+}
+
+/* 输入框焦点动画 */
+.login-form .field input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.login-form .field input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+  background-color: #fff;
+}
+
+/* 品牌标志动画 */
+.brand-mark {
+  transition: transform 0.3s ease;
+}
+
+.brand-mark:hover {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+/* 登录按钮加载动画 */
+.login-form button[type="submit"][disabled] {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.login-form button[type="submit"][disabled]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .login-panel {
+    grid-template-columns: 1fr;
+    border-radius: 20px;
+  }
+  
+  .login-brand {
+    padding: 32px;
+  }
+  
+  .login-brand-body {
+    display: none;
+  }
+  
+  .login-card {
+    padding: 32px;
+  }
+}

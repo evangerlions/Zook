@@ -116,3 +116,43 @@ export function assertDateKey(value: string): void {
     throw new Error(`Invalid date key: ${value}`);
   }
 }
+
+const DEFAULT_SENSITIVE_VISIBLE_CHARS = 4;
+const DEFAULT_MASK_SUFFIX = "****";
+
+export interface SensitiveFieldRule {
+  visibleChars?: number;
+}
+
+export type SensitiveFieldRules<T extends Record<string, unknown>> = Partial<
+  Record<Extract<keyof T, string>, SensitiveFieldRule>
+>;
+
+export function maskSensitiveString(value: unknown, visibleChars = DEFAULT_SENSITIVE_VISIBLE_CHARS): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (!normalized) {
+    return "";
+  }
+
+  const prefixLength = Math.min(visibleChars, normalized.length);
+  return normalized.slice(0, prefixLength) + DEFAULT_MASK_SUFFIX;
+}
+
+export function maskSensitiveFields<T extends Record<string, unknown>>(
+  obj: T,
+  rules: SensitiveFieldRules<T>,
+): T {
+  const result = { ...obj } as T;
+
+  for (const [field, rule] of Object.entries(rules) as Array<[Extract<keyof T, string>, SensitiveFieldRule]>) {
+    const value = result[field];
+    if (typeof value === "string") {
+      (result as Record<string, unknown>)[field] = maskSensitiveString(
+        value,
+        rule.visibleChars ?? DEFAULT_SENSITIVE_VISIBLE_CHARS,
+      );
+    }
+  }
+
+  return result;
+}

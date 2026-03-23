@@ -3,7 +3,17 @@ import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 import { type RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
 
-function createFakeSender(sent: Array<{ appId: string; email: string; code: string }>): RegistrationEmailSender {
+interface SentRegistrationEmail {
+  appId: string;
+  email: string;
+  code: string;
+  locale: string;
+  senderId: string;
+  replyToAddresses?: string;
+  subject: string;
+}
+
+function createFakeSender(sent: SentRegistrationEmail[]): RegistrationEmailSender {
   return {
     async sendRegistrationCode(command) {
       sent.push(command);
@@ -12,7 +22,7 @@ function createFakeSender(sent: Array<{ appId: string; email: string; code: stri
 }
 
 test("register email-code and register APIs create a new account and issue tokens", async () => {
-  const sent: Array<{ appId: string; email: string; code: string }> = [];
+  const sent: SentRegistrationEmail[] = [];
   const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),
@@ -41,6 +51,10 @@ test("register email-code and register APIs create a new account and issue token
       appId: "app_a",
       email: "carol@example.com",
       code: "123456",
+      locale: "zh-CN",
+      senderId: "default",
+      replyToAddresses: undefined,
+      subject: "验证码",
     },
   ]);
 
@@ -84,7 +98,7 @@ test("register email-code and register APIs create a new account and issue token
 });
 
 test("registerEmailCode enforces resend cooldown per app, email and IP", async () => {
-  const sent: Array<{ appId: string; email: string; code: string }> = [];
+  const sent: SentRegistrationEmail[] = [];
   const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),

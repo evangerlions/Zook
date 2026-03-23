@@ -49,6 +49,10 @@ export class AuthService {
   private readonly registrationWindowMs = 10 * 60 * 1000;
   private readonly registrationWindowLimit = 5;
   private readonly registrationMaxFailedCodeAttempts = 5;
+  private readonly registrationEmailLocale = process.env.REGISTRATION_EMAIL_LOCALE?.trim() || "zh-CN";
+  private readonly registrationEmailSenderId = process.env.REGISTRATION_EMAIL_SENDER_ID?.trim() || "default";
+  private readonly registrationEmailReplyTo = process.env.REGISTRATION_EMAIL_REPLY_TO?.trim() || "";
+  private readonly registrationEmailSubject = process.env.REGISTRATION_EMAIL_SUBJECT?.trim() || "验证码";
   private readonly failureStates = new Map<string, LoginFailureState>();
 
   constructor(
@@ -126,6 +130,10 @@ export class AuthService {
         appId: app.id,
         email,
         code: rawCode,
+        locale: this.registrationEmailLocale,
+        senderId: this.registrationEmailSenderId,
+        replyToAddresses: this.registrationEmailReplyTo || undefined,
+        subject: this.registrationEmailSubject,
       });
     } catch (error) {
       this.cache.delete(cacheKey);
