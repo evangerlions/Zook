@@ -9,8 +9,6 @@ services:
       PORT: "${CONTAINER_PORT:-3100}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
-      CONTAINER_NETWORK_MODE: "${CONTAINER_NETWORK_MODE:-bridge}"
-      RUNTIME_HOST_GATEWAY: "${RUNTIME_HOST_GATEWAY:-host.docker.internal}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -37,8 +35,6 @@ services:
       PORT: "${CONTAINER_PORT:-3100}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
-      CONTAINER_NETWORK_MODE: "${CONTAINER_NETWORK_MODE:-bridge}"
-      RUNTIME_HOST_GATEWAY: "${RUNTIME_HOST_GATEWAY:-host.docker.internal}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: ["node", "--experimental-transform-types", "src/worker.ts"]

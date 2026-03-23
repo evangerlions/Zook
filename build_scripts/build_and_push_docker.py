@@ -31,13 +31,11 @@ DEFAULT_REMOTE = "origin"
 DEFAULT_LOCK_TIMEOUT_SECONDS = 600
 DEFAULT_APP_ENV_FILE = ".env"
 DEFAULT_COMPOSE_FILE = "compose.yaml"
-DEFAULT_HOST_NETWORK_COMPOSE_FILE = "compose.host-network.yaml"
 DEFAULT_BIND_IP = "127.0.0.1"
 DEFAULT_PORT = "3100"
 DEFAULT_ADMIN_PORT = "3110"
 DEFAULT_HEALTH_PATH = "api/health"
 DEFAULT_ADMIN_HEALTH_PATH = "_admin/health"
-DEFAULT_NETWORK_MODE = "bridge"
 DEFAULT_KEEP_RELEASES = 5
 DEFAULT_BUILDER_PRUNE_UNTIL = "168h"
 STATE_DIR_NAME = ".deploy"
@@ -541,27 +539,18 @@ def resolve_runtime_paths(repo_root: Path, args: argparse.Namespace) -> tuple[Pa
     return compose_file, app_env_file, dockerfile_path
 
 
-def resolve_network_mode(raw_value: str | None) -> str:
-    normalized = (raw_value or DEFAULT_NETWORK_MODE).strip().lower()
-    if not normalized:
-        return DEFAULT_NETWORK_MODE
-    if normalized not in {"bridge", "host"}:
-        raise ScriptError(f"Unsupported DEPLOY_NETWORK_MODE: {raw_value!r}. Expected bridge or host.")
-    return normalized
-
-
-def resolve_compose_files(repo_root: Path, compose_file: Path, network_mode: str) -> list[Path]:
-    if network_mode != "host":
-        return [compose_file]
-
-    if compose_file.name == DEFAULT_COMPOSE_FILE:
-        host_network_compose_file = ensure_existing_file(
-            repo_root / DEFAULT_HOST_NETWORK_COMPOSE_FILE,
-            "Host network compose file",
+def warn_legacy_network_mode(raw_value: str | None) -> None:
+    normalized = (raw_value or "").strip().lower()
+    if not normalized or normalized == "bridge":
+        return
+    if normalized == "host":
+        print(
+            "warning: legacy DEPLOY_NETWORK_MODE=host is ignored; deployment now always uses bridge networking. "
+            "Use host.docker.internal in REDIS_URL/DATABASE_URL and ensure the host services listen on a "
+            "container-reachable address.",
         )
-        return [host_network_compose_file]
-
-    return [compose_file]
+        return
+    raise ScriptError(f"Unsupported DEPLOY_NETWORK_MODE: {raw_value!r}. Expected bridge.")
 
 
 def resolve_project_name(image_name: str, slot_name: str) -> str:
@@ -724,7 +713,6 @@ def build_compose_env(
     bind_ip: str,
     health_path: str,
     admin_health_path: str,
-    network_mode: str,
 ) -> dict[str, str]:
     return {
         "DEPLOY_IMAGE": image_name,
@@ -738,7 +726,6 @@ def build_compose_env(
         "ADMIN_CONTAINER_PORT": admin_container_port,
         "HEALTH_PATH": health_path,
         "ADMIN_HEALTH_PATH": admin_health_path,
-        "CONTAINER_NETWORK_MODE": network_mode,
     }
 
 
@@ -866,8 +853,8 @@ def main() -> int:
     slot_name = sanitize_slot(args.slot or os.getenv("DEPLOY_SLOT", ""))
     project_name = resolve_project_name(image_name, slot_name)
     branch = resolve_branch(repo_root, args.branch)
-    network_mode = resolve_network_mode(os.getenv("DEPLOY_NETWORK_MODE", DEFAULT_NETWORK_MODE))
-    compose_files = resolve_compose_files(repo_root, compose_file, network_mode)
+    warn_legacy_network_mode(os.getenv("DEPLOY_NETWORK_MODE"))
+    compose_files = [compose_file]
     keep_releases = resolve_keep_releases(args)
     builder_prune_until = resolve_builder_prune_until(args)
     dirty_checkout = assert_repo_ready_for_sync(repo_root, skip_git_sync=args.skip_git_sync, allow_dirty=args.allow_dirty)
@@ -920,7 +907,7 @@ def main() -> int:
         print(f"use slot: {slot_name}")
         print(f"use branch: {branch}")
         print(f"use commit: {commit_sha}")
-        print(f"use container network mode: {network_mode}")
+        print("use container network mode: bridge")
         print(f"use compose files: {', '.join(str(path) for path in compose_files)}")
         print(f"use image: {image_full_name}")
         print(f"keep recent release images: {keep_releases}")
@@ -945,7 +932,6 @@ def main() -> int:
             bind_ip=bind_ip,
             health_path=health_path,
             admin_health_path=admin_health_path,
-            network_mode=network_mode,
         )
 
         if args.dry_run:
@@ -1040,7 +1026,6 @@ def main() -> int:
                 bind_ip=bind_ip,
                 health_path=health_path,
                 admin_health_path=admin_health_path,
-                network_mode=network_mode,
             )
             print(f"attempt rollback to: {previous_release['image']}")
             write_compose_env(compose_env_file, previous_compose_env)

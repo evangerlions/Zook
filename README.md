@@ -90,5 +90,6 @@ npm test
 默认 API 端口是 `3100`，也可以通过 `PORT` 环境变量覆盖。
 默认 Admin Web 端口是 `3110`。
 运行时会强校验 `REDIS_URL` 和 `DATABASE_URL`，依赖不可用时直接启动失败。
+容器访问宿主机 Redis / PostgreSQL 时，推荐在连接串里使用 `host.docker.internal`。
 
 健康检查路径为 `/api/health`。
