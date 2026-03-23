@@ -62,6 +62,10 @@ cp deploy_configs/dev.env.example deploy_configs/dev.env
 1. 作为部署脚本的参数来源
 2. 作为容器运行时的 `env_file`
 
+容器网络统一使用 Docker 默认 bridge 网络。若 Redis / PostgreSQL 部署在宿主机上，
+请在 `REDIS_URL` / `DATABASE_URL` 中使用 `host.docker.internal`，并确保宿主机服务
+监听的是容器可达地址，而不是只监听 `127.0.0.1`。
+
 默认还支持这两个清理参数：
 
 ```text
