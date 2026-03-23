@@ -1,5 +1,6 @@
 import { AppConfigService } from "./app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
+import { maskSensitiveValue, resolveSensitiveInput } from "../shared/utils.ts";
 import type {
   AdminAppSummary,
   AdminEmailServiceDocument,
@@ -122,8 +123,8 @@ export class CommonEmailConfigService {
       provider: "tencent_ses",
       regionMode: source.regionMode === "manual" ? "manual" : "auto",
       manualRegion: source.manualRegion === "ap-hongkong" ? "ap-hongkong" : "ap-guangzhou",
-      secretId: this.resolveSensitiveInput(source.secretId, existingConfig?.secretId),
-      secretKey: this.resolveSensitiveInput(source.secretKey, existingConfig?.secretKey),
+      secretId: resolveSensitiveInput(source.secretId, existingConfig?.secretId, 4),
+      secretKey: resolveSensitiveInput(source.secretKey, existingConfig?.secretKey, 4),
       fromEmailAddress: this.optionalString(source.fromEmailAddress),
       replyToAddresses: this.optionalString(source.replyToAddresses),
       verification: {
@@ -192,31 +193,11 @@ export class CommonEmailConfigService {
     return typeof value === "number" && Number.isFinite(value) ? value : 0;
   }
 
-  private resolveSensitiveInput(value: unknown, existingValue?: string): string {
-    const normalized = this.optionalString(value);
-    if (existingValue && normalized === this.maskSecret(existingValue)) {
-      return existingValue;
-    }
-
-    return normalized;
-  }
-
   private maskSensitiveConfig(config: EmailServiceConfig): EmailServiceConfig {
     return {
       ...config,
-      secretId: this.maskSecret(config.secretId),
-      secretKey: this.maskSecret(config.secretKey),
+      secretId: maskSensitiveValue(config.secretId, 4, 8),
+      secretKey: maskSensitiveValue(config.secretKey, 4, 8),
     };
-  }
-
-  private maskSecret(value: string): string {
-    const normalized = this.optionalString(value);
-    if (!normalized) {
-      return "";
-    }
-
-    const visibleLength = Math.min(4, normalized.length);
-    const maskedLength = Math.max(4, normalized.length - visibleLength);
-    return `${normalized.slice(0, visibleLength)}${"*".repeat(maskedLength)}`;
   }
 }

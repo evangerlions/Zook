@@ -235,8 +235,8 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(fetchResponse.statusCode, 200);
-  assert.equal(fetchResponse.body.data.config.secretId, "sid-****");
-  assert.equal(fetchResponse.body.data.config.secretKey, "sk-d****");
+  assert.equal(fetchResponse.body.data.config.secretId, "sid-********");
+  assert.equal(fetchResponse.body.data.config.secretKey, "sk-d********");
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
 
