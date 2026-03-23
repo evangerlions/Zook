@@ -8,6 +8,10 @@ services:
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
+      RUNTIME_HOST_GATEWAY: "${RUNTIME_HOST_GATEWAY:-host.docker.internal}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${HOST_BIND_IP:-127.0.0.1}:${HOST_PORT:-3100}:${CONTAINER_PORT:-3100}"
     command: ["node", "--experimental-transform-types", "src/main.ts"]
@@ -31,6 +35,10 @@ services:
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
+      RUNTIME_HOST_GATEWAY: "${RUNTIME_HOST_GATEWAY:-host.docker.internal}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
 
   admin-web:

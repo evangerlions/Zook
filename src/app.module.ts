@@ -15,6 +15,7 @@ import { InMemoryKVBackend, KVManager, type KVBackend } from "./infrastructure/k
 import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
+import { resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
@@ -850,8 +851,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     options.kvManager ??
     (options.kvBackend
       ? await KVManager.create({ backend: options.kvBackend })
-      : process.env.REDIS_URL
-        ? await KVManager.getShared()
+      : resolveRuntimeRedisUrl()
+        ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
         : await KVManager.create({ backend: new InMemoryKVBackend() }));
   const managedStateStore = new ManagedStateStore(kvManager);
   const database = new InMemoryDatabase(
