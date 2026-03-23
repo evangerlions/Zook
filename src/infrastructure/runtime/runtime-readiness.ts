@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { Client } from "pg";
 import { KVManager } from "../kv/kv-manager.ts";
 
@@ -38,49 +37,17 @@ async function assertPostgresReady(connectionString: string): Promise<void> {
 }
 
 export function resolveRuntimeRedisUrl(rawValue = process.env.REDIS_URL): string | undefined {
-  return rewriteLoopbackRuntimeUrl(rawValue);
+  return normalizeRuntimeUrl(rawValue);
 }
 
 export function resolveRuntimeDatabaseUrl(rawValue = process.env.DATABASE_URL): string | undefined {
-  return rewriteLoopbackRuntimeUrl(rawValue);
+  return normalizeRuntimeUrl(rawValue);
 }
 
-function rewriteLoopbackRuntimeUrl(rawValue?: string): string | undefined {
+function normalizeRuntimeUrl(rawValue?: string): string | undefined {
   const normalized = rawValue?.trim();
   if (!normalized) {
     return undefined;
   }
-
-  let url: URL;
-  try {
-    url = new URL(normalized);
-  } catch {
-    return normalized;
-  }
-
-  if (!isContainerRuntime()) {
-    return normalized;
-  }
-
-  if (resolveContainerNetworkMode() === "host") {
-    return normalized;
-  }
-
-  if (url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1") {
-    url.hostname = process.env.RUNTIME_HOST_GATEWAY?.trim() || "host.docker.internal";
-  }
-
-  return url.toString();
-}
-
-function isContainerRuntime(): boolean {
-  return existsSync("/.dockerenv") || process.env.CONTAINERIZED_RUNTIME === "1";
-}
-
-function resolveContainerNetworkMode(rawValue = process.env.CONTAINER_NETWORK_MODE): string {
-  const normalized = rawValue?.trim().toLowerCase();
-  if (normalized === "host") {
-    return "host";
-  }
-  return "bridge";
+  return normalized;
 }
