@@ -8,18 +8,18 @@ test("kv manager supports JSON read and write", async () => {
   });
 
   await kvManager.setJson("common", "email-service", {
-    provider: "tencent_ses",
     enabled: true,
+    templates: [],
   });
 
-  const value = await kvManager.getJson<{ provider: string; enabled: boolean }>(
+  const value = await kvManager.getJson<{ enabled: boolean; templates: unknown[] }>(
     "common",
     "email-service",
   );
 
   assert.deepEqual(value, {
-    provider: "tencent_ses",
     enabled: true,
+    templates: [],
   });
 });
 

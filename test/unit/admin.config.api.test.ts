@@ -206,27 +206,42 @@ test("admin email service API stores common config and exposes resolved region",
     headers,
     body: {
       enabled: true,
-      provider: "tencent_ses",
-      regionMode: "manual",
-      manualRegion: "ap-hongkong",
       secretId: "sid-demo",
       secretKey: "sk-demo",
-      fromEmailAddress: "Admin <noreply@example.com>",
-      replyToAddresses: "support@example.com",
-      verification: {
-        subject: "验证码",
-        templateId: 100001,
-        templateDataKey: "code",
-        triggerType: 1,
-      },
+      senders: [
+        {
+          id: "default",
+          address: "Admin <noreply@example.com>",
+        },
+        {
+          id: "support",
+          address: "Support <support@example.com>",
+        },
+      ],
+      templates: [
+        {
+          locale: "zh-CN",
+          templateId: 100001,
+          name: "验证码",
+        },
+        {
+          locale: "en-US",
+          templateId: 100002,
+          name: "Verification Code",
+        },
+      ],
     },
   });
 
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.app.appId, "common");
-  assert.equal(updateResponse.body.data.resolvedRegion, "ap-hongkong");
+  assert.equal(updateResponse.body.data.resolvedRegion, "ap-guangzhou");
   assert.equal(updateResponse.body.data.config.enabled, true);
-  assert.equal(updateResponse.body.data.config.verification.templateId, 100001);
+  assert.equal(updateResponse.body.data.config.senders[0]?.id, "default");
+  assert.equal(updateResponse.body.data.config.senders[1]?.address, "Support <support@example.com>");
+  assert.equal(updateResponse.body.data.config.templates[0]?.templateId, 100001);
+  assert.equal(updateResponse.body.data.config.templates[1]?.locale, "en-US");
+  assert.equal(updateResponse.body.data.config.templates[1]?.name, "Verification Code");
 
   const fetchResponse = await runtime.app.handle({
     method: "GET",
@@ -235,8 +250,8 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(fetchResponse.statusCode, 200);
-  assert.equal(fetchResponse.body.data.config.secretId, "sid-********");
-  assert.equal(fetchResponse.body.data.config.secretKey, "sk-d********");
+  assert.equal(fetchResponse.body.data.config.secretId, "sid-****");
+  assert.equal(fetchResponse.body.data.config.secretKey, "sk-d****");
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
 
@@ -246,17 +261,27 @@ test("admin email service API stores common config and exposes resolved region",
     headers,
     body: {
       ...fetchResponse.body.data.config,
-      verification: {
-        ...fetchResponse.body.data.config.verification,
-        subject: "新验证码",
-      },
+      templates: [
+        ...fetchResponse.body.data.config.templates,
+        {
+          locale: "zh",
+          templateId: 100003,
+          name: "验证码简体",
+        },
+      ],
     },
   });
 
   assert.equal(maskedUpdateResponse.statusCode, 200);
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.verification.subject, "新验证码");
+  assert.equal(
+    runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "support").sender.address,
+    "Support <support@example.com>",
+  );
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("en-US").template.name, "Verification Code");
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("en-US").template.templateId, 100002);
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW").template.templateId, 100003);
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.email_service.update" && item.appId === "common"),
   );

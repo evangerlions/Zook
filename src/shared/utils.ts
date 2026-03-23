@@ -116,182 +116,40 @@ export function assertDateKey(value: string): void {
     throw new Error(`Invalid date key: ${value}`);
   }
 }
-/**
- * ===== 敏感数据脱敏工具 =====
- * 用于对敏感字段（如密钥、密码等）进行脱敏处理，返回给前端显示。
- */
 
-/**
- * 敏感字段配置类型
- */
-export interface SensitiveFieldConfig {
-  /** 字段名 */
-  field: string;
-  /** 可见字符数（前N位显示明文），默认4 */
+const DEFAULT_SENSITIVE_VISIBLE_CHARS = 4;
+const DEFAULT_MASK_SUFFIX = "****";
+
+export interface SensitiveFieldRule {
   visibleChars?: number;
-  /** 最小脱敏长度，默认4个星号 */
-  minMaskChars?: number;
 }
 
-/**
- * 默认敏感字段配置列表
- * 后续新增敏感字段时，只需在此添加配置即可
- */
-export const SENSITIVE_FIELD_CONFIGS: SensitiveFieldConfig[] = [
-  { field: "secretId", visibleChars: 4, minMaskChars: 8 },
-  { field: "secretKey", visibleChars: 4, minMaskChars: 8 },
-  { field: "password", visibleChars: 0, minMaskChars: 8 },
-  { field: "apiKey", visibleChars: 4, minMaskChars: 8 },
-  { field: "accessToken", visibleChars: 8, minMaskChars: 8 },
-  { field: "refreshToken", visibleChars: 8, minMaskChars: 8 },
-];
+export type SensitiveFieldRules<T extends Record<string, unknown>> = Partial<
+  Record<Extract<keyof T, string>, SensitiveFieldRule>
+>;
 
-/**
- * 对单个敏感值进行脱敏
- * @param value 原始值
- * @param visibleChars 可见字符数（前N位显示明文），默认4
- * @param minMaskChars 最小脱敏星号数，默认4
- * @returns 脱敏后的字符串
- */
-export function maskSensitiveValue(
-  value: string,
-  visibleChars: number = 4,
-  minMaskChars: number = 4,
-): string {
-  if (!value || typeof value !== "string") {
-    return "";
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return "";
-  }
-
-  const actualVisible = Math.min(visibleChars, trimmed.length);
-  const maskedLength = Math.max(minMaskChars, trimmed.length - actualVisible);
-
-  return trimmed.slice(0, actualVisible) + "*".repeat(maskedLength);
-}
-
-/**
- * 检查值是否为脱敏后的值（用于更新时判断是否需要保留原值）
- * @param value 待检查的值
- * @param originalVisibleChars 原始脱敏时使用的可见字符数
- * @returns 是否为脱敏值
- */
-export function isMaskedValue(value: string, originalVisibleChars: number = 4): boolean {
-  if (!value || typeof value !== "string") {
-    return false;
-  }
-
-  // 脱敏值的特点：前面是明文，后面全是星号
-  const starIndex = value.indexOf("*");
-  if (starIndex === -1) {
-    return false;
-  }
-
-  // 检查星号后面是否全是星号
-  const afterStars = value.slice(starIndex);
-  return afterStars === "*".repeat(afterStars.length);
-}
-
-/**
- * 解析敏感输入值：如果传入的是脱敏值，则返回原值；否则返回新值
- * @param input 用户输入的值
- * @param existingValue 现有的原始值
- * @param visibleChars 脱敏时使用的可见字符数
- * @returns 最终值
- */
-export function resolveSensitiveInput(
-  input: unknown,
-  existingValue?: string,
-  visibleChars: number = 4,
-): string {
-  const normalized = typeof input === "string" ? input.trim() : "";
-  const existing = existingValue?.trim() ?? "";
-
+export function maskSensitiveString(value: unknown, visibleChars = DEFAULT_SENSITIVE_VISIBLE_CHARS): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
   if (!normalized) {
     return "";
   }
 
-  if (!existing) {
-    return normalized;
-  }
-
-  if (isMaskedValue(normalized)) {
-    const starIndex = normalized.indexOf("*");
-    const prefix = normalized.slice(0, starIndex);
-    if (existing.startsWith(prefix)) {
-      return existing;
-    }
-  }
-
-  return normalized;
+  const prefixLength = Math.min(visibleChars, normalized.length);
+  return normalized.slice(0, prefixLength) + DEFAULT_MASK_SUFFIX;
 }
 
-/**
- * 对对象中的敏感字段进行脱敏
- * @param obj 原始对象
- * @param configs 敏感字段配置列表，默认使用 SENSITIVE_FIELD_CONFIGS
- * @returns 脱敏后的对象副本
- */
 export function maskSensitiveFields<T extends Record<string, unknown>>(
   obj: T,
-  configs: SensitiveFieldConfig[] = SENSITIVE_FIELD_CONFIGS,
+  rules: SensitiveFieldRules<T>,
 ): T {
-  if (!obj || typeof obj !== "object") {
-    return obj;
-  }
-
   const result = { ...obj } as T;
-  const configMap = new Map(configs.map((c) => [c.field, c]));
 
-  for (const [key, value] of Object.entries(result)) {
-    const config = configMap.get(key);
-    if (!config) {
-      continue;
-    }
-
+  for (const [field, rule] of Object.entries(rules) as Array<[Extract<keyof T, string>, SensitiveFieldRule]>) {
+    const value = result[field];
     if (typeof value === "string") {
-      (result as Record<string, unknown>)[key] = maskSensitiveValue(
+      (result as Record<string, unknown>)[field] = maskSensitiveString(
         value,
-        config.visibleChars ?? 4,
-        config.minMaskChars ?? 4,
-      );
-    }
-  }
-
-  return result;
-}
-
-/**
- * 解析对象中的敏感字段：如果字段值是脱敏形式，则保留原值
- * @param input 用户输入的对象
- * @param existing 现有的原始对象
- * @param configs 敏感字段配置列表
- * @returns 处理后的对象
- */
-export function resolveSensitiveFields<T extends Record<string, unknown>>(
-  input: T,
-  existing: Partial<T> | undefined,
-  configs: SensitiveFieldConfig[] = SENSITIVE_FIELD_CONFIGS,
-): T {
-  if (!input || typeof input !== "object") {
-    return input;
-  }
-
-  const result = { ...input } as T;
-  const configMap = new Map(configs.map((c) => [c.field, c]));
-
-  for (const [key, config] of configMap) {
-    const inputValue = result[key];
-    const existingValue = existing?.[key];
-
-    if (typeof inputValue === "string" && typeof existingValue === "string") {
-      (result as Record<string, unknown>)[key] = resolveSensitiveInput(
-        inputValue,
-        existingValue,
-        config.visibleChars ?? 4,
+        rule.visibleChars ?? DEFAULT_SENSITIVE_VISIBLE_CHARS,
       );
     }
   }
