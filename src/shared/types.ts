@@ -162,6 +162,16 @@ export interface AppConfigRecord {
   updatedAt: string;
 }
 
+export interface ConfigRevisionMeta {
+  revision: number;
+  desc: string;
+  createdAt: string;
+}
+
+export interface ConfigRevisionRecord<T = string> extends ConfigRevisionMeta {
+  content: T;
+}
+
 export interface AnalyticsEventRecord {
   id: string;
   appId: string;
@@ -298,6 +308,10 @@ export interface AdminConfigDocument {
   configKey: string;
   rawJson: string;
   updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
 }
 
 export interface EmailServiceTemplateConfig {

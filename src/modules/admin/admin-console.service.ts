@@ -35,28 +35,56 @@ export class AdminConsoleService {
     };
   }
 
-  getConfig(appId: string): AdminConfigDocument {
+  async getConfig(appId: string, revision?: number): Promise<AdminConfigDocument> {
     const app = this.requireConfigApp(appId);
-    const rawJson = this.readNormalizedConfig(app.id);
-    const record = this.database.appConfigs.find(
+    const revisions = await this.appConfigService.listRevisions(app.id, ADMIN_CONFIG_KEY);
+    const latestRevision = revisions.at(-1)?.revision;
+    const record = revision
+      ? await this.appConfigService.getRevision(app.id, ADMIN_CONFIG_KEY, revision)
+      : await this.appConfigService.getLatestRevision(app.id, ADMIN_CONFIG_KEY);
+    if (revision && !record) {
+      throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
+    }
+    const fallbackRecord = this.database.appConfigs.find(
       (item) => item.appId === app.id && item.configKey === ADMIN_CONFIG_KEY,
     );
+    const rawJson = record ? this.normalizeConfig(record.content) : this.readNormalizedConfig(app.id);
 
     return {
       app: this.toSummary(app),
       configKey: ADMIN_CONFIG_KEY,
       rawJson,
-      updatedAt: record?.updatedAt,
+      updatedAt: record?.createdAt ?? fallbackRecord?.updatedAt,
+      revision: record?.revision,
+      desc: record?.desc,
+      isLatest: !record || record.revision === latestRevision,
+      revisions: [...revisions].reverse(),
     };
   }
 
-  async updateConfig(appId: string, rawJson: string): Promise<AdminConfigDocument> {
+  async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
     const app = this.requireConfigApp(appId);
     const normalized = this.normalizeConfig(rawJson);
 
-    this.appConfigService.setValue(app.id, ADMIN_CONFIG_KEY, normalized);
+    await this.appConfigService.setValue(
+      app.id,
+      ADMIN_CONFIG_KEY,
+      normalized,
+      desc?.trim() || "admin-update",
+    );
     await this.managedStateStore.save(this.database);
 
+    return this.getConfig(app.id);
+  }
+
+  async restoreConfig(appId: string, revision: number): Promise<AdminConfigDocument> {
+    const app = this.requireConfigApp(appId);
+    const existing = await this.appConfigService.getRevision(app.id, ADMIN_CONFIG_KEY, revision);
+    if (!existing) {
+      throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
+    }
+    await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision);
+    await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);
   }
 
@@ -85,7 +113,12 @@ export class AdminConsoleService {
 
     this.database.apps.push(record);
     this.createDefaultRoles(record.id);
-    this.appConfigService.setValue(record.id, ADMIN_CONFIG_KEY, JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2));
+    await this.appConfigService.setValue(
+      record.id,
+      ADMIN_CONFIG_KEY,
+      JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2),
+      "app-created",
+    );
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
@@ -122,7 +155,7 @@ export class AdminConsoleService {
     this.database.failedEvents = this.database.failedEvents.filter((item) => item.appId !== app.id);
     this.database.analyticsEvents = this.database.analyticsEvents.filter((item) => item.appId !== app.id);
     this.database.files = this.database.files.filter((item) => item.appId !== app.id);
-    this.appConfigService.deleteByApp(app.id);
+    await this.appConfigService.deleteByApp(app.id);
     await this.managedStateStore.save(this.database);
 
     return {
@@ -170,7 +203,7 @@ export class AdminConsoleService {
   }
 
   async updateEmailServiceConfig(input: unknown): Promise<AdminEmailServiceDocument> {
-    const document = this.commonEmailConfigService.updateConfig(input);
+    const document = await this.commonEmailConfigService.updateConfig(input);
     await this.managedStateStore.save(this.database);
     return document;
   }

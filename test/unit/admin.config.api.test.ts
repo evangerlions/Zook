@@ -42,6 +42,9 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
   assert.equal(configResponse.statusCode, 200);
   assert.equal(configResponse.body.data.app.appId, "app_a");
   assert.equal(configResponse.body.data.configKey, "admin.delivery_config");
+  assert.equal(configResponse.body.data.revision, 1);
+  assert.equal(configResponse.body.data.isLatest, true);
+  assert.equal(configResponse.body.data.revisions.length, 1);
   assert.match(configResponse.body.data.rawJson, /featureFlags/);
 });
 
@@ -62,11 +65,16 @@ test("admin config API saves normalized JSON back to the app config store", asyn
     headers,
     body: {
       rawJson: '{"release":{"version":"2026.03.21","channel":"stable"},"featureFlags":{"enableVipBanner":false},"settings":{"theme":"dawn"}}',
+      desc: "发布稳定版本",
     },
   });
 
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.app.appId, "app_b");
+  assert.equal(updateResponse.body.data.revision, 2);
+  assert.equal(updateResponse.body.data.desc, "发布稳定版本");
+  assert.equal(updateResponse.body.data.isLatest, true);
+  assert.equal(updateResponse.body.data.revisions.length, 2);
   assert.match(updateResponse.body.data.rawJson, /2026\.03\.21/);
   assert.ok(
     runtime.database.auditLogs.some(
@@ -94,6 +102,68 @@ test("admin config API saves normalized JSON back to the app config store", asyn
       2,
     ),
   );
+});
+
+test("admin config API exposes revision history and can restore a historical version", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_b/config",
+    headers,
+    body: {
+      rawJson: '{"release":{"version":"2026.03.21"}}',
+      desc: "v1",
+    },
+  });
+
+  const secondUpdate = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_b/config",
+    headers,
+    body: {
+      rawJson: '{"release":{"version":"2026.03.22"}}',
+      desc: "v2",
+    },
+  });
+
+  assert.equal(secondUpdate.statusCode, 200);
+  assert.equal(secondUpdate.body.data.revision, 3);
+  assert.deepEqual(
+    secondUpdate.body.data.revisions.map((item) => item.revision),
+    [3, 2, 1],
+  );
+
+  const revisionOneResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_b/config/revisions/1",
+    headers,
+  });
+
+  assert.equal(revisionOneResponse.statusCode, 200);
+  assert.equal(revisionOneResponse.body.data.revision, 1);
+  assert.equal(revisionOneResponse.body.data.isLatest, false);
+  assert.match(revisionOneResponse.body.data.rawJson, /featureFlags/);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/app_b/config/revisions/1/restore",
+    headers,
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.revision, 4);
+  assert.equal(restoreResponse.body.data.isLatest, true);
+  assert.equal(restoreResponse.body.data.desc, "restore:1");
+  assert.match(restoreResponse.body.data.rawJson, /featureFlags/);
 });
 
 test("admin config API rejects invalid JSON and missing basic auth", async () => {

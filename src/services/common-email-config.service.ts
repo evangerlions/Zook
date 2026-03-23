@@ -34,10 +34,15 @@ export class CommonEmailConfigService {
     return this.toDocument(this.maskSensitiveConfig(config));
   }
 
-  updateConfig(input: unknown): AdminEmailServiceDocument {
+  async updateConfig(input: unknown): Promise<AdminEmailServiceDocument> {
     const existingConfig = this.getStoredConfig();
     const normalized = this.validateInput(input, existingConfig);
-    this.appConfigService.setValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY, JSON.stringify(normalized, null, 2));
+    await this.appConfigService.setValue(
+      COMMON_APP_ID,
+      EMAIL_SERVICE_CONFIG_KEY,
+      JSON.stringify(normalized, null, 2),
+      "common-email-service-update",
+    );
     return this.getDocument();
   }
 

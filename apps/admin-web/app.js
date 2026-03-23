@@ -32,7 +32,9 @@ const state = {
   emailDocument: null,
   editorValue: "",
   savedValue: "",
+  configDesc: "",
   editorError: "",
+  restoringRevision: "",
 };
 
 window.addEventListener("popstate", () => {
@@ -78,9 +80,6 @@ appRoot.addEventListener("change", (event) => {
     return;
   }
 
-  if (target.name === "mailRegionMode") {
-    render().catch(handleUnexpectedError);
-  }
 });
 
 appRoot.addEventListener("input", (event) => {
@@ -239,6 +238,10 @@ function handleUnexpectedError(error) {
 
 function selectedApp() {
   return state.apps.find((item) => item.appId === state.selectedAppId) ?? null;
+}
+
+function isViewingHistoricalConfig() {
+  return Boolean(state.configDocument && state.configDocument.isLatest === false);
 }
 
 function hasUnsavedChanges() {
@@ -554,6 +557,9 @@ function renderConfigPage() {
   }
 
   const updatedAt = state.configDocument?.updatedAt ? formatTimestamp(state.configDocument.updatedAt) : "未保存";
+  const currentRevision = state.configDocument?.revision ?? "—";
+  const revisions = Array.isArray(state.configDocument?.revisions) ? state.configDocument.revisions : [];
+  const readOnly = state.loadingConfig || isViewingHistoricalConfig();
 
   return `
     <section class="page-shell">
@@ -563,40 +569,124 @@ function renderConfigPage() {
           <p class="page-subtitle">${escapeHtml(app.appName)} · ${escapeHtml(app.appCode)}</p>
         </div>
         <div class="page-actions">
+          <span class="meta-chip">R${escapeHtml(String(currentRevision))}</span>
           <span class="meta-chip">${escapeHtml(updatedAt)}</span>
-          <span class="meta-chip">${hasUnsavedChanges() ? "未保存" : "已保存"}</span>
+          <span class="meta-chip">${isViewingHistoricalConfig() ? "历史版本" : hasUnsavedChanges() ? "未保存" : "已保存"}</span>
         </div>
       </header>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2 class="panel-title">JSON</h2>
-          <div class="panel-actions">
-            <button class="button button-secondary" type="button" data-action="reload-config" ${state.loadingConfig ? "disabled" : ""}>读取</button>
-            <button class="button button-secondary" type="button" data-action="validate-json" ${state.loadingConfig ? "disabled" : ""}>校验</button>
-            <button class="button button-secondary" type="button" data-action="format-json" ${state.loadingConfig ? "disabled" : ""}>格式化</button>
+      <div class="config-workspace">
+        <section class="panel config-main-panel">
+          <div class="panel-header">
+            <div class="panel-heading">
+              <h2 class="panel-title">最新配置</h2>
+              <p class="panel-caption">${isViewingHistoricalConfig() ? "当前正在查看历史版本，只读展示。" : "保存时可填写本次变更说明。"}</p>
+            </div>
+            <div class="panel-actions">
+              ${
+                isViewingHistoricalConfig()
+                  ? `<button class="button button-secondary" type="button" data-action="view-latest-config" ${state.loadingConfig ? "disabled" : ""}>返回最新</button>`
+                  : ""
+              }
+              <button class="button button-secondary" type="button" data-action="reload-config" ${state.loadingConfig ? "disabled" : ""}>读取</button>
+              <button class="button button-secondary" type="button" data-action="validate-json" ${readOnly ? "disabled" : ""}>校验</button>
+              <button class="button button-secondary" type="button" data-action="format-json" ${readOnly ? "disabled" : ""}>格式化</button>
+            </div>
           </div>
-        </div>
 
-        <form class="editor-form" data-form="save-config">
-          <textarea
-            id="config-json"
-            name="configJson"
-            class="json-editor"
-            spellcheck="false"
-            placeholder='{\n  "featureFlags": {},\n  "settings": {}\n}'
-            ${state.loadingConfig ? "disabled" : ""}
-          >${escapeHtml(state.editorValue)}</textarea>
-          ${state.editorError ? `<p class="editor-error" role="alert">${escapeHtml(state.editorError)}</p>` : ""}
-          <div class="form-footer">
-            <button class="button button-ghost" type="button" data-action="reset-config" ${!hasUnsavedChanges() || state.loadingConfig ? "disabled" : ""}>恢复</button>
-            <button class="button button-primary" type="submit" ${state.busy || state.loadingConfig ? "disabled" : ""}>
-              ${state.busy ? "保存中..." : "保存"}
-            </button>
+          ${
+            isViewingHistoricalConfig()
+              ? `
+                <div class="revision-banner">
+                  <div>
+                    <strong>正在查看历史版本 R${escapeHtml(String(currentRevision))}</strong>
+                    <p>${escapeHtml(state.configDocument?.desc || "未填写变更说明")}</p>
+                  </div>
+                  <button
+                    class="button button-primary"
+                    type="button"
+                    data-action="restore-config-revision"
+                    data-revision="${escapeHtml(String(currentRevision))}"
+                    ${state.restoringRevision === String(currentRevision) ? "disabled" : ""}
+                  >
+                    ${state.restoringRevision === String(currentRevision) ? "恢复中..." : "恢复到此版本"}
+                  </button>
+                </div>
+              `
+              : ""
+          }
+
+          <form class="editor-form" data-form="save-config">
+            <label class="field">
+              <span>更新说明</span>
+              <input
+                name="configDesc"
+                type="text"
+                maxlength="120"
+                placeholder="例如：开启灰度开关 / 修正渠道配置"
+                value="${escapeHtml(state.configDesc)}"
+                ${readOnly || state.busy ? "disabled" : ""}
+              />
+            </label>
+
+            <textarea
+              id="config-json"
+              name="configJson"
+              class="json-editor"
+              spellcheck="false"
+              placeholder='{\n  "featureFlags": {},\n  "settings": {}\n}'
+              ${readOnly ? "disabled" : ""}
+            >${escapeHtml(state.editorValue)}</textarea>
+            ${state.editorError ? `<p class="editor-error" role="alert">${escapeHtml(state.editorError)}</p>` : ""}
+            <div class="form-footer">
+              <button class="button button-ghost" type="button" data-action="reset-config" ${!hasUnsavedChanges() || readOnly ? "disabled" : ""}>恢复</button>
+              <button class="button button-primary" type="submit" ${state.busy || readOnly ? "disabled" : ""}>
+                ${state.busy ? "保存中..." : "保存新版本"}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="panel config-history-panel">
+          <div class="panel-header">
+            <div class="panel-heading">
+              <h2 class="panel-title">历史版本</h2>
+              <p class="panel-caption">按时间倒序展示，点击可查看任意版本。</p>
+            </div>
           </div>
-        </form>
-      </section>
+
+          <div class="revision-list">
+            ${
+              revisions.length
+                ? revisions.map((item) => renderRevisionItem(item)).join("")
+                : '<div class="revision-empty">还没有历史版本。</div>'
+            }
+          </div>
+        </aside>
+      </div>
     </section>
+  `;
+}
+
+function renderRevisionItem(item) {
+  const isActive = Number(item.revision) === Number(state.configDocument?.revision);
+  const isLatest = Number(item.revision) === Number(state.configDocument?.revisions?.[0]?.revision);
+
+  return `
+    <button
+      class="revision-item"
+      type="button"
+      data-action="view-config-revision"
+      data-revision="${escapeHtml(String(item.revision))}"
+      data-active="${isActive ? "true" : "false"}"
+    >
+      <div class="revision-item-top">
+        <strong>R${escapeHtml(String(item.revision))}</strong>
+        ${isLatest ? '<span class="revision-tag">Latest</span>' : ""}
+      </div>
+      <p>${escapeHtml(item.desc || "未填写更新说明")}</p>
+      <span>${escapeHtml(formatTimestamp(item.createdAt))}</span>
+    </button>
   `;
 }
 
@@ -614,6 +704,8 @@ function renderMailPage() {
 
   const config = state.emailDocument?.config ?? createDefaultMailConfig();
   const updatedAt = state.emailDocument?.updatedAt ? formatTimestamp(state.emailDocument.updatedAt) : "未保存";
+  const sendersJson = JSON.stringify(config.senders ?? [], null, 2);
+  const templatesJson = JSON.stringify(config.templates ?? [], null, 2);
 
   return `
     <section class="page-shell">
@@ -637,31 +729,15 @@ function renderMailPage() {
         </div>
 
         <form class="stack-form" data-form="save-mail">
-          <div class="form-grid form-grid-wide">
+          <div class="form-grid">
             <label class="field field-checkbox">
               <span>启用</span>
               <input name="enabled" type="checkbox" ${config.enabled ? "checked" : ""} ${state.savingMail ? "disabled" : ""} />
             </label>
             <label class="field">
               <span>Region</span>
-              <select name="mailRegionMode" ${state.savingMail ? "disabled" : ""}>
-                <option value="auto" ${config.regionMode === "auto" ? "selected" : ""}>自动</option>
-                <option value="manual" ${config.regionMode === "manual" ? "selected" : ""}>手动</option>
-              </select>
+              <input type="text" value="${escapeHtml(state.emailDocument?.resolvedRegion || "ap-guangzhou")}" disabled />
             </label>
-            ${
-              config.regionMode === "manual"
-                ? `
-                  <label class="field">
-                    <span>手动地域</span>
-                    <select name="manualRegion" ${state.savingMail ? "disabled" : ""}>
-                      <option value="ap-guangzhou" ${config.manualRegion === "ap-guangzhou" ? "selected" : ""}>ap-guangzhou</option>
-                      <option value="ap-hongkong" ${config.manualRegion === "ap-hongkong" ? "selected" : ""}>ap-hongkong</option>
-                    </select>
-                  </label>
-                `
-                : ""
-            }
           </div>
 
           <div class="form-grid">
@@ -675,40 +751,26 @@ function renderMailPage() {
             </label>
           </div>
 
-          <div class="form-grid">
-            <label class="field">
-              <span>发件人</span>
-              <input name="fromEmailAddress" type="text" value="${escapeHtml(config.fromEmailAddress)}" autocomplete="off" ${state.savingMail ? "disabled" : ""} />
-            </label>
-            <label class="field">
-              <span>回复地址</span>
-              <input name="replyToAddresses" type="text" value="${escapeHtml(config.replyToAddresses || "")}" autocomplete="off" ${state.savingMail ? "disabled" : ""} />
-            </label>
-          </div>
+          <label class="field">
+            <span>Senders</span>
+            <textarea
+              class="json-editor json-editor-compact"
+              name="sendersJson"
+              spellcheck="false"
+              ${state.savingMail ? "disabled" : ""}
+            >${escapeHtml(sendersJson)}</textarea>
+            <small class="field-hint">JSON 数组，每项包含 id 和 address。</small>
+          </label>
 
-          <div class="form-grid">
-            <label class="field">
-              <span>主题</span>
-              <input name="verificationSubject" type="text" value="${escapeHtml(config.verification.subject)}" autocomplete="off" ${state.savingMail ? "disabled" : ""} />
-            </label>
-            <label class="field">
-              <span>模板 ID</span>
-              <input name="verificationTemplateId" type="number" min="0" step="1" value="${escapeHtml(config.verification.templateId)}" ${state.savingMail ? "disabled" : ""} />
-            </label>
-          </div>
-
-          <div class="form-grid">
-            <label class="field">
-              <span>模板变量</span>
-              <input name="verificationTemplateDataKey" type="text" value="${escapeHtml(config.verification.templateDataKey)}" autocomplete="off" ${state.savingMail ? "disabled" : ""} />
-            </label>
-            <label class="field">
-              <span>TriggerType</span>
-              <select name="verificationTriggerType" ${state.savingMail ? "disabled" : ""}>
-                <option value="1" ${config.verification.triggerType === 1 ? "selected" : ""}>1</option>
-                <option value="0" ${config.verification.triggerType === 0 ? "selected" : ""}>0</option>
-              </select>
-            </label>
+          <label class="field">
+            <span>Templates</span>
+            <textarea
+              class="json-editor json-editor-compact"
+              name="templatesJson"
+              spellcheck="false"
+              ${state.savingMail ? "disabled" : ""}
+            >${escapeHtml(templatesJson)}</textarea>
+            <small class="field-hint">JSON 数组，每项包含 locale、templateId、name。</small>
           </div>
 
           <div class="form-footer">
@@ -769,6 +831,60 @@ async function handleAction(target) {
     await loadSelectedAppConfig();
     clearNotice();
     await render();
+    return;
+  }
+
+  if (action === "view-latest-config") {
+    await loadSelectedAppConfig();
+    clearNotice();
+    await render();
+    return;
+  }
+
+  if (action === "view-config-revision") {
+    const revision = Number(target.dataset.revision || 0);
+    if (revision > 0) {
+      await loadConfigRevision(revision);
+      clearNotice();
+      await render();
+    }
+    return;
+  }
+
+  if (action === "restore-config-revision") {
+    const revision = Number(target.dataset.revision || 0);
+    if (revision > 0) {
+      const confirmed = window.confirm(`确认恢复到版本 R${revision} 吗？当前最新配置会保留为新版本历史。`);
+      if (!confirmed) {
+        return;
+      }
+
+      state.restoringRevision = String(revision);
+      clearNotice();
+      await render();
+
+      try {
+        const payload = await requestJson(
+          `/api/v1/admin/apps/${encodeURIComponent(state.selectedAppId)}/config/revisions/${revision}/restore`,
+          {
+            method: "POST",
+          },
+        );
+        state.configDocument = payload.data;
+        state.editorValue = payload.data.rawJson;
+        state.savedValue = payload.data.rawJson;
+        state.configDesc = "";
+        state.editorError = "";
+        await loadBootstrap();
+        setNotice("success", `已恢复到版本 R${revision}。`);
+      } catch (error) {
+        setNotice("error", formatError(error));
+      } finally {
+        state.restoringRevision = "";
+      }
+
+      await render();
+    }
     return;
   }
 
@@ -920,16 +1036,20 @@ async function handleFormSubmit(form) {
     try {
       const parsed = parseConfigText(state.editorValue);
       const normalized = JSON.stringify(parsed, null, 2);
+      const formData = new FormData(form);
+      const desc = String(formData.get("configDesc") ?? "").trim();
       const payload = await requestJson(`/api/v1/admin/apps/${encodeURIComponent(state.selectedAppId)}/config`, {
         method: "PUT",
         body: {
           rawJson: normalized,
+          desc: desc || undefined,
         },
       });
 
       state.configDocument = payload.data;
       state.editorValue = payload.data.rawJson;
       state.savedValue = payload.data.rawJson;
+      state.configDesc = "";
       state.editorError = "";
       await loadBootstrap();
       setNotice("success", "配置已保存。");
@@ -948,30 +1068,28 @@ async function handleFormSubmit(form) {
 
   if (form.dataset.form === "save-mail") {
     const formData = new FormData(form);
-    const regionMode = String(formData.get("mailRegionMode") ?? "auto");
 
     state.savingMail = true;
     clearNotice();
     await render();
 
     try {
+      const senders = parseJsonArrayInput(
+        String(formData.get("sendersJson") ?? "[]"),
+        "发件人列表必须是合法的 JSON 数组。",
+      );
+      const templates = parseJsonArrayInput(
+        String(formData.get("templatesJson") ?? "[]"),
+        "模板列表必须是合法的 JSON 数组。",
+      );
       const payload = await requestJson("/api/v1/admin/apps/common/email-service", {
         method: "PUT",
         body: {
           enabled: formData.get("enabled") === "on",
-          provider: "tencent_ses",
-          regionMode,
-          manualRegion: regionMode === "manual" ? String(formData.get("manualRegion") ?? "") : undefined,
           secretId: String(formData.get("secretId") ?? "").trim(),
           secretKey: String(formData.get("secretKey") ?? "").trim(),
-          fromEmailAddress: String(formData.get("fromEmailAddress") ?? "").trim(),
-          replyToAddresses: String(formData.get("replyToAddresses") ?? "").trim(),
-          verification: {
-            subject: String(formData.get("verificationSubject") ?? "").trim(),
-            templateId: Number(formData.get("verificationTemplateId") ?? 0),
-            templateDataKey: String(formData.get("verificationTemplateDataKey") ?? "").trim(),
-            triggerType: Number(formData.get("verificationTriggerType") ?? 1) === 0 ? 0 : 1,
-          },
+          senders,
+          templates,
         },
       });
 
@@ -1079,6 +1197,7 @@ async function loadSelectedAppConfig(showIntermediateRender = true) {
     state.configDocument = null;
     state.editorValue = "";
     state.savedValue = "";
+    state.configDesc = "";
     state.loadingConfig = false;
     return;
   }
@@ -1094,6 +1213,31 @@ async function loadSelectedAppConfig(showIntermediateRender = true) {
     state.configDocument = payload.data;
     state.editorValue = payload.data.rawJson;
     state.savedValue = payload.data.rawJson;
+    state.configDesc = "";
+  } finally {
+    state.loadingConfig = false;
+  }
+}
+
+async function loadConfigRevision(revision, showIntermediateRender = true) {
+  if (!state.selectedAppId || !revision) {
+    return;
+  }
+
+  state.loadingConfig = true;
+  state.editorError = "";
+  if (showIntermediateRender) {
+    await render();
+  }
+
+  try {
+    const payload = await requestJson(
+      `/api/v1/admin/apps/${encodeURIComponent(state.selectedAppId)}/config/revisions/${revision}`,
+    );
+    state.configDocument = payload.data;
+    state.editorValue = payload.data.rawJson;
+    state.savedValue = payload.data.rawJson;
+    state.configDesc = "";
   } finally {
     state.loadingConfig = false;
   }
@@ -1116,19 +1260,10 @@ async function loadEmailServiceConfig(showIntermediateRender = true) {
 function createDefaultMailConfig() {
   return {
     enabled: false,
-    provider: "tencent_ses",
-    regionMode: "auto",
-    manualRegion: "ap-guangzhou",
     secretId: "",
     secretKey: "",
-    fromEmailAddress: "",
-    replyToAddresses: "",
-    verification: {
-      subject: "",
-      templateId: 0,
-      templateDataKey: "code",
-      triggerType: 1,
-    },
+    senders: [],
+    templates: [],
   };
 }
 
@@ -1143,6 +1278,22 @@ function parseConfigText(rawText) {
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("配置根节点必须是 JSON object。");
+  }
+
+  return parsed;
+}
+
+function parseJsonArrayInput(rawText, errorMessage) {
+  let parsed;
+
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    throw new Error(errorMessage);
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error(errorMessage);
   }
 
   return parsed;

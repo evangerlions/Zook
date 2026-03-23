@@ -193,6 +193,28 @@ export class BackendApplication {
       return this.handleAdminUpdateConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
     }
 
+    const adminConfigRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/config\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminConfigRevisionMatch) {
+      return this.handleAdminGetConfigRevision(
+        request,
+        decodeURIComponent(adminConfigRevisionMatch[1] as string),
+        Number(adminConfigRevisionMatch[2]),
+      );
+    }
+
+    const adminConfigRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/config\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminConfigRestoreMatch) {
+      return this.handleAdminRestoreConfigRevision(
+        request,
+        decodeURIComponent(adminConfigRestoreMatch[1] as string),
+        Number(adminConfigRestoreMatch[2]),
+      );
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/login") {
       return this.handleLogin(request);
     }
@@ -676,9 +698,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleAdminGetConfig(request: HttpRequest, appId: string): HttpResponse<unknown> {
+  private async handleAdminGetConfig(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = this.adminConsoleService.getConfig(appId);
+    const result = await this.adminConsoleService.getConfig(appId);
 
     this.auditInterceptor.record({
       appId,
@@ -697,7 +719,8 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const rawJson = this.validationPipe.requireString(body, "rawJson");
-    const result = await this.adminConsoleService.updateConfig(appId, rawJson);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateConfig(appId, rawJson, desc);
 
     this.auditInterceptor.record({
       appId,
@@ -706,6 +729,50 @@ export class BackendApplication {
       resourceId: result.configKey,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetConfigRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getConfig(appId, revision);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.config.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreConfigRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.restoreConfig(appId, revision);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.config.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
       },
     });
 
@@ -864,7 +931,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     emitToConsole: options.emitLogs ?? false,
   });
 
-  const appConfigService = new AppConfigService(database, cache);
+  const appConfigService = new AppConfigService(database, cache, kvManager);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
