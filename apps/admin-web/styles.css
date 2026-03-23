@@ -625,6 +625,18 @@ select {
   margin-bottom: 16px;
 }
 
+.panel-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.panel-caption {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 .inline-form {
   display: grid;
   grid-template-columns: minmax(180px, 240px) minmax(180px, 1fr) auto;
@@ -667,6 +679,12 @@ select {
   color: var(--text-soft);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.field-hint {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 input {
@@ -731,6 +749,124 @@ input {
   gap: 14px;
 }
 
+.config-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.config-main-panel,
+.config-history-panel {
+  min-width: 0;
+}
+
+.revision-banner {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.revision-banner strong,
+.revision-banner p {
+  margin: 0;
+}
+
+.revision-banner p {
+  margin-top: 6px;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.revision-list {
+  display: grid;
+  gap: 10px;
+}
+
+.revision-item {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.revision-item:hover,
+.revision-item:focus-visible {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: #fdfefe;
+  transform: translateY(-1px);
+}
+
+.revision-item[data-active="true"] {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.revision-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.revision-item-top strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.revision-item p,
+.revision-item span {
+  margin: 0;
+}
+
+.revision-item p {
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.revision-item span {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.revision-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(15, 157, 104, 0.12);
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.revision-empty {
+  padding: 18px 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
 .json-editor {
   width: 100%;
   min-height: 620px;
@@ -743,6 +879,10 @@ input {
   font-family: var(--font-mono);
   font-size: 0.95rem;
   line-height: 1.68;
+}
+
+.json-editor-compact {
+  min-height: 180px;
 }
 
 .json-editor[data-dirty="true"] {
@@ -863,9 +1003,14 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .config-workspace,
   .form-grid,
   .form-grid-wide {
     grid-template-columns: 1fr;
+  }
+
+  .revision-banner {
+    display: grid;
   }
 }
 
