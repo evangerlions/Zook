@@ -31,11 +31,13 @@ DEFAULT_REMOTE = "origin"
 DEFAULT_LOCK_TIMEOUT_SECONDS = 600
 DEFAULT_APP_ENV_FILE = ".env"
 DEFAULT_COMPOSE_FILE = "compose.yaml"
+DEFAULT_HOST_NETWORK_COMPOSE_FILE = "compose.host-network.yaml"
 DEFAULT_BIND_IP = "127.0.0.1"
 DEFAULT_PORT = "3100"
 DEFAULT_ADMIN_PORT = "3110"
 DEFAULT_HEALTH_PATH = "api/health"
 DEFAULT_ADMIN_HEALTH_PATH = "_admin/health"
+DEFAULT_NETWORK_MODE = "bridge"
 DEFAULT_KEEP_RELEASES = 5
 DEFAULT_BUILDER_PRUNE_UNTIL = "168h"
 STATE_DIR_NAME = ".deploy"
@@ -409,26 +411,27 @@ def get_service_status(project_name: str, service_name: str) -> str | None:
     return command_output(["docker", "inspect", "--format", "{{.State.Status}}", container_id])
 
 
-def compose_command(project_name: str, compose_file: Path, compose_env_file: Path, *extra_args: str) -> list[str]:
-    return [
+def compose_command(project_name: str, compose_files: list[Path], compose_env_file: Path, *extra_args: str) -> list[str]:
+    command = [
         "docker",
         "compose",
         "--project-name",
         project_name,
         "--env-file",
         str(compose_env_file),
-        "-f",
-        str(compose_file),
-        *extra_args,
     ]
+    for compose_file in compose_files:
+        command.extend(["-f", str(compose_file)])
+    command.extend(extra_args)
+    return command
 
 
-def collect_compose_logs(project_name: str, compose_file: Path, compose_env_file: Path) -> str:
+def collect_compose_logs(project_name: str, compose_files: list[Path], compose_env_file: Path) -> str:
     try:
         return command_output(
             compose_command(
                 project_name,
-                compose_file,
+                compose_files,
                 compose_env_file,
                 "logs",
                 "--no-color",
@@ -512,9 +515,9 @@ def build_local_image(repo_root: Path, dockerfile_path: Path, image_full_name: s
     )
 
 
-def deploy_release(repo_root: Path, project_name: str, compose_file: Path, compose_env_file: Path) -> None:
+def deploy_release(repo_root: Path, project_name: str, compose_files: list[Path], compose_env_file: Path) -> None:
     run_command(
-        compose_command(project_name, compose_file, compose_env_file, "up", "-d", "--force-recreate", "--remove-orphans"),
+        compose_command(project_name, compose_files, compose_env_file, "up", "-d", "--force-recreate", "--remove-orphans"),
         cwd=repo_root,
     )
 
@@ -536,6 +539,29 @@ def resolve_runtime_paths(repo_root: Path, args: argparse.Namespace) -> tuple[Pa
     dockerfile_path = ensure_existing_file(dockerfile_path, "Dockerfile")
 
     return compose_file, app_env_file, dockerfile_path
+
+
+def resolve_network_mode(raw_value: str | None) -> str:
+    normalized = (raw_value or DEFAULT_NETWORK_MODE).strip().lower()
+    if not normalized:
+        return DEFAULT_NETWORK_MODE
+    if normalized not in {"bridge", "host"}:
+        raise ScriptError(f"Unsupported DEPLOY_NETWORK_MODE: {raw_value!r}. Expected bridge or host.")
+    return normalized
+
+
+def resolve_compose_files(repo_root: Path, compose_file: Path, network_mode: str) -> list[Path]:
+    if network_mode != "host":
+        return [compose_file]
+
+    if compose_file.name == DEFAULT_COMPOSE_FILE:
+        host_network_compose_file = ensure_existing_file(
+            repo_root / DEFAULT_HOST_NETWORK_COMPOSE_FILE,
+            "Host network compose file",
+        )
+        return [host_network_compose_file]
+
+    return [compose_file]
 
 
 def resolve_project_name(image_name: str, slot_name: str) -> str:
@@ -698,6 +724,7 @@ def build_compose_env(
     bind_ip: str,
     health_path: str,
     admin_health_path: str,
+    network_mode: str,
 ) -> dict[str, str]:
     return {
         "DEPLOY_IMAGE": image_name,
@@ -711,6 +738,7 @@ def build_compose_env(
         "ADMIN_CONTAINER_PORT": admin_container_port,
         "HEALTH_PATH": health_path,
         "ADMIN_HEALTH_PATH": admin_health_path,
+        "CONTAINER_NETWORK_MODE": network_mode,
     }
 
 
@@ -838,6 +866,8 @@ def main() -> int:
     slot_name = sanitize_slot(args.slot or os.getenv("DEPLOY_SLOT", ""))
     project_name = resolve_project_name(image_name, slot_name)
     branch = resolve_branch(repo_root, args.branch)
+    network_mode = resolve_network_mode(os.getenv("DEPLOY_NETWORK_MODE", DEFAULT_NETWORK_MODE))
+    compose_files = resolve_compose_files(repo_root, compose_file, network_mode)
     keep_releases = resolve_keep_releases(args)
     builder_prune_until = resolve_builder_prune_until(args)
     dirty_checkout = assert_repo_ready_for_sync(repo_root, skip_git_sync=args.skip_git_sync, allow_dirty=args.allow_dirty)
@@ -890,6 +920,8 @@ def main() -> int:
         print(f"use slot: {slot_name}")
         print(f"use branch: {branch}")
         print(f"use commit: {commit_sha}")
+        print(f"use container network mode: {network_mode}")
+        print(f"use compose files: {', '.join(str(path) for path in compose_files)}")
         print(f"use image: {image_full_name}")
         print(f"keep recent release images: {keep_releases}")
         if version:
@@ -913,6 +945,7 @@ def main() -> int:
             bind_ip=bind_ip,
             health_path=health_path,
             admin_health_path=admin_health_path,
+            network_mode=network_mode,
         )
 
         if args.dry_run:
@@ -929,7 +962,7 @@ def main() -> int:
 
         deploy_start = get_time()
         print("===== START DEPLOY LOCAL RELEASE =====")
-        deploy_release(repo_root, project_name, compose_file, compose_env_file)
+        deploy_release(repo_root, project_name, compose_files, compose_env_file)
 
         if wait_for_release(
             project_name,
@@ -989,7 +1022,7 @@ def main() -> int:
             return 0
 
         print("deployment health check failed, collecting logs...")
-        logs = collect_compose_logs(project_name, compose_file, compose_env_file)
+        logs = collect_compose_logs(project_name, compose_files, compose_env_file)
         if logs:
             print("===== COMPOSE LOGS =====")
             print(logs)
@@ -1007,10 +1040,11 @@ def main() -> int:
                 bind_ip=bind_ip,
                 health_path=health_path,
                 admin_health_path=admin_health_path,
+                network_mode=network_mode,
             )
             print(f"attempt rollback to: {previous_release['image']}")
             write_compose_env(compose_env_file, previous_compose_env)
-            deploy_release(repo_root, project_name, compose_file, compose_env_file)
+            deploy_release(repo_root, project_name, compose_files, compose_env_file)
             rollback_ok = wait_for_release(
                 project_name,
                 bind_ip,
