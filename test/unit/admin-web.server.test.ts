@@ -38,7 +38,7 @@ async function listen(server: ReturnType<typeof createServer>): Promise<{ baseUr
   };
 }
 
-test("admin web serves SPA routes and runtime config", async (t) => {
+test("admin web serves login route and runtime config", async (t) => {
   const adminServer = createAdminServer({
     defaultAppId: "app_a",
     brandName: "Zook Test Console",
@@ -62,15 +62,15 @@ test("admin web serves SPA routes and runtime config", async (t) => {
   }
 
   try {
-    const setupResponse = await fetch(`${admin.baseUrl}/setup`);
-    const setupHtml = await setupResponse.text();
+    const loginResponse = await fetch(`${admin.baseUrl}/login`);
+    const loginHtml = await loginResponse.text();
 
-    assert.equal(setupResponse.status, 200);
-    assert.match(setupHtml, /<div id="app"><\/div>/);
-    assert.match(setupHtml, /_admin\/runtime-config\.test-build-001\.js/);
-    assert.match(setupHtml, /assets\/styles\.test-build-001\.css/);
-    assert.match(setupHtml, /assets\/app\.test-build-001\.js/);
-    assert.match(setupResponse.headers.get("cache-control") ?? "", /max-age=60/);
+    assert.equal(loginResponse.status, 200);
+    assert.match(loginHtml, /<div id="app"><\/div>/);
+    assert.match(loginHtml, /_admin\/runtime-config\.test-build-001\.js/);
+    assert.match(loginHtml, /assets\/styles\.test-build-001\.css/);
+    assert.match(loginHtml, /assets\/app\.test-build-001\.js/);
+    assert.match(loginResponse.headers.get("cache-control") ?? "", /max-age=60/);
 
     const runtimeResponse = await fetch(`${admin.baseUrl}/_admin/runtime-config.js`);
     const runtimeScript = await runtimeResponse.text();
@@ -166,16 +166,33 @@ test("admin web proxies API responses and preserves set-cookie", async (t) => {
   }
 });
 
-test("admin web basic auth protects pages and proxy routes while keeping internal health public", async (t) => {
+test("admin web keeps internal health public and forwards authorization headers to upstream", async (t) => {
   const upstreamServer = createServer((request, response) => {
-    if (request.url === "/api/health") {
+    if (request.url === "/api/v1/admin/bootstrap") {
+      if (request.headers.authorization !== `Basic ${Buffer.from("admin:AdminPass123!").toString("base64")}`) {
+        response.statusCode = 401;
+        response.setHeader("Content-Type", "application/json; charset=utf-8");
+        response.end(
+          JSON.stringify({
+            code: "ADMIN_BASIC_AUTH_REQUIRED",
+            message: "Admin basic authentication is required.",
+            data: null,
+            requestId: "req_upstream_unauthorized",
+          }),
+        );
+        return;
+      }
+
       response.statusCode = 200;
       response.setHeader("Content-Type", "application/json; charset=utf-8");
       response.end(
         JSON.stringify({
           code: "OK",
           message: "success",
-          data: { status: "ok" },
+          data: {
+            adminUser: "admin",
+            apps: [],
+          },
           requestId: "req_upstream_auth",
         }),
       );
@@ -205,11 +222,6 @@ test("admin web basic auth protects pages and proxy routes while keeping interna
   const adminServer = createAdminServer({
     proxyTarget: upstream.baseUrl,
     assetVersion: "test-build-003",
-    basicAuth: {
-      username: "admin",
-      password: "AdminPass123!",
-      realm: "Zook Admin Test",
-    },
   });
   let admin;
 
@@ -237,32 +249,31 @@ test("admin web basic auth protects pages and proxy routes while keeping interna
     assert.equal(healthResponse.status, 200);
     assert.equal(healthPayload.data.status, "ok");
 
-    const unauthorizedPage = await fetch(`${admin.baseUrl}/setup`, {
+    const loginPage = await fetch(`${admin.baseUrl}/login`);
+    const loginHtml = await loginPage.text();
+
+    assert.equal(loginPage.status, 200);
+    assert.match(loginHtml, /<div id="app"><\/div>/);
+
+    const unauthorizedApi = await fetch(`${admin.baseUrl}/api/v1/admin/bootstrap`, {
       redirect: "manual",
     });
-    assert.equal(unauthorizedPage.status, 401);
-    assert.match(unauthorizedPage.headers.get("www-authenticate") ?? "", /Basic realm="Zook Admin Test"/);
+    const unauthorizedPayload = await unauthorizedApi.json();
+
+    assert.equal(unauthorizedApi.status, 401);
+    assert.equal(unauthorizedPayload.code, "ADMIN_BASIC_AUTH_REQUIRED");
 
     const authorizedHeaders = {
       Authorization: `Basic ${Buffer.from("admin:AdminPass123!").toString("base64")}`,
     };
 
-    const authorizedPage = await fetch(`${admin.baseUrl}/setup`, {
-      headers: authorizedHeaders,
-    });
-    const authorizedHtml = await authorizedPage.text();
-
-    assert.equal(authorizedPage.status, 200);
-    assert.match(authorizedHtml, /<div id="app"><\/div>/);
-    assert.match(authorizedHtml, /assets\/app\.test-build-003\.js/);
-
-    const authorizedApi = await fetch(`${admin.baseUrl}/api/health`, {
+    const authorizedApi = await fetch(`${admin.baseUrl}/api/v1/admin/bootstrap`, {
       headers: authorizedHeaders,
     });
     const authorizedPayload = await authorizedApi.json();
 
     assert.equal(authorizedApi.status, 200);
-    assert.equal(authorizedPayload.data.status, "ok");
+    assert.equal(authorizedPayload.data.adminUser, "admin");
   } finally {
     await admin.close();
     await upstream.close();

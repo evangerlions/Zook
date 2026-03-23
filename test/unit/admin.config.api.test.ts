@@ -1,16 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
+import { InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
 
 function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
 }
 
 test("admin bootstrap and config APIs expose app list and editable JSON config", async () => {
-  const runtime = createApplication({
+  const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -28,10 +26,10 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
 
   assert.equal(bootstrapResponse.statusCode, 200);
   assert.equal(bootstrapResponse.body.data.adminUser, "admin");
-  assert.equal(bootstrapResponse.body.data.apps.length, 3);
+  assert.equal(bootstrapResponse.body.data.apps.length, 2);
   assert.deepEqual(
     bootstrapResponse.body.data.apps.map((item) => item.appId),
-    ["common", "app_a", "app_b"],
+    ["app_a", "app_b"],
   );
   assert.equal(bootstrapResponse.body.data.apps[0]?.canDelete, false);
 
@@ -48,7 +46,7 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
 });
 
 test("admin config API saves normalized JSON back to the app config store", async () => {
-  const runtime = createApplication({
+  const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -99,7 +97,7 @@ test("admin config API saves normalized JSON back to the app config store", asyn
 });
 
 test("admin config API rejects invalid JSON and missing basic auth", async () => {
-  const runtime = createApplication({
+  const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -131,7 +129,7 @@ test("admin config API rejects invalid JSON and missing basic auth", async () =>
 });
 
 test("admin app APIs can add new apps and only delete apps with empty config", async () => {
-  const runtime = createApplication({
+  const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -192,7 +190,7 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
 });
 
 test("admin email service API stores common config and exposes resolved region", async () => {
-  const runtime = createApplication({
+  const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
@@ -237,79 +235,115 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(fetchResponse.statusCode, 200);
-  assert.equal(fetchResponse.body.data.config.secretId, "sid-demo");
+  assert.equal(fetchResponse.body.data.config.secretId, "sid-****");
+  assert.equal(fetchResponse.body.data.config.secretKey, "sk-d****");
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
+
+  const maskedUpdateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      ...fetchResponse.body.data.config,
+      verification: {
+        ...fetchResponse.body.data.config.verification,
+        subject: "新验证码",
+      },
+    },
+  });
+
+  assert.equal(maskedUpdateResponse.statusCode, 200);
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
+  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.verification.subject, "新验证码");
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.email_service.update" && item.appId === "common"),
   );
 });
 
-test("managed app state persists app and config changes to disk", async () => {
-  const directory = mkdtempSync(join(tmpdir(), "zook-state-"));
-  const persistedStateFile = join(directory, "state.json");
+test("common workspace does not expose app config API", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
 
-  try {
-    const firstRuntime = createApplication({
-      adminBasicAuth: {
-        username: "admin",
-        password: "AdminPass123!",
-      },
-      persistedStateFile,
-    });
-    const headers = {
-      authorization: createAdminAuthHeader(),
-    };
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/config",
+    headers,
+  });
 
-    const createResponse = await firstRuntime.app.handle({
-      method: "POST",
-      path: "/api/v1/admin/apps",
-      headers,
-      body: {
-        appId: "app_persisted",
-        appName: "Persisted App",
-      },
-    });
+  assert.equal(response.statusCode, 404);
+  assert.equal(response.body.code, "APP_NOT_FOUND");
+});
 
-    assert.equal(createResponse.statusCode, 200);
+test("managed app state persists app and config changes through kv backend", async () => {
+  const kvBackend = new InMemoryKVBackend();
+  const firstRuntime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    kvBackend,
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
 
-    const configResponse = await firstRuntime.app.handle({
-      method: "PUT",
-      path: "/api/v1/admin/apps/app_persisted/config",
-      headers,
-      body: {
-        rawJson: '{"mail":{"enabled":true}}',
-      },
-    });
+  const createResponse = await firstRuntime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps",
+    headers,
+    body: {
+      appId: "app_persisted",
+      appName: "Persisted App",
+    },
+  });
 
-    assert.equal(configResponse.statusCode, 200);
+  assert.equal(createResponse.statusCode, 200);
 
-    const secondRuntime = createApplication({
-      adminBasicAuth: {
-        username: "admin",
-        password: "AdminPass123!",
-      },
-      persistedStateFile,
-    });
+  const configResponse = await firstRuntime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_persisted/config",
+    headers,
+    body: {
+      rawJson: '{"mail":{"enabled":true}}',
+    },
+  });
 
-    const bootstrapResponse = await secondRuntime.app.handle({
-      method: "GET",
-      path: "/api/v1/admin/bootstrap",
-      headers,
-    });
+  assert.equal(configResponse.statusCode, 200);
 
-    assert.equal(bootstrapResponse.statusCode, 200);
-    assert.ok(
-      bootstrapResponse.body.data.apps.some((item) => item.appId === "app_persisted"),
-    );
+  const secondRuntime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    kvBackend,
+  });
 
-    const persistedConfigResponse = await secondRuntime.app.handle({
-      method: "GET",
-      path: "/api/v1/admin/apps/app_persisted/config",
-      headers,
-    });
+  const bootstrapResponse = await secondRuntime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/bootstrap",
+    headers,
+  });
 
-    assert.equal(persistedConfigResponse.statusCode, 200);
-    assert.match(persistedConfigResponse.body.data.rawJson, /"enabled": true/);
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
+  assert.equal(bootstrapResponse.statusCode, 200);
+  assert.ok(
+    bootstrapResponse.body.data.apps.some((item) => item.appId === "app_persisted"),
+  );
+
+  const persistedConfigResponse = await secondRuntime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_persisted/config",
+    headers,
+  });
+
+  assert.equal(persistedConfigResponse.statusCode, 200);
+  assert.match(persistedConfigResponse.body.data.rawJson, /"enabled": true/);
 });

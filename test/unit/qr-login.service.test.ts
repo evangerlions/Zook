@@ -7,7 +7,7 @@ function extractScanToken(qrContent: string): string {
 }
 
 test("qr login APIs create a session, confirm it on mobile, and let PC poll once", async () => {
-  const runtime = createApplication();
+  const runtime = await createApplication();
 
   const createResponse = await runtime.app.handle({
     method: "POST",
@@ -93,8 +93,8 @@ test("qr login APIs create a session, confirm it on mobile, and let PC poll once
   assert.equal(secondPollResponse.body.code, "AUTH_QR_LOGIN_ALREADY_USED");
 });
 
-test("qr login rejects repeated confirmation with the same QR code", () => {
-  const runtime = createApplication();
+test("qr login rejects repeated confirmation with the same QR code", async () => {
+  const runtime = await createApplication();
   const baseTime = new Date("2026-03-20T10:00:00+08:00");
   const created = runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
   const scanToken = extractScanToken(created.qrContent);
@@ -128,8 +128,8 @@ test("qr login rejects repeated confirmation with the same QR code", () => {
   );
 });
 
-test("qr login session expires before mobile confirmation", () => {
-  const runtime = createApplication();
+test("qr login session expires before mobile confirmation", async () => {
+  const runtime = await createApplication();
   const baseTime = new Date("2026-03-20T11:00:00+08:00");
   const created = runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
   const scanToken = extractScanToken(created.qrContent);
@@ -153,7 +153,7 @@ test("qr login session expires before mobile confirmation", () => {
 });
 
 test("qr login confirm rejects app scope mismatches from mobile auth", async () => {
-  const runtime = createApplication();
+  const runtime = await createApplication();
   const created = runtime.services.qrLoginService.createSession({ appId: "app_a" });
   const scanToken = extractScanToken(created.qrContent);
   const mismatchedAccessToken = runtime.services.tokenService.issueAccessToken("user_alice", "app_b");

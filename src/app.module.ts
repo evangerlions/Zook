@@ -10,8 +10,9 @@ import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
 import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { InMemoryDatabase } from "./infrastructure/database/prisma/in-memory-database.ts";
-import { applyManagedState, createManagedStatePersistence } from "./infrastructure/database/prisma/managed-state.persistence.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
+import { InMemoryKVBackend, KVManager, type KVBackend } from "./infrastructure/kv/kv-manager.ts";
+import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
@@ -24,8 +25,10 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AppConfigService } from "./services/app-config.service.ts";
+import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
+import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
@@ -38,7 +41,8 @@ export interface CreateApplicationOptions {
   emitLogs?: boolean;
   registrationCodeGenerator?: () => string;
   registrationEmailSender?: RegistrationEmailSender;
-  persistedStateFile?: string;
+  kvBackend?: KVBackend;
+  kvManager?: KVManager;
   adminBasicAuth?: {
     username: string;
     password: string;
@@ -110,6 +114,7 @@ export class BackendApplication {
     private readonly analyticsService: AnalyticsService,
     private readonly adminConsoleService: AdminConsoleService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
+    private readonly llmManager: LLMManager,
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
@@ -145,6 +150,7 @@ export class BackendApplication {
       qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
+      llmManager: this.llmManager,
       storageService: this.storageService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
@@ -595,12 +601,12 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleAdminCreateApp(request: HttpRequest): HttpResponse<unknown> {
+  private async handleAdminCreateApp(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
     const appName = this.validationPipe.optionalString(body, "appName");
-    const result = this.adminConsoleService.createApp(appId, appName);
+    const result = await this.adminConsoleService.createApp(appId, appName);
 
     this.auditInterceptor.record({
       appId: result.appId,
@@ -615,9 +621,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleAdminDeleteApp(request: HttpRequest, appId: string): HttpResponse<unknown> {
+  private async handleAdminDeleteApp(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = this.adminConsoleService.deleteApp(appId);
+    const result = await this.adminConsoleService.deleteApp(appId);
 
     this.auditInterceptor.record({
       appId,
@@ -649,10 +655,12 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleAdminUpdateEmailService(request: HttpRequest): HttpResponse<unknown> {
+  private async handleAdminUpdateEmailService(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
-    const result = this.adminConsoleService.updateEmailServiceConfig(body as AdminEmailServiceDocument["config"]);
+    const result = await this.adminConsoleService.updateEmailServiceConfig(
+      body as AdminEmailServiceDocument["config"],
+    );
 
     this.auditInterceptor.record({
       appId: "common",
@@ -684,11 +692,11 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleAdminUpdateConfig(request: HttpRequest, appId: string): HttpResponse<unknown> {
+  private async handleAdminUpdateConfig(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const rawJson = this.validationPipe.requireString(body, "rawJson");
-    const result = this.adminConsoleService.updateConfig(appId, rawJson);
+    const result = await this.adminConsoleService.updateConfig(appId, rawJson);
 
     this.auditInterceptor.record({
       appId,
@@ -835,14 +843,19 @@ export class BackendApplication {
 /**
  * createApplication produces a full runtime context that tests can reuse without real infra.
  */
-export function createApplication(options: CreateApplicationOptions = {}) {
+export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
   const seed = options.seed ?? buildDefaultSeed(passwordHasher);
-  const managedStatePersistence = createManagedStatePersistence(
-    options.persistedStateFile ?? process.env.ZOOK_STATE_FILE,
-  );
+  const kvManager =
+    options.kvManager ??
+    (options.kvBackend
+      ? await KVManager.create({ backend: options.kvBackend })
+      : process.env.REDIS_URL
+        ? await KVManager.getShared()
+        : await KVManager.create({ backend: new InMemoryKVBackend() }));
+  const managedStateStore = new ManagedStateStore(kvManager);
   const database = new InMemoryDatabase(
-    applyManagedState(seed, managedStatePersistence.load()),
+    applyManagedState(seed, await managedStateStore.load()),
   );
   const cache = new InMemoryCache();
   const queue = new InMemoryJobQueue();
@@ -850,7 +863,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
     emitToConsole: options.emitLogs ?? false,
   });
 
-  const appConfigService = new AppConfigService(database, cache, managedStatePersistence);
+  const appConfigService = new AppConfigService(database, cache);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
@@ -872,8 +885,16 @@ export function createApplication(options: CreateApplicationOptions = {}) {
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const adminConsoleService = new AdminConsoleService(database, appConfigService, commonEmailConfigService);
+  const adminConsoleService = new AdminConsoleService(
+    database,
+    appConfigService,
+    commonEmailConfigService,
+    managedStateStore,
+  );
   const rbacService = new RbacService(database);
+  const llmManager = new LLMManager({
+    bailian: new BailianOpenAICompatibleProvider(),
+  });
   const storageService = new StorageService(database);
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
@@ -899,6 +920,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
     analyticsService,
     adminConsoleService,
     adminBasicAuth,
+    llmManager,
     storageService,
     notificationService,
     failedEventRetryService,
@@ -921,6 +943,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
     passwordHasher,
     services: {
       appConfigService,
+      kvManager,
       commonEmailConfigService,
       appRegistryService,
       userService,
@@ -929,6 +952,7 @@ export function createApplication(options: CreateApplicationOptions = {}) {
       qrLoginService,
       analyticsService,
       adminConsoleService,
+      llmManager,
       rbacService,
       storageService,
       notificationService,

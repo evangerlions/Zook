@@ -2,24 +2,29 @@ const runtimeConfig = window.__ADMIN_RUNTIME_CONFIG__ ?? {};
 const STORAGE_KEYS = {
   selectedAppId: "zook.admin.selectedAppId",
 };
+const SESSION_STORAGE_KEY = "zook.admin.session";
 
+const LOGIN_ROUTE = "/login";
 const APPS_ROUTE = "/apps";
 const CONFIG_ROUTE = "/config";
 const MAIL_ROUTE = "/mail";
-const COMMON_APP_ID = "common";
-const KNOWN_ROUTES = new Set([APPS_ROUTE, CONFIG_ROUTE, MAIL_ROUTE]);
+const KNOWN_ROUTES = new Set([LOGIN_ROUTE, APPS_ROUTE, CONFIG_ROUTE, MAIL_ROUTE]);
 
 const appRoot = document.getElementById("app");
 
 const state = {
+  session: loadAdminSession(),
+  booting: true,
   busy: false,
+  loginBusy: false,
   creatingApp: false,
   deletingAppId: "",
   savingMail: false,
-  loadingBootstrap: true,
+  loadingBootstrap: false,
   loadingConfig: false,
   loadingMail: false,
   notice: null,
+  loginError: "",
   adminUser: "",
   apps: [],
   selectedAppId: loadSelectedAppId(),
@@ -80,14 +85,16 @@ appRoot.addEventListener("change", (event) => {
 
 appRoot.addEventListener("input", (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLTextAreaElement)) {
-    return;
-  }
 
-  if (target.name === "configJson") {
+  if (target instanceof HTMLTextAreaElement && target.name === "configJson") {
     state.editorValue = target.value;
     state.editorError = "";
     syncDirtyState();
+    return;
+  }
+
+  if (target instanceof HTMLInputElement && target.form?.dataset.form === "login") {
+    state.loginError = "";
   }
 });
 
@@ -95,8 +102,29 @@ boot().catch(handleUnexpectedError);
 
 async function boot() {
   await render();
-  await loadBootstrap();
-  await syncRouteState(ensureKnownRoute());
+
+  if (!state.session) {
+    state.booting = false;
+    if (currentPath() !== LOGIN_ROUTE) {
+      window.history.replaceState({}, "", LOGIN_ROUTE);
+    }
+    await render();
+    return;
+  }
+
+  try {
+    await loadBootstrap();
+    await syncRouteState(ensureKnownRoute());
+  } catch (error) {
+    clearAdminSession();
+    state.loginError = "登录已失效，请重新登录。";
+    if (currentPath() !== LOGIN_ROUTE) {
+      window.history.replaceState({}, "", LOGIN_ROUTE);
+    }
+  } finally {
+    state.booting = false;
+  }
+
   await render();
 }
 
@@ -114,23 +142,79 @@ function saveSelectedAppId(appId) {
   localStorage.removeItem(STORAGE_KEYS.selectedAppId);
 }
 
+function loadAdminSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    if (typeof parsed.authorization !== "string" || typeof parsed.username !== "string") {
+      return null;
+    }
+
+    return {
+      authorization: parsed.authorization,
+      username: parsed.username,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveAdminSession(session) {
+  state.session = session;
+  sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+}
+
+function clearAdminSession() {
+  state.session = null;
+  state.adminUser = "";
+  state.apps = [];
+  state.configDocument = null;
+  state.emailDocument = null;
+  state.editorValue = "";
+  state.savedValue = "";
+  state.editorError = "";
+  sessionStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
 function currentPath() {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
 
 function ensureKnownRoute() {
   const path = currentPath();
+
+  if (!state.session) {
+    if (path !== LOGIN_ROUTE) {
+      window.history.replaceState({}, "", LOGIN_ROUTE);
+      return LOGIN_ROUTE;
+    }
+    return LOGIN_ROUTE;
+  }
+
+  if (path === LOGIN_ROUTE) {
+    window.history.replaceState({}, "", APPS_ROUTE);
+    return APPS_ROUTE;
+  }
+
   if (KNOWN_ROUTES.has(path)) {
     return path;
   }
 
-  const fallback = state.selectedAppId ? CONFIG_ROUTE : APPS_ROUTE;
-  window.history.replaceState({}, "", fallback);
-  return fallback;
+  window.history.replaceState({}, "", APPS_ROUTE);
+  return APPS_ROUTE;
 }
 
 async function navigate(path) {
-  const nextPath = KNOWN_ROUTES.has(path) ? path : CONFIG_ROUTE;
+  const fallback = state.session ? APPS_ROUTE : LOGIN_ROUTE;
+  const nextPath = KNOWN_ROUTES.has(path) ? path : fallback;
   if (currentPath() !== nextPath) {
     window.history.pushState({}, "", nextPath);
   }
@@ -173,14 +257,64 @@ function syncDirtyState() {
 async function render() {
   const path = ensureKnownRoute();
   syncDocumentTitle(path);
-  appRoot.innerHTML = renderConsole(path);
+  appRoot.innerHTML = state.session ? renderConsole(path) : renderLoginPage();
   syncDirtyState();
 }
 
-function renderConsole(path) {
-  const app = selectedApp();
+function renderLoginPage() {
   const brandName = runtimeConfig.brandName || "Zook Admin";
-  const disableAppSelect = state.loadingBootstrap || state.apps.length === 0 || path === MAIL_ROUTE;
+  const feedback = state.loginError
+    ? `<p class="editor-error" role="alert">${escapeHtml(state.loginError)}</p>`
+    : state.notice
+      ? `<p class="login-feedback" data-tone="${escapeHtml(state.notice.tone || "info")}" role="status">${escapeHtml(state.notice.text)}</p>`
+      : "";
+
+  return `
+    <div class="login-shell">
+      <div class="login-panel">
+        <section class="login-brand">
+          <div class="login-brand-top">
+            <div class="brand-mark" aria-hidden="true">YW</div>
+            <div class="login-brand-copy">
+              <span>Admin Console</span>
+              <strong>${escapeHtml(brandName)}</strong>
+            </div>
+          </div>
+          <div class="login-brand-body">
+            <p class="login-eyebrow">Console Access</p>
+            <h1>登录后台</h1>
+            <p class="login-description">使用管理员账号进入配置工作台，统一管理应用与邮件服务。</p>
+          </div>
+        </section>
+
+        <section class="login-card">
+          <div class="login-header">
+            <h2>管理员登录</h2>
+            <p>输入账号密码后即可进入工作台。</p>
+          </div>
+
+          <form class="login-form" data-form="login">
+            <label class="field">
+              <span>用户名</span>
+              <input name="username" type="text" autocomplete="username" placeholder="admin" ${state.loginBusy ? "disabled" : ""} />
+            </label>
+            <label class="field">
+              <span>密码</span>
+              <input name="password" type="password" autocomplete="current-password" placeholder="输入密码" ${state.loginBusy ? "disabled" : ""} />
+            </label>
+            ${feedback}
+            <button class="button button-primary button-block" type="submit" ${state.loginBusy ? "disabled" : ""}>
+              ${state.loginBusy ? "登录中..." : "进入后台"}
+            </button>
+          </form>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function renderConsole(path) {
+  const brandName = runtimeConfig.brandName || "Zook Admin";
 
   return `
     <div class="admin-shell">
@@ -192,12 +326,6 @@ function renderConsole(path) {
             <span>Admin</span>
           </div>
         </div>
-
-        <section class="workspace-brief">
-          <span class="sidebar-label">当前工作区</span>
-          <strong>${escapeHtml(app?.appName || "未选择 App")}</strong>
-          <span>${escapeHtml(app?.appCode || "请选择 App")}</span>
-        </section>
 
         <nav class="sidebar-nav" aria-label="主导航">
           ${renderNavItem(APPS_ROUTE, path, "应用")}
@@ -215,22 +343,22 @@ function renderConsole(path) {
             </div>
 
             <div class="topbar-controls">
-              <label class="select-inline">
-                <span>App</span>
-                <select name="selectedAppId" ${disableAppSelect ? "disabled" : ""}>
-                  ${renderAppOptions()}
-                </select>
-              </label>
+              ${renderWorkspaceControl(path)}
 
               <nav class="topbar-links" aria-label="外部工具">
                 <a href="${escapeHtml(runtimeConfig.analyticsUrl || "https://analytics.youwoai.net")}" target="_blank" rel="noreferrer">Analytics</a>
-                <a href="${escapeHtml(runtimeConfig.logsUrl || "https://log.youwoai.net")}" target="_blank" rel="noreferrer">Logs</a>
+                <a href="${escapeHtml(runtimeConfig.logsUrl || "https://logs.youwoai.net/")}" target="_blank" rel="noreferrer">Logs</a>
               </nav>
 
-              <div class="user-chip">
-                <span class="user-avatar" aria-hidden="true">${escapeHtml((state.adminUser || "A").slice(0, 1).toUpperCase())}</span>
-                <strong>${escapeHtml(state.adminUser || "—")}</strong>
-              </div>
+              <details class="user-menu">
+                <summary class="user-chip">
+                  <span class="user-avatar" aria-hidden="true">${escapeHtml((state.adminUser || "A").slice(0, 1).toUpperCase())}</span>
+                  <strong>${escapeHtml(state.adminUser || "—")}</strong>
+                </summary>
+                <div class="user-menu-panel">
+                  <button class="menu-button" type="button" data-action="logout">退出登录</button>
+                </div>
+              </details>
             </div>
           </div>
         </header>
@@ -241,6 +369,26 @@ function renderConsole(path) {
         </main>
       </div>
     </div>
+  `;
+}
+
+function renderWorkspaceControl(path) {
+  if (path === APPS_ROUTE || path === MAIL_ROUTE) {
+    return `
+      <div class="select-inline select-inline-static">
+        <span>工作区</span>
+        <strong>Common</strong>
+      </div>
+    `;
+  }
+
+  return `
+    <label class="select-inline">
+      <span>App</span>
+      <select name="selectedAppId" ${state.loadingBootstrap || state.apps.length === 0 ? "disabled" : ""}>
+        ${renderAppOptions()}
+      </select>
+    </label>
   `;
 }
 
@@ -291,7 +439,7 @@ function renderNotice() {
 }
 
 function renderContent(path) {
-  if (state.loadingBootstrap) {
+  if (state.booting || state.loadingBootstrap) {
     return `
       <section class="page-shell">
         <div class="page-header">
@@ -361,7 +509,7 @@ function renderAppsPage() {
 
 function renderAppRow(app) {
   const isDeleting = state.deletingAppId === app.appId;
-  const deleteLabel = app.appId === COMMON_APP_ID ? "保留" : app.canDelete ? "可删除" : "需先清空配置";
+  const deleteLabel = app.canDelete ? "可删除" : "需先清空配置";
 
   return `
     <tr data-current="${app.appId === state.selectedAppId ? "true" : "false"}">
@@ -380,21 +528,15 @@ function renderAppRow(app) {
       <td class="align-right">
         <div class="row-actions">
           <button class="button button-secondary" type="button" data-action="open-config" data-app-id="${escapeHtml(app.appId)}">配置</button>
-          ${
-            app.appId === COMMON_APP_ID
-              ? `<button class="button button-secondary" type="button" data-link="${escapeHtml(MAIL_ROUTE)}">邮件</button>`
-              : `
-                <button
-                  class="button button-danger"
-                  type="button"
-                  data-action="delete-app"
-                  data-app-id="${escapeHtml(app.appId)}"
-                  ${!app.canDelete || isDeleting ? "disabled" : ""}
-                >
-                  ${isDeleting ? "删除中..." : "删除"}
-                </button>
-              `
-          }
+          <button
+            class="button button-danger"
+            type="button"
+            data-action="delete-app"
+            data-app-id="${escapeHtml(app.appId)}"
+            ${!app.canDelete || isDeleting ? "disabled" : ""}
+          >
+            ${isDeleting ? "删除中..." : "删除"}
+          </button>
         </div>
       </td>
     </tr>
@@ -402,11 +544,15 @@ function renderAppRow(app) {
 }
 
 function renderConfigPage() {
-  if (state.apps.length === 0 || !state.selectedAppId) {
+  if (!state.selectedAppId) {
     return renderNoAppState();
   }
 
   const app = selectedApp();
+  if (!app) {
+    return renderNoAppState();
+  }
+
   const updatedAt = state.configDocument?.updatedAt ? formatTimestamp(state.configDocument.updatedAt) : "未保存";
 
   return `
@@ -414,7 +560,7 @@ function renderConfigPage() {
       <header class="page-header">
         <div>
           <h1 class="page-title">配置</h1>
-          <p class="page-subtitle">${escapeHtml(app?.appName || "")} · ${escapeHtml(app?.appCode || "")}</p>
+          <p class="page-subtitle">${escapeHtml(app.appName)} · ${escapeHtml(app.appCode)}</p>
         </div>
         <div class="page-actions">
           <span class="meta-chip">${escapeHtml(updatedAt)}</span>
@@ -593,6 +739,15 @@ async function handleAction(target) {
   const action = target.dataset.action;
   const appId = target.dataset.appId;
 
+  if (action === "logout") {
+    clearNotice();
+    clearAdminSession();
+    state.loginError = "";
+    state.booting = false;
+    await navigate(LOGIN_ROUTE);
+    return;
+  }
+
   if (action === "open-config") {
     if (appId) {
       saveSelectedAppId(appId);
@@ -604,11 +759,9 @@ async function handleAction(target) {
   }
 
   if (action === "delete-app") {
-    if (!appId) {
-      return;
+    if (appId) {
+      await deleteApp(appId);
     }
-
-    await deleteApp(appId);
     return;
   }
 
@@ -660,6 +813,57 @@ async function handleAction(target) {
 }
 
 async function handleFormSubmit(form) {
+  if (form.dataset.form === "login") {
+    const formData = new FormData(form);
+    const username = String(formData.get("username") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
+    if (!username || !password) {
+      state.loginError = "请输入用户名和密码。";
+      await render();
+      return;
+    }
+
+    state.loginBusy = true;
+    state.loginError = "";
+    clearNotice();
+    await render();
+
+    try {
+      const authorization = createBasicAuthorization(username, password);
+      const payload = await requestJson("/api/v1/admin/bootstrap", {
+        headers: {
+          Authorization: authorization,
+        },
+      });
+
+      saveAdminSession({
+        username: payload.data.adminUser,
+        authorization,
+      });
+
+      state.adminUser = payload.data.adminUser;
+      state.apps = payload.data.apps ?? [];
+      state.booting = false;
+
+      if (!state.apps.some((item) => item.appId === state.selectedAppId)) {
+        const defaultApp = state.apps.find((item) => item.appId === runtimeConfig.defaultAppId);
+        saveSelectedAppId(defaultApp?.appId || state.apps[0]?.appId || "");
+      }
+
+      await syncRouteState(APPS_ROUTE);
+      await navigate(APPS_ROUTE);
+      return;
+    } catch (error) {
+      state.loginError = "用户名或密码错误。";
+    } finally {
+      state.loginBusy = false;
+    }
+
+    await render();
+    return;
+  }
+
   if (form.dataset.form === "create-app") {
     const formData = new FormData(form);
     const appId = String(formData.get("appId") ?? "").trim();
@@ -805,6 +1009,9 @@ async function deleteApp(appId) {
 
     const deletedCurrentApp = state.selectedAppId === appId;
     await loadBootstrap();
+    if (deletedCurrentApp) {
+      saveSelectedAppId(state.apps[0]?.appId || "");
+    }
     await syncRouteState(deletedCurrentApp ? APPS_ROUTE : currentPath());
     setNotice("success", "App 已删除。");
   } catch (error) {
@@ -817,7 +1024,7 @@ async function deleteApp(appId) {
 }
 
 async function handleAppSwitch(nextAppId) {
-  if (!nextAppId || nextAppId === state.selectedAppId || currentPath() === MAIL_ROUTE) {
+  if (!nextAppId || nextAppId === state.selectedAppId) {
     return;
   }
 
@@ -828,21 +1035,29 @@ async function handleAppSwitch(nextAppId) {
 }
 
 async function syncRouteState(path) {
+  if (!state.session) {
+    return;
+  }
+
+  if (path === LOGIN_ROUTE) {
+    return;
+  }
+
   if (path === MAIL_ROUTE) {
-    if (state.selectedAppId !== COMMON_APP_ID) {
-      saveSelectedAppId(COMMON_APP_ID);
-    }
     await loadEmailServiceConfig(false);
     return;
   }
 
   if (path === CONFIG_ROUTE) {
     await loadSelectedAppConfig(false);
-    return;
   }
 }
 
 async function loadBootstrap() {
+  if (!state.session) {
+    return;
+  }
+
   state.loadingBootstrap = true;
 
   try {
@@ -933,18 +1148,28 @@ function parseConfigText(rawText) {
   return parsed;
 }
 
-async function requestJson(path, { method = "GET", body } = {}) {
-  const headers = new Headers({
+async function requestJson(path, { method = "GET", body, headers = {} } = {}) {
+  const requestHeaders = new Headers({
     Accept: "application/json",
   });
 
+  Object.entries(headers).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      requestHeaders.set(key, value);
+    }
+  });
+
   if (body !== undefined) {
-    headers.set("Content-Type", "application/json");
+    requestHeaders.set("Content-Type", "application/json");
+  }
+
+  if (!requestHeaders.has("Authorization") && state.session?.authorization) {
+    requestHeaders.set("Authorization", state.session.authorization);
   }
 
   const response = await fetch(path, {
     method,
-    headers,
+    headers: requestHeaders,
     credentials: "include",
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -952,6 +1177,15 @@ async function requestJson(path, { method = "GET", body } = {}) {
   const payload = await parseResponsePayload(response);
 
   if (!response.ok) {
+    if (response.status === 401 && state.session) {
+      clearAdminSession();
+      state.booting = false;
+      state.loginError = "登录已失效，请重新登录。";
+      if (currentPath() !== LOGIN_ROUTE) {
+        window.history.replaceState({}, "", LOGIN_ROUTE);
+      }
+    }
+
     const error = new Error(payload?.message || `Request failed with status ${response.status}`);
     error.statusCode = response.status;
     error.code = payload?.code;
@@ -975,6 +1209,10 @@ async function parseResponsePayload(response) {
   };
 }
 
+function createBasicAuthorization(username, password) {
+  return `Basic ${btoa(`${username}:${password}`)}`;
+}
+
 function formatTimestamp(value) {
   if (!value) {
     return "—";
@@ -996,7 +1234,14 @@ function formatTimestamp(value) {
 
 function syncDocumentTitle(path) {
   const base = runtimeConfig.brandName || "Zook Admin";
-  const label = path === APPS_ROUTE ? "应用管理" : path === MAIL_ROUTE ? "邮件服务" : "配置管理";
+  const label =
+    path === LOGIN_ROUTE
+      ? "登录"
+      : path === APPS_ROUTE
+        ? "应用管理"
+        : path === MAIL_ROUTE
+          ? "邮件服务"
+          : "配置管理";
   document.title = `${label} | ${base}`;
 }
 

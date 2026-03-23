@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 
-test("auth service auto-joins users for AUTO apps and assigns the default role", () => {
-  const runtime = createApplication();
+test("auth service auto-joins users for AUTO apps and assigns the default role", async () => {
+  const runtime = await createApplication();
 
   const session = runtime.services.authService.login({
     appId: "app_a",
@@ -25,8 +25,8 @@ test("auth service auto-joins users for AUTO apps and assigns the default role",
   );
 });
 
-test("auth service rejects first-login into INVITE_ONLY apps", () => {
-  const runtime = createApplication();
+test("auth service rejects first-login into INVITE_ONLY apps", async () => {
+  const runtime = await createApplication();
 
   assert.throws(
     () =>
@@ -42,8 +42,8 @@ test("auth service rejects first-login into INVITE_ONLY apps", () => {
   );
 });
 
-test("auth service rotates refresh tokens and revokes them on logout", () => {
-  const runtime = createApplication();
+test("auth service rotates refresh tokens and revokes them on logout", async () => {
+  const runtime = await createApplication();
   const firstSession = runtime.services.authService.login({
     appId: "app_a",
     account: "alice@example.com",

@@ -1,4 +1,5 @@
 import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { AppConfigService } from "../../services/app-config.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
@@ -16,36 +17,26 @@ import type {
 const ADMIN_CONFIG_KEY = "admin.delivery_config";
 const EMPTY_CONFIG_TEMPLATE = {};
 const COMMON_APP_ID = "common";
-const COMMON_APP_RECORD: AppRecord = {
-  id: COMMON_APP_ID,
-  code: COMMON_APP_ID,
-  name: "Common",
-  status: "ACTIVE",
-  joinMode: "AUTO",
-  createdAt: "2026-03-20T00:00:00+08:00",
-};
 
 export class AdminConsoleService {
   constructor(
     private readonly database: InMemoryDatabase,
     private readonly appConfigService: AppConfigService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
+    private readonly managedStateStore: ManagedStateStore,
   ) {}
 
   getBootstrap(adminUser: string): AdminBootstrapResult {
-    const commonSummary = this.toSummary(COMMON_APP_RECORD);
-    const appSummaries = this.database.apps
-      .map((app) => this.toSummary(app))
-      .sort((left, right) => left.appName.localeCompare(right.appName, "zh-CN"));
-
     return {
       adminUser,
-      apps: [commonSummary, ...appSummaries],
+      apps: this.database.apps
+        .map((app) => this.toSummary(app))
+        .sort((left, right) => left.appName.localeCompare(right.appName, "zh-CN")),
     };
   }
 
   getConfig(appId: string): AdminConfigDocument {
-    const app = this.resolveManagedApp(appId);
+    const app = this.requireConfigApp(appId);
     const rawJson = this.readNormalizedConfig(app.id);
     const record = this.database.appConfigs.find(
       (item) => item.appId === app.id && item.configKey === ADMIN_CONFIG_KEY,
@@ -59,16 +50,17 @@ export class AdminConsoleService {
     };
   }
 
-  updateConfig(appId: string, rawJson: string): AdminConfigDocument {
-    const app = this.resolveManagedApp(appId);
+  async updateConfig(appId: string, rawJson: string): Promise<AdminConfigDocument> {
+    const app = this.requireConfigApp(appId);
     const normalized = this.normalizeConfig(rawJson);
 
     this.appConfigService.setValue(app.id, ADMIN_CONFIG_KEY, normalized);
+    await this.managedStateStore.save(this.database);
 
     return this.getConfig(app.id);
   }
 
-  createApp(appId: string, appName?: string): AdminAppSummary {
+  async createApp(appId: string, appName?: string): Promise<AdminAppSummary> {
     const normalizedId = appId.trim();
     if (!normalizedId) {
       badRequest("REQ_INVALID_BODY", "appId must be a non-empty string.");
@@ -94,11 +86,12 @@ export class AdminConsoleService {
     this.database.apps.push(record);
     this.createDefaultRoles(record.id);
     this.appConfigService.setValue(record.id, ADMIN_CONFIG_KEY, JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2));
+    await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
   }
 
-  deleteApp(appId: string): AdminDeleteAppResult {
+  async deleteApp(appId: string): Promise<AdminDeleteAppResult> {
     if (appId === COMMON_APP_ID) {
       conflict("ADMIN_APP_ID_RESERVED", "App ID common is reserved.");
     }
@@ -130,6 +123,7 @@ export class AdminConsoleService {
     this.database.analyticsEvents = this.database.analyticsEvents.filter((item) => item.appId !== app.id);
     this.database.files = this.database.files.filter((item) => item.appId !== app.id);
     this.appConfigService.deleteByApp(app.id);
+    await this.managedStateStore.save(this.database);
 
     return {
       deleted: true,
@@ -144,6 +138,14 @@ export class AdminConsoleService {
     }
 
     return app;
+  }
+
+  private requireConfigApp(appId: string): AppRecord {
+    if (appId === COMMON_APP_ID) {
+      throw new ApplicationError(404, "APP_NOT_FOUND", "App common does not have app-scoped config.");
+    }
+
+    return this.requireApp(appId);
   }
 
   private readNormalizedConfig(appId: string): string {
@@ -167,8 +169,10 @@ export class AdminConsoleService {
     return this.commonEmailConfigService.getDocument();
   }
 
-  updateEmailServiceConfig(input: unknown): AdminEmailServiceDocument {
-    return this.commonEmailConfigService.updateConfig(input);
+  async updateEmailServiceConfig(input: unknown): Promise<AdminEmailServiceDocument> {
+    const document = this.commonEmailConfigService.updateConfig(input);
+    await this.managedStateStore.save(this.database);
+    return document;
   }
 
   private normalizeConfig(rawJson: string): string {
@@ -196,15 +200,6 @@ export class AdminConsoleService {
       canDelete: this.isDeleteAllowed(app.id),
     };
   }
-
-  private resolveManagedApp(appId: string): AppRecord {
-    if (appId === COMMON_APP_ID) {
-      return COMMON_APP_RECORD;
-    }
-
-    return this.requireApp(appId);
-  }
-
   private createDefaultRoles(appId: string): void {
     const memberRole: RoleRecord = {
       id: randomId(`role_${appId}_member`),

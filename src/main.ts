@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createApplication } from "./app.module.ts";
+import { init } from "./infrastructure/runtime/init.ts";
 
 /**
  * readJsonBody keeps the transport adapter thin while still supporting the documented JSON APIs.
@@ -33,7 +33,7 @@ function getClientIp(headers: Record<string, string | string[] | undefined>, fal
 }
 
 const port = Number(process.env.PORT ?? 3100);
-const runtime = createApplication({
+const runtime = await init({
   serviceName: "api",
   emitLogs: true,
 });

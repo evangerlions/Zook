@@ -11,6 +11,7 @@
 5. 文件上传确认流程骨架。
 6. 通知入队与失败事件重投。
 7. API / Worker / Admin Web 三服务结构。
+8. Redis-backed `KVManager` 统一状态持久化。
 
 ## 文档入口
 
@@ -48,6 +49,13 @@ src/
 ├── app.module.ts
 ├── core/
 ├── infrastructure/
+│   ├── cache/
+│   ├── database/
+│   ├── files/
+│   ├── kv/
+│   ├── logging/
+│   ├── queue/
+│   └── runtime/
 ├── modules/
 ├── services/
 └── shared/
@@ -81,5 +89,6 @@ npm test
 
 默认 API 端口是 `3100`，也可以通过 `PORT` 环境变量覆盖。
 默认 Admin Web 端口是 `3110`。
+运行时会强校验 `REDIS_URL` 和 `DATABASE_URL`，依赖不可用时直接启动失败。
 
 健康检查路径为 `/api/health`。
