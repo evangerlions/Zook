@@ -15,6 +15,9 @@ export type ClientType = "web" | "app";
 export type EventName = "page_view" | "page_leave" | "page_heartbeat";
 export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
+export type LlmRoutingStrategy = "auto" | "fixed";
+export type LlmMetricsRange = "24h" | "7d" | "30d";
+export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ErrorCode =
   | "ADMIN_BASIC_AUTH_REQUIRED"
   | "ADMIN_CONFIG_INVALID_JSON"
@@ -22,6 +25,8 @@ export type ErrorCode =
   | "ADMIN_APP_ID_RESERVED"
   | "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG"
   | "ADMIN_EMAIL_SERVICE_INVALID"
+  | "ADMIN_LLM_SERVICE_INVALID"
+  | "ADMIN_RATE_LIMITED"
   | "AUTH_INVALID_CREDENTIAL"
   | "AUTH_BEARER_REQUIRED"
   | "AUTH_INVALID_TOKEN"
@@ -47,6 +52,8 @@ export type ErrorCode =
   | "EMAIL_SERVICE_NOT_CONFIGURED"
   | "EMAIL_PROVIDER_REQUEST_FAILED"
   | "LLM_MODEL_NOT_FOUND"
+  | "LLM_SERVICE_NOT_CONFIGURED"
+  | "LLM_ROUTE_NOT_AVAILABLE"
   | "LLM_PROVIDER_REQUEST_FAILED"
   | "LLM_PROVIDER_RESPONSE_INVALID"
   | "REQ_INVALID_BODY"
@@ -339,6 +346,154 @@ export interface AdminEmailServiceDocument {
   config: EmailServiceConfig;
   resolvedRegion: TencentSesRegion;
   updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface LlmProviderConfig {
+  key: string;
+  label: string;
+  enabled: boolean;
+  baseUrl: string;
+  apiKey: string;
+  timeoutMs: number;
+}
+
+export interface LlmModelRouteConfig {
+  provider: string;
+  providerModel: string;
+  enabled: boolean;
+  weight: number;
+}
+
+export interface LlmModelConfig {
+  key: string;
+  label: string;
+  strategy: LlmRoutingStrategy;
+  routes: LlmModelRouteConfig[];
+}
+
+export interface LlmServiceConfig {
+  enabled: boolean;
+  defaultModelKey: string;
+  providers: LlmProviderConfig[];
+  models: LlmModelConfig[];
+}
+
+export interface LlmRouteRuntimeStatus {
+  provider: string;
+  providerModel: string;
+  enabled: boolean;
+  weight: number;
+  totalCalls: number;
+  sampleSize: number;
+  successRate: number;
+  healthScore: number;
+  effectiveProbability?: number;
+  lastErrorAt?: string;
+}
+
+export interface LlmModelRuntimeStatus {
+  key: string;
+  strategy: LlmRoutingStrategy;
+  routes: LlmRouteRuntimeStatus[];
+}
+
+export interface LlmRuntimeSnapshot {
+  generatedAt: string;
+  models: LlmModelRuntimeStatus[];
+}
+
+export interface AdminLlmServiceDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: LlmServiceConfig;
+  runtime: LlmRuntimeSnapshot;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface LlmMetricsSummary {
+  requestCount: number;
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  avgFirstByteLatencyMs: number;
+  avgTotalLatencyMs: number;
+  p95FirstByteLatencyMs: number;
+  p95TotalLatencyMs: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface LlmHourlySeriesItem extends LlmMetricsSummary {
+  hour: string;
+}
+
+export interface LlmModelMetricsGroup {
+  modelKey: string;
+  label: string;
+  summary: LlmMetricsSummary;
+  items: LlmHourlySeriesItem[];
+}
+
+export interface LlmRouteMetricsGroup {
+  modelKey: string;
+  provider: string;
+  providerModel: string;
+  summary: LlmMetricsSummary;
+  items: LlmHourlySeriesItem[];
+}
+
+export interface AdminLlmMetricsDocument {
+  timezone: string;
+  range: LlmMetricsRange;
+  summary: LlmMetricsSummary;
+  models: LlmModelMetricsGroup[];
+}
+
+export interface AdminLlmModelMetricsDocument {
+  timezone: string;
+  range: LlmMetricsRange;
+  modelKey: string;
+  label: string;
+  summary: LlmMetricsSummary;
+  routes: LlmRouteMetricsGroup[];
+}
+
+export interface AdminLlmSmokeTestSummary {
+  totalCount: number;
+  attemptedCount: number;
+  successCount: number;
+  failureCount: number;
+  skippedCount: number;
+  successRate: number;
+}
+
+export interface AdminLlmSmokeTestItem {
+  modelKey: string;
+  modelLabel: string;
+  provider: string;
+  providerLabel: string;
+  providerModel: string;
+  configured: boolean;
+  status: LlmSmokeTestStatus;
+  latencyMs?: number;
+  message: string;
+  responsePreview?: string;
+}
+
+export interface AdminLlmSmokeTestDocument {
+  executedAt: string;
+  cooldownSeconds: number;
+  summary: AdminLlmSmokeTestSummary;
+  items: AdminLlmSmokeTestItem[];
 }
 
 export interface AdminDeleteAppResult {

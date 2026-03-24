@@ -29,19 +29,50 @@ const EMAIL_SERVICE_SENSITIVE_FIELDS: SensitiveFieldRules<EmailServiceConfig> = 
 export class CommonEmailConfigService {
   constructor(private readonly appConfigService: AppConfigService) {}
 
-  getDocument(): AdminEmailServiceDocument {
-    const config = this.getStoredConfig();
-    return this.toDocument(this.maskSensitiveConfig(config));
+  async getDocument(revision?: number): Promise<AdminEmailServiceDocument> {
+    const revisions = await this.appConfigService.listRevisions(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
+    const latestRevision = revisions.at(-1)?.revision;
+    const record = revision
+      ? await this.appConfigService.getRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY, revision)
+      : await this.appConfigService.getLatestRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
+
+    if (revision && !record) {
+      throw new ApplicationError(404, "REQ_INVALID_QUERY", `Email service revision ${revision} was not found.`);
+    }
+
+    const config = record ? this.parseConfig(record.content) : this.getStoredConfig();
+    return this.toDocument(this.maskSensitiveConfig(config), {
+      updatedAt: record?.createdAt ?? this.getUpdatedAt(),
+      revision: record?.revision,
+      desc: record?.desc,
+      isLatest: !record || record.revision === latestRevision,
+      revisions: [...revisions].reverse(),
+    });
   }
 
-  async updateConfig(input: unknown): Promise<AdminEmailServiceDocument> {
+  async updateConfig(input: unknown, desc?: string): Promise<AdminEmailServiceDocument> {
     const existingConfig = this.getStoredConfig();
     const normalized = this.validateInput(input, existingConfig);
     await this.appConfigService.setValue(
       COMMON_APP_ID,
       EMAIL_SERVICE_CONFIG_KEY,
       JSON.stringify(normalized, null, 2),
-      "common-email-service-update",
+      desc?.trim() || "common-email-service-update",
+    );
+    return this.getDocument();
+  }
+
+  async restoreConfig(revision: number): Promise<AdminEmailServiceDocument> {
+    const existing = await this.appConfigService.getRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY, revision);
+    if (!existing) {
+      throw new ApplicationError(404, "REQ_INVALID_QUERY", `Email service revision ${revision} was not found.`);
+    }
+
+    await this.appConfigService.restoreValue(
+      COMMON_APP_ID,
+      EMAIL_SERVICE_CONFIG_KEY,
+      revision,
+      `恢复到版本 R${revision}`,
     );
     return this.getDocument();
   }
@@ -76,13 +107,26 @@ export class CommonEmailConfigService {
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
-  private toDocument(config: EmailServiceConfig): AdminEmailServiceDocument {
+  private toDocument(
+    config: EmailServiceConfig,
+    options: {
+      updatedAt?: string;
+      revision?: number;
+      desc?: string;
+      isLatest: boolean;
+      revisions: AdminEmailServiceDocument["revisions"];
+    },
+  ): AdminEmailServiceDocument {
     return {
       app: COMMON_APP_SUMMARY,
       configKey: EMAIL_SERVICE_CONFIG_KEY,
       config,
       resolvedRegion: DEFAULT_EMAIL_REGION,
-      updatedAt: this.getUpdatedAt(),
+      updatedAt: options.updatedAt,
+      revision: options.revision,
+      desc: options.desc,
+      isLatest: options.isLatest,
+      revisions: options.revisions,
     };
   }
 
@@ -172,6 +216,13 @@ export class CommonEmailConfigService {
 
       if (!address) {
         badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Sender address is required.");
+      }
+
+      if (!this.isValidSenderAddress(address)) {
+        badRequest(
+          "ADMIN_EMAIL_SERVICE_INVALID",
+          `Sender address format is invalid: ${address}`,
+        );
       }
 
       return {
@@ -330,5 +381,12 @@ export class CommonEmailConfigService {
 
   private maskSensitiveConfig(config: EmailServiceConfig): EmailServiceConfig {
     return maskSensitiveFields(config, EMAIL_SERVICE_SENSITIVE_FIELDS);
+  }
+
+  private isValidSenderAddress(value: string): boolean {
+    return (
+      /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value) ||
+      /^[^<>]+<\s*[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+\s*>$/.test(value)
+    );
   }
 }

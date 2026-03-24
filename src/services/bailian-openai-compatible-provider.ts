@@ -59,11 +59,10 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
   }
 
   async complete(request: ResolvedLLMCompletionRequest): Promise<LLMCompletionResult> {
-    const response = await this.fetchImplementation(this.buildUrl(), {
-      method: "POST",
-      headers: this.buildHeaders(),
-      body: JSON.stringify(this.buildRequestBody(request)),
-    });
+    const response = await this.fetchImplementation(
+      this.buildUrl(request),
+      this.buildRequestInit(request, this.buildRequestBody(request)),
+    );
     const payload = await this.readJsonPayload(response, !response.ok);
 
     if (!response.ok || payload.error) {
@@ -81,7 +80,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     }
 
     return {
-      provider: "bailian",
+      provider: request.model.provider,
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       text,
@@ -93,10 +92,9 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
 
   async *stream(request: ResolvedLLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
     const streamOptions = this.getProviderStreamOptions(request.providerOptions);
-    const response = await this.fetchImplementation(this.buildUrl(), {
-      method: "POST",
-      headers: this.buildHeaders(),
-      body: JSON.stringify({
+    const response = await this.fetchImplementation(
+      this.buildUrl(request),
+      this.buildRequestInit(request, {
         ...request.providerOptions,
         model: request.model.providerModel,
         messages: request.messages,
@@ -108,7 +106,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
           include_usage: true,
         },
       }),
-    });
+    );
 
     if (!response.ok) {
       const payload = await this.readJsonPayload(response, true);
@@ -184,14 +182,28 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     this.throwProviderResponseInvalid("Streaming response ended before [DONE].");
   }
 
-  private buildUrl(): string {
-    return `${this.baseUrl}/chat/completions`;
+  private buildUrl(request: ResolvedLLMCompletionRequest): string {
+    const baseUrl = normalizeBaseUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl);
+    return `${baseUrl}/chat/completions`;
   }
 
-  private buildHeaders(): Record<string, string> {
+  private buildHeaders(request: ResolvedLLMCompletionRequest): Record<string, string> {
+    const apiKey = request.model.providerConfig?.apiKey ?? this.apiKey;
     return {
-      Authorization: `Bearer ${this.apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+    };
+  }
+
+  private buildRequestInit(request: ResolvedLLMCompletionRequest, body: Record<string, unknown>): RequestInit {
+    const timeoutMs = request.model.providerConfig?.timeoutMs ?? 0;
+    return {
+      method: "POST",
+      headers: this.buildHeaders(request),
+      body: JSON.stringify(body),
+      ...(timeoutMs > 0 && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+        ? { signal: AbortSignal.timeout(timeoutMs) }
+        : {}),
     };
   }
 
