@@ -491,16 +491,7 @@ function renderConsole(path) {
 
             <div class="topbar-right">
               ${renderWorkspaceControl(path)}
-
-              <details class="user-menu">
-                <summary class="user-chip">
-                  <span class="user-avatar" aria-hidden="true">${escapeHtml((state.adminUser || "A").slice(0, 1).toUpperCase())}</span>
-                  <strong>${escapeHtml(state.adminUser || "—")}</strong>
-                </summary>
-                <div class="user-menu-panel">
-                  <button class="menu-button" type="button" data-action="logout">退出登录</button>
-                </div>
-              </details>
+              ${renderUserMenu()}
             </div>
           </div>
         </header>
@@ -514,6 +505,29 @@ function renderConsole(path) {
     ${renderSaveDialog()}
     ${renderLlmDialog()}
     ${renderToastStack()}
+  `;
+}
+
+function renderUserMenu() {
+  if (!state.session || !state.adminUser) {
+    return `
+      <button class="user-chip user-chip-button" type="button" data-action="goto-login">
+        <span class="user-avatar" aria-hidden="true">A</span>
+        <strong>去登录</strong>
+      </button>
+    `;
+  }
+
+  return `
+    <details class="user-menu">
+      <summary class="user-chip">
+        <span class="user-avatar" aria-hidden="true">${escapeHtml((state.adminUser || "A").slice(0, 1).toUpperCase())}</span>
+        <strong>${escapeHtml(state.adminUser || "—")}</strong>
+      </summary>
+      <div class="user-menu-panel">
+        <button class="menu-button" type="button" data-action="logout">退出登录</button>
+      </div>
+    </details>
   `;
 }
 
@@ -2031,6 +2045,12 @@ async function handleAction(target) {
     state.loginError = "";
     state.booting = false;
     await navigate(LOGIN_ROUTE);
+    return;
+  }
+
+  if (action === "goto-login") {
+    redirectToLogin("");
+    await render();
     return;
   }
 
@@ -3969,8 +3989,9 @@ async function requestJson(path, { method = "GET", body, headers = {} } = {}) {
   const payload = await parseResponsePayload(response);
 
   if (!response.ok) {
-    if (response.status === 401 && state.session) {
-      redirectToLogin("登录已失效，请重新登录。");
+    if (shouldRedirectToLogin(response, payload)) {
+      redirectToLogin(payload?.message || "登录已失效，请重新登录。");
+      await render();
     }
 
     const error = new Error(payload?.message || `Request failed with status ${response.status}`);
@@ -3980,6 +4001,19 @@ async function requestJson(path, { method = "GET", body, headers = {} } = {}) {
   }
 
   return payload;
+}
+
+function shouldRedirectToLogin(response, payload) {
+  if (response.status === 401) {
+    return true;
+  }
+
+  if (payload?.code === "ADMIN_BASIC_AUTH_REQUIRED") {
+    return true;
+  }
+
+  const message = String(payload?.message ?? "").toLowerCase();
+  return message.includes("admin basic authentication is required");
 }
 
 async function parseResponsePayload(response) {
