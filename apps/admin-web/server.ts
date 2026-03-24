@@ -11,7 +11,6 @@ interface AdminServerOptions {
 }
 
 const STATIC_FILE_MAP = new Map<string, string>([
-  ["/", "index.html"],
   ["/app.js", "app.js"],
   ["/styles.css", "styles.css"],
 ]);
@@ -284,6 +283,11 @@ async function handleRequest(
 
   if (versionedStaticFile) {
     await serveVersionedStaticFile(response, versionedStaticFile);
+    return;
+  }
+
+  if (pathname === "/" || pathname === "/index.html") {
+    await serveIndex(response, options);
     return;
   }
 
