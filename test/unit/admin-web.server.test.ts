@@ -62,6 +62,17 @@ test("admin web serves login route and runtime config", async (t) => {
   }
 
   try {
+    const homeResponse = await fetch(`${admin.baseUrl}/`);
+    const homeHtml = await homeResponse.text();
+
+    assert.equal(homeResponse.status, 200);
+    assert.match(homeHtml, /_admin\/runtime-config\.test-build-001\.js/);
+    assert.match(homeHtml, /assets\/styles\.test-build-001\.css/);
+    assert.match(homeHtml, /assets\/app\.test-build-001\.js/);
+    assert.doesNotMatch(homeHtml, /__ADMIN_STYLES_URL__/);
+    assert.doesNotMatch(homeHtml, /__ADMIN_RUNTIME_CONFIG_URL__/);
+    assert.doesNotMatch(homeHtml, /__ADMIN_APP_SCRIPT_URL__/);
+
     const loginResponse = await fetch(`${admin.baseUrl}/login`);
     const loginHtml = await loginResponse.text();
 
