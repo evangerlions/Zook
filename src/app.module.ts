@@ -37,6 +37,7 @@ import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { PasswordManager } from "./services/password-manager.ts";
+import { RefreshTokenStore } from "./services/refresh-token-store.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
 import type {
@@ -369,13 +370,13 @@ export class BackendApplication {
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
   }
 
-  private handleLogin(request: HttpRequest): HttpResponse<unknown> {
+  private async handleLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
     const account = this.validationPipe.requireString(body, "account");
     const password = this.validationPipe.requireString(body, "password");
     const clientType = this.getClientType(body);
-    const session = this.authService.login({ appId, account, password });
+    const session = await this.authService.login({ appId, account, password });
 
     this.auditInterceptor.record({
       appId: session.appId,
@@ -436,7 +437,7 @@ export class BackendApplication {
     }
   }
 
-  private handleRegister(request: HttpRequest): HttpResponse<unknown> {
+  private async handleRegister(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
     const email = this.validationPipe.requireString(body, "email");
@@ -446,7 +447,7 @@ export class BackendApplication {
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
-      const session = this.authService.register({
+      const session = await this.authService.register({
         appId,
         email,
         password,
@@ -519,14 +520,14 @@ export class BackendApplication {
     }
   }
 
-  private handleConfirmQrLogin(request: HttpRequest, loginId: string): HttpResponse<unknown> {
+  private async handleConfirmQrLogin(request: HttpRequest, loginId: string): Promise<HttpResponse<unknown>> {
     const auth = this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
     const scanToken = this.validationPipe.requireString(body, "scanToken");
 
     try {
-      const result = this.qrLoginService.confirm({
+      const result = await this.qrLoginService.confirm({
         appId,
         loginId,
         scanToken,
@@ -611,10 +612,10 @@ export class BackendApplication {
     }
   }
 
-  private handleRefresh(request: HttpRequest): HttpResponse<unknown> {
+  private async handleRefresh(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const clientType = this.getClientType(body);
-    const session = this.authService.refresh({
+    const session = await this.authService.refresh({
       appId: this.validationPipe.optionalString(body, "appId"),
       refreshToken: this.validationPipe.optionalString(body, "refreshToken"),
       cookieRefreshToken: request.cookies?.refreshToken,
@@ -627,14 +628,14 @@ export class BackendApplication {
     );
   }
 
-  private handleLogout(request: HttpRequest): HttpResponse<unknown> {
+  private async handleLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
     const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
     const scope = body.scope === "all" ? "all" : "current";
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
-    const revoked = this.authService.logout(
+    const revoked = await this.authService.logout(
       {
         appId: requestedAppId,
         scope,
@@ -1262,6 +1263,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
 
   const appConfigService = new AppConfigService(database, cache, kvManager);
   const passwordManager = new PasswordManager(kvManager);
+  const refreshTokenStore = new RefreshTokenStore(kvManager);
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService);
@@ -1282,6 +1284,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appRegistryService,
     passwordHasher,
     tokenService,
+    refreshTokenStore,
     registrationEmailSender,
     options.registrationCodeGenerator,
   );
@@ -1304,6 +1307,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmHealthService,
     llmMetricsService,
     llmSmokeTestService,
+    refreshTokenStore,
     managedStateStore,
   );
   const rbacService = new RbacService(database);
@@ -1363,6 +1367,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       appConfigService,
       kvManager,
       passwordManager,
+      refreshTokenStore,
       commonPasswordConfigService,
       commonEmailConfigService,
       commonLlmConfigService,

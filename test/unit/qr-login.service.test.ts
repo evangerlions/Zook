@@ -99,7 +99,7 @@ test("qr login rejects repeated confirmation with the same QR code", async () =>
   const created = runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
   const scanToken = extractScanToken(created.qrContent);
 
-  const first = runtime.services.qrLoginService.confirm(
+  const first = await runtime.services.qrLoginService.confirm(
     {
       appId: "app_a",
       loginId: created.loginId,
@@ -110,7 +110,7 @@ test("qr login rejects repeated confirmation with the same QR code", async () =>
   );
   assert.equal(first.confirmed, true);
 
-  assert.throws(
+  await assert.rejects(
     () =>
       runtime.services.qrLoginService.confirm(
         {
@@ -134,7 +134,7 @@ test("qr login session expires before mobile confirmation", async () => {
   const created = runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
   const scanToken = extractScanToken(created.qrContent);
 
-  assert.throws(
+  await assert.rejects(
     () =>
       runtime.services.qrLoginService.confirm(
         {

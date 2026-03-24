@@ -221,7 +221,7 @@ test("register rejects expired or reused verification codes", async () => {
     baseTime,
   );
 
-  assert.throws(
+  await assert.rejects(
     () =>
       runtime.services.authService.register(
         {
@@ -255,7 +255,7 @@ test("register rejects expired or reused verification codes", async () => {
     issueTime,
   );
 
-  const session = secondRuntime.services.authService.register(
+  const session = await secondRuntime.services.authService.register(
     {
       appId: "app_a",
       email: "single-use@example.com",
@@ -267,7 +267,7 @@ test("register rejects expired or reused verification codes", async () => {
   );
   assert.ok(session.accessToken);
 
-  assert.throws(
+  await assert.rejects(
     () =>
       secondRuntime.services.authService.register(
         {

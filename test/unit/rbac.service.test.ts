@@ -11,7 +11,7 @@ test("rbac service grants admin permissions through app-scoped roles", async () 
 
 test("rbac service keeps member permissions narrower than admin permissions", async () => {
   const runtime = await createApplication();
-  runtime.services.authService.login({
+  await runtime.services.authService.login({
     appId: "app_a",
     account: "bob@example.com",
     password: "Password1234",
