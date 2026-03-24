@@ -910,6 +910,9 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
   assert.equal(firstResponse.body.data.summary.totalCount, 1);
   assert.equal(firstResponse.body.data.summary.failureCount, 1);
   assert.equal(firstResponse.body.data.items[0]?.status, "failed");
+  assert.equal(firstResponse.body.data.items[0]?.details.request?.provider, "volcengine");
+  assert.equal(firstResponse.body.data.items[0]?.details.request?.providerModel, "kimi-2.5");
+  assert.equal(firstResponse.body.data.items[0]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
 
   const rateLimitedResponse = await runtime.app.handle({
     method: "POST",

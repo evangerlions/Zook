@@ -908,6 +908,16 @@ select {
   margin-top: 4px;
 }
 
+.smoke-inline-tip {
+  padding: 12px 14px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: var(--radius-md);
+  background: rgba(37, 99, 235, 0.04);
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
 .llm-model-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1043,6 +1053,10 @@ select {
   margin-top: 2px;
 }
 
+.smoke-table-control-cell {
+  width: 72px;
+}
+
 .smoke-table td {
   vertical-align: top;
 }
@@ -1057,6 +1071,37 @@ select {
 
 .smoke-table tr[data-smoke-status="skipped"] {
   background: rgba(148, 163, 184, 0.08);
+}
+
+.smoke-expand-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.smoke-expand-button:hover,
+.smoke-expand-button:focus-visible {
+  border-color: rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.06);
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.smoke-expand-button[aria-expanded="true"] {
+  border-color: rgba(37, 99, 235, 0.32);
+  background: rgba(37, 99, 235, 0.09);
+  color: #1d4ed8;
 }
 
 .smoke-status-badge {
@@ -1093,10 +1138,94 @@ select {
   line-height: 1.55;
 }
 
+.smoke-table-summary {
+  min-width: 300px;
+}
+
+.smoke-summary-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.smoke-summary-cell strong {
+  font-size: 0.94rem;
+  color: var(--text);
+}
+
+.smoke-summary-cell p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.55;
+}
+
 .smoke-table-preview {
   max-width: 280px;
   word-break: break-word;
   color: var(--text);
+}
+
+.smoke-details-row td {
+  padding: 0;
+  border-top: none;
+  background: rgba(247, 250, 252, 0.96);
+}
+
+.smoke-details-shell {
+  padding: 18px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.smoke-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.smoke-detail-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.03);
+}
+
+.smoke-detail-card-header {
+  display: grid;
+  gap: 6px;
+}
+
+.smoke-detail-card-header h4 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: var(--text);
+}
+
+.smoke-detail-card-header p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.smoke-detail-card .json-preview-highlighted {
+  min-height: 180px;
+  margin: 0;
+  background: rgba(248, 250, 252, 0.96);
+}
+
+.smoke-detail-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 252, 0.7);
+  color: var(--text-soft);
+  text-align: center;
+  line-height: 1.6;
 }
 
 .mail-row-grid-sender {
