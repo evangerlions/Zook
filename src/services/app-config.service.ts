@@ -68,9 +68,10 @@ export class AppConfigService {
     appId: string,
     configKey: string,
     revision: number,
+    desc?: string,
   ): Promise<ConfigRevisionRecord<string>> {
     const revisionManager = this.getRevisionManager(appId, configKey);
-    const restored = await revisionManager.restore(revision);
+    const restored = await revisionManager.restore(revision, desc);
     this.upsertRecord(appId, configKey, restored.content, restored.createdAt);
     return restored;
   }

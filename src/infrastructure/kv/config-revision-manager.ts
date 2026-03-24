@@ -89,13 +89,13 @@ export class ConfigRevisionManager<T = string> {
     return record;
   }
 
-  async restore(revision: number): Promise<ConfigRevisionRecord<T>> {
+  async restore(revision: number, desc?: string): Promise<ConfigRevisionRecord<T>> {
     const target = await this.getVersion(revision);
     if (!target) {
       throw new Error(`Config revision ${revision} was not found.`);
     }
 
-    return this.update(target.content, `${this.descKey}:${revision}`);
+    return this.update(target.content, desc ?? `${this.descKey}:${revision}`);
   }
 
   async ensureInitial(content: T, desc = "", createdAt?: string): Promise<ConfigRevisionRecord<T>> {

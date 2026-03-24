@@ -58,6 +58,7 @@ test("admin config API saves normalized JSON back to the app config store", asyn
   const headers = {
     authorization: createAdminAuthHeader(),
   };
+  const now = new Date();
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -162,7 +163,7 @@ test("admin config API exposes revision history and can restore a historical ver
   assert.equal(restoreResponse.statusCode, 200);
   assert.equal(restoreResponse.body.data.revision, 4);
   assert.equal(restoreResponse.body.data.isLatest, true);
-  assert.equal(restoreResponse.body.data.desc, "restore:1");
+  assert.equal(restoreResponse.body.data.desc, "恢复到版本 R1");
   assert.match(restoreResponse.body.data.rawJson, /featureFlags/);
 });
 
@@ -269,6 +270,7 @@ test("admin email service API stores common config and exposes resolved region",
   const headers = {
     authorization: createAdminAuthHeader(),
   };
+  const now = new Date();
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -278,6 +280,7 @@ test("admin email service API stores common config and exposes resolved region",
       enabled: true,
       secretId: "sid-demo",
       secretKey: "sk-demo",
+      desc: "初始化邮件服务",
       senders: [
         {
           id: "default",
@@ -307,6 +310,10 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal(updateResponse.body.data.app.appId, "common");
   assert.equal(updateResponse.body.data.resolvedRegion, "ap-guangzhou");
   assert.equal(updateResponse.body.data.config.enabled, true);
+  assert.equal(updateResponse.body.data.revision, 1);
+  assert.equal(updateResponse.body.data.isLatest, true);
+  assert.equal(updateResponse.body.data.desc, "初始化邮件服务");
+  assert.equal(updateResponse.body.data.revisions.length, 1);
   assert.equal(updateResponse.body.data.config.senders[0]?.id, "default");
   assert.equal(updateResponse.body.data.config.senders[1]?.address, "Support <support@example.com>");
   assert.equal(updateResponse.body.data.config.templates[0]?.templateId, 100001);
@@ -331,6 +338,7 @@ test("admin email service API stores common config and exposes resolved region",
     headers,
     body: {
       ...fetchResponse.body.data.config,
+      desc: "补充中文模板",
       templates: [
         ...fetchResponse.body.data.config.templates,
         {
@@ -343,6 +351,12 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(maskedUpdateResponse.statusCode, 200);
+  assert.equal(maskedUpdateResponse.body.data.revision, 2);
+  assert.equal(maskedUpdateResponse.body.data.desc, "补充中文模板");
+  assert.deepEqual(
+    maskedUpdateResponse.body.data.revisions.map((item) => item.revision),
+    [2, 1],
+  );
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
   assert.equal(
@@ -352,8 +366,317 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("en-US").template.name, "Verification Code");
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("en-US").template.templateId, 100002);
   assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW").template.templateId, 100003);
+
+  const revisionOneResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/email-service/revisions/1",
+    headers,
+  });
+
+  assert.equal(revisionOneResponse.statusCode, 200);
+  assert.equal(revisionOneResponse.body.data.revision, 1);
+  assert.equal(revisionOneResponse.body.data.isLatest, false);
+  assert.equal(revisionOneResponse.body.data.config.templates.length, 2);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/email-service/revisions/1/restore",
+    headers,
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.revision, 3);
+  assert.equal(restoreResponse.body.data.isLatest, true);
+  assert.equal(restoreResponse.body.data.desc, "恢复到版本 R1");
+  assert.equal(restoreResponse.body.data.config.templates.length, 2);
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.email_service.update" && item.appId === "common"),
+  );
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.email_service.restore" && item.appId === "common"),
+  );
+});
+
+test("admin email service API rejects invalid sender address format", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const response = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      secretId: "sid-demo",
+      secretKey: "sk-demo",
+      senders: [
+        {
+          id: "default",
+          address: "not-an-email",
+        },
+      ],
+      templates: [
+        {
+          locale: "zh-CN",
+          templateId: 100001,
+          name: "验证码",
+        },
+      ],
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.match(response.body.message, /Sender address format is invalid/);
+});
+
+test("admin llm service API stores versioned common config and exposes metrics", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+  const now = new Date();
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/llm-service",
+    headers,
+    body: {
+      enabled: true,
+      defaultModelKey: "kimi2.5",
+      desc: "初始化 LLM 服务",
+      providers: [
+        {
+          key: "bailian",
+          label: "阿里云百炼",
+          enabled: true,
+          baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          apiKey: "mock-bailian-api-key",
+          timeoutMs: 30000,
+        },
+        {
+          key: "volcengine",
+          label: "火山引擎",
+          enabled: true,
+          baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+          apiKey: "mock-volcengine-api-key",
+          timeoutMs: 30000,
+        },
+      ],
+      models: [
+        {
+          key: "kimi2.5",
+          label: "Kimi 2.5",
+          strategy: "auto",
+          routes: [
+            {
+              provider: "bailian",
+              providerModel: "kimi/kimi-k2.5",
+              enabled: true,
+              weight: 80,
+            },
+            {
+              provider: "volcengine",
+              providerModel: "kimi-2.5",
+              enabled: true,
+              weight: 20,
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.revision, 1);
+  assert.equal(updateResponse.body.data.config.providers[0]?.apiKey, "mock****");
+  assert.equal(updateResponse.body.data.runtime.models[0]?.routes.length, 2);
+
+  await runtime.services.llmMetricsService.recordCall({
+    modelKey: "kimi2.5",
+    provider: "bailian",
+    providerModel: "kimi/kimi-k2.5",
+    ok: true,
+    firstByteLatencyMs: 120,
+    totalLatencyMs: 500,
+    usage: {
+      promptTokens: 10,
+      completionTokens: 5,
+      totalTokens: 15,
+    },
+    occurredAt: now,
+  });
+  await runtime.services.llmMetricsService.recordCall({
+    modelKey: "kimi2.5",
+    provider: "volcengine",
+    providerModel: "kimi-2.5",
+    ok: false,
+    firstByteLatencyMs: 300,
+    totalLatencyMs: 900,
+    occurredAt: now,
+  });
+
+  const metricsResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/llm-service/metrics",
+    headers,
+    query: {
+      range: "24h",
+    },
+  });
+
+  assert.equal(metricsResponse.statusCode, 200);
+  assert.equal(metricsResponse.body.data.summary.requestCount, 2);
+  assert.equal(metricsResponse.body.data.summary.successRate, 50);
+  assert.equal(metricsResponse.body.data.models[0]?.modelKey, "kimi2.5");
+
+  const detailResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/llm-service/metrics/models/kimi2.5",
+    headers,
+    query: {
+      range: "24h",
+    },
+  });
+
+  assert.equal(detailResponse.statusCode, 200);
+  assert.equal(detailResponse.body.data.routes.length, 2);
+  assert.equal(detailResponse.body.data.routes[0]?.provider, "bailian");
+
+  const revisionResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/llm-service/revisions/1",
+    headers,
+  });
+
+  assert.equal(revisionResponse.statusCode, 200);
+  assert.equal(revisionResponse.body.data.isLatest, true);
+
+  const secondUpdate = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/llm-service",
+    headers,
+    body: {
+      ...updateResponse.body.data.config,
+      desc: "切换到固定路由",
+      models: [
+        {
+          ...updateResponse.body.data.config.models[0],
+          strategy: "fixed",
+        },
+      ],
+    },
+  });
+
+  assert.equal(secondUpdate.statusCode, 200);
+  assert.equal(secondUpdate.body.data.revision, 2);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/revisions/1/restore",
+    headers,
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.revision, 3);
+  assert.equal(restoreResponse.body.data.config.models[0]?.strategy, "auto");
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.update" && item.appId === "common"),
+  );
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.restore" && item.appId === "common"),
+  );
+});
+
+test("admin llm smoke test API requires admin auth and enforces global cooldown", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/llm-service",
+    headers,
+    body: {
+      enabled: true,
+      defaultModelKey: "kimi2.5",
+      providers: [
+        {
+          key: "volcengine",
+          label: "火山引擎",
+          enabled: true,
+          baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+          apiKey: "mock-volcengine-api-key",
+          timeoutMs: 30000,
+        },
+      ],
+      models: [
+        {
+          key: "kimi2.5",
+          label: "Kimi 2.5",
+          strategy: "fixed",
+          routes: [
+            {
+              provider: "volcengine",
+              providerModel: "kimi-2.5",
+              enabled: true,
+              weight: 100,
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  const unauthorizedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/smoke-test",
+    headers: {},
+  });
+
+  assert.equal(unauthorizedResponse.statusCode, 401);
+  assert.equal(unauthorizedResponse.body.code, "ADMIN_BASIC_AUTH_REQUIRED");
+
+  const firstResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/smoke-test",
+    headers,
+  });
+
+  assert.equal(firstResponse.statusCode, 200);
+  assert.equal(firstResponse.body.data.summary.totalCount, 1);
+  assert.equal(firstResponse.body.data.summary.failureCount, 1);
+  assert.equal(firstResponse.body.data.items[0]?.status, "failed");
+
+  const rateLimitedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/smoke-test",
+    headers,
+  });
+
+  assert.equal(rateLimitedResponse.statusCode, 429);
+  assert.equal(rateLimitedResponse.body.code, "ADMIN_RATE_LIMITED");
+  assert.match(rateLimitedResponse.body.message, /10 秒内只能触发一次/);
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.smoke_test" && item.appId === "common"),
   );
 });
 

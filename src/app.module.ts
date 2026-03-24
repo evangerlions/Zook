@@ -28,12 +28,26 @@ import { UserService } from "./modules/user/user.service.ts";
 import { AppConfigService } from "./services/app-config.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
+import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
+import { LlmHealthService } from "./services/llm-health.service.ts";
+import { LlmMetricsService } from "./services/llm-metrics.service.ts";
+import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
-import type { AdminEmailServiceDocument, AnalyticsEventInput, ClientType, DatabaseSeed, HttpRequest, HttpResponse, Platform } from "./shared/types.ts";
+import type {
+  AdminEmailServiceDocument,
+  AdminLlmServiceDocument,
+  AnalyticsEventInput,
+  ClientType,
+  DatabaseSeed,
+  HttpRequest,
+  HttpResponse,
+  LlmMetricsRange,
+  Platform,
+} from "./shared/types.ts";
 import { parseCookies, randomId } from "./shared/utils.ts";
 
 export interface CreateApplicationOptions {
@@ -116,6 +130,7 @@ export class BackendApplication {
     private readonly adminConsoleService: AdminConsoleService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly llmManager: LLMManager,
+    private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
@@ -152,6 +167,7 @@ export class BackendApplication {
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
       llmManager: this.llmManager,
+      llmSmokeTestService: this.llmSmokeTestService,
       storageService: this.storageService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
@@ -173,6 +189,72 @@ export class BackendApplication {
 
     if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/email-service") {
       return this.handleAdminUpdateEmailService(request);
+    }
+
+    const adminEmailRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminEmailRevisionMatch) {
+      return this.handleAdminGetEmailServiceRevision(
+        request,
+        Number(adminEmailRevisionMatch[1]),
+      );
+    }
+
+    const adminEmailRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminEmailRestoreMatch) {
+      return this.handleAdminRestoreEmailServiceRevision(
+        request,
+        Number(adminEmailRestoreMatch[1]),
+      );
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service") {
+      return this.handleAdminGetLlmService(request);
+    }
+
+    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/llm-service") {
+      return this.handleAdminUpdateLlmService(request);
+    }
+
+    const adminLlmRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/llm-service\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminLlmRevisionMatch) {
+      return this.handleAdminGetLlmServiceRevision(
+        request,
+        Number(adminLlmRevisionMatch[1]),
+      );
+    }
+
+    const adminLlmRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/llm-service\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminLlmRestoreMatch) {
+      return this.handleAdminRestoreLlmServiceRevision(
+        request,
+        Number(adminLlmRestoreMatch[1]),
+      );
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service/metrics") {
+      return this.handleAdminGetLlmMetrics(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/llm-service/smoke-test") {
+      return this.handleAdminRunLlmSmokeTest(request);
+    }
+
+    const adminLlmModelMetricsMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/llm-service\/metrics\/models\/([^/]+)$/,
+    );
+    if (request.method === "GET" && adminLlmModelMetricsMatch) {
+      return this.handleAdminGetLlmModelMetrics(
+        request,
+        decodeURIComponent(adminLlmModelMetricsMatch[1] as string),
+      );
     }
 
     if (request.method === "POST" && request.path === "/api/v1/admin/apps") {
@@ -661,9 +743,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleAdminGetEmailService(request: HttpRequest): HttpResponse<unknown> {
+  private async handleAdminGetEmailService(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = this.adminConsoleService.getEmailServiceConfig();
+    const result = await this.adminConsoleService.getEmailServiceConfig();
 
     this.auditInterceptor.record({
       appId: "common",
@@ -681,8 +763,10 @@ export class BackendApplication {
   private async handleAdminUpdateEmailService(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
     const result = await this.adminConsoleService.updateEmailServiceConfig(
       body as AdminEmailServiceDocument["config"],
+      desc,
     );
 
     this.auditInterceptor.record({
@@ -692,6 +776,189 @@ export class BackendApplication {
       resourceId: result.configKey,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetEmailServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getEmailServiceConfig(revision);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.email_service.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreEmailServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.restoreEmailServiceConfig(revision);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.email_service.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetLlmService(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getLlmServiceConfig();
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.llm_service.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateLlmService(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateLlmServiceConfig(
+      body as AdminLlmServiceDocument["config"],
+      desc,
+    );
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.llm_service.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetLlmServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getLlmServiceConfig(revision);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.llm_service.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreLlmServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.restoreLlmServiceConfig(revision);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.llm_service.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetLlmMetrics(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const range = this.parseLlmMetricsRange(request.query?.range);
+    const result = await this.adminConsoleService.getLlmMetrics(range);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.llm_service.metrics.read",
+      resourceType: "app_config",
+      resourceId: `common.llm_service:${range}`,
+      payload: {
+        adminUser,
+        range,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetLlmModelMetrics(
+    request: HttpRequest,
+    modelKey: string,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const range = this.parseLlmMetricsRange(request.query?.range);
+    const result = await this.adminConsoleService.getLlmModelMetrics(modelKey, range);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.llm_service.model_metrics.read",
+      resourceType: "app_config",
+      resourceId: `common.llm_service:${modelKey}:${range}`,
+      payload: {
+        adminUser,
+        modelKey,
+        range,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRunLlmSmokeTest(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdminSuperUser(request);
+    const result = await this.adminConsoleService.runLlmSmokeTest();
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.llm_service.smoke_test",
+      resourceType: "app_config",
+      resourceId: "common.llm_service:smoke-test",
+      payload: {
+        adminUser,
+        summary: result.summary,
       },
     });
 
@@ -713,6 +980,22 @@ export class BackendApplication {
     });
 
     return this.ok(result, request.requestId as string);
+  }
+
+  private parseLlmMetricsRange(value: string | undefined): LlmMetricsRange {
+    if (!value) {
+      return "24h";
+    }
+
+    if (value === "24h" || value === "7d" || value === "30d") {
+      return value;
+    }
+
+    throw new ApplicationError(400, "REQ_INVALID_QUERY", `Unsupported range: ${value}.`);
+  }
+
+  private authenticateAdminSuperUser(request: HttpRequest): string {
+    return this.authenticateAdmin(request);
   }
 
   private async handleAdminUpdateConfig(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
@@ -933,6 +1216,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
 
   const appConfigService = new AppConfigService(database, cache, kvManager);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService);
+  const commonLlmConfigService = new CommonLlmConfigService(appConfigService);
+  const llmHealthService = new LlmHealthService(kvManager);
+  const llmMetricsService = new LlmMetricsService(kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
   const tokenService = new TokenService("zook-local-secret");
@@ -953,15 +1239,29 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
+  const llmProviders = {
+    bailian: new BailianOpenAICompatibleProvider(),
+  };
+  const llmSmokeTestService = new LlmSmokeTestService(
+    commonLlmConfigService,
+    kvManager,
+    llmProviders,
+  );
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
     commonEmailConfigService,
+    commonLlmConfigService,
+    llmHealthService,
+    llmMetricsService,
+    llmSmokeTestService,
     managedStateStore,
   );
   const rbacService = new RbacService(database);
-  const llmManager = new LLMManager({
-    bailian: new BailianOpenAICompatibleProvider(),
+  const llmManager = new LLMManager(llmProviders, undefined, {
+    commonLlmConfigService,
+    llmHealthService,
+    llmMetricsService,
   });
   const storageService = new StorageService(database);
   const notificationService = new NotificationService(database, queue, logger);
@@ -989,6 +1289,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     adminConsoleService,
     adminBasicAuth,
     llmManager,
+    llmSmokeTestService,
     storageService,
     notificationService,
     failedEventRetryService,
@@ -1013,6 +1314,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       appConfigService,
       kvManager,
       commonEmailConfigService,
+      commonLlmConfigService,
       appRegistryService,
       userService,
       tokenService,
@@ -1021,6 +1323,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       analyticsService,
       adminConsoleService,
       llmManager,
+      llmHealthService,
+      llmMetricsService,
+      llmSmokeTestService,
       rbacService,
       storageService,
       notificationService,

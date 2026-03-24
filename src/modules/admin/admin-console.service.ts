@@ -2,6 +2,10 @@ import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { AppConfigService } from "../../services/app-config.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
+import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
+import { LlmHealthService } from "../../services/llm-health.service.ts";
+import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
+import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
@@ -10,7 +14,12 @@ import type {
   AdminConfigDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
+  AdminLlmMetricsDocument,
+  AdminLlmModelMetricsDocument,
+  AdminLlmSmokeTestDocument,
+  AdminLlmServiceDocument,
   AppRecord,
+  LlmMetricsRange,
   RoleRecord,
 } from "../../shared/types.ts";
 
@@ -23,6 +32,10 @@ export class AdminConsoleService {
     private readonly database: InMemoryDatabase,
     private readonly appConfigService: AppConfigService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
+    private readonly commonLlmConfigService: CommonLlmConfigService,
+    private readonly llmHealthService: LlmHealthService,
+    private readonly llmMetricsService: LlmMetricsService,
+    private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly managedStateStore: ManagedStateStore,
   ) {}
 
@@ -83,7 +96,7 @@ export class AdminConsoleService {
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
-    await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision);
+    await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);
   }
@@ -198,14 +211,59 @@ export class AdminConsoleService {
     return this.readNormalizedConfig(appId) === JSON.stringify({}, null, 2);
   }
 
-  getEmailServiceConfig(): AdminEmailServiceDocument {
-    return this.commonEmailConfigService.getDocument();
+  async getEmailServiceConfig(revision?: number): Promise<AdminEmailServiceDocument> {
+    return this.commonEmailConfigService.getDocument(revision);
   }
 
-  async updateEmailServiceConfig(input: unknown): Promise<AdminEmailServiceDocument> {
-    const document = await this.commonEmailConfigService.updateConfig(input);
+  async updateEmailServiceConfig(input: unknown, desc?: string): Promise<AdminEmailServiceDocument> {
+    const document = await this.commonEmailConfigService.updateConfig(input, desc);
     await this.managedStateStore.save(this.database);
     return document;
+  }
+
+  async restoreEmailServiceConfig(revision: number): Promise<AdminEmailServiceDocument> {
+    const document = await this.commonEmailConfigService.restoreConfig(revision);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {
+    const document = await this.commonLlmConfigService.getDocument(revision);
+    const runtime = {
+      generatedAt: new Date().toISOString(),
+      models: await Promise.all(
+        document.config.models.map((model) => this.llmHealthService.buildModelRuntimeStatus(model)),
+      ),
+    };
+
+    return {
+      ...document,
+      runtime,
+    };
+  }
+
+  async updateLlmServiceConfig(input: unknown, desc?: string): Promise<AdminLlmServiceDocument> {
+    const document = await this.commonLlmConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getLlmServiceConfig(document.revision);
+  }
+
+  async restoreLlmServiceConfig(revision: number): Promise<AdminLlmServiceDocument> {
+    const document = await this.commonLlmConfigService.restoreConfig(revision);
+    await this.managedStateStore.save(this.database);
+    return this.getLlmServiceConfig(document.revision);
+  }
+
+  async getLlmMetrics(range: LlmMetricsRange): Promise<AdminLlmMetricsDocument> {
+    return this.llmMetricsService.getOverview(this.commonLlmConfigService.getCurrentConfig(), range);
+  }
+
+  async getLlmModelMetrics(modelKey: string, range: LlmMetricsRange): Promise<AdminLlmModelMetricsDocument> {
+    return this.llmMetricsService.getModelDetail(this.commonLlmConfigService.getCurrentConfig(), modelKey, range);
+  }
+
+  async runLlmSmokeTest(): Promise<AdminLlmSmokeTestDocument> {
+    return this.llmSmokeTestService.run();
   }
 
   private normalizeConfig(rawJson: string): string {
