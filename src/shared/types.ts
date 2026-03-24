@@ -490,6 +490,58 @@ export interface AdminLlmSmokeTestSummary {
   successRate: number;
 }
 
+export interface AdminLlmSmokeTestRequestPayload {
+  provider: string;
+  modelKey: string;
+  providerModel: string;
+  baseUrl: string;
+  timeoutMs: number;
+  messages: Array<{
+    role: "system" | "user" | "assistant";
+    content: string;
+  }>;
+  temperature?: number;
+  maxTokens?: number;
+  providerOptions: Record<string, unknown>;
+}
+
+export interface AdminLlmSmokeTestResponsePayload {
+  provider: string;
+  modelKey: string;
+  providerModel: string;
+  text: string;
+  reasoningText?: string;
+  finishReason?: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+export interface AdminLlmSmokeTestErrorPayload {
+  name: string;
+  message: string;
+  code?: string;
+  statusCode?: number;
+  details?: unknown;
+  stackPreview?: string[];
+}
+
+export interface AdminLlmSmokeTestSkipPayload {
+  reason: string;
+  configured: boolean;
+  providerEnabled: boolean;
+  routeEnabled?: boolean;
+}
+
+export interface AdminLlmSmokeTestDetails {
+  request?: AdminLlmSmokeTestRequestPayload;
+  response?: AdminLlmSmokeTestResponsePayload;
+  error?: AdminLlmSmokeTestErrorPayload;
+  skip?: AdminLlmSmokeTestSkipPayload;
+}
+
 export interface AdminLlmSmokeTestItem {
   modelKey: string;
   modelLabel: string;
@@ -501,6 +553,7 @@ export interface AdminLlmSmokeTestItem {
   latencyMs?: number;
   message: string;
   responsePreview?: string;
+  details: AdminLlmSmokeTestDetails;
 }
 
 export interface AdminLlmSmokeTestDocument {

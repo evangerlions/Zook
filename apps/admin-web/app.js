@@ -68,6 +68,7 @@ const state = {
   llmSelectedModelKey: "",
   runningLlmSmokeTest: false,
   llmSmokeTestDocument: null,
+  llmSmokeExpandedKeys: {},
   toasts: [],
 };
 
@@ -302,6 +303,7 @@ function clearAdminSession() {
   state.llmSelectedModelKey = "";
   state.runningLlmSmokeTest = false;
   state.llmSmokeTestDocument = null;
+  state.llmSmokeExpandedKeys = {};
   sessionStorage.removeItem(SESSION_STORAGE_KEY);
 }
 
@@ -1421,6 +1423,7 @@ function renderLlmSmokeTestPanel() {
                 ${renderLlmMetricCard("跳过", String(summary.skippedCount), "未配置 route 或已禁用的组合数")}
                 ${renderLlmMetricCard("成功率", `${summary.successRate}%`, "仅按实际发起请求的组合计算")}
               </div>
+              <div class="smoke-inline-tip">点击每行左侧的 <strong>+</strong> 可展开查看调用参数、模型返回结果和错误详情。</div>
               ${renderLlmSmokeTestTable(items)}
             `
             : `
@@ -1709,39 +1712,19 @@ function renderLlmSmokeTestTable(items) {
       <table class="app-table smoke-table">
         <thead>
           <tr>
+            <th class="smoke-table-control-cell">明细</th>
             <th>模型</th>
             <th>供应商</th>
             <th>供应商模型</th>
             <th>结果</th>
             <th>耗时</th>
-            <th>说明</th>
-            <th>响应预览</th>
+            <th>摘要</th>
           </tr>
         </thead>
         <tbody>
           ${
             items.length
-              ? items.map((item) => `
-                <tr data-smoke-status="${escapeHtml(item.status)}">
-                  <td>
-                    <div class="app-name-cell">
-                      <strong>${escapeHtml(item.modelLabel)}</strong>
-                      <span>${escapeHtml(item.modelKey)}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="app-name-cell">
-                      <strong>${escapeHtml(item.providerLabel)}</strong>
-                      <span>${escapeHtml(item.provider)}</span>
-                    </div>
-                  </td>
-                  <td><code>${escapeHtml(item.providerModel || "-")}</code></td>
-                  <td>${renderLlmSmokeStatusBadge(item.status)}</td>
-                  <td>${escapeHtml(item.latencyMs ? `${item.latencyMs} ms` : "-")}</td>
-                  <td class="smoke-table-message">${escapeHtml(item.message)}</td>
-                  <td class="smoke-table-preview">${escapeHtml(item.responsePreview || "-")}</td>
-                </tr>
-              `).join("")
+              ? items.map((item, index) => renderLlmSmokeTestRows(item, index)).join("")
               : `
                 <tr>
                   <td colspan="7">
@@ -1753,6 +1736,128 @@ function renderLlmSmokeTestTable(items) {
         </tbody>
       </table>
     </div>
+  `;
+}
+
+function renderLlmSmokeTestRows(item, index) {
+  const itemKey = buildLlmSmokeItemKey(item, index);
+  const expanded = Boolean(state.llmSmokeExpandedKeys[itemKey]);
+
+  return `
+    <tr data-smoke-status="${escapeHtml(item.status)}">
+      <td class="smoke-table-control-cell">
+        <button
+          class="smoke-expand-button"
+          type="button"
+          data-action="toggle-llm-smoke-details"
+          data-item-key="${escapeHtml(itemKey)}"
+          aria-expanded="${expanded ? "true" : "false"}"
+          aria-label="${expanded ? "收起详情" : "展开详情"}"
+        >
+          ${expanded ? "−" : "+"}
+        </button>
+      </td>
+      <td>
+        <div class="app-name-cell">
+          <strong>${escapeHtml(item.modelLabel)}</strong>
+          <span>${escapeHtml(item.modelKey)}</span>
+        </div>
+      </td>
+      <td>
+        <div class="app-name-cell">
+          <strong>${escapeHtml(item.providerLabel)}</strong>
+          <span>${escapeHtml(item.provider)}</span>
+        </div>
+      </td>
+      <td><code>${escapeHtml(item.providerModel || "-")}</code></td>
+      <td>${renderLlmSmokeStatusBadge(item.status)}</td>
+      <td>${escapeHtml(typeof item.latencyMs === "number" ? `${item.latencyMs} ms` : "-")}</td>
+      <td class="smoke-table-summary">${renderLlmSmokeSummaryCell(item)}</td>
+    </tr>
+    ${
+      expanded
+        ? `
+          <tr class="smoke-details-row">
+            <td colspan="7">
+              ${renderLlmSmokeDetails(item)}
+            </td>
+          </tr>
+        `
+        : ""
+    }
+  `;
+}
+
+function renderLlmSmokeSummaryCell(item) {
+  return `
+    <div class="smoke-summary-cell">
+      <strong>${escapeHtml(item.message)}</strong>
+      <p>${escapeHtml(item.responsePreview || "点击 + 查看完整的请求参数、模型返回或错误详情。")}</p>
+    </div>
+  `;
+}
+
+function renderLlmSmokeDetails(item) {
+  const diagnosticTitle =
+    item.status === "success"
+      ? "模型返回"
+      : item.status === "failed"
+        ? "错误详情"
+        : "跳过说明";
+  const diagnosticDescription =
+    item.status === "success"
+      ? "这里展示统一后的模型返回结果，便于确认内容、finish reason 和 usage。"
+      : item.status === "failed"
+        ? "这里展示失败时捕获到的错误对象关键信息，包括错误码和供应商返回细节。"
+        : "这里说明当前组合为什么被跳过，没有真正发起上游调用。";
+  const diagnosticPayload =
+    item.status === "success"
+      ? item.details?.response
+      : item.status === "failed"
+        ? item.details?.error
+        : item.details?.skip;
+
+  return `
+    <div class="smoke-details-shell">
+      <div class="smoke-detail-grid">
+        ${renderLlmSmokeDetailCard(
+          "调用参数",
+          "这里是本次实际发出的 smoke request 快照，包含 providerModel、messages、timeoutMs 和 providerOptions。",
+          item.details?.request,
+          "当前组合没有生成可展示的请求参数。",
+        )}
+        ${renderLlmSmokeDetailCard(
+          diagnosticTitle,
+          diagnosticDescription,
+          diagnosticPayload,
+          item.status === "success" ? "当前没有模型返回内容。" : item.status === "failed" ? "当前没有捕获到可展示的错误详情。" : "当前没有跳过说明。",
+        )}
+        ${renderLlmSmokeDetailCard(
+          "结果摘要",
+          "这里聚合本次组合测试的最终状态、耗时和摘要消息，方便快速判断问题归属。",
+          buildLlmSmokeOutcomeSnapshot(item),
+          "当前没有额外摘要信息。",
+        )}
+      </div>
+    </div>
+  `;
+}
+
+function renderLlmSmokeDetailCard(title, description, payload, emptyText) {
+  return `
+    <section class="smoke-detail-card">
+      <div class="smoke-detail-card-header">
+        <div>
+          <h4>${escapeHtml(title)}</h4>
+          <p>${escapeHtml(description)}</p>
+        </div>
+      </div>
+      ${
+        payload
+          ? renderJsonPreview(payload)
+          : `<div class="smoke-detail-empty">${escapeHtml(emptyText)}</div>`
+      }
+    </section>
   `;
 }
 
@@ -1769,6 +1874,20 @@ function renderLlmSmokeStatusBadge(status) {
       ${escapeHtml(label)}
     </span>
   `;
+}
+
+function buildLlmSmokeItemKey(item, index) {
+  return [item.modelKey, item.provider, item.providerModel || "__none__", String(index)].join("::");
+}
+
+function buildLlmSmokeOutcomeSnapshot(item) {
+  return {
+    status: item.status,
+    configured: Boolean(item.configured),
+    message: item.message,
+    ...(typeof item.latencyMs === "number" ? { latencyMs: item.latencyMs } : {}),
+    ...(item.responsePreview ? { responsePreview: item.responsePreview } : {}),
+  };
 }
 
 function renderLlmProviderCard(provider, index, readOnly) {
@@ -2612,6 +2731,20 @@ async function handleAction(target) {
     return;
   }
 
+  if (action === "toggle-llm-smoke-details") {
+    const itemKey = String(target.dataset.itemKey || "");
+    if (!itemKey) {
+      return;
+    }
+
+    state.llmSmokeExpandedKeys[itemKey] = !state.llmSmokeExpandedKeys[itemKey];
+    if (!state.llmSmokeExpandedKeys[itemKey]) {
+      delete state.llmSmokeExpandedKeys[itemKey];
+    }
+    await render();
+    return;
+  }
+
   if (action === "select-llm-model-metrics") {
     const modelKey = String(target.dataset.modelKey || "");
     if (modelKey) {
@@ -3298,6 +3431,7 @@ async function runLlmSmokeTest() {
       method: "POST",
     });
     state.llmSmokeTestDocument = payload.data;
+    state.llmSmokeExpandedKeys = {};
     setNotice(
       "success",
       `冒烟测试完成：成功 ${payload.data.summary.successCount}，失败 ${payload.data.summary.failureCount}，跳过 ${payload.data.summary.skippedCount}。`,

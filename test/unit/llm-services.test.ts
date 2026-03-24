@@ -498,6 +498,13 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
   assert.equal(firstRun.items[0]?.status, "success");
   assert.equal(firstRun.items[1]?.status, "failed");
   assert.equal(firstRun.items[2]?.status, "skipped");
+  assert.equal(firstRun.items[0]?.details.request?.provider, "bailian");
+  assert.equal(firstRun.items[0]?.details.request?.messages.length, 2);
+  assert.equal(firstRun.items[0]?.details.response?.text, "bailian:ok");
+  assert.equal(firstRun.items[1]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
+  assert.equal(firstRun.items[1]?.details.request?.providerModel, "kimi-2.5");
+  assert.equal(firstRun.items[2]?.details.skip?.providerEnabled, false);
+  assert.equal(firstRun.items[2]?.details.skip?.routeEnabled, false);
 
   await assert.rejects(
     () => smokeTestService.run(),

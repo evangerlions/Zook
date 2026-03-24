@@ -1,8 +1,13 @@
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import { ApplicationError, tooManyRequests } from "../shared/errors.ts";
 import type {
+  AdminLlmSmokeTestDetails,
   AdminLlmSmokeTestDocument,
+  AdminLlmSmokeTestErrorPayload,
   AdminLlmSmokeTestItem,
+  AdminLlmSmokeTestRequestPayload,
+  AdminLlmSmokeTestResponsePayload,
+  AdminLlmSmokeTestSkipPayload,
   AdminLlmSmokeTestSummary,
   LlmProviderConfig,
   LlmServiceConfig,
@@ -14,6 +19,7 @@ const SMOKE_TEST_SCOPE = "admin-llm-smoke-test";
 const SMOKE_TEST_COOLDOWN_KEY = "cooldown";
 const DEFAULT_COOLDOWN_MS = 10_000;
 const RESPONSE_PREVIEW_LIMIT = 120;
+const ERROR_STACK_PREVIEW_LIMIT = 6;
 const SMOKE_MESSAGES = [
   {
     role: "system" as const,
@@ -105,6 +111,7 @@ export class LlmSmokeTestService {
       providerLabel: item.provider.label,
       providerModel: item.route?.providerModel ?? "",
       configured: Boolean(item.route),
+      details: {},
     };
 
     if (!item.route) {
@@ -112,14 +119,24 @@ export class LlmSmokeTestService {
         ...base,
         status: "skipped",
         message: "当前模型没有配置该供应商 route。",
+        details: {
+          skip: this.buildSkipDetails("当前模型没有配置该供应商 route。", item, false),
+        },
       };
     }
+
+    const request = this.buildRequest(item);
+    const requestDetails = this.buildRequestDetails(request);
 
     if (!item.provider.enabled) {
       return {
         ...base,
         status: "skipped",
         message: "该供应商已禁用，未发起测试请求。",
+        details: {
+          request: requestDetails,
+          skip: this.buildSkipDetails("该供应商已禁用，未发起测试请求。", item, true),
+        },
       };
     }
 
@@ -128,6 +145,10 @@ export class LlmSmokeTestService {
         ...base,
         status: "skipped",
         message: "该 route 已禁用，未发起测试请求。",
+        details: {
+          request: requestDetails,
+          skip: this.buildSkipDetails("该 route 已禁用，未发起测试请求。", item, true),
+        },
       };
     }
 
@@ -137,13 +158,26 @@ export class LlmSmokeTestService {
         ...base,
         status: "failed",
         message: "当前运行时还没有接入这个供应商适配器。",
+        details: {
+          request: requestDetails,
+          error: this.buildErrorDetails(
+            new ApplicationError(
+              503,
+              "LLM_ROUTE_NOT_AVAILABLE",
+              "当前运行时还没有接入这个供应商适配器。",
+              {
+                provider: item.provider.key,
+              },
+            ),
+          ),
+        },
       };
     }
 
     const startedAt = this.getNow().getTime();
 
     try {
-      const response = await provider.complete(this.buildRequest(item));
+      const response = await provider.complete(request);
       const latencyMs = this.getNow().getTime() - startedAt;
 
       return {
@@ -152,6 +186,10 @@ export class LlmSmokeTestService {
         latencyMs,
         message: "请求成功，供应商返回了有效响应。",
         responsePreview: truncateText(response.text || response.reasoningText || "", RESPONSE_PREVIEW_LIMIT),
+        details: {
+          request: requestDetails,
+          response: this.buildResponseDetails(response),
+        },
       };
     } catch (error) {
       const latencyMs = this.getNow().getTime() - startedAt;
@@ -160,6 +198,10 @@ export class LlmSmokeTestService {
         status: "failed",
         latencyMs,
         message: error instanceof Error ? error.message : "请求失败，未拿到有效响应。",
+        details: {
+          request: requestDetails,
+          error: this.buildErrorDetails(error),
+        },
       };
     }
   }
@@ -227,6 +269,70 @@ export class LlmSmokeTestService {
   private getNow(): Date {
     return this.options.now?.() ?? new Date();
   }
+
+  private buildRequestDetails(request: ResolvedLLMCompletionRequest): AdminLlmSmokeTestRequestPayload {
+    return {
+      provider: request.model.provider,
+      modelKey: request.model.modelKey,
+      providerModel: request.model.providerModel,
+      baseUrl: request.model.providerConfig?.baseUrl ?? "",
+      timeoutMs: request.model.providerConfig?.timeoutMs ?? 0,
+      messages: request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+      ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
+      ...(request.maxTokens === undefined ? {} : { maxTokens: request.maxTokens }),
+      providerOptions: toPlainRecord(request.providerOptions),
+    };
+  }
+
+  private buildResponseDetails(response: Awaited<ReturnType<LLMProvider["complete"]>>): AdminLlmSmokeTestResponsePayload {
+    return {
+      provider: response.provider,
+      modelKey: response.modelKey,
+      providerModel: response.providerModel,
+      text: response.text,
+      ...(response.reasoningText ? { reasoningText: response.reasoningText } : {}),
+      ...(response.finishReason ? { finishReason: response.finishReason } : {}),
+      ...(response.usage ? { usage: response.usage } : {}),
+    };
+  }
+
+  private buildErrorDetails(error: unknown): AdminLlmSmokeTestErrorPayload {
+    if (error instanceof ApplicationError) {
+      return {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode,
+        ...(error.details === undefined ? {} : { details: toJsonSafeValue(error.details) }),
+        ...(error.stack ? { stackPreview: truncateStack(error.stack) } : {}),
+      };
+    }
+
+    if (error instanceof Error) {
+      return {
+        name: error.name,
+        message: error.message,
+        ...(error.stack ? { stackPreview: truncateStack(error.stack) } : {}),
+      };
+    }
+
+    return {
+      name: "UnknownError",
+      message: String(error ?? "Unknown smoke test error."),
+    };
+  }
+
+  private buildSkipDetails(reason: string, item: SmokeMatrixItem, configured: boolean): AdminLlmSmokeTestSkipPayload {
+    return {
+      reason,
+      configured,
+      providerEnabled: item.provider.enabled,
+      ...(item.route ? { routeEnabled: item.route.enabled } : {}),
+    };
+  }
 }
 
 function truncateText(value: string, limit: number): string {
@@ -240,4 +346,44 @@ function truncateText(value: string, limit: number): string {
 
 function roundTwoDecimals(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function truncateStack(stack: string): string[] {
+  return stack
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, ERROR_STACK_PREVIEW_LIMIT);
+}
+
+function toPlainRecord(value: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!value) {
+    return {};
+  }
+
+  return toJsonSafeValue(value) as Record<string, unknown>;
+}
+
+function toJsonSafeValue(value: unknown): unknown {
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => toJsonSafeValue(item));
+  }
+
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, toJsonSafeValue(item)]),
+    );
+  }
+
+  return String(value);
 }
