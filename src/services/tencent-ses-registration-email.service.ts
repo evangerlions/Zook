@@ -30,7 +30,7 @@ export class TencentSesRegistrationEmailSender implements RegistrationEmailSende
     replyToAddresses?: string;
     subject: string;
   }): Promise<void> {
-    const { config, resolvedRegion, sender, template } = this.commonEmailConfigService.getRuntimeConfig(
+    const { resolvedRegion, secretId, secretKey, sender, template } = await this.commonEmailConfigService.getRuntimeConfig(
       command.locale,
       command.senderId,
     );
@@ -63,11 +63,11 @@ export class TencentSesRegistrationEmailSender implements RegistrationEmailSende
     const canonicalRequest = `POST\n/\n\n${canonicalHeaders}\n${signedHeaders}\n${hashedRequestPayload}`;
     const credentialScope = `${date}/${service}/tc3_request`;
     const stringToSign = `TC3-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${sha256Hex(canonicalRequest)}`;
-    const secretDate = hmacSha256(Buffer.from(`TC3${config.secretKey}`, "utf8"), date);
+    const secretDate = hmacSha256(Buffer.from(`TC3${secretKey}`, "utf8"), date);
     const secretService = hmacSha256(secretDate, service);
     const secretSigning = hmacSha256(secretService, "tc3_request");
     const signature = hmacSha256(secretSigning, stringToSign, "hex");
-    const authorization = `TC3-HMAC-SHA256 Credential=${config.secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+    const authorization = `TC3-HMAC-SHA256 Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
     const response = await fetch(`https://${host}/`, {
       method: "POST",

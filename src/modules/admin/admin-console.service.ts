@@ -3,6 +3,7 @@ import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.t
 import { AppConfigService } from "../../services/app-config.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
+import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
@@ -18,6 +19,7 @@ import type {
   AdminLlmModelMetricsDocument,
   AdminLlmSmokeTestDocument,
   AdminLlmServiceDocument,
+  AdminPasswordDocument,
   AppRecord,
   LlmMetricsRange,
   RoleRecord,
@@ -33,6 +35,7 @@ export class AdminConsoleService {
     private readonly appConfigService: AppConfigService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
+    private readonly commonPasswordConfigService: CommonPasswordConfigService,
     private readonly llmHealthService: LlmHealthService,
     private readonly llmMetricsService: LlmMetricsService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
@@ -225,6 +228,14 @@ export class AdminConsoleService {
     const document = await this.commonEmailConfigService.restoreConfig(revision);
     await this.managedStateStore.save(this.database);
     return document;
+  }
+
+  async getPasswordConfig(): Promise<AdminPasswordDocument> {
+    return this.commonPasswordConfigService.getDocument();
+  }
+
+  async updatePasswordConfig(input: unknown): Promise<AdminPasswordDocument> {
+    return this.commonPasswordConfigService.updateConfig(input);
   }
 
   async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {

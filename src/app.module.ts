@@ -29,17 +29,20 @@ import { AppConfigService } from "./services/app-config.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
+import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
+import { PasswordManager } from "./services/password-manager.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
 import type {
   AdminEmailServiceDocument,
   AdminLlmServiceDocument,
+  AdminPasswordDocument,
   AnalyticsEventInput,
   ClientType,
   DatabaseSeed,
@@ -209,6 +212,14 @@ export class BackendApplication {
         request,
         Number(adminEmailRestoreMatch[1]),
       );
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/passwords") {
+      return this.handleAdminGetPasswords(request);
+    }
+
+    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/passwords") {
+      return this.handleAdminUpdatePasswords(request);
     }
 
     if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service") {
@@ -824,6 +835,41 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminGetPasswords(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getPasswordConfig();
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.password.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdatePasswords(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.adminConsoleService.updatePasswordConfig(body);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.password.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminGetLlmService(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getLlmServiceConfig();
@@ -1215,7 +1261,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   });
 
   const appConfigService = new AppConfigService(database, cache, kvManager);
-  const commonEmailConfigService = new CommonEmailConfigService(appConfigService);
+  const passwordManager = new PasswordManager(kvManager);
+  const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
+  const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService);
   const llmHealthService = new LlmHealthService(kvManager);
   const llmMetricsService = new LlmMetricsService(kvManager);
@@ -1252,6 +1300,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appConfigService,
     commonEmailConfigService,
     commonLlmConfigService,
+    commonPasswordConfigService,
     llmHealthService,
     llmMetricsService,
     llmSmokeTestService,
@@ -1313,6 +1362,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     services: {
       appConfigService,
       kvManager,
+      passwordManager,
+      commonPasswordConfigService,
       commonEmailConfigService,
       commonLlmConfigService,
       appRegistryService,

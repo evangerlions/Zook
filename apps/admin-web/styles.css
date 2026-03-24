@@ -1080,6 +1080,10 @@ select {
   grid-template-columns: minmax(180px, 220px) minmax(140px, 180px) minmax(220px, 1fr) auto;
 }
 
+.mail-row-grid-password {
+  grid-template-columns: minmax(220px, 280px) minmax(200px, 280px) minmax(260px, 1fr) auto;
+}
+
 .mail-row-remove {
   min-width: 84px;
 }
@@ -1634,7 +1638,8 @@ a:focus-visible {
   .form-grid-wide,
   .metric-card-grid,
   .mail-row-grid-sender,
-  .mail-row-grid-template {
+  .mail-row-grid-template,
+  .mail-row-grid-password {
     grid-template-columns: 1fr;
   }
 

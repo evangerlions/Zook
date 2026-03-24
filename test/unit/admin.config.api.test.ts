@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 import { InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
+import {
+  TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+  TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+} from "../../src/services/common-email-config.service.ts";
 
 function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
@@ -260,6 +264,48 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   );
 });
 
+test("admin password API stores masked common secrets without revision history", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers,
+    body: {
+      items: [
+        {
+          key: "tencent.ses.secret_id",
+          desc: "腾讯 SES SecretId",
+          value: "sid-demo",
+        },
+      ],
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.configKey, "common.passwords");
+  assert.equal(updateResponse.body.data.items[0]?.value, "sid-****");
+
+  const fetchResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers,
+  });
+
+  assert.equal(fetchResponse.statusCode, 200);
+  assert.equal(fetchResponse.body.data.items[0]?.desc, "腾讯 SES SecretId");
+  assert.equal(fetchResponse.body.data.items[0]?.value, "sid-****");
+  assert.equal(await runtime.services.commonPasswordConfigService.getValue("tencent.ses.secret_id"), "sid-demo");
+});
+
 test("admin email service API stores common config and exposes resolved region", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
@@ -270,7 +316,30 @@ test("admin email service API stores common config and exposes resolved region",
   const headers = {
     authorization: createAdminAuthHeader(),
   };
-  const now = new Date();
+
+  const passwordResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers,
+    body: {
+      items: [
+        {
+          key: TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+          desc: "腾讯 SES SecretId",
+          value: "sid-demo",
+        },
+        {
+          key: TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+          desc: "腾讯 SES SecretKey",
+          value: "sk-demo",
+        },
+      ],
+    },
+  });
+
+  assert.equal(passwordResponse.statusCode, 200);
+  assert.equal(passwordResponse.body.data.items[0]?.value, "sid-****");
+  assert.equal(passwordResponse.body.data.items[1]?.value, "sk-d****");
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -278,8 +347,6 @@ test("admin email service API stores common config and exposes resolved region",
     headers,
     body: {
       enabled: true,
-      secretId: "sid-demo",
-      secretKey: "sk-demo",
       desc: "初始化邮件服务",
       senders: [
         {
@@ -327,12 +394,36 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(fetchResponse.statusCode, 200);
-  assert.equal(fetchResponse.body.data.config.secretId, "sid-****");
-  assert.equal(fetchResponse.body.data.config.secretKey, "sk-d****");
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
+  assert.equal(fetchResponse.body.data.config.senders.length, 2);
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretId, "sid-demo");
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretKey, "sk-demo");
 
   const maskedUpdateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers,
+    body: {
+      items: [
+        {
+          key: TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+          desc: "腾讯 SES SecretId",
+          value: "sid-****",
+        },
+        {
+          key: TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+          desc: "腾讯 SES SecretKey",
+          value: "sk-d****",
+        },
+      ],
+    },
+  });
+
+  assert.equal(maskedUpdateResponse.statusCode, 200);
+  assert.equal(maskedUpdateResponse.body.data.items[0]?.value, "sid-****");
+  assert.equal((await runtime.services.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_ID_PASSWORD_KEY)), "sid-demo");
+  assert.equal((await runtime.services.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_KEY_PASSWORD_KEY)), "sk-demo");
+
+  const templateUpdateResponse = await runtime.app.handle({
     method: "PUT",
     path: "/api/v1/admin/apps/common/email-service",
     headers,
@@ -350,22 +441,22 @@ test("admin email service API stores common config and exposes resolved region",
     },
   });
 
-  assert.equal(maskedUpdateResponse.statusCode, 200);
-  assert.equal(maskedUpdateResponse.body.data.revision, 2);
-  assert.equal(maskedUpdateResponse.body.data.desc, "补充中文模板");
+  assert.equal(templateUpdateResponse.statusCode, 200);
+  assert.equal(templateUpdateResponse.body.data.revision, 2);
+  assert.equal(templateUpdateResponse.body.data.desc, "补充中文模板");
   assert.deepEqual(
-    maskedUpdateResponse.body.data.revisions.map((item) => item.revision),
+    templateUpdateResponse.body.data.revisions.map((item) => item.revision),
     [2, 1],
   );
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretId, "sid-demo");
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig().config.secretKey, "sk-demo");
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretId, "sid-demo");
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretKey, "sk-demo");
   assert.equal(
-    runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "support").sender.address,
+    (await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "support")).sender.address,
     "Support <support@example.com>",
   );
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("en-US").template.name, "Verification Code");
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("en-US").template.templateId, 100002);
-  assert.equal(runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW").template.templateId, 100003);
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US")).template.name, "Verification Code");
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US")).template.templateId, 100002);
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW")).template.templateId, 100003);
 
   const revisionOneResponse = await runtime.app.handle({
     method: "GET",
@@ -414,8 +505,6 @@ test("admin email service API rejects invalid sender address format", async () =
     headers,
     body: {
       enabled: true,
-      secretId: "sid-demo",
-      secretKey: "sk-demo",
       senders: [
         {
           id: "default",
