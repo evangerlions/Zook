@@ -1004,6 +1004,13 @@ function renderMailPage() {
             </div>
           </section>
 
+          <details class="version-note">
+            <summary>查看当前 JSON</summary>
+            <div class="version-note-body">
+              <pre class="json-preview">${escapeHtml(JSON.stringify(serializeMailDraftForPreview(draft), null, 2))}</pre>
+            </div>
+          </details>
+
           <div class="form-footer">
             <button class="button button-ghost" type="button" data-action="reset-mail" ${readOnly || state.savingMail ? "disabled" : ""}>恢复</button>
             <button class="button button-primary" type="button" data-action="open-save-mail-dialog" ${readOnly || state.savingMail ? "disabled" : ""}>
@@ -3263,6 +3270,20 @@ function serializeMailDraft(draft) {
     senders,
     templates,
   };
+}
+
+function serializeMailDraftForPreview(draft) {
+  try {
+    return serializeMailDraft(draft);
+  } catch {
+    return {
+      enabled: Boolean(draft?.enabled),
+      secretId: String(draft?.secretId ?? "").trim(),
+      secretKey: String(draft?.secretKey ?? "").trim(),
+      senders: Array.isArray(draft?.senders) ? draft.senders : [],
+      templates: Array.isArray(draft?.templates) ? draft.templates : [],
+    };
+  }
 }
 
 function createDefaultLlmConfig() {
