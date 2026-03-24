@@ -26,6 +26,7 @@ export type ErrorCode =
   | "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG"
   | "ADMIN_EMAIL_SERVICE_INVALID"
   | "ADMIN_LLM_SERVICE_INVALID"
+  | "ADMIN_PASSWORD_INVALID"
   | "ADMIN_RATE_LIMITED"
   | "AUTH_INVALID_CREDENTIAL"
   | "AUTH_BEARER_REQUIRED"
@@ -334,8 +335,6 @@ export interface EmailSenderConfig {
 
 export interface EmailServiceConfig {
   enabled: boolean;
-  secretId: string;
-  secretKey: string;
   senders: EmailSenderConfig[];
   templates: EmailServiceTemplateConfig[];
 }
@@ -350,6 +349,20 @@ export interface AdminEmailServiceDocument {
   desc?: string;
   isLatest: boolean;
   revisions: ConfigRevisionMeta[];
+}
+
+export interface PasswordEntry {
+  key: string;
+  desc: string;
+  value: string;
+  updatedAt?: string;
+}
+
+export interface AdminPasswordDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  items: PasswordEntry[];
+  updatedAt?: string;
 }
 
 export interface LlmProviderConfig {

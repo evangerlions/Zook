@@ -1,6 +1,6 @@
 import { AppConfigService } from "./app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
-import { maskSensitiveFields, type SensitiveFieldRules } from "../shared/utils.ts";
+import { CommonPasswordConfigService } from "./common-password-config.service.ts";
 import type {
   AdminAppSummary,
   AdminEmailServiceDocument,
@@ -12,22 +12,23 @@ import type {
 
 const COMMON_APP_ID = "common";
 const EMAIL_SERVICE_CONFIG_KEY = "common.email_service";
+export const TENCENT_SES_SECRET_ID_PASSWORD_KEY = "tencent.ses.secret_id";
+export const TENCENT_SES_SECRET_KEY_PASSWORD_KEY = "tencent.ses.secret_key";
 const COMMON_APP_SUMMARY: AdminAppSummary = {
   appId: COMMON_APP_ID,
   appCode: COMMON_APP_ID,
-  appName: "Common",
+  appName: "服务端配置",
   status: "ACTIVE",
   canDelete: false,
 };
 const DEFAULT_EMAIL_REGION: TencentSesRegion = "ap-guangzhou";
 const DEFAULT_TEMPLATE_LOCALE = "zh-CN";
-const EMAIL_SERVICE_SENSITIVE_FIELDS: SensitiveFieldRules<EmailServiceConfig> = {
-  secretId: { visibleChars: 4 },
-  secretKey: { visibleChars: 4 },
-};
 
 export class CommonEmailConfigService {
-  constructor(private readonly appConfigService: AppConfigService) {}
+  constructor(
+    private readonly appConfigService: AppConfigService,
+    private readonly commonPasswordConfigService: CommonPasswordConfigService,
+  ) {}
 
   async getDocument(revision?: number): Promise<AdminEmailServiceDocument> {
     const revisions = await this.appConfigService.listRevisions(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
@@ -41,7 +42,7 @@ export class CommonEmailConfigService {
     }
 
     const config = record ? this.parseConfig(record.content) : this.getStoredConfig();
-    return this.toDocument(this.maskSensitiveConfig(config), {
+    return this.toDocument(config, {
       updatedAt: record?.createdAt ?? this.getUpdatedAt(),
       revision: record?.revision,
       desc: record?.desc,
@@ -77,22 +78,27 @@ export class CommonEmailConfigService {
     return this.getDocument();
   }
 
-  getRuntimeConfig(
+  async getRuntimeConfig(
     locale = DEFAULT_TEMPLATE_LOCALE,
     senderId = "default",
-  ): {
+  ): Promise<{
     config: EmailServiceConfig;
     resolvedRegion: TencentSesRegion;
+    secretId: string;
+    secretKey: string;
     sender: EmailSenderConfig;
     template: EmailServiceTemplateConfig;
-  } {
+  }> {
     const config = this.getStoredConfig();
 
     this.assertRuntimeConfig(config);
+    const credentials = await this.resolveCredentials();
 
     return {
       config,
       resolvedRegion: DEFAULT_EMAIL_REGION,
+      secretId: credentials.secretId,
+      secretKey: credentials.secretKey,
       sender: this.resolveSender(config.senders, senderId),
       template: this.resolveTemplate(config.templates, locale),
     };
@@ -153,18 +159,12 @@ export class CommonEmailConfigService {
 
     const config: EmailServiceConfig = {
       enabled: Boolean(source.enabled),
-      secretId: this.resolveSensitiveField(source.secretId, existingConfig?.secretId),
-      secretKey: this.resolveSensitiveField(source.secretKey, existingConfig?.secretKey),
       senders,
       templates,
     };
 
     if (!config.enabled) {
       return config;
-    }
-
-    if (!config.secretId || !config.secretKey) {
-      badRequest("ADMIN_EMAIL_SERVICE_INVALID", "SecretId and SecretKey are required.");
     }
 
     if (!config.senders.length) {
@@ -181,8 +181,6 @@ export class CommonEmailConfigService {
   private createDefaultConfig(): EmailServiceConfig {
     return {
       enabled: false,
-      secretId: "",
-      secretKey: "",
       senders: [],
       templates: [],
     };
@@ -316,9 +314,29 @@ export class CommonEmailConfigService {
       throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service is not enabled.");
     }
 
-    if (!config.secretId || !config.secretKey || !config.senders.length || !config.templates.length) {
+    if (!config.senders.length || !config.templates.length) {
       throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service is not fully configured.");
     }
+  }
+
+  private async resolveCredentials(): Promise<{ secretId: string; secretKey: string }> {
+    const [secretId, secretKey] = await Promise.all([
+      this.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_ID_PASSWORD_KEY),
+      this.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_KEY_PASSWORD_KEY),
+    ]);
+
+    if (!secretId || !secretKey) {
+      throw new ApplicationError(
+        503,
+        "EMAIL_SERVICE_NOT_CONFIGURED",
+        "Tencent SES credentials are not configured in password workspace.",
+      );
+    }
+
+    return {
+      secretId,
+      secretKey,
+    };
   }
 
   private resolveSender(senders: EmailSenderConfig[], senderId: string): EmailSenderConfig {
@@ -357,30 +375,6 @@ export class CommonEmailConfigService {
     }
 
     return templates[0];
-  }
-
-  private resolveSensitiveField(input: unknown, existingValue?: string, visibleChars = 4): string {
-    const normalized = this.optionalString(input);
-    const existing = existingValue?.trim() ?? "";
-
-    if (!normalized) {
-      return "";
-    }
-
-    if (!existing) {
-      return normalized;
-    }
-
-    const prefix = existing.slice(0, Math.min(visibleChars, existing.length));
-    if (normalized.endsWith("****") && normalized.startsWith(prefix)) {
-      return existing;
-    }
-
-    return normalized;
-  }
-
-  private maskSensitiveConfig(config: EmailServiceConfig): EmailServiceConfig {
-    return maskSensitiveFields(config, EMAIL_SERVICE_SENSITIVE_FIELDS);
   }
 
   private isValidSenderAddress(value: string): boolean {

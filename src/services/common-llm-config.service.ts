@@ -17,7 +17,7 @@ const LLM_SERVICE_CONFIG_KEY = "common.llm_service";
 const COMMON_APP_SUMMARY: AdminAppSummary = {
   appId: COMMON_APP_ID,
   appCode: COMMON_APP_ID,
-  appName: "Common",
+  appName: "服务端配置",
   status: "ACTIVE",
   canDelete: false,
 };

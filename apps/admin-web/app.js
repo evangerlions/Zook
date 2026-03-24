@@ -9,8 +9,10 @@ const APPS_ROUTE = "/apps";
 const CONFIG_ROUTE = "/config";
 const MAIL_ROUTE = "/mail";
 const LLM_ROUTE = "/llm";
+const PASSWORD_ROUTE = "/passwords";
 const COMMON_WORKSPACE_VALUE = "__common__";
-const KNOWN_ROUTES = new Set([LOGIN_ROUTE, APPS_ROUTE, CONFIG_ROUTE, MAIL_ROUTE, LLM_ROUTE]);
+const SERVICE_WORKSPACE_LABEL = "服务端配置";
+const KNOWN_ROUTES = new Set([LOGIN_ROUTE, APPS_ROUTE, CONFIG_ROUTE, MAIL_ROUTE, LLM_ROUTE, PASSWORD_ROUTE]);
 const MAIL_TEMPLATE_LOCALE_OPTIONS = [
   { value: "zh-CN", label: "简体中文" },
   { value: "en-US", label: "English (US)" },
@@ -31,10 +33,12 @@ const state = {
   deletingAppId: "",
   savingMail: false,
   savingLlm: false,
+  savingPasswords: false,
   loadingBootstrap: false,
   loadingConfig: false,
   loadingMail: false,
   loadingLlm: false,
+  loadingPasswords: false,
   loadingLlmMetrics: false,
   notice: null,
   loginError: "",
@@ -44,8 +48,10 @@ const state = {
   configDocument: null,
   emailDocument: null,
   llmDocument: null,
+  passwordDocument: null,
   mailDraft: createDefaultMailConfig(),
   llmDraft: createDefaultLlmConfig(),
+  passwordDraft: createDefaultPasswordConfig(),
   editorValue: "",
   savedValue: "",
   configDesc: "",
@@ -122,6 +128,11 @@ appRoot.addEventListener("change", (event) => {
     return;
   }
 
+  if (isPasswordDraftControl(target)) {
+    handlePasswordDraftChange(target);
+    return;
+  }
+
   if (isLlmDialogControl(target)) {
     handleLlmDialogChange(target);
     return;
@@ -174,6 +185,11 @@ appRoot.addEventListener("input", (event) => {
 
   if (isMailDraftControl(target)) {
     handleMailDraftChange(target);
+    return;
+  }
+
+  if (isPasswordDraftControl(target)) {
+    handlePasswordDraftChange(target);
     return;
   }
 
@@ -259,8 +275,10 @@ function clearAdminSession() {
   state.configDocument = null;
   state.emailDocument = null;
   state.llmDocument = null;
+  state.passwordDocument = null;
   state.mailDraft = createDefaultMailConfig();
   state.llmDraft = createDefaultLlmConfig();
+  state.passwordDraft = createDefaultPasswordConfig();
   state.editorValue = "";
   state.savedValue = "";
   state.editorError = "";
@@ -269,6 +287,8 @@ function clearAdminSession() {
   state.restoringLlmRevision = "";
   state.saveDialog = null;
   state.llmDialog = null;
+  state.loadingPasswords = false;
+  state.savingPasswords = false;
   state.llmMetricsDocument = null;
   state.llmModelMetricsDocument = null;
   state.llmSelectedModelKey = "";
@@ -471,12 +491,7 @@ function renderConsole(path) {
           </div>
         </div>
 
-        <nav class="sidebar-nav" aria-label="主导航">
-          ${renderNavItem(APPS_ROUTE, path, "应用")}
-          ${renderNavItem(CONFIG_ROUTE, path, "配置")}
-          ${renderNavItem(MAIL_ROUTE, path, "邮件服务")}
-          ${renderNavItem(LLM_ROUTE, path, "LLM")}
-        </nav>
+        <nav class="sidebar-nav" aria-label="主导航">${renderSidebarNav(path)}</nav>
       </aside>
 
       <div class="main-shell">
@@ -571,6 +586,23 @@ function renderWorkspaceControl(path) {
   `;
 }
 
+function isCommonWorkspacePath(path) {
+  return path === APPS_ROUTE || path === MAIL_ROUTE || path === LLM_ROUTE || path === PASSWORD_ROUTE;
+}
+
+function renderSidebarNav(path) {
+  if (isCommonWorkspacePath(path)) {
+    return `
+      ${renderNavItem(APPS_ROUTE, path, "应用")}
+      ${renderNavItem(MAIL_ROUTE, path, "邮件服务")}
+      ${renderNavItem(LLM_ROUTE, path, "LLM")}
+      ${renderNavItem(PASSWORD_ROUTE, path, "密码")}
+    `;
+  }
+
+  return renderNavItem(CONFIG_ROUTE, path, "配置");
+}
+
 function renderNavItem(route, currentRoute, label) {
   return `
     <a
@@ -590,10 +622,10 @@ function renderWorkspaceOptions(path) {
     return '<option value="">加载中...</option>';
   }
 
-  const inCommonWorkspace = path === APPS_ROUTE || path === MAIL_ROUTE || path === LLM_ROUTE;
+  const inCommonWorkspace = isCommonWorkspacePath(path);
   const commonOption = `
     <option value="${COMMON_WORKSPACE_VALUE}" ${inCommonWorkspace ? "selected" : ""}>
-      Common
+      ${SERVICE_WORKSPACE_LABEL}
     </option>
   `;
 
@@ -646,6 +678,10 @@ function renderContent(path) {
 
   if (path === LLM_ROUTE) {
     return renderLlmPage();
+  }
+
+  if (path === PASSWORD_ROUTE) {
+    return renderPasswordsPage();
   }
 
   return renderConfigPage();
@@ -895,7 +931,7 @@ function renderMailPage() {
       <header class="page-header">
         <div>
           <h1 class="page-title">邮件服务</h1>
-          <p class="page-subtitle">Common</p>
+          <p class="page-subtitle">${SERVICE_WORKSPACE_LABEL}</p>
         </div>
         <div class="page-actions">
           <span class="meta-chip">R${escapeHtml(String(currentRevision))}</span>
@@ -959,28 +995,15 @@ function renderMailPage() {
             </label>
           </div>
 
-          <div class="form-grid">
-            <label class="field">
-              <span>SecretId</span>
-              <input
-                data-mail-field="secretId"
-                type="text"
-                value="${escapeHtml(draft.secretId)}"
-                autocomplete="off"
-                ${readOnly || state.savingMail ? "disabled" : ""}
-              />
-            </label>
-            <label class="field">
-              <span>SecretKey</span>
-              <input
-                data-mail-field="secretKey"
-                type="password"
-                value="${escapeHtml(draft.secretKey)}"
-                autocomplete="off"
-                ${readOnly || state.savingMail ? "disabled" : ""}
-              />
-            </label>
-          </div>
+          <section class="mail-section">
+            <div class="mail-section-header">
+              <div>
+                <h3>腾讯云凭据</h3>
+                <p>请在密码工作区配置 <code>tencent.ses.secret_id</code> 与 <code>tencent.ses.secret_key</code>。</p>
+              </div>
+              <button class="button button-secondary" type="button" data-link="${PASSWORD_ROUTE}">前往密码</button>
+            </div>
+          </section>
 
           <section class="mail-section">
             <div class="mail-section-header">
@@ -1059,6 +1082,120 @@ function renderMailPage() {
   `;
 }
 
+function renderPasswordsPage() {
+  if (state.loadingPasswords) {
+    return `
+      <section class="page-shell">
+        <div class="page-header">
+          <div class="skeleton skeleton-title"></div>
+        </div>
+        <section class="panel"><div class="skeleton skeleton-block"></div></section>
+      </section>
+    `;
+  }
+
+  const document = normalizePasswordDocument(state.passwordDocument);
+  const draft = normalizePasswordDraft(state.passwordDraft ?? document.items);
+  const updatedAt = document.updatedAt ? formatTimestamp(document.updatedAt) : "未保存";
+
+  return `
+    <section class="page-shell">
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">密码</h1>
+          <p class="page-subtitle">${SERVICE_WORKSPACE_LABEL}</p>
+        </div>
+        <div class="page-actions">
+          <span class="meta-chip">${escapeHtml(updatedAt)}</span>
+          <span class="meta-chip">${hasUnsavedPasswordChanges() ? "未保存" : "已保存"}</span>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-heading">
+            <h2 class="panel-title">机密字段</h2>
+            <p class="panel-caption">统一保存腾讯云等服务端机密参数，不做版本控制。</p>
+          </div>
+          <div class="panel-actions">
+            <button class="button button-secondary" type="button" data-action="reload-passwords" ${state.loadingPasswords ? "disabled" : ""}>读取</button>
+            <button class="button button-secondary" type="button" data-action="add-password-item" ${state.savingPasswords ? "disabled" : ""}>添加密码</button>
+          </div>
+        </div>
+
+        <div class="mail-list">
+          ${
+            draft.length
+              ? draft.map((item, index) => renderPasswordItemRow(item, index)).join("")
+              : '<div class="mail-empty">还没有密码项。</div>'
+          }
+        </div>
+
+        <div class="form-footer">
+          <button class="button button-ghost" type="button" data-action="reset-passwords" ${!hasUnsavedPasswordChanges() || state.savingPasswords ? "disabled" : ""}>恢复</button>
+          <button class="button button-primary" type="button" data-action="save-passwords" ${state.savingPasswords ? "disabled" : ""}>
+            ${state.savingPasswords ? "保存中..." : "保存"}
+          </button>
+        </div>
+      </section>
+    </section>
+  `;
+}
+
+function renderPasswordItemRow(item, index) {
+  return `
+    <div class="mail-row">
+      <div class="mail-row-grid mail-row-grid-password">
+        <label class="field">
+          <span>Key</span>
+          <input
+            data-password-field="key"
+            data-index="${escapeHtml(String(index))}"
+            type="text"
+            value="${escapeHtml(item.key)}"
+            placeholder="tencent.ses.secret_id"
+            autocomplete="off"
+            ${state.savingPasswords ? "disabled" : ""}
+          />
+        </label>
+        <label class="field">
+          <span>说明</span>
+          <input
+            data-password-field="desc"
+            data-index="${escapeHtml(String(index))}"
+            type="text"
+            value="${escapeHtml(item.desc)}"
+            placeholder="腾讯 SES SecretId"
+            autocomplete="off"
+            ${state.savingPasswords ? "disabled" : ""}
+          />
+        </label>
+        <label class="field">
+          <span>值</span>
+          <input
+            data-password-field="value"
+            data-index="${escapeHtml(String(index))}"
+            type="password"
+            value="${escapeHtml(item.value)}"
+            placeholder="输入机密值"
+            autocomplete="off"
+            ${state.savingPasswords ? "disabled" : ""}
+          />
+        </label>
+        <button
+          class="button button-ghost mail-row-remove"
+          type="button"
+          data-action="remove-password-item"
+          data-index="${escapeHtml(String(index))}"
+          ${state.savingPasswords ? "disabled" : ""}
+        >
+          删除
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function normalizeMailDocument(document) {
   return {
     revision: document?.revision ?? null,
@@ -1076,6 +1213,17 @@ function normalizeMailDraft(config) {
   normalized.senders = Array.isArray(normalized.senders) ? normalized.senders : [];
   normalized.templates = Array.isArray(normalized.templates) ? normalized.templates : [];
   return normalized;
+}
+
+function normalizePasswordDocument(document) {
+  return {
+    updatedAt: document?.updatedAt ?? null,
+    items: normalizePasswordDraft(document?.items),
+  };
+}
+
+function normalizePasswordDraft(items) {
+  return clonePasswordConfig(items);
 }
 
 function renderLlmPage() {
@@ -1104,7 +1252,7 @@ function renderLlmPage() {
       <header class="page-header">
         <div>
           <h1 class="page-title">LLM</h1>
-          <p class="page-subtitle">Common</p>
+          <p class="page-subtitle">${SERVICE_WORKSPACE_LABEL}</p>
         </div>
         <div class="page-actions">
           <span class="meta-chip">R${escapeHtml(String(currentRevision))}</span>
@@ -1322,7 +1470,7 @@ function renderLlmConfigPanel({ doc, draft, readOnly, validation, latestRevision
             <div class="mail-section-header">
               <div>
                 <h3>全局设置</h3>
-                <p>这里控制整个 Common LLM 服务是否启用，以及默认模型 key。</p>
+                <p>这里控制整个服务端 LLM 配置是否启用，以及默认模型 key。</p>
               </div>
             </div>
             <div class="form-grid">
@@ -2559,6 +2707,49 @@ async function handleAction(target) {
     return;
   }
 
+  if (action === "reload-passwords") {
+    await loadPasswordConfig();
+    clearNotice();
+    await render();
+    return;
+  }
+
+  if (action === "add-password-item") {
+    ensurePasswordDraft().push(createEmptyPasswordItem());
+    clearNotice();
+    await render();
+    return;
+  }
+
+  if (action === "remove-password-item") {
+    const index = Number(target.dataset.index || -1);
+    if (index >= 0) {
+      ensurePasswordDraft().splice(index, 1);
+    }
+    clearNotice();
+    await render();
+    return;
+  }
+
+  if (action === "reset-passwords") {
+    state.passwordDraft = clonePasswordConfig(state.passwordDocument?.items);
+    clearNotice();
+    await render();
+    return;
+  }
+
+  if (action === "save-passwords") {
+    try {
+      serializePasswordDraft(ensurePasswordDraft());
+      await persistPasswords();
+    } catch (error) {
+      setNotice("error", formatError(error));
+      pushToast("error", formatError(error));
+      await render();
+    }
+    return;
+  }
+
   if (action === "validate-json") {
     const parsed = parseConfigText(state.editorValue);
     const topLevelCount = Object.keys(parsed).length;
@@ -2776,7 +2967,7 @@ async function handleWorkspaceSwitch(nextValue) {
 
   if (nextValue === COMMON_WORKSPACE_VALUE) {
     clearNotice();
-    if (currentPath() !== APPS_ROUTE && currentPath() !== MAIL_ROUTE && currentPath() !== LLM_ROUTE) {
+    if (!isCommonWorkspacePath(currentPath())) {
       await navigate(APPS_ROUTE);
       return;
     }
@@ -2809,6 +3000,11 @@ async function syncRouteState(path) {
 
   if (path === MAIL_ROUTE) {
     await loadEmailServiceConfig(false);
+    return;
+  }
+
+  if (path === PASSWORD_ROUTE) {
+    await loadPasswordConfig(false);
     return;
   }
 
@@ -2921,6 +3117,21 @@ async function loadEmailServiceRevision(revision, showIntermediateRender = true)
     state.mailDraft = normalizeMailDraft(payload.data?.config);
   } finally {
     state.loadingMail = false;
+  }
+}
+
+async function loadPasswordConfig(showIntermediateRender = true) {
+  state.loadingPasswords = true;
+  if (showIntermediateRender) {
+    await render();
+  }
+
+  try {
+    const payload = await requestJson("/api/v1/admin/apps/common/passwords");
+    state.passwordDocument = normalizePasswordDocument(payload.data);
+    state.passwordDraft = normalizePasswordDraft(payload.data?.items);
+  } finally {
+    state.loadingPasswords = false;
   }
 }
 
@@ -3128,6 +3339,33 @@ async function persistMailConfig(desc) {
   await render();
 }
 
+async function persistPasswords() {
+  state.savingPasswords = true;
+  clearNotice();
+  await render();
+
+  try {
+    const payload = await requestJson("/api/v1/admin/apps/common/passwords", {
+      method: "PUT",
+      body: {
+        items: serializePasswordDraft(ensurePasswordDraft()),
+      },
+    });
+
+    state.passwordDocument = normalizePasswordDocument(payload.data);
+    state.passwordDraft = normalizePasswordDraft(payload.data?.items);
+    setNotice("success", "密码已保存。");
+    pushToast("success", "密码已保存。");
+  } catch (error) {
+    setNotice("error", formatError(error));
+    pushToast("error", formatError(error));
+  } finally {
+    state.savingPasswords = false;
+  }
+
+  await render();
+}
+
 async function persistLlmConfig(desc) {
   state.savingLlm = true;
   clearNotice();
@@ -3161,8 +3399,6 @@ async function persistLlmConfig(desc) {
 function createDefaultMailConfig() {
   return {
     enabled: false,
-    secretId: "",
-    secretKey: "",
     senders: [],
     templates: [],
   };
@@ -3171,8 +3407,6 @@ function createDefaultMailConfig() {
 function cloneMailConfig(config = createDefaultMailConfig()) {
   return {
     enabled: Boolean(config?.enabled),
-    secretId: String(config?.secretId ?? ""),
-    secretKey: String(config?.secretKey ?? ""),
     senders: Array.isArray(config?.senders)
       ? config.senders.map((item) => ({
           id: String(item?.id ?? ""),
@@ -3285,8 +3519,6 @@ function serializeMailDraft(draft) {
 
   return {
     enabled: Boolean(draft.enabled),
-    secretId: String(draft.secretId ?? "").trim(),
-    secretKey: String(draft.secretKey ?? "").trim(),
     senders,
     templates,
   };
@@ -3298,11 +3530,96 @@ function serializeMailDraftForPreview(draft) {
   } catch {
     return {
       enabled: Boolean(draft?.enabled),
-      secretId: String(draft?.secretId ?? "").trim(),
-      secretKey: String(draft?.secretKey ?? "").trim(),
       senders: Array.isArray(draft?.senders) ? draft.senders : [],
       templates: Array.isArray(draft?.templates) ? draft.templates : [],
     };
+  }
+}
+
+function createDefaultPasswordConfig() {
+  return [];
+}
+
+function clonePasswordConfig(items = createDefaultPasswordConfig()) {
+  return Array.isArray(items)
+    ? items.map((item) => ({
+        key: String(item?.key ?? ""),
+        desc: String(item?.desc ?? ""),
+        value: String(item?.value ?? ""),
+        updatedAt: item?.updatedAt ? String(item.updatedAt) : undefined,
+      }))
+    : [];
+}
+
+function ensurePasswordDraft() {
+  if (!state.passwordDraft) {
+    state.passwordDraft = clonePasswordConfig(state.passwordDocument?.items);
+  }
+
+  return state.passwordDraft;
+}
+
+function createEmptyPasswordItem() {
+  return {
+    key: "",
+    desc: "",
+    value: "",
+  };
+}
+
+function isPasswordDraftControl(target) {
+  return target instanceof HTMLInputElement && Boolean(target.dataset.passwordField);
+}
+
+function handlePasswordDraftChange(target) {
+  const draft = ensurePasswordDraft();
+  const index = Number(target.dataset.index || -1);
+  const key = target.dataset.passwordField;
+
+  if (index < 0 || !key || !draft[index]) {
+    return;
+  }
+
+  draft[index][key] = target.value;
+}
+
+function hasUnsavedPasswordChanges() {
+  try {
+    const current = JSON.stringify(serializePasswordDraft(ensurePasswordDraft()));
+    const saved = JSON.stringify(serializePasswordDraft(clonePasswordConfig(state.passwordDocument?.items)));
+    return current !== saved;
+  } catch {
+    return true;
+  }
+}
+
+function serializePasswordDraft(draft) {
+  const items = [];
+
+  for (const [index, item] of draft.entries()) {
+    const key = String(item?.key ?? "").trim();
+    const desc = String(item?.desc ?? "").trim();
+    const value = typeof item?.value === "string" ? item.value : "";
+
+    if (!key && !desc && !value) {
+      continue;
+    }
+
+    if (!key || !value) {
+      throw new Error(`请完整填写第 ${index + 1} 个密码项。`);
+    }
+
+    items.push({ key, desc, value });
+  }
+
+  return items;
+}
+
+function serializePasswordDraftForPreview(draft) {
+  try {
+    return { items: serializePasswordDraft(draft) };
+  } catch {
+    return { items: Array.isArray(draft) ? draft : [] };
   }
 }
 
