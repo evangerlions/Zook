@@ -468,6 +468,13 @@ select {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
+.user-chip-button {
+  cursor: pointer;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+}
+
 .user-menu {
   position: relative;
 }
