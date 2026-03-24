@@ -868,10 +868,11 @@ function renderMailPage() {
     `;
   }
 
-  const draft = state.mailDraft ?? cloneMailConfig(state.emailDocument?.config);
-  const updatedAt = state.emailDocument?.updatedAt ? formatTimestamp(state.emailDocument.updatedAt) : "未保存";
-  const currentRevision = state.emailDocument?.revision ?? "—";
-  const revisions = Array.isArray(state.emailDocument?.revisions) ? state.emailDocument.revisions : [];
+  const emailDocument = normalizeMailDocument(state.emailDocument);
+  const draft = normalizeMailDraft(state.mailDraft ?? emailDocument.config);
+  const updatedAt = emailDocument.updatedAt ? formatTimestamp(emailDocument.updatedAt) : "未保存";
+  const currentRevision = emailDocument.revision ?? "—";
+  const revisions = Array.isArray(emailDocument.revisions) ? emailDocument.revisions : [];
   const latestRevision = revisions[0]?.revision;
   const readOnly = state.loadingMail || isViewingHistoricalMailConfig();
 
@@ -886,7 +887,7 @@ function renderMailPage() {
           <span class="meta-chip">R${escapeHtml(String(currentRevision))}</span>
           <span class="meta-chip">${escapeHtml(updatedAt)}</span>
           <span class="meta-chip">${isViewingHistoricalMailConfig() ? "历史版本" : hasUnsavedMailChanges() ? "未保存" : "已保存"}</span>
-          <span class="meta-chip">${escapeHtml(state.emailDocument?.resolvedRegion || "ap-guangzhou")}</span>
+          <span class="meta-chip">${escapeHtml(emailDocument.resolvedRegion || "ap-guangzhou")}</span>
         </div>
       </header>
 
@@ -913,7 +914,7 @@ function renderMailPage() {
                 <div class="revision-banner">
                   <div>
                     <strong>正在查看历史版本 R${escapeHtml(String(currentRevision))}</strong>
-                    <p>${escapeHtml(state.emailDocument?.desc || "未填写更新说明")}</p>
+                    <p>${escapeHtml(emailDocument.desc || "未填写更新说明")}</p>
                   </div>
                   <button
                     class="button button-primary"
@@ -929,7 +930,7 @@ function renderMailPage() {
               : ""
           }
 
-          ${renderVersionDescription(state.emailDocument?.desc)}
+          ${renderVersionDescription(emailDocument.desc)}
 
           <form class="stack-form" data-form="save-mail">
           <div class="form-grid">
@@ -1025,7 +1026,7 @@ function renderMailPage() {
               revisions.length
                 ? revisions.map((item) => renderRevisionItem(item, {
                     action: "view-mail-revision",
-                    activeRevision: state.emailDocument?.revision,
+                    activeRevision: emailDocument.revision,
                     latestRevision,
                   })).join("")
                 : '<div class="revision-empty">还没有历史版本。</div>'
@@ -1035,6 +1036,25 @@ function renderMailPage() {
       </div>
     </section>
   `;
+}
+
+function normalizeMailDocument(document) {
+  return {
+    revision: document?.revision ?? null,
+    updatedAt: document?.updatedAt ?? null,
+    desc: document?.desc ?? "",
+    resolvedRegion: document?.resolvedRegion ?? "ap-guangzhou",
+    isLatest: document?.isLatest !== false,
+    revisions: Array.isArray(document?.revisions) ? document.revisions : [],
+    config: normalizeMailDraft(document?.config),
+  };
+}
+
+function normalizeMailDraft(config) {
+  const normalized = cloneMailConfig(config);
+  normalized.senders = Array.isArray(normalized.senders) ? normalized.senders : [];
+  normalized.templates = Array.isArray(normalized.templates) ? normalized.templates : [];
+  return normalized;
 }
 
 function renderLlmPage() {
@@ -2435,11 +2455,13 @@ async function handleAction(target) {
             method: "POST",
           },
         );
-        state.emailDocument = payload.data;
-        state.mailDraft = cloneMailConfig(payload.data.config);
+        state.emailDocument = normalizeMailDocument(payload.data);
+        state.mailDraft = normalizeMailDraft(payload.data?.config);
         setNotice("success", `已恢复到版本 R${revision}。`);
+        pushToast("success", `已恢复到版本 R${revision}。`);
       } catch (error) {
         setNotice("error", formatError(error));
+        pushToast("error", formatError(error));
       } finally {
         state.restoringMailRevision = "";
       }
@@ -2853,8 +2875,8 @@ async function loadEmailServiceConfig(showIntermediateRender = true) {
 
   try {
     const payload = await requestJson("/api/v1/admin/apps/common/email-service");
-    state.emailDocument = payload.data;
-    state.mailDraft = cloneMailConfig(payload.data.config);
+    state.emailDocument = normalizeMailDocument(payload.data);
+    state.mailDraft = normalizeMailDraft(payload.data?.config);
   } finally {
     state.loadingMail = false;
   }
@@ -2868,8 +2890,8 @@ async function loadEmailServiceRevision(revision, showIntermediateRender = true)
 
   try {
     const payload = await requestJson(`/api/v1/admin/apps/common/email-service/revisions/${revision}`);
-    state.emailDocument = payload.data;
-    state.mailDraft = cloneMailConfig(payload.data.config);
+    state.emailDocument = normalizeMailDocument(payload.data);
+    state.mailDraft = normalizeMailDraft(payload.data?.config);
   } finally {
     state.loadingMail = false;
   }
@@ -3064,8 +3086,8 @@ async function persistMailConfig(desc) {
       },
     });
 
-    state.emailDocument = payload.data;
-    state.mailDraft = cloneMailConfig(payload.data.config);
+    state.emailDocument = normalizeMailDocument(payload.data);
+    state.mailDraft = normalizeMailDraft(payload.data?.config);
     state.saveDialog = null;
     setNotice("success", "邮件服务已保存。");
     pushToast("success", "邮件服务已保存。");
