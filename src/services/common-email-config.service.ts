@@ -12,8 +12,12 @@ import type {
 
 const COMMON_APP_ID = "common";
 const EMAIL_SERVICE_CONFIG_KEY = "common.email_service";
-export const TENCENT_SES_SECRET_ID_PASSWORD_KEY = "tencent.ses.secret_id";
-export const TENCENT_SES_SECRET_KEY_PASSWORD_KEY = "tencent.ses.secret_key";
+export const TENCENT_SECRET_ID_PASSWORD_KEY = "tencent.secret_id";
+export const TENCENT_SECRET_KEY_PASSWORD_KEY = "tencent.secret_key";
+export const TENCENT_SES_SECRET_ID_PASSWORD_KEY = TENCENT_SECRET_ID_PASSWORD_KEY;
+export const TENCENT_SES_SECRET_KEY_PASSWORD_KEY = TENCENT_SECRET_KEY_PASSWORD_KEY;
+const LEGACY_TENCENT_SES_SECRET_ID_PASSWORD_KEY = "tencent.ses.secret_id";
+const LEGACY_TENCENT_SES_SECRET_KEY_PASSWORD_KEY = "tencent.ses.secret_key";
 const COMMON_APP_SUMMARY: AdminAppSummary = {
   appId: COMMON_APP_ID,
   appCode: COMMON_APP_ID,
@@ -321,8 +325,14 @@ export class CommonEmailConfigService {
 
   private async resolveCredentials(): Promise<{ secretId: string; secretKey: string }> {
     const [secretId, secretKey] = await Promise.all([
-      this.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_ID_PASSWORD_KEY),
-      this.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_KEY_PASSWORD_KEY),
+      this.resolveCredentialValue(
+        TENCENT_SECRET_ID_PASSWORD_KEY,
+        LEGACY_TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+      ),
+      this.resolveCredentialValue(
+        TENCENT_SECRET_KEY_PASSWORD_KEY,
+        LEGACY_TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+      ),
     ]);
 
     if (!secretId || !secretKey) {
@@ -337,6 +347,15 @@ export class CommonEmailConfigService {
       secretId,
       secretKey,
     };
+  }
+
+  private async resolveCredentialValue(primaryKey: string, legacyKey: string): Promise<string | undefined> {
+    const primaryValue = await this.commonPasswordConfigService.getValue(primaryKey);
+    if (primaryValue) {
+      return primaryValue;
+    }
+
+    return this.commonPasswordConfigService.getValue(legacyKey);
   }
 
   private resolveSender(senders: EmailSenderConfig[], senderId: string): EmailSenderConfig {

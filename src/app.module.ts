@@ -38,6 +38,7 @@ import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
+import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
 import type {
@@ -221,6 +222,17 @@ export class BackendApplication {
 
     if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/passwords") {
       return this.handleAdminUpdatePasswords(request);
+    }
+
+    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/passwords/item") {
+      return this.handleAdminUpsertPasswordItem(request);
+    }
+
+    const adminPasswordDeleteMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/passwords\/([^/]+)$/,
+    );
+    if (request.method === "DELETE" && adminPasswordDeleteMatch) {
+      return this.handleAdminDeletePasswordItem(request, decodeURIComponent(adminPasswordDeleteMatch[1]));
     }
 
     if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service") {
@@ -871,6 +883,46 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminUpsertPasswordItem(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.adminConsoleService.upsertPasswordItem(body);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.password.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+        key: typeof body.key === "string" ? body.key : undefined,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminDeletePasswordItem(
+    request: HttpRequest,
+    key: string,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.deletePasswordItem(key);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.password.delete",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+        key,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminGetLlmService(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getLlmServiceConfig();
@@ -1265,8 +1317,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const passwordManager = new PasswordManager(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
+  const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService);
-  const commonLlmConfigService = new CommonLlmConfigService(appConfigService);
+  const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
   const llmHealthService = new LlmHealthService(kvManager);
   const llmMetricsService = new LlmMetricsService(kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);

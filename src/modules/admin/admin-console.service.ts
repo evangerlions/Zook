@@ -240,6 +240,18 @@ export class AdminConsoleService {
     return this.commonPasswordConfigService.updateConfig(input);
   }
 
+  async upsertPasswordItem(input: unknown): Promise<AdminPasswordDocument> {
+    const document = await this.commonPasswordConfigService.upsertItem(input);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async deletePasswordItem(key: string): Promise<AdminPasswordDocument> {
+    const document = await this.commonPasswordConfigService.deleteItem(key);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
   async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {
     const document = await this.commonLlmConfigService.getDocument(revision);
     const runtime = {

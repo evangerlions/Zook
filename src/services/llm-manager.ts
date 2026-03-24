@@ -212,7 +212,7 @@ export class LLMManager {
     });
 
     const requestedModelKey = request.modelKey.trim();
-    const commonConfig = this.options.commonLlmConfigService?.getRuntimeConfig();
+    const commonConfig = await this.options.commonLlmConfigService?.getRuntimeConfig();
 
     if (this.options.commonLlmConfigService?.hasStoredConfig()) {
       if (!commonConfig?.enabled) {

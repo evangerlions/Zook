@@ -118,7 +118,7 @@ export function assertDateKey(value: string): void {
 }
 
 const DEFAULT_SENSITIVE_VISIBLE_CHARS = 4;
-const DEFAULT_MASK_SUFFIX = "****";
+const MASK_CHAR = "*";
 
 export interface SensitiveFieldRule {
   visibleChars?: number;
@@ -134,8 +134,32 @@ export function maskSensitiveString(value: unknown, visibleChars = DEFAULT_SENSI
     return "";
   }
 
-  const prefixLength = Math.min(visibleChars, normalized.length);
-  return normalized.slice(0, prefixLength) + DEFAULT_MASK_SUFFIX;
+  const edgeLength = Math.max(0, visibleChars);
+  const normalizedLength = normalized.length;
+
+  if (normalizedLength <= edgeLength * 2) {
+    const prefixLength = Math.min(edgeLength, normalizedLength);
+    return normalized.slice(0, prefixLength) + MASK_CHAR.repeat(normalizedLength - prefixLength);
+  }
+
+  return normalized.slice(0, edgeLength)
+    + MASK_CHAR.repeat(normalizedLength - edgeLength * 2)
+    + normalized.slice(-edgeLength);
+}
+
+export function matchesMaskedSensitiveString(
+  maskedValue: unknown,
+  originalValue: unknown,
+  visibleChars = DEFAULT_SENSITIVE_VISIBLE_CHARS,
+): boolean {
+  const normalizedMasked = typeof maskedValue === "string" ? maskedValue.trim() : "";
+  const normalizedOriginal = typeof originalValue === "string" ? originalValue.trim() : "";
+
+  if (!normalizedMasked || !normalizedOriginal) {
+    return false;
+  }
+
+  return normalizedMasked === maskSensitiveString(normalizedOriginal, visibleChars);
 }
 
 export function maskSensitiveFields<T extends Record<string, unknown>>(

@@ -355,6 +355,7 @@ export interface PasswordEntry {
   key: string;
   desc: string;
   value: string;
+  valueMd5?: string;
   updatedAt?: string;
 }
 
