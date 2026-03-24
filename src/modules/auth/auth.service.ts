@@ -13,6 +13,7 @@ import type {
   RegisterEmailCodeResult,
 } from "../../shared/types.ts";
 import { createOpaqueToken, randomId, randomNumericCode, sha256, toDateKey, toHourKey } from "../../shared/utils.ts";
+import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
@@ -62,11 +63,12 @@ export class AuthService {
     private readonly appRegistryService: AppRegistryService,
     private readonly passwordHasher: DevelopmentPasswordHasher,
     private readonly tokenService: TokenService,
+    private readonly refreshTokenStore: RefreshTokenStore,
     private readonly registrationEmailSender: RegistrationEmailSender,
     private readonly registrationCodeGenerator: () => string = () => randomNumericCode(6),
   ) {}
 
-  login(command: LoginCommand, now = new Date()): AuthSession {
+  async login(command: LoginCommand, now = new Date()): Promise<AuthSession> {
     const normalizedAccount = command.account.trim().toLowerCase();
     this.assertNotLocked(normalizedAccount, now);
 
@@ -147,7 +149,7 @@ export class AuthService {
     };
   }
 
-  register(command: RegisterCommand, now = new Date()): AuthSession {
+  async register(command: RegisterCommand, now = new Date()): Promise<AuthSession> {
     const app = this.assertSelfRegistrationAllowed(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
@@ -203,13 +205,13 @@ export class AuthService {
     return this.issueSessionForUser(userId, app.id, now);
   }
 
-  refresh(command: RefreshCommand, now = new Date()): AuthSession {
+  async refresh(command: RefreshCommand, now = new Date()): Promise<AuthSession> {
     const rawRefreshToken = command.cookieRefreshToken ?? command.refreshToken;
     if (!rawRefreshToken) {
       unauthorized("AUTH_REFRESH_TOKEN_REQUIRED", "Refresh token is required.");
     }
 
-    const existingRecord = this.getRefreshTokenRecord(rawRefreshToken);
+    const existingRecord = await this.getRefreshTokenRecord(rawRefreshToken);
     if (!existingRecord || existingRecord.revokedAt) {
       unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is revoked.");
     }
@@ -227,13 +229,14 @@ export class AuthService {
     this.appRegistryService.ensureExistingMembership(existingRecord.appId, user.id);
 
     const accessToken = this.tokenService.issueAccessToken(user.id, existingRecord.appId, now);
-    const { rawToken: refreshToken, recordId } = this.issueRefreshToken(
+    const { rawToken: refreshToken, recordId } = await this.issueRefreshToken(
       user.id,
       existingRecord.appId,
       now,
     );
     existingRecord.revokedAt = now.toISOString();
     existingRecord.replacedBy = recordId;
+    await this.refreshTokenStore.update(existingRecord);
 
     return {
       userId: user.id,
@@ -244,20 +247,13 @@ export class AuthService {
     };
   }
 
-  logout(command: LogoutCommand, auth: AuthContext, now = new Date()): number {
+  async logout(command: LogoutCommand, auth: AuthContext, now = new Date()): Promise<number> {
     if (command.appId !== auth.appId) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Logout app scope does not match the access token.");
     }
 
     if (command.scope === "all") {
-      const records = this.database.refreshTokens.filter(
-        (item) => item.appId === auth.appId && item.userId === auth.userId && !item.revokedAt,
-      );
-
-      records.forEach((item) => {
-        item.revokedAt = now.toISOString();
-      });
-      return records.length;
+      return this.refreshTokenStore.revokeAllByUserAndApp(auth.appId, auth.userId, now.toISOString());
     }
 
     const rawRefreshToken = command.cookieRefreshToken ?? command.refreshToken;
@@ -265,12 +261,13 @@ export class AuthService {
       unauthorized("AUTH_REFRESH_TOKEN_REQUIRED", "Refresh token is required for current-device logout.");
     }
 
-    const record = this.getRefreshTokenRecord(rawRefreshToken);
+    const record = await this.getRefreshTokenRecord(rawRefreshToken);
     if (!record || record.revokedAt || record.userId !== auth.userId || record.appId !== auth.appId) {
       unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is already invalid.");
     }
 
     record.revokedAt = now.toISOString();
+    await this.refreshTokenStore.update(record);
     return 1;
   }
 
@@ -286,13 +283,13 @@ export class AuthService {
     )}`;
   }
 
-  issueSession(userId: string, appId: string, now = new Date()): AuthSession {
+  async issueSession(userId: string, appId: string, now = new Date()): Promise<AuthSession> {
     return this.issueSessionForUser(userId, appId, now);
   }
 
-  private issueSessionForUser(userId: string, appId: string, now = new Date()): AuthSession {
+  private async issueSessionForUser(userId: string, appId: string, now = new Date()): Promise<AuthSession> {
     const accessToken = this.tokenService.issueAccessToken(userId, appId, now);
-    const { rawToken: refreshToken } = this.issueRefreshToken(userId, appId, now);
+    const { rawToken: refreshToken } = await this.issueRefreshToken(userId, appId, now);
 
     return {
       userId,
@@ -303,14 +300,14 @@ export class AuthService {
     };
   }
 
-  private issueRefreshToken(
+  private async issueRefreshToken(
     userId: string,
     appId: string,
     now = new Date(),
-  ): { rawToken: string; recordId: string } {
+  ): Promise<{ rawToken: string; recordId: string }> {
     const rawToken = createOpaqueToken("rt");
     const recordId = randomId("rft");
-    this.database.refreshTokens.push({
+    await this.refreshTokenStore.create({
       id: recordId,
       appId,
       userId,
@@ -322,9 +319,8 @@ export class AuthService {
     return { rawToken, recordId };
   }
 
-  private getRefreshTokenRecord(rawToken: string) {
-    const tokenHash = sha256(rawToken);
-    return this.database.refreshTokens.find((item) => item.tokenHash === tokenHash);
+  private async getRefreshTokenRecord(rawToken: string) {
+    return this.refreshTokenStore.getByRawToken(rawToken);
   }
 
   private assertNotLocked(account: string, now = new Date()): void {

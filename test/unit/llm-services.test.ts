@@ -5,10 +5,13 @@ import { InMemoryDatabase } from "../../src/infrastructure/database/prisma/in-me
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
 import { AppConfigService } from "../../src/services/app-config.service.ts";
 import { CommonLlmConfigService } from "../../src/services/common-llm-config.service.ts";
+import { CommonPasswordConfigService } from "../../src/services/common-password-config.service.ts";
 import { LlmHealthService } from "../../src/services/llm-health.service.ts";
 import { LLMManager, type LLMCompletionResult, type LLMProvider, type LLMStreamEvent } from "../../src/services/llm-manager.ts";
 import { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../src/services/llm-smoke-test.service.ts";
+import { PasswordManager } from "../../src/services/password-manager.ts";
+import { SecretReferenceResolver } from "../../src/services/secret-reference-resolver.ts";
 import { toHourKey } from "../../src/shared/utils.ts";
 
 async function createLlmFixture() {
@@ -18,12 +21,16 @@ async function createLlmFixture() {
   const database = new InMemoryDatabase();
   const cache = new InMemoryCache();
   const appConfigService = new AppConfigService(database, cache, kvManager);
-  const commonLlmConfigService = new CommonLlmConfigService(appConfigService);
+  const passwordManager = new PasswordManager(kvManager);
+  const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
+  const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
+  const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
   const llmHealthService = new LlmHealthService(kvManager);
   const llmMetricsService = new LlmMetricsService(kvManager);
 
   return {
     kvManager,
+    commonPasswordConfigService,
     commonLlmConfigService,
     llmHealthService,
     llmMetricsService,
@@ -236,6 +243,84 @@ test("llm manager fixed strategy ignores health score and always picks the highe
   });
 
   assert.equal(calls.at(-1), "volcengine");
+});
+
+test("llm manager resolves {{zook.ps.xxx}} apiKey references from password workspace", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonPasswordConfigService.updateConfig({
+    items: [
+      {
+        key: "bailian.api_key",
+        desc: "百炼 API Key",
+        value: "resolved-bailian-key",
+      },
+    ],
+  });
+
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "kimi2.5",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "{{zook.ps.bailian.api_key}}",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "kimi2.5",
+        label: "Kimi 2.5",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "kimi/kimi-k2.5",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+
+  let resolvedApiKey = "";
+  const manager = new LLMManager(
+    {
+      bailian: {
+        async complete(request): Promise<LLMCompletionResult> {
+          resolvedApiKey = request.model.providerConfig?.apiKey ?? "";
+          return {
+            provider: request.model.provider,
+            modelKey: request.model.modelKey,
+            providerModel: request.model.providerModel,
+            text: "ok",
+          };
+        },
+        async *stream(): AsyncIterable<LLMStreamEvent> {
+          yield {
+            type: "done",
+          };
+        },
+      },
+    },
+    undefined,
+    {
+      commonLlmConfigService: fixture.commonLlmConfigService,
+      llmHealthService: fixture.llmHealthService,
+      llmMetricsService: fixture.llmMetricsService,
+    },
+  );
+
+  await manager.complete({
+    modelKey: "kimi2.5",
+    messages: [{ role: "user", content: "hello" }],
+  });
+
+  assert.equal(resolvedApiKey, "resolved-bailian-key");
 });
 
 test("llm metrics service aggregates hourly data and prunes buckets older than one year", async () => {

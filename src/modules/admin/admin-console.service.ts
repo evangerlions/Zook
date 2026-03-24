@@ -7,6 +7,7 @@ import { CommonPasswordConfigService } from "../../services/common-password-conf
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
+import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
@@ -39,6 +40,7 @@ export class AdminConsoleService {
     private readonly llmHealthService: LlmHealthService,
     private readonly llmMetricsService: LlmMetricsService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
+    private readonly refreshTokenStore: RefreshTokenStore,
     private readonly managedStateStore: ManagedStateStore,
   ) {}
 
@@ -165,13 +167,13 @@ export class AdminConsoleService {
     this.database.rolePermissions = this.database.rolePermissions.filter(
       (item) => !roleIds.includes(item.roleId),
     );
-    this.database.refreshTokens = this.database.refreshTokens.filter((item) => item.appId !== app.id);
     this.database.auditLogs = this.database.auditLogs.filter((item) => item.appId !== app.id);
     this.database.notificationJobs = this.database.notificationJobs.filter((item) => item.appId !== app.id);
     this.database.failedEvents = this.database.failedEvents.filter((item) => item.appId !== app.id);
     this.database.analyticsEvents = this.database.analyticsEvents.filter((item) => item.appId !== app.id);
     this.database.files = this.database.files.filter((item) => item.appId !== app.id);
     await this.appConfigService.deleteByApp(app.id);
+    await this.refreshTokenStore.deleteByApp(app.id);
     await this.managedStateStore.save(this.database);
 
     return {
@@ -236,6 +238,18 @@ export class AdminConsoleService {
 
   async updatePasswordConfig(input: unknown): Promise<AdminPasswordDocument> {
     return this.commonPasswordConfigService.updateConfig(input);
+  }
+
+  async upsertPasswordItem(input: unknown): Promise<AdminPasswordDocument> {
+    const document = await this.commonPasswordConfigService.upsertItem(input);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async deletePasswordItem(key: string): Promise<AdminPasswordDocument> {
+    const document = await this.commonPasswordConfigService.deleteItem(key);
+    await this.managedStateStore.save(this.database);
+    return document;
   }
 
   async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {

@@ -198,6 +198,14 @@ appRoot.addEventListener("input", (event) => {
   }
 });
 
+appRoot.addEventListener("focusin", (event) => {
+  clearMaskedPasswordValue(event.target);
+});
+
+appRoot.addEventListener("focusout", (event) => {
+  restoreMaskedPasswordValue(event.target);
+});
+
 boot().catch(handleUnexpectedError);
 
 async function boot() {
@@ -596,7 +604,7 @@ function renderSidebarNav(path) {
       ${renderNavItem(APPS_ROUTE, path, "应用")}
       ${renderNavItem(MAIL_ROUTE, path, "邮件服务")}
       ${renderNavItem(LLM_ROUTE, path, "LLM")}
-      ${renderNavItem(PASSWORD_ROUTE, path, "密码")}
+      ${renderNavItem(PASSWORD_ROUTE, path, "PASSWORD")}
     `;
   }
 
@@ -645,7 +653,7 @@ function renderWorkspaceOptions(path) {
 }
 
 function renderNotice() {
-  if (!state.notice) {
+  if (!state.notice || currentPath() === PASSWORD_ROUTE) {
     return "";
   }
 
@@ -690,10 +698,8 @@ function renderContent(path) {
 function renderAppsPage() {
   return `
     <section class="page-shell">
-      <header class="page-header">
-        <div>
-          <h1 class="page-title">应用</h1>
-        </div>
+      <header class="page-header-compact">
+        <h1 class="page-title">应用</h1>
       </header>
 
       <section class="panel">
@@ -999,7 +1005,7 @@ function renderMailPage() {
             <div class="mail-section-header">
               <div>
                 <h3>腾讯云凭据</h3>
-                <p>请在密码工作区配置 <code>tencent.ses.secret_id</code> 与 <code>tencent.ses.secret_key</code>。</p>
+                <p>请在密码工作区配置 <code>tencent.secret_id</code> 与 <code>tencent.secret_key</code>。</p>
               </div>
               <button class="button button-secondary" type="button" data-link="${PASSWORD_ROUTE}">前往密码</button>
             </div>
@@ -1044,7 +1050,7 @@ function renderMailPage() {
           <details class="version-note">
             <summary>查看当前 JSON</summary>
             <div class="version-note-body">
-              <pre class="json-preview">${escapeHtml(JSON.stringify(serializeMailDraftForPreview(draft), null, 2))}</pre>
+              ${renderJsonPreview(serializeMailDraftForPreview(draft))}
             </div>
           </details>
 
@@ -1085,10 +1091,7 @@ function renderMailPage() {
 function renderPasswordsPage() {
   if (state.loadingPasswords) {
     return `
-      <section class="page-shell">
-        <div class="page-header">
-          <div class="skeleton skeleton-title"></div>
-        </div>
+      <section class="page-shell password-page-shell">
         <section class="panel"><div class="skeleton skeleton-block"></div></section>
       </section>
     `;
@@ -1099,31 +1102,30 @@ function renderPasswordsPage() {
   const updatedAt = document.updatedAt ? formatTimestamp(document.updatedAt) : "未保存";
 
   return `
-    <section class="page-shell">
-      <header class="page-header">
-        <div>
-          <h1 class="page-title">密码</h1>
-          <p class="page-subtitle">${SERVICE_WORKSPACE_LABEL}</p>
-        </div>
-        <div class="page-actions">
-          <span class="meta-chip">${escapeHtml(updatedAt)}</span>
-          <span class="meta-chip">${hasUnsavedPasswordChanges() ? "未保存" : "已保存"}</span>
-        </div>
-      </header>
-
-      <section class="panel">
+    <section class="page-shell password-page-shell">
+      <section class="panel password-panel">
         <div class="panel-header">
           <div class="panel-heading">
-            <h2 class="panel-title">机密字段</h2>
+            <h1 class="page-title password-page-title">PASSWORD</h1>
             <p class="panel-caption">统一保存腾讯云等服务端机密参数，不做版本控制。</p>
           </div>
+          <div class="page-header-compact-actions">
+            <span class="meta-chip">${escapeHtml(updatedAt)}</span>
+            <span class="meta-chip">${hasUnsavedPasswordChanges() ? "未保存" : "已保存"}</span>
+          </div>
+        </div>
+
+        <div class="panel-header password-toolbar">
+          <div class="panel-heading">
+            <h2 class="panel-title">机密字段</h2>
+          </div>
           <div class="panel-actions">
-            <button class="button button-secondary" type="button" data-action="reload-passwords" ${state.loadingPasswords ? "disabled" : ""}>读取</button>
+            <button class="button button-secondary" type="button" data-action="reload-passwords" ${state.loadingPasswords ? "disabled" : ""}>刷新</button>
             <button class="button button-secondary" type="button" data-action="add-password-item" ${state.savingPasswords ? "disabled" : ""}>添加密码</button>
           </div>
         </div>
 
-        <div class="mail-list">
+        <div class="mail-list password-list">
           ${
             draft.length
               ? draft.map((item, index) => renderPasswordItemRow(item, index)).join("")
@@ -1131,20 +1133,18 @@ function renderPasswordsPage() {
           }
         </div>
 
-        <div class="form-footer">
-          <button class="button button-ghost" type="button" data-action="reset-passwords" ${!hasUnsavedPasswordChanges() || state.savingPasswords ? "disabled" : ""}>恢复</button>
-          <button class="button button-primary" type="button" data-action="save-passwords" ${state.savingPasswords ? "disabled" : ""}>
-            ${state.savingPasswords ? "保存中..." : "保存"}
-          </button>
-        </div>
       </section>
     </section>
   `;
 }
 
 function renderPasswordItemRow(item, index) {
+  const valueMd5 = typeof item.valueMd5 === "string" ? item.valueMd5.trim() : "";
+  const updatedAt = item.updatedAt ? formatTimestamp(item.updatedAt) : "未保存";
+  const isNewItem = !String(item.originalKey ?? "").trim();
+  const isMaskedValue = !isNewItem && typeof item.value === "string" && item.value.includes("*");
   return `
-    <div class="mail-row">
+    <div class="mail-row password-row">
       <div class="mail-row-grid mail-row-grid-password">
         <label class="field">
           <span>Key</span>
@@ -1153,9 +1153,9 @@ function renderPasswordItemRow(item, index) {
             data-index="${escapeHtml(String(index))}"
             type="text"
             value="${escapeHtml(item.key)}"
-            placeholder="tencent.ses.secret_id"
+            placeholder="tencent.secret_id"
             autocomplete="off"
-            ${state.savingPasswords ? "disabled" : ""}
+            ${state.savingPasswords || !isNewItem ? "disabled" : ""}
           />
         </label>
         <label class="field">
@@ -1165,7 +1165,7 @@ function renderPasswordItemRow(item, index) {
             data-index="${escapeHtml(String(index))}"
             type="text"
             value="${escapeHtml(item.desc)}"
-            placeholder="腾讯 SES SecretId"
+            placeholder="用途说明"
             autocomplete="off"
             ${state.savingPasswords ? "disabled" : ""}
           />
@@ -1175,7 +1175,9 @@ function renderPasswordItemRow(item, index) {
           <input
             data-password-field="value"
             data-index="${escapeHtml(String(index))}"
-            type="password"
+            data-password-masked="${isMaskedValue ? "true" : "false"}"
+            data-password-original-value="${escapeHtml(item.value)}"
+            type="text"
             value="${escapeHtml(item.value)}"
             placeholder="输入机密值"
             autocomplete="off"
@@ -1183,7 +1185,16 @@ function renderPasswordItemRow(item, index) {
           />
         </label>
         <button
-          class="button button-ghost mail-row-remove"
+          class="button button-primary"
+          type="button"
+          data-action="save-password-item"
+          data-index="${escapeHtml(String(index))}"
+          ${state.savingPasswords ? "disabled" : ""}
+        >
+          ${state.savingPasswords ? "保存中..." : isNewItem ? "添加" : "保存"}
+        </button>
+        <button
+          class="button button-danger mail-row-remove"
           type="button"
           data-action="remove-password-item"
           data-index="${escapeHtml(String(index))}"
@@ -1191,6 +1202,10 @@ function renderPasswordItemRow(item, index) {
         >
           删除
         </button>
+      </div>
+      <div class="password-row-meta">
+        <span class="meta-chip password-md5-chip">${escapeHtml(valueMd5 ? `MD5 ${valueMd5}` : "MD5 待生成")}</span>
+        <span class="meta-chip">${escapeHtml(updatedAt)}</span>
       </div>
     </div>
   `;
@@ -1507,7 +1522,7 @@ function renderLlmConfigPanel({ doc, draft, readOnly, validation, latestRevision
             <div class="mail-section-header">
               <div>
                 <h3>供应商</h3>
-                <p>配置供应商连接信息。<code>key</code> 是系统内部标识，保存后不要频繁改；<code>baseUrl</code> 是 API 根地址；<code>apiKey</code> 会在读取时自动掩码。</p>
+                <p>配置供应商连接信息。<code>key</code> 是系统内部标识，保存后不要频繁改；<code>baseUrl</code> 是 API 根地址；<code>apiKey</code> 支持直接填写，也支持 <code>{{zook.ps.xxx}}</code> 引用密码工作区。</p>
               </div>
               <button class="button button-secondary" type="button" data-action="add-llm-provider" ${readOnly || state.savingLlm ? "disabled" : ""}>添加供应商</button>
             </div>
@@ -1540,7 +1555,7 @@ function renderLlmConfigPanel({ doc, draft, readOnly, validation, latestRevision
           <details class="version-note">
             <summary>查看当前 JSON</summary>
             <div class="version-note-body">
-              <pre class="json-preview">${escapeHtml(JSON.stringify(serializeLlmDraftForPreview(draft), null, 2))}</pre>
+              ${renderJsonPreview(serializeLlmDraftForPreview(draft))}
             </div>
           </details>
 
@@ -2007,6 +2022,18 @@ function renderJsonEditor({ value, readOnly, compact, dirty }) {
   `;
 }
 
+function renderJsonPreview(value, options = {}) {
+  const placeholder = typeof options.placeholder === "string" ? options.placeholder : "{\n}";
+  const serialized =
+    typeof value === "string"
+      ? value
+      : JSON.stringify(value ?? {}, null, 2);
+
+  return `
+    <pre class="json-preview json-preview-highlighted">${renderHighlightedJson(serialized, placeholder)}</pre>
+  `;
+}
+
 function renderSaveDialog() {
   if (!state.saveDialog) {
     return "";
@@ -2105,7 +2132,7 @@ function renderLlmDialogFields(dialog) {
       <label class="field">
         <span>apiKey</span>
         <input data-llm-dialog-field="apiKey" type="text" value="${escapeHtml(dialog.values.apiKey)}" autocomplete="off" />
-        <small class="field-hint">敏感字段。读取时会掩码展示，保存时会自动保留已有值。</small>
+        <small class="field-hint">支持明文，也支持 <code>{{zook.ps.xxx}}</code>，例如 <code>{{zook.ps.bailian.api_key}}</code>。</small>
       </label>
     `;
   }
@@ -2723,27 +2750,51 @@ async function handleAction(target) {
 
   if (action === "remove-password-item") {
     const index = Number(target.dataset.index || -1);
-    if (index >= 0) {
-      ensurePasswordDraft().splice(index, 1);
+    if (index < 0) {
+      return;
     }
-    clearNotice();
-    await render();
+
+    const draft = ensurePasswordDraft();
+    const item = draft[index];
+    if (!item) {
+      return;
+    }
+
+    const currentKey = String(item.key ?? "").trim();
+    const persistedKey = String(item.originalKey ?? "").trim();
+    const expectedKey = currentKey || persistedKey;
+    if (!expectedKey) {
+      draft.splice(index, 1);
+      await render();
+      return;
+    }
+
+    const confirmKey = window.prompt(`请输入要删除的 key 以确认删除：\n${expectedKey}`, "");
+    if (confirmKey === null) {
+      return;
+    }
+
+    if (confirmKey.trim() !== expectedKey) {
+      pushToast("error", "输入的 key 不匹配，已取消删除。");
+      return;
+    }
+
+    if (!persistedKey) {
+      draft.splice(index, 1);
+      pushToast("success", `已移除 ${expectedKey}。`);
+      await render();
+      return;
+    }
+
+    await deletePasswordItem(index, persistedKey, expectedKey);
     return;
   }
 
-  if (action === "reset-passwords") {
-    state.passwordDraft = clonePasswordConfig(state.passwordDocument?.items);
-    clearNotice();
-    await render();
-    return;
-  }
-
-  if (action === "save-passwords") {
+  if (action === "save-password-item") {
+    const index = Number(target.dataset.index || -1);
     try {
-      serializePasswordDraft(ensurePasswordDraft());
-      await persistPasswords();
+      await persistPasswordItem(index);
     } catch (error) {
-      setNotice("error", formatError(error));
       pushToast("error", formatError(error));
       await render();
     }
@@ -3339,25 +3390,58 @@ async function persistMailConfig(desc) {
   await render();
 }
 
-async function persistPasswords() {
+async function persistPasswordItem(index) {
+  const draft = ensurePasswordDraft();
+  const item = draft[index];
+  if (!item) {
+    return;
+  }
+
+  const body = serializePasswordItem(item, index);
   state.savingPasswords = true;
   clearNotice();
   await render();
 
   try {
-    const payload = await requestJson("/api/v1/admin/apps/common/passwords", {
+    const payload = await requestJson("/api/v1/admin/apps/common/passwords/item", {
       method: "PUT",
-      body: {
-        items: serializePasswordDraft(ensurePasswordDraft()),
-      },
+      body,
     });
 
     state.passwordDocument = normalizePasswordDocument(payload.data);
-    state.passwordDraft = normalizePasswordDraft(payload.data?.items);
-    setNotice("success", "密码已保存。");
-    pushToast("success", "密码已保存。");
+    const savedItem = normalizePasswordDraft(payload.data?.items).find((entry) => entry.key === body.key);
+    draft[index] = savedItem ?? {
+      ...item,
+      originalKey: body.key,
+      key: body.key,
+      desc: body.desc,
+      value: item.value,
+    };
+    pushToast("success", `${body.key} 已保存。`);
   } catch (error) {
-    setNotice("error", formatError(error));
+    pushToast("error", formatError(error));
+  } finally {
+    state.savingPasswords = false;
+  }
+
+  await render();
+}
+
+async function deletePasswordItem(index, persistedKey, displayKey) {
+  const draft = ensurePasswordDraft();
+  state.savingPasswords = true;
+  clearNotice();
+  await render();
+
+  try {
+    const payload = await requestJson(`/api/v1/admin/apps/common/passwords/${encodeURIComponent(persistedKey)}`, {
+      method: "DELETE",
+    });
+
+    state.passwordDocument = normalizePasswordDocument(payload.data);
+    draft.splice(index, 1);
+    pushToast("success", `${displayKey} 已删除。`);
+  } catch (error) {
     pushToast("error", formatError(error));
   } finally {
     state.savingPasswords = false;
@@ -3543,9 +3627,11 @@ function createDefaultPasswordConfig() {
 function clonePasswordConfig(items = createDefaultPasswordConfig()) {
   return Array.isArray(items)
     ? items.map((item) => ({
+        originalKey: String(item?.originalKey ?? item?.key ?? ""),
         key: String(item?.key ?? ""),
         desc: String(item?.desc ?? ""),
         value: String(item?.value ?? ""),
+        valueMd5: item?.valueMd5 ? String(item.valueMd5) : "",
         updatedAt: item?.updatedAt ? String(item.updatedAt) : undefined,
       }))
     : [];
@@ -3561,6 +3647,7 @@ function ensurePasswordDraft() {
 
 function createEmptyPasswordItem() {
   return {
+    originalKey: "",
     key: "",
     desc: "",
     value: "",
@@ -3615,12 +3702,67 @@ function serializePasswordDraft(draft) {
   return items;
 }
 
+function serializePasswordItem(item, index) {
+  if (!item || typeof item !== "object") {
+    throw new Error(`第 ${index + 1} 个密码项无效。`);
+  }
+
+  const key = String(item.key ?? "").trim();
+  const desc = String(item.desc ?? "").trim();
+  const value = typeof item.value === "string" ? item.value : "";
+  const originalKey = String(item.originalKey ?? "").trim();
+
+  if (!key || !value) {
+    throw new Error(`请完整填写第 ${index + 1} 个密码项。`);
+  }
+
+  return {
+    originalKey: originalKey || undefined,
+    key,
+    desc,
+    value,
+  };
+}
+
 function serializePasswordDraftForPreview(draft) {
   try {
     return { items: serializePasswordDraft(draft) };
   } catch {
     return { items: Array.isArray(draft) ? draft : [] };
   }
+}
+
+function clearMaskedPasswordValue(input) {
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (input.dataset.passwordField !== "value" || input.dataset.passwordMasked !== "true") {
+    return;
+  }
+
+  input.value = "";
+  input.dataset.passwordMasked = "false";
+  handlePasswordDraftChange(input);
+}
+
+function restoreMaskedPasswordValue(input) {
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (input.dataset.passwordField !== "value") {
+    return;
+  }
+
+  const originalValue = input.dataset.passwordOriginalValue ?? "";
+  if (!originalValue || input.value !== "") {
+    return;
+  }
+
+  input.value = originalValue;
+  input.dataset.passwordMasked = "true";
+  handlePasswordDraftChange(input);
 }
 
 function createDefaultLlmConfig() {

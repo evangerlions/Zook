@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
-import { maskSensitiveString } from "../shared/utils.ts";
+import { maskSensitiveString, matchesMaskedSensitiveString } from "../shared/utils.ts";
 import type { AdminAppSummary, AdminPasswordDocument, PasswordEntry } from "../shared/types.ts";
 import { PasswordManager } from "./password-manager.ts";
 
@@ -30,6 +31,38 @@ export class CommonPasswordConfigService {
     return this.getDocument();
   }
 
+  async upsertItem(input: unknown): Promise<AdminPasswordDocument> {
+    const existingItems = await this.passwordManager.list(PASSWORD_SCOPE);
+    const existingMap = new Map(existingItems.map((item) => [item.key, item]));
+
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      badRequest("ADMIN_PASSWORD_INVALID", "Password item must be a JSON object.");
+    }
+
+    const source = input as Record<string, unknown>;
+    const originalKey = this.optionalString(source.originalKey);
+    const requestedKey = this.optionalString(source.key);
+    if (originalKey && requestedKey && originalKey !== requestedKey) {
+      badRequest("ADMIN_PASSWORD_INVALID", "Password key cannot be changed once created.");
+    }
+
+    const normalized = this.normalizeItem(source, 0, existingMap);
+
+    await this.passwordManager.set(PASSWORD_SCOPE, normalized.key, normalized.desc, normalized.value);
+
+    return this.getDocument();
+  }
+
+  async deleteItem(key: string): Promise<AdminPasswordDocument> {
+    const normalizedKey = this.optionalString(key);
+    if (!normalizedKey) {
+      badRequest("ADMIN_PASSWORD_INVALID", "Password key is required.");
+    }
+
+    await this.passwordManager.delete(PASSWORD_SCOPE, normalizedKey);
+    return this.getDocument();
+  }
+
   async set(key: string, desc: string, value: string): Promise<void> {
     await this.passwordManager.set(PASSWORD_SCOPE, key, desc, value);
   }
@@ -42,6 +75,7 @@ export class CommonPasswordConfigService {
     const maskedItems = items.map((item) => ({
       ...item,
       value: maskSensitiveString(item.value),
+      valueMd5: createHash("md5").update(item.value).digest("hex"),
     }));
     const updatedAt = maskedItems
       .map((item) => item.updatedAt)
@@ -89,9 +123,11 @@ export class CommonPasswordConfigService {
     }
 
     const source = item as Record<string, unknown>;
+    const originalKey = this.optionalString(source.originalKey);
     const key = this.optionalString(source.key);
     const desc = this.optionalString(source.desc);
-    const existing = key ? existingMap.get(key) : undefined;
+    const existingLookupKey = originalKey || key;
+    const existing = existingLookupKey ? existingMap.get(existingLookupKey) : undefined;
     const value = this.resolveValue(source.value, existing?.value);
 
     if (!key) {
@@ -123,8 +159,7 @@ export class CommonPasswordConfigService {
       return value;
     }
 
-    const maskedPrefix = existingValue.slice(0, Math.min(4, existingValue.length));
-    if (value.endsWith("****") && value.startsWith(maskedPrefix)) {
+    if (matchesMaskedSensitiveString(value, existingValue)) {
       return existingValue;
     }
 

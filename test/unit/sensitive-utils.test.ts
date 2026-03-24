@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { maskSensitiveFields, maskSensitiveString } from "../../src/shared/utils.ts";
 
-test("maskSensitiveString keeps the first four characters and masks the rest", () => {
+test("maskSensitiveString keeps the original length and preserves both ends when the value is long enough", () => {
   assert.equal(maskSensitiveString("sid-demo"), "sid-****");
-  assert.equal(maskSensitiveString("sk-demo"), "sk-d****");
+  assert.equal(maskSensitiveString("sk-demo"), "sk-d***");
+  assert.equal(maskSensitiveString("AKIDEXAMPLE1234"), "AKID*******1234");
   assert.equal(maskSensitiveString(""), "");
 });
 
@@ -25,7 +26,7 @@ test("field-level sensitive helpers apply the same masking rule", () => {
 
   assert.deepEqual(masked, {
     secretId: "sid-****",
-    secretKey: "sk-d****",
+    secretKey: "sk-d***",
     fromEmailAddress: "noreply@example.com",
   });
 });

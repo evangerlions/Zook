@@ -533,6 +533,8 @@ select {
 
 .content-shell {
   display: grid;
+  align-content: start;
+  align-items: start;
   gap: 16px;
   padding: 16px 24px 24px;
 }
@@ -569,6 +571,8 @@ select {
 
 .page-shell {
   display: grid;
+  align-content: start;
+  align-self: start;
   gap: 16px;
 }
 
@@ -603,8 +607,23 @@ select {
 .page-header {
   display: flex;
   align-items: end;
+  align-self: start;
   justify-content: space-between;
   gap: 16px;
+}
+
+.page-header-compact {
+  display: grid;
+  align-self: start;
+  gap: 10px;
+}
+
+.page-header-compact-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .page-title,
@@ -981,6 +1000,14 @@ select {
   color: var(--text);
 }
 
+.json-preview-highlighted {
+  overflow: auto;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.58);
+}
+
 .mail-empty {
   padding: 18px 16px;
   border: 1px dashed var(--line);
@@ -1081,11 +1108,53 @@ select {
 }
 
 .mail-row-grid-password {
-  grid-template-columns: minmax(220px, 280px) minmax(200px, 280px) minmax(260px, 1fr) auto;
+  grid-template-columns: minmax(220px, 280px) minmax(200px, 280px) minmax(260px, 1fr) auto auto;
 }
 
 .mail-row-remove {
   min-width: 84px;
+}
+
+.password-page-shell {
+  gap: 0;
+}
+
+.password-panel {
+  padding: 16px 18px 18px;
+}
+
+.password-page-title {
+  font-size: clamp(1.8rem, 2.2vw, 2.2rem);
+}
+
+.password-toolbar {
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.password-list {
+  gap: 14px;
+}
+
+.password-row {
+  display: grid;
+  gap: 12px;
+}
+
+.password-row-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.password-md5-chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 input {
@@ -1406,7 +1475,7 @@ input {
   z-index: 80;
   display: grid;
   gap: 10px;
-  width: min(380px, calc(100vw - 32px));
+  width: min(300px, calc(100vw - 32px));
 }
 
 .toast {
@@ -1556,6 +1625,11 @@ input {
   border-color: rgba(37, 99, 235, 0.24);
   background: rgba(37, 99, 235, 0.08);
   color: var(--primary);
+}
+
+.password-panel .form-footer {
+  margin-top: 16px;
+  padding-top: 4px;
 }
 
 .empty-state {

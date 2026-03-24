@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -45,14 +46,24 @@ function createRuntimeConfig(options: AdminServerOptions) {
 }
 
 function resolveAssetVersion(options: AdminServerOptions): string {
-  const rawValue =
+  const explicitValue =
     options.assetVersion ??
     process.env.ADMIN_ASSET_VERSION ??
     process.env.APP_VERSION ??
-    process.env.GIT_SHA ??
-    "dev";
+    process.env.GIT_SHA;
 
-  return rawValue.trim() || "dev";
+  if (explicitValue?.trim()) {
+    return explicitValue.trim();
+  }
+
+  const staticRoot = getStaticRoot();
+  const assetFiles = ["app.js", "styles.css", "server.ts", "index.html"];
+  const latestMtime = assetFiles.reduce((maxValue, fileName) => {
+    const filePath = fileURLToPath(new URL(`./${fileName}`, pathToFileURL(staticRoot)));
+    return Math.max(maxValue, statSync(filePath).mtimeMs);
+  }, 0);
+
+  return `local-${Math.floor(latestMtime)}`;
 }
 
 function createAssetFingerprint(assetVersion: string): string {
@@ -200,16 +211,17 @@ async function serveIndex(response: ServerResponse, options: AdminServerOptions)
 
   response.statusCode = 200;
   response.setHeader("Content-Type", "text/html; charset=utf-8");
-  response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+  response.setHeader("Cache-Control", assetVersion.startsWith("local-") ? "no-store" : "public, max-age=60, stale-while-revalidate=300");
   response.end(html);
 }
 
 function serveRuntimeConfig(response: ServerResponse, options: AdminServerOptions): void {
   const payload = JSON.stringify(createRuntimeConfig(options)).replace(/</g, "\\u003c");
+  const assetVersion = resolveAssetVersion(options);
 
   response.statusCode = 200;
   response.setHeader("Content-Type", "application/javascript; charset=utf-8");
-  response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+  response.setHeader("Cache-Control", assetVersion.startsWith("local-") ? "no-store" : "public, max-age=60, stale-while-revalidate=300");
   response.end(`window.__ADMIN_RUNTIME_CONFIG__ = ${payload};\n`);
 }
 

@@ -72,7 +72,7 @@ export class QrLoginService {
     };
   }
 
-  confirm(command: ConfirmQrLoginCommand, now = new Date()): QrLoginConfirmResult {
+  async confirm(command: ConfirmQrLoginCommand, now = new Date()): Promise<QrLoginConfirmResult> {
     const app = this.appRegistryService.getAppOrThrow(command.appId);
     const user = this.userService.getById(command.userId);
     this.appRegistryService.ensureExistingMembership(app.id, user.id);
@@ -88,7 +88,7 @@ export class QrLoginService {
     session.status = "CONFIRMED";
     session.confirmedAt = now.toISOString();
     session.confirmedByUserId = user.id;
-    session.authSession = this.authService.issueSession(user.id, app.id, now);
+    session.authSession = await this.authService.issueSession(user.id, app.id, now);
 
     this.saveSession(session, now);
 

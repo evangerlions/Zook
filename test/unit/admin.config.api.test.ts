@@ -6,6 +6,7 @@ import {
   TENCENT_SES_SECRET_ID_PASSWORD_KEY,
   TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
 } from "../../src/services/common-email-config.service.ts";
+import { maskSensitiveString } from "../../src/shared/utils.ts";
 
 function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
@@ -282,7 +283,7 @@ test("admin password API stores masked common secrets without revision history",
     body: {
       items: [
         {
-          key: "tencent.ses.secret_id",
+          key: TENCENT_SES_SECRET_ID_PASSWORD_KEY,
           desc: "腾讯 SES SecretId",
           value: "sid-demo",
         },
@@ -293,6 +294,7 @@ test("admin password API stores masked common secrets without revision history",
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.configKey, "common.passwords");
   assert.equal(updateResponse.body.data.items[0]?.value, "sid-****");
+  assert.equal(updateResponse.body.data.items[0]?.valueMd5, "b4d7390125134c3b8485c802e1efe692");
 
   const fetchResponse = await runtime.app.handle({
     method: "GET",
@@ -303,7 +305,91 @@ test("admin password API stores masked common secrets without revision history",
   assert.equal(fetchResponse.statusCode, 200);
   assert.equal(fetchResponse.body.data.items[0]?.desc, "腾讯 SES SecretId");
   assert.equal(fetchResponse.body.data.items[0]?.value, "sid-****");
-  assert.equal(await runtime.services.commonPasswordConfigService.getValue("tencent.ses.secret_id"), "sid-demo");
+  assert.equal(fetchResponse.body.data.items[0]?.valueMd5, "b4d7390125134c3b8485c802e1efe692");
+  assert.equal(await runtime.services.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_ID_PASSWORD_KEY), "sid-demo");
+});
+
+test("admin password API supports per-item upsert and delete", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const upsertResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords/item",
+    headers,
+    body: {
+      key: "bailian.api_key",
+      desc: "百炼 API Key",
+      value: "key-v1",
+    },
+  });
+
+  assert.equal(upsertResponse.statusCode, 200);
+  assert.equal(upsertResponse.body.data.items[0]?.key, "bailian.api_key");
+  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v1");
+
+  const maskedReplayResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords/item",
+    headers,
+    body: {
+      originalKey: "bailian.api_key",
+      key: "bailian.api_key",
+      desc: "百炼 API Key",
+      value: upsertResponse.body.data.items[0]?.value,
+    },
+  });
+
+  assert.equal(maskedReplayResponse.statusCode, 200);
+  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v1");
+
+  const renameResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords/item",
+    headers,
+    body: {
+      originalKey: "bailian.api_key",
+      key: "bailian.runtime_api_key",
+      desc: "百炼运行时 API Key",
+      value: "key-v2",
+    },
+  });
+
+  assert.equal(renameResponse.statusCode, 400);
+  assert.equal(renameResponse.body.code, "ADMIN_PASSWORD_INVALID");
+  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v1");
+  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.runtime_api_key"), undefined);
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords/item",
+    headers,
+    body: {
+      originalKey: "bailian.api_key",
+      key: "bailian.api_key",
+      desc: "百炼 API Key",
+      value: "key-v2",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v2");
+
+  const deleteResponse = await runtime.app.handle({
+    method: "DELETE",
+    path: "/api/v1/admin/apps/common/passwords/bailian.api_key",
+    headers,
+  });
+
+  assert.equal(deleteResponse.statusCode, 200);
+  assert.equal(deleteResponse.body.data.items.length, 0);
 });
 
 test("admin email service API stores common config and exposes resolved region", async () => {
@@ -338,8 +424,10 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(passwordResponse.statusCode, 200);
-  assert.equal(passwordResponse.body.data.items[0]?.value, "sid-****");
-  assert.equal(passwordResponse.body.data.items[1]?.value, "sk-d****");
+  assert.equal(passwordResponse.body.data.items[0]?.value, maskSensitiveString("sid-demo"));
+  assert.equal(passwordResponse.body.data.items[1]?.value, maskSensitiveString("sk-demo"));
+  assert.equal(passwordResponse.body.data.items[0]?.valueMd5, "b4d7390125134c3b8485c802e1efe692");
+  assert.equal(passwordResponse.body.data.items[1]?.valueMd5, "663d6ce05d17561635f0ffe690a0cb75");
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -412,7 +500,7 @@ test("admin email service API stores common config and exposes resolved region",
         {
           key: TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
           desc: "腾讯 SES SecretKey",
-          value: "sk-d****",
+          value: maskSensitiveString("sk-demo"),
         },
       ],
     },
@@ -590,7 +678,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
 
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.revision, 1);
-  assert.equal(updateResponse.body.data.config.providers[0]?.apiKey, "mock****");
+  assert.equal(updateResponse.body.data.config.providers[0]?.apiKey, maskSensitiveString("mock-bailian-api-key"));
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes.length, 2);
 
   await runtime.services.llmMetricsService.recordCall({
@@ -687,6 +775,74 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.restore" && item.appId === "common"),
   );
+});
+
+test("admin llm service keeps password references visible in config and resolves them at runtime", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers,
+    body: {
+      items: [
+        {
+          key: "bailian.api_key",
+          desc: "百炼 API Key",
+          value: "resolved-bailian-key",
+        },
+      ],
+    },
+  });
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/llm-service",
+    headers,
+    body: {
+      enabled: true,
+      defaultModelKey: "kimi2.5",
+      providers: [
+        {
+          key: "bailian",
+          label: "阿里云百炼",
+          enabled: true,
+          baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+          apiKey: "{{zook.ps.bailian.api_key}}",
+          timeoutMs: 30000,
+        },
+      ],
+      models: [
+        {
+          key: "kimi2.5",
+          label: "Kimi 2.5",
+          strategy: "fixed",
+          routes: [
+            {
+              provider: "bailian",
+              providerModel: "kimi/kimi-k2.5",
+              enabled: true,
+              weight: 100,
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.config.providers[0]?.apiKey, "{{zook.ps.bailian.api_key}}");
+
+  const runtimeConfig = await runtime.services.commonLlmConfigService.getRuntimeConfig();
+  assert.equal(runtimeConfig?.providers[0]?.apiKey, "resolved-bailian-key");
 });
 
 test("admin llm smoke test API requires admin auth and enforces global cooldown", async () => {

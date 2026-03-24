@@ -1,6 +1,7 @@
 import { AppConfigService } from "./app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { maskSensitiveString } from "../shared/utils.ts";
+import { SecretReferenceResolver, isSecretReference } from "./secret-reference-resolver.ts";
 import type {
   AdminAppSummary,
   AdminLlmServiceDocument,
@@ -28,7 +29,10 @@ const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WEIGHT_PRECISION = 100;
 
 export class CommonLlmConfigService {
-  constructor(private readonly appConfigService: AppConfigService) {}
+  constructor(
+    private readonly appConfigService: AppConfigService,
+    private readonly secretReferenceResolver?: SecretReferenceResolver,
+  ) {}
 
   async getDocument(revision?: number): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
     const revisions = await this.appConfigService.listRevisions(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
@@ -88,13 +92,24 @@ export class CommonLlmConfigService {
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
-  getRuntimeConfig(): LlmServiceConfig | undefined {
+  async getRuntimeConfig(): Promise<LlmServiceConfig | undefined> {
     const stored = this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
     if (!stored) {
       return undefined;
     }
 
-    return this.parseConfig(stored);
+    const config = this.parseConfig(stored);
+    if (!this.secretReferenceResolver) {
+      return config;
+    }
+
+    try {
+      const resolvedConfig = await this.secretReferenceResolver.resolveValue(config);
+      return this.validateInput(resolvedConfig, config);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "LLM password references are invalid.";
+      throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", message);
+    }
   }
 
   hasStoredConfig(): boolean {
@@ -416,7 +431,7 @@ export class CommonLlmConfigService {
       ...config,
       providers: config.providers.map((provider) => ({
         ...provider,
-        apiKey: maskSensitiveString(provider.apiKey),
+        apiKey: isSecretReference(provider.apiKey) ? provider.apiKey : maskSensitiveString(provider.apiKey),
       })),
     };
   }

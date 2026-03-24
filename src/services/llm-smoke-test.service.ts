@@ -48,8 +48,8 @@ export class LlmSmokeTestService {
   async run(): Promise<AdminLlmSmokeTestDocument> {
     await this.assertCooldown();
 
-    const config = this.commonLlmConfigService.getCurrentConfig();
-    if (!config.enabled) {
+    const config = await this.commonLlmConfigService.getRuntimeConfig();
+    if (!config?.enabled) {
       throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM 服务未启用，无法执行冒烟测试。");
     }
 
