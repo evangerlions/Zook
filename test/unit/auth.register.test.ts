@@ -4,19 +4,26 @@ import { createApplication } from "../../src/app.module.ts";
 import { type RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
 
 interface SentRegistrationEmail {
-  appId: string;
+  appName: string;
   email: string;
   code: string;
   locale: string;
-  senderId: string;
-  replyToAddresses?: string;
-  subject: string;
+  region: "ap-guangzhou" | "ap-hongkong";
+  expireMinutes: number;
 }
 
 function createFakeSender(sent: SentRegistrationEmail[]): RegistrationEmailSender {
   return {
-    async sendRegistrationCode(command) {
+    async sendTemplateEmail() {
+      return {
+        provider: "tencent_ses",
+      };
+    },
+    async sendVerificationCode(command) {
       sent.push(command);
+      return {
+        provider: "tencent_ses",
+      };
     },
   };
 }
@@ -48,13 +55,12 @@ test("register email-code and register APIs create a new account and issue token
   });
   assert.deepEqual(sent, [
     {
-      appId: "app_a",
+      appName: "App A",
       email: "carol@example.com",
       code: "123456",
       locale: "zh-CN",
-      senderId: "default",
-      replyToAddresses: undefined,
-      subject: "验证码",
+      region: "ap-guangzhou",
+      expireMinutes: 10,
     },
   ]);
 
@@ -110,6 +116,8 @@ test("registerEmailCode enforces resend cooldown per app, email and IP", async (
       appId: "app_a",
       email: "cooldown@example.com",
       ipAddress: "203.0.113.11",
+      locale: "zh-CN",
+      region: "ap-guangzhou",
     },
     baseTime,
   );
@@ -122,6 +130,8 @@ test("registerEmailCode enforces resend cooldown per app, email and IP", async (
         appId: "app_a",
         email: "cooldown@example.com",
         ipAddress: "203.0.113.11",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
       },
       new Date(baseTime.getTime() + 30 * 1000),
     ),
@@ -135,7 +145,7 @@ test("registerEmailCode enforces resend cooldown per app, email and IP", async (
 });
 
 test("registerEmailCode enforces daily email limit and hourly IP limit", async () => {
-  const sent: Array<{ appId: string; email: string; code: string }> = [];
+  const sent: SentRegistrationEmail[] = [];
   const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),
@@ -149,6 +159,8 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
         appId: "app_a",
         email: "daily-limit@example.com",
         ipAddress: "203.0.113.12",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
       },
       now,
     );
@@ -161,6 +173,8 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
         appId: "app_a",
         email: "daily-limit@example.com",
         ipAddress: "203.0.113.12",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
       },
       new Date(baseTime.getTime() + 55 * 60 * 1000),
     ),
@@ -170,7 +184,7 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
       error.code === "AUTH_RATE_LIMITED",
   );
 
-  const ipSent: Array<{ appId: string; email: string; code: string }> = [];
+  const ipSent: SentRegistrationEmail[] = [];
   const ipRuntime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(ipSent),
@@ -182,6 +196,8 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
         appId: "app_a",
         email: `ip-hour-${index}@example.com`,
         ipAddress: "203.0.113.13",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
       },
       now,
     );
@@ -194,6 +210,8 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
         appId: "app_a",
         email: "ip-hour-overflow@example.com",
         ipAddress: "203.0.113.13",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
       },
       new Date(baseTime.getTime() + 40 * 60 * 1000),
     ),
@@ -205,7 +223,7 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
 });
 
 test("register rejects expired or reused verification codes", async () => {
-  const sent: Array<{ appId: string; email: string; code: string }> = [];
+  const sent: SentRegistrationEmail[] = [];
   const runtime = await createApplication({
     registrationCodeGenerator: () => "123456",
     registrationEmailSender: createFakeSender(sent),
@@ -217,6 +235,8 @@ test("register rejects expired or reused verification codes", async () => {
       appId: "app_a",
       email: "expired@example.com",
       ipAddress: "203.0.113.14",
+      locale: "zh-CN",
+      region: "ap-guangzhou",
     },
     baseTime,
   );
@@ -239,7 +259,7 @@ test("register rejects expired or reused verification codes", async () => {
       error.code === "AUTH_VERIFICATION_CODE_INVALID",
   );
 
-  const secondSent: Array<{ appId: string; email: string; code: string }> = [];
+  const secondSent: SentRegistrationEmail[] = [];
   const secondRuntime = await createApplication({
     registrationCodeGenerator: () => "654321",
     registrationEmailSender: createFakeSender(secondSent),
@@ -251,6 +271,8 @@ test("register rejects expired or reused verification codes", async () => {
       appId: "app_a",
       email: "single-use@example.com",
       ipAddress: "203.0.113.15",
+      locale: "zh-CN",
+      region: "ap-guangzhou",
     },
     issueTime,
   );

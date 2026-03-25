@@ -32,10 +32,10 @@ test("config revision manager stores version metadata, content and restore histo
   );
   assert.equal(await manager.getVersionCount(), 2);
 
-  const restored = await manager.restore(1);
+  const restored = await manager.restore(1, "恢复到版本 R1");
   assert.equal(restored.revision, 3);
   assert.equal(restored.content, '{"theme":"light"}');
-  assert.equal(restored.desc, "restore:1");
+  assert.equal(restored.desc, "恢复到版本 R1");
 
   const revision1Content = await manager.getVersion(1);
   assert.equal(revision1Content?.content, '{"theme":"light"}');
@@ -69,8 +69,14 @@ test("app config service keeps config history and can restore old revisions", as
     '{"featureFlags":{"enableVipBanner":false}}',
   );
 
-  const restoredRevision = await runtime.services.appConfigService.restoreValue("app_a", configKey, 1);
+  const restoredRevision = await runtime.services.appConfigService.restoreValue(
+    "app_a",
+    configKey,
+    1,
+    "恢复到版本 R1",
+  );
   assert.equal(restoredRevision.revision, 3);
+  assert.equal(restoredRevision.desc, "恢复到版本 R1");
   assert.match(runtime.services.appConfigService.getValue("app_a", configKey) ?? "", /featureFlags/);
 
   const revisions = await runtime.services.appConfigService.listRevisions("app_a", configKey);

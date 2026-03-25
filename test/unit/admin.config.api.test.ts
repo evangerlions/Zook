@@ -6,10 +6,45 @@ import {
   TENCENT_SES_SECRET_ID_PASSWORD_KEY,
   TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
 } from "../../src/services/common-email-config.service.ts";
+import { type RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
 import { maskSensitiveString } from "../../src/shared/utils.ts";
 
 function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
+}
+
+interface SentTemplateEmail {
+  email: string;
+  region: "ap-guangzhou" | "ap-hongkong";
+  fromEmailAddress: string;
+  subject: string;
+  templateId: number;
+  templateData: Record<string, unknown>;
+}
+
+function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSender {
+  return {
+    async sendTemplateEmail(command) {
+      sent.push({
+        email: command.email,
+        region: command.region,
+        fromEmailAddress: command.fromEmailAddress,
+        subject: command.subject,
+        templateId: command.templateId,
+        templateData: command.templateData,
+      });
+      return {
+        provider: "tencent_ses",
+        requestId: "req-test-email",
+        messageId: "msg-test-email",
+      };
+    },
+    async sendVerificationCode() {
+      return {
+        provider: "tencent_ses",
+      };
+    },
+  };
 }
 
 test("admin bootstrap and config APIs expose app list and editable JSON config", async () => {
@@ -440,10 +475,12 @@ test("admin email service API stores common config and exposes resolved region",
         {
           id: "default",
           address: "Admin <noreply@example.com>",
+          region: "ap-guangzhou",
         },
         {
           id: "support",
           address: "Support <support@example.com>",
+          region: "ap-hongkong",
         },
       ],
       templates: [
@@ -451,11 +488,13 @@ test("admin email service API stores common config and exposes resolved region",
           locale: "zh-CN",
           templateId: 100001,
           name: "验证码",
+          subject: "验证码",
         },
         {
           locale: "en-US",
           templateId: 100002,
           name: "Verification Code",
+          subject: "Verification Code",
         },
       ],
     },
@@ -470,10 +509,12 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal(updateResponse.body.data.desc, "初始化邮件服务");
   assert.equal(updateResponse.body.data.revisions.length, 1);
   assert.equal(updateResponse.body.data.config.senders[0]?.id, "default");
+  assert.equal(updateResponse.body.data.config.senders[0]?.region, "ap-guangzhou");
   assert.equal(updateResponse.body.data.config.senders[1]?.address, "Support <support@example.com>");
   assert.equal(updateResponse.body.data.config.templates[0]?.templateId, 100001);
   assert.equal(updateResponse.body.data.config.templates[1]?.locale, "en-US");
   assert.equal(updateResponse.body.data.config.templates[1]?.name, "Verification Code");
+  assert.equal(updateResponse.body.data.config.templates[1]?.subject, "Verification Code");
 
   const fetchResponse = await runtime.app.handle({
     method: "GET",
@@ -524,6 +565,7 @@ test("admin email service API stores common config and exposes resolved region",
           locale: "zh",
           templateId: 100003,
           name: "验证码简体",
+          subject: "验证码（简体）",
         },
       ],
     },
@@ -539,7 +581,7 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretId, "sid-demo");
   assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretKey, "sk-demo");
   assert.equal(
-    (await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "support")).sender.address,
+    (await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).sender.address,
     "Support <support@example.com>",
   );
   assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US")).template.name, "Verification Code");
@@ -597,6 +639,7 @@ test("admin email service API rejects invalid sender address format", async () =
         {
           id: "default",
           address: "not-an-email",
+          region: "ap-guangzhou",
         },
       ],
       templates: [
@@ -604,6 +647,7 @@ test("admin email service API rejects invalid sender address format", async () =
           locale: "zh-CN",
           templateId: 100001,
           name: "验证码",
+          subject: "验证码",
         },
       ],
     },
@@ -612,6 +656,221 @@ test("admin email service API rejects invalid sender address format", async () =
   assert.equal(response.statusCode, 400);
   assert.equal(response.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
   assert.match(response.body.message, /Sender address format is invalid/);
+});
+
+test("admin email service API rejects duplicate sender region and missing subject", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const duplicateRegionResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      senders: [
+        {
+          id: "cn",
+          address: "Admin <noreply@example.com>",
+          region: "ap-guangzhou",
+        },
+        {
+          id: "cn-backup",
+          address: "Backup <backup@example.com>",
+          region: "ap-guangzhou",
+        },
+      ],
+      templates: [
+        {
+          locale: "zh-CN",
+          templateId: 100001,
+          name: "验证码",
+          subject: "验证码",
+        },
+      ],
+    },
+  });
+
+  assert.equal(duplicateRegionResponse.statusCode, 400);
+  assert.equal(duplicateRegionResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.match(duplicateRegionResponse.body.message, /Duplicate sender region/);
+
+  const missingSubjectResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      senders: [
+        {
+          id: "default",
+          address: "Admin <noreply@example.com>",
+          region: "ap-guangzhou",
+        },
+      ],
+      templates: [
+        {
+          locale: "en-US",
+          templateId: 100002,
+          name: "Verification Code",
+          subject: "",
+        },
+      ],
+    },
+  });
+
+  assert.equal(missingSubjectResponse.statusCode, 400);
+  assert.equal(missingSubjectResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.match(missingSubjectResponse.body.message, /Template subject is required/);
+});
+
+test("admin email service test-send API requires super-admin auth and enforces 20 second cooldown", async () => {
+  const sent: SentTemplateEmail[] = [];
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    registrationEmailSender: createFakeEmailSender(sent),
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers,
+    body: {
+      items: [
+        {
+          key: TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+          desc: "腾讯 SES SecretId",
+          value: "sid-demo",
+        },
+        {
+          key: TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+          desc: "腾讯 SES SecretKey",
+          value: "sk-demo",
+        },
+      ],
+    },
+  });
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      senders: [
+        {
+          id: "mainland",
+          address: "Admin <noreply@example.com>",
+          region: "ap-guangzhou",
+        },
+        {
+          id: "global",
+          address: "Global <global@example.com>",
+          region: "ap-hongkong",
+        },
+      ],
+      templates: [
+        {
+          locale: "zh-CN",
+          templateId: 100001,
+          name: "验证码",
+          subject: "验证码",
+        },
+        {
+          locale: "en-US",
+          templateId: 100002,
+          name: "Verification Code",
+          subject: "Verification Code",
+        },
+      ],
+    },
+  });
+
+  const unauthorizedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/email-service/test-send",
+    headers: {},
+    body: {
+      recipientEmail: "tester@example.com",
+      region: "ap-hongkong",
+      templateId: 100002,
+      appName: "Zook",
+      code: "654321",
+      expireMinutes: 10,
+    },
+  });
+
+  assert.equal(unauthorizedResponse.statusCode, 401);
+  assert.equal(unauthorizedResponse.body.code, "ADMIN_BASIC_AUTH_REQUIRED");
+
+  const firstResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/email-service/test-send",
+    headers,
+    body: {
+      recipientEmail: "tester@example.com",
+      region: "ap-hongkong",
+      templateId: 100002,
+      appName: "Zook",
+      code: "654321",
+      expireMinutes: 10,
+    },
+  });
+
+  assert.equal(firstResponse.statusCode, 200);
+  assert.equal(firstResponse.body.data.recipientEmail, "tester@example.com");
+  assert.equal(firstResponse.body.data.sender.region, "ap-hongkong");
+  assert.equal(firstResponse.body.data.sender.address, "Global <global@example.com>");
+  assert.equal(firstResponse.body.data.template.templateId, 100002);
+  assert.equal(firstResponse.body.data.providerRequestId, "req-test-email");
+  assert.equal(firstResponse.body.data.providerMessageId, "msg-test-email");
+  assert.deepEqual(sent, [
+    {
+      email: "tester@example.com",
+      region: "ap-hongkong",
+      fromEmailAddress: "Global <global@example.com>",
+      subject: "Verification Code",
+      templateId: 100002,
+      templateData: {
+        appName: "Zook",
+        expireMinutes: 10,
+        code: "654321",
+      },
+    },
+  ]);
+
+  const rateLimitedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/email-service/test-send",
+    headers,
+    body: {
+      recipientEmail: "tester@example.com",
+      region: "ap-hongkong",
+      templateId: 100002,
+      appName: "Zook",
+      code: "654321",
+      expireMinutes: 10,
+    },
+  });
+
+  assert.equal(rateLimitedResponse.statusCode, 429);
+  assert.equal(rateLimitedResponse.body.code, "ADMIN_RATE_LIMITED");
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.email_service.test_send" && item.appId === "common"),
+  );
 });
 
 test("admin llm service API stores versioned common config and exposes metrics", async () => {

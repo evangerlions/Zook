@@ -288,12 +288,29 @@ export interface RegisterEmailCodeCommand {
   appId: string;
   email: string;
   ipAddress: string;
+  locale: string;
+  region: TencentSesRegion;
 }
 
 export interface RegisterCommand {
   appId: string;
   email: string;
   password: string;
+  emailCode: string;
+  ipAddress: string;
+}
+
+export interface EmailLoginCodeCommand {
+  appId: string;
+  email: string;
+  ipAddress: string;
+  locale: string;
+  region: TencentSesRegion;
+}
+
+export interface EmailLoginCommand {
+  appId: string;
+  email: string;
   emailCode: string;
   ipAddress: string;
 }
@@ -326,11 +343,13 @@ export interface EmailServiceTemplateConfig {
   locale: string;
   templateId: number;
   name: string;
+  subject: string;
 }
 
 export interface EmailSenderConfig {
   id: string;
   address: string;
+  region: TencentSesRegion;
 }
 
 export interface EmailServiceConfig {
@@ -349,6 +368,40 @@ export interface AdminEmailServiceDocument {
   desc?: string;
   isLatest: boolean;
   revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminEmailTestSendCommand {
+  recipientEmail: string;
+  region: TencentSesRegion;
+  templateId: number;
+  appName: string;
+  code: string;
+  expireMinutes: number;
+}
+
+export interface AdminEmailTestSendDocument {
+  executedAt: string;
+  cooldownSeconds: number;
+  recipientEmail: string;
+  sender: {
+    id: string;
+    address: string;
+    region: TencentSesRegion;
+  };
+  template: {
+    locale: string;
+    templateId: number;
+    name: string;
+    subject: string;
+  };
+  templateData: {
+    appName: string;
+    expireMinutes: number;
+    code: string;
+  };
+  provider: "tencent_ses";
+  providerRequestId?: string;
+  providerMessageId?: string;
 }
 
 export interface PasswordEntry {

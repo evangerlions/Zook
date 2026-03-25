@@ -183,13 +183,24 @@ X-App-Id: my-todo
 X-Platform: ios
 X-App-Version: 1.2.0
 X-Request-Id: xxxxxx
+X-App-Locale: zh-CN
+X-App-Country-Code: CN
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 ```
 
 说明：
 
 1. `X-App-Id` 可用于日志、埋点、网关或前置校验。
 2. 如果请求同时带 `X-App-Id` 和产品路径，两者必须一致。
-3. 列表查询统一通过 query 表达，例如 `page`、`page_size`、`keyword`、`status`、`sort_by`、`sort_order`、`cursor`。
+3. `X-App-Locale` 表示客户端当前 UI 语言，推荐传 BCP 47，如 `zh-CN`、`en-US`。
+4. `X-App-Country-Code` 表示客户端感知到的国家码，使用 ISO 3166-1 alpha-2 大写值，如 `CN`、`US`。
+5. `Accept-Language` 可作为 Web / 浏览器环境下的语言兜底。
+6. `X-Country-Code` 仅供可信网关注入，普通客户端不需要发送；服务端会优先使用它来决定邮件发送 region。
+7. 邮件发送场景的优先级：
+   `region = X-Country-Code（可信网关） > X-App-Country-Code > Geo`
+   `locale = X-App-Locale > Accept-Language > 国家码推断 > zh-CN`
+8. App 客户端建议始终传 `X-App-Locale` 与 `X-App-Country-Code`；Web 客户端至少传 `X-App-Locale`。
+9. 列表查询统一通过 query 表达，例如 `page`、`page_size`、`keyword`、`status`、`sort_by`、`sort_order`、`cursor`。
 
 示例：
 
@@ -207,6 +218,8 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | --- | --- | --- |
 | `GET` | `/api/health` | 健康检查 |
 | `POST` | `/api/v1/auth/login` | 登录 |
+| `POST` | `/api/v1/auth/login/email-code` | 发送邮箱登录验证码 |
+| `POST` | `/api/v1/auth/login/email` | 使用邮箱验证码登录，必要时自动创建账号 |
 | `POST` | `/api/v1/auth/register/email-code` | 发送注册邮箱验证码 |
 | `POST` | `/api/v1/auth/register` | 邮箱注册并创建账号 |
 | `POST` | `/api/v1/auth/qr-logins` | 创建扫码登录会话并生成二维码内容 |
@@ -226,6 +239,10 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 1. 当前脚手架尚未挂出 `novel`、`pomodoro`、`ppt`、`my-todo` 这类产品业务路由。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
 3. 扫码登录的对外接入说明见 [doc/public-api-spec.md](doc/public-api-spec.md)。
+4. 邮箱验证码登录接口：
+   `POST /api/v1/auth/login/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
+   `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`
+5. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
 
 ## 7. 统一响应格式
 

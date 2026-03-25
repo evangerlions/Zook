@@ -126,6 +126,27 @@
 4. `src/core/pipes/validation.pipe.ts`
 5. `src/infrastructure/logging/pino-logger.module.ts`
 
+### 2.9 Common 配置与 LLM 路由监控
+
+当前已经补齐两类 Common 级能力：
+
+1. `common.email_service` 的强类型配置、版本记录与恢复
+2. `common.llm_service` 的强类型配置、版本记录与恢复
+3. LLM 按 `auto / fixed` 两种策略路由
+4. LLM 健康窗口记录
+5. LLM 小时级监控聚合
+6. Admin Web 的 LLM 配置页与监控页
+
+对应核心文件：
+
+1. `src/services/common-email-config.service.ts`
+2. `src/services/common-llm-config.service.ts`
+3. `src/services/llm-manager.ts`
+4. `src/services/llm-health.service.ts`
+5. `src/services/llm-metrics.service.ts`
+6. `apps/admin-web/app.js`
+7. `doc/admin-web-design.md`
+
 ## 3. 当前可用接口
 
 当前已经接入到应用入口中的接口包括：
@@ -140,6 +161,12 @@
 8. `POST /api/v1/files/presign`
 9. `POST /api/v1/files/confirm`
 10. `POST /api/v1/notifications/send`
+11. `GET /api/v1/admin/apps/common/email-service`
+12. `PUT /api/v1/admin/apps/common/email-service`
+13. `GET /api/v1/admin/apps/common/llm-service`
+14. `PUT /api/v1/admin/apps/common/llm-service`
+15. `GET /api/v1/admin/apps/common/llm-service/metrics`
+16. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 

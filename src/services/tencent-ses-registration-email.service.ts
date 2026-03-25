@@ -1,55 +1,130 @@
 import { createHash, createHmac } from "node:crypto";
 import { ApplicationError } from "../shared/errors.ts";
 import { CommonEmailConfigService } from "./common-email-config.service.ts";
+import type { TencentSesRegion } from "../shared/types.ts";
 
-export interface RegistrationEmailSender {
-  sendRegistrationCode(command: {
-    appId: string;
+export interface TemplateEmailSendResult {
+  provider: "tencent_ses";
+  requestId?: string;
+  messageId?: string;
+}
+
+export interface VerificationEmailSender {
+  sendTemplateEmail(command: {
+    email: string;
+    region: TencentSesRegion;
+    fromEmailAddress: string;
+    subject: string;
+    templateId: number;
+    templateData: Record<string, unknown>;
+  }): Promise<TemplateEmailSendResult>;
+  sendVerificationCode(command: {
+    appName: string;
     email: string;
     code: string;
     locale: string;
-    senderId: string;
-    replyToAddresses?: string;
-    subject: string;
-  }): Promise<void>;
+    region: TencentSesRegion;
+    expireMinutes: number;
+  }): Promise<TemplateEmailSendResult>;
 }
 
-export class NoopRegistrationEmailSender implements RegistrationEmailSender {
-  async sendRegistrationCode(): Promise<void> {}
+export type RegistrationEmailSender = VerificationEmailSender;
+
+export class NoopRegistrationEmailSender implements VerificationEmailSender {
+  async sendTemplateEmail(): Promise<TemplateEmailSendResult> {
+    return {
+      provider: "tencent_ses",
+    };
+  }
+
+  async sendVerificationCode(): Promise<TemplateEmailSendResult> {
+    return {
+      provider: "tencent_ses",
+    };
+  }
 }
 
-export class TencentSesRegistrationEmailSender implements RegistrationEmailSender {
+export class TencentSesRegistrationEmailSender implements VerificationEmailSender {
   constructor(private readonly commonEmailConfigService: CommonEmailConfigService) {}
 
-  async sendRegistrationCode(command: {
-    appId: string;
+  async sendTemplateEmail(command: {
+    email: string;
+    region: TencentSesRegion;
+    fromEmailAddress: string;
+    subject: string;
+    templateId: number;
+    templateData: Record<string, unknown>;
+  }): Promise<TemplateEmailSendResult> {
+    return this.sendTencentTemplateEmail({
+      email: command.email,
+      region: command.region,
+      fromEmailAddress: command.fromEmailAddress,
+      subject: command.subject,
+      templateId: command.templateId,
+      templateData: command.templateData,
+    });
+  }
+
+  async sendVerificationCode(command: {
+    appName: string;
     email: string;
     code: string;
     locale: string;
-    senderId: string;
-    replyToAddresses?: string;
-    subject: string;
-  }): Promise<void> {
+    region: TencentSesRegion;
+    expireMinutes: number;
+  }): Promise<TemplateEmailSendResult> {
     const { resolvedRegion, secretId, secretKey, sender, template } = await this.commonEmailConfigService.getRuntimeConfig(
       command.locale,
-      command.senderId,
+      command.region,
     );
+    return this.sendTencentTemplateEmail({
+      email: command.email,
+      region: resolvedRegion,
+      fromEmailAddress: sender.address,
+      subject: template.subject,
+      templateId: template.templateId,
+      templateData: {
+        appName: command.appName,
+        expireMinutes: command.expireMinutes,
+        code: command.code,
+      },
+      secretId,
+      secretKey,
+    });
+  }
+
+  private async sendTencentTemplateEmail(command: {
+    email: string;
+    region: TencentSesRegion;
+    fromEmailAddress: string;
+    subject: string;
+    templateId: number;
+    templateData: Record<string, unknown>;
+    secretId?: string;
+    secretKey?: string;
+  }): Promise<TemplateEmailSendResult> {
+    const credentials = command.secretId && command.secretKey
+      ? {
+          secretId: command.secretId,
+          secretKey: command.secretKey,
+        }
+      : await this.commonEmailConfigService.getRuntimeConfigByTemplateId(command.templateId, command.region)
+        .then((runtime) => ({
+          secretId: runtime.secretId,
+          secretKey: runtime.secretKey,
+        }));
+    const { secretId, secretKey } = credentials;
     const host = "ses.tencentcloudapi.com";
     const service = "ses";
     const action = "SendEmail";
     const version = "2020-10-02";
     const body = JSON.stringify({
-      FromEmailAddress: sender.address,
-      ReplyToAddresses: command.replyToAddresses || undefined,
+      FromEmailAddress: command.fromEmailAddress,
       Destination: [command.email],
       Subject: command.subject,
       Template: {
-        TemplateID: template.templateId,
-        TemplateData: JSON.stringify({
-          code: command.code,
-          appId: command.appId,
-          email: command.email,
-        }),
+        TemplateID: command.templateId,
+        TemplateData: JSON.stringify(command.templateData),
       },
       TriggerType: 1,
     });
@@ -78,7 +153,7 @@ export class TencentSesRegistrationEmailSender implements RegistrationEmailSende
         "X-TC-Action": action,
         "X-TC-Timestamp": String(timestamp),
         "X-TC-Version": version,
-        "X-TC-Region": resolvedRegion,
+        "X-TC-Region": command.region,
       },
       body,
     });
@@ -102,6 +177,12 @@ export class TencentSesRegistrationEmailSender implements RegistrationEmailSende
         provider: "tencent_ses",
       });
     }
+
+    return {
+      provider: "tencent_ses",
+      requestId: payload.Response?.RequestId,
+      messageId: payload.Response?.MessageId,
+    };
   }
 }
 

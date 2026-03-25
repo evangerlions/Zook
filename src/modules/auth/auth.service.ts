@@ -5,6 +5,8 @@ import type {
   AuthContext,
   AuthSession,
   ClientType,
+  EmailLoginCodeCommand,
+  EmailLoginCommand,
   LoginCommand,
   LogoutCommand,
   RefreshCommand,
@@ -50,10 +52,6 @@ export class AuthService {
   private readonly registrationWindowMs = 10 * 60 * 1000;
   private readonly registrationWindowLimit = 5;
   private readonly registrationMaxFailedCodeAttempts = 5;
-  private readonly registrationEmailLocale = process.env.REGISTRATION_EMAIL_LOCALE?.trim() || "zh-CN";
-  private readonly registrationEmailSenderId = process.env.REGISTRATION_EMAIL_SENDER_ID?.trim() || "default";
-  private readonly registrationEmailReplyTo = process.env.REGISTRATION_EMAIL_REPLY_TO?.trim() || "";
-  private readonly registrationEmailSubject = process.env.REGISTRATION_EMAIL_SUBJECT?.trim() || "验证码";
   private readonly failureStates = new Map<string, LoginFailureState>();
 
   constructor(
@@ -73,7 +71,7 @@ export class AuthService {
     this.assertNotLocked(normalizedAccount, now);
 
     const user = this.database.findUserByAccount(normalizedAccount);
-    if (!user || !this.passwordHasher.verify(command.password, user.passwordHash)) {
+    if (!user || user.passwordAlgo !== "argon2id-adapter" || !this.passwordHasher.verify(command.password, user.passwordHash)) {
       this.registerFailure(normalizedAccount, now);
       unauthorized("AUTH_INVALID_CREDENTIAL", "Account or password is invalid.");
     }
@@ -128,14 +126,72 @@ export class AuthService {
     );
 
     try {
-      await this.registrationEmailSender.sendRegistrationCode({
-        appId: app.id,
+      await this.registrationEmailSender.sendVerificationCode({
+        appName: app.name,
         email,
         code: rawCode,
-        locale: this.registrationEmailLocale,
-        senderId: this.registrationEmailSenderId,
-        replyToAddresses: this.registrationEmailReplyTo || undefined,
-        subject: this.registrationEmailSubject,
+        locale: command.locale.trim() || "zh-CN",
+        region: command.region,
+        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+      });
+    } catch (error) {
+      this.cache.delete(cacheKey);
+      throw error;
+    }
+
+    return {
+      accepted: true,
+      cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
+      expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+    };
+  }
+
+  async loginEmailCode(
+    command: EmailLoginCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const email = this.normalizeEmail(command.email);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    this.consumeEmailLoginCodeLimits(app.id, email, ipAddress, now);
+
+    const cacheKey = this.buildEmailLoginCodeKey(app.id, email);
+    const existingCode = this.cache.get<EmailVerificationCacheEntry>(cacheKey, now);
+    if (
+      existingCode &&
+      now.getTime() - new Date(existingCode.sentAt).getTime() < this.registrationResendCooldownMs
+    ) {
+      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+    }
+
+    const rawCode = this.registrationCodeGenerator();
+    if (!/^\d{6}$/.test(rawCode)) {
+      throw new Error("Registration code generator must return a 6-digit numeric string.");
+    }
+
+    const entry = {
+      codeHash: sha256(rawCode),
+      expiresAt: new Date(now.getTime() + this.registrationCodeTtlMs).toISOString(),
+      sentAt: now.toISOString(),
+      failedAttempts: 0,
+    } satisfies EmailVerificationCacheEntry;
+
+    this.cache.set(
+      cacheKey,
+      entry,
+      Math.ceil(this.registrationCodeTtlMs / 1000),
+      now,
+    );
+
+    try {
+      await this.registrationEmailSender.sendVerificationCode({
+        appName: app.name,
+        email,
+        code: rawCode,
+        locale: command.locale.trim() || "zh-CN",
+        region: command.region,
+        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
       });
     } catch (error) {
       this.cache.delete(cacheKey);
@@ -203,6 +259,71 @@ export class AuthService {
     this.appRegistryService.ensureMembership(app.id, userId, now);
 
     return this.issueSessionForUser(userId, app.id, now);
+  }
+
+  async loginWithEmailCode(
+    command: EmailLoginCommand,
+    now = new Date(),
+  ): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
+    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const email = this.normalizeEmail(command.email);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    this.consumeEmailLoginLimits(app.id, email, ipAddress, now);
+
+    const emailCode = command.emailCode.trim();
+    if (!emailCode) {
+      unauthorized("AUTH_VERIFICATION_CODE_REQUIRED", "Email verification code is required.");
+    }
+
+    const cacheKey = this.buildEmailLoginCodeKey(app.id, email);
+    const cachedCode = this.cache.get<EmailVerificationCacheEntry>(cacheKey, now);
+    if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
+      this.cache.delete(cacheKey);
+      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+    }
+
+    if (cachedCode.failedAttempts >= this.registrationMaxFailedCodeAttempts) {
+      this.cache.delete(cacheKey);
+      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+    }
+
+    if (sha256(emailCode) !== cachedCode.codeHash) {
+      this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
+      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+    }
+
+    this.cache.delete(cacheKey);
+
+    let user = this.database.findUserByAccount(email);
+    let autoCreatedUser = false;
+    if (!user) {
+      if (app.joinMode !== "AUTO") {
+        forbidden("APP_JOIN_INVITE_REQUIRED", "This app requires an invite to join.");
+      }
+
+      autoCreatedUser = true;
+      user = {
+        id: randomId("user"),
+        email,
+        passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
+        passwordAlgo: "email-code-only",
+        status: "ACTIVE",
+        createdAt: now.toISOString(),
+      };
+      this.database.users.push(user);
+    }
+
+    if (user.status === "BLOCKED") {
+      forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
+    }
+
+    this.appRegistryService.ensureMembership(app.id, user.id, now);
+
+    return {
+      session: await this.issueSessionForUser(user.id, app.id, now),
+      autoCreatedUser,
+    };
   }
 
   async refresh(command: RefreshCommand, now = new Date()): Promise<AuthSession> {
@@ -419,6 +540,36 @@ export class AuthService {
     );
   }
 
+  private consumeEmailLoginCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): void {
+    this.consumeRollingWindow(
+      this.buildEmailLoginComboRateKey("email-code", appId, email, ipAddress),
+      this.registrationCodeWindowMs,
+      this.registrationCodeWindowLimit,
+      now,
+    );
+    this.consumeBucketCount(
+      this.buildEmailLoginEmailDayRateKey(email, now),
+      48 * 60 * 60,
+      this.registrationEmailDailyLimit,
+      now,
+    );
+    this.consumeBucketCount(
+      this.buildEmailLoginIpHourRateKey(ipAddress, now),
+      2 * 60 * 60,
+      this.registrationIpHourlyLimit,
+      now,
+    );
+  }
+
+  private consumeEmailLoginLimits(appId: string, email: string, ipAddress: string, now = new Date()): void {
+    this.consumeRollingWindow(
+      this.buildEmailLoginComboRateKey("complete", appId, email, ipAddress),
+      this.registrationWindowMs,
+      this.registrationWindowLimit,
+      now,
+    );
+  }
+
   private consumeRollingWindow(
     key: string,
     windowMs: number,
@@ -493,5 +644,26 @@ export class AuthService {
 
   private buildRegistrationIpHourRateKey(ipAddress: string, now = new Date()): string {
     return `auth:register:ip-hour:${toHourKey(now)}:${ipAddress}`;
+  }
+
+  private buildEmailLoginCodeKey(appId: string, email: string): string {
+    return `auth:email-login:code:${appId}:${email}`;
+  }
+
+  private buildEmailLoginComboRateKey(
+    kind: "email-code" | "complete",
+    appId: string,
+    email: string,
+    ipAddress: string,
+  ): string {
+    return `auth:email-login:rate:${kind}:${appId}:${email}:${ipAddress}`;
+  }
+
+  private buildEmailLoginEmailDayRateKey(email: string, now = new Date()): string {
+    return `auth:email-login:email-day:${toDateKey(now)}:${email}`;
+  }
+
+  private buildEmailLoginIpHourRateKey(ipAddress: string, now = new Date()): string {
+    return `auth:email-login:ip-hour:${toHourKey(now)}:${ipAddress}`;
   }
 }
