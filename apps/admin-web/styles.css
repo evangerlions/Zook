@@ -836,6 +836,30 @@ select {
   justify-content: flex-end;
 }
 
+.llm-model-card {
+  gap: 12px;
+}
+
+.llm-model-card[data-collapsed="true"] {
+  background:
+    linear-gradient(180deg, rgba(37, 99, 235, 0.03), rgba(255, 255, 255, 0.92)),
+    var(--surface);
+}
+
+.llm-collapse-button {
+  min-width: 76px;
+}
+
+.llm-collapse-button[aria-expanded="false"] {
+  border-color: rgba(37, 99, 235, 0.18);
+  background: rgba(37, 99, 235, 0.06);
+  color: #1d4ed8;
+}
+
+.llm-model-summary-hint {
+  margin-bottom: 0;
+}
+
 .llm-route-section {
   gap: 12px;
 }

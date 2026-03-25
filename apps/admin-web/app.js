@@ -66,6 +66,7 @@ const state = {
   llmMetricsDocument: null,
   llmModelMetricsDocument: null,
   llmSelectedModelKey: "",
+  llmCollapsedModelKeys: {},
   runningLlmSmokeTest: false,
   llmSmokeTestDocument: null,
   llmSmokeExpandedKeys: {},
@@ -301,6 +302,7 @@ function clearAdminSession() {
   state.llmMetricsDocument = null;
   state.llmModelMetricsDocument = null;
   state.llmSelectedModelKey = "";
+  state.llmCollapsedModelKeys = {};
   state.runningLlmSmokeTest = false;
   state.llmSmokeTestDocument = null;
   state.llmSmokeExpandedKeys = {};
@@ -1890,6 +1892,10 @@ function buildLlmSmokeOutcomeSnapshot(item) {
   };
 }
 
+function buildLlmModelCollapseKey(model, index) {
+  return [model.key || "__empty__", String(index)].join("::");
+}
+
 function renderLlmProviderCard(provider, index, readOnly) {
   return `
     <div class="mail-row">
@@ -1920,16 +1926,31 @@ function renderLlmModelCard(model, index, readOnly, runtimeSnapshot) {
   const weightHint = model.routes.some((route) => route.enabled)
     ? `当前启用 route 的 weight 合计 ${enabledWeightSum.toFixed(2)}，应等于 100。`
     : "当前没有启用 route。fixed 模式下会回退到列表里的第一条 route。";
+  const collapseKey = buildLlmModelCollapseKey(model, index);
+  const collapsed = Boolean(state.llmCollapsedModelKeys[collapseKey]);
+  const enabledRouteCount = model.routes.filter((route) => route.enabled).length;
+  const summaryHint = collapsed
+    ? `已折叠，当前共有 ${model.routes.length} 条 route，其中 ${enabledRouteCount} 条启用。点击展开后可继续编辑路由明细。`
+    : `当前共有 ${model.routes.length} 条 route，其中 ${enabledRouteCount} 条启用。`;
 
   return `
     <div class="mail-row">
-      <div class="entity-card">
+      <div class="entity-card llm-model-card" data-collapsed="${collapsed ? "true" : "false"}">
         <div class="entity-card-top">
           <div>
             <strong>${escapeHtml(model.label || "未命名模型")}</strong>
             <span>${escapeHtml(model.key || "未设置 key")}</span>
           </div>
           <div class="row-actions">
+            <button
+              class="button button-secondary llm-collapse-button"
+              type="button"
+              data-action="toggle-llm-model-collapse"
+              data-model-collapse-key="${escapeHtml(collapseKey)}"
+              aria-expanded="${collapsed ? "false" : "true"}"
+            >
+              ${collapsed ? "展开" : "收起"}
+            </button>
             <button class="button button-secondary" type="button" data-action="edit-llm-model" data-index="${escapeHtml(String(index))}" ${readOnly || state.savingLlm ? "disabled" : ""}>编辑</button>
             <button class="button button-ghost" type="button" data-action="delete-llm-model" data-index="${escapeHtml(String(index))}" ${readOnly || state.savingLlm ? "disabled" : ""}>删除</button>
           </div>
@@ -1938,37 +1959,44 @@ function renderLlmModelCard(model, index, readOnly, runtimeSnapshot) {
           <span class="meta-chip">${escapeHtml(model.strategy)}</span>
           <span class="meta-chip">${escapeHtml(model.strategy === "auto" ? "按 weight × 健康分自动分流" : "固定走最高 weight route")}</span>
         </div>
-        <p class="field-hint">${escapeHtml(weightHint)}</p>
-        <div class="mail-section llm-route-section">
-          <div class="mail-section-header">
-            <div>
-              <h3>Routes</h3>
-              <p><code>weight</code> 表示基础流量比例。<code>auto</code> 会叠加健康分，<code>fixed</code> 只认最大的 weight。</p>
-            </div>
-            <button class="button button-secondary" type="button" data-action="add-llm-route" data-model-index="${escapeHtml(String(index))}" ${readOnly || state.savingLlm ? "disabled" : ""}>添加 Route</button>
-          </div>
-          <div class="table-wrap">
-            <table class="app-table llm-route-table">
-              <thead>
-                <tr>
-                  <th>供应商</th>
-                  <th>Provider Model</th>
-                  <th>启用</th>
-                  <th>Weight</th>
-                  <th>健康分</th>
-                  <th>成功率</th>
-                  <th>实际流量</th>
-                  <th class="align-right">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${model.routes
-                  .map((route, routeIndex) => renderLlmRouteRow(route, routeIndex, index, runtimeModel, readOnly))
-                  .join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <p class="field-hint llm-model-summary-hint">${escapeHtml(summaryHint)}</p>
+        ${
+          collapsed
+            ? ""
+            : `
+              <p class="field-hint">${escapeHtml(weightHint)}</p>
+              <div class="mail-section llm-route-section">
+                <div class="mail-section-header">
+                  <div>
+                    <h3>Routes</h3>
+                    <p><code>weight</code> 表示基础流量比例。<code>auto</code> 会叠加健康分，<code>fixed</code> 只认最大的 weight。</p>
+                  </div>
+                  <button class="button button-secondary" type="button" data-action="add-llm-route" data-model-index="${escapeHtml(String(index))}" ${readOnly || state.savingLlm ? "disabled" : ""}>添加 Route</button>
+                </div>
+                <div class="table-wrap">
+                  <table class="app-table llm-route-table">
+                    <thead>
+                      <tr>
+                        <th>供应商</th>
+                        <th>Provider Model</th>
+                        <th>启用</th>
+                        <th>Weight</th>
+                        <th>健康分</th>
+                        <th>成功率</th>
+                        <th>实际流量</th>
+                        <th class="align-right">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${model.routes
+                        .map((route, routeIndex) => renderLlmRouteRow(route, routeIndex, index, runtimeModel, readOnly))
+                        .join("")}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+        }
       </div>
     </div>
   `;
@@ -2601,6 +2629,20 @@ async function handleAction(target) {
       mode: "create",
       values: createEmptyLlmModel(),
     });
+    await render();
+    return;
+  }
+
+  if (action === "toggle-llm-model-collapse") {
+    const collapseKey = String(target.dataset.modelCollapseKey || "");
+    if (!collapseKey) {
+      return;
+    }
+
+    state.llmCollapsedModelKeys[collapseKey] = !state.llmCollapsedModelKeys[collapseKey];
+    if (!state.llmCollapsedModelKeys[collapseKey]) {
+      delete state.llmCollapsedModelKeys[collapseKey];
+    }
     await render();
     return;
   }
