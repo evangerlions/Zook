@@ -116,11 +116,59 @@ export function buildDefaultSeed(
         updatedAt: "2026-03-01T09:00:00+08:00",
       },
       {
+        id: "cfg_app_a_delivery_config",
+        appId: "app_a",
+        configKey: "admin.delivery_config",
+        configValue: JSON.stringify(
+          {
+            release: {
+              version: "2026.03.20",
+              channel: "stable",
+            },
+            featureFlags: {
+              showOnboarding: true,
+              enableVipBanner: false,
+            },
+            settings: {
+              theme: "spring",
+              apiBasePath: "/api/v1",
+            },
+          },
+          null,
+          2,
+        ),
+        updatedAt: "2026-03-20T09:00:00+08:00",
+      },
+      {
         id: "cfg_app_b_default_role",
         appId: "app_b",
         configKey: "auth.default_role_code",
         configValue: "member",
         updatedAt: "2026-03-01T09:00:00+08:00",
+      },
+      {
+        id: "cfg_app_b_delivery_config",
+        appId: "app_b",
+        configKey: "admin.delivery_config",
+        configValue: JSON.stringify(
+          {
+            release: {
+              version: "2026.03.18",
+              channel: "beta",
+            },
+            featureFlags: {
+              showOnboarding: false,
+              enableVipBanner: true,
+            },
+            settings: {
+              theme: "midnight",
+              apiBasePath: "/api/v1",
+            },
+          },
+          null,
+          2,
+        ),
+        updatedAt: "2026-03-20T09:10:00+08:00",
       },
     ],
     analyticsEvents: [],

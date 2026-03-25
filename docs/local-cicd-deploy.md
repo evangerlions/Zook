@@ -23,7 +23,7 @@ python3 build_scripts/build_and_push_docker.py --branch <branch> --commit <commi
    - `git fetch` + `git checkout`
    - 本地 `docker build`
    - `docker compose up -d`
-   - `/health` 健康检查
+   - `/api/health` 和 Admin Web `/setup` 健康检查
    - 失败回滚到上一个成功版本
    - 成功后保留少量最近镜像并清理更早的旧镜像
 
@@ -42,8 +42,8 @@ python3 build_scripts/build_and_push_docker.py --branch <branch> --commit <commi
 
 这套方案现在支持同机双槽位部署。推荐直接约定：
 
-1. `release-online -> slot=online -> COMPOSE_PROJECT_NAME=zook-online -> HOST_PORT=3100`
-2. `release-dev -> slot=dev -> COMPOSE_PROJECT_NAME=zook-dev -> HOST_PORT=3101`
+1. `release-online -> slot=online -> COMPOSE_PROJECT_NAME=zook-online -> HOST_PORT=3100 -> ADMIN_HOST_PORT=3110`
+2. `release-dev -> slot=dev -> COMPOSE_PROJECT_NAME=zook-dev -> HOST_PORT=3101 -> ADMIN_HOST_PORT=3111`
 
 仓库里已经提供了两个示例配置文件：
 
@@ -61,6 +61,10 @@ cp deploy_configs/dev.env.example deploy_configs/dev.env
 
 1. 作为部署脚本的参数来源
 2. 作为容器运行时的 `env_file`
+
+容器网络统一使用 Docker 默认 bridge 网络。若 Redis / PostgreSQL 部署在宿主机上，
+请在 `REDIS_URL` / `DATABASE_URL` 中使用 `host.docker.internal`，并确保宿主机服务
+监听的是容器可达地址，而不是只监听 `127.0.0.1`。
 
 默认还支持这两个清理参数：
 
@@ -135,7 +139,7 @@ python3 build_scripts/build_and_push_docker.py --branch main --skip-git-sync --a
 5. 本地构建镜像。
 6. 按槽位写入 `.deploy/<slot>/compose.env`
 7. 执行 `docker compose up -d --force-recreate --remove-orphans`
-8. 轮询 `http://127.0.0.1:<port>/<health_path>`
+8. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
 9. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`
 10. 成功后默认保留最近 `5` 个本地发布镜像，并额外保留各槽位当前与上一个回滚点
 11. 成功后再执行一次温和的 `docker builder prune`

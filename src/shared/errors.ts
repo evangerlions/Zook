@@ -31,6 +31,14 @@ export function forbidden(code: ErrorCode, message: string, details?: unknown): 
   throw new ApplicationError(403, code, message, details);
 }
 
+export function conflict(code: ErrorCode, message: string, details?: unknown): never {
+  throw new ApplicationError(409, code, message, details);
+}
+
+export function tooManyRequests(code: ErrorCode, message: string, details?: unknown): never {
+  throw new ApplicationError(429, code, message, details);
+}
+
 export function internalError(message: string, details?: unknown): never {
   throw new ApplicationError(500, "SYS_INTERNAL_ERROR", message, details);
 }

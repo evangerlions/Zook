@@ -1,10 +1,10 @@
-import { createApplication } from "./app.module.ts";
+import { init } from "./infrastructure/runtime/init.ts";
 
 /**
  * The worker entry mirrors the BullMQ worker deployment shape from the design document.
  * In this scaffold it operates on in-memory adapters, so it is primarily for local verification.
  */
-const runtime = createApplication({
+const runtime = await init({
   serviceName: "worker",
   emitLogs: true,
 });

@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 
-test("auth service auto-joins users for AUTO apps and assigns the default role", () => {
-  const runtime = createApplication();
+test("auth service auto-joins users for AUTO apps and assigns the default role", async () => {
+  const runtime = await createApplication();
 
-  const session = runtime.services.authService.login({
+  const session = await runtime.services.authService.login({
     appId: "app_a",
     account: "bob@example.com",
     password: "Password1234",
@@ -25,10 +25,10 @@ test("auth service auto-joins users for AUTO apps and assigns the default role",
   );
 });
 
-test("auth service rejects first-login into INVITE_ONLY apps", () => {
-  const runtime = createApplication();
+test("auth service rejects first-login into INVITE_ONLY apps", async () => {
+  const runtime = await createApplication();
 
-  assert.throws(
+  await assert.rejects(
     () =>
       runtime.services.authService.login({
         appId: "app_b",
@@ -42,22 +42,22 @@ test("auth service rejects first-login into INVITE_ONLY apps", () => {
   );
 });
 
-test("auth service rotates refresh tokens and revokes them on logout", () => {
-  const runtime = createApplication();
-  const firstSession = runtime.services.authService.login({
+test("auth service rotates refresh tokens and revokes them on logout", async () => {
+  const runtime = await createApplication();
+  const firstSession = await runtime.services.authService.login({
     appId: "app_a",
     account: "alice@example.com",
     password: "Password1234",
   });
 
-  const secondSession = runtime.services.authService.refresh({
+  const secondSession = await runtime.services.authService.refresh({
     appId: "app_a",
     refreshToken: firstSession.refreshToken,
   });
 
   assert.notEqual(secondSession.refreshToken, firstSession.refreshToken);
   const auth = runtime.services.tokenService.verifyAccessToken(secondSession.accessToken);
-  const revoked = runtime.services.authService.logout(
+  const revoked = await runtime.services.authService.logout(
     {
       appId: "app_a",
       scope: "current",
@@ -67,7 +67,7 @@ test("auth service rotates refresh tokens and revokes them on logout", () => {
   );
 
   assert.equal(revoked, 1);
-  assert.throws(
+  await assert.rejects(
     () =>
       runtime.services.authService.refresh({
         appId: "app_a",
@@ -78,4 +78,25 @@ test("auth service rotates refresh tokens and revokes them on logout", () => {
       "code" in error &&
       error.code === "AUTH_REFRESH_TOKEN_REVOKED",
   );
+});
+
+test("auth service keeps refresh tokens usable across application restarts when KV storage is shared", async () => {
+  const firstRuntime = await createApplication();
+  const sharedKvManager = firstRuntime.services.kvManager;
+  const firstSession = await firstRuntime.services.authService.login({
+    appId: "app_a",
+    account: "alice@example.com",
+    password: "Password1234",
+  });
+
+  const secondRuntime = await createApplication({
+    kvManager: sharedKvManager,
+  });
+  const refreshed = await secondRuntime.services.authService.refresh({
+    appId: "app_a",
+    refreshToken: firstSession.refreshToken,
+  });
+
+  assert.ok(refreshed.accessToken);
+  assert.notEqual(refreshed.refreshToken, firstSession.refreshToken);
 });

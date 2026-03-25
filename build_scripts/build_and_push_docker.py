@@ -33,7 +33,9 @@ DEFAULT_APP_ENV_FILE = ".env"
 DEFAULT_COMPOSE_FILE = "compose.yaml"
 DEFAULT_BIND_IP = "127.0.0.1"
 DEFAULT_PORT = "3100"
-DEFAULT_HEALTH_PATH = "health"
+DEFAULT_ADMIN_PORT = "3110"
+DEFAULT_HEALTH_PATH = "api/health"
+DEFAULT_ADMIN_HEALTH_PATH = "_admin/health"
 DEFAULT_KEEP_RELEASES = 5
 DEFAULT_BUILDER_PRUNE_UNTIL = "168h"
 STATE_DIR_NAME = ".deploy"
@@ -293,9 +295,20 @@ def resolve_version(repo_root: Path, version_source: str) -> tuple[str | None, s
     return None, None
 
 
-def normalize_health_path(raw_value: str | None) -> str:
-    cleaned = (raw_value or DEFAULT_HEALTH_PATH).strip().strip("/")
-    return cleaned or DEFAULT_HEALTH_PATH
+def normalize_health_path(
+    raw_value: str | None,
+    default_value: str = DEFAULT_HEALTH_PATH,
+    legacy_aliases: dict[str, str] | None = None,
+) -> str:
+    cleaned = (raw_value or default_value).strip().strip("/")
+    if not cleaned:
+        return default_value
+
+    aliases = legacy_aliases or {}
+    normalized = aliases.get(cleaned, cleaned)
+    if normalized != cleaned:
+        print(f"warning: normalize legacy health path {cleaned!r} -> {normalized!r}")
+    return normalized
 
 
 def ensure_existing_file(path: Path, description: str) -> Path:
@@ -396,24 +409,36 @@ def get_service_status(project_name: str, service_name: str) -> str | None:
     return command_output(["docker", "inspect", "--format", "{{.State.Status}}", container_id])
 
 
-def compose_command(project_name: str, compose_file: Path, compose_env_file: Path, *extra_args: str) -> list[str]:
-    return [
+def compose_command(project_name: str, compose_files: list[Path], compose_env_file: Path, *extra_args: str) -> list[str]:
+    command = [
         "docker",
         "compose",
         "--project-name",
         project_name,
         "--env-file",
         str(compose_env_file),
-        "-f",
-        str(compose_file),
-        *extra_args,
     ]
+    for compose_file in compose_files:
+        command.extend(["-f", str(compose_file)])
+    command.extend(extra_args)
+    return command
 
 
-def collect_compose_logs(project_name: str, compose_file: Path, compose_env_file: Path) -> str:
+def collect_compose_logs(project_name: str, compose_files: list[Path], compose_env_file: Path) -> str:
     try:
         return command_output(
-            compose_command(project_name, compose_file, compose_env_file, "logs", "--no-color", "--tail", "200", "api", "worker")
+            compose_command(
+                project_name,
+                compose_files,
+                compose_env_file,
+                "logs",
+                "--no-color",
+                "--tail",
+                "200",
+                "api",
+                "worker",
+                "admin-web",
+            )
         )
     except subprocess.CalledProcessError:
         return ""
@@ -428,18 +453,37 @@ def check_http_health(bind_ip: str, host_port: str, health_path: str) -> bool:
         return False
 
 
-def wait_for_release(project_name: str, bind_ip: str, host_port: str, health_path: str, timeout_seconds: int = 60) -> bool:
+def wait_for_release(
+    project_name: str,
+    bind_ip: str,
+    host_port: str,
+    health_path: str,
+    admin_host_port: str,
+    admin_health_path: str,
+    timeout_seconds: int = 60,
+) -> bool:
     deadline = time.monotonic() + timeout_seconds
     last_state = ""
     while time.monotonic() < deadline:
         api_status = get_service_status(project_name, "api")
         worker_status = get_service_status(project_name, "worker")
+        admin_status = get_service_status(project_name, "admin-web")
         healthy = check_http_health(bind_ip, host_port, health_path)
-        current_state = f"api={api_status} worker={worker_status} healthy={healthy}"
+        admin_healthy = check_http_health(bind_ip, admin_host_port, admin_health_path)
+        current_state = (
+            f"api={api_status} worker={worker_status} admin={admin_status} "
+            f"healthy={healthy} adminHealthy={admin_healthy}"
+        )
         if current_state != last_state:
             print(f"wait release status: {current_state}")
             last_state = current_state
-        if api_status == "running" and worker_status == "running" and healthy:
+        if (
+            api_status == "running"
+            and worker_status == "running"
+            and admin_status == "running"
+            and healthy
+            and admin_healthy
+        ):
             return True
         time.sleep(2)
     return False
@@ -469,9 +513,9 @@ def build_local_image(repo_root: Path, dockerfile_path: Path, image_full_name: s
     )
 
 
-def deploy_release(repo_root: Path, project_name: str, compose_file: Path, compose_env_file: Path) -> None:
+def deploy_release(repo_root: Path, project_name: str, compose_files: list[Path], compose_env_file: Path) -> None:
     run_command(
-        compose_command(project_name, compose_file, compose_env_file, "up", "-d", "--force-recreate", "--remove-orphans"),
+        compose_command(project_name, compose_files, compose_env_file, "up", "-d", "--force-recreate", "--remove-orphans"),
         cwd=repo_root,
     )
 
@@ -493,6 +537,20 @@ def resolve_runtime_paths(repo_root: Path, args: argparse.Namespace) -> tuple[Pa
     dockerfile_path = ensure_existing_file(dockerfile_path, "Dockerfile")
 
     return compose_file, app_env_file, dockerfile_path
+
+
+def warn_legacy_network_mode(raw_value: str | None) -> None:
+    normalized = (raw_value or "").strip().lower()
+    if not normalized or normalized == "bridge":
+        return
+    if normalized == "host":
+        print(
+            "warning: legacy DEPLOY_NETWORK_MODE=host is ignored; deployment now always uses bridge networking. "
+            "Use host.docker.internal in REDIS_URL/DATABASE_URL and ensure the host services listen on a "
+            "container-reachable address.",
+        )
+        return
+    raise ScriptError(f"Unsupported DEPLOY_NETWORK_MODE: {raw_value!r}. Expected bridge.")
 
 
 def resolve_project_name(image_name: str, slot_name: str) -> str:
@@ -650,8 +708,11 @@ def build_compose_env(
     app_env_file: Path,
     host_port: str,
     container_port: str,
+    admin_host_port: str,
+    admin_container_port: str,
     bind_ip: str,
     health_path: str,
+    admin_health_path: str,
 ) -> dict[str, str]:
     return {
         "DEPLOY_IMAGE": image_name,
@@ -661,7 +722,10 @@ def build_compose_env(
         "HOST_BIND_IP": bind_ip,
         "HOST_PORT": host_port,
         "CONTAINER_PORT": container_port,
+        "ADMIN_HOST_PORT": admin_host_port,
+        "ADMIN_CONTAINER_PORT": admin_container_port,
         "HEALTH_PATH": health_path,
+        "ADMIN_HEALTH_PATH": admin_health_path,
     }
 
 
@@ -789,6 +853,8 @@ def main() -> int:
     slot_name = sanitize_slot(args.slot or os.getenv("DEPLOY_SLOT", ""))
     project_name = resolve_project_name(image_name, slot_name)
     branch = resolve_branch(repo_root, args.branch)
+    warn_legacy_network_mode(os.getenv("DEPLOY_NETWORK_MODE"))
+    compose_files = [compose_file]
     keep_releases = resolve_keep_releases(args)
     builder_prune_until = resolve_builder_prune_until(args)
     dirty_checkout = assert_repo_ready_for_sync(repo_root, skip_git_sync=args.skip_git_sync, allow_dirty=args.allow_dirty)
@@ -818,12 +884,31 @@ def main() -> int:
         bind_ip = os.getenv("DEPLOY_HOST_BIND_IP", DEFAULT_BIND_IP).strip() or DEFAULT_BIND_IP
         host_port = os.getenv("DEPLOY_HOST_PORT", os.getenv("PORT", DEFAULT_PORT)).strip() or DEFAULT_PORT
         container_port = os.getenv("DEPLOY_CONTAINER_PORT", os.getenv("PORT", DEFAULT_PORT)).strip() or DEFAULT_PORT
-        health_path = normalize_health_path(os.getenv("HEALTH_PATH", DEFAULT_HEALTH_PATH))
+        admin_host_port = os.getenv("ADMIN_HOST_PORT", DEFAULT_ADMIN_PORT).strip() or DEFAULT_ADMIN_PORT
+        admin_container_port = os.getenv("ADMIN_CONTAINER_PORT", DEFAULT_ADMIN_PORT).strip() or DEFAULT_ADMIN_PORT
+        health_path = normalize_health_path(
+            os.getenv("HEALTH_PATH", DEFAULT_HEALTH_PATH),
+            DEFAULT_HEALTH_PATH,
+            {
+                "health": DEFAULT_HEALTH_PATH,
+                "api/v1/health": DEFAULT_HEALTH_PATH,
+            },
+        )
+        admin_health_path = normalize_health_path(
+            os.getenv("ADMIN_HEALTH_PATH", DEFAULT_ADMIN_HEALTH_PATH),
+            DEFAULT_ADMIN_HEALTH_PATH,
+            {
+                "setup": DEFAULT_ADMIN_HEALTH_PATH,
+                "_admin/health": DEFAULT_ADMIN_HEALTH_PATH,
+            },
+        )
 
         print(f"use repo root: {repo_root}")
         print(f"use slot: {slot_name}")
         print(f"use branch: {branch}")
         print(f"use commit: {commit_sha}")
+        print("use container network mode: bridge")
+        print(f"use compose files: {', '.join(str(path) for path in compose_files)}")
         print(f"use image: {image_full_name}")
         print(f"keep recent release images: {keep_releases}")
         if version:
@@ -842,8 +927,11 @@ def main() -> int:
             app_env_file=app_env_file,
             host_port=host_port,
             container_port=container_port,
+            admin_host_port=admin_host_port,
+            admin_container_port=admin_container_port,
             bind_ip=bind_ip,
             health_path=health_path,
+            admin_health_path=admin_health_path,
         )
 
         if args.dry_run:
@@ -860,9 +948,16 @@ def main() -> int:
 
         deploy_start = get_time()
         print("===== START DEPLOY LOCAL RELEASE =====")
-        deploy_release(repo_root, project_name, compose_file, compose_env_file)
+        deploy_release(repo_root, project_name, compose_files, compose_env_file)
 
-        if wait_for_release(project_name, bind_ip, host_port, health_path):
+        if wait_for_release(
+            project_name,
+            bind_ip,
+            host_port,
+            health_path,
+            admin_host_port,
+            admin_health_path,
+        ):
             write_state(
                 state_file,
                 {
@@ -913,7 +1008,7 @@ def main() -> int:
             return 0
 
         print("deployment health check failed, collecting logs...")
-        logs = collect_compose_logs(project_name, compose_file, compose_env_file)
+        logs = collect_compose_logs(project_name, compose_files, compose_env_file)
         if logs:
             print("===== COMPOSE LOGS =====")
             print(logs)
@@ -926,13 +1021,23 @@ def main() -> int:
                 app_env_file=app_env_file,
                 host_port=host_port,
                 container_port=container_port,
+                admin_host_port=admin_host_port,
+                admin_container_port=admin_container_port,
                 bind_ip=bind_ip,
                 health_path=health_path,
+                admin_health_path=admin_health_path,
             )
             print(f"attempt rollback to: {previous_release['image']}")
             write_compose_env(compose_env_file, previous_compose_env)
-            deploy_release(repo_root, project_name, compose_file, compose_env_file)
-            rollback_ok = wait_for_release(project_name, bind_ip, host_port, health_path)
+            deploy_release(repo_root, project_name, compose_files, compose_env_file)
+            rollback_ok = wait_for_release(
+                project_name,
+                bind_ip,
+                host_port,
+                health_path,
+                admin_host_port,
+                admin_health_path,
+            )
             if rollback_ok:
                 write_state(
                     state_file,
