@@ -21,6 +21,10 @@ const MAIL_TEMPLATE_LOCALE_OPTIONS = [
   { value: "ja-JP", label: "日本語" },
   { value: "ko-KR", label: "한국어" },
 ];
+const MAIL_SENDER_REGION_OPTIONS = [
+  { value: "ap-guangzhou", label: "中国大陆 / 广州" },
+  { value: "ap-hongkong", label: "海外 / 中国香港" },
+];
 
 const appRoot = document.getElementById("app");
 
@@ -50,6 +54,9 @@ const state = {
   llmDocument: null,
   passwordDocument: null,
   mailDraft: createDefaultMailConfig(),
+  mailTestDraft: createDefaultMailTestDraft(),
+  sendingMailTest: false,
+  mailTestResult: null,
   llmDraft: createDefaultLlmConfig(),
   passwordDraft: createDefaultPasswordConfig(),
   editorValue: "",
@@ -130,6 +137,11 @@ appRoot.addEventListener("change", (event) => {
     return;
   }
 
+  if (isMailTestDraftControl(target)) {
+    handleMailTestDraftChange(target);
+    return;
+  }
+
   if (isPasswordDraftControl(target)) {
     handlePasswordDraftChange(target);
     return;
@@ -187,6 +199,11 @@ appRoot.addEventListener("input", (event) => {
 
   if (isMailDraftControl(target)) {
     handleMailDraftChange(target);
+    return;
+  }
+
+  if (isMailTestDraftControl(target)) {
+    handleMailTestDraftChange(target);
     return;
   }
 
@@ -935,6 +952,7 @@ function renderMailPage() {
   const revisions = Array.isArray(emailDocument.revisions) ? emailDocument.revisions : [];
   const latestRevision = revisions[0]?.revision;
   const readOnly = state.loadingMail || isViewingHistoricalMailConfig();
+  const mailTestDraft = ensureMailTestDraft(draft);
 
   return `
     <section class="page-shell">
@@ -1009,7 +1027,7 @@ function renderMailPage() {
             <div class="mail-section-header">
               <div>
                 <h3>腾讯云凭据</h3>
-                <p>请在密码工作区配置 <code>tencent.secret_id</code> 与 <code>tencent.secret_key</code>。</p>
+                <p>请在密码工作区配置 <code>tencent.secret_id</code> 与 <code>tencent.secret_key</code>。服务端会按用户地区自动选择 SES region。</p>
               </div>
               <button class="button button-secondary" type="button" data-link="${PASSWORD_ROUTE}">前往密码</button>
             </div>
@@ -1019,7 +1037,7 @@ function renderMailPage() {
             <div class="mail-section-header">
               <div>
                 <h3>发件地址</h3>
-                <p>按 ID 管理可复用的发件人。</p>
+                <p>每个 region 只保留一个 sender。系统会按 <code>X-Country-Code</code> / <code>X-App-Country-Code</code> / Geo 自动切换发信源。</p>
               </div>
               <button class="button button-secondary" type="button" data-action="add-mail-sender" ${readOnly || state.savingMail ? "disabled" : ""}>添加发件人</button>
             </div>
@@ -1037,7 +1055,7 @@ function renderMailPage() {
             <div class="mail-section-header">
               <div>
                 <h3>模板</h3>
-                <p>每条模板记录对应一种语言。</p>
+                <p>每条模板记录对应一种语言，<code>subject</code> 会和模板 ID 一起下发到腾讯 SES。</p>
               </div>
               <button class="button button-secondary" type="button" data-action="add-mail-template" ${readOnly || state.savingMail ? "disabled" : ""}>添加模板</button>
             </div>
@@ -1049,6 +1067,97 @@ function renderMailPage() {
                   : '<div class="mail-empty">还没有模板。</div>'
               }
             </div>
+          </section>
+
+          <section class="mail-section">
+            <div class="mail-section-header">
+              <div>
+                <h3>测试发送</h3>
+                <p>超级管理员专用。选择 sender region、templateId 和模板变量后，可直接向指定邮箱发送一封测试邮件。全局 20 秒内只能触发一次。</p>
+              </div>
+              <button
+                class="button button-primary"
+                type="button"
+                data-action="send-mail-test"
+                ${readOnly || state.sendingMailTest || !draft.enabled || !draft.senders.length || !draft.templates.length ? "disabled" : ""}
+              >
+                ${state.sendingMailTest ? "发送中..." : "发送测试邮件"}
+              </button>
+            </div>
+
+            <div class="mail-test-grid">
+              <label class="field">
+                <span>收件邮箱</span>
+                <input
+                  data-mail-test-field="recipientEmail"
+                  type="email"
+                  value="${escapeHtml(mailTestDraft.recipientEmail)}"
+                  placeholder="tester@example.com"
+                  autocomplete="off"
+                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
+                />
+                <small class="field-hint">测试邮件会直接发送到这里，建议先填你自己的邮箱做联调。</small>
+              </label>
+              <label class="field">
+                <span>发信 Region</span>
+                <select
+                  data-mail-test-field="region"
+                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
+                >
+                  ${renderMailTestRegionOptions(mailTestDraft.region, draft.senders)}
+                </select>
+                <small class="field-hint">会严格使用你选中的 region sender，不再自动推断。</small>
+              </label>
+              <label class="field">
+                <span>模板 ID</span>
+                <select
+                  data-mail-test-field="templateId"
+                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
+                >
+                  ${renderMailTestTemplateOptions(mailTestDraft.templateId, draft.templates)}
+                </select>
+                <small class="field-hint">直接选择后台已配置模板，便于验证指定模板是否可用。</small>
+              </label>
+              <label class="field">
+                <span>App 名称</span>
+                <input
+                  data-mail-test-field="appName"
+                  type="text"
+                  value="${escapeHtml(mailTestDraft.appName)}"
+                  placeholder="Zook"
+                  autocomplete="off"
+                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
+                />
+                <small class="field-hint">会传给模板变量 <code>{{appName}}</code>。</small>
+              </label>
+              <label class="field">
+                <span>验证码</span>
+                <input
+                  data-mail-test-field="code"
+                  type="text"
+                  value="${escapeHtml(mailTestDraft.code)}"
+                  placeholder="123456"
+                  autocomplete="off"
+                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
+                />
+                <small class="field-hint">会传给模板变量 <code>{{code}}</code>。</small>
+              </label>
+              <label class="field">
+                <span>过期分钟</span>
+                <input
+                  data-mail-test-field="expireMinutes"
+                  type="number"
+                  min="1"
+                  max="120"
+                  step="1"
+                  value="${escapeHtml(String(mailTestDraft.expireMinutes))}"
+                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
+                />
+                <small class="field-hint">会传给模板变量 <code>{{expireMinutes}}</code>，建议和真实验证码 TTL 保持一致。</small>
+              </label>
+            </div>
+
+            ${renderMailTestResult()}
           </section>
 
           <details class="version-note">
@@ -1232,6 +1341,24 @@ function normalizeMailDraft(config) {
   normalized.senders = Array.isArray(normalized.senders) ? normalized.senders : [];
   normalized.templates = Array.isArray(normalized.templates) ? normalized.templates : [];
   return normalized;
+}
+
+function normalizeMailTestDraft(draft, config) {
+  const senders = Array.isArray(config?.senders) ? config.senders : [];
+  const templates = Array.isArray(config?.templates) ? config.templates : [];
+  const preferredRegion = String(draft?.region ?? "").trim();
+  const preferredTemplateId = String(draft?.templateId ?? "").trim();
+  const hasRegion = senders.some((item) => item.region === preferredRegion);
+  const hasTemplate = templates.some((item) => String(item.templateId) === preferredTemplateId);
+
+  return {
+    recipientEmail: String(draft?.recipientEmail ?? "").trim(),
+    region: hasRegion ? preferredRegion : String(senders[0]?.region ?? MAIL_SENDER_REGION_OPTIONS[0].value),
+    templateId: hasTemplate ? preferredTemplateId : String(templates[0]?.templateId ?? ""),
+    appName: String(draft?.appName ?? "Zook"),
+    code: String(draft?.code ?? "123456"),
+    expireMinutes: String(draft?.expireMinutes ?? "").trim() ? Number(draft.expireMinutes) : 10,
+  };
 }
 
 function normalizePasswordDocument(document) {
@@ -2044,6 +2171,19 @@ function renderMailSenderRow(sender, index, readOnly) {
             autocomplete="off"
             ${readOnly || state.savingMail ? "disabled" : ""}
           />
+          <small class="field-hint">系统内部标识，例如 <code>mainland</code> 或 <code>global</code>。</small>
+        </label>
+        <label class="field">
+          <span>Region</span>
+          <select
+            data-mail-list="senders"
+            data-index="${escapeHtml(String(index))}"
+            data-key="region"
+            ${readOnly || state.savingMail ? "disabled" : ""}
+          >
+            ${renderSenderRegionOptions(sender.region)}
+          </select>
+          <small class="field-hint">广州适合中国大陆流量；香港适合作为海外默认发信源。</small>
         </label>
         <label class="field">
           <span>发件地址</span>
@@ -2057,6 +2197,7 @@ function renderMailSenderRow(sender, index, readOnly) {
             autocomplete="off"
             ${readOnly || state.savingMail ? "disabled" : ""}
           />
+          <small class="field-hint">填写腾讯 SES 已验证的发件地址，例如 <code>Admin &lt;noreply@example.com&gt;</code>。</small>
         </label>
         <button
           class="button button-ghost mail-row-remove"
@@ -2086,6 +2227,7 @@ function renderMailTemplateRow(template, index, readOnly) {
           >
             ${renderTemplateLocaleOptions(template.locale)}
           </select>
+          <small class="field-hint">优先按 <code>X-App-Locale</code> 精确匹配，找不到再做语言兜底。</small>
         </label>
         <label class="field">
           <span>模板 ID</span>
@@ -2101,6 +2243,7 @@ function renderMailTemplateRow(template, index, readOnly) {
             autocomplete="off"
             ${readOnly || state.savingMail ? "disabled" : ""}
           />
+          <small class="field-hint">腾讯云 SES 控制台里创建模板后会得到一个正整数 ID。</small>
         </label>
         <label class="field">
           <span>名称</span>
@@ -2114,6 +2257,21 @@ function renderMailTemplateRow(template, index, readOnly) {
             autocomplete="off"
             ${readOnly || state.savingMail ? "disabled" : ""}
           />
+          <small class="field-hint">后台里的可读名称，只用于识别这条模板。</small>
+        </label>
+        <label class="field">
+          <span>主题</span>
+          <input
+            data-mail-list="templates"
+            data-index="${escapeHtml(String(index))}"
+            data-key="subject"
+            type="text"
+            value="${escapeHtml(template.subject)}"
+            placeholder="验证码"
+            autocomplete="off"
+            ${readOnly || state.savingMail ? "disabled" : ""}
+          />
+          <small class="field-hint">腾讯 SES 的 <code>Subject</code> 必填，建议和模板语言保持一致。</small>
         </label>
         <button
           class="button button-ghost mail-row-remove"
@@ -2141,6 +2299,123 @@ function renderTemplateLocaleOptions(selectedLocale) {
       </option>
     `,
   ).join("");
+}
+
+function renderSenderRegionOptions(selectedRegion) {
+  const options = MAIL_SENDER_REGION_OPTIONS.some((option) => option.value === selectedRegion)
+    ? MAIL_SENDER_REGION_OPTIONS
+    : [{ value: selectedRegion, label: selectedRegion || "未设置" }, ...MAIL_SENDER_REGION_OPTIONS];
+
+  return options.map(
+    (option) => `
+      <option value="${escapeHtml(option.value)}" ${option.value === selectedRegion ? "selected" : ""}>
+        ${escapeHtml(option.label)}
+      </option>
+    `,
+  ).join("");
+}
+
+function renderMailTestRegionOptions(selectedRegion, senders) {
+  const items = Array.isArray(senders) ? senders : [];
+  if (!items.length) {
+    return '<option value="">请先配置 sender</option>';
+  }
+
+  return items.map((sender) => `
+    <option value="${escapeHtml(sender.region)}" ${sender.region === selectedRegion ? "selected" : ""}>
+      ${escapeHtml(`${sender.region} · ${sender.id} · ${sender.address}`)}
+    </option>
+  `).join("");
+}
+
+function renderMailTestTemplateOptions(selectedTemplateId, templates) {
+  const items = Array.isArray(templates) ? templates : [];
+  if (!items.length) {
+    return '<option value="">请先配置模板</option>';
+  }
+
+  return items.map((template) => `
+    <option value="${escapeHtml(String(template.templateId))}" ${String(template.templateId) === String(selectedTemplateId) ? "selected" : ""}>
+      ${escapeHtml(`[${template.templateId}] ${template.name} · ${template.locale}`)}
+    </option>
+  `).join("");
+}
+
+function renderMailTestResult() {
+  if (!state.mailTestResult) {
+    return `
+      <div class="mail-test-result" data-tone="neutral">
+        <div class="mail-test-result-header">
+          <strong>最近一次测试</strong>
+          <span class="meta-chip">还没有执行</span>
+        </div>
+        <p class="mail-test-result-text">填写上面的信息后点击“发送测试邮件”，这里会展示实际使用的 sender、template 和模板变量。</p>
+      </div>
+    `;
+  }
+
+  if (state.mailTestResult.status === "error") {
+    return `
+      <div class="mail-test-result" data-tone="error">
+        <div class="mail-test-result-header">
+          <strong>最近一次测试</strong>
+          <span class="meta-chip">发送失败</span>
+        </div>
+        <p class="mail-test-result-text">${escapeHtml(state.mailTestResult.message || "发送失败。")}</p>
+        ${
+          state.mailTestResult.code
+            ? `<p class="mail-test-result-subtle">错误码：<code>${escapeHtml(state.mailTestResult.code)}</code></p>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  const doc = state.mailTestResult.data;
+  return `
+    <div class="mail-test-result" data-tone="success">
+      <div class="mail-test-result-header">
+        <strong>最近一次测试</strong>
+        <div class="mail-test-meta">
+          <span class="meta-chip">已发送</span>
+          <span class="meta-chip">${escapeHtml(formatTimestamp(doc.executedAt))}</span>
+        </div>
+      </div>
+      <div class="mail-test-summary-grid">
+        <div>
+          <span class="mail-test-label">收件邮箱</span>
+          <strong>${escapeHtml(doc.recipientEmail)}</strong>
+        </div>
+        <div>
+          <span class="mail-test-label">Sender</span>
+          <strong>${escapeHtml(`${doc.sender.id} · ${doc.sender.region}`)}</strong>
+          <small>${escapeHtml(doc.sender.address)}</small>
+        </div>
+        <div>
+          <span class="mail-test-label">模板</span>
+          <strong>${escapeHtml(`[${doc.template.templateId}] ${doc.template.name}`)}</strong>
+          <small>${escapeHtml(`${doc.template.locale} · ${doc.template.subject}`)}</small>
+        </div>
+        <div>
+          <span class="mail-test-label">Provider</span>
+          <strong>${escapeHtml(doc.provider)}</strong>
+          <small>${escapeHtml(doc.providerMessageId || doc.providerRequestId || "无额外回执")}</small>
+        </div>
+      </div>
+      <details class="version-note">
+        <summary>查看本次发送详情</summary>
+        <div class="version-note-body">
+          ${renderJsonPreview({
+            sender: doc.sender,
+            template: doc.template,
+            templateData: doc.templateData,
+            providerRequestId: doc.providerRequestId,
+            providerMessageId: doc.providerMessageId,
+          })}
+        </div>
+      </details>
+    </div>
+  `;
 }
 
 function renderVersionDescription(desc) {
@@ -2834,6 +3109,7 @@ async function handleAction(target) {
         );
         state.emailDocument = normalizeMailDocument(payload.data);
         state.mailDraft = normalizeMailDraft(payload.data?.config);
+        state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, payload.data?.config);
         setNotice("success", `已恢复到版本 R${revision}。`);
         pushToast("success", `已恢复到版本 R${revision}。`);
       } catch (error) {
@@ -2851,6 +3127,7 @@ async function handleAction(target) {
   if (action === "reset-mail") {
     clearNotice();
     state.mailDraft = cloneMailConfig(state.emailDocument?.config);
+    state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, state.emailDocument?.config);
     await render();
     return;
   }
@@ -2906,6 +3183,18 @@ async function handleAction(target) {
       ensureMailDraft().templates.splice(index, 1);
     }
     await render();
+    return;
+  }
+
+  if (action === "send-mail-test") {
+    try {
+      serializeMailTestDraft(ensureMailTestDraft());
+      await sendMailTest();
+    } catch (error) {
+      setNotice("error", formatError(error));
+      pushToast("error", formatError(error));
+      await render();
+    }
     return;
   }
 
@@ -3326,6 +3615,7 @@ async function loadEmailServiceConfig(showIntermediateRender = true) {
     const payload = await requestJson("/api/v1/admin/apps/common/email-service");
     state.emailDocument = normalizeMailDocument(payload.data);
     state.mailDraft = normalizeMailDraft(payload.data?.config);
+    state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, payload.data?.config);
   } finally {
     state.loadingMail = false;
   }
@@ -3341,6 +3631,7 @@ async function loadEmailServiceRevision(revision, showIntermediateRender = true)
     const payload = await requestJson(`/api/v1/admin/apps/common/email-service/revisions/${revision}`);
     state.emailDocument = normalizeMailDocument(payload.data);
     state.mailDraft = normalizeMailDraft(payload.data?.config);
+    state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, payload.data?.config);
   } finally {
     state.loadingMail = false;
   }
@@ -3487,6 +3778,37 @@ async function runLlmSmokeTest() {
     pushToast("error", formatError(error));
   } finally {
     state.runningLlmSmokeTest = false;
+  }
+
+  await render();
+}
+
+async function sendMailTest() {
+  state.sendingMailTest = true;
+  clearNotice();
+  await render();
+
+  try {
+    const payload = await requestJson("/api/v1/admin/apps/common/email-service/test-send", {
+      method: "POST",
+      body: serializeMailTestDraft(ensureMailTestDraft()),
+    });
+    state.mailTestResult = {
+      status: "success",
+      data: payload.data,
+    };
+    setNotice("success", `测试邮件已发送到 ${payload.data.recipientEmail}。`);
+    pushToast("success", `测试邮件已发送到 ${payload.data.recipientEmail}。`);
+  } catch (error) {
+    state.mailTestResult = {
+      status: "error",
+      message: formatError(error),
+      code: error?.code || "",
+    };
+    setNotice("error", formatError(error));
+    pushToast("error", formatError(error));
+  } finally {
+    state.sendingMailTest = false;
   }
 
   await render();
@@ -3664,6 +3986,17 @@ function createDefaultMailConfig() {
   };
 }
 
+function createDefaultMailTestDraft() {
+  return {
+    recipientEmail: "",
+    region: MAIL_SENDER_REGION_OPTIONS[0].value,
+    templateId: "",
+    appName: "Zook",
+    code: "123456",
+    expireMinutes: 10,
+  };
+}
+
 function cloneMailConfig(config = createDefaultMailConfig()) {
   return {
     enabled: Boolean(config?.enabled),
@@ -3671,6 +4004,7 @@ function cloneMailConfig(config = createDefaultMailConfig()) {
       ? config.senders.map((item) => ({
           id: String(item?.id ?? ""),
           address: String(item?.address ?? ""),
+          region: String(item?.region ?? MAIL_SENDER_REGION_OPTIONS[0].value),
         }))
       : [],
     templates: Array.isArray(config?.templates)
@@ -3678,6 +4012,7 @@ function cloneMailConfig(config = createDefaultMailConfig()) {
           locale: String(item?.locale ?? MAIL_TEMPLATE_LOCALE_OPTIONS[0].value),
           templateId: item?.templateId == null ? "" : String(item.templateId),
           name: String(item?.name ?? ""),
+          subject: String(item?.subject ?? ""),
         }))
       : [],
   };
@@ -3691,10 +4026,16 @@ function ensureMailDraft() {
   return state.mailDraft;
 }
 
+function ensureMailTestDraft(config = ensureMailDraft()) {
+  state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft ?? createDefaultMailTestDraft(), config);
+  return state.mailTestDraft;
+}
+
 function createEmptyMailSender() {
   return {
     id: "",
     address: "",
+    region: MAIL_SENDER_REGION_OPTIONS[0].value,
   };
 }
 
@@ -3703,6 +4044,7 @@ function createEmptyMailTemplate() {
     locale: MAIL_TEMPLATE_LOCALE_OPTIONS[0].value,
     templateId: "",
     name: "",
+    subject: "",
   };
 }
 
@@ -3710,6 +4052,12 @@ function isMailDraftControl(target) {
   return (
     target instanceof HTMLInputElement || target instanceof HTMLSelectElement
   ) && Boolean(target.dataset.mailField || target.dataset.mailList);
+}
+
+function isMailTestDraftControl(target) {
+  return (
+    target instanceof HTMLInputElement || target instanceof HTMLSelectElement
+  ) && Boolean(target.dataset.mailTestField);
 }
 
 function handleMailDraftChange(target) {
@@ -3736,21 +4084,37 @@ function handleMailDraftChange(target) {
   list[index][key] = target.value;
 }
 
+function handleMailTestDraftChange(target) {
+  const draft = ensureMailTestDraft();
+  const key = target.dataset.mailTestField;
+  if (!key) {
+    return;
+  }
+
+  if (target instanceof HTMLInputElement && target.type === "number") {
+    draft[key] = target.value;
+    return;
+  }
+
+  draft[key] = target.value;
+}
+
 function serializeMailDraft(draft) {
   const senders = [];
   for (const [index, item] of draft.senders.entries()) {
     const id = String(item?.id ?? "").trim();
     const address = String(item?.address ?? "").trim();
-    if (!id && !address) {
+    const region = String(item?.region ?? "").trim();
+    if (!id && !address && !region) {
       continue;
     }
-    if (!id || !address) {
+    if (!id || !address || !region) {
       throw new Error(`请完整填写第 ${index + 1} 个发件人。`);
     }
     if (!isValidSenderAddress(address)) {
       throw new Error(`第 ${index + 1} 个发件地址格式不正确。`);
     }
-    senders.push({ id, address });
+    senders.push({ id, address, region });
   }
 
   const templates = [];
@@ -3758,10 +4122,11 @@ function serializeMailDraft(draft) {
     const locale = String(item?.locale ?? "").trim();
     const templateIdText = String(item?.templateId ?? "").trim();
     const name = String(item?.name ?? "").trim();
-    if (!templateIdText && !name) {
+    const subject = String(item?.subject ?? "").trim();
+    if (!templateIdText && !name && !subject) {
       continue;
     }
-    if (!locale || !templateIdText || !name) {
+    if (!locale || !templateIdText || !name || !subject) {
       throw new Error(`请完整填写第 ${index + 1} 个模板。`);
     }
 
@@ -3774,6 +4139,7 @@ function serializeMailDraft(draft) {
       locale,
       templateId,
       name,
+      subject,
     });
   }
 
@@ -3781,6 +4147,58 @@ function serializeMailDraft(draft) {
     enabled: Boolean(draft.enabled),
     senders,
     templates,
+  };
+}
+
+function serializeMailTestDraft(draft) {
+  const recipientEmail = String(draft?.recipientEmail ?? "").trim();
+  const region = String(draft?.region ?? "").trim();
+  const templateIdText = String(draft?.templateId ?? "").trim();
+  const appName = String(draft?.appName ?? "").trim();
+  const code = String(draft?.code ?? "").trim();
+  const expireMinutesText = String(draft?.expireMinutes ?? "").trim();
+
+  if (!recipientEmail) {
+    throw new Error("请填写测试邮件的收件邮箱。");
+  }
+
+  if (!isValidSenderAddress(recipientEmail) || recipientEmail.includes("<")) {
+    throw new Error("测试邮件的收件邮箱格式不正确。");
+  }
+
+  if (!region) {
+    throw new Error("请选择发信 Region。");
+  }
+
+  if (!templateIdText) {
+    throw new Error("请选择模板 ID。");
+  }
+
+  const templateId = Number(templateIdText);
+  if (!Number.isInteger(templateId) || templateId <= 0) {
+    throw new Error("模板 ID 必须是正整数。");
+  }
+
+  if (!appName) {
+    throw new Error("请填写 App 名称。");
+  }
+
+  if (!code) {
+    throw new Error("请填写验证码。");
+  }
+
+  const expireMinutes = Number(expireMinutesText);
+  if (!Number.isInteger(expireMinutes) || expireMinutes <= 0 || expireMinutes > 120) {
+    throw new Error("过期分钟必须是 1 到 120 之间的整数。");
+  }
+
+  return {
+    recipientEmail,
+    region,
+    templateId,
+    appName,
+    code,
+    expireMinutes,
   };
 }
 

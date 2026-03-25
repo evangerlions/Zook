@@ -30,6 +30,7 @@ import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compa
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
@@ -38,11 +39,13 @@ import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
+import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError } from "./shared/errors.ts";
 import type {
   AdminEmailServiceDocument,
+  AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
   AdminPasswordDocument,
   AnalyticsEventInput,
@@ -63,6 +66,7 @@ export interface CreateApplicationOptions {
   registrationEmailSender?: RegistrationEmailSender;
   kvBackend?: KVBackend;
   kvManager?: KVManager;
+  geoResolver?: GeoResolver;
   adminBasicAuth?: {
     username: string;
     password: string;
@@ -139,6 +143,7 @@ export class BackendApplication {
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
+    private readonly requestEmailContextService: RequestEmailContextService,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
     private readonly httpExceptionFilter: HttpExceptionFilter,
@@ -194,6 +199,10 @@ export class BackendApplication {
 
     if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/email-service") {
       return this.handleAdminUpdateEmailService(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/email-service/test-send") {
+      return this.handleAdminSendTestEmail(request);
     }
 
     const adminEmailRevisionMatch = request.path.match(
@@ -325,6 +334,14 @@ export class BackendApplication {
       return this.handleLogin(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/auth/login/email-code") {
+      return this.handleLoginEmailCode(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/login/email") {
+      return this.handleLoginWithEmailCode(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/register/email-code") {
       return this.handleRegisterEmailCode(request);
     }
@@ -413,12 +430,15 @@ export class BackendApplication {
     const appId = this.appContextResolver.resolvePreAuth(request);
     const email = this.validationPipe.requireString(body, "email");
     const ipAddress = request.ipAddress ?? "unknown";
+    const emailContext = await this.requestEmailContextService.resolve(request);
 
     try {
       const result = await this.authService.registerEmailCode({
         appId,
         email,
         ipAddress,
+        locale: emailContext.locale,
+        region: emailContext.region,
       });
 
       this.auditInterceptor.record({
@@ -429,6 +449,11 @@ export class BackendApplication {
           email,
           ipAddress,
           accepted: true,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
         },
       });
 
@@ -442,6 +467,128 @@ export class BackendApplication {
           email,
           ipAddress,
           accepted: false,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleLoginEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const ipAddress = request.ipAddress ?? "unknown";
+    const emailContext = await this.requestEmailContextService.resolve(request);
+
+    try {
+      const result = await this.authService.loginEmailCode({
+        appId,
+        email,
+        ipAddress,
+        locale: emailContext.locale,
+        region: emailContext.region,
+      });
+
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.login.email_code",
+        resourceType: "user_login",
+        payload: {
+          email,
+          ipAddress,
+          accepted: true,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.login.email_code",
+        resourceType: "user_login",
+        payload: {
+          email,
+          ipAddress,
+          accepted: false,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleLoginWithEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const emailCode = this.validationPipe.requireString(body, "emailCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+    const emailContext = await this.requestEmailContextService.resolve(request);
+
+    try {
+      const result = await this.authService.loginWithEmailCode({
+        appId,
+        email,
+        emailCode,
+        ipAddress,
+      });
+
+      this.auditInterceptor.record({
+        appId: result.session.appId,
+        actorUserId: result.session.userId,
+        action: "auth.login.email",
+        resourceType: "user_session",
+        resourceId: result.session.userId,
+        resourceOwnerUserId: result.session.userId,
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+          autoCreatedUser: result.autoCreatedUser,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
+        },
+      });
+
+      return this.ok(
+        this.toAuthPayload(result.session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(result.session.refreshToken, clientType),
+      );
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.login.email",
+        resourceType: "user_login",
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
           errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
         },
       });
@@ -800,6 +947,34 @@ export class BackendApplication {
       resourceId: result.configKey,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminSendTestEmail(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdminSuperUser(request);
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.adminConsoleService.sendEmailTest({
+      recipientEmail: this.validationPipe.requireString(body, "recipientEmail"),
+      region: this.validationPipe.requireString(body, "region") as AdminEmailTestSendDocument["sender"]["region"],
+      templateId: this.validationPipe.requireNumber(body, "templateId"),
+      appName: this.validationPipe.requireString(body, "appName"),
+      code: this.validationPipe.requireString(body, "code"),
+      expireMinutes: this.validationPipe.requireNumber(body, "expireMinutes"),
+    });
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.email_service.test_send",
+      resourceType: "app_config",
+      resourceId: `${result.template.templateId}:${result.recipientEmail}`,
+      payload: {
+        adminUser,
+        recipientEmail: result.recipientEmail,
+        region: result.sender.region,
+        templateId: result.template.templateId,
       },
     });
 
@@ -1330,6 +1505,24 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     (options.serviceName === "api"
       ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
       : new NoopRegistrationEmailSender());
+  const emailTestSendService = new EmailTestSendService(
+    commonEmailConfigService,
+    kvManager,
+    registrationEmailSender,
+  );
+  const geoResolver =
+    options.geoResolver ??
+    (process.env.GEO_RESOLVER_URL?.trim()
+      ? new HttpGeoResolver(
+          {
+            baseUrl: process.env.GEO_RESOLVER_URL,
+            token: process.env.GEO_RESOLVER_TOKEN,
+            timeoutMs: Number(process.env.GEO_RESOLVER_TIMEOUT_MS ?? 1500),
+          },
+          cache,
+        )
+      : new NoopGeoResolver());
+  const requestEmailContextService = new RequestEmailContextService(geoResolver);
   const authService = new AuthService(
     database,
     cache,
@@ -1357,6 +1550,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonEmailConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
+    emailTestSendService,
     llmHealthService,
     llmMetricsService,
     llmSmokeTestService,
@@ -1399,6 +1593,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     storageService,
     notificationService,
     failedEventRetryService,
+    requestEmailContextService,
     auditInterceptor,
     requestLoggingInterceptor,
     httpExceptionFilter,
@@ -1425,6 +1620,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       commonEmailConfigService,
       commonLlmConfigService,
       appRegistryService,
+      emailTestSendService,
       userService,
       tokenService,
       authService,
@@ -1439,6 +1635,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       storageService,
       notificationService,
       failedEventRetryService,
+      requestEmailContextService,
       appContextResolver,
       authGuard,
       appAccessGuard,

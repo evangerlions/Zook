@@ -4,6 +4,7 @@ import { AppConfigService } from "../../services/app-config.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
+import { EmailTestSendService } from "../../services/email-test-send.service.ts";
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
@@ -16,6 +17,8 @@ import type {
   AdminConfigDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
+  AdminEmailTestSendCommand,
+  AdminEmailTestSendDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
   AdminLlmSmokeTestDocument,
@@ -37,6 +40,7 @@ export class AdminConsoleService {
     private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
+    private readonly emailTestSendService: EmailTestSendService,
     private readonly llmHealthService: LlmHealthService,
     private readonly llmMetricsService: LlmMetricsService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
@@ -230,6 +234,10 @@ export class AdminConsoleService {
     const document = await this.commonEmailConfigService.restoreConfig(revision);
     await this.managedStateStore.save(this.database);
     return document;
+  }
+
+  async sendEmailTest(input: AdminEmailTestSendCommand): Promise<AdminEmailTestSendDocument> {
+    return this.emailTestSendService.run(input);
   }
 
   async getPasswordConfig(): Promise<AdminPasswordDocument> {
