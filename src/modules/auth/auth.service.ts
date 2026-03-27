@@ -22,6 +22,8 @@ import { UserService } from "../user/user.service.ts";
 import { DevelopmentPasswordHasher } from "./password-hasher.ts";
 import { TokenService } from "./token.service.ts";
 
+const VERIFICATION_TEMPLATE_NAME = "验证码";
+
 interface LoginFailureState {
   count: number;
   windowStartedAt: number;
@@ -133,6 +135,7 @@ export class AuthService {
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
         expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        templateName: VERIFICATION_TEMPLATE_NAME,
       });
     } catch (error) {
       this.cache.delete(cacheKey);
@@ -192,6 +195,7 @@ export class AuthService {
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
         expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        templateName: VERIFICATION_TEMPLATE_NAME,
       });
     } catch (error) {
       this.cache.delete(cacheKey);

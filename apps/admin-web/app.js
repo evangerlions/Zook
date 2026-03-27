@@ -55,6 +55,7 @@ const state = {
   passwordDocument: null,
   mailTab: "config",
   mailDraft: createDefaultMailConfig(),
+  mailExpandedRegions: {},
   mailTestDraft: createDefaultMailTestDraft(),
   sendingMailTest: false,
   mailTestResult: null,
@@ -140,6 +141,7 @@ appRoot.addEventListener("change", (event) => {
 
   if (isMailTestDraftControl(target)) {
     handleMailTestDraftChange(target);
+    render().catch(handleUnexpectedError);
     return;
   }
 
@@ -161,6 +163,20 @@ appRoot.addEventListener("change", (event) => {
     handleWorkspaceSwitch(target.value).catch(handleUnexpectedError);
     return;
   }
+});
+
+appRoot.addEventListener("toggle", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLDetailsElement)) {
+    return;
+  }
+
+  const region = target.dataset.mailRegion;
+  if (!region) {
+    return;
+  }
+
+  state.mailExpandedRegions[region] = target.open;
 });
 
 appRoot.addEventListener("input", (event) => {
@@ -2216,9 +2232,10 @@ function renderMailRegionSection(regionConfig, regionIndex, readOnly) {
     sender.id ? `sender: ${sender.id}` : "未配置 sender",
     `${templates.length} 个模板`,
   ].join(" · ");
+  const isOpen = state.mailExpandedRegions[regionConfig.region] ?? regionIndex === 0;
 
   return `
-    <details class="mail-region-section" ${regionIndex === 0 ? "open" : ""}>
+    <details class="mail-region-section" data-mail-region="${escapeHtml(regionConfig.region)}" ${isOpen ? "open" : ""}>
       <summary>
         <div class="mail-region-summary">
           <strong>${escapeHtml(regionLabel)}</strong>
@@ -2291,77 +2308,79 @@ function renderMailRegionSection(regionConfig, regionIndex, readOnly) {
 function renderMailTemplateRow(template, regionIndex, index, readOnly) {
   return `
     <div class="mail-row">
-      <div class="mail-row-grid mail-row-grid-template">
-        <label class="field">
-          <span>语言</span>
-          <select
-            data-mail-list="templates"
+      <div class="mail-row-scroll">
+        <div class="mail-row-grid mail-row-grid-template">
+          <label class="field">
+            <span>语言</span>
+            <select
+              data-mail-list="templates"
+              data-region-index="${escapeHtml(String(regionIndex))}"
+              data-index="${escapeHtml(String(index))}"
+              data-key="locale"
+              ${readOnly || state.savingMail ? "disabled" : ""}
+            >
+              ${renderTemplateLocaleOptions(template.locale)}
+            </select>
+            <small class="field-hint">优先按 <code>X-App-Locale</code> 精确匹配，找不到再做语言兜底。</small>
+          </label>
+          <label class="field">
+            <span>模板 ID</span>
+            <input
+              data-mail-list="templates"
+              data-region-index="${escapeHtml(String(regionIndex))}"
+              data-index="${escapeHtml(String(index))}"
+              data-key="templateId"
+              type="number"
+              min="1"
+              step="1"
+              value="${escapeHtml(template.templateId)}"
+              placeholder="100001"
+              autocomplete="off"
+              ${readOnly || state.savingMail ? "disabled" : ""}
+            />
+            <small class="field-hint">腾讯云 SES 控制台里创建模板后会得到一个正整数 ID。</small>
+          </label>
+          <label class="field">
+            <span>名称</span>
+            <input
+              data-mail-list="templates"
+              data-region-index="${escapeHtml(String(regionIndex))}"
+              data-index="${escapeHtml(String(index))}"
+              data-key="name"
+              type="text"
+              value="${escapeHtml(template.name)}"
+              placeholder="验证码"
+              autocomplete="off"
+              ${readOnly || state.savingMail ? "disabled" : ""}
+            />
+            <small class="field-hint">后台里的可读名称，只用于识别这条模板。</small>
+          </label>
+          <label class="field">
+            <span>主题</span>
+            <input
+              data-mail-list="templates"
+              data-region-index="${escapeHtml(String(regionIndex))}"
+              data-index="${escapeHtml(String(index))}"
+              data-key="subject"
+              type="text"
+              value="${escapeHtml(template.subject)}"
+              placeholder="验证码"
+              autocomplete="off"
+              ${readOnly || state.savingMail ? "disabled" : ""}
+            />
+            <small class="field-hint">腾讯 SES 的 <code>Subject</code> 必填，建议和模板语言保持一致。</small>
+          </label>
+          <button
+            class="button button-ghost mail-row-remove"
+            type="button"
+            data-action="remove-mail-template"
             data-region-index="${escapeHtml(String(regionIndex))}"
             data-index="${escapeHtml(String(index))}"
-            data-key="locale"
             ${readOnly || state.savingMail ? "disabled" : ""}
           >
-            ${renderTemplateLocaleOptions(template.locale)}
-          </select>
-          <small class="field-hint">优先按 <code>X-App-Locale</code> 精确匹配，找不到再做语言兜底。</small>
-        </label>
-        <label class="field">
-          <span>模板 ID</span>
-          <input
-            data-mail-list="templates"
-            data-region-index="${escapeHtml(String(regionIndex))}"
-            data-index="${escapeHtml(String(index))}"
-            data-key="templateId"
-            type="number"
-            min="1"
-            step="1"
-            value="${escapeHtml(template.templateId)}"
-            placeholder="100001"
-            autocomplete="off"
-            ${readOnly || state.savingMail ? "disabled" : ""}
-          />
-          <small class="field-hint">腾讯云 SES 控制台里创建模板后会得到一个正整数 ID。</small>
-        </label>
-        <label class="field">
-          <span>名称</span>
-          <input
-            data-mail-list="templates"
-            data-region-index="${escapeHtml(String(regionIndex))}"
-            data-index="${escapeHtml(String(index))}"
-            data-key="name"
-            type="text"
-            value="${escapeHtml(template.name)}"
-            placeholder="验证码"
-            autocomplete="off"
-            ${readOnly || state.savingMail ? "disabled" : ""}
-          />
-          <small class="field-hint">后台里的可读名称，只用于识别这条模板。</small>
-        </label>
-        <label class="field">
-          <span>主题</span>
-          <input
-            data-mail-list="templates"
-            data-region-index="${escapeHtml(String(regionIndex))}"
-            data-index="${escapeHtml(String(index))}"
-            data-key="subject"
-            type="text"
-            value="${escapeHtml(template.subject)}"
-            placeholder="验证码"
-            autocomplete="off"
-            ${readOnly || state.savingMail ? "disabled" : ""}
-          />
-          <small class="field-hint">腾讯 SES 的 <code>Subject</code> 必填，建议和模板语言保持一致。</small>
-        </label>
-        <button
-          class="button button-ghost mail-row-remove"
-          type="button"
-          data-action="remove-mail-template"
-          data-region-index="${escapeHtml(String(regionIndex))}"
-          data-index="${escapeHtml(String(index))}"
-          ${readOnly || state.savingMail ? "disabled" : ""}
-        >
-          删除
-        </button>
+            删除
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -3230,6 +3249,7 @@ async function handleAction(target) {
     const draft = ensureMailDraft();
     if (regionIndex >= 0 && draft.regions[regionIndex]) {
       draft.regions[regionIndex].sender = createEmptyMailSender();
+      state.mailExpandedRegions[draft.regions[regionIndex].region] = true;
     }
     clearNotice();
     await render();
@@ -3262,6 +3282,7 @@ async function handleAction(target) {
     const draft = ensureMailDraft();
     if (regionIndex >= 0 && draft.regions[regionIndex]) {
       draft.regions[regionIndex].sender = null;
+      state.mailExpandedRegions[draft.regions[regionIndex].region] = true;
     }
     clearNotice();
     await render();
@@ -3273,6 +3294,7 @@ async function handleAction(target) {
     const draft = ensureMailDraft();
     if (regionIndex >= 0 && draft.regions[regionIndex]) {
       draft.regions[regionIndex].templates.push(createEmptyMailTemplate());
+      state.mailExpandedRegions[draft.regions[regionIndex].region] = true;
       state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, draft);
     }
     clearNotice();
@@ -3286,6 +3308,7 @@ async function handleAction(target) {
     const draft = ensureMailDraft();
     if (regionIndex >= 0 && index >= 0 && draft.regions[regionIndex]) {
       draft.regions[regionIndex].templates.splice(index, 1);
+      state.mailExpandedRegions[draft.regions[regionIndex].region] = true;
       state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, draft);
     }
     await render();
@@ -3721,6 +3744,7 @@ async function loadEmailServiceConfig(showIntermediateRender = true) {
     const payload = await requestJson("/api/v1/admin/apps/common/email-service");
     state.emailDocument = normalizeMailDocument(payload.data);
     state.mailDraft = normalizeMailDraft(payload.data?.config);
+    state.mailExpandedRegions = {};
     state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, payload.data?.config);
   } finally {
     state.loadingMail = false;
@@ -3737,6 +3761,7 @@ async function loadEmailServiceRevision(revision, showIntermediateRender = true)
     const payload = await requestJson(`/api/v1/admin/apps/common/email-service/revisions/${revision}`);
     state.emailDocument = normalizeMailDocument(payload.data);
     state.mailDraft = normalizeMailDraft(payload.data?.config);
+    state.mailExpandedRegions = {};
     state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, payload.data?.config);
   } finally {
     state.loadingMail = false;
@@ -3982,6 +4007,7 @@ async function persistMailConfig(desc) {
 
     state.emailDocument = normalizeMailDocument(payload.data);
     state.mailDraft = normalizeMailDraft(payload.data?.config);
+    state.mailExpandedRegions = {};
     state.saveDialog = null;
     setNotice("success", "邮件服务已保存。");
     pushToast("success", "邮件服务已保存。");
@@ -4196,6 +4222,7 @@ function handleMailDraftChange(target) {
       return;
     }
 
+    state.mailExpandedRegions[draft.regions[regionIndex].region] = true;
     const nextSender = draft.regions[regionIndex].sender ?? createEmptyMailSender();
     nextSender[key] = target.value;
     draft.regions[regionIndex].sender = nextSender;
@@ -4215,6 +4242,7 @@ function handleMailDraftChange(target) {
     return;
   }
 
+  state.mailExpandedRegions[regionConfig.region] = true;
   const list = regionConfig[listName];
   if (!Array.isArray(list) || !list[index]) {
     return;
