@@ -61,6 +61,7 @@ test("register email-code and register APIs create a new account and issue token
       locale: "zh-CN",
       region: "ap-guangzhou",
       expireMinutes: 10,
+      templateName: "验证码",
     },
   ]);
 

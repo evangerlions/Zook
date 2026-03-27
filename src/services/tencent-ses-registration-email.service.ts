@@ -50,6 +50,7 @@ export interface VerificationEmailSender {
     locale: string;
     region: TencentSesRegion;
     expireMinutes: number;
+    templateName?: string;
   }): Promise<TemplateEmailSendResult>;
 }
 
@@ -99,10 +100,12 @@ export class TencentSesRegistrationEmailSender implements VerificationEmailSende
     locale: string;
     region: TencentSesRegion;
     expireMinutes: number;
+    templateName?: string;
   }): Promise<TemplateEmailSendResult> {
     const { resolvedRegion, secretId, secretKey, sender, template } = await this.commonEmailConfigService.getRuntimeConfig(
       command.locale,
       command.region,
+      command.templateName,
     );
     return this.sendTencentTemplateEmail({
       email: command.email,

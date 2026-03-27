@@ -700,6 +700,52 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).template.templateId, 100002);
   assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW")).template.templateId, 100003);
 
+  await runtime.services.commonEmailConfigService.updateConfig({
+    enabled: true,
+    regions: [
+      {
+        region: "ap-guangzhou",
+        sender: {
+          id: "default",
+          address: "Admin <noreply@example.com>",
+        },
+        templates: [
+          {
+            locale: "zh-CN",
+            templateId: 100101,
+            name: "验证码",
+            subject: "验证码",
+          },
+        ],
+      },
+      {
+        region: "ap-hongkong",
+        sender: {
+          id: "support",
+          address: "Support <support@example.com>",
+        },
+        templates: [
+          {
+            locale: "en-US",
+            templateId: 100102,
+            name: "验证码",
+            subject: "Verification Code",
+          },
+          {
+            locale: "en-US",
+            templateId: 100103,
+            name: "欢迎邮件",
+            subject: "Welcome",
+          },
+        ],
+      },
+    ],
+  });
+
+  const verificationRuntime = await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong", "验证码");
+  assert.equal(verificationRuntime.template.templateId, 100102);
+  assert.equal(verificationRuntime.template.name, "验证码");
+
   const revisionOneResponse = await runtime.app.handle({
     method: "GET",
     path: "/api/v1/admin/apps/common/email-service/revisions/1",
@@ -719,7 +765,7 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(restoreResponse.statusCode, 200);
-  assert.equal(restoreResponse.body.data.revision, 3);
+  assert.equal(restoreResponse.body.data.revision, 4);
   assert.equal(restoreResponse.body.data.isLatest, true);
   assert.equal(restoreResponse.body.data.desc, "恢复到版本 R1");
   assert.equal(restoreResponse.body.data.config.regions[0]?.templates.length, 1);
@@ -774,7 +820,7 @@ test("admin email service API rejects invalid sender address format", async () =
   assert.match(response.body.message, /Sender address format is invalid/);
 });
 
-test("admin email service API rejects duplicate email region and missing subject", async () => {
+test("admin email service API rejects duplicate email region, duplicate template keys and missing subject", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
@@ -822,6 +868,87 @@ test("admin email service API rejects duplicate email region and missing subject
   assert.equal(duplicateRegionResponse.statusCode, 400);
   assert.equal(duplicateRegionResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
   assert.match(duplicateRegionResponse.body.message, /Duplicate email region/);
+
+  const duplicateTemplateKeyResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      regions: [
+        {
+          region: "ap-guangzhou",
+          sender: {
+            id: "default",
+            address: "Admin <noreply@example.com>",
+          },
+          templates: [
+            {
+              locale: "zh-CN",
+              templateId: 100001,
+              name: "验证码",
+              subject: "验证码",
+            },
+            {
+              locale: "zh-CN",
+              templateId: 100003,
+              name: "验证码",
+              subject: "验证码（备用）",
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.equal(duplicateTemplateKeyResponse.statusCode, 400);
+  assert.equal(duplicateTemplateKeyResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.match(duplicateTemplateKeyResponse.body.message, /Duplicate template name \+ locale/);
+
+  const duplicateTemplateIdResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      regions: [
+        {
+          region: "ap-guangzhou",
+          sender: {
+            id: "default",
+            address: "Admin <noreply@example.com>",
+          },
+          templates: [
+            {
+              locale: "zh-CN",
+              templateId: 100001,
+              name: "验证码",
+              subject: "验证码",
+            },
+          ],
+        },
+        {
+          region: "ap-hongkong",
+          sender: {
+            id: "global",
+            address: "Global <global@example.com>",
+          },
+          templates: [
+            {
+              locale: "en-US",
+              templateId: 100001,
+              name: "Verification Code",
+              subject: "Verification Code",
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.equal(duplicateTemplateIdResponse.statusCode, 400);
+  assert.equal(duplicateTemplateIdResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.match(duplicateTemplateIdResponse.body.message, /Duplicate template ID/);
 
   const missingSubjectResponse = await runtime.app.handle({
     method: "PUT",

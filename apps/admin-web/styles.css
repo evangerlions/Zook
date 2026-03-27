@@ -1096,7 +1096,7 @@ select {
 
 .mail-region-body {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   padding: 16px 18px 18px;
 }
 
@@ -1105,6 +1105,12 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
+}
+
+.mail-row-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
 }
 
 .mail-row-grid {
@@ -1124,6 +1130,7 @@ select {
 
 .mail-row-grid-region-sender {
   grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.6fr);
+  gap: 16px 18px;
 }
 
 .mail-test-grid {
@@ -1404,7 +1411,18 @@ select {
 }
 
 .mail-row-grid-template {
-  grid-template-columns: minmax(180px, 220px) minmax(140px, 180px) minmax(180px, 220px) minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(170px, 220px) minmax(140px, 180px) minmax(180px, 220px) minmax(240px, 1fr) auto;
+  gap: 16px 18px;
+  align-items: start;
+  min-width: 1120px;
+}
+
+.mail-row-grid-template > .field {
+  align-content: start;
+}
+
+.mail-row-grid-template .field-hint {
+  margin-top: 6px;
 }
 
 .mail-row-grid-password {

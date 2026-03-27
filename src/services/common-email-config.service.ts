@@ -86,6 +86,7 @@ export class CommonEmailConfigService {
   async getRuntimeConfig(
     locale = DEFAULT_TEMPLATE_LOCALE,
     region: TencentSesRegion = DEFAULT_EMAIL_REGION,
+    templateName?: string,
   ): Promise<{
     config: EmailServiceConfig;
     resolvedRegion: TencentSesRegion;
@@ -109,7 +110,7 @@ export class CommonEmailConfigService {
       secretKey: credentials.secretKey,
       regionConfig,
       sender: this.resolveSender(regionConfig, resolvedRegion),
-      template: this.resolveTemplate(regionConfig.templates, locale),
+      template: this.resolveTemplate(regionConfig.templates, locale, templateName),
     };
   }
 
@@ -199,6 +200,8 @@ export class CommonEmailConfigService {
       enabled: Boolean(source.enabled),
       regions,
     };
+
+    this.assertUniqueTemplateIds(config.regions);
 
     if (!config.enabled) {
       return config;
@@ -349,12 +352,13 @@ export class CommonEmailConfigService {
       } satisfies EmailServiceTemplateConfig;
     });
 
-    const localeSet = new Set<string>();
+    const templateKeySet = new Set<string>();
     for (const item of items) {
-      if (localeSet.has(item.locale)) {
-        badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Duplicate template locale is not allowed: ${item.locale}`);
+      const templateKey = `${item.name}::${item.locale}`;
+      if (templateKeySet.has(templateKey)) {
+        badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Duplicate template name + locale is not allowed: ${item.name} + ${item.locale}`);
       }
-      localeSet.add(item.locale);
+      templateKeySet.add(templateKey);
     }
 
     return items;
@@ -467,25 +471,35 @@ export class CommonEmailConfigService {
     return region === "ap-guangzhou" ? "ap-guangzhou" : "ap-hongkong";
   }
 
-  private resolveTemplate(templates: EmailServiceTemplateConfig[], locale: string): EmailServiceTemplateConfig {
+  private resolveTemplate(
+    templates: EmailServiceTemplateConfig[],
+    locale: string,
+    templateName = "",
+  ): EmailServiceTemplateConfig {
     if (!templates.length) {
       throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service template is not configured.");
     }
 
     const normalizedLocale = this.normalizeLocale(locale || DEFAULT_TEMPLATE_LOCALE);
-    const exactMatch = templates.find((item) => item.locale === normalizedLocale);
+    const preferredName = this.optionalString(templateName);
+    const candidateTemplates = preferredName
+      ? templates.filter((item) => item.name === preferredName)
+      : templates;
+
+    const scopedTemplates = candidateTemplates.length ? candidateTemplates : templates;
+    const exactMatch = scopedTemplates.find((item) => item.locale === normalizedLocale);
     if (exactMatch) {
       return exactMatch;
     }
 
     const languageOnly = normalizedLocale.split("-")[0];
-    const fallbackMatch = templates.find((item) => item.locale === languageOnly);
+    const fallbackMatch = scopedTemplates.find((item) => item.locale === languageOnly);
     if (fallbackMatch) {
       return fallbackMatch;
     }
 
-    const englishFallback = templates.find((item) => item.locale === "en-US");
-    return englishFallback ?? templates[0];
+    const englishFallback = scopedTemplates.find((item) => item.locale === "en-US");
+    return englishFallback ?? scopedTemplates[0];
   }
 
   private resolveTemplateById(templates: EmailServiceTemplateConfig[], templateId: number): EmailServiceTemplateConfig {
@@ -518,5 +532,17 @@ export class CommonEmailConfigService {
       /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value) ||
       /^[^<>]+<\s*[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+\s*>$/.test(value)
     );
+  }
+
+  private assertUniqueTemplateIds(regions: EmailServiceRegionConfig[]): void {
+    const templateIds = new Set<number>();
+    for (const regionConfig of regions) {
+      for (const template of regionConfig.templates) {
+        if (templateIds.has(template.templateId)) {
+          badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Duplicate template ID is not allowed: ${template.templateId}`);
+        }
+        templateIds.add(template.templateId);
+      }
+    }
   }
 }
