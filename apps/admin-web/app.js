@@ -1077,47 +1077,15 @@ function renderMailConfigPanel({ emailDocument, draft, readOnly, revisions, late
             <div class="mail-section-header">
               <div>
                 <h3>腾讯云凭据</h3>
-                <p>请在密码工作区配置 <code>tencent.secret_id</code> 与 <code>tencent.secret_key</code>。服务端会按用户地区自动选择 SES region。</p>
+                <p>请在密码工作区配置 <code>tencent.secret_id</code> 与 <code>tencent.secret_key</code>。邮件配置按广州 / 香港两个固定地域分组管理。</p>
               </div>
               <button class="button button-secondary" type="button" data-link="${PASSWORD_ROUTE}">前往密码</button>
             </div>
           </section>
 
-          <section class="mail-section">
-            <div class="mail-section-header">
-              <div>
-                <h3>发件地址</h3>
-                <p>每个 region 只保留一个 sender。系统会按 <code>X-Country-Code</code> / <code>X-App-Country-Code</code> / Geo 自动切换发信源。</p>
-              </div>
-              <button class="button button-secondary" type="button" data-action="add-mail-sender" ${readOnly || state.savingMail ? "disabled" : ""}>添加发件人</button>
-            </div>
-
-            <div class="mail-list">
-              ${
-                draft.senders.length
-                  ? draft.senders.map((sender, index) => renderMailSenderRow(sender, index, readOnly)).join("")
-                  : '<div class="mail-empty">还没有发件地址。</div>'
-              }
-            </div>
-          </section>
-
-          <section class="mail-section">
-            <div class="mail-section-header">
-              <div>
-                <h3>模板</h3>
-                <p>每条模板记录对应一种语言，<code>subject</code> 会和模板 ID 一起下发到腾讯 SES。</p>
-              </div>
-              <button class="button button-secondary" type="button" data-action="add-mail-template" ${readOnly || state.savingMail ? "disabled" : ""}>添加模板</button>
-            </div>
-
-            <div class="mail-list">
-              ${
-                draft.templates.length
-                  ? draft.templates.map((template, index) => renderMailTemplateRow(template, index, readOnly)).join("")
-                  : '<div class="mail-empty">还没有模板。</div>'
-              }
-            </div>
-          </section>
+          <div class="mail-region-stack">
+            ${draft.regions.map((regionConfig, regionIndex) => renderMailRegionSection(regionConfig, regionIndex, readOnly)).join("")}
+          </div>
 
           <details class="version-note">
             <summary>查看当前 JSON</summary>
@@ -1160,12 +1128,17 @@ function renderMailConfigPanel({ emailDocument, draft, readOnly, revisions, late
 }
 
 function renderMailTestPanel({ draft, mailTestDraft, readOnly }) {
+  const selectedRegionConfig = getMailRegionConfig(draft, mailTestDraft.region);
+  const selectedTemplates = Array.isArray(selectedRegionConfig.templates) ? selectedRegionConfig.templates : [];
+  const hasSender = Boolean(selectedRegionConfig.sender?.id && selectedRegionConfig.sender?.address);
+  const canSendTest = readOnly || state.sendingMailTest || !draft.enabled || !hasSender || !selectedTemplates.length;
+
   return `
     <section class="panel">
       <div class="panel-header">
         <div class="panel-heading">
           <h2 class="panel-title">测试发送</h2>
-          <p class="panel-caption">超级管理员专用。选择 sender region、templateId 和模板变量后，可直接向指定邮箱发送一封测试邮件。全局 20 秒内只能触发一次。</p>
+          <p class="panel-caption">超级管理员专用。按当前地域选择模板并发送测试邮件，帮助你验证地域路由、sender 和腾讯 SES 配置是否都已就绪。全局 20 秒内只能触发一次。</p>
         </div>
         <div class="panel-actions">
           <span class="meta-chip">${draft.enabled ? "服务已启用" : "服务未启用"}</span>
@@ -1178,7 +1151,7 @@ function renderMailTestPanel({ draft, mailTestDraft, readOnly }) {
             class="button button-primary"
             type="button"
             data-action="send-mail-test"
-            ${readOnly || state.sendingMailTest || !draft.enabled || !draft.senders.length || !draft.templates.length ? "disabled" : ""}
+            ${canSendTest ? "disabled" : ""}
           >
             ${state.sendingMailTest ? "发送中..." : "发送测试邮件"}
           </button>
@@ -1223,9 +1196,9 @@ function renderMailTestPanel({ draft, mailTestDraft, readOnly }) {
                 data-mail-test-field="templateId"
                 ${readOnly || state.sendingMailTest ? "disabled" : ""}
               >
-                ${renderMailTestTemplateOptions(mailTestDraft.templateId, draft.templates)}
+                ${renderMailTestTemplateOptions(mailTestDraft.templateId, selectedTemplates)}
               </select>
-              <small class="field-hint">直接选择后台已配置模板，便于验证指定模板是否可用。</small>
+              <small class="field-hint">这里只展示当前地域下的模板，便于确认广州 / 香港配置是否各自正确。</small>
             </label>
             <label class="field">
               <span>App 名称</span>
@@ -1418,23 +1391,22 @@ function normalizeMailDocument(document) {
 }
 
 function normalizeMailDraft(config) {
-  const normalized = cloneMailConfig(config);
-  normalized.senders = Array.isArray(normalized.senders) ? normalized.senders : [];
-  normalized.templates = Array.isArray(normalized.templates) ? normalized.templates : [];
-  return normalized;
+  return cloneMailConfig(config);
 }
 
 function normalizeMailTestDraft(draft, config) {
-  const senders = Array.isArray(config?.senders) ? config.senders : [];
-  const templates = Array.isArray(config?.templates) ? config.templates : [];
   const preferredRegion = String(draft?.region ?? "").trim();
+  const region = MAIL_SENDER_REGION_OPTIONS.some((item) => item.value === preferredRegion)
+    ? preferredRegion
+    : MAIL_SENDER_REGION_OPTIONS[0].value;
+  const regionConfig = getMailRegionConfig(config, region);
+  const templates = Array.isArray(regionConfig.templates) ? regionConfig.templates : [];
   const preferredTemplateId = String(draft?.templateId ?? "").trim();
-  const hasRegion = senders.some((item) => item.region === preferredRegion);
   const hasTemplate = templates.some((item) => String(item.templateId) === preferredTemplateId);
 
   return {
     recipientEmail: String(draft?.recipientEmail ?? "").trim(),
-    region: hasRegion ? preferredRegion : String(senders[0]?.region ?? MAIL_SENDER_REGION_OPTIONS[0].value),
+    region,
     templateId: hasTemplate ? preferredTemplateId : String(templates[0]?.templateId ?? ""),
     appName: String(draft?.appName ?? "Zook"),
     code: String(draft?.code ?? "123456"),
@@ -2236,65 +2208,87 @@ function renderLlmRouteRow(route, routeIndex, modelIndex, runtimeModel, readOnly
   `;
 }
 
-function renderMailSenderRow(sender, index, readOnly) {
+function renderMailRegionSection(regionConfig, regionIndex, readOnly) {
+  const regionLabel = renderMailRegionLabel(regionConfig.region);
+  const sender = regionConfig.sender ?? createEmptyMailSender();
+  const templates = Array.isArray(regionConfig.templates) ? regionConfig.templates : [];
+  const summary = [
+    sender.id ? `sender: ${sender.id}` : "未配置 sender",
+    `${templates.length} 个模板`,
+  ].join(" · ");
+
   return `
-    <div class="mail-row">
-      <div class="mail-row-grid mail-row-grid-sender">
-        <label class="field">
-          <span>ID</span>
-          <input
-            data-mail-list="senders"
-            data-index="${escapeHtml(String(index))}"
-            data-key="id"
-            type="text"
-            value="${escapeHtml(sender.id)}"
-            placeholder="default"
-            autocomplete="off"
-            ${readOnly || state.savingMail ? "disabled" : ""}
-          />
-          <small class="field-hint">系统内部标识，例如 <code>mainland</code> 或 <code>global</code>。</small>
-        </label>
-        <label class="field">
-          <span>Region</span>
-          <select
-            data-mail-list="senders"
-            data-index="${escapeHtml(String(index))}"
-            data-key="region"
-            ${readOnly || state.savingMail ? "disabled" : ""}
-          >
-            ${renderSenderRegionOptions(sender.region)}
-          </select>
-          <small class="field-hint">广州适合中国大陆流量；香港适合作为海外默认发信源。</small>
-        </label>
-        <label class="field">
-          <span>发件地址</span>
-          <input
-            data-mail-list="senders"
-            data-index="${escapeHtml(String(index))}"
-            data-key="address"
-            type="text"
-            value="${escapeHtml(sender.address)}"
-            placeholder="Admin <noreply@example.com>"
-            autocomplete="off"
-            ${readOnly || state.savingMail ? "disabled" : ""}
-          />
-          <small class="field-hint">填写腾讯 SES 已验证的发件地址，例如 <code>Admin &lt;noreply@example.com&gt;</code>。</small>
-        </label>
-        <button
-          class="button button-ghost mail-row-remove"
-          type="button"
-          data-action="remove-mail-sender"
-          data-index="${escapeHtml(String(index))}"
-          ${readOnly || state.savingMail ? "disabled" : ""}
-        >
-          删除
-        </button>
+    <details class="mail-region-section" ${regionIndex === 0 ? "open" : ""}>
+      <summary>
+        <div class="mail-region-summary">
+          <strong>${escapeHtml(regionLabel)}</strong>
+          <span>${escapeHtml(summary)}</span>
+        </div>
+      </summary>
+      <div class="mail-region-body">
+        <section class="mail-section">
+          <div class="mail-section-header">
+            <div>
+              <h3>发件地址</h3>
+              <p>这个地域下只保留一个 sender，发送时会严格使用当前地域对应的发件地址。</p>
+            </div>
+          </div>
+
+          <div class="mail-row">
+            <div class="mail-row-grid mail-row-grid-region-sender">
+              <label class="field">
+                <span>Sender ID</span>
+                <input
+                  data-mail-region-field="sender"
+                  data-region-index="${escapeHtml(String(regionIndex))}"
+                  data-key="id"
+                  type="text"
+                  value="${escapeHtml(sender.id)}"
+                  placeholder="${regionConfig.region === "ap-guangzhou" ? "mainland" : "global"}"
+                  autocomplete="off"
+                  ${readOnly || state.savingMail ? "disabled" : ""}
+                />
+              </label>
+              <label class="field">
+                <span>发件地址</span>
+                <input
+                  data-mail-region-field="sender"
+                  data-region-index="${escapeHtml(String(regionIndex))}"
+                  data-key="address"
+                  type="text"
+                  value="${escapeHtml(sender.address)}"
+                  placeholder="Admin <noreply@example.com>"
+                  autocomplete="off"
+                  ${readOnly || state.savingMail ? "disabled" : ""}
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="mail-section">
+          <div class="mail-section-header">
+            <div>
+              <h3>模板</h3>
+              <p>这个地域自己的模板列表。<code>subject</code> 会和模板 ID 一起下发到腾讯 SES。</p>
+            </div>
+            <button class="button button-secondary" type="button" data-action="add-mail-template" data-region-index="${escapeHtml(String(regionIndex))}" ${readOnly || state.savingMail ? "disabled" : ""}>添加模板</button>
+          </div>
+
+          <div class="mail-list">
+            ${
+              templates.length
+                ? templates.map((template, templateIndex) => renderMailTemplateRow(template, regionIndex, templateIndex, readOnly)).join("")
+                : '<div class="mail-empty">这个地域还没有模板。</div>'
+            }
+          </div>
+        </section>
       </div>
-    </div>
+    </details>
   `;
 }
 
-function renderMailTemplateRow(template, index, readOnly) {
+function renderMailTemplateRow(template, regionIndex, index, readOnly) {
   return `
     <div class="mail-row">
       <div class="mail-row-grid mail-row-grid-template">
@@ -2302,6 +2296,7 @@ function renderMailTemplateRow(template, index, readOnly) {
           <span>语言</span>
           <select
             data-mail-list="templates"
+            data-region-index="${escapeHtml(String(regionIndex))}"
             data-index="${escapeHtml(String(index))}"
             data-key="locale"
             ${readOnly || state.savingMail ? "disabled" : ""}
@@ -2314,6 +2309,7 @@ function renderMailTemplateRow(template, index, readOnly) {
           <span>模板 ID</span>
           <input
             data-mail-list="templates"
+            data-region-index="${escapeHtml(String(regionIndex))}"
             data-index="${escapeHtml(String(index))}"
             data-key="templateId"
             type="number"
@@ -2330,6 +2326,7 @@ function renderMailTemplateRow(template, index, readOnly) {
           <span>名称</span>
           <input
             data-mail-list="templates"
+            data-region-index="${escapeHtml(String(regionIndex))}"
             data-index="${escapeHtml(String(index))}"
             data-key="name"
             type="text"
@@ -2344,6 +2341,7 @@ function renderMailTemplateRow(template, index, readOnly) {
           <span>主题</span>
           <input
             data-mail-list="templates"
+            data-region-index="${escapeHtml(String(regionIndex))}"
             data-index="${escapeHtml(String(index))}"
             data-key="subject"
             type="text"
@@ -2358,6 +2356,7 @@ function renderMailTemplateRow(template, index, readOnly) {
           class="button button-ghost mail-row-remove"
           type="button"
           data-action="remove-mail-template"
+          data-region-index="${escapeHtml(String(regionIndex))}"
           data-index="${escapeHtml(String(index))}"
           ${readOnly || state.savingMail ? "disabled" : ""}
         >
@@ -2376,20 +2375,6 @@ function renderTemplateLocaleOptions(selectedLocale) {
   return options.map(
     (option) => `
       <option value="${escapeHtml(option.value)}" ${option.value === selectedLocale ? "selected" : ""}>
-        ${escapeHtml(option.label)}
-      </option>
-    `,
-  ).join("");
-}
-
-function renderSenderRegionOptions(selectedRegion) {
-  const options = MAIL_SENDER_REGION_OPTIONS.some((option) => option.value === selectedRegion)
-    ? MAIL_SENDER_REGION_OPTIONS
-    : [{ value: selectedRegion, label: selectedRegion || "未设置" }, ...MAIL_SENDER_REGION_OPTIONS];
-
-  return options.map(
-    (option) => `
-      <option value="${escapeHtml(option.value)}" ${option.value === selectedRegion ? "selected" : ""}>
         ${escapeHtml(option.label)}
       </option>
     `,
@@ -3241,7 +3226,11 @@ async function handleAction(target) {
   }
 
   if (action === "add-mail-sender") {
-    ensureMailDraft().senders.push(createEmptyMailSender());
+    const regionIndex = Number(target.dataset.regionIndex || -1);
+    const draft = ensureMailDraft();
+    if (regionIndex >= 0 && draft.regions[regionIndex]) {
+      draft.regions[regionIndex].sender = createEmptyMailSender();
+    }
     clearNotice();
     await render();
     return;
@@ -3269,9 +3258,10 @@ async function handleAction(target) {
   }
 
   if (action === "remove-mail-sender") {
-    const index = Number(target.dataset.index || -1);
-    if (index >= 0) {
-      ensureMailDraft().senders.splice(index, 1);
+    const regionIndex = Number(target.dataset.regionIndex || -1);
+    const draft = ensureMailDraft();
+    if (regionIndex >= 0 && draft.regions[regionIndex]) {
+      draft.regions[regionIndex].sender = null;
     }
     clearNotice();
     await render();
@@ -3279,16 +3269,24 @@ async function handleAction(target) {
   }
 
   if (action === "add-mail-template") {
-    ensureMailDraft().templates.push(createEmptyMailTemplate());
+    const regionIndex = Number(target.dataset.regionIndex || -1);
+    const draft = ensureMailDraft();
+    if (regionIndex >= 0 && draft.regions[regionIndex]) {
+      draft.regions[regionIndex].templates.push(createEmptyMailTemplate());
+      state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, draft);
+    }
     clearNotice();
     await render();
     return;
   }
 
   if (action === "remove-mail-template") {
+    const regionIndex = Number(target.dataset.regionIndex || -1);
     const index = Number(target.dataset.index || -1);
-    if (index >= 0) {
-      ensureMailDraft().templates.splice(index, 1);
+    const draft = ensureMailDraft();
+    if (regionIndex >= 0 && index >= 0 && draft.regions[regionIndex]) {
+      draft.regions[regionIndex].templates.splice(index, 1);
+      state.mailTestDraft = normalizeMailTestDraft(state.mailTestDraft, draft);
     }
     await render();
     return;
@@ -4090,8 +4088,7 @@ async function persistLlmConfig(desc) {
 function createDefaultMailConfig() {
   return {
     enabled: false,
-    senders: [],
-    templates: [],
+    regions: MAIL_SENDER_REGION_OPTIONS.map((option) => createEmptyMailRegion(option.value)),
   };
 }
 
@@ -4107,23 +4104,29 @@ function createDefaultMailTestDraft() {
 }
 
 function cloneMailConfig(config = createDefaultMailConfig()) {
+  const sourceRegions = Array.isArray(config?.regions) ? config.regions : [];
   return {
     enabled: Boolean(config?.enabled),
-    senders: Array.isArray(config?.senders)
-      ? config.senders.map((item) => ({
-          id: String(item?.id ?? ""),
-          address: String(item?.address ?? ""),
-          region: String(item?.region ?? MAIL_SENDER_REGION_OPTIONS[0].value),
-        }))
-      : [],
-    templates: Array.isArray(config?.templates)
-      ? config.templates.map((item) => ({
-          locale: String(item?.locale ?? MAIL_TEMPLATE_LOCALE_OPTIONS[0].value),
-          templateId: item?.templateId == null ? "" : String(item.templateId),
-          name: String(item?.name ?? ""),
-          subject: String(item?.subject ?? ""),
-        }))
-      : [],
+    regions: MAIL_SENDER_REGION_OPTIONS.map((option) => {
+      const source = sourceRegions.find((item) => item?.region === option.value);
+      return {
+        region: option.value,
+        sender: source?.sender
+          ? {
+              id: String(source.sender?.id ?? ""),
+              address: String(source.sender?.address ?? ""),
+            }
+          : null,
+        templates: Array.isArray(source?.templates)
+          ? source.templates.map((item) => ({
+              locale: String(item?.locale ?? MAIL_TEMPLATE_LOCALE_OPTIONS[0].value),
+              templateId: item?.templateId == null ? "" : String(item.templateId),
+              name: String(item?.name ?? ""),
+              subject: String(item?.subject ?? ""),
+            }))
+          : [],
+      };
+    }),
   };
 }
 
@@ -4144,7 +4147,14 @@ function createEmptyMailSender() {
   return {
     id: "",
     address: "",
-    region: MAIL_SENDER_REGION_OPTIONS[0].value,
+  };
+}
+
+function createEmptyMailRegion(region) {
+  return {
+    region,
+    sender: null,
+    templates: [],
   };
 }
 
@@ -4160,7 +4170,7 @@ function createEmptyMailTemplate() {
 function isMailDraftControl(target) {
   return (
     target instanceof HTMLInputElement || target instanceof HTMLSelectElement
-  ) && Boolean(target.dataset.mailField || target.dataset.mailList);
+  ) && Boolean(target.dataset.mailField || target.dataset.mailList || target.dataset.mailRegionField);
 }
 
 function isMailTestDraftControl(target) {
@@ -4178,14 +4188,34 @@ function handleMailDraftChange(target) {
     return;
   }
 
-  const listName = target.dataset.mailList;
-  const index = Number(target.dataset.index || -1);
-  const key = target.dataset.key;
-  if (!listName || index < 0 || !key) {
+  const regionField = target.dataset.mailRegionField;
+  if (regionField === "sender") {
+    const regionIndex = Number(target.dataset.regionIndex || -1);
+    const key = target.dataset.key;
+    if (regionIndex < 0 || !key || !draft.regions[regionIndex]) {
+      return;
+    }
+
+    const nextSender = draft.regions[regionIndex].sender ?? createEmptyMailSender();
+    nextSender[key] = target.value;
+    draft.regions[regionIndex].sender = nextSender;
     return;
   }
 
-  const list = draft[listName];
+  const listName = target.dataset.mailList;
+  const regionIndex = Number(target.dataset.regionIndex || -1);
+  const index = Number(target.dataset.index || -1);
+  const key = target.dataset.key;
+  if (!listName || index < 0 || !key || regionIndex < 0) {
+    return;
+  }
+
+  const regionConfig = draft.regions[regionIndex];
+  if (!regionConfig) {
+    return;
+  }
+
+  const list = regionConfig[listName];
   if (!Array.isArray(list) || !list[index]) {
     return;
   }
@@ -4200,6 +4230,12 @@ function handleMailTestDraftChange(target) {
     return;
   }
 
+  if (key === "region") {
+    draft.region = target.value;
+    state.mailTestDraft = normalizeMailTestDraft(draft, ensureMailDraft());
+    return;
+  }
+
   if (target instanceof HTMLInputElement && target.type === "number") {
     draft[key] = target.value;
     return;
@@ -4209,53 +4245,59 @@ function handleMailTestDraftChange(target) {
 }
 
 function serializeMailDraft(draft) {
-  const senders = [];
-  for (const [index, item] of draft.senders.entries()) {
-    const id = String(item?.id ?? "").trim();
-    const address = String(item?.address ?? "").trim();
-    const region = String(item?.region ?? "").trim();
-    if (!id && !address && !region) {
-      continue;
-    }
-    if (!id || !address || !region) {
-      throw new Error(`请完整填写第 ${index + 1} 个发件人。`);
-    }
-    if (!isValidSenderAddress(address)) {
-      throw new Error(`第 ${index + 1} 个发件地址格式不正确。`);
-    }
-    senders.push({ id, address, region });
-  }
-
-  const templates = [];
-  for (const [index, item] of draft.templates.entries()) {
-    const locale = String(item?.locale ?? "").trim();
-    const templateIdText = String(item?.templateId ?? "").trim();
-    const name = String(item?.name ?? "").trim();
-    const subject = String(item?.subject ?? "").trim();
-    if (!templateIdText && !name && !subject) {
-      continue;
-    }
-    if (!locale || !templateIdText || !name || !subject) {
-      throw new Error(`请完整填写第 ${index + 1} 个模板。`);
-    }
-
-    const templateId = Number(templateIdText);
-    if (!Number.isInteger(templateId) || templateId <= 0) {
-      throw new Error(`第 ${index + 1} 个模板 ID 必须是正整数。`);
-    }
-
-    templates.push({
-      locale,
-      templateId,
-      name,
-      subject,
-    });
-  }
-
   return {
     enabled: Boolean(draft.enabled),
-    senders,
-    templates,
+    regions: draft.regions.map((regionConfig, regionIndex) => {
+      const region = String(regionConfig?.region ?? MAIL_SENDER_REGION_OPTIONS[regionIndex]?.value ?? "").trim();
+      const senderId = String(regionConfig?.sender?.id ?? "").trim();
+      const senderAddress = String(regionConfig?.sender?.address ?? "").trim();
+
+      let sender = null;
+      if (senderId || senderAddress) {
+        if (!senderId || !senderAddress) {
+          throw new Error(`请完整填写 ${renderMailRegionLabel(region)} 的发件地址。`);
+        }
+        if (!isValidSenderAddress(senderAddress)) {
+          throw new Error(`${renderMailRegionLabel(region)} 的发件地址格式不正确。`);
+        }
+        sender = {
+          id: senderId,
+          address: senderAddress,
+        };
+      }
+
+      const templates = [];
+      for (const [templateIndex, item] of (Array.isArray(regionConfig?.templates) ? regionConfig.templates : []).entries()) {
+        const locale = String(item?.locale ?? "").trim();
+        const templateIdText = String(item?.templateId ?? "").trim();
+        const name = String(item?.name ?? "").trim();
+        const subject = String(item?.subject ?? "").trim();
+        if (!templateIdText && !name && !subject) {
+          continue;
+        }
+        if (!locale || !templateIdText || !name || !subject) {
+          throw new Error(`请完整填写 ${renderMailRegionLabel(region)} 的第 ${templateIndex + 1} 个模板。`);
+        }
+
+        const templateId = Number(templateIdText);
+        if (!Number.isInteger(templateId) || templateId <= 0) {
+          throw new Error(`${renderMailRegionLabel(region)} 的第 ${templateIndex + 1} 个模板 ID 必须是正整数。`);
+        }
+
+        templates.push({
+          locale,
+          templateId,
+          name,
+          subject,
+        });
+      }
+
+      return {
+        region,
+        sender,
+        templates,
+      };
+    }),
   };
 }
 
@@ -4317,10 +4359,14 @@ function serializeMailDraftForPreview(draft) {
   } catch {
     return {
       enabled: Boolean(draft?.enabled),
-      senders: Array.isArray(draft?.senders) ? draft.senders : [],
-      templates: Array.isArray(draft?.templates) ? draft.templates : [],
+      regions: Array.isArray(draft?.regions) ? draft.regions : createDefaultMailConfig().regions,
     };
   }
+}
+
+function getMailRegionConfig(config, region) {
+  const normalizedConfig = normalizeMailDraft(config);
+  return normalizedConfig.regions.find((item) => item.region === region) || normalizedConfig.regions[0] || createEmptyMailRegion(MAIL_SENDER_REGION_OPTIONS[0].value);
 }
 
 function createDefaultPasswordConfig() {

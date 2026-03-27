@@ -5,13 +5,14 @@ import type {
   AdminAppSummary,
   AdminEmailServiceDocument,
   EmailServiceConfig,
+  EmailServiceRegionConfig,
   EmailSenderConfig,
   EmailServiceTemplateConfig,
   TencentSesRegion,
 } from "../shared/types.ts";
 
 const COMMON_APP_ID = "common";
-const EMAIL_SERVICE_CONFIG_KEY = "common.email_service";
+const EMAIL_SERVICE_CONFIG_KEY = "common.email_service_regions";
 export const TENCENT_SECRET_ID_PASSWORD_KEY = "tencent.secret_id";
 export const TENCENT_SECRET_KEY_PASSWORD_KEY = "tencent.secret_key";
 export const TENCENT_SES_SECRET_ID_PASSWORD_KEY = TENCENT_SECRET_ID_PASSWORD_KEY;
@@ -26,6 +27,7 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
   canDelete: false,
 };
 const DEFAULT_EMAIL_REGION: TencentSesRegion = "ap-guangzhou";
+const EMAIL_REGIONS: TencentSesRegion[] = ["ap-guangzhou", "ap-hongkong"];
 const DEFAULT_TEMPLATE_LOCALE = "zh-CN";
 
 export class CommonEmailConfigService {
@@ -89,6 +91,7 @@ export class CommonEmailConfigService {
     resolvedRegion: TencentSesRegion;
     secretId: string;
     secretKey: string;
+    regionConfig: EmailServiceRegionConfig;
     sender: EmailSenderConfig;
     template: EmailServiceTemplateConfig;
   }> {
@@ -98,13 +101,15 @@ export class CommonEmailConfigService {
     const credentials = await this.resolveCredentials();
     const resolvedRegion = this.resolveProviderRegion(region);
 
+    const regionConfig = this.resolveRegionConfig(config.regions, resolvedRegion);
     return {
       config,
       resolvedRegion,
       secretId: credentials.secretId,
       secretKey: credentials.secretKey,
-      sender: this.resolveSender(config.senders, resolvedRegion),
-      template: this.resolveTemplate(config.templates, locale),
+      regionConfig,
+      sender: this.resolveSender(regionConfig, resolvedRegion),
+      template: this.resolveTemplate(regionConfig.templates, locale),
     };
   }
 
@@ -116,6 +121,7 @@ export class CommonEmailConfigService {
     resolvedRegion: TencentSesRegion;
     secretId: string;
     secretKey: string;
+    regionConfig: EmailServiceRegionConfig;
     sender: EmailSenderConfig;
     template: EmailServiceTemplateConfig;
   }> {
@@ -125,13 +131,15 @@ export class CommonEmailConfigService {
     const credentials = await this.resolveCredentials();
     const resolvedRegion = this.resolveProviderRegion(region);
 
+    const regionConfig = this.resolveRegionConfig(config.regions, resolvedRegion);
     return {
       config,
       resolvedRegion,
       secretId: credentials.secretId,
       secretKey: credentials.secretKey,
-      sender: this.resolveSender(config.senders, resolvedRegion),
-      template: this.resolveTemplateById(config.templates, templateId),
+      regionConfig,
+      sender: this.resolveSender(regionConfig, resolvedRegion),
+      template: this.resolveTemplateById(regionConfig.templates, templateId),
     };
   }
 
@@ -185,35 +193,31 @@ export class CommonEmailConfigService {
     }
 
     const source = input as Record<string, unknown>;
-    const senders = this.normalizeSenders(source.senders, allowLegacyFallback);
-    const templates = this.normalizeTemplates(source.templates, allowLegacyFallback);
+    const regions = this.normalizeRegions(source.regions, allowLegacyFallback);
 
     const config: EmailServiceConfig = {
       enabled: Boolean(source.enabled),
-      senders,
-      templates,
+      regions,
     };
 
     if (!config.enabled) {
       return config;
     }
 
-    if (!config.senders.length) {
-      badRequest("ADMIN_EMAIL_SERVICE_INVALID", "At least one sender is required.");
+    if (!config.regions.some((item) => item.sender && item.templates.length)) {
+      badRequest("ADMIN_EMAIL_SERVICE_INVALID", "At least one region must have sender and templates configured.");
     }
-
-    if (!config.templates.length) {
-      badRequest("ADMIN_EMAIL_SERVICE_INVALID", "At least one email template is required.");
-    }
-
     return config;
   }
 
   private createDefaultConfig(): EmailServiceConfig {
     return {
       enabled: false,
-      senders: [],
-      templates: [],
+      regions: EMAIL_REGIONS.map((region) => ({
+        region,
+        sender: null,
+        templates: [],
+      })),
     };
   }
 
@@ -225,63 +229,83 @@ export class CommonEmailConfigService {
     return typeof value === "number" && Number.isFinite(value) ? value : 0;
   }
 
-  private normalizeSenders(value: unknown, allowLegacyFallback: boolean): EmailSenderConfig[] {
+  private normalizeRegions(value: unknown, allowLegacyFallback: boolean): EmailServiceRegionConfig[] {
     if (!Array.isArray(value)) {
-      return [];
+      if (allowLegacyFallback) {
+        return this.createDefaultConfig().regions;
+      }
+      return this.createDefaultConfig().regions;
     }
 
-    const items = value.map((item, index) => {
+    const regions = value.map((item) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) {
-        badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Each email sender must be a JSON object.");
+        badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Each email region config must be a JSON object.");
       }
 
       const source = item as Record<string, unknown>;
-      const id = this.optionalString(source.id);
-      const address = this.optionalString(source.address);
-      const region = this.normalizeRegion(source.region)
-        ?? (allowLegacyFallback ? this.inferLegacyRegion(source, index) : undefined);
-
-      if (!id) {
-        badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Sender ID is required.");
-      }
-
-      if (!address) {
-        badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Sender address is required.");
-      }
-
-      if (!this.isValidSenderAddress(address)) {
-        badRequest(
-          "ADMIN_EMAIL_SERVICE_INVALID",
-          `Sender address format is invalid: ${address}`,
-        );
-      }
-
+      const region = this.normalizeRegion(source.region);
       if (!region) {
-        badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Sender region is required.");
+        badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Email region is required.");
       }
 
       return {
-        id,
-        address,
         region,
-      } satisfies EmailSenderConfig;
+        sender: this.normalizeSender(source.sender),
+        templates: this.normalizeTemplates(source.templates, allowLegacyFallback),
+      } satisfies EmailServiceRegionConfig;
     });
 
-    const senderSet = new Set<string>();
-    const regionSet = new Set<TencentSesRegion>();
-    for (const item of items) {
-      if (senderSet.has(item.id)) {
-        badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Duplicate sender ID is not allowed: ${item.id}`);
+    const normalizedMap = new Map<TencentSesRegion, EmailServiceRegionConfig>();
+    for (const item of regions) {
+      if (normalizedMap.has(item.region)) {
+        badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Duplicate email region is not allowed: ${item.region}`);
       }
-      senderSet.add(item.id);
-
-      if (regionSet.has(item.region)) {
-        badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Duplicate sender region is not allowed: ${item.region}`);
-      }
-      regionSet.add(item.region);
+      normalizedMap.set(item.region, item);
     }
 
-    return items;
+    return EMAIL_REGIONS.map((region) => normalizedMap.get(region) ?? {
+      region,
+      sender: null,
+      templates: [],
+    });
+  }
+
+  private normalizeSender(value: unknown): EmailSenderConfig | null {
+    if (value == null || value === "") {
+      return null;
+    }
+
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Email sender must be a JSON object.");
+    }
+
+    const source = value as Record<string, unknown>;
+    const id = this.optionalString(source.id);
+    const address = this.optionalString(source.address);
+
+    if (!id && !address) {
+      return null;
+    }
+
+    if (!id) {
+      badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Sender ID is required.");
+    }
+
+    if (!address) {
+      badRequest("ADMIN_EMAIL_SERVICE_INVALID", "Sender address is required.");
+    }
+
+    if (!this.isValidSenderAddress(address)) {
+      badRequest(
+        "ADMIN_EMAIL_SERVICE_INVALID",
+        `Sender address format is invalid: ${address}`,
+      );
+    }
+
+    return {
+      id,
+      address,
+    };
   }
 
   private normalizeTemplates(value: unknown, allowLegacyFallback: boolean): EmailServiceTemplateConfig[] {
@@ -378,7 +402,7 @@ export class CommonEmailConfigService {
       throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service is not enabled.");
     }
 
-    if (!config.senders.length || !config.templates.length) {
+    if (!config.regions.length) {
       throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service is not fully configured.");
     }
   }
@@ -418,14 +442,18 @@ export class CommonEmailConfigService {
     return this.commonPasswordConfigService.getValue(legacyKey);
   }
 
-  private resolveSender(senders: EmailSenderConfig[], region: TencentSesRegion): EmailSenderConfig {
-    if (!senders.length) {
-      throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", "Email service sender is not configured.");
+  private resolveRegionConfig(regions: EmailServiceRegionConfig[], region: TencentSesRegion): EmailServiceRegionConfig {
+    const regionConfig = regions.find((item) => item.region === region);
+    if (regionConfig) {
+      return regionConfig;
     }
 
-    const sender = senders.find((item) => item.region === region);
-    if (sender) {
-      return sender;
+    throw new ApplicationError(503, "EMAIL_SERVICE_NOT_CONFIGURED", `Email region is not configured: ${region}`);
+  }
+
+  private resolveSender(regionConfig: EmailServiceRegionConfig, region: TencentSesRegion): EmailSenderConfig {
+    if (regionConfig.sender) {
+      return regionConfig.sender;
     }
 
     throw new ApplicationError(
@@ -475,20 +503,6 @@ export class CommonEmailConfigService {
       "EMAIL_SERVICE_NOT_CONFIGURED",
       `Email template is not configured: ${templateId}`,
     );
-  }
-
-  private inferLegacyRegion(source: Record<string, unknown>, index: number): TencentSesRegion {
-    const id = this.optionalString(source.id).toLowerCase();
-    const address = this.optionalString(source.address).toLowerCase();
-    if (id === "hongkong" || id === "hk" || address.includes("hongkong") || address.includes("hong kong")) {
-      return "ap-hongkong";
-    }
-
-    if (index === 1) {
-      return "ap-hongkong";
-    }
-
-    return DEFAULT_EMAIL_REGION;
   }
 
   private defaultTemplateSubject(locale: string, name: string): string {
