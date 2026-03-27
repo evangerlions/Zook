@@ -96,13 +96,14 @@ export class CommonEmailConfigService {
 
     this.assertRuntimeConfig(config);
     const credentials = await this.resolveCredentials();
+    const resolvedRegion = this.resolveProviderRegion(region);
 
     return {
       config,
-      resolvedRegion: region,
+      resolvedRegion,
       secretId: credentials.secretId,
       secretKey: credentials.secretKey,
-      sender: this.resolveSender(config.senders, region),
+      sender: this.resolveSender(config.senders, resolvedRegion),
       template: this.resolveTemplate(config.templates, locale),
     };
   }
@@ -122,13 +123,14 @@ export class CommonEmailConfigService {
 
     this.assertRuntimeConfig(config);
     const credentials = await this.resolveCredentials();
+    const resolvedRegion = this.resolveProviderRegion(region);
 
     return {
       config,
-      resolvedRegion: region,
+      resolvedRegion,
       secretId: credentials.secretId,
       secretKey: credentials.secretKey,
-      sender: this.resolveSender(config.senders, region),
+      sender: this.resolveSender(config.senders, resolvedRegion),
       template: this.resolveTemplateById(config.templates, templateId),
     };
   }
@@ -431,6 +433,10 @@ export class CommonEmailConfigService {
       "EMAIL_SERVICE_NOT_CONFIGURED",
       `Email sender is not configured for region: ${region}`,
     );
+  }
+
+  private resolveProviderRegion(region: TencentSesRegion): TencentSesRegion {
+    return region === "ap-guangzhou" ? "ap-guangzhou" : "ap-hongkong";
   }
 
   private resolveTemplate(templates: EmailServiceTemplateConfig[], locale: string): EmailServiceTemplateConfig {

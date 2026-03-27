@@ -42,7 +42,7 @@ import { RefreshTokenStore } from "./services/refresh-token-store.ts";
 import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
-import { ApplicationError } from "./shared/errors.ts";
+import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
@@ -954,31 +954,47 @@ export class BackendApplication {
   }
 
   private async handleAdminSendTestEmail(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    const adminUser = this.authenticateAdminSuperUser(request);
-    const body = this.validationPipe.asObject(request.body);
-    const result = await this.adminConsoleService.sendEmailTest({
-      recipientEmail: this.validationPipe.requireString(body, "recipientEmail"),
-      region: this.validationPipe.requireString(body, "region") as AdminEmailTestSendDocument["sender"]["region"],
-      templateId: this.validationPipe.requireNumber(body, "templateId"),
-      appName: this.validationPipe.requireString(body, "appName"),
-      code: this.validationPipe.requireString(body, "code"),
-      expireMinutes: this.validationPipe.requireNumber(body, "expireMinutes"),
-    });
+    try {
+      const adminUser = this.authenticateAdminSuperUser(request);
+      const body = this.validationPipe.asObject(request.body);
+      const result = await this.adminConsoleService.sendEmailTest({
+        recipientEmail: this.validationPipe.requireString(body, "recipientEmail"),
+        region: this.validationPipe.requireString(body, "region") as AdminEmailTestSendDocument["sender"]["region"],
+        templateId: this.validationPipe.requireNumber(body, "templateId"),
+        appName: this.validationPipe.requireString(body, "appName"),
+        code: this.validationPipe.requireString(body, "code"),
+        expireMinutes: this.validationPipe.requireNumber(body, "expireMinutes"),
+      });
 
-    this.auditInterceptor.record({
-      appId: "common",
-      action: "admin.email_service.test_send",
-      resourceType: "app_config",
-      resourceId: `${result.template.templateId}:${result.recipientEmail}`,
-      payload: {
-        adminUser,
-        recipientEmail: result.recipientEmail,
-        region: result.sender.region,
-        templateId: result.template.templateId,
-      },
-    });
+      this.auditInterceptor.record({
+        appId: "common",
+        action: "admin.email_service.test_send",
+        resourceType: "app_config",
+        resourceId: `${result.template.templateId}:${result.recipientEmail}`,
+        payload: {
+          adminUser,
+          recipientEmail: result.recipientEmail,
+          region: result.sender.region,
+          templateId: result.template.templateId,
+        },
+      });
 
-    return this.ok(result, request.requestId as string);
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      if (isApplicationError(error) && error.code === "EMAIL_PROVIDER_REQUEST_FAILED") {
+        return {
+          statusCode: error.statusCode,
+          body: {
+            code: error.code,
+            message: error.message,
+            data: error.details ?? null,
+            requestId: request.requestId as string,
+          },
+        };
+      }
+
+      throw error;
+    }
   }
 
   private async handleAdminGetEmailServiceRevision(
