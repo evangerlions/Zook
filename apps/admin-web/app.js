@@ -1208,14 +1208,14 @@ function renderMailTestPanel({ draft, mailTestDraft, readOnly }) {
               <small class="field-hint">测试邮件会直接发送到这里，建议先填你自己的邮箱做联调。</small>
             </label>
             <label class="field">
-              <span>发信 Region</span>
+              <span>客户端地区</span>
               <select
                 data-mail-test-field="region"
                 ${readOnly || state.sendingMailTest ? "disabled" : ""}
               >
-                ${renderMailTestRegionOptions(mailTestDraft.region, draft.senders)}
+                ${renderMailTestRegionOptions(mailTestDraft.region)}
               </select>
-              <small class="field-hint">会严格使用你选中的 region sender，不再自动推断。</small>
+              <small class="field-hint">这里只用于判断是否属于中国大陆地区。中国大陆会映射到 <code>ap-guangzhou</code>，其他地区会映射到 <code>ap-hongkong</code>，不会把你的选择原样透传给腾讯云。</small>
             </label>
             <label class="field">
               <span>模板 ID</span>
@@ -2396,15 +2396,10 @@ function renderSenderRegionOptions(selectedRegion) {
   ).join("");
 }
 
-function renderMailTestRegionOptions(selectedRegion, senders) {
-  const items = Array.isArray(senders) ? senders : [];
-  if (!items.length) {
-    return '<option value="">请先配置 sender</option>';
-  }
-
-  return items.map((sender) => `
-    <option value="${escapeHtml(sender.region)}" ${sender.region === selectedRegion ? "selected" : ""}>
-      ${escapeHtml(`${sender.region} · ${sender.id} · ${sender.address}`)}
+function renderMailTestRegionOptions(selectedRegion) {
+  return MAIL_SENDER_REGION_OPTIONS.map((option) => `
+    <option value="${escapeHtml(option.value)}" ${option.value === selectedRegion ? "selected" : ""}>
+      ${escapeHtml(option.label)}
     </option>
   `).join("");
 }
@@ -2436,6 +2431,7 @@ function renderMailTestResult() {
   }
 
   if (state.mailTestResult.status === "error") {
+    const debugPayload = state.mailTestResult.data;
     return `
       <div class="mail-test-result" data-tone="error">
         <div class="mail-test-result-header">
@@ -2446,6 +2442,18 @@ function renderMailTestResult() {
         ${
           state.mailTestResult.code
             ? `<p class="mail-test-result-subtle">错误码：<code>${escapeHtml(state.mailTestResult.code)}</code></p>`
+            : ""
+        }
+        ${
+          debugPayload
+            ? `
+              <details class="version-note">
+                <summary>查看失败调试信息</summary>
+                <div class="version-note-body">
+                  ${renderJsonPreview(debugPayload)}
+                </div>
+              </details>
+            `
             : ""
         }
       </div>
@@ -2468,6 +2476,11 @@ function renderMailTestResult() {
           <strong>${escapeHtml(doc.recipientEmail)}</strong>
         </div>
         <div>
+          <span class="mail-test-label">客户端地区</span>
+          <strong>${escapeHtml(renderMailRegionLabel(doc.clientRegion))}</strong>
+          <small>最终腾讯云 Region：${escapeHtml(doc.resolvedRegion)}</small>
+        </div>
+        <div>
           <span class="mail-test-label">Sender</span>
           <strong>${escapeHtml(`${doc.sender.id} · ${doc.sender.region}`)}</strong>
           <small>${escapeHtml(doc.sender.address)}</small>
@@ -2487,16 +2500,23 @@ function renderMailTestResult() {
         <summary>查看本次发送详情</summary>
         <div class="version-note-body">
           ${renderJsonPreview({
+            clientRegion: doc.clientRegion,
+            resolvedRegion: doc.resolvedRegion,
             sender: doc.sender,
             template: doc.template,
             templateData: doc.templateData,
             providerRequestId: doc.providerRequestId,
             providerMessageId: doc.providerMessageId,
+            debug: doc.debug,
           })}
         </div>
       </details>
     </div>
   `;
+}
+
+function renderMailRegionLabel(region) {
+  return MAIL_SENDER_REGION_OPTIONS.find((option) => option.value === region)?.label || region || "未设置";
 }
 
 function renderVersionDescription(desc) {
@@ -3892,6 +3912,7 @@ async function sendMailTest() {
       status: "error",
       message: formatError(error),
       code: error?.code || "",
+      data: error?.data ?? null,
     };
     setNotice("error", formatError(error));
     pushToast("error", formatError(error));
@@ -5138,6 +5159,7 @@ async function requestJson(path, { method = "GET", body, headers = {} } = {}) {
     const error = new Error(payload?.message || `Request failed with status ${response.status}`);
     error.statusCode = response.status;
     error.code = payload?.code;
+    error.data = payload?.data ?? null;
     throw error;
   }
 

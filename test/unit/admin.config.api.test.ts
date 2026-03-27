@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 import { InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
+import { ApplicationError } from "../../src/shared/errors.ts";
 import {
   TENCENT_SES_SECRET_ID_PASSWORD_KEY,
   TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
@@ -15,6 +16,7 @@ function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): 
 
 interface SentTemplateEmail {
   email: string;
+  clientRegion: "ap-guangzhou" | "ap-hongkong";
   region: "ap-guangzhou" | "ap-hongkong";
   fromEmailAddress: string;
   subject: string;
@@ -27,6 +29,7 @@ function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSend
     async sendTemplateEmail(command) {
       sent.push({
         email: command.email,
+        clientRegion: command.clientRegion,
         region: command.region,
         fromEmailAddress: command.fromEmailAddress,
         subject: command.subject,
@@ -37,7 +40,99 @@ function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSend
         provider: "tencent_ses",
         requestId: "req-test-email",
         messageId: "msg-test-email",
+        debug: {
+          request: {
+            endpoint: "https://ses.tencentcloudapi.com/",
+            method: "POST",
+            clientRegion: command.clientRegion,
+            resolvedRegion: command.region,
+            headers: {
+              "X-TC-Region": command.region,
+            },
+            credentials: {
+              secretIdMasked: "sid-****",
+              secretKeyMasked: "sk-d****",
+            },
+            body: {
+              FromEmailAddress: command.fromEmailAddress,
+              Destination: [command.email],
+              Subject: command.subject,
+              Template: {
+                TemplateID: command.templateId,
+                TemplateData: JSON.stringify(command.templateData),
+              },
+            },
+          },
+          response: {
+            statusCode: 200,
+            ok: true,
+            body: {
+              Response: {
+                RequestId: "req-test-email",
+                MessageId: "msg-test-email",
+              },
+            },
+            requestId: "req-test-email",
+            messageId: "msg-test-email",
+          },
+        },
       };
+    },
+    async sendVerificationCode() {
+      return {
+        provider: "tencent_ses",
+      };
+    },
+  };
+}
+
+function createFailingEmailSender(): RegistrationEmailSender {
+  return {
+    async sendTemplateEmail(command) {
+      throw new ApplicationError(502, "EMAIL_PROVIDER_REQUEST_FAILED", "FailedOperation.SendEmailErr: region mismatch", {
+        requestId: "req-failed-email",
+        provider: "tencent_ses",
+        debug: {
+          request: {
+            endpoint: "https://ses.tencentcloudapi.com/",
+            method: "POST",
+            clientRegion: command.clientRegion,
+            resolvedRegion: command.region,
+            headers: {
+              "X-TC-Region": command.region,
+            },
+            credentials: {
+              secretIdMasked: "sid-****",
+              secretKeyMasked: "sk-d****",
+            },
+            body: {
+              FromEmailAddress: command.fromEmailAddress,
+              Destination: [command.email],
+              Subject: command.subject,
+              Template: {
+                TemplateID: command.templateId,
+                TemplateData: JSON.stringify(command.templateData),
+              },
+            },
+          },
+          response: {
+            statusCode: 400,
+            ok: false,
+            body: {
+              Response: {
+                RequestId: "req-failed-email",
+                Error: {
+                  Code: "FailedOperation.SendEmailErr",
+                  Message: "region mismatch",
+                },
+              },
+            },
+            requestId: "req-failed-email",
+            errorCode: "FailedOperation.SendEmailErr",
+            errorMessage: "region mismatch",
+          },
+        },
+      });
     },
     async sendVerificationCode() {
       return {
@@ -832,14 +927,21 @@ test("admin email service test-send API requires super-admin auth and enforces 2
 
   assert.equal(firstResponse.statusCode, 200);
   assert.equal(firstResponse.body.data.recipientEmail, "tester@example.com");
+  assert.equal(firstResponse.body.data.clientRegion, "ap-hongkong");
+  assert.equal(firstResponse.body.data.resolvedRegion, "ap-hongkong");
   assert.equal(firstResponse.body.data.sender.region, "ap-hongkong");
   assert.equal(firstResponse.body.data.sender.address, "Global <global@example.com>");
   assert.equal(firstResponse.body.data.template.templateId, 100002);
   assert.equal(firstResponse.body.data.providerRequestId, "req-test-email");
   assert.equal(firstResponse.body.data.providerMessageId, "msg-test-email");
+  assert.equal(firstResponse.body.data.debug.request.clientRegion, "ap-hongkong");
+  assert.equal(firstResponse.body.data.debug.request.resolvedRegion, "ap-hongkong");
+  assert.equal(firstResponse.body.data.debug.request.credentials.secretIdMasked, "sid-****");
+  assert.equal(firstResponse.body.data.debug.response.requestId, "req-test-email");
   assert.deepEqual(sent, [
     {
       email: "tester@example.com",
+      clientRegion: "ap-hongkong",
       region: "ap-hongkong",
       fromEmailAddress: "Global <global@example.com>",
       subject: "Verification Code",
@@ -871,6 +973,87 @@ test("admin email service test-send API requires super-admin auth and enforces 2
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.email_service.test_send" && item.appId === "common"),
   );
+});
+
+test("admin email service test-send API returns masked provider debug details on failure", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    registrationEmailSender: createFailingEmailSender(),
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers,
+    body: {
+      items: [
+        {
+          key: TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+          desc: "腾讯 SES SecretId",
+          value: "sid-demo",
+        },
+        {
+          key: TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+          desc: "腾讯 SES SecretKey",
+          value: "sk-demo",
+        },
+      ],
+    },
+  });
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      senders: [
+        {
+          id: "mainland",
+          address: "Admin <noreply@example.com>",
+          region: "ap-guangzhou",
+        },
+      ],
+      templates: [
+        {
+          locale: "zh-CN",
+          templateId: 100001,
+          name: "验证码",
+          subject: "验证码",
+        },
+      ],
+    },
+  });
+
+  const failedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/email-service/test-send",
+    headers,
+    body: {
+      recipientEmail: "tester@example.com",
+      region: "ap-guangzhou",
+      templateId: 100001,
+      appName: "Zook",
+      code: "654321",
+      expireMinutes: 10,
+    },
+  });
+
+  assert.equal(failedResponse.statusCode, 502);
+  assert.equal(failedResponse.body.code, "EMAIL_PROVIDER_REQUEST_FAILED");
+  assert.equal(failedResponse.body.data.provider, "tencent_ses");
+  assert.equal(failedResponse.body.data.requestId, "req-failed-email");
+  assert.equal(failedResponse.body.data.debug.request.clientRegion, "ap-guangzhou");
+  assert.equal(failedResponse.body.data.debug.request.resolvedRegion, "ap-guangzhou");
+  assert.equal(failedResponse.body.data.debug.request.credentials.secretIdMasked, "sid-****");
+  assert.equal(failedResponse.body.data.debug.request.credentials.secretKeyMasked, "sk-d****");
+  assert.equal(failedResponse.body.data.debug.response.errorCode, "FailedOperation.SendEmailErr");
 });
 
 test("admin llm service API stores versioned common config and exposes metrics", async () => {
