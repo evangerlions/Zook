@@ -1051,6 +1051,55 @@ select {
   background: rgba(255, 255, 255, 0.55);
 }
 
+.mail-region-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.mail-region-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.mail-region-section > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 18px;
+  border-bottom: 1px solid transparent;
+}
+
+.mail-region-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mail-region-section[open] > summary {
+  border-bottom-color: var(--line);
+}
+
+.mail-region-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mail-region-summary strong {
+  font-size: 1rem;
+}
+
+.mail-region-summary span {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.mail-region-body {
+  display: grid;
+  gap: 16px;
+  padding: 16px 18px 18px;
+}
+
 .mail-row {
   padding: 16px;
   border: 1px solid var(--line);
@@ -1073,6 +1122,10 @@ select {
   width: 100%;
 }
 
+.mail-row-grid-region-sender {
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.6fr);
+}
+
 .mail-test-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1083,10 +1136,16 @@ select {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   gap: 16px;
+  align-items: start;
 }
 
 .mail-test-side {
   align-content: start;
+  align-self: start;
+}
+
+.mail-test-layout > .mail-section {
+  align-self: start;
 }
 
 .mail-test-result {

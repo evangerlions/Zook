@@ -349,13 +349,17 @@ export interface EmailServiceTemplateConfig {
 export interface EmailSenderConfig {
   id: string;
   address: string;
+}
+
+export interface EmailServiceRegionConfig {
   region: TencentSesRegion;
+  sender?: EmailSenderConfig | null;
+  templates: EmailServiceTemplateConfig[];
 }
 
 export interface EmailServiceConfig {
   enabled: boolean;
-  senders: EmailSenderConfig[];
-  templates: EmailServiceTemplateConfig[];
+  regions: EmailServiceRegionConfig[];
 }
 
 export interface AdminEmailServiceDocument {
