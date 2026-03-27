@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { buildCorsHeaders, buildCorsPreflightHeaders, resolveCorsDecision } from "./infrastructure/http/cors.ts";
 import { init } from "./infrastructure/runtime/init.ts";
 
 /**
@@ -40,6 +41,31 @@ const runtime = await init({
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+  const originHeader = Array.isArray(request.headers.origin) ? request.headers.origin[0] : request.headers.origin;
+  const corsDecision = resolveCorsDecision(originHeader);
+
+  if (!corsDecision.allowed) {
+    response.statusCode = 403;
+    response.setHeader("Content-Type", "application/json; charset=utf-8");
+    response.end(
+      JSON.stringify({
+        code: "REQ_CORS_BLOCKED",
+        message: `CORS blocked: ${corsDecision.origin}`,
+        data: null,
+        requestId: "req_cors_blocked",
+      }),
+    );
+    return;
+  }
+
+  if ((request.method ?? "GET").toUpperCase() === "OPTIONS") {
+    Object.entries(buildCorsPreflightHeaders(corsDecision.origin)).forEach(([key, value]) => {
+      response.setHeader(key, value);
+    });
+    response.statusCode = 204;
+    response.end();
+    return;
+  }
 
   try {
     const handled = await runtime.app.handle({
@@ -55,6 +81,9 @@ const server = createServer(async (request, response) => {
 
     response.statusCode = handled.statusCode;
     response.setHeader("Content-Type", "application/json; charset=utf-8");
+    Object.entries(buildCorsHeaders(corsDecision.origin)).forEach(([key, value]) => {
+      response.setHeader(key, value);
+    });
     Object.entries(handled.headers ?? {}).forEach(([key, value]) => {
       response.setHeader(key, value);
     });
@@ -62,6 +91,9 @@ const server = createServer(async (request, response) => {
   } catch (error) {
     response.statusCode = 400;
     response.setHeader("Content-Type", "application/json; charset=utf-8");
+    Object.entries(buildCorsHeaders(corsDecision.origin)).forEach(([key, value]) => {
+      response.setHeader(key, value);
+    });
     response.end(
       JSON.stringify({
         code: "REQ_INVALID_BODY",
