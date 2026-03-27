@@ -1079,6 +1079,16 @@ select {
   gap: 14px 16px;
 }
 
+.mail-test-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 16px;
+}
+
+.mail-test-side {
+  align-content: start;
+}
+
 .mail-test-result {
   margin-top: 16px;
   padding: 18px;
@@ -1942,6 +1952,7 @@ a:focus-visible {
   .form-grid,
   .form-grid-wide,
   .metric-card-grid,
+  .mail-test-layout,
   .mail-test-grid,
   .mail-test-summary-grid,
   .mail-row-grid-sender,

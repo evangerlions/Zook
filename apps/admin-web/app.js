@@ -53,6 +53,7 @@ const state = {
   emailDocument: null,
   llmDocument: null,
   passwordDocument: null,
+  mailTab: "config",
   mailDraft: createDefaultMailConfig(),
   mailTestDraft: createDefaultMailTestDraft(),
   sendingMailTest: false,
@@ -953,6 +954,11 @@ function renderMailPage() {
   const latestRevision = revisions[0]?.revision;
   const readOnly = state.loadingMail || isViewingHistoricalMailConfig();
   const mailTestDraft = ensureMailTestDraft(draft);
+  const activeMailStatus = (
+    state.mailTab === "config"
+      ? (isViewingHistoricalMailConfig() ? "历史版本" : hasUnsavedMailChanges() ? "未保存" : "已保存")
+      : (state.sendingMailTest ? "测试中" : "测试面板")
+  );
 
   return `
     <section class="page-shell">
@@ -964,53 +970,97 @@ function renderMailPage() {
         <div class="page-actions">
           <span class="meta-chip">R${escapeHtml(String(currentRevision))}</span>
           <span class="meta-chip">${escapeHtml(updatedAt)}</span>
-          <span class="meta-chip">${isViewingHistoricalMailConfig() ? "历史版本" : hasUnsavedMailChanges() ? "未保存" : "已保存"}</span>
+          <span class="meta-chip">${escapeHtml(activeMailStatus)}</span>
           <span class="meta-chip">${escapeHtml(emailDocument.resolvedRegion || "ap-guangzhou")}</span>
         </div>
       </header>
 
-      <div class="config-workspace">
-        <section class="panel config-main-panel">
-          <div class="panel-header">
-            <div class="panel-heading">
-              <h2 class="panel-title">腾讯 SES</h2>
-              <p class="panel-caption">${isViewingHistoricalMailConfig() ? "当前正在查看历史版本，只读展示。" : "保存前会弹出更新说明，系统会自动生成变更摘要。"}</p>
-            </div>
-            <div class="panel-actions">
-              ${
-                isViewingHistoricalMailConfig()
-                  ? `<button class="button button-secondary" type="button" data-action="view-latest-mail" ${state.loadingMail ? "disabled" : ""}>返回最新</button>`
-                  : ""
-              }
-              <button class="button button-secondary" type="button" data-action="reload-mail" ${state.loadingMail ? "disabled" : ""}>读取</button>
-            </div>
+      <div class="tab-switcher" role="tablist" aria-label="邮件服务页面标签">
+        ${renderMailTabButton("config", "配置")}
+        ${renderMailTabButton("test", "测试")}
+      </div>
+
+      ${
+        state.mailTab === "test"
+          ? renderMailTestPanel({
+              draft,
+              mailTestDraft,
+              readOnly,
+            })
+          : renderMailConfigPanel({
+              emailDocument,
+              draft,
+              readOnly,
+              revisions,
+              latestRevision,
+            })
+      }
+    </section>
+  `;
+}
+
+function renderMailTabButton(tab, label) {
+  return `
+    <button
+      class="tab-chip"
+      type="button"
+      data-action="switch-mail-tab"
+      data-tab="${escapeHtml(tab)}"
+      data-active="${state.mailTab === tab ? "true" : "false"}"
+      role="tab"
+      aria-selected="${state.mailTab === tab ? "true" : "false"}"
+    >
+      ${escapeHtml(label)}
+    </button>
+  `;
+}
+
+function renderMailConfigPanel({ emailDocument, draft, readOnly, revisions, latestRevision }) {
+  const currentRevision = emailDocument.revision ?? "—";
+
+  return `
+    <div class="config-workspace">
+      <section class="panel config-main-panel">
+        <div class="panel-header">
+          <div class="panel-heading">
+            <h2 class="panel-title">邮件配置</h2>
+            <p class="panel-caption">${isViewingHistoricalMailConfig() ? "当前正在查看历史版本，只读展示。" : "配置 sender、模板和开关。保存前会弹出更新说明，系统会自动生成变更摘要。"}</p>
           </div>
+          <div class="panel-actions">
+            ${
+              isViewingHistoricalMailConfig()
+                ? `<button class="button button-secondary" type="button" data-action="view-latest-mail" ${state.loadingMail ? "disabled" : ""}>返回最新</button>`
+                : ""
+            }
+            <button class="button button-secondary" type="button" data-action="reload-mail" ${state.loadingMail ? "disabled" : ""}>刷新</button>
+          </div>
+        </div>
 
-          ${
-            isViewingHistoricalMailConfig()
-              ? `
-                <div class="revision-banner">
-                  <div>
-                    <strong>正在查看历史版本 R${escapeHtml(String(currentRevision))}</strong>
-                    <p>${escapeHtml(emailDocument.desc || "未填写更新说明")}</p>
-                  </div>
-                  <button
-                    class="button button-primary"
-                    type="button"
-                    data-action="restore-mail-revision"
-                    data-revision="${escapeHtml(String(currentRevision))}"
-                    ${state.restoringMailRevision === String(currentRevision) ? "disabled" : ""}
-                  >
-                    ${state.restoringMailRevision === String(currentRevision) ? "恢复中..." : "恢复到此版本"}
-                  </button>
+        ${
+          isViewingHistoricalMailConfig()
+            ? `
+              <div class="revision-banner">
+                <div>
+                  <strong>正在查看历史版本 R${escapeHtml(String(currentRevision))}</strong>
+                  <p>${escapeHtml(emailDocument.desc || "未填写更新说明")}</p>
                 </div>
-              `
-              : ""
-          }
+                <button
+                  class="button button-primary"
+                  type="button"
+                  data-action="restore-mail-revision"
+                  data-revision="${escapeHtml(String(currentRevision))}"
+                  ${state.restoringMailRevision === String(currentRevision) ? "disabled" : ""}
+                >
+                  ${state.restoringMailRevision === String(currentRevision) ? "恢复中..." : "恢复到此版本"}
+                </button>
+              </div>
+            `
+            : ""
+        }
 
-          ${renderVersionDescription(emailDocument.desc)}
+        ${renderVersionDescription(emailDocument.desc)}
 
-          <form class="stack-form" data-form="save-mail">
+        <form class="stack-form" data-form="save-mail">
           <div class="form-grid">
             <label class="field field-checkbox">
               <span>启用</span>
@@ -1069,97 +1119,6 @@ function renderMailPage() {
             </div>
           </section>
 
-          <section class="mail-section">
-            <div class="mail-section-header">
-              <div>
-                <h3>测试发送</h3>
-                <p>超级管理员专用。选择 sender region、templateId 和模板变量后，可直接向指定邮箱发送一封测试邮件。全局 20 秒内只能触发一次。</p>
-              </div>
-              <button
-                class="button button-primary"
-                type="button"
-                data-action="send-mail-test"
-                ${readOnly || state.sendingMailTest || !draft.enabled || !draft.senders.length || !draft.templates.length ? "disabled" : ""}
-              >
-                ${state.sendingMailTest ? "发送中..." : "发送测试邮件"}
-              </button>
-            </div>
-
-            <div class="mail-test-grid">
-              <label class="field">
-                <span>收件邮箱</span>
-                <input
-                  data-mail-test-field="recipientEmail"
-                  type="email"
-                  value="${escapeHtml(mailTestDraft.recipientEmail)}"
-                  placeholder="tester@example.com"
-                  autocomplete="off"
-                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
-                />
-                <small class="field-hint">测试邮件会直接发送到这里，建议先填你自己的邮箱做联调。</small>
-              </label>
-              <label class="field">
-                <span>发信 Region</span>
-                <select
-                  data-mail-test-field="region"
-                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
-                >
-                  ${renderMailTestRegionOptions(mailTestDraft.region, draft.senders)}
-                </select>
-                <small class="field-hint">会严格使用你选中的 region sender，不再自动推断。</small>
-              </label>
-              <label class="field">
-                <span>模板 ID</span>
-                <select
-                  data-mail-test-field="templateId"
-                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
-                >
-                  ${renderMailTestTemplateOptions(mailTestDraft.templateId, draft.templates)}
-                </select>
-                <small class="field-hint">直接选择后台已配置模板，便于验证指定模板是否可用。</small>
-              </label>
-              <label class="field">
-                <span>App 名称</span>
-                <input
-                  data-mail-test-field="appName"
-                  type="text"
-                  value="${escapeHtml(mailTestDraft.appName)}"
-                  placeholder="Zook"
-                  autocomplete="off"
-                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
-                />
-                <small class="field-hint">会传给模板变量 <code>{{appName}}</code>。</small>
-              </label>
-              <label class="field">
-                <span>验证码</span>
-                <input
-                  data-mail-test-field="code"
-                  type="text"
-                  value="${escapeHtml(mailTestDraft.code)}"
-                  placeholder="123456"
-                  autocomplete="off"
-                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
-                />
-                <small class="field-hint">会传给模板变量 <code>{{code}}</code>。</small>
-              </label>
-              <label class="field">
-                <span>过期分钟</span>
-                <input
-                  data-mail-test-field="expireMinutes"
-                  type="number"
-                  min="1"
-                  max="120"
-                  step="1"
-                  value="${escapeHtml(String(mailTestDraft.expireMinutes))}"
-                  ${readOnly || state.sendingMailTest ? "disabled" : ""}
-                />
-                <small class="field-hint">会传给模板变量 <code>{{expireMinutes}}</code>，建议和真实验证码 TTL 保持一致。</small>
-              </label>
-            </div>
-
-            ${renderMailTestResult()}
-          </section>
-
           <details class="version-note">
             <summary>查看当前 JSON</summary>
             <div class="version-note-body">
@@ -1170,32 +1129,154 @@ function renderMailPage() {
           <div class="form-footer">
             <button class="button button-ghost" type="button" data-action="reset-mail" ${readOnly || state.savingMail ? "disabled" : ""}>恢复</button>
             <button class="button button-primary" type="button" data-action="open-save-mail-dialog" ${readOnly || state.savingMail ? "disabled" : ""}>
-              ${state.savingMail ? "保存中..." : "保存"}
+              ${state.savingMail ? "保存中..." : "保存配置"}
             </button>
           </div>
         </form>
-        </section>
+      </section>
 
-        <aside class="panel config-history-panel">
-          <div class="panel-header">
-            <div class="panel-heading">
-              <h2 class="panel-title">历史版本</h2>
-              <p class="panel-caption">按时间倒序展示，点击可查看任意版本。</p>
+      <aside class="panel config-history-panel">
+        <div class="panel-header">
+          <div class="panel-heading">
+            <h2 class="panel-title">历史版本</h2>
+            <p class="panel-caption">按时间倒序展示，点击可查看任意版本。</p>
+          </div>
+        </div>
+
+        <div class="revision-list">
+          ${
+            revisions.length
+              ? revisions.map((item) => renderRevisionItem(item, {
+                  action: "view-mail-revision",
+                  activeRevision: emailDocument.revision,
+                  latestRevision,
+                })).join("")
+              : '<div class="revision-empty">还没有历史版本。</div>'
+          }
+        </div>
+      </aside>
+    </div>
+  `;
+}
+
+function renderMailTestPanel({ draft, mailTestDraft, readOnly }) {
+  return `
+    <section class="panel">
+      <div class="panel-header">
+        <div class="panel-heading">
+          <h2 class="panel-title">测试发送</h2>
+          <p class="panel-caption">超级管理员专用。选择 sender region、templateId 和模板变量后，可直接向指定邮箱发送一封测试邮件。全局 20 秒内只能触发一次。</p>
+        </div>
+        <div class="panel-actions">
+          <span class="meta-chip">${draft.enabled ? "服务已启用" : "服务未启用"}</span>
+          ${
+            isViewingHistoricalMailConfig()
+              ? `<button class="button button-secondary" type="button" data-action="view-latest-mail" ${state.loadingMail ? "disabled" : ""}>返回最新</button>`
+              : ""
+          }
+          <button
+            class="button button-primary"
+            type="button"
+            data-action="send-mail-test"
+            ${readOnly || state.sendingMailTest || !draft.enabled || !draft.senders.length || !draft.templates.length ? "disabled" : ""}
+          >
+            ${state.sendingMailTest ? "发送中..." : "发送测试邮件"}
+          </button>
+        </div>
+      </div>
+
+      <div class="mail-test-layout">
+        <section class="mail-section">
+          <div class="mail-section-header">
+            <div>
+              <h3>测试参数</h3>
+              <p>这里不会改动配置本身，只是用当前 sender / template 组合发一封测试邮件，帮助你验证模板、地区路由和腾讯 SES 凭据是否都已就绪。</p>
             </div>
           </div>
 
-          <div class="revision-list">
-            ${
-              revisions.length
-                ? revisions.map((item) => renderRevisionItem(item, {
-                    action: "view-mail-revision",
-                    activeRevision: emailDocument.revision,
-                    latestRevision,
-                  })).join("")
-                : '<div class="revision-empty">还没有历史版本。</div>'
-            }
+          <div class="mail-test-grid">
+            <label class="field">
+              <span>收件邮箱</span>
+              <input
+                data-mail-test-field="recipientEmail"
+                type="email"
+                value="${escapeHtml(mailTestDraft.recipientEmail)}"
+                placeholder="tester@example.com"
+                autocomplete="off"
+                ${readOnly || state.sendingMailTest ? "disabled" : ""}
+              />
+              <small class="field-hint">测试邮件会直接发送到这里，建议先填你自己的邮箱做联调。</small>
+            </label>
+            <label class="field">
+              <span>发信 Region</span>
+              <select
+                data-mail-test-field="region"
+                ${readOnly || state.sendingMailTest ? "disabled" : ""}
+              >
+                ${renderMailTestRegionOptions(mailTestDraft.region, draft.senders)}
+              </select>
+              <small class="field-hint">会严格使用你选中的 region sender，不再自动推断。</small>
+            </label>
+            <label class="field">
+              <span>模板 ID</span>
+              <select
+                data-mail-test-field="templateId"
+                ${readOnly || state.sendingMailTest ? "disabled" : ""}
+              >
+                ${renderMailTestTemplateOptions(mailTestDraft.templateId, draft.templates)}
+              </select>
+              <small class="field-hint">直接选择后台已配置模板，便于验证指定模板是否可用。</small>
+            </label>
+            <label class="field">
+              <span>App 名称</span>
+              <input
+                data-mail-test-field="appName"
+                type="text"
+                value="${escapeHtml(mailTestDraft.appName)}"
+                placeholder="Zook"
+                autocomplete="off"
+                ${readOnly || state.sendingMailTest ? "disabled" : ""}
+              />
+              <small class="field-hint">会传给模板变量 <code>{{appName}}</code>。</small>
+            </label>
+            <label class="field">
+              <span>验证码</span>
+              <input
+                data-mail-test-field="code"
+                type="text"
+                value="${escapeHtml(mailTestDraft.code)}"
+                placeholder="123456"
+                autocomplete="off"
+                ${readOnly || state.sendingMailTest ? "disabled" : ""}
+              />
+              <small class="field-hint">会传给模板变量 <code>{{code}}</code>。</small>
+            </label>
+            <label class="field">
+              <span>过期分钟</span>
+              <input
+                data-mail-test-field="expireMinutes"
+                type="number"
+                min="1"
+                max="120"
+                step="1"
+                value="${escapeHtml(String(mailTestDraft.expireMinutes))}"
+                ${readOnly || state.sendingMailTest ? "disabled" : ""}
+              />
+              <small class="field-hint">会传给模板变量 <code>{{expireMinutes}}</code>，建议和真实验证码 TTL 保持一致。</small>
+            </label>
           </div>
-        </aside>
+        </section>
+
+        <section class="mail-section mail-test-side">
+          <div class="mail-section-header">
+            <div>
+              <h3>最近一次测试</h3>
+              <p>这里会展示最近一次测试真正使用的 sender、template 和模板变量，便于快速核对。</p>
+            </div>
+          </div>
+
+          ${renderMailTestResult()}
+        </section>
       </div>
     </section>
   `;
@@ -2755,6 +2836,13 @@ async function handleAction(target) {
 
   if (action === "reload-mail") {
     await loadEmailServiceConfig();
+    clearNotice();
+    await render();
+    return;
+  }
+
+  if (action === "switch-mail-tab") {
+    state.mailTab = target.dataset.tab === "test" ? "test" : "config";
     clearNotice();
     await render();
     return;
