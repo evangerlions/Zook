@@ -37,6 +37,7 @@ import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
+import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
 import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
@@ -47,6 +48,7 @@ import type {
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
+  AdminSessionRecord,
   AdminPasswordDocument,
   AnalyticsEventInput,
   ClientType,
@@ -77,6 +79,9 @@ interface ResolvedAdminBasicAuth {
   username: string;
   password: string;
 }
+
+const ADMIN_SESSION_COOKIE_NAME = "adminSession";
+const ADMIN_SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 function resolveAdminBasicAuth(options: CreateApplicationOptions): ResolvedAdminBasicAuth | null {
   const username = options.adminBasicAuth?.username ?? process.env.ADMIN_BASIC_AUTH_USERNAME ?? "";
@@ -138,6 +143,7 @@ export class BackendApplication {
     private readonly analyticsService: AnalyticsService,
     private readonly adminConsoleService: AdminConsoleService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
+    private readonly adminSessionStore: AdminSessionStore,
     private readonly llmManager: LLMManager,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly storageService: StorageService,
@@ -157,6 +163,7 @@ export class BackendApplication {
   async handle(request: HttpRequest): Promise<HttpResponse<unknown>> {
     request.requestId ??= randomId("req");
     request.cookies ??= parseCookies(request.headers.cookie);
+    request.adminSession = await this.resolveAdminSession(request);
     const startedAt = Date.now();
 
     try {
@@ -187,6 +194,14 @@ export class BackendApplication {
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
     if (request.method === "GET" && request.path === "/api/health") {
       return this.ok({ status: "ok" }, request.requestId as string);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/auth/login") {
+      return this.handleAdminLogin(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/auth/logout") {
+      return this.handleAdminLogout(request);
     }
 
     if (request.method === "GET" && request.path === "/api/v1/admin/bootstrap") {
@@ -870,11 +885,52 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    if (!this.adminBasicAuth) {
+      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
+    }
+
+    const body = this.validationPipe.asObject(request.body);
+    const username = this.validationPipe.requireString(body, "username");
+    const password = this.validationPipe.requireString(body, "password");
+    const adminUser = this.validateAdminCredentials(username, password);
+    const session = await this.adminSessionStore.create(adminUser, ADMIN_SESSION_TTL_MS);
+    const bootstrap = this.adminConsoleService.getBootstrap(adminUser);
+
+    return this.ok(
+      {
+        ...bootstrap,
+        sessionExpiresAt: session.expiresAt,
+      },
+      request.requestId as string,
+      this.buildAdminSessionHeaders(session.id),
+    );
+  }
+
+  private async handleAdminLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const sessionId = request.cookies?.[ADMIN_SESSION_COOKIE_NAME];
+    if (sessionId) {
+      await this.adminSessionStore.delete(sessionId);
+    }
+
+    return this.ok(
+      { loggedOut: true },
+      request.requestId as string,
+      this.buildAdminSessionClearHeaders(),
+    );
+  }
+
   private handleAdminBootstrap(request: HttpRequest): HttpResponse<unknown> {
     const adminUser = this.authenticateAdmin(request);
     const result = this.adminConsoleService.getBootstrap(adminUser);
 
-    return this.ok(result, request.requestId as string);
+    return this.ok(
+      {
+        ...result,
+        sessionExpiresAt: request.adminSession?.expiresAt,
+      },
+      request.requestId as string,
+    );
   }
 
   private async handleAdminCreateApp(request: HttpRequest): Promise<HttpResponse<unknown>> {
@@ -1426,23 +1482,44 @@ export class BackendApplication {
   }
 
   private authenticateAdmin(request: HttpRequest): string {
+    if (request.adminSession) {
+      return request.adminSession.username;
+    }
+
     if (!this.adminBasicAuth) {
-      throw new ApplicationError(401, "ADMIN_BASIC_AUTH_REQUIRED", "Admin basic authentication is required.");
+      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
     }
 
     const credentials = parseBasicAuthorization(request.headers.authorization);
     if (!credentials) {
-      throw new ApplicationError(401, "ADMIN_BASIC_AUTH_REQUIRED", "Admin basic authentication is required.");
+      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
+    }
+
+    return this.validateAdminCredentials(credentials.username, credentials.password);
+  }
+
+  private validateAdminCredentials(username: string, password: string): string {
+    if (!this.adminBasicAuth) {
+      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
     }
 
     if (
-      !safeEqual(credentials.username, this.adminBasicAuth.username) ||
-      !safeEqual(credentials.password, this.adminBasicAuth.password)
+      !safeEqual(username, this.adminBasicAuth.username) ||
+      !safeEqual(password, this.adminBasicAuth.password)
     ) {
-      throw new ApplicationError(401, "ADMIN_BASIC_AUTH_REQUIRED", "Admin basic authentication is required.");
+      throw new ApplicationError(401, "ADMIN_INVALID_CREDENTIAL", "Admin username or password is invalid.");
     }
 
-    return credentials.username;
+    return username;
+  }
+
+  private async resolveAdminSession(request: HttpRequest): Promise<AdminSessionRecord | null> {
+    const sessionId = request.cookies?.[ADMIN_SESSION_COOKIE_NAME];
+    if (!sessionId) {
+      return null;
+    }
+
+    return (await this.adminSessionStore.get(sessionId)) ?? null;
   }
 
   private getClientType(body: Record<string, unknown>): ClientType {
@@ -1465,6 +1542,46 @@ export class BackendApplication {
   private buildAuthHeaders(refreshToken: string, clientType: ClientType): Record<string, string> | undefined {
     const cookie = this.authService.buildRefreshCookie(refreshToken, clientType);
     return cookie ? { "Set-Cookie": cookie } : undefined;
+  }
+
+  private buildAdminSessionHeaders(sessionId: string): Record<string, string> {
+    return {
+      "Set-Cookie": this.buildAdminSessionCookie(`${ADMIN_SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}`),
+    };
+  }
+
+  private buildAdminSessionClearHeaders(): Record<string, string> {
+    return {
+      "Set-Cookie": this.buildAdminSessionCookie(`${ADMIN_SESSION_COOKIE_NAME}=`, "Max-Age=0"),
+    };
+  }
+
+  private buildAdminSessionCookie(base: string, maxAgePart = `Max-Age=${Math.floor(ADMIN_SESSION_TTL_MS / 1000)}`): string {
+    const parts = [
+      base,
+      "HttpOnly",
+      "Path=/api/v1/admin",
+      "SameSite=Lax",
+      maxAgePart,
+    ];
+
+    if (this.shouldUseSecureAdminCookie()) {
+      parts.push("Secure");
+    }
+
+    return parts.join("; ");
+  }
+
+  private shouldUseSecureAdminCookie(): boolean {
+    if (process.env.ADMIN_SESSION_COOKIE_SECURE === "true") {
+      return true;
+    }
+
+    if (process.env.ADMIN_SESSION_COOKIE_SECURE === "false") {
+      return false;
+    }
+
+    return process.env.NODE_ENV === "production";
   }
 
   private ok<T>(data: T, requestId: string, headers?: Record<string, string>): HttpResponse<T> {
@@ -1506,6 +1623,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
 
   const appConfigService = new AppConfigService(database, cache, kvManager);
   const passwordManager = new PasswordManager(kvManager);
+  const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
@@ -1604,6 +1722,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     analyticsService,
     adminConsoleService,
     adminBasicAuth,
+    adminSessionStore,
     llmManager,
     llmSmokeTestService,
     storageService,
@@ -1631,6 +1750,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       appConfigService,
       kvManager,
       passwordManager,
+      adminSessionStore,
       refreshTokenStore,
       commonPasswordConfigService,
       commonEmailConfigService,

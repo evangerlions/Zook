@@ -19,7 +19,9 @@ export type LlmRoutingStrategy = "auto" | "fixed";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ErrorCode =
+  | "ADMIN_AUTH_REQUIRED"
   | "ADMIN_BASIC_AUTH_REQUIRED"
+  | "ADMIN_INVALID_CREDENTIAL"
   | "ADMIN_CONFIG_INVALID_JSON"
   | "ADMIN_APP_ALREADY_EXISTS"
   | "ADMIN_APP_ID_RESERVED"
@@ -127,6 +129,13 @@ export interface RefreshTokenRecord {
   expiresAt: string;
   revokedAt?: string;
   replacedBy?: string;
+}
+
+export interface AdminSessionRecord {
+  id: string;
+  username: string;
+  createdAt: string;
+  expiresAt: string;
 }
 
 export interface AuditLogRecord {
@@ -250,6 +259,7 @@ export interface HttpRequest {
   requestId?: string;
   cookies?: Record<string, string>;
   auth?: AuthContext;
+  adminSession?: AdminSessionRecord | null;
 }
 
 export interface HttpResponse<T> {
@@ -326,6 +336,7 @@ export interface AdminAppSummary {
 export interface AdminBootstrapResult {
   adminUser: string;
   apps: AdminAppSummary[];
+  sessionExpiresAt?: string;
 }
 
 export interface AdminConfigDocument {

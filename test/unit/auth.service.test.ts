@@ -100,3 +100,11 @@ test("auth service keeps refresh tokens usable across application restarts when 
   assert.ok(refreshed.accessToken);
   assert.notEqual(refreshed.refreshToken, firstSession.refreshToken);
 });
+
+test("auth service issues web refresh cookies with a 60 day lifetime", async () => {
+  const runtime = await createApplication();
+  const cookie = runtime.services.authService.buildRefreshCookie("refresh-token", "web");
+
+  assert.ok(cookie);
+  assert.match(cookie, /Max-Age=5184000/);
+});
