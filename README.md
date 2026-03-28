@@ -69,10 +69,24 @@ src/
 npm run dev
 ```
 
+一键启动本地 API + Admin Web：
+
+```bash
+npm run dev:stack
+```
+
 启动 Admin Web：
 
 ```bash
+npm run admin:install
+npm run admin:build
 npm run admin
+```
+
+本地开发 Admin Web 前端：
+
+```bash
+npm run admin:dev
 ```
 
 启动 Worker：
@@ -91,5 +105,13 @@ npm test
 默认 Admin Web 端口是 `3110`。
 运行时会强校验 `REDIS_URL` 和 `DATABASE_URL`，依赖不可用时直接启动失败。
 容器访问宿主机 Redis / PostgreSQL 时，推荐在连接串里使用 `host.docker.internal`。
+
+如果你想把本地数据库、Redis 和管理员账号固定下来，推荐先复制：
+
+```bash
+cp deploy_configs/dev.local.env.example local/env/dev.env
+```
+
+`npm run dev:stack` 会优先读取 `local/env/dev.env`，再读取 `deploy_configs/dev.local.env` 和 `.env.local`。这样本地联调配置就固定在仓库里，不再依赖 `~/Downloads` 这类外部位置。
 
 健康检查路径为 `/api/health`。

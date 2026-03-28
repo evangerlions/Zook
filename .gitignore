@@ -1,8 +1,11 @@
 node_modules
+.react-router/
+build/
 .DS_Store
 __pycache__/
 *.pyc
 .env
+.env.local
 .deploy/
 deploy_configs/*.env
 db_doc/generated/*

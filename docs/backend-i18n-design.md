@@ -17,6 +17,12 @@
 3. 只有跨业务复用的公共文案，才进入共享消息字典。
 4. 所有读取逻辑统一走一套 locale 解析和 fallback 规则。
 
+这是一套业界比较常见、也比较稳的折中方案：
+
+1. 不会把所有业务都耦合到一个 i18n 中心表。
+2. 不会让每个模块都发明一套自己的字段和 fallback 规则。
+3. 能支持多 app、多业务线、逐步演进。
+
 ## 1. 设计目标
 
 本方案希望解决以下问题：
@@ -61,6 +67,16 @@
 
 如果一段文本属于某个具体业务对象，那么文本应直接跟该对象一起存储。
 
+例如：
+
+1. banner 标题
+2. 活动副标题
+3. onboarding 提示语
+4. 权益说明
+5. 角色介绍
+
+这类文本不应该被拆进一个全局文案库，否则后续关联、权限、迁移、查询和回滚都会变复杂。
+
 ### 3.3 公共文案才集中管理
 
 以下文案适合进入共享消息字典：
@@ -70,6 +86,20 @@
 3. 通用状态展示名
 4. 公共系统通知标题
 5. 公共协议、提示、引导段落
+
+### 3.4 读时统一本地化，写时统一校验
+
+无论文本来自业务表，还是来自共享字典，读取时都要走同一套工具：
+
+1. 解析请求 locale
+2. 选择最佳文本
+3. 缺失时按规则 fallback
+
+写入时也要走统一校验：
+
+1. locale 是否合法
+2. value 是否为空字符串
+3. 是否满足默认语言要求
 
 ## 4. 总体方案
 
@@ -99,6 +129,12 @@
 
 完整的默认 20 语种示例见 `5.4 示例文案（Welcome）`。
 
+适用场景：
+
+1. 文本和业务对象强绑定
+2. 文本不会被大量跨模块复用
+3. 文案更新通常跟业务对象一起发生
+
 ### 4.2 第二层：共享消息字典
 
 对跨模块复用的公共文案，单独做共享消息表。
@@ -107,11 +143,31 @@
 
 `i18n_messages`
 
+推荐字段：
+
+1. `id`
+2. `app_id`
+3. `namespace`
+4. `message_key`
+5. `locale`
+6. `text`
+7. `status`
+8. `updated_at`
+
 推荐唯一约束：
 
 1. `unique(app_id, namespace, message_key, locale)`
 
+适用场景：
+
+1. `common.error.user_blocked`
+2. `common.status.active`
+3. `billing.plan.free.name`
+4. `onboarding.welcome.title`
+
 ### 4.3 两层同时存在，不互相替代
+
+这是整个方案最重要的取舍：
 
 1. 业务对象文案优先用内嵌字段
 2. 共享复用文案才用字典表
@@ -131,6 +187,12 @@
 4. 用户资料中的 `preferredLocale`
 5. app 默认语言
 6. 系统默认语言
+
+说明：
+
+1. 面向普通业务接口时，建议以请求显式 locale 或 header 为准。
+2. 用户资料中的 `preferredLocale` 更适合消息中心、邮件、系统通知等“被动触达”场景。
+3. app 默认语言建议配置在 `app_configs` 中，例如 `i18n.default_locale`。
 
 ### 5.2 locale 格式要求
 
@@ -182,6 +244,8 @@
 
 ### 5.4 示例文案（Welcome）
 
+如果需要一个完整的默认示例，可以直接使用下面这份 `welcome_i18n`：
+
 ```json
 {
   "en-US": "Welcome",
@@ -218,6 +282,27 @@ fallback 必须统一，不允许每个业务模块自己决定。
 3. app 默认 locale
 4. 系统默认 locale
 5. 任意第一个非空值
+
+示例：
+
+请求 locale 为 `en-GB`，文本中只有：
+
+```json
+{
+  "en-US": "Welcome",
+  "zh-CN": "欢迎使用"
+}
+```
+
+则应返回 `Welcome`。
+
+### 6.1 语言级命中的实现建议
+
+语言级命中建议按下面顺序：
+
+1. 先查是否存在 `en`
+2. 再查是否存在同语言前缀的区域值，例如 `en-US`
+3. 如果同语言有多个区域值，优先使用 app 配置的 fallback 映射
 
 建议在 `app_configs` 中配置：
 
@@ -265,21 +350,137 @@ fallback 必须统一，不允许每个业务模块自己决定。
 
 `i18n.settings`
 
-## 7. API 设计规范
+## 7. 数据建模建议
 
-### 7.1 写接口规范
+### 7.1 业务表字段规范
+
+以 `campaigns` 为例：
+
+```sql
+create table campaigns (
+  id text primary key,
+  app_id text not null,
+  title_i18n jsonb not null default '{}'::jsonb,
+  subtitle_i18n jsonb not null default '{}'::jsonb,
+  description_i18n jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null,
+  updated_at timestamptz not null
+);
+```
+
+建议：
+
+1. 所有可翻译字段统一使用 `*_i18n`
+2. 类型统一用 `jsonb`
+3. 默认值统一 `{}`，避免空值判断过多
+
+### 7.2 共享字典表规范
+
+推荐模型：
+
+```sql
+create table i18n_messages (
+  id text primary key,
+  app_id text not null,
+  namespace text not null,
+  message_key text not null,
+  locale text not null,
+  text text not null,
+  status text not null default 'ACTIVE',
+  updated_at timestamptz not null
+);
+
+create unique index uq_i18n_messages_scope
+  on i18n_messages(app_id, namespace, message_key, locale);
+```
+
+可选补充：
+
+1. `created_at`
+2. `updated_by`
+3. `version`
+
+如果后续要做复杂版本回滚，再考虑 revision 表；MVP 阶段不建议先做重。
+
+### 7.3 不建议单独拆表的场景
+
+以下情况不建议为了“规范化”把文本拆成子表：
+
+1. 一个业务对象只有 2 到 5 个短文本字段
+2. 文案更新频率低
+3. 文案不参与复杂查询
+4. 文案不需要被多个对象共享
+
+这种场景 `jsonb` 反而是更稳妥的工程选型。
+
+## 8. API 设计规范
+
+### 8.1 写接口规范
 
 管理端或业务创建接口，建议直接写入 `*_i18n` 字段。
 
-### 7.2 读接口规范
+示例：
+
+```json
+{
+  "titleI18n": {
+    "zh-CN": "限时优惠",
+    "en-US": "Limited Offer"
+  },
+  "subtitleI18n": {
+    "zh-CN": "新用户首月免费",
+    "en-US": "First month free for new users"
+  }
+}
+```
+
+### 8.2 读接口规范
 
 面向客户端的普通业务接口，默认返回“已解析后的文本”，而不是原始多语言 map。
 
-### 7.3 管理接口规范
+示例：
+
+```json
+{
+  "id": "banner_1",
+  "title": "Limited Offer",
+  "subtitle": "First month free for new users"
+}
+```
+
+### 8.3 管理接口规范
 
 面向后台编辑页时，可以返回完整的 `*_i18n`。
 
-## 8. 公共工具层设计
+示例：
+
+```json
+{
+  "id": "banner_1",
+  "titleI18n": {
+    "zh-CN": "限时优惠",
+    "en-US": "Limited Offer"
+  }
+}
+```
+
+### 8.4 避免在同一个接口里混合两种语义
+
+普通客户端接口建议返回：
+
+1. `title`
+2. `subtitle`
+3. `description`
+
+后台编辑接口建议返回：
+
+1. `titleI18n`
+2. `subtitleI18n`
+3. `descriptionI18n`
+
+不要默认同时把两套结构都返回给客户端，否则接口会很臃肿。
+
+## 9. 公共工具层设计
 
 建议增加一个独立的 `i18n` 公共模块，职责只做三件事：
 
@@ -287,7 +488,188 @@ fallback 必须统一，不允许每个业务模块自己决定。
 2. 选择文本
 3. 批量本地化对象
 
-## 9. 与当前仓库的结合方式
+### 9.1 建议的核心类型
+
+```ts
+export type I18nText = Record<string, string>;
+
+export interface I18nSettings {
+  defaultLocale: string;
+  supportedLocales: string[];
+  fallbackLocales?: Record<string, string[]>;
+}
+```
+
+### 9.2 建议的核心函数
+
+```ts
+resolveRequestLocale(request): string
+normalizeLocale(locale): string | undefined
+pickI18nText(textMap, locale, settings): string
+localizeFields(record, fieldNames, locale, settings): object
+```
+
+### 9.3 `pickI18nText` 的建议行为
+
+```ts
+function pickI18nText(
+  value: Record<string, string> | undefined,
+  locale: string,
+  settings: I18nSettings,
+): string {
+  if (!value) {
+    return "";
+  }
+
+  const exact = value[locale];
+  if (exact) {
+    return exact;
+  }
+
+  const configuredFallbacks = settings.fallbackLocales?.[locale] ?? [];
+  for (const fallbackLocale of configuredFallbacks) {
+    if (value[fallbackLocale]) {
+      return value[fallbackLocale];
+    }
+  }
+
+  const language = locale.split("-")[0];
+  if (value[language]) {
+    return value[language];
+  }
+
+  const sameLanguageKey = Object.keys(value).find((key) => key.split("-")[0] === language);
+  if (sameLanguageKey) {
+    return value[sameLanguageKey] ?? "";
+  }
+
+  if (value[settings.defaultLocale]) {
+    return value[settings.defaultLocale] ?? "";
+  }
+
+  return Object.values(value).find((item) => item.trim()) ?? "";
+}
+```
+
+### 9.4 批量对象本地化
+
+推荐做一个轻量工具：
+
+```ts
+localizeFields(
+  campaign,
+  ["title", "subtitle", "description"],
+  locale,
+  settings,
+)
+```
+
+其作用是：
+
+1. 从 `title_i18n` 生成 `title`
+2. 从 `subtitle_i18n` 生成 `subtitle`
+3. 从 `description_i18n` 生成 `description`
+
+这样每个业务 service 就不需要重复写映射代码。
+
+## 10. 什么时候用内嵌字段，什么时候用共享字典
+
+### 10.1 选内嵌字段
+
+满足以下任意大多数条件时，优先用 `*_i18n jsonb`：
+
+1. 文案属于单个业务对象
+2. 文案不会跨很多模块复用
+3. 文案由业务后台编辑
+4. 文案和对象一起查询、一起更新
+
+### 10.2 选共享字典
+
+满足以下条件时，优先用 `i18n_messages`：
+
+1. 同一文案在多个业务模块复用
+2. 文案脱离具体业务对象存在
+3. 文案需要按 namespace/key 管理
+4. 文案适合做统一后台编辑
+
+## 11. 缓存策略
+
+### 11.1 业务对象文案
+
+业务对象内嵌文案通常跟对象缓存一致，不需要单独再做 i18n 缓存层。
+
+### 11.2 共享字典文案
+
+共享字典适合按下面维度缓存：
+
+1. `app_id + namespace + locale`
+2. `app_id + message_key + locale`
+
+TTL 可以先保持轻量，例如 30 秒到 5 分钟。
+
+如果后续共享字典量变大，再引入：
+
+1. namespace 级预热
+2. revision 号失效
+3. 按 locale 批量快照
+
+## 12. 后台维护建议
+
+### 12.1 app 级配置
+
+建议先把 i18n 基础设置放入 `app_configs`：
+
+1. `i18n.settings`
+2. `i18n.enabled_locales`
+3. `i18n.default_locale`
+
+最简做法是只保留一个：
+
+`i18n.settings`
+
+配置内容示例可直接复用 `6.1` 中的默认配置。
+默认 `defaultLocale = en-US`，`supportedLocales` 使用 `5.3` 中的 20 个 locale。
+
+### 12.2 管理台编辑策略
+
+管理端建议分两类页面：
+
+1. 业务对象编辑页
+2. 公共字典编辑页
+
+不要把所有多语言都揉进一个“超级国际化页面”。
+
+## 13. 查询、排序与搜索注意事项
+
+这是 `jsonb` 方案最容易被忽视的地方。
+
+### 13.1 不要让 `*_i18n` 承担复杂检索主职责
+
+如果某个字段需要：
+
+1. 高频搜索
+2. 高频排序
+3. 全文检索
+4. 聚合统计
+
+则不建议直接依赖 `jsonb` 中的多语言内容完成这些需求。
+
+更稳妥的做法：
+
+1. 保留 `*_i18n`
+2. 额外维护 `title_default` 这类影子字段
+3. 或者引入专门的搜索索引
+
+### 13.2 客户端展示字段与后台检索字段分离
+
+客户端需要的是“当前 locale 的最佳文本”。
+后台运营常常需要的是“默认语言字段”做列表检索。
+
+这两个目标不要混在一个字段设计里。
+
+## 14. 与当前仓库的结合方式
+
+### 14.1 可以直接复用的现有能力
 
 当前仓库里已有以下基础能力可以直接承接本方案：
 
@@ -296,10 +678,81 @@ fallback 必须统一，不允许每个业务模块自己决定。
 3. [app-config.service.ts](/Users/zhoukai/Projects/AI/codex/Zook/src/services/app-config.service.ts) 可直接承接 `i18n.settings`
 4. [app.module.ts](/Users/zhoukai/Projects/AI/codex/Zook/src/app.module.ts) 已有 admin config 路由范式，可扩展 i18n 配置读写
 
-## 10. 最终推荐
+### 14.2 建议新增的模块
+
+建议新增：
+
+1. `src/services/request-locale.service.ts`
+2. `src/services/i18n.service.ts`
+3. `src/shared/i18n.ts`
+
+职责建议：
+
+1. `request-locale.service.ts` 负责解析 locale
+2. `i18n.service.ts` 负责读取 app 级 i18n 配置与共享字典
+3. `shared/i18n.ts` 放纯函数工具，例如 normalize、pick、batch localize
+
+## 15. 推荐实施顺序
+
+### Phase 1
+
+先把统一规范和工具落地：
+
+1. 确定 `*_i18n` 字段命名
+2. 落地 `i18n.settings`
+3. 实现公共 locale 解析与 `pickI18nText`
+
+### Phase 2
+
+选择 1 到 2 个业务模块试点：
+
+1. banner
+2. onboarding
+3. 活动配置
+
+把这部分动态文本改为 `jsonb` 多语言字段。
+
+### Phase 3
+
+再补共享字典：
+
+1. 通用错误文案
+2. 公共状态文案
+3. 多模块复用的通知标题
+
+### Phase 4
+
+最后再考虑后台页面、revision、批量导入导出。
+
+## 16. 明确不建议的做法
+
+1. 把所有业务文案都放进一个巨大的 JSON 文件
+2. 把所有业务文本都抽成中心化字典表
+3. 每个模块自己发明 locale 解析规则
+4. 每个接口自己决定 fallback 逻辑
+5. 普通客户端接口同时返回 `title` 和 `titleI18n`
+6. 在读请求时临时调用外部翻译服务
+
+## 17. 最终推荐
+
+如果只选一套最适合当前项目阶段的方案，建议是：
 
 1. 动态业务文本使用 `*_i18n jsonb`
 2. 公共复用文本使用 `i18n_messages`
 3. app 级统一配置使用 `app_configs.i18n.settings`
 4. locale 和 fallback 统一由公共工具处理
 5. 客户端接口默认只返回已本地化字段
+
+这套组合兼顾了：
+
+1. 简单
+2. 可维护
+3. 可扩展
+4. 多业务共存
+5. 后续能自然演进到后台可编辑和共享字典
+
+如果后续开始正式实施，下一步建议直接补三样东西：
+
+1. `i18n.settings` 配置定义
+2. `pickI18nText` / `localizeFields` 工具
+3. 一个试点业务对象的 `*_i18n` 字段改造
