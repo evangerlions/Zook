@@ -14,6 +14,23 @@ function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): 
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
 }
 
+async function loginAdmin(runtime: Awaited<ReturnType<typeof createApplication>>, username = "admin", password = "AdminPass123!") {
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/auth/login",
+    headers: {},
+    body: {
+      username,
+      password,
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const cookie = response.headers?.["Set-Cookie"];
+  assert.ok(cookie);
+  return cookie;
+}
+
 function createEmailServiceRegions() {
   return [
     {
@@ -352,7 +369,7 @@ test("admin config API rejects invalid JSON and missing basic auth", async () =>
   });
 
   assert.equal(unauthorizedResponse.statusCode, 401);
-  assert.equal(unauthorizedResponse.body.code, "ADMIN_BASIC_AUTH_REQUIRED");
+  assert.equal(unauthorizedResponse.body.code, "ADMIN_AUTH_REQUIRED");
 
   const invalidJsonResponse = await runtime.app.handle({
     method: "PUT",
@@ -367,6 +384,72 @@ test("admin config API rejects invalid JSON and missing basic auth", async () =>
 
   assert.equal(invalidJsonResponse.statusCode, 400);
   assert.equal(invalidJsonResponse.body.code, "ADMIN_CONFIG_INVALID_JSON");
+});
+
+test("admin auth login creates a persistent session cookie backed by Redis KV", async () => {
+  const firstRuntime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+
+  const cookie = await loginAdmin(firstRuntime);
+  assert.match(cookie, /adminSession=/);
+  assert.match(cookie, /HttpOnly/);
+  assert.match(cookie, /Max-Age=1209600/);
+
+  const secondRuntime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    kvManager: firstRuntime.services.kvManager,
+  });
+
+  const bootstrapResponse = await secondRuntime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/bootstrap",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(bootstrapResponse.statusCode, 200);
+  assert.equal(bootstrapResponse.body.data.adminUser, "admin");
+  assert.match(String(bootstrapResponse.body.data.sessionExpiresAt), /^20/);
+});
+
+test("admin auth logout clears the session cookie and invalidates the admin session", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+
+  const cookie = await loginAdmin(runtime);
+  const logoutResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/auth/logout",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(logoutResponse.statusCode, 200);
+  assert.match(String(logoutResponse.headers?.["Set-Cookie"] ?? ""), /Max-Age=0/);
+
+  const bootstrapResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/bootstrap",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(bootstrapResponse.statusCode, 401);
+  assert.equal(bootstrapResponse.body.code, "ADMIN_AUTH_REQUIRED");
 });
 
 test("admin app APIs can add new apps and only delete apps with empty config", async () => {
@@ -1070,7 +1153,7 @@ test("admin email service test-send API requires super-admin auth and enforces 2
   });
 
   assert.equal(unauthorizedResponse.statusCode, 401);
-  assert.equal(unauthorizedResponse.body.code, "ADMIN_BASIC_AUTH_REQUIRED");
+  assert.equal(unauthorizedResponse.body.code, "ADMIN_AUTH_REQUIRED");
 
   const firstResponse = await runtime.app.handle({
     method: "POST",
@@ -1502,7 +1585,7 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
   });
 
   assert.equal(unauthorizedResponse.statusCode, 401);
-  assert.equal(unauthorizedResponse.body.code, "ADMIN_BASIC_AUTH_REQUIRED");
+  assert.equal(unauthorizedResponse.body.code, "ADMIN_AUTH_REQUIRED");
 
   const firstResponse = await runtime.app.handle({
     method: "POST",

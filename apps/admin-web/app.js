@@ -2,7 +2,6 @@ const runtimeConfig = window.__ADMIN_RUNTIME_CONFIG__ ?? {};
 const STORAGE_KEYS = {
   selectedAppId: "zook.admin.selectedAppId",
 };
-const SESSION_STORAGE_KEY = "zook.admin.session";
 
 const LOGIN_ROUTE = "/login";
 const APPS_ROUTE = "/apps";
@@ -29,7 +28,6 @@ const MAIL_SENDER_REGION_OPTIONS = [
 const appRoot = document.getElementById("app");
 
 const state = {
-  session: loadAdminSession(),
   booting: true,
   busy: false,
   loginBusy: false,
@@ -247,24 +245,19 @@ boot().catch(handleUnexpectedError);
 async function boot() {
   await render();
 
-  if (!state.session) {
-    state.booting = false;
-    if (currentPath() !== LOGIN_ROUTE) {
-      window.history.replaceState({}, "", LOGIN_ROUTE);
-    }
-    await render();
-    return;
-  }
-
   try {
     await loadBootstrap();
-    await syncRouteState(ensureKnownRoute());
   } catch (error) {
-    redirectToLogin("登录已失效，请重新登录。");
+    if (isAdminAuthError(error)) {
+      redirectToLogin("登录已失效，请重新登录。");
+    } else {
+      handleUnexpectedError(error);
+    }
   } finally {
     state.booting = false;
   }
 
+  await syncRouteState(ensureKnownRoute());
   await render();
 }
 
@@ -282,38 +275,7 @@ function saveSelectedAppId(appId) {
   localStorage.removeItem(STORAGE_KEYS.selectedAppId);
 }
 
-function loadAdminSession() {
-  try {
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") {
-      return null;
-    }
-
-    if (typeof parsed.authorization !== "string" || typeof parsed.username !== "string") {
-      return null;
-    }
-
-    return {
-      authorization: parsed.authorization,
-      username: parsed.username,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function saveAdminSession(session) {
-  state.session = session;
-  sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-}
-
 function clearAdminSession() {
-  state.session = null;
   state.adminUser = "";
   state.apps = [];
   state.configDocument = null;
@@ -340,7 +302,6 @@ function clearAdminSession() {
   state.runningLlmSmokeTest = false;
   state.llmSmokeTestDocument = null;
   state.llmSmokeExpandedKeys = {};
-  sessionStorage.removeItem(SESSION_STORAGE_KEY);
 }
 
 function redirectToLogin(message = "登录已失效，请重新登录。") {
@@ -357,10 +318,14 @@ function currentPath() {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
 
+function isAdminAuthenticated() {
+  return Boolean(state.adminUser);
+}
+
 function ensureKnownRoute() {
   const path = currentPath();
 
-  if (!state.session) {
+  if (!isAdminAuthenticated()) {
     if (path !== LOGIN_ROUTE) {
       window.history.replaceState({}, "", LOGIN_ROUTE);
       return LOGIN_ROUTE;
@@ -382,7 +347,7 @@ function ensureKnownRoute() {
 }
 
 async function navigate(path) {
-  const fallback = state.session ? APPS_ROUTE : LOGIN_ROUTE;
+  const fallback = isAdminAuthenticated() ? APPS_ROUTE : LOGIN_ROUTE;
   const nextPath = KNOWN_ROUTES.has(path) ? path : fallback;
   if (currentPath() !== nextPath) {
     window.history.pushState({}, "", nextPath);
@@ -465,7 +430,7 @@ function syncDirtyState() {
 async function render() {
   const path = ensureKnownRoute();
   syncDocumentTitle(path);
-  const shouldRenderConsole = Boolean(state.session) && (state.booting || Boolean(state.adminUser));
+  const shouldRenderConsole = isAdminAuthenticated() || (state.booting && currentPath() !== LOGIN_ROUTE);
   appRoot.innerHTML = shouldRenderConsole ? renderConsole(path) : renderLoginPage();
   syncDirtyState();
   syncJsonEditorDecorations();
@@ -570,7 +535,7 @@ function renderConsole(path) {
 }
 
 function renderUserMenu() {
-  if (!state.session || !state.adminUser) {
+  if (!state.adminUser) {
     return `
       <button class="user-chip user-chip-button" type="button" data-action="goto-login">
         <span class="user-avatar" aria-hidden="true">A</span>
@@ -2743,6 +2708,15 @@ async function handleAction(target) {
 
   if (action === "logout") {
     clearNotice();
+    try {
+      await requestJson("/api/v1/admin/auth/logout", {
+        method: "POST",
+      });
+    } catch (error) {
+      if (!isAdminAuthError(error)) {
+        throw error;
+      }
+    }
     clearAdminSession();
     state.loginError = "";
     state.booting = false;
@@ -3455,16 +3429,12 @@ async function handleFormSubmit(form) {
     await render();
 
     try {
-      const authorization = createBasicAuthorization(username, password);
-      const payload = await requestJson("/api/v1/admin/bootstrap", {
-        headers: {
-          Authorization: authorization,
+      const payload = await requestJson("/api/v1/admin/auth/login", {
+        method: "POST",
+        body: {
+          username,
+          password,
         },
-      });
-
-      saveAdminSession({
-        username: payload.data.adminUser,
-        authorization,
       });
 
       state.adminUser = payload.data.adminUser;
@@ -3634,7 +3604,7 @@ async function handleWorkspaceSwitch(nextValue) {
 }
 
 async function syncRouteState(path) {
-  if (!state.session) {
+  if (!isAdminAuthenticated()) {
     return;
   }
 
@@ -3663,10 +3633,6 @@ async function syncRouteState(path) {
 }
 
 async function loadBootstrap() {
-  if (!state.session) {
-    return;
-  }
-
   state.loadingBootstrap = true;
 
   try {
@@ -5211,10 +5177,6 @@ async function requestJson(path, { method = "GET", body, headers = {} } = {}) {
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  if (!requestHeaders.has("Authorization") && state.session?.authorization) {
-    requestHeaders.set("Authorization", state.session.authorization);
-  }
-
   const response = await fetch(path, {
     method,
     headers: requestHeaders,
@@ -5245,12 +5207,27 @@ function shouldRedirectToLogin(response, payload) {
     return true;
   }
 
+  if (payload?.code === "ADMIN_AUTH_REQUIRED") {
+    return true;
+  }
+
   if (payload?.code === "ADMIN_BASIC_AUTH_REQUIRED") {
     return true;
   }
 
   const message = String(payload?.message ?? "").toLowerCase();
-  return message.includes("admin basic authentication is required");
+  return message.includes("admin authentication is required")
+    || message.includes("admin basic authentication is required");
+}
+
+function isAdminAuthError(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  return error.statusCode === 401
+    || error.code === "ADMIN_AUTH_REQUIRED"
+    || error.code === "ADMIN_BASIC_AUTH_REQUIRED";
 }
 
 async function parseResponsePayload(response) {
@@ -5265,10 +5242,6 @@ async function parseResponsePayload(response) {
     data: null,
     requestId: "admin_plain_text",
   };
-}
-
-function createBasicAuthorization(username, password) {
-  return `Basic ${btoa(`${username}:${password}`)}`;
 }
 
 function formatTimestamp(value) {

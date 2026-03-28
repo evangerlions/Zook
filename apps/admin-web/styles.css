@@ -1105,9 +1105,12 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
+  overflow: hidden;
 }
 
 .mail-row-scroll {
+  display: block;
+  width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 4px;
@@ -1411,10 +1414,11 @@ select {
 }
 
 .mail-row-grid-template {
-  grid-template-columns: minmax(170px, 220px) minmax(140px, 180px) minmax(180px, 220px) minmax(240px, 1fr) auto;
+  grid-template-columns: 220px 180px 220px 320px 96px;
   gap: 16px 18px;
   align-items: start;
-  min-width: 1120px;
+  width: max-content;
+  min-width: max-content;
 }
 
 .mail-row-grid-template > .field {
@@ -2033,7 +2037,6 @@ a:focus-visible {
   .mail-test-grid,
   .mail-test-summary-grid,
   .mail-row-grid-sender,
-  .mail-row-grid-template,
   .mail-row-grid-password {
     grid-template-columns: 1fr;
   }
