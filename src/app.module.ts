@@ -26,12 +26,14 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AppConfigService } from "./services/app-config.service.ts";
+import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
+import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
@@ -41,10 +43,12 @@ import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
 import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
+import { RequestLocaleService } from "./services/request-locale.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
+  AdminAppI18nDocument,
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
@@ -312,6 +316,37 @@ export class BackendApplication {
     const adminAppMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)$/);
     if (request.method === "DELETE" && adminAppMatch) {
       return this.handleAdminDeleteApp(request, decodeURIComponent(adminAppMatch[1] as string));
+    }
+
+    const adminI18nSettingsMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings$/);
+    if (request.method === "GET" && adminI18nSettingsMatch) {
+      return this.handleAdminGetI18nSettings(request, decodeURIComponent(adminI18nSettingsMatch[1] as string));
+    }
+
+    if (request.method === "PUT" && adminI18nSettingsMatch) {
+      return this.handleAdminUpdateI18nSettings(request, decodeURIComponent(adminI18nSettingsMatch[1] as string));
+    }
+
+    const adminI18nRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminI18nRevisionMatch) {
+      return this.handleAdminGetI18nSettingsRevision(
+        request,
+        decodeURIComponent(adminI18nRevisionMatch[1] as string),
+        Number(adminI18nRevisionMatch[2]),
+      );
+    }
+
+    const adminI18nRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminI18nRestoreMatch) {
+      return this.handleAdminRestoreI18nSettingsRevision(
+        request,
+        decodeURIComponent(adminI18nRestoreMatch[1] as string),
+        Number(adminI18nRestoreMatch[2]),
+      );
     }
 
     const adminConfigMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/config$/);
@@ -1328,6 +1363,93 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminGetI18nSettings(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getI18nSettings(appId);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateI18nSettings(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const config = body.config ?? body;
+    const result = await this.adminConsoleService.updateI18nSettings(appId, config, desc);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetI18nSettingsRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getI18nSettings(appId, revision);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreI18nSettingsRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.restoreI18nSettings(appId, revision);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private parseLlmMetricsRange(value: string | undefined): LlmMetricsRange {
     if (!value) {
       return "24h";
@@ -1622,6 +1744,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   });
 
   const appConfigService = new AppConfigService(database, cache, kvManager);
+  const appI18nConfigService = new AppI18nConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
@@ -1657,6 +1780,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
         )
       : new NoopGeoResolver());
   const requestEmailContextService = new RequestEmailContextService(geoResolver);
+  const requestLocaleService = new RequestLocaleService();
+  const i18nService = new I18nService(appI18nConfigService, requestLocaleService);
   const authService = new AuthService(
     database,
     cache,
@@ -1681,6 +1806,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
+    appI18nConfigService,
     commonEmailConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
@@ -1748,6 +1874,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     passwordHasher,
     services: {
       appConfigService,
+      appI18nConfigService,
       kvManager,
       passwordManager,
       adminSessionStore,
@@ -1772,6 +1899,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       notificationService,
       failedEventRetryService,
       requestEmailContextService,
+      requestLocaleService,
+      i18nService,
       appContextResolver,
       authGuard,
       appAccessGuard,

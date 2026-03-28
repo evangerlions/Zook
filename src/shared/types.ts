@@ -27,6 +27,7 @@ export type ErrorCode =
   | "ADMIN_APP_ID_RESERVED"
   | "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG"
   | "ADMIN_EMAIL_SERVICE_INVALID"
+  | "ADMIN_I18N_INVALID"
   | "ADMIN_LLM_SERVICE_INVALID"
   | "ADMIN_PASSWORD_INVALID"
   | "ADMIN_RATE_LIMITED"
@@ -348,6 +349,26 @@ export interface AdminConfigDocument {
   desc?: string;
   isLatest: boolean;
   revisions: ConfigRevisionMeta[];
+}
+
+export interface I18nSettings {
+  defaultLocale: string;
+  supportedLocales: string[];
+  fallbackLocales: Record<string, string[]>;
+}
+
+export interface AppI18nConfigDocument {
+  configKey: string;
+  config: I18nSettings;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAppI18nDocument extends AppI18nConfigDocument {
+  app: AdminAppSummary;
 }
 
 export interface EmailServiceTemplateConfig {

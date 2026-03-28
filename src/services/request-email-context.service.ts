@@ -1,4 +1,5 @@
 import { InMemoryCache } from "../infrastructure/cache/redis/in-memory-cache.ts";
+import { normalizeLocale, parseAcceptLanguage } from "../shared/i18n.ts";
 import type { HttpRequest, TencentSesRegion } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
 
@@ -162,59 +163,9 @@ function readNestedCountryCode(value: unknown): string | undefined {
         : undefined;
 }
 
-function parseAcceptLanguage(value?: string): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((item) => item.split(";")[0]?.trim())
-    .find(Boolean);
-}
-
 function normalizeCountryCode(value?: string): string | undefined {
   const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
   return /^[A-Z]{2}$/.test(normalized) ? normalized : undefined;
-}
-
-function normalizeLocale(value?: string): string | undefined {
-  const normalized = typeof value === "string" ? value.trim().replaceAll("_", "-") : "";
-  if (!normalized) {
-    return undefined;
-  }
-
-  const lowerCased = normalized.toLowerCase();
-  if (lowerCased === "zh" || lowerCased === "zh-cn" || lowerCased.startsWith("zh-hans")) {
-    return "zh-CN";
-  }
-
-  if (lowerCased === "zh-tw" || lowerCased.includes("hant") || lowerCased.endsWith("-tw")) {
-    return "zh-TW";
-  }
-
-  if (lowerCased === "zh-hk" || lowerCased.endsWith("-hk")) {
-    return "zh-HK";
-  }
-
-  if (lowerCased === "en" || lowerCased.startsWith("en-")) {
-    return "en-US";
-  }
-
-  const parts = normalized.split("-").filter(Boolean);
-  if (!parts.length) {
-    return undefined;
-  }
-
-  const [language, ...rest] = parts;
-  const region = rest.find((item) => /^[a-z]{2}$/i.test(item));
-  if (!region) {
-    return language.toLowerCase();
-  }
-
-  return `${language.toLowerCase()}-${region.toUpperCase()}`;
 }
 
 function deriveLocaleFromCountry(countryCode?: string): string | undefined {

@@ -1,5 +1,6 @@
 import type { DatabaseSeed } from "../../../shared/types.ts";
 import { DevelopmentPasswordHasher } from "../../../modules/auth/password-hasher.ts";
+import { DEFAULT_APP_I18N_SETTINGS } from "../../../shared/i18n.ts";
 
 /**
  * buildDefaultSeed gives the scaffold a working shared-account dataset for local verification.
@@ -7,6 +8,12 @@ import { DevelopmentPasswordHasher } from "../../../modules/auth/password-hasher
 export function buildDefaultSeed(
   passwordHasher = new DevelopmentPasswordHasher(),
 ): DatabaseSeed {
+  const defaultI18nSettings = JSON.stringify(
+    DEFAULT_APP_I18N_SETTINGS,
+    null,
+    2,
+  );
+
   return {
     apps: [
       {
@@ -140,6 +147,13 @@ export function buildDefaultSeed(
         updatedAt: "2026-03-20T09:00:00+08:00",
       },
       {
+        id: "cfg_app_a_i18n_settings",
+        appId: "app_a",
+        configKey: "i18n.settings",
+        configValue: defaultI18nSettings,
+        updatedAt: "2026-03-20T09:05:00+08:00",
+      },
+      {
         id: "cfg_app_b_default_role",
         appId: "app_b",
         configKey: "auth.default_role_code",
@@ -169,6 +183,13 @@ export function buildDefaultSeed(
           2,
         ),
         updatedAt: "2026-03-20T09:10:00+08:00",
+      },
+      {
+        id: "cfg_app_b_i18n_settings",
+        appId: "app_b",
+        configKey: "i18n.settings",
+        configValue: defaultI18nSettings,
+        updatedAt: "2026-03-20T09:15:00+08:00",
       },
     ],
     analyticsEvents: [],

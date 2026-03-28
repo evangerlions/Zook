@@ -1,6 +1,7 @@
 import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { AppConfigService } from "../../services/app-config.service.ts";
+import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
@@ -13,6 +14,7 @@ import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
   AdminAppSummary,
+  AdminAppI18nDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
@@ -37,6 +39,7 @@ export class AdminConsoleService {
   constructor(
     private readonly database: InMemoryDatabase,
     private readonly appConfigService: AppConfigService,
+    private readonly appI18nConfigService: AppI18nConfigService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
@@ -141,6 +144,7 @@ export class AdminConsoleService {
       JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2),
       "app-created",
     );
+    await this.appI18nConfigService.initializeAppConfig(record.id, "app-created");
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
@@ -258,6 +262,30 @@ export class AdminConsoleService {
     const document = await this.commonPasswordConfigService.deleteItem(key);
     await this.managedStateStore.save(this.database);
     return document;
+  }
+
+  async getI18nSettings(appId: string, revision?: number): Promise<AdminAppI18nDocument> {
+    const app = this.requireConfigApp(appId);
+    const document = await this.appI18nConfigService.getDocument(app.id, revision);
+
+    return {
+      app: this.toSummary(app),
+      ...document,
+    };
+  }
+
+  async updateI18nSettings(appId: string, input: unknown, desc?: string): Promise<AdminAppI18nDocument> {
+    const app = this.requireConfigApp(appId);
+    const document = await this.appI18nConfigService.updateConfig(app.id, input, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getI18nSettings(app.id, document.revision);
+  }
+
+  async restoreI18nSettings(appId: string, revision: number): Promise<AdminAppI18nDocument> {
+    const app = this.requireConfigApp(appId);
+    const document = await this.appI18nConfigService.restoreConfig(app.id, revision);
+    await this.managedStateStore.save(this.database);
+    return this.getI18nSettings(app.id, document.revision);
   }
 
   async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {
