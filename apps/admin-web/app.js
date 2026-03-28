@@ -4990,22 +4990,30 @@ function isValidSenderAddress(value) {
 }
 
 function buildChangeSummary(previousValue, nextValue) {
+  const maxItems = 10;
+  const maxLength = 500;
   const changes = [];
-  collectObjectDiff(previousValue, nextValue, "", changes, 10);
+  collectObjectDiff(previousValue, nextValue, "", changes, maxItems);
 
   if (!changes.length) {
     return "更新配置";
   }
 
-  const lines = changes.slice(0, 10).map(
+  const lines = changes.slice(0, maxItems).map(
     (item) => `${item.path}: ${formatDiffValue(item.before)} -> ${formatDiffValue(item.after)}`,
   );
 
-  if (changes.length > 10) {
+  if (changes.length > maxItems) {
     lines.push(`等 ${changes.length} 项变更`);
   }
 
-  return lines.join("；");
+  const summary = lines.join("；");
+  if (summary.length <= maxLength) {
+    return summary;
+  }
+
+  const truncated = `${summary.slice(0, maxLength - 1).trimEnd()}…`;
+  return truncated;
 }
 
 function collectObjectDiff(previousValue, nextValue, path, changes, maxItems) {
