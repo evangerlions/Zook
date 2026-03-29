@@ -18,6 +18,7 @@ import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.
 import { resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
+import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
 import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
@@ -30,12 +31,13 @@ import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compa
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import { EmbeddingManager, type EmbeddingProvider } from "./services/embedding-manager.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
-import { LLMManager } from "./services/llm-manager.ts";
+import { LLMManager, type LLMProvider } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
@@ -56,7 +58,7 @@ import type {
   LlmMetricsRange,
   Platform,
 } from "./shared/types.ts";
-import { parseCookies, randomId } from "./shared/utils.ts";
+import { getHeader, parseCookies, randomId } from "./shared/utils.ts";
 
 export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
@@ -64,6 +66,8 @@ export interface CreateApplicationOptions {
   emitLogs?: boolean;
   registrationCodeGenerator?: () => string;
   registrationEmailSender?: RegistrationEmailSender;
+  llmProviders?: Record<string, LLMProvider>;
+  embeddingProviders?: Record<string, EmbeddingProvider>;
   kvBackend?: KVBackend;
   kvManager?: KVManager;
   geoResolver?: GeoResolver;
@@ -139,7 +143,9 @@ export class BackendApplication {
     private readonly adminConsoleService: AdminConsoleService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly llmManager: LLMManager,
+    private readonly embeddingManager: EmbeddingManager,
     private readonly llmSmokeTestService: LlmSmokeTestService,
+    private readonly aiNovelLlmService: AiNovelLlmService,
     private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
@@ -177,7 +183,9 @@ export class BackendApplication {
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
       llmManager: this.llmManager,
+      embeddingManager: this.embeddingManager,
       llmSmokeTestService: this.llmSmokeTestService,
+      aiNovelLlmService: this.aiNovelLlmService,
       storageService: this.storageService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
@@ -394,6 +402,14 @@ export class BackendApplication {
 
     if (request.method === "POST" && request.path === "/api/v1/notifications/send") {
       return this.handleNotification(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/chat-completions") {
+      return this.handleAiNovelChatCompletions(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") {
+      return this.handleAiNovelEmbeddings(request);
     }
 
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
@@ -1399,6 +1415,20 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAiNovelChatCompletions(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    this.authenticateOptionalProductRequest(request, "ai_novel");
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.aiNovelLlmService.createChatCompletion(body);
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAiNovelEmbeddings(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    this.authenticateOptionalProductRequest(request, "ai_novel");
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.aiNovelLlmService.createEmbeddings(body);
+    return this.ok(result, request.requestId as string);
+  }
+
   private authenticate(request: HttpRequest) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
@@ -1406,6 +1436,27 @@ export class BackendApplication {
     if (explicitAppId) {
       this.appAccessGuard.assertScope(explicitAppId, auth.appId);
     }
+    return auth;
+  }
+
+  private authenticateOptionalProductRequest(request: HttpRequest, appId: string) {
+    const authorization = getHeader(request.headers, "authorization");
+    if (!authorization) {
+      const explicitAppId = getHeader(request.headers, "x-app-id");
+      if (!explicitAppId) {
+        throw new ApplicationError(400, "REQ_INVALID_BODY", "X-App-Id header is required when Authorization is missing.");
+      }
+
+      if (explicitAppId !== appId) {
+        throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${appId}.`);
+      }
+
+      return undefined;
+    }
+
+    const auth = this.authGuard.canActivate(request);
+    this.appContextResolver.resolvePostAuth(request, auth.appId);
+    this.appAccessGuard.assertScope(appId, auth.appId);
     return auth;
   }
 
@@ -1536,13 +1587,23 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const llmProviders = {
-    bailian: new BailianOpenAICompatibleProvider(),
+  const bailianProvider = new BailianOpenAICompatibleProvider();
+  const llmProviders = options.llmProviders ?? {
+    bailian: bailianProvider,
   };
+  const embeddingProviders = options.embeddingProviders ?? {
+    bailian: bailianProvider,
+  };
+  const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
+    commonLlmConfigService,
+    llmHealthService,
+    llmMetricsService,
+  });
   const llmSmokeTestService = new LlmSmokeTestService(
     commonLlmConfigService,
     kvManager,
     llmProviders,
+    embeddingProviders,
   );
   const adminConsoleService = new AdminConsoleService(
     database,
@@ -1563,6 +1624,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmHealthService,
     llmMetricsService,
   });
+  const aiNovelLlmService = new AiNovelLlmService(llmManager, embeddingManager);
   const storageService = new StorageService(database);
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
@@ -1589,7 +1651,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     adminConsoleService,
     adminBasicAuth,
     llmManager,
+    embeddingManager,
     llmSmokeTestService,
+    aiNovelLlmService,
     storageService,
     notificationService,
     failedEventRetryService,
@@ -1628,9 +1692,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       analyticsService,
       adminConsoleService,
       llmManager,
+      embeddingManager,
       llmHealthService,
       llmMetricsService,
       llmSmokeTestService,
+      aiNovelLlmService,
       rbacService,
       storageService,
       notificationService,

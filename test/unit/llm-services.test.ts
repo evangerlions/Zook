@@ -484,6 +484,7 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
     {
       bailian: createMockProvider("bailian", []),
     },
+    {},
     {
       now: () => now,
     },

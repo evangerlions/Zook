@@ -1636,6 +1636,7 @@ function renderLlmConfigPanel({ doc, draft, readOnly, validation, latestRevision
                 <select data-llm-field="defaultModelKey" ${readOnly || state.savingLlm ? "disabled" : ""}>
                   <option value="">请选择</option>
                   ${draft.models
+                    .filter((model) => model.kind === "chat")
                     .map(
                       (model) => `
                         <option value="${escapeHtml(model.key)}" ${draft.defaultModelKey === model.key ? "selected" : ""}>
@@ -1645,7 +1646,7 @@ function renderLlmConfigPanel({ doc, draft, readOnly, validation, latestRevision
                     )
                     .join("")}
                 </select>
-                <small class="field-hint">业务侧没有显式指定模型时，会优先使用这里的 key。</small>
+                <small class="field-hint">业务侧没有显式指定聊天模型时，会优先使用这里的 key。这里必须选择 <code>chat</code> 类型模型。</small>
               </label>
             </div>
           </section>
@@ -1671,7 +1672,7 @@ function renderLlmConfigPanel({ doc, draft, readOnly, validation, latestRevision
             <div class="mail-section-header">
               <div>
                 <h3>模型与路由</h3>
-                <p><code>strategy</code> 只有两种：<code>auto</code> 会按 weight 和健康分自动分流；<code>fixed</code> 固定走 weight 最大的 route。<code>providerModel</code> 是供应商真实模型名，不一定等于逻辑模型 key。</p>
+                <p><code>kind</code> 用来区分 <code>chat</code> 和 <code>embedding</code>。<code>strategy</code> 只有两种：<code>auto</code> 会按 weight 和健康分自动分流；<code>fixed</code> 固定走 weight 最大的 route。<code>providerModel</code> 是供应商真实模型名，不一定等于逻辑模型 key。</p>
               </div>
               <button class="button button-secondary" type="button" data-action="add-llm-model" ${readOnly || state.savingLlm ? "disabled" : ""}>添加模型</button>
             </div>
@@ -1890,6 +1891,7 @@ function renderLlmSmokeTestRows(item, index) {
         <div class="app-name-cell">
           <strong>${escapeHtml(item.modelLabel)}</strong>
           <span>${escapeHtml(item.modelKey)}</span>
+          <span>${escapeHtml(item.modelKind)}</span>
         </div>
       </td>
       <td>
@@ -2083,6 +2085,7 @@ function renderLlmModelCard(model, index, readOnly, runtimeSnapshot) {
           </div>
         </div>
         <div class="entity-card-meta">
+          <span class="meta-chip">${escapeHtml(model.kind)}</span>
           <span class="meta-chip">${escapeHtml(model.strategy)}</span>
           <span class="meta-chip">${escapeHtml(model.strategy === "auto" ? "按 weight × 健康分自动分流" : "固定走最高 weight route")}</span>
         </div>
@@ -2574,6 +2577,14 @@ function renderLlmDialogFields(dialog) {
         </label>
       </div>
       <label class="field">
+        <span>kind</span>
+        <select data-llm-dialog-field="kind">
+          <option value="chat" ${dialog.values.kind === "chat" ? "selected" : ""}>chat</option>
+          <option value="embedding" ${dialog.values.kind === "embedding" ? "selected" : ""}>embedding</option>
+        </select>
+        <small class="field-hint"><code>chat</code> 用于对话/生成；<code>embedding</code> 用于文本向量化。默认模型只能选择 <code>chat</code>。</small>
+      </label>
+      <label class="field">
         <span>strategy</span>
         <select data-llm-dialog-field="strategy">
           <option value="auto" ${dialog.values.strategy === "auto" ? "selected" : ""}>auto</option>
@@ -2933,6 +2944,7 @@ async function handleAction(target) {
         values: {
           key: model.key,
           label: model.label,
+          kind: model.kind,
           strategy: model.strategy,
         },
       });
@@ -4386,6 +4398,7 @@ function cloneLlmConfig(config = createDefaultLlmConfig()) {
       ? config.models.map((item) => ({
           key: String(item?.key ?? ""),
           label: String(item?.label ?? ""),
+          kind: item?.kind === "embedding" ? "embedding" : "chat",
           strategy: item?.strategy === "fixed" ? "fixed" : "auto",
           routes: Array.isArray(item?.routes)
             ? item.routes.map((route) => ({
@@ -4423,6 +4436,7 @@ function createEmptyLlmModel() {
   return {
     key: "",
     label: "",
+    kind: "chat",
     strategy: "auto",
     routes: [],
   };
@@ -4519,6 +4533,7 @@ function serializeLlmDraft(draft) {
   const models = draft.models.map((item, index) => {
     const key = String(item?.key ?? "").trim();
     const label = String(item?.label ?? "").trim();
+    const kind = item?.kind === "embedding" ? "embedding" : "chat";
     const strategy = item?.strategy === "fixed" ? "fixed" : "auto";
 
     if (!key || !label) {
@@ -4573,6 +4588,7 @@ function serializeLlmDraft(draft) {
     return {
       key,
       label,
+      kind,
       strategy,
       routes,
     };
@@ -4588,8 +4604,12 @@ function serializeLlmDraft(draft) {
     if (!defaultModelKey) {
       throw new Error("启用 LLM 服务时，必须选择默认模型。");
     }
-    if (!models.some((item) => item.key === defaultModelKey)) {
+    const defaultModel = models.find((item) => item.key === defaultModelKey);
+    if (!defaultModel) {
       throw new Error("默认模型必须引用现有模型。");
+    }
+    if (defaultModel.kind !== "chat") {
+      throw new Error("默认模型必须是 chat 类型。");
     }
   }
 
@@ -4688,7 +4708,7 @@ function openLlmDialog(options) {
       options.kind === "provider"
         ? "这里配置供应商连接信息，字段说明会直接显示在输入框下方。"
         : options.kind === "model"
-          ? "这里配置逻辑模型 key、展示名称和路由策略。"
+          ? "这里配置逻辑模型 key、展示名称、模型种类和路由策略。"
           : "这里配置某个逻辑模型下的一条具体 route。",
     confirmLabel: options.mode === "create" ? "确认添加" : "保存修改",
     values: { ...options.values },
@@ -4798,6 +4818,7 @@ function normalizeLlmProviderDialogValues(values) {
 function normalizeLlmModelDialogValues(values) {
   const key = String(values.key ?? "").trim();
   const label = String(values.label ?? "").trim();
+  const kind = values.kind === "embedding" ? "embedding" : "chat";
   const strategy = values.strategy === "fixed" ? "fixed" : "auto";
 
   if (!key || !label) {
@@ -4811,6 +4832,7 @@ function normalizeLlmModelDialogValues(values) {
   return {
     key,
     label,
+    kind,
     strategy,
   };
 }

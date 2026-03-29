@@ -126,6 +126,7 @@ export class LlmHealthService {
 
     return {
       key: model.key,
+      kind: model.kind,
       strategy: model.strategy,
       routes: this.attachEffectiveProbabilities(model.strategy, routeStatuses),
     };

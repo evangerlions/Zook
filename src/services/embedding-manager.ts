@@ -1,69 +1,39 @@
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
+import type { LLMManagerOptions, LLMProviderName, LLMUsage, ResolvedLLMModel } from "./llm-manager.ts";
 import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 
-export type LLMProviderName = string;
-export type LLMRole = "system" | "user" | "assistant";
-
-export interface LLMMessage {
-  role: LLMRole;
-  content: string;
-}
-
-export interface LLMCompletionRequest {
+export interface EmbeddingRequest {
   modelKey: string;
-  messages: LLMMessage[];
-  temperature?: number;
-  maxTokens?: number;
+  input: string[];
   providerOptions?: Record<string, unknown>;
 }
 
-export interface LLMUsage {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
+export interface EmbeddingVector {
+  index: number;
+  embedding: number[];
 }
 
-export interface LLMCompletionResult {
+export interface EmbeddingResult {
   provider: LLMProviderName;
   modelKey: string;
   providerModel: string;
-  text: string;
-  reasoningText?: string;
-  finishReason?: string;
+  vectors: EmbeddingVector[];
   usage?: LLMUsage;
   providerRequestId?: string;
 }
 
-export type LLMStreamEvent =
-  | { type: "reasoning_delta"; text: string }
-  | { type: "content_delta"; text: string }
-  | { type: "usage"; usage: LLMUsage }
-  | { type: "done"; finishReason?: string };
-
-export interface ResolvedLLMModel {
-  provider: LLMProviderName;
-  modelKey: string;
-  providerModel: string;
-  providerConfig?: {
-    baseUrl: string;
-    apiKey: string;
-    timeoutMs: number;
-  };
-}
-
-export interface ResolvedLLMCompletionRequest extends Omit<LLMCompletionRequest, "modelKey"> {
+export interface ResolvedEmbeddingRequest extends Omit<EmbeddingRequest, "modelKey"> {
   model: ResolvedLLMModel;
 }
 
-export interface LLMProvider {
-  complete(request: ResolvedLLMCompletionRequest): Promise<LLMCompletionResult>;
-  stream(request: ResolvedLLMCompletionRequest): AsyncIterable<LLMStreamEvent>;
+export interface EmbeddingProvider {
+  embed(request: ResolvedEmbeddingRequest): Promise<EmbeddingResult>;
 }
 
-export type LLMModelRegistry = Record<
+export type EmbeddingModelRegistry = Record<
   string,
   {
     provider: LLMProviderName;
@@ -71,53 +41,30 @@ export type LLMModelRegistry = Record<
   }
 >;
 
-export const DEFAULT_LLM_MODEL_REGISTRY: LLMModelRegistry = {
-  "kimi2.5": {
+export const DEFAULT_EMBEDDING_MODEL_REGISTRY: EmbeddingModelRegistry = {
+  "novel-embedding": {
     provider: "bailian",
-    providerModel: "kimi/kimi-k2.5",
-  },
-  "novel-creative": {
-    provider: "bailian",
-    providerModel: "kimi/kimi-k2.5",
-  },
-  "novel-reasoning": {
-    provider: "bailian",
-    providerModel: "kimi/kimi-k2.5",
-  },
-  "novel-structured": {
-    provider: "bailian",
-    providerModel: "kimi/kimi-k2.5",
+    providerModel: "text-embedding-v4",
   },
 };
 
-const VALID_ROLES = new Set<LLMRole>(["system", "user", "assistant"]);
-
-export interface LLMManagerOptions {
-  commonLlmConfigService?: CommonLlmConfigService;
-  llmHealthService?: LlmHealthService;
-  llmMetricsService?: LlmMetricsService;
-  random?: () => number;
-  now?: () => Date;
-}
-
-export class LLMManager {
+export class EmbeddingManager {
   constructor(
-    private readonly providers: Record<LLMProviderName, LLMProvider>,
-    private readonly modelRegistry: LLMModelRegistry = DEFAULT_LLM_MODEL_REGISTRY,
+    private readonly providers: Record<LLMProviderName, EmbeddingProvider>,
+    private readonly modelRegistry: EmbeddingModelRegistry = DEFAULT_EMBEDDING_MODEL_REGISTRY,
     private readonly options: LLMManagerOptions = {},
   ) {}
 
-  async complete(request: LLMCompletionRequest): Promise<LLMCompletionResult> {
+  async embed(request: EmbeddingRequest): Promise<EmbeddingResult> {
     const resolution = await this.resolveRequest(request);
     const startedAt = this.getNow();
 
     try {
-      const result = await this.providers[resolution.request.model.provider].complete(resolution.request);
+      const result = await this.providers[resolution.request.model.provider].embed(resolution.request);
       const completedAt = this.getNow();
       const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
       await this.recordRouteResult(resolution.routeRef, {
         ok: true,
-        firstByteLatencyMs: totalLatencyMs,
         totalLatencyMs,
         usage: result.usage,
         occurredAt: completedAt,
@@ -130,69 +77,9 @@ export class LLMManager {
       };
     } catch (error) {
       const completedAt = this.getNow();
-      const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
       await this.recordRouteResult(resolution.routeRef, {
         ok: false,
-        firstByteLatencyMs: totalLatencyMs,
-        totalLatencyMs,
-        occurredAt: completedAt,
-      });
-      throw error;
-    }
-  }
-
-  async *stream(request: LLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
-    const resolution = await this.resolveRequest(request);
-    const startedAt = this.getNow();
-    let firstByteLatencyMs: number | undefined;
-    let usage: LLMUsage | undefined;
-    let recorded = false;
-
-    try {
-      for await (const event of this.providers[resolution.request.model.provider].stream(resolution.request)) {
-        if (
-          firstByteLatencyMs === undefined &&
-          (event.type === "reasoning_delta" || event.type === "content_delta")
-        ) {
-          firstByteLatencyMs = this.getNow().getTime() - startedAt.getTime();
-        }
-
-        if (event.type === "usage") {
-          usage = event.usage;
-        }
-
-        if (event.type === "done") {
-          const completedAt = this.getNow();
-          await this.recordRouteResult(resolution.routeRef, {
-            ok: true,
-            firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
-            totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-            usage,
-            occurredAt: completedAt,
-          });
-          recorded = true;
-        }
-
-        yield event;
-      }
-
-      if (!recorded) {
-        const completedAt = this.getNow();
-        await this.recordRouteResult(resolution.routeRef, {
-          ok: true,
-          firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
-          totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-          usage,
-          occurredAt: completedAt,
-        });
-      }
-    } catch (error) {
-      const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRef, {
-        ok: false,
-        firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
         totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-        usage,
         occurredAt: completedAt,
       });
       throw error;
@@ -200,48 +87,38 @@ export class LLMManager {
   }
 
   private async resolveRequest(
-    request: LLMCompletionRequest,
+    request: EmbeddingRequest,
   ): Promise<{
-    request: ResolvedLLMCompletionRequest;
+    request: ResolvedEmbeddingRequest;
     routeRef: LlmRouteRef;
   }> {
-    if (!Array.isArray(request.messages) || request.messages.length === 0) {
-      badRequest("REQ_INVALID_BODY", "messages must contain at least one item.");
+    const modelKey = request.modelKey.trim();
+    if (!modelKey) {
+      badRequest("LLM_MODEL_NOT_FOUND", "Embedding modelKey is required.");
     }
 
-    const messages = request.messages.map((message) => {
-      if (!VALID_ROLES.has(message.role)) {
-        badRequest("REQ_INVALID_BODY", `Unsupported LLM role: ${String(message.role)}.`);
-      }
+    if (!Array.isArray(request.input) || request.input.length === 0) {
+      badRequest("AI_EMBEDDING_INPUT_INVALID", "input must be a non-empty string array.");
+    }
 
-      if (typeof message.content !== "string" || !message.content.trim()) {
-        badRequest("REQ_INVALID_BODY", "LLM message content must be a non-empty string.");
+    const input = request.input.map((item) => {
+      if (typeof item !== "string" || !item.trim()) {
+        badRequest("AI_EMBEDDING_INPUT_INVALID", "input must contain non-empty strings only.");
       }
-
-      return {
-        role: message.role,
-        content: message.content,
-      };
+      return item.trim();
     });
 
-    const requestedModelKey = request.modelKey.trim();
     const commonConfig = await this.options.commonLlmConfigService?.getRuntimeConfig();
-
     if (this.options.commonLlmConfigService?.hasStoredConfig()) {
       if (!commonConfig?.enabled) {
         throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM service is not enabled.");
-      }
-
-      const modelKey = requestedModelKey || commonConfig.defaultModelKey;
-      if (!modelKey) {
-        throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM default modelKey is not configured.");
       }
 
       const selection = await this.resolveConfiguredModel(commonConfig, modelKey);
       return {
         request: {
           ...request,
-          messages,
+          input,
           model: {
             provider: selection.provider.key,
             modelKey,
@@ -261,20 +138,19 @@ export class LLMManager {
       };
     }
 
-    const modelKey = requestedModelKey;
-    if (!modelKey || !this.modelRegistry[modelKey]) {
-      badRequest("LLM_MODEL_NOT_FOUND", `Unknown LLM modelKey: ${request.modelKey}.`);
+    const resolvedModel = this.modelRegistry[modelKey];
+    if (!resolvedModel) {
+      badRequest("LLM_MODEL_NOT_FOUND", `Unknown embedding modelKey: ${request.modelKey}.`);
     }
 
-    const resolvedModel = this.modelRegistry[modelKey];
     if (!this.providers[resolvedModel.provider]) {
-      internalError(`LLM provider ${resolvedModel.provider} is not configured.`);
+      internalError(`Embedding provider ${resolvedModel.provider} is not configured.`);
     }
 
     return {
       request: {
         ...request,
-        messages,
+        input,
         model: {
           provider: resolvedModel.provider,
           modelKey,
@@ -298,11 +174,11 @@ export class LLMManager {
   }> {
     const model = config.models.find((item) => item.key === modelKey);
     if (!model) {
-      badRequest("LLM_MODEL_NOT_FOUND", `Unknown LLM modelKey: ${modelKey}.`);
+      badRequest("LLM_MODEL_NOT_FOUND", `Unknown embedding modelKey: ${modelKey}.`);
     }
 
-    if (model.kind !== "chat") {
-      badRequest("LLM_MODEL_NOT_FOUND", `LLM modelKey ${modelKey} is not configured as a chat model.`);
+    if (model.kind !== "embedding") {
+      badRequest("LLM_MODEL_NOT_FOUND", `LLM modelKey ${modelKey} is not configured as an embedding model.`);
     }
 
     const providerMap = new Map(config.providers.map((item) => [item.key, item]));
@@ -316,7 +192,7 @@ export class LLMManager {
       throw new ApplicationError(
         503,
         "LLM_ROUTE_NOT_AVAILABLE",
-        `LLM provider ${chosenRoute.provider} is not available in the current runtime.`,
+        `Embedding provider ${chosenRoute.provider} is not available in the current runtime.`,
       );
     }
 
@@ -407,7 +283,6 @@ export class LLMManager {
     routeRef: LlmRouteRef,
     result: {
       ok: boolean;
-      firstByteLatencyMs: number;
       totalLatencyMs: number;
       usage?: LLMUsage;
       occurredAt: Date;
@@ -417,13 +292,13 @@ export class LLMManager {
       this.options.llmHealthService?.recordResult(routeRef, {
         ok: result.ok,
         timestamp: result.occurredAt.toISOString(),
-        firstByteLatencyMs: result.firstByteLatencyMs,
+        firstByteLatencyMs: result.totalLatencyMs,
         totalLatencyMs: result.totalLatencyMs,
       }),
       this.options.llmMetricsService?.recordCall({
         ...routeRef,
         ok: result.ok,
-        firstByteLatencyMs: result.firstByteLatencyMs,
+        firstByteLatencyMs: result.totalLatencyMs,
         totalLatencyMs: result.totalLatencyMs,
         usage: result.usage,
         occurredAt: result.occurredAt,

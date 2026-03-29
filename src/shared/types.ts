@@ -16,9 +16,14 @@ export type EventName = "page_view" | "page_leave" | "page_heartbeat";
 export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
 export type LlmRoutingStrategy = "auto" | "fixed";
+export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ErrorCode =
+  | "AI_EMBEDDING_INPUT_INVALID"
+  | "AI_TASK_TYPE_NOT_SUPPORTED"
+  | "AI_UPSTREAM_BAD_GATEWAY"
+  | "AI_UPSTREAM_TIMEOUT"
   | "ADMIN_BASIC_AUTH_REQUIRED"
   | "ADMIN_CONFIG_INVALID_JSON"
   | "ADMIN_APP_ALREADY_EXISTS"
@@ -438,6 +443,7 @@ export interface LlmModelRouteConfig {
 export interface LlmModelConfig {
   key: string;
   label: string;
+  kind: LlmModelKind;
   strategy: LlmRoutingStrategy;
   routes: LlmModelRouteConfig[];
 }
@@ -464,6 +470,7 @@ export interface LlmRouteRuntimeStatus {
 
 export interface LlmModelRuntimeStatus {
   key: string;
+  kind: LlmModelKind;
   strategy: LlmRoutingStrategy;
   routes: LlmRouteRuntimeStatus[];
 }
@@ -544,27 +551,37 @@ export interface AdminLlmSmokeTestSummary {
 }
 
 export interface AdminLlmSmokeTestRequestPayload {
+  modelKind: LlmModelKind;
   provider: string;
   modelKey: string;
   providerModel: string;
   baseUrl: string;
   timeoutMs: number;
-  messages: Array<{
+  messages?: Array<{
     role: "system" | "user" | "assistant";
     content: string;
   }>;
+  input?: string[];
   temperature?: number;
   maxTokens?: number;
   providerOptions: Record<string, unknown>;
 }
 
 export interface AdminLlmSmokeTestResponsePayload {
+  modelKind: LlmModelKind;
   provider: string;
   modelKey: string;
   providerModel: string;
-  text: string;
+  text?: string;
   reasoningText?: string;
   finishReason?: string;
+  vectorCount?: number;
+  dimensions?: number;
+  vectorPreview?: Array<{
+    index: number;
+    embedding: number[];
+  }>;
+  providerRequestId?: string;
   usage?: {
     promptTokens: number;
     completionTokens: number;
@@ -596,6 +613,7 @@ export interface AdminLlmSmokeTestDetails {
 }
 
 export interface AdminLlmSmokeTestItem {
+  modelKind: LlmModelKind;
   modelKey: string;
   modelLabel: string;
   provider: string;

@@ -233,16 +233,20 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `POST` | `/api/v1/files/presign` | 获取上传预签名 |
 | `POST` | `/api/v1/files/confirm` | 确认上传完成 |
 | `POST` | `/api/v1/notifications/send` | 发送通知任务 |
+| `POST` | `/api/v1/ai_novel/ai/chat-completions` | AINovel chat 薄代理，按 `taskType` 选择服务端 scene 与逻辑模型 |
+| `POST` | `/api/v1/ai_novel/ai/embeddings` | AINovel embeddings 薄代理，按 `taskType` 选择服务端 scene 与逻辑模型 |
 
 说明：
 
-1. 当前脚手架尚未挂出 `novel`、`pomodoro`、`ppt`、`my-todo` 这类产品业务路由。
+1. 当前仓库已经挂出一个产品级薄代理示例：`ai_novel`，其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
 3. 扫码登录的对外接入说明见 [doc/public-api-spec.md](doc/public-api-spec.md)。
 4. 邮箱验证码登录接口：
    `POST /api/v1/auth/login/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`
 5. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
+6. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
+7. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
 
 ## 7. 统一响应格式
 
