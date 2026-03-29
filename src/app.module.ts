@@ -81,7 +81,7 @@ import type {
   Platform,
   TencentSesRegion,
 } from "./shared/types.ts";
-import { getHeader, parseCookies, randomId } from "./shared/utils.ts";
+import { createOpaqueToken, getHeader, parseCookies, randomId } from "./shared/utils.ts";
 
 export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
@@ -109,6 +109,8 @@ export interface CreateApplicationOptions {
     codeGenerator?: () => string;
   };
   secureRefreshCookie?: boolean;
+  accessTokenSecret?: string;
+  accessTokenPreviousSecrets?: string[];
 }
 
 interface ResolvedAdminBasicAuth {
@@ -143,6 +145,29 @@ function resolveSecureRefreshCookie(options: CreateApplicationOptions): boolean 
   }
 
   return options.serviceName === "api" || process.env.NODE_ENV === "production";
+}
+
+function resolveAccessTokenSecrets(options: CreateApplicationOptions): { current: string; previous: string[] } {
+  const current = options.accessTokenSecret?.trim() || process.env.AUTH_ACCESS_TOKEN_SECRET?.trim() || "";
+  const previous = options.accessTokenPreviousSecrets
+    ?? process.env.AUTH_ACCESS_TOKEN_PREVIOUS_SECRETS?.split(",").map((item) => item.trim()).filter(Boolean)
+    ?? [];
+
+  if (current) {
+    return {
+      current,
+      previous,
+    };
+  }
+
+  if (options.serviceName === "api") {
+    throw new Error("AUTH_ACCESS_TOKEN_SECRET must be configured before starting the API service.");
+  }
+
+  return {
+    current: createOpaqueToken("atk_secret"),
+    previous: previous.filter(Boolean),
+  };
 }
 
 function safeEqual(left: string, right: string): boolean {
@@ -468,6 +493,18 @@ export class BackendApplication {
       return this.handleLoginWithEmailCode(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/auth/password/email-code") {
+      return this.handleSendPasswordCode(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/password/reset") {
+      return this.handleResetPassword(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/password/change") {
+      return this.handleChangePassword(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/register/email-code") {
       return this.handleRegisterEmailCode(request);
     }
@@ -742,6 +779,147 @@ export class BackendApplication {
     }
   }
 
+  private async handleSendPasswordCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const ipAddress = request.ipAddress ?? "unknown";
+    const emailContext = await this.requestEmailContextService.resolve(request);
+
+    try {
+      const result = await this.authService.sendPasswordCode({
+        appId,
+        email,
+        ipAddress,
+        locale: emailContext.locale,
+        region: emailContext.region,
+      });
+
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.password.email_code",
+        resourceType: "user_password_reset",
+        payload: {
+          email,
+          ipAddress,
+          accepted: true,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.password.email_code",
+        resourceType: "user_password_reset",
+        payload: {
+          email,
+          ipAddress,
+          accepted: false,
+          resolvedLocale: emailContext.locale,
+          localeSource: emailContext.localeSource,
+          resolvedCountryCode: emailContext.countryCode,
+          countrySource: emailContext.countrySource,
+          resolvedRegion: emailContext.region,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleResetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = this.validationPipe.requireString(body, "email");
+    const password = this.validationPipe.requireString(body, "password");
+    const emailCode = this.validationPipe.requireString(body, "emailCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const session = await this.authService.resetPassword({
+        appId,
+        email,
+        password,
+        emailCode,
+        ipAddress,
+      });
+
+      this.auditInterceptor.record({
+        appId: session.appId,
+        actorUserId: session.userId,
+        action: "auth.password.reset",
+        resourceType: "user_session",
+        resourceId: session.userId,
+        resourceOwnerUserId: session.userId,
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+        },
+      });
+
+      return this.ok(
+        this.toAuthPayload(session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(session.refreshToken, clientType),
+      );
+    } catch (error) {
+      this.auditInterceptor.record({
+        appId,
+        action: "auth.password.reset",
+        resourceType: "user_password_reset",
+        payload: {
+          email,
+          clientType,
+          ipAddress,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleChangePassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
+    const currentPassword = this.validationPipe.requireString(body, "currentPassword");
+    const newPassword = this.validationPipe.requireString(body, "newPassword");
+    const clientType = this.getClientType(body);
+
+    this.appAccessGuard.assertScope(requestedAppId, auth.appId);
+    const session = await this.authService.changePassword({
+      appId: requestedAppId,
+      userId: auth.userId,
+      currentPassword,
+      newPassword,
+    });
+
+    this.auditInterceptor.record({
+      appId: auth.appId,
+      actorUserId: auth.userId,
+      action: "auth.password.change",
+      resourceType: "user_session",
+      resourceOwnerUserId: auth.userId,
+      payload: {
+        clientType,
+      },
+    });
+
+    return this.ok(
+      this.toAuthPayload(session, clientType),
+      request.requestId as string,
+      this.buildAuthHeaders(session.refreshToken, clientType),
+    );
+  }
+
   private async handleRegister(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
@@ -826,7 +1004,7 @@ export class BackendApplication {
   }
 
   private async handleConfirmQrLogin(request: HttpRequest, loginId: string): Promise<HttpResponse<unknown>> {
-    const auth = this.authenticate(request);
+    const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
     const scanToken = this.validationPipe.requireString(body, "scanToken");
@@ -932,8 +1110,8 @@ export class BackendApplication {
     );
   }
 
-  private handleGetCurrentUser(request: HttpRequest): HttpResponse<CurrentUserDocument> {
-    const auth = this.authenticate(request);
+  private async handleGetCurrentUser(request: HttpRequest): Promise<HttpResponse<CurrentUserDocument>> {
+    const auth = await this.authenticate(request);
     const appId = this.appContextResolver.resolvePostAuth(request, auth.appId);
     const result: CurrentUserDocument = {
       appId,
@@ -956,7 +1134,7 @@ export class BackendApplication {
   }
 
   private async handleLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    const auth = this.authenticate(request, { requireActiveMembership: false });
+    const auth = await this.authenticate(request, { requireActiveMembership: false });
     const body = this.validationPipe.asObject(request.body);
     const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
     const scope = body.scope === "all" ? "all" : "current";
@@ -993,8 +1171,8 @@ export class BackendApplication {
     );
   }
 
-  private handleAnalyticsBatch(request: HttpRequest): HttpResponse<unknown> {
-    const auth = this.authenticate(request);
+  private async handleAnalyticsBatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
@@ -1009,8 +1187,8 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleMetricsOverview(request: HttpRequest): HttpResponse<unknown> {
-    const auth = this.authenticate(request);
+  private async handleMetricsOverview(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
     this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
 
     const requestedAppId = request.query?.appId ?? auth.appId;
@@ -1023,8 +1201,8 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleMetricsPages(request: HttpRequest): HttpResponse<unknown> {
-    const auth = this.authenticate(request);
+  private async handleMetricsPages(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
     this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
 
     const requestedAppId = request.query?.appId ?? auth.appId;
@@ -1738,8 +1916,8 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleFilePresign(request: HttpRequest): HttpResponse<unknown> {
-    const auth = this.authenticate(request);
+  private async handleFilePresign(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
@@ -1755,8 +1933,8 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleFileConfirm(request: HttpRequest): HttpResponse<unknown> {
-    const auth = this.authenticate(request);
+  private async handleFileConfirm(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
@@ -1784,8 +1962,8 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private handleNotification(request: HttpRequest): HttpResponse<unknown> {
-    const auth = this.authenticate(request);
+  private async handleNotification(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
@@ -1802,27 +1980,27 @@ export class BackendApplication {
   }
 
   private async handleAiNovelChatCompletions(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    this.authenticateOptionalProductRequest(request, "ai_novel");
+    await this.authenticateOptionalProductRequest(request, "ai_novel");
     const body = this.validationPipe.asObject(request.body);
     const result = await this.aiNovelLlmService.createChatCompletion(body);
     return this.ok(result, request.requestId as string);
   }
 
   private async handleAiNovelEmbeddings(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    this.authenticateOptionalProductRequest(request, "ai_novel");
+    await this.authenticateOptionalProductRequest(request, "ai_novel");
     const body = this.validationPipe.asObject(request.body);
     const result = await this.aiNovelLlmService.createEmbeddings(body);
     return this.ok(result, request.requestId as string);
   }
 
-  private handleLogsPullTask(request: HttpRequest): HttpResponse<LogPullTaskResult> {
-    const auth = this.authenticate(request);
+  private async handleLogsPullTask(request: HttpRequest): Promise<HttpResponse<LogPullTaskResult>> {
+    const auth = await this.authenticate(request);
     const result = this.clientLogUploadService.getPullTask(auth);
     return this.ok(result, request.requestId as string);
   }
 
   private async handleLogsUpload(request: HttpRequest): Promise<HttpResponse<LogUploadResult>> {
-    const auth = this.authenticate(request);
+    const auth = await this.authenticate(request);
     const result = await this.clientLogUploadService.upload({
       auth,
       taskId: this.requireHeader(request, "x-log-task-id"),
@@ -1851,13 +2029,15 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private authenticate(request: HttpRequest, options: { requireActiveMembership?: boolean } = {}) {
+  private async authenticate(request: HttpRequest, options: { requireActiveMembership?: boolean } = {}) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     const explicitAppId = this.appContextResolver.extractExplicitAppId(request);
     if (explicitAppId) {
       this.appAccessGuard.assertScope(explicitAppId, auth.appId);
     }
+
+    await this.authService.assertAccessTokenActive(auth);
 
     if (options.requireActiveMembership !== false) {
       this.userService.getById(auth.userId);
@@ -1868,7 +2048,7 @@ export class BackendApplication {
     return auth;
   }
 
-  private authenticateOptionalProductRequest(request: HttpRequest, appId: string) {
+  private async authenticateOptionalProductRequest(request: HttpRequest, appId: string) {
     const authorization = getHeader(request.headers, "authorization");
     if (!authorization) {
       const explicitAppId = getHeader(request.headers, "x-app-id");
@@ -1886,6 +2066,7 @@ export class BackendApplication {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     this.appAccessGuard.assertScope(appId, auth.appId);
+    await this.authService.assertAccessTokenActive(auth);
     return auth;
   }
 
@@ -2100,7 +2281,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const llmMetricsService = new LlmMetricsService(kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
-  const tokenService = new TokenService("zook-local-secret");
+  const accessTokenSecrets = resolveAccessTokenSecrets(options);
+  const tokenService = new TokenService(accessTokenSecrets.current, {
+    previousSecrets: accessTokenSecrets.previous,
+  });
   const registrationEmailSender =
     options.registrationEmailSender ??
     (options.serviceName === "api"
@@ -2133,7 +2317,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const i18nService = new I18nService(appI18nConfigService, requestLocaleService);
   const authService = new AuthService(
     database,
-    cache,
     kvManager,
     userService,
     appRegistryService,

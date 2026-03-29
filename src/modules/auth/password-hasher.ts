@@ -5,6 +5,8 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
  * The production binding should be swapped to Argon2id exactly as the design doc requires.
  */
 export class DevelopmentPasswordHasher {
+  readonly algorithm = "scrypt";
+
   hash(password: string): string {
     const salt = randomBytes(16).toString("hex");
     const digest = scryptSync(password, salt, 64).toString("hex");

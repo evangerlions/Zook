@@ -3,22 +3,34 @@ import { unauthorized } from "../../shared/errors.ts";
 import type { AccessTokenPayload, AuthContext } from "../../shared/types.ts";
 import { decodeBase64Url, encodeBase64Url, randomId, signValue } from "../../shared/utils.ts";
 
+interface TokenServiceOptions {
+  previousSecrets?: string[];
+  accessTokenTtlSeconds?: number;
+}
+
 /**
  * TokenService issues short-lived bearer tokens whose app scope becomes the post-login source of truth.
  */
 export class TokenService {
+  private readonly verifySecrets: string[];
+  private readonly accessTokenTtlSeconds: number;
+
   constructor(
     private readonly secret: string,
-    private readonly accessTokenTtlSeconds = 15 * 60,
-  ) {}
+    options: TokenServiceOptions = {},
+  ) {
+    this.verifySecrets = [secret, ...(options.previousSecrets ?? []).filter((item) => item && item !== secret)];
+    this.accessTokenTtlSeconds = options.accessTokenTtlSeconds ?? 15 * 60;
+  }
 
-  issueAccessToken(userId: string, appId: string, now = new Date()): string {
+  issueAccessToken(userId: string, appId: string, tokenVersion = 1, now = new Date()): string {
     const issuedAt = Math.floor(now.getTime() / 1000);
     const payload: AccessTokenPayload = {
       sub: userId,
       app_id: appId,
       type: "access",
       jti: randomId("atk"),
+      ver: tokenVersion,
       iat: issuedAt,
       exp: issuedAt + this.accessTokenTtlSeconds,
     };
@@ -34,16 +46,23 @@ export class TokenService {
       unauthorized("AUTH_INVALID_TOKEN", "Bearer token format is invalid.");
     }
 
-    const expectedSignature = signValue(this.secret, serializedPayload);
-    if (
-      signature.length !== expectedSignature.length ||
-      !timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))
-    ) {
+    const signatureIsValid = this.verifySecrets.some((secret) => {
+      const expectedSignature = signValue(secret, serializedPayload);
+      return signature.length === expectedSignature.length &&
+        timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+    });
+
+    if (!signatureIsValid) {
       unauthorized("AUTH_INVALID_TOKEN", "Bearer token signature is invalid.");
     }
 
     const payload = JSON.parse(decodeBase64Url(serializedPayload)) as AccessTokenPayload;
-    if (payload.type !== "access" || payload.exp <= Math.floor(now.getTime() / 1000)) {
+    if (
+      payload.type !== "access" ||
+      !Number.isInteger(payload.ver) ||
+      payload.ver <= 0 ||
+      payload.exp <= Math.floor(now.getTime() / 1000)
+    ) {
       unauthorized("AUTH_INVALID_TOKEN", "Bearer token is expired or malformed.");
     }
 
@@ -51,6 +70,7 @@ export class TokenService {
       userId: payload.sub,
       appId: payload.app_id,
       tokenId: payload.jti,
+      tokenVersion: payload.ver,
       expiresAt: new Date(payload.exp * 1000).toISOString(),
     };
   }
