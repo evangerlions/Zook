@@ -90,6 +90,10 @@ test("email-code login sends localized email, auto-creates account, and blocks p
 
   const createdUser = runtime.database.findUserByAccount("new-login@example.com");
   assert.ok(createdUser);
+  assert.equal(loginResponse.body.data.user.id, createdUser.id);
+  assert.equal(loginResponse.body.data.user.name, "new-login");
+  assert.equal(loginResponse.body.data.user.email, "new-login@example.com");
+  assert.equal(loginResponse.body.data.user.avatarUrl, null);
   assert.equal(createdUser.passwordAlgo, "email-code-only");
   assert.ok(runtime.database.findAppUser("app_a", createdUser.id));
   assert.ok(

@@ -227,6 +227,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `GET` | `/api/v1/auth/qr-logins/{loginId}` | PC 端轮询扫码登录结果 |
 | `POST` | `/api/v1/auth/refresh` | 刷新 Access Token |
 | `POST` | `/api/v1/auth/logout` | 登出 |
+| `GET` | `/api/v1/users/me` | 获取当前 Bearer Token 对应的用户信息 |
 | `POST` | `/api/v1/analytics/events/batch` | 行为事件上报 |
 | `GET` | `/api/v1/admin/metrics/overview` | 概览指标 |
 | `GET` | `/api/v1/admin/metrics/pages` | 页面指标 |
@@ -252,8 +253,23 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
    `POST /api/v1/auth/login/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`
 5. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
-6. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
-7. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
+6. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/register`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
+7. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
+8. 当前 `user` 结构为：
+
+```json
+{
+  "id": "user_alice",
+  "name": "alice",
+  "email": "alice@example.com",
+  "phone": null,
+  "avatarUrl": null
+}
+```
+
+9. 目前 `name` 会根据现有账号信息推导，优先取邮箱前缀，其次取手机号；`avatarUrl` 预留为 `null`，后续可平滑扩展。
+10. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
+11. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
 
 ## 7. 统一响应格式
 

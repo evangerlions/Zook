@@ -83,9 +83,13 @@ test("register email-code and register APIs create a new account and issue token
   assert.equal(registerResponse.body.code, "OK");
   assert.ok(typeof registerResponse.body.data.accessToken === "string");
   assert.ok(typeof registerResponse.body.data.refreshToken === "string");
+  assert.equal(registerResponse.body.data.user.name, "carol");
+  assert.equal(registerResponse.body.data.user.email, "carol@example.com");
+  assert.equal(registerResponse.body.data.user.avatarUrl, null);
 
   const createdUser = runtime.database.findUserByAccount("carol@example.com");
   assert.ok(createdUser);
+  assert.equal(registerResponse.body.data.user.id, createdUser.id);
   assert.ok(runtime.database.findAppUser("app_a", createdUser.id));
   assert.ok(
     runtime.database.userRoles.some(

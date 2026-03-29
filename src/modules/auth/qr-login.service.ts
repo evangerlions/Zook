@@ -125,6 +125,7 @@ export class QrLoginService {
       accessToken: authSession.accessToken,
       refreshToken: authSession.refreshToken,
       expiresIn: authSession.expiresIn,
+      userId: authSession.userId,
     };
   }
 

@@ -805,6 +805,26 @@ export interface AuthSession {
   expiresIn: number;
 }
 
+export interface AuthenticatedUserProfile {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  avatarUrl: string | null;
+}
+
+export interface AuthSuccessPayload {
+  accessToken: string;
+  expiresIn: number;
+  refreshToken?: string;
+  user: AuthenticatedUserProfile;
+}
+
+export interface CurrentUserDocument {
+  appId: string;
+  user: AuthenticatedUserProfile;
+}
+
 export interface RegisterEmailCodeResult {
   accepted: true;
   cooldownSeconds: number;
@@ -851,6 +871,7 @@ export type QrLoginPollResult =
       accessToken: string;
       refreshToken: string;
       expiresIn: number;
+      userId: string;
     };
 
 export interface AnalyticsEventInput {
