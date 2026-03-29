@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+
 import { createAdminServer } from "../../apps/admin-web/server.ts";
+
+const FIXTURE_STATIC_ROOT = fileURLToPath(new URL("../fixtures/admin-web-build", import.meta.url));
 
 async function listen(server: ReturnType<typeof createServer>): Promise<{ baseUrl: string; close: () => Promise<void> }> {
   await new Promise<void>((resolve, reject) => {
@@ -38,11 +42,11 @@ async function listen(server: ReturnType<typeof createServer>): Promise<{ baseUr
   };
 }
 
-test("admin web serves login route and runtime config", async (t) => {
+test("admin web serves built SPA routes, runtime config, and immutable assets", async (t) => {
   const adminServer = createAdminServer({
     defaultAppId: "app_a",
     brandName: "Zook Test Console",
-    assetVersion: "test-build-001",
+    staticRoot: FIXTURE_STATIC_ROOT,
   });
   let admin;
 
@@ -66,22 +70,16 @@ test("admin web serves login route and runtime config", async (t) => {
     const homeHtml = await homeResponse.text();
 
     assert.equal(homeResponse.status, 200);
-    assert.match(homeHtml, /_admin\/runtime-config\.test-build-001\.js/);
-    assert.match(homeHtml, /assets\/styles\.test-build-001\.css/);
-    assert.match(homeHtml, /assets\/app\.test-build-001\.js/);
-    assert.doesNotMatch(homeHtml, /__ADMIN_STYLES_URL__/);
-    assert.doesNotMatch(homeHtml, /__ADMIN_RUNTIME_CONFIG_URL__/);
-    assert.doesNotMatch(homeHtml, /__ADMIN_APP_SCRIPT_URL__/);
+    assert.match(homeHtml, /_admin\/runtime-config\.js/);
+    assert.match(homeHtml, /assets\/admin-app\.abc12345\.js/);
+    assert.match(homeHtml, /assets\/admin-app\.abc12345\.css/);
+    assert.match(homeResponse.headers.get("cache-control") ?? "", /no-store/);
 
     const loginResponse = await fetch(`${admin.baseUrl}/login`);
     const loginHtml = await loginResponse.text();
 
     assert.equal(loginResponse.status, 200);
-    assert.match(loginHtml, /<div id="app"><\/div>/);
-    assert.match(loginHtml, /_admin\/runtime-config\.test-build-001\.js/);
-    assert.match(loginHtml, /assets\/styles\.test-build-001\.css/);
-    assert.match(loginHtml, /assets\/app\.test-build-001\.js/);
-    assert.match(loginResponse.headers.get("cache-control") ?? "", /max-age=60/);
+    assert.match(loginHtml, /admin-app\.abc12345\.js/);
 
     const runtimeResponse = await fetch(`${admin.baseUrl}/_admin/runtime-config.js`);
     const runtimeScript = await runtimeResponse.text();
@@ -89,13 +87,13 @@ test("admin web serves login route and runtime config", async (t) => {
     assert.equal(runtimeResponse.status, 200);
     assert.match(runtimeScript, /app_a/);
     assert.match(runtimeScript, /Zook Test Console/);
-    assert.match(runtimeResponse.headers.get("cache-control") ?? "", /max-age=60/);
+    assert.match(runtimeResponse.headers.get("cache-control") ?? "", /no-store/);
 
-    const assetResponse = await fetch(`${admin.baseUrl}/assets/app.test-build-001.js`);
+    const assetResponse = await fetch(`${admin.baseUrl}/assets/admin-app.abc12345.js`);
     const assetBody = await assetResponse.text();
 
     assert.equal(assetResponse.status, 200);
-    assert.match(assetBody, /window\.__ADMIN_RUNTIME_CONFIG__/m, "app bundle should be served from fingerprinted URL");
+    assert.match(assetBody, /fixture admin bundle/);
     assert.match(assetResponse.headers.get("cache-control") ?? "", /immutable/);
   } finally {
     await admin.close();
@@ -141,7 +139,7 @@ test("admin web proxies API responses and preserves set-cookie", async (t) => {
 
   const adminServer = createAdminServer({
     proxyTarget: upstream.baseUrl,
-    assetVersion: "test-build-002",
+    staticRoot: FIXTURE_STATIC_ROOT,
   });
   let admin;
 
@@ -232,7 +230,7 @@ test("admin web keeps internal health public and forwards authorization headers 
 
   const adminServer = createAdminServer({
     proxyTarget: upstream.baseUrl,
-    assetVersion: "test-build-003",
+    staticRoot: FIXTURE_STATIC_ROOT,
   });
   let admin;
 
@@ -264,7 +262,7 @@ test("admin web keeps internal health public and forwards authorization headers 
     const loginHtml = await loginPage.text();
 
     assert.equal(loginPage.status, 200);
-    assert.match(loginHtml, /<div id="app"><\/div>/);
+    assert.match(loginHtml, /admin-app\.abc12345\.js/);
 
     const unauthorizedApi = await fetch(`${admin.baseUrl}/api/v1/admin/bootstrap`, {
       redirect: "manual",
@@ -274,12 +272,10 @@ test("admin web keeps internal health public and forwards authorization headers 
     assert.equal(unauthorizedApi.status, 401);
     assert.equal(unauthorizedPayload.code, "ADMIN_BASIC_AUTH_REQUIRED");
 
-    const authorizedHeaders = {
-      Authorization: `Basic ${Buffer.from("admin:AdminPass123!").toString("base64")}`,
-    };
-
     const authorizedApi = await fetch(`${admin.baseUrl}/api/v1/admin/bootstrap`, {
-      headers: authorizedHeaders,
+      headers: {
+        Authorization: `Basic ${Buffer.from("admin:AdminPass123!").toString("base64")}`,
+      },
     });
     const authorizedPayload = await authorizedApi.json();
 

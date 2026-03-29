@@ -64,6 +64,7 @@ test("email-code login sends localized email, auto-creates account, and blocks p
       locale: "en-US",
       region: "ap-hongkong",
       expireMinutes: 10,
+      templateName: "验证码",
     },
   ]);
 

@@ -145,7 +145,24 @@
 4. `src/services/llm-health.service.ts`
 5. `src/services/llm-metrics.service.ts`
 6. `apps/admin-web/app.js`
-7. `doc/admin-web-design.md`
+7. `docs/admin-web-design.md`
+
+### 2.10 App 级 i18n 设置与本地化工具
+
+当前已经补齐一版服务端多语言文本底座：
+
+1. `i18n.settings` 的 app 级强类型配置、版本记录与恢复
+2. 请求 locale 的统一解析与 normalize
+3. 文本 locale fallback 统一工具
+4. `*_i18n` 字段的批量本地化工具
+5. Admin API 的 i18n 设置读写与回滚
+
+对应核心文件：
+
+1. `src/services/app-i18n-config.service.ts`
+2. `src/services/request-locale.service.ts`
+3. `src/services/i18n.service.ts`
+4. `src/shared/i18n.ts`
 
 ## 3. 当前可用接口
 
@@ -167,6 +184,8 @@
 14. `PUT /api/v1/admin/apps/common/llm-service`
 15. `GET /api/v1/admin/apps/common/llm-service/metrics`
 16. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
+17. `GET /api/v1/admin/apps/{appId}/i18n-settings`
+18. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 

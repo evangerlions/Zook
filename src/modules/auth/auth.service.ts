@@ -22,6 +22,8 @@ import { UserService } from "../user/user.service.ts";
 import { DevelopmentPasswordHasher } from "./password-hasher.ts";
 import { TokenService } from "./token.service.ts";
 
+const VERIFICATION_TEMPLATE_NAME = "验证码";
+
 interface LoginFailureState {
   count: number;
   windowStartedAt: number;
@@ -39,7 +41,7 @@ interface EmailVerificationCacheEntry {
  * AuthService implements the document's shared-account, password-only, bearer-only auth workflow.
  */
 export class AuthService {
-  private readonly refreshTokenTtlMs = 30 * 24 * 60 * 60 * 1000;
+  private readonly refreshTokenTtlMs = 60 * 24 * 60 * 60 * 1000;
   private readonly failureWindowMs = 15 * 60 * 1000;
   private readonly maxFailedAttempts = 10;
   private readonly lockDurationMs = 15 * 60 * 1000;
@@ -133,6 +135,7 @@ export class AuthService {
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
         expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        templateName: VERIFICATION_TEMPLATE_NAME,
       });
     } catch (error) {
       this.cache.delete(cacheKey);
@@ -192,6 +195,7 @@ export class AuthService {
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
         expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        templateName: VERIFICATION_TEMPLATE_NAME,
       });
     } catch (error) {
       this.cache.delete(cacheKey);

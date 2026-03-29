@@ -24,12 +24,15 @@ export type ErrorCode =
   | "AI_TASK_TYPE_NOT_SUPPORTED"
   | "AI_UPSTREAM_BAD_GATEWAY"
   | "AI_UPSTREAM_TIMEOUT"
+  | "ADMIN_AUTH_REQUIRED"
   | "ADMIN_BASIC_AUTH_REQUIRED"
+  | "ADMIN_INVALID_CREDENTIAL"
   | "ADMIN_CONFIG_INVALID_JSON"
   | "ADMIN_APP_ALREADY_EXISTS"
   | "ADMIN_APP_ID_RESERVED"
   | "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG"
   | "ADMIN_EMAIL_SERVICE_INVALID"
+  | "ADMIN_I18N_INVALID"
   | "ADMIN_LLM_SERVICE_INVALID"
   | "ADMIN_PASSWORD_INVALID"
   | "ADMIN_RATE_LIMITED"
@@ -132,6 +135,13 @@ export interface RefreshTokenRecord {
   expiresAt: string;
   revokedAt?: string;
   replacedBy?: string;
+}
+
+export interface AdminSessionRecord {
+  id: string;
+  username: string;
+  createdAt: string;
+  expiresAt: string;
 }
 
 export interface AuditLogRecord {
@@ -255,6 +265,7 @@ export interface HttpRequest {
   requestId?: string;
   cookies?: Record<string, string>;
   auth?: AuthContext;
+  adminSession?: AdminSessionRecord | null;
 }
 
 export interface HttpResponse<T> {
@@ -331,6 +342,7 @@ export interface AdminAppSummary {
 export interface AdminBootstrapResult {
   adminUser: string;
   apps: AdminAppSummary[];
+  sessionExpiresAt?: string;
 }
 
 export interface AdminConfigDocument {
@@ -344,6 +356,26 @@ export interface AdminConfigDocument {
   revisions: ConfigRevisionMeta[];
 }
 
+export interface I18nSettings {
+  defaultLocale: string;
+  supportedLocales: string[];
+  fallbackLocales: Record<string, string[]>;
+}
+
+export interface AppI18nConfigDocument {
+  configKey: string;
+  config: I18nSettings;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAppI18nDocument extends AppI18nConfigDocument {
+  app: AdminAppSummary;
+}
+
 export interface EmailServiceTemplateConfig {
   locale: string;
   templateId: number;
@@ -354,13 +386,17 @@ export interface EmailServiceTemplateConfig {
 export interface EmailSenderConfig {
   id: string;
   address: string;
+}
+
+export interface EmailServiceRegionConfig {
   region: TencentSesRegion;
+  sender?: EmailSenderConfig | null;
+  templates: EmailServiceTemplateConfig[];
 }
 
 export interface EmailServiceConfig {
   enabled: boolean;
-  senders: EmailSenderConfig[];
-  templates: EmailServiceTemplateConfig[];
+  regions: EmailServiceRegionConfig[];
 }
 
 export interface AdminEmailServiceDocument {
@@ -388,6 +424,8 @@ export interface AdminEmailTestSendDocument {
   executedAt: string;
   cooldownSeconds: number;
   recipientEmail: string;
+  clientRegion: TencentSesRegion;
+  resolvedRegion: TencentSesRegion;
   sender: {
     id: string;
     address: string;
@@ -407,6 +445,29 @@ export interface AdminEmailTestSendDocument {
   provider: "tencent_ses";
   providerRequestId?: string;
   providerMessageId?: string;
+  debug?: {
+    request: {
+      endpoint: string;
+      method: "POST";
+      clientRegion: TencentSesRegion;
+      resolvedRegion: TencentSesRegion;
+      headers: Record<string, string>;
+      credentials: {
+        secretIdMasked: string;
+        secretKeyMasked: string;
+      };
+      body: Record<string, unknown>;
+    };
+    response?: {
+      statusCode: number;
+      ok: boolean;
+      body: unknown;
+      requestId?: string;
+      messageId?: string;
+      errorCode?: string;
+      errorMessage?: string;
+    };
+  };
 }
 
 export interface PasswordEntry {

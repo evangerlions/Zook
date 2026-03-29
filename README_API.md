@@ -230,6 +230,8 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `POST` | `/api/v1/analytics/events/batch` | 行为事件上报 |
 | `GET` | `/api/v1/admin/metrics/overview` | 概览指标 |
 | `GET` | `/api/v1/admin/metrics/pages` | 页面指标 |
+| `GET` | `/api/v1/admin/apps/{appId}/i18n-settings` | 获取 app 级多语言设置 |
+| `PUT` | `/api/v1/admin/apps/{appId}/i18n-settings` | 更新 app 级多语言设置 |
 | `POST` | `/api/v1/files/presign` | 获取上传预签名 |
 | `POST` | `/api/v1/files/confirm` | 确认上传完成 |
 | `POST` | `/api/v1/notifications/send` | 发送通知任务 |
@@ -240,7 +242,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 
 1. 当前仓库已经挂出一个产品级薄代理示例：`ai_novel`，其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
-3. 扫码登录的对外接入说明见 [doc/public-api-spec.md](doc/public-api-spec.md)。
+3. 扫码登录的对外接入说明见 [docs/public-api-spec.md](docs/public-api-spec.md)。
 4. 邮箱验证码登录接口：
    `POST /api/v1/auth/login/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`

@@ -29,10 +29,12 @@ export class EmailTestSendService {
       normalized.templateId,
       normalized.region,
     );
+    const resolvedRegion = runtime.resolvedRegion;
 
     const providerResult = await this.emailSender.sendTemplateEmail({
       email: normalized.recipientEmail,
-      region: normalized.region,
+      clientRegion: normalized.region,
+      region: resolvedRegion,
       fromEmailAddress: runtime.sender.address,
       subject: runtime.template.subject,
       templateId: runtime.template.templateId,
@@ -47,6 +49,8 @@ export class EmailTestSendService {
       executedAt: this.getNow().toISOString(),
       cooldownSeconds: Math.ceil(this.getCooldownMs() / 1000),
       recipientEmail: normalized.recipientEmail,
+      clientRegion: normalized.region,
+      resolvedRegion,
       sender: {
         id: runtime.sender.id,
         address: runtime.sender.address,
@@ -66,6 +70,7 @@ export class EmailTestSendService {
       provider: providerResult.provider,
       providerRequestId: providerResult.requestId,
       providerMessageId: providerResult.messageId,
+      debug: providerResult.debug,
     };
   }
 
