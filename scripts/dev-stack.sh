@@ -68,6 +68,34 @@ ensure_command() {
   fi
 }
 
+admin_rollup_native_ok() {
+  (
+    cd "$ROOT_DIR/apps/admin-web"
+    node -e "require('rollup/dist/native.js')"
+  ) >/dev/null 2>&1
+}
+
+ensure_admin_web_dependencies() {
+  if [[ ! -d "$ROOT_DIR/apps/admin-web/node_modules" ]]; then
+    log "安装 Admin Web 依赖..."
+    npm run admin:install
+    return
+  fi
+
+  if admin_rollup_native_ok; then
+    return
+  fi
+
+  log "检测到 Admin Web 的 Rollup 原生依赖缺失，正在自动修复..."
+  rm -rf "$ROOT_DIR/apps/admin-web/node_modules/rollup" "$ROOT_DIR/apps/admin-web/node_modules/@rollup"
+  npm run admin:install
+
+  if ! admin_rollup_native_ok; then
+    log "Admin Web 依赖自动修复失败，请手动执行 npm run admin:install 后重试。"
+    exit 1
+  fi
+}
+
 cleanup() {
   local exit_code=$?
   trap - EXIT INT TERM
@@ -171,10 +199,7 @@ if [[ ! -d "$ROOT_DIR/node_modules" ]]; then
   npm install --include=dev
 fi
 
-if [[ ! -d "$ROOT_DIR/apps/admin-web/node_modules" ]]; then
-  log "安装 Admin Web 依赖..."
-  npm run admin:install
-fi
+ensure_admin_web_dependencies
 
 log "构建 Admin Web..."
 npm run admin:build
