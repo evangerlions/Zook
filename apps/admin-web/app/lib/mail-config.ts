@@ -20,6 +20,7 @@ export const MAIL_SENDER_REGION_OPTIONS = [
   { value: "ap-guangzhou", label: "中国大陆 / 广州" },
   { value: "ap-hongkong", label: "海外 / 中国香港" },
 ] as const;
+const REQUIRED_VERIFICATION_TEMPLATE_NAME = "verify-code";
 
 export function renderMailRegionLabel(region: string) {
   return MAIL_SENDER_REGION_OPTIONS.find((item) => item.value === region)?.label ?? region;
@@ -126,9 +127,8 @@ export function normalizeMailTestDraft(draft: MailTestDraft | null, config: Mail
 }
 
 export function serializeMailDraft(draft: MailConfigDraft) {
-  return {
-    enabled: Boolean(draft.enabled),
-    regions: draft.regions.map((regionConfig, regionIndex) => {
+  const enabled = Boolean(draft.enabled);
+  const regions = draft.regions.map((regionConfig, regionIndex) => {
       const region = String(regionConfig?.region ?? MAIL_SENDER_REGION_OPTIONS[regionIndex]?.value ?? "").trim();
       const senderId = String(regionConfig?.sender?.id ?? "").trim();
       const senderAddress = String(regionConfig?.sender?.address ?? "").trim();
@@ -173,12 +173,30 @@ export function serializeMailDraft(draft: MailConfigDraft) {
         });
       }
 
+      if (
+        enabled
+        && templates.length > 0
+        && !templates.some((item) => item.name === REQUIRED_VERIFICATION_TEMPLATE_NAME)
+      ) {
+        throw new Error(
+          `${renderMailRegionLabel(region)} 的模板列表里必须至少包含一个名称为 ${REQUIRED_VERIFICATION_TEMPLATE_NAME} 的模板。`,
+        );
+      }
+
       return {
         region,
         sender,
         templates,
       };
-    }),
+    });
+
+  if (enabled && !regions.some((item) => item.sender && item.templates.length)) {
+    throw new Error("至少需要为一个 Region 配置发件地址和模板。");
+  }
+
+  return {
+    enabled,
+    regions,
   };
 }
 

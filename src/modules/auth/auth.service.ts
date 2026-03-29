@@ -17,12 +17,11 @@ import type {
 import { createOpaqueToken, randomId, randomNumericCode, sha256, toDateKey, toHourKey } from "../../shared/utils.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
+import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
 import { DevelopmentPasswordHasher } from "./password-hasher.ts";
 import { TokenService } from "./token.service.ts";
-
-const VERIFICATION_TEMPLATE_NAME = "验证码";
 
 interface LoginFailureState {
   count: number;
@@ -135,7 +134,7 @@ export class AuthService {
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
         expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
-        templateName: VERIFICATION_TEMPLATE_NAME,
+        templateName: VERIFICATION_EMAIL_TEMPLATE_NAME,
       });
     } catch (error) {
       this.cache.delete(cacheKey);
@@ -195,7 +194,7 @@ export class AuthService {
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
         expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
-        templateName: VERIFICATION_TEMPLATE_NAME,
+        templateName: VERIFICATION_EMAIL_TEMPLATE_NAME,
       });
     } catch (error) {
       this.cache.delete(cacheKey);

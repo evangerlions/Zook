@@ -43,7 +43,7 @@ function createEmailServiceRegions() {
         {
           locale: "zh-CN",
           templateId: 100001,
-          name: "验证码",
+          name: "verify-code",
           subject: "验证码",
         },
       ],
@@ -58,7 +58,7 @@ function createEmailServiceRegions() {
         {
           locale: "en-US",
           templateId: 100002,
-          name: "Verification Code",
+          name: "verify-code",
           subject: "Verification Code",
         },
       ],
@@ -512,7 +512,7 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   assert.equal(createResponse.statusCode, 200);
   assert.equal(createResponse.body.data.appId, "app_c");
   assert.equal(createResponse.body.data.appName, "App C");
-  assert.equal(createResponse.body.data.canDelete, true);
+  assert.equal(createResponse.body.data.canDelete, false);
   assert.match(String(createResponse.body.data.logSecret.keyId), /^logk_/);
   assert.match(String(createResponse.body.data.logSecret.secretMasked), /\*/);
   assert.ok(
@@ -539,12 +539,33 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
 
   const blockedDeleteResponse = await runtime.app.handle({
     method: "DELETE",
-    path: "/api/v1/admin/apps/app_a",
+    path: "/api/v1/admin/apps/app_c",
     headers,
   });
 
   assert.equal(blockedDeleteResponse.statusCode, 409);
   assert.equal(blockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
+
+  const clearConfigResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_c/config",
+    headers,
+    body: {
+      rawJson: "{}",
+      desc: "clear before delete",
+    },
+  });
+
+  assert.equal(clearConfigResponse.statusCode, 200);
+
+  const stillBlockedDeleteResponse = await runtime.app.handle({
+    method: "DELETE",
+    path: "/api/v1/admin/apps/app_a",
+    headers,
+  });
+
+  assert.equal(stillBlockedDeleteResponse.statusCode, 409);
+  assert.equal(stillBlockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
 
   const deleteResponse = await runtime.app.handle({
     method: "DELETE",
@@ -607,7 +628,7 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
     locale: "zh-CN",
     region: "ap-hongkong",
     expireMinutes: 10,
-    templateName: "验证码",
+    templateName: "verify-code",
   });
 
   const verifyResponse = await runtime.app.handle({
@@ -831,7 +852,7 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal(updateResponse.body.data.config.regions[1]?.sender?.address, "Support <support@example.com>");
   assert.equal(updateResponse.body.data.config.regions[0]?.templates[0]?.templateId, 100001);
   assert.equal(updateResponse.body.data.config.regions[1]?.templates[0]?.locale, "en-US");
-  assert.equal(updateResponse.body.data.config.regions[1]?.templates[0]?.name, "Verification Code");
+  assert.equal(updateResponse.body.data.config.regions[1]?.templates[0]?.name, "verify-code");
   assert.equal(updateResponse.body.data.config.regions[1]?.templates[0]?.subject, "Verification Code");
 
   const fetchResponse = await runtime.app.handle({
@@ -909,9 +930,18 @@ test("admin email service API stores common config and exposes resolved region",
     (await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).sender.address,
     "Support <support@example.com>",
   );
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).template.name, "Verification Code");
+  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).template.name, "verify-code");
   assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).template.templateId, 100002);
   assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW")).template.templateId, 100003);
+  await assert.rejects(
+    runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong", "missing-template"),
+    (error: unknown) => (
+      error instanceof ApplicationError
+      && error.statusCode === 503
+      && error.code === "EMAIL_SERVICE_NOT_CONFIGURED"
+      && /missing-template/.test(error.message)
+    ),
+  );
 
   await runtime.services.commonEmailConfigService.updateConfig({
     enabled: true,
@@ -926,7 +956,7 @@ test("admin email service API stores common config and exposes resolved region",
           {
             locale: "zh-CN",
             templateId: 100101,
-            name: "验证码",
+            name: "verify-code",
             subject: "验证码",
           },
         ],
@@ -941,7 +971,7 @@ test("admin email service API stores common config and exposes resolved region",
           {
             locale: "en-US",
             templateId: 100102,
-            name: "验证码",
+            name: "verify-code",
             subject: "Verification Code",
           },
           {
@@ -955,9 +985,9 @@ test("admin email service API stores common config and exposes resolved region",
     ],
   });
 
-  const verificationRuntime = await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong", "验证码");
+  const verificationRuntime = await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong", "verify-code");
   assert.equal(verificationRuntime.template.templateId, 100102);
-  assert.equal(verificationRuntime.template.name, "验证码");
+  assert.equal(verificationRuntime.template.name, "verify-code");
 
   const revisionOneResponse = await runtime.app.handle({
     method: "GET",
@@ -1019,7 +1049,7 @@ test("admin email service API rejects invalid sender address format", async () =
             {
               locale: "zh-CN",
               templateId: 100001,
-              name: "验证码",
+              name: "verify-code",
               subject: "验证码",
             },
           ],
@@ -1061,7 +1091,7 @@ test("admin email service API rejects duplicate email region, duplicate template
             {
               locale: "zh-CN",
               templateId: 100001,
-              name: "验证码",
+              name: "verify-code",
               subject: "验证码",
             },
           ],
@@ -1099,13 +1129,13 @@ test("admin email service API rejects duplicate email region, duplicate template
             {
               locale: "zh-CN",
               templateId: 100001,
-              name: "验证码",
+              name: "verify-code",
               subject: "验证码",
             },
             {
               locale: "zh-CN",
               templateId: 100003,
-              name: "验证码",
+              name: "verify-code",
               subject: "验证码（备用）",
             },
           ],
@@ -1135,7 +1165,7 @@ test("admin email service API rejects duplicate email region, duplicate template
             {
               locale: "zh-CN",
               templateId: 100001,
-              name: "验证码",
+              name: "verify-code",
               subject: "验证码",
             },
           ],
@@ -1150,7 +1180,7 @@ test("admin email service API rejects duplicate email region, duplicate template
             {
               locale: "en-US",
               templateId: 100001,
-              name: "Verification Code",
+              name: "verify-code",
               subject: "Verification Code",
             },
           ],
@@ -1180,7 +1210,7 @@ test("admin email service API rejects duplicate email region, duplicate template
             {
               locale: "en-US",
               templateId: 100002,
-              name: "Verification Code",
+              name: "verify-code",
               subject: "",
             },
           ],
@@ -1192,6 +1222,36 @@ test("admin email service API rejects duplicate email region, duplicate template
   assert.equal(missingSubjectResponse.statusCode, 400);
   assert.equal(missingSubjectResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
   assert.match(missingSubjectResponse.body.message, /Template subject is required/);
+
+  const missingVerificationTemplateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/email-service",
+    headers,
+    body: {
+      enabled: true,
+      regions: [
+        {
+          region: "ap-hongkong",
+          sender: {
+            id: "global",
+            address: "Global <global@example.com>",
+          },
+          templates: [
+            {
+              locale: "en-US",
+              templateId: 100005,
+              name: "welcome-email",
+              subject: "Welcome",
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.equal(missingVerificationTemplateResponse.statusCode, 400);
+  assert.equal(missingVerificationTemplateResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.match(missingVerificationTemplateResponse.body.message, /verify-code/);
 });
 
 test("admin email service test-send API requires super-admin auth and enforces 20 second cooldown", async () => {
@@ -1244,7 +1304,7 @@ test("admin email service test-send API requires super-admin auth and enforces 2
             {
               locale: "zh-CN",
               templateId: 100001,
-              name: "验证码",
+              name: "verify-code",
               subject: "验证码",
             },
           ],
@@ -1259,7 +1319,7 @@ test("admin email service test-send API requires super-admin auth and enforces 2
             {
               locale: "en-US",
               templateId: 100002,
-              name: "Verification Code",
+              name: "verify-code",
               subject: "Verification Code",
             },
           ],
@@ -1397,7 +1457,7 @@ test("admin email service test-send API returns masked provider debug details on
             {
               locale: "zh-CN",
               templateId: 100001,
-              name: "验证码",
+              name: "verify-code",
               subject: "验证码",
             },
           ],
