@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { JsonEditor } from "../components/json-editor";
 import { JsonPreview } from "../components/json-preview";
+import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
@@ -17,6 +18,7 @@ export default function ConfigRoute() {
     reloadBootstrap,
     setNotice,
     clearNotice,
+    completeWorkspaceTransition,
   } = useAdminSession();
 
   const selectedApp = apps.find((item) => item.appId === selectedAppId) ?? null;
@@ -27,6 +29,7 @@ export default function ConfigRoute() {
   const [saving, setSaving] = useState(false);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [editorError, setEditorError] = useState("");
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   const previewValue = useMemo(() => safeParseJson(value), [value]);
 
   async function loadLatest() {
@@ -35,6 +38,7 @@ export default function ConfigRoute() {
       setValue("");
       setDesc("");
       setEditorError("");
+      completeWorkspaceTransition();
       return;
     }
 
@@ -47,6 +51,7 @@ export default function ConfigRoute() {
       setEditorError("");
     } finally {
       setLoading(false);
+      completeWorkspaceTransition();
     }
   }
 
@@ -156,7 +161,7 @@ export default function ConfigRoute() {
         />
       </section>
 
-      <div className="page-grid page-grid--config">
+      <div className={`page-grid page-grid--config${historyExpanded ? "" : " is-history-collapsed"}`}>
         <section className="editor-card">
           <div className="card-header">
             <div>
@@ -217,28 +222,19 @@ export default function ConfigRoute() {
           </div>
         </section>
 
-        <aside className="side-card">
-          <Collapse
-            className="config-collapse config-collapse-history"
-            defaultActiveKey={["revision-history"]}
-            items={[
-            {
-              key: "revision-history",
-              label: "版本历史",
-              children: (
-                <RevisionList
-                    activeRevision={document?.revision}
-                    compact
-                    loadingRevision={restoringRevision}
-                    onRestore={(revision) => void handleRestoreRevision(revision)}
-                    onSelect={(revision) => void handleViewRevision(revision)}
-                    revisions={document?.revisions ?? []}
-                  />
-                ),
-              },
-            ]}
+        <RevisionHistoryDock
+          expanded={historyExpanded}
+          onToggle={() => setHistoryExpanded((current) => !current)}
+        >
+          <RevisionList
+            activeRevision={document?.revision}
+            compact
+            loadingRevision={restoringRevision}
+            onRestore={(revision) => void handleRestoreRevision(revision)}
+            onSelect={(revision) => void handleViewRevision(revision)}
+            revisions={document?.revisions ?? []}
           />
-        </aside>
+        </RevisionHistoryDock>
       </div>
     </section>
   );

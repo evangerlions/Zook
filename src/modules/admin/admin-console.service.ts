@@ -240,9 +240,23 @@ export class AdminConsoleService {
       return false;
     }
 
-    const normalized = this.readNormalizedConfig(appId);
-    return normalized === JSON.stringify({}, null, 2)
-      || normalized === JSON.stringify(this.buildDefaultConfigTemplate(appId), null, 2);
+    const raw = this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
+    if (!raw || !raw.trim()) {
+      return true;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return false;
+    }
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return false;
+    }
+
+    return Object.keys(parsed as Record<string, unknown>).length === 0;
   }
 
   private buildDefaultConfigTemplate(appId: string): Record<string, string> {

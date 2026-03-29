@@ -45,6 +45,8 @@ export function AppShell() {
     apps,
     selectedAppId,
     setSelectedAppId,
+    beginWorkspaceTransition,
+    workspaceTransitionLabel,
     runtimeConfig,
     notice,
     clearNotice,
@@ -83,10 +85,20 @@ export function AppShell() {
   }
 
   function openServerSpace() {
+    if (location.pathname === "/apps") {
+      return;
+    }
+
+    beginWorkspaceTransition("正在切换到 Server 工作区");
     void navigate("/apps");
   }
 
   function openAppSpace(app: AdminAppSummary) {
+    if (appProjectSpace && selectedAppId === app.appId) {
+      return;
+    }
+
+    beginWorkspaceTransition(`正在切换到 ${app.appName}`);
     setSelectedAppId(app.appId);
     void navigate("/config");
   }
@@ -197,9 +209,18 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="page-shell">
+        <main className={`page-shell${workspaceTransitionLabel ? " has-workspace-overlay" : ""}`}>
           <NoticeBanner notice={notice} onDismiss={clearNotice} />
           <Outlet />
+          {workspaceTransitionLabel ? (
+            <div aria-live="polite" className="workspace-transition-overlay" role="status">
+              <div className="workspace-transition-panel">
+                <span aria-hidden="true" className="workspace-transition-spinner" />
+                <strong>正在切换工作区</strong>
+                <p>{workspaceTransitionLabel}</p>
+              </div>
+            </div>
+          ) : null}
         </main>
       </div>
     </div>

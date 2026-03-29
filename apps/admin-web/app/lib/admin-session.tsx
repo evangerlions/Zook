@@ -5,10 +5,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import { ADMIN_AUTH_REQUIRED_EVENT, adminApi, isAdminAuthError } from "./admin-api";
 import { formatApiError, makeNotice } from "./format";
@@ -23,17 +24,26 @@ interface AdminSessionContextValue {
   bootstrapped: boolean;
   loadingBootstrap: boolean;
   authenticating: boolean;
+  workspaceTransitionLabel: string;
   runtimeConfig: RuntimeConfig;
   notice: NoticeState | null;
   setNotice: (notice: NoticeState | null) => void;
   clearNotice: () => void;
   setSelectedAppId: (appId: string) => void;
+  beginWorkspaceTransition: (label: string) => void;
+  completeWorkspaceTransition: () => void;
   login: (username: string, password: string) => Promise<void>;
   logout: (message?: string) => Promise<void>;
   reloadBootstrap: () => Promise<void>;
 }
 
 const AdminSessionContext = createContext<AdminSessionContextValue | null>(null);
+const MIN_WORKSPACE_TRANSITION_MS = 240;
+
+interface WorkspaceTransitionState {
+  label: string;
+  startedAt: number;
+}
 
 function resolveNextSelectedAppId(currentAppId: string, apps: AdminAppSummary[], defaultAppId: string): string {
   if (currentAppId && apps.some((item) => item.appId === currentAppId)) {
@@ -46,7 +56,6 @@ function resolveNextSelectedAppId(currentAppId: string, apps: AdminAppSummary[],
 
 export function AdminSessionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const runtimeConfig = getRuntimeConfig();
 
   const [adminUser, setAdminUser] = useState("");
@@ -55,10 +64,60 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [loadingBootstrap, setLoadingBootstrap] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
+  const [workspaceTransition, setWorkspaceTransition] = useState<WorkspaceTransitionState | null>(null);
   const [notice, setNotice] = useState<NoticeState | null>(null);
+  const workspaceTransitionRef = useRef<WorkspaceTransitionState | null>(null);
+  const workspaceTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearNotice = useCallback(() => {
     setNotice(null);
+  }, []);
+
+  const beginWorkspaceTransition = useCallback((label: string) => {
+    if (workspaceTransitionTimerRef.current) {
+      clearTimeout(workspaceTransitionTimerRef.current);
+      workspaceTransitionTimerRef.current = null;
+    }
+
+    const nextState: WorkspaceTransitionState = {
+      label: label.trim() || "正在切换工作区",
+      startedAt: Date.now(),
+    };
+    workspaceTransitionRef.current = nextState;
+    setWorkspaceTransition(nextState);
+  }, []);
+
+  const completeWorkspaceTransition = useCallback(() => {
+    const current = workspaceTransitionRef.current;
+    if (!current) {
+      return;
+    }
+
+    const finish = (startedAt: number) => {
+      if (workspaceTransitionRef.current?.startedAt !== startedAt) {
+        return;
+      }
+
+      workspaceTransitionRef.current = null;
+      setWorkspaceTransition(null);
+    };
+
+    if (workspaceTransitionTimerRef.current) {
+      clearTimeout(workspaceTransitionTimerRef.current);
+      workspaceTransitionTimerRef.current = null;
+    }
+
+    const elapsedMs = Date.now() - current.startedAt;
+    const remainingMs = Math.max(0, MIN_WORKSPACE_TRANSITION_MS - elapsedMs);
+    if (remainingMs === 0) {
+      finish(current.startedAt);
+      return;
+    }
+
+    workspaceTransitionTimerRef.current = setTimeout(() => {
+      workspaceTransitionTimerRef.current = null;
+      finish(current.startedAt);
+    }, remainingMs);
   }, []);
 
   const redirectToLogin = useCallback((message = "登录已失效，请重新登录。") => {
@@ -69,10 +128,8 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
       setSelectedAppIdState("");
     });
     setNotice(makeNotice("error", message));
-    if (location.pathname !== "/login") {
-      navigate("/login", { replace: true });
-    }
-  }, [location.pathname, navigate]);
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const applyBootstrap = useCallback((nextAdminUser: string, nextApps: AdminAppSummary[]) => {
     setAdminUser(nextAdminUser);
@@ -154,6 +211,12 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
     void reloadBootstrap();
   }, [reloadBootstrap]);
 
+  useEffect(() => () => {
+    if (workspaceTransitionTimerRef.current) {
+      clearTimeout(workspaceTransitionTimerRef.current);
+    }
+  }, []);
+
   const value = useMemo<AdminSessionContextValue>(() => ({
     adminUser,
     apps,
@@ -161,11 +224,14 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
     bootstrapped,
     loadingBootstrap,
     authenticating,
+    workspaceTransitionLabel: workspaceTransition?.label ?? "",
     runtimeConfig,
     notice,
     setNotice,
     clearNotice,
     setSelectedAppId,
+    beginWorkspaceTransition,
+    completeWorkspaceTransition,
     login,
     logout,
     reloadBootstrap,
@@ -176,10 +242,13 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
     bootstrapped,
     loadingBootstrap,
     authenticating,
+    workspaceTransition,
     runtimeConfig,
     notice,
     clearNotice,
     setSelectedAppId,
+    beginWorkspaceTransition,
+    completeWorkspaceTransition,
     login,
     logout,
     reloadBootstrap,

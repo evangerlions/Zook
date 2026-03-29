@@ -1,11 +1,10 @@
 import {
-  CheckCircleFilled,
   CopyOutlined,
   DeleteOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
 import { Button, Input, Modal, Popconfirm, Tooltip } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
 import { ApiError, adminApi } from "../lib/admin-api";
@@ -22,6 +21,7 @@ export default function AppsRoute() {
     reloadBootstrap,
     setNotice,
     clearNotice,
+    completeWorkspaceTransition,
   } = useAdminSession();
 
   const [appId, setAppId] = useState("");
@@ -113,6 +113,10 @@ export default function AppsRoute() {
     }
   }
 
+  useEffect(() => {
+    completeWorkspaceTransition();
+  }, [completeWorkspaceTransition]);
+
   return (
     <section className="stack">
       <header className="page-header">
@@ -194,23 +198,6 @@ export default function AppsRoute() {
                                 onClick={() => void copyAppSecret(item.appId)}
                                 shape="circle"
                                 type="default"
-                              />
-                            </span>
-                          </Tooltip>
-
-                          <Tooltip title={isCurrent ? "当前项目空间" : "设为当前项目空间"}>
-                            <span>
-                              <Button
-                                aria-label={isCurrent ? `${item.appName} 已是当前项目` : `设 ${item.appName} 为当前项目`}
-                                className="action-icon-button"
-                                icon={<CheckCircleFilled />}
-                                onClick={() => {
-                                  if (!isCurrent) {
-                                    setSelectedAppId(item.appId);
-                                  }
-                                }}
-                                shape="circle"
-                                type={isCurrent ? "primary" : "default"}
                               />
                             </span>
                           </Tooltip>

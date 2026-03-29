@@ -7,6 +7,7 @@ import type {
   TencentSesRegion,
 } from "../shared/types.ts";
 import { randomNumericCode, sha256 } from "../shared/utils.ts";
+import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "./common-email-config.service.ts";
 import type { RegistrationEmailSender } from "./tencent-ses-registration-email.service.ts";
 
 interface SensitiveCodeRecord {
@@ -58,7 +59,7 @@ export class AdminSensitiveOperationService {
     this.recipientEmail = (options.recipientEmail ?? "evangerlions@gmail.com").trim().toLowerCase();
     this.locale = (options.locale ?? "zh-CN").trim() || "zh-CN";
     this.region = options.region ?? "ap-hongkong";
-    this.templateName = (options.templateName ?? "验证码").trim() || "验证码";
+    this.templateName = (options.templateName ?? VERIFICATION_EMAIL_TEMPLATE_NAME).trim() || VERIFICATION_EMAIL_TEMPLATE_NAME;
     this.appName = (options.appName ?? "Zook 管理后台").trim() || "Zook 管理后台";
     this.codeTtlMs = options.codeTtlMs ?? 10 * 60 * 1000;
     this.resendCooldownMs = options.resendCooldownMs ?? 60 * 1000;

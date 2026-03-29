@@ -513,7 +513,61 @@ a:focus-visible {
 }
 
 .page-shell {
+  position: relative;
   padding: 0 6px 28px;
+}
+
+.page-shell.has-workspace-overlay {
+  min-height: 360px;
+}
+
+.workspace-transition-overlay {
+  position: absolute;
+  inset: 0 6px 28px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(232, 237, 247, 0.7), rgba(247, 249, 253, 0.82));
+  backdrop-filter: blur(12px);
+}
+
+.workspace-transition-panel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(320px, calc(100% - 32px));
+  padding: 24px 26px;
+  border: 1px solid rgba(191, 208, 229, 0.82);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
+  text-align: center;
+}
+
+.workspace-transition-panel strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.workspace-transition-panel p {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.workspace-transition-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(33, 87, 213, 0.14);
+  border-top-color: var(--primary);
+  border-radius: 999px;
+  animation: workspace-spin 900ms linear infinite;
+}
+
+@keyframes workspace-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .page-header {
@@ -555,6 +609,11 @@ a:focus-visible {
 
 .page-grid--config {
   grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  transition: grid-template-columns 220ms ease;
+}
+
+.page-grid--config.is-history-collapsed {
+  grid-template-columns: minmax(0, 1fr) 84px;
 }
 
 .surface-card,
@@ -573,6 +632,58 @@ a:focus-visible {
 .side-card,
 .table-card {
   padding: 24px;
+}
+
+.side-card--history,
+.history-dock-collapsed {
+  align-self: start;
+}
+
+.history-dock-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.history-dock-header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.history-dock-header p {
+  margin: 8px 0 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.history-dock-toggle.ant-btn {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  border-radius: 999px !important;
+}
+
+.history-dock-collapsed {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 14px 10px;
+  border: 1px solid rgba(191, 208, 229, 0.72);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.history-dock-collapsed-label {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
 
 .card-header {

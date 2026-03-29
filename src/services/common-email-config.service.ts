@@ -34,6 +34,7 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
 const DEFAULT_EMAIL_REGION: TencentSesRegion = "ap-guangzhou";
 const EMAIL_REGIONS: TencentSesRegion[] = ["ap-guangzhou", "ap-hongkong"];
 const DEFAULT_TEMPLATE_LOCALE = "zh-CN";
+export const VERIFICATION_EMAIL_TEMPLATE_NAME = "verify-code";
 
 export class CommonEmailConfigService {
   constructor(
@@ -211,6 +212,8 @@ export class CommonEmailConfigService {
     if (!config.enabled) {
       return config;
     }
+
+    this.assertVerificationTemplateNames(config.regions);
 
     if (!config.regions.some((item) => item.sender && item.templates.length)) {
       badRequest("ADMIN_EMAIL_SERVICE_INVALID", "At least one region must have sender and templates configured.");
@@ -490,6 +493,13 @@ export class CommonEmailConfigService {
     const candidateTemplates = preferredName
       ? templates.filter((item) => item.name === preferredName)
       : templates;
+    if (preferredName && !candidateTemplates.length) {
+      throw new ApplicationError(
+        503,
+        "EMAIL_SERVICE_NOT_CONFIGURED",
+        `Email template is not configured: ${preferredName}`,
+      );
+    }
 
     const scopedTemplates = candidateTemplates.length ? candidateTemplates : templates;
     const exactMatch = scopedTemplates.find((item) => item.locale === normalizedLocale);
@@ -547,6 +557,24 @@ export class CommonEmailConfigService {
           badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Duplicate template ID is not allowed: ${template.templateId}`);
         }
         templateIds.add(template.templateId);
+      }
+    }
+  }
+
+  private assertVerificationTemplateNames(regions: EmailServiceRegionConfig[]): void {
+    for (const regionConfig of regions) {
+      if (!regionConfig.templates.length) {
+        continue;
+      }
+
+      const hasVerificationTemplate = regionConfig.templates.some(
+        (template) => template.name === VERIFICATION_EMAIL_TEMPLATE_NAME,
+      );
+      if (!hasVerificationTemplate) {
+        badRequest(
+          "ADMIN_EMAIL_SERVICE_INVALID",
+          `Region ${regionConfig.region} must include a template named ${VERIFICATION_EMAIL_TEMPLATE_NAME}.`,
+        );
       }
     }
   }
