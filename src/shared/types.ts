@@ -16,9 +16,14 @@ export type EventName = "page_view" | "page_leave" | "page_heartbeat";
 export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
 export type LlmRoutingStrategy = "auto" | "fixed";
+export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ErrorCode =
+  | "AI_EMBEDDING_INPUT_INVALID"
+  | "AI_TASK_TYPE_NOT_SUPPORTED"
+  | "AI_UPSTREAM_BAD_GATEWAY"
+  | "AI_UPSTREAM_TIMEOUT"
   | "ADMIN_AUTH_REQUIRED"
   | "ADMIN_BASIC_AUTH_REQUIRED"
   | "ADMIN_INVALID_CREDENTIAL"
@@ -27,9 +32,14 @@ export type ErrorCode =
   | "ADMIN_APP_ID_RESERVED"
   | "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG"
   | "ADMIN_EMAIL_SERVICE_INVALID"
+  | "ADMIN_I18N_INVALID"
   | "ADMIN_LLM_SERVICE_INVALID"
   | "ADMIN_PASSWORD_INVALID"
   | "ADMIN_RATE_LIMITED"
+  | "ADMIN_SENSITIVE_OPERATION_REQUIRED"
+  | "ADMIN_SENSITIVE_CODE_REQUIRED"
+  | "ADMIN_SENSITIVE_CODE_INVALID"
+  | "ADMIN_SENSITIVE_RATE_LIMITED"
   | "AUTH_INVALID_CREDENTIAL"
   | "AUTH_BEARER_REQUIRED"
   | "AUTH_INVALID_TOKEN"
@@ -59,7 +69,14 @@ export type ErrorCode =
   | "LLM_ROUTE_NOT_AVAILABLE"
   | "LLM_PROVIDER_REQUEST_FAILED"
   | "LLM_PROVIDER_RESPONSE_INVALID"
+  | "LOG_UNSUPPORTED_ENCRYPTION"
+  | "LOG_DECRYPT_FAILED"
+  | "LOG_DECOMPRESS_FAILED"
+  | "LOG_INVALID_NDJSON"
+  | "LOG_TASK_MISMATCH"
+  | "LOG_PAYLOAD_TOO_LARGE"
   | "REQ_INVALID_BODY"
+  | "REQ_INVALID_HEADER"
   | "REQ_INVALID_QUERY"
   | "REQ_INVALID_EVENT"
   | "REQ_DATE_RANGE_INVALID"
@@ -214,6 +231,54 @@ export interface FileRecord {
   createdAt: string;
 }
 
+export type ClientLogUploadTaskStatus = "PENDING" | "COMPLETED" | "CANCELLED";
+
+export interface ClientLogUploadTaskRecord {
+  id: string;
+  appId: string;
+  userId?: string;
+  keyId: string;
+  fromTsMs?: number;
+  toTsMs?: number;
+  maxLines?: number;
+  maxBytes?: number;
+  status: ClientLogUploadTaskStatus;
+  createdAt: string;
+  expiresAt?: string;
+  uploadedAt?: string;
+}
+
+export interface ClientLogUploadRecord {
+  id: string;
+  taskId: string;
+  appId: string;
+  userId: string;
+  keyId: string;
+  encryption: "aes-256-gcm";
+  contentEncoding: "ndjson+gzip";
+  nonceBase64: string;
+  lineCountReported?: number;
+  plainBytesReported?: number;
+  compressedBytesReported?: number;
+  encryptedBytes: number;
+  acceptedCount: number;
+  rejectedCount: number;
+  uploadedAt: string;
+}
+
+export interface ClientLogLineRecord {
+  id: string;
+  uploadId: string;
+  taskId: string;
+  appId: string;
+  userId: string;
+  timestampMs?: number;
+  level?: string;
+  message?: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -229,6 +294,9 @@ export interface DatabaseSeed {
   appConfigs?: AppConfigRecord[];
   analyticsEvents?: AnalyticsEventRecord[];
   files?: FileRecord[];
+  clientLogUploadTasks?: ClientLogUploadTaskRecord[];
+  clientLogUploads?: ClientLogUploadRecord[];
+  clientLogLines?: ClientLogLineRecord[];
 }
 
 export interface AccessTokenPayload {
@@ -325,18 +393,45 @@ export interface EmailLoginCommand {
   ipAddress: string;
 }
 
+export interface AdminAppLogSecretSummary {
+  keyId: string;
+  secretMasked: string;
+  updatedAt: string;
+}
+
 export interface AdminAppSummary {
   appId: string;
   appCode: string;
   appName: string;
   status: AppStatus;
   canDelete: boolean;
+  logSecret: AdminAppLogSecretSummary;
 }
 
 export interface AdminBootstrapResult {
   adminUser: string;
   apps: AdminAppSummary[];
   sessionExpiresAt?: string;
+}
+
+export interface AdminAppLogSecretRevealDocument {
+  app: AdminAppSummary;
+  keyId: string;
+  secret: string;
+  updatedAt: string;
+}
+
+export interface AdminSensitiveOperationCodeRequestDocument {
+  operation: string;
+  recipientEmailMasked: string;
+  cooldownSeconds: number;
+  expiresInSeconds: number;
+}
+
+export interface AdminSensitiveOperationGrantDocument {
+  operation: string;
+  granted: true;
+  expiresAt: string;
 }
 
 export interface AdminConfigDocument {
@@ -348,6 +443,26 @@ export interface AdminConfigDocument {
   desc?: string;
   isLatest: boolean;
   revisions: ConfigRevisionMeta[];
+}
+
+export interface I18nSettings {
+  defaultLocale: string;
+  supportedLocales: string[];
+  fallbackLocales: Record<string, string[]>;
+}
+
+export interface AppI18nConfigDocument {
+  configKey: string;
+  config: I18nSettings;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAppI18nDocument extends AppI18nConfigDocument {
+  app: AdminAppSummary;
 }
 
 export interface EmailServiceTemplateConfig {
@@ -478,6 +593,7 @@ export interface LlmModelRouteConfig {
 export interface LlmModelConfig {
   key: string;
   label: string;
+  kind: LlmModelKind;
   strategy: LlmRoutingStrategy;
   routes: LlmModelRouteConfig[];
 }
@@ -504,6 +620,7 @@ export interface LlmRouteRuntimeStatus {
 
 export interface LlmModelRuntimeStatus {
   key: string;
+  kind: LlmModelKind;
   strategy: LlmRoutingStrategy;
   routes: LlmRouteRuntimeStatus[];
 }
@@ -584,27 +701,37 @@ export interface AdminLlmSmokeTestSummary {
 }
 
 export interface AdminLlmSmokeTestRequestPayload {
+  modelKind: LlmModelKind;
   provider: string;
   modelKey: string;
   providerModel: string;
   baseUrl: string;
   timeoutMs: number;
-  messages: Array<{
+  messages?: Array<{
     role: "system" | "user" | "assistant";
     content: string;
   }>;
+  input?: string[];
   temperature?: number;
   maxTokens?: number;
   providerOptions: Record<string, unknown>;
 }
 
 export interface AdminLlmSmokeTestResponsePayload {
+  modelKind: LlmModelKind;
   provider: string;
   modelKey: string;
   providerModel: string;
-  text: string;
+  text?: string;
   reasoningText?: string;
   finishReason?: string;
+  vectorCount?: number;
+  dimensions?: number;
+  vectorPreview?: Array<{
+    index: number;
+    embedding: number[];
+  }>;
+  providerRequestId?: string;
   usage?: {
     promptTokens: number;
     completionTokens: number;
@@ -636,6 +763,7 @@ export interface AdminLlmSmokeTestDetails {
 }
 
 export interface AdminLlmSmokeTestItem {
+  modelKind: LlmModelKind;
   modelKey: string;
   modelLabel: string;
   provider: string;
@@ -751,6 +879,26 @@ export interface FilePresignResult {
 export interface FileConfirmResult {
   downloadUrl: string;
   storageKey: string;
+}
+
+export type LogPullTaskResult =
+  | {
+      shouldUpload: false;
+    }
+  | {
+      shouldUpload: true;
+      taskId: string;
+      fromTsMs?: number;
+      toTsMs?: number;
+      maxLines?: number;
+      maxBytes?: number;
+      keyId: string;
+    };
+
+export interface LogUploadResult {
+  taskId: string;
+  acceptedCount: number;
+  rejectedCount: number;
 }
 
 export interface QueueJob<T = Record<string, unknown>> {

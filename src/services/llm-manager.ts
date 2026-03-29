@@ -34,6 +34,7 @@ export interface LLMCompletionResult {
   reasoningText?: string;
   finishReason?: string;
   usage?: LLMUsage;
+  providerRequestId?: string;
 }
 
 export type LLMStreamEvent =
@@ -72,6 +73,18 @@ export type LLMModelRegistry = Record<
 
 export const DEFAULT_LLM_MODEL_REGISTRY: LLMModelRegistry = {
   "kimi2.5": {
+    provider: "bailian",
+    providerModel: "kimi/kimi-k2.5",
+  },
+  "novel-creative": {
+    provider: "bailian",
+    providerModel: "kimi/kimi-k2.5",
+  },
+  "novel-reasoning": {
+    provider: "bailian",
+    providerModel: "kimi/kimi-k2.5",
+  },
+  "novel-structured": {
     provider: "bailian",
     providerModel: "kimi/kimi-k2.5",
   },
@@ -286,6 +299,10 @@ export class LLMManager {
     const model = config.models.find((item) => item.key === modelKey);
     if (!model) {
       badRequest("LLM_MODEL_NOT_FOUND", `Unknown LLM modelKey: ${modelKey}.`);
+    }
+
+    if (model.kind !== "chat") {
+      badRequest("LLM_MODEL_NOT_FOUND", `LLM modelKey ${modelKey} is not configured as a chat model.`);
     }
 
     const providerMap = new Map(config.providers.map((item) => [item.key, item]));

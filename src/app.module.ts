@@ -18,6 +18,7 @@ import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.
 import { resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
+import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
 import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
@@ -26,39 +27,58 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AppConfigService } from "./services/app-config.service.ts";
+import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
+import { AppLogSecretService, APP_LOG_SECRET_READ_OPERATION } from "./services/app-log-secret.service.ts";
+import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import { EmbeddingManager, type EmbeddingProvider } from "./services/embedding-manager.ts";
+import {
+  ClientLogUploadService,
+  CompositeClientLogEncryptionKeyResolver,
+  StaticClientLogEncryptionKeyResolver,
+  type ClientLogEncryptionKeyResolver,
+} from "./services/client-log-upload.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
+import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
-import { LLMManager } from "./services/llm-manager.ts";
+import { LLMManager, type LLMProvider } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
 import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
+import { RequestLocaleService } from "./services/request-locale.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
+  AdminAppI18nDocument,
+  AdminAppLogSecretRevealDocument,
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
   AdminSessionRecord,
+  AdminSensitiveOperationCodeRequestDocument,
+  AdminSensitiveOperationGrantDocument,
   AdminPasswordDocument,
   AnalyticsEventInput,
   ClientType,
   DatabaseSeed,
   HttpRequest,
   HttpResponse,
+  LogPullTaskResult,
+  LogUploadResult,
   LlmMetricsRange,
   Platform,
+  TencentSesRegion,
 } from "./shared/types.ts";
-import { parseCookies, randomId } from "./shared/utils.ts";
+import { getHeader, parseCookies, randomId } from "./shared/utils.ts";
 
 export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
@@ -66,12 +86,24 @@ export interface CreateApplicationOptions {
   emitLogs?: boolean;
   registrationCodeGenerator?: () => string;
   registrationEmailSender?: RegistrationEmailSender;
+  llmProviders?: Record<string, LLMProvider>;
+  embeddingProviders?: Record<string, EmbeddingProvider>;
   kvBackend?: KVBackend;
   kvManager?: KVManager;
   geoResolver?: GeoResolver;
+  logEncryptionKeys?: Record<string, string>;
+  logEncryptionKeyResolver?: ClientLogEncryptionKeyResolver;
   adminBasicAuth?: {
     username: string;
     password: string;
+  };
+  adminSensitiveOperation?: {
+    recipientEmail?: string;
+    locale?: string;
+    region?: TencentSesRegion;
+    templateName?: string;
+    appName?: string;
+    codeGenerator?: () => string;
   };
 }
 
@@ -144,9 +176,14 @@ export class BackendApplication {
     private readonly adminConsoleService: AdminConsoleService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly adminSessionStore: AdminSessionStore,
+    private readonly appLogSecretService: AppLogSecretService,
+    private readonly adminSensitiveOperationService: AdminSensitiveOperationService,
     private readonly llmManager: LLMManager,
+    private readonly embeddingManager: EmbeddingManager,
     private readonly llmSmokeTestService: LlmSmokeTestService,
+    private readonly aiNovelLlmService: AiNovelLlmService,
     private readonly storageService: StorageService,
+    private readonly clientLogUploadService: ClientLogUploadService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
     private readonly requestEmailContextService: RequestEmailContextService,
@@ -183,9 +220,14 @@ export class BackendApplication {
       qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
+      appLogSecretService: this.appLogSecretService,
+      adminSensitiveOperationService: this.adminSensitiveOperationService,
       llmManager: this.llmManager,
+      embeddingManager: this.embeddingManager,
       llmSmokeTestService: this.llmSmokeTestService,
+      aiNovelLlmService: this.aiNovelLlmService,
       storageService: this.storageService,
+      clientLogUploadService: this.clientLogUploadService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
     };
@@ -206,6 +248,14 @@ export class BackendApplication {
 
     if (request.method === "GET" && request.path === "/api/v1/admin/bootstrap") {
       return this.handleAdminBootstrap(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/sensitive-operations/request-code") {
+      return this.handleAdminRequestSensitiveOperationCode(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/sensitive-operations/verify") {
+      return this.handleAdminVerifySensitiveOperationCode(request);
     }
 
     if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/email-service") {
@@ -314,6 +364,47 @@ export class BackendApplication {
       return this.handleAdminDeleteApp(request, decodeURIComponent(adminAppMatch[1] as string));
     }
 
+    const adminAppLogSecretRevealMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/log-secret\/reveal$/,
+    );
+    if (request.method === "POST" && adminAppLogSecretRevealMatch) {
+      return this.handleAdminRevealAppLogSecret(
+        request,
+        decodeURIComponent(adminAppLogSecretRevealMatch[1] as string),
+      );
+    }
+
+    const adminI18nSettingsMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings$/);
+    if (request.method === "GET" && adminI18nSettingsMatch) {
+      return this.handleAdminGetI18nSettings(request, decodeURIComponent(adminI18nSettingsMatch[1] as string));
+    }
+
+    if (request.method === "PUT" && adminI18nSettingsMatch) {
+      return this.handleAdminUpdateI18nSettings(request, decodeURIComponent(adminI18nSettingsMatch[1] as string));
+    }
+
+    const adminI18nRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminI18nRevisionMatch) {
+      return this.handleAdminGetI18nSettingsRevision(
+        request,
+        decodeURIComponent(adminI18nRevisionMatch[1] as string),
+        Number(adminI18nRevisionMatch[2]),
+      );
+    }
+
+    const adminI18nRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminI18nRestoreMatch) {
+      return this.handleAdminRestoreI18nSettingsRevision(
+        request,
+        decodeURIComponent(adminI18nRestoreMatch[1] as string),
+        Number(adminI18nRestoreMatch[2]),
+      );
+    }
+
     const adminConfigMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/config$/);
     if (request.method === "GET" && adminConfigMatch) {
       return this.handleAdminGetConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
@@ -409,6 +500,22 @@ export class BackendApplication {
 
     if (request.method === "POST" && request.path === "/api/v1/notifications/send") {
       return this.handleNotification(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/chat-completions") {
+      return this.handleAiNovelChatCompletions(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") {
+      return this.handleAiNovelEmbeddings(request);
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/logs/pull-task") {
+      return this.handleLogsPullTask(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/logs/upload") {
+      return this.handleLogsUpload(request);
     }
 
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
@@ -933,6 +1040,51 @@ export class BackendApplication {
     );
   }
 
+  private async handleAdminRequestSensitiveOperationCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSensitiveOperationCodeRequestDocument>> {
+    const session = this.requireAdminSession(request);
+    const body = this.validationPipe.asObject(request.body);
+    const operation = this.validationPipe.requireString(body, "operation");
+    const result = await this.adminSensitiveOperationService.requestCode(session, operation);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sensitive_operation.request_code",
+      resourceType: "sensitive_operation",
+      resourceId: result.operation,
+      payload: {
+        adminUser: session.username,
+        recipientEmailMasked: result.recipientEmailMasked,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminVerifySensitiveOperationCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSensitiveOperationGrantDocument>> {
+    const session = this.requireAdminSession(request);
+    const body = this.validationPipe.asObject(request.body);
+    const operation = this.validationPipe.requireString(body, "operation");
+    const code = this.validationPipe.requireString(body, "code");
+    const result = await this.adminSensitiveOperationService.verifyCode(session, operation, code);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sensitive_operation.verify",
+      resourceType: "sensitive_operation",
+      resourceId: result.operation,
+      payload: {
+        adminUser: session.username,
+        expiresAt: result.expiresAt,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminCreateApp(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
@@ -947,6 +1099,27 @@ export class BackendApplication {
       resourceId: result.appId,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRevealAppLogSecret(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppLogSecretRevealDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(session, APP_LOG_SECRET_READ_OPERATION);
+    const result = await this.adminConsoleService.revealAppLogSecret(appId);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.app.log_secret.reveal",
+      resourceType: "app_log_secret",
+      resourceId: result.keyId,
+      payload: {
+        adminUser: session.username,
       },
     });
 
@@ -1328,6 +1501,93 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminGetI18nSettings(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getI18nSettings(appId);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateI18nSettings(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const config = body.config ?? body;
+    const result = await this.adminConsoleService.updateI18nSettings(appId, config, desc);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetI18nSettingsRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getI18nSettings(appId, revision);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreI18nSettingsRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<AdminAppI18nDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.restoreI18nSettings(appId, revision);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.i18n_settings.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private parseLlmMetricsRange(value: string | undefined): LlmMetricsRange {
     if (!value) {
       return "24h";
@@ -1471,6 +1731,56 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAiNovelChatCompletions(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    this.authenticateOptionalProductRequest(request, "ai_novel");
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.aiNovelLlmService.createChatCompletion(body);
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAiNovelEmbeddings(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    this.authenticateOptionalProductRequest(request, "ai_novel");
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.aiNovelLlmService.createEmbeddings(body);
+    return this.ok(result, request.requestId as string);
+  }
+
+  private handleLogsPullTask(request: HttpRequest): HttpResponse<LogPullTaskResult> {
+    const auth = this.authenticate(request);
+    const result = this.clientLogUploadService.getPullTask(auth);
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleLogsUpload(request: HttpRequest): Promise<HttpResponse<LogUploadResult>> {
+    const auth = this.authenticate(request);
+    const result = await this.clientLogUploadService.upload({
+      auth,
+      taskId: this.requireHeader(request, "x-log-task-id"),
+      keyId: this.requireHeader(request, "x-log-key-id"),
+      encryption: this.requireHeader(request, "x-log-enc"),
+      nonceBase64: this.requireHeader(request, "x-log-nonce"),
+      contentEncoding: this.requireHeader(request, "x-log-content"),
+      lineCountReported: this.optionalIntegerHeader(request, "x-log-line-count"),
+      plainBytesReported: this.optionalIntegerHeader(request, "x-log-plain-bytes"),
+      compressedBytesReported: this.optionalIntegerHeader(request, "x-log-compressed-bytes"),
+      body: this.requireBinaryBody(request.body),
+    });
+
+    this.auditInterceptor.record({
+      appId: auth.appId,
+      actorUserId: auth.userId,
+      action: "logs.upload",
+      resourceType: "client_log_upload",
+      resourceId: result.taskId,
+      resourceOwnerUserId: auth.userId,
+      payload: {
+        acceptedCount: result.acceptedCount,
+        rejectedCount: result.rejectedCount,
+      },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
   private authenticate(request: HttpRequest) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
@@ -1478,6 +1788,27 @@ export class BackendApplication {
     if (explicitAppId) {
       this.appAccessGuard.assertScope(explicitAppId, auth.appId);
     }
+    return auth;
+  }
+
+  private authenticateOptionalProductRequest(request: HttpRequest, appId: string) {
+    const authorization = getHeader(request.headers, "authorization");
+    if (!authorization) {
+      const explicitAppId = getHeader(request.headers, "x-app-id");
+      if (!explicitAppId) {
+        throw new ApplicationError(400, "REQ_INVALID_BODY", "X-App-Id header is required when Authorization is missing.");
+      }
+
+      if (explicitAppId !== appId) {
+        throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${appId}.`);
+      }
+
+      return undefined;
+    }
+
+    const auth = this.authGuard.canActivate(request);
+    this.appContextResolver.resolvePostAuth(request, auth.appId);
+    this.appAccessGuard.assertScope(appId, auth.appId);
     return auth;
   }
 
@@ -1496,6 +1827,14 @@ export class BackendApplication {
     }
 
     return this.validateAdminCredentials(credentials.username, credentials.password);
+  }
+
+  private requireAdminSession(request: HttpRequest): AdminSessionRecord {
+    if (!request.adminSession) {
+      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin session login is required.");
+    }
+
+    return request.adminSession;
   }
 
   private validateAdminCredentials(username: string, password: string): string {
@@ -1584,6 +1923,45 @@ export class BackendApplication {
     return process.env.NODE_ENV === "production";
   }
 
+  private requireHeader(request: HttpRequest, headerName: string): string {
+    const value = getHeader(request.headers, headerName)?.trim();
+    if (!value) {
+      throw new ApplicationError(400, "REQ_INVALID_HEADER", `${headerName} header is required.`);
+    }
+
+    return value;
+  }
+
+  private optionalIntegerHeader(request: HttpRequest, headerName: string): number | undefined {
+    const rawValue = getHeader(request.headers, headerName)?.trim();
+    if (!rawValue) {
+      return undefined;
+    }
+
+    const value = Number(rawValue);
+    if (!Number.isInteger(value) || value < 0) {
+      throw new ApplicationError(400, "REQ_INVALID_HEADER", `${headerName} header must be a non-negative integer.`);
+    }
+
+    return value;
+  }
+
+  private requireBinaryBody(body: unknown): Buffer {
+    if (Buffer.isBuffer(body)) {
+      return body;
+    }
+
+    if (body instanceof Uint8Array) {
+      return Buffer.from(body);
+    }
+
+    if (body instanceof ArrayBuffer) {
+      return Buffer.from(body);
+    }
+
+    throw new ApplicationError(400, "REQ_INVALID_BODY", "Request body must be binary.");
+  }
+
   private ok<T>(data: T, requestId: string, headers?: Record<string, string>): HttpResponse<T> {
     return {
       statusCode: 200,
@@ -1622,6 +2000,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   });
 
   const appConfigService = new AppConfigService(database, cache, kvManager);
+  const appI18nConfigService = new AppI18nConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
@@ -1629,6 +2008,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
+  const appLogSecretService = new AppLogSecretService(database, appConfigService);
+  const initializedAppLogSecrets = appLogSecretService.initializeSecrets(database.apps.map((item) => item.id));
+  if (initializedAppLogSecrets) {
+    await managedStateStore.save(database);
+  }
   const llmHealthService = new LlmHealthService(kvManager);
   const llmMetricsService = new LlmMetricsService(kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
@@ -1644,6 +2028,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     kvManager,
     registrationEmailSender,
   );
+  const adminSensitiveOperationService = new AdminSensitiveOperationService(
+    kvManager,
+    registrationEmailSender,
+    options.adminSensitiveOperation,
+  );
   const geoResolver =
     options.geoResolver ??
     (process.env.GEO_RESOLVER_URL?.trim()
@@ -1657,6 +2046,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
         )
       : new NoopGeoResolver());
   const requestEmailContextService = new RequestEmailContextService(geoResolver);
+  const requestLocaleService = new RequestLocaleService();
+  const i18nService = new I18nService(appI18nConfigService, requestLocaleService);
   const authService = new AuthService(
     database,
     cache,
@@ -1670,17 +2061,33 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const llmProviders = {
-    bailian: new BailianOpenAICompatibleProvider(),
+  const bailianProvider = new BailianOpenAICompatibleProvider();
+  const llmProviders = options.llmProviders ?? {
+    bailian: bailianProvider,
   };
+  const embeddingProviders = options.embeddingProviders ?? {
+    bailian: bailianProvider,
+  };
+  const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
+    commonLlmConfigService,
+    llmHealthService,
+    llmMetricsService,
+  });
   const llmSmokeTestService = new LlmSmokeTestService(
     commonLlmConfigService,
     kvManager,
     llmProviders,
+    embeddingProviders,
   );
+  const logEncryptionKeyResolver = new CompositeClientLogEncryptionKeyResolver([
+    options.logEncryptionKeyResolver ?? new StaticClientLogEncryptionKeyResolver(options.logEncryptionKeys),
+    appLogSecretService,
+  ]);
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
+    appI18nConfigService,
+    appLogSecretService,
     commonEmailConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
@@ -1697,7 +2104,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmHealthService,
     llmMetricsService,
   });
+  const aiNovelLlmService = new AiNovelLlmService(llmManager, embeddingManager);
   const storageService = new StorageService(database);
+  const clientLogUploadService = new ClientLogUploadService(
+    database,
+    logEncryptionKeyResolver,
+  );
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
   const appContextResolver = new AppContextResolver(
@@ -1723,9 +2135,14 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     adminConsoleService,
     adminBasicAuth,
     adminSessionStore,
+    appLogSecretService,
+    adminSensitiveOperationService,
     llmManager,
+    embeddingManager,
     llmSmokeTestService,
+    aiNovelLlmService,
     storageService,
+    clientLogUploadService,
     notificationService,
     failedEventRetryService,
     requestEmailContextService,
@@ -1748,6 +2165,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     passwordHasher,
     services: {
       appConfigService,
+      appI18nConfigService,
       kvManager,
       passwordManager,
       adminSessionStore,
@@ -1755,6 +2173,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       commonPasswordConfigService,
       commonEmailConfigService,
       commonLlmConfigService,
+      appLogSecretService,
+      adminSensitiveOperationService,
       appRegistryService,
       emailTestSendService,
       userService,
@@ -1764,14 +2184,19 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       analyticsService,
       adminConsoleService,
       llmManager,
+      embeddingManager,
       llmHealthService,
       llmMetricsService,
       llmSmokeTestService,
+      aiNovelLlmService,
       rbacService,
       storageService,
+      clientLogUploadService,
       notificationService,
       failedEventRetryService,
       requestEmailContextService,
+      requestLocaleService,
+      i18nService,
       appContextResolver,
       authGuard,
       appAccessGuard,

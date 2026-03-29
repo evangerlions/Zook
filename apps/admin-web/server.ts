@@ -1,39 +1,36 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { statSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { extname } from "node:path";
+import { stat } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 interface AdminServerOptions {
   proxyTarget?: string;
   brandName?: string;
   defaultAppId?: string;
+  staticRoot?: string;
   assetVersion?: string;
 }
-
-const STATIC_FILE_MAP = new Map<string, string>([
-  ["/app.js", "app.js"],
-  ["/styles.css", "styles.css"],
-]);
 
 const CONTENT_TYPES: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
   ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
 };
 
 const DEFAULT_PROXY_TARGET = "http://127.0.0.1:3100";
 const DEFAULT_BRAND_NAME = "Zook Control Room";
 const DEFAULT_PORT = 3110;
+const DEFAULT_STATIC_ROOT = fileURLToPath(new URL("./build/client", import.meta.url));
 const INTERNAL_HEALTH_PATH = "/_admin/health";
-
-function getStaticRoot(): string {
-  return fileURLToPath(new URL("./", import.meta.url));
-}
-
-function toContentType(pathname: string): string {
-  return CONTENT_TYPES[extname(pathname)] ?? "application/octet-stream";
-}
+const RUNTIME_CONFIG_PATH = "/_admin/runtime-config.js";
 
 function createRuntimeConfig(options: AdminServerOptions) {
   return {
@@ -45,61 +42,12 @@ function createRuntimeConfig(options: AdminServerOptions) {
   };
 }
 
-function resolveAssetVersion(options: AdminServerOptions): string {
-  const explicitValue =
-    options.assetVersion ??
-    process.env.ADMIN_ASSET_VERSION ??
-    process.env.APP_VERSION ??
-    process.env.GIT_SHA;
-
-  if (explicitValue?.trim()) {
-    return explicitValue.trim();
-  }
-
-  const staticRoot = getStaticRoot();
-  const assetFiles = ["app.js", "styles.css", "server.ts", "index.html"];
-  const latestMtime = assetFiles.reduce((maxValue, fileName) => {
-    const filePath = fileURLToPath(new URL(`./${fileName}`, pathToFileURL(staticRoot)));
-    return Math.max(maxValue, statSync(filePath).mtimeMs);
-  }, 0);
-
-  return `local-${Math.floor(latestMtime)}`;
+function getStaticRoot(options: AdminServerOptions): string {
+  return options.staticRoot ?? process.env.ADMIN_STATIC_ROOT ?? DEFAULT_STATIC_ROOT;
 }
 
-function createAssetFingerprint(assetVersion: string): string {
-  return assetVersion.replace(/[^a-zA-Z0-9._-]/g, "-") || "dev";
-}
-
-function createVersionedAssetPath(pathname: string, assetVersion: string): string {
-  const fingerprint = createAssetFingerprint(assetVersion);
-
-  if (pathname === "/app.js") {
-    return `/assets/app.${fingerprint}.js`;
-  }
-
-  if (pathname === "/styles.css") {
-    return `/assets/styles.${fingerprint}.css`;
-  }
-
-  if (pathname === "/_admin/runtime-config.js") {
-    return `/_admin/runtime-config.${fingerprint}.js`;
-  }
-
-  return pathname;
-}
-
-function resolveVersionedStaticAsset(pathname: string): string | null {
-  const assetMatch = pathname.match(/^\/assets\/(app|styles)\.[a-zA-Z0-9._-]+\.(js|css)$/);
-  if (assetMatch) {
-    return assetMatch[1] === "app" ? "app.js" : "styles.css";
-  }
-
-  const runtimeMatch = pathname.match(/^\/_admin\/runtime-config\.[a-zA-Z0-9._-]+\.js$/);
-  if (runtimeMatch) {
-    return "_admin/runtime-config.js";
-  }
-
-  return null;
+function toContentType(pathname: string): string {
+  return CONTENT_TYPES[extname(pathname)] ?? "application/octet-stream";
 }
 
 function sanitizeProxyHeaders(request: IncomingMessage): Headers {
@@ -178,50 +126,44 @@ async function proxyApiRequest(
   }
 }
 
-async function serveStaticFile(response: ServerResponse, pathname: string): Promise<void> {
-  const filePath = new URL(`./${pathname}`, import.meta.url);
-  const body = await readFile(filePath);
-  response.statusCode = 200;
-  response.setHeader("Content-Type", toContentType(pathname));
-  if (pathname.endsWith(".js") || pathname.endsWith(".css")) {
-    response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
-  } else if (pathname.endsWith(".html")) {
-    response.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+async function statIfExists(pathname: string) {
+  try {
+    return await stat(pathname);
+  } catch {
+    return null;
   }
-  response.end(body);
 }
 
-async function serveVersionedStaticFile(response: ServerResponse, pathname: string): Promise<void> {
-  const filePath = new URL(`./${pathname}`, import.meta.url);
-  const body = await readFile(filePath);
+function resolveStaticPath(staticRoot: string, pathname: string): string | null {
+  const normalizedPath = normalize(pathname).replace(/^(\.\.[/\\])+/, "");
+  const resolvedPath = resolve(join(staticRoot, normalizedPath.replace(/^[/\\]+/, "")));
+  const resolvedRoot = resolve(staticRoot);
+
+  if (!resolvedPath.startsWith(resolvedRoot)) {
+    return null;
+  }
+
+  return resolvedPath;
+}
+
+async function serveFile(response: ServerResponse, pathname: string, cacheControl: string): Promise<void> {
   response.statusCode = 200;
   response.setHeader("Content-Type", toContentType(pathname));
-  response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-  response.end(body);
-}
+  response.setHeader("Cache-Control", cacheControl);
 
-async function serveIndex(response: ServerResponse, options: AdminServerOptions): Promise<void> {
-  const assetVersion = resolveAssetVersion(options);
-  const filePath = new URL("./index.html", import.meta.url);
-  const template = await readFile(filePath, "utf8");
-  const html = template
-    .replaceAll("__ADMIN_STYLES_URL__", createVersionedAssetPath("/styles.css", assetVersion))
-    .replaceAll("__ADMIN_RUNTIME_CONFIG_URL__", createVersionedAssetPath("/_admin/runtime-config.js", assetVersion))
-    .replaceAll("__ADMIN_APP_SCRIPT_URL__", createVersionedAssetPath("/app.js", assetVersion));
-
-  response.statusCode = 200;
-  response.setHeader("Content-Type", "text/html; charset=utf-8");
-  response.setHeader("Cache-Control", assetVersion.startsWith("local-") ? "no-store" : "public, max-age=60, stale-while-revalidate=300");
-  response.end(html);
+  await new Promise<void>((resolvePromise, rejectPromise) => {
+    const stream = createReadStream(pathname);
+    stream.on("error", rejectPromise);
+    stream.on("end", () => resolvePromise());
+    stream.pipe(response);
+  });
 }
 
 function serveRuntimeConfig(response: ServerResponse, options: AdminServerOptions): void {
   const payload = JSON.stringify(createRuntimeConfig(options)).replace(/</g, "\\u003c");
-  const assetVersion = resolveAssetVersion(options);
-
   response.statusCode = 200;
   response.setHeader("Content-Type", "application/javascript; charset=utf-8");
-  response.setHeader("Cache-Control", assetVersion.startsWith("local-") ? "no-store" : "public, max-age=60, stale-while-revalidate=300");
+  response.setHeader("Cache-Control", "no-store");
   response.end(`window.__ADMIN_RUNTIME_CONFIG__ = ${payload};\n`);
 }
 
@@ -247,6 +189,85 @@ function notFound(response: ServerResponse): void {
   response.end("Not found.");
 }
 
+function serviceUnavailable(response: ServerResponse): void {
+  response.statusCode = 503;
+  response.setHeader("Content-Type", "text/plain; charset=utf-8");
+  response.end("Admin web build is missing. Run `npm run admin:install` and `npm run admin:build` first.");
+}
+
+async function serveIndex(response: ServerResponse, staticRoot: string): Promise<void> {
+  const indexPath = join(staticRoot, "index.html");
+  const indexStat = await statIfExists(indexPath);
+  if (!indexStat?.isFile()) {
+    serviceUnavailable(response);
+    return;
+  }
+
+  await serveFile(response, indexPath, "no-store");
+}
+
+async function handleStaticRequest(
+  request: IncomingMessage,
+  response: ServerResponse,
+  pathname: string,
+  options: AdminServerOptions,
+): Promise<void> {
+  if (pathname === RUNTIME_CONFIG_PATH) {
+    serveRuntimeConfig(response, options);
+    return;
+  }
+
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    response.statusCode = 405;
+    response.setHeader("Content-Type", "text/plain; charset=utf-8");
+    response.end("Method not allowed.");
+    return;
+  }
+
+  if (pathname === "/favicon.ico") {
+    const faviconPath = resolveStaticPath(getStaticRoot(options), pathname);
+    if (faviconPath) {
+      const faviconStat = await statIfExists(faviconPath);
+      if (faviconStat?.isFile()) {
+        await serveFile(response, faviconPath, "public, max-age=3600");
+        return;
+      }
+    }
+
+    response.statusCode = 204;
+    response.end();
+    return;
+  }
+
+  if (pathname.startsWith("/_admin/")) {
+    notFound(response);
+    return;
+  }
+
+  const staticRoot = getStaticRoot(options);
+  const resolvedPath = resolveStaticPath(staticRoot, pathname);
+  if (!resolvedPath) {
+    notFound(response);
+    return;
+  }
+
+  const fileStat = await statIfExists(resolvedPath);
+  if (fileStat?.isFile()) {
+    const cacheControl = pathname.includes("/assets/") || /\.[a-z0-9]{8,}\./i.test(pathname)
+      ? "public, max-age=31536000, immutable"
+      : "public, max-age=3600";
+    await serveFile(response, resolvedPath, cacheControl);
+    return;
+  }
+
+  if (extname(pathname)) {
+    notFound(response);
+    return;
+  }
+
+  await serveIndex(response, staticRoot);
+}
+
 async function handleRequest(
   request: IncomingMessage,
   response: ServerResponse,
@@ -269,52 +290,7 @@ async function handleRequest(
     return;
   }
 
-  if (pathname === "/_admin/runtime-config.js") {
-    serveRuntimeConfig(response, options);
-    return;
-  }
-
-  const versionedStaticFile = resolveVersionedStaticAsset(pathname);
-  if (versionedStaticFile === "_admin/runtime-config.js") {
-    serveRuntimeConfig(response, options);
-    return;
-  }
-
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    response.statusCode = 405;
-    response.setHeader("Content-Type", "text/plain; charset=utf-8");
-    response.end("Method not allowed.");
-    return;
-  }
-
-  if (pathname === "/favicon.ico") {
-    response.statusCode = 204;
-    response.end();
-    return;
-  }
-
-  if (versionedStaticFile) {
-    await serveVersionedStaticFile(response, versionedStaticFile);
-    return;
-  }
-
-  if (pathname === "/" || pathname === "/index.html") {
-    await serveIndex(response, options);
-    return;
-  }
-
-  const staticFile = STATIC_FILE_MAP.get(pathname);
-  if (staticFile) {
-    await serveStaticFile(response, staticFile);
-    return;
-  }
-
-  if (pathname.startsWith("/_admin/")) {
-    notFound(response);
-    return;
-  }
-
-  await serveIndex(response, options);
+  await handleStaticRequest(request, response, pathname, options);
 }
 
 export function createAdminServer(options: AdminServerOptions = {}): Server {
@@ -339,10 +315,10 @@ export function startAdminServer(options: AdminServerOptions = {}): Server {
           level: "info",
           message: "admin-web started",
           port,
-          proxyTarget:
-            options.proxyTarget ?? process.env.ADMIN_API_PROXY_TARGET ?? DEFAULT_PROXY_TARGET,
+          proxyTarget: options.proxyTarget ?? process.env.ADMIN_API_PROXY_TARGET ?? DEFAULT_PROXY_TARGET,
+          staticRoot: getStaticRoot(options),
           brandName: runtimeConfig.brandName,
-          loginMode: "frontend-basic",
+          loginMode: "session-cookie",
         },
         null,
         2,

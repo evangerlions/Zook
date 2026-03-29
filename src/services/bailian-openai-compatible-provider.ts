@@ -1,4 +1,5 @@
 import { ApplicationError } from "../shared/errors.ts";
+import type { EmbeddingProvider, EmbeddingResult, ResolvedEmbeddingRequest } from "./embedding-manager.ts";
 import type {
   LLMCompletionResult,
   LLMProvider,
@@ -23,7 +24,27 @@ interface OpenAICompatibleChoice {
 }
 
 interface OpenAICompatibleResponsePayload {
+  id?: string;
   choices?: OpenAICompatibleChoice[];
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  } | null;
+  error?: {
+    message?: string;
+    code?: string;
+    type?: string;
+  };
+  message?: string;
+}
+
+interface OpenAICompatibleEmbeddingPayload {
+  id?: string;
+  data?: Array<{
+    index?: number;
+    embedding?: number[];
+  }>;
   usage?: {
     prompt_tokens?: number;
     completion_tokens?: number;
@@ -43,7 +64,7 @@ export interface BailianOpenAICompatibleProviderOptions {
   fetchImplementation?: typeof fetch;
 }
 
-export class BailianOpenAICompatibleProvider implements LLMProvider {
+export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingProvider {
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly fetchImplementation: typeof fetch;
@@ -59,9 +80,13 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
   }
 
   async complete(request: ResolvedLLMCompletionRequest): Promise<LLMCompletionResult> {
-    const response = await this.fetchImplementation(
-      this.buildUrl(request),
-      this.buildRequestInit(request, this.buildRequestBody(request)),
+    const response = await this.execute(
+      this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      this.buildRequestInit(
+        request.model.providerConfig?.apiKey ?? this.apiKey,
+        request.model.providerConfig?.timeoutMs ?? 0,
+        this.buildChatRequestBody(request),
+      ),
     );
     const payload = await this.readJsonPayload(response, !response.ok);
 
@@ -86,26 +111,81 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
       text,
       reasoningText: this.readOptionalString(choice.message.reasoning_content),
       finishReason: this.readOptionalString(choice.finish_reason),
-      usage: this.parseUsage(payload.usage),
+      usage: this.parseChatUsage(payload.usage),
+      providerRequestId: this.readOptionalString(payload.id),
+    };
+  }
+
+  async embed(request: ResolvedEmbeddingRequest): Promise<EmbeddingResult> {
+    const response = await this.execute(
+      this.buildEmbeddingsUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      this.buildRequestInit(
+        request.model.providerConfig?.apiKey ?? this.apiKey,
+        request.model.providerConfig?.timeoutMs ?? 0,
+        {
+          ...request.providerOptions,
+          model: request.model.providerModel,
+          input: request.input,
+        },
+      ),
+    );
+    const payload = await this.readEmbeddingPayload(response, !response.ok);
+
+    if (!response.ok || payload.error) {
+      this.throwEmbeddingRequestFailed(response.status, payload);
+    }
+
+    if (!Array.isArray(payload.data) || payload.data.length === 0) {
+      this.throwProviderResponseInvalid("Embedding response does not contain any vectors.");
+    }
+
+    const vectors = payload.data.map((item, index) => {
+      if (
+        typeof item.index !== "number" ||
+        !Array.isArray(item.embedding) ||
+        item.embedding.some((value) => typeof value !== "number" || Number.isNaN(value))
+      ) {
+        this.throwProviderResponseInvalid("Embedding response contains an invalid vector item.", {
+          index,
+        });
+      }
+
+      return {
+        index: item.index,
+        embedding: item.embedding,
+      };
+    });
+
+    return {
+      provider: request.model.provider,
+      modelKey: request.model.modelKey,
+      providerModel: request.model.providerModel,
+      vectors,
+      usage: this.parseEmbeddingUsage(payload.usage),
+      providerRequestId: this.readOptionalString(payload.id),
     };
   }
 
   async *stream(request: ResolvedLLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
     const streamOptions = this.getProviderStreamOptions(request.providerOptions);
-    const response = await this.fetchImplementation(
-      this.buildUrl(request),
-      this.buildRequestInit(request, {
-        ...request.providerOptions,
-        model: request.model.providerModel,
-        messages: request.messages,
-        ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-        ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
-        stream: true,
-        stream_options: {
-          ...streamOptions,
-          include_usage: true,
+    const response = await this.execute(
+      this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      this.buildRequestInit(
+        request.model.providerConfig?.apiKey ?? this.apiKey,
+        request.model.providerConfig?.timeoutMs ?? 0,
+        {
+          ...request.providerOptions,
+          model: request.model.providerModel,
+          messages: request.messages,
+          ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
+          ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
+          stream: true,
+          stream_options: {
+            ...streamOptions,
+            include_usage: true,
+          },
         },
-      }),
+      ),
     );
 
     if (!response.ok) {
@@ -141,7 +221,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
         this.throwProviderRequestFailed(response.status, payload);
       }
 
-      const usage = this.parseUsage(payload.usage);
+      const usage = this.parseChatUsage(payload.usage);
       if (usage) {
         yield {
           type: "usage",
@@ -182,24 +262,25 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     this.throwProviderResponseInvalid("Streaming response ended before [DONE].");
   }
 
-  private buildUrl(request: ResolvedLLMCompletionRequest): string {
-    const baseUrl = normalizeBaseUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl);
-    return `${baseUrl}/chat/completions`;
+  private buildChatUrl(baseUrl: string): string {
+    return `${normalizeBaseUrl(baseUrl)}/chat/completions`;
   }
 
-  private buildHeaders(request: ResolvedLLMCompletionRequest): Record<string, string> {
-    const apiKey = request.model.providerConfig?.apiKey ?? this.apiKey;
+  private buildEmbeddingsUrl(baseUrl: string): string {
+    return `${normalizeBaseUrl(baseUrl)}/embeddings`;
+  }
+
+  private buildHeaders(apiKey: string): Record<string, string> {
     return {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     };
   }
 
-  private buildRequestInit(request: ResolvedLLMCompletionRequest, body: Record<string, unknown>): RequestInit {
-    const timeoutMs = request.model.providerConfig?.timeoutMs ?? 0;
+  private buildRequestInit(apiKey: string, timeoutMs: number, body: Record<string, unknown>): RequestInit {
     return {
       method: "POST",
-      headers: this.buildHeaders(request),
+      headers: this.buildHeaders(apiKey),
       body: JSON.stringify(body),
       ...(timeoutMs > 0 && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
         ? { signal: AbortSignal.timeout(timeoutMs) }
@@ -207,7 +288,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     };
   }
 
-  private buildRequestBody(request: ResolvedLLMCompletionRequest): Record<string, unknown> {
+  private buildChatRequestBody(request: ResolvedLLMCompletionRequest): Record<string, unknown> {
     return {
       ...request.providerOptions,
       model: request.model.providerModel,
@@ -215,6 +296,31 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
       ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
       ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
     };
+  }
+
+  private async execute(url: string, init: RequestInit): Promise<Response> {
+    try {
+      return await this.fetchImplementation(url, init);
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new ApplicationError(504, "LLM_PROVIDER_REQUEST_FAILED", "Bailian request timed out.", {
+          provider: "bailian",
+          reason: "timeout",
+          cause: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      throw new ApplicationError(
+        502,
+        "LLM_PROVIDER_REQUEST_FAILED",
+        "Bailian request failed before a response was received.",
+        {
+          provider: "bailian",
+          reason: "network_error",
+          cause: error instanceof Error ? error.message : String(error),
+        },
+      );
+    }
   }
 
   private async readJsonPayload(response: Response, allowInvalidJsonDetails: boolean): Promise<OpenAICompatibleResponsePayload> {
@@ -239,7 +345,32 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     }
   }
 
-  private parseUsage(usage: OpenAICompatibleResponsePayload["usage"]): LLMUsage | undefined {
+  private async readEmbeddingPayload(
+    response: Response,
+    allowInvalidJsonDetails: boolean,
+  ): Promise<OpenAICompatibleEmbeddingPayload> {
+    const rawBody = await response.text();
+    if (!rawBody) {
+      this.throwProviderResponseInvalid("Provider response body is empty.");
+    }
+
+    try {
+      return JSON.parse(rawBody) as OpenAICompatibleEmbeddingPayload;
+    } catch (error) {
+      if (allowInvalidJsonDetails) {
+        this.throwProviderRequestFailed(response.status, {
+          message: `Provider returned non-JSON error payload: ${rawBody}`,
+        });
+      }
+
+      this.throwProviderResponseInvalid("Provider response is not valid JSON.", {
+        cause: error instanceof Error ? error.message : String(error),
+        body: rawBody,
+      });
+    }
+  }
+
+  private parseChatUsage(usage: OpenAICompatibleResponsePayload["usage"]): LLMUsage | undefined {
     if (!usage) {
       return undefined;
     }
@@ -258,6 +389,24 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     return {
       promptTokens,
       completionTokens,
+      totalTokens,
+    };
+  }
+
+  private parseEmbeddingUsage(usage: OpenAICompatibleEmbeddingPayload["usage"]): LLMUsage | undefined {
+    if (!usage) {
+      return undefined;
+    }
+
+    const promptTokens = usage.prompt_tokens;
+    const totalTokens = usage.total_tokens;
+    if (typeof promptTokens !== "number" || typeof totalTokens !== "number") {
+      this.throwProviderResponseInvalid("Provider embedding usage payload is invalid.");
+    }
+
+    return {
+      promptTokens,
+      completionTokens: typeof usage.completion_tokens === "number" ? usage.completion_tokens : 0,
       totalTokens,
     };
   }
@@ -282,6 +431,20 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
       payload.error?.message ??
       payload.message ??
       `Bailian request failed with status ${statusCode}.`;
+
+    throw new ApplicationError(502, "LLM_PROVIDER_REQUEST_FAILED", errorMessage, {
+      provider: "bailian",
+      statusCode,
+      errorCode: payload.error?.code,
+      errorType: payload.error?.type,
+    });
+  }
+
+  private throwEmbeddingRequestFailed(statusCode: number, payload: OpenAICompatibleEmbeddingPayload): never {
+    const errorMessage =
+      payload.error?.message ??
+      payload.message ??
+      `Bailian embedding request failed with status ${statusCode}.`;
 
     throw new ApplicationError(502, "LLM_PROVIDER_REQUEST_FAILED", errorMessage, {
       provider: "bailian",
@@ -350,6 +513,10 @@ function normalizeBaseUrl(baseUrl: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
 }
 
 function toRecord(details: unknown): Record<string, unknown> {

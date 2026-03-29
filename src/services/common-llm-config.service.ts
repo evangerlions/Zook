@@ -6,6 +6,7 @@ import type {
   AdminAppSummary,
   AdminLlmServiceDocument,
   LlmModelConfig,
+  LlmModelKind,
   LlmModelRouteConfig,
   LlmProviderConfig,
   LlmRoutingStrategy,
@@ -21,8 +22,15 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
   appName: "服务端配置",
   status: "ACTIVE",
   canDelete: false,
+  logSecret: {
+    keyId: "common",
+    secretMasked: "",
+    updatedAt: "",
+  },
 };
 const DEFAULT_PROVIDER_TIMEOUT_MS = 30000;
+const DEFAULT_MODEL_KIND: LlmModelKind = "chat";
+const VALID_MODEL_KINDS = new Set<LlmModelKind>(["chat", "embedding"]);
 const VALID_ROUTING_STRATEGIES = new Set<LlmRoutingStrategy>(["auto", "fixed"]);
 const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -174,8 +182,13 @@ export class CommonLlmConfigService {
       badRequest("ADMIN_LLM_SERVICE_INVALID", "defaultModelKey is required when LLM service is enabled.");
     }
 
-    if (!config.models.some((item) => item.key === config.defaultModelKey)) {
+    const defaultModel = config.models.find((item) => item.key === config.defaultModelKey);
+    if (!defaultModel) {
       badRequest("ADMIN_LLM_SERVICE_INVALID", "defaultModelKey must reference an existing model.");
+    }
+
+    if (defaultModel.kind !== "chat") {
+      badRequest("ADMIN_LLM_SERVICE_INVALID", "defaultModelKey must reference a chat model.");
     }
 
     return config;
@@ -246,12 +259,14 @@ export class CommonLlmConfigService {
       const source = item as Record<string, unknown>;
       const key = this.normalizeModelKey(source.key);
       const label = this.requireTrimmedString(source.label, `Model ${key || `#${index + 1}`} label is required.`);
+      const kind = this.normalizeKind(source.kind);
       const strategy = this.normalizeStrategy(source.strategy);
       const routes = this.normalizeRoutes(source.routes, key, providerKeys);
 
       return {
         key,
         label,
+        kind,
         strategy,
         routes,
       } satisfies LlmModelConfig;
@@ -339,6 +354,19 @@ export class CommonLlmConfigService {
       badRequest("ADMIN_LLM_SERVICE_INVALID", `Unsupported LLM routing strategy: ${String(value)}.`);
     }
     return normalized;
+  }
+
+  private normalizeKind(value: unknown): LlmModelKind {
+    const normalized = this.optionalString(value);
+    if (!normalized) {
+      return DEFAULT_MODEL_KIND;
+    }
+
+    if (!VALID_MODEL_KINDS.has(normalized as LlmModelKind)) {
+      badRequest("ADMIN_LLM_SERVICE_INVALID", `Unsupported LLM model kind: ${String(value)}.`);
+    }
+
+    return normalized as LlmModelKind;
   }
 
   private normalizeWeight(value: unknown, modelKey: string, routeIndex: number): number {

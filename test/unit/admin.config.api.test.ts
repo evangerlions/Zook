@@ -76,6 +76,16 @@ interface SentTemplateEmail {
   templateData: Record<string, unknown>;
 }
 
+interface SentVerificationEmail {
+  appName: string;
+  email: string;
+  code: string;
+  locale: string;
+  region: "ap-guangzhou" | "ap-hongkong";
+  expireMinutes: number;
+  templateName?: string;
+}
+
 function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSender {
   return {
     async sendTemplateEmail(command) {
@@ -131,6 +141,30 @@ function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSend
       };
     },
     async sendVerificationCode() {
+      return {
+        provider: "tencent_ses",
+      };
+    },
+  };
+}
+
+function createSensitiveVerificationEmailSender(sent: SentVerificationEmail[]): RegistrationEmailSender {
+  return {
+    async sendTemplateEmail() {
+      return {
+        provider: "tencent_ses",
+      };
+    },
+    async sendVerificationCode(command) {
+      sent.push({
+        appName: command.appName,
+        email: command.email,
+        code: command.code,
+        locale: command.locale,
+        region: command.region,
+        expireMinutes: command.expireMinutes,
+        templateName: command.templateName,
+      });
       return {
         provider: "tencent_ses",
       };
@@ -219,6 +253,8 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
     ["app_a", "app_b"],
   );
   assert.equal(bootstrapResponse.body.data.apps[0]?.canDelete, false);
+  assert.match(String(bootstrapResponse.body.data.apps[0]?.logSecret.keyId), /^logk_/);
+  assert.match(String(bootstrapResponse.body.data.apps[0]?.logSecret.secretMasked), /\*/);
 
   const configResponse = await runtime.app.handle({
     method: "GET",
@@ -477,6 +513,8 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   assert.equal(createResponse.body.data.appId, "app_c");
   assert.equal(createResponse.body.data.appName, "App C");
   assert.equal(createResponse.body.data.canDelete, true);
+  assert.match(String(createResponse.body.data.logSecret.keyId), /^logk_/);
+  assert.match(String(createResponse.body.data.logSecret.secretMasked), /\*/);
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.app.create" && item.appId === "app_c"),
   );
@@ -510,6 +548,89 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   assert.equal(runtime.database.findApp("app_c"), undefined);
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.app.delete" && item.appId === "app_c"),
+  );
+});
+
+test("admin app log secret reveal requires sensitive verification and grants 1h access after email code", async () => {
+  const sentVerificationEmails: SentVerificationEmail[] = [];
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    registrationEmailSender: createSensitiveVerificationEmailSender(sentVerificationEmails),
+    adminSensitiveOperation: {
+      codeGenerator: () => "123456",
+    },
+  });
+
+  const cookie = await loginAdmin(runtime);
+
+  const directRevealResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/app_a/log-secret/reveal",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(directRevealResponse.statusCode, 403);
+  assert.equal(directRevealResponse.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
+
+  const requestCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "app.log_secret.read",
+    },
+  });
+
+  assert.equal(requestCodeResponse.statusCode, 200);
+  assert.equal(requestCodeResponse.body.data.operation, "app.log_secret.read");
+  assert.equal(sentVerificationEmails.length, 1);
+  assert.deepEqual(sentVerificationEmails[0], {
+    appName: "Zook 管理后台",
+    email: "evangerlions@gmail.com",
+    code: "123456",
+    locale: "zh-CN",
+    region: "ap-hongkong",
+    expireMinutes: 10,
+    templateName: "验证码",
+  });
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "app.log_secret.read",
+      code: "123456",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+  assert.equal(verifyResponse.body.data.granted, true);
+  assert.match(String(verifyResponse.body.data.expiresAt), /^20/);
+
+  const revealResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/app_a/log-secret/reveal",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(revealResponse.statusCode, 200);
+  assert.equal(revealResponse.body.data.app.appId, "app_a");
+  assert.equal(revealResponse.body.data.keyId, runtime.services.appLogSecretService.getSummary("app_a")?.keyId);
+  assert.equal(revealResponse.body.data.secret.length > 20, true);
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.app.log_secret.reveal" && item.appId === "app_a"),
   );
 });
 

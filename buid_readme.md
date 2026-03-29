@@ -5,6 +5,9 @@
 
 ```bash
 npm test
+npm run dev:stack
+npm run admin:install
+npm run admin:build
 npm run admin
 npm run dev
 npm run worker
@@ -18,10 +21,24 @@ npm run worker
 npm run dev
 ```
 
+一键启动本地 API + Admin Web：
+
+```bash
+npm run dev:stack
+```
+
 启动 Admin Web：
 
 ```bash
+npm run admin:install
+npm run admin:build
 npm run admin
+```
+
+本地开发 Admin Web 前端：
+
+```bash
+npm run admin:dev
 ```
 
 启动 Worker：
@@ -35,6 +52,15 @@ npm run worker
 ```bash
 npm test
 ```
+
+推荐先准备一份本地专用环境文件：
+
+```bash
+mkdir -p local/env
+cp deploy_configs/dev.local.env.example local/env/dev.env
+```
+
+然后直接运行 `npm run dev:stack`。脚本会优先读取 `local/env/dev.env`，再读取 `deploy_configs/dev.local.env` / `.env.local`，自动构建 Admin Web，并把 API 与 Admin Web 一起拉起。
 
 ## 生产发布常用命令
 
