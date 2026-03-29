@@ -554,7 +554,7 @@ a:focus-visible {
 }
 
 .page-grid--config {
-  grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
 }
 
 .surface-card,
@@ -646,6 +646,14 @@ a:focus-visible {
 .revision-actions .ant-btn,
 .top-actions .ant-btn {
   border-radius: 14px;
+}
+
+.action-icon-button.ant-btn {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding-inline: 0;
+  border-radius: 999px !important;
 }
 
 .button {
@@ -750,10 +758,18 @@ a:focus-visible {
 .app-item,
 .password-item,
 .revision-item {
+  gap: 16px;
+}
+
+.app-item,
+.password-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+}
+
+.revision-item {
+  display: grid;
 }
 
 .app-item p,
@@ -761,6 +777,28 @@ a:focus-visible {
 .password-item p {
   margin: 6px 0;
   color: var(--text-soft);
+}
+
+.revision-item-head,
+.revision-item-title,
+.table-primary-cell,
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.revision-item-head {
+  justify-content: space-between;
+}
+
+.revision-item-title {
+  flex-wrap: wrap;
+}
+
+.revision-desc {
+  margin: 0;
+  word-break: break-word;
 }
 
 .status-chip,
@@ -900,6 +938,24 @@ a:focus-visible {
   overflow: auto;
 }
 
+.app-admin-table {
+  min-width: 1040px;
+}
+
+.table-primary-cell {
+  flex-wrap: wrap;
+}
+
+.table-code {
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-all;
+}
+
+.table-actions {
+  flex-wrap: nowrap;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -946,16 +1002,7 @@ tbody tr:last-child td {
 }
 
 .revision-item.is-compact .revision-actions {
-  width: 100%;
-  justify-content: flex-start;
-}
-
-.revision-item.is-compact .button {
-  padding: 0.68rem 0.9rem;
-}
-
-.revision-item.is-compact .ant-btn {
-  padding-inline: 0.9rem;
+  justify-content: flex-end;
 }
 
 .page-segmented.ant-segmented,
@@ -1085,5 +1132,14 @@ tbody tr:last-child td {
   .revision-item {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .revision-item-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .table-actions {
+    flex-wrap: wrap;
   }
 }

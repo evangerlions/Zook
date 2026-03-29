@@ -1,4 +1,10 @@
-import { Button, Input, Popconfirm } from "antd";
+import {
+  CheckCircleFilled,
+  CopyOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { Button, Input, Modal, Popconfirm, Tooltip } from "antd";
 import { useState } from "react";
 
 import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
@@ -21,12 +27,18 @@ export default function AppsRoute() {
   const [appId, setAppId] = useState("");
   const [appName, setAppName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deletingAppId, setDeletingAppId] = useState("");
   const [copyingAppId, setCopyingAppId] = useState("");
   const [pendingSensitiveAppId, setPendingSensitiveAppId] = useState("");
 
-  async function handleCreateApp(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function closeCreateModal() {
+    setCreateModalOpen(false);
+    setAppId("");
+    setAppName("");
+  }
+
+  async function handleCreateApp() {
     if (!appId.trim()) {
       setNotice(makeNotice("error", "请输入 App ID。"));
       return;
@@ -38,9 +50,8 @@ export default function AppsRoute() {
       const payload = await adminApi.createApp(appId.trim(), appName.trim() || undefined);
       await reloadBootstrap();
       setSelectedAppId(payload.appId);
-      setAppId("");
-      setAppName("");
-      setNotice(makeNotice("success", "App 已添加，并已自动生成日志密钥。"));
+      closeCreateModal();
+      setNotice(makeNotice("success", "App 已添加，并已自动生成密钥。"));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
@@ -62,7 +73,7 @@ export default function AppsRoute() {
     try {
       const payload = await adminApi.revealAppLogSecret(nextAppId);
       await writeClipboard(payload.secret);
-      setNotice(makeNotice("success", `已复制 ${payload.app.appName} 的完整日志密钥，1 小时内无需再次验证。`));
+      setNotice(makeNotice("success", `已复制 ${payload.app.appName} 的完整密钥，1 小时内无需再次验证。`));
       setPendingSensitiveAppId("");
     } catch (error) {
       if (
@@ -107,113 +118,176 @@ export default function AppsRoute() {
       <header className="page-header">
         <div>
           <h1>应用管理</h1>
-          <p>管理所有 App 项目空间。创建时会自动生成日志密钥；复制完整密钥前需要完成一次敏感操作验证。</p>
+          <p>管理所有 App 项目空间。创建时会自动生成密钥；复制完整密钥前需要完成一次敏感操作验证。</p>
+        </div>
+        <div className="top-actions">
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => setCreateModalOpen(true)}
+            size="large"
+            type="primary"
+          >
+            新增 App
+          </Button>
         </div>
       </header>
 
-      <div className="page-grid">
-        <section className="surface-card">
-          <div className="card-header">
-            <div>
-              <h2>应用列表</h2>
-              <p>所有业务 App 项目空间都会出现在这里，并在顶部项目空间栏中可直接切换。</p>
-            </div>
+      <section className="surface-card">
+        <div className="card-header">
+          <div>
+            <h2>应用列表</h2>
+            <p>
+              `Key ID` 是密钥编号，`密钥` 是实际 secret；复制按钮只会复制完整密钥值，不会附带 `Key ID`。
+            </p>
           </div>
+        </div>
 
-          {apps.length ? (
-            <div className="app-list">
-              {apps.map((item) => (
-                <article className="app-item" key={item.appId}>
-                  <div>
-                    <strong>{item.appName}</strong>
-                    <p className="mono">{item.appId}</p>
-                    <p className="mono">Key ID: {item.logSecret.keyId}</p>
-                    <p className="mono">日志密钥: {item.logSecret.secretMasked}</p>
-                    <div className="inline-row">
-                      <span className="status-chip">{item.status}</span>
-                      {selectedAppId === item.appId ? <span className="meta-chip">当前项目空间</span> : null}
-                      <span className="meta-chip">更新于 {new Date(item.logSecret.updatedAt).toLocaleString("zh-CN")}</span>
-                    </div>
-                  </div>
+        {apps.length ? (
+          <div className="table-wrap">
+            <table className="app-admin-table">
+              <thead>
+                <tr>
+                  <th>应用</th>
+                  <th>App ID</th>
+                  <th>Key ID</th>
+                  <th>密钥</th>
+                  <th>状态</th>
+                  <th>更新时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {apps.map((item) => {
+                  const isCurrent = selectedAppId === item.appId;
+                  return (
+                    <tr key={item.appId}>
+                      <td>
+                        <div className="table-primary-cell">
+                          <strong>{item.appName}</strong>
+                          {isCurrent ? <span className="meta-chip">当前项目</span> : null}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="mono table-code">{item.appId}</span>
+                      </td>
+                      <td>
+                        <span className="mono table-code">{item.logSecret.keyId}</span>
+                      </td>
+                      <td>
+                        <span className="mono table-code">{item.logSecret.secretMasked}</span>
+                      </td>
+                      <td>
+                        <div className="inline-row">
+                          <span className="status-chip">{item.status}</span>
+                        </div>
+                      </td>
+                      <td>{new Date(item.logSecret.updatedAt).toLocaleString("zh-CN")}</td>
+                      <td>
+                        <div className="table-actions">
+                          <Tooltip title="复制密钥值（不含 Key ID）">
+                            <span>
+                              <Button
+                                aria-label={`复制 ${item.appName} 的密钥`}
+                                className="action-icon-button"
+                                icon={<CopyOutlined />}
+                                loading={copyingAppId === item.appId}
+                                onClick={() => void copyAppSecret(item.appId)}
+                                shape="circle"
+                                type="default"
+                              />
+                            </span>
+                          </Tooltip>
 
-                  <div className="button-row">
-                    <Button
-                      loading={copyingAppId === item.appId}
-                      onClick={() => void copyAppSecret(item.appId)}
-                      type="primary"
-                    >
-                      复制密钥
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setSelectedAppId(item.appId);
-                      }}
-                      type="default"
-                    >
-                      设为当前项目
-                    </Button>
-                    <Popconfirm
-                      cancelText="取消"
-                      disabled={!item.canDelete || deletingAppId === item.appId}
-                      okText="删除"
-                      onConfirm={() => void handleDeleteApp(item.appId)}
-                      title={`确认删除 ${item.appName} (${item.appId})？`}
-                    >
-                      <Button danger disabled={!item.canDelete || deletingAppId === item.appId} loading={deletingAppId === item.appId} type="primary">
-                        {item.canDelete ? "删除" : "不可删"}
-                      </Button>
-                    </Popconfirm>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">当前还没有业务 App，可先在右侧创建一个。</div>
-          )}
-        </section>
+                          <Tooltip title={isCurrent ? "当前项目空间" : "设为当前项目空间"}>
+                            <span>
+                              <Button
+                                aria-label={isCurrent ? `${item.appName} 已是当前项目` : `设 ${item.appName} 为当前项目`}
+                                className="action-icon-button"
+                                icon={<CheckCircleFilled />}
+                                onClick={() => {
+                                  if (!isCurrent) {
+                                    setSelectedAppId(item.appId);
+                                  }
+                                }}
+                                shape="circle"
+                                type={isCurrent ? "primary" : "default"}
+                              />
+                            </span>
+                          </Tooltip>
 
-        <aside className="side-card">
-          <div className="card-header">
-            <div>
-              <h2>新增 App</h2>
-              <p>创建后会自动初始化默认配置，并生成一个新的 App 项目空间。</p>
-            </div>
+                          <Popconfirm
+                            cancelText="取消"
+                            disabled={!item.canDelete || deletingAppId === item.appId}
+                            okText="删除"
+                            onConfirm={() => void handleDeleteApp(item.appId)}
+                            title={`确认删除 ${item.appName} (${item.appId})？`}
+                          >
+                            <Tooltip title={item.canDelete ? "删除 App" : "当前配置未清空，暂不可删除"}>
+                              <span>
+                                <Button
+                                  aria-label={`删除 ${item.appName}`}
+                                  className="action-icon-button"
+                                  danger
+                                  disabled={!item.canDelete || deletingAppId === item.appId}
+                                  icon={<DeleteOutlined />}
+                                  loading={deletingAppId === item.appId}
+                                  shape="circle"
+                                  type="default"
+                                />
+                              </span>
+                            </Tooltip>
+                          </Popconfirm>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+        ) : (
+          <div className="empty-state">当前还没有业务 App，可以先从上方创建一个。</div>
+        )}
+      </section>
 
-          <form className="stack" onSubmit={handleCreateApp}>
-            <label className="field">
-              <span className="field-label">App ID</span>
-              <Input
-                disabled={submitting}
-                onChange={(event) => setAppId(event.target.value)}
-                placeholder="例如 app_a"
-                size="large"
-                value={appId}
-              />
-              <small className="field-hint">建议使用稳定、可读的技术 key。</small>
-            </label>
+      <Modal
+        cancelText="取消"
+        okButtonProps={{ loading: submitting }}
+        okText="创建 App"
+        onCancel={closeCreateModal}
+        onOk={() => void handleCreateApp()}
+        open={createModalOpen}
+        title="新增 App"
+      >
+        <div className="stack">
+          <label className="field">
+            <span className="field-label">App ID</span>
+            <Input
+              disabled={submitting}
+              onChange={(event) => setAppId(event.target.value)}
+              placeholder="例如 app_a"
+              size="large"
+              value={appId}
+            />
+            <small className="field-hint">建议使用稳定、可读的技术代号，创建后会写入默认 config。</small>
+          </label>
 
-            <label className="field">
-              <span className="field-label">App 名称</span>
-              <Input
-                disabled={submitting}
-                onChange={(event) => setAppName(event.target.value)}
-                placeholder="展示名称，可选"
-                size="large"
-                value={appName}
-              />
-              <small className="field-hint">创建完成后会自动生成一份日志上传密钥。</small>
-            </label>
-
-            <Button htmlType="submit" loading={submitting} size="large" type="primary">
-              {submitting ? "创建中..." : "创建 App"}
-            </Button>
-          </form>
-        </aside>
-      </div>
+          <label className="field">
+            <span className="field-label">App 名称</span>
+            <Input
+              disabled={submitting}
+              onChange={(event) => setAppName(event.target.value)}
+              placeholder="展示名称，可选"
+              size="large"
+              value={appName}
+            />
+            <small className="field-hint">创建完成后会自动生成密钥和默认配置。</small>
+          </label>
+        </div>
+      </Modal>
 
       <SensitiveOperationModal
-        description="为了复制完整日志密钥，需要先完成一次邮箱验证码校验。验证通过后，当前登录会话会自动获得 1 小时敏感操作权限。"
+        description="为了复制完整密钥，需要先完成一次邮箱验证码校验。验证通过后，当前登录会话会自动获得 1 小时敏感操作权限。"
         onAuthorized={async () => {
           if (!pendingSensitiveAppId) {
             return;
@@ -224,7 +298,7 @@ export default function AppsRoute() {
         onClose={() => setPendingSensitiveAppId("")}
         open={Boolean(pendingSensitiveAppId)}
         operation={APP_LOG_SECRET_READ_OPERATION}
-        title="验证后复制日志密钥"
+        title="验证后复制密钥"
       />
     </section>
   );

@@ -526,7 +526,16 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   });
 
   assert.equal(createdConfigResponse.statusCode, 200);
-  assert.equal(createdConfigResponse.body.data.rawJson, "{}");
+  assert.equal(
+    createdConfigResponse.body.data.rawJson,
+    JSON.stringify(
+      {
+        app: "make_app_c_great_again",
+      },
+      null,
+      2,
+    ),
+  );
 
   const blockedDeleteResponse = await runtime.app.handle({
     method: "DELETE",
