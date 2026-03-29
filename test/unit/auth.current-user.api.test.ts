@@ -87,3 +87,37 @@ test("users/me rejects X-App-Id mismatches against bearer scope", async () => {
   assert.equal(response.statusCode, 403);
   assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
 });
+
+test("users/me rejects bearer tokens after the user loses app membership", async () => {
+  const runtime = await createApplication();
+
+  const loginResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login",
+    headers: {},
+    body: {
+      appId: "app_a",
+      account: "alice@example.com",
+      password: "Password1234",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.10",
+  });
+
+  const accessToken = loginResponse.body.data.accessToken;
+  runtime.database.appUsers = runtime.database.appUsers.filter(
+    (item) => !(item.appId === "app_a" && item.userId === "user_alice"),
+  );
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/users/me",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "x-app-id": "app_a",
+    },
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.body.code, "APP_JOIN_INVITE_REQUIRED");
+});

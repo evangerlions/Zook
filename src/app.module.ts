@@ -108,6 +108,7 @@ export interface CreateApplicationOptions {
     appName?: string;
     codeGenerator?: () => string;
   };
+  secureRefreshCookie?: boolean;
 }
 
 interface ResolvedAdminBasicAuth {
@@ -134,6 +135,14 @@ function resolveAdminBasicAuth(options: CreateApplicationOptions): ResolvedAdmin
     username,
     password,
   };
+}
+
+function resolveSecureRefreshCookie(options: CreateApplicationOptions): boolean {
+  if (typeof options.secureRefreshCookie === "boolean") {
+    return options.secureRefreshCookie;
+  }
+
+  return options.serviceName === "api" || process.env.NODE_ENV === "production";
 }
 
 function safeEqual(left: string, right: string): boolean {
@@ -177,6 +186,7 @@ export class BackendApplication {
     private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
     private readonly adminConsoleService: AdminConsoleService,
+    private readonly appRegistryService: AppRegistryService,
     private readonly userService: UserService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly adminSessionStore: AdminSessionStore,
@@ -859,12 +869,12 @@ export class BackendApplication {
     }
   }
 
-  private handlePollQrLogin(request: HttpRequest, loginId: string): HttpResponse<unknown> {
+  private async handlePollQrLogin(request: HttpRequest, loginId: string): Promise<HttpResponse<unknown>> {
     const appId = this.appContextResolver.resolvePreAuth(request);
     const pollToken = this.validationPipe.requireQueryString(request.query, "pollToken");
 
     try {
-      const result = this.qrLoginService.poll({
+      const result = await this.qrLoginService.poll({
         appId,
         loginId,
         pollToken,
@@ -946,7 +956,7 @@ export class BackendApplication {
   }
 
   private async handleLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    const auth = this.authenticate(request);
+    const auth = this.authenticate(request, { requireActiveMembership: false });
     const body = this.validationPipe.asObject(request.body);
     const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
     const scope = body.scope === "all" ? "all" : "current";
@@ -978,7 +988,7 @@ export class BackendApplication {
       { revoked },
       request.requestId as string,
       {
-        "Set-Cookie": "refreshToken=; HttpOnly; Path=/api/v1/auth; SameSite=Lax; Max-Age=0",
+        "Set-Cookie": this.authService.buildClearRefreshCookie(),
       },
     );
   }
@@ -1841,13 +1851,20 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private authenticate(request: HttpRequest) {
+  private authenticate(request: HttpRequest, options: { requireActiveMembership?: boolean } = {}) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     const explicitAppId = this.appContextResolver.extractExplicitAppId(request);
     if (explicitAppId) {
       this.appAccessGuard.assertScope(explicitAppId, auth.appId);
     }
+
+    if (options.requireActiveMembership !== false) {
+      this.userService.getById(auth.userId);
+      this.appRegistryService.getAppOrThrow(auth.appId);
+      this.appRegistryService.ensureExistingMembership(auth.appId, auth.userId);
+    }
+
     return auth;
   }
 
@@ -2117,6 +2134,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const authService = new AuthService(
     database,
     cache,
+    kvManager,
     userService,
     appRegistryService,
     passwordHasher,
@@ -2124,6 +2142,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     refreshTokenStore,
     registrationEmailSender,
     options.registrationCodeGenerator,
+    resolveSecureRefreshCookie(options),
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
@@ -2199,6 +2218,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     qrLoginService,
     analyticsService,
     adminConsoleService,
+    appRegistryService,
     userService,
     adminBasicAuth,
     adminSessionStore,

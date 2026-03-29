@@ -1,7 +1,6 @@
 import { InMemoryCache } from "../../infrastructure/cache/redis/in-memory-cache.ts";
 import { conflict, forbidden, unauthorized } from "../../shared/errors.ts";
 import type {
-  AuthSession,
   ConfirmQrLoginCommand,
   CreateQrLoginCommand,
   PollQrLoginCommand,
@@ -24,7 +23,6 @@ interface StoredQrLoginSession {
   expiresAt: string;
   confirmedAt?: string;
   confirmedByUserId?: string;
-  authSession?: AuthSession;
 }
 
 /**
@@ -88,7 +86,6 @@ export class QrLoginService {
     session.status = "CONFIRMED";
     session.confirmedAt = now.toISOString();
     session.confirmedByUserId = user.id;
-    session.authSession = await this.authService.issueSession(user.id, app.id, now);
 
     this.saveSession(session, now);
 
@@ -97,7 +94,7 @@ export class QrLoginService {
     };
   }
 
-  poll(command: PollQrLoginCommand, now = new Date()): QrLoginPollResult {
+  async poll(command: PollQrLoginCommand, now = new Date()): Promise<QrLoginPollResult> {
     const app = this.appRegistryService.getAppOrThrow(command.appId);
     const session = this.getSessionOrThrow(command.loginId, now);
     this.assertSessionScope(session, app.id);
@@ -111,13 +108,14 @@ export class QrLoginService {
       };
     }
 
-    if (session.status !== "CONFIRMED" || !session.authSession) {
+    if (session.status !== "CONFIRMED" || !session.confirmedByUserId) {
       conflict("AUTH_QR_LOGIN_ALREADY_USED", "QR login session is already completed.");
     }
 
-    const authSession = session.authSession;
+    const user = this.userService.getById(session.confirmedByUserId);
+    this.appRegistryService.ensureExistingMembership(app.id, user.id);
+    const authSession = await this.authService.issueSession(user.id, app.id, now);
     session.status = "COMPLETED";
-    session.authSession = undefined;
     this.saveSession(session, now);
 
     return {

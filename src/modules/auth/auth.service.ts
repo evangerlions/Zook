@@ -1,5 +1,6 @@
 import { InMemoryCache } from "../../infrastructure/cache/redis/in-memory-cache.ts";
 import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { KVManager } from "../../infrastructure/kv/kv-manager.ts";
 import { badRequest, conflict, forbidden, tooManyRequests, unauthorized } from "../../shared/errors.ts";
 import type {
   AuthContext,
@@ -40,6 +41,7 @@ interface EmailVerificationCacheEntry {
  * AuthService implements the document's shared-account, password-only, bearer-only auth workflow.
  */
 export class AuthService {
+  private readonly loginFailureScope = "auth.login-failures";
   private readonly refreshTokenTtlMs = 60 * 24 * 60 * 60 * 1000;
   private readonly failureWindowMs = 15 * 60 * 1000;
   private readonly maxFailedAttempts = 10;
@@ -53,11 +55,11 @@ export class AuthService {
   private readonly registrationWindowMs = 10 * 60 * 1000;
   private readonly registrationWindowLimit = 5;
   private readonly registrationMaxFailedCodeAttempts = 5;
-  private readonly failureStates = new Map<string, LoginFailureState>();
 
   constructor(
     private readonly database: InMemoryDatabase,
     private readonly cache: InMemoryCache,
+    private readonly kvManager: KVManager,
     private readonly userService: UserService,
     private readonly appRegistryService: AppRegistryService,
     private readonly passwordHasher: DevelopmentPasswordHasher,
@@ -65,15 +67,16 @@ export class AuthService {
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly registrationEmailSender: RegistrationEmailSender,
     private readonly registrationCodeGenerator: () => string = () => randomNumericCode(6),
+    private readonly secureRefreshCookie = false,
   ) {}
 
   async login(command: LoginCommand, now = new Date()): Promise<AuthSession> {
     const normalizedAccount = command.account.trim().toLowerCase();
-    this.assertNotLocked(normalizedAccount, now);
+    await this.assertNotLocked(normalizedAccount, now);
 
     const user = this.database.findUserByAccount(normalizedAccount);
     if (!user || user.passwordAlgo !== "argon2id-adapter" || !this.passwordHasher.verify(command.password, user.passwordHash)) {
-      this.registerFailure(normalizedAccount, now);
+      await this.registerFailure(normalizedAccount, now);
       unauthorized("AUTH_INVALID_CREDENTIAL", "Account or password is invalid.");
     }
 
@@ -81,7 +84,7 @@ export class AuthService {
       forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
     }
 
-    this.failureStates.delete(normalizedAccount);
+    await this.clearFailureState(normalizedAccount);
     const app = this.appRegistryService.getAppOrThrow(command.appId);
     this.appRegistryService.ensureMembership(app.id, user.id, now);
 
@@ -406,11 +409,14 @@ export class AuthService {
       return undefined;
     }
 
-    return `refreshToken=${encodeURIComponent(
-      refreshToken,
-    )}; HttpOnly; Path=/api/v1/auth; SameSite=Lax; Max-Age=${Math.floor(
-      this.refreshTokenTtlMs / 1000,
-    )}`;
+    return this.buildRefreshCookieValue(
+      `refreshToken=${encodeURIComponent(refreshToken)}`,
+      `Max-Age=${Math.floor(this.refreshTokenTtlMs / 1000)}`,
+    );
+  }
+
+  buildClearRefreshCookie(): string {
+    return this.buildRefreshCookieValue("refreshToken=", "Max-Age=0");
   }
 
   async issueSession(userId: string, appId: string, now = new Date()): Promise<AuthSession> {
@@ -453,8 +459,8 @@ export class AuthService {
     return this.refreshTokenStore.getByRawToken(rawToken);
   }
 
-  private assertNotLocked(account: string, now = new Date()): void {
-    const state = this.failureStates.get(account);
+  private async assertNotLocked(account: string, now = new Date()): Promise<void> {
+    const state = await this.getFailureState(account);
     if (!state?.lockedUntil) {
       return;
     }
@@ -466,15 +472,15 @@ export class AuthService {
       );
     }
 
-    this.failureStates.delete(account);
+    await this.clearFailureState(account);
   }
 
-  private registerFailure(account: string, now = new Date()): void {
-    const previous = this.failureStates.get(account);
+  private async registerFailure(account: string, now = new Date()): Promise<void> {
+    const previous = await this.getFailureState(account);
     const currentTime = now.getTime();
 
     if (!previous || currentTime - previous.windowStartedAt > this.failureWindowMs) {
-      this.failureStates.set(account, {
+      await this.setFailureState(account, {
         count: 1,
         windowStartedAt: currentTime,
       });
@@ -493,7 +499,38 @@ export class AuthService {
       nextState.windowStartedAt = currentTime;
     }
 
-    this.failureStates.set(account, nextState);
+    await this.setFailureState(account, nextState);
+  }
+
+  private async getFailureState(account: string): Promise<LoginFailureState | undefined> {
+    return this.kvManager.getJson<LoginFailureState>(this.loginFailureScope, this.buildFailureKey(account));
+  }
+
+  private async setFailureState(account: string, state: LoginFailureState): Promise<void> {
+    await this.kvManager.setJson(this.loginFailureScope, this.buildFailureKey(account), state);
+  }
+
+  private async clearFailureState(account: string): Promise<void> {
+    await this.kvManager.delete(this.loginFailureScope, this.buildFailureKey(account));
+  }
+
+  private buildFailureKey(account: string): string {
+    return sha256(account.trim().toLowerCase());
+  }
+
+  private buildRefreshCookieValue(namePart: string, maxAgePart: string): string {
+    const parts = [
+      namePart,
+      "HttpOnly",
+      "Path=/api/v1/auth",
+      "SameSite=Lax",
+      maxAgePart,
+    ];
+    if (this.secureRefreshCookie) {
+      parts.push("Secure");
+    }
+
+    return parts.join("; ");
   }
 
   private assertSelfRegistrationAllowed(appId: string) {
