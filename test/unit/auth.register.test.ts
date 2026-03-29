@@ -55,7 +55,7 @@ test("register email-code and register APIs create a new account and issue token
   });
   assert.deepEqual(sent, [
     {
-      appName: "App A",
+      appName: "应用 A",
       email: "carol@example.com",
       code: "123456",
       locale: "zh-CN",

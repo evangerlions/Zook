@@ -94,7 +94,8 @@ test("creating a new app also initializes default i18n settings", async () => {
     headers,
     body: {
       appId: "app_c",
-      appName: "App C",
+      appNameZhCn: "应用 C",
+      appNameEnUs: "App C",
     },
   });
 

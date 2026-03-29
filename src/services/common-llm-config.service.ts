@@ -20,6 +20,10 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
   appId: COMMON_APP_ID,
   appCode: COMMON_APP_ID,
   appName: "服务端配置",
+  appNameI18n: {
+    "zh-CN": "服务端配置",
+    "en-US": "Server Config",
+  },
   status: "ACTIVE",
   canDelete: false,
   logSecret: {

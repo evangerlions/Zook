@@ -153,6 +153,7 @@ test("email-code delivery uses trusted gateway country header before client coun
 
   assert.equal(response.statusCode, 200);
   assert.equal(geoCalls, 0);
+  assert.equal(sent[0]?.appName, "应用 A");
   assert.equal(sent[0]?.region, "ap-guangzhou");
   assert.equal(sent[0]?.locale, "ja-JP");
 });
@@ -185,6 +186,34 @@ test("email-code delivery falls back to geo when country headers are absent", as
 
   assert.equal(response.statusCode, 200);
   assert.equal(geoCalls, 1);
+  assert.equal(sent[0]?.appName, "App A");
   assert.equal(sent[0]?.locale, "en-US");
+  assert.equal(sent[0]?.region, "ap-hongkong");
+});
+
+test("email-code delivery falls back to english app name outside mainland when locale-specific name is missing", async () => {
+  const sent: SentVerificationEmail[] = [];
+  const runtime = await createApplication({
+    registrationCodeGenerator: () => "333333",
+    registrationEmailSender: createFakeSender(sent),
+  });
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/email-code",
+    headers: {
+      "x-app-locale": "zh-TW",
+      "x-app-country-code": "TW",
+    },
+    body: {
+      appId: "app_a",
+      email: "tw-fallback@example.com",
+    },
+    ipAddress: "203.0.113.66",
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(sent[0]?.appName, "App A");
+  assert.equal(sent[0]?.locale, "zh-TW");
   assert.equal(sent[0]?.region, "ap-hongkong");
 });

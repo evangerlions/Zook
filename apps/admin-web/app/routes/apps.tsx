@@ -25,7 +25,8 @@ export default function AppsRoute() {
   } = useAdminSession();
 
   const [appId, setAppId] = useState("");
-  const [appName, setAppName] = useState("");
+  const [appNameZhCn, setAppNameZhCn] = useState("");
+  const [appNameEnUs, setAppNameEnUs] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deletingAppId, setDeletingAppId] = useState("");
@@ -35,7 +36,8 @@ export default function AppsRoute() {
   function closeCreateModal() {
     setCreateModalOpen(false);
     setAppId("");
-    setAppName("");
+    setAppNameZhCn("");
+    setAppNameEnUs("");
   }
 
   async function handleCreateApp() {
@@ -46,8 +48,18 @@ export default function AppsRoute() {
 
     setSubmitting(true);
     clearNotice();
+    if (!appNameZhCn.trim()) {
+      setNotice(makeNotice("error", "请输入 App 中文名。"));
+      return;
+    }
+
+    if (!appNameEnUs.trim()) {
+      setNotice(makeNotice("error", "请输入 App 英文名。"));
+      return;
+    }
+
     try {
-      const payload = await adminApi.createApp(appId.trim(), appName.trim() || undefined);
+      const payload = await adminApi.createApp(appId.trim(), appNameZhCn.trim(), appNameEnUs.trim());
       await reloadBootstrap();
       setSelectedAppId(payload.appId);
       closeCreateModal();
@@ -163,11 +175,15 @@ export default function AppsRoute() {
               <tbody>
                 {apps.map((item) => {
                   const isCurrent = selectedAppId === item.appId;
+                  const englishName = item.appNameI18n?.["en-US"] ?? "";
                   return (
                     <tr key={item.appId}>
                       <td>
                         <div className="table-primary-cell">
                           <strong>{item.appName}</strong>
+                          {englishName && englishName !== item.appName ? (
+                            <span className="meta-text">{englishName}</span>
+                          ) : null}
                           {isCurrent ? <span className="meta-chip">当前项目</span> : null}
                         </div>
                       </td>
@@ -260,15 +276,27 @@ export default function AppsRoute() {
           </label>
 
           <label className="field">
-            <span className="field-label">App 名称</span>
+            <span className="field-label">App 中文名</span>
             <Input
               disabled={submitting}
-              onChange={(event) => setAppName(event.target.value)}
-              placeholder="展示名称，可选"
+              onChange={(event) => setAppNameZhCn(event.target.value)}
+              placeholder="例如 小说工坊"
               size="large"
-              value={appName}
+              value={appNameZhCn}
             />
-            <small className="field-hint">创建完成后会自动生成密钥和默认配置。</small>
+            <small className="field-hint">中国大陆相关邮件会优先使用这个名字。</small>
+          </label>
+
+          <label className="field">
+            <span className="field-label">App 英文名</span>
+            <Input
+              disabled={submitting}
+              onChange={(event) => setAppNameEnUs(event.target.value)}
+              placeholder="For example Novel Forge"
+              size="large"
+              value={appNameEnUs}
+            />
+            <small className="field-hint">其他地区会优先使用对应 locale 的名字，缺失时回退到英文名。</small>
           </label>
         </div>
       </Modal>

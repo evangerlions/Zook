@@ -1,4 +1,5 @@
 import type {
+  AdminAppSummary,
   AdminAppLogSecretRevealDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
@@ -186,12 +187,13 @@ export const adminApi = {
       },
     );
   },
-  createApp(appId: string, appName?: string) {
-    return requestJson<{ appId: string; appName: string }>(adminPath("/apps"), {
+  createApp(appId: string, appNameZhCn: string, appNameEnUs: string) {
+    return requestJson<AdminAppSummary>(adminPath("/apps"), {
       method: "POST",
       body: {
         appId,
-        appName: appName || undefined,
+        appNameZhCn,
+        appNameEnUs,
       },
     });
   },

@@ -1089,8 +1089,9 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
-    const appName = this.validationPipe.optionalString(body, "appName");
-    const result = await this.adminConsoleService.createApp(appId, appName);
+    const appNameZhCn = this.validationPipe.requireString(body, "appNameZhCn");
+    const appNameEnUs = this.validationPipe.requireString(body, "appNameEnUs");
+    const result = await this.adminConsoleService.createApp(appId, appNameZhCn, appNameEnUs);
 
     this.auditInterceptor.record({
       appId: result.appId,

@@ -505,13 +505,18 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
     headers,
     body: {
       appId: "app_c",
-      appName: "App C",
+      appNameZhCn: "应用 C",
+      appNameEnUs: "App C",
     },
   });
 
   assert.equal(createResponse.statusCode, 200);
   assert.equal(createResponse.body.data.appId, "app_c");
-  assert.equal(createResponse.body.data.appName, "App C");
+  assert.equal(createResponse.body.data.appName, "应用 C");
+  assert.deepEqual(createResponse.body.data.appNameI18n, {
+    "zh-CN": "应用 C",
+    "en-US": "App C",
+  });
   assert.equal(createResponse.body.data.canDelete, false);
   assert.match(String(createResponse.body.data.logSecret.keyId), /^logk_/);
   assert.match(String(createResponse.body.data.logSecret.secretMasked), /\*/);
@@ -1845,7 +1850,8 @@ test("managed app state persists app and config changes through kv backend", asy
     headers,
     body: {
       appId: "app_persisted",
-      appName: "Persisted App",
+      appNameZhCn: "持久化应用",
+      appNameEnUs: "Persisted App",
     },
   });
 

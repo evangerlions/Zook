@@ -128,7 +128,10 @@ export class AuthService {
 
     try {
       await this.registrationEmailSender.sendVerificationCode({
-        appName: app.name,
+        appName: this.appRegistryService.resolveLocalizedAppName(app, {
+          locale: command.locale,
+          region: command.region,
+        }),
         email,
         code: rawCode,
         locale: command.locale.trim() || "zh-CN",
@@ -188,7 +191,10 @@ export class AuthService {
 
     try {
       await this.registrationEmailSender.sendVerificationCode({
-        appName: app.name,
+        appName: this.appRegistryService.resolveLocalizedAppName(app, {
+          locale: command.locale,
+          region: command.region,
+        }),
         email,
         code: rawCode,
         locale: command.locale.trim() || "zh-CN",

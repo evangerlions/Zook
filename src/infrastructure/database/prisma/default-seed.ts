@@ -20,6 +20,10 @@ export function buildDefaultSeed(
         id: "app_a",
         code: "app_a",
         name: "App A",
+        nameI18n: {
+          "zh-CN": "应用 A",
+          "en-US": "App A",
+        },
         status: "ACTIVE",
         apiDomain: "app-a.example.com",
         joinMode: "AUTO",
@@ -29,6 +33,10 @@ export function buildDefaultSeed(
         id: "app_b",
         code: "app_b",
         name: "App B",
+        nameI18n: {
+          "zh-CN": "应用 B",
+          "en-US": "App B",
+        },
         status: "ACTIVE",
         apiDomain: "app-b.example.com",
         joinMode: "INVITE_ONLY",

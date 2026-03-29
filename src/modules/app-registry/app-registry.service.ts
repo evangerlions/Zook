@@ -1,4 +1,6 @@
+import { resolveLocalizedAppName as resolveLocalizedAppNameText } from "../../shared/app-name.ts";
 import { forbidden } from "../../shared/errors.ts";
+import type { AppRecord, TencentSesRegion } from "../../shared/types.ts";
 import { randomId } from "../../shared/utils.ts";
 import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
 import { AppConfigService } from "../../services/app-config.service.ts";
@@ -23,6 +25,22 @@ export class AppRegistryService {
     }
 
     return app;
+  }
+
+  resolveLocalizedAppName(
+    app: AppRecord,
+    options: {
+      locale?: string;
+      region?: TencentSesRegion;
+      countryCode?: string;
+    } = {},
+  ): string {
+    return resolveLocalizedAppNameText(app.nameI18n, {
+      fallbackName: app.name,
+      locale: options.locale,
+      region: options.region,
+      countryCode: options.countryCode,
+    });
   }
 
   ensureMembership(appId: string, userId: string, now = new Date()) {

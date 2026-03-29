@@ -11,6 +11,7 @@ import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
+import { createAppNameI18n, normalizeAppNameI18n, resolveAdminAppName } from "../../shared/app-name.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
@@ -115,10 +116,20 @@ export class AdminConsoleService {
     return this.getConfig(app.id);
   }
 
-  async createApp(appId: string, appName?: string): Promise<AdminAppSummary> {
+  async createApp(appId: string, appNameZhCn: string, appNameEnUs: string): Promise<AdminAppSummary> {
     const normalizedId = appId.trim();
     if (!normalizedId) {
       badRequest("REQ_INVALID_BODY", "appId must be a non-empty string.");
+    }
+
+    const normalizedZhCnName = appNameZhCn.trim();
+    const normalizedEnUsName = appNameEnUs.trim();
+    if (!normalizedZhCnName) {
+      badRequest("REQ_INVALID_BODY", "appNameZhCn must be a non-empty string.");
+    }
+
+    if (!normalizedEnUsName) {
+      badRequest("REQ_INVALID_BODY", "appNameEnUs must be a non-empty string.");
     }
 
     if (normalizedId.toLowerCase() === COMMON_APP_ID) {
@@ -132,7 +143,8 @@ export class AdminConsoleService {
     const record: AppRecord = {
       id: normalizedId,
       code: normalizedId,
-      name: (appName ?? normalizedId).trim() || normalizedId,
+      name: normalizedEnUsName,
+      nameI18n: createAppNameI18n(normalizedZhCnName, normalizedEnUsName),
       status: "ACTIVE",
       joinMode: "AUTO",
       createdAt: new Date().toISOString(),
@@ -393,7 +405,8 @@ export class AdminConsoleService {
     return {
       appId: app.id,
       appCode: app.code,
-      appName: app.name,
+      appName: resolveAdminAppName(app.nameI18n, app.name),
+      appNameI18n: normalizeAppNameI18n(app.nameI18n, app.name),
       status: app.status,
       canDelete: this.isDeleteAllowed(app.id),
       logSecret,

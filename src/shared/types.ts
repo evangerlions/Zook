@@ -86,10 +86,17 @@ export interface AppRecord {
   id: string;
   code: string;
   name: string;
+  nameI18n: AppNameI18n;
   status: AppStatus;
   apiDomain?: string;
   joinMode: JoinMode;
   createdAt: string;
+}
+
+export interface AppNameI18n {
+  "zh-CN": string;
+  "en-US": string;
+  [locale: string]: string;
 }
 
 export interface UserRecord {
@@ -403,6 +410,7 @@ export interface AdminAppSummary {
   appId: string;
   appCode: string;
   appName: string;
+  appNameI18n: AppNameI18n;
   status: AppStatus;
   canDelete: boolean;
   logSecret: AdminAppLogSecretSummary;
