@@ -13,6 +13,11 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
   appName: "服务端配置",
   status: "ACTIVE",
   canDelete: false,
+  logSecret: {
+    keyId: "common",
+    secretMasked: "",
+    updatedAt: "",
+  },
 };
 const PASSWORD_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 

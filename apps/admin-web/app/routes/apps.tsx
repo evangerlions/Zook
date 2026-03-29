@@ -1,13 +1,14 @@
 import { Button, Input, Popconfirm } from "antd";
 import { useState } from "react";
-import { useNavigate } from "react-router";
 
-import { adminApi } from "../lib/admin-api";
+import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
+import { ApiError, adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, makeNotice } from "../lib/format";
 
+const APP_LOG_SECRET_READ_OPERATION = "app.log_secret.read";
+
 export default function AppsRoute() {
-  const navigate = useNavigate();
   const {
     apps,
     selectedAppId,
@@ -21,6 +22,8 @@ export default function AppsRoute() {
   const [appName, setAppName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deletingAppId, setDeletingAppId] = useState("");
+  const [copyingAppId, setCopyingAppId] = useState("");
+  const [pendingSensitiveAppId, setPendingSensitiveAppId] = useState("");
 
   async function handleCreateApp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,12 +40,43 @@ export default function AppsRoute() {
       setSelectedAppId(payload.appId);
       setAppId("");
       setAppName("");
-      setNotice(makeNotice("success", "App 已添加。"));
-      navigate("/config");
+      setNotice(makeNotice("success", "App 已添加，并已自动生成日志密钥。"));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function writeClipboard(value: string) {
+    if (!navigator?.clipboard?.writeText) {
+      throw new Error("当前浏览器不支持剪贴板写入。");
+    }
+
+    await navigator.clipboard.writeText(value);
+  }
+
+  async function copyAppSecret(nextAppId: string, allowPrompt = true) {
+    setCopyingAppId(nextAppId);
+    clearNotice();
+    try {
+      const payload = await adminApi.revealAppLogSecret(nextAppId);
+      await writeClipboard(payload.secret);
+      setNotice(makeNotice("success", `已复制 ${payload.app.appName} 的完整日志密钥，1 小时内无需再次验证。`));
+      setPendingSensitiveAppId("");
+    } catch (error) {
+      if (
+        allowPrompt
+        && error instanceof ApiError
+        && error.code === "ADMIN_SENSITIVE_OPERATION_REQUIRED"
+      ) {
+        setPendingSensitiveAppId(nextAppId);
+        return;
+      }
+
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      setCopyingAppId("");
     }
   }
 
@@ -73,7 +107,7 @@ export default function AppsRoute() {
       <header className="page-header">
         <div>
           <h1>应用管理</h1>
-          <p>管理所有 App 项目空间。删除前必须先把配置清空为 `{}`。</p>
+          <p>管理所有 App 项目空间。创建时会自动生成日志密钥；复制完整密钥前需要完成一次敏感操作验证。</p>
         </div>
       </header>
 
@@ -93,21 +127,30 @@ export default function AppsRoute() {
                   <div>
                     <strong>{item.appName}</strong>
                     <p className="mono">{item.appId}</p>
+                    <p className="mono">Key ID: {item.logSecret.keyId}</p>
+                    <p className="mono">日志密钥: {item.logSecret.secretMasked}</p>
                     <div className="inline-row">
                       <span className="status-chip">{item.status}</span>
                       {selectedAppId === item.appId ? <span className="meta-chip">当前项目空间</span> : null}
+                      <span className="meta-chip">更新于 {new Date(item.logSecret.updatedAt).toLocaleString("zh-CN")}</span>
                     </div>
                   </div>
 
                   <div className="button-row">
                     <Button
+                      loading={copyingAppId === item.appId}
+                      onClick={() => void copyAppSecret(item.appId)}
+                      type="primary"
+                    >
+                      复制密钥
+                    </Button>
+                    <Button
                       onClick={() => {
                         setSelectedAppId(item.appId);
-                        navigate("/config");
                       }}
                       type="default"
                     >
-                      打开配置
+                      设为当前项目
                     </Button>
                     <Popconfirm
                       cancelText="取消"
@@ -159,6 +202,7 @@ export default function AppsRoute() {
                 size="large"
                 value={appName}
               />
+              <small className="field-hint">创建完成后会自动生成一份日志上传密钥。</small>
             </label>
 
             <Button htmlType="submit" loading={submitting} size="large" type="primary">
@@ -167,6 +211,21 @@ export default function AppsRoute() {
           </form>
         </aside>
       </div>
+
+      <SensitiveOperationModal
+        description="为了复制完整日志密钥，需要先完成一次邮箱验证码校验。验证通过后，当前登录会话会自动获得 1 小时敏感操作权限。"
+        onAuthorized={async () => {
+          if (!pendingSensitiveAppId) {
+            return;
+          }
+
+          await copyAppSecret(pendingSensitiveAppId, false);
+        }}
+        onClose={() => setPendingSensitiveAppId("")}
+        open={Boolean(pendingSensitiveAppId)}
+        operation={APP_LOG_SECRET_READ_OPERATION}
+        title="验证后复制日志密钥"
+      />
     </section>
   );
 }

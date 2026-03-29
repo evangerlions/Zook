@@ -1,4 +1,5 @@
 import type {
+  AdminAppLogSecretRevealDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
@@ -10,6 +11,8 @@ import type {
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
   AdminPasswordDocument,
+  AdminSensitiveOperationCodeRequestDocument,
+  AdminSensitiveOperationGrantDocument,
   LlmMetricsRange,
 } from "./types";
 
@@ -160,6 +163,29 @@ export const adminApi = {
   bootstrap() {
     return requestJson<AdminBootstrapResult>(adminPath("/bootstrap"));
   },
+  requestSensitiveOperationCode(operation: string) {
+    return requestJson<AdminSensitiveOperationCodeRequestDocument>(
+      adminPath("/sensitive-operations/request-code"),
+      {
+        method: "POST",
+        body: {
+          operation,
+        },
+      },
+    );
+  },
+  verifySensitiveOperationCode(operation: string, code: string) {
+    return requestJson<AdminSensitiveOperationGrantDocument>(
+      adminPath("/sensitive-operations/verify"),
+      {
+        method: "POST",
+        body: {
+          operation,
+          code,
+        },
+      },
+    );
+  },
   createApp(appId: string, appName?: string) {
     return requestJson<{ appId: string; appName: string }>(adminPath("/apps"), {
       method: "POST",
@@ -168,6 +194,14 @@ export const adminApi = {
         appName: appName || undefined,
       },
     });
+  },
+  revealAppLogSecret(appId: string) {
+    return requestJson<AdminAppLogSecretRevealDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/log-secret/reveal`),
+      {
+        method: "POST",
+      },
+    );
   },
   deleteApp(appId: string) {
     return requestJson<AdminDeleteAppResult>(adminPath(`/apps/${encodeURIComponent(appId)}`), {

@@ -2,6 +2,7 @@ import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { AppConfigService } from "../../services/app-config.service.ts";
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
+import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
@@ -15,6 +16,7 @@ import { randomId } from "../../shared/utils.ts";
 import type {
   AdminAppSummary,
   AdminAppI18nDocument,
+  AdminAppLogSecretRevealDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
@@ -40,6 +42,7 @@ export class AdminConsoleService {
     private readonly database: InMemoryDatabase,
     private readonly appConfigService: AppConfigService,
     private readonly appI18nConfigService: AppI18nConfigService,
+    private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
@@ -138,6 +141,7 @@ export class AdminConsoleService {
 
     this.database.apps.push(record);
     this.createDefaultRoles(record.id);
+    this.appLogSecretService.ensureSecret(record.id);
     await this.appConfigService.setValue(
       record.id,
       ADMIN_CONFIG_KEY,
@@ -148,6 +152,21 @@ export class AdminConsoleService {
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
+  }
+
+  async revealAppLogSecret(appId: string): Promise<AdminAppLogSecretRevealDocument> {
+    const app = this.requireApp(appId);
+    const ensured = this.appLogSecretService.ensureSecret(app.id);
+    if (ensured.created) {
+      await this.managedStateStore.save(this.database);
+    }
+
+    return {
+      app: this.toSummary(app),
+      keyId: ensured.record.keyId,
+      secret: ensured.record.secret,
+      updatedAt: ensured.record.updatedAt,
+    };
   }
 
   async deleteApp(appId: string): Promise<AdminDeleteAppResult> {
@@ -344,12 +363,18 @@ export class AdminConsoleService {
   }
 
   private toSummary(app: AppRecord): AdminAppSummary {
+    const logSecret = this.appLogSecretService.getSummary(app.id);
+    if (!logSecret) {
+      throw new ApplicationError(500, "SYS_INTERNAL_ERROR", `App ${app.id} log secret is missing.`);
+    }
+
     return {
       appId: app.id,
       appCode: app.code,
       appName: app.name,
       status: app.status,
       canDelete: this.isDeleteAllowed(app.id),
+      logSecret,
     };
   }
   private createDefaultRoles(appId: string): void {

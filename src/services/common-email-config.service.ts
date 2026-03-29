@@ -25,6 +25,11 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
   appName: "服务端配置",
   status: "ACTIVE",
   canDelete: false,
+  logSecret: {
+    keyId: "common",
+    secretMasked: "",
+    updatedAt: "",
+  },
 };
 const DEFAULT_EMAIL_REGION: TencentSesRegion = "ap-guangzhou";
 const EMAIL_REGIONS: TencentSesRegion[] = ["ap-guangzhou", "ap-hongkong"];
