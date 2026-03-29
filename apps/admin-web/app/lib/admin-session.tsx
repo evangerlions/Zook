@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 import { ADMIN_AUTH_REQUIRED_EVENT, adminApi, isAdminAuthError } from "./admin-api";
 import { formatApiError, makeNotice } from "./format";
@@ -46,7 +46,6 @@ function resolveNextSelectedAppId(currentAppId: string, apps: AdminAppSummary[],
 
 export function AdminSessionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const runtimeConfig = getRuntimeConfig();
 
   const [adminUser, setAdminUser] = useState("");
@@ -69,10 +68,8 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
       setSelectedAppIdState("");
     });
     setNotice(makeNotice("error", message));
-    if (location.pathname !== "/login") {
-      navigate("/login", { replace: true });
-    }
-  }, [location.pathname, navigate]);
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const applyBootstrap = useCallback((nextAdminUser: string, nextApps: AdminAppSummary[]) => {
     setAdminUser(nextAdminUser);

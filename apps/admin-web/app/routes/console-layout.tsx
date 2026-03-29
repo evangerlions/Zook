@@ -6,7 +6,7 @@ import { useAdminSession } from "../lib/admin-session";
 export default function ConsoleLayoutRoute() {
   const { adminUser, bootstrapped, loadingBootstrap } = useAdminSession();
 
-  if (!bootstrapped || loadingBootstrap) {
+  if (!bootstrapped) {
     return (
       <main className="page-loading-shell">
         <div className="loading-panel">
