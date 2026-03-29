@@ -2,6 +2,7 @@ import { Button, Collapse, Input, Segmented, Select } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { JsonPreview } from "../components/json-preview";
+import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
 import { Field, ToggleField } from "../components/field";
 import { adminApi } from "../lib/admin-api";
@@ -45,6 +46,7 @@ export default function MailRoute() {
   const [testing, setTesting] = useState(false);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [desc, setDesc] = useState("");
+  const [historyExpanded, setHistoryExpanded] = useState(true);
 
   async function loadLatest() {
     setLoading(true);
@@ -209,7 +211,7 @@ export default function MailRoute() {
             />
           </section>
 
-          <div className="page-grid page-grid--config">
+          <div className={`page-grid page-grid--config${historyExpanded ? "" : " is-history-collapsed"}`}>
             <section className="surface-card">
               <div className="card-header">
                 <div>
@@ -354,28 +356,19 @@ export default function MailRoute() {
               </div>
             </section>
 
-            <aside className="side-card">
-              <Collapse
-                className="config-collapse config-collapse-history"
-                defaultActiveKey={["revision-history"]}
-                items={[
-                  {
-                    key: "revision-history",
-                    label: "版本历史",
-                    children: (
-                      <RevisionList
-                        activeRevision={document?.revision}
-                        compact
-                        loadingRevision={restoringRevision}
-                        onRestore={(revision) => void handleRestoreRevision(revision)}
-                        onSelect={(revision) => void handleViewRevision(revision)}
-                        revisions={document?.revisions ?? []}
-                      />
-                    ),
-                  },
-                ]}
+            <RevisionHistoryDock
+              expanded={historyExpanded}
+              onToggle={() => setHistoryExpanded((current) => !current)}
+            >
+              <RevisionList
+                activeRevision={document?.revision}
+                compact
+                loadingRevision={restoringRevision}
+                onRestore={(revision) => void handleRestoreRevision(revision)}
+                onSelect={(revision) => void handleViewRevision(revision)}
+                revisions={document?.revisions ?? []}
               />
-            </aside>
+            </RevisionHistoryDock>
           </div>
         </div>
       ) : (
