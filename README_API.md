@@ -231,6 +231,8 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `POST` | `/api/v1/analytics/events/batch` | 行为事件上报 |
 | `GET` | `/api/v1/admin/metrics/overview` | 概览指标 |
 | `GET` | `/api/v1/admin/metrics/pages` | 页面指标 |
+| `POST` | `/api/v1/admin/apps` | 创建 app，要求提供中文名与英文名 |
+| `PUT` | `/api/v1/admin/apps/{appId}/names` | 更新 app 的多语言名称，必须包含 `zh-CN` 与 `en-US` |
 | `GET` | `/api/v1/admin/apps/{appId}/i18n-settings` | 获取 app 级多语言设置 |
 | `PUT` | `/api/v1/admin/apps/{appId}/i18n-settings` | 更新 app 级多语言设置 |
 | `POST` | `/api/v1/admin/sensitive-operations/request-code` | 发送敏感操作邮箱验证码 |

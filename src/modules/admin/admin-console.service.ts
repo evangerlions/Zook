@@ -166,6 +166,15 @@ export class AdminConsoleService {
     return this.toSummary(record);
   }
 
+  async updateAppNames(appId: string, appNameI18n: unknown): Promise<AdminAppSummary> {
+    const app = this.requireApp(appId);
+    const normalizedNames = this.normalizeRequiredAppNames(appNameI18n);
+    app.name = normalizedNames["en-US"];
+    app.nameI18n = normalizedNames;
+    await this.managedStateStore.save(this.database);
+    return this.toSummary(app);
+  }
+
   async revealAppLogSecret(appId: string): Promise<AdminAppLogSecretRevealDocument> {
     const app = this.requireApp(appId);
     const ensured = this.appLogSecretService.ensureSecret(app.id);
@@ -245,6 +254,25 @@ export class AdminConsoleService {
     }
 
     return this.normalizeConfig(stored);
+  }
+
+  private normalizeRequiredAppNames(value: unknown) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n must be a JSON object.");
+    }
+
+    const source = value as Record<string, unknown>;
+    const zhCnName = typeof source["zh-CN"] === "string" ? source["zh-CN"].trim() : "";
+    const enUsName = typeof source["en-US"] === "string" ? source["en-US"].trim() : "";
+    if (!zhCnName) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n.zh-CN must be a non-empty string.");
+    }
+
+    if (!enUsName) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n.en-US must be a non-empty string.");
+    }
+
+    return normalizeAppNameI18n(source, enUsName);
   }
 
   private isDeleteAllowed(appId: string): boolean {

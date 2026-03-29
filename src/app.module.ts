@@ -58,6 +58,7 @@ import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
+  AdminAppSummary,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
   AdminEmailServiceDocument,
@@ -361,6 +362,11 @@ export class BackendApplication {
 
     if (request.method === "POST" && request.path === "/api/v1/admin/apps") {
       return this.handleAdminCreateApp(request);
+    }
+
+    const adminAppNamesMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/names$/);
+    if (request.method === "PUT" && adminAppNamesMatch) {
+      return this.handleAdminUpdateAppNames(request, decodeURIComponent(adminAppNamesMatch[1] as string));
     }
 
     const adminAppMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)$/);
@@ -1130,6 +1136,29 @@ export class BackendApplication {
       resourceId: result.appId,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateAppNames(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppSummary>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const appNameI18n = this.validationPipe.asObject(body.appNameI18n);
+    const result = await this.adminConsoleService.updateAppNames(appId, appNameI18n);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.app.update_names",
+      resourceType: "app",
+      resourceId: appId,
+      payload: {
+        adminUser,
+        locales: Object.keys(result.appNameI18n),
       },
     });
 

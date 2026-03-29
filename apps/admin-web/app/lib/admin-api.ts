@@ -197,6 +197,14 @@ export const adminApi = {
       },
     });
   },
+  updateAppNames(appId: string, appNameI18n: Record<string, string>) {
+    return requestJson<AdminAppSummary>(adminPath(`/apps/${encodeURIComponent(appId)}/names`), {
+      method: "PUT",
+      body: {
+        appNameI18n,
+      },
+    });
+  },
   revealAppLogSecret(appId: string) {
     return requestJson<AdminAppLogSecretRevealDocument>(
       adminPath(`/apps/${encodeURIComponent(appId)}/log-secret/reveal`),
