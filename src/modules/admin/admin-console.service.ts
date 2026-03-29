@@ -34,7 +34,6 @@ import type {
 } from "../../shared/types.ts";
 
 const ADMIN_CONFIG_KEY = "admin.delivery_config";
-const EMPTY_CONFIG_TEMPLATE = {};
 const COMMON_APP_ID = "common";
 
 export class AdminConsoleService {
@@ -142,10 +141,11 @@ export class AdminConsoleService {
     this.database.apps.push(record);
     this.createDefaultRoles(record.id);
     this.appLogSecretService.ensureSecret(record.id);
+    const defaultConfig = this.buildDefaultConfigTemplate(record.id);
     await this.appConfigService.setValue(
       record.id,
       ADMIN_CONFIG_KEY,
-      JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2),
+      JSON.stringify(defaultConfig, null, 2),
       "app-created",
     );
     await this.appI18nConfigService.initializeAppConfig(record.id, "app-created");
@@ -229,7 +229,7 @@ export class AdminConsoleService {
   private readNormalizedConfig(appId: string): string {
     const stored = this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
     if (!stored) {
-      return JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2);
+      return JSON.stringify(this.buildDefaultConfigTemplate(appId), null, 2);
     }
 
     return this.normalizeConfig(stored);
@@ -240,7 +240,15 @@ export class AdminConsoleService {
       return false;
     }
 
-    return this.readNormalizedConfig(appId) === JSON.stringify({}, null, 2);
+    const normalized = this.readNormalizedConfig(appId);
+    return normalized === JSON.stringify({}, null, 2)
+      || normalized === JSON.stringify(this.buildDefaultConfigTemplate(appId), null, 2);
+  }
+
+  private buildDefaultConfigTemplate(appId: string): Record<string, string> {
+    return {
+      app: `make_${appId}_great_again`,
+    };
   }
 
   async getEmailServiceConfig(revision?: number): Promise<AdminEmailServiceDocument> {

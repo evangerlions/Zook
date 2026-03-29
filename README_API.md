@@ -234,7 +234,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `PUT` | `/api/v1/admin/apps/{appId}/i18n-settings` | 更新 app 级多语言设置 |
 | `POST` | `/api/v1/admin/sensitive-operations/request-code` | 发送敏感操作邮箱验证码 |
 | `POST` | `/api/v1/admin/sensitive-operations/verify` | 校验敏感操作邮箱验证码并授予 1 小时权限 |
-| `POST` | `/api/v1/admin/apps/{appId}/log-secret/reveal` | 在敏感操作授权后获取 app 日志密钥明文 |
+| `POST` | `/api/v1/admin/apps/{appId}/log-secret/reveal` | 在敏感操作授权后获取 app 密钥明文 |
 | `POST` | `/api/v1/files/presign` | 获取上传预签名 |
 | `POST` | `/api/v1/files/confirm` | 确认上传完成 |
 | `GET` | `/api/v1/logs/pull-task` | 拉取客户端日志上传任务 |
