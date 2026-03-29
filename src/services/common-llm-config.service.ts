@@ -22,6 +22,11 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
   appName: "服务端配置",
   status: "ACTIVE",
   canDelete: false,
+  logSecret: {
+    keyId: "common",
+    secretMasked: "",
+    updatedAt: "",
+  },
 };
 const DEFAULT_PROVIDER_TIMEOUT_MS = 30000;
 const DEFAULT_MODEL_KIND: LlmModelKind = "chat";

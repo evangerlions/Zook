@@ -164,6 +164,21 @@
 3. `src/services/i18n.service.ts`
 4. `src/shared/i18n.ts`
 
+### 2.11 客户端日志任务拉取与加密上传
+
+当前已经补齐一版客户端日志上报底座：
+
+1. 客户端日志上传任务拉取
+2. `AES-256-GCM` 密文上传
+3. `gzip + NDJSON` 解压与解析
+4. 窗口、条数、大小限制校验
+5. 日志上传记录与已接收日志行入库
+
+对应核心文件：
+
+1. `src/services/client-log-upload.service.ts`
+2. `src/app.module.ts`
+
 ## 3. 当前可用接口
 
 当前已经接入到应用入口中的接口包括：
@@ -186,6 +201,11 @@
 16. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
 17. `GET /api/v1/admin/apps/{appId}/i18n-settings`
 18. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
+19. `POST /api/v1/admin/sensitive-operations/request-code`
+20. `POST /api/v1/admin/sensitive-operations/verify`
+21. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
+22. `GET /api/v1/logs/pull-task`
+23. `POST /api/v1/logs/upload`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 

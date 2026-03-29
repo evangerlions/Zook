@@ -11,6 +11,12 @@ export interface NoticeState {
   text: string;
 }
 
+export interface AdminAppLogSecretSummary {
+  keyId: string;
+  secretMasked: string;
+  updatedAt: string;
+}
+
 export interface ConfigRevisionMeta {
   revision: number;
   desc: string;
@@ -23,12 +29,33 @@ export interface AdminAppSummary {
   appName: string;
   status: "ACTIVE" | "BLOCKED";
   canDelete: boolean;
+  logSecret: AdminAppLogSecretSummary;
 }
 
 export interface AdminBootstrapResult {
   adminUser: string;
   apps: AdminAppSummary[];
   sessionExpiresAt?: string;
+}
+
+export interface AdminAppLogSecretRevealDocument {
+  app: AdminAppSummary;
+  keyId: string;
+  secret: string;
+  updatedAt: string;
+}
+
+export interface AdminSensitiveOperationCodeRequestDocument {
+  operation: string;
+  recipientEmailMasked: string;
+  cooldownSeconds: number;
+  expiresInSeconds: number;
+}
+
+export interface AdminSensitiveOperationGrantDocument {
+  operation: string;
+  granted: true;
+  expiresAt: string;
 }
 
 export interface AdminConfigDocument {

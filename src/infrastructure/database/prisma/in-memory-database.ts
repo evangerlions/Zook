@@ -4,6 +4,9 @@ import type {
   AppRecord,
   AppUserRecord,
   AuditLogRecord,
+  ClientLogLineRecord,
+  ClientLogUploadRecord,
+  ClientLogUploadTaskRecord,
   DatabaseSeed,
   FailedEventRecord,
   FileRecord,
@@ -34,6 +37,9 @@ export class InMemoryDatabase {
   appConfigs: AppConfigRecord[];
   analyticsEvents: AnalyticsEventRecord[];
   files: FileRecord[];
+  clientLogUploadTasks: ClientLogUploadTaskRecord[];
+  clientLogUploads: ClientLogUploadRecord[];
+  clientLogLines: ClientLogLineRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     this.apps = structuredClone(seed.apps ?? []);
@@ -50,6 +56,9 @@ export class InMemoryDatabase {
     this.appConfigs = structuredClone(seed.appConfigs ?? []);
     this.analyticsEvents = structuredClone(seed.analyticsEvents ?? []);
     this.files = structuredClone(seed.files ?? []);
+    this.clientLogUploadTasks = structuredClone(seed.clientLogUploadTasks ?? []);
+    this.clientLogUploads = structuredClone(seed.clientLogUploads ?? []);
+    this.clientLogLines = structuredClone(seed.clientLogLines ?? []);
   }
 
   findApp(appId: string): AppRecord | undefined {

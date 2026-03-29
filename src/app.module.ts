@@ -28,11 +28,19 @@ import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AppConfigService } from "./services/app-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
+import { AppLogSecretService, APP_LOG_SECRET_READ_OPERATION } from "./services/app-log-secret.service.ts";
+import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
 import { EmbeddingManager, type EmbeddingProvider } from "./services/embedding-manager.ts";
+import {
+  ClientLogUploadService,
+  CompositeClientLogEncryptionKeyResolver,
+  StaticClientLogEncryptionKeyResolver,
+  type ClientLogEncryptionKeyResolver,
+} from "./services/client-log-upload.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
@@ -51,18 +59,24 @@ import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRe
 import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
   AdminAppI18nDocument,
+  AdminAppLogSecretRevealDocument,
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
   AdminSessionRecord,
+  AdminSensitiveOperationCodeRequestDocument,
+  AdminSensitiveOperationGrantDocument,
   AdminPasswordDocument,
   AnalyticsEventInput,
   ClientType,
   DatabaseSeed,
   HttpRequest,
   HttpResponse,
+  LogPullTaskResult,
+  LogUploadResult,
   LlmMetricsRange,
   Platform,
+  TencentSesRegion,
 } from "./shared/types.ts";
 import { getHeader, parseCookies, randomId } from "./shared/utils.ts";
 
@@ -77,9 +91,19 @@ export interface CreateApplicationOptions {
   kvBackend?: KVBackend;
   kvManager?: KVManager;
   geoResolver?: GeoResolver;
+  logEncryptionKeys?: Record<string, string>;
+  logEncryptionKeyResolver?: ClientLogEncryptionKeyResolver;
   adminBasicAuth?: {
     username: string;
     password: string;
+  };
+  adminSensitiveOperation?: {
+    recipientEmail?: string;
+    locale?: string;
+    region?: TencentSesRegion;
+    templateName?: string;
+    appName?: string;
+    codeGenerator?: () => string;
   };
 }
 
@@ -152,11 +176,14 @@ export class BackendApplication {
     private readonly adminConsoleService: AdminConsoleService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly adminSessionStore: AdminSessionStore,
+    private readonly appLogSecretService: AppLogSecretService,
+    private readonly adminSensitiveOperationService: AdminSensitiveOperationService,
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelLlmService: AiNovelLlmService,
     private readonly storageService: StorageService,
+    private readonly clientLogUploadService: ClientLogUploadService,
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
     private readonly requestEmailContextService: RequestEmailContextService,
@@ -193,11 +220,14 @@ export class BackendApplication {
       qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
+      appLogSecretService: this.appLogSecretService,
+      adminSensitiveOperationService: this.adminSensitiveOperationService,
       llmManager: this.llmManager,
       embeddingManager: this.embeddingManager,
       llmSmokeTestService: this.llmSmokeTestService,
       aiNovelLlmService: this.aiNovelLlmService,
       storageService: this.storageService,
+      clientLogUploadService: this.clientLogUploadService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
     };
@@ -218,6 +248,14 @@ export class BackendApplication {
 
     if (request.method === "GET" && request.path === "/api/v1/admin/bootstrap") {
       return this.handleAdminBootstrap(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/sensitive-operations/request-code") {
+      return this.handleAdminRequestSensitiveOperationCode(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/admin/sensitive-operations/verify") {
+      return this.handleAdminVerifySensitiveOperationCode(request);
     }
 
     if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/email-service") {
@@ -324,6 +362,16 @@ export class BackendApplication {
     const adminAppMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)$/);
     if (request.method === "DELETE" && adminAppMatch) {
       return this.handleAdminDeleteApp(request, decodeURIComponent(adminAppMatch[1] as string));
+    }
+
+    const adminAppLogSecretRevealMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/log-secret\/reveal$/,
+    );
+    if (request.method === "POST" && adminAppLogSecretRevealMatch) {
+      return this.handleAdminRevealAppLogSecret(
+        request,
+        decodeURIComponent(adminAppLogSecretRevealMatch[1] as string),
+      );
     }
 
     const adminI18nSettingsMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings$/);
@@ -460,6 +508,14 @@ export class BackendApplication {
 
     if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") {
       return this.handleAiNovelEmbeddings(request);
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/logs/pull-task") {
+      return this.handleLogsPullTask(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/logs/upload") {
+      return this.handleLogsUpload(request);
     }
 
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
@@ -984,6 +1040,51 @@ export class BackendApplication {
     );
   }
 
+  private async handleAdminRequestSensitiveOperationCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSensitiveOperationCodeRequestDocument>> {
+    const session = this.requireAdminSession(request);
+    const body = this.validationPipe.asObject(request.body);
+    const operation = this.validationPipe.requireString(body, "operation");
+    const result = await this.adminSensitiveOperationService.requestCode(session, operation);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sensitive_operation.request_code",
+      resourceType: "sensitive_operation",
+      resourceId: result.operation,
+      payload: {
+        adminUser: session.username,
+        recipientEmailMasked: result.recipientEmailMasked,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminVerifySensitiveOperationCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSensitiveOperationGrantDocument>> {
+    const session = this.requireAdminSession(request);
+    const body = this.validationPipe.asObject(request.body);
+    const operation = this.validationPipe.requireString(body, "operation");
+    const code = this.validationPipe.requireString(body, "code");
+    const result = await this.adminSensitiveOperationService.verifyCode(session, operation, code);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sensitive_operation.verify",
+      resourceType: "sensitive_operation",
+      resourceId: result.operation,
+      payload: {
+        adminUser: session.username,
+        expiresAt: result.expiresAt,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminCreateApp(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
@@ -998,6 +1099,27 @@ export class BackendApplication {
       resourceId: result.appId,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRevealAppLogSecret(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppLogSecretRevealDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(session, APP_LOG_SECRET_READ_OPERATION);
+    const result = await this.adminConsoleService.revealAppLogSecret(appId);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.app.log_secret.reveal",
+      resourceType: "app_log_secret",
+      resourceId: result.keyId,
+      payload: {
+        adminUser: session.username,
       },
     });
 
@@ -1623,6 +1745,42 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private handleLogsPullTask(request: HttpRequest): HttpResponse<LogPullTaskResult> {
+    const auth = this.authenticate(request);
+    const result = this.clientLogUploadService.getPullTask(auth);
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleLogsUpload(request: HttpRequest): Promise<HttpResponse<LogUploadResult>> {
+    const auth = this.authenticate(request);
+    const result = await this.clientLogUploadService.upload({
+      auth,
+      taskId: this.requireHeader(request, "x-log-task-id"),
+      keyId: this.requireHeader(request, "x-log-key-id"),
+      encryption: this.requireHeader(request, "x-log-enc"),
+      nonceBase64: this.requireHeader(request, "x-log-nonce"),
+      contentEncoding: this.requireHeader(request, "x-log-content"),
+      lineCountReported: this.optionalIntegerHeader(request, "x-log-line-count"),
+      plainBytesReported: this.optionalIntegerHeader(request, "x-log-plain-bytes"),
+      compressedBytesReported: this.optionalIntegerHeader(request, "x-log-compressed-bytes"),
+      body: this.requireBinaryBody(request.body),
+    });
+
+    this.auditInterceptor.record({
+      appId: auth.appId,
+      actorUserId: auth.userId,
+      action: "logs.upload",
+      resourceType: "client_log_upload",
+      resourceId: result.taskId,
+      resourceOwnerUserId: auth.userId,
+      payload: {
+        acceptedCount: result.acceptedCount,
+        rejectedCount: result.rejectedCount,
+      },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
   private authenticate(request: HttpRequest) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
@@ -1669,6 +1827,14 @@ export class BackendApplication {
     }
 
     return this.validateAdminCredentials(credentials.username, credentials.password);
+  }
+
+  private requireAdminSession(request: HttpRequest): AdminSessionRecord {
+    if (!request.adminSession) {
+      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin session login is required.");
+    }
+
+    return request.adminSession;
   }
 
   private validateAdminCredentials(username: string, password: string): string {
@@ -1757,6 +1923,45 @@ export class BackendApplication {
     return process.env.NODE_ENV === "production";
   }
 
+  private requireHeader(request: HttpRequest, headerName: string): string {
+    const value = getHeader(request.headers, headerName)?.trim();
+    if (!value) {
+      throw new ApplicationError(400, "REQ_INVALID_HEADER", `${headerName} header is required.`);
+    }
+
+    return value;
+  }
+
+  private optionalIntegerHeader(request: HttpRequest, headerName: string): number | undefined {
+    const rawValue = getHeader(request.headers, headerName)?.trim();
+    if (!rawValue) {
+      return undefined;
+    }
+
+    const value = Number(rawValue);
+    if (!Number.isInteger(value) || value < 0) {
+      throw new ApplicationError(400, "REQ_INVALID_HEADER", `${headerName} header must be a non-negative integer.`);
+    }
+
+    return value;
+  }
+
+  private requireBinaryBody(body: unknown): Buffer {
+    if (Buffer.isBuffer(body)) {
+      return body;
+    }
+
+    if (body instanceof Uint8Array) {
+      return Buffer.from(body);
+    }
+
+    if (body instanceof ArrayBuffer) {
+      return Buffer.from(body);
+    }
+
+    throw new ApplicationError(400, "REQ_INVALID_BODY", "Request body must be binary.");
+  }
+
   private ok<T>(data: T, requestId: string, headers?: Record<string, string>): HttpResponse<T> {
     return {
       statusCode: 200,
@@ -1803,6 +2008,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
+  const appLogSecretService = new AppLogSecretService(database, appConfigService);
+  const initializedAppLogSecrets = appLogSecretService.initializeSecrets(database.apps.map((item) => item.id));
+  if (initializedAppLogSecrets) {
+    await managedStateStore.save(database);
+  }
   const llmHealthService = new LlmHealthService(kvManager);
   const llmMetricsService = new LlmMetricsService(kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
@@ -1817,6 +2027,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonEmailConfigService,
     kvManager,
     registrationEmailSender,
+  );
+  const adminSensitiveOperationService = new AdminSensitiveOperationService(
+    kvManager,
+    registrationEmailSender,
+    options.adminSensitiveOperation,
   );
   const geoResolver =
     options.geoResolver ??
@@ -1864,10 +2079,15 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmProviders,
     embeddingProviders,
   );
+  const logEncryptionKeyResolver = new CompositeClientLogEncryptionKeyResolver([
+    options.logEncryptionKeyResolver ?? new StaticClientLogEncryptionKeyResolver(options.logEncryptionKeys),
+    appLogSecretService,
+  ]);
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
     appI18nConfigService,
+    appLogSecretService,
     commonEmailConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
@@ -1886,6 +2106,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   });
   const aiNovelLlmService = new AiNovelLlmService(llmManager, embeddingManager);
   const storageService = new StorageService(database);
+  const clientLogUploadService = new ClientLogUploadService(
+    database,
+    logEncryptionKeyResolver,
+  );
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
   const appContextResolver = new AppContextResolver(
@@ -1911,11 +2135,14 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     adminConsoleService,
     adminBasicAuth,
     adminSessionStore,
+    appLogSecretService,
+    adminSensitiveOperationService,
     llmManager,
     embeddingManager,
     llmSmokeTestService,
     aiNovelLlmService,
     storageService,
+    clientLogUploadService,
     notificationService,
     failedEventRetryService,
     requestEmailContextService,
@@ -1946,6 +2173,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       commonPasswordConfigService,
       commonEmailConfigService,
       commonLlmConfigService,
+      appLogSecretService,
+      adminSensitiveOperationService,
       appRegistryService,
       emailTestSendService,
       userService,
@@ -1962,6 +2191,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       aiNovelLlmService,
       rbacService,
       storageService,
+      clientLogUploadService,
       notificationService,
       failedEventRetryService,
       requestEmailContextService,

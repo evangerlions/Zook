@@ -119,6 +119,15 @@ export class AppConfigService {
     return this.getValue(appId, "auth.default_role_code") ?? "member";
   }
 
+  setDirectValue(
+    appId: string,
+    configKey: string,
+    configValue: string,
+    updatedAt = new Date().toISOString(),
+  ): void {
+    this.upsertRecord(appId, configKey, configValue, updatedAt);
+  }
+
   private buildCacheKey(appId: string, configKey: string): string {
     return `app-config:${appId}:${configKey}`;
   }
