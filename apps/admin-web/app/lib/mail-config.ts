@@ -6,15 +6,9 @@ import type {
   MailTemplateDraft,
   MailTestDraft,
 } from "./types";
+import { DEFAULT_CHINESE_LOCALE, SUPPORTED_LOCALE_OPTIONS } from "./locale-options";
 
-export const MAIL_TEMPLATE_LOCALE_OPTIONS = [
-  { value: "zh-CN", label: "简体中文" },
-  { value: "en-US", label: "English (US)" },
-  { value: "zh-TW", label: "繁體中文 (TW)" },
-  { value: "zh-HK", label: "繁體中文 (HK)" },
-  { value: "ja-JP", label: "日本語" },
-  { value: "ko-KR", label: "한국어" },
-] as const;
+export const MAIL_TEMPLATE_LOCALE_OPTIONS = SUPPORTED_LOCALE_OPTIONS;
 
 export const MAIL_SENDER_REGION_OPTIONS = [
   { value: "ap-guangzhou", label: "中国大陆 / 广州" },
@@ -35,7 +29,7 @@ export function createEmptyMailSender() {
 
 export function createEmptyMailTemplate(): MailTemplateDraft {
   return {
-    locale: MAIL_TEMPLATE_LOCALE_OPTIONS[0].value,
+    locale: DEFAULT_CHINESE_LOCALE,
     templateId: "",
     name: "",
     subject: "",
@@ -84,7 +78,7 @@ export function cloneMailConfig(config: MailConfigDraft | EmailServiceConfig = c
           : null,
         templates: Array.isArray(source?.templates)
           ? source.templates.map((item) => ({
-              locale: String(item?.locale ?? MAIL_TEMPLATE_LOCALE_OPTIONS[0].value),
+              locale: String(item?.locale ?? DEFAULT_CHINESE_LOCALE),
               templateId: item?.templateId == null ? "" : String(item.templateId),
               name: String(item?.name ?? ""),
               subject: String(item?.subject ?? ""),

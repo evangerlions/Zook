@@ -1053,6 +1053,15 @@ a:focus-visible {
   min-width: 1040px;
 }
 
+.compact-card-header {
+  margin-bottom: 0.5rem;
+}
+
+.compact-empty-state {
+  min-height: auto;
+  padding: 1rem 1.1rem;
+}
+
 .table-primary-cell {
   flex-wrap: wrap;
 }
@@ -1061,6 +1070,35 @@ a:focus-visible {
   display: inline-block;
   max-width: 100%;
   word-break: break-all;
+}
+
+.app-name-modal-section {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 0.35rem;
+}
+
+.app-name-locale-list {
+  display: grid;
+  gap: 12px;
+}
+
+.app-name-locale-row {
+  display: grid;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.app-name-locale-row .field {
+  margin: 0;
+}
+
+.app-name-locale-remove {
+  display: inline-flex;
+  align-items: center;
+  padding-bottom: 2px;
 }
 
 .table-actions {
@@ -1252,5 +1290,13 @@ tbody tr:last-child td {
 
   .table-actions {
     flex-wrap: wrap;
+  }
+
+  .app-name-locale-row {
+    grid-template-columns: 1fr;
+  }
+
+  .app-name-locale-remove {
+    padding-bottom: 0;
   }
 }

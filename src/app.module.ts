@@ -58,6 +58,7 @@ import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
+  AdminAppSummary,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
   AdminEmailServiceDocument,
@@ -68,7 +69,9 @@ import type {
   AdminSensitiveOperationGrantDocument,
   AdminPasswordDocument,
   AnalyticsEventInput,
+  AuthSuccessPayload,
   ClientType,
+  CurrentUserDocument,
   DatabaseSeed,
   HttpRequest,
   HttpResponse,
@@ -174,6 +177,7 @@ export class BackendApplication {
     private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
     private readonly adminConsoleService: AdminConsoleService,
+    private readonly userService: UserService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly adminSessionStore: AdminSessionStore,
     private readonly appLogSecretService: AppLogSecretService,
@@ -220,6 +224,7 @@ export class BackendApplication {
       qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
+      userService: this.userService,
       appLogSecretService: this.appLogSecretService,
       adminSensitiveOperationService: this.adminSensitiveOperationService,
       llmManager: this.llmManager,
@@ -359,6 +364,11 @@ export class BackendApplication {
       return this.handleAdminCreateApp(request);
     }
 
+    const adminAppNamesMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/names$/);
+    if (request.method === "PUT" && adminAppNamesMatch) {
+      return this.handleAdminUpdateAppNames(request, decodeURIComponent(adminAppNamesMatch[1] as string));
+    }
+
     const adminAppMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)$/);
     if (request.method === "DELETE" && adminAppMatch) {
       return this.handleAdminDeleteApp(request, decodeURIComponent(adminAppMatch[1] as string));
@@ -476,6 +486,10 @@ export class BackendApplication {
 
     if (request.method === "POST" && request.path === "/api/v1/auth/logout") {
       return this.handleLogout(request);
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/users/me") {
+      return this.handleGetCurrentUser(request);
     }
 
     if (request.method === "POST" && request.path === "/api/v1/analytics/events/batch") {
@@ -870,8 +884,7 @@ export class BackendApplication {
         return this.ok(
           {
             status: "CONFIRMED" as const,
-            accessToken: result.accessToken,
-            expiresIn: result.expiresIn,
+            ...this.toAuthPayload(result, "web"),
           },
           request.requestId as string,
           this.buildAuthHeaders(result.refreshToken, "web"),
@@ -907,6 +920,29 @@ export class BackendApplication {
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
+  }
+
+  private handleGetCurrentUser(request: HttpRequest): HttpResponse<CurrentUserDocument> {
+    const auth = this.authenticate(request);
+    const appId = this.appContextResolver.resolvePostAuth(request, auth.appId);
+    const result: CurrentUserDocument = {
+      appId,
+      user: this.userService.getProfile(auth.userId),
+    };
+
+    this.auditInterceptor.record({
+      appId,
+      actorUserId: auth.userId,
+      action: "user.profile.read_self",
+      resourceType: "user",
+      resourceId: auth.userId,
+      resourceOwnerUserId: auth.userId,
+      payload: {
+        self: true,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
   }
 
   private async handleLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
@@ -1089,8 +1125,9 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
-    const appName = this.validationPipe.optionalString(body, "appName");
-    const result = await this.adminConsoleService.createApp(appId, appName);
+    const appNameZhCn = this.validationPipe.requireString(body, "appNameZhCn");
+    const appNameEnUs = this.validationPipe.requireString(body, "appNameEnUs");
+    const result = await this.adminConsoleService.createApp(appId, appNameZhCn, appNameEnUs);
 
     this.auditInterceptor.record({
       appId: result.appId,
@@ -1099,6 +1136,29 @@ export class BackendApplication {
       resourceId: result.appId,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateAppNames(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppSummary>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const appNameI18n = this.validationPipe.asObject(body.appNameI18n);
+    const result = await this.adminConsoleService.updateAppNames(appId, appNameI18n);
+
+    this.auditInterceptor.record({
+      appId,
+      action: "admin.app.update_names",
+      resourceType: "app",
+      resourceId: appId,
+      payload: {
+        adminUser,
+        locales: Object.keys(result.appNameI18n),
       },
     });
 
@@ -1865,16 +1925,22 @@ export class BackendApplication {
     return body.clientType === "app" ? "app" : "web";
   }
 
-  private toAuthPayload(session: { accessToken: string; refreshToken: string; expiresIn: number }, clientType: ClientType) {
+  private toAuthPayload(
+    session: { userId: string; accessToken: string; refreshToken: string; expiresIn: number },
+    clientType: ClientType,
+  ): AuthSuccessPayload {
+    const user = this.userService.getProfile(session.userId);
     return clientType === "app"
       ? {
           accessToken: session.accessToken,
           expiresIn: session.expiresIn,
           refreshToken: session.refreshToken,
+          user,
         }
       : {
           accessToken: session.accessToken,
           expiresIn: session.expiresIn,
+          user,
         };
   }
 
@@ -2133,6 +2199,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     qrLoginService,
     analyticsService,
     adminConsoleService,
+    userService,
     adminBasicAuth,
     adminSessionStore,
     appLogSecretService,

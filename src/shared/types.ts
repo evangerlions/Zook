@@ -86,10 +86,17 @@ export interface AppRecord {
   id: string;
   code: string;
   name: string;
+  nameI18n: AppNameI18n;
   status: AppStatus;
   apiDomain?: string;
   joinMode: JoinMode;
   createdAt: string;
+}
+
+export interface AppNameI18n {
+  "zh-CN": string;
+  "en-US": string;
+  [locale: string]: string;
 }
 
 export interface UserRecord {
@@ -403,6 +410,7 @@ export interface AdminAppSummary {
   appId: string;
   appCode: string;
   appName: string;
+  appNameI18n: AppNameI18n;
   status: AppStatus;
   canDelete: boolean;
   logSecret: AdminAppLogSecretSummary;
@@ -797,6 +805,26 @@ export interface AuthSession {
   expiresIn: number;
 }
 
+export interface AuthenticatedUserProfile {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  avatarUrl: string | null;
+}
+
+export interface AuthSuccessPayload {
+  accessToken: string;
+  expiresIn: number;
+  refreshToken?: string;
+  user: AuthenticatedUserProfile;
+}
+
+export interface CurrentUserDocument {
+  appId: string;
+  user: AuthenticatedUserProfile;
+}
+
 export interface RegisterEmailCodeResult {
   accepted: true;
   cooldownSeconds: number;
@@ -843,6 +871,7 @@ export type QrLoginPollResult =
       accessToken: string;
       refreshToken: string;
       expiresIn: number;
+      userId: string;
     };
 
 export interface AnalyticsEventInput {

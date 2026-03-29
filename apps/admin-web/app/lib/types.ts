@@ -27,6 +27,11 @@ export interface AdminAppSummary {
   appId: string;
   appCode: string;
   appName: string;
+  appNameI18n: {
+    "zh-CN": string;
+    "en-US": string;
+    [locale: string]: string;
+  };
   status: "ACTIVE" | "BLOCKED";
   canDelete: boolean;
   logSecret: AdminAppLogSecretSummary;

@@ -11,6 +11,7 @@ import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
+import { createAppNameI18n, normalizeAppNameI18n, resolveAdminAppName } from "../../shared/app-name.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
@@ -115,10 +116,20 @@ export class AdminConsoleService {
     return this.getConfig(app.id);
   }
 
-  async createApp(appId: string, appName?: string): Promise<AdminAppSummary> {
+  async createApp(appId: string, appNameZhCn: string, appNameEnUs: string): Promise<AdminAppSummary> {
     const normalizedId = appId.trim();
     if (!normalizedId) {
       badRequest("REQ_INVALID_BODY", "appId must be a non-empty string.");
+    }
+
+    const normalizedZhCnName = appNameZhCn.trim();
+    const normalizedEnUsName = appNameEnUs.trim();
+    if (!normalizedZhCnName) {
+      badRequest("REQ_INVALID_BODY", "appNameZhCn must be a non-empty string.");
+    }
+
+    if (!normalizedEnUsName) {
+      badRequest("REQ_INVALID_BODY", "appNameEnUs must be a non-empty string.");
     }
 
     if (normalizedId.toLowerCase() === COMMON_APP_ID) {
@@ -132,7 +143,8 @@ export class AdminConsoleService {
     const record: AppRecord = {
       id: normalizedId,
       code: normalizedId,
-      name: (appName ?? normalizedId).trim() || normalizedId,
+      name: normalizedEnUsName,
+      nameI18n: createAppNameI18n(normalizedZhCnName, normalizedEnUsName),
       status: "ACTIVE",
       joinMode: "AUTO",
       createdAt: new Date().toISOString(),
@@ -152,6 +164,15 @@ export class AdminConsoleService {
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
+  }
+
+  async updateAppNames(appId: string, appNameI18n: unknown): Promise<AdminAppSummary> {
+    const app = this.requireApp(appId);
+    const normalizedNames = this.normalizeRequiredAppNames(appNameI18n);
+    app.name = normalizedNames["en-US"];
+    app.nameI18n = normalizedNames;
+    await this.managedStateStore.save(this.database);
+    return this.toSummary(app);
   }
 
   async revealAppLogSecret(appId: string): Promise<AdminAppLogSecretRevealDocument> {
@@ -233,6 +254,25 @@ export class AdminConsoleService {
     }
 
     return this.normalizeConfig(stored);
+  }
+
+  private normalizeRequiredAppNames(value: unknown) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n must be a JSON object.");
+    }
+
+    const source = value as Record<string, unknown>;
+    const zhCnName = typeof source["zh-CN"] === "string" ? source["zh-CN"].trim() : "";
+    const enUsName = typeof source["en-US"] === "string" ? source["en-US"].trim() : "";
+    if (!zhCnName) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n.zh-CN must be a non-empty string.");
+    }
+
+    if (!enUsName) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n.en-US must be a non-empty string.");
+    }
+
+    return normalizeAppNameI18n(source, enUsName);
   }
 
   private isDeleteAllowed(appId: string): boolean {
@@ -393,7 +433,8 @@ export class AdminConsoleService {
     return {
       appId: app.id,
       appCode: app.code,
-      appName: app.name,
+      appName: resolveAdminAppName(app.nameI18n, app.name),
+      appNameI18n: normalizeAppNameI18n(app.nameI18n, app.name),
       status: app.status,
       canDelete: this.isDeleteAllowed(app.id),
       logSecret,

@@ -77,6 +77,10 @@ test("qr login APIs create a session, confirm it on mobile, and let PC poll once
   assert.equal(completedResponse.statusCode, 200);
   assert.equal(completedResponse.body.data.status, "CONFIRMED");
   assert.ok(typeof completedResponse.body.data.accessToken === "string");
+  assert.equal(completedResponse.body.data.user.id, "user_alice");
+  assert.equal(completedResponse.body.data.user.name, "alice");
+  assert.equal(completedResponse.body.data.user.email, "alice@example.com");
+  assert.equal(completedResponse.body.data.user.avatarUrl, null);
   assert.ok(typeof completedResponse.headers?.["Set-Cookie"] === "string");
 
   const secondPollResponse = await runtime.app.handle({

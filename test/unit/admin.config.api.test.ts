@@ -505,13 +505,18 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
     headers,
     body: {
       appId: "app_c",
-      appName: "App C",
+      appNameZhCn: "应用 C",
+      appNameEnUs: "App C",
     },
   });
 
   assert.equal(createResponse.statusCode, 200);
   assert.equal(createResponse.body.data.appId, "app_c");
-  assert.equal(createResponse.body.data.appName, "App C");
+  assert.equal(createResponse.body.data.appName, "应用 C");
+  assert.deepEqual(createResponse.body.data.appNameI18n, {
+    "zh-CN": "应用 C",
+    "en-US": "App C",
+  });
   assert.equal(createResponse.body.data.canDelete, false);
   assert.match(String(createResponse.body.data.logSecret.keyId), /^logk_/);
   assert.match(String(createResponse.body.data.logSecret.secretMasked), /\*/);
@@ -579,6 +584,86 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.app.delete" && item.appId === "app_c"),
   );
+});
+
+test("admin app APIs can update localized app names and add extra locales", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_a/names",
+    headers,
+    body: {
+      appNameI18n: {
+        "zh-CN": "小说工坊",
+        "en-US": "Novel Forge",
+        "ja-JP": "ノベル工房",
+      },
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.appId, "app_a");
+  assert.equal(updateResponse.body.data.appName, "小说工坊");
+  assert.deepEqual(updateResponse.body.data.appNameI18n, {
+    "zh-CN": "小说工坊",
+    "en-US": "Novel Forge",
+    "ja-JP": "ノベル工房",
+  });
+  assert.equal(runtime.database.findApp("app_a")?.name, "Novel Forge");
+  assert.deepEqual(runtime.database.findApp("app_a")?.nameI18n, {
+    "zh-CN": "小说工坊",
+    "en-US": "Novel Forge",
+    "ja-JP": "ノベル工房",
+  });
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.app.update_names" && item.appId === "app_a"),
+  );
+
+  const bootstrapResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/bootstrap",
+    headers,
+  });
+
+  assert.equal(bootstrapResponse.statusCode, 200);
+  const updatedApp = bootstrapResponse.body.data.apps.find((item: { appId: string }) => item.appId === "app_a");
+  assert.equal(updatedApp?.appName, "小说工坊");
+  assert.equal(updatedApp?.appNameI18n?.["ja-JP"], "ノベル工房");
+});
+
+test("admin app name updates require both zh-CN and en-US", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+
+  const response = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_a/names",
+    headers: {
+      authorization: createAdminAuthHeader(),
+    },
+    body: {
+      appNameI18n: {
+        "zh-CN": "小说工坊",
+      },
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.match(String(response.body.message), /appNameI18n\.en-US/);
 });
 
 test("admin app log secret reveal requires sensitive verification and grants 1h access after email code", async () => {
@@ -1845,7 +1930,8 @@ test("managed app state persists app and config changes through kv backend", asy
     headers,
     body: {
       appId: "app_persisted",
-      appName: "Persisted App",
+      appNameZhCn: "持久化应用",
+      appNameEnUs: "Persisted App",
     },
   });
 

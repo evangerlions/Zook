@@ -279,6 +279,8 @@ export default function MailRoute() {
                                   label: item.label,
                                   value: item.value,
                                 }))}
+                                optionFilterProp="label"
+                                showSearch
                                 size="large"
                                 value={template.locale}
                               />

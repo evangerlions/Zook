@@ -1,17 +1,46 @@
 import {
   CopyOutlined,
   DeleteOutlined,
+  EditOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { Button, Input, Modal, Popconfirm, Tooltip } from "antd";
+import { Button, Input, Modal, Popconfirm, Select, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 
 import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
 import { ApiError, adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, makeNotice } from "../lib/format";
+import { SUPPORTED_LOCALE_OPTIONS } from "../lib/locale-options";
+import type { AdminAppSummary } from "../lib/types";
 
 const APP_LOG_SECRET_READ_OPERATION = "app.log_secret.read";
+const REQUIRED_LOCALES = new Set(["zh-CN", "en-US"]);
+
+interface LocaleNameDraft {
+  id: string;
+  locale: string;
+  value: string;
+}
+
+function createLocaleNameDraft(locale = "", value = ""): LocaleNameDraft {
+  return {
+    id: `locale_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    locale,
+    value,
+  };
+}
+
+function createExtraLocaleDrafts(app: AdminAppSummary): LocaleNameDraft[] {
+  return Object.entries(app.appNameI18n ?? {})
+    .filter(([locale]) => !REQUIRED_LOCALES.has(locale))
+    .sort(([left], [right]) => left.localeCompare(right, "en-US"))
+    .map(([locale, value]) => createLocaleNameDraft(locale, value));
+}
+
+function normalizeLocaleInput(value: string): string {
+  return value.trim().replaceAll("_", "-");
+}
 
 export default function AppsRoute() {
   const {
@@ -25,9 +54,15 @@ export default function AppsRoute() {
   } = useAdminSession();
 
   const [appId, setAppId] = useState("");
-  const [appName, setAppName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [appNameZhCn, setAppNameZhCn] = useState("");
+  const [appNameEnUs, setAppNameEnUs] = useState("");
+  const [creatingApp, setCreatingApp] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingApp, setEditingApp] = useState<AdminAppSummary | null>(null);
+  const [editingNameZhCn, setEditingNameZhCn] = useState("");
+  const [editingNameEnUs, setEditingNameEnUs] = useState("");
+  const [editingExtraNames, setEditingExtraNames] = useState<LocaleNameDraft[]>([]);
+  const [savingAppNames, setSavingAppNames] = useState(false);
   const [deletingAppId, setDeletingAppId] = useState("");
   const [copyingAppId, setCopyingAppId] = useState("");
   const [pendingSensitiveAppId, setPendingSensitiveAppId] = useState("");
@@ -35,7 +70,22 @@ export default function AppsRoute() {
   function closeCreateModal() {
     setCreateModalOpen(false);
     setAppId("");
-    setAppName("");
+    setAppNameZhCn("");
+    setAppNameEnUs("");
+  }
+
+  function openEditNamesModal(app: AdminAppSummary) {
+    setEditingApp(app);
+    setEditingNameZhCn(app.appNameI18n?.["zh-CN"] ?? "");
+    setEditingNameEnUs(app.appNameI18n?.["en-US"] ?? "");
+    setEditingExtraNames(createExtraLocaleDrafts(app));
+  }
+
+  function closeEditNamesModal() {
+    setEditingApp(null);
+    setEditingNameZhCn("");
+    setEditingNameEnUs("");
+    setEditingExtraNames([]);
   }
 
   async function handleCreateApp() {
@@ -44,10 +94,20 @@ export default function AppsRoute() {
       return;
     }
 
-    setSubmitting(true);
+    if (!appNameZhCn.trim()) {
+      setNotice(makeNotice("error", "请输入 App 中文名。"));
+      return;
+    }
+
+    if (!appNameEnUs.trim()) {
+      setNotice(makeNotice("error", "请输入 App 英文名。"));
+      return;
+    }
+
+    setCreatingApp(true);
     clearNotice();
     try {
-      const payload = await adminApi.createApp(appId.trim(), appName.trim() || undefined);
+      const payload = await adminApi.createApp(appId.trim(), appNameZhCn.trim(), appNameEnUs.trim());
       await reloadBootstrap();
       setSelectedAppId(payload.appId);
       closeCreateModal();
@@ -55,7 +115,87 @@ export default function AppsRoute() {
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
-      setSubmitting(false);
+      setCreatingApp(false);
+    }
+  }
+
+  function updateExtraLocaleDraft(id: string, patch: Partial<Pick<LocaleNameDraft, "locale" | "value">>) {
+    setEditingExtraNames((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  }
+
+  function removeExtraLocaleDraft(id: string) {
+    setEditingExtraNames((current) => current.filter((item) => item.id !== id));
+  }
+
+  function getExtraLocaleOptions(currentLocale: string) {
+    const currentValue = normalizeLocaleInput(currentLocale);
+    const usedLocales = new Set(
+      editingExtraNames
+        .map((item) => normalizeLocaleInput(item.locale))
+        .filter(Boolean),
+    );
+
+    return SUPPORTED_LOCALE_OPTIONS.filter((item) => (
+      !REQUIRED_LOCALES.has(item.value)
+      && (item.value === currentValue || !usedLocales.has(item.value))
+    ));
+  }
+
+  async function handleSaveAppNames() {
+    if (!editingApp) {
+      return;
+    }
+
+    if (!editingNameZhCn.trim()) {
+      setNotice(makeNotice("error", "请输入中文名（zh-CN）。"));
+      return;
+    }
+
+    if (!editingNameEnUs.trim()) {
+      setNotice(makeNotice("error", "请输入英文名（en-US）。"));
+      return;
+    }
+
+    const nextNames: Record<string, string> = {
+      "zh-CN": editingNameZhCn.trim(),
+      "en-US": editingNameEnUs.trim(),
+    };
+    const seenLocales = new Set<string>(["zh-cn", "en-us"]);
+
+    for (const item of editingExtraNames) {
+      const locale = normalizeLocaleInput(item.locale);
+      const value = item.value.trim();
+      if (!locale) {
+        setNotice(makeNotice("error", "请先从下拉列表里选择额外语言。"));
+        return;
+      }
+
+      if (!value) {
+        setNotice(makeNotice("error", `请填写 ${locale} 对应的 App 名称。`));
+        return;
+      }
+
+      const localeKey = locale.toLowerCase();
+      if (seenLocales.has(localeKey)) {
+        setNotice(makeNotice("error", `${locale} 已经存在，请勿重复添加。`));
+        return;
+      }
+
+      seenLocales.add(localeKey);
+      nextNames[locale] = value;
+    }
+
+    setSavingAppNames(true);
+    clearNotice();
+    try {
+      const payload = await adminApi.updateAppNames(editingApp.appId, nextNames);
+      await reloadBootstrap();
+      closeEditNamesModal();
+      setNotice(makeNotice("success", `已更新 ${payload.appName} 的多语言名称。`));
+    } catch (error) {
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      setSavingAppNames(false);
     }
   }
 
@@ -141,7 +281,7 @@ export default function AppsRoute() {
           <div>
             <h2>应用列表</h2>
             <p>
-              `Key ID` 是密钥编号，`密钥` 是实际 secret；复制按钮只会复制完整密钥值，不会附带 `Key ID`。
+              `Key ID` 是密钥编号，`密钥` 是实际 secret；多语言 App 名称可通过操作区的小图标在弹窗里维护。
             </p>
           </div>
         </div>
@@ -163,11 +303,17 @@ export default function AppsRoute() {
               <tbody>
                 {apps.map((item) => {
                   const isCurrent = selectedAppId === item.appId;
+                  const englishName = item.appNameI18n?.["en-US"] ?? "";
+                  const localeCount = Object.keys(item.appNameI18n ?? {}).length;
                   return (
                     <tr key={item.appId}>
                       <td>
                         <div className="table-primary-cell">
                           <strong>{item.appName}</strong>
+                          {englishName && englishName !== item.appName ? (
+                            <span className="meta-text">{englishName}</span>
+                          ) : null}
+                          <span className="meta-chip">{localeCount} 个名称</span>
                           {isCurrent ? <span className="meta-chip">当前项目</span> : null}
                         </div>
                       </td>
@@ -188,6 +334,19 @@ export default function AppsRoute() {
                       <td>{new Date(item.logSecret.updatedAt).toLocaleString("zh-CN")}</td>
                       <td>
                         <div className="table-actions">
+                          <Tooltip title="编辑多语言名称">
+                            <span>
+                              <Button
+                                aria-label={`编辑 ${item.appName} 的多语言名称`}
+                                className="action-icon-button"
+                                icon={<EditOutlined />}
+                                onClick={() => openEditNamesModal(item)}
+                                shape="circle"
+                                type="default"
+                              />
+                            </span>
+                          </Tooltip>
+
                           <Tooltip title="复制密钥值（不含 Key ID）">
                             <span>
                               <Button
@@ -239,7 +398,7 @@ export default function AppsRoute() {
 
       <Modal
         cancelText="取消"
-        okButtonProps={{ loading: submitting }}
+        okButtonProps={{ loading: creatingApp }}
         okText="创建 App"
         onCancel={closeCreateModal}
         onOk={() => void handleCreateApp()}
@@ -250,7 +409,7 @@ export default function AppsRoute() {
           <label className="field">
             <span className="field-label">App ID</span>
             <Input
-              disabled={submitting}
+              disabled={creatingApp}
               onChange={(event) => setAppId(event.target.value)}
               placeholder="例如 app_a"
               size="large"
@@ -260,16 +419,129 @@ export default function AppsRoute() {
           </label>
 
           <label className="field">
-            <span className="field-label">App 名称</span>
+            <span className="field-label">App 中文名</span>
             <Input
-              disabled={submitting}
-              onChange={(event) => setAppName(event.target.value)}
-              placeholder="展示名称，可选"
+              disabled={creatingApp}
+              onChange={(event) => setAppNameZhCn(event.target.value)}
+              placeholder="例如 小说工坊"
               size="large"
-              value={appName}
+              value={appNameZhCn}
             />
-            <small className="field-hint">创建完成后会自动生成密钥和默认配置。</small>
+            <small className="field-hint">中国大陆相关邮件会优先使用这个名字。</small>
           </label>
+
+          <label className="field">
+            <span className="field-label">App 英文名</span>
+            <Input
+              disabled={creatingApp}
+              onChange={(event) => setAppNameEnUs(event.target.value)}
+              placeholder="For example Novel Forge"
+              size="large"
+              value={appNameEnUs}
+            />
+            <small className="field-hint">其他地区会优先使用对应 locale 的名字，缺失时回退到英文名。</small>
+          </label>
+        </div>
+      </Modal>
+
+      <Modal
+        cancelText="取消"
+        destroyOnClose
+        okButtonProps={{ loading: savingAppNames }}
+        okText="保存名称"
+        onCancel={closeEditNamesModal}
+        onOk={() => void handleSaveAppNames()}
+        open={Boolean(editingApp)}
+        title={editingApp ? `编辑 ${editingApp.appId} 的多语言名称` : "编辑多语言名称"}
+      >
+        <div className="stack">
+          <label className="field">
+            <span className="field-label">中文名（zh-CN）</span>
+            <Input
+              disabled={savingAppNames}
+              onChange={(event) => setEditingNameZhCn(event.target.value)}
+              placeholder="例如 小说工坊"
+              size="large"
+              value={editingNameZhCn}
+            />
+            <small className="field-hint">中国大陆相关邮件会优先使用中文名。</small>
+          </label>
+
+          <label className="field">
+            <span className="field-label">英文名（en-US）</span>
+            <Input
+              disabled={savingAppNames}
+              onChange={(event) => setEditingNameEnUs(event.target.value)}
+              placeholder="For example Novel Forge"
+              size="large"
+              value={editingNameEnUs}
+            />
+            <small className="field-hint">其他地区没有命中本地名称时，会回退到英文名。</small>
+          </label>
+
+          <section className="app-name-modal-section">
+            <div className="card-header compact-card-header">
+              <div>
+                <h3>其他语言</h3>
+                <p>低频语言名称放在这里维护，例如 `ja-JP`、`fr-FR`。</p>
+              </div>
+              <Button
+                icon={<PlusOutlined />}
+                onClick={() => setEditingExtraNames((current) => [...current, createLocaleNameDraft()])}
+                type="dashed"
+              >
+                添加语言
+              </Button>
+            </div>
+
+            {editingExtraNames.length ? (
+              <div className="app-name-locale-list">
+                {editingExtraNames.map((item) => (
+                  <div className="app-name-locale-row" key={item.id}>
+                    <label className="field">
+                      <span className="field-label">Locale</span>
+                      <Select
+                        allowClear
+                        disabled={savingAppNames}
+                        onChange={(value) => updateExtraLocaleDraft(item.id, { locale: value ?? "" })}
+                        options={getExtraLocaleOptions(item.locale)}
+                        placeholder="选择语言"
+                        showSearch
+                        size="large"
+                        optionFilterProp="label"
+                        value={item.locale || undefined}
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="field-label">名称</span>
+                      <Input
+                        disabled={savingAppNames}
+                        onChange={(event) => updateExtraLocaleDraft(item.id, { value: event.target.value })}
+                        placeholder="例如 ノベル工房"
+                        value={item.value}
+                      />
+                    </label>
+                    <Tooltip title="移除这条语言名称">
+                      <span className="app-name-locale-remove">
+                        <Button
+                          aria-label={`移除 ${item.locale || "这条"} 语言名称`}
+                          className="action-icon-button"
+                          danger
+                          disabled={savingAppNames}
+                          icon={<DeleteOutlined />}
+                          onClick={() => removeExtraLocaleDraft(item.id)}
+                          shape="circle"
+                          type="default"
+                        />
+                      </span>
+                    </Tooltip>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state compact-empty-state">当前只有默认的中文名和英文名。</div>
+            )}
+          </section>
         </div>
       </Modal>
 
