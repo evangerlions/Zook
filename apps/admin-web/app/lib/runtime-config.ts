@@ -15,12 +15,20 @@ declare global {
 }
 
 function readEnvFallback(): Partial<RuntimeConfig> {
-  return {
-    brandName: import.meta.env.VITE_ADMIN_BRAND_NAME,
-    defaultAppId: import.meta.env.VITE_ADMIN_DEFAULT_APP_ID,
-    analyticsUrl: import.meta.env.VITE_ADMIN_ANALYTICS_URL,
-    logsUrl: import.meta.env.VITE_ADMIN_LOG_URL,
-  };
+  const result: Partial<RuntimeConfig> = {};
+  if (import.meta.env.VITE_ADMIN_BRAND_NAME) {
+    result.brandName = import.meta.env.VITE_ADMIN_BRAND_NAME;
+  }
+  if (import.meta.env.VITE_ADMIN_DEFAULT_APP_ID) {
+    result.defaultAppId = import.meta.env.VITE_ADMIN_DEFAULT_APP_ID;
+  }
+  if (import.meta.env.VITE_ADMIN_ANALYTICS_URL) {
+    result.analyticsUrl = import.meta.env.VITE_ADMIN_ANALYTICS_URL;
+  }
+  if (import.meta.env.VITE_ADMIN_LOG_URL) {
+    result.logsUrl = import.meta.env.VITE_ADMIN_LOG_URL;
+  }
+  return result;
 }
 
 export function getRuntimeConfig(): RuntimeConfig {
