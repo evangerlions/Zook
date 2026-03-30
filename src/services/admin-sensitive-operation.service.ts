@@ -6,7 +6,7 @@ import type {
   AdminSessionRecord,
   TencentSesRegion,
 } from "../shared/types.ts";
-import { randomNumericCode, sha256 } from "../shared/utils.ts";
+import { randomNumericCode, sha256, timingSafeHexCompare } from "../shared/utils.ts";
 import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "./common-email-config.service.ts";
 import type { RegistrationEmailSender } from "./tencent-ses-registration-email.service.ts";
 
@@ -159,7 +159,7 @@ export class AdminSensitiveOperationService {
       badRequest("ADMIN_SENSITIVE_CODE_INVALID", "Sensitive verification code is invalid or expired.");
     }
 
-    if (sha256(normalizedCode) !== existing.codeHash) {
+    if (!timingSafeHexCompare(sha256(normalizedCode), existing.codeHash)) {
       const failedAttempts = existing.failedAttempts + 1;
       if (failedAttempts >= this.maxFailedAttempts) {
         await this.kvManager.delete(SENSITIVE_OPERATION_SCOPE, cacheKey);

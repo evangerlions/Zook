@@ -56,7 +56,13 @@ export class TokenService {
       unauthorized("AUTH_INVALID_TOKEN", "Bearer token signature is invalid.");
     }
 
-    const payload = JSON.parse(decodeBase64Url(serializedPayload)) as AccessTokenPayload;
+    let payload: AccessTokenPayload;
+    try {
+      payload = JSON.parse(decodeBase64Url(serializedPayload)) as AccessTokenPayload;
+    } catch {
+      unauthorized("AUTH_INVALID_TOKEN", "Bearer token is expired or malformed.");
+    }
+
     if (
       payload.type !== "access" ||
       !Number.isInteger(payload.ver) ||
