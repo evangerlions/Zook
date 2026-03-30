@@ -163,9 +163,8 @@ ensure_command npm
 ensure_command curl
 ensure_command lsof
 
-load_env_file "$ROOT_DIR/local/env/dev.env"
+load_env_file "$ROOT_DIR/deploy_configs/local.env"
 load_env_file "$ROOT_DIR/.env.local"
-load_env_file "$ROOT_DIR/deploy_configs/dev.local.env"
 
 if [[ -z "${REDIS_URL:-}" ]]; then
   if REDIS_URL="$(discover_local_redis_url)"; then
@@ -182,12 +181,12 @@ API_PORT="${API_PORT:-3100}"
 ADMIN_PORT="${ADMIN_PORT:-3110}"
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
-  log "缺少 DATABASE_URL。请在 local/env/dev.env、deploy_configs/dev.local.env 或 .env.local 中配置。"
+  log "缺少 DATABASE_URL。请在 deploy_configs/local.env 或 .env.local 中配置。"
   exit 1
 fi
 
 if [[ -z "${REDIS_URL:-}" ]]; then
-  log "缺少 REDIS_URL。请在 local/env/dev.env、deploy_configs/dev.local.env 或 .env.local 中配置。"
+  log "缺少 REDIS_URL。请在 deploy_configs/local.env 或 .env.local 中配置。"
   exit 1
 fi
 
@@ -218,6 +217,5 @@ printf 'Admin:      http://127.0.0.1:%s\n' "$ADMIN_PORT"
 printf '用户名:      %s\n' "$ADMIN_BASIC_AUTH_USERNAME"
 printf '密码:        %s\n' "$ADMIN_BASIC_AUTH_PASSWORD"
 printf '按 Ctrl+C 可一起停止这两个服务。\n'
-printf '\n'
 
 monitor_children

@@ -252,7 +252,26 @@ export function serializeMailDraftForPreview(draft: MailConfigDraft) {
   } catch {
     return {
       enabled: Boolean(draft.enabled),
-      regions: draft.regions,
+      regions: draft.regions.map((region) => ({
+        region: region.region,
+        sender: region.sender,
+        templates: region.templates,
+      })),
+    };
+  }
+}
+
+export function safeSerializeMailDraft(draft: MailConfigDraft) {
+  try {
+    return serializeMailDraft(draft);
+  } catch {
+    return {
+      enabled: Boolean(draft.enabled),
+      regions: draft.regions.map((region) => ({
+        region: region.region,
+        sender: region.sender,
+        templates: region.templates,
+      })),
     };
   }
 }

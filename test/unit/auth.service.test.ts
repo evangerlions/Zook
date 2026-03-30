@@ -108,3 +108,51 @@ test("auth service issues web refresh cookies with a 60 day lifetime", async () 
   assert.ok(cookie);
   assert.match(cookie, /Max-Age=5184000/);
 });
+
+test("auth service can mark web refresh cookies as Secure", async () => {
+  const runtime = await createApplication({
+    secureRefreshCookie: true,
+  });
+  const cookie = runtime.services.authService.buildRefreshCookie("refresh-token", "web");
+
+  assert.ok(cookie);
+  assert.match(cookie, /Secure/);
+  assert.match(runtime.services.authService.buildClearRefreshCookie(), /Secure/);
+});
+
+test("password login lock survives application restart when KV storage is shared", async () => {
+  const firstRuntime = await createApplication();
+  const sharedKvManager = firstRuntime.services.kvManager;
+
+  for (let index = 0; index < 10; index += 1) {
+    await assert.rejects(
+      () =>
+        firstRuntime.services.authService.login({
+          appId: "app_a",
+          account: "alice@example.com",
+          password: "wrong-password",
+        }),
+      (error: unknown) =>
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "AUTH_INVALID_CREDENTIAL",
+    );
+  }
+
+  const secondRuntime = await createApplication({
+    kvManager: sharedKvManager,
+  });
+
+  await assert.rejects(
+    () =>
+      secondRuntime.services.authService.login({
+        appId: "app_a",
+        account: "alice@example.com",
+        password: "Password1234",
+      }),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "AUTH_LOGIN_TEMPORARILY_LOCKED",
+  );
+});

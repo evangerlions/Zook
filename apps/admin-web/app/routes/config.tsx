@@ -5,6 +5,7 @@ import { JsonEditor } from "../components/json-editor";
 import { JsonPreview } from "../components/json-preview";
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
+import { SaveConfirmModal } from "../components/save-confirm-modal";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
@@ -24,18 +25,21 @@ export default function ConfigRoute() {
   const selectedApp = apps.find((item) => item.appId === selectedAppId) ?? null;
   const [document, setDocument] = useState<AdminConfigDocument | null>(null);
   const [value, setValue] = useState("");
+  const [originalValue, setOriginalValue] = useState("");
   const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [editorError, setEditorError] = useState("");
   const [historyExpanded, setHistoryExpanded] = useState(true);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const previewValue = useMemo(() => safeParseJson(value), [value]);
 
   async function loadLatest() {
     if (!selectedAppId) {
       setDocument(null);
       setValue("");
+      setOriginalValue("");
       setDesc("");
       setEditorError("");
       completeWorkspaceTransition();
@@ -47,6 +51,7 @@ export default function ConfigRoute() {
       const payload = await adminApi.getConfig(selectedAppId);
       setDocument(payload);
       setValue(payload.rawJson);
+      setOriginalValue(payload.rawJson);
       setDesc("");
       setEditorError("");
     } finally {
@@ -99,9 +104,25 @@ export default function ConfigRoute() {
     }
   }
 
-  async function handleSave() {
+  function openSaveModal() {
     if (!selectedAppId) {
       setNotice(makeNotice("error", "请先选择一个 App。"));
+      return;
+    }
+
+    try {
+      parseConfigText(value);
+      setEditorError("");
+      setSaveModalOpen(true);
+    } catch (error) {
+      const message = formatApiError(error);
+      setEditorError(message);
+      setNotice(makeNotice("error", message));
+    }
+  }
+
+  async function handleConfirmSave() {
+    if (!selectedAppId) {
       return;
     }
 
@@ -113,13 +134,14 @@ export default function ConfigRoute() {
       const payload = await adminApi.updateConfig(selectedAppId, normalized, desc.trim() || undefined);
       setDocument(payload);
       setValue(payload.rawJson);
+      setOriginalValue(payload.rawJson);
       setDesc("");
       setEditorError("");
+      setSaveModalOpen(false);
       await reloadBootstrap();
       setNotice(makeNotice("success", "配置已保存。"));
     } catch (error) {
       const message = formatApiError(error);
-      setEditorError(message);
       setNotice(makeNotice("error", message));
     } finally {
       setSaving(false);
@@ -201,19 +223,9 @@ export default function ConfigRoute() {
               {editorError ? <small className="form-error">{editorError}</small> : null}
             </label>
 
-            <label className="field">
-              <span className="field-label">更新说明</span>
-              <Input
-                onChange={(event) => setDesc(event.target.value)}
-                placeholder="例如：新增投递渠道白名单"
-                size="large"
-                value={desc}
-              />
-            </label>
-
             <div className="button-row">
-              <Button disabled={loading} loading={saving} onClick={() => void handleSave()} size="large" type="primary">
-                {saving ? "保存中..." : "保存配置"}
+              <Button disabled={loading} onClick={openSaveModal} size="large" type="primary">
+                保存配置
               </Button>
               <Button disabled={loading} onClick={() => void loadLatest()} size="large" type="default">
                 刷新最新
@@ -236,6 +248,19 @@ export default function ConfigRoute() {
           />
         </RevisionHistoryDock>
       </div>
+
+      <SaveConfirmModal
+        desc={desc}
+        descPlaceholder="例如：新增投递渠道白名单"
+        loading={saving}
+        newValue={value}
+        oldValue={originalValue}
+        onCancel={() => setSaveModalOpen(false)}
+        onConfirm={() => void handleConfirmSave()}
+        onDescChange={setDesc}
+        open={saveModalOpen}
+        title="保存配置"
+      />
     </section>
   );
 }

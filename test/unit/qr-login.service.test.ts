@@ -177,3 +177,19 @@ test("qr login confirm rejects app scope mismatches from mobile auth", async () 
   assert.equal(response.statusCode, 403);
   assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
 });
+
+test("qr login does not issue refresh tokens before PC polling completes", async () => {
+  const runtime = await createApplication();
+  const created = runtime.services.qrLoginService.createSession({ appId: "app_a" });
+  const scanToken = extractScanToken(created.qrContent);
+
+  await runtime.services.qrLoginService.confirm({
+    appId: "app_a",
+    loginId: created.loginId,
+    scanToken,
+    userId: "user_alice",
+  });
+
+  const refreshTokens = await runtime.services.refreshTokenStore.listByUserAndApp("app_a", "user_alice");
+  assert.deepEqual(refreshTokens, []);
+});

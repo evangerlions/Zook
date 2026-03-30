@@ -257,6 +257,19 @@ export function serializeLlmDraftForPreview(draft: LlmConfigDraft) {
   }
 }
 
+export function safeSerializeLlmDraft(draft: LlmConfigDraft) {
+  try {
+    return serializeLlmDraft(draft);
+  } catch {
+    return {
+      enabled: Boolean(draft.enabled),
+      defaultModelKey: String(draft.defaultModelKey ?? ""),
+      providers: draft.providers,
+      models: draft.models,
+    };
+  }
+}
+
 export function getModelRuntimeSnapshot(
   runtimeModels: LlmModelRuntimeStatus[] | undefined,
   modelKey: string,

@@ -311,6 +311,7 @@ export interface AccessTokenPayload {
   app_id: string;
   type: "access";
   jti: string;
+  ver: number;
   iat: number;
   exp: number;
 }
@@ -319,6 +320,7 @@ export interface AuthContext {
   userId: string;
   appId: string;
   tokenId: string;
+  tokenVersion: number;
   expiresAt: string;
 }
 
@@ -398,6 +400,29 @@ export interface EmailLoginCommand {
   email: string;
   emailCode: string;
   ipAddress: string;
+}
+
+export interface PasswordEmailCodeCommand {
+  appId: string;
+  email: string;
+  ipAddress: string;
+  locale: string;
+  region: TencentSesRegion;
+}
+
+export interface ResetPasswordCommand {
+  appId: string;
+  email: string;
+  emailCode: string;
+  password: string;
+  ipAddress: string;
+}
+
+export interface ChangePasswordCommand {
+  appId: string;
+  userId: string;
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface AdminAppLogSecretSummary {

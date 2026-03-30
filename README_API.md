@@ -220,6 +220,9 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `POST` | `/api/v1/auth/login` | 登录 |
 | `POST` | `/api/v1/auth/login/email-code` | 发送邮箱登录验证码 |
 | `POST` | `/api/v1/auth/login/email` | 使用邮箱验证码登录，必要时自动创建账号 |
+| `POST` | `/api/v1/auth/password/email-code` | 发送密码设置 / 重置邮箱验证码 |
+| `POST` | `/api/v1/auth/password/reset` | 使用邮箱验证码重置密码，并直接签发新会话 |
+| `POST` | `/api/v1/auth/password/change` | 已登录用户修改密码，并直接签发新会话 |
 | `POST` | `/api/v1/auth/register/email-code` | 发送注册邮箱验证码 |
 | `POST` | `/api/v1/auth/register` | 邮箱注册并创建账号 |
 | `POST` | `/api/v1/auth/qr-logins` | 创建扫码登录会话并生成二维码内容 |
@@ -254,10 +257,15 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 4. 邮箱验证码登录接口：
    `POST /api/v1/auth/login/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`
-5. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
-6. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/register`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
-7. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
-8. 当前 `user` 结构为：
+5. 密码相关接口：
+   `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
+   `POST /api/v1/auth/password/reset` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "password": "Password1234", "clientType": "app" }`
+   `POST /api/v1/auth/password/change` 请求体为 `{ "appId": "app_a", "currentPassword": "OldPass1234", "newPassword": "NewPass1234", "clientType": "app" }`
+6. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
+7. `POST /api/v1/auth/password/email-code` 为了避免账号探测，在邮箱不存在、账号被封或当前 app 不允许该用户走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` 阶段完成。
+8. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
+9. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
+10. 当前 `user` 结构为：
 
 ```json
 {
@@ -269,9 +277,10 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 }
 ```
 
-9. 目前 `name` 会根据现有账号信息推导，优先取邮箱前缀，其次取手机号；`avatarUrl` 预留为 `null`，后续可平滑扩展。
-10. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
-11. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
+11. 目前 `name` 会根据现有账号信息推导，优先取邮箱前缀，其次取手机号；`avatarUrl` 预留为 `null`，后续可平滑扩展。
+12. `POST /api/v1/auth/logout` 当 `scope = "all"` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
+13. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
+14. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
 
 ## 7. 统一响应格式
 
