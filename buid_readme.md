@@ -56,11 +56,10 @@ npm test
 推荐先准备一份本地专用环境文件：
 
 ```bash
-mkdir -p local/env
-cp deploy_configs/dev.local.env.example local/env/dev.env
+cp deploy_configs/local.env.example deploy_configs/local.env
 ```
 
-然后直接运行 `npm run dev:stack`。脚本会优先读取 `local/env/dev.env`，再读取 `deploy_configs/dev.local.env` / `.env.local`，自动构建 Admin Web，并把 API 与 Admin Web 一起拉起。
+然后直接运行 `npm run dev:stack`。脚本会优先读取 `deploy_configs/local.env`，再读取 `.env.local`，自动构建 Admin Web，并把 API 与 Admin Web 一起拉起。
 
 ## 生产发布常用命令
 

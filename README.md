@@ -109,9 +109,9 @@ npm test
 如果你想把本地数据库、Redis 和管理员账号固定下来，推荐先复制：
 
 ```bash
-cp deploy_configs/dev.local.env.example local/env/dev.env
+cp deploy_configs/local.env.example deploy_configs/local.env
 ```
 
-`npm run dev:stack` 会优先读取 `local/env/dev.env`，再读取 `deploy_configs/dev.local.env` 和 `.env.local`。这样本地联调配置就固定在仓库里，不再依赖 `~/Downloads` 这类外部位置。
+`npm run dev:stack` 会优先读取 `deploy_configs/local.env`，再读取 `.env.local`。这样本地联调配置就固定在 `deploy_configs` 里，不再需要单独维护一个 `local/` 目录。
 
 健康检查路径为 `/api/health`。
