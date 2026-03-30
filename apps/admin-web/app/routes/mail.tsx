@@ -5,6 +5,7 @@ import { JsonPreview } from "../components/json-preview";
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
 import { Field, ToggleField } from "../components/field";
+import { SaveConfirmModal } from "../components/save-confirm-modal";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
@@ -18,6 +19,7 @@ import {
   normalizeMailDocument,
   normalizeMailTestDraft,
   renderMailRegionLabel,
+  safeSerializeMailDraft,
   serializeMailDraft,
   serializeMailDraftForPreview,
   serializeMailTestDraft,
@@ -39,6 +41,7 @@ export default function MailRoute() {
   const [tab, setTab] = useState<"config" | "test">("config");
   const [document, setDocument] = useState<AdminEmailServiceDocument | null>(null);
   const [draft, setDraft] = useState<MailConfigDraft>(createDefaultMailConfig());
+  const [originalDraft, setOriginalDraft] = useState<MailConfigDraft>(createDefaultMailConfig());
   const [testDraft, setTestDraft] = useState<MailTestDraft>(createDefaultMailTestDraft());
   const [testResult, setTestResult] = useState<AdminEmailTestSendDocument | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,14 +50,17 @@ export default function MailRoute() {
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [desc, setDesc] = useState("");
   const [historyExpanded, setHistoryExpanded] = useState(true);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   async function loadLatest() {
     setLoading(true);
     try {
       const payload = normalizeMailDocument(await adminApi.getEmailService());
       setDocument(payload);
-      setDraft(cloneMailConfig(payload?.config));
-      setTestDraft((current) => normalizeMailTestDraft(current, cloneMailConfig(payload?.config)));
+      const clonedDraft = cloneMailConfig(payload?.config);
+      setDraft(clonedDraft);
+      setOriginalDraft(clonedDraft);
+      setTestDraft((current) => normalizeMailTestDraft(current, clonedDraft));
       setDesc("");
     } finally {
       setLoading(false);
@@ -105,7 +111,11 @@ export default function MailRoute() {
     }));
   }
 
-  async function handleSave() {
+  function openSaveModal() {
+    setSaveModalOpen(true);
+  }
+
+  async function handleConfirmSave() {
     setSaving(true);
     clearNotice();
     try {
@@ -116,9 +126,12 @@ export default function MailRoute() {
         }),
       );
       setDocument(payload);
-      setDraft(cloneMailConfig(payload?.config));
-      setTestDraft((current) => normalizeMailTestDraft(current, cloneMailConfig(payload?.config)));
+      const clonedDraft = cloneMailConfig(payload?.config);
+      setDraft(clonedDraft);
+      setOriginalDraft(clonedDraft);
+      setTestDraft((current) => normalizeMailTestDraft(current, clonedDraft));
       setDesc("");
+      setSaveModalOpen(false);
       setNotice(makeNotice("success", "邮件服务已保存。"));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
@@ -346,13 +359,9 @@ export default function MailRoute() {
                   </article>
                 ))}
 
-                <Field hint="保存说明会进入 revision 历史。" label="更新说明">
-                  <Input onChange={(event) => setDesc(event.target.value)} size="large" value={desc} />
-                </Field>
-
                 <div className="button-row">
-                  <Button disabled={saving} loading={saving} onClick={() => void handleSave()} size="large" type="primary">
-                    {saving ? "保存中..." : "保存邮件服务"}
+                  <Button disabled={saving} onClick={openSaveModal} size="large" type="primary">
+                    保存邮件服务
                   </Button>
                 </div>
               </div>
@@ -469,6 +478,19 @@ export default function MailRoute() {
           </aside>
         </div>
       )}
+
+      <SaveConfirmModal
+        desc={desc}
+        descPlaceholder="例如：新增邮件模板或更新发件地址"
+        loading={saving}
+        newValue={JSON.stringify(safeSerializeMailDraft(draft), null, 2)}
+        oldValue={JSON.stringify(safeSerializeMailDraft(originalDraft), null, 2)}
+        onCancel={() => setSaveModalOpen(false)}
+        onConfirm={() => void handleConfirmSave()}
+        onDescChange={setDesc}
+        open={saveModalOpen}
+        title="保存邮件服务"
+      />
     </section>
   );
 }

@@ -6,6 +6,7 @@ import { JsonPreview } from "../components/json-preview";
 import { MetricCard } from "../components/metric-card";
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
+import { SaveConfirmModal } from "../components/save-confirm-modal";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatNumber, formatTimestamp, makeNotice } from "../lib/format";
@@ -19,6 +20,7 @@ import {
   createEmptyLlmSummary,
   getModelRuntimeSnapshot,
   normalizeLlmDocument,
+  safeSerializeLlmDraft,
   serializeLlmDraft,
   serializeLlmDraftForPreview,
   toModelKindLabel,
@@ -47,6 +49,7 @@ export default function LlmRoute() {
   const [tab, setTab] = useState<"monitor" | "config">("monitor");
   const [document, setDocument] = useState<AdminLlmServiceDocument | null>(null);
   const [draft, setDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
+  const [originalDraft, setOriginalDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
   const [metrics, setMetrics] = useState<AdminLlmMetricsDocument | null>(null);
   const [modelMetrics, setModelMetrics] = useState<AdminLlmModelMetricsDocument | null>(null);
   const [smokeDocument, setSmokeDocument] = useState<AdminLlmSmokeTestDocument | null>(null);
@@ -59,13 +62,16 @@ export default function LlmRoute() {
   const [runningSmokeTest, setRunningSmokeTest] = useState(false);
   const [desc, setDesc] = useState("");
   const [historyExpanded, setHistoryExpanded] = useState(true);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   async function loadConfig() {
     setLoadingConfig(true);
     try {
       const payload = normalizeLlmDocument(await adminApi.getLlmService());
       setDocument(payload);
-      setDraft(cloneLlmConfig(payload?.config));
+      const clonedDraft = cloneLlmConfig(payload?.config);
+      setDraft(clonedDraft);
+      setOriginalDraft(clonedDraft);
       setDesc("");
       if (!selectedModelKey) {
         setSelectedModelKey(payload?.config.defaultModelKey || payload?.config.models[0]?.key || "");
@@ -164,7 +170,11 @@ export default function LlmRoute() {
     }));
   }
 
-  async function handleSave() {
+  function openSaveModal() {
+    setSaveModalOpen(true);
+  }
+
+  async function handleConfirmSave() {
     setSaving(true);
     clearNotice();
     try {
@@ -175,8 +185,11 @@ export default function LlmRoute() {
         }),
       );
       setDocument(payload);
-      setDraft(cloneLlmConfig(payload?.config));
+      const clonedDraft = cloneLlmConfig(payload?.config);
+      setDraft(clonedDraft);
+      setOriginalDraft(clonedDraft);
       setDesc("");
+      setSaveModalOpen(false);
       setNotice(makeNotice("success", "LLM 配置已保存。"));
       await loadMetrics(range);
     } catch (error) {
@@ -558,13 +571,9 @@ export default function LlmRoute() {
                   </div>
                 </section>
 
-                <Field hint="会进入版本历史，后续回滚时也能看见。" label="更新说明">
-                  <Input onChange={(event) => setDesc(event.target.value)} size="large" value={desc} />
-                </Field>
-
                 <div className="button-row">
-                  <Button disabled={saving} loading={saving} onClick={() => void handleSave()} size="large" type="primary">
-                    {saving ? "保存中..." : "保存 LLM 配置"}
+                  <Button disabled={saving} onClick={openSaveModal} size="large" type="primary">
+                    保存 LLM 配置
                   </Button>
                 </div>
               </div>
@@ -586,6 +595,19 @@ export default function LlmRoute() {
           </div>
         </div>
       )}
+
+      <SaveConfirmModal
+        desc={desc}
+        descPlaceholder="例如：新增模型路由或调整权重"
+        loading={saving}
+        newValue={JSON.stringify(safeSerializeLlmDraft(draft), null, 2)}
+        oldValue={JSON.stringify(safeSerializeLlmDraft(originalDraft), null, 2)}
+        onCancel={() => setSaveModalOpen(false)}
+        onConfirm={() => void handleConfirmSave()}
+        onDescChange={setDesc}
+        open={saveModalOpen}
+        title="保存 LLM 配置"
+      />
     </section>
   );
 }
