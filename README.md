@@ -101,9 +101,17 @@ npm run worker
 npm test
 ```
 
+手动执行数据库迁移：
+
+```bash
+node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts
+```
+
 默认 API 端口是 `3100`，也可以通过 `PORT` 环境变量覆盖。
 默认 Admin Web 端口是 `3110`。
 运行时会强校验 `REDIS_URL` 和 `DATABASE_URL`，依赖不可用时直接启动失败。
+`api` / `worker` 运行时默认使用 PostgreSQL 持久化业务状态，不再使用纯内存态数据集。
+通知任务队列运行时默认使用共享 Redis，不再使用单进程内存队列。
 容器访问宿主机 Redis / PostgreSQL 时，推荐在连接串里使用 `host.docker.internal`。
 
 如果你想把本地数据库、Redis 和管理员账号固定下来，推荐先复制：

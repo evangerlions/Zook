@@ -138,12 +138,13 @@ python3 build_scripts/build_and_push_docker.py --branch main --skip-git-sync --a
 4. 根据 `branch + version + shortsha` 生成本地镜像 tag。
 5. 本地构建镜像。
 6. 按槽位写入 `.deploy/<slot>/compose.env`
-7. 执行 `docker compose up -d --force-recreate --remove-orphans`
-8. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
-9. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`
-10. 成功后默认保留最近 `5` 个本地发布镜像，并额外保留各槽位当前与上一个回滚点
-11. 成功后再执行一次温和的 `docker builder prune`
-12. 如果健康检查失败，则收集日志并回滚到上一个成功版本
+7. 使用新镜像执行 `node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts`
+8. 只有迁移成功才继续执行 `docker compose up -d --force-recreate --remove-orphans`
+9. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
+10. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`
+11. 成功后默认保留最近 `5` 个本地发布镜像，并额外保留各槽位当前与上一个回滚点
+12. 成功后再执行一次温和的 `docker builder prune`
+13. 如果健康检查失败，则收集日志并回滚到上一个成功版本
 
 ## CICD 服务怎么改
 

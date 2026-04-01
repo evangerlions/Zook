@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, randomInt, randomUUID } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 
 const DEFAULT_TIMEZONE = "Asia/Shanghai";
 
@@ -23,6 +23,28 @@ export function randomNumericCode(length = 6): string {
 
 export function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+export function timingSafeHexCompare(left: string, right: string): boolean {
+  const normalizedLeft = typeof left === "string" ? left.trim() : "";
+  const normalizedRight = typeof right === "string" ? right.trim() : "";
+
+  if (
+    !normalizedLeft ||
+    normalizedLeft.length !== normalizedRight.length ||
+    normalizedLeft.length % 2 !== 0
+  ) {
+    return false;
+  }
+
+  try {
+    return timingSafeEqual(
+      Buffer.from(normalizedLeft, "hex"),
+      Buffer.from(normalizedRight, "hex"),
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function signValue(secret: string, value: string): string {

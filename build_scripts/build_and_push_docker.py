@@ -520,6 +520,24 @@ def deploy_release(repo_root: Path, project_name: str, compose_files: list[Path]
     )
 
 
+def run_database_migrations(image_full_name: str, app_env_file: Path) -> None:
+    run_command(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--env-file",
+            str(app_env_file),
+            "--add-host",
+            "host.docker.internal:host-gateway",
+            image_full_name,
+            "node",
+            "--experimental-transform-types",
+            "src/infrastructure/database/postgres/migrate.ts",
+        ]
+    )
+
+
 def resolve_runtime_paths(repo_root: Path, args: argparse.Namespace) -> tuple[Path, Path, Path]:
     compose_file = Path(args.compose_file)
     if not compose_file.is_absolute():
@@ -945,6 +963,11 @@ def main() -> int:
         print(f"===== END BUILD LOCAL IMAGE cost: {print_time(get_time() - build_start)} =====")
 
         write_compose_env(compose_env_file, compose_env)
+
+        migrate_start = get_time()
+        print("===== START DATABASE MIGRATION =====")
+        run_database_migrations(image_full_name, app_env_file)
+        print(f"===== END DATABASE MIGRATION cost: {print_time(get_time() - migrate_start)} =====")
 
         deploy_start = get_time()
         print("===== START DEPLOY LOCAL RELEASE =====")

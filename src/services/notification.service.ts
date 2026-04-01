@@ -1,6 +1,6 @@
 import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
-import { InMemoryJobQueue } from "../infrastructure/queue/bullmq/in-memory-queue.ts";
+import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
 import { randomId } from "../shared/utils.ts";
 
 /**
@@ -9,16 +9,16 @@ import { randomId } from "../shared/utils.ts";
 export class NotificationService {
   constructor(
     private readonly database: InMemoryDatabase,
-    private readonly queue: InMemoryJobQueue,
+    private readonly queue: JobQueue,
     private readonly logger: StructuredLogger,
   ) {}
 
-  queueNotification(command: {
+  async queueNotification(command: {
     appId: string;
     recipientUserId: string;
     channel: "email" | "sms" | "push";
     payload: Record<string, unknown>;
-  }): { queued: boolean; notificationJobId: string } {
+  }): Promise<{ queued: boolean; notificationJobId: string }> {
     const notificationJobId = randomId("notification");
     this.database.notificationJobs.push({
       id: notificationJobId,
@@ -31,7 +31,7 @@ export class NotificationService {
     });
 
     try {
-      this.queue.add(
+      await this.queue.add(
         "notification.send",
         {
           notificationJobId,

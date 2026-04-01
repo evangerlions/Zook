@@ -6,6 +6,8 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
  */
 export class DevelopmentPasswordHasher {
   readonly algorithm = "scrypt";
+  private readonly minPasswordLength = 10;
+  private readonly maxPasswordLength = 256;
 
   hash(password: string): string {
     const salt = randomBytes(16).toString("hex");
@@ -25,6 +27,9 @@ export class DevelopmentPasswordHasher {
   }
 
   validateStrength(password: string): boolean {
-    return password.length >= 10 && /[A-Za-z]/.test(password) && /\d/.test(password);
+    return password.length >= this.minPasswordLength &&
+      password.length <= this.maxPasswordLength &&
+      /[A-Za-z]/.test(password) &&
+      /\d/.test(password);
   }
 }

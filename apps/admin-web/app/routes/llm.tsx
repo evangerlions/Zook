@@ -2,6 +2,7 @@ import { Button, Collapse, Input, Segmented, Select } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { Field, ToggleField } from "../components/field";
+import { JsonEditor } from "../components/json-editor";
 import { JsonPreview } from "../components/json-preview";
 import { MetricCard } from "../components/metric-card";
 import { RevisionHistoryDock } from "../components/revision-history-dock";
@@ -18,8 +19,11 @@ import {
   createEmptyLlmRoute,
   createEmptyLlmSmokeSummary,
   createEmptyLlmSummary,
+  formatLlmConfigJson,
+  getLlmDraftValidationError,
   getModelRuntimeSnapshot,
   normalizeLlmDocument,
+  parseLlmConfigText,
   safeSerializeLlmDraft,
   serializeLlmDraft,
   serializeLlmDraftForPreview,
@@ -43,13 +47,19 @@ const LLM_TAB_OPTIONS: Array<{ label: string; value: "monitor" | "config" }> = [
   { label: "监控", value: "monitor" },
   { label: "配置", value: "config" },
 ];
+const LLM_CONFIG_MODE_OPTIONS: Array<{ label: string; value: "form" | "raw" }> = [
+  { label: "表单", value: "form" },
+  { label: "RAW JSON", value: "raw" },
+];
 
 export default function LlmRoute() {
   const { clearNotice, setNotice } = useAdminSession();
   const [tab, setTab] = useState<"monitor" | "config">("monitor");
+  const [configMode, setConfigMode] = useState<"form" | "raw">("form");
   const [document, setDocument] = useState<AdminLlmServiceDocument | null>(null);
   const [draft, setDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
   const [originalDraft, setOriginalDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
+  const [rawValue, setRawValue] = useState(() => formatLlmConfigJson(createDefaultLlmConfig()));
   const [metrics, setMetrics] = useState<AdminLlmMetricsDocument | null>(null);
   const [modelMetrics, setModelMetrics] = useState<AdminLlmModelMetricsDocument | null>(null);
   const [smokeDocument, setSmokeDocument] = useState<AdminLlmSmokeTestDocument | null>(null);
@@ -63,19 +73,48 @@ export default function LlmRoute() {
   const [desc, setDesc] = useState("");
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const draftValidationError = useMemo(() => getLlmDraftValidationError(draft), [draft]);
+  const rawValidation = useMemo(() => {
+    try {
+      return {
+        ...parseLlmConfigText(rawValue),
+        error: "",
+      };
+    } catch (error) {
+      return {
+        config: null,
+        draft: null,
+        normalizedText: "",
+        error: formatApiError(error),
+      };
+    }
+  }, [rawValue]);
+  const draftSnapshot = useMemo(() => JSON.stringify(draft), [draft]);
+  const rawDraftSnapshot = useMemo(
+    () => (rawValidation.draft ? JSON.stringify(rawValidation.draft) : ""),
+    [rawValidation.draft],
+  );
+  const activeConfigError = configMode === "raw" ? rawValidation.error : draftValidationError;
+
+  function applyConfigDocument(payload: AdminLlmServiceDocument | null, preserveSelectedModel = true) {
+    const nextDraft = cloneLlmConfig(payload?.config);
+    const availableModelKeys = payload?.config.models.map((item) => item.key) ?? [];
+    const fallbackModelKey = payload?.config.defaultModelKey || payload?.config.models[0]?.key || "";
+
+    setDocument(payload);
+    setDraft(nextDraft);
+    setOriginalDraft(nextDraft);
+    setRawValue(formatLlmConfigJson(payload?.config ?? nextDraft));
+    setDesc("");
+    setSelectedModelKey((current) => (
+      preserveSelectedModel && current && availableModelKeys.includes(current) ? current : fallbackModelKey
+    ));
+  }
 
   async function loadConfig() {
     setLoadingConfig(true);
     try {
-      const payload = normalizeLlmDocument(await adminApi.getLlmService());
-      setDocument(payload);
-      const clonedDraft = cloneLlmConfig(payload?.config);
-      setDraft(clonedDraft);
-      setOriginalDraft(clonedDraft);
-      setDesc("");
-      if (!selectedModelKey) {
-        setSelectedModelKey(payload?.config.defaultModelKey || payload?.config.models[0]?.key || "");
-      }
+      applyConfigDocument(normalizeLlmDocument(await adminApi.getLlmService()));
     } finally {
       setLoadingConfig(false);
     }
@@ -109,7 +148,26 @@ export default function LlmRoute() {
     void loadMetrics(range);
   }, [range]);
 
-  const previewValue = useMemo(() => serializeLlmDraftForPreview(draft), [draft]);
+  useEffect(() => {
+    if (configMode !== "raw" || rawValidation.error || !rawValidation.draft || rawDraftSnapshot === draftSnapshot) {
+      return;
+    }
+
+    setDraft(rawValidation.draft);
+  }, [configMode, draftSnapshot, rawDraftSnapshot, rawValidation.draft, rawValidation.error]);
+
+  useEffect(() => {
+    if (configMode === "raw") {
+      return;
+    }
+
+    setRawValue(formatLlmConfigJson(draft));
+  }, [configMode, draft]);
+
+  const previewValue = useMemo(
+    () => (configMode === "raw" ? rawValidation.config : serializeLlmDraftForPreview(draft)),
+    [configMode, draft, rawValidation.config],
+  );
   const summary = metrics?.summary ?? createEmptyLlmSummary();
   const smokeSummary = smokeDocument?.summary ?? createEmptyLlmSmokeSummary();
   const chatModelOptions = draft.models.filter((item) => item.key && item.kind === "chat");
@@ -171,6 +229,9 @@ export default function LlmRoute() {
   }
 
   function openSaveModal() {
+    if (activeConfigError) {
+      return;
+    }
     setSaveModalOpen(true);
   }
 
@@ -178,17 +239,14 @@ export default function LlmRoute() {
     setSaving(true);
     clearNotice();
     try {
+      const nextConfig = configMode === "raw" ? parseLlmConfigText(rawValue).config : serializeLlmDraft(draft);
       const payload = normalizeLlmDocument(
         await adminApi.updateLlmService({
-          ...serializeLlmDraft(draft),
+          ...nextConfig,
           desc: desc.trim() || undefined,
         }),
       );
-      setDocument(payload);
-      const clonedDraft = cloneLlmConfig(payload?.config);
-      setDraft(clonedDraft);
-      setOriginalDraft(clonedDraft);
-      setDesc("");
+      applyConfigDocument(payload);
       setSaveModalOpen(false);
       setNotice(makeNotice("success", "LLM 配置已保存。"));
       await loadMetrics(range);
@@ -202,10 +260,7 @@ export default function LlmRoute() {
   async function handleViewRevision(revision: number) {
     setLoadingConfig(true);
     try {
-      const payload = normalizeLlmDocument(await adminApi.getLlmServiceRevision(revision));
-      setDocument(payload);
-      setDraft(cloneLlmConfig(payload?.config));
-      setSelectedModelKey(payload?.config.defaultModelKey || payload?.config.models[0]?.key || "");
+      applyConfigDocument(normalizeLlmDocument(await adminApi.getLlmServiceRevision(revision)), false);
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
@@ -218,9 +273,7 @@ export default function LlmRoute() {
     clearNotice();
     try {
       const payload = normalizeLlmDocument(await adminApi.restoreLlmService(revision));
-      setDocument(payload);
-      setDraft(cloneLlmConfig(payload?.config));
-      setSelectedModelKey(payload?.config.defaultModelKey || payload?.config.models[0]?.key || "");
+      applyConfigDocument(payload, false);
       await loadMetrics(range);
       setNotice(makeNotice("success", `已恢复到版本 R${revision}。`));
     } catch (error) {
@@ -435,7 +488,11 @@ export default function LlmRoute() {
                 {
                   key: "structure-preview",
                   label: "结构预览",
-                  children: <JsonPreview value={previewValue} />,
+                  children: activeConfigError ? (
+                    <div className="empty-state">当前配置还没有通过校验，暂时无法生成结构预览。</div>
+                  ) : (
+                    <JsonPreview value={previewValue} />
+                  ),
                 },
               ]}
             />
@@ -463,116 +520,153 @@ export default function LlmRoute() {
               {loadingConfig ? <p className="meta-text">正在加载 LLM 配置...</p> : null}
 
               <div className="stack">
-                <ToggleField
-                  checked={draft.enabled}
-                  hint="关闭后不会影响历史版本，但不会再参与默认路由。"
-                  label="启用 LLM 服务"
-                  onChange={(value) => setDraft((current) => ({ ...current, enabled: value }))}
-                />
-
-                <Field hint="启用状态下必须选择一个存在的模型。" label="默认模型">
-                  <Select
-                    onChange={(value) => setDraft((current) => ({ ...current, defaultModelKey: value }))}
-                    options={[
-                      { label: "请选择", value: "" },
-                      ...chatModelOptions
-                        .map((item) => ({
-                          label: `${item.label || item.key} (${toModelKindLabel(item.kind)})`,
-                          value: item.key,
-                        })),
-                    ]}
-                    size="large"
-                    value={draft.defaultModelKey}
+                <div className="config-mode-toolbar">
+                  <Segmented
+                    className="range-segmented"
+                    onChange={(value) => setConfigMode(value as "form" | "raw")}
+                    options={LLM_CONFIG_MODE_OPTIONS}
+                    value={configMode}
                   />
-                </Field>
+                  <span className="meta-chip">{activeConfigError ? "校验待修正" : "校验通过"}</span>
+                </div>
 
-                <section className="stack">
-                  <div className="card-header">
-                    <div>
-                      <h3>供应商</h3>
-                      <p>配置 provider 连接信息。修改 key 时会同步更新已引用的 routes。</p>
-                    </div>
-                    <Button
-                      onClick={() => setDraft((current) => ({ ...current, providers: [...current.providers, createEmptyLlmProvider()] }))}
-                      size="large"
-                    >
-                      添加供应商
-                    </Button>
-                  </div>
+                {configMode === "form" ? (
+                  <>
+                    <ToggleField
+                      checked={draft.enabled}
+                      hint="关闭后不会影响历史版本，但不会再参与默认路由。"
+                      label="启用 LLM 服务"
+                      onChange={(value) => setDraft((current) => ({ ...current, enabled: value }))}
+                    />
 
-                  <div className="provider-list">
-                    {draft.providers.map((provider, index) => (
-                      <ProviderCard
-                        key={`${provider.key || "provider"}-${index}`}
-                        onChange={(key, value) => updateProvider(index, key, value)}
-                        onRemove={() => setDraft((current) => ({
-                          ...current,
-                          providers: current.providers.filter((_, itemIndex) => itemIndex !== index),
-                          models: current.models.map((model) => ({
-                            ...model,
-                            routes: model.routes.filter((route) => route.provider !== provider.key),
+                    <Field hint="启用状态下必须选择一个存在的模型。" label="默认模型">
+                      <Select
+                        onChange={(value) => setDraft((current) => ({ ...current, defaultModelKey: value }))}
+                        options={[
+                          { label: "请选择", value: "" },
+                          ...chatModelOptions.map((item) => ({
+                            label: `${item.label || item.key} (${toModelKindLabel(item.kind)})`,
+                            value: item.key,
                           })),
-                        }))}
-                        provider={provider}
+                        ]}
+                        size="large"
+                        value={draft.defaultModelKey}
                       />
-                    ))}
-                  </div>
-                </section>
+                    </Field>
 
-                <section className="stack">
-                  <div className="card-header">
-                    <div>
-                      <h3>模型与 Routes</h3>
-                      <p>每个模型都可以拥有多条 route，并根据策略决定流量分发方式。</p>
-                    </div>
-                    <Button
-                      onClick={() => setDraft((current) => ({ ...current, models: [...current.models, createEmptyLlmModel()] }))}
-                      size="large"
-                    >
-                      添加模型
-                    </Button>
-                  </div>
+                    <section className="stack">
+                      <div className="card-header">
+                        <div>
+                          <h3>供应商</h3>
+                          <p>配置 provider 连接信息。修改 key 时会同步更新已引用的 routes。</p>
+                        </div>
+                        <Button
+                          onClick={() => setDraft((current) => ({ ...current, providers: [...current.providers, createEmptyLlmProvider()] }))}
+                          size="large"
+                        >
+                          添加供应商
+                        </Button>
+                      </div>
 
-                  <div className="model-list">
-                    {draft.models.map((model, modelIndex) => (
-                      <ModelCard
-                        key={`${model.key || "model"}-${modelIndex}`}
-                        model={model}
-                        onAddRoute={() => setDraft((current) => ({
-                          ...current,
-                          models: current.models.map((item, index) => (
-                            index === modelIndex
-                              ? {
-                                  ...item,
-                                  routes: [...item.routes, createEmptyLlmRoute(current.providers[0]?.key ?? "")],
-                                }
-                              : item
-                          )),
-                        }))}
-                        onChange={(key, value) => updateModel(modelIndex, key, value)}
-                        onRemove={() => setDraft((current) => ({
-                          ...current,
-                          defaultModelKey: current.defaultModelKey === model.key ? "" : current.defaultModelKey,
-                          models: current.models.filter((_, index) => index !== modelIndex),
-                        }))}
-                        onRouteChange={(routeIndex, key, value) => updateRoute(modelIndex, routeIndex, key, value)}
-                        onRouteRemove={(routeIndex) => setDraft((current) => ({
-                          ...current,
-                          models: current.models.map((item, index) => (
-                            index === modelIndex
-                              ? { ...item, routes: item.routes.filter((_, currentRouteIndex) => currentRouteIndex !== routeIndex) }
-                              : item
-                          )),
-                        }))}
-                        providers={draft.providers}
-                        runtimeSnapshot={getModelRuntimeSnapshot(document?.runtime.models, model.key)}
-                      />
-                    ))}
-                  </div>
-                </section>
+                      <div className="provider-list">
+                        {draft.providers.map((provider, index) => (
+                          <ProviderCard
+                            key={`${provider.key || "provider"}-${index}`}
+                            onChange={(key, value) => updateProvider(index, key, value)}
+                            onRemove={() => setDraft((current) => ({
+                              ...current,
+                              providers: current.providers.filter((_, itemIndex) => itemIndex !== index),
+                              models: current.models.map((model) => ({
+                                ...model,
+                                routes: model.routes.filter((route) => route.provider !== provider.key),
+                              })),
+                            }))}
+                            provider={provider}
+                          />
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="stack">
+                      <div className="card-header">
+                        <div>
+                          <h3>模型与 Routes</h3>
+                          <p>每个模型都可以拥有多条 route，并根据策略决定流量分发方式。</p>
+                        </div>
+                        <Button
+                          onClick={() => setDraft((current) => ({ ...current, models: [...current.models, createEmptyLlmModel()] }))}
+                          size="large"
+                        >
+                          添加模型
+                        </Button>
+                      </div>
+
+                      <div className="model-list">
+                        {draft.models.map((model, modelIndex) => (
+                          <ModelCard
+                            key={`${model.key || "model"}-${modelIndex}`}
+                            model={model}
+                            onAddRoute={() => setDraft((current) => ({
+                              ...current,
+                              models: current.models.map((item, index) => (
+                                index === modelIndex
+                                  ? {
+                                      ...item,
+                                      routes: [...item.routes, createEmptyLlmRoute(current.providers[0]?.key ?? "")],
+                                    }
+                                  : item
+                              )),
+                            }))}
+                            onChange={(key, value) => updateModel(modelIndex, key, value)}
+                            onRemove={() => setDraft((current) => ({
+                              ...current,
+                              defaultModelKey: current.defaultModelKey === model.key ? "" : current.defaultModelKey,
+                              models: current.models.filter((_, index) => index !== modelIndex),
+                            }))}
+                            onRouteChange={(routeIndex, key, value) => updateRoute(modelIndex, routeIndex, key, value)}
+                            onRouteRemove={(routeIndex) => setDraft((current) => ({
+                              ...current,
+                              models: current.models.map((item, index) => (
+                                index === modelIndex
+                                  ? { ...item, routes: item.routes.filter((_, currentRouteIndex) => currentRouteIndex !== routeIndex) }
+                                  : item
+                              )),
+                            }))}
+                            providers={draft.providers}
+                            runtimeSnapshot={getModelRuntimeSnapshot(document?.runtime.models, model.key)}
+                          />
+                        ))}
+                      </div>
+                    </section>
+
+                    {draftValidationError ? <p className="form-error">{draftValidationError}</p> : null}
+                  </>
+                ) : (
+                  <label className="field">
+                    <span className="field-label">RAW JSON</span>
+                    <JsonEditor
+                      onChange={setRawValue}
+                      readOnly={loadingConfig || saving}
+                      value={rawValue}
+                    />
+                    <small className="field-hint">
+                      直接编辑标准 JSON。`timeoutMs`、`weight` 等数值字段请保持为 number，不要写成字符串。
+                    </small>
+                    {rawValidation.error ? (
+                      <small className="form-error">{rawValidation.error}</small>
+                    ) : (
+                      <small className="field-hint">保存前会按当前规则重新标准化，避免把结构写乱。</small>
+                    )}
+                  </label>
+                )}
 
                 <div className="button-row">
-                  <Button disabled={saving} onClick={openSaveModal} size="large" type="primary">
+                  <Button
+                    disabled={saving || loadingConfig || Boolean(activeConfigError)}
+                    onClick={openSaveModal}
+                    size="large"
+                    type="primary"
+                  >
                     保存 LLM 配置
                   </Button>
                 </div>
@@ -600,7 +694,7 @@ export default function LlmRoute() {
         desc={desc}
         descPlaceholder="例如：新增模型路由或调整权重"
         loading={saving}
-        newValue={JSON.stringify(safeSerializeLlmDraft(draft), null, 2)}
+        newValue={configMode === "raw" ? rawValidation.normalizedText : JSON.stringify(safeSerializeLlmDraft(draft), null, 2)}
         oldValue={JSON.stringify(safeSerializeLlmDraft(originalDraft), null, 2)}
         onCancel={() => setSaveModalOpen(false)}
         onConfirm={() => void handleConfirmSave()}

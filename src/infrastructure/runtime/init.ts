@@ -33,6 +33,7 @@ export async function init(options: RuntimeInitOptions) {
   const runtime = await createApplication({
     ...options,
     kvManager,
+    databaseBackend: options.databaseBackend ?? "postgres",
   });
   console.log("[runtime:init] 应用创建完成");
   console.log(`[runtime:init] init 完成，serviceName=${options.serviceName}`);

@@ -18,7 +18,7 @@ import type {
   ResetPasswordCommand,
   UserRecord,
 } from "../../shared/types.ts";
-import { createOpaqueToken, randomId, randomNumericCode, sha256, toDateKey, toHourKey } from "../../shared/utils.ts";
+import { createOpaqueToken, randomId, randomNumericCode, sha256, timingSafeHexCompare, toDateKey, toHourKey } from "../../shared/utils.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
 import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
@@ -222,7 +222,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be at least 10 characters and include both letters and numbers.",
+        "Password must be between 10 and 256 characters and include both letters and numbers.",
       );
     }
 
@@ -243,7 +243,7 @@ export class AuthService {
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
 
-    if (sha256(emailCode) !== cachedCode.codeHash) {
+    if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
       await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
@@ -295,7 +295,7 @@ export class AuthService {
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
 
-    if (sha256(emailCode) !== cachedCode.codeHash) {
+    if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
       await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
@@ -497,7 +497,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be at least 10 characters and include both letters and numbers.",
+        "Password must be between 10 and 256 characters and include both letters and numbers.",
       );
     }
 
@@ -518,7 +518,7 @@ export class AuthService {
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
 
-    if (sha256(emailCode) !== cachedCode.codeHash) {
+    if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
       await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
@@ -546,7 +546,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.newPassword)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be at least 10 characters and include both letters and numbers.",
+        "Password must be between 10 and 256 characters and include both letters and numbers.",
       );
     }
 

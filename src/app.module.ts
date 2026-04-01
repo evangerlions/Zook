@@ -8,6 +8,7 @@ import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
 import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
+import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { InMemoryDatabase } from "./infrastructure/database/prisma/in-memory-database.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
@@ -15,7 +16,9 @@ import { InMemoryKVBackend, KVManager, type KVBackend } from "./infrastructure/k
 import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
-import { resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
+import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
+import { resolveRuntimeDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
@@ -111,6 +114,11 @@ export interface CreateApplicationOptions {
   secureRefreshCookie?: boolean;
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
+  databaseBackend?: "memory" | "postgres";
+  databaseUrl?: string;
+  queueBackend?: "memory" | "redis";
+  queue?: JobQueue;
+  queueRedisUrl?: string;
 }
 
 interface ResolvedAdminBasicAuth {
@@ -207,6 +215,7 @@ function parseBasicAuthorization(headerValue?: string): { username: string; pass
  */
 export class BackendApplication {
   constructor(
+    private readonly database: InMemoryDatabase,
     private readonly authService: AuthService,
     private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
@@ -239,18 +248,26 @@ export class BackendApplication {
   async handle(request: HttpRequest): Promise<HttpResponse<unknown>> {
     request.requestId ??= randomId("req");
     request.cookies ??= parseCookies(request.headers.cookie);
-    request.adminSession = await this.resolveAdminSession(request);
-    const startedAt = Date.now();
+    const execute = async () => {
+      request.adminSession = await this.resolveAdminSession(request);
+      const startedAt = Date.now();
 
-    try {
-      const response = await this.dispatch(request);
-      this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt);
-      return response;
-    } catch (error) {
-      const response = this.httpExceptionFilter.catch(error, request.requestId);
-      this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt, error);
-      return response;
+      try {
+        const response = await this.dispatch(request);
+        this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt);
+        return response;
+      } catch (error) {
+        const response = this.httpExceptionFilter.catch(error, request.requestId);
+        this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt, error);
+        return response;
+      }
+    };
+
+    if (request.method === "GET" && request.path === "/api/health") {
+      return execute();
     }
+
+    return this.database.withExclusiveSession(execute);
   }
 
   get runtimeServices() {
@@ -1969,7 +1986,7 @@ export class BackendApplication {
     this.appAccessGuard.assertScope(appId, auth.appId);
     this.rbacGuard.assertPermission(auth.appId, auth.userId, "notification:send");
 
-    const result = this.notificationService.queueNotification({
+    const result = await this.notificationService.queueNotification({
       appId: auth.appId,
       recipientUserId: this.validationPipe.requireString(body, "recipientUserId"),
       channel: this.validationPipe.requireString(body, "channel") as "email" | "sms" | "push",
@@ -2254,11 +2271,29 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
         ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
         : await KVManager.create({ backend: new InMemoryKVBackend() }));
   const managedStateStore = new ManagedStateStore(kvManager);
-  const database = new InMemoryDatabase(
-    applyManagedState(seed, await managedStateStore.load()),
-  );
+  const databaseBackend = options.databaseBackend ?? "memory";
+  const database =
+    databaseBackend === "postgres"
+      ? await PostgresDatabase.create(
+          options.databaseUrl?.trim() || resolveRuntimeDatabaseUrl() || (() => {
+            throw new Error("DATABASE_URL must be configured before starting the PostgreSQL database backend.");
+          })(),
+          seed,
+        )
+      : new InMemoryDatabase(
+          applyManagedState(seed, await managedStateStore.load()),
+        );
   const cache = new InMemoryCache();
-  const queue = new InMemoryJobQueue();
+  const defaultQueueBackend = options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl() ? "redis" : "memory";
+  const resolvedQueueBackend = options.queueBackend ?? defaultQueueBackend;
+  const queue = options.queue ??
+    (resolvedQueueBackend === "redis"
+      ? new RedisJobQueue(
+          options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl() || (() => {
+            throw new Error("REDIS_URL must be configured before starting the Redis job queue backend.");
+          })(),
+        )
+      : new InMemoryJobQueue());
   const logger = new StructuredLogger(options.serviceName ?? "api", {
     emitToConsole: options.emitLogs ?? false,
   });
@@ -2273,10 +2308,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
   const appLogSecretService = new AppLogSecretService(database, appConfigService);
-  const initializedAppLogSecrets = appLogSecretService.initializeSecrets(database.apps.map((item) => item.id));
-  if (initializedAppLogSecrets) {
-    await managedStateStore.save(database);
-  }
+  await database.withExclusiveSession(async () => {
+    const initializedAppLogSecrets = appLogSecretService.initializeSecrets(database.apps.map((item) => item.id));
+    if (initializedAppLogSecrets) {
+      await managedStateStore.save(database);
+    }
+  });
   const llmHealthService = new LlmHealthService(kvManager);
   const llmMetricsService = new LlmMetricsService(kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
@@ -2397,6 +2434,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const adminBasicAuth = resolveAdminBasicAuth(options);
 
   const app = new BackendApplication(
+    database,
     authService,
     qrLoginService,
     analyticsService,
@@ -2471,6 +2509,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       authGuard,
       appAccessGuard,
       rbacGuard,
+    },
+    close: async () => {
+      await queue.close?.();
+      await database.close();
     },
   };
 }

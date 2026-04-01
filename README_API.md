@@ -261,6 +261,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/password/reset` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "password": "Password1234", "clientType": "app" }`
    `POST /api/v1/auth/password/change` 请求体为 `{ "appId": "app_a", "currentPassword": "OldPass1234", "newPassword": "NewPass1234", "clientType": "app" }`
+   `password` / `newPassword` 当前要求为 10-256 个字符，且同时包含字母和数字。
 6. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
 7. `POST /api/v1/auth/password/email-code` 为了避免账号探测，在邮箱不存在、账号被封或当前 app 不允许该用户走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` 阶段完成。
 8. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。

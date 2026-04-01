@@ -8,7 +8,7 @@ import type {
   QrLoginCreateResult,
   QrLoginPollResult,
 } from "../../shared/types.ts";
-import { createOpaqueToken, randomId, sha256 } from "../../shared/utils.ts";
+import { createOpaqueToken, randomId, sha256, timingSafeHexCompare } from "../../shared/utils.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
 import { AuthService } from "./auth.service.ts";
@@ -152,7 +152,7 @@ export class QrLoginService {
       unauthorized("AUTH_QR_LOGIN_TOKEN_REQUIRED", "QR login scan token is required.");
     }
 
-    if (sha256(scanToken.trim()) !== session.scanTokenHash) {
+    if (!timingSafeHexCompare(sha256(scanToken.trim()), session.scanTokenHash)) {
       unauthorized("AUTH_QR_LOGIN_INVALID", "QR login session is invalid.");
     }
   }
@@ -162,7 +162,7 @@ export class QrLoginService {
       unauthorized("AUTH_QR_LOGIN_TOKEN_REQUIRED", "QR login poll token is required.");
     }
 
-    if (sha256(pollToken.trim()) !== session.pollTokenHash) {
+    if (!timingSafeHexCompare(sha256(pollToken.trim()), session.pollTokenHash)) {
       unauthorized("AUTH_QR_LOGIN_INVALID", "QR login session is invalid.");
     }
   }

@@ -1,6 +1,6 @@
 import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
-import { InMemoryJobQueue } from "../infrastructure/queue/bullmq/in-memory-queue.ts";
+import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
 
 /**
  * FailedEventRetryService replays due failed_events back into the queue every retry window.
@@ -8,20 +8,20 @@ import { InMemoryJobQueue } from "../infrastructure/queue/bullmq/in-memory-queue
 export class FailedEventRetryService {
   constructor(
     private readonly database: InMemoryDatabase,
-    private readonly queue: InMemoryJobQueue,
+    private readonly queue: JobQueue,
     private readonly logger: StructuredLogger,
   ) {}
 
-  retryDueEvents(now = new Date()): { replayed: number; remaining: number } {
+  async retryDueEvents(now = new Date()): Promise<{ replayed: number; remaining: number }> {
     const dueEvents = this.database.failedEvents.filter(
       (item) => new Date(item.nextRetryAt) <= now,
     );
 
     let replayed = 0;
 
-    dueEvents.forEach((failedEvent) => {
+    for (const failedEvent of dueEvents) {
       try {
-        this.queue.add(failedEvent.eventType, failedEvent.payload, {
+        await this.queue.add(failedEvent.eventType, failedEvent.payload, {
           attempts: 5,
           backoffMs: 1000,
         });
@@ -42,7 +42,7 @@ export class FailedEventRetryService {
           error: failedEvent.errorMessage,
         });
       }
-    });
+    }
 
     return {
       replayed,
