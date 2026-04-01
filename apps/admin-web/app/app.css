@@ -875,6 +875,14 @@ a:focus-visible {
   margin-bottom: 18px;
 }
 
+.config-mode-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .tab-button {
   border: 1px solid var(--line);
   border-radius: 999px;
