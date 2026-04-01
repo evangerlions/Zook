@@ -19,6 +19,26 @@ import type {
   UserRoleRecord,
 } from "../../../shared/types.ts";
 
+export interface DatabaseStateSnapshot {
+  apps: AppRecord[];
+  users: UserRecord[];
+  appUsers: AppUserRecord[];
+  roles: RoleRecord[];
+  permissions: PermissionRecord[];
+  rolePermissions: RolePermissionRecord[];
+  userRoles: UserRoleRecord[];
+  refreshTokens: RefreshTokenRecord[];
+  auditLogs: AuditLogRecord[];
+  notificationJobs: NotificationJobRecord[];
+  failedEvents: FailedEventRecord[];
+  appConfigs: AppConfigRecord[];
+  analyticsEvents: AnalyticsEventRecord[];
+  files: FileRecord[];
+  clientLogUploadTasks: ClientLogUploadTaskRecord[];
+  clientLogUploads: ClientLogUploadRecord[];
+  clientLogLines: ClientLogLineRecord[];
+}
+
 /**
  * InMemoryDatabase mirrors the documented tables so the design can be exercised without infra setup.
  */
@@ -104,5 +124,55 @@ export class InMemoryDatabase {
     return this.permissions
       .filter((item) => permissionIds.includes(item.id))
       .map((item) => item.code);
+  }
+
+  cloneState(): DatabaseStateSnapshot {
+    return {
+      apps: structuredClone(this.apps),
+      users: structuredClone(this.users),
+      appUsers: structuredClone(this.appUsers),
+      roles: structuredClone(this.roles),
+      permissions: structuredClone(this.permissions),
+      rolePermissions: structuredClone(this.rolePermissions),
+      userRoles: structuredClone(this.userRoles),
+      refreshTokens: structuredClone(this.refreshTokens),
+      auditLogs: structuredClone(this.auditLogs),
+      notificationJobs: structuredClone(this.notificationJobs),
+      failedEvents: structuredClone(this.failedEvents),
+      appConfigs: structuredClone(this.appConfigs),
+      analyticsEvents: structuredClone(this.analyticsEvents),
+      files: structuredClone(this.files),
+      clientLogUploadTasks: structuredClone(this.clientLogUploadTasks),
+      clientLogUploads: structuredClone(this.clientLogUploads),
+      clientLogLines: structuredClone(this.clientLogLines),
+    };
+  }
+
+  replaceState(next: Partial<DatabaseStateSnapshot>): void {
+    this.apps = structuredClone(next.apps ?? []);
+    this.users = structuredClone(next.users ?? []);
+    this.appUsers = structuredClone(next.appUsers ?? []);
+    this.roles = structuredClone(next.roles ?? []);
+    this.permissions = structuredClone(next.permissions ?? []);
+    this.rolePermissions = structuredClone(next.rolePermissions ?? []);
+    this.userRoles = structuredClone(next.userRoles ?? []);
+    this.refreshTokens = structuredClone(next.refreshTokens ?? []);
+    this.auditLogs = structuredClone(next.auditLogs ?? []);
+    this.notificationJobs = structuredClone(next.notificationJobs ?? []);
+    this.failedEvents = structuredClone(next.failedEvents ?? []);
+    this.appConfigs = structuredClone(next.appConfigs ?? []);
+    this.analyticsEvents = structuredClone(next.analyticsEvents ?? []);
+    this.files = structuredClone(next.files ?? []);
+    this.clientLogUploadTasks = structuredClone(next.clientLogUploadTasks ?? []);
+    this.clientLogUploads = structuredClone(next.clientLogUploads ?? []);
+    this.clientLogLines = structuredClone(next.clientLogLines ?? []);
+  }
+
+  async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
+    return await fn();
+  }
+
+  async close(): Promise<void> {
+    return undefined;
   }
 }
