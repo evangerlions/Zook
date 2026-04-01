@@ -10,3 +10,5 @@ __pycache__/
 deploy_configs/*.env
 db_doc/generated/*
 !db_doc/generated/.gitkeep
+.gstack/
+.claude/settings.local.json

@@ -83,6 +83,7 @@ else
   echo "Created version tag: ${version_tag}"
 fi
 
+git push "${REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
 git push "${PUSH_REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
 
 if [[ "${ORIGINAL_REF_TYPE}" == "branch" ]]; then
