@@ -8,6 +8,7 @@ __pycache__/
 .env.local
 .deploy/
 deploy_configs/*.env
+!deploy_configs/local.env
 db_doc/generated/*
 !db_doc/generated/.gitkeep
 .gstack/
