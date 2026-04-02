@@ -1,6 +1,7 @@
 import { Button, Collapse, Input, Segmented, Select } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
+import { JsonEditor } from "../components/json-editor";
 import { JsonPreview } from "../components/json-preview";
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
@@ -14,10 +15,13 @@ import {
   createDefaultMailConfig,
   createDefaultMailTestDraft,
   createEmptyMailTemplate,
+  formatMailConfigJson,
+  getMailDraftValidationError,
   MAIL_SENDER_REGION_OPTIONS,
   MAIL_TEMPLATE_LOCALE_OPTIONS,
   normalizeMailDocument,
   normalizeMailTestDraft,
+  parseMailConfigText,
   renderMailRegionLabel,
   safeSerializeMailDraft,
   serializeMailDraft,
@@ -35,13 +39,19 @@ const MAIL_TAB_OPTIONS: Array<{ label: string; value: "config" | "test" }> = [
   { label: "配置", value: "config" },
   { label: "测试发送", value: "test" },
 ];
+const MAIL_CONFIG_MODE_OPTIONS: Array<{ label: string; value: "form" | "raw" }> = [
+  { label: "表单", value: "form" },
+  { label: "RAW JSON", value: "raw" },
+];
 
 export default function MailRoute() {
   const { clearNotice, setNotice } = useAdminSession();
   const [tab, setTab] = useState<"config" | "test">("config");
+  const [configMode, setConfigMode] = useState<"form" | "raw">("form");
   const [document, setDocument] = useState<AdminEmailServiceDocument | null>(null);
   const [draft, setDraft] = useState<MailConfigDraft>(createDefaultMailConfig());
   const [originalDraft, setOriginalDraft] = useState<MailConfigDraft>(createDefaultMailConfig());
+  const [rawValue, setRawValue] = useState(() => formatMailConfigJson(createDefaultMailConfig()));
   const [testDraft, setTestDraft] = useState<MailTestDraft>(createDefaultMailTestDraft());
   const [testResult, setTestResult] = useState<AdminEmailTestSendDocument | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,17 +61,43 @@ export default function MailRoute() {
   const [desc, setDesc] = useState("");
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const draftValidationError = useMemo(() => getMailDraftValidationError(draft), [draft]);
+  const rawValidation = useMemo(() => {
+    try {
+      return {
+        ...parseMailConfigText(rawValue),
+        error: "",
+      };
+    } catch (error) {
+      return {
+        config: null,
+        draft: null,
+        normalizedText: "",
+        error: formatApiError(error),
+      };
+    }
+  }, [rawValue]);
+  const draftSnapshot = useMemo(() => JSON.stringify(draft), [draft]);
+  const rawDraftSnapshot = useMemo(
+    () => (rawValidation.draft ? JSON.stringify(rawValidation.draft) : ""),
+    [rawValidation.draft],
+  );
+  const activeConfigError = configMode === "raw" ? rawValidation.error : draftValidationError;
+
+  function applyConfigDocument(payload: AdminEmailServiceDocument | null) {
+    const nextDraft = cloneMailConfig(payload?.config);
+    setDocument(payload);
+    setDraft(nextDraft);
+    setOriginalDraft(nextDraft);
+    setRawValue(formatMailConfigJson(payload?.config ?? nextDraft));
+    setTestDraft((current) => normalizeMailTestDraft(current, nextDraft));
+    setDesc("");
+  }
 
   async function loadLatest() {
     setLoading(true);
     try {
-      const payload = normalizeMailDocument(await adminApi.getEmailService());
-      setDocument(payload);
-      const clonedDraft = cloneMailConfig(payload?.config);
-      setDraft(clonedDraft);
-      setOriginalDraft(clonedDraft);
-      setTestDraft((current) => normalizeMailTestDraft(current, clonedDraft));
-      setDesc("");
+      applyConfigDocument(normalizeMailDocument(await adminApi.getEmailService()));
     } finally {
       setLoading(false);
     }
@@ -71,7 +107,27 @@ export default function MailRoute() {
     void loadLatest();
   }, []);
 
-  const previewValue = useMemo(() => serializeMailDraftForPreview(draft), [draft]);
+  useEffect(() => {
+    if (configMode !== "raw" || rawValidation.error || !rawValidation.draft || rawDraftSnapshot === draftSnapshot) {
+      return;
+    }
+
+    setDraft(rawValidation.draft);
+    setTestDraft((current) => normalizeMailTestDraft(current, rawValidation.draft!));
+  }, [configMode, draftSnapshot, rawDraftSnapshot, rawValidation.draft, rawValidation.error]);
+
+  useEffect(() => {
+    if (configMode === "raw") {
+      return;
+    }
+
+    setRawValue(formatMailConfigJson(draft));
+  }, [configMode, draft]);
+
+  const previewValue = useMemo(
+    () => (configMode === "raw" ? rawValidation.config : serializeMailDraftForPreview(draft)),
+    [configMode, draft, rawValidation.config],
+  );
 
   function updateRegionSender(regionIndex: number, key: "id" | "address", value: string) {
     setDraft((current) => ({
@@ -112,6 +168,9 @@ export default function MailRoute() {
   }
 
   function openSaveModal() {
+    if (activeConfigError) {
+      return;
+    }
     setSaveModalOpen(true);
   }
 
@@ -119,18 +178,14 @@ export default function MailRoute() {
     setSaving(true);
     clearNotice();
     try {
+      const nextConfig = configMode === "raw" ? parseMailConfigText(rawValue).config : serializeMailDraft(draft);
       const payload = normalizeMailDocument(
         await adminApi.updateEmailService({
-          ...serializeMailDraft(draft),
+          ...nextConfig,
           desc: desc.trim() || undefined,
         }),
       );
-      setDocument(payload);
-      const clonedDraft = cloneMailConfig(payload?.config);
-      setDraft(clonedDraft);
-      setOriginalDraft(clonedDraft);
-      setTestDraft((current) => normalizeMailTestDraft(current, clonedDraft));
-      setDesc("");
+      applyConfigDocument(payload);
       setSaveModalOpen(false);
       setNotice(makeNotice("success", "邮件服务已保存。"));
     } catch (error) {
@@ -143,10 +198,7 @@ export default function MailRoute() {
   async function handleViewRevision(revision: number) {
     setLoading(true);
     try {
-      const payload = normalizeMailDocument(await adminApi.getEmailServiceRevision(revision));
-      setDocument(payload);
-      setDraft(cloneMailConfig(payload?.config));
-      setTestDraft((current) => normalizeMailTestDraft(current, cloneMailConfig(payload?.config)));
+      applyConfigDocument(normalizeMailDocument(await adminApi.getEmailServiceRevision(revision)));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
@@ -159,9 +211,7 @@ export default function MailRoute() {
     clearNotice();
     try {
       const payload = normalizeMailDocument(await adminApi.restoreEmailService(revision));
-      setDocument(payload);
-      setDraft(cloneMailConfig(payload?.config));
-      setTestDraft((current) => normalizeMailTestDraft(current, cloneMailConfig(payload?.config)));
+      applyConfigDocument(payload);
       setNotice(makeNotice("success", `已恢复到版本 R${revision}。`));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
@@ -218,7 +268,11 @@ export default function MailRoute() {
                 {
                   key: "structure-preview",
                   label: "结构预览",
-                  children: <JsonPreview value={previewValue} />,
+                  children: activeConfigError ? (
+                    <div className="empty-state">当前配置还没有通过校验，暂时无法生成结构预览。</div>
+                  ) : (
+                    <JsonPreview value={previewValue} />
+                  ),
                 },
               ]}
             />
@@ -246,121 +300,154 @@ export default function MailRoute() {
               {loading ? <p className="meta-text">正在加载邮件配置...</p> : null}
 
               <div className="stack">
-                <ToggleField
-                  checked={draft.enabled}
-                  hint="关闭后不会影响历史版本，但测试发送仍会校验当前草稿。"
-                  label="启用邮件服务"
-                  onChange={(value) => setDraft((current) => ({ ...current, enabled: value }))}
-                />
+                <div className="config-mode-toolbar">
+                  <Segmented
+                    className="range-segmented"
+                    onChange={(value) => setConfigMode(value as "form" | "raw")}
+                    options={MAIL_CONFIG_MODE_OPTIONS}
+                    value={configMode}
+                  />
+                  <span className="meta-chip">{activeConfigError ? "校验待修正" : "校验通过"}</span>
+                </div>
 
-                {draft.regions.map((region, regionIndex) => (
-                  <article className="mail-region-card" key={region.region}>
-                    <div className="card-header">
-                      <div>
-                        <h3>{renderMailRegionLabel(region.region)}</h3>
-                        <p>为这个 Region 设置发件账号和模板映射。</p>
-                      </div>
-                      <span className="meta-chip">{region.region}</span>
-                    </div>
+                {configMode === "form" ? (
+                  <>
+                    <ToggleField
+                      checked={draft.enabled}
+                      hint="关闭后不会影响历史版本，但测试发送仍会校验当前草稿。"
+                      label="启用邮件服务"
+                      onChange={(value) => setDraft((current) => ({ ...current, enabled: value }))}
+                    />
 
-                    <div className="form-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-                      <Field label="Sender ID">
-                        <Input
-                          onChange={(event) => updateRegionSender(regionIndex, "id", event.target.value)}
-                          size="large"
-                          value={region.sender?.id ?? ""}
-                        />
-                      </Field>
-                      <Field label="Sender Address">
-                        <Input
-                          onChange={(event) => updateRegionSender(regionIndex, "address", event.target.value)}
-                          placeholder="noreply@example.com"
-                          size="large"
-                          value={region.sender?.address ?? ""}
-                        />
-                      </Field>
-                    </div>
-
-                    <div className="template-list">
-                      {region.templates.map((template, templateIndex) => (
-                        <article className="route-card" key={`${region.region}-${templateIndex}`}>
-                          <div className="form-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
-                            <Field label="Locale">
-                              <Select
-                                onChange={(value) => updateRegionTemplate(regionIndex, templateIndex, "locale", value)}
-                                options={MAIL_TEMPLATE_LOCALE_OPTIONS.map((item) => ({
-                                  label: item.label,
-                                  value: item.value,
-                                }))}
-                                optionFilterProp="label"
-                                showSearch
-                                size="large"
-                                value={template.locale}
-                              />
-                            </Field>
-                            <Field label="Template ID">
-                              <Input
-                                onChange={(event) => updateRegionTemplate(regionIndex, templateIndex, "templateId", event.target.value)}
-                                size="large"
-                                value={template.templateId}
-                              />
-                            </Field>
-                            <Field label="模板名称">
-                              <Input
-                                onChange={(event) => updateRegionTemplate(regionIndex, templateIndex, "name", event.target.value)}
-                                size="large"
-                                value={template.name}
-                              />
-                            </Field>
-                            <Field label="主题">
-                              <Input
-                                onChange={(event) => updateRegionTemplate(regionIndex, templateIndex, "subject", event.target.value)}
-                                size="large"
-                                value={template.subject}
-                              />
-                            </Field>
+                    {draft.regions.map((region, regionIndex) => (
+                      <article className="mail-region-card" key={region.region}>
+                        <div className="card-header">
+                          <div>
+                            <h3>{renderMailRegionLabel(region.region)}</h3>
+                            <p>为这个 Region 设置发件账号和模板映射。</p>
                           </div>
+                          <span className="meta-chip">{region.region}</span>
+                        </div>
 
-                          <div className="button-row">
-                            <Button
-                              danger
-                              onClick={() => {
-                                setDraft((current) => ({
-                                  ...current,
-                                  regions: current.regions.map((item, index) => (
-                                    index === regionIndex
-                                      ? { ...item, templates: item.templates.filter((_, indexValue) => indexValue !== templateIndex) }
-                                      : item
-                                  )),
-                                }));
-                              }}
-                            >
-                              删除模板
-                            </Button>
-                          </div>
-                        </article>
-                      ))}
+                        <div className="form-grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                          <Field label="Sender ID">
+                            <Input
+                              onChange={(event) => updateRegionSender(regionIndex, "id", event.target.value)}
+                              size="large"
+                              value={region.sender?.id ?? ""}
+                            />
+                          </Field>
+                          <Field label="Sender Address">
+                            <Input
+                              onChange={(event) => updateRegionSender(regionIndex, "address", event.target.value)}
+                              placeholder="noreply@example.com"
+                              size="large"
+                              value={region.sender?.address ?? ""}
+                            />
+                          </Field>
+                        </div>
 
-                      <Button
-                        onClick={() => {
-                          setDraft((current) => ({
-                            ...current,
-                            regions: current.regions.map((item, index) => (
-                              index === regionIndex
-                                ? { ...item, templates: [...item.templates, createEmptyMailTemplate()] }
-                                : item
-                            )),
-                          }));
-                        }}
-                      >
-                        添加模板
-                      </Button>
-                    </div>
-                  </article>
-                ))}
+                        <div className="template-list">
+                          {region.templates.map((template, templateIndex) => (
+                            <article className="route-card" key={`${region.region}-${templateIndex}`}>
+                              <div className="form-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+                                <Field label="Locale">
+                                  <Select
+                                    onChange={(value) => updateRegionTemplate(regionIndex, templateIndex, "locale", value)}
+                                    options={MAIL_TEMPLATE_LOCALE_OPTIONS.map((item) => ({
+                                      label: item.label,
+                                      value: item.value,
+                                    }))}
+                                    optionFilterProp="label"
+                                    showSearch
+                                    size="large"
+                                    value={template.locale}
+                                  />
+                                </Field>
+                                <Field label="Template ID">
+                                  <Input
+                                    onChange={(event) => updateRegionTemplate(regionIndex, templateIndex, "templateId", event.target.value)}
+                                    size="large"
+                                    value={template.templateId}
+                                  />
+                                </Field>
+                                <Field label="模板名称">
+                                  <Input
+                                    onChange={(event) => updateRegionTemplate(regionIndex, templateIndex, "name", event.target.value)}
+                                    size="large"
+                                    value={template.name}
+                                  />
+                                </Field>
+                                <Field label="主题">
+                                  <Input
+                                    onChange={(event) => updateRegionTemplate(regionIndex, templateIndex, "subject", event.target.value)}
+                                    size="large"
+                                    value={template.subject}
+                                  />
+                                </Field>
+                              </div>
+
+                              <div className="button-row">
+                                <Button
+                                  danger
+                                  onClick={() => {
+                                    setDraft((current) => ({
+                                      ...current,
+                                      regions: current.regions.map((item, index) => (
+                                        index === regionIndex
+                                          ? { ...item, templates: item.templates.filter((_, indexValue) => indexValue !== templateIndex) }
+                                          : item
+                                      )),
+                                    }));
+                                  }}
+                                >
+                                  删除模板
+                                </Button>
+                              </div>
+                            </article>
+                          ))}
+
+                          <Button
+                            onClick={() => {
+                              setDraft((current) => ({
+                                ...current,
+                                regions: current.regions.map((item, index) => (
+                                  index === regionIndex
+                                    ? { ...item, templates: [...item.templates, createEmptyMailTemplate()] }
+                                    : item
+                                )),
+                              }));
+                            }}
+                          >
+                            添加模板
+                          </Button>
+                        </div>
+                      </article>
+                    ))}
+
+                    {draftValidationError ? <p className="form-error">{draftValidationError}</p> : null}
+                  </>
+                ) : (
+                  <label className="field">
+                    <span className="field-label">RAW JSON</span>
+                    <JsonEditor
+                      onChange={setRawValue}
+                      readOnly={loading || saving}
+                      value={rawValue}
+                    />
+                    <small className="field-hint">
+                      直接编辑标准 JSON。`templateId` 请保持为 number，保存前会做 Region、模板名和模板 ID 的完整校验。
+                    </small>
+                    {rawValidation.error ? (
+                      <small className="form-error">{rawValidation.error}</small>
+                    ) : (
+                      <small className="field-hint">保存前会按当前规则重新标准化，避免把结构写乱。</small>
+                    )}
+                  </label>
+                )}
 
                 <div className="button-row">
-                  <Button disabled={saving} onClick={openSaveModal} size="large" type="primary">
+                  <Button disabled={saving || loading || Boolean(activeConfigError)} onClick={openSaveModal} size="large" type="primary">
                     保存邮件服务
                   </Button>
                 </div>
@@ -483,7 +570,7 @@ export default function MailRoute() {
         desc={desc}
         descPlaceholder="例如：新增邮件模板或更新发件地址"
         loading={saving}
-        newValue={JSON.stringify(safeSerializeMailDraft(draft), null, 2)}
+        newValue={configMode === "raw" ? rawValidation.normalizedText : JSON.stringify(safeSerializeMailDraft(draft), null, 2)}
         oldValue={JSON.stringify(safeSerializeMailDraft(originalDraft), null, 2)}
         onCancel={() => setSaveModalOpen(false)}
         onConfirm={() => void handleConfirmSave()}
