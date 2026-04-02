@@ -240,7 +240,7 @@ export default function MailRoute() {
       <header className="page-header">
         <div>
           <h1>邮件服务</h1>
-          <p>管理 `common.email_service`，支持固定结构配置、测试发送和历史版本回滚。</p>
+          <p>管理公共邮件服务配置，支持固定结构配置、测试发送和历史版本回滚。</p>
         </div>
         <div className="top-actions">
           <span className="meta-chip">{document?.revision ? `R${document.revision}` : "未保存"}</span>

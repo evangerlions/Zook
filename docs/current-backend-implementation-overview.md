@@ -130,7 +130,7 @@
 
 当前已经补齐两类 Common 级能力：
 
-1. `common.email_service` 的强类型配置、版本记录与恢复
+1. `common.email_service_regions` 的强类型配置、版本记录与恢复
 2. `common.llm_service` 的强类型配置、版本记录与恢复
 3. LLM 按 `auto / fixed` 两种策略路由
 4. LLM 健康窗口记录
