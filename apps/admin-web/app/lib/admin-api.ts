@@ -12,6 +12,7 @@ import type {
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
   AdminPasswordDocument,
+  AdminPasswordRevealDocument,
   AdminSensitiveOperationCodeRequestDocument,
   AdminSensitiveOperationGrantDocument,
   LlmMetricsRange,
@@ -282,6 +283,14 @@ export const adminApi = {
     return requestJson<AdminPasswordDocument>(adminPath(`/apps/common/passwords/${encodeURIComponent(key)}`), {
       method: "DELETE",
     });
+  },
+  revealPasswordValue(key: string) {
+    return requestJson<AdminPasswordRevealDocument>(
+      adminPath(`/apps/common/passwords/${encodeURIComponent(key)}/reveal`),
+      {
+        method: "POST",
+      },
+    );
   },
   getLlmService() {
     return requestJson<AdminLlmServiceDocument>(adminPath("/apps/common/llm-service"));
