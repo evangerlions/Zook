@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,25 +12,37 @@ async function ensureMigrationTable(client: Client): Promise<void> {
   await client.query(`
     CREATE TABLE IF NOT EXISTS zook_schema_migrations (
       name TEXT PRIMARY KEY,
+      checksum TEXT,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await client.query(`
+    ALTER TABLE zook_schema_migrations
+    ADD COLUMN IF NOT EXISTS checksum TEXT
+  `);
 }
 
-async function loadAppliedMigrations(client: Client): Promise<Set<string>> {
-  const result = await client.query<{ name: string }>(
-    "SELECT name FROM zook_schema_migrations ORDER BY name ASC",
-  );
-  return new Set(result.rows.map((row) => row.name));
+function computeChecksum(sql: string): string {
+  return createHash("sha256").update(sql, "utf8").digest("hex");
 }
 
-async function applyMigration(client: Client, fileName: string, sql: string): Promise<void> {
+async function applyMigration(
+  client: Client,
+  fileName: string,
+  sql: string,
+  checksum: string,
+): Promise<void> {
   await client.query("BEGIN");
   try {
     await client.query(sql);
     await client.query(
-      "INSERT INTO zook_schema_migrations (name, applied_at) VALUES ($1, NOW()) ON CONFLICT (name) DO NOTHING",
-      [fileName],
+      `
+        INSERT INTO zook_schema_migrations (name, checksum, applied_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (name)
+        DO UPDATE SET checksum = EXCLUDED.checksum, applied_at = EXCLUDED.applied_at
+      `,
+      [fileName, checksum],
     );
     await client.query("COMMIT");
   } catch (error) {
@@ -57,17 +70,12 @@ async function main(): Promise<void> {
   try {
     await client.connect();
     await ensureMigrationTable(client);
-    const appliedMigrations = await loadAppliedMigrations(client);
 
     for (const fileName of migrationFiles) {
-      if (appliedMigrations.has(fileName)) {
-        console.log(`[db:migrate] skip already applied migration: ${fileName}`);
-        continue;
-      }
-
       const sql = await readFile(join(migrationsDir, fileName), "utf8");
-      console.log(`[db:migrate] applying migration: ${fileName}`);
-      await applyMigration(client, fileName, sql);
+      const checksum = computeChecksum(sql);
+      console.log(`[db:migrate] applying idempotent migration: ${fileName}`);
+      await applyMigration(client, fileName, sql, checksum);
     }
 
     console.log("[db:migrate] all migrations are up to date");
