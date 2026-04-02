@@ -1,9 +1,12 @@
-import { Button, Collapse, Input, Popconfirm } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
+import { Button, Collapse, Input, Popconfirm, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 
 import { JsonPreview } from "../components/json-preview";
-import { adminApi } from "../lib/admin-api";
+import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
+import { ApiError, adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
+import { writeClipboard } from "../lib/clipboard";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import {
   createEmptyPasswordItem,
@@ -14,6 +17,8 @@ import {
 } from "../lib/password-config";
 import type { AdminPasswordDocument, PasswordDraftItem } from "../lib/types";
 
+const PASSWORD_VALUE_READ_OPERATION = "password.value.read";
+
 export default function PasswordsRoute() {
   const { clearNotice, setNotice } = useAdminSession();
   const [document, setDocument] = useState<AdminPasswordDocument | null>(null);
@@ -21,6 +26,8 @@ export default function PasswordsRoute() {
   const [loading, setLoading] = useState(false);
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+  const [copyingKey, setCopyingKey] = useState("");
+  const [pendingSensitiveKey, setPendingSensitiveKey] = useState("");
 
   async function loadPasswords() {
     setLoading(true);
@@ -84,6 +91,35 @@ export default function PasswordsRoute() {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
       setDeletingIndex(null);
+    }
+  }
+
+  async function copyPasswordValue(nextKey: string, allowPrompt = true) {
+    const normalizedKey = nextKey.trim();
+    if (!normalizedKey) {
+      return;
+    }
+
+    setCopyingKey(normalizedKey);
+    clearNotice();
+    try {
+      const payload = await adminApi.revealPasswordValue(normalizedKey);
+      await writeClipboard(payload.value);
+      setNotice(makeNotice("success", `已复制 ${payload.key} 的密钥值，1 小时内无需再次验证。`));
+      setPendingSensitiveKey("");
+    } catch (error) {
+      if (
+        allowPrompt
+        && error instanceof ApiError
+        && error.code === "ADMIN_SENSITIVE_OPERATION_REQUIRED"
+      ) {
+        setPendingSensitiveKey(normalizedKey);
+        return;
+      }
+
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      setCopyingKey("");
     }
   }
 
@@ -162,6 +198,18 @@ export default function PasswordsRoute() {
               </div>
 
               <div className="button-row">
+                <Tooltip title="复制这个密码项的真实值">
+                  <span>
+                    <Button
+                      disabled={!item.originalKey || !item.key.trim()}
+                      icon={<CopyOutlined />}
+                      loading={copyingKey === item.key.trim()}
+                      onClick={() => void copyPasswordValue(item.originalKey || item.key)}
+                    >
+                      复制 Key
+                    </Button>
+                  </span>
+                </Tooltip>
                 <Button
                   disabled={savingIndex === index}
                   loading={savingIndex === index}
@@ -187,6 +235,21 @@ export default function PasswordsRoute() {
           )}
         </div>
       </section>
+
+      <SensitiveOperationModal
+        description="为了复制密码项的真实值，需要先完成一次邮箱验证码校验。验证通过后，当前登录会话会自动获得 1 小时敏感操作权限。"
+        onAuthorized={async () => {
+          if (!pendingSensitiveKey) {
+            return;
+          }
+
+          await copyPasswordValue(pendingSensitiveKey, false);
+        }}
+        onClose={() => setPendingSensitiveKey("")}
+        open={Boolean(pendingSensitiveKey)}
+        operation={PASSWORD_VALUE_READ_OPERATION}
+        title="验证后复制 Key"
+      />
     </section>
   );
 }

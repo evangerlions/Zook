@@ -876,6 +876,91 @@ test("admin password API supports per-item upsert and delete", async () => {
   assert.equal(deleteResponse.body.data.items.length, 0);
 });
 
+test("admin password reveal requires sensitive verification before copying real value", async () => {
+  const sentVerificationEmails: SentVerificationEmail[] = [];
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    registrationEmailSender: createSensitiveVerificationEmailSender(sentVerificationEmails),
+    adminSensitiveOperation: {
+      codeGenerator: () => "123456",
+    },
+  });
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords/item",
+    headers: {
+      authorization: createAdminAuthHeader(),
+    },
+    body: {
+      key: "bailian.api_key",
+      desc: "百炼 API Key",
+      value: "key-v1",
+    },
+  });
+
+  const cookie = await loginAdmin(runtime);
+
+  const directRevealResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/passwords/bailian.api_key/reveal",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(directRevealResponse.statusCode, 403);
+  assert.equal(directRevealResponse.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
+
+  const requestCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "password.value.read",
+    },
+  });
+
+  assert.equal(requestCodeResponse.statusCode, 200);
+  assert.equal(requestCodeResponse.body.data.operation, "password.value.read");
+  assert.equal(sentVerificationEmails.length, 1);
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "password.value.read",
+      code: "123456",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+  assert.equal(verifyResponse.body.data.granted, true);
+
+  const revealResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/passwords/bailian.api_key/reveal",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(revealResponse.statusCode, 200);
+  assert.equal(revealResponse.body.data.key, "bailian.api_key");
+  assert.equal(revealResponse.body.data.value, "key-v1");
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.password.reveal" && item.appId === "common"),
+  );
+});
+
 test("admin email service API stores common config and exposes resolved region", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {

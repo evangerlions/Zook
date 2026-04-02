@@ -29,6 +29,7 @@ import type {
   AdminLlmSmokeTestDocument,
   AdminLlmServiceDocument,
   AdminPasswordDocument,
+  AdminPasswordRevealDocument,
   AppRecord,
   LlmMetricsRange,
   RoleRecord,
@@ -228,6 +229,10 @@ export class AdminConsoleService {
       deleted: true,
       appId: app.id,
     };
+  }
+
+  async revealPasswordValue(key: string): Promise<AdminPasswordRevealDocument> {
+    return this.commonPasswordConfigService.revealValue(key);
   }
 
   private requireApp(appId: string): AppRecord {

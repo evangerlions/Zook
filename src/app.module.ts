@@ -36,7 +36,10 @@ import { AdminSensitiveOperationService } from "./services/admin-sensitive-opera
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
-import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import {
+  CommonPasswordConfigService,
+  PASSWORD_VALUE_READ_OPERATION,
+} from "./services/common-password-config.service.ts";
 import { EmbeddingManager, type EmbeddingProvider } from "./services/embedding-manager.ts";
 import {
   ClientLogUploadService,
@@ -67,6 +70,7 @@ import type {
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
+  AdminPasswordRevealDocument,
   AdminSessionRecord,
   AdminSensitiveOperationCodeRequestDocument,
   AdminSensitiveOperationGrantDocument,
@@ -357,6 +361,13 @@ export class BackendApplication {
 
     if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/passwords/item") {
       return this.handleAdminUpsertPasswordItem(request);
+    }
+
+    const adminPasswordRevealMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/passwords\/([^/]+)\/reveal$/,
+    );
+    if (request.method === "POST" && adminPasswordRevealMatch) {
+      return this.handleAdminRevealPasswordValue(request, decodeURIComponent(adminPasswordRevealMatch[1]));
     }
 
     const adminPasswordDeleteMatch = request.path.match(
@@ -1544,6 +1555,27 @@ export class BackendApplication {
       resourceId: result.configKey,
       payload: {
         adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRevealPasswordValue(
+    request: HttpRequest,
+    key: string,
+  ): Promise<HttpResponse<AdminPasswordRevealDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(session, PASSWORD_VALUE_READ_OPERATION);
+    const result = await this.adminConsoleService.revealPasswordValue(key);
+
+    this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.password.reveal",
+      resourceType: "password_item",
+      resourceId: key,
+      payload: {
+        adminUser: session.username,
       },
     });
 
