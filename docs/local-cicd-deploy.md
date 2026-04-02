@@ -138,7 +138,7 @@ python3 build_scripts/build_and_push_docker.py --branch main --skip-git-sync --a
 4. 根据 `branch + version + shortsha` 生成本地镜像 tag。
 5. 本地构建镜像。
 6. 按槽位写入 `.deploy/<slot>/compose.env`
-7. 使用新镜像执行 `node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts`
+7. 使用新镜像执行 `node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts`，迁移优先读取 `DIRECT_URL`
 8. 只有迁移成功才继续执行 `docker compose up -d --force-recreate --remove-orphans`
 9. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
 10. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`

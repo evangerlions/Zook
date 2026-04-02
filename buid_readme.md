@@ -196,6 +196,7 @@ node --experimental-transform-types src/infrastructure/database/postgres/migrate
 说明：
 
 - `build_scripts/build_and_push_docker.py` 现在会在 `docker compose up` 之前自动执行这一步。
+- 迁移优先使用 `DIRECT_URL`，建议这里始终配置 `migrator` 账号；运行时容器继续使用 `DATABASE_URL`。
 - 只有数据库迁移成功，才会继续发布新的 `api` / `worker` / `admin-web` 容器。
 - 发布后的 `api` / `worker` 会共享 Redis 队列处理通知任务，因此部署环境中的 `REDIS_URL` 必须可被两个容器共同访问。
 
