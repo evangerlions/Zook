@@ -10,7 +10,7 @@
 
 本期公共配置包含两块：
 
-1. 邮件服务 `common.email_service`
+1. 邮件服务 `common.email_service_regions`
 2. LLM 服务 `common.llm_service`
 
 ---
