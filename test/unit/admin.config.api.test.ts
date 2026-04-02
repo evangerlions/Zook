@@ -1191,6 +1191,41 @@ test("admin email service API stores common config and exposes resolved region",
   );
 });
 
+test("common email service runtime follows latest revision even if direct config record is stale", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+
+  await runtime.services.commonEmailConfigService.updateConfig({
+    enabled: true,
+    regions: createEmailServiceRegions(),
+  });
+  await runtime.services.commonPasswordConfigService.set(TENCENT_SES_SECRET_ID_PASSWORD_KEY, "腾讯 SES SecretId", "sid-demo");
+  await runtime.services.commonPasswordConfigService.set(TENCENT_SES_SECRET_KEY_PASSWORD_KEY, "腾讯 SES SecretKey", "sk-demo");
+
+  runtime.services.appConfigService.setDirectValue(
+    "common",
+    "common.email_service_regions",
+    JSON.stringify({
+      enabled: false,
+      regions: createEmailServiceRegions(),
+    }),
+  );
+
+  const document = await runtime.services.commonEmailConfigService.getDocument();
+  assert.equal(document.config.enabled, true);
+  assert.equal(document.revision, 1);
+
+  const runtimeConfig = await runtime.services.commonEmailConfigService.getRuntimeConfigByTemplateId(100001, "ap-guangzhou");
+  assert.equal(runtimeConfig.config.enabled, true);
+  assert.equal(runtimeConfig.template.templateId, 100001);
+  assert.equal(runtimeConfig.secretId, "sid-demo");
+  assert.equal(runtimeConfig.secretKey, "sk-demo");
+});
+
 test("admin email service API rejects invalid sender address format", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {

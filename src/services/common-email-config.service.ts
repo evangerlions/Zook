@@ -1,6 +1,7 @@
 import { AppConfigService } from "./app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { CommonPasswordConfigService } from "./common-password-config.service.ts";
+import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type {
   AdminAppSummary,
   AdminEmailServiceDocument,
@@ -44,6 +45,7 @@ export class CommonEmailConfigService {
   constructor(
     private readonly appConfigService: AppConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
+    private readonly logger?: StructuredLogger,
   ) {}
 
   async getDocument(revision?: number): Promise<AdminEmailServiceDocument> {
@@ -51,13 +53,18 @@ export class CommonEmailConfigService {
     const latestRevision = revisions.at(-1)?.revision;
     const record = revision
       ? await this.appConfigService.getRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY, revision)
-      : await this.appConfigService.getLatestRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
+      : await this.getCurrentConfigRecord();
 
     if (revision && !record) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Email service revision ${revision} was not found.`);
     }
 
     const config = record ? this.parseConfig(record.content) : this.getStoredConfig();
+    this.logConfigSnapshot("common email config document resolved", config, {
+      source: record?.revision ? "latest-revision" : "direct-record",
+      revision: record?.revision,
+      updatedAt: record?.createdAt ?? this.getUpdatedAt(),
+    });
     return this.toDocument(config, {
       updatedAt: record?.createdAt ?? this.getUpdatedAt(),
       revision: record?.revision,
@@ -106,7 +113,12 @@ export class CommonEmailConfigService {
     sender: EmailSenderConfig;
     template: EmailServiceTemplateConfig;
   }> {
-    const config = this.getStoredConfig();
+    const config = await this.getCurrentRuntimeConfig();
+    this.logConfigSnapshot("common email runtime config resolved", config, {
+      source: "runtime",
+      region,
+      templateName,
+    });
 
     this.assertRuntimeConfig(config);
     const credentials = await this.resolveCredentials();
@@ -136,7 +148,12 @@ export class CommonEmailConfigService {
     sender: EmailSenderConfig;
     template: EmailServiceTemplateConfig;
   }> {
-    const config = this.getStoredConfig();
+    const config = await this.getCurrentRuntimeConfig();
+    this.logConfigSnapshot("common email runtime template config resolved", config, {
+      source: "runtime-by-template-id",
+      region,
+      templateId,
+    });
 
     this.assertRuntimeConfig(config);
     const credentials = await this.resolveCredentials();
@@ -156,6 +173,52 @@ export class CommonEmailConfigService {
 
   private getUpdatedAt(): string | undefined {
     return this.appConfigService.getRecord(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY)?.updatedAt;
+  }
+
+  private async getCurrentConfigRecord() {
+    const latestRevision = await this.appConfigService.getLatestRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
+    if (latestRevision) {
+      return latestRevision;
+    }
+
+    const directValue = this.appConfigService.getValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
+    if (!directValue) {
+      return undefined;
+    }
+
+    return {
+      content: directValue,
+      createdAt: this.getUpdatedAt() ?? new Date(0).toISOString(),
+      revision: undefined,
+      desc: undefined,
+    };
+  }
+
+  private async getCurrentRuntimeConfig(): Promise<EmailServiceConfig> {
+    const record = await this.getCurrentConfigRecord();
+    return record ? this.parseConfig(record.content) : this.createDefaultConfig();
+  }
+
+  private logConfigSnapshot(
+    event: string,
+    config: EmailServiceConfig,
+    meta: {
+      source: string;
+      revision?: number;
+      updatedAt?: string;
+      region?: TencentSesRegion;
+      templateId?: number;
+      templateName?: string;
+    },
+  ): void {
+    if (!this.logger) {
+      return;
+    }
+
+    const templateIds = config.regions.flatMap((item) => item.templates.map((template) => template.templateId));
+    this.logger.info(
+      `${event}; source=${meta.source}; enabled=${config.enabled}; revision=${meta.revision ?? "none"}; updatedAt=${meta.updatedAt ?? "unknown"}; region=${meta.region ?? "n/a"}; templateId=${meta.templateId ?? "n/a"}; templateName=${meta.templateName ?? "n/a"}; regions=${config.regions.length}; templateIds=${templateIds.join(",") || "none"}`,
+    );
   }
 
   private getStoredConfig(): EmailServiceConfig {
