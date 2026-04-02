@@ -607,6 +607,15 @@ export interface AdminPasswordDocument {
   updatedAt?: string;
 }
 
+export interface AdminPasswordRevealDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  key: string;
+  desc: string;
+  value: string;
+  updatedAt?: string;
+}
+
 export interface LlmProviderConfig {
   key: string;
   label: string;

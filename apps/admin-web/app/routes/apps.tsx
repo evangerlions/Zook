@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
 import { ApiError, adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
+import { writeClipboard } from "../lib/clipboard";
 import { formatApiError, makeNotice } from "../lib/format";
 import { SUPPORTED_LOCALE_OPTIONS } from "../lib/locale-options";
 import type { AdminAppSummary } from "../lib/types";
@@ -197,14 +198,6 @@ export default function AppsRoute() {
     } finally {
       setSavingAppNames(false);
     }
-  }
-
-  async function writeClipboard(value: string) {
-    if (!navigator?.clipboard?.writeText) {
-      throw new Error("当前浏览器不支持剪贴板写入。");
-    }
-
-    await navigator.clipboard.writeText(value);
   }
 
   async function copyAppSecret(nextAppId: string, allowPrompt = true) {
