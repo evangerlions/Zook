@@ -108,6 +108,7 @@ node --experimental-transform-types src/infrastructure/database/postgres/migrate
 ```
 
 迁移会优先使用 `DIRECT_URL`，只有没配置时才回退到 `DATABASE_URL`。
+部署时会按文件名顺序重放所有数据库脚本，所以每个 SQL 文件都必须保持幂等。
 
 默认 API 端口是 `3100`，也可以通过 `PORT` 环境变量覆盖。
 默认 Admin Web 端口是 `3110`。
