@@ -107,6 +107,8 @@ npm test
 node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts
 ```
 
+迁移会优先使用 `DIRECT_URL`，只有没配置时才回退到 `DATABASE_URL`。
+
 默认 API 端口是 `3100`，也可以通过 `PORT` 环境变量覆盖。
 默认 Admin Web 端口是 `3110`。
 运行时会强校验 `REDIS_URL` 和 `DATABASE_URL`，依赖不可用时直接启动失败。

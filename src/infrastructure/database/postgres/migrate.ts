@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "pg";
-import { resolveRuntimeDatabaseUrl } from "../../runtime/runtime-readiness.ts";
+import { resolveRuntimeMigrationDatabaseUrl } from "../../runtime/runtime-readiness.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(__dirname, "migrations");
@@ -39,10 +39,12 @@ async function applyMigration(client: Client, fileName: string, sql: string): Pr
 }
 
 async function main(): Promise<void> {
-  const databaseUrl = resolveRuntimeDatabaseUrl();
+  const databaseUrl = resolveRuntimeMigrationDatabaseUrl();
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required to run database migrations.");
+    throw new Error("DIRECT_URL or DATABASE_URL is required to run database migrations.");
   }
+  const source = process.env.DIRECT_URL?.trim() ? "DIRECT_URL" : "DATABASE_URL";
+  console.log(`[db:migrate] using ${source}`);
 
   const migrationFiles = (await readdir(migrationsDir))
     .filter((fileName) => fileName.endsWith(".sql"))
