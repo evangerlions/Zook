@@ -66,6 +66,23 @@ export function resolveRuntimeDatabaseUrl(
   return normalizeRuntimeUrl(rawValue, insideContainer);
 }
 
+export function resolveRuntimeDirectDatabaseUrl(
+  rawValue = process.env.DIRECT_URL,
+  insideContainer = isContainerRuntime(),
+): string | undefined {
+  return normalizeRuntimeUrl(rawValue, insideContainer);
+}
+
+export function resolveRuntimeMigrationDatabaseUrl(
+  directUrl = process.env.DIRECT_URL,
+  databaseUrl = process.env.DATABASE_URL,
+  insideContainer = isContainerRuntime(),
+): string | undefined {
+  return (
+    normalizeRuntimeUrl(directUrl, insideContainer) ?? normalizeRuntimeUrl(databaseUrl, insideContainer)
+  );
+}
+
 export function isContainerRuntime(): boolean {
   return (
     existsSync("/.dockerenv") ||
