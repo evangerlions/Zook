@@ -179,6 +179,7 @@ export ADMIN_DEFAULT_APP_ID="${ADMIN_DEFAULT_APP_ID:-app_a}"
 export ADMIN_BRAND_NAME="${ADMIN_BRAND_NAME:-Zook Control Room}"
 API_PORT="${API_PORT:-3100}"
 ADMIN_PORT="${ADMIN_PORT:-3110}"
+ADMIN_DEV_MODE="${ADMIN_DEV_MODE:-hmr}"
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
   log "缺少 DATABASE_URL。请在 deploy_configs/local.env 或 .env.local 中配置。"
@@ -200,15 +201,29 @@ fi
 
 ensure_admin_web_dependencies
 
-log "构建 Admin Web..."
-npm run admin:build
-
 log "启动 API 和 Admin Web..."
 start_service api env PORT="$API_PORT" npm run dev
-start_service admin env PORT="$ADMIN_PORT" ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" npm run admin
+
+if [[ "$ADMIN_DEV_MODE" == "build" ]]; then
+  log "Admin Web 使用构建产物模式..."
+  npm run admin:build
+  start_service admin env PORT="$ADMIN_PORT" ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" npm run admin
+  ADMIN_HEALTH_URL="http://127.0.0.1:$ADMIN_PORT/_admin/health"
+else
+  log "Admin Web 使用热重载模式..."
+  start_service admin env \
+    ADMIN_PORT="$ADMIN_PORT" \
+    ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" \
+    VITE_ADMIN_BRAND_NAME="$ADMIN_BRAND_NAME" \
+    VITE_ADMIN_DEFAULT_APP_ID="$ADMIN_DEFAULT_APP_ID" \
+    VITE_ADMIN_ANALYTICS_URL="${ADMIN_ANALYTICS_URL:-https://analytics.youwoai.net}" \
+    VITE_ADMIN_LOG_URL="${ADMIN_LOG_URL:-https://logs.youwoai.net/}" \
+    npm run admin:dev
+  ADMIN_HEALTH_URL="http://127.0.0.1:$ADMIN_PORT/"
+fi
 
 wait_for_http "http://127.0.0.1:$API_PORT/api/health" "API"
-wait_for_http "http://127.0.0.1:$ADMIN_PORT/_admin/health" "Admin Web"
+wait_for_http "$ADMIN_HEALTH_URL" "Admin Web"
 
 printf '\n'
 printf '本地联调已启动\n'
@@ -216,6 +231,7 @@ printf 'API:        http://127.0.0.1:%s\n' "$API_PORT"
 printf 'Admin:      http://127.0.0.1:%s\n' "$ADMIN_PORT"
 printf '用户名:      %s\n' "$ADMIN_BASIC_AUTH_USERNAME"
 printf '密码:        %s\n' "$ADMIN_BASIC_AUTH_PASSWORD"
+printf '前端模式:    %s\n' "$ADMIN_DEV_MODE"
 printf '按 Ctrl+C 可一起停止这两个服务。\n'
 
 monitor_children

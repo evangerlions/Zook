@@ -1,6 +1,7 @@
 import { Pool, type PoolClient } from "pg";
 import type { DatabaseSeed } from "../../../shared/types.ts";
 import { InMemoryDatabase, type DatabaseStateSnapshot } from "../prisma/in-memory-database.ts";
+import { runPostgresMigrations } from "./migrate.ts";
 
 interface PostgresCollectionDefinition {
   key: keyof DatabaseStateSnapshot;
@@ -75,7 +76,17 @@ export class PostgresDatabase extends InMemoryDatabase {
     this.seedSnapshot = buildSeedSnapshot(seed);
   }
 
-  static async create(connectionString: string, seed: DatabaseSeed = {}): Promise<PostgresDatabase> {
+  static async create(
+    connectionString: string,
+    seed: DatabaseSeed = {},
+    options: {
+      migrationConnectionString?: string;
+    } = {},
+  ): Promise<PostgresDatabase> {
+    await runPostgresMigrations({
+      connectionString: options.migrationConnectionString?.trim() || connectionString,
+      log: (message) => console.log(message),
+    });
     const pool = new Pool({
       connectionString,
     });

@@ -51,17 +51,27 @@ async function applyMigration(
   }
 }
 
-async function main(): Promise<void> {
-  const databaseUrl = resolveRuntimeMigrationDatabaseUrl();
+async function listMigrationFiles() {
+  return (await readdir(migrationsDir))
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+export async function runPostgresMigrations(options: {
+  connectionString?: string;
+  log?: (message: string) => void;
+} = {}): Promise<void> {
+  const databaseUrl = options.connectionString?.trim() || resolveRuntimeMigrationDatabaseUrl();
   if (!databaseUrl) {
     throw new Error("DIRECT_URL or DATABASE_URL is required to run database migrations.");
   }
-  const source = process.env.DIRECT_URL?.trim() ? "DIRECT_URL" : "DATABASE_URL";
-  console.log(`[db:migrate] using ${source}`);
+  const log = options.log ?? ((message: string) => console.log(message));
+  const source = options.connectionString?.trim()
+    ? "provided connection string"
+    : process.env.DIRECT_URL?.trim() ? "DIRECT_URL" : "DATABASE_URL";
+  log(`[db:migrate] using ${source}`);
 
-  const migrationFiles = (await readdir(migrationsDir))
-    .filter((fileName) => fileName.endsWith(".sql"))
-    .sort((left, right) => left.localeCompare(right));
+  const migrationFiles = await listMigrationFiles();
 
   const client = new Client({
     connectionString: databaseUrl,
@@ -74,14 +84,20 @@ async function main(): Promise<void> {
     for (const fileName of migrationFiles) {
       const sql = await readFile(join(migrationsDir, fileName), "utf8");
       const checksum = computeChecksum(sql);
-      console.log(`[db:migrate] applying idempotent migration: ${fileName}`);
+      log(`[db:migrate] applying idempotent migration: ${fileName}`);
       await applyMigration(client, fileName, sql, checksum);
     }
 
-    console.log("[db:migrate] all migrations are up to date");
+    log("[db:migrate] all migrations are up to date");
   } finally {
     await client.end().catch(() => undefined);
   }
 }
 
-await main();
+async function main(): Promise<void> {
+  await runPostgresMigrations();
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  await main();
+}
