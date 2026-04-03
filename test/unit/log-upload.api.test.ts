@@ -59,7 +59,7 @@ test("logs pull-task returns shouldUpload false when no pending task exists", as
 test("logs upload can decrypt payloads using app-generated log secrets", async () => {
   const runtime = await createApplication();
   const session = await issueAccessToken(runtime);
-  const appSecret = runtime.services.appLogSecretService.ensureSecret("app_a").record;
+  const appSecret = (await runtime.services.appLogSecretService.ensureSecret("app_a")).record;
   const key = Buffer.from(appSecret.secret, "base64");
 
   runtime.database.clientLogUploadTasks.push({

@@ -91,7 +91,7 @@ export class AuthService {
 
     await this.clearFailureState(normalizedAccount);
     const app = this.appRegistryService.getAppOrThrow(command.appId);
-    this.appRegistryService.ensureMembership(app.id, user.id, now);
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
 
     return this.issueSessionForUser(user.id, app.id, now);
   }
@@ -263,7 +263,7 @@ export class AuthService {
       status: "ACTIVE",
       createdAt: now.toISOString(),
     });
-    this.appRegistryService.ensureMembership(app.id, userId, now);
+    await this.appRegistryService.ensureMembership(app.id, userId, now);
 
     return this.issueSessionForUser(userId, app.id, now);
   }
@@ -325,7 +325,7 @@ export class AuthService {
       forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
     }
 
-    this.appRegistryService.ensureMembership(app.id, user.id, now);
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
 
     return {
       session: await this.issueSessionForUser(user.id, app.id, now),
@@ -534,7 +534,7 @@ export class AuthService {
     user.passwordAlgo = this.passwordHasher.algorithm;
 
     await this.revokeAllSessions(app.id, user.id, now);
-    this.appRegistryService.ensureMembership(app.id, user.id, now);
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
     return this.issueSessionForUser(user.id, app.id, now);
   }
 

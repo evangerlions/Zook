@@ -29,7 +29,7 @@ import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
-import { AppConfigService } from "./services/app-config.service.ts";
+import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import { AppLogSecretService, APP_LOG_SECRET_READ_OPERATION } from "./services/app-log-secret.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
@@ -1254,7 +1254,7 @@ export class BackendApplication {
     const password = this.validationPipe.requireString(body, "password");
     const adminUser = this.validateAdminCredentials(username, password);
     const session = await this.adminSessionStore.create(adminUser, ADMIN_SESSION_TTL_MS);
-    const bootstrap = this.adminConsoleService.getBootstrap(adminUser);
+    const bootstrap = await this.adminConsoleService.getBootstrap(adminUser);
 
     return this.ok(
       {
@@ -1279,9 +1279,9 @@ export class BackendApplication {
     );
   }
 
-  private handleAdminBootstrap(request: HttpRequest): HttpResponse<unknown> {
+  private async handleAdminBootstrap(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = this.adminConsoleService.getBootstrap(adminUser);
+    const result = await this.adminConsoleService.getBootstrap(adminUser);
 
     return this.ok(
       {
@@ -2330,7 +2330,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     emitToConsole: options.emitLogs ?? false,
   });
 
-  const appConfigService = new AppConfigService(database, cache, kvManager);
+  const appConfigService = new VersionedAppConfigService(database, cache, kvManager);
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
@@ -2339,9 +2339,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService, logger);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
-  const appLogSecretService = new AppLogSecretService(database, appConfigService);
+  const appLogSecretService = new AppLogSecretService(database, kvManager);
   await database.withExclusiveSession(async () => {
-    const initializedAppLogSecrets = appLogSecretService.initializeSecrets(database.apps.map((item) => item.id));
+    const initializedAppLogSecrets = await appLogSecretService.initializeSecrets(database.apps.map((item) => item.id));
     if (initializedAppLogSecrets) {
       await managedStateStore.save(database);
     }

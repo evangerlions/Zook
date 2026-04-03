@@ -3,7 +3,7 @@ import { forbidden } from "../../shared/errors.ts";
 import type { AppRecord, TencentSesRegion } from "../../shared/types.ts";
 import { randomId } from "../../shared/utils.ts";
 import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
-import { AppConfigService } from "../../services/app-config.service.ts";
+import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
 
 /**
  * AppRegistryService applies app status, join mode and default-role rules.
@@ -11,7 +11,7 @@ import { AppConfigService } from "../../services/app-config.service.ts";
 export class AppRegistryService {
   constructor(
     private readonly database: InMemoryDatabase,
-    private readonly appConfigService: AppConfigService,
+    private readonly appConfigService: VersionedAppConfigService,
   ) {}
 
   getAppOrThrow(appId: string) {
@@ -43,7 +43,7 @@ export class AppRegistryService {
     });
   }
 
-  ensureMembership(appId: string, userId: string, now = new Date()) {
+  async ensureMembership(appId: string, userId: string, now = new Date()) {
     const app = this.getAppOrThrow(appId);
     const membership = this.database.findAppUser(app.id, userId);
 
@@ -68,7 +68,7 @@ export class AppRegistryService {
     };
 
     this.database.appUsers.push(autoJoinedMembership);
-    this.assignDefaultRole(app.id, userId);
+    await this.assignDefaultRole(app.id, userId);
     return autoJoinedMembership;
   }
 
@@ -85,8 +85,8 @@ export class AppRegistryService {
     return membership;
   }
 
-  private assignDefaultRole(appId: string, userId: string): void {
-    const defaultRoleCode = this.appConfigService.getDefaultRoleCode(appId);
+  private async assignDefaultRole(appId: string, userId: string): Promise<void> {
+    const defaultRoleCode = await this.appConfigService.getDefaultRoleCode(appId);
     const role = this.database.findRole(appId, defaultRoleCode);
     if (!role) {
       return;
