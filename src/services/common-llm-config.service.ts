@@ -1,4 +1,4 @@
-import { AppConfigService } from "./app-config.service.ts";
+import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { maskSensitiveString } from "../shared/utils.ts";
 import { SecretReferenceResolver, isSecretReference } from "./secret-reference-resolver.ts";
@@ -42,7 +42,7 @@ const WEIGHT_PRECISION = 100;
 
 export class CommonLlmConfigService {
   constructor(
-    private readonly appConfigService: AppConfigService,
+    private readonly appConfigService: VersionedAppConfigService,
     private readonly secretReferenceResolver?: SecretReferenceResolver,
   ) {}
 
@@ -57,13 +57,13 @@ export class CommonLlmConfigService {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `LLM service revision ${revision} was not found.`);
     }
 
-    const config = record ? this.parseConfig(record.content) : this.getCurrentConfig();
+    const config = record ? this.parseConfig(record.content) : await this.getCurrentConfig();
 
     return {
       app: COMMON_APP_SUMMARY,
       configKey: LLM_SERVICE_CONFIG_KEY,
       config: this.maskSensitiveConfig(config),
-      updatedAt: record?.createdAt ?? this.getUpdatedAt(),
+      updatedAt: record?.createdAt ?? await this.getUpdatedAt(),
       revision: record?.revision,
       desc: record?.desc,
       isLatest: !record || record.revision === latestRevision,
@@ -72,7 +72,7 @@ export class CommonLlmConfigService {
   }
 
   async updateConfig(input: unknown, desc?: string): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
-    const existingConfig = this.getCurrentConfig();
+    const existingConfig = await this.getCurrentConfig();
     const normalized = this.validateInput(input, existingConfig);
     await this.appConfigService.setValue(
       COMMON_APP_ID,
@@ -99,13 +99,13 @@ export class CommonLlmConfigService {
     return this.getDocument();
   }
 
-  getCurrentConfig(): LlmServiceConfig {
-    const stored = this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
+  async getCurrentConfig(): Promise<LlmServiceConfig> {
+    const stored = await this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
   async getRuntimeConfig(): Promise<LlmServiceConfig | undefined> {
-    const stored = this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
+    const stored = await this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
     if (!stored) {
       return undefined;
     }
@@ -124,8 +124,8 @@ export class CommonLlmConfigService {
     }
   }
 
-  hasStoredConfig(): boolean {
-    return Boolean(this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY));
+  async hasStoredConfig(): Promise<boolean> {
+    return Boolean(await this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY));
   }
 
   createEmptyRuntimeSnapshot(): LlmRuntimeSnapshot {
@@ -135,8 +135,8 @@ export class CommonLlmConfigService {
     };
   }
 
-  private getUpdatedAt(): string | undefined {
-    return this.appConfigService.getRecord(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY)?.updatedAt;
+  private async getUpdatedAt(): Promise<string | undefined> {
+    return this.appConfigService.getUpdatedAt(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
   }
 
   private parseConfig(raw: string): LlmServiceConfig {

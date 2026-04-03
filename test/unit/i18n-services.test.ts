@@ -3,7 +3,7 @@ import test from "node:test";
 import { InMemoryCache } from "../../src/infrastructure/cache/redis/in-memory-cache.ts";
 import { InMemoryDatabase } from "../../src/infrastructure/database/prisma/in-memory-database.ts";
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
-import { AppConfigService } from "../../src/services/app-config.service.ts";
+import { VersionedAppConfigService } from "../../src/services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../src/services/app-i18n-config.service.ts";
 import { RequestLocaleService } from "../../src/services/request-locale.service.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
@@ -16,7 +16,7 @@ async function createI18nFixture() {
   });
   const database = new InMemoryDatabase();
   const cache = new InMemoryCache();
-  const appConfigService = new AppConfigService(database, cache, kvManager);
+  const appConfigService = new VersionedAppConfigService(database, cache, kvManager);
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
 
   return {
@@ -214,4 +214,32 @@ test("app i18n config service rejects unsupported fallback locales", async () =>
       return true;
     },
   );
+});
+
+test("app i18n config service follows latest revision even if direct config record is stale", async () => {
+  const fixture = await createI18nFixture();
+
+  await fixture.appI18nConfigService.initializeAppConfig("app_a");
+  await fixture.appI18nConfigService.updateConfig("app_a", {
+    defaultLocale: "zh-CN",
+    supportedLocales: ["zh-CN", "en-US"],
+    fallbackLocales: {
+      "zh-HK": ["zh-CN"],
+    },
+  }, "switch-default-locale");
+
+  const staleRecord = fixture.database.appConfigs.find(
+    (item) => item.appId === "app_a" && item.configKey === "i18n.settings",
+  );
+  assert.ok(staleRecord);
+  staleRecord.configValue = JSON.stringify(DEFAULT_APP_I18N_SETTINGS, null, 2);
+  staleRecord.updatedAt = "2026-04-03T10:00:00.000Z";
+
+  const document = await fixture.appI18nConfigService.getDocument("app_a");
+  assert.equal(document.config.defaultLocale, "zh-CN");
+  assert.deepEqual(document.config.supportedLocales, ["zh-CN", "en-US"]);
+
+  const current = await fixture.appI18nConfigService.getCurrentConfig("app_a");
+  assert.equal(current.defaultLocale, "zh-CN");
+  assert.deepEqual(current.supportedLocales, ["zh-CN", "en-US"]);
 });

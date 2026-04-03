@@ -1,4 +1,4 @@
-import { AppConfigService } from "./app-config.service.ts";
+import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { CommonPasswordConfigService } from "./common-password-config.service.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
@@ -43,7 +43,7 @@ export const VERIFICATION_EMAIL_TEMPLATE_NAME = "verify-code";
 
 export class CommonEmailConfigService {
   constructor(
-    private readonly appConfigService: AppConfigService,
+    private readonly appConfigService: VersionedAppConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
     private readonly logger?: StructuredLogger,
   ) {}
@@ -59,14 +59,14 @@ export class CommonEmailConfigService {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Email service revision ${revision} was not found.`);
     }
 
-    const config = record ? this.parseConfig(record.content) : this.getStoredConfig();
+    const config = record ? this.parseConfig(record.content) : this.createDefaultConfig();
     this.logConfigSnapshot("common email config document resolved", config, {
       source: record?.revision ? "latest-revision" : "direct-record",
       revision: record?.revision,
-      updatedAt: record?.createdAt ?? this.getUpdatedAt(),
+      updatedAt: record?.createdAt ?? await this.getUpdatedAt(),
     });
     return this.toDocument(config, {
-      updatedAt: record?.createdAt ?? this.getUpdatedAt(),
+      updatedAt: record?.createdAt ?? await this.getUpdatedAt(),
       revision: record?.revision,
       desc: record?.desc,
       isLatest: !record || record.revision === latestRevision,
@@ -171,32 +171,17 @@ export class CommonEmailConfigService {
     };
   }
 
-  private getUpdatedAt(): string | undefined {
-    return this.appConfigService.getRecord(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY)?.updatedAt;
+  private async getUpdatedAt(): Promise<string | undefined> {
+    return this.appConfigService.getUpdatedAt(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
   }
 
   private async getCurrentConfigRecord() {
-    const latestRevision = await this.appConfigService.getLatestRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
-    if (latestRevision) {
-      return latestRevision;
-    }
-
-    const directValue = this.appConfigService.getValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
-    if (!directValue) {
-      return undefined;
-    }
-
-    return {
-      content: directValue,
-      createdAt: this.getUpdatedAt() ?? new Date(0).toISOString(),
-      revision: undefined,
-      desc: undefined,
-    };
+    return this.appConfigService.getLatestRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
   }
 
   private async getCurrentRuntimeConfig(): Promise<EmailServiceConfig> {
-    const record = await this.getCurrentConfigRecord();
-    return record ? this.parseConfig(record.content) : this.createDefaultConfig();
+    const stored = await this.appConfigService.getValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
+    return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
   private logConfigSnapshot(
@@ -219,11 +204,6 @@ export class CommonEmailConfigService {
     this.logger.info(
       `${event}; source=${meta.source}; enabled=${config.enabled}; revision=${meta.revision ?? "none"}; updatedAt=${meta.updatedAt ?? "unknown"}; region=${meta.region ?? "n/a"}; templateId=${meta.templateId ?? "n/a"}; templateName=${meta.templateName ?? "n/a"}; regions=${config.regions.length}; templateIds=${templateIds.join(",") || "none"}`,
     );
-  }
-
-  private getStoredConfig(): EmailServiceConfig {
-    const stored = this.appConfigService.getValue(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY);
-    return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
   private toDocument(

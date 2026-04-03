@@ -1,4 +1,4 @@
-import { AppConfigService } from "./app-config.service.ts";
+import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { DEFAULT_APP_I18N_SETTINGS, normalizeLocale } from "../shared/i18n.ts";
 import type {
@@ -10,7 +10,7 @@ import type {
 export const APP_I18N_SETTINGS_CONFIG_KEY = "i18n.settings";
 
 export class AppI18nConfigService {
-  constructor(private readonly appConfigService: AppConfigService) {}
+  constructor(private readonly appConfigService: VersionedAppConfigService) {}
 
   async getDocument(appId: string, revision?: number): Promise<AppI18nConfigDocument> {
     const revisions = await this.appConfigService.listRevisions(appId, APP_I18N_SETTINGS_CONFIG_KEY);
@@ -23,13 +23,13 @@ export class AppI18nConfigService {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `i18n settings revision ${revision} was not found.`);
     }
 
-    const config = record ? this.parseConfig(record.content) : this.getCurrentConfig(appId);
+    const config = record ? this.parseConfig(record.content) : await this.getCurrentConfig(appId);
 
     return this.createDocument(
       config,
       revisions,
       {
-        updatedAt: record?.createdAt ?? this.getUpdatedAt(appId),
+        updatedAt: record?.createdAt ?? await this.getUpdatedAt(appId),
         revision: record?.revision,
         desc: record?.desc,
         isLatest: !record || record.revision === latestRevision,
@@ -64,8 +64,8 @@ export class AppI18nConfigService {
     return this.getDocument(appId);
   }
 
-  getCurrentConfig(appId: string): I18nSettings {
-    const stored = this.appConfigService.getValue(appId, APP_I18N_SETTINGS_CONFIG_KEY);
+  async getCurrentConfig(appId: string): Promise<I18nSettings> {
+    const stored = await this.appConfigService.getValue(appId, APP_I18N_SETTINGS_CONFIG_KEY);
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
@@ -88,8 +88,8 @@ export class AppI18nConfigService {
     };
   }
 
-  private getUpdatedAt(appId: string): string | undefined {
-    return this.appConfigService.getRecord(appId, APP_I18N_SETTINGS_CONFIG_KEY)?.updatedAt;
+  private async getUpdatedAt(appId: string): Promise<string | undefined> {
+    return this.appConfigService.getUpdatedAt(appId, APP_I18N_SETTINGS_CONFIG_KEY);
   }
 
   private createDocument(

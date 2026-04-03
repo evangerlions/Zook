@@ -675,7 +675,7 @@ TTL 可以先保持轻量，例如 30 秒到 5 分钟。
 
 1. [README_API.md](/Users/zhoukai/Projects/AI/codex/Zook/README_API.md) 中已经定义 `X-App-Locale`
 2. [request-email-context.service.ts](/Users/zhoukai/Projects/AI/codex/Zook/src/services/request-email-context.service.ts) 已有 locale normalize 和 header fallback 思路
-3. [app-config.service.ts](/Users/zhoukai/Projects/AI/codex/Zook/src/services/app-config.service.ts) 可直接承接 `i18n.settings`
+3. [versioned-app-config.service.ts](/Users/zhoukai/Projects/AI/codex/Zook/src/services/versioned-app-config.service.ts) 可直接承接 `i18n.settings`
 4. [app.module.ts](/Users/zhoukai/Projects/AI/codex/Zook/src/app.module.ts) 已有 admin config 路由范式，可扩展 i18n 配置读写
 
 ### 14.2 建议新增的模块

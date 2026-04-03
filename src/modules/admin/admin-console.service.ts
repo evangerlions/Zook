@@ -1,6 +1,6 @@
 import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
-import { AppConfigService } from "../../services/app-config.service.ts";
+import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
@@ -41,7 +41,7 @@ const COMMON_APP_ID = "common";
 export class AdminConsoleService {
   constructor(
     private readonly database: InMemoryDatabase,
-    private readonly appConfigService: AppConfigService,
+    private readonly appConfigService: VersionedAppConfigService,
     private readonly appI18nConfigService: AppI18nConfigService,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
@@ -55,11 +55,10 @@ export class AdminConsoleService {
     private readonly managedStateStore: ManagedStateStore,
   ) {}
 
-  getBootstrap(adminUser: string): AdminBootstrapResult {
+  async getBootstrap(adminUser: string): Promise<AdminBootstrapResult> {
     return {
       adminUser,
-      apps: this.database.apps
-        .map((app) => this.toSummary(app))
+      apps: (await Promise.all(this.database.apps.map((app) => this.toSummary(app))))
         .sort((left, right) => left.appName.localeCompare(right.appName, "zh-CN")),
     };
   }
@@ -74,16 +73,13 @@ export class AdminConsoleService {
     if (revision && !record) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
-    const fallbackRecord = this.database.appConfigs.find(
-      (item) => item.appId === app.id && item.configKey === ADMIN_CONFIG_KEY,
-    );
-    const rawJson = record ? this.normalizeConfig(record.content) : this.readNormalizedConfig(app.id);
+    const rawJson = record ? this.normalizeConfig(record.content) : await this.readNormalizedConfig(app.id);
 
     return {
-      app: this.toSummary(app),
+      app: await this.toSummary(app),
       configKey: ADMIN_CONFIG_KEY,
       rawJson,
-      updatedAt: record?.createdAt ?? fallbackRecord?.updatedAt,
+      updatedAt: record?.createdAt ?? await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY),
       revision: record?.revision,
       desc: record?.desc,
       isLatest: !record || record.revision === latestRevision,
@@ -153,7 +149,7 @@ export class AdminConsoleService {
 
     this.database.apps.push(record);
     this.createDefaultRoles(record.id);
-    this.appLogSecretService.ensureSecret(record.id);
+    await this.appLogSecretService.ensureSecret(record.id);
     const defaultConfig = this.buildDefaultConfigTemplate(record.id);
     await this.appConfigService.setValue(
       record.id,
@@ -178,13 +174,13 @@ export class AdminConsoleService {
 
   async revealAppLogSecret(appId: string): Promise<AdminAppLogSecretRevealDocument> {
     const app = this.requireApp(appId);
-    const ensured = this.appLogSecretService.ensureSecret(app.id);
+    const ensured = await this.appLogSecretService.ensureSecret(app.id);
     if (ensured.created) {
       await this.managedStateStore.save(this.database);
     }
 
     return {
-      app: this.toSummary(app),
+      app: await this.toSummary(app),
       keyId: ensured.record.keyId,
       secret: ensured.record.secret,
       updatedAt: ensured.record.updatedAt,
@@ -198,7 +194,7 @@ export class AdminConsoleService {
 
     const app = this.requireApp(appId);
 
-    if (!this.isDeleteAllowed(app.id)) {
+    if (!(await this.isDeleteAllowed(app.id))) {
       conflict(
         "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG",
         "Config must be an empty JSON object before deleting the app.",
@@ -252,8 +248,8 @@ export class AdminConsoleService {
     return this.requireApp(appId);
   }
 
-  private readNormalizedConfig(appId: string): string {
-    const stored = this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
+  private async readNormalizedConfig(appId: string): Promise<string> {
+    const stored = await this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
     if (!stored) {
       return JSON.stringify(this.buildDefaultConfigTemplate(appId), null, 2);
     }
@@ -280,12 +276,12 @@ export class AdminConsoleService {
     return normalizeAppNameI18n(source, enUsName);
   }
 
-  private isDeleteAllowed(appId: string): boolean {
+  private async isDeleteAllowed(appId: string): Promise<boolean> {
     if (appId === COMMON_APP_ID) {
       return false;
     }
 
-    const raw = this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
+    const raw = await this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
     if (!raw || !raw.trim()) {
       return true;
     }
@@ -355,7 +351,7 @@ export class AdminConsoleService {
     const document = await this.appI18nConfigService.getDocument(app.id, revision);
 
     return {
-      app: this.toSummary(app),
+      app: await this.toSummary(app),
       ...document,
     };
   }
@@ -402,11 +398,15 @@ export class AdminConsoleService {
   }
 
   async getLlmMetrics(range: LlmMetricsRange): Promise<AdminLlmMetricsDocument> {
-    return this.llmMetricsService.getOverview(this.commonLlmConfigService.getCurrentConfig(), range);
+    return this.llmMetricsService.getOverview(await this.commonLlmConfigService.getCurrentConfig(), range);
   }
 
   async getLlmModelMetrics(modelKey: string, range: LlmMetricsRange): Promise<AdminLlmModelMetricsDocument> {
-    return this.llmMetricsService.getModelDetail(this.commonLlmConfigService.getCurrentConfig(), modelKey, range);
+    return this.llmMetricsService.getModelDetail(
+      await this.commonLlmConfigService.getCurrentConfig(),
+      modelKey,
+      range,
+    );
   }
 
   async runLlmSmokeTest(): Promise<AdminLlmSmokeTestDocument> {
@@ -429,8 +429,8 @@ export class AdminConsoleService {
     return JSON.stringify(parsed, null, 2);
   }
 
-  private toSummary(app: AppRecord): AdminAppSummary {
-    const logSecret = this.appLogSecretService.getSummary(app.id);
+  private async toSummary(app: AppRecord): Promise<AdminAppSummary> {
+    const logSecret = await this.appLogSecretService.getSummary(app.id);
     if (!logSecret) {
       throw new ApplicationError(500, "SYS_INTERNAL_ERROR", `App ${app.id} log secret is missing.`);
     }
@@ -441,7 +441,7 @@ export class AdminConsoleService {
       appName: resolveAdminAppName(app.nameI18n, app.name),
       appNameI18n: normalizeAppNameI18n(app.nameI18n, app.name),
       status: app.status,
-      canDelete: this.isDeleteAllowed(app.id),
+      canDelete: await this.isDeleteAllowed(app.id),
       logSecret,
     };
   }

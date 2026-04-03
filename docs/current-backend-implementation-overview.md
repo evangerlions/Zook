@@ -52,7 +52,7 @@
 对应核心文件：
 
 1. `src/modules/app-registry/app-registry.service.ts`
-2. `src/services/app-config.service.ts`
+2. `src/services/versioned-app-config.service.ts`
 
 ### 2.4 RBAC 权限模型
 

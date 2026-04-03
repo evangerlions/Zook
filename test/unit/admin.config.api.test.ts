@@ -306,7 +306,7 @@ test("admin config API saves normalized JSON back to the app config store", asyn
     ),
   );
 
-  const storedValue = runtime.services.appConfigService.getValue("app_b", "admin.delivery_config");
+  const storedValue = await runtime.services.appConfigService.getValue("app_b", "admin.delivery_config");
   assert.equal(
     storedValue,
     JSON.stringify(
@@ -586,6 +586,74 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   );
 });
 
+test("admin app config reads and delete guards follow latest revision even if direct config record is stale", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps",
+    headers,
+    body: {
+      appId: "app_c",
+      appNameZhCn: "应用 C",
+      appNameEnUs: "App C",
+    },
+  });
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_c/config",
+    headers,
+    body: {
+      rawJson: "{}",
+      desc: "clear before delete",
+    },
+  });
+
+  const staleRecord = runtime.database.appConfigs.find(
+    (item) => item.appId === "app_c" && item.configKey === "admin.delivery_config",
+  );
+  assert.ok(staleRecord);
+  staleRecord.configValue = '{"stale":true}';
+  staleRecord.updatedAt = "2026-04-03T10:00:00.000Z";
+
+  const bootstrapResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/bootstrap",
+    headers,
+  });
+
+  assert.equal(bootstrapResponse.statusCode, 200);
+  const appSummary = bootstrapResponse.body.data.apps.find((item: { appId: string }) => item.appId === "app_c");
+  assert.equal(appSummary?.canDelete, true);
+
+  const configResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_c/config",
+    headers,
+  });
+
+  assert.equal(configResponse.statusCode, 200);
+  assert.equal(configResponse.body.data.rawJson, "{}");
+
+  const deleteResponse = await runtime.app.handle({
+    method: "DELETE",
+    path: "/api/v1/admin/apps/app_c",
+    headers,
+  });
+
+  assert.equal(deleteResponse.statusCode, 200);
+  assert.equal(deleteResponse.body.data.deleted, true);
+});
+
 test("admin app APIs can update localized app names and add extra locales", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
@@ -742,7 +810,7 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
 
   assert.equal(revealResponse.statusCode, 200);
   assert.equal(revealResponse.body.data.app.appId, "app_a");
-  assert.equal(revealResponse.body.data.keyId, runtime.services.appLogSecretService.getSummary("app_a")?.keyId);
+  assert.equal(revealResponse.body.data.keyId, (await runtime.services.appLogSecretService.getSummary("app_a"))?.keyId);
   assert.equal(revealResponse.body.data.secret.length > 20, true);
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.app.log_secret.reveal" && item.appId === "app_a"),
@@ -1206,14 +1274,14 @@ test("common email service runtime follows latest revision even if direct config
   await runtime.services.commonPasswordConfigService.set(TENCENT_SES_SECRET_ID_PASSWORD_KEY, "腾讯 SES SecretId", "sid-demo");
   await runtime.services.commonPasswordConfigService.set(TENCENT_SES_SECRET_KEY_PASSWORD_KEY, "腾讯 SES SecretKey", "sk-demo");
 
-  runtime.services.appConfigService.setDirectValue(
-    "common",
-    "common.email_service_regions",
-    JSON.stringify({
-      enabled: false,
-      regions: createEmailServiceRegions(),
-    }),
+  const staleEmailRecord = runtime.database.appConfigs.find(
+    (item) => item.appId === "common" && item.configKey === "common.email_service_regions",
   );
+  assert.ok(staleEmailRecord);
+  staleEmailRecord.configValue = JSON.stringify({
+    enabled: false,
+    regions: createEmailServiceRegions(),
+  });
 
   const document = await runtime.services.commonEmailConfigService.getDocument();
   assert.equal(document.config.enabled, true);
