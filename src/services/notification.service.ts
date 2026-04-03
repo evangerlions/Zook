@@ -1,4 +1,4 @@
-import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
 import { randomId } from "../shared/utils.ts";
@@ -8,7 +8,7 @@ import { randomId } from "../shared/utils.ts";
  */
 export class NotificationService {
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly queue: JobQueue,
     private readonly logger: StructuredLogger,
   ) {}
@@ -20,7 +20,7 @@ export class NotificationService {
     payload: Record<string, unknown>;
   }): Promise<{ queued: boolean; notificationJobId: string }> {
     const notificationJobId = randomId("notification");
-    this.database.notificationJobs.push({
+    await this.database.insertNotificationJob({
       id: notificationJobId,
       appId: command.appId,
       recipientUserId: command.recipientUserId,
@@ -40,22 +40,20 @@ export class NotificationService {
         { attempts: 5, backoffMs: 1000 },
       );
 
-      const job = this.database.notificationJobs.find((item) => item.id === notificationJobId);
-      if (job) {
-        job.status = "QUEUED";
-      }
+      await this.database.updateNotificationJob(notificationJobId, {
+        status: "QUEUED",
+      });
 
       return {
         queued: true,
         notificationJobId,
       };
     } catch (error) {
-      const job = this.database.notificationJobs.find((item) => item.id === notificationJobId);
-      if (job) {
-        job.status = "ENQUEUE_FAILED";
-      }
+      await this.database.updateNotificationJob(notificationJobId, {
+        status: "ENQUEUE_FAILED",
+      });
 
-      this.database.failedEvents.push({
+      await this.database.insertFailedEvent({
         id: randomId("failed_event"),
         appId: command.appId,
         eventType: "notification.send",
@@ -89,13 +87,15 @@ export class NotificationService {
     }
 
     const notificationJobId = String(job.payload.notificationJobId ?? "");
-    const record = this.database.notificationJobs.find((item) => item.id === notificationJobId);
+    const record = await this.database.findNotificationJob(notificationJobId);
     if (!record) {
       return;
     }
 
-    record.status = "SENT";
-    record.retryCount += 1;
+    await this.database.updateNotificationJob(notificationJobId, {
+      status: "SENT",
+      retryCount: record.retryCount + 1,
+    });
     this.logger.info("notification delivered", {
       appId: record.appId,
       jobId: job.id,

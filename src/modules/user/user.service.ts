@@ -1,19 +1,19 @@
 import { forbidden, unauthorized } from "../../shared/errors.ts";
-import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import type { AuthenticatedUserProfile, UserRecord } from "../../shared/types.ts";
 
 /**
  * UserService centralizes account lookup and cross-app user status checks.
  */
 export class UserService {
-  constructor(private readonly database: InMemoryDatabase) {}
+  constructor(private readonly database: ApplicationDatabase) {}
 
-  findByAccount(account: string) {
-    return this.database.findUserByAccount(account);
+  async findByAccount(account: string) {
+    return await this.database.findUserByAccount(account);
   }
 
-  getById(userId: string) {
-    const user = this.database.findUserById(userId);
+  async getById(userId: string) {
+    const user = await this.database.findUserById(userId);
     if (!user) {
       unauthorized("AUTH_INVALID_CREDENTIAL", "The account does not exist.");
     }
@@ -25,8 +25,8 @@ export class UserService {
     return user;
   }
 
-  getProfile(userId: string): AuthenticatedUserProfile {
-    const user = this.getById(userId);
+  async getProfile(userId: string): Promise<AuthenticatedUserProfile> {
+    const user = await this.getById(userId);
     return this.toProfile(user);
   }
 

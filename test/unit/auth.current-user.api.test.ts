@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 test("password login returns user profile, refresh keeps user profile, and users/me returns current user", async () => {
   const runtime = await createApplication();

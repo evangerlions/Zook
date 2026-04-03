@@ -1,4 +1,4 @@
-import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
@@ -40,7 +40,7 @@ const COMMON_APP_ID = "common";
 
 export class AdminConsoleService {
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly appConfigService: VersionedAppConfigService,
     private readonly appI18nConfigService: AppI18nConfigService,
     private readonly appLogSecretService: AppLogSecretService,
@@ -56,15 +56,16 @@ export class AdminConsoleService {
   ) {}
 
   async getBootstrap(adminUser: string): Promise<AdminBootstrapResult> {
+    const apps = await this.database.listApps();
     return {
       adminUser,
-      apps: (await Promise.all(this.database.apps.map((app) => this.toSummary(app))))
+      apps: (await Promise.all(apps.map((app) => this.toSummary(app))))
         .sort((left, right) => left.appName.localeCompare(right.appName, "zh-CN")),
     };
   }
 
   async getConfig(appId: string, revision?: number): Promise<AdminConfigDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const revisions = await this.appConfigService.listRevisions(app.id, ADMIN_CONFIG_KEY);
     const latestRevision = revisions.at(-1)?.revision;
     const record = revision
@@ -88,7 +89,7 @@ export class AdminConsoleService {
   }
 
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const normalized = this.normalizeConfig(rawJson);
 
     await this.appConfigService.setValue(
@@ -103,7 +104,7 @@ export class AdminConsoleService {
   }
 
   async restoreConfig(appId: string, revision: number): Promise<AdminConfigDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const existing = await this.appConfigService.getRevision(app.id, ADMIN_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
@@ -133,7 +134,7 @@ export class AdminConsoleService {
       conflict("ADMIN_APP_ID_RESERVED", "App ID common is reserved.");
     }
 
-    if (this.database.findApp(normalizedId)) {
+    if (await this.database.findApp(normalizedId)) {
       conflict("ADMIN_APP_ALREADY_EXISTS", `App ${normalizedId} already exists.`);
     }
 
@@ -147,8 +148,8 @@ export class AdminConsoleService {
       createdAt: new Date().toISOString(),
     };
 
-    this.database.apps.push(record);
-    this.createDefaultRoles(record.id);
+    await this.database.insertApp(record);
+    await this.createDefaultRoles(record.id);
     await this.appLogSecretService.ensureSecret(record.id);
     const defaultConfig = this.buildDefaultConfigTemplate(record.id);
     await this.appConfigService.setValue(
@@ -164,16 +165,19 @@ export class AdminConsoleService {
   }
 
   async updateAppNames(appId: string, appNameI18n: unknown): Promise<AdminAppSummary> {
-    const app = this.requireApp(appId);
+    const app = await this.requireApp(appId);
     const normalizedNames = this.normalizeRequiredAppNames(appNameI18n);
-    app.name = normalizedNames["en-US"];
-    app.nameI18n = normalizedNames;
+    await this.database.updateAppNames(app.id, normalizedNames["en-US"], normalizedNames);
     await this.managedStateStore.save(this.database);
-    return this.toSummary(app);
+    return await this.toSummary({
+      ...app,
+      name: normalizedNames["en-US"],
+      nameI18n: normalizedNames,
+    });
   }
 
   async revealAppLogSecret(appId: string): Promise<AdminAppLogSecretRevealDocument> {
-    const app = this.requireApp(appId);
+    const app = await this.requireApp(appId);
     const ensured = await this.appLogSecretService.ensureSecret(app.id);
     if (ensured.created) {
       await this.managedStateStore.save(this.database);
@@ -192,7 +196,7 @@ export class AdminConsoleService {
       conflict("ADMIN_APP_ID_RESERVED", "App ID common is reserved.");
     }
 
-    const app = this.requireApp(appId);
+    const app = await this.requireApp(appId);
 
     if (!(await this.isDeleteAllowed(app.id))) {
       conflict(
@@ -201,22 +205,7 @@ export class AdminConsoleService {
       );
     }
 
-    const roleIds = this.database.roles
-      .filter((item) => item.appId === app.id)
-      .map((item) => item.id);
-
-    this.database.apps = this.database.apps.filter((item) => item.id !== app.id);
-    this.database.appUsers = this.database.appUsers.filter((item) => item.appId !== app.id);
-    this.database.roles = this.database.roles.filter((item) => item.appId !== app.id);
-    this.database.userRoles = this.database.userRoles.filter((item) => item.appId !== app.id);
-    this.database.rolePermissions = this.database.rolePermissions.filter(
-      (item) => !roleIds.includes(item.roleId),
-    );
-    this.database.auditLogs = this.database.auditLogs.filter((item) => item.appId !== app.id);
-    this.database.notificationJobs = this.database.notificationJobs.filter((item) => item.appId !== app.id);
-    this.database.failedEvents = this.database.failedEvents.filter((item) => item.appId !== app.id);
-    this.database.analyticsEvents = this.database.analyticsEvents.filter((item) => item.appId !== app.id);
-    this.database.files = this.database.files.filter((item) => item.appId !== app.id);
+    await this.database.deleteApp(app.id);
     await this.appConfigService.deleteByApp(app.id);
     await this.refreshTokenStore.deleteByApp(app.id);
     await this.managedStateStore.save(this.database);
@@ -231,8 +220,8 @@ export class AdminConsoleService {
     return this.commonPasswordConfigService.revealValue(key);
   }
 
-  private requireApp(appId: string): AppRecord {
-    const app = this.database.findApp(appId);
+  private async requireApp(appId: string): Promise<AppRecord> {
+    const app = await this.database.findApp(appId);
     if (!app) {
       throw new ApplicationError(404, "APP_NOT_FOUND", `App ${appId} was not found.`);
     }
@@ -240,12 +229,12 @@ export class AdminConsoleService {
     return app;
   }
 
-  private requireConfigApp(appId: string): AppRecord {
+  private async requireConfigApp(appId: string): Promise<AppRecord> {
     if (appId === COMMON_APP_ID) {
       throw new ApplicationError(404, "APP_NOT_FOUND", "App common does not have app-scoped config.");
     }
 
-    return this.requireApp(appId);
+    return await this.requireApp(appId);
   }
 
   private async readNormalizedConfig(appId: string): Promise<string> {
@@ -347,7 +336,7 @@ export class AdminConsoleService {
   }
 
   async getI18nSettings(appId: string, revision?: number): Promise<AdminAppI18nDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const document = await this.appI18nConfigService.getDocument(app.id, revision);
 
     return {
@@ -357,14 +346,14 @@ export class AdminConsoleService {
   }
 
   async updateI18nSettings(appId: string, input: unknown, desc?: string): Promise<AdminAppI18nDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const document = await this.appI18nConfigService.updateConfig(app.id, input, desc);
     await this.managedStateStore.save(this.database);
     return this.getI18nSettings(app.id, document.revision);
   }
 
   async restoreI18nSettings(appId: string, revision: number): Promise<AdminAppI18nDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const document = await this.appI18nConfigService.restoreConfig(app.id, revision);
     await this.managedStateStore.save(this.database);
     return this.getI18nSettings(app.id, document.revision);
@@ -445,7 +434,7 @@ export class AdminConsoleService {
       logSecret,
     };
   }
-  private createDefaultRoles(appId: string): void {
+  private async createDefaultRoles(appId: string): Promise<void> {
     const memberRole: RoleRecord = {
       id: randomId(`role_${appId}_member`),
       appId,
@@ -461,11 +450,12 @@ export class AdminConsoleService {
       status: "ACTIVE",
     };
 
-    this.database.roles.push(memberRole, adminRole);
+    await this.database.insertRoles([memberRole, adminRole]);
 
-    const permissionMap = new Map(this.database.permissions.map((item) => [item.code, item.id]));
+    const permissionMap = new Map((await this.database.listPermissions()).map((item) => [item.code, item.id]));
     const memberPermissions = ["file:read"];
     const adminPermissions = ["file:read", "metrics:read", "notification:send"];
+    const rolePermissionRecords = [];
 
     memberPermissions.forEach((code) => {
       const permissionId = permissionMap.get(code);
@@ -473,7 +463,7 @@ export class AdminConsoleService {
         return;
       }
 
-      this.database.rolePermissions.push({
+      rolePermissionRecords.push({
         id: randomId(`rp_${appId}_member`),
         roleId: memberRole.id,
         permissionId,
@@ -486,11 +476,12 @@ export class AdminConsoleService {
         return;
       }
 
-      this.database.rolePermissions.push({
+      rolePermissionRecords.push({
         id: randomId(`rp_${appId}_admin`),
         roleId: adminRole.id,
         permissionId,
       });
     });
+    await this.database.insertRolePermissions(rolePermissionRecords);
   }
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { InMemoryCache } from "../../src/infrastructure/cache/redis/in-memory-cache.ts";
-import { InMemoryDatabase } from "../../src/infrastructure/database/prisma/in-memory-database.ts";
+import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
 import { VersionedAppConfigService } from "../../src/services/versioned-app-config.service.ts";
 import { CommonLlmConfigService } from "../../src/services/common-llm-config.service.ts";
