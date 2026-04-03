@@ -18,7 +18,11 @@ import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
 import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
-import { resolveRuntimeDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+import {
+  resolveRuntimeDatabaseUrl,
+  resolveRuntimeMigrationDatabaseUrl,
+  resolveRuntimeRedisUrl,
+} from "./infrastructure/runtime/runtime-readiness.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
