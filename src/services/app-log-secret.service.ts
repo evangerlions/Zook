@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import type {
   AdminAppLogSecretRevealDocument,
@@ -27,7 +27,7 @@ export interface EnsureAppLogSecretResult {
 
 export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly kvManager: KVManager,
   ) {}
 
@@ -108,7 +108,7 @@ export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
       return undefined;
     }
 
-    for (const app of this.database.apps) {
+    for (const app of await this.database.listApps()) {
       const record = await this.readRecord(app.id);
       if (!record || record.keyId !== normalizedKeyId) {
         continue;

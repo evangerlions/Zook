@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 import { ConfigRevisionManager } from "../../src/infrastructure/kv/config-revision-manager.ts";
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
 

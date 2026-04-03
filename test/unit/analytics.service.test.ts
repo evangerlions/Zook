@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 test("analytics service calculates DAU, new users and page duration metrics per app", async () => {
   const runtime = await createApplication();
@@ -13,7 +13,7 @@ test("analytics service calculates DAU, new users and page duration metrics per 
     joinedAt: "2026-03-06T11:00:00+08:00",
   });
 
-  runtime.services.analyticsService.recordBatch({
+  await runtime.services.analyticsService.recordBatch({
     appId: "app_a",
     userId: "user_alice",
     events: [
@@ -35,7 +35,7 @@ test("analytics service calculates DAU, new users and page duration metrics per 
     ],
   });
 
-  runtime.services.analyticsService.recordBatch({
+  await runtime.services.analyticsService.recordBatch({
     appId: "app_a",
     userId: "user_bob",
     events: [
@@ -65,7 +65,7 @@ test("analytics service calculates DAU, new users and page duration metrics per 
     ],
   });
 
-  runtime.services.analyticsService.recordBatch({
+  await runtime.services.analyticsService.recordBatch({
     appId: "app_b",
     userId: "user_alice",
     events: [
@@ -80,13 +80,13 @@ test("analytics service calculates DAU, new users and page duration metrics per 
     ],
   });
 
-  const overview = runtime.services.analyticsService.getOverview("app_a", "2026-03-06", "2026-03-07");
+  const overview = await runtime.services.analyticsService.getOverview("app_a", "2026-03-06", "2026-03-07");
   assert.deepEqual(overview.items, [
     { date: "2026-03-06", dau: 2, newUsers: 1 },
     { date: "2026-03-07", dau: 1, newUsers: 0 },
   ]);
 
-  const pages = runtime.services.analyticsService.getPageMetrics("app_a", "2026-03-06", "2026-03-07");
+  const pages = await runtime.services.analyticsService.getPageMetrics("app_a", "2026-03-06", "2026-03-07");
   assert.deepEqual(pages.items, [
     {
       pageKey: "/profile",

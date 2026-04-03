@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 test("rbac service grants admin permissions through app-scoped roles", async () => {
   const runtime = await createApplication();
 
-  assert.equal(runtime.services.rbacService.hasPermission("app_a", "user_alice", "metrics:read"), true);
-  assert.equal(runtime.services.rbacService.hasPermission("app_a", "user_alice", "notification:send"), true);
+  assert.equal(await runtime.services.rbacService.hasPermission("app_a", "user_alice", "metrics:read"), true);
+  assert.equal(await runtime.services.rbacService.hasPermission("app_a", "user_alice", "notification:send"), true);
 });
 
 test("rbac service keeps member permissions narrower than admin permissions", async () => {
@@ -17,10 +17,10 @@ test("rbac service keeps member permissions narrower than admin permissions", as
     password: "Password1234",
   });
 
-  assert.equal(runtime.services.rbacService.hasPermission("app_a", "user_bob", "file:read"), true);
-  assert.equal(runtime.services.rbacService.hasPermission("app_a", "user_bob", "metrics:read"), false);
-  assert.throws(
-    () => runtime.services.rbacService.assertPermission("app_a", "user_bob", "metrics:read"),
+  assert.equal(await runtime.services.rbacService.hasPermission("app_a", "user_bob", "file:read"), true);
+  assert.equal(await runtime.services.rbacService.hasPermission("app_a", "user_bob", "metrics:read"), false);
+  await assert.rejects(
+    runtime.services.rbacService.assertPermission("app_a", "user_bob", "metrics:read"),
     (error: unknown) =>
       error instanceof Error &&
       "code" in error &&

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 test("auth service auto-joins users for AUTO apps and assigns the default role", async () => {
   const runtime = await createApplication();

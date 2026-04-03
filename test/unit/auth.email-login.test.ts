@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 import type { GeoResolver } from "../../src/services/request-email-context.service.ts";
 import { type RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
 

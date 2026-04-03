@@ -1,13 +1,13 @@
-import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { randomId } from "../../shared/utils.ts";
 
 /**
  * AuditInterceptor captures mutating business actions into audit_logs.
  */
 export class AuditInterceptor {
-  constructor(private readonly database: InMemoryDatabase) {}
+  constructor(private readonly database: ApplicationDatabase) {}
 
-  record(entry: {
+  async record(entry: {
     appId: string;
     actorUserId?: string;
     action: string;
@@ -15,8 +15,8 @@ export class AuditInterceptor {
     resourceId?: string;
     resourceOwnerUserId?: string;
     payload: Record<string, unknown>;
-  }): void {
-    this.database.auditLogs.push({
+  }): Promise<void> {
+    await this.database.insertAuditLog({
       id: randomId("audit"),
       appId: entry.appId,
       actorUserId: entry.actorUserId,

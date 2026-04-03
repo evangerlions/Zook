@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 function extractScanToken(qrContent: string): string {
   return new URL(qrContent).searchParams.get("scanToken") ?? "";
@@ -100,7 +100,7 @@ test("qr login APIs create a session, confirm it on mobile, and let PC poll once
 test("qr login rejects repeated confirmation with the same QR code", async () => {
   const runtime = await createApplication();
   const baseTime = new Date("2026-03-20T10:00:00+08:00");
-  const created = runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
+  const created = await runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
   const scanToken = extractScanToken(created.qrContent);
 
   const first = await runtime.services.qrLoginService.confirm(
@@ -135,7 +135,7 @@ test("qr login rejects repeated confirmation with the same QR code", async () =>
 test("qr login session expires before mobile confirmation", async () => {
   const runtime = await createApplication();
   const baseTime = new Date("2026-03-20T11:00:00+08:00");
-  const created = runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
+  const created = await runtime.services.qrLoginService.createSession({ appId: "app_a" }, baseTime);
   const scanToken = extractScanToken(created.qrContent);
 
   await assert.rejects(
@@ -158,7 +158,7 @@ test("qr login session expires before mobile confirmation", async () => {
 
 test("qr login confirm rejects app scope mismatches from mobile auth", async () => {
   const runtime = await createApplication();
-  const created = runtime.services.qrLoginService.createSession({ appId: "app_a" });
+  const created = await runtime.services.qrLoginService.createSession({ appId: "app_a" });
   const scanToken = extractScanToken(created.qrContent);
   const mismatchedAccessToken = runtime.services.tokenService.issueAccessToken("user_alice", "app_b");
 
@@ -180,7 +180,7 @@ test("qr login confirm rejects app scope mismatches from mobile auth", async () 
 
 test("qr login does not issue refresh tokens before PC polling completes", async () => {
   const runtime = await createApplication();
-  const created = runtime.services.qrLoginService.createSession({ appId: "app_a" });
+  const created = await runtime.services.qrLoginService.createSession({ appId: "app_a" });
   const scanToken = extractScanToken(created.qrContent);
 
   await runtime.services.qrLoginService.confirm({

@@ -8,9 +8,9 @@ import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
 import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
+import { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
-import { InMemoryDatabase } from "./infrastructure/database/prisma/in-memory-database.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
 import { InMemoryKVBackend, KVManager, type KVBackend } from "./infrastructure/kv/kv-manager.ts";
 import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
@@ -118,8 +118,17 @@ export interface CreateApplicationOptions {
   secureRefreshCookie?: boolean;
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
-  databaseBackend?: "memory" | "postgres";
   databaseUrl?: string;
+  migrationDatabaseUrl?: string;
+  /**
+   * Test-only escape hatch for injecting a database double.
+   * Production runtime should rely on PostgreSQL-backed storage.
+   */
+  database?: ApplicationDatabase;
+  /**
+   * Test-only factory for constructing a database double from the resolved seed.
+   */
+  databaseFactory?: (seed: DatabaseSeed) => Promise<ApplicationDatabase> | ApplicationDatabase;
   queueBackend?: "memory" | "redis";
   queue?: JobQueue;
   queueRedisUrl?: string;
@@ -219,7 +228,7 @@ function parseBasicAuthorization(headerValue?: string): { username: string; pass
  */
 export class BackendApplication {
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly authService: AuthService,
     private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
@@ -618,7 +627,7 @@ export class BackendApplication {
     const clientType = this.getClientType(body);
     const session = await this.authService.login({ appId, account, password });
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: session.appId,
       actorUserId: session.userId,
       action: "auth.login",
@@ -630,7 +639,7 @@ export class BackendApplication {
     });
 
     return this.ok(
-      this.toAuthPayload(session, clientType),
+      await this.toAuthPayload(session, clientType),
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
@@ -652,7 +661,7 @@ export class BackendApplication {
         region: emailContext.region,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.register.email_code",
         resourceType: "user_registration",
@@ -670,7 +679,7 @@ export class BackendApplication {
 
       return this.ok(result, request.requestId as string);
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.register.email_code",
         resourceType: "user_registration",
@@ -706,7 +715,7 @@ export class BackendApplication {
         region: emailContext.region,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.login.email_code",
         resourceType: "user_login",
@@ -724,7 +733,7 @@ export class BackendApplication {
 
       return this.ok(result, request.requestId as string);
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.login.email_code",
         resourceType: "user_login",
@@ -761,7 +770,7 @@ export class BackendApplication {
         ipAddress,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId: result.session.appId,
         actorUserId: result.session.userId,
         action: "auth.login.email",
@@ -782,12 +791,12 @@ export class BackendApplication {
       });
 
       return this.ok(
-        this.toAuthPayload(result.session, clientType),
+        await this.toAuthPayload(result.session, clientType),
         request.requestId as string,
         this.buildAuthHeaders(result.session.refreshToken, clientType),
       );
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.login.email",
         resourceType: "user_login",
@@ -823,7 +832,7 @@ export class BackendApplication {
         region: emailContext.region,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.password.email_code",
         resourceType: "user_password_reset",
@@ -841,7 +850,7 @@ export class BackendApplication {
 
       return this.ok(result, request.requestId as string);
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.password.email_code",
         resourceType: "user_password_reset",
@@ -879,7 +888,7 @@ export class BackendApplication {
         ipAddress,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId: session.appId,
         actorUserId: session.userId,
         action: "auth.password.reset",
@@ -894,12 +903,12 @@ export class BackendApplication {
       });
 
       return this.ok(
-        this.toAuthPayload(session, clientType),
+        await this.toAuthPayload(session, clientType),
         request.requestId as string,
         this.buildAuthHeaders(session.refreshToken, clientType),
       );
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.password.reset",
         resourceType: "user_password_reset",
@@ -930,7 +939,7 @@ export class BackendApplication {
       newPassword,
     });
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: auth.appId,
       actorUserId: auth.userId,
       action: "auth.password.change",
@@ -942,7 +951,7 @@ export class BackendApplication {
     });
 
     return this.ok(
-      this.toAuthPayload(session, clientType),
+      await this.toAuthPayload(session, clientType),
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
@@ -966,7 +975,7 @@ export class BackendApplication {
         ipAddress,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId: session.appId,
         actorUserId: session.userId,
         action: "auth.register",
@@ -981,12 +990,12 @@ export class BackendApplication {
       });
 
       return this.ok(
-        this.toAuthPayload(session, clientType),
+        await this.toAuthPayload(session, clientType),
         request.requestId as string,
         this.buildAuthHeaders(session.refreshToken, clientType),
       );
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.register",
         resourceType: "user_registration",
@@ -1001,13 +1010,13 @@ export class BackendApplication {
     }
   }
 
-  private handleCreateQrLogin(request: HttpRequest): HttpResponse<unknown> {
+  private async handleCreateQrLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const appId = this.appContextResolver.resolvePreAuth(request);
 
     try {
-      const result = this.qrLoginService.createSession({ appId });
+      const result = await this.qrLoginService.createSession({ appId });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.qr_login.create",
         resourceType: "qr_login_session",
@@ -1019,7 +1028,7 @@ export class BackendApplication {
 
       return this.ok(result, request.requestId as string);
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.qr_login.create",
         resourceType: "qr_login_session",
@@ -1045,7 +1054,7 @@ export class BackendApplication {
         userId: auth.userId,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId: auth.appId,
         actorUserId: auth.userId,
         action: "auth.qr_login.confirm",
@@ -1059,7 +1068,7 @@ export class BackendApplication {
 
       return this.ok(result, request.requestId as string);
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId: auth.appId,
         actorUserId: auth.userId,
         action: "auth.qr_login.confirm",
@@ -1086,7 +1095,7 @@ export class BackendApplication {
         pollToken,
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.qr_login.poll",
         resourceType: "qr_login_session",
@@ -1100,7 +1109,7 @@ export class BackendApplication {
         return this.ok(
           {
             status: "CONFIRMED" as const,
-            ...this.toAuthPayload(result, "web"),
+            ...(await this.toAuthPayload(result, "web")),
           },
           request.requestId as string,
           this.buildAuthHeaders(result.refreshToken, "web"),
@@ -1109,7 +1118,7 @@ export class BackendApplication {
 
       return this.ok(result, request.requestId as string);
     } catch (error) {
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId,
         action: "auth.qr_login.poll",
         resourceType: "qr_login_session",
@@ -1132,7 +1141,7 @@ export class BackendApplication {
     });
 
     return this.ok(
-      this.toAuthPayload(session, clientType),
+      await this.toAuthPayload(session, clientType),
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
@@ -1143,10 +1152,10 @@ export class BackendApplication {
     const appId = this.appContextResolver.resolvePostAuth(request, auth.appId);
     const result: CurrentUserDocument = {
       appId,
-      user: this.userService.getProfile(auth.userId),
+      user: await this.userService.getProfile(auth.userId),
     };
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       actorUserId: auth.userId,
       action: "user.profile.read_self",
@@ -1178,7 +1187,7 @@ export class BackendApplication {
       auth,
     );
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: auth.appId,
       actorUserId: auth.userId,
       action: "auth.logout",
@@ -1206,7 +1215,7 @@ export class BackendApplication {
     this.appAccessGuard.assertScope(appId, auth.appId);
 
     const events = this.validationPipe.requireArray<AnalyticsEventInput>(body, "events");
-    const result = this.analyticsService.recordBatch({
+    const result = await this.analyticsService.recordBatch({
       appId: auth.appId,
       userId: auth.userId,
       events,
@@ -1217,21 +1226,21 @@ export class BackendApplication {
 
   private async handleMetricsOverview(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
-    this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
+    await this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
 
     const requestedAppId = request.query?.appId ?? auth.appId;
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
 
     const dateFrom = this.validationPipe.requireQueryString(request.query, "dateFrom");
     const dateTo = this.validationPipe.requireQueryString(request.query, "dateTo");
-    const result = this.analyticsService.getOverview(auth.appId, dateFrom, dateTo);
+    const result = await this.analyticsService.getOverview(auth.appId, dateFrom, dateTo);
 
     return this.ok(result, request.requestId as string);
   }
 
   private async handleMetricsPages(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
-    this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
+    await this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
 
     const requestedAppId = request.query?.appId ?? auth.appId;
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
@@ -1239,7 +1248,7 @@ export class BackendApplication {
     const dateFrom = this.validationPipe.requireQueryString(request.query, "dateFrom");
     const dateTo = this.validationPipe.requireQueryString(request.query, "dateTo");
     const platform = request.query?.platform as Platform | undefined;
-    const result = this.analyticsService.getPageMetrics(auth.appId, dateFrom, dateTo, platform);
+    const result = await this.analyticsService.getPageMetrics(auth.appId, dateFrom, dateTo, platform);
 
     return this.ok(result, request.requestId as string);
   }
@@ -1300,7 +1309,7 @@ export class BackendApplication {
     const operation = this.validationPipe.requireString(body, "operation");
     const result = await this.adminSensitiveOperationService.requestCode(session, operation);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.sensitive_operation.request_code",
       resourceType: "sensitive_operation",
@@ -1323,7 +1332,7 @@ export class BackendApplication {
     const code = this.validationPipe.requireString(body, "code");
     const result = await this.adminSensitiveOperationService.verifyCode(session, operation, code);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.sensitive_operation.verify",
       resourceType: "sensitive_operation",
@@ -1345,7 +1354,7 @@ export class BackendApplication {
     const appNameEnUs = this.validationPipe.requireString(body, "appNameEnUs");
     const result = await this.adminConsoleService.createApp(appId, appNameZhCn, appNameEnUs);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: result.appId,
       action: "admin.app.create",
       resourceType: "app",
@@ -1367,7 +1376,7 @@ export class BackendApplication {
     const appNameI18n = this.validationPipe.asObject(body.appNameI18n);
     const result = await this.adminConsoleService.updateAppNames(appId, appNameI18n);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.app.update_names",
       resourceType: "app",
@@ -1389,7 +1398,7 @@ export class BackendApplication {
     await this.adminSensitiveOperationService.assertGranted(session, APP_LOG_SECRET_READ_OPERATION);
     const result = await this.adminConsoleService.revealAppLogSecret(appId);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.app.log_secret.reveal",
       resourceType: "app_log_secret",
@@ -1406,7 +1415,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.deleteApp(appId);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.app.delete",
       resourceType: "app",
@@ -1423,7 +1432,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getEmailServiceConfig();
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.email_service.read",
       resourceType: "app_config",
@@ -1445,7 +1454,7 @@ export class BackendApplication {
       desc,
     );
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.email_service.update",
       resourceType: "app_config",
@@ -1471,7 +1480,7 @@ export class BackendApplication {
         expireMinutes: this.validationPipe.requireNumber(body, "expireMinutes"),
       });
 
-      this.auditInterceptor.record({
+      await this.auditInterceptor.record({
         appId: "common",
         action: "admin.email_service.test_send",
         resourceType: "app_config",
@@ -1509,7 +1518,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getEmailServiceConfig(revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.email_service.revision.read",
       resourceType: "app_config",
@@ -1530,7 +1539,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.restoreEmailServiceConfig(revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.email_service.restore",
       resourceType: "app_config",
@@ -1548,7 +1557,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getPasswordConfig();
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.password.read",
       resourceType: "app_config",
@@ -1569,7 +1578,7 @@ export class BackendApplication {
     await this.adminSensitiveOperationService.assertGranted(session, PASSWORD_VALUE_READ_OPERATION);
     const result = await this.adminConsoleService.revealPasswordValue(key);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.password.reveal",
       resourceType: "password_item",
@@ -1587,7 +1596,7 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const result = await this.adminConsoleService.updatePasswordConfig(body);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.password.update",
       resourceType: "app_config",
@@ -1605,7 +1614,7 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const result = await this.adminConsoleService.upsertPasswordItem(body);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.password.update",
       resourceType: "app_config",
@@ -1626,7 +1635,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.deletePasswordItem(key);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.password.delete",
       resourceType: "app_config",
@@ -1644,7 +1653,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getLlmServiceConfig();
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.llm_service.read",
       resourceType: "app_config",
@@ -1666,7 +1675,7 @@ export class BackendApplication {
       desc,
     );
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.llm_service.update",
       resourceType: "app_config",
@@ -1686,7 +1695,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getLlmServiceConfig(revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.llm_service.revision.read",
       resourceType: "app_config",
@@ -1707,7 +1716,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.restoreLlmServiceConfig(revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.llm_service.restore",
       resourceType: "app_config",
@@ -1726,7 +1735,7 @@ export class BackendApplication {
     const range = this.parseLlmMetricsRange(request.query?.range);
     const result = await this.adminConsoleService.getLlmMetrics(range);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.llm_service.metrics.read",
       resourceType: "app_config",
@@ -1748,7 +1757,7 @@ export class BackendApplication {
     const range = this.parseLlmMetricsRange(request.query?.range);
     const result = await this.adminConsoleService.getLlmModelMetrics(modelKey, range);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.llm_service.model_metrics.read",
       resourceType: "app_config",
@@ -1767,7 +1776,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdminSuperUser(request);
     const result = await this.adminConsoleService.runLlmSmokeTest();
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: "common",
       action: "admin.llm_service.smoke_test",
       resourceType: "app_config",
@@ -1785,7 +1794,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getConfig(appId);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.config.read",
       resourceType: "app_config",
@@ -1805,7 +1814,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getI18nSettings(appId);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.i18n_settings.read",
       resourceType: "app_config",
@@ -1828,7 +1837,7 @@ export class BackendApplication {
     const config = body.config ?? body;
     const result = await this.adminConsoleService.updateI18nSettings(appId, config, desc);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.i18n_settings.update",
       resourceType: "app_config",
@@ -1849,7 +1858,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getI18nSettings(appId, revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.i18n_settings.revision.read",
       resourceType: "app_config",
@@ -1871,7 +1880,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.restoreI18nSettings(appId, revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.i18n_settings.restore",
       resourceType: "app_config",
@@ -1908,7 +1917,7 @@ export class BackendApplication {
     const desc = this.validationPipe.optionalString(body, "desc");
     const result = await this.adminConsoleService.updateConfig(appId, rawJson, desc);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.config.update",
       resourceType: "app_config",
@@ -1929,7 +1938,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getConfig(appId, revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.config.revision.read",
       resourceType: "app_config",
@@ -1951,7 +1960,7 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.restoreConfig(appId, revision);
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId,
       action: "admin.config.restore",
       resourceType: "app_config",
@@ -1971,7 +1980,7 @@ export class BackendApplication {
     const appId = this.validationPipe.requireString(body, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
 
-    const result = this.storageService.presignUpload({
+    const result = await this.storageService.presignUpload({
       appId: auth.appId,
       ownerUserId: auth.userId,
       fileName: this.validationPipe.requireString(body, "fileName"),
@@ -1988,7 +1997,7 @@ export class BackendApplication {
     const appId = this.validationPipe.requireString(body, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
 
-    const result = this.storageService.confirmUpload({
+    const result = await this.storageService.confirmUpload({
       appId: auth.appId,
       ownerUserId: auth.userId,
       storageKey: this.validationPipe.requireString(body, "storageKey"),
@@ -1996,7 +2005,7 @@ export class BackendApplication {
       sizeBytes: this.validationPipe.requireNumber(body, "sizeBytes"),
     });
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: auth.appId,
       actorUserId: auth.userId,
       action: "file.confirm",
@@ -2016,7 +2025,7 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
-    this.rbacGuard.assertPermission(auth.appId, auth.userId, "notification:send");
+    await this.rbacGuard.assertPermission(auth.appId, auth.userId, "notification:send");
 
     const result = await this.notificationService.queueNotification({
       appId: auth.appId,
@@ -2044,7 +2053,7 @@ export class BackendApplication {
 
   private async handleLogsPullTask(request: HttpRequest): Promise<HttpResponse<LogPullTaskResult>> {
     const auth = await this.authenticate(request);
-    const result = this.clientLogUploadService.getPullTask(auth);
+    const result = await this.clientLogUploadService.getPullTask(auth);
     return this.ok(result, request.requestId as string);
   }
 
@@ -2063,7 +2072,7 @@ export class BackendApplication {
       body: this.requireBinaryBody(request.body),
     });
 
-    this.auditInterceptor.record({
+    await this.auditInterceptor.record({
       appId: auth.appId,
       actorUserId: auth.userId,
       action: "logs.upload",
@@ -2089,9 +2098,9 @@ export class BackendApplication {
     await this.authService.assertAccessTokenActive(auth);
 
     if (options.requireActiveMembership !== false) {
-      this.userService.getById(auth.userId);
-      this.appRegistryService.getAppOrThrow(auth.appId);
-      this.appRegistryService.ensureExistingMembership(auth.appId, auth.userId);
+      await this.userService.getById(auth.userId);
+      await this.appRegistryService.getAppOrThrow(auth.appId);
+      await this.appRegistryService.ensureExistingMembership(auth.appId, auth.userId);
     }
 
     return auth;
@@ -2172,11 +2181,11 @@ export class BackendApplication {
     return body.clientType === "app" ? "app" : "web";
   }
 
-  private toAuthPayload(
+  private async toAuthPayload(
     session: { userId: string; accessToken: string; refreshToken: string; expiresIn: number },
     clientType: ClientType,
-  ): AuthSuccessPayload {
-    const user = this.userService.getProfile(session.userId);
+  ): Promise<AuthSuccessPayload> {
+    const user = await this.userService.getProfile(session.userId);
     return clientType === "app"
       ? {
           accessToken: session.accessToken,
@@ -2294,7 +2303,7 @@ export class BackendApplication {
  */
 export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
-  const seed = options.seed ?? buildDefaultSeed(passwordHasher);
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher);
   const kvManager =
     options.kvManager ??
     (options.kvBackend
@@ -2302,19 +2311,27 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       : resolveRuntimeRedisUrl()
         ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
         : await KVManager.create({ backend: new InMemoryKVBackend() }));
-  const managedStateStore = new ManagedStateStore(kvManager);
-  const databaseBackend = options.databaseBackend ?? "memory";
+  const shouldLoadManagedState = Boolean(options.database || options.databaseFactory);
+  const managedStateStore = new ManagedStateStore(kvManager, {
+    enabled: shouldLoadManagedState,
+  });
+  const seed = shouldLoadManagedState
+    ? applyManagedState(baseSeed, await managedStateStore.load())
+    : baseSeed;
   const database =
-    databaseBackend === "postgres"
-      ? await PostgresDatabase.create(
+    options.database
+    ?? (options.databaseFactory
+      ? await options.databaseFactory(seed)
+      : await PostgresDatabase.create(
           options.databaseUrl?.trim() || resolveRuntimeDatabaseUrl() || (() => {
-            throw new Error("DATABASE_URL must be configured before starting the PostgreSQL database backend.");
+            throw new Error("DATABASE_URL must be configured before starting PostgreSQL.");
           })(),
           seed,
-        )
-      : new InMemoryDatabase(
-          applyManagedState(seed, await managedStateStore.load()),
-        );
+          {
+            migrationConnectionString:
+              options.migrationDatabaseUrl?.trim() || resolveRuntimeMigrationDatabaseUrl(),
+          },
+        ));
   const cache = new InMemoryCache();
   const defaultQueueBackend = options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl() ? "redis" : "memory";
   const resolvedQueueBackend = options.queueBackend ?? defaultQueueBackend;
@@ -2341,7 +2358,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
   const appLogSecretService = new AppLogSecretService(database, kvManager);
   await database.withExclusiveSession(async () => {
-    const initializedAppLogSecrets = await appLogSecretService.initializeSecrets(database.apps.map((item) => item.id));
+    const initializedAppLogSecrets = await appLogSecretService.initializeSecrets(await database.listAppIds());
     if (initializedAppLogSecrets) {
       await managedStateStore.save(database);
     }
@@ -2449,9 +2466,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
+  const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(
     new Map(
-      database.apps
+      apps
         .filter((item) => item.apiDomain)
         .map((item) => [item.apiDomain as string, item.id]),
     ),

@@ -40,8 +40,8 @@ export class QrLoginService {
     private readonly authService: AuthService,
   ) {}
 
-  createSession(command: CreateQrLoginCommand, now = new Date()): QrLoginCreateResult {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+  async createSession(command: CreateQrLoginCommand, now = new Date()): Promise<QrLoginCreateResult> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const loginId = randomId("qr_login");
     const scanToken = createOpaqueToken("qrs");
     const pollToken = createOpaqueToken("qrp");
@@ -71,9 +71,9 @@ export class QrLoginService {
   }
 
   async confirm(command: ConfirmQrLoginCommand, now = new Date()): Promise<QrLoginConfirmResult> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
-    const user = this.userService.getById(command.userId);
-    this.appRegistryService.ensureExistingMembership(app.id, user.id);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const user = await this.userService.getById(command.userId);
+    await this.appRegistryService.ensureExistingMembership(app.id, user.id);
 
     const session = this.getSessionOrThrow(command.loginId, now);
     this.assertSessionScope(session, app.id);
@@ -95,7 +95,7 @@ export class QrLoginService {
   }
 
   async poll(command: PollQrLoginCommand, now = new Date()): Promise<QrLoginPollResult> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const session = this.getSessionOrThrow(command.loginId, now);
     this.assertSessionScope(session, app.id);
     this.assertPollToken(session, command.pollToken);
@@ -112,8 +112,8 @@ export class QrLoginService {
       conflict("AUTH_QR_LOGIN_ALREADY_USED", "QR login session is already completed.");
     }
 
-    const user = this.userService.getById(session.confirmedByUserId);
-    this.appRegistryService.ensureExistingMembership(app.id, user.id);
+    const user = await this.userService.getById(session.confirmedByUserId);
+    await this.appRegistryService.ensureExistingMembership(app.id, user.id);
     const authSession = await this.authService.issueSession(user.id, app.id, now);
     session.status = "COMPLETED";
     this.saveSession(session, now);

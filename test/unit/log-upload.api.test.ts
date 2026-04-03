@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createCipheriv, randomBytes } from "node:crypto";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 function encodeKeyBase64(): { raw: Buffer; base64: string } {
   const raw = Buffer.from("0123456789abcdef0123456789abcdef", "utf8");

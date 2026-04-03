@@ -10,7 +10,7 @@ import type {
   LogUploadResult,
 } from "../shared/types.ts";
 import { randomId } from "../shared/utils.ts";
-import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 
 const AES_256_GCM = "aes-256-gcm";
 const NDJSON_GZIP = "ndjson+gzip";
@@ -80,15 +80,15 @@ export interface UploadClientLogsCommand {
 
 export class ClientLogUploadService {
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly keyResolver: ClientLogEncryptionKeyResolver,
     private readonly options: {
       maxEncryptedPayloadBytes?: number;
     } = {},
   ) {}
 
-  getPullTask(auth: AuthContext, now = new Date()): LogPullTaskResult {
-    const task = this.findPendingTask(auth, now);
+  async getPullTask(auth: AuthContext, now = new Date()): Promise<LogPullTaskResult> {
+    const task = await this.findPendingTask(auth, now);
     if (!task) {
       return {
         shouldUpload: false,
@@ -108,7 +108,7 @@ export class ClientLogUploadService {
 
   async upload(command: UploadClientLogsCommand): Promise<LogUploadResult> {
     const now = command.now ?? new Date();
-    const task = this.requireTask(command.auth, command.taskId, now);
+    const task = await this.requireTask(command.auth, command.taskId, now);
 
     if (command.encryption !== AES_256_GCM) {
       badRequest("LOG_UNSUPPORTED_ENCRYPTION", "X-Log-Enc must be aes-256-gcm.");
@@ -153,7 +153,7 @@ export class ClientLogUploadService {
       uploadedAt,
     };
 
-    this.database.clientLogUploads.push(uploadRecord);
+    await this.database.insertClientLogUpload(uploadRecord);
     const acceptedLineRecords: ClientLogLineRecord[] = evaluated.accepted.map((item) => ({
       id: randomId("log_line"),
       uploadId: uploadRecord.id,
@@ -166,10 +166,12 @@ export class ClientLogUploadService {
       payload: item.payload,
       createdAt: uploadedAt,
     }));
-    this.database.clientLogLines.push(...acceptedLineRecords);
+    await this.database.insertClientLogLines(acceptedLineRecords);
 
-    task.status = "COMPLETED";
-    task.uploadedAt = uploadedAt;
+    await this.database.updateClientLogUploadTask(task.id, {
+      status: "COMPLETED",
+      uploadedAt,
+    });
 
     return {
       taskId: task.id,
@@ -178,15 +180,15 @@ export class ClientLogUploadService {
     };
   }
 
-  private findPendingTask(auth: AuthContext, now: Date): ClientLogUploadTaskRecord | undefined {
-    return this.database.clientLogUploadTasks
+  private async findPendingTask(auth: AuthContext, now: Date): Promise<ClientLogUploadTaskRecord | undefined> {
+    return (await this.database.listClientLogUploadTasks(auth.appId))
       .filter((item) => this.isTaskVisibleToUser(item, auth, now))
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
       .at(0);
   }
 
-  private requireTask(auth: AuthContext, taskId: string, now: Date): ClientLogUploadTaskRecord {
-    const task = this.database.clientLogUploadTasks.find((item) => item.id === taskId);
+  private async requireTask(auth: AuthContext, taskId: string, now: Date): Promise<ClientLogUploadTaskRecord> {
+    const task = await this.database.findClientLogUploadTask(taskId);
     if (!task || !this.isTaskVisibleToUser(task, auth, now)) {
       badRequest("LOG_TASK_MISMATCH", "The log upload task is missing, expired, or no longer available.");
     }

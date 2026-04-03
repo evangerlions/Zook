@@ -1,5 +1,5 @@
 import { InMemoryCache } from "../infrastructure/cache/redis/in-memory-cache.ts";
-import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { ConfigRevisionManager } from "../infrastructure/kv/config-revision-manager.ts";
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import type { AppConfigRecord, ConfigRevisionMeta, ConfigRevisionRecord } from "../shared/types.ts";
@@ -17,7 +17,7 @@ export class VersionedAppConfigService {
   private readonly cacheTtlSeconds = 30;
 
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly cache: InMemoryCache,
     private readonly kvManager: KVManager,
   ) {}
@@ -30,10 +30,10 @@ export class VersionedAppConfigService {
   async getRecord(appId: string, configKey: string): Promise<AppConfigRecord | undefined> {
     const latestRevision = await this.getLatestRevision(appId, configKey);
     if (!latestRevision) {
-      return this.readCachedRecord(appId, configKey);
+      return await this.readCachedRecord(appId, configKey);
     }
 
-    const directRecord = this.readCachedRecord(appId, configKey);
+    const directRecord = await this.readCachedRecord(appId, configKey);
     if (
       directRecord &&
       directRecord.configValue === latestRevision.content &&
@@ -49,10 +49,8 @@ export class VersionedAppConfigService {
     return (await this.getRecord(appId, configKey))?.updatedAt;
   }
 
-  private readCachedRecord(appId: string, configKey: string): AppConfigRecord | undefined {
-    return this.database.appConfigs.find(
-      (item) => item.appId === appId && item.configKey === configKey,
-    );
+  private async readCachedRecord(appId: string, configKey: string): Promise<AppConfigRecord | undefined> {
+    return await this.database.findAppConfig(appId, configKey);
   }
 
   async setValue(
@@ -62,7 +60,7 @@ export class VersionedAppConfigService {
     desc = "",
   ): Promise<ConfigRevisionRecord<string>> {
     const revisionManager = this.getRevisionManager(appId, configKey);
-    const existing = this.readCachedRecord(appId, configKey);
+    const existing = await this.readCachedRecord(appId, configKey);
 
     if (existing) {
       await revisionManager.ensureInitial(
@@ -73,7 +71,7 @@ export class VersionedAppConfigService {
     }
 
     const revision = await revisionManager.update(configValue, desc);
-    this.upsertRecord(appId, configKey, configValue, revision.createdAt);
+    await this.upsertRecord(appId, configKey, configValue, revision.createdAt);
     return revision;
   }
 
@@ -85,7 +83,7 @@ export class VersionedAppConfigService {
   ): Promise<ConfigRevisionRecord<string>> {
     const revisionManager = this.getRevisionManager(appId, configKey);
     const restored = await revisionManager.restore(revision, desc);
-    this.upsertRecord(appId, configKey, restored.content, restored.createdAt);
+    await this.upsertRecord(appId, configKey, restored.content, restored.createdAt);
     return restored;
   }
 
@@ -117,11 +115,9 @@ export class VersionedAppConfigService {
   }
 
   async deleteByApp(appId: string): Promise<void> {
-    const keys = this.database.appConfigs
-      .filter((item) => item.appId === appId)
-      .map((item) => item.configKey);
+    const keys = (await this.database.listAppConfigs(appId)).map((item) => item.configKey);
 
-    this.database.appConfigs = this.database.appConfigs.filter((item) => item.appId !== appId);
+    await this.database.deleteAppConfigsByApp(appId);
     await Promise.all(keys.map((configKey) => this.getRevisionManager(appId, configKey).clear()));
     keys.forEach((configKey) => {
       this.cache.delete(this.buildCacheKey(appId, configKey));
@@ -143,7 +139,7 @@ export class VersionedAppConfigService {
   }
 
   private async ensureInitialRevision(appId: string, configKey: string): Promise<void> {
-    const existing = this.readCachedRecord(appId, configKey);
+    const existing = await this.readCachedRecord(appId, configKey);
     if (!existing) {
       return;
     }
@@ -155,27 +151,16 @@ export class VersionedAppConfigService {
     );
   }
 
-  private upsertRecord(appId: string, configKey: string, configValue: string, updatedAt: string): AppConfigRecord {
-    const existing = this.database.appConfigs.find(
-      (item) => item.appId === appId && item.configKey === configKey,
-    );
-
-    if (existing) {
-      existing.configValue = configValue;
-      existing.updatedAt = updatedAt;
-      this.cache.delete(this.buildCacheKey(appId, configKey));
-      return existing;
-    } else {
-      const created = {
-        id: randomId("cfg"),
-        appId,
-        configKey,
-        configValue,
-        updatedAt,
-      };
-      this.database.appConfigs.push(created);
-      this.cache.delete(this.buildCacheKey(appId, configKey));
-      return created;
-    }
+  private async upsertRecord(appId: string, configKey: string, configValue: string, updatedAt: string): Promise<AppConfigRecord> {
+    const existing = await this.readCachedRecord(appId, configKey);
+    const persisted = await this.database.upsertAppConfig({
+      id: existing?.id ?? randomId("cfg"),
+      appId,
+      configKey,
+      configValue,
+      updatedAt,
+    });
+    this.cache.delete(this.buildCacheKey(appId, configKey));
+    return persisted;
   }
 }

@@ -1,4 +1,4 @@
-import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
 
@@ -7,13 +7,13 @@ import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
  */
 export class FailedEventRetryService {
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly queue: JobQueue,
     private readonly logger: StructuredLogger,
   ) {}
 
   async retryDueEvents(now = new Date()): Promise<{ replayed: number; remaining: number }> {
-    const dueEvents = this.database.failedEvents.filter(
+    const dueEvents = (await this.database.listFailedEvents()).filter(
       (item) => new Date(item.nextRetryAt) <= now,
     );
 
@@ -26,27 +26,29 @@ export class FailedEventRetryService {
           backoffMs: 1000,
         });
 
-        this.database.failedEvents = this.database.failedEvents.filter(
-          (item) => item.id !== failedEvent.id,
-        );
+        await this.database.deleteFailedEvent(failedEvent.id);
         replayed += 1;
       } catch (error) {
-        failedEvent.retryCount += 1;
-        failedEvent.errorMessage = error instanceof Error ? error.message : "Retry enqueue failed";
-        failedEvent.nextRetryAt = new Date(now.getTime() + 60 * 1000).toISOString();
+        const nextRetryAt = new Date(now.getTime() + 60 * 1000).toISOString();
+        const errorMessage = error instanceof Error ? error.message : "Retry enqueue failed";
+        await this.database.updateFailedEvent(failedEvent.id, {
+          retryCount: failedEvent.retryCount + 1,
+          errorMessage,
+          nextRetryAt,
+        });
 
         this.logger.warn("failed event replay delayed", {
           appId: failedEvent.appId,
           jobId: failedEvent.id,
           jobName: failedEvent.eventType,
-          error: failedEvent.errorMessage,
+          error: errorMessage,
         });
       }
     }
 
     return {
       replayed,
-      remaining: this.database.failedEvents.length,
+      remaining: (await this.database.listFailedEvents()).length,
     };
   }
 }

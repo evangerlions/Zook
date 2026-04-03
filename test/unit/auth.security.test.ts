@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 import { DevelopmentPasswordHasher } from "../../src/modules/auth/password-hasher.ts";
 import type { RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
 import { encodeBase64Url, signValue } from "../../src/shared/utils.ts";

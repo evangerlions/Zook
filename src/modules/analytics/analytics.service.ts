@@ -1,7 +1,7 @@
 import { badRequest } from "../../shared/errors.ts";
 import type { AnalyticsEventInput, MetricsOverviewItem, PageMetricItem, Platform } from "../../shared/types.ts";
 import { enumerateDateKeys, toDateKey, randomId } from "../../shared/utils.ts";
-import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 
 const SUPPORTED_EVENTS = new Set(["page_view", "page_leave", "page_heartbeat"]);
@@ -11,20 +11,19 @@ const SUPPORTED_EVENTS = new Set(["page_view", "page_leave", "page_heartbeat"]);
  */
 export class AnalyticsService {
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly appRegistryService: AppRegistryService,
   ) {}
 
-  recordBatch(
+  async recordBatch(
     command: { appId: string; userId: string; events: AnalyticsEventInput[] },
     now = new Date(),
-  ): { accepted: number } {
-    this.appRegistryService.getAppOrThrow(command.appId);
+  ): Promise<{ accepted: number }> {
+    await this.appRegistryService.getAppOrThrow(command.appId);
 
     command.events.forEach((event) => this.validateEvent(event));
 
-    command.events.forEach((event) => {
-      this.database.analyticsEvents.push({
+    await this.database.insertAnalyticsEvents(command.events.map((event) => ({
         id: randomId("analytics"),
         appId: command.appId,
         userId: command.userId,
@@ -36,24 +35,25 @@ export class AnalyticsService {
         occurredAt: event.occurredAt,
         receivedAt: now.toISOString(),
         metadata: event.metadata ?? {},
-      });
-    });
+      })));
 
     return {
       accepted: command.events.length,
     };
   }
 
-  getOverview(appId: string, dateFrom: string, dateTo: string): { timezone: string; items: MetricsOverviewItem[] } {
+  async getOverview(appId: string, dateFrom: string, dateTo: string): Promise<{ timezone: string; items: MetricsOverviewItem[] }> {
     this.assertDateRange(dateFrom, dateTo);
-    this.appRegistryService.getAppOrThrow(appId);
+    await this.appRegistryService.getAppOrThrow(appId);
+    const analyticsEvents = await this.database.listAnalyticsEvents(appId);
+    const appUsers = await this.database.listAppUsers(appId);
 
     const items = enumerateDateKeys(dateFrom, dateTo).map((dateKey) => {
-      const dailyEvents = this.database.analyticsEvents.filter(
+      const dailyEvents = analyticsEvents.filter(
         (item) => item.appId === appId && toDateKey(item.occurredAt) === dateKey,
       );
       const dau = new Set(dailyEvents.map((item) => item.userId)).size;
-      const newUsers = this.database.appUsers.filter(
+      const newUsers = appUsers.filter(
         (item) => item.appId === appId && toDateKey(item.joinedAt) === dateKey,
       ).length;
 
@@ -70,14 +70,15 @@ export class AnalyticsService {
     };
   }
 
-  getPageMetrics(
+  async getPageMetrics(
     appId: string,
     dateFrom: string,
     dateTo: string,
     platform?: Platform,
-  ): { timezone: string; items: PageMetricItem[] } {
+  ): Promise<{ timezone: string; items: PageMetricItem[] }> {
     this.assertDateRange(dateFrom, dateTo);
-    this.appRegistryService.getAppOrThrow(appId);
+    await this.appRegistryService.getAppOrThrow(appId);
+    const analyticsEvents = await this.database.listAnalyticsEvents(appId);
 
     const dateKeys = new Set(enumerateDateKeys(dateFrom, dateTo));
     const groups = new Map<
@@ -91,7 +92,7 @@ export class AnalyticsService {
       }
     >();
 
-    this.database.analyticsEvents
+    analyticsEvents
       .filter((item) => item.appId === appId)
       .filter((item) => dateKeys.has(toDateKey(item.occurredAt)))
       .filter((item) => (platform ? item.platform === platform : true))
