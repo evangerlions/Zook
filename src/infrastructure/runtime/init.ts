@@ -5,9 +5,10 @@ import {
   resolveRuntimeRedisUrl,
 } from "./runtime-readiness.ts";
 
-type RuntimeServiceName = NonNullable<CreateApplicationOptions["serviceName"]>;
+type RuntimeCreateApplicationOptions = Omit<CreateApplicationOptions, "database" | "databaseFactory">;
+type RuntimeServiceName = NonNullable<RuntimeCreateApplicationOptions["serviceName"]>;
 
-export interface RuntimeInitOptions extends CreateApplicationOptions {
+export interface RuntimeInitOptions extends RuntimeCreateApplicationOptions {
   serviceName: RuntimeServiceName;
 }
 
@@ -33,7 +34,6 @@ export async function init(options: RuntimeInitOptions) {
   const runtime = await createApplication({
     ...options,
     kvManager,
-    databaseBackend: options.databaseBackend ?? "postgres",
   });
   console.log("[runtime:init] 应用创建完成");
   console.log(`[runtime:init] init 完成，serviceName=${options.serviceName}`);

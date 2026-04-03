@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 import { EmbeddingManager, type EmbeddingProvider, type EmbeddingResult, type ResolvedEmbeddingRequest } from "../../src/services/embedding-manager.ts";
 
 test("embedding manager resolves novel-embedding to the Bailian provider model", async () => {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 import type { EmbeddingProvider, EmbeddingResult } from "../../src/services/embedding-manager.ts";
 import type { LLMCompletionResult, LLMProvider, LLMStreamEvent } from "../../src/services/llm-manager.ts";
 

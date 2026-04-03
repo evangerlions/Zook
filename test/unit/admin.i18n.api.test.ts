@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 import { DEFAULT_APP_I18N_SETTINGS } from "../../src/shared/i18n.ts";
 
 function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): string {

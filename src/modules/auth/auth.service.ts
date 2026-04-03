@@ -1,4 +1,4 @@
-import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { KVManager } from "../../infrastructure/kv/kv-manager.ts";
 import { badRequest, conflict, forbidden, tooManyRequests, unauthorized } from "../../shared/errors.ts";
 import type {
@@ -63,7 +63,7 @@ export class AuthService {
   private readonly registrationMaxFailedCodeAttempts = 5;
 
   constructor(
-    private readonly database: InMemoryDatabase,
+    private readonly database: ApplicationDatabase,
     private readonly kvManager: KVManager,
     private readonly userService: UserService,
     private readonly appRegistryService: AppRegistryService,
@@ -79,7 +79,7 @@ export class AuthService {
     const normalizedAccount = command.account.trim().toLowerCase();
     await this.assertNotLocked(normalizedAccount, now);
 
-    const user = this.database.findUserByAccount(normalizedAccount);
+    const user = await this.database.findUserByAccount(normalizedAccount);
     if (!user || !this.verifyPassword(user, command.password)) {
       await this.registerFailure(normalizedAccount, now);
       unauthorized("AUTH_INVALID_CREDENTIAL", "Account or password is invalid.");
@@ -90,7 +90,7 @@ export class AuthService {
     }
 
     await this.clearFailureState(normalizedAccount);
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     await this.appRegistryService.ensureMembership(app.id, user.id, now);
 
     return this.issueSessionForUser(user.id, app.id, now);
@@ -100,7 +100,7 @@ export class AuthService {
     command: RegisterEmailCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const app = this.assertSelfRegistrationAllowed(command.appId);
+    const app = await this.assertSelfRegistrationAllowed(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
@@ -158,7 +158,7 @@ export class AuthService {
     command: EmailLoginCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
@@ -213,7 +213,7 @@ export class AuthService {
   }
 
   async register(command: RegisterCommand, now = new Date()): Promise<AuthSession> {
-    const app = this.assertSelfRegistrationAllowed(command.appId);
+    const app = await this.assertSelfRegistrationAllowed(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
@@ -248,14 +248,14 @@ export class AuthService {
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
 
-    if (this.database.findUserByAccount(email)) {
+    if (await this.database.findUserByAccount(email)) {
       conflict("AUTH_ACCOUNT_ALREADY_EXISTS", "Registration is not available for the provided email.");
     }
 
     await this.deleteVerificationCodeEntry(cacheKey);
 
     const userId = randomId("user");
-    this.database.users.push({
+    await this.database.insertUser({
       id: userId,
       email,
       passwordHash: this.passwordHasher.hash(command.password),
@@ -272,7 +272,7 @@ export class AuthService {
     command: EmailLoginCommand,
     now = new Date(),
   ): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
@@ -302,7 +302,7 @@ export class AuthService {
 
     await this.deleteVerificationCodeEntry(cacheKey);
 
-    let user = this.database.findUserByAccount(email);
+    let user = await this.database.findUserByAccount(email);
     let autoCreatedUser = false;
     if (!user) {
       if (app.joinMode !== "AUTO") {
@@ -318,7 +318,7 @@ export class AuthService {
         status: "ACTIVE",
         createdAt: now.toISOString(),
       };
-      this.database.users.push(user);
+      await this.database.insertUser(user);
     }
 
     if (user.status === "BLOCKED") {
@@ -352,9 +352,9 @@ export class AuthService {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Refresh token app scope does not match the request.");
     }
 
-    const user = this.userService.getById(existingRecord.userId);
-    this.appRegistryService.getAppOrThrow(existingRecord.appId);
-    this.appRegistryService.ensureExistingMembership(existingRecord.appId, user.id);
+    const user = await this.userService.getById(existingRecord.userId);
+    await this.appRegistryService.getAppOrThrow(existingRecord.appId);
+    await this.appRegistryService.ensureExistingMembership(existingRecord.appId, user.id);
 
     const accessToken = this.tokenService.issueAccessToken(
       user.id,
@@ -424,7 +424,7 @@ export class AuthService {
   }
 
   async sendPasswordCode(command: PasswordEmailCodeCommand, now = new Date()): Promise<RegisterEmailCodeResult> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
@@ -439,8 +439,8 @@ export class AuthService {
       tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
     }
 
-    const user = this.database.findUserByAccount(email);
-    if (!user || user.status === "BLOCKED" || !this.canUsePasswordEmailFlow(app.id, user.id)) {
+    const user = await this.database.findUserByAccount(email);
+    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordEmailFlow(app.id, user.id))) {
       return {
         accepted: true,
         cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
@@ -488,7 +488,7 @@ export class AuthService {
   }
 
   async resetPassword(command: ResetPasswordCommand, now = new Date()): Promise<AuthSession> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
@@ -523,15 +523,18 @@ export class AuthService {
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
 
-    const user = this.database.findUserByAccount(email);
-    if (!user || user.status === "BLOCKED" || !this.canUsePasswordEmailFlow(app.id, user.id)) {
+    const user = await this.database.findUserByAccount(email);
+    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordEmailFlow(app.id, user.id))) {
       await this.deleteVerificationCodeEntry(cacheKey);
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
 
     await this.deleteVerificationCodeEntry(cacheKey);
-    user.passwordHash = this.passwordHasher.hash(command.password);
-    user.passwordAlgo = this.passwordHasher.algorithm;
+    await this.database.updateUserPassword(
+      user.id,
+      this.passwordHasher.hash(command.password),
+      this.passwordHasher.algorithm,
+    );
 
     await this.revokeAllSessions(app.id, user.id, now);
     await this.appRegistryService.ensureMembership(app.id, user.id, now);
@@ -539,9 +542,9 @@ export class AuthService {
   }
 
   async changePassword(command: ChangePasswordCommand, now = new Date()): Promise<AuthSession> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
-    const user = this.userService.getById(command.userId);
-    this.appRegistryService.ensureExistingMembership(app.id, user.id);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const user = await this.userService.getById(command.userId);
+    await this.appRegistryService.ensureExistingMembership(app.id, user.id);
 
     if (!this.passwordHasher.validateStrength(command.newPassword)) {
       badRequest(
@@ -561,8 +564,11 @@ export class AuthService {
       unauthorized("AUTH_INVALID_CREDENTIAL", "Account or password is invalid.");
     }
 
-    user.passwordHash = this.passwordHasher.hash(command.newPassword);
-    user.passwordAlgo = this.passwordHasher.algorithm;
+    await this.database.updateUserPassword(
+      user.id,
+      this.passwordHasher.hash(command.newPassword),
+      this.passwordHasher.algorithm,
+    );
     await this.revokeAllSessions(app.id, user.id, now);
 
     return this.issueSessionForUser(user.id, app.id, now);
@@ -698,17 +704,17 @@ export class AuthService {
     return this.canVerifyPassword(user) && this.passwordHasher.verify(password, user.passwordHash);
   }
 
-  private canUsePasswordEmailFlow(appId: string, userId: string): boolean {
-    const membership = this.database.findAppUser(appId, userId);
+  private async canUsePasswordEmailFlow(appId: string, userId: string): Promise<boolean> {
+    const membership = await this.database.findAppUser(appId, userId);
     if (membership) {
       return membership.status === "ACTIVE";
     }
 
-    return this.appRegistryService.getAppOrThrow(appId).joinMode === "AUTO";
+    return (await this.appRegistryService.getAppOrThrow(appId)).joinMode === "AUTO";
   }
 
-  private assertSelfRegistrationAllowed(appId: string) {
-    const app = this.appRegistryService.getAppOrThrow(appId);
+  private async assertSelfRegistrationAllowed(appId: string) {
+    const app = await this.appRegistryService.getAppOrThrow(appId);
     if (app.joinMode !== "AUTO") {
       forbidden("APP_JOIN_INVITE_REQUIRED", "This app requires an invite to join.");
     }
