@@ -16,16 +16,16 @@ export class I18nService {
     private readonly requestLocaleService = new RequestLocaleService(),
   ) {}
 
-  getSettings(appId: string): I18nSettings {
+  async getSettings(appId: string): Promise<I18nSettings> {
     return this.appI18nConfigService.getCurrentConfig(appId);
   }
 
-  resolveRequestLocale(
+  async resolveRequestLocale(
     request: HttpRequest,
     appId: string,
     preferredLocale?: string,
-  ): ResolvedRequestLocaleContext {
-    const settings = this.getSettings(appId);
+  ): Promise<ResolvedRequestLocaleContext> {
+    const settings = await this.getSettings(appId);
     return this.requestLocaleService.resolve(request, {
       preferredLocale,
       appDefaultLocale: settings.defaultLocale,
@@ -34,29 +34,29 @@ export class I18nService {
     });
   }
 
-  pickText(
+  async pickText(
     value: I18nText | undefined,
     locale: string,
     appId: string,
-  ): string {
-    return pickI18nText(value, locale, this.getSettings(appId));
+  ): Promise<string> {
+    return pickI18nText(value, locale, await this.getSettings(appId));
   }
 
-  resolveText(
+  async resolveText(
     value: I18nText | undefined,
     locale: string,
     appId: string,
-  ): ResolvedI18nText {
-    return resolveI18nText(value, locale, this.getSettings(appId));
+  ): Promise<ResolvedI18nText> {
+    return resolveI18nText(value, locale, await this.getSettings(appId));
   }
 
-  localizeFields<T extends Record<string, unknown>>(
+  async localizeFields<T extends Record<string, unknown>>(
     record: T,
     fieldNames: string[],
     locale: string,
     appId: string,
     options?: LocalizeFieldsOptions,
-  ): T {
-    return localizeFields(record, fieldNames, locale, this.getSettings(appId), options);
+  ): Promise<T> {
+    return localizeFields(record, fieldNames, locale, await this.getSettings(appId), options);
   }
 }

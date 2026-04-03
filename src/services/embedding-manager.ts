@@ -109,7 +109,7 @@ export class EmbeddingManager {
     });
 
     const commonConfig = await this.options.commonLlmConfigService?.getRuntimeConfig();
-    if (this.options.commonLlmConfigService?.hasStoredConfig()) {
+    if (await this.options.commonLlmConfigService?.hasStoredConfig()) {
       if (!commonConfig?.enabled) {
         throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM service is not enabled.");
       }

@@ -1,16 +1,17 @@
 import { randomBytes } from "node:crypto";
 import { InMemoryDatabase } from "../infrastructure/database/prisma/in-memory-database.ts";
+import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import type {
   AdminAppLogSecretRevealDocument,
   AdminAppLogSecretSummary,
   AdminAppSummary,
 } from "../shared/types.ts";
 import { maskSensitiveString, randomId } from "../shared/utils.ts";
-import { AppConfigService } from "./app-config.service.ts";
 import type { ClientLogEncryptionKeyResolver } from "./client-log-upload.service.ts";
 
 export const APP_LOG_SECRET_CONFIG_KEY = "logs.client_upload_secret";
 export const APP_LOG_SECRET_READ_OPERATION = "app.log_secret.read";
+const APP_LOG_SECRET_SCOPE = "app-log-secrets";
 
 interface StoredAppLogSecret {
   keyId: string;
@@ -27,21 +28,21 @@ export interface EnsureAppLogSecretResult {
 export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
   constructor(
     private readonly database: InMemoryDatabase,
-    private readonly appConfigService: AppConfigService,
+    private readonly kvManager: KVManager,
   ) {}
 
-  initializeSecrets(appIds: string[], now = new Date()): boolean {
+  async initializeSecrets(appIds: string[], now = new Date()): Promise<boolean> {
     let changed = false;
     for (const appId of appIds) {
-      const ensured = this.ensureSecret(appId, now);
+      const ensured = await this.ensureSecret(appId, now);
       changed = changed || ensured.created;
     }
 
     return changed;
   }
 
-  ensureSecret(appId: string, now = new Date()): EnsureAppLogSecretResult {
-    const existing = this.readRecord(appId);
+  async ensureSecret(appId: string, now = new Date()): Promise<EnsureAppLogSecretResult> {
+    const existing = await this.readRecord(appId);
     if (existing) {
       return {
         created: false,
@@ -57,12 +58,7 @@ export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
       updatedAt: timestamp,
     };
 
-    this.appConfigService.setDirectValue(
-      appId,
-      APP_LOG_SECRET_CONFIG_KEY,
-      JSON.stringify(record, null, 2),
-      timestamp,
-    );
+    await this.kvManager.setJson(APP_LOG_SECRET_SCOPE, appId, record);
 
     return {
       created: true,
@@ -70,8 +66,8 @@ export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
     };
   }
 
-  getSummary(appId: string): AdminAppLogSecretSummary | undefined {
-    const record = this.readRecord(appId);
+  async getSummary(appId: string): Promise<AdminAppLogSecretSummary | undefined> {
+    const record = await this.readRecord(appId);
     if (!record) {
       return undefined;
     }
@@ -83,8 +79,11 @@ export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
     };
   }
 
-  revealSecret(app: AdminAppSummary, now = new Date()): EnsureAppLogSecretResult & { document: AdminAppLogSecretRevealDocument } {
-    const ensured = this.ensureSecret(app.appId, now);
+  async revealSecret(
+    app: AdminAppSummary,
+    now = new Date(),
+  ): Promise<EnsureAppLogSecretResult & { document: AdminAppLogSecretRevealDocument }> {
+    const ensured = await this.ensureSecret(app.appId, now);
     return {
       ...ensured,
       document: {
@@ -103,14 +102,14 @@ export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
     };
   }
 
-  resolveKey(keyId: string): Buffer | undefined {
+  async resolveKey(keyId: string): Promise<Buffer | undefined> {
     const normalizedKeyId = keyId.trim();
     if (!normalizedKeyId) {
       return undefined;
     }
 
     for (const app of this.database.apps) {
-      const record = this.readRecord(app.id);
+      const record = await this.readRecord(app.id);
       if (!record || record.keyId !== normalizedKeyId) {
         continue;
       }
@@ -128,16 +127,9 @@ export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
     return undefined;
   }
 
-  private readRecord(appId: string): StoredAppLogSecret | undefined {
-    const raw = this.appConfigService.getValue(appId, APP_LOG_SECRET_CONFIG_KEY);
-    if (!raw) {
-      return undefined;
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
+  private async readRecord(appId: string): Promise<StoredAppLogSecret | undefined> {
+    const parsed = await this.kvManager.getJson<StoredAppLogSecret>(APP_LOG_SECRET_SCOPE, appId);
+    if (!parsed) {
       return undefined;
     }
 

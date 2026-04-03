@@ -6,9 +6,14 @@ import type { AppConfigRecord, ConfigRevisionMeta, ConfigRevisionRecord } from "
 import { randomId } from "../shared/utils.ts";
 
 /**
- * AppConfigService mirrors the app_configs table plus the documented 30-second Redis cache layer.
+ * VersionedAppConfigService owns app configuration that requires revision history.
+ * Revisions are the canonical source of truth and app_configs is only a derived
+ * current-value cache.
+ *
+ * Config that does not need revision history, such as secrets or other single-value
+ * runtime state, should talk to KVManager directly instead of using this service.
  */
-export class AppConfigService {
+export class VersionedAppConfigService {
   private readonly cacheTtlSeconds = 30;
 
   constructor(
@@ -17,26 +22,34 @@ export class AppConfigService {
     private readonly kvManager: KVManager,
   ) {}
 
-  getValue(appId: string, configKey: string, now = new Date()): string | undefined {
-    const cacheKey = this.buildCacheKey(appId, configKey);
-    const cached = this.cache.get<string>(cacheKey, now);
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    const record = this.database.appConfigs.find(
-      (item) => item.appId === appId && item.configKey === configKey,
-    );
-
-    if (!record) {
-      return undefined;
-    }
-
-    this.cache.set(cacheKey, record.configValue, this.cacheTtlSeconds, now);
-    return record.configValue;
+  async getValue(appId: string, configKey: string): Promise<string | undefined> {
+    const record = await this.getRecord(appId, configKey);
+    return record?.configValue;
   }
 
-  getRecord(appId: string, configKey: string): AppConfigRecord | undefined {
+  async getRecord(appId: string, configKey: string): Promise<AppConfigRecord | undefined> {
+    const latestRevision = await this.getLatestRevision(appId, configKey);
+    if (!latestRevision) {
+      return this.readCachedRecord(appId, configKey);
+    }
+
+    const directRecord = this.readCachedRecord(appId, configKey);
+    if (
+      directRecord &&
+      directRecord.configValue === latestRevision.content &&
+      directRecord.updatedAt === latestRevision.createdAt
+    ) {
+      return directRecord;
+    }
+
+    return this.upsertRecord(appId, configKey, latestRevision.content, latestRevision.createdAt);
+  }
+
+  async getUpdatedAt(appId: string, configKey: string): Promise<string | undefined> {
+    return (await this.getRecord(appId, configKey))?.updatedAt;
+  }
+
+  private readCachedRecord(appId: string, configKey: string): AppConfigRecord | undefined {
     return this.database.appConfigs.find(
       (item) => item.appId === appId && item.configKey === configKey,
     );
@@ -49,7 +62,7 @@ export class AppConfigService {
     desc = "",
   ): Promise<ConfigRevisionRecord<string>> {
     const revisionManager = this.getRevisionManager(appId, configKey);
-    const existing = this.getRecord(appId, configKey);
+    const existing = this.readCachedRecord(appId, configKey);
 
     if (existing) {
       await revisionManager.ensureInitial(
@@ -115,17 +128,8 @@ export class AppConfigService {
     });
   }
 
-  getDefaultRoleCode(appId: string): string {
-    return this.getValue(appId, "auth.default_role_code") ?? "member";
-  }
-
-  setDirectValue(
-    appId: string,
-    configKey: string,
-    configValue: string,
-    updatedAt = new Date().toISOString(),
-  ): void {
-    this.upsertRecord(appId, configKey, configValue, updatedAt);
+  async getDefaultRoleCode(appId: string): Promise<string> {
+    return (await this.getValue(appId, "auth.default_role_code")) ?? "member";
   }
 
   private buildCacheKey(appId: string, configKey: string): string {
@@ -139,7 +143,7 @@ export class AppConfigService {
   }
 
   private async ensureInitialRevision(appId: string, configKey: string): Promise<void> {
-    const existing = this.getRecord(appId, configKey);
+    const existing = this.readCachedRecord(appId, configKey);
     if (!existing) {
       return;
     }
@@ -151,7 +155,7 @@ export class AppConfigService {
     );
   }
 
-  private upsertRecord(appId: string, configKey: string, configValue: string, updatedAt: string): void {
+  private upsertRecord(appId: string, configKey: string, configValue: string, updatedAt: string): AppConfigRecord {
     const existing = this.database.appConfigs.find(
       (item) => item.appId === appId && item.configKey === configKey,
     );
@@ -159,16 +163,19 @@ export class AppConfigService {
     if (existing) {
       existing.configValue = configValue;
       existing.updatedAt = updatedAt;
+      this.cache.delete(this.buildCacheKey(appId, configKey));
+      return existing;
     } else {
-      this.database.appConfigs.push({
+      const created = {
         id: randomId("cfg"),
         appId,
         configKey,
         configValue,
         updatedAt,
-      });
+      };
+      this.database.appConfigs.push(created);
+      this.cache.delete(this.buildCacheKey(appId, configKey));
+      return created;
     }
-
-    this.cache.delete(this.buildCacheKey(appId, configKey));
   }
 }

@@ -3,7 +3,7 @@ import test from "node:test";
 import { InMemoryCache } from "../../src/infrastructure/cache/redis/in-memory-cache.ts";
 import { InMemoryDatabase } from "../../src/infrastructure/database/prisma/in-memory-database.ts";
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
-import { AppConfigService } from "../../src/services/app-config.service.ts";
+import { VersionedAppConfigService } from "../../src/services/versioned-app-config.service.ts";
 import { CommonLlmConfigService } from "../../src/services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../src/services/common-password-config.service.ts";
 import { LlmHealthService } from "../../src/services/llm-health.service.ts";
@@ -20,7 +20,7 @@ async function createLlmFixture() {
   });
   const database = new InMemoryDatabase();
   const cache = new InMemoryCache();
-  const appConfigService = new AppConfigService(database, cache, kvManager);
+  const appConfigService = new VersionedAppConfigService(database, cache, kvManager);
   const passwordManager = new PasswordManager(kvManager);
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
@@ -30,6 +30,8 @@ async function createLlmFixture() {
 
   return {
     kvManager,
+    database,
+    appConfigService,
     commonPasswordConfigService,
     commonLlmConfigService,
     llmHealthService,
@@ -243,6 +245,61 @@ test("llm manager fixed strategy ignores health score and always picks the highe
   });
 
   assert.equal(calls.at(-1), "volcengine");
+});
+
+test("common llm config service runtime follows latest revision even if direct config record is stale", async () => {
+  const fixture = await createLlmFixture();
+
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "kimi2.5",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "kimi2.5",
+        label: "Kimi 2.5",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "kimi/kimi-k2.5",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+
+  const staleRecord = fixture.database.appConfigs.find(
+    (item) => item.appId === "common" && item.configKey === "common.llm_service",
+  );
+  assert.ok(staleRecord);
+  staleRecord.configValue = JSON.stringify({
+    enabled: false,
+    defaultModelKey: "",
+    providers: [],
+    models: [],
+  });
+  staleRecord.updatedAt = "2026-04-03T10:00:00.000Z";
+
+  const document = await fixture.commonLlmConfigService.getDocument();
+  assert.equal(document.config.enabled, true);
+  assert.equal(document.config.defaultModelKey, "kimi2.5");
+
+  const runtimeConfig = await fixture.commonLlmConfigService.getRuntimeConfig();
+  assert.equal(runtimeConfig?.enabled, true);
+  assert.equal(runtimeConfig?.defaultModelKey, "kimi2.5");
+  assert.equal(runtimeConfig?.providers[0]?.key, "bailian");
 });
 
 test("llm manager resolves {{zook.ps.xxx}} apiKey references from password workspace", async () => {
