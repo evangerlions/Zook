@@ -83,3 +83,37 @@
     padding-bottom: 0;
   }
 }
+
+/* Responsive for config form */
+@media (max-width: 800px) {
+  .config-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .config-form-grid .field--full {
+    grid-column: span 1;
+  }
+
+  .route-item {
+    padding: 8px;
+  }
+
+  .route-item-header,
+  .route-item-fields {
+    flex-direction: column;
+  }
+
+  .route-item-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .config-sub-tabs {
+    flex-direction: column;
+  }
+
+  .config-sub-tab {
+    justify-content: flex-start;
+  }
+}

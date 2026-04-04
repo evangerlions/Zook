@@ -5,13 +5,15 @@ export function Field({
   label,
   hint,
   children,
+  className,
 }: {
   label: string;
   hint?: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <label className="field">
+    <label className={`field${className ? ` ${className}` : ""}`}>
       <Typography.Text className="field-label">{label}</Typography.Text>
       {children}
       {hint ? <Typography.Text className="field-hint" type="secondary">{hint}</Typography.Text> : null}

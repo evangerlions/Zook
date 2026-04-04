@@ -1,4 +1,4 @@
-import { Button, Collapse, Input, Segmented, Select, Table, Tag } from "antd";
+import { Button, Collapse, Input, Segmented, Select, Switch, Table, Tag } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { Field, ToggleField } from "../components/field";
@@ -53,11 +53,16 @@ const LLM_CONFIG_MODE_OPTIONS: Array<{ label: string; value: "form" | "raw" }> =
   { label: "表单", value: "form" },
   { label: "RAW JSON", value: "raw" },
 ];
+const CONFIG_SUB_TABS: Array<{ label: string; value: "providers" | "models" }> = [
+  { label: "供应商", value: "providers" },
+  { label: "模型与路由", value: "models" },
+];
 
 export default function LlmRoute() {
   const { clearNotice, setNotice } = useAdminSession();
   const [tab, setTab] = useState<"monitor" | "config" | "smoke">("monitor");
   const [configMode, setConfigMode] = useState<"form" | "raw">("form");
+  const [configSubTab, setConfigSubTab] = useState<"providers" | "models">("providers");
   const [document, setDocument] = useState<AdminLlmServiceDocument | null>(null);
   const [draft, setDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
   const [originalDraft, setOriginalDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
@@ -442,7 +447,7 @@ export default function LlmRoute() {
                       value: item.modelKey,
                     }))),
                   ]}
-                  size="large"
+                  
                   value={selectedModelKey}
                 />
               </div>
@@ -535,7 +540,7 @@ export default function LlmRoute() {
               <div className="button-row">
                 <span className="meta-chip">冷却 {smokeDocument?.cooldownSeconds ?? 10}s</span>
                 <span className="meta-chip">{smokeDocument ? formatTimestamp(smokeDocument.executedAt) : "尚未执行"}</span>
-                <Button disabled={runningSmokeTest} loading={runningSmokeTest} onClick={() => void handleRunSmokeTest()} size="large" type="primary">
+                <Button disabled={runningSmokeTest} loading={runningSmokeTest} onClick={() => void handleRunSmokeTest()}  type="primary">
                   {runningSmokeTest ? "执行中..." : "运行冒烟测试"}
                 </Button>
               </div>
@@ -619,11 +624,11 @@ export default function LlmRoute() {
                 </div>
                 <div className="button-row">
                   {!document?.isLatest ? (
-                    <Button onClick={() => void loadConfig()} size="large">
+                    <Button onClick={() => void loadConfig()} >
                       回到最新
                     </Button>
                   ) : null}
-                  <Button onClick={() => void loadConfig()} size="large">
+                  <Button onClick={() => void loadConfig()} >
                     刷新
                   </Button>
                 </div>
@@ -661,95 +666,104 @@ export default function LlmRoute() {
                             value: item.key,
                           })),
                         ]}
-                        size="large"
+                        
                         value={draft.defaultModelKey}
                       />
                     </Field>
 
-                    <section className="stack">
-                      <div className="card-header">
-                        <div>
-                          <h3>供应商</h3>
-                          <p>配置 provider 连接信息。修改 key 时会同步更新已引用的 routes。</p>
+                    {/* Sub-tabs for providers and models */}
+                    <div className="config-sub-tabs">
+                      {CONFIG_SUB_TABS.map((item) => (
+                        <button
+                          className={`config-sub-tab ${configSubTab === item.value ? "is-active" : ""}`}
+                          key={item.value}
+                          onClick={() => setConfigSubTab(item.value)}
+                          type="button"
+                        >
+                          {item.label}
+                          <span className="config-sub-tab-count">
+                            {item.value === "providers" ? draft.providers.length : draft.models.length}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {configSubTab === "providers" ? (
+                      <section className="stack">
+                        <div className="provider-list">
+                          {draft.providers.map((provider, index) => (
+                            <ProviderCard
+                              key={`${provider.key || "provider"}-${index}`}
+                              onChange={(key, value) => updateProvider(index, key, value)}
+                              onRemove={() => setDraft((current) => ({
+                                ...current,
+                                providers: current.providers.filter((_, itemIndex) => itemIndex !== index),
+                                models: current.models.map((model) => ({
+                                  ...model,
+                                  routes: model.routes.filter((route) => route.provider !== provider.key),
+                                })),
+                              }))}
+                              provider={provider}
+                            />
+                          ))}
                         </div>
-                        <Button
+
+                        <button
+                          className="config-add-button"
                           onClick={() => setDraft((current) => ({ ...current, providers: [...current.providers, createEmptyLlmProvider()] }))}
-                          size="large"
+                          type="button"
                         >
-                          添加供应商
-                        </Button>
-                      </div>
-
-                      <div className="provider-list">
-                        {draft.providers.map((provider, index) => (
-                          <ProviderCard
-                            key={`${provider.key || "provider"}-${index}`}
-                            onChange={(key, value) => updateProvider(index, key, value)}
-                            onRemove={() => setDraft((current) => ({
-                              ...current,
-                              providers: current.providers.filter((_, itemIndex) => itemIndex !== index),
-                              models: current.models.map((model) => ({
-                                ...model,
-                                routes: model.routes.filter((route) => route.provider !== provider.key),
-                              })),
-                            }))}
-                            provider={provider}
-                          />
-                        ))}
-                      </div>
-                    </section>
-
-                    <section className="stack">
-                      <div className="card-header">
-                        <div>
-                          <h3>模型与 Routes</h3>
-                          <p>每个模型都可以拥有多条 route，并根据策略决定流量分发方式。</p>
+                          + 添加供应商
+                        </button>
+                      </section>
+                    ) : (
+                      <section className="stack">
+                        <div className="model-list">
+                          {draft.models.map((model, modelIndex) => (
+                            <ModelCard
+                              key={`${model.key || "model"}-${modelIndex}`}
+                              model={model}
+                              onAddRoute={() => setDraft((current) => ({
+                                ...current,
+                                models: current.models.map((item, index) => (
+                                  index === modelIndex
+                                    ? {
+                                        ...item,
+                                        routes: [...item.routes, createEmptyLlmRoute(current.providers[0]?.key ?? "")],
+                                      }
+                                    : item
+                                )),
+                              }))}
+                              onChange={(key, value) => updateModel(modelIndex, key, value)}
+                              onRemove={() => setDraft((current) => ({
+                                ...current,
+                                defaultModelKey: current.defaultModelKey === model.key ? "" : current.defaultModelKey,
+                                models: current.models.filter((_, index) => index !== modelIndex),
+                              }))}
+                              onRouteChange={(routeIndex, key, value) => updateRoute(modelIndex, routeIndex, key, value)}
+                              onRouteRemove={(routeIndex) => setDraft((current) => ({
+                                ...current,
+                                models: current.models.map((item, index) => (
+                                  index === modelIndex
+                                    ? { ...item, routes: item.routes.filter((_, currentRouteIndex) => currentRouteIndex !== routeIndex) }
+                                    : item
+                                )),
+                              }))}
+                              providers={draft.providers}
+                              runtimeSnapshot={getModelRuntimeSnapshot(document?.runtime.models, model.key)}
+                            />
+                          ))}
                         </div>
-                        <Button
-                          onClick={() => setDraft((current) => ({ ...current, models: [...current.models, createEmptyLlmModel()] }))}
-                          size="large"
-                        >
-                          添加模型
-                        </Button>
-                      </div>
 
-                      <div className="model-list">
-                        {draft.models.map((model, modelIndex) => (
-                          <ModelCard
-                            key={`${model.key || "model"}-${modelIndex}`}
-                            model={model}
-                            onAddRoute={() => setDraft((current) => ({
-                              ...current,
-                              models: current.models.map((item, index) => (
-                                index === modelIndex
-                                  ? {
-                                      ...item,
-                                      routes: [...item.routes, createEmptyLlmRoute(current.providers[0]?.key ?? "")],
-                                    }
-                                  : item
-                              )),
-                            }))}
-                            onChange={(key, value) => updateModel(modelIndex, key, value)}
-                            onRemove={() => setDraft((current) => ({
-                              ...current,
-                              defaultModelKey: current.defaultModelKey === model.key ? "" : current.defaultModelKey,
-                              models: current.models.filter((_, index) => index !== modelIndex),
-                            }))}
-                            onRouteChange={(routeIndex, key, value) => updateRoute(modelIndex, routeIndex, key, value)}
-                            onRouteRemove={(routeIndex) => setDraft((current) => ({
-                              ...current,
-                              models: current.models.map((item, index) => (
-                                index === modelIndex
-                                  ? { ...item, routes: item.routes.filter((_, currentRouteIndex) => currentRouteIndex !== routeIndex) }
-                                  : item
-                              )),
-                            }))}
-                            providers={draft.providers}
-                            runtimeSnapshot={getModelRuntimeSnapshot(document?.runtime.models, model.key)}
-                          />
-                        ))}
-                      </div>
-                    </section>
+                        <button
+                          className="config-add-button"
+                          onClick={() => setDraft((current) => ({ ...current, models: [...current.models, createEmptyLlmModel()] }))}
+                          type="button"
+                        >
+                          + 添加模型
+                        </button>
+                      </section>
+                    )}
 
                     {draftValidationError ? <p className="form-error">{draftValidationError}</p> : null}
                   </>
@@ -776,7 +790,7 @@ export default function LlmRoute() {
                   <Button
                     disabled={saving || loadingConfig || Boolean(activeConfigError)}
                     onClick={openSaveModal}
-                    size="large"
+                    
                     type="primary"
                   >
                     保存 LLM 配置
@@ -852,36 +866,68 @@ function ProviderCard({
   onRemove: () => void;
 }) {
   return (
-    <article className="provider-card">
-      <div className="card-header">
-        <div>
+    <article className={`config-item ${provider.enabled ? "" : "config-item--disabled"}`}>
+      <div className="config-item-header">
+        <div className="config-item-title">
           <h3>{provider.label || provider.key || "新供应商"}</h3>
-          <p className="mono">{provider.baseUrl || "尚未填写 baseUrl"}</p>
+          <Tag bordered={false} color={provider.enabled ? "success" : "default"}>
+            {provider.enabled ? "已启用" : "已禁用"}
+          </Tag>
         </div>
-        <Button danger onClick={onRemove} size="large">
-          删除
-        </Button>
+        <div className="config-item-actions">
+          <Button
+            size="small"
+            onClick={() => onChange("enabled", !provider.enabled)}
+          >
+            {provider.enabled ? "禁用" : "启用"}
+          </Button>
+          <Button danger onClick={onRemove} size="small">
+            删除
+          </Button>
+        </div>
       </div>
 
-      <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-        <Field label="Key">
-          <Input onChange={(event) => onChange("key", event.target.value)} size="large" value={provider.key} />
+      <div className="config-form-grid">
+        <Field label="Key" hint="唯一标识">
+          <Input
+            onChange={(event) => onChange("key", event.target.value)}
+            placeholder="bailian"
+            
+            value={provider.key}
+          />
         </Field>
-        <Field label="Label">
-          <Input onChange={(event) => onChange("label", event.target.value)} size="large" value={provider.label} />
+        <Field label="Label" hint="显示名称">
+          <Input
+            onChange={(event) => onChange("label", event.target.value)}
+            placeholder="百炼"
+            
+            value={provider.label}
+          />
         </Field>
-        <Field label="Base URL">
-          <Input onChange={(event) => onChange("baseUrl", event.target.value)} size="large" value={provider.baseUrl} />
+        <Field className="field--full" label="Base URL">
+          <Input
+            onChange={(event) => onChange("baseUrl", event.target.value)}
+            placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
+            
+            value={provider.baseUrl}
+          />
         </Field>
-        <Field label="API Key">
-          <Input.Password onChange={(event) => onChange("apiKey", event.target.value)} size="large" value={provider.apiKey} />
+        <Field className="field--full" label="API Key">
+          <Input.Password
+            onChange={(event) => onChange("apiKey", event.target.value)}
+            placeholder="sk-..."
+            
+            value={provider.apiKey}
+          />
         </Field>
-        <Field label="Timeout (ms)">
-          <Input onChange={(event) => onChange("timeoutMs", event.target.value)} size="large" value={provider.timeoutMs} />
+        <Field label="Timeout (ms)" hint="请求超时">
+          <Input
+            onChange={(event) => onChange("timeoutMs", event.target.value)}
+            
+            value={provider.timeoutMs}
+          />
         </Field>
       </div>
-
-      <ToggleField checked={provider.enabled} label="启用供应商" onChange={(value) => onChange("enabled", value)} />
     </article>
   );
 }
@@ -906,91 +952,132 @@ function ModelCard({
   onRouteRemove: (routeIndex: number) => void;
 }) {
   return (
-    <article className="model-card">
-      <div className="card-header">
-        <div>
+    <article className="config-item">
+      <div className="config-item-header">
+        <div className="config-item-title">
           <h3>{model.label || model.key || "新模型"}</h3>
-          <p>{toModelKindLabel(model.kind)} · {toRouteStrategyLabel(model.strategy)}</p>
+          <span className="config-item-meta">
+            {toModelKindLabel(model.kind)} · {toRouteStrategyLabel(model.strategy)}
+          </span>
         </div>
-        <div className="button-row">
-          <Button onClick={onAddRoute} size="large">
-            添加 Route
-          </Button>
-          <Button danger onClick={onRemove} size="large">
+        <div className="config-item-actions">
+          <Button danger onClick={onRemove} size="small">
             删除模型
           </Button>
         </div>
       </div>
 
-      <div className="form-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
-        <Field label="Key">
-          <Input onChange={(event) => onChange("key", event.target.value)} size="large" value={model.key} />
+      <div className="config-form-grid">
+        <Field label="Key" hint="唯一标识">
+          <Input
+            onChange={(event) => onChange("key", event.target.value)}
+            placeholder="qwen3.5-plus"
+            
+            value={model.key}
+          />
         </Field>
-        <Field label="Label">
-          <Input onChange={(event) => onChange("label", event.target.value)} size="large" value={model.label} />
+        <Field label="Label" hint="显示名称">
+          <Input
+            onChange={(event) => onChange("label", event.target.value)}
+            placeholder="Qwen 3.5 Plus"
+            
+            value={model.label}
+          />
         </Field>
-        <Field hint="chat 用于对话生成，embedding 用于向量化。" label="Kind">
+        <Field label="Kind" hint="chat 用于对话，embedding 用于向量化">
           <Select
             onChange={(value) => onChange("kind", value)}
             options={[
               { label: "chat", value: "chat" },
               { label: "embedding", value: "embedding" },
             ]}
-            size="large"
+            
             value={model.kind}
           />
         </Field>
-        <Field label="Strategy">
+        <Field label="Strategy" hint="auto 自动路由，fixed 固定路由">
           <Select
             onChange={(value) => onChange("strategy", value)}
             options={[
               { label: "auto", value: "auto" },
               { label: "fixed", value: "fixed" },
             ]}
-            size="large"
+            
             value={model.strategy}
           />
         </Field>
       </div>
 
-      <div className="route-list">
-        {model.routes.map((route, routeIndex) => (
-          <article className="route-card" key={`${route.provider}-${route.providerModel}-${routeIndex}`}>
-            <div className="card-header">
-              <div>
-                <h3>{route.providerModel || "新 Route"}</h3>
-                <p>{runtimeSnapshot?.routes[routeIndex]?.healthScore != null ? `健康分 ${runtimeSnapshot.routes[routeIndex]!.healthScore}` : "尚无运行时数据"}</p>
-              </div>
-              <Button danger onClick={() => onRouteRemove(routeIndex)} size="large">
-                删除 Route
-              </Button>
-            </div>
+      {/* Routes section */}
+      <div className="route-list" style={{ marginTop: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+          <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600 }}>路由配置</h4>
+          <Button onClick={onAddRoute} size="small">
+            + 添加路由
+          </Button>
+        </div>
 
-            <div className="form-grid" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
-              <Field label="Provider">
-                <Select
-                  onChange={(value) => onRouteChange(routeIndex, "provider", value)}
-                  options={[
-                    { label: "请选择", value: "" },
-                    ...providers.map((item) => ({
-                      label: item.label || item.key,
-                      value: item.key,
-                    })),
-                  ]}
-                  size="large"
-                  value={route.provider}
-                />
-              </Field>
-              <Field label="Provider Model">
-                <Input onChange={(event) => onRouteChange(routeIndex, "providerModel", event.target.value)} size="large" value={route.providerModel} />
-              </Field>
-              <Field label="Weight">
-                <Input onChange={(event) => onRouteChange(routeIndex, "weight", event.target.value)} size="large" value={route.weight} />
-              </Field>
-              <ToggleField checked={route.enabled} label="启用 Route" onChange={(value) => onRouteChange(routeIndex, "enabled", value)} />
+        {model.routes.length === 0 ? (
+          <div className="empty-state" style={{ padding: "16px", fontSize: "0.9rem" }}>
+            还没有配置路由，点击上方按钮添加。
+          </div>
+        ) : (
+          model.routes.map((route, routeIndex) => (
+            <div
+              className={`route-item ${route.enabled ? "" : "route-item--disabled"}`}
+              key={`${route.provider}-${route.providerModel}-${routeIndex}`}
+            >
+              <div className="route-item-header">
+                <h4>
+                  {route.providerModel || "新路由"}
+                  {!route.enabled && <span style={{ color: "var(--text-soft)", fontWeight: 400 }}> (已禁用)</span>}
+                </h4>
+                <Button danger onClick={() => onRouteRemove(routeIndex)} size="small">
+                  删除
+                </Button>
+              </div>
+              <div className="route-item-fields">
+                <Field label="Provider">
+                  <Select
+                    onChange={(value) => onRouteChange(routeIndex, "provider", value)}
+                    options={[
+                      { label: "请选择", value: "" },
+                      ...providers.map((item) => ({
+                        label: item.label || item.key,
+                        value: item.key,
+                      })),
+                    ]}
+                    
+                    value={route.provider}
+                  />
+                </Field>
+                <Field label="Provider Model">
+                  <Input
+                    onChange={(event) => onRouteChange(routeIndex, "providerModel", event.target.value)}
+                    placeholder="qwen3.5-plus"
+                    
+                    value={route.providerModel}
+                  />
+                </Field>
+                <Field label="Weight" className="field--weight">
+                  <Input
+                    onChange={(event) => onRouteChange(routeIndex, "weight", event.target.value)}
+                    
+                    value={route.weight}
+                  />
+                </Field>
+                <div className="toggle-inline">
+                  <span className="toggle-inline-label">启用</span>
+                  <Switch
+                    checked={route.enabled}
+                    onChange={(value) => onRouteChange(routeIndex, "enabled", value)}
+                    size="small"
+                  />
+                </div>
+              </div>
             </div>
-          </article>
-        ))}
+          ))
+        )}
       </div>
     </article>
   );

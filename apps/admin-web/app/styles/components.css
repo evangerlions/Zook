@@ -344,3 +344,308 @@
   color: #fecaca;
 }
 
+/* LLM Config Form Styles - Compact */
+
+.config-sub-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.config-sub-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.config-sub-tab:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text);
+}
+
+.config-sub-tab.is-active {
+  background: var(--surface-strong);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.config-sub-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.config-sub-tab.is-active .config-sub-tab-count {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* Config Item Card - Compact */
+.config-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  padding: 12px;
+  transition: opacity 160ms ease, border-color 160ms ease;
+}
+
+.config-item--disabled {
+  opacity: 0.55;
+}
+
+.config-item--disabled .config-item-title h3 {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-soft);
+}
+
+/* Config Item Header - Compact */
+.config-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.config-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.config-item-title h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+.config-item-meta {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.config-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Config Form Grid: unified 2-column - Compact */
+.config-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.config-form-grid .field--full {
+  grid-column: span 2;
+}
+
+.config-form-grid .field--compact {
+  margin-bottom: 0;
+}
+
+/* Compact field styles for config forms */
+.config-form-grid .field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.config-form-grid .field-hint {
+  font-size: 0.78rem;
+}
+
+/* Compact inputs in config form */
+.config-form-grid .ant-input,
+.config-form-grid .ant-input-affix-wrapper,
+.config-form-grid .ant-select-selector {
+  padding-block: 0.28rem !important;
+  padding-inline: 0.55rem !important;
+  font-size: 0.9rem;
+  height: 30px !important;
+  min-height: 30px !important;
+}
+
+.config-form-grid .ant-select {
+  height: 30px !important;
+}
+
+.config-form-grid .ant-select-selection-item,
+.config-form-grid .ant-select-selection-placeholder {
+  font-size: 0.9rem;
+  line-height: 28px !important;
+}
+
+.config-form-grid .ant-input-affix-wrapper .ant-input {
+  padding: 0 !important;
+  height: auto !important;
+}
+
+.config-form-grid .ant-input {
+  height: 30px !important;
+}
+
+.config-form-grid .ant-select-arrow {
+  font-size: 11px !important;
+}
+
+/* Route Card: lighter style - Compact */
+.route-item {
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+.route-item:last-child {
+  margin-bottom: 0;
+}
+
+.route-item--disabled {
+  opacity: 0.6;
+}
+
+.route-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.route-item-header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.route-item-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.route-item-fields .field-label {
+  font-size: 0.82rem;
+}
+
+/* Compact inputs in route fields */
+.route-item-fields .ant-input,
+.route-item-fields .ant-input-affix-wrapper,
+.route-item-fields .ant-select-selector {
+  padding-block: 0.24rem !important;
+  padding-inline: 0.5rem !important;
+  font-size: 0.88rem;
+  height: 28px !important;
+  min-height: 28px !important;
+}
+
+.route-item-fields .ant-select {
+  height: 28px !important;
+}
+
+.route-item-fields .ant-select-selection-item,
+.route-item-fields .ant-select-selection-placeholder {
+  font-size: 0.88rem;
+  line-height: 26px !important;
+}
+
+.route-item-fields .ant-input {
+  height: 28px !important;
+}
+
+.route-item-fields .field--weight .ant-input {
+  max-width: 80px;
+}
+
+.route-item-fields .ant-select-arrow {
+  font-size: 11px !important;
+}
+
+/* Compact Switch */
+.config-item .ant-switch {
+  min-width: 32px !important;
+  height: 18px !important;
+}
+
+.config-item .ant-switch-handle {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Compact Buttons in config */
+.config-item .ant-btn-sm {
+  font-size: 0.82rem;
+  padding: 0 8px;
+  height: 26px;
+}
+
+/* Inline toggle for routes - Compact */
+.toggle-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-inline-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+/* Add button style - Compact */
+.config-add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.config-add-button:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* Provider list and Model list - tighter spacing */
+.provider-list,
+.model-list {
+  display: grid;
+  gap: 10px;
+}
+
