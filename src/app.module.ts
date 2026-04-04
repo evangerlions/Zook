@@ -2422,9 +2422,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const bailianProvider = new BailianOpenAICompatibleProvider();
   const llmProviders = options.llmProviders ?? {
     bailian: bailianProvider,
+    bailian_coding: bailianProvider,
   };
   const embeddingProviders = options.embeddingProviders ?? {
     bailian: bailianProvider,
+    bailian_coding: bailianProvider,
   };
   const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
     commonLlmConfigService,

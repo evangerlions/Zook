@@ -1,4 +1,5 @@
 import { Button, Collapse, Input, Segmented, Select, Switch, Table, Tag } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import { Field, ToggleField } from "../components/field";
@@ -604,7 +605,28 @@ export default function LlmRoute() {
               items={[
                 {
                   key: "structure-preview",
-                  label: "结构预览",
+                  label: (
+                    <span>
+                      结构预览
+                      {activeConfigError ? null : (
+                        <Button
+                          size="small"
+                          type="text"
+                          icon={<CopyOutlined />}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const text = typeof previewValue === "string"
+                              ? previewValue
+                              : JSON.stringify(previewValue, null, 2);
+                            navigator.clipboard.writeText(text).then(() => {
+                              setNotice(makeNotice("success", "已复制到剪贴板。"));
+                            });
+                          }}
+                          style={{ marginLeft: 8 }}
+                        />
+                      )}
+                    </span>
+                  ),
                   children: activeConfigError ? (
                     <div className="empty-state">当前配置还没有通过校验，暂时无法生成结构预览。</div>
                   ) : (
