@@ -1,0 +1,651 @@
+.toggle-field-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.button-row,
+.inline-row,
+.revision-actions,
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.button-row .ant-btn,
+.revision-actions .ant-btn,
+.top-actions .ant-btn {
+  border-radius: 14px;
+}
+
+.action-icon-button.ant-btn {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding-inline: 0;
+  border-radius: 999px !important;
+}
+
+.button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.8rem 1.15rem;
+  font-weight: 700;
+  background: var(--surface-soft);
+  color: var(--text);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.66;
+}
+
+.button-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 14px 26px rgba(33, 87, 213, 0.22);
+}
+
+.button-secondary {
+  border-color: var(--line);
+  background: var(--surface-strong);
+}
+
+.button-danger {
+  background: rgba(209, 67, 67, 0.1);
+  color: var(--danger);
+}
+
+.button-block {
+  width: 100%;
+}
+
+.notice-banner {
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+}
+
+.notice-banner.ant-alert {
+  border-radius: 16px;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--danger);
+}
+
+.app-list,
+.password-list,
+.revision-list,
+.template-list,
+.provider-list,
+.model-list,
+.route-list,
+.metric-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.metric-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.metric-card {
+  padding: 16px;
+}
+
+.metric-card p,
+.metric-card small {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.metric-card strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.app-item,
+.password-item,
+.revision-item,
+.provider-card,
+.model-card,
+.route-card,
+.mail-region-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+  padding: 16px;
+}
+
+.app-item,
+.password-item,
+.revision-item {
+  gap: 16px;
+}
+
+.app-item,
+.password-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.revision-item {
+  display: grid;
+}
+
+.app-item p,
+.revision-item p,
+.password-item p {
+  margin: 6px 0;
+  color: var(--text-soft);
+}
+
+.revision-item-head,
+.revision-item-title,
+.table-primary-cell,
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.revision-item-head {
+  justify-content: space-between;
+}
+
+.revision-item-title {
+  flex-wrap: wrap;
+}
+
+.revision-desc {
+  margin: 0;
+  word-break: break-word;
+}
+
+.status-chip,
+.meta-chip,
+.range-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 0.28rem 0.55rem;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.json-preview {
+  overflow: auto;
+  margin: 0;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(9, 14, 29, 0.98), rgba(17, 24, 39, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.json-code {
+  color: #d9e4f1;
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.65;
+  white-space: pre;
+}
+
+.json-token-key {
+  color: #7dd3fc;
+}
+
+.json-token-string {
+  color: #c4b5fd;
+}
+
+.json-token-number {
+  color: #fbbf24;
+}
+
+.json-token-boolean {
+  color: #34d399;
+}
+
+.json-token-null {
+  color: #f87171;
+}
+
+.json-token-punctuation {
+  color: #94a3b8;
+}
+
+/* Save Confirm Modal */
+.save-confirm-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.json-diff-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.json-diff-section-header {
+  padding: 12px 16px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.json-diff-section-header h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.json-diff-section-header p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.json-diff-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  background: var(--surface-soft);
+}
+
+.json-diff-view {
+  background: linear-gradient(180deg, rgba(9, 14, 29, 0.98), rgba(17, 24, 39, 0.98));
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.json-diff-content {
+  padding: 8px 0;
+}
+
+.json-diff-line {
+  display: flex;
+  min-height: 22px;
+}
+
+.json-diff-line-added {
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.json-diff-line-removed {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.json-diff-gutter {
+  display: flex;
+  min-width: 36px;
+  padding: 0 8px;
+  background: rgba(15, 23, 42, 0.3);
+  border-right: 1px solid rgba(148, 163, 184, 0.1);
+  color: #64748b;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.json-diff-line-num {
+  opacity: 0.6;
+  min-width: 20px;
+  text-align: right;
+}
+
+.json-diff-marker {
+  font-weight: 700;
+  min-width: 8px;
+  text-align: center;
+}
+
+.json-diff-line-added .json-diff-marker {
+  color: #22c55e;
+}
+
+.json-diff-line-removed .json-diff-marker {
+  color: #ef4444;
+}
+
+.json-diff-value {
+  padding: 0 12px;
+  white-space: pre;
+  color: #d9e4f1;
+  overflow: hidden;
+}
+
+.json-diff-line-added .json-diff-value {
+  color: #bbf7d0;
+}
+
+.json-diff-line-removed .json-diff-value {
+  color: #fecaca;
+}
+
+/* LLM Config Form Styles - Compact */
+
+.config-sub-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.config-sub-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.config-sub-tab:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text);
+}
+
+.config-sub-tab.is-active {
+  background: var(--surface-strong);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.config-sub-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.config-sub-tab.is-active .config-sub-tab-count {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* Config Item Card - Compact */
+.config-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  padding: 12px;
+  transition: opacity 160ms ease, border-color 160ms ease;
+}
+
+.config-item--disabled {
+  opacity: 0.55;
+}
+
+.config-item--disabled .config-item-title h3 {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-soft);
+}
+
+/* Config Item Header - Compact */
+.config-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.config-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.config-item-title h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+.config-item-meta {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.config-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Config Form Grid: unified 2-column - Compact */
+.config-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.config-form-grid .field--full {
+  grid-column: span 2;
+}
+
+.config-form-grid .field--compact {
+  margin-bottom: 0;
+}
+
+/* Compact field styles for config forms */
+.config-form-grid .field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.config-form-grid .field-hint {
+  font-size: 0.78rem;
+}
+
+/* Compact inputs in config form */
+.config-form-grid .ant-input,
+.config-form-grid .ant-input-affix-wrapper,
+.config-form-grid .ant-select-selector {
+  padding-block: 0.28rem !important;
+  padding-inline: 0.55rem !important;
+  font-size: 0.9rem;
+  height: 30px !important;
+  min-height: 30px !important;
+}
+
+.config-form-grid .ant-select {
+  height: 30px !important;
+}
+
+.config-form-grid .ant-select-selection-item,
+.config-form-grid .ant-select-selection-placeholder {
+  font-size: 0.9rem;
+  line-height: 28px !important;
+}
+
+.config-form-grid .ant-input-affix-wrapper .ant-input {
+  padding: 0 !important;
+  height: auto !important;
+}
+
+.config-form-grid .ant-input {
+  height: 30px !important;
+}
+
+.config-form-grid .ant-select-arrow {
+  font-size: 11px !important;
+}
+
+/* Route Card: lighter style - Compact */
+.route-item {
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+.route-item:last-child {
+  margin-bottom: 0;
+}
+
+.route-item--disabled {
+  opacity: 0.6;
+}
+
+.route-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.route-item-header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.route-item-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.route-item-fields .field-label {
+  font-size: 0.82rem;
+}
+
+/* Compact inputs in route fields */
+.route-item-fields .ant-input,
+.route-item-fields .ant-input-affix-wrapper,
+.route-item-fields .ant-select-selector {
+  padding-block: 0.24rem !important;
+  padding-inline: 0.5rem !important;
+  font-size: 0.88rem;
+  height: 28px !important;
+  min-height: 28px !important;
+}
+
+.route-item-fields .ant-select {
+  height: 28px !important;
+}
+
+.route-item-fields .ant-select-selection-item,
+.route-item-fields .ant-select-selection-placeholder {
+  font-size: 0.88rem;
+  line-height: 26px !important;
+}
+
+.route-item-fields .ant-input {
+  height: 28px !important;
+}
+
+.route-item-fields .field--weight .ant-input {
+  max-width: 80px;
+}
+
+.route-item-fields .ant-select-arrow {
+  font-size: 11px !important;
+}
+
+/* Compact Switch */
+.config-item .ant-switch {
+  min-width: 32px !important;
+  height: 18px !important;
+}
+
+.config-item .ant-switch-handle {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Compact Buttons in config */
+.config-item .ant-btn-sm {
+  font-size: 0.82rem;
+  padding: 0 8px;
+  height: 26px;
+}
+
+/* Inline toggle for routes - Compact */
+.toggle-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-inline-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+/* Add button style - Compact */
+.config-add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.config-add-button:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+/* Provider list and Model list - tighter spacing */
+.provider-list,
+.model-list {
+  display: grid;
+  gap: 10px;
+}
+
