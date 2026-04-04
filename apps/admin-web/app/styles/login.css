@@ -1,0 +1,45 @@
+.login-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(340px, 420px);
+  overflow: hidden;
+}
+
+.login-brand,
+.login-card {
+  padding: 40px;
+}
+
+.login-brand {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(160deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.94)),
+    linear-gradient(180deg, transparent, transparent);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.login-brand-mark {
+  display: block;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 4vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+}
+
+.login-card {
+  display: grid;
+  align-content: center;
+  gap: 24px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.login-header {
+  display: grid;
+  gap: 8px;
+}
+
+.login-header .ant-typography {
+  margin: 0;
+  font-family: var(--font-display);
+}
