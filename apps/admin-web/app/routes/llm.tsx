@@ -1,5 +1,5 @@
 import { Button, Collapse, Input, Segmented, Select, Switch, Table, Tag } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
+import { CopyOutlined, DownOutlined, RightOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import { Field, ToggleField } from "../components/field";
@@ -81,6 +81,29 @@ export default function LlmRoute() {
   const [desc, setDesc] = useState("");
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [collapsedModels, setCollapsedModels] = useState<Set<string>>(() => new Set(draft.models.map((m) => m.key || "")));
+  const allModelKeys = useMemo(() => draft.models.map((m) => m.key || ""), [draft.models]);
+  const allCollapsed = allModelKeys.length > 0 && allModelKeys.every((key) => collapsedModels.has(key));
+
+  function toggleModelCollapse(modelKey: string) {
+    setCollapsedModels((current) => {
+      const next = new Set(current);
+      if (next.has(modelKey)) {
+        next.delete(modelKey);
+      } else {
+        next.add(modelKey);
+      }
+      return next;
+    });
+  }
+
+  function toggleAllModels() {
+    if (allCollapsed) {
+      setCollapsedModels(new Set());
+    } else {
+      setCollapsedModels(new Set(allModelKeys));
+    }
+  }
   const draftValidationError = useMemo(() => getLlmDraftValidationError(draft), [draft]);
   const rawValidation = useMemo(() => {
     try {
@@ -740,11 +763,18 @@ export default function LlmRoute() {
                       </section>
                     ) : (
                       <section className="stack">
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+                          <Button onClick={toggleAllModels} size="small">
+                            {allCollapsed ? "全部展开" : "全部折叠"}
+                          </Button>
+                        </div>
                         <div className="model-list">
                           {draft.models.map((model, modelIndex) => (
                             <ModelCard
                               key={`${model.key || "model"}-${modelIndex}`}
                               model={model}
+                              collapsed={collapsedModels.has(model.key || "")}
+                              onToggleCollapse={() => toggleModelCollapse(model.key || "")}
                               onAddRoute={() => setDraft((current) => ({
                                 ...current,
                                 models: current.models.map((item, index) => (
@@ -958,6 +988,8 @@ function ModelCard({
   model,
   providers,
   runtimeSnapshot,
+  collapsed,
+  onToggleCollapse,
   onChange,
   onRemove,
   onAddRoute,
@@ -967,6 +999,8 @@ function ModelCard({
   model: LlmModelDraft;
   providers: LlmProviderDraft[];
   runtimeSnapshot: ReturnType<typeof getModelRuntimeSnapshot>;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
   onChange: (key: keyof LlmModelDraft, value: string) => void;
   onRemove: () => void;
   onAddRoute: () => void;
@@ -975,21 +1009,30 @@ function ModelCard({
 }) {
   return (
     <article className="config-item">
-      <div className="config-item-header">
+      <div
+        className="config-item-header"
+        style={{ cursor: "pointer", marginBottom: collapsed ? 0 : undefined, borderBottom: collapsed ? "none" : undefined }}
+        onClick={onToggleCollapse}
+      >
         <div className="config-item-title">
-          <h3>{model.label || model.key || "新模型"}</h3>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            {collapsed ? <RightOutlined style={{ fontSize: 12 }} /> : <DownOutlined style={{ fontSize: 12 }} />}
+            <h3>{model.label || model.key || "新模型"}</h3>
+          </span>
           <span className="config-item-meta">
-            {toModelKindLabel(model.kind)} · {toRouteStrategyLabel(model.strategy)}
+            {toModelKindLabel(model.kind)} · {toRouteStrategyLabel(model.strategy)} · {model.routes.length} 路由
           </span>
         </div>
-        <div className="config-item-actions">
+        <div className="config-item-actions" onClick={(e) => e.stopPropagation()}>
           <Button danger onClick={onRemove} size="small">
             删除模型
           </Button>
         </div>
       </div>
 
-      <div className="config-form-grid">
+      {collapsed ? null : (
+        <>
+          <div className="config-form-grid">
         <Field label="Key" hint="唯一标识">
           <Input
             onChange={(event) => onChange("key", event.target.value)}
@@ -1100,7 +1143,9 @@ function ModelCard({
             </div>
           ))
         )}
-      </div>
+          </div>
+        </>
+      )}
     </article>
   );
 }
