@@ -597,6 +597,44 @@ def is_managed_release_image(image_ref: str, image_name: str, tag_suffix: str) -
     return tag.endswith(f"-{tag_suffix}") or tag.endswith(f"-{tag_suffix}-dirty")
 
 
+def parse_docker_image_created(raw: str) -> datetime | None:
+    """Parse docker image Created field which may have multiple formats."""
+    if not raw:
+        return None
+
+    raw = raw.strip()
+
+    # Format 1: ISO 8601 with timezone (2026-04-03T10:23:45+00:00)
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        pass
+
+    # Format 2: Docker default format (2026-04-03 10:23:45.123456789 +0000 UTC)
+    # or (2026-04-03 10:23:45 +0000 UTC)
+    import re
+    match = re.match(r"^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\.\d+)?\s+([+-]\d{4})\s*(?:UTC)?$", raw)
+    if match:
+        date_part, time_part, tz_part = match.groups()
+        try:
+            iso_str = f"{date_part}T{time_part}{tz_part[:3]}:{tz_part[3:]}"
+            return datetime.fromisoformat(iso_str)
+        except ValueError:
+            pass
+
+    # Format 3: Without microseconds (2026-04-03 10:23:45 +0000 UTC)
+    match = re.match(r"^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\s+([+-]\d{4})\s*(?:UTC)?$", raw)
+    if match:
+        date_part, time_part, tz_part = match.groups()
+        try:
+            iso_str = f"{date_part}T{time_part}{tz_part[:3]}:{tz_part[3:]}"
+            return datetime.fromisoformat(iso_str)
+        except ValueError:
+            pass
+
+    return None
+
+
 def list_managed_release_images(image_name: str, tag_suffix: str) -> list[tuple[str, datetime]]:
     try:
         output = command_output(["docker", "image", "ls", image_name, "--format", "{{.Repository}}:{{.Tag}}"])
@@ -616,9 +654,11 @@ def list_managed_release_images(image_name: str, tag_suffix: str) -> list[tuple[
         created_at = datetime.fromtimestamp(0, tz=timezone.utc)
         try:
             created_raw = command_output(["docker", "image", "inspect", image_ref, "--format", "{{.Created}}"])
-            created_at = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
-        except (subprocess.CalledProcessError, ValueError):
-            print(f"warning: cannot inspect image creation time, fallback to oldest ordering: {image_ref}")
+            parsed = parse_docker_image_created(created_raw)
+            if parsed:
+                created_at = parsed
+        except subprocess.CalledProcessError:
+            pass
 
         image_refs.append((image_ref, created_at))
 
