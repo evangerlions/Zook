@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { stat } from "node:fs/promises";
-import { createReadStream } from "node:fs";
+import { createReadStream, readFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -31,11 +31,15 @@ const DEFAULT_PORT = 3110;
 const DEFAULT_STATIC_ROOT = fileURLToPath(new URL("./build/client", import.meta.url));
 const INTERNAL_HEALTH_PATH = "/_admin/health";
 const RUNTIME_CONFIG_PATH = "/_admin/runtime-config.js";
+const ROOT_PACKAGE_VERSION = JSON.parse(
+  readFileSync(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8"),
+).version as string;
 
 function createRuntimeConfig(options: AdminServerOptions) {
   return {
     brandName: options.brandName ?? process.env.ADMIN_BRAND_NAME ?? DEFAULT_BRAND_NAME,
     defaultAppId: options.defaultAppId ?? process.env.ADMIN_DEFAULT_APP_ID ?? "",
+    version: process.env.APP_VERSION ?? ROOT_PACKAGE_VERSION,
     healthPath: "/api/health",
     analyticsUrl: process.env.ADMIN_ANALYTICS_URL ?? "https://analytics.youwoai.net",
     logsUrl: process.env.ADMIN_LOG_URL ?? "https://logs.youwoai.net/",

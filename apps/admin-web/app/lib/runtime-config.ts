@@ -3,6 +3,7 @@ import type { RuntimeConfig } from "./types";
 const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   brandName: "Zook Control Room",
   defaultAppId: "",
+  version: "0.1.0",
   healthPath: "/api/health",
   analyticsUrl: "https://analytics.youwoai.net",
   logsUrl: "https://logs.youwoai.net/",
