@@ -1,26 +1,26 @@
 :root {
-  --bg: #e8edf7;
+  --bg: #edf0ea;
   --surface: rgba(255, 255, 255, 0.92);
-  --surface-soft: #f5f8fd;
+  --surface-soft: #f6f7f1;
   --surface-strong: #ffffff;
-  --line: #d3ddeb;
-  --line-strong: #b8cadf;
-  --text: #132033;
-  --text-soft: #607187;
-  --primary: #2157d5;
-  --primary-soft: rgba(33, 87, 213, 0.12);
-  --primary-strong: #0f2b77;
-  --success: #0f9d68;
-  --danger: #d14343;
-  --sidebar: #0b1426;
+  --line: #d6ddd3;
+  --line-strong: #bcc7bb;
+  --text: #1f2721;
+  --text-soft: #6f7a72;
+  --primary: #d7725f;
+  --primary-soft: rgba(215, 114, 95, 0.12);
+  --primary-strong: #a44b3b;
+  --success: #4e8b68;
+  --danger: #c45757;
+  --sidebar: #55675c;
   --sidebar-text: rgba(255, 255, 255, 0.88);
-  --sidebar-soft: rgba(255, 255, 255, 0.58);
+  --sidebar-soft: rgba(237, 243, 236, 0.72);
   --radius-xl: 24px;
   --radius-lg: 18px;
   --radius-md: 14px;
   --radius-sm: 10px;
-  --shadow: 0 26px 70px rgba(15, 23, 42, 0.08);
-  --shadow-strong: 0 24px 60px rgba(9, 19, 41, 0.22);
+  --shadow: 0 26px 70px rgba(59, 79, 63, 0.08);
+  --shadow-strong: 0 28px 64px rgba(48, 64, 53, 0.22);
   --font-sans: "Manrope", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-display: "Outfit", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
@@ -40,9 +40,9 @@ body {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(33, 87, 213, 0.18), transparent 24%),
-    radial-gradient(circle at 85% 10%, rgba(15, 23, 42, 0.08), transparent 22%),
-    linear-gradient(180deg, #e8edf7 0%, #f7f9fd 48%, #eef4fb 100%);
+    radial-gradient(circle at top left, rgba(215, 114, 95, 0.16), transparent 24%),
+    radial-gradient(circle at 82% 8%, rgba(115, 150, 123, 0.12), transparent 22%),
+    linear-gradient(180deg, #edf0ea 0%, #fafaf6 46%, #eef2ec 100%);
   color: var(--text);
   font-family: var(--font-sans);
 }
@@ -66,7 +66,7 @@ button {
 button:focus-visible,
 a:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(33, 87, 213, 0.16);
+  box-shadow: 0 0 0 4px rgba(215, 114, 95, 0.16);
 }
 
 #app {
@@ -111,4 +111,3 @@ a:focus-visible {
   padding: 48px;
   text-align: center;
 }
-
