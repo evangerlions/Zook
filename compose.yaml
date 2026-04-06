@@ -7,6 +7,7 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
+      APP_VERSION: "${APP_VERSION:-}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
     extra_hosts:
@@ -33,6 +34,7 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
+      APP_VERSION: "${APP_VERSION:-}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
     extra_hosts:
@@ -47,6 +49,7 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${ADMIN_CONTAINER_PORT:-3110}"
+      APP_VERSION: "${APP_VERSION:-}"
       ADMIN_API_PROXY_TARGET: "http://api:${CONTAINER_PORT:-3100}"
       ADMIN_BRAND_NAME: "${ADMIN_BRAND_NAME:-Zook Control Room}"
       ADMIN_DEFAULT_APP_ID: "${ADMIN_DEFAULT_APP_ID:-}"

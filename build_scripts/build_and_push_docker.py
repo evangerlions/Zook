@@ -762,6 +762,7 @@ def build_compose_env(
     *,
     image_name: str,
     image_tag: str,
+    app_version: str,
     project_name: str,
     app_env_file: Path,
     host_port: str,
@@ -775,6 +776,7 @@ def build_compose_env(
     return {
         "DEPLOY_IMAGE": image_name,
         "IMAGE_TAG": image_tag,
+        "APP_VERSION": app_version,
         "COMPOSE_PROJECT_NAME": project_name,
         "APP_ENV_FILE": str(app_env_file),
         "HOST_BIND_IP": bind_ip,
@@ -981,6 +983,7 @@ def main() -> int:
         compose_env = build_compose_env(
             image_name=image_name,
             image_tag=image_tag,
+            app_version=version or image_tag,
             project_name=project_name,
             app_env_file=app_env_file,
             host_port=host_port,
@@ -1080,6 +1083,7 @@ def main() -> int:
             previous_compose_env = build_compose_env(
                 image_name=previous_release["image_name"],
                 image_tag=previous_release["image_tag"],
+                app_version=(previous_release.get("version") or previous_release["image_tag"]),
                 project_name=project_name,
                 app_env_file=app_env_file,
                 host_port=host_port,
