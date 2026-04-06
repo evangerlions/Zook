@@ -3,6 +3,7 @@ import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.t
 import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
+import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
@@ -18,6 +19,8 @@ import type {
   AdminAppSummary,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
+  AdminAppRemoteLogPullSettingsDocument,
+  AdminAppRemoteLogPullTaskListDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
@@ -32,17 +35,20 @@ import type {
   AdminPasswordRevealDocument,
   AppRecord,
   LlmMetricsRange,
+  PublicAppConfigDocument,
   RoleRecord,
 } from "../../shared/types.ts";
 
 const ADMIN_CONFIG_KEY = "admin.delivery_config";
 const COMMON_APP_ID = "common";
+const APP_ID_PATTERN = /^[a-z0-9_]+$/;
 
 export class AdminConsoleService {
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly appConfigService: VersionedAppConfigService,
     private readonly appI18nConfigService: AppI18nConfigService,
+    private readonly appRemoteLogPullService: AppRemoteLogPullService,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
@@ -88,6 +94,26 @@ export class AdminConsoleService {
     };
   }
 
+  async getPublicConfig(appId: string): Promise<PublicAppConfigDocument> {
+    const app = await this.requireApp(appId);
+    if (app.id === COMMON_APP_ID) {
+      throw new ApplicationError(404, "APP_NOT_FOUND", "App common does not expose public config.");
+    }
+
+    if (app.status === "BLOCKED") {
+      throw new ApplicationError(403, "APP_BLOCKED", "The app is blocked.");
+    }
+
+    const rawJson = await this.readNormalizedConfig(app.id);
+
+    return {
+      appId: app.id,
+      configKey: ADMIN_CONFIG_KEY,
+      config: JSON.parse(rawJson) as Record<string, unknown>,
+      updatedAt: await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY),
+    };
+  }
+
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
     const app = await this.requireConfigApp(appId);
     const normalized = this.normalizeConfig(rawJson);
@@ -118,6 +144,10 @@ export class AdminConsoleService {
     const normalizedId = appId.trim();
     if (!normalizedId) {
       badRequest("REQ_INVALID_BODY", "appId must be a non-empty string.");
+    }
+
+    if (!APP_ID_PATTERN.test(normalizedId)) {
+      badRequest("REQ_INVALID_BODY", "appId must contain only lowercase letters, numbers, and underscores.");
     }
 
     const normalizedZhCnName = appNameZhCn.trim();
@@ -159,6 +189,7 @@ export class AdminConsoleService {
       "app-created",
     );
     await this.appI18nConfigService.initializeAppConfig(record.id, "app-created");
+    await this.appRemoteLogPullService.initializeAppConfig(record.id, "app-created");
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
@@ -343,6 +374,61 @@ export class AdminConsoleService {
       app: await this.toSummary(app),
       ...document,
     };
+  }
+
+  async getRemoteLogPullSettings(
+    appId: string,
+    revision?: number,
+  ): Promise<AdminAppRemoteLogPullSettingsDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appRemoteLogPullService.getDocument(app.id, revision);
+    return {
+      app: await this.toSummary(app),
+      ...document,
+    };
+  }
+
+  async updateRemoteLogPullSettings(
+    appId: string,
+    input: unknown,
+    desc?: string,
+  ): Promise<AdminAppRemoteLogPullSettingsDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appRemoteLogPullService.updateConfig(app.id, input, desc);
+    await this.managedStateStore.save(this.database);
+    return await this.getRemoteLogPullSettings(app.id, document.revision);
+  }
+
+  async restoreRemoteLogPullSettings(
+    appId: string,
+    revision: number,
+  ): Promise<AdminAppRemoteLogPullSettingsDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appRemoteLogPullService.restoreConfig(app.id, revision);
+    await this.managedStateStore.save(this.database);
+    return await this.getRemoteLogPullSettings(app.id, document.revision);
+  }
+
+  async listRemoteLogPullTasks(appId: string): Promise<AdminAppRemoteLogPullTaskListDocument> {
+    const app = await this.requireConfigApp(appId);
+    return {
+      app: await this.toSummary(app),
+      items: await this.appRemoteLogPullService.listTasks(app.id),
+    };
+  }
+
+  async createRemoteLogPullTask(appId: string, input: unknown): Promise<AdminAppRemoteLogPullTaskListDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appRemoteLogPullService.createTask(app.id, input);
+    await this.managedStateStore.save(this.database);
+    return await this.listRemoteLogPullTasks(app.id);
+  }
+
+  async cancelRemoteLogPullTask(appId: string, taskId: string): Promise<AdminAppRemoteLogPullTaskListDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appRemoteLogPullService.cancelTask(app.id, taskId);
+    await this.managedStateStore.save(this.database);
+    return await this.listRemoteLogPullTasks(app.id);
   }
 
   async updateI18nSettings(appId: string, input: unknown, desc?: string): Promise<AdminAppI18nDocument> {

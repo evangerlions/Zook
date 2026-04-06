@@ -1,4 +1,4 @@
-import { Button, Input, Modal } from "antd";
+import { Input, Modal } from "antd";
 import { useEffect, useState } from "react";
 
 import { adminApi } from "../lib/admin-api";
@@ -18,30 +18,20 @@ export function SensitiveOperationModal({
   open,
   operation,
   title,
-  description,
+  description: _description,
   onClose,
   onAuthorized,
 }: SensitiveOperationModalProps) {
   const [code, setCode] = useState("");
-  const [recipientHint, setRecipientHint] = useState("");
-  const [statusText, setStatusText] = useState("");
   const [errorText, setErrorText] = useState("");
-  const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
   async function sendCode() {
-    setSending(true);
     setErrorText("");
     try {
-      const result = await adminApi.requestSensitiveOperationCode(operation);
-      setRecipientHint(result.recipientEmailMasked);
-      setStatusText(
-        `验证码已发送至 ${result.recipientEmailMasked}，${Math.max(1, Math.floor(result.expiresInSeconds / 60))} 分钟内有效。`,
-      );
+      await adminApi.requestSensitiveOperationCode(operation);
     } catch (error) {
       setErrorText(formatApiError(error));
-    } finally {
-      setSending(false);
     }
   }
 
@@ -52,7 +42,6 @@ export function SensitiveOperationModal({
       const grant = await adminApi.verifySensitiveOperationCode(operation, code.trim());
       await onAuthorized(grant);
       setCode("");
-      setStatusText("");
       setErrorText("");
       onClose();
     } catch (error) {
@@ -65,8 +54,6 @@ export function SensitiveOperationModal({
   useEffect(() => {
     if (!open) {
       setCode("");
-      setRecipientHint("");
-      setStatusText("");
       setErrorText("");
       return;
     }
@@ -77,7 +64,7 @@ export function SensitiveOperationModal({
   return (
     <Modal
       cancelText="取消"
-      okButtonProps={{ loading: verifying }}
+      okButtonProps={{ loading: verifying, disabled: code.trim().length !== 6 }}
       okText="验证并继续"
       onCancel={onClose}
       onOk={() => void handleVerify()}
@@ -85,27 +72,16 @@ export function SensitiveOperationModal({
       title={title}
     >
       <div className="stack">
-        <p>{description}</p>
         <label className="field">
-          <span className="field-label">邮箱验证码</span>
-          <Input
-            maxLength={6}
-            onChange={(event) => setCode(event.target.value)}
-            placeholder="请输入 6 位验证码"
+          <Input.OTP
+            autoFocus
+            formatter={(value) => value.replace(/\D/g, "")}
+            length={6}
+            onChange={(value) => setCode(value)}
             size="large"
             value={code}
           />
-          <small className="field-hint">
-            {recipientHint ? `验证码会发送到 ${recipientHint}` : "验证码会发送到预设的管理邮箱。"}
-          </small>
         </label>
-
-        <div className="button-row">
-          <Button loading={sending} onClick={() => void sendCode()}>
-            {sending ? "发送中..." : "重新发送验证码"}
-          </Button>
-          {statusText ? <small className="field-hint">{statusText}</small> : null}
-        </div>
 
         {errorText ? <p className="form-error">{errorText}</p> : null}
       </div>

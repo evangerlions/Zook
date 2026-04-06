@@ -333,19 +333,32 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return this.clientLogUploadTasks.find((item) => item.id === taskId);
   }
 
+  insertClientLogUploadTask(record: ClientLogUploadTaskRecord): void {
+    this.clientLogUploadTasks.push(structuredClone(record));
+  }
+
   updateClientLogUploadTask(
     taskId: string,
-    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "uploadedAt">>,
+    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "clientId" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
   ): void {
     const task = this.findClientLogUploadTask(taskId);
     if (!task) {
       return;
     }
 
-    if (patch.status) {
+    if ("status" in patch) {
       task.status = patch.status;
     }
-    if (patch.uploadedAt !== undefined) {
+    if ("clientId" in patch) {
+      task.clientId = patch.clientId;
+    }
+    if ("claimToken" in patch) {
+      task.claimToken = patch.claimToken;
+    }
+    if ("claimExpireAt" in patch) {
+      task.claimExpireAt = patch.claimExpireAt;
+    }
+    if ("uploadedAt" in patch) {
       task.uploadedAt = patch.uploadedAt;
     }
   }

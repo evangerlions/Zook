@@ -237,7 +237,7 @@ export default function PasswordsRoute() {
       </section>
 
       <SensitiveOperationModal
-        description="为了复制密码项的真实值，需要先完成一次邮箱验证码校验。验证通过后，当前登录会话会自动获得 1 小时敏感操作权限。"
+        description="为了复制密码项的真实值，需要先输入 6 位二级密码。验证通过后，当前登录会话会自动获得 1 小时敏感操作权限。"
         onAuthorized={async () => {
           if (!pendingSensitiveKey) {
             return;

@@ -7,6 +7,8 @@ import type {
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
   AdminEmailTestSendDocument,
+  AdminRemoteLogPullSettingsDocument,
+  AdminRemoteLogPullTaskListDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
   AdminLlmServiceDocument,
@@ -239,6 +241,61 @@ export const adminApi = {
   restoreConfig(appId: string, revision: number) {
     return requestJson<AdminConfigDocument>(
       adminPath(`/apps/${encodeURIComponent(appId)}/config/revisions/${revision}/restore`),
+      {
+        method: "POST",
+      },
+    );
+  },
+  getRemoteLogPull(appId: string) {
+    return requestJson<AdminRemoteLogPullSettingsDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull`),
+    );
+  },
+  getRemoteLogPullRevision(appId: string, revision: number) {
+    return requestJson<AdminRemoteLogPullSettingsDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/revisions/${revision}`),
+    );
+  },
+  updateRemoteLogPull(appId: string, config: unknown, desc?: string) {
+    return requestJson<AdminRemoteLogPullSettingsDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull`),
+      {
+        method: "PUT",
+        body: {
+          config,
+          desc: desc || undefined,
+        },
+      },
+    );
+  },
+  restoreRemoteLogPull(appId: string, revision: number) {
+    return requestJson<AdminRemoteLogPullSettingsDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/revisions/${revision}/restore`),
+      {
+        method: "POST",
+      },
+    );
+  },
+  listRemoteLogPullTasks(appId: string) {
+    return requestJson<AdminRemoteLogPullTaskListDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/tasks`),
+    );
+  },
+  createRemoteLogPullTask(appId: string, userId: string, clientId: string) {
+    return requestJson<AdminRemoteLogPullTaskListDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/tasks`),
+      {
+        method: "POST",
+        body: {
+          userId,
+          clientId,
+        },
+      },
+    );
+  },
+  cancelRemoteLogPullTask(appId: string, taskId: string) {
+    return requestJson<AdminRemoteLogPullTaskListDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/tasks/${encodeURIComponent(taskId)}/cancel`),
       {
         method: "POST",
       },

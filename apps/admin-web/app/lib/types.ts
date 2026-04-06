@@ -74,6 +74,48 @@ export interface AdminConfigDocument {
   revisions: ConfigRevisionMeta[];
 }
 
+export interface RemoteLogPullSettings {
+  enabled: boolean;
+  minPullIntervalSeconds: number;
+  claimTtlSeconds: number;
+  taskDefaults: {
+    lookbackMinutes: number;
+    maxLines: number;
+    maxBytes: number;
+  };
+}
+
+export interface AdminRemoteLogPullSettingsDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: RemoteLogPullSettings;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminRemoteLogPullTaskSummary {
+  taskId: string;
+  userId: string;
+  clientId: string;
+  keyId: string;
+  status: "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED";
+  fromTsMs?: number;
+  toTsMs?: number;
+  maxLines?: number;
+  maxBytes?: number;
+  claimExpireAt?: string;
+  uploadedAt?: string;
+  createdAt: string;
+}
+
+export interface AdminRemoteLogPullTaskListDocument {
+  app: AdminAppSummary;
+  items: AdminRemoteLogPullTaskSummary[];
+}
+
 export interface EmailServiceTemplateConfig {
   locale: string;
   templateId: number;

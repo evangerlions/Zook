@@ -36,6 +36,7 @@ import { UserService } from "./modules/user/user.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import { AppLogSecretService, APP_LOG_SECRET_READ_OPERATION } from "./services/app-log-secret.service.ts";
+import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
@@ -71,10 +72,13 @@ import type {
   AdminAppSummary,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
+  AdminAppRemoteLogPullSettingsDocument,
+  AdminAppRemoteLogPullTaskListDocument,
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
+  PublicAppConfigDocument,
   AdminSessionRecord,
   AdminSensitiveOperationCodeRequestDocument,
   AdminSensitiveOperationGrantDocument,
@@ -86,11 +90,12 @@ import type {
   DatabaseSeed,
   HttpRequest,
   HttpResponse,
+  LogNoDataAckResult,
+  LogPolicyResult,
   LogPullTaskResult,
   LogUploadResult,
   LlmMetricsRange,
   Platform,
-  TencentSesRegion,
 } from "./shared/types.ts";
 import { createOpaqueToken, getHeader, parseCookies, randomId } from "./shared/utils.ts";
 
@@ -112,14 +117,10 @@ export interface CreateApplicationOptions {
     password: string;
   };
   adminSensitiveOperation?: {
-    recipientEmail?: string;
-    locale?: string;
-    region?: TencentSesRegion;
-    templateName?: string;
-    appName?: string;
-    codeGenerator?: () => string;
+    secondaryPassword?: string;
   };
   secureRefreshCookie?: boolean;
+  refreshCookieSameSite?: "Lax" | "None" | "Strict";
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
   databaseUrl?: string;
@@ -169,7 +170,37 @@ function resolveSecureRefreshCookie(options: CreateApplicationOptions): boolean 
     return options.secureRefreshCookie;
   }
 
+  const sameSite = resolveRefreshCookieSameSite(options);
+  if (sameSite === "None") {
+    return true;
+  }
+
   return options.serviceName === "api" || process.env.NODE_ENV === "production";
+}
+
+function resolveRefreshCookieSameSite(options: CreateApplicationOptions): "Lax" | "None" | "Strict" {
+  const runtimeServiceName = options.serviceName ?? "api";
+  const configured = options.refreshCookieSameSite ?? process.env.AUTH_REFRESH_COOKIE_SAMESITE;
+  if (configured) {
+    const normalized = configured.trim().toLowerCase();
+    if (normalized === "lax") {
+      return "Lax";
+    }
+    if (normalized === "none") {
+      return "None";
+    }
+    if (normalized === "strict") {
+      return "Strict";
+    }
+
+    throw new Error("AUTH_REFRESH_COOKIE_SAMESITE must be one of: Lax, None, Strict.");
+  }
+
+  if (runtimeServiceName === "api" || process.env.NODE_ENV === "production") {
+    return "None";
+  }
+
+  return "Lax";
 }
 
 function resolveAccessTokenSecrets(options: CreateApplicationOptions): { current: string; previous: string[] } {
@@ -310,6 +341,14 @@ export class BackendApplication {
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
     if (request.method === "GET" && request.path === "/api/health") {
       return this.ok({ status: "ok" }, request.requestId as string);
+    }
+
+    const publicConfigMatch = request.path.match(/^\/api\/v1\/([^/]+)\/public\/config$/);
+    if (request.method === "GET" && publicConfigMatch) {
+      return this.handleGetPublicAppConfig(
+        request,
+        decodeURIComponent(publicConfigMatch[1] as string),
+      );
     }
 
     if (request.method === "POST" && request.path === "/api/v1/admin/auth/login") {
@@ -491,6 +530,71 @@ export class BackendApplication {
       );
     }
 
+    const adminRemoteLogPullMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull$/);
+    if (request.method === "GET" && adminRemoteLogPullMatch) {
+      return this.handleAdminGetRemoteLogPullSettings(
+        request,
+        decodeURIComponent(adminRemoteLogPullMatch[1] as string),
+      );
+    }
+
+    if (request.method === "PUT" && adminRemoteLogPullMatch) {
+      return this.handleAdminUpdateRemoteLogPullSettings(
+        request,
+        decodeURIComponent(adminRemoteLogPullMatch[1] as string),
+      );
+    }
+
+    const adminRemoteLogPullRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminRemoteLogPullRevisionMatch) {
+      return this.handleAdminGetRemoteLogPullSettingsRevision(
+        request,
+        decodeURIComponent(adminRemoteLogPullRevisionMatch[1] as string),
+        Number(adminRemoteLogPullRevisionMatch[2]),
+      );
+    }
+
+    const adminRemoteLogPullRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminRemoteLogPullRestoreMatch) {
+      return this.handleAdminRestoreRemoteLogPullSettingsRevision(
+        request,
+        decodeURIComponent(adminRemoteLogPullRestoreMatch[1] as string),
+        Number(adminRemoteLogPullRestoreMatch[2]),
+      );
+    }
+
+    const adminRemoteLogPullTasksMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull\/tasks$/,
+    );
+    if (request.method === "GET" && adminRemoteLogPullTasksMatch) {
+      return this.handleAdminListRemoteLogPullTasks(
+        request,
+        decodeURIComponent(adminRemoteLogPullTasksMatch[1] as string),
+      );
+    }
+
+    if (request.method === "POST" && adminRemoteLogPullTasksMatch) {
+      return this.handleAdminCreateRemoteLogPullTask(
+        request,
+        decodeURIComponent(adminRemoteLogPullTasksMatch[1] as string),
+      );
+    }
+
+    const adminRemoteLogPullTaskCancelMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull\/tasks\/([^/]+)\/cancel$/,
+    );
+    if (request.method === "POST" && adminRemoteLogPullTaskCancelMatch) {
+      return this.handleAdminCancelRemoteLogPullTask(
+        request,
+        decodeURIComponent(adminRemoteLogPullTaskCancelMatch[1] as string),
+        decodeURIComponent(adminRemoteLogPullTaskCancelMatch[2] as string),
+      );
+    }
+
     const adminConfigMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/config$/);
     if (request.method === "GET" && adminConfigMatch) {
       return this.handleAdminGetConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
@@ -616,8 +720,17 @@ export class BackendApplication {
       return this.handleLogsPullTask(request);
     }
 
+    if (request.method === "GET" && request.path === "/api/v1/logs/policy") {
+      return this.handleLogsPolicy(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/logs/upload") {
       return this.handleLogsUpload(request);
+    }
+
+    const logAckMatch = request.path.match(/^\/api\/v1\/logs\/tasks\/([^/]+)\/ack$/);
+    if (request.method === "POST" && logAckMatch) {
+      return this.handleLogsAckNoData(request, decodeURIComponent(logAckMatch[1]));
     }
 
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
@@ -1305,6 +1418,27 @@ export class BackendApplication {
     );
   }
 
+  private async handleGetPublicAppConfig(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<PublicAppConfigDocument>> {
+    const authorization = getHeader(request.headers, "authorization");
+    if (authorization) {
+      const auth = this.authGuard.canActivate(request);
+      this.appContextResolver.resolvePostAuth(request, auth.appId);
+      this.appAccessGuard.assertScope(appId, auth.appId);
+      await this.authService.assertAccessTokenActive(auth);
+    } else {
+      const requestAppId = getHeader(request.headers, "x-app-id");
+      if (requestAppId && requestAppId !== appId) {
+        throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${appId}.`);
+      }
+    }
+
+    const result = await this.adminConsoleService.getPublicConfig(appId);
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminRequestSensitiveOperationCode(
     request: HttpRequest,
   ): Promise<HttpResponse<AdminSensitiveOperationCodeRequestDocument>> {
@@ -1854,6 +1988,127 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminGetRemoteLogPullSettings(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getRemoteLogPullSettings(appId);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: { adminUser },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateRemoteLogPullSettings(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const config = body.config ?? body;
+    const result = await this.adminConsoleService.updateRemoteLogPullSettings(appId, config, desc);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: { adminUser },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetRemoteLogPullSettingsRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getRemoteLogPullSettings(appId, revision);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: { adminUser, revision },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreRemoteLogPullSettingsRevision(
+    request: HttpRequest,
+    appId: string,
+    revision: number,
+  ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.restoreRemoteLogPullSettings(appId, revision);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: { adminUser, revision },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminListRemoteLogPullTasks(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppRemoteLogPullTaskListDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.listRemoteLogPullTasks(appId);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.tasks.read",
+      resourceType: "client_log_upload",
+      resourceId: "task-list",
+      payload: { adminUser },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminCreateRemoteLogPullTask(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<AdminAppRemoteLogPullTaskListDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.createRemoteLogPullTask(
+      appId,
+      this.validationPipe.asObject(request.body),
+    );
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.task.create",
+      resourceType: "client_log_upload",
+      resourceId: result.items[0]?.taskId ?? "created",
+      payload: { adminUser },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminCancelRemoteLogPullTask(
+    request: HttpRequest,
+    appId: string,
+    taskId: string,
+  ): Promise<HttpResponse<AdminAppRemoteLogPullTaskListDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.cancelRemoteLogPullTask(appId, taskId);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.task.cancel",
+      resourceType: "client_log_upload",
+      resourceId: taskId,
+      payload: { adminUser },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminGetI18nSettingsRevision(
     request: HttpRequest,
     appId: string,
@@ -2055,9 +2310,15 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleLogsPolicy(request: HttpRequest): Promise<HttpResponse<LogPolicyResult>> {
+    const auth = await this.authenticate(request);
+    const result = await this.clientLogUploadService.getPolicy(auth);
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleLogsPullTask(request: HttpRequest): Promise<HttpResponse<LogPullTaskResult>> {
     const auth = await this.authenticate(request);
-    const result = await this.clientLogUploadService.getPullTask(auth);
+    const result = await this.clientLogUploadService.getPullTask(auth, this.requireHeader(request, "x-client-id"));
     return this.ok(result, request.requestId as string);
   }
 
@@ -2065,7 +2326,9 @@ export class BackendApplication {
     const auth = await this.authenticate(request);
     const result = await this.clientLogUploadService.upload({
       auth,
+      clientId: this.requireHeader(request, "x-client-id"),
       taskId: this.requireHeader(request, "x-log-task-id"),
+      claimToken: this.requireHeader(request, "x-log-claim-token"),
       keyId: this.requireHeader(request, "x-log-key-id"),
       encryption: this.requireHeader(request, "x-log-enc"),
       nonceBase64: this.requireHeader(request, "x-log-nonce"),
@@ -2087,6 +2350,26 @@ export class BackendApplication {
         acceptedCount: result.acceptedCount,
         rejectedCount: result.rejectedCount,
       },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleLogsAckNoData(
+    request: HttpRequest,
+    taskId: string,
+  ): Promise<HttpResponse<LogNoDataAckResult>> {
+    const auth = await this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const status = this.validationPipe.requireString(body, "status");
+    if (status !== "no_data") {
+      throw new ApplicationError(400, "REQ_INVALID_BODY", "status must be no_data.");
+    }
+
+    const result = await this.clientLogUploadService.acknowledgeNoData({
+      auth,
+      clientId: this.requireHeader(request, "x-client-id"),
+      taskId,
+      claimToken: this.validationPipe.requireString(body, "claimToken"),
     });
     return this.ok(result, request.requestId as string);
   }
@@ -2361,9 +2644,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService, logger);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
   const appLogSecretService = new AppLogSecretService(database, kvManager);
+  const appRemoteLogPullService = new AppRemoteLogPullService(appConfigService, database, appLogSecretService);
   await database.withExclusiveSession(async () => {
     const initializedAppLogSecrets = await appLogSecretService.initializeSecrets(await database.listAppIds());
-    if (initializedAppLogSecrets) {
+    const initializedRemoteLogPullConfigs = await appRemoteLogPullService.initializeMissingConfigs(
+      await database.listAppIds(),
+    );
+    if (initializedAppLogSecrets || initializedRemoteLogPullConfigs) {
       await managedStateStore.save(database);
     }
   });
@@ -2387,7 +2674,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const adminSensitiveOperationService = new AdminSensitiveOperationService(
     kvManager,
-    registrationEmailSender,
     options.adminSensitiveOperation,
   );
   const geoResolver =
@@ -2416,6 +2702,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     registrationEmailSender,
     options.registrationCodeGenerator,
     resolveSecureRefreshCookie(options),
+    resolveRefreshCookieSameSite(options),
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
@@ -2447,6 +2734,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     appConfigService,
     appI18nConfigService,
+    appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
     commonLlmConfigService,
@@ -2469,6 +2757,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const clientLogUploadService = new ClientLogUploadService(
     database,
     logEncryptionKeyResolver,
+    appRemoteLogPullService,
   );
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
@@ -2530,6 +2819,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     services: {
       appConfigService,
       appI18nConfigService,
+      appRemoteLogPullService,
       kvManager,
       passwordManager,
       adminSessionStore,

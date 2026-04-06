@@ -2,13 +2,25 @@
 
 ## 1. 文档目标
 
-本文档用于统一多产品共用后端时的 API 路径与命名规范。适用场景是多个业务完全不同的产品共用一套服务基础设施，例如 `novel`、`pomodoro`、`ppt`、`my-todo`。
+本文档只面向外部 App / Web / H5 接入方。
 
-核心原则只有一句：
+它回答的是：
 
-```text
-平台能力平台化，产品能力产品化，管理能力后台化。
-```
+1. 别的产品如果要接入 Zook 服务，路径应该怎么设计
+2. 当前有哪些对外可调用接口
+3. Header、鉴权、作用域、响应格式应该怎么遵守
+
+不包含：
+
+1. `admin` 后台接口
+2. 内部配置管理接口
+3. Zook 运营后台自己的协议细节
+
+内部运营与后台接口请看：
+
+- [docs/admin-api-spec.md](docs/admin-api-spec.md)
+
+## 2. 核心原则
 
 统一业务前缀：
 
@@ -16,34 +28,24 @@
 /api/v1
 ```
 
-健康检查独立使用：
+健康检查：
 
 ```text
 /api/health
 ```
 
-## 2. 路径分层
+核心原则只有一句：
 
-API 按职责分三层：
+```text
+平台能力平台化，产品能力产品化。
+```
+
+## 3. 路径分层
 
 | 层级 | Path 模板 | 说明 | 示例 |
 | --- | --- | --- | --- |
-| 平台公共能力 | `/api/v1/{commonScope}/...` | 登录、用户、文件、支付、通知、配置等 | `/api/v1/auth/login` |
+| 平台公共能力 | `/api/v1/{commonScope}/...` | 登录、用户、文件、通知、统计等 | `/api/v1/auth/login` |
 | 产品业务能力 | `/api/v1/{productKey}/...` | 某个产品独有的业务接口 | `/api/v1/ppt/projects` |
-| 管理能力 | `/api/v1/admin/...` | 运营后台、审核、系统配置 | `/api/v1/admin/users` |
-
-管理后台如果要管理某个具体产品，继续嵌套：
-
-```text
-/api/v1/admin/{productKey}/...
-```
-
-例如：
-
-```text
-/api/v1/admin/novel/projects
-/api/v1/admin/ppt/templates
-```
 
 平台公共模块推荐固定为：
 
@@ -51,16 +53,34 @@ API 按职责分三层：
 /api/v1/auth/...
 /api/v1/users/...
 /api/v1/files/...
-/api/v1/billing/...
 /api/v1/notifications/...
-/api/v1/config/...
+/api/v1/analytics/...
 ```
 
-规则：
+产品路径规则：
 
-1. 平台公共能力必须抽离，不要在每个产品下重复实现。
-2. 产品路径使用稳定的技术 key，不用营销名。推荐：`novel`、`pomodoro`、`ppt`、`my-todo`。
-3. 产品登录前公开能力、回调、Webhook 仍挂在产品前缀下：
+1. 使用稳定技术 key，不用营销名
+2. 路径统一小写
+3. 单词优先使用中划线
+4. 如果 Path、Header、Token 同时带产品标识，它们必须一致，否则返回 `403 AUTH_APP_SCOPE_MISMATCH`
+
+## 4. 产品接入模板
+
+假设新增产品 key 为 `my-todo`。
+
+### 4.1 私有业务接口
+
+```text
+GET    /api/v1/my-todo/todos
+POST   /api/v1/my-todo/todos
+GET    /api/v1/my-todo/todos/{todoId}
+PATCH  /api/v1/my-todo/todos/{todoId}
+DELETE /api/v1/my-todo/todos/{todoId}
+```
+
+### 4.2 产品公开接口
+
+推荐对外结构：
 
 ```text
 /api/v1/{productKey}/public/...
@@ -68,15 +88,31 @@ API 按职责分三层：
 /api/v1/{productKey}/webhooks/...
 ```
 
-## 3. 命名与 Method 规则
+例如：
 
-1. 路径统一小写，单词使用中划线。
-2. 资源优先使用复数名词，如 `/projects`、`/chapters`、`/sessions`。
-3. 查询使用 `GET`，创建使用 `POST`，局部更新使用 `PATCH`，删除使用 `DELETE`。
-4. 生成、导出、取消、结算这类不适合资源建模的动作，使用 `POST`。
-5. 查询条件放 query，写操作参数放 JSON body。
-6. 版本只放大版本号，统一使用 `/api/v1`；不使用 `/api/v1.1` 这类小版本路径。
-7. 如果 Path、Header、Token 同时携带产品标识，它们必须一致，否则返回 `403 AUTH_APP_SCOPE_MISMATCH`。
+```text
+GET  /api/v1/my-todo/public/config
+GET  /api/v1/my-todo/public/bootstrap
+POST /api/v1/my-todo/webhooks/stripe
+GET  /api/v1/my-todo/callbacks/oauth/google
+```
+
+说明：
+
+1. 这是推荐接入规范，不代表当前仓库已经把所有模板接口都实现完
+2. 当前仓库已经提供通用的 `GET /api/v1/{productKey}/public/config` 实现
+3. 这条接口当前返回的是后台 `admin.delivery_config` 中维护的 app 级公共配置
+4. 其他 `/public/*` 模板接口仍需按产品需要补齐
+
+## 5. 命名与 Method 规则
+
+1. 查询使用 `GET`
+2. 创建使用 `POST`
+3. 局部更新使用 `PATCH`
+4. 删除使用 `DELETE`
+5. 查询条件放 query
+6. 写操作参数放 JSON body
+7. 版本统一使用 `/api/v1`
 
 推荐：
 
@@ -93,87 +129,9 @@ POST   /api/v1/ppt/exports/pptx
 /api/v1/pptProjects
 /api/v1/createSlide
 /api/v1/magic-super-ppt-maker/projects
-/api/v1/ppt/login
 ```
 
-## 4. 新产品接入模板
-
-假设新增产品 key 为 `my-todo`，有以下业务资源：
-
-1. `todos`
-2. `projects`
-3. `tags`
-
-### 4.1 私有业务接口
-
-已登录用户的私有业务接口，直接挂在产品前缀下：
-
-```text
-GET    /api/v1/my-todo/todos
-POST   /api/v1/my-todo/todos
-GET    /api/v1/my-todo/todos/{todoId}
-PATCH  /api/v1/my-todo/todos/{todoId}
-DELETE /api/v1/my-todo/todos/{todoId}
-
-GET    /api/v1/my-todo/projects
-POST   /api/v1/my-todo/projects
-GET    /api/v1/my-todo/projects/{projectId}
-
-GET    /api/v1/my-todo/tags
-POST   /api/v1/my-todo/tags
-GET    /api/v1/my-todo/tags/{tagId}
-```
-
-规则：
-
-1. 这类场景不要写成 `/api/v1/todos`，因为这里不是“单产品多资源”，而是“多产品共用后端”。
-2. 产品边界直接体现在 path 上，便于网关、权限、日志和文档按产品收口。
-3. 如果 Token 中带有 `app_id` 或 `productKey`，它必须与 path 中的 `my-todo` 一致。
-
-### 4.2 产品公开接口
-
-登录前公开能力也放在产品前缀下：
-
-```text
-GET /api/v1/my-todo/public/config
-GET /api/v1/my-todo/public/bootstrap
-GET /api/v1/my-todo/public/tags
-```
-
-适用场景：
-
-1. 启动配置
-2. 品牌配置
-3. 公开字典或模板数据
-
-### 4.3 产品回调与 Webhook
-
-```text
-GET  /api/v1/my-todo/callbacks/oauth/google
-GET  /api/v1/my-todo/callbacks/wechat-login
-
-POST /api/v1/my-todo/webhooks/stripe
-POST /api/v1/my-todo/webhooks/github
-```
-
-规则：
-
-1. `callbacks` 用于 OAuth、支付页面跳回等回调入口。
-2. `webhooks` 用于第三方系统主动推送事件。
-3. 这类接口应使用签名、密钥或白名单鉴权，不依赖普通用户 Bearer Token。
-
-### 4.4 一眼看懂的模板
-
-| 需求 | 推荐 Path |
-| --- | --- |
-| 登录 | `/api/v1/auth/login` |
-| 产品资源列表 | `/api/v1/my-todo/todos` |
-| 产品资源详情 | `/api/v1/my-todo/todos/{todoId}` |
-| 产品公开配置 | `/api/v1/my-todo/public/config` |
-| 产品回调 | `/api/v1/my-todo/callbacks/oauth/google` |
-| 产品 Webhook | `/api/v1/my-todo/webhooks/stripe` |
-
-## 5. Header 与查询参数
+## 6. Header 约定
 
 推荐 Header：
 
@@ -190,34 +148,21 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
 说明：
 
-1. `X-App-Id` 可用于日志、埋点、网关或前置校验。
-2. 如果请求同时带 `X-App-Id` 和产品路径，两者必须一致。
-3. `X-App-Locale` 表示客户端当前 UI 语言，推荐传 BCP 47，如 `zh-CN`、`en-US`。
-4. `X-App-Country-Code` 表示客户端感知到的国家码，使用 ISO 3166-1 alpha-2 大写值，如 `CN`、`US`。
-5. `Accept-Language` 可作为 Web / 浏览器环境下的语言兜底。
-6. `X-Country-Code` 仅供可信网关注入，普通客户端不需要发送；服务端会优先使用它来决定邮件发送 region。
-7. 邮件发送场景的优先级：
-   `region = X-Country-Code（可信网关） > X-App-Country-Code > Geo`
-   `locale = X-App-Locale > Accept-Language > 国家码推断 > zh-CN`
-8. App 客户端建议始终传 `X-App-Locale` 与 `X-App-Country-Code`；Web 客户端至少传 `X-App-Locale`。
-9. 列表查询统一通过 query 表达，例如 `page`、`page_size`、`keyword`、`status`、`sort_by`、`sort_order`、`cursor`。
+1. `X-App-Id` 可用于日志、埋点、网关或前置校验
+2. `X-App-Locale` 推荐传 BCP 47，如 `zh-CN`、`en-US`
+3. `X-App-Country-Code` 推荐传 ISO 3166-1 alpha-2 大写值，如 `CN`、`US`
+4. `Accept-Language` 可作为 Web / 浏览器环境的兜底语言来源
+5. 邮件发送场景的 region 优先级是：
+   `X-Country-Code（可信网关） > X-App-Country-Code > Geo`
 
-示例：
+## 7. 当前已开放的对外接口
 
-```text
-GET /api/v1/ppt/projects?page=1&page_size=20
-GET /api/v1/novel/projects?status=active
-GET /api/v1/pomodoro/sessions?date=2026-03-18
-```
-
-## 6. 当前已开放接口
-
-当前仓库已经挂出的接口主要是平台层与管理层能力：
+当前仓库已经开放的对外接口，主要是平台层与产品薄代理能力：
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/health` | 健康检查 |
-| `POST` | `/api/v1/auth/login` | 登录 |
+| `POST` | `/api/v1/auth/login` | 密码登录 |
 | `POST` | `/api/v1/auth/login/email-code` | 发送邮箱登录验证码 |
 | `POST` | `/api/v1/auth/login/email` | 使用邮箱验证码登录，必要时自动创建账号 |
 | `POST` | `/api/v1/auth/password/email-code` | 发送密码设置 / 重置邮箱验证码 |
@@ -227,25 +172,19 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `POST` | `/api/v1/auth/register` | 邮箱注册并创建账号 |
 | `POST` | `/api/v1/auth/qr-logins` | 创建扫码登录会话并生成二维码内容 |
 | `POST` | `/api/v1/auth/qr-logins/{loginId}/confirm` | 移动端确认扫码登录 |
-| `GET` | `/api/v1/auth/qr-logins/{loginId}` | PC 端轮询扫码登录结果 |
+| `GET` | `/api/v1/auth/qr-logins/{loginId}` | PC/Web 轮询扫码登录结果 |
 | `POST` | `/api/v1/auth/refresh` | 刷新 Access Token |
 | `POST` | `/api/v1/auth/logout` | 登出 |
 | `GET` | `/api/v1/users/me` | 获取当前 Bearer Token 对应的用户信息 |
 | `POST` | `/api/v1/analytics/events/batch` | 行为事件上报 |
-| `GET` | `/api/v1/admin/metrics/overview` | 概览指标 |
-| `GET` | `/api/v1/admin/metrics/pages` | 页面指标 |
-| `POST` | `/api/v1/admin/apps` | 创建 app，要求提供中文名与英文名 |
-| `PUT` | `/api/v1/admin/apps/{appId}/names` | 更新 app 的多语言名称，必须包含 `zh-CN` 与 `en-US` |
-| `GET` | `/api/v1/admin/apps/{appId}/i18n-settings` | 获取 app 级多语言设置 |
-| `PUT` | `/api/v1/admin/apps/{appId}/i18n-settings` | 更新 app 级多语言设置 |
-| `POST` | `/api/v1/admin/sensitive-operations/request-code` | 发送敏感操作邮箱验证码 |
-| `POST` | `/api/v1/admin/sensitive-operations/verify` | 校验敏感操作邮箱验证码并授予 1 小时权限 |
-| `POST` | `/api/v1/admin/apps/{appId}/log-secret/reveal` | 在敏感操作授权后获取 app 密钥明文 |
 | `POST` | `/api/v1/files/presign` | 获取上传预签名 |
 | `POST` | `/api/v1/files/confirm` | 确认上传完成 |
+| `GET` | `/api/v1/logs/policy` | 获取客户端日志回捞策略 |
 | `GET` | `/api/v1/logs/pull-task` | 拉取客户端日志上传任务 |
+| `POST` | `/api/v1/logs/tasks/{taskId}/ack` | 客户端无日志时回执 `no_data` |
 | `POST` | `/api/v1/logs/upload` | 上传 AES-GCM + gzip + NDJSON 客户端日志 |
 | `POST` | `/api/v1/notifications/send` | 发送通知任务 |
+| `GET` | `/api/v1/{productKey}/public/config` | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config` |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions` | AINovel chat 薄代理，按 `taskType` 选择服务端 scene 与逻辑模型 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings` | AINovel embeddings 薄代理，按 `taskType` 选择服务端 scene 与逻辑模型 |
 
@@ -266,7 +205,8 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 7. `POST /api/v1/auth/password/email-code` 为了避免账号探测，在邮箱不存在、账号被封或当前 app 不允许该用户走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` 阶段完成。
 8. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
 9. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
-10. 当前 `user` 结构为：
+10. `clientType = "web"` 时，服务端会通过 `Set-Cookie` 写入 refresh token。当前 API 默认使用跨站友好的 `SameSite=None; Secure`，前端请求必须带 `credentials: "include"`；如果是同站部署，也可以通过 `AUTH_REFRESH_COOKIE_SAMESITE=Lax` 切回更保守的策略。
+11. 当前 `user` 结构为：
 
 ```json
 {
@@ -282,10 +222,11 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 12. `POST /api/v1/auth/logout` 当 `scope = "all"` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 13. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
 14. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
+15. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Client-Id` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
 
-## 7. 统一响应格式
+## 8. 统一响应格式
 
-当前实现统一返回：
+成功响应：
 
 ```json
 {
@@ -296,7 +237,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 }
 ```
 
-失败时：
+失败响应：
 
 ```json
 {
@@ -309,7 +250,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 
 客户端应优先根据 `HTTP Status + code` 做分支处理。
 
-## 8. 常用错误码
+## 9. 常用错误码
 
 | HTTP Status | code | 说明 |
 | --- | --- | --- |
@@ -319,35 +260,14 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 | `401` | `AUTH_INVALID_TOKEN` | Token 非法、签名错误或过期 |
 | `401` | `AUTH_REFRESH_TOKEN_REQUIRED` | 需要 Refresh Token 但未提供 |
 | `401` | `AUTH_REFRESH_TOKEN_REVOKED` | Refresh Token 已失效或已撤销 |
-| `401` | `AUTH_VERIFICATION_CODE_REQUIRED` | 注册验证码缺失 |
-| `401` | `AUTH_VERIFICATION_CODE_INVALID` | 注册验证码错误、过期或已失效 |
+| `401` | `AUTH_VERIFICATION_CODE_REQUIRED` | 验证码缺失 |
+| `401` | `AUTH_VERIFICATION_CODE_INVALID` | 验证码错误、过期或已失效 |
 | `401` | `AUTH_QR_LOGIN_TOKEN_REQUIRED` | 扫码登录所需的一次性 token 缺失 |
 | `401` | `AUTH_QR_LOGIN_INVALID` | 扫码登录会话或 token 非法 |
 | `401` | `AUTH_QR_LOGIN_EXPIRED` | 扫码登录二维码已过期 |
-| `409` | `AUTH_ACCOUNT_ALREADY_EXISTS` | 邮箱已注册 |
-| `409` | `AUTH_QR_LOGIN_ALREADY_USED` | 扫码登录会话已确认或已消费 |
-| `429` | `AUTH_RATE_LIMITED` | 注册发送或提交频率过高 |
 | `403` | `AUTH_APP_SCOPE_MISMATCH` | Header、Path、Token 的产品标识不一致 |
 | `403` | `IAM_PERMISSION_DENIED` | 当前用户没有对应权限 |
+| `409` | `AUTH_ACCOUNT_ALREADY_EXISTS` | 邮箱已注册 |
+| `409` | `AUTH_QR_LOGIN_ALREADY_USED` | 扫码登录会话已确认或已消费 |
+| `429` | `AUTH_RATE_LIMITED` | 提交频率过高 |
 | `500` | `SYS_INTERNAL_ERROR` | 服务端内部异常 |
-
-## 9. 最终落地模板
-
-新增接口时，优先按下面的骨架设计：
-
-```text
-/api/v1/auth/...
-/api/v1/users/...
-/api/v1/files/...
-/api/v1/billing/...
-/api/v1/notifications/...
-/api/v1/config/...
-
-/api/v1/{productKey}/...
-/api/v1/{productKey}/public/...
-/api/v1/{productKey}/callbacks/...
-/api/v1/{productKey}/webhooks/...
-
-/api/v1/admin/...
-/api/v1/admin/{productKey}/...
-```

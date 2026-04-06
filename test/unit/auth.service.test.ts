@@ -107,6 +107,8 @@ test("auth service issues web refresh cookies with a 60 day lifetime", async () 
 
   assert.ok(cookie);
   assert.match(cookie, /Max-Age=5184000/);
+  assert.match(cookie, /SameSite=None/);
+  assert.match(cookie, /Secure/);
 });
 
 test("auth service can mark web refresh cookies as Secure", async () => {
@@ -118,6 +120,18 @@ test("auth service can mark web refresh cookies as Secure", async () => {
   assert.ok(cookie);
   assert.match(cookie, /Secure/);
   assert.match(runtime.services.authService.buildClearRefreshCookie(), /Secure/);
+});
+
+test("auth service allows overriding refresh cookie SameSite strategy", async () => {
+  const runtime = await createApplication({
+    refreshCookieSameSite: "Lax",
+    secureRefreshCookie: false,
+  });
+  const cookie = runtime.services.authService.buildRefreshCookie("refresh-token", "web");
+
+  assert.ok(cookie);
+  assert.match(cookie, /SameSite=Lax/);
+  assert.doesNotMatch(cookie, /Secure/);
 });
 
 test("password login lock survives application restart when KV storage is shared", async () => {

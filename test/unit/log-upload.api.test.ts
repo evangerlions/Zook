@@ -37,7 +37,66 @@ async function issueAccessToken(runtime: Awaited<ReturnType<typeof createApplica
   });
 }
 
-test("logs pull-task returns shouldUpload false when no pending task exists", async () => {
+async function enableLogPull(runtime: Awaited<ReturnType<typeof createApplication>>) {
+  await runtime.services.appRemoteLogPullService.updateConfig("app_a", {
+    enabled: true,
+    claimTtlSeconds: 300,
+    minPullIntervalSeconds: 120,
+    taskDefaults: {
+      lookbackMinutes: 60,
+      maxLines: 2000,
+      maxBytes: 1048576,
+    },
+  });
+}
+
+test("logs policy returns defaults and app-level overrides", async () => {
+  const runtime = await createApplication();
+  const session = await issueAccessToken(runtime);
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/logs/policy",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+    },
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.deepEqual(defaultResponse.body.data, {
+    enabled: false,
+    minPullIntervalSeconds: 1800,
+  });
+
+  await runtime.services.appRemoteLogPullService.updateConfig("app_a", {
+    enabled: true,
+    claimTtlSeconds: 300,
+    minPullIntervalSeconds: 120,
+    taskDefaults: {
+      lookbackMinutes: 60,
+      maxLines: 2000,
+      maxBytes: 1048576,
+    },
+  });
+
+  const configuredResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/logs/policy",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+    },
+  });
+
+  assert.equal(configuredResponse.statusCode, 200);
+  assert.deepEqual(configuredResponse.body.data, {
+    enabled: true,
+    minPullIntervalSeconds: 120,
+  });
+});
+
+test("logs pull-task returns shouldUpload false when no claimable task exists", async () => {
   const runtime = await createApplication();
   const session = await issueAccessToken(runtime);
 
@@ -47,6 +106,7 @@ test("logs pull-task returns shouldUpload false when no pending task exists", as
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
     },
   });
 
@@ -56,9 +116,66 @@ test("logs pull-task returns shouldUpload false when no pending task exists", as
   });
 });
 
-test("logs upload can decrypt payloads using app-generated log secrets", async () => {
+test("logs pull-task claims a task for one client and hides it from concurrent pulls", async () => {
+  const key = encodeKeyBase64();
+  const runtime = await createApplication({
+    logEncryptionKeys: {
+      "dev-k1": key.base64,
+    },
+  });
+  const session = await issueAccessToken(runtime);
+  await enableLogPull(runtime);
+
+  runtime.database.clientLogUploadTasks.push({
+    id: "log-task-claim-001",
+    appId: "app_a",
+    userId: session.userId,
+    keyId: "dev-k1",
+    status: "PENDING",
+    createdAt: "2026-04-05T12:00:00.000Z",
+  });
+
+  const claimed = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/logs/pull-task",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+    },
+  });
+
+  assert.equal(claimed.statusCode, 200);
+  assert.equal(claimed.body.data.shouldUpload, true);
+  if (!claimed.body.data.shouldUpload) {
+    throw new Error("Expected claimable task.");
+  }
+  assert.equal(claimed.body.data.taskId, "log-task-claim-001");
+  assert.equal(typeof claimed.body.data.claimToken, "string");
+  assert.equal(typeof claimed.body.data.claimExpireAtMs, "number");
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.status, "CLAIMED");
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.clientId, "client_alpha");
+
+  const hidden = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/logs/pull-task",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+    },
+  });
+
+  assert.equal(hidden.statusCode, 200);
+  assert.deepEqual(hidden.body.data, {
+    shouldUpload: false,
+  });
+});
+
+test("logs upload can decrypt payloads using app-generated log secrets after claim", async () => {
   const runtime = await createApplication();
   const session = await issueAccessToken(runtime);
+  await enableLogPull(runtime);
   const appSecret = (await runtime.services.appLogSecretService.ensureSecret("app_a")).record;
   const key = Buffer.from(appSecret.secret, "base64");
 
@@ -71,6 +188,21 @@ test("logs upload can decrypt payloads using app-generated log secrets", async (
     createdAt: "2026-03-28T09:00:00+08:00",
   });
 
+  const pullResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/logs/pull-task",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-client-id": "device_a",
+    },
+  });
+  assert.equal(pullResponse.statusCode, 200);
+  assert.equal(pullResponse.body.data.shouldUpload, true);
+  if (!pullResponse.body.data.shouldUpload) {
+    throw new Error("Expected log upload task.");
+  }
+
   const payload = encryptNdjson(
     [{ tsMs: 1710000000100, level: "info", message: "app secret path" }],
     key,
@@ -81,6 +213,8 @@ test("logs upload can decrypt payloads using app-generated log secrets", async (
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
+      "x-client-id": "device_a",
+      "x-log-claim-token": pullResponse.body.data.claimToken,
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": appSecret.keyId,
       "x-log-nonce": payload.nonceBase64,
@@ -98,7 +232,7 @@ test("logs upload can decrypt payloads using app-generated log secrets", async (
   });
 });
 
-test("logs upload decrypts AES-GCM+gzip NDJSON payload and stores accepted lines", async () => {
+test("logs upload decrypts claimed AES-GCM+gzip NDJSON payload and stores accepted lines", async () => {
   const key = encodeKeyBase64();
   const runtime = await createApplication({
     logEncryptionKeys: {
@@ -106,6 +240,7 @@ test("logs upload decrypts AES-GCM+gzip NDJSON payload and stores accepted lines
     },
   });
   const session = await issueAccessToken(runtime);
+  await enableLogPull(runtime);
 
   runtime.database.clientLogUploadTasks.push({
     id: "log-task-20260328-001",
@@ -126,6 +261,7 @@ test("logs upload decrypts AES-GCM+gzip NDJSON payload and stores accepted lines
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
     },
   });
 
@@ -165,6 +301,8 @@ test("logs upload decrypts AES-GCM+gzip NDJSON payload and stores accepted lines
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+      "x-log-claim-token": pullResponse.body.data.claimToken,
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",
       "x-log-nonce": payload.nonceBase64,
@@ -192,7 +330,7 @@ test("logs upload decrypts AES-GCM+gzip NDJSON payload and stores accepted lines
   assert.equal(runtime.database.clientLogLines[1]?.level, "warn");
 });
 
-test("logs upload rejects task mismatch and decrypt failure", async () => {
+test("logs ack(no_data) completes a claimed task without creating uploads", async () => {
   const key = encodeKeyBase64();
   const runtime = await createApplication({
     logEncryptionKeys: {
@@ -200,14 +338,74 @@ test("logs upload rejects task mismatch and decrypt failure", async () => {
     },
   });
   const session = await issueAccessToken(runtime);
+  await enableLogPull(runtime);
 
   runtime.database.clientLogUploadTasks.push({
-    id: "log-task-20260328-002",
+    id: "log-task-no-data-001",
     appId: "app_a",
     userId: session.userId,
     keyId: "dev-k1",
     status: "PENDING",
-    createdAt: "2026-03-28T10:10:00+08:00",
+    createdAt: "2026-04-05T12:00:00.000Z",
+  });
+
+  const pullResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/logs/pull-task",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+    },
+  });
+
+  assert.equal(pullResponse.statusCode, 200);
+  assert.equal(pullResponse.body.data.shouldUpload, true);
+  if (!pullResponse.body.data.shouldUpload) {
+    throw new Error("Expected claimed task.");
+  }
+
+  const ackResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/logs/tasks/log-task-no-data-001/ack",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+    },
+    body: {
+      claimToken: pullResponse.body.data.claimToken,
+      status: "no_data",
+    },
+  });
+
+  assert.equal(ackResponse.statusCode, 200);
+  assert.deepEqual(ackResponse.body.data, {
+    taskId: "log-task-no-data-001",
+    status: "no_data",
+  });
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.status, "COMPLETED");
+  assert.equal(runtime.database.clientLogUploads.length, 0);
+});
+
+test("logs upload rejects claim mismatch, expired claims, and decrypt failure", async () => {
+  const key = encodeKeyBase64();
+  const runtime = await createApplication({
+    logEncryptionKeys: {
+      "dev-k1": key.base64,
+    },
+  });
+  const session = await issueAccessToken(runtime);
+  runtime.database.clientLogUploadTasks.push({
+    id: "log-task-claim-mismatch",
+    appId: "app_a",
+    userId: session.userId,
+    clientId: "client_alpha",
+    keyId: "dev-k1",
+    status: "CLAIMED",
+    claimToken: "claim_alpha",
+    claimExpireAt: "2026-04-05T12:05:00.000Z",
+    createdAt: "2026-04-05T11:55:00.000Z",
   });
 
   const mismatchPayload = encryptNdjson(
@@ -220,17 +418,104 @@ test("logs upload rejects task mismatch and decrypt failure", async () => {
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+      "x-log-claim-token": "wrong_claim",
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",
       "x-log-nonce": mismatchPayload.nonceBase64,
       "x-log-content": "ndjson+gzip",
-      "x-log-task-id": "another-task-id",
+      "x-log-task-id": "log-task-claim-mismatch",
     },
     body: mismatchPayload.body,
   });
 
-  assert.equal(mismatchResponse.statusCode, 400);
-  assert.equal(mismatchResponse.body.code, "LOG_TASK_MISMATCH");
+  assert.equal(mismatchResponse.statusCode, 409);
+  assert.equal(mismatchResponse.body.code, "LOG_CLAIM_MISMATCH");
+
+  runtime.database.clientLogUploadTasks.push({
+    id: "log-task-claim-expired",
+    appId: "app_a",
+    userId: session.userId,
+    clientId: "client_alpha",
+    keyId: "dev-k1",
+    status: "CLAIMED",
+    claimToken: "claim_expired",
+    claimExpireAt: "2000-01-01T00:00:00.000Z",
+    createdAt: "2026-04-05T11:54:00.000Z",
+  });
+
+  const expiredPayload = encryptNdjson(
+    [{ tsMs: 1710000000100, level: "info", message: "expired claim" }],
+    key.raw,
+  );
+  const expiredResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/logs/upload",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+      "x-log-claim-token": "claim_expired",
+      "x-log-enc": "aes-256-gcm",
+      "x-log-key-id": "dev-k1",
+      "x-log-nonce": expiredPayload.nonceBase64,
+      "x-log-content": "ndjson+gzip",
+      "x-log-task-id": "log-task-claim-expired",
+    },
+    body: expiredPayload.body,
+    requestId: "req_expired",
+  });
+
+  assert.equal(expiredResponse.statusCode, 409);
+  assert.equal(expiredResponse.body.code, "LOG_CLAIM_EXPIRED");
+
+  runtime.database.clientLogUploadTasks.push({
+    id: "log-task-completed",
+    appId: "app_a",
+    userId: session.userId,
+    clientId: "client_alpha",
+    keyId: "dev-k1",
+    status: "COMPLETED",
+    claimToken: "claim_done",
+    claimExpireAt: "2026-04-05T12:05:00.000Z",
+    createdAt: "2026-04-05T11:53:00.000Z",
+  });
+
+  const completedPayload = encryptNdjson(
+    [{ tsMs: 1710000000100, level: "info", message: "completed task" }],
+    key.raw,
+  );
+  const completedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/logs/upload",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+      "x-log-claim-token": "claim_done",
+      "x-log-enc": "aes-256-gcm",
+      "x-log-key-id": "dev-k1",
+      "x-log-nonce": completedPayload.nonceBase64,
+      "x-log-content": "ndjson+gzip",
+      "x-log-task-id": "log-task-completed",
+    },
+    body: completedPayload.body,
+  });
+
+  assert.equal(completedResponse.statusCode, 409);
+  assert.equal(completedResponse.body.code, "LOG_TASK_ALREADY_COMPLETED");
+
+  runtime.database.clientLogUploadTasks.push({
+    id: "log-task-decrypt-fail",
+    appId: "app_a",
+    userId: session.userId,
+    clientId: "client_alpha",
+    keyId: "dev-k1",
+    status: "CLAIMED",
+    claimToken: "claim_ok",
+    claimExpireAt: "2099-01-01T00:00:00.000Z",
+    createdAt: "2026-04-05T11:56:00.000Z",
+  });
 
   const decryptPayload = encryptNdjson(
     [{ tsMs: 1710000000100, level: "info", message: "decrypt fail" }],
@@ -242,11 +527,13 @@ test("logs upload rejects task mismatch and decrypt failure", async () => {
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
+      "x-client-id": "client_alpha",
+      "x-log-claim-token": "claim_ok",
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",
       "x-log-nonce": randomBytes(12).toString("base64"),
       "x-log-content": "ndjson+gzip",
-      "x-log-task-id": "log-task-20260328-002",
+      "x-log-task-id": "log-task-decrypt-fail",
     },
     body: decryptPayload.body,
   });

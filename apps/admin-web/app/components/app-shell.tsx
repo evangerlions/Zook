@@ -16,10 +16,11 @@ const SERVER_WORKSPACES = [
 
 const APP_WORKSPACES = [
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
+  { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
 ];
 
 function isAppProjectSpace(pathname: string) {
-  return pathname === "/config";
+  return pathname === "/config" || pathname === "/remote-log-pull";
 }
 
 function describeProjectSpace(app: AdminAppSummary | null, pathname: string) {
@@ -100,7 +101,7 @@ export function AppShell() {
 
     beginWorkspaceTransition(`正在切换到 ${app.appName}`);
     setSelectedAppId(app.appId);
-    void navigate("/config");
+    void navigate(appProjectSpace ? location.pathname : "/config");
   }
 
   function handleProjectSpaceChange(value: string) {

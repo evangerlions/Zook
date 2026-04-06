@@ -76,16 +76,6 @@ interface SentTemplateEmail {
   templateData: Record<string, unknown>;
 }
 
-interface SentVerificationEmail {
-  appName: string;
-  email: string;
-  code: string;
-  locale: string;
-  region: "ap-guangzhou" | "ap-hongkong";
-  expireMinutes: number;
-  templateName?: string;
-}
-
 function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSender {
   return {
     async sendTemplateEmail(command) {
@@ -141,30 +131,6 @@ function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSend
       };
     },
     async sendVerificationCode() {
-      return {
-        provider: "tencent_ses",
-      };
-    },
-  };
-}
-
-function createSensitiveVerificationEmailSender(sent: SentVerificationEmail[]): RegistrationEmailSender {
-  return {
-    async sendTemplateEmail() {
-      return {
-        provider: "tencent_ses",
-      };
-    },
-    async sendVerificationCode(command) {
-      sent.push({
-        appName: command.appName,
-        email: command.email,
-        code: command.code,
-        locale: command.locale,
-        region: command.region,
-        expireMinutes: command.expireMinutes,
-        templateName: command.templateName,
-      });
       return {
         provider: "tencent_ses",
       };
@@ -269,6 +235,51 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
   assert.equal(configResponse.body.data.isLatest, true);
   assert.equal(configResponse.body.data.revisions.length, 1);
   assert.match(configResponse.body.data.rawJson, /featureFlags/);
+});
+
+test("public app config API exposes admin delivery config for the requested app", async () => {
+  const runtime = await createApplication();
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/app_a/public/config",
+    headers: {
+      "x-app-id": "app_a",
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.data.appId, "app_a");
+  assert.equal(response.body.data.configKey, "admin.delivery_config");
+  assert.deepEqual(response.body.data.config, {
+    release: {
+      version: "2026.03.20",
+      channel: "stable",
+    },
+    featureFlags: {
+      showOnboarding: true,
+      enableVipBanner: false,
+    },
+    settings: {
+      theme: "spring",
+      apiBasePath: "/api/v1",
+    },
+  });
+});
+
+test("public app config API rejects X-App-Id mismatches against the path app", async () => {
+  const runtime = await createApplication();
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/app_a/public/config",
+    headers: {
+      "x-app-id": "app_b",
+    },
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
 });
 
 test("admin config API saves normalized JSON back to the app config store", async () => {
@@ -586,6 +597,33 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   );
 });
 
+test("admin app create rejects app ids outside lowercase letters numbers and underscores", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps",
+    headers,
+    body: {
+      appId: "App-Test",
+      appNameZhCn: "应用测试",
+      appNameEnUs: "App Test",
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.match(String(response.body.message), /lowercase letters, numbers, and underscores/);
+});
+
 test("admin app config reads and delete guards follow latest revision even if direct config record is stale", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
@@ -734,6 +772,136 @@ test("admin app name updates require both zh-CN and en-US", async () => {
   assert.match(String(response.body.message), /appNameI18n\.en-US/);
 });
 
+test("admin remote log pull settings API exposes defaults, updates revisions, and restores older versions", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull",
+    headers,
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.equal(defaultResponse.body.data.configKey, "remote_log_pull.settings");
+  assert.deepEqual(defaultResponse.body.data.config, {
+    enabled: false,
+    minPullIntervalSeconds: 1800,
+    claimTtlSeconds: 300,
+    taskDefaults: {
+      lookbackMinutes: 60,
+      maxLines: 2000,
+      maxBytes: 1048576,
+    },
+  });
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull",
+    headers,
+    body: {
+      config: {
+        enabled: true,
+        minPullIntervalSeconds: 120,
+        claimTtlSeconds: 90,
+        taskDefaults: {
+          lookbackMinutes: 30,
+          maxLines: 300,
+          maxBytes: 65536,
+        },
+      },
+      desc: "incident tuning",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.revision, 2);
+  assert.equal(updateResponse.body.data.desc, "incident tuning");
+  assert.equal(updateResponse.body.data.config.enabled, true);
+  assert.equal(updateResponse.body.data.config.taskDefaults.lookbackMinutes, 30);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull/revisions/1/restore",
+    headers,
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.config.enabled, false);
+  assert.equal(restoreResponse.body.data.revision, 3);
+});
+
+test("admin remote log pull task API creates tasks from defaults and can cancel them", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull",
+    headers,
+    body: {
+      config: {
+        enabled: true,
+        minPullIntervalSeconds: 120,
+        claimTtlSeconds: 180,
+        taskDefaults: {
+          lookbackMinutes: 15,
+          maxLines: 500,
+          maxBytes: 32768,
+        },
+      },
+    },
+  });
+
+  const createResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull/tasks",
+    headers,
+    body: {
+      userId: "user_alice",
+      clientId: "did_ios_001",
+    },
+  });
+
+  assert.equal(createResponse.statusCode, 200);
+  assert.equal(createResponse.body.data.items.length, 1);
+  assert.equal(createResponse.body.data.items[0]?.userId, "user_alice");
+  assert.equal(createResponse.body.data.items[0]?.clientId, "did_ios_001");
+  assert.equal(createResponse.body.data.items[0]?.maxLines, 500);
+  assert.equal(createResponse.body.data.items[0]?.maxBytes, 32768);
+  assert.equal(createResponse.body.data.items[0]?.keyId.startsWith("logk_"), true);
+  assert.equal(createResponse.body.data.items[0]?.status, "PENDING");
+
+  const taskId = createResponse.body.data.items[0]?.taskId;
+  assert.ok(taskId);
+
+  const cancelResponse = await runtime.app.handle({
+    method: "POST",
+    path: `/api/v1/admin/apps/app_a/remote-log-pull/tasks/${taskId}/cancel`,
+    headers,
+  });
+
+  assert.equal(cancelResponse.statusCode, 200);
+  assert.equal(
+    cancelResponse.body.data.items.find((item: { taskId: string }) => item.taskId === taskId)?.status,
+    "CANCELLED",
+  );
+});
+
 test("admin app log secret reveal requires sensitive verification and grants 1h access after email code", async () => {
   const sentVerificationEmails: SentVerificationEmail[] = [];
   const runtime = await createApplication({
@@ -741,9 +909,8 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
       username: "admin",
       password: "AdminPass123!",
     },
-    registrationEmailSender: createSensitiveVerificationEmailSender(sentVerificationEmails),
     adminSensitiveOperation: {
-      codeGenerator: () => "123456",
+      secondaryPassword: "199510",
     },
   });
 
@@ -773,16 +940,6 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
 
   assert.equal(requestCodeResponse.statusCode, 200);
   assert.equal(requestCodeResponse.body.data.operation, "app.log_secret.read");
-  assert.equal(sentVerificationEmails.length, 1);
-  assert.deepEqual(sentVerificationEmails[0], {
-    appName: "Zook 管理后台",
-    email: "evangerlions@gmail.com",
-    code: "123456",
-    locale: "zh-CN",
-    region: "ap-hongkong",
-    expireMinutes: 10,
-    templateName: "verify-code",
-  });
 
   const verifyResponse = await runtime.app.handle({
     method: "POST",
@@ -792,7 +949,7 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
     },
     body: {
       operation: "app.log_secret.read",
-      code: "123456",
+      code: "199510",
     },
   });
 
@@ -945,15 +1102,13 @@ test("admin password API supports per-item upsert and delete", async () => {
 });
 
 test("admin password reveal requires sensitive verification before copying real value", async () => {
-  const sentVerificationEmails: SentVerificationEmail[] = [];
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
     },
-    registrationEmailSender: createSensitiveVerificationEmailSender(sentVerificationEmails),
     adminSensitiveOperation: {
-      codeGenerator: () => "123456",
+      secondaryPassword: "199510",
     },
   });
 
@@ -996,7 +1151,6 @@ test("admin password reveal requires sensitive verification before copying real 
 
   assert.equal(requestCodeResponse.statusCode, 200);
   assert.equal(requestCodeResponse.body.data.operation, "password.value.read");
-  assert.equal(sentVerificationEmails.length, 1);
 
   const verifyResponse = await runtime.app.handle({
     method: "POST",
@@ -1006,7 +1160,7 @@ test("admin password reveal requires sensitive verification before copying real 
     },
     body: {
       operation: "password.value.read",
-      code: "123456",
+      code: "199510",
     },
   });
 
