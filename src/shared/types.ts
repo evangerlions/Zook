@@ -48,6 +48,7 @@ export type ErrorCode =
   | "AUTH_VERIFICATION_CODE_REQUIRED"
   | "AUTH_VERIFICATION_CODE_INVALID"
   | "AUTH_ACCOUNT_ALREADY_EXISTS"
+  | "AUTH_PASSWORD_ALREADY_SET"
   | "AUTH_RATE_LIMITED"
   | "AUTH_QR_LOGIN_TOKEN_REQUIRED"
   | "AUTH_QR_LOGIN_INVALID"
@@ -247,7 +248,7 @@ export interface ClientLogUploadTaskRecord {
   id: string;
   appId: string;
   userId?: string;
-  clientId?: string;
+  did?: string;
   keyId: string;
   fromTsMs?: number;
   toTsMs?: number;
@@ -431,6 +432,12 @@ export interface ChangePasswordCommand {
   newPassword: string;
 }
 
+export interface SetPasswordCommand {
+  appId: string;
+  userId: string;
+  password: string;
+}
+
 export interface AdminAppLogSecretSummary {
   keyId: string;
   secretMasked: string;
@@ -486,7 +493,6 @@ export interface AdminConfigDocument {
 
 export interface PublicAppConfigDocument {
   appId: string;
-  configKey: string;
   config: Record<string, unknown>;
   updatedAt?: string;
 }
@@ -539,7 +545,7 @@ export interface AdminAppRemoteLogPullSettingsDocument extends RemoteLogPullSett
 export interface AdminRemoteLogPullTaskSummary {
   taskId: string;
   userId: string;
-  clientId: string;
+  did: string;
   keyId: string;
   status: ClientLogUploadTaskStatus;
   fromTsMs?: number;
@@ -903,6 +909,7 @@ export interface AuthenticatedUserProfile {
   email?: string;
   phone?: string;
   avatarUrl: string | null;
+  hasPassword: boolean;
 }
 
 export interface AuthSuccessPayload {

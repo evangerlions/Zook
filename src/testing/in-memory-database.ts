@@ -339,7 +339,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   updateClientLogUploadTask(
     taskId: string,
-    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "clientId" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
+    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
   ): void {
     const task = this.findClientLogUploadTask(taskId);
     if (!task) {
@@ -349,8 +349,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     if ("status" in patch) {
       task.status = patch.status;
     }
-    if ("clientId" in patch) {
-      task.clientId = patch.clientId;
+    if ("did" in patch) {
+      task.did = patch.did;
     }
     if ("claimToken" in patch) {
       task.claimToken = patch.claimToken;

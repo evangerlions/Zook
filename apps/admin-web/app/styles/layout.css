@@ -129,6 +129,25 @@
   align-self: start;
 }
 
+.history-dock-placeholder {
+  visibility: hidden;
+  pointer-events: none;
+  min-height: 100%;
+}
+
+@media (min-width: 1101px) {
+  .remote-log-pull-main-stack.is-tasks-tab {
+    max-width: calc(100% - 348px);
+  }
+}
+
+.remote-log-pull-main-stack,
+.remote-log-pull-task-pane,
+.remote-log-pull-tabs .ant-tabs-content-holder,
+.remote-log-pull-tabs .ant-tabs-tabpane {
+  min-width: 0;
+}
+
 .history-dock-header {
   display: flex;
   align-items: flex-start;
@@ -237,4 +256,3 @@
   border-radius: var(--radius-md);
   background: var(--surface-soft);
 }
-

@@ -63,7 +63,7 @@ export class AppRemoteLogPullService {
     return await this.getDocument(appId);
   }
 
-  async restoreConfig(appId: string, revision: number): Promise<RemoteLogPullSettingsDocument> {
+  async restoreConfig(appId: string, revision: number, desc?: string): Promise<RemoteLogPullSettingsDocument> {
     const existing = await this.appConfigService.getRevision(appId, REMOTE_LOG_PULL_SETTINGS_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Remote Log Pull revision ${revision} was not found.`);
@@ -73,7 +73,7 @@ export class AppRemoteLogPullService {
       appId,
       REMOTE_LOG_PULL_SETTINGS_CONFIG_KEY,
       revision,
-      `恢复到版本 R${revision}`,
+      desc?.trim() || `恢复到版本 R${revision}`,
     );
     return await this.getDocument(appId);
   }
@@ -124,12 +124,12 @@ export class AppRemoteLogPullService {
 
     const source = input as Record<string, unknown>;
     const userId = typeof source.userId === "string" ? source.userId.trim() : "";
-    const clientId = typeof source.clientId === "string" ? source.clientId.trim() : "";
+    const did = typeof source.did === "string" ? source.did.trim() : "";
     if (!userId) {
       badRequest("REQ_INVALID_BODY", "userId must be a non-empty string.");
     }
-    if (!clientId) {
-      badRequest("REQ_INVALID_BODY", "clientId must be a non-empty string.");
+    if (!did) {
+      badRequest("REQ_INVALID_BODY", "did must be a non-empty string.");
     }
 
     const settings = await this.getCurrentConfig(appId);
@@ -140,7 +140,7 @@ export class AppRemoteLogPullService {
       id: randomId("log_task"),
       appId,
       userId,
-      clientId,
+      did,
       keyId: secret.keyId,
       fromTsMs,
       toTsMs,
@@ -264,7 +264,7 @@ export class AppRemoteLogPullService {
     return {
       taskId: task.id,
       userId: task.userId ?? "",
-      clientId: task.clientId ?? "",
+      did: task.did ?? "",
       keyId: task.keyId,
       status: task.status,
       fromTsMs: task.fromTsMs,

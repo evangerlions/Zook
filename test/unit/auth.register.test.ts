@@ -86,6 +86,7 @@ test("register email-code and register APIs create a new account and issue token
   assert.equal(registerResponse.body.data.user.name, "carol");
   assert.equal(registerResponse.body.data.user.email, "carol@example.com");
   assert.equal(registerResponse.body.data.user.avatarUrl, null);
+  assert.equal(registerResponse.body.data.user.hasPassword, true);
 
   const createdUser = runtime.database.findUserByAccount("carol@example.com");
   assert.ok(createdUser);

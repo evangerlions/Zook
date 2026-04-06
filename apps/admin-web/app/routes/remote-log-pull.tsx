@@ -1,9 +1,10 @@
 import { PlusOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Form, Input, InputNumber, Space, Switch, Table, Tag, Tooltip } from "antd";
+import { Alert, Button, Card, Form, Input, InputNumber, Space, Switch, Table, Tabs, Tag, Tooltip } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
+import { SaveConfirmModal } from "../components/save-confirm-modal";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
@@ -12,6 +13,17 @@ import type {
   AdminRemoteLogPullTaskListDocument,
   RemoteLogPullSettings,
 } from "../lib/types";
+
+const BYTES_PER_MEGABYTE = 1024 * 1024;
+const MAX_TASK_SIZE_MEGABYTES = 100;
+
+function bytesToMegabytes(value: number): number {
+  return Math.max(1, Math.round(value / BYTES_PER_MEGABYTE));
+}
+
+function megabytesToBytes(value: number): number {
+  return value * BYTES_PER_MEGABYTE;
+}
 
 export default function RemoteLogPullRoute() {
   const {
@@ -33,7 +45,14 @@ export default function RemoteLogPullRoute() {
   const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
-  const [taskForm] = Form.useForm<{ userId: string; clientId: string }>();
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [restoreRevision, setRestoreRevision] = useState<number | null>(null);
+  const [restoreDesc, setRestoreDesc] = useState("");
+  const [restoreOldValue, setRestoreOldValue] = useState("");
+  const [restoreNewValue, setRestoreNewValue] = useState("");
+  const [tab, setTab] = useState<"settings" | "tasks">("settings");
+  const [taskForm] = Form.useForm<{ userId: string; did: string }>();
+  const settingsTabActive = tab === "settings";
 
   async function loadLatest() {
     if (!selectedAppId) {
@@ -105,7 +124,7 @@ export default function RemoteLogPullRoute() {
     }
   }
 
-  async function handleRestoreRevision(revision: number) {
+  async function handleRequestRestoreRevision(revision: number) {
     if (!selectedAppId) {
       return;
     }
@@ -113,11 +132,38 @@ export default function RemoteLogPullRoute() {
     setRestoringRevision(revision);
     clearNotice();
     try {
-      const payload = await adminApi.restoreRemoteLogPull(selectedAppId, revision);
+      const [latestPayload, revisionPayload] = await Promise.all([
+        adminApi.getRemoteLogPull(selectedAppId),
+        adminApi.getRemoteLogPullRevision(selectedAppId, revision),
+      ]);
+      setRestoreRevision(revision);
+      setRestoreOldValue(JSON.stringify(latestPayload.config, null, 2));
+      setRestoreNewValue(JSON.stringify(revisionPayload.config, null, 2));
+      setRestoreDesc(`回滚到版本 R${revision}`);
+      setRestoreModalOpen(true);
+    } catch (error) {
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      setRestoringRevision(null);
+    }
+  }
+
+  async function handleConfirmRestoreRevision() {
+    if (!selectedAppId || !restoreRevision) {
+      return;
+    }
+
+    setRestoringRevision(restoreRevision);
+    clearNotice();
+    try {
+      const payload = await adminApi.restoreRemoteLogPull(selectedAppId, restoreRevision, restoreDesc.trim() || undefined);
       setDocument(payload);
       setConfig(payload.config);
       setDesc("");
-      setNotice(makeNotice("success", `已恢复到版本 R${revision}。`));
+      setRestoreModalOpen(false);
+      setRestoreRevision(null);
+      setRestoreDesc("");
+      setNotice(makeNotice("success", `已恢复到版本 R${restoreRevision}。`));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
@@ -134,7 +180,7 @@ export default function RemoteLogPullRoute() {
     setCreatingTask(true);
     clearNotice();
     try {
-      const payload = await adminApi.createRemoteLogPullTask(selectedAppId, values.userId, values.clientId);
+      const payload = await adminApi.createRemoteLogPullTask(selectedAppId, values.userId, values.did);
       setTasks(payload);
       taskForm.resetFields();
       setNotice(makeNotice("success", "日志回捞任务已创建。"));
@@ -171,15 +217,19 @@ export default function RemoteLogPullRoute() {
         key: "userId",
       },
       {
-        title: "DID / Client ID",
-        dataIndex: "clientId",
-        key: "clientId",
+        title: "DID",
+        dataIndex: "did",
+        key: "did",
       },
       {
         title: "状态",
         dataIndex: "status",
         key: "status",
-        render: (value: string) => <Tag color={value === "COMPLETED" ? "green" : value === "CANCELLED" ? "red" : value === "CLAIMED" ? "blue" : "default"}>{value}</Tag>,
+        render: (value: string) => (
+          <Tag color={value === "COMPLETED" ? "green" : value === "CANCELLED" ? "red" : value === "CLAIMED" ? "blue" : "default"}>
+            {value}
+          </Tag>
+        ),
       },
       {
         title: "窗口",
@@ -239,10 +289,10 @@ export default function RemoteLogPullRoute() {
         </div>
       </header>
 
-      <div className={`page-grid page-grid--config${historyExpanded ? "" : " is-history-collapsed"}`}>
-        <div className="stack">
+      <div className={`page-grid page-grid--config${settingsTabActive && !historyExpanded ? " is-history-collapsed" : ""}`}>
+        <div className={`stack remote-log-pull-main-stack${settingsTabActive ? "" : " is-tasks-tab"}`}>
           <Card
-            extra={(
+            extra={settingsTabActive ? (
               <Space>
                 <span className="meta-chip">{document?.revision ? `R${document.revision}` : "默认值"}</span>
                 <span className="meta-chip">{formatTimestamp(document?.updatedAt)}</span>
@@ -250,163 +300,218 @@ export default function RemoteLogPullRoute() {
                   刷新
                 </Button>
               </Space>
+            ) : (
+              <Button icon={<ReloadOutlined />} onClick={() => void loadLatest()} type="default">
+                刷新
+              </Button>
             )}
-            title="Settings"
+            title={settingsTabActive ? "Settings" : "Remote Log Pull"}
           >
-            <div className="stack">
-              <Alert
-                message="通用策略放在这里维护，真正创建任务时只需要填 UID 和 DID / Client ID。"
-                showIcon
-                type="info"
-              />
+            <Tabs
+              activeKey={tab}
+              className="remote-log-pull-tabs"
+              items={[
+                {
+                  key: "settings",
+                  label: "通用设置",
+                  children: (
+                    <div className="stack">
+                      <Alert
+                        message="通用策略放在这里维护，创建任务时会自动带入默认窗口、行数和体积限制。"
+                        showIcon
+                        type="info"
+                      />
 
-              {config ? (
-                <Form layout="vertical">
-                  <Form.Item label="Enabled">
-                    <Switch
-                      checked={config.enabled}
-                      onChange={(checked) => setConfig({ ...config, enabled: checked })}
-                    />
-                  </Form.Item>
+                      {config ? (
+                        <Form layout="vertical">
+                          <Form.Item extra="打开后，客户端才能主动拉取日志回捞任务。" label="Enabled">
+                            <Switch
+                              checked={config.enabled}
+                              onChange={(checked) => setConfig({ ...config, enabled: checked })}
+                            />
+                          </Form.Item>
 
-                  <Form.Item label="Min Pull Interval Seconds">
-                    <InputNumber
-                      min={1}
-                      onChange={(value) =>
-                        setConfig({
-                          ...config,
-                          minPullIntervalSeconds: Number(value ?? 1),
-                        })}
-                      style={{ width: "100%" }}
-                      value={config.minPullIntervalSeconds}
-                    />
-                  </Form.Item>
+                          <Form.Item extra="同一个客户端两次拉取任务之间至少要间隔多少秒。" label="Min Pull Interval Seconds">
+                            <InputNumber
+                              min={1}
+                              onChange={(value) =>
+                                setConfig({
+                                  ...config,
+                                  minPullIntervalSeconds: Number(value ?? 1),
+                                })}
+                              style={{ width: "100%" }}
+                              value={config.minPullIntervalSeconds}
+                            />
+                          </Form.Item>
 
-                  <Form.Item label="Claim TTL Seconds">
-                    <InputNumber
-                      min={1}
-                      onChange={(value) =>
-                        setConfig({
-                          ...config,
-                          claimTtlSeconds: Number(value ?? 1),
-                        })}
-                      style={{ width: "100%" }}
-                      value={config.claimTtlSeconds}
-                    />
-                  </Form.Item>
+                          <Form.Item extra="任务被客户端领取后，多久内未上传会自动失效。" label="Claim TTL Seconds">
+                            <InputNumber
+                              min={1}
+                              onChange={(value) =>
+                                setConfig({
+                                  ...config,
+                                  claimTtlSeconds: Number(value ?? 1),
+                                })}
+                              style={{ width: "100%" }}
+                              value={config.claimTtlSeconds}
+                            />
+                          </Form.Item>
 
-                  <Form.Item label="Default Lookback Minutes">
-                    <InputNumber
-                      min={1}
-                      onChange={(value) =>
-                        setConfig({
-                          ...config,
-                          taskDefaults: {
-                            ...config.taskDefaults,
-                            lookbackMinutes: Number(value ?? 1),
-                          },
-                        })}
-                      style={{ width: "100%" }}
-                      value={config.taskDefaults.lookbackMinutes}
-                    />
-                  </Form.Item>
+                          <Form.Item extra="创建任务时默认向前回看多少分钟的日志窗口。" label="Default Lookback Minutes">
+                            <InputNumber
+                              min={1}
+                              onChange={(value) =>
+                                setConfig({
+                                  ...config,
+                                  taskDefaults: {
+                                    ...config.taskDefaults,
+                                    lookbackMinutes: Number(value ?? 1),
+                                  },
+                                })}
+                              style={{ width: "100%" }}
+                              value={config.taskDefaults.lookbackMinutes}
+                            />
+                          </Form.Item>
 
-                  <Form.Item label="Default Max Lines">
-                    <InputNumber
-                      min={1}
-                      onChange={(value) =>
-                        setConfig({
-                          ...config,
-                          taskDefaults: {
-                            ...config.taskDefaults,
-                            maxLines: Number(value ?? 1),
-                          },
-                        })}
-                      style={{ width: "100%" }}
-                      value={config.taskDefaults.maxLines}
-                    />
-                  </Form.Item>
+                          <Form.Item extra="每个任务默认最多允许上传多少行日志。" label="Default Max Lines">
+                            <InputNumber
+                              min={1}
+                              onChange={(value) =>
+                                setConfig({
+                                  ...config,
+                                  taskDefaults: {
+                                    ...config.taskDefaults,
+                                    maxLines: Number(value ?? 1),
+                                  },
+                                })}
+                              style={{ width: "100%" }}
+                              value={config.taskDefaults.maxLines}
+                            />
+                          </Form.Item>
 
-                  <Form.Item label="Default Max Bytes">
-                    <InputNumber
-                      min={1}
-                      onChange={(value) =>
-                        setConfig({
-                          ...config,
-                          taskDefaults: {
-                            ...config.taskDefaults,
-                            maxBytes: Number(value ?? 1),
-                          },
-                        })}
-                      style={{ width: "100%" }}
-                      value={config.taskDefaults.maxBytes}
-                    />
-                  </Form.Item>
+                          <Form.Item extra="每个任务默认最多允许上传多少 M 的压缩日志数据，最大 100M。" label="Default Max Size">
+                            <div className="unit-input-row">
+                              <InputNumber
+                                max={MAX_TASK_SIZE_MEGABYTES}
+                                min={1}
+                                onChange={(value) =>
+                                  setConfig({
+                                    ...config,
+                                    taskDefaults: {
+                                      ...config.taskDefaults,
+                                      maxBytes: megabytesToBytes(Number(value ?? 1)),
+                                    },
+                                  })}
+                                parser={(value) => Number(String(value ?? "").replace(/[^\d]/g, "") || 0)}
+                                precision={0}
+                                style={{ width: "100%" }}
+                                value={bytesToMegabytes(config.taskDefaults.maxBytes)}
+                              />
+                              <span className="unit-input-suffix">M</span>
+                            </div>
+                          </Form.Item>
 
-                  <Form.Item label="Revision Desc">
-                    <Input
-                      onChange={(event) => setDesc(event.target.value)}
-                      placeholder="例如：调高 claim TTL，默认回看最近 120 分钟"
-                      value={desc}
-                    />
-                  </Form.Item>
+                          <Form.Item extra="保存这次设置修改时的备注，方便后面看版本历史。" label="Revision Desc">
+                            <Input
+                              onChange={(event) => setDesc(event.target.value)}
+                              placeholder="例如：调高 claim TTL，默认回看最近 120 分钟"
+                              value={desc}
+                            />
+                          </Form.Item>
 
-                  <div className="button-row">
-                    <Button loading={saving} onClick={() => void handleSave()} type="primary">
-                      保存设置
-                    </Button>
-                  </div>
-                </Form>
-              ) : null}
-            </div>
-          </Card>
+                          <div className="button-row">
+                            <Button loading={saving} onClick={() => void handleSave()} type="primary">
+                              保存设置
+                            </Button>
+                          </div>
+                        </Form>
+                      ) : null}
+                    </div>
+                  ),
+                },
+                {
+                  key: "tasks",
+                  label: "任务管理",
+                  children: (
+                    <div className="stack remote-log-pull-task-pane">
+                      <Card className="table-card" title="Create Task">
+                        <div className="stack">
+                          <Alert
+                            message="这里只需要填写 UID 和 DID，任务会自动继承当前通用设置里的默认窗口和限额。"
+                            showIcon
+                            type="info"
+                          />
 
-          <Card title="Create Task">
-            <div className="stack">
-              <Alert
-                message={`任务会自动使用当前设置里的默认窗口和限额，也会自动绑定当前 App 的 keyId。`}
-                showIcon
-                type="info"
-              />
+                          <Form form={taskForm} layout="vertical">
+                            <Form.Item extra="要回捞哪个用户的日志，就填这个用户的 userId。" label="UID" name="userId" rules={[{ required: true, message: "请输入 userId" }]}>
+                              <Input placeholder="user_alice" />
+                            </Form.Item>
+                            <Form.Item extra="客户端设备标识，用来精确定位具体终端。" label="DID" name="did" rules={[{ required: true, message: "请输入 DID" }]}>
+                              <Input placeholder="did_ios_001 / web_install_001" />
+                            </Form.Item>
+                            <div className="button-row">
+                              <Button icon={<PlusOutlined />} loading={creatingTask} onClick={() => void handleCreateTask()} type="primary">
+                                创建回捞任务
+                              </Button>
+                            </div>
+                          </Form>
+                        </div>
+                      </Card>
 
-              <Form form={taskForm} layout="vertical">
-                <Form.Item label="UID" name="userId" rules={[{ required: true, message: "请输入 userId" }]}>
-                  <Input placeholder="user_alice" />
-                </Form.Item>
-                <Form.Item label="DID / Client ID" name="clientId" rules={[{ required: true, message: "请输入 DID / Client ID" }]}>
-                  <Input placeholder="did_ios_001 / web_install_001" />
-                </Form.Item>
-                <div className="button-row">
-                  <Button icon={<PlusOutlined />} loading={creatingTask} onClick={() => void handleCreateTask()} type="primary">
-                    创建回捞任务
-                  </Button>
-                </div>
-              </Form>
-            </div>
-          </Card>
-
-          <Card title="Task List">
-            <Table
-              columns={taskColumns}
-              dataSource={tasks?.items ?? []}
-              pagination={{ pageSize: 8 }}
-              rowKey="taskId"
-              scroll={{ x: 1200 }}
+                      <Card className="table-card" title="Task List">
+                        <div className="table-wrap">
+                          <Table
+                            columns={taskColumns}
+                            dataSource={tasks?.items ?? []}
+                            pagination={{ pageSize: 8 }}
+                            rowKey="taskId"
+                            scroll={{ x: 980 }}
+                          />
+                        </div>
+                      </Card>
+                    </div>
+                  ),
+                },
+              ]}
+              onChange={(value) => setTab(value as "settings" | "tasks")}
             />
           </Card>
         </div>
 
-        <RevisionHistoryDock expanded={historyExpanded} onToggle={() => setHistoryExpanded((current) => !current)}>
-          <RevisionList
-            activeRevision={document?.revision}
-            compact
-            loadingRevision={restoringRevision}
-            onRestore={(revision) => void handleRestoreRevision(revision)}
-            onSelect={(revision) => void handleViewRevision(revision)}
-            revisions={document?.revisions ?? []}
-          />
-        </RevisionHistoryDock>
+        {settingsTabActive ? (
+          <RevisionHistoryDock expanded={historyExpanded} onToggle={() => setHistoryExpanded((current) => !current)}>
+            <RevisionList
+              activeRevision={document?.revision}
+              compact
+              latestRevision={document?.revisions?.[0]?.revision}
+              loadingRevision={restoringRevision}
+              onRestore={(revision) => void handleRequestRestoreRevision(revision)}
+              onSelect={(revision) => void handleViewRevision(revision)}
+              revisions={document?.revisions ?? []}
+            />
+          </RevisionHistoryDock>
+        ) : (
+          <aside aria-hidden="true" className="side-card side-card--history history-dock-placeholder" />
+        )}
       </div>
+      <SaveConfirmModal
+        desc={restoreDesc}
+        descPlaceholder="例如：误修改后回滚到稳定版本"
+        loading={Boolean(restoreRevision) && restoringRevision === restoreRevision}
+        newValue={restoreNewValue}
+        oldValue={restoreOldValue}
+        onCancel={() => {
+          setRestoreModalOpen(false);
+          setRestoreRevision(null);
+          setRestoreDesc("");
+        }}
+        onConfirm={() => void handleConfirmRestoreRevision()}
+        onDescChange={setRestoreDesc}
+        okText="确认回滚"
+        open={restoreModalOpen}
+        title={restoreRevision ? `确认回滚到版本 R${restoreRevision}` : "确认回滚"}
+        autoGenerateDesc={false}
+      />
     </section>
   );
 }

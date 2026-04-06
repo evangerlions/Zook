@@ -16,6 +16,7 @@ import type {
   RegisterEmailCodeCommand,
   RegisterEmailCodeResult,
   ResetPasswordCommand,
+  SetPasswordCommand,
   UserRecord,
 } from "../../shared/types.ts";
 import { createOpaqueToken, randomId, randomNumericCode, sha256, timingSafeHexCompare, toDateKey, toHourKey } from "../../shared/utils.ts";
@@ -568,6 +569,32 @@ export class AuthService {
     await this.database.updateUserPassword(
       user.id,
       this.passwordHasher.hash(command.newPassword),
+      this.passwordHasher.algorithm,
+    );
+    await this.revokeAllSessions(app.id, user.id, now);
+
+    return this.issueSessionForUser(user.id, app.id, now);
+  }
+
+  async setPassword(command: SetPasswordCommand, now = new Date()): Promise<AuthSession> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const user = await this.userService.getById(command.userId);
+    await this.appRegistryService.ensureExistingMembership(app.id, user.id);
+
+    if (!this.passwordHasher.validateStrength(command.password)) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        "Password must be between 10 and 256 characters and include both letters and numbers.",
+      );
+    }
+
+    if (user.passwordAlgo !== "email-code-only") {
+      conflict("AUTH_PASSWORD_ALREADY_SET", "This account already has a password. Use the change password flow.");
+    }
+
+    await this.database.updateUserPassword(
+      user.id,
+      this.passwordHasher.hash(command.password),
       this.passwordHasher.algorithm,
     );
     await this.revokeAllSessions(app.id, user.id, now);

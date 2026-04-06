@@ -68,7 +68,7 @@ export class StaticClientLogEncryptionKeyResolver implements ClientLogEncryption
 
 export interface UploadClientLogsCommand {
   auth: AuthContext;
-  clientId: string;
+  did: string;
   taskId: string;
   claimToken: string;
   keyId: string;
@@ -84,7 +84,7 @@ export interface UploadClientLogsCommand {
 
 export interface AckClientLogNoDataCommand {
   auth: AuthContext;
-  clientId: string;
+  did: string;
   taskId: string;
   claimToken: string;
   now?: Date;
@@ -108,7 +108,7 @@ export class ClientLogUploadService {
     };
   }
 
-  async getPullTask(auth: AuthContext, clientId: string, now = new Date()): Promise<LogPullTaskResult> {
+  async getPullTask(auth: AuthContext, did: string, now = new Date()): Promise<LogPullTaskResult> {
     const policy = await this.getPolicy(auth);
     if (!policy.enabled) {
       return {
@@ -116,7 +116,7 @@ export class ClientLogUploadService {
       };
     }
 
-    const task = await this.claimPendingTask(auth, clientId, now);
+    const task = await this.claimPendingTask(auth, did, now);
     if (!task) {
       return {
         shouldUpload: false,
@@ -140,7 +140,7 @@ export class ClientLogUploadService {
     const now = command.now ?? new Date();
     const task = await this.requireClaimedTask(
       command.auth,
-      command.clientId,
+      command.did,
       command.taskId,
       command.claimToken,
       now,
@@ -222,7 +222,7 @@ export class ClientLogUploadService {
     const now = command.now ?? new Date();
     const task = await this.requireClaimedTask(
       command.auth,
-      command.clientId,
+      command.did,
       command.taskId,
       command.claimToken,
       now,
@@ -242,11 +242,11 @@ export class ClientLogUploadService {
 
   private async claimPendingTask(
     auth: AuthContext,
-    clientId: string,
+    did: string,
     now: Date,
   ): Promise<ClientLogUploadTaskRecord | undefined> {
     const candidate = (await this.database.listClientLogUploadTasks(auth.appId))
-      .filter((item) => this.isTaskClaimableByClient(item, auth, clientId, now))
+      .filter((item) => this.isTaskClaimableByClient(item, auth, did, now))
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
       .at(0);
     if (!candidate) {
@@ -260,7 +260,7 @@ export class ClientLogUploadService {
 
     await this.database.updateClientLogUploadTask(candidate.id, {
       status: "CLAIMED",
-      clientId,
+      did,
       claimToken,
       claimExpireAt,
     });
@@ -268,7 +268,7 @@ export class ClientLogUploadService {
     return {
       ...candidate,
       status: "CLAIMED",
-      clientId,
+      did,
       claimToken,
       claimExpireAt,
     };
@@ -276,7 +276,7 @@ export class ClientLogUploadService {
 
   private async requireClaimedTask(
     auth: AuthContext,
-    clientId: string,
+    did: string,
     taskId: string,
     claimToken: string,
     now: Date,
@@ -298,7 +298,7 @@ export class ClientLogUploadService {
       badRequest("LOG_TASK_MISMATCH", "The log upload task is missing, expired, or no longer available.");
     }
 
-    if (task.status !== "CLAIMED" || task.clientId !== clientId || task.claimToken !== claimToken) {
+    if (task.status !== "CLAIMED" || task.did !== did || task.claimToken !== claimToken) {
       conflict("LOG_CLAIM_MISMATCH", "The log upload claim is missing or no longer owned by this client.");
     }
 
@@ -312,7 +312,7 @@ export class ClientLogUploadService {
   private isTaskClaimableByClient(
     task: ClientLogUploadTaskRecord,
     auth: AuthContext,
-    clientId: string,
+    did: string,
     now: Date,
   ): boolean {
     if (task.appId !== auth.appId) {
@@ -323,7 +323,7 @@ export class ClientLogUploadService {
       return false;
     }
 
-    if (task.clientId && task.clientId !== clientId) {
+    if (task.did && task.did !== did) {
       return false;
     }
 

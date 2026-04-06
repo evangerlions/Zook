@@ -250,7 +250,6 @@ test("public app config API exposes admin delivery config for the requested app"
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.appId, "app_a");
-  assert.equal(response.body.data.configKey, "admin.delivery_config");
   assert.deepEqual(response.body.data.config, {
     release: {
       version: "2026.03.20",
@@ -873,14 +872,14 @@ test("admin remote log pull task API creates tasks from defaults and can cancel 
     headers,
     body: {
       userId: "user_alice",
-      clientId: "did_ios_001",
+      did: "did_ios_001",
     },
   });
 
   assert.equal(createResponse.statusCode, 200);
   assert.equal(createResponse.body.data.items.length, 1);
   assert.equal(createResponse.body.data.items[0]?.userId, "user_alice");
-  assert.equal(createResponse.body.data.items[0]?.clientId, "did_ios_001");
+  assert.equal(createResponse.body.data.items[0]?.did, "did_ios_001");
   assert.equal(createResponse.body.data.items[0]?.maxLines, 500);
   assert.equal(createResponse.body.data.items[0]?.maxBytes, 32768);
   assert.equal(createResponse.body.data.items[0]?.keyId.startsWith("logk_"), true);

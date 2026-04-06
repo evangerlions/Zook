@@ -104,6 +104,18 @@ GET  /api/v1/my-todo/callbacks/oauth/google
 3. 这条接口当前返回的是后台 `admin.delivery_config` 中维护的 app 级公共配置
 4. 其他 `/public/*` 模板接口仍需按产品需要补齐
 
+当前返回示例：
+
+```json
+{
+  "appId": "flutter_demo",
+  "config": {
+    "app": "make_flutter_demo_great_again"
+  },
+  "updatedAt": "2026-04-04T02:03:31.907Z"
+}
+```
+
 ## 5. 命名与 Method 规则
 
 1. 查询使用 `GET`
@@ -166,6 +178,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/auth/login/email-code` | 发送邮箱登录验证码 |
 | `POST` | `/api/v1/auth/login/email` | 使用邮箱验证码登录，必要时自动创建账号 |
 | `POST` | `/api/v1/auth/password/email-code` | 发送密码设置 / 重置邮箱验证码 |
+| `POST` | `/api/v1/auth/password/set` | 已登录的邮箱验证码账号直接设置密码，并签发新会话 |
 | `POST` | `/api/v1/auth/password/reset` | 使用邮箱验证码重置密码，并直接签发新会话 |
 | `POST` | `/api/v1/auth/password/change` | 已登录用户修改密码，并直接签发新会话 |
 | `POST` | `/api/v1/auth/register/email-code` | 发送注册邮箱验证码 |
@@ -198,9 +211,11 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
    `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`
 5. 密码相关接口：
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
+   `POST /api/v1/auth/password/set` 请求体为 `{ "appId": "app_a", "password": "Password1234", "clientType": "app" }`
    `POST /api/v1/auth/password/reset` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "password": "Password1234", "clientType": "app" }`
    `POST /api/v1/auth/password/change` 请求体为 `{ "appId": "app_a", "currentPassword": "OldPass1234", "newPassword": "NewPass1234", "clientType": "app" }`
    `password` / `newPassword` 当前要求为 10-256 个字符，且同时包含字母和数字。
+   `password/set` 只允许当前已登录且仍为 `email-code-only` 的账号调用；如果该账号已经有密码，会返回 `409 AUTH_PASSWORD_ALREADY_SET`，此时应改走 `password/change`。
 6. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
 7. `POST /api/v1/auth/password/email-code` 为了避免账号探测，在邮箱不存在、账号被封或当前 app 不允许该用户走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` 阶段完成。
 8. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
@@ -214,15 +229,19 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
   "name": "alice",
   "email": "alice@example.com",
   "phone": null,
-  "avatarUrl": null
+  "avatarUrl": null,
+  "hasPassword": true
 }
 ```
 
 11. 目前 `name` 会根据现有账号信息推导，优先取邮箱前缀，其次取手机号；`avatarUrl` 预留为 `null`，后续可平滑扩展。
-12. `POST /api/v1/auth/logout` 当 `scope = "all"` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
-13. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
-14. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
-15. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Client-Id` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
+12. `hasPassword` 用于标识当前账号是否已经设置过密码：
+   - `false`：当前仍是 `email-code-only` 账号，前端应展示“设置密码”
+   - `true`：前端应展示“修改密码”
+13. `POST /api/v1/auth/logout` 当 `scope = "all"` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
+14. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
+15. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
+16. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Did` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
 
 ## 8. 统一响应格式
 

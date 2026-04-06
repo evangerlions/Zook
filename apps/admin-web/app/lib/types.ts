@@ -99,7 +99,7 @@ export interface AdminRemoteLogPullSettingsDocument {
 export interface AdminRemoteLogPullTaskSummary {
   taskId: string;
   userId: string;
-  clientId: string;
+  did: string;
   keyId: string;
   status: "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED";
   fromTsMs?: number;

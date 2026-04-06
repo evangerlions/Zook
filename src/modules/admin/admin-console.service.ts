@@ -108,7 +108,6 @@ export class AdminConsoleService {
 
     return {
       appId: app.id,
-      configKey: ADMIN_CONFIG_KEY,
       config: JSON.parse(rawJson) as Record<string, unknown>,
       updatedAt: await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY),
     };
@@ -129,13 +128,13 @@ export class AdminConsoleService {
     return this.getConfig(app.id);
   }
 
-  async restoreConfig(appId: string, revision: number): Promise<AdminConfigDocument> {
+  async restoreConfig(appId: string, revision: number, desc?: string): Promise<AdminConfigDocument> {
     const app = await this.requireConfigApp(appId);
     const existing = await this.appConfigService.getRevision(app.id, ADMIN_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
-    await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, `恢复到版本 R${revision}`);
+    await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, desc?.trim() || `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);
   }
@@ -336,8 +335,8 @@ export class AdminConsoleService {
     return document;
   }
 
-  async restoreEmailServiceConfig(revision: number): Promise<AdminEmailServiceDocument> {
-    const document = await this.commonEmailConfigService.restoreConfig(revision);
+  async restoreEmailServiceConfig(revision: number, desc?: string): Promise<AdminEmailServiceDocument> {
+    const document = await this.commonEmailConfigService.restoreConfig(revision, desc);
     await this.managedStateStore.save(this.database);
     return document;
   }
@@ -402,9 +401,10 @@ export class AdminConsoleService {
   async restoreRemoteLogPullSettings(
     appId: string,
     revision: number,
+    desc?: string,
   ): Promise<AdminAppRemoteLogPullSettingsDocument> {
     const app = await this.requireConfigApp(appId);
-    const document = await this.appRemoteLogPullService.restoreConfig(app.id, revision);
+    const document = await this.appRemoteLogPullService.restoreConfig(app.id, revision, desc);
     await this.managedStateStore.save(this.database);
     return await this.getRemoteLogPullSettings(app.id, document.revision);
   }
@@ -438,9 +438,9 @@ export class AdminConsoleService {
     return this.getI18nSettings(app.id, document.revision);
   }
 
-  async restoreI18nSettings(appId: string, revision: number): Promise<AdminAppI18nDocument> {
+  async restoreI18nSettings(appId: string, revision: number, desc?: string): Promise<AdminAppI18nDocument> {
     const app = await this.requireConfigApp(appId);
-    const document = await this.appI18nConfigService.restoreConfig(app.id, revision);
+    const document = await this.appI18nConfigService.restoreConfig(app.id, revision, desc);
     await this.managedStateStore.save(this.database);
     return this.getI18nSettings(app.id, document.revision);
   }
@@ -466,8 +466,8 @@ export class AdminConsoleService {
     return this.getLlmServiceConfig(document.revision);
   }
 
-  async restoreLlmServiceConfig(revision: number): Promise<AdminLlmServiceDocument> {
-    const document = await this.commonLlmConfigService.restoreConfig(revision);
+  async restoreLlmServiceConfig(revision: number, desc?: string): Promise<AdminLlmServiceDocument> {
+    const document = await this.commonLlmConfigService.restoreConfig(revision, desc);
     await this.managedStateStore.save(this.database);
     return this.getLlmServiceConfig(document.revision);
   }

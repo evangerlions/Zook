@@ -650,6 +650,10 @@ export class BackendApplication {
       return this.handleChangePassword(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/auth/password/set") {
+      return this.handleSetPassword(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/register/email-code") {
       return this.handleRegisterEmailCode(request);
     }
@@ -1060,6 +1064,38 @@ export class BackendApplication {
       appId: auth.appId,
       actorUserId: auth.userId,
       action: "auth.password.change",
+      resourceType: "user_session",
+      resourceOwnerUserId: auth.userId,
+      payload: {
+        clientType,
+      },
+    });
+
+    return this.ok(
+      await this.toAuthPayload(session, clientType),
+      request.requestId as string,
+      this.buildAuthHeaders(session.refreshToken, clientType),
+    );
+  }
+
+  private async handleSetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
+    const password = this.validationPipe.requireString(body, "password");
+    const clientType = this.getClientType(body);
+
+    this.appAccessGuard.assertScope(requestedAppId, auth.appId);
+    const session = await this.authService.setPassword({
+      appId: requestedAppId,
+      userId: auth.userId,
+      password,
+    });
+
+    await this.auditInterceptor.record({
+      appId: auth.appId,
+      actorUserId: auth.userId,
+      action: "auth.password.set",
       resourceType: "user_session",
       resourceOwnerUserId: auth.userId,
       payload: {
@@ -1675,7 +1711,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreEmailServiceConfig(revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreEmailServiceConfig(revision, desc);
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -1852,7 +1890,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreLlmServiceConfig(revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreLlmServiceConfig(revision, desc);
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -2046,7 +2086,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreRemoteLogPullSettings(appId, revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreRemoteLogPullSettings(appId, revision, desc);
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.restore",
@@ -2137,7 +2179,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<AdminAppI18nDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreI18nSettings(appId, revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreI18nSettings(appId, revision, desc);
 
     await this.auditInterceptor.record({
       appId,
@@ -2217,7 +2261,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreConfig(appId, revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreConfig(appId, revision, desc);
 
     await this.auditInterceptor.record({
       appId,
@@ -2318,7 +2364,7 @@ export class BackendApplication {
 
   private async handleLogsPullTask(request: HttpRequest): Promise<HttpResponse<LogPullTaskResult>> {
     const auth = await this.authenticate(request);
-    const result = await this.clientLogUploadService.getPullTask(auth, this.requireHeader(request, "x-client-id"));
+    const result = await this.clientLogUploadService.getPullTask(auth, this.requireHeader(request, "x-did"));
     return this.ok(result, request.requestId as string);
   }
 
@@ -2326,7 +2372,7 @@ export class BackendApplication {
     const auth = await this.authenticate(request);
     const result = await this.clientLogUploadService.upload({
       auth,
-      clientId: this.requireHeader(request, "x-client-id"),
+      did: this.requireHeader(request, "x-did"),
       taskId: this.requireHeader(request, "x-log-task-id"),
       claimToken: this.requireHeader(request, "x-log-claim-token"),
       keyId: this.requireHeader(request, "x-log-key-id"),
@@ -2367,7 +2413,7 @@ export class BackendApplication {
 
     const result = await this.clientLogUploadService.acknowledgeNoData({
       auth,
-      clientId: this.requireHeader(request, "x-client-id"),
+      did: this.requireHeader(request, "x-did"),
       taskId,
       claimToken: this.validationPipe.requireString(body, "claimToken"),
     });
