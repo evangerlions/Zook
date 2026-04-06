@@ -37,7 +37,12 @@ export class UserService {
       email: user.email,
       phone: user.phone,
       avatarUrl: null,
+      hasPassword: this.hasPassword(user),
     };
+  }
+
+  private hasPassword(user: UserRecord): boolean {
+    return user.passwordAlgo !== "email-code-only";
   }
 
   private deriveName(user: UserRecord): string {

@@ -650,6 +650,10 @@ export class BackendApplication {
       return this.handleChangePassword(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/auth/password/set") {
+      return this.handleSetPassword(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/register/email-code") {
       return this.handleRegisterEmailCode(request);
     }
@@ -1060,6 +1064,38 @@ export class BackendApplication {
       appId: auth.appId,
       actorUserId: auth.userId,
       action: "auth.password.change",
+      resourceType: "user_session",
+      resourceOwnerUserId: auth.userId,
+      payload: {
+        clientType,
+      },
+    });
+
+    return this.ok(
+      await this.toAuthPayload(session, clientType),
+      request.requestId as string,
+      this.buildAuthHeaders(session.refreshToken, clientType),
+    );
+  }
+
+  private async handleSetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
+    const password = this.validationPipe.requireString(body, "password");
+    const clientType = this.getClientType(body);
+
+    this.appAccessGuard.assertScope(requestedAppId, auth.appId);
+    const session = await this.authService.setPassword({
+      appId: requestedAppId,
+      userId: auth.userId,
+      password,
+    });
+
+    await this.auditInterceptor.record({
+      appId: auth.appId,
+      actorUserId: auth.userId,
+      action: "auth.password.set",
       resourceType: "user_session",
       resourceOwnerUserId: auth.userId,
       payload: {

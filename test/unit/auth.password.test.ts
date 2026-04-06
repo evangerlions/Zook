@@ -209,6 +209,131 @@ test("password reset upgrades email-code-only accounts into password accounts", 
   assert.equal(sent.at(-1)?.templateName, "verify-code");
 });
 
+test("logged-in email-code-only users can set a password directly", async () => {
+  const sent: SentVerificationEmail[] = [];
+  const runtime = await createApplication({
+    registrationCodeGenerator: () => "333333",
+    registrationEmailSender: createFakeSender(sent),
+  });
+
+  await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/email-code",
+    headers: {
+      "x-app-locale": "en-US",
+      "x-app-country-code": "US",
+    },
+    body: {
+      appId: "app_a",
+      email: "set-direct@example.com",
+    },
+    ipAddress: "198.51.100.61",
+  });
+
+  const emailLoginResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/email",
+    headers: {
+      "x-app-locale": "en-US",
+      "x-app-country-code": "US",
+    },
+    body: {
+      appId: "app_a",
+      email: "set-direct@example.com",
+      emailCode: "333333",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.61",
+  });
+
+  assert.equal(emailLoginResponse.statusCode, 200);
+  assert.equal(runtime.database.findUserByAccount("set-direct@example.com")?.passwordAlgo, "email-code-only");
+
+  const setPasswordResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/password/set",
+    headers: {
+      authorization: `Bearer ${emailLoginResponse.body.data.accessToken}`,
+      "x-app-id": "app_a",
+    },
+    body: {
+      appId: "app_a",
+      password: "Password6789",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.61",
+  });
+
+  assert.equal(setPasswordResponse.statusCode, 200);
+  assert.ok(typeof setPasswordResponse.body.data.accessToken === "string");
+  assert.ok(typeof setPasswordResponse.body.data.refreshToken === "string");
+  assert.equal(runtime.database.findUserByAccount("set-direct@example.com")?.passwordAlgo, "scrypt");
+
+  const staleMeResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/users/me",
+    headers: {
+      authorization: `Bearer ${emailLoginResponse.body.data.accessToken}`,
+      "x-app-id": "app_a",
+    },
+  });
+
+  assert.equal(staleMeResponse.statusCode, 401);
+  assert.equal(staleMeResponse.body.code, "AUTH_INVALID_TOKEN");
+
+  const passwordLoginResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login",
+    headers: {},
+    body: {
+      appId: "app_a",
+      account: "set-direct@example.com",
+      password: "Password6789",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.61",
+  });
+
+  assert.equal(passwordLoginResponse.statusCode, 200);
+});
+
+test("set password rejects accounts that already have a password", async () => {
+  const runtime = await createApplication();
+
+  const loginResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login",
+    headers: {},
+    body: {
+      appId: "app_a",
+      account: "alice@example.com",
+      password: "Password1234",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.71",
+  });
+
+  assert.equal(loginResponse.statusCode, 200);
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/password/set",
+    headers: {
+      authorization: `Bearer ${loginResponse.body.data.accessToken}`,
+      "x-app-id": "app_a",
+    },
+    body: {
+      appId: "app_a",
+      password: "Password8888",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.71",
+  });
+
+  assert.equal(response.statusCode, 409);
+  assert.equal(response.body.code, "AUTH_PASSWORD_ALREADY_SET");
+});
+
 test("password change returns a new session and revokes the previous access token", async () => {
   const runtime = await createApplication();
 

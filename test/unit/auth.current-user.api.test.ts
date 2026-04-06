@@ -27,6 +27,7 @@ test("password login returns user profile, refresh keeps user profile, and users
     email: "alice@example.com",
     phone: undefined,
     avatarUrl: null,
+    hasPassword: true,
   });
 
   const meResponse = await runtime.app.handle({
@@ -46,6 +47,7 @@ test("password login returns user profile, refresh keeps user profile, and users
     email: "alice@example.com",
     phone: undefined,
     avatarUrl: null,
+    hasPassword: true,
   });
 
   const refreshResponse = await runtime.app.handle({
@@ -68,6 +70,7 @@ test("password login returns user profile, refresh keeps user profile, and users
     email: "alice@example.com",
     phone: undefined,
     avatarUrl: null,
+    hasPassword: true,
   });
 });
 

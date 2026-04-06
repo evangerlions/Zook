@@ -108,7 +108,6 @@ export class AdminConsoleService {
 
     return {
       appId: app.id,
-      configKey: ADMIN_CONFIG_KEY,
       config: JSON.parse(rawJson) as Record<string, unknown>,
       updatedAt: await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY),
     };

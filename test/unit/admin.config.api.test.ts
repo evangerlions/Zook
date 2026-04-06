@@ -250,7 +250,6 @@ test("public app config API exposes admin delivery config for the requested app"
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.appId, "app_a");
-  assert.equal(response.body.data.configKey, "admin.delivery_config");
   assert.deepEqual(response.body.data.config, {
     release: {
       version: "2026.03.20",
