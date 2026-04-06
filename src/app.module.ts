@@ -2354,7 +2354,7 @@ export class BackendApplication {
 
   private async handleLogsPullTask(request: HttpRequest): Promise<HttpResponse<LogPullTaskResult>> {
     const auth = await this.authenticate(request);
-    const result = await this.clientLogUploadService.getPullTask(auth, this.requireHeader(request, "x-client-id"));
+    const result = await this.clientLogUploadService.getPullTask(auth, this.requireHeader(request, "x-did"));
     return this.ok(result, request.requestId as string);
   }
 
@@ -2362,7 +2362,7 @@ export class BackendApplication {
     const auth = await this.authenticate(request);
     const result = await this.clientLogUploadService.upload({
       auth,
-      clientId: this.requireHeader(request, "x-client-id"),
+      did: this.requireHeader(request, "x-did"),
       taskId: this.requireHeader(request, "x-log-task-id"),
       claimToken: this.requireHeader(request, "x-log-claim-token"),
       keyId: this.requireHeader(request, "x-log-key-id"),
@@ -2403,7 +2403,7 @@ export class BackendApplication {
 
     const result = await this.clientLogUploadService.acknowledgeNoData({
       auth,
-      clientId: this.requireHeader(request, "x-client-id"),
+      did: this.requireHeader(request, "x-did"),
       taskId,
       claimToken: this.validationPipe.requireString(body, "claimToken"),
     });

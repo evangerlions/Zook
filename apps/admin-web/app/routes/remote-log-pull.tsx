@@ -33,7 +33,7 @@ export default function RemoteLogPullRoute() {
   const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
-  const [taskForm] = Form.useForm<{ userId: string; clientId: string }>();
+  const [taskForm] = Form.useForm<{ userId: string; did: string }>();
 
   async function loadLatest() {
     if (!selectedAppId) {
@@ -134,7 +134,7 @@ export default function RemoteLogPullRoute() {
     setCreatingTask(true);
     clearNotice();
     try {
-      const payload = await adminApi.createRemoteLogPullTask(selectedAppId, values.userId, values.clientId);
+      const payload = await adminApi.createRemoteLogPullTask(selectedAppId, values.userId, values.did);
       setTasks(payload);
       taskForm.resetFields();
       setNotice(makeNotice("success", "日志回捞任务已创建。"));
@@ -171,9 +171,9 @@ export default function RemoteLogPullRoute() {
         key: "userId",
       },
       {
-        title: "DID / Client ID",
-        dataIndex: "clientId",
-        key: "clientId",
+        title: "DID",
+        dataIndex: "did",
+        key: "did",
       },
       {
         title: "状态",
@@ -255,7 +255,7 @@ export default function RemoteLogPullRoute() {
           >
             <div className="stack">
               <Alert
-                message="通用策略放在这里维护，真正创建任务时只需要填 UID 和 DID / Client ID。"
+                message="通用策略放在这里维护，真正创建任务时只需要填 UID 和 DID。"
                 showIcon
                 type="info"
               />
@@ -373,7 +373,7 @@ export default function RemoteLogPullRoute() {
                 <Form.Item label="UID" name="userId" rules={[{ required: true, message: "请输入 userId" }]}>
                   <Input placeholder="user_alice" />
                 </Form.Item>
-                <Form.Item label="DID / Client ID" name="clientId" rules={[{ required: true, message: "请输入 DID / Client ID" }]}>
+                <Form.Item label="DID" name="did" rules={[{ required: true, message: "请输入 DID" }]}>
                   <Input placeholder="did_ios_001 / web_install_001" />
                 </Form.Item>
                 <div className="button-row">

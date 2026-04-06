@@ -124,12 +124,12 @@ export class AppRemoteLogPullService {
 
     const source = input as Record<string, unknown>;
     const userId = typeof source.userId === "string" ? source.userId.trim() : "";
-    const clientId = typeof source.clientId === "string" ? source.clientId.trim() : "";
+    const did = typeof source.did === "string" ? source.did.trim() : "";
     if (!userId) {
       badRequest("REQ_INVALID_BODY", "userId must be a non-empty string.");
     }
-    if (!clientId) {
-      badRequest("REQ_INVALID_BODY", "clientId must be a non-empty string.");
+    if (!did) {
+      badRequest("REQ_INVALID_BODY", "did must be a non-empty string.");
     }
 
     const settings = await this.getCurrentConfig(appId);
@@ -140,7 +140,7 @@ export class AppRemoteLogPullService {
       id: randomId("log_task"),
       appId,
       userId,
-      clientId,
+      did,
       keyId: secret.keyId,
       fromTsMs,
       toTsMs,
@@ -264,7 +264,7 @@ export class AppRemoteLogPullService {
     return {
       taskId: task.id,
       userId: task.userId ?? "",
-      clientId: task.clientId ?? "",
+      did: task.did ?? "",
       keyId: task.keyId,
       status: task.status,
       fromTsMs: task.fromTsMs,

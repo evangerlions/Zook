@@ -248,7 +248,7 @@ export interface ClientLogUploadTaskRecord {
   id: string;
   appId: string;
   userId?: string;
-  clientId?: string;
+  did?: string;
   keyId: string;
   fromTsMs?: number;
   toTsMs?: number;
@@ -545,7 +545,7 @@ export interface AdminAppRemoteLogPullSettingsDocument extends RemoteLogPullSett
 export interface AdminRemoteLogPullTaskSummary {
   taskId: string;
   userId: string;
-  clientId: string;
+  did: string;
   keyId: string;
   status: ClientLogUploadTaskStatus;
   fromTsMs?: number;

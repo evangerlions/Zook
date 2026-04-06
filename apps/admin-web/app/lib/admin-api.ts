@@ -281,14 +281,14 @@ export const adminApi = {
       adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/tasks`),
     );
   },
-  createRemoteLogPullTask(appId: string, userId: string, clientId: string) {
+  createRemoteLogPullTask(appId: string, userId: string, did: string) {
     return requestJson<AdminRemoteLogPullTaskListDocument>(
       adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/tasks`),
       {
         method: "POST",
         body: {
           userId,
-          clientId,
+          did,
         },
       },
     );

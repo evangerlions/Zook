@@ -106,7 +106,7 @@ test("logs pull-task returns shouldUpload false when no claimable task exists", 
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
     },
   });
 
@@ -141,7 +141,7 @@ test("logs pull-task claims a task for one client and hides it from concurrent p
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
     },
   });
 
@@ -154,7 +154,7 @@ test("logs pull-task claims a task for one client and hides it from concurrent p
   assert.equal(typeof claimed.body.data.claimToken, "string");
   assert.equal(typeof claimed.body.data.claimExpireAtMs, "number");
   assert.equal(runtime.database.clientLogUploadTasks[0]?.status, "CLAIMED");
-  assert.equal(runtime.database.clientLogUploadTasks[0]?.clientId, "client_alpha");
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.did, "did_alpha");
 
   const hidden = await runtime.app.handle({
     method: "GET",
@@ -162,7 +162,7 @@ test("logs pull-task claims a task for one client and hides it from concurrent p
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
     },
   });
 
@@ -194,7 +194,7 @@ test("logs upload can decrypt payloads using app-generated log secrets after cla
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "device_a",
+      "x-did": "did_a",
     },
   });
   assert.equal(pullResponse.statusCode, 200);
@@ -213,7 +213,7 @@ test("logs upload can decrypt payloads using app-generated log secrets after cla
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "device_a",
+      "x-did": "did_a",
       "x-log-claim-token": pullResponse.body.data.claimToken,
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": appSecret.keyId,
@@ -261,7 +261,7 @@ test("logs upload decrypts claimed AES-GCM+gzip NDJSON payload and stores accept
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
     },
   });
 
@@ -301,7 +301,7 @@ test("logs upload decrypts claimed AES-GCM+gzip NDJSON payload and stores accept
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
       "x-log-claim-token": pullResponse.body.data.claimToken,
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",
@@ -355,7 +355,7 @@ test("logs ack(no_data) completes a claimed task without creating uploads", asyn
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
     },
   });
 
@@ -371,7 +371,7 @@ test("logs ack(no_data) completes a claimed task without creating uploads", asyn
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
     },
     body: {
       claimToken: pullResponse.body.data.claimToken,
@@ -400,7 +400,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     id: "log-task-claim-mismatch",
     appId: "app_a",
     userId: session.userId,
-    clientId: "client_alpha",
+    did: "did_alpha",
     keyId: "dev-k1",
     status: "CLAIMED",
     claimToken: "claim_alpha",
@@ -418,7 +418,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
       "x-log-claim-token": "wrong_claim",
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",
@@ -436,7 +436,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     id: "log-task-claim-expired",
     appId: "app_a",
     userId: session.userId,
-    clientId: "client_alpha",
+    did: "did_alpha",
     keyId: "dev-k1",
     status: "CLAIMED",
     claimToken: "claim_expired",
@@ -454,7 +454,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
       "x-log-claim-token": "claim_expired",
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",
@@ -473,7 +473,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     id: "log-task-completed",
     appId: "app_a",
     userId: session.userId,
-    clientId: "client_alpha",
+    did: "did_alpha",
     keyId: "dev-k1",
     status: "COMPLETED",
     claimToken: "claim_done",
@@ -491,7 +491,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
       "x-log-claim-token": "claim_done",
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",
@@ -509,7 +509,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     id: "log-task-decrypt-fail",
     appId: "app_a",
     userId: session.userId,
-    clientId: "client_alpha",
+    did: "did_alpha",
     keyId: "dev-k1",
     status: "CLAIMED",
     claimToken: "claim_ok",
@@ -527,7 +527,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     headers: {
       authorization: `Bearer ${session.accessToken}`,
       "x-app-id": "app_a",
-      "x-client-id": "client_alpha",
+      "x-did": "did_alpha",
       "x-log-claim-token": "claim_ok",
       "x-log-enc": "aes-256-gcm",
       "x-log-key-id": "dev-k1",

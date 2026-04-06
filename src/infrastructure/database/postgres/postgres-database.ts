@@ -193,7 +193,7 @@ function parseClientLogUploadTask(row: QueryResultRow): ClientLogUploadTaskRecor
     id: String(row.id),
     appId: String(row.app_id),
     userId: row.user_id ?? undefined,
-    clientId: row.client_id ?? undefined,
+    did: row.did ?? row.client_id ?? undefined,
     keyId: String(row.key_id),
     fromTsMs: row.from_ts_ms === null || row.from_ts_ms === undefined ? undefined : Number(row.from_ts_ms),
     toTsMs: row.to_ts_ms === null || row.to_ts_ms === undefined ? undefined : Number(row.to_ts_ms),
@@ -708,14 +708,14 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listClientLogUploadTasks(appId?: string): Promise<ClientLogUploadTaskRecord[]> {
     const result = appId
       ? await this.query(
-          `SELECT id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
+          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
            FROM zook_client_log_upload_tasks
            WHERE app_id = $1
            ORDER BY created_at DESC`,
           [appId],
         )
       : await this.query(
-          `SELECT id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
+          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
            FROM zook_client_log_upload_tasks
            ORDER BY created_at DESC`,
         );
@@ -724,7 +724,7 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async findClientLogUploadTask(taskId: string): Promise<ClientLogUploadTaskRecord | undefined> {
     const result = await this.query(
-      `SELECT id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
+      `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
        FROM zook_client_log_upload_tasks
        WHERE id = $1
        LIMIT 1`,
@@ -736,14 +736,14 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertClientLogUploadTask(record: ClientLogUploadTaskRecord): Promise<void> {
     await this.query(
       `INSERT INTO zook_client_log_upload_tasks (
-         id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes,
+         id, app_id, user_id, did, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes,
          status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::timestamptz, $13::timestamptz, $14::timestamptz, $15::timestamptz)`,
       [
         record.id,
         record.appId,
         record.userId ?? null,
-        record.clientId ?? null,
+        record.did ?? null,
         record.keyId,
         record.fromTsMs ?? null,
         record.toTsMs ?? null,
@@ -761,7 +761,7 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async updateClientLogUploadTask(
     taskId: string,
-    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "clientId" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
+    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
   ): Promise<void> {
     const fields: string[] = [];
     const values: unknown[] = [taskId];
@@ -772,9 +772,9 @@ export class PostgresDatabase extends ApplicationDatabase {
       values.push(patch.status ?? null);
     }
 
-    if ("clientId" in patch) {
-      fields.push(`client_id = $${index++}`);
-      values.push(patch.clientId ?? null);
+    if ("did" in patch) {
+      fields.push(`did = $${index++}`);
+      values.push(patch.did ?? null);
     }
 
     if ("claimToken" in patch) {
