@@ -76,16 +76,6 @@ interface SentTemplateEmail {
   templateData: Record<string, unknown>;
 }
 
-interface SentVerificationEmail {
-  appName: string;
-  email: string;
-  code: string;
-  locale: string;
-  region: "ap-guangzhou" | "ap-hongkong";
-  expireMinutes: number;
-  templateName?: string;
-}
-
 function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSender {
   return {
     async sendTemplateEmail(command) {
@@ -141,30 +131,6 @@ function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSend
       };
     },
     async sendVerificationCode() {
-      return {
-        provider: "tencent_ses",
-      };
-    },
-  };
-}
-
-function createSensitiveVerificationEmailSender(sent: SentVerificationEmail[]): RegistrationEmailSender {
-  return {
-    async sendTemplateEmail() {
-      return {
-        provider: "tencent_ses",
-      };
-    },
-    async sendVerificationCode(command) {
-      sent.push({
-        appName: command.appName,
-        email: command.email,
-        code: command.code,
-        locale: command.locale,
-        region: command.region,
-        expireMinutes: command.expireMinutes,
-        templateName: command.templateName,
-      });
       return {
         provider: "tencent_ses",
       };
@@ -734,16 +700,14 @@ test("admin app name updates require both zh-CN and en-US", async () => {
   assert.match(String(response.body.message), /appNameI18n\.en-US/);
 });
 
-test("admin app log secret reveal requires sensitive verification and grants 1h access after email code", async () => {
-  const sentVerificationEmails: SentVerificationEmail[] = [];
+test("admin app log secret reveal requires sensitive verification and grants 1h access after secondary password", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
     },
-    registrationEmailSender: createSensitiveVerificationEmailSender(sentVerificationEmails),
     adminSensitiveOperation: {
-      codeGenerator: () => "123456",
+      secondaryPassword: "199510",
     },
   });
 
@@ -773,16 +737,6 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
 
   assert.equal(requestCodeResponse.statusCode, 200);
   assert.equal(requestCodeResponse.body.data.operation, "app.log_secret.read");
-  assert.equal(sentVerificationEmails.length, 1);
-  assert.deepEqual(sentVerificationEmails[0], {
-    appName: "Zook 管理后台",
-    email: "evangerlions@gmail.com",
-    code: "123456",
-    locale: "zh-CN",
-    region: "ap-hongkong",
-    expireMinutes: 10,
-    templateName: "verify-code",
-  });
 
   const verifyResponse = await runtime.app.handle({
     method: "POST",
@@ -792,7 +746,7 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
     },
     body: {
       operation: "app.log_secret.read",
-      code: "123456",
+      code: "199510",
     },
   });
 
@@ -945,15 +899,13 @@ test("admin password API supports per-item upsert and delete", async () => {
 });
 
 test("admin password reveal requires sensitive verification before copying real value", async () => {
-  const sentVerificationEmails: SentVerificationEmail[] = [];
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
       password: "AdminPass123!",
     },
-    registrationEmailSender: createSensitiveVerificationEmailSender(sentVerificationEmails),
     adminSensitiveOperation: {
-      codeGenerator: () => "123456",
+      secondaryPassword: "199510",
     },
   });
 
@@ -996,7 +948,6 @@ test("admin password reveal requires sensitive verification before copying real 
 
   assert.equal(requestCodeResponse.statusCode, 200);
   assert.equal(requestCodeResponse.body.data.operation, "password.value.read");
-  assert.equal(sentVerificationEmails.length, 1);
 
   const verifyResponse = await runtime.app.handle({
     method: "POST",
@@ -1006,7 +957,7 @@ test("admin password reveal requires sensitive verification before copying real 
     },
     body: {
       operation: "password.value.read",
-      code: "123456",
+      code: "199510",
     },
   });
 

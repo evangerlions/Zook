@@ -90,7 +90,6 @@ import type {
   LogUploadResult,
   LlmMetricsRange,
   Platform,
-  TencentSesRegion,
 } from "./shared/types.ts";
 import { createOpaqueToken, getHeader, parseCookies, randomId } from "./shared/utils.ts";
 
@@ -112,12 +111,7 @@ export interface CreateApplicationOptions {
     password: string;
   };
   adminSensitiveOperation?: {
-    recipientEmail?: string;
-    locale?: string;
-    region?: TencentSesRegion;
-    templateName?: string;
-    appName?: string;
-    codeGenerator?: () => string;
+    secondaryPassword?: string;
   };
   secureRefreshCookie?: boolean;
   accessTokenSecret?: string;
@@ -2387,7 +2381,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const adminSensitiveOperationService = new AdminSensitiveOperationService(
     kvManager,
-    registrationEmailSender,
     options.adminSensitiveOperation,
   );
   const geoResolver =
