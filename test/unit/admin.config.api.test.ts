@@ -772,7 +772,138 @@ test("admin app name updates require both zh-CN and en-US", async () => {
   assert.match(String(response.body.message), /appNameI18n\.en-US/);
 });
 
-test("admin app log secret reveal requires sensitive verification and grants 1h access after secondary password", async () => {
+test("admin remote log pull settings API exposes defaults, updates revisions, and restores older versions", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull",
+    headers,
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.equal(defaultResponse.body.data.configKey, "remote_log_pull.settings");
+  assert.deepEqual(defaultResponse.body.data.config, {
+    enabled: false,
+    minPullIntervalSeconds: 1800,
+    claimTtlSeconds: 300,
+    taskDefaults: {
+      lookbackMinutes: 60,
+      maxLines: 2000,
+      maxBytes: 1048576,
+    },
+  });
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull",
+    headers,
+    body: {
+      config: {
+        enabled: true,
+        minPullIntervalSeconds: 120,
+        claimTtlSeconds: 90,
+        taskDefaults: {
+          lookbackMinutes: 30,
+          maxLines: 300,
+          maxBytes: 65536,
+        },
+      },
+      desc: "incident tuning",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.revision, 2);
+  assert.equal(updateResponse.body.data.desc, "incident tuning");
+  assert.equal(updateResponse.body.data.config.enabled, true);
+  assert.equal(updateResponse.body.data.config.taskDefaults.lookbackMinutes, 30);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull/revisions/1/restore",
+    headers,
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.config.enabled, false);
+  assert.equal(restoreResponse.body.data.revision, 3);
+});
+
+test("admin remote log pull task API creates tasks from defaults and can cancel them", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull",
+    headers,
+    body: {
+      config: {
+        enabled: true,
+        minPullIntervalSeconds: 120,
+        claimTtlSeconds: 180,
+        taskDefaults: {
+          lookbackMinutes: 15,
+          maxLines: 500,
+          maxBytes: 32768,
+        },
+      },
+    },
+  });
+
+  const createResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull/tasks",
+    headers,
+    body: {
+      userId: "user_alice",
+      clientId: "did_ios_001",
+    },
+  });
+
+  assert.equal(createResponse.statusCode, 200);
+  assert.equal(createResponse.body.data.items.length, 1);
+  assert.equal(createResponse.body.data.items[0]?.userId, "user_alice");
+  assert.equal(createResponse.body.data.items[0]?.clientId, "did_ios_001");
+  assert.equal(createResponse.body.data.items[0]?.maxLines, 500);
+  assert.equal(createResponse.body.data.items[0]?.maxBytes, 32768);
+  assert.equal(createResponse.body.data.items[0]?.keyId.startsWith("logk_"), true);
+  assert.equal(createResponse.body.data.items[0]?.status, "PENDING");
+
+  const taskId = createResponse.body.data.items[0]?.taskId;
+  assert.ok(taskId);
+
+  const cancelResponse = await runtime.app.handle({
+    method: "POST",
+    path: `/api/v1/admin/apps/app_a/remote-log-pull/tasks/${taskId}/cancel`,
+    headers,
+  });
+
+  assert.equal(cancelResponse.statusCode, 200);
+  assert.equal(
+    cancelResponse.body.data.items.find((item: { taskId: string }) => item.taskId === taskId)?.status,
+    "CANCELLED",
+  );
+});
+
+test("admin app log secret reveal requires sensitive verification and grants 1h access after email code", async () => {
+  const sentVerificationEmails: SentVerificationEmail[] = [];
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",

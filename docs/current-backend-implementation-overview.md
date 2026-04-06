@@ -210,14 +210,22 @@
 16. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
 17. `GET /api/v1/admin/apps/{appId}/i18n-settings`
 18. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
-19. `POST /api/v1/admin/sensitive-operations/request-code`
-20. `POST /api/v1/admin/sensitive-operations/verify`
-21. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
-22. `GET /api/v1/logs/pull-task`
-23. `POST /api/v1/logs/upload`
-24. `GET /api/v1/{appId}/public/config`
+19. `GET /api/v1/admin/apps/{appId}/remote-log-pull`
+20. `PUT /api/v1/admin/apps/{appId}/remote-log-pull`
+21. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+22. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+23. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
+24. `POST /api/v1/admin/sensitive-operations/request-code`
+25. `POST /api/v1/admin/sensitive-operations/verify`
+26. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
+27. `GET /api/v1/logs/policy`
+28. `GET /api/v1/logs/pull-task`
+29. `POST /api/v1/logs/tasks/{taskId}/ack`
+30. `POST /api/v1/logs/upload`
+31. `GET /api/v1/{appId}/public/config`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
+客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。
 
 ## 4. 当前目录结构
 

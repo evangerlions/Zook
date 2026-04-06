@@ -1,23 +1,25 @@
 import { createDecipheriv } from "node:crypto";
 import { gunzipSync } from "node:zlib";
-import { ApplicationError, badRequest, payloadTooLarge } from "../shared/errors.ts";
+import { badRequest, conflict, payloadTooLarge } from "../shared/errors.ts";
 import type {
   AuthContext,
   ClientLogLineRecord,
   ClientLogUploadRecord,
   ClientLogUploadTaskRecord,
+  LogNoDataAckResult,
+  LogPolicyResult,
   LogPullTaskResult,
   LogUploadResult,
 } from "../shared/types.ts";
 import { randomId } from "../shared/utils.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
+import { AppRemoteLogPullService } from "./app-remote-log-pull.service.ts";
 
 const AES_256_GCM = "aes-256-gcm";
 const NDJSON_GZIP = "ndjson+gzip";
 const GCM_NONCE_BYTES = 12;
 const GCM_TAG_BYTES = 16;
 const DEFAULT_MAX_ENCRYPTED_PAYLOAD_BYTES = 8 * 1024 * 1024;
-
 export interface ClientLogEncryptionKeyResolver {
   resolveKey(keyId: string): Promise<Buffer | undefined> | Buffer | undefined;
 }
@@ -66,7 +68,9 @@ export class StaticClientLogEncryptionKeyResolver implements ClientLogEncryption
 
 export interface UploadClientLogsCommand {
   auth: AuthContext;
+  clientId: string;
   taskId: string;
+  claimToken: string;
   keyId: string;
   encryption: string;
   nonceBase64: string;
@@ -78,17 +82,41 @@ export interface UploadClientLogsCommand {
   now?: Date;
 }
 
+export interface AckClientLogNoDataCommand {
+  auth: AuthContext;
+  clientId: string;
+  taskId: string;
+  claimToken: string;
+  now?: Date;
+}
+
 export class ClientLogUploadService {
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly keyResolver: ClientLogEncryptionKeyResolver,
+    private readonly remoteLogPullService: AppRemoteLogPullService,
     private readonly options: {
       maxEncryptedPayloadBytes?: number;
     } = {},
   ) {}
 
-  async getPullTask(auth: AuthContext, now = new Date()): Promise<LogPullTaskResult> {
-    const task = await this.findPendingTask(auth, now);
+  async getPolicy(auth: AuthContext): Promise<LogPolicyResult> {
+    const settings = await this.remoteLogPullService.getCurrentConfig(auth.appId);
+    return {
+      enabled: settings.enabled,
+      minPullIntervalSeconds: settings.minPullIntervalSeconds,
+    };
+  }
+
+  async getPullTask(auth: AuthContext, clientId: string, now = new Date()): Promise<LogPullTaskResult> {
+    const policy = await this.getPolicy(auth);
+    if (!policy.enabled) {
+      return {
+        shouldUpload: false,
+      };
+    }
+
+    const task = await this.claimPendingTask(auth, clientId, now);
     if (!task) {
       return {
         shouldUpload: false,
@@ -98,6 +126,8 @@ export class ClientLogUploadService {
     return {
       shouldUpload: true,
       taskId: task.id,
+      claimToken: task.claimToken as string,
+      claimExpireAtMs: new Date(task.claimExpireAt as string).getTime(),
       fromTsMs: task.fromTsMs,
       toTsMs: task.toTsMs,
       maxLines: task.maxLines,
@@ -108,7 +138,13 @@ export class ClientLogUploadService {
 
   async upload(command: UploadClientLogsCommand): Promise<LogUploadResult> {
     const now = command.now ?? new Date();
-    const task = await this.requireTask(command.auth, command.taskId, now);
+    const task = await this.requireClaimedTask(
+      command.auth,
+      command.clientId,
+      command.taskId,
+      command.claimToken,
+      now,
+    );
 
     if (command.encryption !== AES_256_GCM) {
       badRequest("LOG_UNSUPPORTED_ENCRYPTION", "X-Log-Enc must be aes-256-gcm.");
@@ -119,7 +155,7 @@ export class ClientLogUploadService {
     }
 
     if (command.keyId !== task.keyId) {
-      badRequest("LOG_TASK_MISMATCH", "X-Log-Key-Id does not match the pending log upload task.");
+      badRequest("LOG_TASK_MISMATCH", "X-Log-Key-Id does not match the claimed log upload task.");
     }
 
     const maxEncryptedPayloadBytes = this.options.maxEncryptedPayloadBytes ?? DEFAULT_MAX_ENCRYPTED_PAYLOAD_BYTES;
@@ -170,6 +206,8 @@ export class ClientLogUploadService {
 
     await this.database.updateClientLogUploadTask(task.id, {
       status: "COMPLETED",
+      claimToken: undefined,
+      claimExpireAt: undefined,
       uploadedAt,
     });
 
@@ -180,23 +218,103 @@ export class ClientLogUploadService {
     };
   }
 
-  private async findPendingTask(auth: AuthContext, now: Date): Promise<ClientLogUploadTaskRecord | undefined> {
-    return (await this.database.listClientLogUploadTasks(auth.appId))
-      .filter((item) => this.isTaskVisibleToUser(item, auth, now))
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-      .at(0);
+  async acknowledgeNoData(command: AckClientLogNoDataCommand): Promise<LogNoDataAckResult> {
+    const now = command.now ?? new Date();
+    const task = await this.requireClaimedTask(
+      command.auth,
+      command.clientId,
+      command.taskId,
+      command.claimToken,
+      now,
+    );
+
+    await this.database.updateClientLogUploadTask(task.id, {
+      status: "COMPLETED",
+      claimToken: undefined,
+      claimExpireAt: undefined,
+    });
+
+    return {
+      taskId: task.id,
+      status: "no_data",
+    };
   }
 
-  private async requireTask(auth: AuthContext, taskId: string, now: Date): Promise<ClientLogUploadTaskRecord> {
+  private async claimPendingTask(
+    auth: AuthContext,
+    clientId: string,
+    now: Date,
+  ): Promise<ClientLogUploadTaskRecord | undefined> {
+    const candidate = (await this.database.listClientLogUploadTasks(auth.appId))
+      .filter((item) => this.isTaskClaimableByClient(item, auth, clientId, now))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+      .at(0);
+    if (!candidate) {
+      return undefined;
+    }
+
+    const claimExpireAt = new Date(
+      now.getTime() + (await this.remoteLogPullService.getCurrentConfig(auth.appId)).claimTtlSeconds * 1000,
+    ).toISOString();
+    const claimToken = randomId("log_claim");
+
+    await this.database.updateClientLogUploadTask(candidate.id, {
+      status: "CLAIMED",
+      clientId,
+      claimToken,
+      claimExpireAt,
+    });
+
+    return {
+      ...candidate,
+      status: "CLAIMED",
+      clientId,
+      claimToken,
+      claimExpireAt,
+    };
+  }
+
+  private async requireClaimedTask(
+    auth: AuthContext,
+    clientId: string,
+    taskId: string,
+    claimToken: string,
+    now: Date,
+  ): Promise<ClientLogUploadTaskRecord> {
     const task = await this.database.findClientLogUploadTask(taskId);
-    if (!task || !this.isTaskVisibleToUser(task, auth, now)) {
+    if (!task || task.appId !== auth.appId || (task.userId && task.userId !== auth.userId)) {
       badRequest("LOG_TASK_MISMATCH", "The log upload task is missing, expired, or no longer available.");
+    }
+
+    if (task.expiresAt && new Date(task.expiresAt).getTime() <= now.getTime()) {
+      badRequest("LOG_TASK_MISMATCH", "The log upload task is missing, expired, or no longer available.");
+    }
+
+    if (task.status === "COMPLETED") {
+      conflict("LOG_TASK_ALREADY_COMPLETED", "The log upload task is already completed.");
+    }
+
+    if (task.status === "CANCELLED") {
+      badRequest("LOG_TASK_MISMATCH", "The log upload task is missing, expired, or no longer available.");
+    }
+
+    if (task.status !== "CLAIMED" || task.clientId !== clientId || task.claimToken !== claimToken) {
+      conflict("LOG_CLAIM_MISMATCH", "The log upload claim is missing or no longer owned by this client.");
+    }
+
+    if (!task.claimExpireAt || new Date(task.claimExpireAt).getTime() <= now.getTime()) {
+      conflict("LOG_CLAIM_EXPIRED", "The log upload claim has expired. Pull the task again before retrying.");
     }
 
     return task;
   }
 
-  private isTaskVisibleToUser(task: ClientLogUploadTaskRecord, auth: AuthContext, now: Date): boolean {
+  private isTaskClaimableByClient(
+    task: ClientLogUploadTaskRecord,
+    auth: AuthContext,
+    clientId: string,
+    now: Date,
+  ): boolean {
     if (task.appId !== auth.appId) {
       return false;
     }
@@ -205,7 +323,7 @@ export class ClientLogUploadService {
       return false;
     }
 
-    if (task.status !== "PENDING") {
+    if (task.clientId && task.clientId !== clientId) {
       return false;
     }
 
@@ -213,7 +331,19 @@ export class ClientLogUploadService {
       return false;
     }
 
-    return true;
+    if (task.status === "PENDING") {
+      return true;
+    }
+
+    if (task.status !== "CLAIMED") {
+      return false;
+    }
+
+    if (!task.claimExpireAt) {
+      return true;
+    }
+
+    return new Date(task.claimExpireAt).getTime() <= now.getTime();
   }
 
   private decodeNonce(value: string): Buffer {

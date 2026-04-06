@@ -73,6 +73,9 @@ export type ErrorCode =
   | "LOG_DECRYPT_FAILED"
   | "LOG_DECOMPRESS_FAILED"
   | "LOG_INVALID_NDJSON"
+  | "LOG_CLAIM_MISMATCH"
+  | "LOG_CLAIM_EXPIRED"
+  | "LOG_TASK_ALREADY_COMPLETED"
   | "LOG_TASK_MISMATCH"
   | "LOG_PAYLOAD_TOO_LARGE"
   | "REQ_INVALID_BODY"
@@ -238,18 +241,21 @@ export interface FileRecord {
   createdAt: string;
 }
 
-export type ClientLogUploadTaskStatus = "PENDING" | "COMPLETED" | "CANCELLED";
+export type ClientLogUploadTaskStatus = "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED";
 
 export interface ClientLogUploadTaskRecord {
   id: string;
   appId: string;
   userId?: string;
+  clientId?: string;
   keyId: string;
   fromTsMs?: number;
   toTsMs?: number;
   maxLines?: number;
   maxBytes?: number;
   status: ClientLogUploadTaskStatus;
+  claimToken?: string;
+  claimExpireAt?: string;
   createdAt: string;
   expiresAt?: string;
   uploadedAt?: string;
@@ -503,6 +509,51 @@ export interface AppI18nConfigDocument {
 
 export interface AdminAppI18nDocument extends AppI18nConfigDocument {
   app: AdminAppSummary;
+}
+
+export interface RemoteLogPullSettings {
+  enabled: boolean;
+  minPullIntervalSeconds: number;
+  claimTtlSeconds: number;
+  taskDefaults: {
+    lookbackMinutes: number;
+    maxLines: number;
+    maxBytes: number;
+  };
+}
+
+export interface RemoteLogPullSettingsDocument {
+  configKey: string;
+  config: RemoteLogPullSettings;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAppRemoteLogPullSettingsDocument extends RemoteLogPullSettingsDocument {
+  app: AdminAppSummary;
+}
+
+export interface AdminRemoteLogPullTaskSummary {
+  taskId: string;
+  userId: string;
+  clientId: string;
+  keyId: string;
+  status: ClientLogUploadTaskStatus;
+  fromTsMs?: number;
+  toTsMs?: number;
+  maxLines?: number;
+  maxBytes?: number;
+  claimExpireAt?: string;
+  uploadedAt?: string;
+  createdAt: string;
+}
+
+export interface AdminAppRemoteLogPullTaskListDocument {
+  app: AdminAppSummary;
+  items: AdminRemoteLogPullTaskSummary[];
 }
 
 export interface EmailServiceTemplateConfig {
@@ -958,6 +1009,8 @@ export type LogPullTaskResult =
   | {
       shouldUpload: true;
       taskId: string;
+      claimToken: string;
+      claimExpireAtMs: number;
       fromTsMs?: number;
       toTsMs?: number;
       maxLines?: number;
@@ -965,10 +1018,20 @@ export type LogPullTaskResult =
       keyId: string;
     };
 
+export interface LogPolicyResult {
+  enabled: boolean;
+  minPullIntervalSeconds: number;
+}
+
 export interface LogUploadResult {
   taskId: string;
   acceptedCount: number;
   rejectedCount: number;
+}
+
+export interface LogNoDataAckResult {
+  taskId: string;
+  status: "no_data";
 }
 
 export interface QueueJob<T = Record<string, unknown>> {

@@ -169,17 +169,23 @@ CREATE TABLE IF NOT EXISTS zook_client_log_upload_tasks (
   id TEXT PRIMARY KEY,
   app_id TEXT NOT NULL,
   user_id TEXT,
+  client_id TEXT,
   key_id TEXT NOT NULL,
   from_ts_ms BIGINT,
   to_ts_ms BIGINT,
   max_lines INTEGER,
   max_bytes INTEGER,
   status TEXT NOT NULL,
+  claim_token TEXT,
+  claim_expire_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ,
   uploaded_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS client_id TEXT;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS claim_token TEXT;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS claim_expire_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS zook_client_log_upload_tasks_app_created_idx
   ON zook_client_log_upload_tasks (app_id, created_at DESC);
 

@@ -73,6 +73,7 @@ export class AuthService {
     private readonly registrationEmailSender: RegistrationEmailSender,
     private readonly registrationCodeGenerator: () => string = () => randomNumericCode(6),
     private readonly secureRefreshCookie = false,
+    private readonly refreshCookieSameSite: "Lax" | "None" | "Strict" = "Lax",
   ) {}
 
   async login(command: LoginCommand, now = new Date()): Promise<AuthSession> {
@@ -686,7 +687,7 @@ export class AuthService {
       namePart,
       "HttpOnly",
       "Path=/api/v1/auth",
-      "SameSite=Lax",
+      `SameSite=${this.refreshCookieSameSite}`,
       maxAgePart,
     ];
     if (this.secureRefreshCookie) {

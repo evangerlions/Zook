@@ -193,12 +193,15 @@ function parseClientLogUploadTask(row: QueryResultRow): ClientLogUploadTaskRecor
     id: String(row.id),
     appId: String(row.app_id),
     userId: row.user_id ?? undefined,
+    clientId: row.client_id ?? undefined,
     keyId: String(row.key_id),
     fromTsMs: row.from_ts_ms === null || row.from_ts_ms === undefined ? undefined : Number(row.from_ts_ms),
     toTsMs: row.to_ts_ms === null || row.to_ts_ms === undefined ? undefined : Number(row.to_ts_ms),
     maxLines: row.max_lines === null || row.max_lines === undefined ? undefined : Number(row.max_lines),
     maxBytes: row.max_bytes === null || row.max_bytes === undefined ? undefined : Number(row.max_bytes),
     status: row.status as ClientLogUploadTaskRecord["status"],
+    claimToken: row.claim_token ?? undefined,
+    claimExpireAt: toIsoString(row.claim_expire_at),
     createdAt: toIsoString(row.created_at) as string,
     expiresAt: toIsoString(row.expires_at),
     uploadedAt: toIsoString(row.uploaded_at),
@@ -705,14 +708,14 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listClientLogUploadTasks(appId?: string): Promise<ClientLogUploadTaskRecord[]> {
     const result = appId
       ? await this.query(
-          `SELECT id, app_id, user_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, created_at, expires_at, uploaded_at
+          `SELECT id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
            FROM zook_client_log_upload_tasks
            WHERE app_id = $1
            ORDER BY created_at DESC`,
           [appId],
         )
       : await this.query(
-          `SELECT id, app_id, user_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, created_at, expires_at, uploaded_at
+          `SELECT id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
            FROM zook_client_log_upload_tasks
            ORDER BY created_at DESC`,
         );
@@ -721,7 +724,7 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async findClientLogUploadTask(taskId: string): Promise<ClientLogUploadTaskRecord | undefined> {
     const result = await this.query(
-      `SELECT id, app_id, user_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, created_at, expires_at, uploaded_at
+      `SELECT id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
        FROM zook_client_log_upload_tasks
        WHERE id = $1
        LIMIT 1`,
@@ -730,22 +733,63 @@ export class PostgresDatabase extends ApplicationDatabase {
     return result.rows[0] ? parseClientLogUploadTask(result.rows[0]) : undefined;
   }
 
+  override async insertClientLogUploadTask(record: ClientLogUploadTaskRecord): Promise<void> {
+    await this.query(
+      `INSERT INTO zook_client_log_upload_tasks (
+         id, app_id, user_id, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes,
+         status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::timestamptz, $13::timestamptz, $14::timestamptz, $15::timestamptz)`,
+      [
+        record.id,
+        record.appId,
+        record.userId ?? null,
+        record.clientId ?? null,
+        record.keyId,
+        record.fromTsMs ?? null,
+        record.toTsMs ?? null,
+        record.maxLines ?? null,
+        record.maxBytes ?? null,
+        record.status,
+        record.claimToken ?? null,
+        record.claimExpireAt ?? null,
+        record.createdAt,
+        record.expiresAt ?? null,
+        record.uploadedAt ?? null,
+      ],
+    );
+  }
+
   override async updateClientLogUploadTask(
     taskId: string,
-    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "uploadedAt">>,
+    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "clientId" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
   ): Promise<void> {
     const fields: string[] = [];
     const values: unknown[] = [taskId];
     let index = 2;
 
-    if (patch.status !== undefined) {
+    if ("status" in patch) {
       fields.push(`status = $${index++}`);
-      values.push(patch.status);
+      values.push(patch.status ?? null);
     }
 
-    if (patch.uploadedAt !== undefined) {
+    if ("clientId" in patch) {
+      fields.push(`client_id = $${index++}`);
+      values.push(patch.clientId ?? null);
+    }
+
+    if ("claimToken" in patch) {
+      fields.push(`claim_token = $${index++}`);
+      values.push(patch.claimToken ?? null);
+    }
+
+    if ("claimExpireAt" in patch) {
+      fields.push(`claim_expire_at = $${index++}::timestamptz`);
+      values.push(patch.claimExpireAt ?? null);
+    }
+
+    if ("uploadedAt" in patch) {
       fields.push(`uploaded_at = $${index++}::timestamptz`);
-      values.push(patch.uploadedAt);
+      values.push(patch.uploadedAt ?? null);
     }
 
     if (fields.length === 0) {
