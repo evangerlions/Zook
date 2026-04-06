@@ -13,3 +13,4 @@ db_doc/generated/*
 !db_doc/generated/.gitkeep
 .gstack/
 .claude/
+.omx/
