@@ -144,7 +144,7 @@
 3. `src/services/llm-manager.ts`
 4. `src/services/llm-health.service.ts`
 5. `src/services/llm-metrics.service.ts`
-6. `apps/admin-web/app.js`
+6. `apps/admin-web/app/routes/llm.tsx`
 7. `docs/admin-web-design.md`
 
 ### 2.10 App 级 i18n 设置与本地化工具
@@ -179,6 +179,15 @@
 1. `src/services/client-log-upload.service.ts`
 2. `src/app.module.ts`
 
+### 2.12 产品公开配置接口
+
+当前已经提供一条通用产品公开配置接口：
+
+1. `GET /api/v1/{appId}/public/config`
+2. 数据来源是后台维护的 `admin.delivery_config`
+3. 返回值为当前 app 配置的 JSON 对象
+4. 如果请求同时携带 `X-App-Id` 或 Bearer Token，则必须与 path 中的 `appId` 一致
+
 ## 3. 当前可用接口
 
 当前已经接入到应用入口中的接口包括：
@@ -206,6 +215,7 @@
 21. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
 22. `GET /api/v1/logs/pull-task`
 23. `POST /api/v1/logs/upload`
+24. `GET /api/v1/{appId}/public/config`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 

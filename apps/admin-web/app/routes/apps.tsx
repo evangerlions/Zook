@@ -17,6 +17,7 @@ import type { AdminAppSummary } from "../lib/types";
 
 const APP_LOG_SECRET_READ_OPERATION = "app.log_secret.read";
 const REQUIRED_LOCALES = new Set(["zh-CN", "en-US"]);
+const APP_ID_PATTERN = /^[a-z0-9_]+$/;
 
 interface LocaleNameDraft {
   id: string;
@@ -90,8 +91,15 @@ export default function AppsRoute() {
   }
 
   async function handleCreateApp() {
-    if (!appId.trim()) {
+    const normalizedAppId = appId.trim();
+
+    if (!normalizedAppId) {
       setNotice(makeNotice("error", "请输入 App ID。"));
+      return;
+    }
+
+    if (!APP_ID_PATTERN.test(normalizedAppId)) {
+      setNotice(makeNotice("error", "App ID 只能包含小写字母、数字和下划线。"));
       return;
     }
 
@@ -108,7 +116,7 @@ export default function AppsRoute() {
     setCreatingApp(true);
     clearNotice();
     try {
-      const payload = await adminApi.createApp(appId.trim(), appNameZhCn.trim(), appNameEnUs.trim());
+      const payload = await adminApi.createApp(normalizedAppId, appNameZhCn.trim(), appNameEnUs.trim());
       await reloadBootstrap();
       setSelectedAppId(payload.appId);
       closeCreateModal();
@@ -402,13 +410,14 @@ export default function AppsRoute() {
           <label className="field">
             <span className="field-label">App ID</span>
             <Input
+              autoComplete="off"
               disabled={creatingApp}
               onChange={(event) => setAppId(event.target.value)}
               placeholder="例如 app_a"
               size="large"
               value={appId}
             />
-            <small className="field-hint">建议使用稳定、可读的技术代号，创建后会写入默认 config。</small>
+            <small className="field-hint">只允许小写字母、数字和下划线。</small>
           </label>
 
           <label className="field">

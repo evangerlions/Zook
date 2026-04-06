@@ -237,6 +237,51 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
   assert.match(configResponse.body.data.rawJson, /featureFlags/);
 });
 
+test("public app config API exposes admin delivery config for the requested app", async () => {
+  const runtime = await createApplication();
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/app_a/public/config",
+    headers: {
+      "x-app-id": "app_a",
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.data.appId, "app_a");
+  assert.equal(response.body.data.configKey, "admin.delivery_config");
+  assert.deepEqual(response.body.data.config, {
+    release: {
+      version: "2026.03.20",
+      channel: "stable",
+    },
+    featureFlags: {
+      showOnboarding: true,
+      enableVipBanner: false,
+    },
+    settings: {
+      theme: "spring",
+      apiBasePath: "/api/v1",
+    },
+  });
+});
+
+test("public app config API rejects X-App-Id mismatches against the path app", async () => {
+  const runtime = await createApplication();
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/app_a/public/config",
+    headers: {
+      "x-app-id": "app_b",
+    },
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
+});
+
 test("admin config API saves normalized JSON back to the app config store", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
@@ -550,6 +595,33 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.app.delete" && item.appId === "app_c"),
   );
+});
+
+test("admin app create rejects app ids outside lowercase letters numbers and underscores", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps",
+    headers,
+    body: {
+      appId: "App-Test",
+      appNameZhCn: "应用测试",
+      appNameEnUs: "App Test",
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.match(String(response.body.message), /lowercase letters, numbers, and underscores/);
 });
 
 test("admin app config reads and delete guards follow latest revision even if direct config record is stale", async () => {

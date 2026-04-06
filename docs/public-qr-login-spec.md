@@ -1,4 +1,4 @@
-# Public API Spec
+# QR Login Public API Spec
 
 ## 1. 文档说明
 

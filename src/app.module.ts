@@ -75,6 +75,7 @@ import type {
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
+  PublicAppConfigDocument,
   AdminSessionRecord,
   AdminSensitiveOperationCodeRequestDocument,
   AdminSensitiveOperationGrantDocument,
@@ -304,6 +305,14 @@ export class BackendApplication {
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
     if (request.method === "GET" && request.path === "/api/health") {
       return this.ok({ status: "ok" }, request.requestId as string);
+    }
+
+    const publicConfigMatch = request.path.match(/^\/api\/v1\/([^/]+)\/public\/config$/);
+    if (request.method === "GET" && publicConfigMatch) {
+      return this.handleGetPublicAppConfig(
+        request,
+        decodeURIComponent(publicConfigMatch[1] as string),
+      );
     }
 
     if (request.method === "POST" && request.path === "/api/v1/admin/auth/login") {
@@ -1297,6 +1306,27 @@ export class BackendApplication {
       },
       request.requestId as string,
     );
+  }
+
+  private async handleGetPublicAppConfig(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<PublicAppConfigDocument>> {
+    const authorization = getHeader(request.headers, "authorization");
+    if (authorization) {
+      const auth = this.authGuard.canActivate(request);
+      this.appContextResolver.resolvePostAuth(request, auth.appId);
+      this.appAccessGuard.assertScope(appId, auth.appId);
+      await this.authService.assertAccessTokenActive(auth);
+    } else {
+      const requestAppId = getHeader(request.headers, "x-app-id");
+      if (requestAppId && requestAppId !== appId) {
+        throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${appId}.`);
+      }
+    }
+
+    const result = await this.adminConsoleService.getPublicConfig(appId);
+    return this.ok(result, request.requestId as string);
   }
 
   private async handleAdminRequestSensitiveOperationCode(

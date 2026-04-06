@@ -478,6 +478,13 @@ export interface AdminConfigDocument {
   revisions: ConfigRevisionMeta[];
 }
 
+export interface PublicAppConfigDocument {
+  appId: string;
+  configKey: string;
+  config: Record<string, unknown>;
+  updatedAt?: string;
+}
+
 export interface I18nSettings {
   defaultLocale: string;
   supportedLocales: string[];
