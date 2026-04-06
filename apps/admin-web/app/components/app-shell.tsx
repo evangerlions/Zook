@@ -19,6 +19,30 @@ const APP_WORKSPACES = [
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
 ];
 
+function formatAdminVersion(rawVersion: string): string {
+  const normalized = rawVersion.trim();
+  if (!normalized) {
+    return "v0.1.0";
+  }
+
+  const semverMatch = normalized.match(/\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?/);
+  if (semverMatch) {
+    return `v${semverMatch[0]}`;
+  }
+
+  const releaseMatch = normalized.match(/(\d{8}_\d{3}).*?-([0-9a-f]{6,8})(?:-|$)/i);
+  if (releaseMatch) {
+    return `${releaseMatch[1]} · ${releaseMatch[2].slice(0, 6)}`;
+  }
+
+  const shortHashMatch = normalized.match(/([0-9a-f]{6,8})(?:-|$)/i);
+  if (shortHashMatch) {
+    return shortHashMatch[1].slice(0, 6);
+  }
+
+  return normalized.length > 18 ? `${normalized.slice(0, 18)}…` : normalized;
+}
+
 function isAppProjectSpace(pathname: string) {
   return pathname === "/config" || pathname === "/remote-log-pull";
 }
@@ -76,6 +100,7 @@ export function AppShell() {
     },
   ];
   const userInitial = adminUser.trim().slice(0, 1).toUpperCase() || "A";
+  const adminVersion = formatAdminVersion(runtimeConfig.version);
 
   function handleToggleSidebar() {
     setSidebarCollapsed((current) => {
@@ -162,6 +187,11 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
+
+        <div className="sidebar-footer">
+          <span>版本</span>
+          <strong>{adminVersion}</strong>
+        </div>
       </aside>
 
       <div className="console-main">

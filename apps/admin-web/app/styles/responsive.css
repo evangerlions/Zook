@@ -5,6 +5,9 @@
   }
 
   .sidebar {
+    position: static;
+    height: auto;
+    overflow: visible;
     border-radius: 28px;
   }
 

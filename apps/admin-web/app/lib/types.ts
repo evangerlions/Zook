@@ -1,6 +1,7 @@
 export interface RuntimeConfig {
   brandName: string;
   defaultAppId: string;
+  version: string;
   healthPath: string;
   analyticsUrl: string;
   logsUrl: string;
