@@ -62,6 +62,8 @@ export class AuthService {
   private readonly registrationWindowMs = 10 * 60 * 1000;
   private readonly registrationWindowLimit = 5;
   private readonly registrationMaxFailedCodeAttempts = 5;
+  private readonly localEmailLoginBypassEmail = "evangerlions@gmail.com";
+  private readonly localEmailLoginBypassCode = "852133";
 
   constructor(
     private readonly database: ApplicationDatabase,
@@ -165,6 +167,14 @@ export class AuthService {
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
     await this.consumeEmailLoginCodeLimits(app.id, email, ipAddress, now);
+
+    if (this.isLocalEmailLoginBypassAccount(email)) {
+      return {
+        accepted: true,
+        cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
+        expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+      };
+    }
 
     const cacheKey = this.buildEmailLoginCodeKey(app.id, email);
     const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
@@ -285,24 +295,27 @@ export class AuthService {
       unauthorized("AUTH_VERIFICATION_CODE_REQUIRED", "Email verification code is required.");
     }
 
-    const cacheKey = this.buildEmailLoginCodeKey(app.id, email);
-    const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
-    if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
+    const bypassMatched = this.matchesLocalEmailLoginBypass(email, emailCode);
+    if (!bypassMatched) {
+      const cacheKey = this.buildEmailLoginCodeKey(app.id, email);
+      const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
+      if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      }
+
+      if (cachedCode.failedAttempts >= this.registrationMaxFailedCodeAttempts) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      }
+
+      if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
+        await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
+        unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      }
+
       await this.deleteVerificationCodeEntry(cacheKey);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
-
-    if (cachedCode.failedAttempts >= this.registrationMaxFailedCodeAttempts) {
-      await this.deleteVerificationCodeEntry(cacheKey);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
-    }
-
-    if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
-      await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
-    }
-
-    await this.deleteVerificationCodeEntry(cacheKey);
 
     let user = await this.database.findUserByAccount(email);
     let autoCreatedUser = false;
@@ -762,6 +775,20 @@ export class AuthService {
   private normalizeIpAddress(ipAddress?: string): string {
     const normalized = ipAddress?.trim();
     return normalized ? normalized : "unknown";
+  }
+
+  private isLocalEmailLoginBypassAccount(email: string): boolean {
+    return this.isLocalEmailLoginBypassEnabled() && email === this.localEmailLoginBypassEmail;
+  }
+
+  private matchesLocalEmailLoginBypass(email: string, emailCode: string): boolean {
+    return this.isLocalEmailLoginBypassAccount(email) && emailCode === this.localEmailLoginBypassCode;
+  }
+
+  private isLocalEmailLoginBypassEnabled(): boolean {
+    const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
+    return appEnv === "local" || nodeEnv === "development";
   }
 
   private async consumeRegistrationCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {

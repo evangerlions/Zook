@@ -7,6 +7,7 @@ import { RevisionList } from "../components/revision-list";
 import { SaveConfirmModal } from "../components/save-confirm-modal";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
+import { writeClipboard } from "../lib/clipboard";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import type {
   AdminRemoteLogPullSettingsDocument,
@@ -209,17 +210,44 @@ export default function RemoteLogPullRoute() {
     }
   }
 
+  async function copyTaskValue(kind: "UID" | "DID", value: string) {
+    try {
+      await writeClipboard(value);
+      setNotice(makeNotice("success", `已复制 ${kind}：${value}`));
+    } catch (error) {
+      setNotice(makeNotice("error", formatApiError(error)));
+    }
+  }
+
   const taskColumns = useMemo(
     () => [
       {
         title: "UID",
         dataIndex: "userId",
         key: "userId",
+        render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
+          <Button
+            className="inline-link-button"
+            onClick={() => void copyTaskValue("UID", record.userId)}
+            type="link"
+          >
+            {value}
+          </Button>
+        ),
       },
       {
         title: "DID",
         dataIndex: "did",
         key: "did",
+        render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
+          <Button
+            className="inline-link-button mono"
+            onClick={() => void copyTaskValue("DID", record.did)}
+            type="link"
+          >
+            {value}
+          </Button>
+        ),
       },
       {
         title: "状态",

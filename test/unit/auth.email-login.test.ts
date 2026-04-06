@@ -222,3 +222,44 @@ test("email-code delivery falls back to english app name outside mainland when l
   assert.equal(sent[0]?.locale, "zh-TW");
   assert.equal(sent[0]?.region, "ap-hongkong");
 });
+
+test("local env allows the designated email to use the fixed bypass code for email login", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+
+  try {
+    const sent: SentVerificationEmail[] = [];
+    const runtime = await createApplication({
+      registrationCodeGenerator: () => "123456",
+      registrationEmailSender: createFakeSender(sent),
+    });
+
+    const loginResponse = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/auth/login/email",
+      headers: {
+        "x-app-locale": "zh-CN",
+        "x-app-country-code": "CN",
+      },
+      body: {
+        appId: "app_a",
+        email: "evangerlions@gmail.com",
+        emailCode: "852133",
+        clientType: "app",
+      },
+      ipAddress: "127.0.0.1",
+    });
+
+    assert.equal(loginResponse.statusCode, 200);
+    assert.ok(typeof loginResponse.body.data.accessToken === "string");
+    assert.ok(typeof loginResponse.body.data.refreshToken === "string");
+    assert.equal(loginResponse.body.data.user.email, "evangerlions@gmail.com");
+    assert.equal(sent.length, 0);
+  } finally {
+    if (previousAppEnv === undefined) {
+      delete process.env.APP_ENV;
+    } else {
+      process.env.APP_ENV = previousAppEnv;
+    }
+  }
+});
