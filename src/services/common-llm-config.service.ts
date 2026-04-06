@@ -83,7 +83,7 @@ export class CommonLlmConfigService {
     return this.getDocument();
   }
 
-  async restoreConfig(revision: number): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
+  async restoreConfig(revision: number, desc?: string): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
     const existing = await this.appConfigService.getRevision(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `LLM service revision ${revision} was not found.`);
@@ -93,7 +93,7 @@ export class CommonLlmConfigService {
       COMMON_APP_ID,
       LLM_SERVICE_CONFIG_KEY,
       revision,
-      `恢复到版本 R${revision}`,
+      desc?.trim() || `恢复到版本 R${revision}`,
     );
 
     return this.getDocument();

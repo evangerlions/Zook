@@ -63,7 +63,7 @@ export class AppRemoteLogPullService {
     return await this.getDocument(appId);
   }
 
-  async restoreConfig(appId: string, revision: number): Promise<RemoteLogPullSettingsDocument> {
+  async restoreConfig(appId: string, revision: number, desc?: string): Promise<RemoteLogPullSettingsDocument> {
     const existing = await this.appConfigService.getRevision(appId, REMOTE_LOG_PULL_SETTINGS_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Remote Log Pull revision ${revision} was not found.`);
@@ -73,7 +73,7 @@ export class AppRemoteLogPullService {
       appId,
       REMOTE_LOG_PULL_SETTINGS_CONFIG_KEY,
       revision,
-      `恢复到版本 R${revision}`,
+      desc?.trim() || `恢复到版本 R${revision}`,
     );
     return await this.getDocument(appId);
   }

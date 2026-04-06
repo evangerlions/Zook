@@ -238,11 +238,14 @@ export const adminApi = {
       },
     });
   },
-  restoreConfig(appId: string, revision: number) {
+  restoreConfig(appId: string, revision: number, desc?: string) {
     return requestJson<AdminConfigDocument>(
       adminPath(`/apps/${encodeURIComponent(appId)}/config/revisions/${revision}/restore`),
       {
         method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
       },
     );
   },
@@ -268,11 +271,14 @@ export const adminApi = {
       },
     );
   },
-  restoreRemoteLogPull(appId: string, revision: number) {
+  restoreRemoteLogPull(appId: string, revision: number, desc?: string) {
     return requestJson<AdminRemoteLogPullSettingsDocument>(
       adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/revisions/${revision}/restore`),
       {
         method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
       },
     );
   },
@@ -313,11 +319,14 @@ export const adminApi = {
       body: input,
     });
   },
-  restoreEmailService(revision: number) {
+  restoreEmailService(revision: number, desc?: string) {
     return requestJson<AdminEmailServiceDocument>(
       adminPath(`/apps/common/email-service/revisions/${revision}/restore`),
       {
         method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
       },
     );
   },
@@ -361,11 +370,14 @@ export const adminApi = {
       body: input,
     });
   },
-  restoreLlmService(revision: number) {
+  restoreLlmService(revision: number, desc?: string) {
     return requestJson<AdminLlmServiceDocument>(
       adminPath(`/apps/common/llm-service/revisions/${revision}/restore`),
       {
         method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
       },
     );
   },

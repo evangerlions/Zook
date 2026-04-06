@@ -48,7 +48,7 @@ export class AppI18nConfigService {
     return this.getDocument(appId);
   }
 
-  async restoreConfig(appId: string, revision: number): Promise<AppI18nConfigDocument> {
+  async restoreConfig(appId: string, revision: number, desc?: string): Promise<AppI18nConfigDocument> {
     const existing = await this.appConfigService.getRevision(appId, APP_I18N_SETTINGS_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `i18n settings revision ${revision} was not found.`);
@@ -58,7 +58,7 @@ export class AppI18nConfigService {
       appId,
       APP_I18N_SETTINGS_CONFIG_KEY,
       revision,
-      `恢复到版本 R${revision}`,
+      desc?.trim() || `恢复到版本 R${revision}`,
     );
 
     return this.getDocument(appId);

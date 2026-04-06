@@ -85,7 +85,7 @@ export class CommonEmailConfigService {
     return this.getDocument();
   }
 
-  async restoreConfig(revision: number): Promise<AdminEmailServiceDocument> {
+  async restoreConfig(revision: number, desc?: string): Promise<AdminEmailServiceDocument> {
     const existing = await this.appConfigService.getRevision(COMMON_APP_ID, EMAIL_SERVICE_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Email service revision ${revision} was not found.`);
@@ -95,7 +95,7 @@ export class CommonEmailConfigService {
       COMMON_APP_ID,
       EMAIL_SERVICE_CONFIG_KEY,
       revision,
-      `恢复到版本 R${revision}`,
+      desc?.trim() || `恢复到版本 R${revision}`,
     );
     return this.getDocument();
   }

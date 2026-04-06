@@ -7,6 +7,7 @@ import type { ConfigRevisionMeta } from "../lib/types";
 export function RevisionList({
   revisions,
   activeRevision,
+  latestRevision,
   loadingRevision,
   onSelect,
   onRestore,
@@ -14,6 +15,7 @@ export function RevisionList({
 }: {
   revisions: ConfigRevisionMeta[];
   activeRevision?: number;
+  latestRevision?: number;
   loadingRevision?: number | null;
   onSelect: (revision: number) => void;
   onRestore?: (revision: number) => void;
@@ -45,7 +47,7 @@ export function RevisionList({
                   />
                 </span>
               </Tooltip>
-              {onRestore ? (
+              {onRestore && item.revision !== latestRevision ? (
                 <Tooltip title={loadingRevision === item.revision ? "恢复中" : `恢复到版本 R${item.revision}`}>
                   <span>
                     <Button

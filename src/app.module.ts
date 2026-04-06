@@ -1711,7 +1711,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreEmailServiceConfig(revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreEmailServiceConfig(revision, desc);
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -1888,7 +1890,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreLlmServiceConfig(revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreLlmServiceConfig(revision, desc);
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -2082,7 +2086,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreRemoteLogPullSettings(appId, revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreRemoteLogPullSettings(appId, revision, desc);
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.restore",
@@ -2173,7 +2179,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<AdminAppI18nDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreI18nSettings(appId, revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreI18nSettings(appId, revision, desc);
 
     await this.auditInterceptor.record({
       appId,
@@ -2253,7 +2261,9 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.restoreConfig(appId, revision);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreConfig(appId, revision, desc);
 
     await this.auditInterceptor.record({
       appId,
