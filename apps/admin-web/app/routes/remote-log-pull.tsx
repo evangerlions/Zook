@@ -225,6 +225,8 @@ export default function RemoteLogPullRoute() {
         title: "UID",
         dataIndex: "userId",
         key: "userId",
+        width: 120,
+        ellipsis: true,
         render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
           <Button
             className="inline-link-button"
@@ -239,6 +241,8 @@ export default function RemoteLogPullRoute() {
         title: "DID",
         dataIndex: "did",
         key: "did",
+        width: 150,
+        ellipsis: true,
         render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
           <Button
             className="inline-link-button mono"
@@ -253,6 +257,7 @@ export default function RemoteLogPullRoute() {
         title: "状态",
         dataIndex: "status",
         key: "status",
+        width: 96,
         render: (value: string) => (
           <Tag color={value === "COMPLETED" ? "green" : value === "CANCELLED" ? "red" : value === "CLAIMED" ? "blue" : "default"}>
             {value}
@@ -262,24 +267,29 @@ export default function RemoteLogPullRoute() {
       {
         title: "窗口",
         key: "window",
-        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) =>
-          `${record.fromTsMs ?? "—"} ~ ${record.toTsMs ?? "—"}`,
+        width: 160,
+        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) => (
+          <div className="table-primary-cell table-primary-cell--stack">
+            <span className="mono table-code">{record.fromTsMs ?? "—"}</span>
+            <span className="mono table-code">{record.toTsMs ?? "—"}</span>
+          </div>
+        ),
       },
       {
-        title: "Claim 到期",
-        dataIndex: "claimExpireAt",
-        key: "claimExpireAt",
-        render: (value?: string) => formatTimestamp(value),
-      },
-      {
-        title: "创建于",
-        dataIndex: "createdAt",
-        key: "createdAt",
-        render: (value: string) => formatTimestamp(value),
+        title: "时间",
+        key: "timestamps",
+        width: 170,
+        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) => (
+          <div className="table-primary-cell table-primary-cell--stack">
+            <span>{formatTimestamp(record.createdAt)}</span>
+            <span className="meta-text">{record.claimExpireAt ? `Claim: ${formatTimestamp(record.claimExpireAt)}` : "Claim: —"}</span>
+          </div>
+        ),
       },
       {
         title: "操作",
         key: "actions",
+        width: 82,
         render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) =>
           record.status === "PENDING" || record.status === "CLAIMED" ? (
             <Tooltip title="取消任务">
@@ -317,7 +327,7 @@ export default function RemoteLogPullRoute() {
         </div>
       </header>
 
-      <div className={`page-grid page-grid--config${settingsTabActive && !historyExpanded ? " is-history-collapsed" : ""}`}>
+      <div className={`page-grid page-grid--config${!settingsTabActive || !historyExpanded ? " is-history-collapsed" : ""}`}>
         <div className={`stack remote-log-pull-main-stack${settingsTabActive ? "" : " is-tasks-tab"}`}>
           <Card
             extra={settingsTabActive ? (
@@ -493,7 +503,7 @@ export default function RemoteLogPullRoute() {
                             dataSource={tasks?.items ?? []}
                             pagination={{ pageSize: 8 }}
                             rowKey="taskId"
-                            scroll={{ x: 980 }}
+                            size="small"
                           />
                         </div>
                       </Card>
