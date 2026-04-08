@@ -168,7 +168,7 @@ export class AuthService {
 
     await this.consumeEmailLoginCodeLimits(app.id, email, ipAddress, now);
 
-    if (this.isLocalEmailLoginBypassAccount(email)) {
+    if (this.isLocalEmailLoginBypassAccount(email, ipAddress)) {
       return {
         accepted: true,
         cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
@@ -288,14 +288,16 @@ export class AuthService {
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
-    await this.consumeEmailLoginLimits(app.id, email, ipAddress, now);
-
     const emailCode = command.emailCode.trim();
     if (!emailCode) {
       unauthorized("AUTH_VERIFICATION_CODE_REQUIRED", "Email verification code is required.");
     }
 
-    const bypassMatched = this.matchesLocalEmailLoginBypass(email, emailCode);
+    const bypassMatched = this.matchesLocalEmailLoginBypass(email, emailCode, ipAddress);
+    if (!bypassMatched) {
+      await this.consumeEmailLoginLimits(app.id, email, ipAddress, now);
+    }
+
     if (!bypassMatched) {
       const cacheKey = this.buildEmailLoginCodeKey(app.id, email);
       const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
@@ -777,18 +779,23 @@ export class AuthService {
     return normalized ? normalized : "unknown";
   }
 
-  private isLocalEmailLoginBypassAccount(email: string): boolean {
-    return this.isLocalEmailLoginBypassEnabled() && email === this.localEmailLoginBypassEmail;
+  private isLocalEmailLoginBypassAccount(email: string, ipAddress: string): boolean {
+    return this.isLocalEmailLoginBypassEnabled(ipAddress) && email === this.localEmailLoginBypassEmail;
   }
 
-  private matchesLocalEmailLoginBypass(email: string, emailCode: string): boolean {
-    return this.isLocalEmailLoginBypassAccount(email) && emailCode === this.localEmailLoginBypassCode;
+  private matchesLocalEmailLoginBypass(email: string, emailCode: string, ipAddress: string): boolean {
+    return this.isLocalEmailLoginBypassAccount(email, ipAddress) && emailCode === this.localEmailLoginBypassCode;
   }
 
-  private isLocalEmailLoginBypassEnabled(): boolean {
+  private isLocalEmailLoginBypassEnabled(ipAddress: string): boolean {
     const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
     const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
-    return appEnv === "local" || nodeEnv === "development";
+    const normalizedIp = ipAddress.trim();
+    return appEnv === "local"
+      || nodeEnv === "development"
+      || normalizedIp === "127.0.0.1"
+      || normalizedIp === "::1"
+      || normalizedIp === "unknown";
   }
 
   private async consumeRegistrationCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {

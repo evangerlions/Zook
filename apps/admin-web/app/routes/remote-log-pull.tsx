@@ -214,7 +214,7 @@ export default function RemoteLogPullRoute() {
     }
   }
 
-  async function copyTaskValue(kind: "UID" | "DID", value: string) {
+  async function copyTaskValue(kind: "Task ID" | "UID" | "DID", value: string) {
     try {
       await writeClipboard(value);
       setNotice(makeNotice("success", `已复制 ${kind}：${value}`));
@@ -225,6 +225,24 @@ export default function RemoteLogPullRoute() {
 
   const taskColumns = useMemo(
     () => [
+      {
+        title: "Task ID",
+        dataIndex: "taskId",
+        key: "taskId",
+        width: 150,
+        ellipsis: true,
+        render: (value: string) => (
+          <Tooltip title={value}>
+            <Button
+              className="inline-link-button is-ellipsis mono"
+              onClick={() => void copyTaskValue("Task ID", value)}
+              type="link"
+            >
+              {value}
+            </Button>
+          </Tooltip>
+        ),
+      },
       {
         title: "UID",
         dataIndex: "userId",

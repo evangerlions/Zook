@@ -67,6 +67,14 @@
   word-break: break-all;
 }
 
+.inline-link-button.is-ellipsis,
+.inline-link-button.is-ellipsis .ant-btn-icon + span,
+.inline-link-button.is-ellipsis > span {
+  white-space: nowrap;
+  word-break: normal;
+  text-overflow: ellipsis;
+}
+
 .button {
   border: 1px solid transparent;
   border-radius: 999px;
