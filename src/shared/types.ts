@@ -571,6 +571,11 @@ export interface AdminAppRemoteLogPullTaskListDocument {
   items: AdminRemoteLogPullTaskSummary[];
 }
 
+export interface AdminRemoteLogPullTaskDocument {
+  app: AdminAppSummary;
+  item: AdminRemoteLogPullTaskSummary;
+}
+
 export interface AdminRemoteLogPullTaskFileDocument {
   appId: string;
   taskId: string;

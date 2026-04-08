@@ -7,6 +7,7 @@ export default [
     route("apps", "routes/apps.tsx"),
     route("config", "routes/config.tsx"),
     route("remote-log-pull", "routes/remote-log-pull.tsx"),
+    route("remote-log-pull/tasks/:taskId", "routes/remote-log-pull-task.tsx"),
     route("mail", "routes/mail.tsx"),
     route("passwords", "routes/passwords.tsx"),
     route("llm", "routes/llm.tsx"),

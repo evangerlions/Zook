@@ -216,15 +216,17 @@
 21. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
 22. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
 23. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
-24. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
-25. `POST /api/v1/admin/sensitive-operations/request-code`
-26. `POST /api/v1/admin/sensitive-operations/verify`
-27. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
-28. `GET /api/v1/logs/policy`
-29. `GET /api/v1/logs/pull-task`
-30. `POST /api/v1/logs/tasks/{taskId}/ack`
-31. `POST /api/v1/logs/upload`
-32. `GET /api/v1/{appId}/public/config`
+24. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
+25. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
+26. `POST /api/v1/admin/sensitive-operations/request-code`
+27. `POST /api/v1/admin/sensitive-operations/verify`
+28. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
+29. `GET /api/v1/logs/policy`
+30. `GET /api/v1/logs/pull-task`
+31. `POST /api/v1/logs/tasks/{taskId}/ack`
+32. `POST /api/v1/logs/tasks/{taskId}/fail`
+33. `POST /api/v1/logs/upload`
+34. `GET /api/v1/{appId}/public/config`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。

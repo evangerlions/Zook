@@ -1,17 +1,18 @@
 import { InfoCircleOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
 import { Alert, Button, Card, Form, Input, InputNumber, Modal, Space, Switch, Table, Tabs, Tag, Tooltip } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
 import { SaveConfirmModal } from "../components/save-confirm-modal";
+import { JsonPreview } from "../components/json-preview";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { writeClipboard } from "../lib/clipboard";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import type {
   AdminRemoteLogPullSettingsDocument,
-  AdminRemoteLogPullTaskFileDocument,
   AdminRemoteLogPullTaskListDocument,
   RemoteLogPullSettings,
 } from "../lib/types";
@@ -27,44 +28,8 @@ function megabytesToBytes(value: number): number {
   return value * BYTES_PER_MEGABYTE;
 }
 
-function downloadTextFile(fileName: string, content: string, contentType: string) {
-  const blob = new Blob([content], { type: contentType });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-function parseNdjson(content: string) {
-  return content
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => {
-      try {
-        const payload = JSON.parse(line) as Record<string, unknown>;
-        return {
-          key: `${index}`,
-          timestamp: typeof payload.tsMs === "number" ? String(payload.tsMs) : "—",
-          level: typeof payload.level === "string" ? payload.level : "—",
-          message: typeof payload.message === "string" ? payload.message : line,
-          raw: JSON.stringify(payload, null, 2),
-        };
-      } catch {
-        return {
-          key: `${index}`,
-          timestamp: "—",
-          level: "—",
-          message: line,
-          raw: line,
-        };
-      }
-    });
-}
-
 export default function RemoteLogPullRoute() {
+  const navigate = useNavigate();
   const {
     apps,
     selectedAppId,
@@ -82,8 +47,6 @@ export default function RemoteLogPullRoute() {
   const [saving, setSaving] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
   const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
-  const [viewingTaskId, setViewingTaskId] = useState<string | null>(null);
-  const [taskFile, setTaskFile] = useState<AdminRemoteLogPullTaskFileDocument | null>(null);
   const [failureTask, setFailureTask] = useState<NonNullable<typeof tasks>["items"][number] | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
@@ -251,23 +214,6 @@ export default function RemoteLogPullRoute() {
     }
   }
 
-  async function handleViewTaskFile(taskId: string) {
-    if (!selectedAppId) {
-      return;
-    }
-
-    setViewingTaskId(taskId);
-    clearNotice();
-    try {
-      const payload = await adminApi.getRemoteLogPullTaskFile(selectedAppId, taskId);
-      setTaskFile(payload);
-    } catch (error) {
-      setNotice(makeNotice("error", formatApiError(error)));
-    } finally {
-      setViewingTaskId(null);
-    }
-  }
-
   async function copyTaskValue(kind: "UID" | "DID", value: string) {
     try {
       await writeClipboard(value);
@@ -276,11 +222,6 @@ export default function RemoteLogPullRoute() {
       setNotice(makeNotice("error", formatApiError(error)));
     }
   }
-
-  const parsedTaskLines = useMemo(
-    () => (taskFile ? parseNdjson(taskFile.content) : []),
-    [taskFile],
-  );
 
   const taskColumns = useMemo(
     () => [
@@ -388,8 +329,7 @@ export default function RemoteLogPullRoute() {
           <Space>
             {record.uploadedFileName ? (
               <Button
-                loading={viewingTaskId === record.taskId}
-                onClick={() => void handleViewTaskFile(record.taskId)}
+                onClick={() => void navigate(`/remote-log-pull/tasks/${encodeURIComponent(record.taskId)}`)}
                 type="link"
               >
                 查看日志
@@ -413,7 +353,7 @@ export default function RemoteLogPullRoute() {
         ),
       },
     ],
-    [tasks, cancellingTaskId, viewingTaskId],
+    [tasks, cancellingTaskId, navigate],
   );
 
   if (!selectedApp) {
@@ -674,64 +614,18 @@ export default function RemoteLogPullRoute() {
               showIcon
               type="warning"
             />
-            <pre className="json-preview">{JSON.stringify({
+            <JsonPreview value={{
               taskId: failureTask.taskId,
               uid: failureTask.userId,
               did: failureTask.did,
               status: failureTask.status,
               failedAt: failureTask.failedAt ?? null,
               failureReason: failureTask.failureReason ?? null,
-            }, null, 2)}</pre>
+            }} />
           </div>
         ) : null}
       </Modal>
 
-      <Modal
-        footer={(
-          <Space>
-            {taskFile ? (
-              <Button onClick={() => downloadTextFile(taskFile.fileName, taskFile.content, taskFile.contentType)}>
-                下载原始文件
-              </Button>
-            ) : null}
-            <Button onClick={() => setTaskFile(null)} type="primary">
-              关闭
-            </Button>
-          </Space>
-        )}
-        onCancel={() => setTaskFile(null)}
-        open={Boolean(taskFile)}
-        title={taskFile ? `日志浏览 · ${taskFile.fileName}` : "日志浏览"}
-        width={1100}
-      >
-        {taskFile ? (
-          <div className="stack">
-            <Alert
-              message={`前端本地解析 ${taskFile.fileName}，共 ${taskFile.lineCount ?? parsedTaskLines.length} 行，${taskFile.sizeBytes} bytes。`}
-              showIcon
-              type="info"
-            />
-            <div className="table-wrap">
-              <Table
-                columns={[
-                  { title: "#", dataIndex: "key", key: "key", width: 72 },
-                  { title: "时间", dataIndex: "timestamp", key: "timestamp", width: 180 },
-                  { title: "级别", dataIndex: "level", key: "level", width: 120 },
-                  { title: "消息", dataIndex: "message", key: "message" },
-                ]}
-                dataSource={parsedTaskLines}
-                expandable={{
-                  expandedRowRender: (record) => <pre className="json-preview">{record.raw}</pre>,
-                }}
-                pagination={{ pageSize: 20 }}
-                rowKey="key"
-                scroll={{ x: 980 }}
-                size="small"
-              />
-            </div>
-          </div>
-        ) : null}
-      </Modal>
     </section>
   );
 }

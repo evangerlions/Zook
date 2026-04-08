@@ -74,6 +74,7 @@ import type {
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
   AdminAppRemoteLogPullTaskListDocument,
+  AdminRemoteLogPullTaskDocument,
   AdminRemoteLogPullTaskFileDocument,
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
@@ -606,6 +607,17 @@ export class BackendApplication {
         request,
         decodeURIComponent(adminRemoteLogPullTaskFileMatch[1] as string),
         decodeURIComponent(adminRemoteLogPullTaskFileMatch[2] as string),
+      );
+    }
+
+    const adminRemoteLogPullTaskDetailMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull\/tasks\/([^/]+)$/,
+    );
+    if (request.method === "GET" && adminRemoteLogPullTaskDetailMatch) {
+      return this.handleAdminGetRemoteLogPullTask(
+        request,
+        decodeURIComponent(adminRemoteLogPullTaskDetailMatch[1] as string),
+        decodeURIComponent(adminRemoteLogPullTaskDetailMatch[2] as string),
       );
     }
 
@@ -2180,6 +2192,23 @@ export class BackendApplication {
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.task.file.read",
+      resourceType: "client_log_upload",
+      resourceId: taskId,
+      payload: { adminUser },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetRemoteLogPullTask(
+    request: HttpRequest,
+    appId: string,
+    taskId: string,
+  ): Promise<HttpResponse<AdminRemoteLogPullTaskDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getRemoteLogPullTask(appId, taskId);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.task.read",
       resourceType: "client_log_upload",
       resourceId: taskId,
       payload: { adminUser },

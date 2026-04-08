@@ -194,6 +194,15 @@ export class AppRemoteLogPullService {
     };
   }
 
+  async getTask(appId: string, taskId: string): Promise<AdminRemoteLogPullTaskSummary> {
+    const task = await this.database.findClientLogUploadTask(taskId);
+    if (!task || task.appId !== appId) {
+      throw new ApplicationError(404, "REQ_INVALID_QUERY", `Remote Log Pull task ${taskId} was not found.`);
+    }
+
+    return this.toTaskSummary(task);
+  }
+
   private createDocument(
     config: RemoteLogPullSettings,
     revisions: ConfigRevisionMeta[],
