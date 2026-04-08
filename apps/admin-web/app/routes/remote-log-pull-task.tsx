@@ -15,9 +15,57 @@ type ParsedLogLine = {
   lineNo: number;
   timestamp: string;
   level: string;
+  module: string;
   message: string;
   raw: string;
 };
+
+function formatLogTimestamp(value: string) {
+  if (!value || value === "—") {
+    return "—";
+  }
+
+  const numeric = Number(value);
+  const date = Number.isFinite(numeric) ? new Date(numeric) : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(date);
+}
+
+function formatLogMessage(payload: Record<string, unknown>, fallback: string) {
+  const parts: string[] = [];
+  const baseMessage = typeof payload.message === "string" ? payload.message : fallback;
+  if (baseMessage) {
+    parts.push(baseMessage);
+  }
+
+  if (typeof payload.error === "string" && payload.error.trim()) {
+    parts.push(`error: ${payload.error.trim()}`);
+  }
+
+  if (typeof payload.stackTrace === "string" && payload.stackTrace.trim()) {
+    parts.push(`stackTrace: ${payload.stackTrace.trim()}`);
+  }
+
+  if (payload.context !== undefined) {
+    try {
+      parts.push(`context: ${typeof payload.context === "string" ? payload.context : JSON.stringify(payload.context)}`);
+    } catch {
+      parts.push(`context: ${String(payload.context)}`);
+    }
+  }
+
+  return parts.join("\n");
+}
 
 function parseNdjson(content: string): ParsedLogLine[] {
   return content
@@ -32,7 +80,8 @@ function parseNdjson(content: string): ParsedLogLine[] {
           lineNo: index + 1,
           timestamp: typeof payload.tsMs === "number" ? String(payload.tsMs) : "—",
           level: typeof payload.level === "string" ? payload.level : "unknown",
-          message: typeof payload.message === "string" ? payload.message : line,
+          module: typeof payload.module === "string" ? payload.module : "—",
+          message: formatLogMessage(payload, line),
           raw: JSON.stringify(payload, null, 2),
         };
       } catch {
@@ -41,6 +90,7 @@ function parseNdjson(content: string): ParsedLogLine[] {
           lineNo: index + 1,
           timestamp: "—",
           level: "unknown",
+          module: "—",
           message: line,
           raw: line,
         };
@@ -260,15 +310,34 @@ export default function RemoteLogPullTaskRoute() {
               <Table
                 columns={[
                   { title: "#", dataIndex: "lineNo", key: "lineNo", width: 72 },
-                  { title: "时间", dataIndex: "timestamp", key: "timestamp", width: 180 },
+                  {
+                    title: "时间",
+                    dataIndex: "timestamp",
+                    key: "timestamp",
+                    width: 180,
+                    render: (value: string) => formatLogTimestamp(value),
+                  },
                   {
                     title: "级别",
                     dataIndex: "level",
                     key: "level",
-                    width: 120,
+                    width: 92,
                     render: (value: string) => <Tag color={levelTagColor(value)}>{value}</Tag>,
                   },
-                  { title: "消息", dataIndex: "message", key: "message" },
+                  {
+                    title: "模块",
+                    dataIndex: "module",
+                    key: "module",
+                    width: 140,
+                    ellipsis: true,
+                  },
+                  {
+                    title: "消息",
+                    dataIndex: "message",
+                    key: "message",
+                    ellipsis: false,
+                    render: (value: string) => <div style={{ whiteSpace: "pre-wrap" }}>{value}</div>,
+                  },
                 ]}
                 dataSource={filteredLines}
                 expandable={{
