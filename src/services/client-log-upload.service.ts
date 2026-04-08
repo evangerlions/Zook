@@ -1,11 +1,14 @@
 import { createDecipheriv } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { badRequest, conflict, payloadTooLarge } from "../shared/errors.ts";
 import type {
   AuthContext,
-  ClientLogLineRecord,
   ClientLogUploadRecord,
   ClientLogUploadTaskRecord,
+  LogFailCommand,
+  LogFailResult,
   LogNoDataAckResult,
   LogPolicyResult,
   LogPullTaskResult,
@@ -20,6 +23,7 @@ const NDJSON_GZIP = "ndjson+gzip";
 const GCM_NONCE_BYTES = 12;
 const GCM_TAG_BYTES = 16;
 const DEFAULT_MAX_ENCRYPTED_PAYLOAD_BYTES = 8 * 1024 * 1024;
+const DEFAULT_LOG_UPLOAD_STORAGE_DIR = ".storage/client-log-uploads";
 export interface ClientLogEncryptionKeyResolver {
   resolveKey(keyId: string): Promise<Buffer | undefined> | Buffer | undefined;
 }
@@ -97,6 +101,7 @@ export class ClientLogUploadService {
     private readonly remoteLogPullService: AppRemoteLogPullService,
     private readonly options: {
       maxEncryptedPayloadBytes?: number;
+      storageDir?: string;
     } = {},
   ) {}
 
@@ -170,6 +175,7 @@ export class ClientLogUploadService {
     const parsedLines = this.parseNdjson(ndjsonBuffer);
     const evaluated = this.evaluateLines(parsedLines, task);
     const uploadedAt = now.toISOString();
+    const savedFile = await this.persistTaskFile(task, ndjsonBuffer, parsedLines.length);
 
     const uploadRecord: ClientLogUploadRecord = {
       id: randomId("log_upload"),
@@ -189,26 +195,15 @@ export class ClientLogUploadService {
       uploadedAt,
     };
 
-    await this.database.insertClientLogUpload(uploadRecord);
-    const acceptedLineRecords: ClientLogLineRecord[] = evaluated.accepted.map((item) => ({
-      id: randomId("log_line"),
-      uploadId: uploadRecord.id,
-      taskId: task.id,
-      appId: command.auth.appId,
-      userId: command.auth.userId,
-      timestampMs: item.timestampMs,
-      level: item.level,
-      message: item.message,
-      payload: item.payload,
-      createdAt: uploadedAt,
-    }));
-    await this.database.insertClientLogLines(acceptedLineRecords);
-
     await this.database.updateClientLogUploadTask(task.id, {
       status: "COMPLETED",
       claimToken: undefined,
       claimExpireAt: undefined,
       uploadedAt,
+      uploadedFileName: savedFile.fileName,
+      uploadedFilePath: savedFile.filePath,
+      uploadedFileSizeBytes: savedFile.sizeBytes,
+      uploadedLineCount: savedFile.lineCount,
     });
 
     return {
@@ -237,6 +232,37 @@ export class ClientLogUploadService {
     return {
       taskId: task.id,
       status: "no_data",
+    };
+  }
+
+  async fail(command: LogFailCommand): Promise<LogFailResult> {
+    const now = command.now ?? new Date();
+    const task = await this.requireClaimedTask(
+      command.auth,
+      command.did,
+      command.taskId,
+      command.claimToken,
+      now,
+    );
+
+    const failureReason = [command.reason?.trim(), command.message?.trim()]
+      .filter((item) => item && item.length > 0)
+      .join(": ");
+    const failedAt = now.toISOString();
+
+    await this.database.updateClientLogUploadTask(task.id, {
+      status: "FAILED",
+      claimToken: undefined,
+      claimExpireAt: undefined,
+      failedAt,
+      failureReason: failureReason || undefined,
+    });
+
+    return {
+      taskId: task.id,
+      status: "failed",
+      failedAt,
+      failureReason: failureReason || undefined,
     };
   }
 
@@ -292,6 +318,10 @@ export class ClientLogUploadService {
 
     if (task.status === "COMPLETED") {
       conflict("LOG_TASK_ALREADY_COMPLETED", "The log upload task is already completed.");
+    }
+
+    if (task.status === "FAILED") {
+      badRequest("LOG_TASK_MISMATCH", "The log upload task is missing, expired, or no longer available.");
     }
 
     if (task.status === "CANCELLED") {
@@ -359,6 +389,25 @@ export class ClientLogUploadService {
     }
 
     return nonce;
+  }
+
+  private async persistTaskFile(
+    task: ClientLogUploadTaskRecord,
+    ndjsonBuffer: Buffer,
+    lineCount: number,
+  ): Promise<{ fileName: string; filePath: string; sizeBytes: number; lineCount: number }> {
+    const storageRoot = resolve(this.options.storageDir ?? DEFAULT_LOG_UPLOAD_STORAGE_DIR);
+    const appDir = join(storageRoot, task.appId);
+    await mkdir(appDir, { recursive: true });
+    const fileName = `${task.id}.ndjson`;
+    const filePath = join(appDir, fileName);
+    await writeFile(filePath, ndjsonBuffer);
+    return {
+      fileName,
+      filePath,
+      sizeBytes: ndjsonBuffer.length,
+      lineCount,
+    };
   }
 
   private async resolveKey(keyId: string): Promise<Buffer> {

@@ -8,6 +8,8 @@ import type {
   AdminEmailTestSendCommand,
   AdminEmailTestSendDocument,
   AdminRemoteLogPullSettingsDocument,
+  AdminRemoteLogPullTaskDocument,
+  AdminRemoteLogPullTaskFileDocument,
   AdminRemoteLogPullTaskListDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
@@ -305,6 +307,16 @@ export const adminApi = {
       {
         method: "POST",
       },
+    );
+  },
+  getRemoteLogPullTaskFile(appId: string, taskId: string) {
+    return requestJson<AdminRemoteLogPullTaskFileDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/tasks/${encodeURIComponent(taskId)}/file`),
+    );
+  },
+  getRemoteLogPullTask(appId: string, taskId: string) {
+    return requestJson<AdminRemoteLogPullTaskDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/remote-log-pull/tasks/${encodeURIComponent(taskId)}`),
     );
   },
   getEmailService() {

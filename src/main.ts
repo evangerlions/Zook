@@ -1,18 +1,7 @@
 import { createServer } from "node:http";
 import { buildCorsHeaders, buildCorsPreflightHeaders, resolveCorsDecision } from "./infrastructure/http/cors.ts";
+import { readRequestBody } from "./infrastructure/http/request-body.ts";
 import { init } from "./infrastructure/runtime/init.ts";
-
-/**
- * readJsonBody keeps the transport adapter thin while still supporting the documented JSON APIs.
- */
-async function readJsonBody(request: AsyncIterable<Buffer>): Promise<unknown> {
-  let body = "";
-  for await (const chunk of request) {
-    body += chunk.toString("utf8");
-  }
-
-  return body ? JSON.parse(body) : undefined;
-}
 
 function normalizeHeaders(headers: Record<string, string | string[] | undefined>): Record<string, string | undefined> {
   return Object.fromEntries(
@@ -59,7 +48,11 @@ const server = createServer(async (request, response) => {
   }
 
   if ((request.method ?? "GET").toUpperCase() === "OPTIONS") {
-    Object.entries(buildCorsPreflightHeaders(corsDecision.origin)).forEach(([key, value]) => {
+    const requestedHeaders =
+      Array.isArray(request.headers["access-control-request-headers"])
+        ? request.headers["access-control-request-headers"][0]
+        : request.headers["access-control-request-headers"];
+    Object.entries(buildCorsPreflightHeaders(corsDecision.origin, requestedHeaders)).forEach(([key, value]) => {
       response.setHeader(key, value);
     });
     response.statusCode = 204;
@@ -73,7 +66,12 @@ const server = createServer(async (request, response) => {
       path: url.pathname,
       headers: normalizeHeaders(request.headers),
       query: Object.fromEntries(url.searchParams.entries()),
-      body: await readJsonBody(request),
+      body: await readRequestBody(
+        request,
+        Array.isArray(request.headers["content-type"])
+          ? request.headers["content-type"][0]
+          : request.headers["content-type"],
+      ),
       hostname: request.headers.host?.split(":")[0],
       ipAddress: getClientIp(request.headers, request.socket.remoteAddress),
       trustedProxy: Boolean(request.headers["x-forwarded-for"]),

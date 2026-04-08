@@ -205,6 +205,16 @@ function parseClientLogUploadTask(row: QueryResultRow): ClientLogUploadTaskRecor
     createdAt: toIsoString(row.created_at) as string,
     expiresAt: toIsoString(row.expires_at),
     uploadedAt: toIsoString(row.uploaded_at),
+    uploadedFileName: row.uploaded_file_name ?? undefined,
+    uploadedFilePath: row.uploaded_file_path ?? undefined,
+    uploadedFileSizeBytes: row.uploaded_file_size_bytes === null || row.uploaded_file_size_bytes === undefined
+      ? undefined
+      : Number(row.uploaded_file_size_bytes),
+    uploadedLineCount: row.uploaded_line_count === null || row.uploaded_line_count === undefined
+      ? undefined
+      : Number(row.uploaded_line_count),
+    failedAt: toIsoString(row.failed_at),
+    failureReason: row.failure_reason ?? undefined,
   };
 }
 
@@ -708,14 +718,14 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listClientLogUploadTasks(appId?: string): Promise<ClientLogUploadTaskRecord[]> {
     const result = appId
       ? await this.query(
-          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
+          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at, uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
            FROM zook_client_log_upload_tasks
            WHERE app_id = $1
            ORDER BY created_at DESC`,
           [appId],
         )
       : await this.query(
-          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
+          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at, uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
            FROM zook_client_log_upload_tasks
            ORDER BY created_at DESC`,
         );
@@ -724,7 +734,7 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async findClientLogUploadTask(taskId: string): Promise<ClientLogUploadTaskRecord | undefined> {
     const result = await this.query(
-      `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
+      `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at, uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
        FROM zook_client_log_upload_tasks
        WHERE id = $1
        LIMIT 1`,
@@ -737,8 +747,9 @@ export class PostgresDatabase extends ApplicationDatabase {
     await this.query(
       `INSERT INTO zook_client_log_upload_tasks (
          id, app_id, user_id, did, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes,
-         status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::timestamptz, $13::timestamptz, $14::timestamptz, $15::timestamptz)`,
+         status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at,
+         uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::timestamptz, $13::timestamptz, $14::timestamptz, $15::timestamptz, $16, $17, $18, $19, $20::timestamptz, $21)`,
       [
         record.id,
         record.appId,
@@ -755,13 +766,24 @@ export class PostgresDatabase extends ApplicationDatabase {
         record.createdAt,
         record.expiresAt ?? null,
         record.uploadedAt ?? null,
+        record.uploadedFileName ?? null,
+        record.uploadedFilePath ?? null,
+        record.uploadedFileSizeBytes ?? null,
+        record.uploadedLineCount ?? null,
+        record.failedAt ?? null,
+        record.failureReason ?? null,
       ],
     );
   }
 
   override async updateClientLogUploadTask(
     taskId: string,
-    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
+    patch: Partial<
+      Pick<
+        ClientLogUploadTaskRecord,
+        "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt" | "uploadedFileName" | "uploadedFilePath" | "uploadedFileSizeBytes" | "uploadedLineCount" | "failedAt" | "failureReason"
+      >
+    >,
   ): Promise<void> {
     const fields: string[] = [];
     const values: unknown[] = [taskId];
@@ -790,6 +812,34 @@ export class PostgresDatabase extends ApplicationDatabase {
     if ("uploadedAt" in patch) {
       fields.push(`uploaded_at = $${index++}::timestamptz`);
       values.push(patch.uploadedAt ?? null);
+    }
+
+    if ("uploadedFileName" in patch) {
+      fields.push(`uploaded_file_name = $${index++}`);
+      values.push(patch.uploadedFileName ?? null);
+    }
+
+    if ("uploadedFilePath" in patch) {
+      fields.push(`uploaded_file_path = $${index++}`);
+      values.push(patch.uploadedFilePath ?? null);
+    }
+
+    if ("uploadedFileSizeBytes" in patch) {
+      fields.push(`uploaded_file_size_bytes = $${index++}`);
+      values.push(patch.uploadedFileSizeBytes ?? null);
+    }
+
+    if ("uploadedLineCount" in patch) {
+      fields.push(`uploaded_line_count = $${index++}`);
+      values.push(patch.uploadedLineCount ?? null);
+    }
+    if ("failedAt" in patch) {
+      fields.push(`failed_at = $${index++}::timestamptz`);
+      values.push(patch.failedAt ?? null);
+    }
+    if ("failureReason" in patch) {
+      fields.push(`failure_reason = $${index++}`);
+      values.push(patch.failureReason ?? null);
     }
 
     if (fields.length === 0) {

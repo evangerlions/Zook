@@ -98,12 +98,12 @@
 }
 
 .page-grid--config {
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 332px);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 288px);
   transition: grid-template-columns 220ms ease;
 }
 
 .page-grid--config.is-history-collapsed {
-  grid-template-columns: minmax(0, 1fr) 74px;
+  grid-template-columns: minmax(0, 1fr) 66px;
 }
 
 .surface-card,
@@ -135,17 +135,18 @@
   min-height: 100%;
 }
 
-@media (min-width: 1101px) {
-  .remote-log-pull-main-stack.is-tasks-tab {
-    max-width: calc(100% - 348px);
-  }
-}
-
 .remote-log-pull-main-stack,
 .remote-log-pull-task-pane,
 .remote-log-pull-tabs .ant-tabs-content-holder,
 .remote-log-pull-tabs .ant-tabs-tabpane {
   min-width: 0;
+}
+
+@media (min-width: 1101px) {
+  .remote-log-pull-main-stack.is-tasks-tab {
+    min-width: 720px;
+    width: 100%;
+  }
 }
 
 .history-dock-header {

@@ -47,6 +47,34 @@
   border-radius: 999px !important;
 }
 
+.inline-link-button.ant-btn {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  max-width: 100%;
+  width: 100%;
+  height: auto !important;
+  padding: 0 !important;
+  text-align: left;
+  white-space: normal;
+}
+
+.inline-link-button .ant-btn-icon + span,
+.inline-link-button > span {
+  overflow: hidden;
+  text-overflow: unset;
+  white-space: normal;
+  word-break: break-all;
+}
+
+.inline-link-button.is-ellipsis,
+.inline-link-button.is-ellipsis .ant-btn-icon + span,
+.inline-link-button.is-ellipsis > span {
+  white-space: nowrap;
+  word-break: normal;
+  text-overflow: ellipsis;
+}
+
 .button {
   border: 1px solid transparent;
   border-radius: 999px;
@@ -87,7 +115,12 @@
 }
 
 .notice-banner {
-  margin-bottom: 16px;
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  z-index: 1200;
+  width: min(520px, calc(100vw - 48px));
+  margin: 0;
   border-radius: var(--radius-md);
 }
 
@@ -213,6 +246,7 @@
     linear-gradient(180deg, rgba(9, 14, 29, 0.98), rgba(17, 24, 39, 0.98));
   border: 1px solid rgba(148, 163, 184, 0.14);
   padding: 16px;
+  color: #d9e4f1;
   font-family: var(--font-mono);
   font-size: 0.82rem;
   line-height: 1.55;

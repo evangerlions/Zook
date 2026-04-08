@@ -1,10 +1,12 @@
-import { PlusOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Form, Input, InputNumber, Space, Switch, Table, Tabs, Tag, Tooltip } from "antd";
+import { InfoCircleOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Form, Input, InputNumber, Modal, Space, Switch, Table, Tabs, Tag, Tooltip } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
 import { SaveConfirmModal } from "../components/save-confirm-modal";
+import { JsonPreview } from "../components/json-preview";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { writeClipboard } from "../lib/clipboard";
@@ -27,6 +29,7 @@ function megabytesToBytes(value: number): number {
 }
 
 export default function RemoteLogPullRoute() {
+  const navigate = useNavigate();
   const {
     apps,
     selectedAppId,
@@ -44,6 +47,7 @@ export default function RemoteLogPullRoute() {
   const [saving, setSaving] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
   const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
+  const [failureTask, setFailureTask] = useState<NonNullable<typeof tasks>["items"][number] | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
@@ -210,7 +214,7 @@ export default function RemoteLogPullRoute() {
     }
   }
 
-  async function copyTaskValue(kind: "UID" | "DID", value: string) {
+  async function copyTaskValue(kind: "Task ID" | "UID" | "DID", value: string) {
     try {
       await writeClipboard(value);
       setNotice(makeNotice("success", `已复制 ${kind}：${value}`));
@@ -222,9 +226,29 @@ export default function RemoteLogPullRoute() {
   const taskColumns = useMemo(
     () => [
       {
+        title: "Task ID",
+        dataIndex: "taskId",
+        key: "taskId",
+        width: 150,
+        ellipsis: true,
+        render: (value: string) => (
+          <Tooltip title={value}>
+            <Button
+              className="inline-link-button is-ellipsis mono"
+              onClick={() => void copyTaskValue("Task ID", value)}
+              type="link"
+            >
+              {value}
+            </Button>
+          </Tooltip>
+        ),
+      },
+      {
         title: "UID",
         dataIndex: "userId",
         key: "userId",
+        width: 120,
+        ellipsis: true,
         render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
           <Button
             className="inline-link-button"
@@ -239,6 +263,8 @@ export default function RemoteLogPullRoute() {
         title: "DID",
         dataIndex: "did",
         key: "did",
+        width: 150,
+        ellipsis: true,
         render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
           <Button
             className="inline-link-button mono"
@@ -253,51 +279,99 @@ export default function RemoteLogPullRoute() {
         title: "状态",
         dataIndex: "status",
         key: "status",
-        render: (value: string) => (
-          <Tag color={value === "COMPLETED" ? "green" : value === "CANCELLED" ? "red" : value === "CLAIMED" ? "blue" : "default"}>
-            {value}
-          </Tag>
+        width: 96,
+        render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
+          <Space size={6}>
+            <Tag color={value === "COMPLETED" ? "green" : value === "FAILED" ? "volcano" : value === "CANCELLED" ? "red" : value === "CLAIMED" ? "blue" : "default"}>
+              {value}
+            </Tag>
+            {value === "FAILED" && record.failureReason ? (
+              <Tooltip title="查看失败详情">
+                <Button
+                  aria-label="查看失败详情"
+                  icon={<InfoCircleOutlined />}
+                  onClick={() => setFailureTask(record)}
+                  shape="circle"
+                  size="small"
+                  type="text"
+                />
+              </Tooltip>
+            ) : null}
+          </Space>
         ),
       },
       {
         title: "窗口",
         key: "window",
-        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) =>
-          `${record.fromTsMs ?? "—"} ~ ${record.toTsMs ?? "—"}`,
+        width: 160,
+        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) => (
+          <div className="table-primary-cell table-primary-cell--stack">
+            <span className="mono table-code">{record.fromTsMs ?? "—"}</span>
+            <span className="mono table-code">{record.toTsMs ?? "—"}</span>
+          </div>
+        ),
       },
       {
-        title: "Claim 到期",
-        dataIndex: "claimExpireAt",
-        key: "claimExpireAt",
-        render: (value?: string) => formatTimestamp(value),
-      },
-      {
-        title: "创建于",
+        title: "时间",
         dataIndex: "createdAt",
         key: "createdAt",
-        render: (value: string) => formatTimestamp(value),
+        width: 180,
+        render: (_: string, record: NonNullable<typeof tasks>["items"][number]) => (
+          <div className="table-primary-cell table-primary-cell--stack">
+            <span>{formatTimestamp(record.createdAt)}</span>
+            <span className="meta-text">Claim: {record.claimExpireAt ? formatTimestamp(record.claimExpireAt) : "—"}</span>
+            <span className="meta-text">上传: {record.uploadedAt ? formatTimestamp(record.uploadedAt) : "—"}</span>
+            <span className="meta-text">失败: {record.failedAt ? formatTimestamp(record.failedAt) : "—"}</span>
+          </div>
+        ),
+      },
+      {
+        title: "文件",
+        key: "file",
+        width: 220,
+        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) =>
+          record.uploadedFileName ? (
+            <div className="table-primary-cell table-primary-cell--stack">
+              <span className="mono">{record.uploadedFileName}</span>
+              <span className="meta-text">
+                {record.uploadedLineCount ?? 0} lines / {record.uploadedFileSizeBytes ?? 0} bytes
+              </span>
+            </div>
+          ) : "—",
       },
       {
         title: "操作",
         key: "actions",
-        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) =>
-          record.status === "PENDING" || record.status === "CLAIMED" ? (
-            <Tooltip title="取消任务">
-              <span>
-                <Button
-                  danger
-                  icon={<StopOutlined />}
-                  loading={cancellingTaskId === record.taskId}
-                  onClick={() => void handleCancelTask(record.taskId)}
-                  shape="circle"
-                  type="default"
-                />
-              </span>
-            </Tooltip>
-          ) : null,
+        width: 150,
+        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) => (
+          <Space>
+            {record.uploadedFileName ? (
+              <Button
+                onClick={() => void navigate(`/remote-log-pull/tasks/${encodeURIComponent(record.taskId)}`)}
+                type="link"
+              >
+                查看日志
+              </Button>
+            ) : null}
+            {record.status === "PENDING" || record.status === "CLAIMED" ? (
+              <Tooltip title="取消任务">
+                <span>
+                  <Button
+                    danger
+                    icon={<StopOutlined />}
+                    loading={cancellingTaskId === record.taskId}
+                    onClick={() => void handleCancelTask(record.taskId)}
+                    shape="circle"
+                    type="default"
+                  />
+                </span>
+              </Tooltip>
+            ) : null}
+          </Space>
+        ),
       },
     ],
-    [tasks, cancellingTaskId],
+    [tasks, cancellingTaskId, navigate],
   );
 
   if (!selectedApp) {
@@ -317,7 +391,7 @@ export default function RemoteLogPullRoute() {
         </div>
       </header>
 
-      <div className={`page-grid page-grid--config${settingsTabActive && !historyExpanded ? " is-history-collapsed" : ""}`}>
+      <div className={`page-grid page-grid--config${!settingsTabActive || !historyExpanded ? " is-history-collapsed" : ""}`}>
         <div className={`stack remote-log-pull-main-stack${settingsTabActive ? "" : " is-tasks-tab"}`}>
           <Card
             extra={settingsTabActive ? (
@@ -493,7 +567,7 @@ export default function RemoteLogPullRoute() {
                             dataSource={tasks?.items ?? []}
                             pagination={{ pageSize: 8 }}
                             rowKey="taskId"
-                            scroll={{ x: 980 }}
+                            size="small"
                           />
                         </div>
                       </Card>
@@ -540,6 +614,36 @@ export default function RemoteLogPullRoute() {
         title={restoreRevision ? `确认回滚到版本 R${restoreRevision}` : "确认回滚"}
         autoGenerateDesc={false}
       />
+      <Modal
+        footer={(
+          <Button onClick={() => setFailureTask(null)} type="primary">
+            关闭
+          </Button>
+        )}
+        onCancel={() => setFailureTask(null)}
+        open={Boolean(failureTask)}
+        title={failureTask ? `失败详情 · ${failureTask.taskId}` : "失败详情"}
+        width={760}
+      >
+        {failureTask ? (
+          <div className="stack">
+            <Alert
+              message="这里展示客户端最终上报给后端的失败信息。"
+              showIcon
+              type="warning"
+            />
+            <JsonPreview value={{
+              taskId: failureTask.taskId,
+              uid: failureTask.userId,
+              did: failureTask.did,
+              status: failureTask.status,
+              failedAt: failureTask.failedAt ?? null,
+              failureReason: failureTask.failureReason ?? null,
+            }} />
+          </div>
+        ) : null}
+      </Modal>
+
     </section>
   );
 }

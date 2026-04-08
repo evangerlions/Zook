@@ -15,6 +15,16 @@ const CORS_ALLOWED_HEADERS = [
   "X-Request-Id",
   "X-App-Locale",
   "X-App-Country-Code",
+  "X-Did",
+  "X-Log-Claim-Token",
+  "X-Log-Key-Id",
+  "X-Log-Enc",
+  "X-Log-Nonce",
+  "X-Log-Content",
+  "X-Log-Task-Id",
+  "X-Log-Line-Count",
+  "X-Log-Plain-Bytes",
+  "X-Log-Compressed-Bytes",
 ];
 const CORS_EXPOSED_HEADERS = ["X-Request-Id"];
 const CORS_MAX_AGE_SECONDS = 86400;
@@ -49,7 +59,10 @@ export function buildCorsHeaders(origin?: string): Record<string, string> {
   };
 }
 
-export function buildCorsPreflightHeaders(origin?: string): Record<string, string> {
+export function buildCorsPreflightHeaders(
+  origin?: string,
+  requestedHeaders?: string,
+): Record<string, string> {
   if (!origin) {
     return {};
   }
@@ -57,7 +70,7 @@ export function buildCorsPreflightHeaders(origin?: string): Record<string, strin
   return {
     ...buildCorsHeaders(origin),
     "Access-Control-Allow-Methods": CORS_ALLOWED_METHODS.join(", "),
-    "Access-Control-Allow-Headers": CORS_ALLOWED_HEADERS.join(", "),
+    "Access-Control-Allow-Headers": requestedHeaders?.trim() || CORS_ALLOWED_HEADERS.join(", "),
     "Access-Control-Max-Age": String(CORS_MAX_AGE_SECONDS),
     Vary: "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
   };

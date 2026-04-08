@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
 import { InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
@@ -899,6 +902,61 @@ test("admin remote log pull task API creates tasks from defaults and can cancel 
     cancelResponse.body.data.items.find((item: { taskId: string }) => item.taskId === taskId)?.status,
     "CANCELLED",
   );
+});
+
+test("admin remote log pull task detail and file APIs return task metadata and saved content", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  runtime.database.clientLogUploadTasks.push({
+    id: "log_task_detail_001",
+    appId: "app_a",
+    userId: "user_alice",
+    did: "did_web_001",
+    keyId: "logk_example",
+    status: "COMPLETED",
+    fromTsMs: 1710000000000,
+    toTsMs: 1710003600000,
+    createdAt: "2026-04-08T10:00:00.000Z",
+    uploadedAt: "2026-04-08T10:01:00.000Z",
+    uploadedFileName: "log_task_detail_001.ndjson",
+    uploadedFilePath: join(mkdtempSync(join(tmpdir(), "zook-admin-log-")), "log_task_detail_001.ndjson"),
+    uploadedFileSizeBytes: 64,
+    uploadedLineCount: 2,
+  });
+  writeFileSync(
+    runtime.database.clientLogUploadTasks[0]?.uploadedFilePath as string,
+    '{"level":"info","message":"hello"}\n{"level":"error","message":"boom"}\n',
+    "utf8",
+  );
+
+  const taskResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull/tasks/log_task_detail_001",
+    headers,
+  });
+
+  assert.equal(taskResponse.statusCode, 200);
+  assert.equal(taskResponse.body.data.item.taskId, "log_task_detail_001");
+  assert.equal(taskResponse.body.data.item.did, "did_web_001");
+  assert.equal(taskResponse.body.data.item.uploadedFileName, "log_task_detail_001.ndjson");
+
+  const fileResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/app_a/remote-log-pull/tasks/log_task_detail_001/file",
+    headers,
+  });
+
+  assert.equal(fileResponse.statusCode, 200);
+  assert.equal(fileResponse.body.data.fileName, "log_task_detail_001.ndjson");
+  assert.match(fileResponse.body.data.content, /hello/);
 });
 
 test("admin app log secret reveal requires sensitive verification and grants 1h access after email code", async () => {

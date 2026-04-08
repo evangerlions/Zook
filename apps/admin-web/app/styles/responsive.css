@@ -44,6 +44,12 @@
 }
 
 @media (max-width: 720px) {
+  .notice-banner {
+    top: 12px;
+    right: 12px;
+    width: calc(100vw - 24px);
+  }
+
   .topbar,
   .page-shell {
     padding-left: 16px;

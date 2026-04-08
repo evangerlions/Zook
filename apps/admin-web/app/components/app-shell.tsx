@@ -44,7 +44,17 @@ function formatAdminVersion(rawVersion: string): string {
 }
 
 function isAppProjectSpace(pathname: string) {
-  return pathname === "/config" || pathname === "/remote-log-pull";
+  return pathname === "/config"
+    || pathname === "/remote-log-pull"
+    || pathname.startsWith("/remote-log-pull/");
+}
+
+function resolveAppWorkspaceTarget(pathname: string) {
+  if (pathname.startsWith("/remote-log-pull/tasks/")) {
+    return "/remote-log-pull";
+  }
+
+  return pathname;
 }
 
 function describeProjectSpace(app: AdminAppSummary | null, pathname: string) {
@@ -126,7 +136,7 @@ export function AppShell() {
 
     beginWorkspaceTransition(`正在切换到 ${app.appName}`);
     setSelectedAppId(app.appId);
-    void navigate(appProjectSpace ? location.pathname : "/config");
+    void navigate(appProjectSpace ? resolveAppWorkspaceTarget(location.pathname) : "/config");
   }
 
   function handleProjectSpaceChange(value: string) {
