@@ -242,7 +242,7 @@ export interface FileRecord {
   createdAt: string;
 }
 
-export type ClientLogUploadTaskStatus = "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED";
+export type ClientLogUploadTaskStatus = "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED" | "FAILED";
 
 export interface ClientLogUploadTaskRecord {
   id: string;
@@ -260,6 +260,12 @@ export interface ClientLogUploadTaskRecord {
   createdAt: string;
   expiresAt?: string;
   uploadedAt?: string;
+  uploadedFileName?: string;
+  uploadedFilePath?: string;
+  uploadedFileSizeBytes?: number;
+  uploadedLineCount?: number;
+  failedAt?: string;
+  failureReason?: string;
 }
 
 export interface ClientLogUploadRecord {
@@ -554,12 +560,25 @@ export interface AdminRemoteLogPullTaskSummary {
   maxBytes?: number;
   claimExpireAt?: string;
   uploadedAt?: string;
+  uploadedFileName?: string;
+  uploadedFileSizeBytes?: number;
+  uploadedLineCount?: number;
   createdAt: string;
 }
 
 export interface AdminAppRemoteLogPullTaskListDocument {
   app: AdminAppSummary;
   items: AdminRemoteLogPullTaskSummary[];
+}
+
+export interface AdminRemoteLogPullTaskFileDocument {
+  appId: string;
+  taskId: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  lineCount?: number;
+  content: string;
 }
 
 export interface EmailServiceTemplateConfig {
@@ -1039,6 +1058,23 @@ export interface LogUploadResult {
 export interface LogNoDataAckResult {
   taskId: string;
   status: "no_data";
+}
+
+export interface LogFailResult {
+  taskId: string;
+  status: "failed";
+  failedAt: string;
+  failureReason?: string;
+}
+
+export interface LogFailCommand {
+  auth: AuthContext;
+  did: string;
+  taskId: string;
+  claimToken: string;
+  reason?: string;
+  message?: string;
+  now?: Date;
 }
 
 export interface QueueJob<T = Record<string, unknown>> {

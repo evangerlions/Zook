@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { AppLogSecretService } from "./app-log-secret.service.ts";
@@ -5,6 +6,7 @@ import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { randomId } from "../shared/utils.ts";
 import type {
   AdminAppRemoteLogPullTaskListDocument,
+  AdminRemoteLogPullTaskFileDocument,
   AdminRemoteLogPullTaskSummary,
   ClientLogUploadTaskRecord,
   ConfigRevisionMeta,
@@ -174,6 +176,24 @@ export class AppRemoteLogPullService {
     });
   }
 
+  async getTaskFile(appId: string, taskId: string): Promise<AdminRemoteLogPullTaskFileDocument> {
+    const task = await this.database.findClientLogUploadTask(taskId);
+    if (!task || task.appId !== appId || !task.uploadedFilePath || !task.uploadedFileName) {
+      throw new ApplicationError(404, "REQ_INVALID_QUERY", `Remote Log Pull task file ${taskId} was not found.`);
+    }
+
+    const content = await readFile(task.uploadedFilePath, "utf8");
+    return {
+      appId,
+      taskId,
+      fileName: task.uploadedFileName,
+      contentType: "application/x-ndjson; charset=utf-8",
+      sizeBytes: task.uploadedFileSizeBytes ?? Buffer.byteLength(content, "utf8"),
+      lineCount: task.uploadedLineCount,
+      content,
+    };
+  }
+
   private createDocument(
     config: RemoteLogPullSettings,
     revisions: ConfigRevisionMeta[],
@@ -273,6 +293,11 @@ export class AppRemoteLogPullService {
       maxBytes: task.maxBytes,
       claimExpireAt: task.claimExpireAt,
       uploadedAt: task.uploadedAt,
+      uploadedFileName: task.uploadedFileName,
+      uploadedFileSizeBytes: task.uploadedFileSizeBytes,
+      uploadedLineCount: task.uploadedLineCount,
+      failedAt: task.failedAt,
+      failureReason: task.failureReason,
       createdAt: task.createdAt,
     };
   }

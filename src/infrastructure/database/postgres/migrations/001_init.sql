@@ -181,6 +181,12 @@ CREATE TABLE IF NOT EXISTS zook_client_log_upload_tasks (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ,
   uploaded_at TIMESTAMPTZ,
+  uploaded_file_name TEXT,
+  uploaded_file_path TEXT,
+  uploaded_file_size_bytes BIGINT,
+  uploaded_line_count INTEGER,
+  failed_at TIMESTAMPTZ,
+  failure_reason TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS did TEXT;
@@ -191,6 +197,12 @@ WHERE did IS NULL
   AND client_id IS NOT NULL;
 ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS claim_token TEXT;
 ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS claim_expire_at TIMESTAMPTZ;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS uploaded_file_name TEXT;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS uploaded_file_path TEXT;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS uploaded_file_size_bytes BIGINT;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS uploaded_line_count INTEGER;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS failed_at TIMESTAMPTZ;
+ALTER TABLE zook_client_log_upload_tasks ADD COLUMN IF NOT EXISTS failure_reason TEXT;
 CREATE INDEX IF NOT EXISTS zook_client_log_upload_tasks_app_created_idx
   ON zook_client_log_upload_tasks (app_id, created_at DESC);
 

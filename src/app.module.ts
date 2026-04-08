@@ -74,6 +74,7 @@ import type {
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
   AdminAppRemoteLogPullTaskListDocument,
+  AdminRemoteLogPullTaskFileDocument,
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
@@ -91,6 +92,7 @@ import type {
   HttpRequest,
   HttpResponse,
   LogNoDataAckResult,
+  LogFailResult,
   LogPolicyResult,
   LogPullTaskResult,
   LogUploadResult,
@@ -137,6 +139,7 @@ export interface CreateApplicationOptions {
   queueBackend?: "memory" | "redis";
   queue?: JobQueue;
   queueRedisUrl?: string;
+  clientLogUploadStorageDir?: string;
 }
 
 interface ResolvedAdminBasicAuth {
@@ -595,6 +598,17 @@ export class BackendApplication {
       );
     }
 
+    const adminRemoteLogPullTaskFileMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull\/tasks\/([^/]+)\/file$/,
+    );
+    if (request.method === "GET" && adminRemoteLogPullTaskFileMatch) {
+      return this.handleAdminGetRemoteLogPullTaskFile(
+        request,
+        decodeURIComponent(adminRemoteLogPullTaskFileMatch[1] as string),
+        decodeURIComponent(adminRemoteLogPullTaskFileMatch[2] as string),
+      );
+    }
+
     const adminConfigMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/config$/);
     if (request.method === "GET" && adminConfigMatch) {
       return this.handleAdminGetConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
@@ -735,6 +749,11 @@ export class BackendApplication {
     const logAckMatch = request.path.match(/^\/api\/v1\/logs\/tasks\/([^/]+)\/ack$/);
     if (request.method === "POST" && logAckMatch) {
       return this.handleLogsAckNoData(request, decodeURIComponent(logAckMatch[1]));
+    }
+
+    const logFailMatch = request.path.match(/^\/api\/v1\/logs\/tasks\/([^/]+)\/fail$/);
+    if (request.method === "POST" && logFailMatch) {
+      return this.handleLogsFail(request, decodeURIComponent(logFailMatch[1]));
     }
 
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
@@ -2151,6 +2170,23 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminGetRemoteLogPullTaskFile(
+    request: HttpRequest,
+    appId: string,
+    taskId: string,
+  ): Promise<HttpResponse<AdminRemoteLogPullTaskFileDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getRemoteLogPullTaskFile(appId, taskId);
+    await this.auditInterceptor.record({
+      appId,
+      action: "admin.remote_log_pull.task.file.read",
+      resourceType: "client_log_upload",
+      resourceId: taskId,
+      payload: { adminUser },
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminGetI18nSettingsRevision(
     request: HttpRequest,
     appId: string,
@@ -2416,6 +2452,36 @@ export class BackendApplication {
       did: this.requireHeader(request, "x-did"),
       taskId,
       claimToken: this.validationPipe.requireString(body, "claimToken"),
+    });
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleLogsFail(
+    request: HttpRequest,
+    taskId: string,
+  ): Promise<HttpResponse<LogFailResult>> {
+    const auth = await this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const result = await this.clientLogUploadService.fail({
+      auth,
+      did: this.requireHeader(request, "x-did"),
+      taskId,
+      claimToken: this.validationPipe.requireString(body, "claimToken"),
+      reason: this.validationPipe.optionalString(body, "reason"),
+      message: this.validationPipe.optionalString(body, "message"),
+    });
+
+    await this.auditInterceptor.record({
+      appId: auth.appId,
+      actorUserId: auth.userId,
+      action: "logs.fail",
+      resourceType: "client_log_upload",
+      resourceId: result.taskId,
+      resourceOwnerUserId: auth.userId,
+      payload: {
+        failedAt: result.failedAt,
+        failureReason: result.failureReason,
+      },
     });
     return this.ok(result, request.requestId as string);
   }
@@ -2804,6 +2870,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     logEncryptionKeyResolver,
     appRemoteLogPullService,
+    {
+      storageDir: options.clientLogUploadStorageDir,
+    },
   );
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);

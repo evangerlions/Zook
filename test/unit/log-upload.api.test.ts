@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { createCipheriv, randomBytes } from "node:crypto";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { gzipSync } from "node:zlib";
 import { createApplication } from "../support/create-test-application.ts";
@@ -48,6 +51,10 @@ async function enableLogPull(runtime: Awaited<ReturnType<typeof createApplicatio
       maxBytes: 1048576,
     },
   });
+}
+
+function createTempStorageDir() {
+  return mkdtempSync(join(tmpdir(), "zook-log-upload-"));
 }
 
 test("logs policy returns defaults and app-level overrides", async () => {
@@ -234,10 +241,12 @@ test("logs upload can decrypt payloads using app-generated log secrets after cla
 
 test("logs upload decrypts claimed AES-GCM+gzip NDJSON payload and stores accepted lines", async () => {
   const key = encodeKeyBase64();
+  const storageDir = createTempStorageDir();
   const runtime = await createApplication({
     logEncryptionKeys: {
       "dev-k1": key.base64,
     },
+    clientLogUploadStorageDir: storageDir,
   });
   const session = await issueAccessToken(runtime);
   await enableLogPull(runtime);
@@ -322,20 +331,27 @@ test("logs upload decrypts claimed AES-GCM+gzip NDJSON payload and stores accept
     rejectedCount: 1,
   });
 
-  assert.equal(runtime.database.clientLogUploads.length, 1);
-  assert.equal(runtime.database.clientLogLines.length, 2);
   assert.equal(runtime.database.clientLogUploadTasks[0]?.status, "COMPLETED");
   assert.equal(runtime.database.clientLogUploadTasks[0]?.uploadedAt !== undefined, true);
-  assert.equal(runtime.database.clientLogLines[0]?.message, "app started");
-  assert.equal(runtime.database.clientLogLines[1]?.level, "warn");
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.uploadedFileName, "log-task-20260328-001.ndjson");
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.uploadedLineCount, 3);
+  assert.ok(runtime.database.clientLogUploadTasks[0]?.uploadedFilePath);
+  const savedContent = readFileSync(
+    runtime.database.clientLogUploadTasks[0]?.uploadedFilePath as string,
+    "utf8",
+  );
+  assert.match(savedContent, /app started/);
+  assert.match(savedContent, /cache warm slow/);
 });
 
 test("logs ack(no_data) completes a claimed task without creating uploads", async () => {
   const key = encodeKeyBase64();
+  const storageDir = createTempStorageDir();
   const runtime = await createApplication({
     logEncryptionKeys: {
       "dev-k1": key.base64,
     },
+    clientLogUploadStorageDir: storageDir,
   });
   const session = await issueAccessToken(runtime);
   await enableLogPull(runtime);
@@ -385,15 +401,17 @@ test("logs ack(no_data) completes a claimed task without creating uploads", asyn
     status: "no_data",
   });
   assert.equal(runtime.database.clientLogUploadTasks[0]?.status, "COMPLETED");
-  assert.equal(runtime.database.clientLogUploads.length, 0);
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.uploadedFilePath, undefined);
 });
 
 test("logs upload rejects claim mismatch, expired claims, and decrypt failure", async () => {
   const key = encodeKeyBase64();
+  const storageDir = createTempStorageDir();
   const runtime = await createApplication({
     logEncryptionKeys: {
       "dev-k1": key.base64,
     },
+    clientLogUploadStorageDir: storageDir,
   });
   const session = await issueAccessToken(runtime);
   runtime.database.clientLogUploadTasks.push({
@@ -540,6 +558,45 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
 
   assert.equal(decryptFailureResponse.statusCode, 400);
   assert.equal(decryptFailureResponse.body.code, "LOG_DECRYPT_FAILED");
-  assert.equal(runtime.database.clientLogUploads.length, 0);
-  assert.equal(runtime.database.clientLogLines.length, 0);
+  assert.equal(runtime.database.clientLogUploadTasks.every((item) => !item.uploadedFilePath), true);
+});
+
+test("logs fail marks a claimed task as FAILED and stores failure reason", async () => {
+  const runtime = await createApplication();
+  const session = await issueAccessToken(runtime);
+  runtime.database.clientLogUploadTasks.push({
+    id: "log-task-fail-001",
+    appId: "app_a",
+    userId: session.userId,
+    did: "did_alpha",
+    keyId: "dev-k1",
+    status: "CLAIMED",
+    claimToken: "claim_fail",
+    claimExpireAt: "2099-01-01T00:00:00.000Z",
+    createdAt: "2026-04-05T11:57:00.000Z",
+  });
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/logs/tasks/log-task-fail-001/fail",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-did": "did_alpha",
+    },
+    body: {
+      claimToken: "claim_fail",
+      reason: "upload_failed",
+      message: "network timeout after 5 retries",
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.data.taskId, "log-task-fail-001");
+  assert.equal(response.body.data.status, "failed");
+  assert.match(String(response.body.data.failureReason), /upload_failed/);
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.status, "FAILED");
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.claimToken, undefined);
+  assert.equal(runtime.database.clientLogUploadTasks[0]?.claimExpireAt, undefined);
+  assert.match(String(runtime.database.clientLogUploadTasks[0]?.failureReason), /network timeout/);
 });

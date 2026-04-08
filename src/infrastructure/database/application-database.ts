@@ -104,7 +104,12 @@ export abstract class ApplicationDatabase {
   abstract insertClientLogUploadTask(record: ClientLogUploadTaskRecord): MaybePromise<void>;
   abstract updateClientLogUploadTask(
     taskId: string,
-    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
+    patch: Partial<
+      Pick<
+        ClientLogUploadTaskRecord,
+        "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt" | "uploadedFileName" | "uploadedFilePath" | "uploadedFileSizeBytes" | "uploadedLineCount" | "failedAt" | "failureReason"
+      >
+    >,
   ): MaybePromise<void>;
   abstract insertClientLogUpload(record: ClientLogUploadRecord): MaybePromise<void>;
   abstract insertClientLogLines(records: ClientLogLineRecord[]): MaybePromise<void>;

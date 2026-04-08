@@ -59,7 +59,11 @@ const server = createServer(async (request, response) => {
   }
 
   if ((request.method ?? "GET").toUpperCase() === "OPTIONS") {
-    Object.entries(buildCorsPreflightHeaders(corsDecision.origin)).forEach(([key, value]) => {
+    const requestedHeaders =
+      Array.isArray(request.headers["access-control-request-headers"])
+        ? request.headers["access-control-request-headers"][0]
+        : request.headers["access-control-request-headers"];
+    Object.entries(buildCorsPreflightHeaders(corsDecision.origin, requestedHeaders)).forEach(([key, value]) => {
       response.setHeader(key, value);
     });
     response.statusCode = 204;

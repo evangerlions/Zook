@@ -21,6 +21,7 @@ import type {
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
   AdminAppRemoteLogPullTaskListDocument,
+  AdminRemoteLogPullTaskFileDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
@@ -429,6 +430,11 @@ export class AdminConsoleService {
     await this.appRemoteLogPullService.cancelTask(app.id, taskId);
     await this.managedStateStore.save(this.database);
     return await this.listRemoteLogPullTasks(app.id);
+  }
+
+  async getRemoteLogPullTaskFile(appId: string, taskId: string): Promise<AdminRemoteLogPullTaskFileDocument> {
+    const app = await this.requireConfigApp(appId);
+    return await this.appRemoteLogPullService.getTaskFile(app.id, taskId);
   }
 
   async updateI18nSettings(appId: string, input: unknown, desc?: string): Promise<AdminAppI18nDocument> {

@@ -1,5 +1,5 @@
-import { PlusOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Form, Input, InputNumber, Space, Switch, Table, Tabs, Tag, Tooltip } from "antd";
+import { InfoCircleOutlined, PlusOutlined, ReloadOutlined, StopOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Form, Input, InputNumber, Modal, Space, Switch, Table, Tabs, Tag, Tooltip } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { RevisionHistoryDock } from "../components/revision-history-dock";
@@ -11,6 +11,7 @@ import { writeClipboard } from "../lib/clipboard";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import type {
   AdminRemoteLogPullSettingsDocument,
+  AdminRemoteLogPullTaskFileDocument,
   AdminRemoteLogPullTaskListDocument,
   RemoteLogPullSettings,
 } from "../lib/types";
@@ -24,6 +25,43 @@ function bytesToMegabytes(value: number): number {
 
 function megabytesToBytes(value: number): number {
   return value * BYTES_PER_MEGABYTE;
+}
+
+function downloadTextFile(fileName: string, content: string, contentType: string) {
+  const blob = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function parseNdjson(content: string) {
+  return content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      try {
+        const payload = JSON.parse(line) as Record<string, unknown>;
+        return {
+          key: `${index}`,
+          timestamp: typeof payload.tsMs === "number" ? String(payload.tsMs) : "—",
+          level: typeof payload.level === "string" ? payload.level : "—",
+          message: typeof payload.message === "string" ? payload.message : line,
+          raw: JSON.stringify(payload, null, 2),
+        };
+      } catch {
+        return {
+          key: `${index}`,
+          timestamp: "—",
+          level: "—",
+          message: line,
+          raw: line,
+        };
+      }
+    });
 }
 
 export default function RemoteLogPullRoute() {
@@ -44,6 +82,9 @@ export default function RemoteLogPullRoute() {
   const [saving, setSaving] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
   const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
+  const [viewingTaskId, setViewingTaskId] = useState<string | null>(null);
+  const [taskFile, setTaskFile] = useState<AdminRemoteLogPullTaskFileDocument | null>(null);
+  const [failureTask, setFailureTask] = useState<NonNullable<typeof tasks>["items"][number] | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [restoreModalOpen, setRestoreModalOpen] = useState(false);
@@ -210,6 +251,23 @@ export default function RemoteLogPullRoute() {
     }
   }
 
+  async function handleViewTaskFile(taskId: string) {
+    if (!selectedAppId) {
+      return;
+    }
+
+    setViewingTaskId(taskId);
+    clearNotice();
+    try {
+      const payload = await adminApi.getRemoteLogPullTaskFile(selectedAppId, taskId);
+      setTaskFile(payload);
+    } catch (error) {
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      setViewingTaskId(null);
+    }
+  }
+
   async function copyTaskValue(kind: "UID" | "DID", value: string) {
     try {
       await writeClipboard(value);
@@ -218,6 +276,11 @@ export default function RemoteLogPullRoute() {
       setNotice(makeNotice("error", formatApiError(error)));
     }
   }
+
+  const parsedTaskLines = useMemo(
+    () => (taskFile ? parseNdjson(taskFile.content) : []),
+    [taskFile],
+  );
 
   const taskColumns = useMemo(
     () => [
@@ -258,10 +321,24 @@ export default function RemoteLogPullRoute() {
         dataIndex: "status",
         key: "status",
         width: 96,
-        render: (value: string) => (
-          <Tag color={value === "COMPLETED" ? "green" : value === "CANCELLED" ? "red" : value === "CLAIMED" ? "blue" : "default"}>
-            {value}
-          </Tag>
+        render: (value: string, record: NonNullable<typeof tasks>["items"][number]) => (
+          <Space size={6}>
+            <Tag color={value === "COMPLETED" ? "green" : value === "FAILED" ? "volcano" : value === "CANCELLED" ? "red" : value === "CLAIMED" ? "blue" : "default"}>
+              {value}
+            </Tag>
+            {value === "FAILED" && record.failureReason ? (
+              <Tooltip title="查看失败详情">
+                <Button
+                  aria-label="查看失败详情"
+                  icon={<InfoCircleOutlined />}
+                  onClick={() => setFailureTask(record)}
+                  shape="circle"
+                  size="small"
+                  type="text"
+                />
+              </Tooltip>
+            ) : null}
+          </Space>
         ),
       },
       {
@@ -277,37 +354,66 @@ export default function RemoteLogPullRoute() {
       },
       {
         title: "时间",
-        key: "timestamps",
-        width: 170,
-        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) => (
+        dataIndex: "createdAt",
+        key: "createdAt",
+        width: 180,
+        render: (_: string, record: NonNullable<typeof tasks>["items"][number]) => (
           <div className="table-primary-cell table-primary-cell--stack">
             <span>{formatTimestamp(record.createdAt)}</span>
-            <span className="meta-text">{record.claimExpireAt ? `Claim: ${formatTimestamp(record.claimExpireAt)}` : "Claim: —"}</span>
+            <span className="meta-text">Claim: {record.claimExpireAt ? formatTimestamp(record.claimExpireAt) : "—"}</span>
+            <span className="meta-text">上传: {record.uploadedAt ? formatTimestamp(record.uploadedAt) : "—"}</span>
+            <span className="meta-text">失败: {record.failedAt ? formatTimestamp(record.failedAt) : "—"}</span>
           </div>
         ),
       },
       {
+        title: "文件",
+        key: "file",
+        width: 220,
+        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) =>
+          record.uploadedFileName ? (
+            <div className="table-primary-cell table-primary-cell--stack">
+              <span className="mono">{record.uploadedFileName}</span>
+              <span className="meta-text">
+                {record.uploadedLineCount ?? 0} lines / {record.uploadedFileSizeBytes ?? 0} bytes
+              </span>
+            </div>
+          ) : "—",
+      },
+      {
         title: "操作",
         key: "actions",
-        width: 82,
-        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) =>
-          record.status === "PENDING" || record.status === "CLAIMED" ? (
-            <Tooltip title="取消任务">
-              <span>
-                <Button
-                  danger
-                  icon={<StopOutlined />}
-                  loading={cancellingTaskId === record.taskId}
-                  onClick={() => void handleCancelTask(record.taskId)}
-                  shape="circle"
-                  type="default"
-                />
-              </span>
-            </Tooltip>
-          ) : null,
+        width: 150,
+        render: (_: unknown, record: NonNullable<typeof tasks>["items"][number]) => (
+          <Space>
+            {record.uploadedFileName ? (
+              <Button
+                loading={viewingTaskId === record.taskId}
+                onClick={() => void handleViewTaskFile(record.taskId)}
+                type="link"
+              >
+                查看日志
+              </Button>
+            ) : null}
+            {record.status === "PENDING" || record.status === "CLAIMED" ? (
+              <Tooltip title="取消任务">
+                <span>
+                  <Button
+                    danger
+                    icon={<StopOutlined />}
+                    loading={cancellingTaskId === record.taskId}
+                    onClick={() => void handleCancelTask(record.taskId)}
+                    shape="circle"
+                    type="default"
+                  />
+                </span>
+              </Tooltip>
+            ) : null}
+          </Space>
+        ),
       },
     ],
-    [tasks, cancellingTaskId],
+    [tasks, cancellingTaskId, viewingTaskId],
   );
 
   if (!selectedApp) {
@@ -550,6 +656,82 @@ export default function RemoteLogPullRoute() {
         title={restoreRevision ? `确认回滚到版本 R${restoreRevision}` : "确认回滚"}
         autoGenerateDesc={false}
       />
+      <Modal
+        footer={(
+          <Button onClick={() => setFailureTask(null)} type="primary">
+            关闭
+          </Button>
+        )}
+        onCancel={() => setFailureTask(null)}
+        open={Boolean(failureTask)}
+        title={failureTask ? `失败详情 · ${failureTask.taskId}` : "失败详情"}
+        width={760}
+      >
+        {failureTask ? (
+          <div className="stack">
+            <Alert
+              message="这里展示客户端最终上报给后端的失败信息。"
+              showIcon
+              type="warning"
+            />
+            <pre className="json-preview">{JSON.stringify({
+              taskId: failureTask.taskId,
+              uid: failureTask.userId,
+              did: failureTask.did,
+              status: failureTask.status,
+              failedAt: failureTask.failedAt ?? null,
+              failureReason: failureTask.failureReason ?? null,
+            }, null, 2)}</pre>
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        footer={(
+          <Space>
+            {taskFile ? (
+              <Button onClick={() => downloadTextFile(taskFile.fileName, taskFile.content, taskFile.contentType)}>
+                下载原始文件
+              </Button>
+            ) : null}
+            <Button onClick={() => setTaskFile(null)} type="primary">
+              关闭
+            </Button>
+          </Space>
+        )}
+        onCancel={() => setTaskFile(null)}
+        open={Boolean(taskFile)}
+        title={taskFile ? `日志浏览 · ${taskFile.fileName}` : "日志浏览"}
+        width={1100}
+      >
+        {taskFile ? (
+          <div className="stack">
+            <Alert
+              message={`前端本地解析 ${taskFile.fileName}，共 ${taskFile.lineCount ?? parsedTaskLines.length} 行，${taskFile.sizeBytes} bytes。`}
+              showIcon
+              type="info"
+            />
+            <div className="table-wrap">
+              <Table
+                columns={[
+                  { title: "#", dataIndex: "key", key: "key", width: 72 },
+                  { title: "时间", dataIndex: "timestamp", key: "timestamp", width: 180 },
+                  { title: "级别", dataIndex: "level", key: "level", width: 120 },
+                  { title: "消息", dataIndex: "message", key: "message" },
+                ]}
+                dataSource={parsedTaskLines}
+                expandable={{
+                  expandedRowRender: (record) => <pre className="json-preview">{record.raw}</pre>,
+                }}
+                pagination={{ pageSize: 20 }}
+                rowKey="key"
+                scroll={{ x: 980 }}
+                size="small"
+              />
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </section>
   );
 }

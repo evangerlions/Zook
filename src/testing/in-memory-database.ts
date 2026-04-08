@@ -339,7 +339,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   updateClientLogUploadTask(
     taskId: string,
-    patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt">>,
+    patch: Partial<
+      Pick<
+        ClientLogUploadTaskRecord,
+        "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt" | "uploadedFileName" | "uploadedFilePath" | "uploadedFileSizeBytes" | "uploadedLineCount" | "failedAt" | "failureReason"
+      >
+    >,
   ): void {
     const task = this.findClientLogUploadTask(taskId);
     if (!task) {
@@ -360,6 +365,24 @@ export class InMemoryDatabase extends ApplicationDatabase {
     }
     if ("uploadedAt" in patch) {
       task.uploadedAt = patch.uploadedAt;
+    }
+    if ("uploadedFileName" in patch) {
+      task.uploadedFileName = patch.uploadedFileName;
+    }
+    if ("uploadedFilePath" in patch) {
+      task.uploadedFilePath = patch.uploadedFilePath;
+    }
+    if ("uploadedFileSizeBytes" in patch) {
+      task.uploadedFileSizeBytes = patch.uploadedFileSizeBytes;
+    }
+    if ("uploadedLineCount" in patch) {
+      task.uploadedLineCount = patch.uploadedLineCount;
+    }
+    if ("failedAt" in patch) {
+      task.failedAt = patch.failedAt;
+    }
+    if ("failureReason" in patch) {
+      task.failureReason = patch.failureReason;
     }
   }
 

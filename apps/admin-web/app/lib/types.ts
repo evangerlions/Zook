@@ -102,19 +102,34 @@ export interface AdminRemoteLogPullTaskSummary {
   userId: string;
   did: string;
   keyId: string;
-  status: "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED";
+  status: "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED" | "FAILED";
   fromTsMs?: number;
   toTsMs?: number;
   maxLines?: number;
   maxBytes?: number;
   claimExpireAt?: string;
   uploadedAt?: string;
+  uploadedFileName?: string;
+  uploadedFileSizeBytes?: number;
+  uploadedLineCount?: number;
+  failedAt?: string;
+  failureReason?: string;
   createdAt: string;
 }
 
 export interface AdminRemoteLogPullTaskListDocument {
   app: AdminAppSummary;
   items: AdminRemoteLogPullTaskSummary[];
+}
+
+export interface AdminRemoteLogPullTaskFileDocument {
+  appId: string;
+  taskId: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  lineCount?: number;
+  content: string;
 }
 
 export interface EmailServiceTemplateConfig {
