@@ -23,7 +23,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   setup_turn: {
     taskType: "setup_turn",
     kind: "chat",
-    defaultModelKey: "novel-reasoning",
+    defaultModelKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 2000,
     responseMode: "json",
@@ -31,23 +31,23 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   blueprint_gen: {
     taskType: "blueprint_gen",
     kind: "chat",
-    defaultModelKey: "novel-creative",
+    defaultModelKey: "ainovel-free-creative",
     defaultTemperature: 0.7,
-    defaultMaxTokens: 4000,
+    defaultMaxTokens: 2200,
     responseMode: "text",
   },
   chapter1_draft_gen: {
     taskType: "chapter1_draft_gen",
     kind: "chat",
-    defaultModelKey: "novel-creative",
+    defaultModelKey: "ainovel-free-creative",
     defaultTemperature: 0.7,
-    defaultMaxTokens: 4000,
+    defaultMaxTokens: 2600,
     responseMode: "text",
   },
   chapter1_critic: {
     taskType: "chapter1_critic",
     kind: "chat",
-    defaultModelKey: "novel-reasoning",
+    defaultModelKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 1600,
     responseMode: "json",
@@ -55,7 +55,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   fact_extract: {
     taskType: "fact_extract",
     kind: "chat",
-    defaultModelKey: "novel-structured",
+    defaultModelKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 2400,
     responseMode: "json",
@@ -63,7 +63,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   episode_extract: {
     taskType: "episode_extract",
     kind: "chat",
-    defaultModelKey: "novel-structured",
+    defaultModelKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 2400,
     responseMode: "json",
@@ -71,7 +71,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   continue_chapter: {
     taskType: "continue_chapter",
     kind: "chat",
-    defaultModelKey: "novel-creative",
+    defaultModelKey: "ainovel-free-creative",
     defaultTemperature: 0.65,
     defaultMaxTokens: 4000,
     responseMode: "text",
@@ -79,7 +79,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   chapter_transition: {
     taskType: "chapter_transition",
     kind: "chat",
-    defaultModelKey: "novel-reasoning",
+    defaultModelKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 2200,
     responseMode: "json",
@@ -87,7 +87,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   chapter2_planner: {
     taskType: "chapter2_planner",
     kind: "chat",
-    defaultModelKey: "novel-reasoning",
+    defaultModelKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 2400,
     responseMode: "json",
@@ -95,7 +95,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   chapter2_draft_gen: {
     taskType: "chapter2_draft_gen",
     kind: "chat",
-    defaultModelKey: "novel-creative",
+    defaultModelKey: "ainovel-free-creative",
     defaultTemperature: 0.65,
     defaultMaxTokens: 4000,
     responseMode: "text",
@@ -106,25 +106,25 @@ const EMBEDDING_SCENES: Record<string, AiNovelEmbeddingScene> = {
   fact_embed: {
     taskType: "fact_embed",
     kind: "embedding",
-    defaultModelKey: "novel-embedding",
+    defaultModelKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   episode_embed: {
     taskType: "episode_embed",
     kind: "embedding",
-    defaultModelKey: "novel-embedding",
+    defaultModelKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   summary_embed: {
     taskType: "summary_embed",
     kind: "embedding",
-    defaultModelKey: "novel-embedding",
+    defaultModelKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   query_memory_embed: {
     taskType: "query_memory_embed",
     kind: "embedding",
-    defaultModelKey: "novel-embedding",
+    defaultModelKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
 };
@@ -133,6 +133,9 @@ const CHAT_ALIASES: Record<string, string> = {
   chapter_planner: "chapter2_planner",
   chapter_draft_gen: "chapter2_draft_gen",
 };
+
+export const AI_NOVEL_CHAT_TASK_TYPES = Object.freeze(Object.keys(CHAT_SCENES));
+export const AI_NOVEL_EMBEDDING_TASK_TYPES = Object.freeze(Object.keys(EMBEDDING_SCENES));
 
 export function resolveAiNovelChatScene(taskType: string): AiNovelChatScene {
   const normalized = normalizeTaskType(taskType);

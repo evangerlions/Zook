@@ -20,8 +20,13 @@ export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ErrorCode =
+  | "AI_DECRYPT_FAILED"
   | "AI_EMBEDDING_INPUT_INVALID"
+  | "AI_ENCRYPT_FAILED"
+  | "AI_RESPONSE_FORMAT_INVALID"
   | "AI_TASK_TYPE_NOT_SUPPORTED"
+  | "AI_UNKNOWN_KEY_ID"
+  | "AI_UNSUPPORTED_ALGORITHM"
   | "AI_UPSTREAM_BAD_GATEWAY"
   | "AI_UPSTREAM_TIMEOUT"
   | "ADMIN_AUTH_REQUIRED"
@@ -487,6 +492,30 @@ export interface AdminSensitiveOperationGrantDocument {
 }
 
 export interface AdminConfigDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  rawJson: string;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export type AiNovelModelRoutingTier = "free" | "plus" | "super_plus";
+export type AiNovelRoutingChannel = "chat" | "embedding";
+
+export interface AiNovelTierRoutingConfig {
+  chat: Record<string, string>;
+  embedding: Record<string, string>;
+}
+
+export interface AiNovelModelRoutingConfig {
+  defaultTier: AiNovelModelRoutingTier;
+  tiers: Record<AiNovelModelRoutingTier, AiNovelTierRoutingConfig>;
+}
+
+export interface AdminAiRoutingDocument {
   app: AdminAppSummary;
   configKey: string;
   rawJson: string;

@@ -7,7 +7,7 @@ import type {
   AdminAppSummary,
 } from "../shared/types.ts";
 import { maskSensitiveString, randomId } from "../shared/utils.ts";
-import type { ClientLogEncryptionKeyResolver } from "./client-log-upload.service.ts";
+import type { AesGcmEncryptionKeyResolver } from "./aes-gcm-payload-crypto.service.ts";
 
 export const APP_LOG_SECRET_CONFIG_KEY = "logs.client_upload_secret";
 export const APP_LOG_SECRET_READ_OPERATION = "app.log_secret.read";
@@ -25,7 +25,7 @@ export interface EnsureAppLogSecretResult {
   record: StoredAppLogSecret;
 }
 
-export class AppLogSecretService implements ClientLogEncryptionKeyResolver {
+export class AppLogSecretService implements AesGcmEncryptionKeyResolver {
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly kvManager: KVManager,

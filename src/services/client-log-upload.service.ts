@@ -1,4 +1,3 @@
-import { createDecipheriv } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
@@ -17,58 +16,17 @@ import type {
 import { randomId } from "../shared/utils.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { AppRemoteLogPullService } from "./app-remote-log-pull.service.ts";
+import {
+  AesGcmPayloadCryptoError,
+  AesGcmPayloadCryptoService,
+  type AesGcmEncryptionKeyResolver,
+} from "./aes-gcm-payload-crypto.service.ts";
 
 const AES_256_GCM = "aes-256-gcm";
 const NDJSON_GZIP = "ndjson+gzip";
-const GCM_NONCE_BYTES = 12;
-const GCM_TAG_BYTES = 16;
 const DEFAULT_MAX_ENCRYPTED_PAYLOAD_BYTES = 8 * 1024 * 1024;
 const DEFAULT_LOG_UPLOAD_STORAGE_DIR = ".storage/client-log-uploads";
-export interface ClientLogEncryptionKeyResolver {
-  resolveKey(keyId: string): Promise<Buffer | undefined> | Buffer | undefined;
-}
-
-export class CompositeClientLogEncryptionKeyResolver implements ClientLogEncryptionKeyResolver {
-  constructor(private readonly resolvers: ClientLogEncryptionKeyResolver[]) {}
-
-  async resolveKey(keyId: string): Promise<Buffer | undefined> {
-    for (const resolver of this.resolvers) {
-      const resolved = await resolver.resolveKey(keyId);
-      if (resolved) {
-        return resolved;
-      }
-    }
-
-    return undefined;
-  }
-}
-
-export class StaticClientLogEncryptionKeyResolver implements ClientLogEncryptionKeyResolver {
-  private readonly normalized = new Map<string, Buffer>();
-
-  constructor(keys: Record<string, string> = {}) {
-    for (const [keyId, secretBase64] of Object.entries(keys)) {
-      const normalizedKeyId = keyId.trim();
-      const normalizedSecret = secretBase64.trim();
-      if (!normalizedKeyId || !normalizedSecret) {
-        continue;
-      }
-
-      try {
-        const key = Buffer.from(normalizedSecret, "base64");
-        if (key.length === 32) {
-          this.normalized.set(normalizedKeyId, key);
-        }
-      } catch {
-        // Ignore invalid bootstrap keys and behave as if the key does not exist.
-      }
-    }
-  }
-
-  resolveKey(keyId: string): Buffer | undefined {
-    return this.normalized.get(keyId.trim());
-  }
-}
+export type ClientLogEncryptionKeyResolver = AesGcmEncryptionKeyResolver;
 
 export interface UploadClientLogsCommand {
   auth: AuthContext;
@@ -95,15 +53,19 @@ export interface AckClientLogNoDataCommand {
 }
 
 export class ClientLogUploadService {
+  private readonly cryptoService: AesGcmPayloadCryptoService;
+
   constructor(
     private readonly database: ApplicationDatabase,
-    private readonly keyResolver: ClientLogEncryptionKeyResolver,
+    keyResolver: ClientLogEncryptionKeyResolver,
     private readonly remoteLogPullService: AppRemoteLogPullService,
     private readonly options: {
       maxEncryptedPayloadBytes?: number;
       storageDir?: string;
     } = {},
-  ) {}
+  ) {
+    this.cryptoService = new AesGcmPayloadCryptoService(keyResolver);
+  }
 
   async getPolicy(auth: AuthContext): Promise<LogPolicyResult> {
     const settings = await this.remoteLogPullService.getCurrentConfig(auth.appId);
@@ -168,9 +130,7 @@ export class ClientLogUploadService {
       payloadTooLarge("LOG_PAYLOAD_TOO_LARGE", "Encrypted log payload exceeds the allowed size.");
     }
 
-    const nonce = this.decodeNonce(command.nonceBase64);
-    const key = await this.resolveKey(command.keyId);
-    const compressed = this.decryptPayload(command.body, key, nonce);
+    const compressed = await this.decryptPayload(command);
     const ndjsonBuffer = this.decompressPayload(compressed);
     const parsedLines = this.parseNdjson(ndjsonBuffer);
     const evaluated = this.evaluateLines(parsedLines, task);
@@ -376,21 +336,6 @@ export class ClientLogUploadService {
     return new Date(task.claimExpireAt).getTime() <= now.getTime();
   }
 
-  private decodeNonce(value: string): Buffer {
-    let nonce: Buffer;
-    try {
-      nonce = Buffer.from(value, "base64");
-    } catch {
-      badRequest("REQ_INVALID_HEADER", "X-Log-Nonce must be valid base64.");
-    }
-
-    if (nonce.length !== GCM_NONCE_BYTES) {
-      badRequest("REQ_INVALID_HEADER", "X-Log-Nonce must decode to 12 bytes.");
-    }
-
-    return nonce;
-  }
-
   private async persistTaskFile(
     task: ClientLogUploadTaskRecord,
     ndjsonBuffer: Buffer,
@@ -410,29 +355,36 @@ export class ClientLogUploadService {
     };
   }
 
-  private async resolveKey(keyId: string): Promise<Buffer> {
-    const resolved = await this.keyResolver.resolveKey(keyId);
-    if (!resolved || resolved.length !== 32) {
-      badRequest("LOG_DECRYPT_FAILED", "Unable to decrypt the log payload.");
+  private async decryptPayload(command: UploadClientLogsCommand): Promise<Buffer> {
+    try {
+      return await this.cryptoService.decrypt({
+        algorithm: command.encryption,
+        keyId: command.keyId,
+        nonceBase64: command.nonceBase64,
+        ciphertext: command.body,
+      });
+    } catch (error) {
+      this.mapCryptoError(error);
     }
-
-    return resolved;
   }
 
-  private decryptPayload(body: Buffer, key: Buffer, nonce: Buffer): Buffer {
-    if (body.length <= GCM_TAG_BYTES) {
-      badRequest("REQ_INVALID_BODY", "Encrypted log payload is too small.");
+  private mapCryptoError(error: unknown): never {
+    if (!(error instanceof AesGcmPayloadCryptoError)) {
+      throw error;
     }
 
-    const ciphertext = body.subarray(0, body.length - GCM_TAG_BYTES);
-    const authTag = body.subarray(body.length - GCM_TAG_BYTES);
-
-    try {
-      const decipher = createDecipheriv(AES_256_GCM, key, nonce);
-      decipher.setAuthTag(authTag);
-      return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-    } catch {
-      badRequest("LOG_DECRYPT_FAILED", "Unable to decrypt the log payload.");
+    switch (error.code) {
+      case "UNSUPPORTED_ALGORITHM":
+        badRequest("LOG_UNSUPPORTED_ENCRYPTION", "X-Log-Enc must be aes-256-gcm.");
+      case "INVALID_NONCE":
+        badRequest("REQ_INVALID_HEADER", "X-Log-Nonce must decode to 12 bytes.");
+      case "PAYLOAD_TOO_SMALL":
+        badRequest("REQ_INVALID_BODY", "Encrypted log payload is too small.");
+      case "UNKNOWN_KEY":
+      case "DECRYPT_FAILED":
+      case "ENCRYPT_FAILED":
+      case "INVALID_ENVELOPE":
+        badRequest("LOG_DECRYPT_FAILED", "Unable to decrypt the log payload.");
     }
   }
 

@@ -198,8 +198,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/upload` | 上传 AES-GCM + gzip + NDJSON 客户端日志 |
 | `POST` | `/api/v1/notifications/send` | 发送通知任务 |
 | `GET` | `/api/v1/{productKey}/public/config` | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config` |
-| `POST` | `/api/v1/ai_novel/ai/chat-completions` | AINovel chat 薄代理，按 `taskType` 选择服务端 scene 与逻辑模型 |
-| `POST` | `/api/v1/ai_novel/ai/embeddings` | AINovel embeddings 薄代理，按 `taskType` 选择服务端 scene 与逻辑模型 |
+| `POST` | `/api/v1/ai_novel/ai/chat-completions` | AINovel chat 能力接口，需要 Bearer 鉴权，按 `taskType` 选择服务端 scene 与逻辑模型 |
+| `POST` | `/api/v1/ai_novel/ai/embeddings` | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `taskType` 选择服务端 scene 与逻辑模型 |
 
 说明：
 
@@ -239,12 +239,16 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
    - `false`：当前仍是 `email-code-only` 账号，前端应展示“设置密码”
    - `true`：前端应展示“修改密码”
 13. `POST /api/v1/auth/logout` 当 `scope = "all"` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
-14. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
-15. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
-16. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Did` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
-17. 服务端不再把上传日志逐行落库；上传成功后会把解密解压后的 `.ndjson` 文件直接存到本地，并在 admin 的 `Remote Log Pull` 页面里提供“查看日志 / 下载原始文件”。日志浏览解析发生在前端，不做服务端分页。
-18. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
-19. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点“查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
+14. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
+15. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
+16. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
+17. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
+18. 一旦 AI 请求解密成功，业务成功结果与业务错误都会加密返回；客户端需要先解密，再读取其中的标准 `code + message + data + requestId` 响应包。
+19. **仅 local 联调环境**允许在 AI 加密 envelope 外层额外挂一个明文字段用于第 8 人员排查：客户端请求体可带 `localDebugRequestPlaintext`，服务端 chat-completion 成功响应可带 `localDebugResponseText`。这两个字段都只是调试镜像，前后端业务逻辑都不得依赖它们。
+20. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Did` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
+21. 服务端不再把上传日志逐行落库；上传成功后会把解密解压后的 `.ndjson` 文件直接存到本地，并在 admin 的 `Remote Log Pull` 页面里提供“查看日志 / 下载原始文件”。日志浏览解析发生在前端，不做服务端分页。
+22. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
+23. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点“查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
 
 ## 8. 统一响应格式
 

@@ -1,12 +1,14 @@
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type { LLMMessage, LLMManager } from "../../services/llm-manager.ts";
 import type { EmbeddingManager, EmbeddingVector } from "../../services/embedding-manager.ts";
+import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "../../services/app-ai-routing-config.service.ts";
 import { resolveAiNovelChatScene, resolveAiNovelEmbeddingScene } from "./ai-novel-llm-scenes.ts";
 
 export interface AiNovelChatResponse {
   taskType: string;
   completion: {
     modelKey: string;
+    provider: string;
     providerModel: string;
     content: string;
     finishReason?: string;
@@ -17,6 +19,7 @@ export interface AiNovelChatResponse {
 export interface AiNovelEmbeddingsResponse {
   taskType: string;
   modelKey: string;
+  provider: string;
   providerModel: string;
   vectors: EmbeddingVector[];
   providerRequestId?: string;
@@ -26,6 +29,7 @@ export class AiNovelLlmService {
   constructor(
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
+    private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
   ) {}
 
   async createChatCompletion(body: Record<string, unknown>): Promise<AiNovelChatResponse> {
@@ -35,13 +39,14 @@ export class AiNovelLlmService {
 
     const taskType = this.requireTaskType(body);
     const scene = resolveAiNovelChatScene(taskType);
+    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(AI_NOVEL_APP_ID, "chat", scene.taskType, "free");
     const messages = this.normalizeMessages(body.messages);
     const temperature = this.optionalNumber(body.temperature, "temperature") ?? scene.defaultTemperature;
     const maxTokens = this.optionalPositiveInteger(body.maxTokens, "maxTokens") ?? scene.defaultMaxTokens;
 
     try {
       const result = await this.llmManager.complete({
-        modelKey: scene.defaultModelKey,
+        modelKey,
         messages,
         temperature,
         maxTokens,
@@ -51,6 +56,7 @@ export class AiNovelLlmService {
         taskType: scene.taskType,
         completion: {
           modelKey: result.modelKey,
+          provider: result.provider,
           providerModel: result.providerModel,
           content: result.text,
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
@@ -69,17 +75,24 @@ export class AiNovelLlmService {
 
     const taskType = this.requireTaskType(body);
     const scene = resolveAiNovelEmbeddingScene(taskType);
+    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
+      AI_NOVEL_APP_ID,
+      "embedding",
+      scene.taskType,
+      "free",
+    );
     const input = this.normalizeEmbeddingInput(body.input);
 
     try {
       const result = await this.embeddingManager.embed({
-        modelKey: scene.defaultModelKey,
+        modelKey,
         input,
       });
 
       return {
         taskType: scene.taskType,
         modelKey: result.modelKey,
+        provider: result.provider,
         providerModel: result.providerModel,
         vectors: result.vectors,
         ...(result.providerRequestId ? { providerRequestId: result.providerRequestId } : {}),

@@ -1,5 +1,6 @@
 import type {
   AdminAppSummary,
+  AdminAiRoutingDocument,
   AdminAppLogSecretRevealDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
@@ -225,6 +226,34 @@ export const adminApi = {
   },
   getConfig(appId: string) {
     return requestJson<AdminConfigDocument>(adminPath(`/apps/${encodeURIComponent(appId)}/config`));
+  },
+  getAiRouting(appId: string) {
+    return requestJson<AdminAiRoutingDocument>(adminPath(`/apps/${encodeURIComponent(appId)}/ai-routing`));
+  },
+  getAiRoutingRevision(appId: string, revision: number) {
+    return requestJson<AdminAiRoutingDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/ai-routing/revisions/${revision}`),
+    );
+  },
+  updateAiRouting(appId: string, rawJson: string, desc?: string) {
+    return requestJson<AdminAiRoutingDocument>(adminPath(`/apps/${encodeURIComponent(appId)}/ai-routing`), {
+      method: "PUT",
+      body: {
+        rawJson,
+        desc: desc || undefined,
+      },
+    });
+  },
+  restoreAiRouting(appId: string, revision: number, desc?: string) {
+    return requestJson<AdminAiRoutingDocument>(
+      adminPath(`/apps/${encodeURIComponent(appId)}/ai-routing/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
+      },
+    );
   },
   getConfigRevision(appId: string, revision: number) {
     return requestJson<AdminConfigDocument>(

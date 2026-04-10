@@ -1,10 +1,50 @@
 import assert from "node:assert/strict";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
 import type { EmbeddingProvider, EmbeddingResult } from "../../src/services/embedding-manager.ts";
 import type { LLMCompletionResult, LLMProvider, LLMStreamEvent } from "../../src/services/llm-manager.ts";
+import { AI_NOVEL_MODEL_ROUTING_CONFIG_KEY } from "../../src/services/app-ai-routing-config.service.ts";
+
+const AI_TEST_KEY_ID = "logk_d5872ff066b8450b9aeed1c53f0df7f1";
+
+function encodeAiKeyBase64(): { raw: Buffer; base64: string } {
+  const raw = Buffer.from("0123456789abcdef0123456789abcdef", "utf8");
+  return {
+    raw,
+    base64: raw.toString("base64"),
+  };
+}
+
+function encryptAiPayload(payload: Record<string, unknown>, key: Buffer) {
+  const plaintext = Buffer.from(JSON.stringify(payload), "utf8");
+  const nonce = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", key, nonce);
+  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const tag = cipher.getAuthTag();
+
+  return {
+    encrypted: true,
+    keyId: AI_TEST_KEY_ID,
+    algorithm: "aes-256-gcm",
+    nonceBase64: nonce.toString("base64"),
+    ciphertextBase64: Buffer.concat([ciphertext, tag]).toString("base64"),
+  };
+}
+
+function decryptAiPayload(envelope: Record<string, unknown>, key: Buffer): Record<string, unknown> {
+  const nonce = Buffer.from(String(envelope.nonceBase64), "base64");
+  const payload = Buffer.from(String(envelope.ciphertextBase64), "base64");
+  const ciphertext = payload.subarray(0, payload.length - 16);
+  const authTag = payload.subarray(payload.length - 16);
+  const decipher = createDecipheriv("aes-256-gcm", key, nonce);
+  decipher.setAuthTag(authTag);
+  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  return JSON.parse(plaintext.toString("utf8")) as Record<string, unknown>;
+}
 
 async function createAiNovelRuntime() {
+  const aiKey = encodeAiKeyBase64();
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -51,11 +91,14 @@ async function createAiNovelRuntime() {
     embeddingProviders: {
       bailian: embeddingProvider,
     },
+    logEncryptionKeys: {
+      [AI_TEST_KEY_ID]: aiKey.base64,
+    },
   });
 
   await runtime.services.commonLlmConfigService.updateConfig({
     enabled: true,
-    defaultModelKey: "novel-creative",
+    defaultModelKey: "ainovel-free-creative",
     providers: [
       {
         key: "bailian",
@@ -68,50 +111,106 @@ async function createAiNovelRuntime() {
     ],
     models: [
       {
-        key: "novel-creative",
-        label: "Novel Creative",
+        key: "ainovel-free-creative",
+        label: "AINovel Free Creative",
         kind: "chat",
         strategy: "fixed",
         routes: [
           {
             provider: "bailian",
-            providerModel: "kimi/kimi-k2.5",
+            providerModel: "qwen-plus",
             enabled: true,
             weight: 100,
           },
         ],
       },
       {
-        key: "novel-reasoning",
-        label: "Novel Reasoning",
+        key: "ainovel-free-reasoning",
+        label: "AINovel Free Reasoning",
         kind: "chat",
         strategy: "fixed",
         routes: [
           {
             provider: "bailian",
-            providerModel: "kimi/kimi-k2.5",
+            providerModel: "qwen3.5-flash",
             enabled: true,
             weight: 100,
           },
         ],
       },
       {
-        key: "novel-structured",
-        label: "Novel Structured",
+        key: "ainovel-plus-creative",
+        label: "AINovel Plus Creative",
         kind: "chat",
         strategy: "fixed",
         routes: [
           {
             provider: "bailian",
-            providerModel: "kimi/kimi-k2.5",
+            providerModel: "siliconflow/deepseek-v3.2",
             enabled: true,
             weight: 100,
           },
         ],
       },
       {
-        key: "novel-embedding",
-        label: "Novel Embedding",
+        key: "ainovel-plus-reasoning",
+        label: "AINovel Plus Reasoning",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "ainovel-super-creative",
+        label: "AINovel Super Creative",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "minimax-m2.7",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "ainovel-super-reasoning",
+        label: "AINovel Super Reasoning",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "glm-5",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "ainovel-lowcost-structured",
+        label: "AINovel Low-cost Structured",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.5-flash",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "ainovel-embedding-default",
+        label: "AINovel Embedding Default",
         kind: "embedding",
         strategy: "fixed",
         routes: [
@@ -126,11 +225,14 @@ async function createAiNovelRuntime() {
     ],
   });
 
-  return runtime;
+  return {
+    runtime,
+    aiKey: aiKey.raw,
+  };
 }
 
-test("ai_novel chat completions route resolves taskType to scene model selection", async () => {
-  const runtime = await createAiNovelRuntime();
+test("ai_novel chat completions route requires bearer auth", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -138,96 +240,162 @@ test("ai_novel chat completions route resolves taskType to scene model selection
     headers: {
       "X-App-Id": "ai_novel",
     },
-    body: {
-      taskType: "continue_chapter",
-      messages: [
-        {
-          role: "system",
-          content: "你是一个续写器。",
-        },
-        {
-          role: "user",
-          content: "请承接上一章继续写。",
-        },
-      ],
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 401);
+  assert.equal(response.body.code, "AUTH_BEARER_REQUIRED");
+});
+
+test("ai_novel chat completions route resolves taskType to scene model selection", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
     },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        messages: [
+          {
+            role: "system",
+            content: "你是一个续写器。",
+          },
+          {
+            role: "user",
+            content: "请承接上一章继续写。",
+          },
+        ],
+      },
+      aiKey,
+    ),
   });
 
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.data.taskType, "continue_chapter");
-  assert.equal(response.body.data.completion.modelKey, "novel-creative");
-  assert.equal(response.body.data.completion.providerModel, "kimi/kimi-k2.5");
-  assert.equal(response.body.data.completion.providerRequestId, "chat-req-001");
+  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  assert.equal(decrypted.code, "OK");
+  const data = (decrypted.data ?? {}) as Record<string, unknown>;
+  assert.equal(data.taskType, "continue_chapter");
+  const completion = (data.completion ?? {}) as Record<string, unknown>;
+  assert.equal(completion.modelKey, "ainovel-free-creative");
+  assert.equal(completion.provider, "bailian");
+  assert.equal(completion.providerModel, "qwen-plus");
+  assert.equal(completion.providerRequestId, "chat-req-001");
+  assert.equal(
+    (response.body as Record<string, unknown>).localDebugResponseText,
+    "第八十一回……",
+  );
 });
 
 test("ai_novel embeddings route resolves taskType to embedding model selection", async () => {
-  const runtime = await createAiNovelRuntime();
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
 
   const response = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai/embeddings",
     headers: {
+      authorization: `Bearer ${token}`,
       "X-App-Id": "ai_novel",
     },
-    body: {
-      taskType: "summary_embed",
-      input: [
-        "第一段摘要",
-        "第二段摘要",
-      ],
-    },
+    body: encryptAiPayload(
+      {
+        taskType: "summary_embed",
+        input: [
+          "第一段摘要",
+          "第二段摘要",
+        ],
+      },
+      aiKey,
+    ),
   });
 
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.data.taskType, "summary_embed");
-  assert.equal(response.body.data.modelKey, "novel-embedding");
-  assert.equal(response.body.data.providerModel, "text-embedding-v4");
-  assert.equal(response.body.data.providerRequestId, "emb-req-001");
-  assert.equal(response.body.data.vectors.length, 2);
+  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  assert.equal(decrypted.code, "OK");
+  const data = (decrypted.data ?? {}) as Record<string, unknown>;
+  assert.equal(data.taskType, "summary_embed");
+  assert.equal(data.modelKey, "ainovel-embedding-default");
+  assert.equal(data.provider, "bailian");
+  assert.equal(data.providerModel, "text-embedding-v4");
+  assert.equal(data.providerRequestId, "emb-req-001");
+  assert.equal(((data.vectors ?? []) as unknown[]).length, 2);
 });
 
-test("ai_novel routes reject direct model overrides and unsupported task types", async () => {
-  const runtime = await createAiNovelRuntime();
+test("ai_novel routes return encrypted business errors after request decryption", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
 
   const invalidModelResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai/chat-completions",
     headers: {
+      authorization: `Bearer ${token}`,
       "X-App-Id": "ai_novel",
     },
-    body: {
-      taskType: "continue_chapter",
-      model: "glm-5",
-      messages: [
-        {
-          role: "user",
-          content: "hello",
-        },
-      ],
-    },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        model: "glm-5",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
   });
 
-  assert.equal(invalidModelResponse.statusCode, 400);
-  assert.equal(invalidModelResponse.body.code, "REQ_INVALID_BODY");
+  assert.equal(invalidModelResponse.statusCode, 200);
+  assert.equal(
+    decryptAiPayload(invalidModelResponse.body as Record<string, unknown>, aiKey).code,
+    "REQ_INVALID_BODY",
+  );
 
   const unsupportedTaskResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai/embeddings",
     headers: {
+      authorization: `Bearer ${token}`,
       "X-App-Id": "ai_novel",
     },
-    body: {
-      taskType: "unknown_embed",
-      input: ["hello"],
-    },
+    body: encryptAiPayload(
+      {
+        taskType: "unknown_embed",
+        input: ["hello"],
+      },
+      aiKey,
+    ),
   });
 
-  assert.equal(unsupportedTaskResponse.statusCode, 400);
-  assert.equal(unsupportedTaskResponse.body.code, "AI_TASK_TYPE_NOT_SUPPORTED");
+  assert.equal(unsupportedTaskResponse.statusCode, 200);
+  assert.equal(
+    decryptAiPayload(unsupportedTaskResponse.body as Record<string, unknown>, aiKey).code,
+    "AI_TASK_TYPE_NOT_SUPPORTED",
+  );
 });
 
 test("ai_novel routes enforce app scope when bearer auth is present", async () => {
-  const runtime = await createAiNovelRuntime();
+  const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "app_a");
 
   const response = await runtime.app.handle({
@@ -237,7 +405,29 @@ test("ai_novel routes enforce app scope when bearer auth is present", async () =
       authorization: `Bearer ${token}`,
       "X-App-Id": "ai_novel",
     },
-    body: {
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
+});
+
+test("ai_novel routes reject unknown encryption keys before entering AI flow", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const body = encryptAiPayload(
+    {
       taskType: "continue_chapter",
       messages: [
         {
@@ -246,8 +436,162 @@ test("ai_novel routes enforce app scope when bearer auth is present", async () =
         },
       ],
     },
+    aiKey,
+  );
+  body.keyId = "logk_unknown";
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body,
   });
 
-  assert.equal(response.statusCode, 403);
-  assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.code, "AI_UNKNOWN_KEY_ID");
+});
+
+test("ai_novel routes can override model routing from admin config", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+
+  await runtime.services.appAiRoutingConfigService.updateConfig(
+    "ai_novel",
+    JSON.stringify({
+      defaultTier: "free",
+      tiers: {
+        free: {
+          chat: {
+            setup_turn: "ainovel-plus-reasoning",
+            blueprint_gen: "ainovel-plus-creative",
+            chapter1_draft_gen: "ainovel-plus-creative",
+            chapter1_critic: "ainovel-plus-reasoning",
+            fact_extract: "ainovel-lowcost-structured",
+            episode_extract: "ainovel-lowcost-structured",
+            continue_chapter: "ainovel-plus-creative",
+            chapter_transition: "ainovel-plus-reasoning",
+            chapter2_planner: "ainovel-plus-reasoning",
+            chapter2_draft_gen: "ainovel-plus-creative",
+          },
+          embedding: {
+            fact_embed: "ainovel-embedding-default",
+            episode_embed: "ainovel-embedding-default",
+            summary_embed: "ainovel-embedding-default",
+            query_memory_embed: "ainovel-embedding-default",
+          },
+        },
+        plus: {
+          chat: {
+            setup_turn: "ainovel-plus-reasoning",
+            blueprint_gen: "ainovel-plus-creative",
+            chapter1_draft_gen: "ainovel-plus-creative",
+            chapter1_critic: "ainovel-plus-reasoning",
+            fact_extract: "ainovel-lowcost-structured",
+            episode_extract: "ainovel-lowcost-structured",
+            continue_chapter: "ainovel-plus-creative",
+            chapter_transition: "ainovel-plus-reasoning",
+            chapter2_planner: "ainovel-plus-reasoning",
+            chapter2_draft_gen: "ainovel-plus-creative",
+          },
+          embedding: {
+            fact_embed: "ainovel-embedding-default",
+            episode_embed: "ainovel-embedding-default",
+            summary_embed: "ainovel-embedding-default",
+            query_memory_embed: "ainovel-embedding-default",
+          },
+        },
+        super_plus: {
+          chat: {
+            setup_turn: "ainovel-super-reasoning",
+            blueprint_gen: "ainovel-super-creative",
+            chapter1_draft_gen: "ainovel-super-creative",
+            chapter1_critic: "ainovel-super-reasoning",
+            fact_extract: "ainovel-lowcost-structured",
+            episode_extract: "ainovel-lowcost-structured",
+            continue_chapter: "ainovel-super-creative",
+            chapter_transition: "ainovel-super-reasoning",
+            chapter2_planner: "ainovel-super-reasoning",
+            chapter2_draft_gen: "ainovel-super-creative",
+          },
+          embedding: {
+            fact_embed: "ainovel-embedding-default",
+            episode_embed: "ainovel-embedding-default",
+            summary_embed: "ainovel-embedding-default",
+            query_memory_embed: "ainovel-embedding-default",
+          },
+        },
+      },
+    }),
+    "test-override",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  const data = (decrypted.data ?? {}) as Record<string, unknown>;
+  const completion = (data.completion ?? {}) as Record<string, unknown>;
+  assert.equal(completion.modelKey, "ainovel-plus-creative");
+  assert.equal(completion.providerModel, "siliconflow/deepseek-v3.2");
+});
+
+test("ai_novel routes fail when routing mapping is missing", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const currentConfig = await runtime.services.appAiRoutingConfigService.getCurrentConfig("ai_novel");
+  delete currentConfig.tiers.free.chat.continue_chapter;
+  await runtime.services.appConfigService.setValue(
+    "ai_novel",
+    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+    JSON.stringify(currentConfig, null, 2),
+    "test-missing-route",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(
+    decryptAiPayload(response.body as Record<string, unknown>, aiKey).code,
+    "AI_UPSTREAM_BAD_GATEWAY",
+  );
 });
