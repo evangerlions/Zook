@@ -12,6 +12,7 @@ import { ApplicationDatabase } from "./infrastructure/database/application-datab
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
+import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
 import { InMemoryKVBackend, KVManager, type KVBackend } from "./infrastructure/kv/kv-manager.ts";
 import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
@@ -48,10 +49,15 @@ import {
 import { EmbeddingManager, type EmbeddingProvider } from "./services/embedding-manager.ts";
 import {
   ClientLogUploadService,
-  CompositeClientLogEncryptionKeyResolver,
-  StaticClientLogEncryptionKeyResolver,
   type ClientLogEncryptionKeyResolver,
 } from "./services/client-log-upload.service.ts";
+import {
+  AesGcmPayloadCryptoError,
+  AesGcmPayloadCryptoService,
+  CompositeAesGcmEncryptionKeyResolver,
+  StaticAesGcmEncryptionKeyResolver,
+  type AesGcmJsonEnvelope,
+} from "./services/aes-gcm-payload-crypto.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
@@ -140,7 +146,7 @@ export interface CreateApplicationOptions {
   queueBackend?: "memory" | "redis";
   queue?: JobQueue;
   queueRedisUrl?: string;
-  clientLogUploadStorageDir?: string;
+  fileStorageRoot?: string;
 }
 
 interface ResolvedAdminBasicAuth {
@@ -282,6 +288,7 @@ export class BackendApplication {
     private readonly embeddingManager: EmbeddingManager,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelLlmService: AiNovelLlmService,
+    private readonly aiPayloadCryptoService: AesGcmPayloadCryptoService,
     private readonly storageService: StorageService,
     private readonly clientLogUploadService: ClientLogUploadService,
     private readonly notificationService: NotificationService,
@@ -335,6 +342,7 @@ export class BackendApplication {
       embeddingManager: this.embeddingManager,
       llmSmokeTestService: this.llmSmokeTestService,
       aiNovelLlmService: this.aiNovelLlmService,
+      aiPayloadCryptoService: this.aiPayloadCryptoService,
       storageService: this.storageService,
       clientLogUploadService: this.clientLogUploadService,
       notificationService: this.notificationService,
@@ -2408,17 +2416,116 @@ export class BackendApplication {
   }
 
   private async handleAiNovelChatCompletions(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    await this.authenticateOptionalProductRequest(request, "ai_novel");
-    const body = this.validationPipe.asObject(request.body);
-    const result = await this.aiNovelLlmService.createChatCompletion(body);
-    return this.ok(result, request.requestId as string);
+    return this.handleEncryptedAiRequest(request, async (body) => {
+      return await this.aiNovelLlmService.createChatCompletion(body);
+    });
   }
 
   private async handleAiNovelEmbeddings(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    await this.authenticateOptionalProductRequest(request, "ai_novel");
-    const body = this.validationPipe.asObject(request.body);
-    const result = await this.aiNovelLlmService.createEmbeddings(body);
-    return this.ok(result, request.requestId as string);
+    return this.handleEncryptedAiRequest(request, async (body) => {
+      return await this.aiNovelLlmService.createEmbeddings(body);
+    });
+  }
+
+  private async handleEncryptedAiRequest(
+    request: HttpRequest,
+    handler: (body: Record<string, unknown>) => Promise<unknown>,
+  ): Promise<HttpResponse<unknown>> {
+    await this.authenticateProductRequest(request, "ai_novel");
+    const { keyId, plaintext } = await this.decryptAiRequestBody(request);
+
+    try {
+      const parsed = JSON.parse(plaintext.toString("utf8"));
+      const body = this.validationPipe.asObject(parsed);
+      const result = await handler(body);
+      return await this.encryptedAiResponse(
+        keyId,
+        {
+          code: "OK",
+          message: "success",
+          data: result,
+          requestId: request.requestId as string,
+        },
+      );
+    } catch (error) {
+      const applicationError =
+        error instanceof SyntaxError
+          ? new ApplicationError(400, "REQ_INVALID_BODY", "Decrypted AI request body must be valid JSON.")
+          : error;
+      if (!isApplicationError(applicationError)) {
+        throw error;
+      }
+
+      return await this.encryptedAiResponse(
+        keyId,
+        {
+          code: applicationError.code,
+          message: applicationError.message,
+          data: null,
+          requestId: request.requestId as string,
+        },
+      );
+    }
+  }
+
+  private async decryptAiRequestBody(
+    request: HttpRequest,
+  ): Promise<{ keyId: string; plaintext: Buffer }> {
+    const envelope = this.validationPipe.asObject(request.body);
+    let decrypted: { keyId: string; plaintext: Buffer };
+    try {
+      decrypted = await this.aiPayloadCryptoService.decryptJsonEnvelope(envelope);
+    } catch (error) {
+      this.mapAiCryptoError(error);
+    }
+
+    return decrypted;
+  }
+
+  private async encryptedAiResponse(
+    keyId: string,
+    payload: {
+      code: string;
+      message: string;
+      data: unknown;
+      requestId: string;
+    },
+  ): HttpResponse<unknown> {
+    let encrypted: AesGcmJsonEnvelope;
+    try {
+      encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
+        Buffer.from(JSON.stringify(payload), "utf8"),
+        keyId,
+      );
+    } catch (error) {
+      this.mapAiCryptoError(error);
+    }
+
+    return {
+      statusCode: 200,
+      body: encrypted as unknown as never,
+    };
+  }
+
+  private mapAiCryptoError(error: unknown): never {
+    if (!(error instanceof AesGcmPayloadCryptoError)) {
+      throw error;
+    }
+
+    switch (error.code) {
+      case "UNSUPPORTED_ALGORITHM":
+        throw new ApplicationError(400, "AI_UNSUPPORTED_ALGORITHM", "Unsupported AI encryption algorithm.");
+      case "UNKNOWN_KEY":
+        throw new ApplicationError(400, "AI_UNKNOWN_KEY_ID", "Unknown AI encryption key id.");
+      case "INVALID_ENVELOPE":
+        throw new ApplicationError(400, "REQ_INVALID_BODY", "Encrypted AI request envelope is invalid.");
+      case "INVALID_NONCE":
+      case "PAYLOAD_TOO_SMALL":
+      case "DECRYPT_FAILED":
+        throw new ApplicationError(400, "AI_DECRYPT_FAILED", "Unable to decrypt AI payload.");
+      case "ENCRYPT_FAILED":
+        throw new ApplicationError(500, "AI_ENCRYPT_FAILED", "Unable to encrypt AI response.");
+    }
   }
 
   private async handleLogsPolicy(request: HttpRequest): Promise<HttpResponse<LogPolicyResult>> {
@@ -2534,21 +2641,7 @@ export class BackendApplication {
     return auth;
   }
 
-  private async authenticateOptionalProductRequest(request: HttpRequest, appId: string) {
-    const authorization = getHeader(request.headers, "authorization");
-    if (!authorization) {
-      const explicitAppId = getHeader(request.headers, "x-app-id");
-      if (!explicitAppId) {
-        throw new ApplicationError(400, "REQ_INVALID_BODY", "X-App-Id header is required when Authorization is missing.");
-      }
-
-      if (explicitAppId !== appId) {
-        throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${appId}.`);
-      }
-
-      return undefined;
-    }
-
+  private async authenticateProductRequest(request: HttpRequest, appId: string) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     this.appAccessGuard.assertScope(appId, auth.appId);
@@ -2785,6 +2878,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService, logger);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
   const appLogSecretService = new AppLogSecretService(database, kvManager);
+  const logEncryptionKeyResolver = options.logEncryptionKeyResolver
+    ?? new CompositeAesGcmEncryptionKeyResolver([
+      new StaticAesGcmEncryptionKeyResolver(options.logEncryptionKeys),
+      appLogSecretService,
+    ]);
+  const aiPayloadCryptoService = new AesGcmPayloadCryptoService(logEncryptionKeyResolver);
   const appRemoteLogPullService = new AppRemoteLogPullService(appConfigService, database, appLogSecretService);
   await database.withExclusiveSession(async () => {
     const initializedAppLogSecrets = await appLogSecretService.initializeSecrets(await database.listAppIds());
@@ -2867,10 +2966,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmProviders,
     embeddingProviders,
   );
-  const logEncryptionKeyResolver = new CompositeClientLogEncryptionKeyResolver([
-    options.logEncryptionKeyResolver ?? new StaticClientLogEncryptionKeyResolver(options.logEncryptionKeys),
-    appLogSecretService,
-  ]);
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
@@ -2895,14 +2990,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   });
   const aiNovelLlmService = new AiNovelLlmService(llmManager, embeddingManager);
   const storageService = new StorageService(database);
-  const clientLogUploadService = new ClientLogUploadService(
-    database,
-    logEncryptionKeyResolver,
-    appRemoteLogPullService,
-    {
-      storageDir: options.clientLogUploadStorageDir,
-    },
-  );
+  const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
+  const clientLogUploadService = new ClientLogUploadService(database, logEncryptionKeyResolver, appRemoteLogPullService, {
+    fileStore: persistentFileStore,
+  });
   const notificationService = new NotificationService(database, queue, logger);
   const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
   const apps = await database.listApps();
@@ -2938,6 +3029,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     embeddingManager,
     llmSmokeTestService,
     aiNovelLlmService,
+    aiPayloadCryptoService,
     storageService,
     clientLogUploadService,
     notificationService,

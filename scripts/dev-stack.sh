@@ -166,6 +166,15 @@ ensure_command lsof
 load_env_file "$ROOT_DIR/deploy_configs/local.env"
 load_env_file "$ROOT_DIR/.env.local"
 
+APP_RUN_DATA_DIR="/var/lib/zook/appRunData"
+if [[ ! -d "$APP_RUN_DATA_DIR" || ! -w "$APP_RUN_DATA_DIR" ]]; then
+  log "持久化目录不可用: $APP_RUN_DATA_DIR"
+  log "请先执行："
+  log "  sudo mkdir -p /var/lib/zook/appRunData"
+  log "  sudo chmod -R 777 /var/lib/zook/appRunData"
+  exit 1
+fi
+
 if [[ -z "${REDIS_URL:-}" ]]; then
   if REDIS_URL="$(discover_local_redis_url)"; then
     export REDIS_URL

@@ -7,6 +7,7 @@ export interface AiNovelChatResponse {
   taskType: string;
   completion: {
     modelKey: string;
+    provider: string;
     providerModel: string;
     content: string;
     finishReason?: string;
@@ -17,6 +18,7 @@ export interface AiNovelChatResponse {
 export interface AiNovelEmbeddingsResponse {
   taskType: string;
   modelKey: string;
+  provider: string;
   providerModel: string;
   vectors: EmbeddingVector[];
   providerRequestId?: string;
@@ -51,6 +53,7 @@ export class AiNovelLlmService {
         taskType: scene.taskType,
         completion: {
           modelKey: result.modelKey,
+          provider: result.provider,
           providerModel: result.providerModel,
           content: result.text,
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
@@ -80,6 +83,7 @@ export class AiNovelLlmService {
       return {
         taskType: scene.taskType,
         modelKey: result.modelKey,
+        provider: result.provider,
         providerModel: result.providerModel,
         vectors: result.vectors,
         ...(result.providerRequestId ? { providerRequestId: result.providerRequestId } : {}),

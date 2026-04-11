@@ -20,8 +20,13 @@ export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ErrorCode =
+  | "AI_DECRYPT_FAILED"
   | "AI_EMBEDDING_INPUT_INVALID"
+  | "AI_ENCRYPT_FAILED"
+  | "AI_RESPONSE_FORMAT_INVALID"
   | "AI_TASK_TYPE_NOT_SUPPORTED"
+  | "AI_UNKNOWN_KEY_ID"
+  | "AI_UNSUPPORTED_ALGORITHM"
   | "AI_UPSTREAM_BAD_GATEWAY"
   | "AI_UPSTREAM_TIMEOUT"
   | "ADMIN_AUTH_REQUIRED"
