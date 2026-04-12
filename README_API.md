@@ -198,7 +198,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/upload` | 上传 AES-GCM + gzip + NDJSON 客户端日志 |
 | `POST` | `/api/v1/notifications/send` | 发送通知任务 |
 | `GET` | `/api/v1/{productKey}/public/config` | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config` |
-| `POST` | `/api/v1/ai_novel/ai/chat-completions` | AINovel chat 能力接口，需要 Bearer 鉴权，按 `taskType` 选择服务端 scene 与逻辑模型 |
+| `POST` | `/api/v1/ai_novel/ai/chat-completions` | AINovel chat 能力接口，需要 Bearer 鉴权，按 `taskType` 选择服务端 scene 与逻辑模型；解密后的 inner body 可用 `stream=true` 切到 SSE |
 | `POST` | `/api/v1/ai_novel/ai/embeddings` | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `taskType` 选择服务端 scene 与逻辑模型 |
 
 说明：

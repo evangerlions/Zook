@@ -43,6 +43,30 @@ function decryptAiPayload(envelope: Record<string, unknown>, key: Buffer): Recor
   return JSON.parse(plaintext.toString("utf8")) as Record<string, unknown>;
 }
 
+async function collectSseEvents(stream: AsyncIterable<string> | undefined): Promise<Record<string, unknown>[]> {
+  if (!stream) {
+    return [];
+  }
+
+  let buffer = "";
+  const events: Record<string, unknown>[] = [];
+  for await (const chunk of stream) {
+    buffer += chunk;
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() ?? "";
+    for (const part of parts) {
+      const dataLine = part
+        .split("\n")
+        .find((line) => line.startsWith("data: "));
+      if (!dataLine) {
+        continue;
+      }
+      events.push(JSON.parse(dataLine.slice("data: ".length)) as Record<string, unknown>);
+    }
+  }
+  return events;
+}
+
 async function createAiNovelRuntime() {
   const aiKey = encodeAiKeyBase64();
   const llmProvider: LLMProvider = {
@@ -58,7 +82,24 @@ async function createAiNovelRuntime() {
     },
     async *stream(): AsyncIterable<LLMStreamEvent> {
       yield {
+        type: "content_delta",
+        text: "第八十",
+      };
+      yield {
+        type: "content_delta",
+        text: "一回……",
+      };
+      yield {
+        type: "usage",
+        usage: {
+          promptTokens: 12,
+          completionTokens: 34,
+          totalTokens: 46,
+        },
+      };
+      yield {
         type: "done",
+        finishReason: "stop",
       };
     },
   };
@@ -302,6 +343,59 @@ test("ai_novel chat completions route resolves taskType to scene model selection
     (response.body as Record<string, unknown>).localDebugResponseText,
     "第八十一回……",
   );
+});
+
+test("ai_novel chat completions route supports encrypted SSE streaming", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        stream: true,
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.contentType, "text/event-stream; charset=utf-8");
+  const events = await collectSseEvents(response.streamBody);
+  assert.equal(events.length, 4);
+
+  const decryptedEvents = events.map((event) => decryptAiPayload(event, aiKey));
+  assert.deepEqual(
+    decryptedEvents.map((event) => (event.data as Record<string, unknown>).type),
+    ["content_delta", "content_delta", "usage", "done"],
+  );
+  assert.equal(
+    ((decryptedEvents[0]?.data as Record<string, unknown>).text ?? "").toString(),
+    "第八十",
+  );
+  assert.equal(
+    ((decryptedEvents[1]?.data as Record<string, unknown>).text ?? "").toString(),
+    "一回……",
+  );
+  const doneCompletion = ((decryptedEvents[3]?.data as Record<string, unknown>).completion ?? {}) as Record<
+    string,
+    unknown
+  >;
+  assert.equal(doneCompletion.modelKey, "ainovel-free-creative");
+  assert.equal(doneCompletion.content, "第八十一回……");
 });
 
 test("ai_novel embeddings route resolves taskType to embedding model selection", async () => {

@@ -2529,9 +2529,58 @@ export class BackendApplication {
   }
 
   private async handleAiNovelChatCompletions(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    return this.handleEncryptedAiRequest(request, async (body) => {
-      return await this.aiNovelLlmService.createChatCompletion(body);
-    });
+    await this.authenticateProductRequest(request, "ai_novel");
+    const { keyId, plaintext } = await this.decryptAiRequestBody(request);
+
+    try {
+      const parsed = JSON.parse(plaintext.toString("utf8"));
+      const body = this.validationPipe.asObject(parsed);
+      const stream = body.stream === true;
+      if (!stream && body.stream !== undefined && body.stream !== false) {
+        throw new ApplicationError(400, "REQ_INVALID_BODY", "stream must be a boolean when provided.");
+      }
+
+      if (stream) {
+        return this.encryptedAiStreamResponse(
+          request,
+          keyId,
+          this.aiNovelLlmService.createChatCompletionStream(body),
+        );
+      }
+
+      const result = await this.aiNovelLlmService.createChatCompletion(body);
+      const localDebugResponseText = this.extractLocalAiDebugResponseText(result);
+      return await this.encryptedAiResponse(
+        request,
+        keyId,
+        {
+          code: "OK",
+          message: "success",
+          data: result,
+          requestId: request.requestId as string,
+        },
+        localDebugResponseText,
+      );
+    } catch (error) {
+      const applicationError =
+        error instanceof SyntaxError
+          ? new ApplicationError(400, "REQ_INVALID_BODY", "Decrypted AI request body must be valid JSON.")
+          : error;
+      if (!isApplicationError(applicationError)) {
+        throw error;
+      }
+
+      return await this.encryptedAiResponse(
+        request,
+        keyId,
+        {
+          code: applicationError.code,
+          message: applicationError.message,
+          data: null,
+          requestId: request.requestId as string,
+        },
+      );
+    }
   }
 
   private async handleAiNovelEmbeddings(request: HttpRequest): Promise<HttpResponse<unknown>> {
@@ -2629,6 +2678,90 @@ export class BackendApplication {
             : {}),
       } as unknown as never,
     };
+  }
+
+  private encryptedAiStreamResponse(
+    request: HttpRequest,
+    keyId: string,
+    stream: AsyncIterable<unknown>,
+  ): HttpResponse<unknown> {
+    const requestId = request.requestId as string;
+    const shouldExposeLocalDebug = this.shouldExposeLocalAiDebugFields(request);
+
+    const streamBody = this.createEncryptedAiSseStream(
+      keyId,
+      requestId,
+      stream,
+      shouldExposeLocalDebug,
+    );
+
+    return {
+      statusCode: 200,
+      contentType: "text/event-stream; charset=utf-8",
+      headers: {
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      },
+      body: {
+        code: "OK",
+        message: "streaming",
+        data: null,
+        requestId,
+      } as unknown as never,
+      streamBody,
+    };
+  }
+
+  private async *createEncryptedAiSseStream(
+    keyId: string,
+    requestId: string,
+    stream: AsyncIterable<unknown>,
+    shouldExposeLocalDebug: boolean,
+  ): AsyncIterable<string> {
+    try {
+      for await (const item of stream) {
+        const payload = {
+          code: "OK",
+          message: "success",
+          data: item,
+          requestId,
+        };
+        const encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
+          Buffer.from(JSON.stringify(payload), "utf8"),
+          keyId,
+        );
+        const localDebugResponseText = shouldExposeLocalDebug
+          ? this.extractLocalAiDebugResponseText(
+              item && typeof item === "object" && !Array.isArray(item)
+                ? { completion: (item as Record<string, unknown>).completion }
+                : undefined,
+            )
+          : undefined;
+        const eventPayload = {
+          ...encrypted,
+          ...(localDebugResponseText ? { localDebugResponseText } : {}),
+        };
+        yield `data: ${JSON.stringify(eventPayload)}\n\n`;
+      }
+    } catch (error) {
+      const applicationError = isApplicationError(error)
+        ? error
+        : new ApplicationError(500, "SYS_INTERNAL_ERROR", "An unexpected internal error occurred.");
+      const encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
+        Buffer.from(
+          JSON.stringify({
+            code: applicationError.code,
+            message: applicationError.message,
+            data: null,
+            requestId,
+          }),
+          "utf8",
+        ),
+        keyId,
+      );
+      yield `data: ${JSON.stringify(encrypted)}\n\n`;
+    }
   }
 
   private shouldExposeLocalAiDebugFields(request: HttpRequest): boolean {

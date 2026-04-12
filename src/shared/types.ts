@@ -361,6 +361,8 @@ export interface HttpResponse<T> {
   statusCode: number;
   headers?: Record<string, string>;
   body: ResultEnvelope<T>;
+  contentType?: string;
+  streamBody?: AsyncIterable<string>;
 }
 
 export interface ResultEnvelope<T> {

@@ -16,6 +16,41 @@ export interface AiNovelChatResponse {
   };
 }
 
+export type AiNovelChatStreamChunk =
+  | {
+      type: "reasoning_delta";
+      text: string;
+    }
+  | {
+      type: "content_delta";
+      text: string;
+    }
+  | {
+      type: "usage";
+      usage: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+    }
+  | {
+      type: "done";
+      completion: {
+        modelKey: string;
+        provider?: string;
+        providerModel?: string;
+        content: string;
+        reasoningText?: string;
+        finishReason?: string;
+        providerRequestId?: string;
+      };
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+    };
+
 export interface AiNovelEmbeddingsResponse {
   taskType: string;
   modelKey: string;
@@ -63,6 +98,80 @@ export class AiNovelLlmService {
           ...(result.providerRequestId ? { providerRequestId: result.providerRequestId } : {}),
         },
       };
+    } catch (error) {
+      throw this.mapUpstreamError(error);
+    }
+  }
+
+  async *createChatCompletionStream(body: Record<string, unknown>): AsyncIterable<AiNovelChatStreamChunk> {
+    if (body.model !== undefined) {
+      badRequest("REQ_INVALID_BODY", "model is not allowed. Use taskType to select the server-side scene.");
+    }
+
+    const taskType = this.requireTaskType(body);
+    const scene = resolveAiNovelChatScene(taskType);
+    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(AI_NOVEL_APP_ID, "chat", scene.taskType, "free");
+    const messages = this.normalizeMessages(body.messages);
+    const temperature = this.optionalNumber(body.temperature, "temperature") ?? scene.defaultTemperature;
+    const maxTokens = this.optionalPositiveInteger(body.maxTokens, "maxTokens") ?? scene.defaultMaxTokens;
+
+    let aggregatedContent = "";
+    let aggregatedReasoning = "";
+    let finishReason: string | undefined;
+    let usage:
+      | {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        }
+      | undefined;
+
+    try {
+      for await (const event of this.llmManager.stream({
+        modelKey,
+        messages,
+        temperature,
+        maxTokens,
+      })) {
+        if (event.type === "reasoning_delta") {
+          aggregatedReasoning += event.text;
+          yield {
+            type: "reasoning_delta",
+            text: event.text,
+          };
+          continue;
+        }
+
+        if (event.type === "content_delta") {
+          aggregatedContent += event.text;
+          yield {
+            type: "content_delta",
+            text: event.text,
+          };
+          continue;
+        }
+
+        if (event.type === "usage") {
+          usage = event.usage;
+          yield {
+            type: "usage",
+            usage: event.usage,
+          };
+          continue;
+        }
+
+        finishReason = event.finishReason;
+        yield {
+          type: "done",
+          completion: {
+            modelKey,
+            content: aggregatedContent,
+            ...(aggregatedReasoning ? { reasoningText: aggregatedReasoning } : {}),
+            ...(finishReason ? { finishReason } : {}),
+          },
+          ...(usage ? { usage } : {}),
+        };
+      }
     } catch (error) {
       throw this.mapUpstreamError(error);
     }
