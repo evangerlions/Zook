@@ -100,6 +100,53 @@ test("admin web serves built SPA routes, runtime config, and immutable assets", 
   }
 });
 
+test("admin web runtime config can derive display version from ADMIN_ASSET_VERSION when APP_VERSION is missing", async (t) => {
+  const previousAppVersion = process.env.APP_VERSION;
+  const previousAssetVersion = process.env.ADMIN_ASSET_VERSION;
+  delete process.env.APP_VERSION;
+  process.env.ADMIN_ASSET_VERSION = "release-dev-20260412_002-d7f5c0-localdeploy";
+
+  const adminServer = createAdminServer({
+    staticRoot: FIXTURE_STATIC_ROOT,
+  });
+  let admin;
+
+  try {
+    admin = await listen(adminServer);
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error.code === "EPERM" || error.code === "EACCES")
+    ) {
+      t.skip("Socket listen is not permitted in the current test sandbox.");
+      return;
+    }
+    throw error;
+  }
+
+  try {
+    const runtimeResponse = await fetch(`${admin.baseUrl}/_admin/runtime-config.js`);
+    const runtimeScript = await runtimeResponse.text();
+
+    assert.equal(runtimeResponse.status, 200);
+    assert.match(runtimeScript, /"version":"20260412_002"/);
+  } finally {
+    await admin.close();
+    if (previousAppVersion === undefined) {
+      delete process.env.APP_VERSION;
+    } else {
+      process.env.APP_VERSION = previousAppVersion;
+    }
+    if (previousAssetVersion === undefined) {
+      delete process.env.ADMIN_ASSET_VERSION;
+    } else {
+      process.env.ADMIN_ASSET_VERSION = previousAssetVersion;
+    }
+  }
+});
+
 test("admin web proxies API responses and preserves set-cookie", async (t) => {
   const upstreamServer = createServer((request, response) => {
     if (request.url === "/api/health") {

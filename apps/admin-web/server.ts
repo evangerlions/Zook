@@ -35,11 +35,31 @@ const ROOT_PACKAGE_VERSION = JSON.parse(
   readFileSync(fileURLToPath(new URL("../../package.json", import.meta.url)), "utf8"),
 ).version as string;
 
+function resolveAdminRuntimeVersion() {
+  const appVersion = process.env.APP_VERSION?.trim();
+  if (appVersion) {
+    return appVersion;
+  }
+
+  const assetVersion = process.env.ADMIN_ASSET_VERSION?.trim() ?? "";
+  const releaseMatch = assetVersion.match(/(\d{8}_\d{3})/);
+  if (releaseMatch) {
+    return releaseMatch[1];
+  }
+
+  const semverMatch = assetVersion.match(/\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?/);
+  if (semverMatch) {
+    return semverMatch[0];
+  }
+
+  return ROOT_PACKAGE_VERSION;
+}
+
 function createRuntimeConfig(options: AdminServerOptions) {
   return {
     brandName: options.brandName ?? process.env.ADMIN_BRAND_NAME ?? DEFAULT_BRAND_NAME,
     defaultAppId: options.defaultAppId ?? process.env.ADMIN_DEFAULT_APP_ID ?? "",
-    version: process.env.APP_VERSION ?? ROOT_PACKAGE_VERSION,
+    version: resolveAdminRuntimeVersion(),
     healthPath: "/api/health",
     analyticsUrl: process.env.ADMIN_ANALYTICS_URL ?? "https://analytics.youwoai.net",
     logsUrl: process.env.ADMIN_LOG_URL ?? "https://logs.youwoai.net/",
