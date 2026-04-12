@@ -15,5 +15,6 @@ db_doc/generated/*
 .claude/
 .omx/
 .omc/
+.zook/
 
 .storage/

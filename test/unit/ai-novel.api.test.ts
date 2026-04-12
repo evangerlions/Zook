@@ -67,9 +67,13 @@ async function collectSseEvents(stream: AsyncIterable<string> | undefined): Prom
   return events;
 }
 
-async function createAiNovelRuntime() {
+interface CreateAiNovelRuntimeOptions {
+  llmProvider?: LLMProvider;
+}
+
+async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
   const aiKey = encodeAiKeyBase64();
-  const llmProvider: LLMProvider = {
+  const defaultLlmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
         provider: request.model.provider,
@@ -103,6 +107,7 @@ async function createAiNovelRuntime() {
       };
     },
   };
+  const llmProvider = options.llmProvider ?? defaultLlmProvider;
 
   const embeddingProvider: EmbeddingProvider = {
     async embed(request): Promise<EmbeddingResult> {
@@ -396,6 +401,130 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   >;
   assert.equal(doneCompletion.modelKey, "ainovel-free-creative");
   assert.equal(doneCompletion.content, "第八十一回……");
+  assert.equal(doneCompletion.provider, undefined);
+  assert.equal(doneCompletion.providerModel, undefined);
+});
+
+test("ai_novel chat completions route keeps JSON envelope when stream is false", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        stream: false,
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.contentType, undefined);
+  assert.equal(response.streamBody, undefined);
+  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  assert.equal(decrypted.code, "OK");
+  const data = (decrypted.data ?? {}) as Record<string, unknown>;
+  assert.equal(data.taskType, "continue_chapter");
+});
+
+test("ai_novel chat completions route rejects non-boolean stream values", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        stream: "true",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  assert.equal(decrypted.code, "REQ_INVALID_BODY");
+  assert.equal(decrypted.message, "stream must be a boolean when provided.");
+});
+
+test("ai_novel chat completions route emits encrypted error event when stream fails mid-flight", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "content_delta",
+        text: "第八十",
+      };
+      throw new Error("upstream stream exploded");
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "continue_chapter",
+        stream: true,
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.contentType, "text/event-stream; charset=utf-8");
+  const events = await collectSseEvents(response.streamBody);
+  assert.equal(events.length, 2);
+
+  const decryptedEvents = events.map((event) => decryptAiPayload(event, aiKey));
+  assert.equal(
+    ((decryptedEvents[0]?.data as Record<string, unknown>).type ?? "").toString(),
+    "content_delta",
+  );
+  assert.equal(decryptedEvents[1]?.code, "SYS_INTERNAL_ERROR");
+  assert.equal(decryptedEvents[1]?.message, "An unexpected internal error occurred.");
 });
 
 test("ai_novel embeddings route resolves taskType to embedding model selection", async () => {

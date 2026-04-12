@@ -3156,9 +3156,9 @@ export class BackendApplication {
           keyId,
         );
         const localDebugResponseText = shouldExposeLocalDebug
-          ? this.extractLocalAiDebugResponseText(
+          ? this.extractLocalAiDebugCompletionText(
               item && typeof item === "object" && !Array.isArray(item)
-                ? { completion: (item as Record<string, unknown>).completion }
+                ? (item as Record<string, unknown>).completion
                 : undefined,
             )
           : undefined;
@@ -3203,6 +3203,10 @@ export class BackendApplication {
     }
 
     const completion = (result as Record<string, unknown>).completion;
+    return this.extractLocalAiDebugCompletionText(completion);
+  }
+
+  private extractLocalAiDebugCompletionText(completion: unknown): string | undefined {
     if (!completion || typeof completion !== "object" || Array.isArray(completion)) {
       return undefined;
     }

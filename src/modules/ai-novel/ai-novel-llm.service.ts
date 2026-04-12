@@ -37,12 +37,9 @@ export type AiNovelChatStreamChunk =
       type: "done";
       completion: {
         modelKey: string;
-        provider?: string;
-        providerModel?: string;
         content: string;
         reasoningText?: string;
         finishReason?: string;
-        providerRequestId?: string;
       };
       usage?: {
         promptTokens: number;
