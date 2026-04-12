@@ -16,10 +16,13 @@ export class AuditInterceptor {
     resourceOwnerUserId?: string;
     payload: Record<string, unknown>;
   }): Promise<void> {
+    const actorUserId = entry.actorUserId ??
+      (typeof entry.payload.adminUser === "string" ? entry.payload.adminUser : undefined);
+
     await this.database.insertAuditLog({
       id: randomId("audit"),
       appId: entry.appId,
-      actorUserId: entry.actorUserId,
+      actorUserId,
       action: entry.action,
       resourceType: entry.resourceType,
       resourceId: entry.resourceId,

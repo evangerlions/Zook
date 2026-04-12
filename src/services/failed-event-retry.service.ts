@@ -6,6 +6,8 @@ import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
  * FailedEventRetryService replays due failed_events back into the queue every retry window.
  */
 export class FailedEventRetryService {
+  private readonly maxRetryCount = 10;
+
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly queue: JobQueue,
@@ -31,8 +33,22 @@ export class FailedEventRetryService {
       } catch (error) {
         const nextRetryAt = new Date(now.getTime() + 60 * 1000).toISOString();
         const errorMessage = error instanceof Error ? error.message : "Retry enqueue failed";
+        const nextRetryCount = failedEvent.retryCount + 1;
+
+        if (nextRetryCount >= this.maxRetryCount) {
+          await this.database.deleteFailedEvent(failedEvent.id);
+          this.logger.error("failed event retry exceeded max attempts, dropping event", {
+            appId: failedEvent.appId,
+            jobId: failedEvent.id,
+            jobName: failedEvent.eventType,
+            error: errorMessage,
+            retryCount: nextRetryCount,
+          });
+          continue;
+        }
+
         await this.database.updateFailedEvent(failedEvent.id, {
-          retryCount: failedEvent.retryCount + 1,
+          retryCount: nextRetryCount,
           errorMessage,
           nextRetryAt,
         });

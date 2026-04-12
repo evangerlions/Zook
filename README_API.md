@@ -218,6 +218,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
    `password/set` 只允许当前已登录且仍为 `email-code-only` 的账号调用；如果该账号已经有密码，会返回 `409 AUTH_PASSWORD_ALREADY_SET`，此时应改走 `password/change`。
 6. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录。
 7. `POST /api/v1/auth/password/email-code` 为了避免账号探测，在邮箱不存在、账号被封或当前 app 不允许该用户走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` 阶段完成。
+8. `POST /api/v1/analytics/events/batch` 单次最多接受 `200` 条事件；超限返回 `400 ANALYTICS_BATCH_TOO_LARGE`。
 8. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
 9. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
 10. `clientType = "web"` 时，服务端会通过 `Set-Cookie` 写入 refresh token。当前 API 默认使用跨站友好的 `SameSite=None; Secure`，前端请求必须带 `credentials: "include"`；如果是同站部署，也可以通过 `AUTH_REFRESH_COOKIE_SAMESITE=Lax` 切回更保守的策略。

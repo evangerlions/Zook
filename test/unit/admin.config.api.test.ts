@@ -469,6 +469,45 @@ test("admin auth login creates a persistent session cookie backed by Redis KV", 
   assert.match(String(bootstrapResponse.body.data.sessionExpiresAt), /^20/);
 });
 
+test("admin auth login applies a rate limit for repeated attempts", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const response = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/admin/auth/login",
+      headers: {},
+      body: {
+        username: "admin",
+        password: "wrong-pass",
+      },
+      ipAddress: "203.0.113.10",
+    });
+
+    assert.equal(response.statusCode, 401);
+    assert.equal(response.body.code, "ADMIN_INVALID_CREDENTIAL");
+  }
+
+  const limitedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/auth/login",
+    headers: {},
+    body: {
+      username: "admin",
+      password: "wrong-pass",
+    },
+    ipAddress: "203.0.113.10",
+  });
+
+  assert.equal(limitedResponse.statusCode, 429);
+  assert.equal(limitedResponse.body.code, "ADMIN_RATE_LIMITED");
+});
+
 test("admin auth logout clears the session cookie and invalidates the admin session", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
@@ -507,10 +546,14 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
       username: "admin",
       password: "AdminPass123!",
     },
+    adminSensitiveOperation: {
+      secondaryPassword: "199510",
+    },
   });
   const headers = {
     authorization: createAdminAuthHeader(),
   };
+  const cookie = await loginAdmin(runtime);
 
   const createResponse = await runtime.app.handle({
     method: "POST",
@@ -558,11 +601,52 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   const blockedDeleteResponse = await runtime.app.handle({
     method: "DELETE",
     path: "/api/v1/admin/apps/app_c",
-    headers,
+    headers: {
+      cookie,
+    },
   });
 
-  assert.equal(blockedDeleteResponse.statusCode, 409);
-  assert.equal(blockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
+  assert.equal(blockedDeleteResponse.statusCode, 403);
+  assert.equal(blockedDeleteResponse.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
+
+  const requestCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "admin.app.delete",
+    },
+  });
+
+  assert.equal(requestCodeResponse.statusCode, 200);
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "admin.app.delete",
+      code: "199510",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+  assert.equal(verifyResponse.body.data.granted, true);
+
+  const stillBlockedDeleteResponse = await runtime.app.handle({
+    method: "DELETE",
+    path: "/api/v1/admin/apps/app_c",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(stillBlockedDeleteResponse.statusCode, 409);
+  assert.equal(stillBlockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
 
   const clearConfigResponse = await runtime.app.handle({
     method: "PUT",
@@ -576,19 +660,12 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
 
   assert.equal(clearConfigResponse.statusCode, 200);
 
-  const stillBlockedDeleteResponse = await runtime.app.handle({
-    method: "DELETE",
-    path: "/api/v1/admin/apps/app_a",
-    headers,
-  });
-
-  assert.equal(stillBlockedDeleteResponse.statusCode, 409);
-  assert.equal(stillBlockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
-
   const deleteResponse = await runtime.app.handle({
     method: "DELETE",
     path: "/api/v1/admin/apps/app_c",
-    headers,
+    headers: {
+      cookie,
+    },
   });
 
   assert.equal(deleteResponse.statusCode, 200);
@@ -632,10 +709,14 @@ test("admin app config reads and delete guards follow latest revision even if di
       username: "admin",
       password: "AdminPass123!",
     },
+    adminSensitiveOperation: {
+      secondaryPassword: "199510",
+    },
   });
   const headers = {
     authorization: createAdminAuthHeader(),
   };
+  const cookie = await loginAdmin(runtime);
 
   await runtime.app.handle({
     method: "POST",
@@ -684,10 +765,39 @@ test("admin app config reads and delete guards follow latest revision even if di
   assert.equal(configResponse.statusCode, 200);
   assert.equal(configResponse.body.data.rawJson, "{}");
 
+  const requestCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "admin.app.delete",
+    },
+  });
+
+  assert.equal(requestCodeResponse.statusCode, 200);
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "admin.app.delete",
+      code: "199510",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+
   const deleteResponse = await runtime.app.handle({
     method: "DELETE",
     path: "/api/v1/admin/apps/app_c",
-    headers,
+    headers: {
+      cookie,
+    },
   });
 
   assert.equal(deleteResponse.statusCode, 200);

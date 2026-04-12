@@ -3,6 +3,7 @@ import { createClient, type RedisClientType } from "redis";
 export interface KVBackend {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, ttlSeconds?: number): Promise<void>;
+  setIfNotExists(key: string, value: string, ttlSeconds?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
   assertReady(): Promise<void>;
   disconnect?(): Promise<void>;
@@ -38,6 +39,14 @@ class RedisKVBackend implements KVBackend {
     }
 
     await this.client.set(key, value);
+  }
+
+  async setIfNotExists(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    await this.ensureConnected();
+    const result = typeof ttlSeconds === "number" && ttlSeconds > 0
+      ? await this.client.set(key, value, { NX: true, EX: ttlSeconds })
+      : await this.client.set(key, value, { NX: true });
+    return result === "OK";
   }
 
   async delete(key: string): Promise<void> {
@@ -97,6 +106,26 @@ export class InMemoryKVBackend implements KVBackend {
         ? Date.now() + ttlSeconds * 1000
         : undefined,
     });
+  }
+
+  async setIfNotExists(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    const now = Date.now();
+    const existing = this.store.get(key);
+    if (existing && (!existing.expiresAt || existing.expiresAt > now)) {
+      return false;
+    }
+
+    if (existing?.expiresAt && existing.expiresAt <= now) {
+      this.store.delete(key);
+    }
+
+    this.store.set(key, {
+      value,
+      expiresAt: typeof ttlSeconds === "number" && ttlSeconds > 0
+        ? now + ttlSeconds * 1000
+        : undefined,
+    });
+    return true;
   }
 
   async delete(key: string): Promise<void> {
@@ -162,6 +191,10 @@ export class KVManager {
     await this.setString(scope, key, JSON.stringify(value), ttlSeconds);
   }
 
+  async setIfNotExists(scope: string, key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    return this.backend.setIfNotExists(this.buildStorageKey(scope, key), value, ttlSeconds);
+  }
+
   async disconnect(): Promise<void> {
     await this.backend.disconnect?.();
   }
@@ -185,7 +218,14 @@ function resolveBackend(options: KVManagerOptions): KVBackend {
 
   const redisUrl = options.redisUrl ?? process.env.REDIS_URL;
   if (!redisUrl?.trim()) {
-    return new InMemoryKVBackend();
+    const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
+    const allowInMemory = String(process.env.ALLOW_IN_MEMORY_KV ?? "").trim().toLowerCase() === "true";
+    if (appEnv === "local" || appEnv === "test" || nodeEnv === "development" || nodeEnv === "test" || allowInMemory) {
+      console.warn("[kv] REDIS_URL is empty, falling back to in-memory KV (not for production).");
+      return new InMemoryKVBackend();
+    }
+    throw new Error("REDIS_URL is required for production runtime.");
   }
 
   return new RedisKVBackend(redisUrl.trim());

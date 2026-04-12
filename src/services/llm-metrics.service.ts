@@ -15,6 +15,10 @@ import type { LLMUsage } from "./llm-manager.ts";
 const METRICS_RETENTION_HOURS = 24 * 365;
 const DEFAULT_TIMEZONE = "Asia/Shanghai";
 const METRICS_INDEX_KEY = "index";
+const METRICS_LOCK_PREFIX = "lock";
+const METRICS_LOCK_TTL_SECONDS = 5;
+const METRICS_LOCK_ATTEMPTS = 6;
+const METRICS_LOCK_BACKOFF_MS = 40;
 
 interface LlmMetricBucket {
   hour: string;
@@ -120,27 +124,29 @@ export class LlmMetricsService {
   }
 
   private async upsertBucket(scope: string, hour: string, event: LlmMetricEvent, now: Date): Promise<void> {
-    const existing = (await this.kvManager.getJson<LlmMetricBucket>(scope, hour)) ?? createEmptyBucket(hour);
-    const firstByteLatencyMs = Math.max(0, Math.round(event.firstByteLatencyMs));
-    const totalLatencyMs = Math.max(0, Math.round(event.totalLatencyMs));
-    const next: LlmMetricBucket = {
-      hour,
-      requestCount: existing.requestCount + 1,
-      successCount: existing.successCount + (event.ok ? 1 : 0),
-      failureCount: existing.failureCount + (event.ok ? 0 : 1),
-      firstByteLatencySumMs: existing.firstByteLatencySumMs + firstByteLatencyMs,
-      totalLatencySumMs: existing.totalLatencySumMs + totalLatencyMs,
-      firstByteLatencyMaxMs: Math.max(existing.firstByteLatencyMaxMs, firstByteLatencyMs),
-      totalLatencyMaxMs: Math.max(existing.totalLatencyMaxMs, totalLatencyMs),
-      promptTokens: existing.promptTokens + (event.usage?.promptTokens ?? 0),
-      completionTokens: existing.completionTokens + (event.usage?.completionTokens ?? 0),
-      totalTokens: existing.totalTokens + (event.usage?.totalTokens ?? 0),
-      firstByteLatencyDigest: [...existing.firstByteLatencyDigest, firstByteLatencyMs],
-      totalLatencyDigest: [...existing.totalLatencyDigest, totalLatencyMs],
-    };
+    await this.withBucketLock(scope, hour, async () => {
+      const existing = (await this.kvManager.getJson<LlmMetricBucket>(scope, hour)) ?? createEmptyBucket(hour);
+      const firstByteLatencyMs = Math.max(0, Math.round(event.firstByteLatencyMs));
+      const totalLatencyMs = Math.max(0, Math.round(event.totalLatencyMs));
+      const next: LlmMetricBucket = {
+        hour,
+        requestCount: existing.requestCount + 1,
+        successCount: existing.successCount + (event.ok ? 1 : 0),
+        failureCount: existing.failureCount + (event.ok ? 0 : 1),
+        firstByteLatencySumMs: existing.firstByteLatencySumMs + firstByteLatencyMs,
+        totalLatencySumMs: existing.totalLatencySumMs + totalLatencyMs,
+        firstByteLatencyMaxMs: Math.max(existing.firstByteLatencyMaxMs, firstByteLatencyMs),
+        totalLatencyMaxMs: Math.max(existing.totalLatencyMaxMs, totalLatencyMs),
+        promptTokens: existing.promptTokens + (event.usage?.promptTokens ?? 0),
+        completionTokens: existing.completionTokens + (event.usage?.completionTokens ?? 0),
+        totalTokens: existing.totalTokens + (event.usage?.totalTokens ?? 0),
+        firstByteLatencyDigest: [...existing.firstByteLatencyDigest, firstByteLatencyMs],
+        totalLatencyDigest: [...existing.totalLatencyDigest, totalLatencyMs],
+      };
 
-    await this.kvManager.setJson(scope, hour, next);
-    await this.updateIndex(scope, hour, now);
+      await this.kvManager.setJson(scope, hour, next);
+      await this.updateIndex(scope, hour, now);
+    });
   }
 
   private async readSeries(scope: string, hours: string[]): Promise<LlmHourlySeriesItem[]> {
@@ -209,6 +215,36 @@ export class LlmMetricsService {
 
   private routeScope(modelKey: string, provider: string, providerModel: string): string {
     return `llm-metrics:route:${modelKey}:${provider}:${providerModel}`;
+  }
+
+  private async withBucketLock<TValue>(scope: string, hour: string, action: () => Promise<TValue>): Promise<TValue> {
+    const lockKey = `${METRICS_LOCK_PREFIX}:${hour}`;
+    const lockToken = `${hour}:${Date.now()}:${Math.random()}`;
+
+    for (let attempt = 0; attempt < METRICS_LOCK_ATTEMPTS; attempt += 1) {
+      const acquired = await this.kvManager.setIfNotExists(scope, lockKey, lockToken, METRICS_LOCK_TTL_SECONDS);
+      if (acquired) {
+        try {
+          return await action();
+        } finally {
+          await this.releaseLock(scope, lockKey, lockToken);
+        }
+      }
+      await this.sleep(METRICS_LOCK_BACKOFF_MS * (attempt + 1));
+    }
+
+    throw new Error(`LLM metrics bucket is busy for ${scope}:${hour}.`);
+  }
+
+  private async releaseLock(scope: string, lockKey: string, lockToken: string): Promise<void> {
+    const current = await this.kvManager.getString(scope, lockKey);
+    if (current === lockToken) {
+      await this.kvManager.delete(scope, lockKey);
+    }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

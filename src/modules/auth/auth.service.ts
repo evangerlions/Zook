@@ -25,7 +25,7 @@ import type { RegistrationEmailSender } from "../../services/tencent-ses-registr
 import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
-import { DevelopmentPasswordHasher } from "./password-hasher.ts";
+import { ScryptPasswordHasher } from "./password-hasher.ts";
 import { TokenService } from "./token.service.ts";
 
 interface LoginFailureState {
@@ -62,15 +62,17 @@ export class AuthService {
   private readonly registrationWindowMs = 10 * 60 * 1000;
   private readonly registrationWindowLimit = 5;
   private readonly registrationMaxFailedCodeAttempts = 5;
-  private readonly localEmailLoginBypassEmail = "evangerlions@gmail.com";
-  private readonly localEmailLoginBypassCode = "852133";
+  private readonly localEmailLoginBypassEmail = String(process.env.LOCAL_EMAIL_LOGIN_BYPASS_EMAIL ?? "")
+    .trim()
+    .toLowerCase();
+  private readonly localEmailLoginBypassCode = String(process.env.LOCAL_EMAIL_LOGIN_BYPASS_CODE ?? "").trim();
 
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly kvManager: KVManager,
     private readonly userService: UserService,
     private readonly appRegistryService: AppRegistryService,
-    private readonly passwordHasher: DevelopmentPasswordHasher,
+    private readonly passwordHasher: ScryptPasswordHasher,
     private readonly tokenService: TokenService,
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly registrationEmailSender: RegistrationEmailSender,
@@ -788,14 +790,16 @@ export class AuthService {
   }
 
   private isLocalEmailLoginBypassEnabled(ipAddress: string): boolean {
+    if (!this.localEmailLoginBypassEmail || !this.localEmailLoginBypassCode) {
+      return false;
+    }
     const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
     const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
+    if (appEnv !== "local" && nodeEnv !== "development") {
+      return false;
+    }
     const normalizedIp = ipAddress.trim();
-    return appEnv === "local"
-      || nodeEnv === "development"
-      || normalizedIp === "127.0.0.1"
-      || normalizedIp === "::1"
-      || normalizedIp === "unknown";
+    return normalizedIp === "127.0.0.1" || normalizedIp === "::1";
   }
 
   private async consumeRegistrationCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {

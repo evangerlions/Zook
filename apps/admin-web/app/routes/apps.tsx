@@ -16,6 +16,7 @@ import { SUPPORTED_LOCALE_OPTIONS } from "../lib/locale-options";
 import type { AdminAppSummary } from "../lib/types";
 
 const APP_LOG_SECRET_READ_OPERATION = "app.log_secret.read";
+const APP_DELETE_OPERATION = "admin.app.delete";
 const REQUIRED_LOCALES = new Set(["zh-CN", "en-US"]);
 const APP_ID_PATTERN = /^[a-z0-9_]+$/;
 
@@ -68,6 +69,7 @@ export default function AppsRoute() {
   const [deletingAppId, setDeletingAppId] = useState("");
   const [copyingAppId, setCopyingAppId] = useState("");
   const [pendingSensitiveAppId, setPendingSensitiveAppId] = useState("");
+  const [pendingDeleteAppId, setPendingDeleteAppId] = useState("");
 
   function closeCreateModal() {
     setCreateModalOpen(false);
@@ -232,7 +234,7 @@ export default function AppsRoute() {
     }
   }
 
-  async function handleDeleteApp(nextAppId: string) {
+  async function handleDeleteApp(nextAppId: string, allowPrompt = true) {
     const app = apps.find((item) => item.appId === nextAppId);
     if (!app) {
       return;
@@ -248,6 +250,14 @@ export default function AppsRoute() {
       }
       setNotice(makeNotice("success", "App 已删除。"));
     } catch (error) {
+      if (
+        allowPrompt
+        && error instanceof ApiError
+        && error.code === "ADMIN_SENSITIVE_OPERATION_REQUIRED"
+      ) {
+        setPendingDeleteAppId(nextAppId);
+        return;
+      }
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
       setDeletingAppId("");
@@ -560,6 +570,21 @@ export default function AppsRoute() {
         open={Boolean(pendingSensitiveAppId)}
         operation={APP_LOG_SECRET_READ_OPERATION}
         title="验证后复制密钥"
+      />
+
+      <SensitiveOperationModal
+        description="删除 App 前需要完成二次校验，验证通过后当前会话会获得 1 小时敏感操作权限。"
+        onAuthorized={async () => {
+          if (!pendingDeleteAppId) {
+            return;
+          }
+
+          await handleDeleteApp(pendingDeleteAppId, false);
+        }}
+        onClose={() => setPendingDeleteAppId("")}
+        open={Boolean(pendingDeleteAppId)}
+        operation={APP_DELETE_OPERATION}
+        title="确认删除 App"
       />
     </section>
   );

@@ -5,6 +5,8 @@ import { ApplicationDatabase } from "../../infrastructure/database/application-d
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 
 const SUPPORTED_EVENTS = new Set(["page_view", "page_leave", "page_heartbeat"]);
+const MAX_BATCH_SIZE = 200;
+const DEFAULT_TIMEZONE_OFFSET = "+08:00";
 
 /**
  * AnalyticsService owns event ingestion and the app-scoped metric definitions from the document.
@@ -20,6 +22,10 @@ export class AnalyticsService {
     now = new Date(),
   ): Promise<{ accepted: number }> {
     await this.appRegistryService.getAppOrThrow(command.appId);
+
+    if (command.events.length > MAX_BATCH_SIZE) {
+      badRequest("ANALYTICS_BATCH_TOO_LARGE", `Analytics batch size exceeds ${MAX_BATCH_SIZE}.`);
+    }
 
     command.events.forEach((event) => this.validateEvent(event));
 
@@ -45,12 +51,13 @@ export class AnalyticsService {
   async getOverview(appId: string, dateFrom: string, dateTo: string): Promise<{ timezone: string; items: MetricsOverviewItem[] }> {
     this.assertDateRange(dateFrom, dateTo);
     await this.appRegistryService.getAppOrThrow(appId);
-    const analyticsEvents = await this.database.listAnalyticsEvents(appId);
+    const range = this.buildDateRange(dateFrom, dateTo);
+    const analyticsEvents = await this.database.listAnalyticsEvents(appId, range);
     const appUsers = await this.database.listAppUsers(appId);
 
     const items = enumerateDateKeys(dateFrom, dateTo).map((dateKey) => {
       const dailyEvents = analyticsEvents.filter(
-        (item) => item.appId === appId && toDateKey(item.occurredAt) === dateKey,
+        (item) => toDateKey(item.occurredAt) === dateKey,
       );
       const dau = new Set(dailyEvents.map((item) => item.userId)).size;
       const newUsers = appUsers.filter(
@@ -78,7 +85,11 @@ export class AnalyticsService {
   ): Promise<{ timezone: string; items: PageMetricItem[] }> {
     this.assertDateRange(dateFrom, dateTo);
     await this.appRegistryService.getAppOrThrow(appId);
-    const analyticsEvents = await this.database.listAnalyticsEvents(appId);
+    const range = this.buildDateRange(dateFrom, dateTo);
+    const analyticsEvents = await this.database.listAnalyticsEvents(appId, {
+      ...range,
+      platform,
+    });
 
     const dateKeys = new Set(enumerateDateKeys(dateFrom, dateTo));
     const groups = new Map<
@@ -93,9 +104,7 @@ export class AnalyticsService {
     >();
 
     analyticsEvents
-      .filter((item) => item.appId === appId)
       .filter((item) => dateKeys.has(toDateKey(item.occurredAt)))
-      .filter((item) => (platform ? item.platform === platform : true))
       .forEach((item) => {
         const groupKey = `${item.platform}:${item.pageKey}`;
         const existing =
@@ -155,5 +164,15 @@ export class AnalyticsService {
     if (dateFrom > dateTo) {
       badRequest("REQ_DATE_RANGE_INVALID", "dateFrom must be earlier than or equal to dateTo.");
     }
+  }
+
+  private buildDateRange(dateFrom: string, dateTo: string): { occurredFrom: string; occurredTo: string } {
+    const start = new Date(`${dateFrom}T00:00:00${DEFAULT_TIMEZONE_OFFSET}`);
+    const end = new Date(`${dateTo}T00:00:00${DEFAULT_TIMEZONE_OFFSET}`);
+    end.setDate(end.getDate() + 1);
+    return {
+      occurredFrom: start.toISOString(),
+      occurredTo: end.toISOString(),
+    };
   }
 }

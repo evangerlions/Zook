@@ -15,6 +15,7 @@ import type {
   FileRecord,
   NotificationJobRecord,
   PermissionRecord,
+  Platform,
   RolePermissionRecord,
   RoleRecord,
   UserRecord,
@@ -555,35 +556,79 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
 
   override async insertAnalyticsEvents(records: AnalyticsEventRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_analytics_events (
-           id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, $11::jsonb)`,
-        [
-          record.id,
-          record.appId,
-          record.userId,
-          record.platform,
-          record.sessionId,
-          record.pageKey,
-          record.eventName,
-          record.durationMs ?? null,
-          record.occurredAt,
-          record.receivedAt,
-          JSON.stringify(record.metadata ?? {}),
-        ],
-      );
+    if (!records.length) {
+      return;
     }
+
+    const columns = [
+      "id",
+      "app_id",
+      "user_id",
+      "platform",
+      "session_id",
+      "page_key",
+      "event_name",
+      "duration_ms",
+      "occurred_at",
+      "received_at",
+      "metadata",
+    ];
+
+    const values: Array<string | number | null> = [];
+    const placeholders = records.map((record, index) => {
+      const baseIndex = index * columns.length;
+      values.push(
+        record.id,
+        record.appId,
+        record.userId,
+        record.platform,
+        record.sessionId,
+        record.pageKey,
+        record.eventName,
+        record.durationMs ?? null,
+        record.occurredAt,
+        record.receivedAt,
+        JSON.stringify(record.metadata ?? {}),
+      );
+      const slots = columns.map((_, offset) => `$${baseIndex + offset + 1}`);
+      return `(${slots[0]}, ${slots[1]}, ${slots[2]}, ${slots[3]}, ${slots[4]}, ${slots[5]}, ${slots[6]}, ${slots[7]}, ${slots[8]}::timestamptz, ${slots[9]}::timestamptz, ${slots[10]}::jsonb)`;
+    });
+
+    await this.query(
+      `INSERT INTO zook_analytics_events (${columns.join(", ")})
+       VALUES ${placeholders.join(", ")}`,
+      values,
+    );
   }
 
-  override async listAnalyticsEvents(appId: string): Promise<AnalyticsEventRecord[]> {
+  override async listAnalyticsEvents(
+    appId: string,
+    options?: { occurredFrom?: string; occurredTo?: string; platform?: Platform },
+  ): Promise<AnalyticsEventRecord[]> {
+    const conditions = ["app_id = $1"];
+    const params: Array<string | null> = [appId];
+
+    if (options?.occurredFrom) {
+      params.push(options.occurredFrom);
+      conditions.push(`occurred_at >= $${params.length}::timestamptz`);
+    }
+
+    if (options?.occurredTo) {
+      params.push(options.occurredTo);
+      conditions.push(`occurred_at < $${params.length}::timestamptz`);
+    }
+
+    if (options?.platform) {
+      params.push(options.platform);
+      conditions.push(`platform = $${params.length}`);
+    }
+
     const result = await this.query(
       `SELECT id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata
        FROM zook_analytics_events
-       WHERE app_id = $1
+       WHERE ${conditions.join(" AND ")}
        ORDER BY occurred_at ASC`,
-      [appId],
+      params,
     );
     return result.rows.map(parseAnalyticsEvent);
   }

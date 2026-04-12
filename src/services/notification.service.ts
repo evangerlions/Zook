@@ -20,65 +20,76 @@ export class NotificationService {
     payload: Record<string, unknown>;
   }): Promise<{ queued: boolean; notificationJobId: string }> {
     const notificationJobId = randomId("notification");
-    await this.database.insertNotificationJob({
-      id: notificationJobId,
-      appId: command.appId,
-      recipientUserId: command.recipientUserId,
-      channel: command.channel,
-      payload: command.payload,
-      status: "PENDING",
-      retryCount: 0,
-    });
-
-    try {
-      await this.queue.add(
-        "notification.send",
-        {
-          notificationJobId,
-          channel: command.channel,
-        },
-        { attempts: 5, backoffMs: 1000 },
-      );
-
-      await this.database.updateNotificationJob(notificationJobId, {
-        status: "QUEUED",
-      });
-
-      return {
-        queued: true,
-        notificationJobId,
-      };
-    } catch (error) {
-      await this.database.updateNotificationJob(notificationJobId, {
-        status: "ENQUEUE_FAILED",
-      });
-
-      await this.database.insertFailedEvent({
-        id: randomId("failed_event"),
+    return await this.database.withExclusiveSession(async () => {
+      await this.database.insertNotificationJob({
+        id: notificationJobId,
         appId: command.appId,
-        eventType: "notification.send",
-        payload: {
-          notificationJobId,
-          ...command,
-        },
-        errorMessage: error instanceof Error ? error.message : "Queue add failed",
+        recipientUserId: command.recipientUserId,
+        channel: command.channel,
+        payload: command.payload,
+        status: "PENDING",
         retryCount: 0,
-        nextRetryAt: new Date(Date.now() + 60 * 1000).toISOString(),
-        createdAt: new Date().toISOString(),
       });
 
-      this.logger.error("notification enqueue failed", {
-        appId: command.appId,
-        jobId: notificationJobId,
-        jobName: "notification.send",
-        error: error instanceof Error ? error.message : "Queue add failed",
-      });
+      try {
+        await this.queue.add(
+          "notification.send",
+          {
+            notificationJobId,
+            channel: command.channel,
+          },
+          { attempts: 5, backoffMs: 1000 },
+        );
 
-      return {
-        queued: false,
-        notificationJobId,
-      };
-    }
+        await this.database.updateNotificationJob(notificationJobId, {
+          status: "QUEUED",
+        });
+
+        return {
+          queued: true,
+          notificationJobId,
+        };
+      } catch (error) {
+        await this.database.updateNotificationJob(notificationJobId, {
+          status: "ENQUEUE_FAILED",
+        });
+
+        try {
+          await this.database.insertFailedEvent({
+            id: randomId("failed_event"),
+            appId: command.appId,
+            eventType: "notification.send",
+            payload: {
+              notificationJobId,
+              ...command,
+            },
+            errorMessage: error instanceof Error ? error.message : "Queue add failed",
+            retryCount: 0,
+            nextRetryAt: new Date(Date.now() + 60 * 1000).toISOString(),
+            createdAt: new Date().toISOString(),
+          });
+        } catch (failedEventError) {
+          this.logger.error("failed to persist failed notification enqueue event", {
+            appId: command.appId,
+            jobId: notificationJobId,
+            jobName: "notification.send",
+            error: failedEventError instanceof Error ? failedEventError.message : "Failed event insert failed",
+          });
+        }
+
+        this.logger.error("notification enqueue failed", {
+          appId: command.appId,
+          jobId: notificationJobId,
+          jobName: "notification.send",
+          error: error instanceof Error ? error.message : "Queue add failed",
+        });
+
+        return {
+          queued: false,
+          notificationJobId,
+        };
+      }
+    });
   }
 
   async processQueueJob(job: { id: string; name: string; payload: Record<string, unknown> }): Promise<void> {
@@ -89,6 +100,20 @@ export class NotificationService {
     const notificationJobId = String(job.payload.notificationJobId ?? "");
     const record = await this.database.findNotificationJob(notificationJobId);
     if (!record) {
+      return;
+    }
+
+    if (record.status === "SENT") {
+      return;
+    }
+
+    if (record.status === "ENQUEUE_FAILED") {
+      this.logger.warn("notification skipped due to enqueue failure", {
+        appId: record.appId,
+        jobId: job.id,
+        jobName: job.name,
+        notificationJobId,
+      });
       return;
     }
 

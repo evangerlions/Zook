@@ -29,7 +29,7 @@ import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
-import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
+import { ScryptPasswordHasher } from "./modules/auth/password-hasher.ts";
 import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
@@ -39,6 +39,7 @@ import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import { AppLogSecretService, APP_LOG_SECRET_READ_OPERATION } from "./services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
+import { AdminLoginRateLimiter } from "./services/admin-login-rate-limiter.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
@@ -156,6 +157,7 @@ interface ResolvedAdminBasicAuth {
 
 const ADMIN_SESSION_COOKIE_NAME = "adminSession";
 const ADMIN_SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const ADMIN_APP_DELETE_OPERATION = "admin.app.delete";
 
 function resolveAdminBasicAuth(options: CreateApplicationOptions): ResolvedAdminBasicAuth | null {
   const username = options.adminBasicAuth?.username ?? process.env.ADMIN_BASIC_AUTH_USERNAME ?? "";
@@ -282,6 +284,7 @@ export class BackendApplication {
     private readonly userService: UserService,
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly adminSessionStore: AdminSessionStore,
+    private readonly adminLoginRateLimiter: AdminLoginRateLimiter,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly adminSensitiveOperationService: AdminSensitiveOperationService,
     private readonly llmManager: LLMManager,
@@ -313,8 +316,9 @@ export class BackendApplication {
 
       try {
         const response = await this.dispatch(request);
-        this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt);
-        return response;
+        const finalResponse = this.extendAdminSessionCookie(request, response);
+        this.requestLoggingInterceptor.log(request, finalResponse, Date.now() - startedAt);
+        return finalResponse;
       } catch (error) {
         const response = this.httpExceptionFilter.catch(error, request.requestId);
         this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt, error);
@@ -1453,6 +1457,8 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const username = this.validationPipe.requireString(body, "username");
     const password = this.validationPipe.requireString(body, "password");
+    const ipAddress = request.ipAddress ?? "unknown";
+    await this.adminLoginRateLimiter.consume(username, ipAddress, new Date());
     const adminUser = this.validateAdminCredentials(username, password);
     const session = await this.adminSessionStore.create(adminUser, ADMIN_SESSION_TTL_MS);
     const bootstrap = await this.adminConsoleService.getBootstrap(adminUser);
@@ -1625,7 +1631,8 @@ export class BackendApplication {
   }
 
   private async handleAdminDeleteApp(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
-    const adminUser = this.authenticateAdmin(request);
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(session, ADMIN_APP_DELETE_OPERATION);
     const result = await this.adminConsoleService.deleteApp(appId);
 
     await this.auditInterceptor.record({
@@ -1634,7 +1641,7 @@ export class BackendApplication {
       resourceType: "app",
       resourceId: appId,
       payload: {
-        adminUser,
+        adminUser: session.username,
       },
     });
 
@@ -2695,7 +2702,28 @@ export class BackendApplication {
       return null;
     }
 
-    return (await this.adminSessionStore.get(sessionId)) ?? null;
+    return (await this.adminSessionStore.refresh(sessionId, ADMIN_SESSION_TTL_MS)) ?? null;
+  }
+
+  private extendAdminSessionCookie(
+    request: HttpRequest,
+    response: HttpResponse<unknown>,
+  ): HttpResponse<unknown> {
+    if (!request.adminSession || !request.path.startsWith("/api/v1/admin")) {
+      return response;
+    }
+
+    if (response.headers?.["Set-Cookie"]) {
+      return response;
+    }
+
+    return {
+      ...response,
+      headers: {
+        ...response.headers,
+        ...this.buildAdminSessionHeaders(request.adminSession.id),
+      },
+    };
   }
 
   private getClientType(body: Record<string, unknown>): ClientType {
@@ -2823,7 +2851,7 @@ export class BackendApplication {
  * createApplication produces a full runtime context that tests can reuse without real infra.
  */
 export async function createApplication(options: CreateApplicationOptions = {}) {
-  const passwordHasher = new DevelopmentPasswordHasher();
+  const passwordHasher = ScryptPasswordHasher.fromEnv();
   const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher);
   const kvManager =
     options.kvManager ??
@@ -2872,6 +2900,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
+  const adminLoginRateLimiter = new AdminLoginRateLimiter(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
@@ -3023,6 +3052,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     userService,
     adminBasicAuth,
     adminSessionStore,
+    adminLoginRateLimiter,
     appLogSecretService,
     adminSensitiveOperationService,
     llmManager,

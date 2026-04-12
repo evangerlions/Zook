@@ -1,4 +1,5 @@
 import type { ConfigRevisionMeta, ConfigRevisionRecord } from "../../shared/types.ts";
+import { randomId } from "../../shared/utils.ts";
 import { KVManager } from "./kv-manager.ts";
 
 interface ConfigRevisionIndexPayload {
@@ -15,6 +16,10 @@ interface ConfigRevisionManagerOptions<T> {
 }
 
 const INDEX_KEY = "index";
+const LOCK_KEY = "index-lock";
+const LOCK_TTL_SECONDS = 10;
+const LOCK_ATTEMPTS = 8;
+const LOCK_BACKOFF_MS = 50;
 
 export class ConfigRevisionManager<T = string> {
   private readonly scope: string;
@@ -63,30 +68,32 @@ export class ConfigRevisionManager<T = string> {
   }
 
   async update(content: T, desc = ""): Promise<ConfigRevisionRecord<T>> {
-    const index = (await this.getIndex()) ?? this.createEmptyIndex();
-    const revision = index.latestRevision + 1;
-    const record: ConfigRevisionRecord<T> = {
-      revision,
-      content: this.serialize(content),
-      desc: desc.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    return this.withIndexLock(async () => {
+      const index = (await this.getIndex()) ?? this.createEmptyIndex();
+      const revision = index.latestRevision + 1;
+      const record: ConfigRevisionRecord<T> = {
+        revision,
+        content: this.serialize(content),
+        desc: desc.trim(),
+        createdAt: new Date().toISOString(),
+      };
 
-    await this.kvManager.setJson(this.scope, this.buildRevisionKey(revision), record);
-    await this.kvManager.setJson(this.scope, INDEX_KEY, {
-      version: 1,
-      latestRevision: revision,
-      versions: [
-        ...index.versions,
-        {
-          revision: record.revision,
-          desc: record.desc,
-          createdAt: record.createdAt,
-        },
-      ],
-    } satisfies ConfigRevisionIndexPayload);
+      await this.kvManager.setJson(this.scope, this.buildRevisionKey(revision), record);
+      await this.kvManager.setJson(this.scope, INDEX_KEY, {
+        version: 1,
+        latestRevision: revision,
+        versions: [
+          ...index.versions,
+          {
+            revision: record.revision,
+            desc: record.desc,
+            createdAt: record.createdAt,
+          },
+        ],
+      } satisfies ConfigRevisionIndexPayload);
 
-    return record;
+      return record;
+    });
   }
 
   async restore(revision: number, desc?: string): Promise<ConfigRevisionRecord<T>> {
@@ -99,32 +106,34 @@ export class ConfigRevisionManager<T = string> {
   }
 
   async ensureInitial(content: T, desc = "", createdAt?: string): Promise<ConfigRevisionRecord<T>> {
-    const latest = await this.getLatest();
-    if (latest) {
-      return latest;
-    }
+    return this.withIndexLock(async () => {
+      const latest = await this.getLatest();
+      if (latest) {
+        return latest;
+      }
 
-    const record: ConfigRevisionRecord<T> = {
-      revision: 1,
-      content: this.serialize(content),
-      desc: desc.trim(),
-      createdAt: createdAt ?? new Date().toISOString(),
-    };
+      const record: ConfigRevisionRecord<T> = {
+        revision: 1,
+        content: this.serialize(content),
+        desc: desc.trim(),
+        createdAt: createdAt ?? new Date().toISOString(),
+      };
 
-    await this.kvManager.setJson(this.scope, this.buildRevisionKey(1), record);
-    await this.kvManager.setJson(this.scope, INDEX_KEY, {
-      version: 1,
-      latestRevision: 1,
-      versions: [
-        {
-          revision: record.revision,
-          desc: record.desc,
-          createdAt: record.createdAt,
-        },
-      ],
-    } satisfies ConfigRevisionIndexPayload);
+      await this.kvManager.setJson(this.scope, this.buildRevisionKey(1), record);
+      await this.kvManager.setJson(this.scope, INDEX_KEY, {
+        version: 1,
+        latestRevision: 1,
+        versions: [
+          {
+            revision: record.revision,
+            desc: record.desc,
+            createdAt: record.createdAt,
+          },
+        ],
+      } satisfies ConfigRevisionIndexPayload);
 
-    return record;
+      return record;
+    });
   }
 
   async clear(): Promise<void> {
@@ -160,5 +169,33 @@ export class ConfigRevisionManager<T = string> {
 
   private buildRevisionKey(revision: number): string {
     return `${this.contentKey}:${revision}`;
+  }
+
+  private async withIndexLock<TValue>(action: () => Promise<TValue>): Promise<TValue> {
+    const lockToken = randomId("cfg-lock");
+    for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt += 1) {
+      const acquired = await this.kvManager.setIfNotExists(this.scope, LOCK_KEY, lockToken, LOCK_TTL_SECONDS);
+      if (acquired) {
+        try {
+          return await action();
+        } finally {
+          await this.releaseLock(lockToken);
+        }
+      }
+      await this.sleep(LOCK_BACKOFF_MS * (attempt + 1));
+    }
+
+    throw new Error(`Config revision update is busy for scope ${this.scope}.`);
+  }
+
+  private async releaseLock(lockToken: string): Promise<void> {
+    const current = await this.kvManager.getString(this.scope, LOCK_KEY);
+    if (current === lockToken) {
+      await this.kvManager.delete(this.scope, LOCK_KEY);
+    }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

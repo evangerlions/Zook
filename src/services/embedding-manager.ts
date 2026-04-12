@@ -2,6 +2,7 @@ import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
 import type { LLMManagerOptions, LLMProviderName, LLMUsage, ResolvedLLMModel } from "./llm-manager.ts";
+import { selectAutoRoute } from "./llm-route-selector.ts";
 import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 
@@ -226,57 +227,24 @@ export class EmbeddingManager {
     model: LlmModelConfig,
     providerMap: Map<string, LlmProviderConfig>,
   ): Promise<LlmModelConfig["routes"][number]> {
-    const availableRoutes = model.routes.filter((route) => route.enabled && providerMap.get(route.provider)?.enabled);
-    if (!availableRoutes.length) {
-      throw new ApplicationError(
-        503,
-        "LLM_ROUTE_NOT_AVAILABLE",
-        `Model ${model.key} does not have any enabled routes.`,
-      );
+    try {
+      return await selectAutoRoute({
+        model,
+        providerMap,
+        random: this.options.random,
+        healthProvider: this.options.llmHealthService
+          ? {
+              getHealthScore: async (route) => {
+                const snapshot = await this.options.llmHealthService?.getRouteSnapshot(route);
+                return snapshot?.healthScore;
+              },
+            }
+          : undefined,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Model ${model.key} does not have a routable provider.`;
+      throw new ApplicationError(503, "LLM_ROUTE_NOT_AVAILABLE", message);
     }
-
-    const scores = await Promise.all(
-      availableRoutes.map(async (route) => {
-        const snapshot = await this.options.llmHealthService?.getRouteSnapshot({
-          modelKey: model.key,
-          provider: route.provider,
-          providerModel: route.providerModel,
-        });
-
-        return {
-          route,
-          score: route.weight * ((snapshot?.healthScore ?? 100) / 100),
-        };
-      }),
-    );
-
-    const totalScore = scores.reduce((sum, item) => sum + item.score, 0);
-    const weights = totalScore > 0
-      ? scores
-      : scores.map((item) => ({
-          route: item.route,
-          score: item.route.weight,
-        }));
-    const totalWeight = weights.reduce((sum, item) => sum + item.score, 0);
-
-    if (totalWeight <= 0) {
-      throw new ApplicationError(
-        503,
-        "LLM_ROUTE_NOT_AVAILABLE",
-        `Model ${model.key} does not have a routable provider.`,
-      );
-    }
-
-    const target = (this.options.random ?? Math.random)() * totalWeight;
-    let cursor = 0;
-    for (const item of weights) {
-      cursor += item.score;
-      if (target <= cursor) {
-        return item.route;
-      }
-    }
-
-    return weights[weights.length - 1].route;
   }
 
   private async recordRouteResult(

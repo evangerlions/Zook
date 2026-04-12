@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
-import { DevelopmentPasswordHasher } from "../../src/modules/auth/password-hasher.ts";
+import { ScryptPasswordHasher } from "../../src/modules/auth/password-hasher.ts";
 import type { RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
 import { encodeBase64Url, signValue } from "../../src/shared/utils.ts";
 
@@ -92,7 +92,7 @@ test("signed but malformed access token payloads return AUTH_INVALID_TOKEN", asy
 });
 
 test("password strength rejects passwords longer than 256 characters", () => {
-  const hasher = new DevelopmentPasswordHasher();
+  const hasher = new ScryptPasswordHasher();
   const tooLongPassword = `${"A".repeat(256)}1`;
 
   assert.equal(hasher.validateStrength("Password1234"), true);

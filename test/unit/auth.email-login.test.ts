@@ -225,7 +225,11 @@ test("email-code delivery falls back to english app name outside mainland when l
 
 test("local env allows the designated email to use the fixed bypass code for email login", async () => {
   const previousAppEnv = process.env.APP_ENV;
+  const previousBypassEmail = process.env.LOCAL_EMAIL_LOGIN_BYPASS_EMAIL;
+  const previousBypassCode = process.env.LOCAL_EMAIL_LOGIN_BYPASS_CODE;
   process.env.APP_ENV = "local";
+  process.env.LOCAL_EMAIL_LOGIN_BYPASS_EMAIL = "evangerlions@gmail.com";
+  process.env.LOCAL_EMAIL_LOGIN_BYPASS_CODE = "852133";
 
   try {
     const sent: SentVerificationEmail[] = [];
@@ -260,6 +264,16 @@ test("local env allows the designated email to use the fixed bypass code for ema
       delete process.env.APP_ENV;
     } else {
       process.env.APP_ENV = previousAppEnv;
+    }
+    if (previousBypassEmail === undefined) {
+      delete process.env.LOCAL_EMAIL_LOGIN_BYPASS_EMAIL;
+    } else {
+      process.env.LOCAL_EMAIL_LOGIN_BYPASS_EMAIL = previousBypassEmail;
+    }
+    if (previousBypassCode === undefined) {
+      delete process.env.LOCAL_EMAIL_LOGIN_BYPASS_CODE;
+    } else {
+      process.env.LOCAL_EMAIL_LOGIN_BYPASS_CODE = previousBypassCode;
     }
   }
 });

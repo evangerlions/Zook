@@ -18,6 +18,7 @@ import type {
   UserRecord,
   UserRoleRecord,
 } from "../shared/types.ts";
+import type { Platform } from "../shared/types.ts";
 import {
   ApplicationDatabase,
   buildManagedStateSnapshot,
@@ -243,8 +244,30 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.analyticsEvents.push(...structuredClone(records));
   }
 
-  listAnalyticsEvents(appId: string): AnalyticsEventRecord[] {
-    return this.analyticsEvents.filter((item) => item.appId === appId);
+  listAnalyticsEvents(
+    appId: string,
+    options?: { occurredFrom?: string; occurredTo?: string; platform?: Platform },
+  ): AnalyticsEventRecord[] {
+    const occurredFrom = options?.occurredFrom ? new Date(options.occurredFrom).getTime() : undefined;
+    const occurredTo = options?.occurredTo ? new Date(options.occurredTo).getTime() : undefined;
+    const platform = options?.platform;
+
+    return this.analyticsEvents.filter((item) => {
+      if (item.appId !== appId) {
+        return false;
+      }
+      if (platform && item.platform !== platform) {
+        return false;
+      }
+      const occurredAt = new Date(item.occurredAt).getTime();
+      if (Number.isFinite(occurredFrom) && occurredAt < (occurredFrom as number)) {
+        return false;
+      }
+      if (Number.isFinite(occurredTo) && occurredAt >= (occurredTo as number)) {
+        return false;
+      }
+      return true;
+    });
   }
 
   insertFile(record: FileRecord): void {

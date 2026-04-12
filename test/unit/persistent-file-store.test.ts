@@ -33,3 +33,10 @@ test("persistent storage root resolves to host path outside containers and conta
   assert.equal(resolvePersistentFileStorageRoot(false), HOST_APP_RUN_DATA_ROOT);
   assert.equal(resolvePersistentFileStorageRoot(true), CONTAINER_APP_RUN_DATA_ROOT);
 });
+
+test("persistent file store blocks path traversal outside the root", async () => {
+  const root = mkdtempSync(join(tmpdir(), "zook-file-store-"));
+  const store = new PersistentFileStore(root);
+
+  await assert.rejects(() => store.writeText("../../etc/passwd", "nope"));
+});

@@ -1,12 +1,12 @@
 import type { DatabaseSeed } from "../../../shared/types.ts";
-import { DevelopmentPasswordHasher } from "../../../modules/auth/password-hasher.ts";
+import { ScryptPasswordHasher } from "../../../modules/auth/password-hasher.ts";
 import { DEFAULT_APP_I18N_SETTINGS } from "../../../shared/i18n.ts";
 
 /**
  * buildDefaultSeed gives the scaffold a working shared-account dataset for local verification.
  */
 export function buildDefaultSeed(
-  passwordHasher = new DevelopmentPasswordHasher(),
+  passwordHasher = new ScryptPasswordHasher(),
 ): DatabaseSeed {
   const defaultI18nSettings = JSON.stringify(
     DEFAULT_APP_I18N_SETTINGS,

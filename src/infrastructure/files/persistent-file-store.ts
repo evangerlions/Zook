@@ -1,5 +1,5 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
 import { isContainerRuntime } from "../runtime/runtime-readiness.ts";
 
@@ -7,6 +7,14 @@ export const HOST_APP_RUN_DATA_ROOT = "/var/lib/zook/appRunData";
 export const CONTAINER_APP_RUN_DATA_ROOT = "/app/appRunData";
 
 export function resolvePersistentFileStorageRoot(insideContainer = isContainerRuntime()): string {
+  const envRoot = process.env.FILE_STORAGE_ROOT?.trim();
+  if (envRoot) {
+    return envRoot;
+  }
+  const appRunDataRoot = process.env.APP_RUN_DATA_ROOT?.trim();
+  if (appRunDataRoot) {
+    return appRunDataRoot;
+  }
   return insideContainer ? CONTAINER_APP_RUN_DATA_ROOT : HOST_APP_RUN_DATA_ROOT;
 }
 
@@ -17,14 +25,27 @@ export interface PersistentFileWriteResult {
 }
 
 export class PersistentFileStore {
-  constructor(private readonly rootDir = resolvePersistentFileStorageRoot()) {}
+  private readonly rootPath: string;
+
+  constructor(private readonly rootDir = resolvePersistentFileStorageRoot()) {
+    this.rootPath = resolve(this.rootDir);
+  }
 
   get root(): string {
     return this.rootDir;
   }
 
   resolvePath(...segments: string[]): string {
-    return resolve(this.rootDir, ...segments);
+    const candidate = resolve(this.rootDir, ...segments);
+    if (candidate === this.rootPath) {
+      return candidate;
+    }
+
+    if (!candidate.startsWith(`${this.rootPath}${sep}`)) {
+      throw new Error(`PersistentFileStore path traversal blocked: ${candidate}`);
+    }
+
+    return candidate;
   }
 
   async ensureDirectory(...segments: string[]): Promise<string> {

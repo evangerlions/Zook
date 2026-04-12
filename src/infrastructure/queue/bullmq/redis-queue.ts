@@ -5,8 +5,29 @@ import type { JobQueue } from "../job-queue.ts";
 
 const QUEUE_SCOPE = "zook:queue";
 const DUE_JOBS_KEY = `${QUEUE_SCOPE}:due`;
+const PROCESSING_JOBS_KEY = `${QUEUE_SCOPE}:processing`;
 const JOB_KEY_PREFIX = `${QUEUE_SCOPE}:job:`;
 const DLQ_KEY = `${QUEUE_SCOPE}:dlq`;
+const PROCESSING_TTL_MS = 5 * 60 * 1000;
+const PROCESSING_REQUEUE_BATCH = 50;
+
+const POP_DUE_JOB_SCRIPT = `
+local popped = redis.call('ZPOPMIN', KEYS[1], 1)
+if #popped == 0 then return nil end
+local jobId = popped[1]
+local score = tonumber(popped[2])
+if score > tonumber(ARGV[1]) then
+  redis.call('ZADD', KEYS[1], score, jobId)
+  return nil
+end
+local jobKey = ARGV[2] .. jobId
+local jobBody = redis.call('GET', jobKey)
+if not jobBody then
+  return nil
+end
+redis.call('ZADD', KEYS[2], tonumber(ARGV[1]) + tonumber(ARGV[3]), jobId)
+return { jobId, jobBody }
+`;
 
 export class RedisJobQueue implements JobQueue {
   private readonly client: RedisClientType;
@@ -45,39 +66,32 @@ export class RedisJobQueue implements JobQueue {
   ): Promise<void> {
     await this.ensureConnected();
     const nowMs = now.getTime();
+    await this.requeueExpiredProcessing(nowMs);
 
     while (true) {
-      const popped = await this.client.zPopMin(DUE_JOBS_KEY);
-      const first = popped[0];
-      if (!first) {
+      const popped = await this.client.eval(POP_DUE_JOB_SCRIPT, {
+        keys: [DUE_JOBS_KEY, PROCESSING_JOBS_KEY],
+        arguments: [String(nowMs), JOB_KEY_PREFIX, String(PROCESSING_TTL_MS)],
+      });
+
+      if (!popped || !Array.isArray(popped) || popped.length < 2) {
         return;
       }
 
-      const score = Number(first.score);
-      if (Number.isFinite(score) && score > nowMs) {
-        await this.client.zAdd(DUE_JOBS_KEY, {
-          score,
-          value: first.value,
-        });
-        return;
-      }
-
-      const rawJob = await this.client.get(this.buildJobKey(first.value));
-      if (!rawJob) {
-        continue;
-      }
-
+      const [jobId, rawJob] = popped as [string, string];
       const job = JSON.parse(rawJob) as QueueJob;
 
       try {
         await handler(job);
         await this.client.del(this.buildJobKey(job.id));
+        await this.client.zRem(PROCESSING_JOBS_KEY, job.id);
       } catch (error) {
         job.attemptsMade += 1;
         job.failedReason = error instanceof Error ? error.message : "Unknown queue error";
 
         if (job.attemptsMade >= job.maxAttempts) {
           await this.client.del(this.buildJobKey(job.id));
+          await this.client.zRem(PROCESSING_JOBS_KEY, job.id);
           await this.client.zAdd(DLQ_KEY, {
             score: Date.now(),
             value: JSON.stringify(job),
@@ -87,6 +101,7 @@ export class RedisJobQueue implements JobQueue {
 
         const delay = job.backoffMs * 2 ** (job.attemptsMade - 1);
         job.availableAt = new Date(nowMs + delay).toISOString();
+        await this.client.zRem(PROCESSING_JOBS_KEY, job.id);
         await this.storeJob(job);
       }
     }
@@ -101,15 +116,45 @@ export class RedisJobQueue implements JobQueue {
   }
 
   private async storeJob(job: QueueJob): Promise<void> {
-    await this.client.set(this.buildJobKey(job.id), JSON.stringify(job));
-    await this.client.zAdd(DUE_JOBS_KEY, {
+    const multi = this.client.multi();
+    multi.set(this.buildJobKey(job.id), JSON.stringify(job));
+    multi.zAdd(DUE_JOBS_KEY, {
       score: new Date(job.availableAt).getTime(),
       value: job.id,
     });
+    await multi.exec();
   }
 
   private buildJobKey(jobId: string): string {
     return `${JOB_KEY_PREFIX}${jobId}`;
+  }
+
+  private async requeueExpiredProcessing(nowMs: number): Promise<void> {
+    const expired = await this.client.zRangeByScore(
+      PROCESSING_JOBS_KEY,
+      0,
+      nowMs,
+      {
+        LIMIT: {
+          offset: 0,
+          count: PROCESSING_REQUEUE_BATCH,
+        },
+      },
+    );
+
+    if (!expired.length) {
+      return;
+    }
+
+    const multi = this.client.multi();
+    for (const jobId of expired) {
+      multi.zRem(PROCESSING_JOBS_KEY, jobId);
+      multi.zAdd(DUE_JOBS_KEY, {
+        score: nowMs,
+        value: jobId,
+      });
+    }
+    await multi.exec();
   }
 
   private async ensureConnected(): Promise<void> {

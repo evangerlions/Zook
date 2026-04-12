@@ -73,7 +73,14 @@ export abstract class ApplicationDatabase {
   abstract deleteAppConfigsByApp(appId: string): MaybePromise<void>;
 
   abstract insertAnalyticsEvents(records: AnalyticsEventRecord[]): MaybePromise<void>;
-  abstract listAnalyticsEvents(appId: string): MaybePromise<AnalyticsEventRecord[]>;
+  abstract listAnalyticsEvents(
+    appId: string,
+    options?: {
+      occurredFrom?: string;
+      occurredTo?: string;
+      platform?: Platform;
+    },
+  ): MaybePromise<AnalyticsEventRecord[]>;
 
   abstract insertFile(record: FileRecord): MaybePromise<void>;
   abstract findFileByOwnerAndStorageKey(

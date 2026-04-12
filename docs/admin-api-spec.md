@@ -43,6 +43,11 @@
 | `POST` | `/api/v1/admin/auth/logout` | 后台登出 |
 | `GET` | `/api/v1/admin/bootstrap` | 加载后台工作区、默认 app 与管理员上下文 |
 
+说明：
+
+1. `/api/v1/admin/auth/login` 默认有基础限速，按 `username + ip` 计数。
+2. 超限返回 `429 ADMIN_RATE_LIMITED`。
+
 ### 3.2 敏感操作授权
 
 | 方法 | Path | 说明 |
@@ -69,6 +74,7 @@
 
 1. `appId` 当前只允许小写字母、数字和下划线
 2. `common` 是保留工作区，不能作为普通 app 删除
+3. 删除 app 需要敏感操作授权（`admin.app.delete`）
 
 ### 3.4 App 配置
 
@@ -137,4 +143,3 @@ admin.delivery_config
 
 - [admin-web-design.md](/Users/zhoukai/.codex/worktrees/b0da/Zook/docs/admin-web-design.md)
 - [current-backend-implementation-overview.md](/Users/zhoukai/.codex/worktrees/b0da/Zook/docs/current-backend-implementation-overview.md)
-
