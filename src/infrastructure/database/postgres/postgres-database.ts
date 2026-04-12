@@ -929,7 +929,7 @@ export class PostgresDatabase extends ApplicationDatabase {
       await this.query(
         `INSERT INTO zook_roles (id, app_id, code, name, status)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT (app_id, code) DO NOTHING`,
         [record.id, record.appId, record.code, record.name, record.status],
       );
     }

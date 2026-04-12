@@ -85,7 +85,23 @@
 admin.delivery_config
 ```
 
-### 3.5 App 级 i18n 设置
+### 3.5 AINovel AI Routing
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/{appId}/ai-routing` | 获取 `ai_novel.model_routing` 当前配置 |
+| `PUT` | `/api/v1/admin/apps/{appId}/ai-routing` | 更新 `ai_novel.model_routing` |
+| `GET` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}` | 获取指定历史版本 |
+| `POST` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore` | 恢复指定历史版本 |
+
+当前只支持：
+
+```text
+appId = ai_novel
+configKey = ai_novel.model_routing
+```
+
+### 3.6 App 级 i18n 设置
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -94,7 +110,7 @@ admin.delivery_config
 | `GET` | `/api/v1/admin/apps/{appId}/i18n-settings/revisions/{revision}` | 获取指定历史版本 |
 | `POST` | `/api/v1/admin/apps/{appId}/i18n-settings/revisions/{revision}/restore` | 恢复指定历史版本 |
 
-### 3.6 Common 邮件服务
+### 3.7 Common 邮件服务
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -104,7 +120,7 @@ admin.delivery_config
 | `GET` | `/api/v1/admin/apps/common/email-service/revisions/{revision}` | 获取指定历史版本 |
 | `POST` | `/api/v1/admin/apps/common/email-service/revisions/{revision}/restore` | 恢复指定历史版本 |
 
-### 3.7 Common Passwords
+### 3.8 Common Passwords
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -114,7 +130,7 @@ admin.delivery_config
 | `DELETE` | `/api/v1/admin/apps/common/passwords/{key}` | 删除密码项 |
 | `POST` | `/api/v1/admin/apps/common/passwords/{key}/reveal` | 获取密码项明文 |
 
-### 3.8 Common LLM 服务
+### 3.9 Common LLM 服务
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -126,7 +142,7 @@ admin.delivery_config
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` | 获取单模型指标 |
 | `POST` | `/api/v1/admin/apps/common/llm-service/smoke-test` | 运行冒烟测试 |
 
-### 3.9 Admin 指标
+### 3.10 Admin 指标
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -137,4 +153,3 @@ admin.delivery_config
 
 - [admin-web-design.md](/Users/zhoukai/.codex/worktrees/b0da/Zook/docs/admin-web-design.md)
 - [current-backend-implementation-overview.md](/Users/zhoukai/.codex/worktrees/b0da/Zook/docs/current-backend-implementation-overview.md)
-

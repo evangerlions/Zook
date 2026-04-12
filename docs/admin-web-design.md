@@ -13,6 +13,10 @@
 1. 邮件服务 `common.email_service_regions`
 2. LLM 服务 `common.llm_service`
 
+本期还新增一个产品专属配置页：
+
+3. AINovel AI Routing `ai_novel.model_routing`
+
 ---
 
 ## 2. 页面结构
@@ -22,6 +26,7 @@ Admin Web
 ├── Sidebar
 │   ├── 应用
 │   ├── 配置
+│   ├── AI Routing（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
 ├── Topbar
@@ -32,6 +37,7 @@ Admin Web
 └── Main Content
     ├── /apps   -> App 总控页
     ├── /config -> App JSON 配置页
+    ├── /ai-routing -> AINovel AI Routing RAW JSON 配置页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
 ```
@@ -58,6 +64,7 @@ Admin Web
 2. `common` 不能删除
 3. `/mail` 和 `/llm` 固定属于 `common`
 4. `/config` 只服务于普通 App
+5. `/ai-routing` 目前只在 `appId = ai_novel` 时显示
 
 ---
 
@@ -104,7 +111,18 @@ admin.delivery_config
 2. 支持版本记录与恢复
 3. 敏感字段读取时自动掩码
 
-### 4.4 LLM 页
+### 4.4 AINovel AI Routing 页
+
+AI Routing 页挂在 `ai_novel` 工作区下，当前只提供 RAW JSON 编辑能力。
+
+交互原则：
+
+1. 只在当前选中的 App 是 `ai_novel` 时展示
+2. 直接编辑 `ai_novel.model_routing`
+3. 支持 JSON 预览、版本历史、恢复
+4. 不在这页编辑 `provider / providerModel`，那部分仍归 `common.llm_service`
+
+### 4.5 LLM 页
 
 LLM 页挂在 `common` 工作区下，分成两个标签：
 

@@ -42,6 +42,19 @@ export function buildDefaultSeed(
         joinMode: "INVITE_ONLY",
         createdAt: "2026-03-01T09:00:00+08:00",
       },
+      {
+        id: "ai_novel",
+        code: "ai_novel",
+        name: "AI Novel",
+        nameI18n: {
+          "zh-CN": "AI 小说",
+          "en-US": "AI Novel",
+        },
+        status: "ACTIVE",
+        apiDomain: "ai-novel.example.com",
+        joinMode: "AUTO",
+        createdAt: "2026-03-01T09:00:00+08:00",
+      },
     ],
     users: [
       {
@@ -90,6 +103,8 @@ export function buildDefaultSeed(
       { id: "role_app_a_admin", appId: "app_a", code: "admin", name: "Admin", status: "ACTIVE" },
       { id: "role_app_b_member", appId: "app_b", code: "member", name: "Member", status: "ACTIVE" },
       { id: "role_app_b_admin", appId: "app_b", code: "admin", name: "Admin", status: "ACTIVE" },
+      { id: "role_ai_novel_member", appId: "ai_novel", code: "member", name: "Member", status: "ACTIVE" },
+      { id: "role_ai_novel_admin", appId: "ai_novel", code: "admin", name: "Admin", status: "ACTIVE" },
     ],
     permissions: [
       { id: "perm_metrics_read", code: "metrics:read", name: "Read metrics", status: "ACTIVE" },
@@ -198,6 +213,33 @@ export function buildDefaultSeed(
         configKey: "i18n.settings",
         configValue: defaultI18nSettings,
         updatedAt: "2026-03-20T09:15:00+08:00",
+      },
+      {
+        id: "cfg_ai_novel_default_role",
+        appId: "ai_novel",
+        configKey: "auth.default_role_code",
+        configValue: "member",
+        updatedAt: "2026-03-01T09:00:00+08:00",
+      },
+      {
+        id: "cfg_ai_novel_delivery_config",
+        appId: "ai_novel",
+        configKey: "admin.delivery_config",
+        configValue: JSON.stringify(
+          {
+            app: "ai_novel",
+          },
+          null,
+          2,
+        ),
+        updatedAt: "2026-03-20T09:20:00+08:00",
+      },
+      {
+        id: "cfg_ai_novel_i18n_settings",
+        appId: "ai_novel",
+        configKey: "i18n.settings",
+        configValue: defaultI18nSettings,
+        updatedAt: "2026-03-20T09:25:00+08:00",
       },
     ],
     analyticsEvents: [],

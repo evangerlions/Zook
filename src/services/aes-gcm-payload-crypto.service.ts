@@ -83,7 +83,6 @@ export class AesGcmPayloadCryptoService {
   get algorithm(): string {
     return AES_256_GCM;
   }
-
   async decryptJsonEnvelope(envelope: Record<string, unknown>): Promise<{ keyId: string; plaintext: Buffer }> {
     const encrypted = envelope.encrypted;
     const keyId = typeof envelope.keyId === "string" ? envelope.keyId.trim() : "";

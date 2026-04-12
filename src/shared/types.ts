@@ -361,6 +361,8 @@ export interface HttpResponse<T> {
   statusCode: number;
   headers?: Record<string, string>;
   body: ResultEnvelope<T>;
+  contentType?: string;
+  streamBody?: AsyncIterable<string>;
 }
 
 export interface ResultEnvelope<T> {
@@ -492,6 +494,30 @@ export interface AdminSensitiveOperationGrantDocument {
 }
 
 export interface AdminConfigDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  rawJson: string;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export type AiNovelModelRoutingTier = "free" | "plus" | "super_plus";
+export type AiNovelRoutingChannel = "chat" | "embedding";
+
+export interface AiNovelTierRoutingConfig {
+  chat: Record<string, string>;
+  embedding: Record<string, string>;
+}
+
+export interface AiNovelModelRoutingConfig {
+  defaultTier: AiNovelModelRoutingTier;
+  tiers: Record<AiNovelModelRoutingTier, AiNovelTierRoutingConfig>;
+}
+
+export interface AdminAiRoutingDocument {
   app: AdminAppSummary;
   configKey: string;
   rawJson: string;

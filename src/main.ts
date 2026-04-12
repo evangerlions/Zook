@@ -78,13 +78,22 @@ const server = createServer(async (request, response) => {
     });
 
     response.statusCode = handled.statusCode;
-    response.setHeader("Content-Type", "application/json; charset=utf-8");
+    response.setHeader("Content-Type", handled.contentType ?? "application/json; charset=utf-8");
     Object.entries(buildCorsHeaders(corsDecision.origin)).forEach(([key, value]) => {
       response.setHeader(key, value);
     });
     Object.entries(handled.headers ?? {}).forEach(([key, value]) => {
       response.setHeader(key, value);
     });
+    if (handled.streamBody) {
+      response.flushHeaders();
+      for await (const chunk of handled.streamBody) {
+        response.write(chunk);
+      }
+      response.end();
+      return;
+    }
+
     response.end(JSON.stringify(handled.body));
   } catch (error) {
     response.statusCode = 400;

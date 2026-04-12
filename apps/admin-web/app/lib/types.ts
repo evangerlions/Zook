@@ -75,6 +75,17 @@ export interface AdminConfigDocument {
   revisions: ConfigRevisionMeta[];
 }
 
+export interface AdminAiRoutingDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  rawJson: string;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
 export interface RemoteLogPullSettings {
   enabled: boolean;
   minPullIntervalSeconds: number;

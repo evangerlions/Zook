@@ -189,6 +189,42 @@
 3. 返回值为当前 app 配置的 JSON 对象
 4. 如果请求同时携带 `X-App-Id` 或 Bearer Token，则必须与 path 中的 `appId` 一致
 
+### 2.13 AINovel 加密 AI 能力接口
+
+当前 `ai_novel` 已经补齐一版正式 AI 能力接口：
+
+1. `POST /api/v1/ai_novel/ai/chat-completions`
+2. `POST /api/v1/ai_novel/ai/embeddings`
+3. 两条接口都强制要求 Bearer 鉴权与 `app_id = ai_novel`
+4. 请求与响应都支持 `AES-256-GCM` JSON envelope
+5. 解密成功后的业务成功与业务错误都会加密返回
+6. `taskType` 继续作为 scene-first 选模入口，不允许客户端直传底层模型字段
+
+对应核心文件：
+
+1. `src/modules/ai-novel/ai-novel-llm.service.ts`
+2. `src/services/aes-gcm-payload-crypto.service.ts`
+3. `src/app.module.ts`
+
+### 2.14 AINovel 产品级 AI Routing 配置
+
+当前已经补齐一版 `ai_novel` 专属的产品级模型路由配置：
+
+1. 配置键为 `ai_novel.model_routing`
+2. 通过 admin 接口读写、记录 revision、支持 restore
+3. 当前运行时固定按 `free` 档位取路由
+4. `plus / super_plus` 本期只落配置结构，不接会员权益判定
+5. `fact_embed / episode_embed / summary_embed / query_memory_embed` 继续走独立 embedding 逻辑模型
+6. `common.llm_service` 默认文档会预填 AINovel 所需逻辑模型骨架与占位 route，管理员补齐后再启用
+
+对应核心文件：
+
+1. `src/services/app-ai-routing-config.service.ts`
+2. `src/services/common-llm-config.service.ts`
+3. `src/modules/ai-novel/ai-novel-llm-scenes.ts`
+4. `src/modules/ai-novel/ai-novel-llm.service.ts`
+5. `src/app.module.ts`
+
 ## 3. 当前可用接口
 
 当前已经接入到应用入口中的接口包括：
@@ -218,15 +254,21 @@
 23. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
 24. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
 25. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
-26. `POST /api/v1/admin/sensitive-operations/request-code`
-27. `POST /api/v1/admin/sensitive-operations/verify`
-28. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
-29. `GET /api/v1/logs/policy`
-30. `GET /api/v1/logs/pull-task`
-31. `POST /api/v1/logs/tasks/{taskId}/ack`
-32. `POST /api/v1/logs/tasks/{taskId}/fail`
-33. `POST /api/v1/logs/upload`
-34. `GET /api/v1/{appId}/public/config`
+26. `GET /api/v1/admin/apps/{appId}/ai-routing`
+27. `PUT /api/v1/admin/apps/{appId}/ai-routing`
+28. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}`
+29. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore`
+30. `POST /api/v1/admin/sensitive-operations/request-code`
+31. `POST /api/v1/admin/sensitive-operations/verify`
+32. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
+33. `GET /api/v1/logs/policy`
+34. `GET /api/v1/logs/pull-task`
+35. `POST /api/v1/logs/tasks/{taskId}/ack`
+36. `POST /api/v1/logs/tasks/{taskId}/fail`
+37. `POST /api/v1/logs/upload`
+38. `GET /api/v1/{appId}/public/config`
+39. `POST /api/v1/ai_novel/ai/chat-completions`
+40. `POST /api/v1/ai_novel/ai/embeddings`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。
