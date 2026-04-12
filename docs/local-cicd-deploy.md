@@ -89,9 +89,18 @@ DEPLOY_BUILDER_PRUNE_UNTIL=168h
 cd /home/ubuntu/app/zook
 cp deploy_configs/online.env.example deploy_configs/online.env
 cp deploy_configs/dev.env.example deploy_configs/dev.env
+sudo mkdir -p /var/lib/zook/appRunData
+sudo chmod -R 777 /var/lib/zook/appRunData
 ```
 
 然后分别把 `deploy_configs/online.env` 和 `deploy_configs/dev.env` 中的业务配置补齐。
+
+持久化运行目录固定为：
+
+- 宿主机：`/var/lib/zook/appRunData`
+- 容器内：`/app/appRunData`
+
+`api` / `worker` 会通过 bind mount 共享这一目录。启动前会先执行文件系统冒烟测试：覆盖写入 `/app/appRunData/hello_world.txt` 并立即读回；如果失败，容器会直接启动失败，部署脚本按现有健康检查失败链路处理。
 
 确保服务器上已经安装并可直接执行：
 

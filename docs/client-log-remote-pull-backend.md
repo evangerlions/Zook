@@ -266,7 +266,7 @@ sequenceDiagram
 上传成功后，后端会把解密解压后的日志文件保存到：
 
 ```text
-.storage/client-log-uploads/{appId}/{taskId}.ndjson
+/app/appRunData/client-log-uploads/{appId}/{taskId}.ndjson
 ```
 
 admin 页面查看日志时，不再走“逐行数据库查询”，而是：

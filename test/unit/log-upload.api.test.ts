@@ -180,26 +180,27 @@ test("logs pull-task claims a task for one client and hides it from concurrent p
 });
 
 test("logs upload can decrypt payloads using app-generated log secrets after claim", async () => {
-  const runtime = await createApplication();
-  const session = await issueAccessToken(runtime);
-  await enableLogPull(runtime);
-  const appSecret = (await runtime.services.appLogSecretService.ensureSecret("app_a")).record;
+  const storageDir = createTempStorageDir();
+  const runtimeWithStorage = await createApplication({ fileStorageRoot: storageDir });
+  const sessionWithStorage = await issueAccessToken(runtimeWithStorage);
+  await enableLogPull(runtimeWithStorage);
+  const appSecret = (await runtimeWithStorage.services.appLogSecretService.ensureSecret("app_a")).record;
   const key = Buffer.from(appSecret.secret, "base64");
 
-  runtime.database.clientLogUploadTasks.push({
+  runtimeWithStorage.database.clientLogUploadTasks.push({
     id: "log-task-20260328-app-secret",
     appId: "app_a",
-    userId: session.userId,
+    userId: sessionWithStorage.userId,
     keyId: appSecret.keyId,
     status: "PENDING",
     createdAt: "2026-03-28T09:00:00+08:00",
   });
 
-  const pullResponse = await runtime.app.handle({
+  const pullResponse = await runtimeWithStorage.app.handle({
     method: "GET",
     path: "/api/v1/logs/pull-task",
     headers: {
-      authorization: `Bearer ${session.accessToken}`,
+      authorization: `Bearer ${sessionWithStorage.accessToken}`,
       "x-app-id": "app_a",
       "x-did": "did_a",
     },
@@ -214,11 +215,11 @@ test("logs upload can decrypt payloads using app-generated log secrets after cla
     [{ tsMs: 1710000000100, level: "info", message: "app secret path" }],
     key,
   );
-  const response = await runtime.app.handle({
+  const response = await runtimeWithStorage.app.handle({
     method: "POST",
     path: "/api/v1/logs/upload",
     headers: {
-      authorization: `Bearer ${session.accessToken}`,
+      authorization: `Bearer ${sessionWithStorage.accessToken}`,
       "x-app-id": "app_a",
       "x-did": "did_a",
       "x-log-claim-token": pullResponse.body.data.claimToken,
@@ -237,6 +238,7 @@ test("logs upload can decrypt payloads using app-generated log secrets after cla
     acceptedCount: 1,
     rejectedCount: 0,
   });
+  assert.ok(runtimeWithStorage.database.clientLogUploadTasks[0]?.uploadedFilePath?.includes(storageDir));
 });
 
 test("logs upload decrypts claimed AES-GCM+gzip NDJSON payload and stores accepted lines", async () => {
@@ -246,7 +248,7 @@ test("logs upload decrypts claimed AES-GCM+gzip NDJSON payload and stores accept
     logEncryptionKeys: {
       "dev-k1": key.base64,
     },
-    clientLogUploadStorageDir: storageDir,
+    fileStorageRoot: storageDir,
   });
   const session = await issueAccessToken(runtime);
   await enableLogPull(runtime);
@@ -351,7 +353,7 @@ test("logs ack(no_data) completes a claimed task without creating uploads", asyn
     logEncryptionKeys: {
       "dev-k1": key.base64,
     },
-    clientLogUploadStorageDir: storageDir,
+    fileStorageRoot: storageDir,
   });
   const session = await issueAccessToken(runtime);
   await enableLogPull(runtime);
@@ -411,7 +413,7 @@ test("logs upload rejects claim mismatch, expired claims, and decrypt failure", 
     logEncryptionKeys: {
       "dev-k1": key.base64,
     },
-    clientLogUploadStorageDir: storageDir,
+    fileStorageRoot: storageDir,
   });
   const session = await issueAccessToken(runtime);
   runtime.database.clientLogUploadTasks.push({

@@ -124,5 +124,18 @@ cp deploy_configs/local.env.example deploy_configs/local.env
 ```
 
 `npm run dev:stack` 会优先读取 `deploy_configs/local.env`，再读取 `.env.local`。这样本地联调配置就固定在 `deploy_configs` 里，不再需要单独维护一个 `local/` 目录。
+在首次启动前，请先准备持久化运行目录：
+
+```bash
+sudo mkdir -p /var/lib/zook/appRunData
+sudo chmod -R 777 /var/lib/zook/appRunData
+```
+
+运行时会固定使用：
+
+- 宿主机：`/var/lib/zook/appRunData`
+- 容器内：`/app/appRunData`
+
+API / Worker 启动前会执行一个文件系统冒烟测试：覆盖写入 `/app/appRunData/hello_world.txt`，再立即读回校验；如果失败，服务不会启动。
 
 健康检查路径为 `/api/health`。

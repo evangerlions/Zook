@@ -61,6 +61,20 @@ cp deploy_configs/local.env.example deploy_configs/local.env
 
 然后直接运行 `npm run dev:stack`。脚本会优先读取 `deploy_configs/local.env`，再读取 `.env.local`，自动构建 Admin Web，并把 API 与 Admin Web 一起拉起。
 
+在首次启动前，需要先准备固定的持久化目录：
+
+```bash
+sudo mkdir -p /var/lib/zook/appRunData
+sudo chmod -R 777 /var/lib/zook/appRunData
+```
+
+运行时固定约定：
+
+- 宿主机：`/var/lib/zook/appRunData`
+- 容器内：`/app/appRunData`
+
+启动阶段会执行文件系统冒烟测试，覆盖写入 `hello_world.txt` 并立即读回；失败时 API / Worker 会直接启动失败。
+
 ## 生产发布常用命令
 
 ### 同机构建并发布

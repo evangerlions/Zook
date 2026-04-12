@@ -1,5 +1,9 @@
 import { existsSync } from "node:fs";
 import { Client } from "pg";
+import {
+  assertPersistentFileStoreReady,
+  resolvePersistentFileStorageRoot as resolvePersistentFileStorageRootImpl,
+} from "../files/persistent-file-store.ts";
 import { KVManager } from "../kv/kv-manager.ts";
 
 export async function assertRuntimeDependenciesReady(
@@ -32,7 +36,20 @@ export async function assertRuntimeDependenciesReady(
   console.log("[runtime:readiness] 正在执行 PostgreSQL 连通性检查");
   await assertPostgresReady(databaseUrl);
   console.log("[runtime:readiness] PostgreSQL 连通性检查完成");
+
+  console.log("[runtime:readiness] 正在执行持久化文件目录冒烟测试");
+  const fileStorageRoot = resolvePersistentFileStorageRoot();
+  console.log(`[runtime:readiness] 持久化文件根目录=${fileStorageRoot}`);
+  await assertPersistentFileStoreReady(fileStorageRoot);
+  console.log("[runtime:readiness] 持久化文件目录冒烟测试完成");
+
   console.log(`[runtime:readiness] 运行时依赖检查完成，serviceName=${serviceName}`);
+}
+
+export function resolvePersistentFileStorageRoot(
+  insideContainer = isContainerRuntime(),
+): string {
+  return resolvePersistentFileStorageRootImpl(insideContainer);
 }
 
 async function assertPostgresReady(connectionString: string): Promise<void> {

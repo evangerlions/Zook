@@ -12,6 +12,8 @@ services:
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/lib/zook/appRunData:/app/appRunData
     ports:
       - "${HOST_BIND_IP:-127.0.0.1}:${HOST_PORT:-3100}:${CONTAINER_PORT:-3100}"
     command: ["node", "--experimental-transform-types", "src/main.ts"]
@@ -39,6 +41,8 @@ services:
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/lib/zook/appRunData:/app/appRunData
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
 
   admin-web:
