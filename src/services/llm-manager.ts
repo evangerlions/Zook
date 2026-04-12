@@ -1,6 +1,7 @@
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
+import { resolveAiNovelModelAlias } from "./ai-novel-llm-model-aliases.ts";
 import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 
@@ -296,7 +297,25 @@ export class LLMManager {
     provider: LlmProviderConfig;
     route: LlmModelConfig["routes"][number];
   }> {
-    const model = config.models.find((item) => item.key === modelKey);
+    let model = config.models.find((item) => item.key === modelKey);
+    if (!model) {
+      const alias = resolveAiNovelModelAlias(modelKey);
+      if (alias?.kind === "chat") {
+        const provider = config.providers.find((item) => item.key === alias.provider);
+        if (provider?.enabled && this.providers[provider.key]) {
+          return {
+            provider,
+            route: {
+              provider: alias.provider,
+              providerModel: alias.providerModel,
+              enabled: true,
+              weight: 100,
+            },
+          };
+        }
+      }
+    }
+
     if (!model) {
       badRequest("LLM_MODEL_NOT_FOUND", `Unknown LLM modelKey: ${modelKey}.`);
     }

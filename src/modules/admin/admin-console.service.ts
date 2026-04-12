@@ -2,6 +2,7 @@ import { ApplicationDatabase } from "../../infrastructure/database/application-d
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
+import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "../../services/app-ai-routing-config.service.ts";
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
@@ -16,6 +17,7 @@ import { createAppNameI18n, normalizeAppNameI18n, resolveAdminAppName } from "..
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
+  AdminAiRoutingDocument,
   AdminAppSummary,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
@@ -50,6 +52,7 @@ export class AdminConsoleService {
     private readonly database: ApplicationDatabase,
     private readonly appConfigService: VersionedAppConfigService,
     private readonly appI18nConfigService: AppI18nConfigService,
+    private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
     private readonly appRemoteLogPullService: AppRemoteLogPullService,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
@@ -94,6 +97,25 @@ export class AdminConsoleService {
       isLatest: !record || record.revision === latestRevision,
       revisions: [...revisions].reverse(),
     };
+  }
+
+  async getAiRouting(appId: string, revision?: number): Promise<AdminAiRoutingDocument> {
+    const app = await this.requireConfigApp(appId);
+    return this.appAiRoutingConfigService.getDocument(await this.toSummary(app), revision);
+  }
+
+  async updateAiRouting(appId: string, rawJson: string, desc?: string): Promise<AdminAiRoutingDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appAiRoutingConfigService.updateConfig(app.id, rawJson, desc);
+    await this.managedStateStore.save(this.database);
+    return this.appAiRoutingConfigService.getDocument(await this.toSummary(app));
+  }
+
+  async restoreAiRouting(appId: string, revision: number, desc?: string): Promise<AdminAiRoutingDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appAiRoutingConfigService.restoreConfig(app.id, revision, desc);
+    await this.managedStateStore.save(this.database);
+    return this.appAiRoutingConfigService.getDocument(await this.toSummary(app));
   }
 
   async getPublicConfig(appId: string): Promise<PublicAppConfigDocument> {
@@ -191,6 +213,9 @@ export class AdminConsoleService {
     );
     await this.appI18nConfigService.initializeAppConfig(record.id, "app-created");
     await this.appRemoteLogPullService.initializeAppConfig(record.id, "app-created");
+    if (record.id === AI_NOVEL_APP_ID) {
+      await this.appAiRoutingConfigService.initializeAppConfig(record.id, "app-created");
+    }
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
@@ -387,6 +412,10 @@ export class AdminConsoleService {
       app: await this.toSummary(app),
       ...document,
     };
+  }
+
+  async getAiRoutingSettings(appId: string, revision?: number): Promise<AdminAiRoutingDocument> {
+    return this.getAiRouting(appId, revision);
   }
 
   async updateRemoteLogPullSettings(

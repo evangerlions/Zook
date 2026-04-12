@@ -1,6 +1,7 @@
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type { LLMMessage, LLMManager } from "../../services/llm-manager.ts";
 import type { EmbeddingManager, EmbeddingVector } from "../../services/embedding-manager.ts";
+import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "../../services/app-ai-routing-config.service.ts";
 import { resolveAiNovelChatScene, resolveAiNovelEmbeddingScene } from "./ai-novel-llm-scenes.ts";
 
 export interface AiNovelChatResponse {
@@ -15,6 +16,41 @@ export interface AiNovelChatResponse {
   };
 }
 
+export type AiNovelChatStreamChunk =
+  | {
+      type: "reasoning_delta";
+      text: string;
+    }
+  | {
+      type: "content_delta";
+      text: string;
+    }
+  | {
+      type: "usage";
+      usage: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+    }
+  | {
+      type: "done";
+      completion: {
+        modelKey: string;
+        provider?: string;
+        providerModel?: string;
+        content: string;
+        reasoningText?: string;
+        finishReason?: string;
+        providerRequestId?: string;
+      };
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+      };
+    };
+
 export interface AiNovelEmbeddingsResponse {
   taskType: string;
   modelKey: string;
@@ -28,6 +64,7 @@ export class AiNovelLlmService {
   constructor(
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
+    private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
   ) {}
 
   async createChatCompletion(body: Record<string, unknown>): Promise<AiNovelChatResponse> {
@@ -37,13 +74,14 @@ export class AiNovelLlmService {
 
     const taskType = this.requireTaskType(body);
     const scene = resolveAiNovelChatScene(taskType);
+    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(AI_NOVEL_APP_ID, "chat", scene.taskType, "free");
     const messages = this.normalizeMessages(body.messages);
     const temperature = this.optionalNumber(body.temperature, "temperature") ?? scene.defaultTemperature;
     const maxTokens = this.optionalPositiveInteger(body.maxTokens, "maxTokens") ?? scene.defaultMaxTokens;
 
     try {
       const result = await this.llmManager.complete({
-        modelKey: scene.defaultModelKey,
+        modelKey,
         messages,
         temperature,
         maxTokens,
@@ -65,6 +103,80 @@ export class AiNovelLlmService {
     }
   }
 
+  async *createChatCompletionStream(body: Record<string, unknown>): AsyncIterable<AiNovelChatStreamChunk> {
+    if (body.model !== undefined) {
+      badRequest("REQ_INVALID_BODY", "model is not allowed. Use taskType to select the server-side scene.");
+    }
+
+    const taskType = this.requireTaskType(body);
+    const scene = resolveAiNovelChatScene(taskType);
+    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(AI_NOVEL_APP_ID, "chat", scene.taskType, "free");
+    const messages = this.normalizeMessages(body.messages);
+    const temperature = this.optionalNumber(body.temperature, "temperature") ?? scene.defaultTemperature;
+    const maxTokens = this.optionalPositiveInteger(body.maxTokens, "maxTokens") ?? scene.defaultMaxTokens;
+
+    let aggregatedContent = "";
+    let aggregatedReasoning = "";
+    let finishReason: string | undefined;
+    let usage:
+      | {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        }
+      | undefined;
+
+    try {
+      for await (const event of this.llmManager.stream({
+        modelKey,
+        messages,
+        temperature,
+        maxTokens,
+      })) {
+        if (event.type === "reasoning_delta") {
+          aggregatedReasoning += event.text;
+          yield {
+            type: "reasoning_delta",
+            text: event.text,
+          };
+          continue;
+        }
+
+        if (event.type === "content_delta") {
+          aggregatedContent += event.text;
+          yield {
+            type: "content_delta",
+            text: event.text,
+          };
+          continue;
+        }
+
+        if (event.type === "usage") {
+          usage = event.usage;
+          yield {
+            type: "usage",
+            usage: event.usage,
+          };
+          continue;
+        }
+
+        finishReason = event.finishReason;
+        yield {
+          type: "done",
+          completion: {
+            modelKey,
+            content: aggregatedContent,
+            ...(aggregatedReasoning ? { reasoningText: aggregatedReasoning } : {}),
+            ...(finishReason ? { finishReason } : {}),
+          },
+          ...(usage ? { usage } : {}),
+        };
+      }
+    } catch (error) {
+      throw this.mapUpstreamError(error);
+    }
+  }
+
   async createEmbeddings(body: Record<string, unknown>): Promise<AiNovelEmbeddingsResponse> {
     if (body.model !== undefined) {
       badRequest("REQ_INVALID_BODY", "model is not allowed. Use taskType to select the server-side scene.");
@@ -72,11 +184,17 @@ export class AiNovelLlmService {
 
     const taskType = this.requireTaskType(body);
     const scene = resolveAiNovelEmbeddingScene(taskType);
+    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
+      AI_NOVEL_APP_ID,
+      "embedding",
+      scene.taskType,
+      "free",
+    );
     const input = this.normalizeEmbeddingInput(body.input);
 
     try {
       const result = await this.embeddingManager.embed({
-        modelKey: scene.defaultModelKey,
+        modelKey,
         input,
       });
 

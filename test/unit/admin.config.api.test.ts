@@ -216,14 +216,23 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
 
   assert.equal(bootstrapResponse.statusCode, 200);
   assert.equal(bootstrapResponse.body.data.adminUser, "admin");
-  assert.equal(bootstrapResponse.body.data.apps.length, 2);
+  assert.equal(bootstrapResponse.body.data.apps.length, 3);
   assert.deepEqual(
-    bootstrapResponse.body.data.apps.map((item) => item.appId),
-    ["app_a", "app_b"],
+    bootstrapResponse.body.data.apps.map((item) => item.appId).sort(),
+    ["ai_novel", "app_a", "app_b"],
   );
-  assert.equal(bootstrapResponse.body.data.apps[0]?.canDelete, false);
-  assert.match(String(bootstrapResponse.body.data.apps[0]?.logSecret.keyId), /^logk_/);
-  assert.match(String(bootstrapResponse.body.data.apps[0]?.logSecret.secretMasked), /\*/);
+  assert.equal(
+    bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")?.canDelete,
+    false,
+  );
+  assert.match(
+    String(bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")?.logSecret.keyId),
+    /^logk_/,
+  );
+  assert.match(
+    String(bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")?.logSecret.secretMasked),
+    /\*/,
+  );
 
   const configResponse = await runtime.app.handle({
     method: "GET",
@@ -238,6 +247,131 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
   assert.equal(configResponse.body.data.isLatest, true);
   assert.equal(configResponse.body.data.revisions.length, 1);
   assert.match(configResponse.body.data.rawJson, /featureFlags/);
+});
+
+test("admin ai routing APIs expose default config and support revisions", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const getResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/ai_novel/ai-routing",
+    headers,
+  });
+
+  assert.equal(getResponse.statusCode, 200);
+  assert.equal(getResponse.body.data.app.appId, "ai_novel");
+  assert.equal(getResponse.body.data.configKey, "ai_novel.model_routing");
+  assert.match(getResponse.body.data.rawJson, /"defaultTier": "free"/);
+  assert.match(getResponse.body.data.rawJson, /"continue_chapter": "ainovel-free-creative"/);
+
+  const updatedRawJson = JSON.stringify({
+    defaultTier: "free",
+    tiers: {
+      free: {
+        chat: {
+          setup_turn: "ainovel-plus-reasoning",
+          blueprint_gen: "ainovel-free-creative",
+          chapter1_draft_gen: "ainovel-free-creative",
+          chapter1_critic: "ainovel-free-reasoning",
+          fact_extract: "ainovel-lowcost-structured",
+          episode_extract: "ainovel-lowcost-structured",
+          continue_chapter: "ainovel-plus-creative",
+          chapter_transition: "ainovel-free-reasoning",
+          chapter2_planner: "ainovel-free-reasoning",
+          chapter2_draft_gen: "ainovel-free-creative",
+        },
+        embedding: {
+          fact_embed: "ainovel-embedding-default",
+          episode_embed: "ainovel-embedding-default",
+          summary_embed: "ainovel-embedding-default",
+          query_memory_embed: "ainovel-embedding-default",
+        },
+      },
+      plus: {
+        chat: {
+          setup_turn: "ainovel-plus-reasoning",
+          blueprint_gen: "ainovel-plus-creative",
+          chapter1_draft_gen: "ainovel-plus-creative",
+          chapter1_critic: "ainovel-plus-reasoning",
+          fact_extract: "ainovel-lowcost-structured",
+          episode_extract: "ainovel-lowcost-structured",
+          continue_chapter: "ainovel-plus-creative",
+          chapter_transition: "ainovel-plus-reasoning",
+          chapter2_planner: "ainovel-plus-reasoning",
+          chapter2_draft_gen: "ainovel-plus-creative",
+        },
+        embedding: {
+          fact_embed: "ainovel-embedding-default",
+          episode_embed: "ainovel-embedding-default",
+          summary_embed: "ainovel-embedding-default",
+          query_memory_embed: "ainovel-embedding-default",
+        },
+      },
+      super_plus: {
+        chat: {
+          setup_turn: "ainovel-super-reasoning",
+          blueprint_gen: "ainovel-super-creative",
+          chapter1_draft_gen: "ainovel-super-creative",
+          chapter1_critic: "ainovel-super-reasoning",
+          fact_extract: "ainovel-lowcost-structured",
+          episode_extract: "ainovel-lowcost-structured",
+          continue_chapter: "ainovel-super-creative",
+          chapter_transition: "ainovel-super-reasoning",
+          chapter2_planner: "ainovel-super-reasoning",
+          chapter2_draft_gen: "ainovel-super-creative",
+        },
+        embedding: {
+          fact_embed: "ainovel-embedding-default",
+          episode_embed: "ainovel-embedding-default",
+          summary_embed: "ainovel-embedding-default",
+          query_memory_embed: "ainovel-embedding-default",
+        },
+      },
+    },
+  }, null, 2);
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/ai_novel/ai-routing",
+    headers,
+    body: {
+      rawJson: updatedRawJson,
+      desc: "switch continue chapter default route",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.match(updateResponse.body.data.rawJson, /"continue_chapter": "ainovel-plus-creative"/);
+  assert.equal(updateResponse.body.data.revisions.length, 2);
+
+  const revisionResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/ai_novel/ai-routing/revisions/1",
+    headers,
+  });
+
+  assert.equal(revisionResponse.statusCode, 200);
+  assert.match(revisionResponse.body.data.rawJson, /"continue_chapter": "ainovel-free-creative"/);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/ai_novel/ai-routing/revisions/1/restore",
+    headers,
+    body: {
+      desc: "rollback ai routing",
+    },
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.match(restoreResponse.body.data.rawJson, /"continue_chapter": "ainovel-free-creative"/);
 });
 
 test("public app config API exposes admin delivery config for the requested app", async () => {
@@ -2038,7 +2172,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
   });
 
   assert.equal(updateResponse.statusCode, 200);
-  assert.equal(updateResponse.body.data.revision, 1);
+  assert.equal(updateResponse.body.data.revision, 2);
   assert.equal(updateResponse.body.data.config.providers[0]?.apiKey, maskSensitiveString("mock-bailian-api-key"));
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes.length, 2);
 
@@ -2100,7 +2234,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
   });
 
   assert.equal(revisionResponse.statusCode, 200);
-  assert.equal(revisionResponse.body.data.isLatest, true);
+  assert.equal(revisionResponse.body.data.isLatest, false);
 
   const secondUpdate = await runtime.app.handle({
     method: "PUT",
@@ -2119,16 +2253,16 @@ test("admin llm service API stores versioned common config and exposes metrics",
   });
 
   assert.equal(secondUpdate.statusCode, 200);
-  assert.equal(secondUpdate.body.data.revision, 2);
+  assert.equal(secondUpdate.body.data.revision, 3);
 
   const restoreResponse = await runtime.app.handle({
     method: "POST",
-    path: "/api/v1/admin/apps/common/llm-service/revisions/1/restore",
+    path: "/api/v1/admin/apps/common/llm-service/revisions/2/restore",
     headers,
   });
 
   assert.equal(restoreResponse.statusCode, 200);
-  assert.equal(restoreResponse.body.data.revision, 3);
+  assert.equal(restoreResponse.body.data.revision, 4);
   assert.equal(restoreResponse.body.data.config.models[0]?.strategy, "auto");
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.update" && item.appId === "common"),
