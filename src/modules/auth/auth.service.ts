@@ -28,6 +28,7 @@ import { createOpaqueToken, randomId, randomNumericCode, sha256, timingSafeHexCo
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
 import type { SmsVerificationSender } from "../../services/tencent-sms-verification.service.ts";
+import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
 import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
@@ -81,6 +82,7 @@ export class AuthService {
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly registrationEmailSender: RegistrationEmailSender,
     private readonly smsVerificationSender: SmsVerificationSender,
+    private readonly smsVerificationRecordService: SmsVerificationRecordService,
     private readonly registrationCodeGenerator: () => string = () => randomNumericCode(6),
     private readonly secureRefreshCookie = false,
     private readonly refreshCookieSameSite: "Lax" | "None" | "Strict" = "Lax",
@@ -377,22 +379,40 @@ export class AuthService {
     }
 
     const rawCode = this.createVerificationCode();
+    const verificationEntry = this.createVerificationCodeEntry(rawCode, now);
     await this.setVerificationCodeEntry(
       cacheKey,
-      this.createVerificationCodeEntry(rawCode, now),
+      verificationEntry,
       this.registrationCodeTtlMs,
       now,
     );
+    const smsRecord = await this.smsVerificationRecordService.recordIssued({
+      appId: app.id,
+      scene: "register",
+      phone,
+      phoneNa: command.phoneNa,
+      code: rawCode,
+      isTest: command.test === true,
+      sentAt: verificationEntry.sentAt,
+      expiresAt: verificationEntry.expiresAt,
+    });
 
     if (!command.test) {
       try {
-        await this.smsVerificationSender.sendVerificationCode({
+        const sendResult = await this.smsVerificationSender.sendVerificationCode({
           phoneNumber: phone,
           code: rawCode,
           expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
         });
+        await this.smsVerificationRecordService.markProviderAccepted(smsRecord.id, {
+          providerRequestId: sendResult.requestId,
+          providerSerialNo: sendResult.sendSerialNo,
+        });
       } catch (error) {
         await this.deleteVerificationCodeEntry(cacheKey);
+        await this.smsVerificationRecordService.markProviderFailed(smsRecord.id, {
+          providerMessage: error instanceof Error ? error.message : String(error),
+        });
         throw error;
       }
     }
@@ -454,22 +474,40 @@ export class AuthService {
     }
 
     const rawCode = this.createVerificationCode();
+    const verificationEntry = this.createVerificationCodeEntry(rawCode, now);
     await this.setVerificationCodeEntry(
       cacheKey,
-      this.createVerificationCodeEntry(rawCode, now),
+      verificationEntry,
       this.registrationCodeTtlMs,
       now,
     );
+    const smsRecord = await this.smsVerificationRecordService.recordIssued({
+      appId: app.id,
+      scene: "login",
+      phone,
+      phoneNa: command.phoneNa,
+      code: rawCode,
+      isTest: command.test === true,
+      sentAt: verificationEntry.sentAt,
+      expiresAt: verificationEntry.expiresAt,
+    });
 
     if (!command.test) {
       try {
-        await this.smsVerificationSender.sendVerificationCode({
+        const sendResult = await this.smsVerificationSender.sendVerificationCode({
           phoneNumber: phone,
           code: rawCode,
           expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
         });
+        await this.smsVerificationRecordService.markProviderAccepted(smsRecord.id, {
+          providerRequestId: sendResult.requestId,
+          providerSerialNo: sendResult.sendSerialNo,
+        });
       } catch (error) {
         await this.deleteVerificationCodeEntry(cacheKey);
+        await this.smsVerificationRecordService.markProviderFailed(smsRecord.id, {
+          providerMessage: error instanceof Error ? error.message : String(error),
+        });
         throw error;
       }
     }
@@ -700,22 +738,40 @@ export class AuthService {
     }
 
     const rawCode = this.createVerificationCode();
+    const verificationEntry = this.createVerificationCodeEntry(rawCode, now);
     await this.setVerificationCodeEntry(
       cacheKey,
-      this.createVerificationCodeEntry(rawCode, now),
+      verificationEntry,
       this.registrationCodeTtlMs,
       now,
     );
+    const smsRecord = await this.smsVerificationRecordService.recordIssued({
+      appId: app.id,
+      scene: "password-reset",
+      phone,
+      phoneNa: command.phoneNa,
+      code: rawCode,
+      isTest: command.test === true,
+      sentAt: verificationEntry.sentAt,
+      expiresAt: verificationEntry.expiresAt,
+    });
 
     if (!command.test) {
       try {
-        await this.smsVerificationSender.sendVerificationCode({
+        const sendResult = await this.smsVerificationSender.sendVerificationCode({
           phoneNumber: phone,
           code: rawCode,
           expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
         });
+        await this.smsVerificationRecordService.markProviderAccepted(smsRecord.id, {
+          providerRequestId: sendResult.requestId,
+          providerSerialNo: sendResult.sendSerialNo,
+        });
       } catch (error) {
         await this.deleteVerificationCodeEntry(cacheKey);
+        await this.smsVerificationRecordService.markProviderFailed(smsRecord.id, {
+          providerMessage: error instanceof Error ? error.message : String(error),
+        });
         throw error;
       }
     }
@@ -1114,6 +1170,13 @@ export class AuthService {
     }
 
     await this.deleteVerificationCodeEntry(cacheKey);
+    await this.smsVerificationRecordService.markConsumed({
+      appId: command.appId,
+      scene: command.kind,
+      phone: command.subject,
+      code: smsCode,
+      now,
+    });
   }
 
   private resolveSmsVerificationCacheKey(appId: string, phone: string, kind: "login" | "register" | "password-reset"): string {

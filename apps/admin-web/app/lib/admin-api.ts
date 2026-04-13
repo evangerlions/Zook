@@ -19,6 +19,8 @@ import type {
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
   AdminSensitiveOperationCodeRequestDocument,
+  AdminSmsVerificationListDocument,
+  AdminSmsVerificationRevealDocument,
   AdminSensitiveOperationGrantDocument,
   LlmMetricsRange,
 } from "./types";
@@ -379,6 +381,18 @@ export const adminApi = {
   },
   getPasswords() {
     return requestJson<AdminPasswordDocument>(adminPath("/apps/common/passwords"));
+  },
+  getSmsVerifications(appId?: string) {
+    const suffix = appId ? `?appId=${encodeURIComponent(appId)}` : "";
+    return requestJson<AdminSmsVerificationListDocument>(adminPath(`/apps/common/sms-verifications${suffix}`));
+  },
+  revealSmsVerification(recordId: string) {
+    return requestJson<AdminSmsVerificationRevealDocument>(
+      adminPath(`/apps/common/sms-verifications/${encodeURIComponent(recordId)}/reveal`),
+      {
+        method: "POST",
+      },
+    );
   },
   upsertPasswordItem(input: Record<string, unknown>) {
     return requestJson<AdminPasswordDocument>(adminPath("/apps/common/passwords/item"), {

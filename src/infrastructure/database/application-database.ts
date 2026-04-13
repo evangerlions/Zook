@@ -17,6 +17,7 @@ import type {
   RoleRecord,
   UserRecord,
   UserRoleRecord,
+  SmsVerificationRecord,
 } from "../../shared/types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
@@ -84,6 +85,19 @@ export abstract class ApplicationDatabase {
   ): MaybePromise<FileRecord | undefined>;
   abstract findFileByAppAndStorageKey(appId: string, storageKey: string): MaybePromise<FileRecord | undefined>;
   abstract confirmFile(fileId: string, mimeType: string, sizeBytes: number): MaybePromise<FileRecord | undefined>;
+
+  abstract listSmsVerificationRecords(appId?: string): MaybePromise<SmsVerificationRecord[]>;
+  abstract findSmsVerificationRecord(recordId: string): MaybePromise<SmsVerificationRecord | undefined>;
+  abstract insertSmsVerificationRecord(record: SmsVerificationRecord): MaybePromise<void>;
+  abstract updateSmsVerificationRecord(
+    recordId: string,
+    patch: Partial<
+      Pick<
+        SmsVerificationRecord,
+        "status" | "providerRequestId" | "providerSerialNo" | "providerMessage" | "consumedAt" | "failedAt" | "revealCount" | "lastRevealedAt" | "updatedAt"
+      >
+    >,
+  ): MaybePromise<void>;
 
   abstract insertNotificationJob(record: NotificationJobRecord): MaybePromise<void>;
   abstract findNotificationJob(jobId: string): MaybePromise<NotificationJobRecord | undefined>;

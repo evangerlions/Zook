@@ -110,6 +110,22 @@ configKey = ai_novel.model_routing
 | `GET` | `/api/v1/admin/apps/{appId}/i18n-settings/revisions/{revision}` | 获取指定历史版本 |
 | `POST` | `/api/v1/admin/apps/{appId}/i18n-settings/revisions/{revision}/restore` | 恢复指定历史版本 |
 
+### 3.8 Common 短信验证码观测
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/common/sms-verifications?appId={appId}` | 查看最近 7 天短信验证码记录，默认返回掩码元数据 |
+| `POST` | `/api/v1/admin/apps/common/sms-verifications/{recordId}/reveal` | 通过敏感操作授权后查看验证码明文 |
+
+说明：
+
+1. 该页面属于 `common` 工作区分组下的固定能力。
+2. 默认列表只返回掩码手机号、appid、场景、模式、状态、时间等元数据。
+3. 验证码明文不会在列表中直接内联展示，只能通过 reveal 接口查看。
+4. reveal 需要先走 `/api/v1/admin/sensitive-operations/request-code` + `/verify`。
+5. 当前验证码明文只保留最近 7 天。
+6. 本期不支持 resend。
+
 ### 3.7 Common 邮件服务
 
 | 方法 | Path | 说明 |

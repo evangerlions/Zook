@@ -285,6 +285,7 @@
   - `src/services/tencent-sms-verification.service.ts`
   - `src/services/tencent-captcha-verification.service.ts`
 - 目前腾讯云短信验证码发送能力已经接入对外 auth 主链路，用于短信登录 / 注册 / 密码重置。
+- 后台现已补充一块 `common` 工作区下的短信验证码观测能力，可按 appId 查看最近 7 天短信记录，并通过受控 reveal 查看验证码明文。
 - 短信发码接口支持一个仅用于联调和自动化测试的 `test` 布尔字段；当为 `true` 时，服务端会继续生成并缓存验证码，但不会真正调用短信发送服务。
 - 腾讯云图形验证码校验能力仍保留在后端，但当前短信主业务默认不启用验证码风控。
 - 运行时默认复用 common password 工作区里的：

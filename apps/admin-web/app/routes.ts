@@ -10,6 +10,7 @@ export default [
     route("remote-log-pull", "routes/remote-log-pull.tsx"),
     route("remote-log-pull/tasks/:taskId", "routes/remote-log-pull-task.tsx"),
     route("mail", "routes/mail.tsx"),
+    route("sms", "routes/sms.tsx"),
     route("passwords", "routes/passwords.tsx"),
     route("llm", "routes/llm.tsx"),
   ]),

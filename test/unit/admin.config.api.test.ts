@@ -1292,6 +1292,106 @@ test("admin password API supports per-item upsert and delete", async () => {
   assert.equal(deleteResponse.body.data.items.length, 0);
 });
 
+test("admin sms verification list and reveal follow sensitive verification flow", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    adminSensitiveOperation: {
+      secondaryPassword: "199510",
+    },
+    registrationCodeGenerator: () => "123456",
+  });
+
+  await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/sms-code",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100985",
+      phoneNa: "+86",
+      test: true,
+    },
+    ipAddress: "198.51.100.70",
+  });
+
+  const cookie = await loginAdmin(runtime);
+
+  const listResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/sms-verifications",
+    headers: {
+      cookie,
+    },
+    query: {
+      appId: "app_a",
+    },
+  });
+
+  assert.equal(listResponse.statusCode, 200);
+  assert.equal(listResponse.body.data.items.length, 1);
+  assert.equal(listResponse.body.data.items[0].appId, "app_a");
+  assert.equal(listResponse.body.data.items[0].status, "test_generated");
+  assert.equal(listResponse.body.data.items[0].phoneMasked.includes('****'), true);
+
+  const directRevealResponse = await runtime.app.handle({
+    method: "POST",
+    path: `/api/v1/admin/apps/common/sms-verifications/${listResponse.body.data.items[0].id}/reveal`,
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(directRevealResponse.statusCode, 403);
+  assert.equal(directRevealResponse.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
+
+  const requestCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "sms.verification.reveal",
+    },
+  });
+
+  assert.equal(requestCodeResponse.statusCode, 200);
+  assert.equal(requestCodeResponse.body.data.operation, "sms.verification.reveal");
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "sms.verification.reveal",
+      code: "199510",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+  assert.equal(verifyResponse.body.data.granted, true);
+
+  const revealResponse = await runtime.app.handle({
+    method: "POST",
+    path: `/api/v1/admin/apps/common/sms-verifications/${listResponse.body.data.items[0].id}/reveal`,
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(revealResponse.statusCode, 200);
+  assert.equal(revealResponse.body.data.code, "123456");
+  assert.equal(revealResponse.body.data.item.revealCount, 1);
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.sms_verification.reveal" && item.appId === "app_a"),
+  );
+});
+
 test("admin password reveal requires sensitive verification before copying real value", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {

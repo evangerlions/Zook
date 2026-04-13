@@ -19,6 +19,7 @@ import type {
   RoleRecord,
   UserRecord,
   UserRoleRecord,
+  SmsVerificationRecord,
 } from "../../../shared/types.ts";
 import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-database.ts";
 import { runPostgresMigrations } from "./migrate.ts";
@@ -133,6 +134,33 @@ function parseNotificationJob(row: QueryResultRow): NotificationJobRecord {
     payload: (row.payload ?? {}) as Record<string, unknown>,
     status: row.status as NotificationJobRecord["status"],
     retryCount: Number(row.retry_count ?? 0),
+  };
+}
+
+function parseSmsVerificationRecord(row: QueryResultRow): SmsVerificationRecord {
+  return {
+    id: String(row.id),
+    appId: String(row.app_id),
+    scene: row.scene as SmsVerificationRecord["scene"],
+    channel: row.channel as SmsVerificationRecord["channel"],
+    phoneMasked: String(row.phone_masked),
+    phoneHash: String(row.phone_hash),
+    phoneNa: row.phone_na ?? undefined,
+    codePlaintext: String(row.code_plaintext),
+    status: row.status as SmsVerificationRecord["status"],
+    isTest: row.is_test === true,
+    provider: row.provider as SmsVerificationRecord["provider"],
+    providerRequestId: row.provider_request_id ?? undefined,
+    providerSerialNo: row.provider_serial_no ?? undefined,
+    providerMessage: row.provider_message ?? undefined,
+    sentAt: toIsoString(row.sent_at) as string,
+    expiresAt: toIsoString(row.expires_at) as string,
+    consumedAt: toIsoString(row.consumed_at),
+    failedAt: toIsoString(row.failed_at),
+    revealCount: Number(row.reveal_count ?? 0),
+    lastRevealedAt: toIsoString(row.last_revealed_at),
+    createdAt: toIsoString(row.created_at) as string,
+    updatedAt: toIsoString(row.updated_at) as string,
   };
 }
 
@@ -641,6 +669,88 @@ export class PostgresDatabase extends ApplicationDatabase {
     return result.rows[0] ? parseFile(result.rows[0]) : undefined;
   }
 
+  override async listSmsVerificationRecords(appId?: string): Promise<SmsVerificationRecord[]> {
+    const result = appId
+      ? await this.query(
+          `SELECT id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
+           FROM zook_sms_verification_records
+           WHERE app_id = $1
+           ORDER BY created_at DESC`,
+          [appId],
+        )
+      : await this.query(
+          `SELECT id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
+           FROM zook_sms_verification_records
+           ORDER BY created_at DESC`,
+        );
+    return result.rows.map(parseSmsVerificationRecord);
+  }
+
+  override async findSmsVerificationRecord(recordId: string): Promise<SmsVerificationRecord | undefined> {
+    const result = await this.query(
+      `SELECT id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
+       FROM zook_sms_verification_records
+       WHERE id = $1
+       LIMIT 1`,
+      [recordId],
+    );
+    return result.rows[0] ? parseSmsVerificationRecord(result.rows[0]) : undefined;
+  }
+
+  override async insertSmsVerificationRecord(record: SmsVerificationRecord): Promise<void> {
+    await this.query(
+      `INSERT INTO zook_sms_verification_records (
+         id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::timestamptz, $16::timestamptz, $17::timestamptz, $18::timestamptz, $19, $20::timestamptz, $21::timestamptz, $22::timestamptz
+       )`,
+      [
+        record.id, record.appId, record.scene, record.channel, record.phoneMasked, record.phoneHash, record.phoneNa ?? null, record.codePlaintext, record.status, record.isTest, record.provider, record.providerRequestId ?? null, record.providerSerialNo ?? null, record.providerMessage ?? null, record.sentAt, record.expiresAt, record.consumedAt ?? null, record.failedAt ?? null, record.revealCount, record.lastRevealedAt ?? null, record.createdAt, record.updatedAt,
+      ],
+    );
+  }
+
+  override async updateSmsVerificationRecord(
+    recordId: string,
+    patch: Partial<
+      Pick<
+        SmsVerificationRecord,
+        "status" | "providerRequestId" | "providerSerialNo" | "providerMessage" | "consumedAt" | "failedAt" | "revealCount" | "lastRevealedAt" | "updatedAt"
+      >
+    >,
+  ): Promise<void> {
+    const fields: string[] = [];
+    const values: unknown[] = [recordId];
+    let index = 2;
+
+    const mapping = {
+      status: 'status',
+      providerRequestId: 'provider_request_id',
+      providerSerialNo: 'provider_serial_no',
+      providerMessage: 'provider_message',
+      consumedAt: 'consumed_at',
+      failedAt: 'failed_at',
+      revealCount: 'reveal_count',
+      lastRevealedAt: 'last_revealed_at',
+      updatedAt: 'updated_at',
+    };
+    for (const [key, column] of Object.entries(mapping)) {
+      if (!(key in patch)) continue;
+      const value = patch[key as keyof typeof patch];
+      if (column.endsWith('_at') || column === 'updated_at') {
+        fields.push(`${column} = $${index++}::timestamptz`);
+      } else {
+        fields.push(`${column} = $${index++}`);
+      }
+      values.push(value ?? null);
+    }
+    if (!('updatedAt' in patch)) {
+      fields.push('updated_at = NOW()');
+    }
+    if (fields.length === 0) return;
+    await this.query(`UPDATE zook_sms_verification_records SET ${fields.join(', ')} WHERE id = $1`, values);
+  }
+
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.query(
       `INSERT INTO zook_notification_jobs (id, app_id, recipient_user_id, channel, payload, status, retry_count, created_at)
@@ -976,6 +1086,9 @@ export class PostgresDatabase extends ApplicationDatabase {
          ON CONFLICT (app_id, config_key) DO NOTHING`,
         [record.id, record.appId, record.configKey, record.configValue, record.updatedAt],
       );
+    }
+    for (const record of this.seed.smsVerificationRecords ?? []) {
+      await this.insertSmsVerificationRecord(record);
     }
   }
 

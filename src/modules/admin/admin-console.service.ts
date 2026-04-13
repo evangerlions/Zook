@@ -13,6 +13,7 @@ import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
+import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
 import { createAppNameI18n, normalizeAppNameI18n, resolveAdminAppName } from "../../shared/app-name.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
@@ -37,6 +38,8 @@ import type {
   AdminLlmServiceDocument,
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
+  AdminSmsVerificationListDocument,
+  AdminSmsVerificationRevealDocument,
   AppRecord,
   LlmMetricsRange,
   PublicAppConfigDocument,
@@ -63,6 +66,7 @@ export class AdminConsoleService {
     private readonly llmMetricsService: LlmMetricsService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly refreshTokenStore: RefreshTokenStore,
+    private readonly smsVerificationRecordService: SmsVerificationRecordService,
     private readonly managedStateStore: ManagedStateStore,
   ) {}
 
@@ -275,6 +279,14 @@ export class AdminConsoleService {
 
   async revealPasswordValue(key: string): Promise<AdminPasswordRevealDocument> {
     return this.commonPasswordConfigService.revealValue(key);
+  }
+
+  async listSmsVerificationRecords(filterAppId?: string): Promise<AdminSmsVerificationListDocument> {
+    return this.smsVerificationRecordService.listForAdmin(await this.commonAppSummary(), filterAppId);
+  }
+
+  async revealSmsVerificationRecord(recordId: string): Promise<AdminSmsVerificationRevealDocument> {
+    return this.smsVerificationRecordService.revealForAdmin(await this.commonAppSummary(), recordId);
   }
 
   private async requireApp(appId: string): Promise<AppRecord> {
@@ -546,6 +558,25 @@ export class AdminConsoleService {
     }
 
     return JSON.stringify(parsed, null, 2);
+  }
+
+  private async commonAppSummary(): Promise<AdminAppSummary> {
+    return {
+      appId: COMMON_APP_ID,
+      appCode: COMMON_APP_ID,
+      appName: "Common",
+      appNameI18n: {
+        "zh-CN": "公共工作区",
+        "en-US": "Common",
+      },
+      status: "ACTIVE",
+      canDelete: false,
+      logSecret: {
+        keyId: COMMON_APP_ID,
+        secretMasked: "internal",
+        updatedAt: new Date(0).toISOString(),
+      },
+    };
   }
 
   private async toSummary(app: AppRecord): Promise<AdminAppSummary> {

@@ -74,6 +74,7 @@ import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
+import { SmsVerificationRecordService, SMS_VERIFICATION_REVEAL_OPERATION } from "./services/sms-verification-record.service.ts";
 import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
 import { RequestLocaleService } from "./services/request-locale.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
@@ -104,6 +105,8 @@ import type {
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
+  AdminSmsVerificationListDocument,
+  AdminSmsVerificationRevealDocument,
   PublicAppConfigDocument,
   AdminSessionRecord,
   AdminSensitiveOperationCodeRequestDocument,
@@ -469,6 +472,17 @@ export class BackendApplication {
     );
     if (request.method === "DELETE" && adminPasswordDeleteMatch) {
       return this.handleAdminDeletePasswordItem(request, decodeURIComponent(adminPasswordDeleteMatch[1]));
+    }
+
+    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/sms-verifications") {
+      return this.handleAdminListSmsVerificationRecords(request);
+    }
+
+    const adminSmsVerificationRevealMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/sms-verifications\/([^/]+)\/reveal$/,
+    );
+    if (request.method === "POST" && adminSmsVerificationRevealMatch) {
+      return this.handleAdminRevealSmsVerificationRecord(request, decodeURIComponent(adminSmsVerificationRevealMatch[1]));
     }
 
     if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service") {
@@ -2206,6 +2220,49 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminListSmsVerificationRecords(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSmsVerificationListDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const filterAppId = typeof request.query?.appId === "string" ? request.query.appId.trim() : "";
+    const result = await this.adminConsoleService.listSmsVerificationRecords(filterAppId || undefined);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_verification.read",
+      resourceType: "sms_verification",
+      resourceId: filterAppId || "all",
+      payload: {
+        adminUser,
+        filterAppId: filterAppId || undefined,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRevealSmsVerificationRecord(
+    request: HttpRequest,
+    recordId: string,
+  ): Promise<HttpResponse<AdminSmsVerificationRevealDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(session, SMS_VERIFICATION_REVEAL_OPERATION);
+    const result = await this.adminConsoleService.revealSmsVerificationRecord(recordId);
+
+    await this.auditInterceptor.record({
+      appId: result.item.appId,
+      action: "admin.sms_verification.reveal",
+      resourceType: "sms_verification",
+      resourceId: recordId,
+      payload: {
+        adminUser: session.username,
+        appId: result.item.appId,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminUpdatePasswords(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
@@ -3524,6 +3581,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
+  const smsVerificationRecordService = new SmsVerificationRecordService(database);
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService, logger);
@@ -3607,6 +3665,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     refreshTokenStore,
     registrationEmailSender,
     smsVerificationSender,
+    smsVerificationRecordService,
     options.registrationCodeGenerator,
     resolveSecureRefreshCookie(options),
     resolveRefreshCookieSameSite(options),
@@ -3648,6 +3707,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmMetricsService,
     llmSmokeTestService,
     refreshTokenStore,
+    smsVerificationRecordService,
     managedStateStore,
   );
   const rbacService = new RbacService(database);

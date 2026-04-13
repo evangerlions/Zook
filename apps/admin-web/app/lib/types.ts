@@ -252,6 +252,45 @@ export interface AdminDeleteAppResult {
   appId: string;
 }
 
+export interface AdminSmsVerificationItem {
+  id: string;
+  appId: string;
+  scene: "login" | "register" | "password-reset";
+  channel: "sms";
+  phoneMasked: string;
+  phoneNa?: string;
+  status:
+    | "created"
+    | "test_generated"
+    | "provider_accepted"
+    | "provider_failed"
+    | "consumed"
+    | "expired";
+  isTest: boolean;
+  provider: "tencent_sms";
+  providerRequestId?: string;
+  providerSerialNo?: string;
+  providerMessage?: string;
+  sentAt: string;
+  expiresAt: string;
+  consumedAt?: string;
+  failedAt?: string;
+  revealCount: number;
+  lastRevealedAt?: string;
+}
+
+export interface AdminSmsVerificationListDocument {
+  app: AdminAppSummary;
+  items: AdminSmsVerificationItem[];
+}
+
+export interface AdminSmsVerificationRevealDocument {
+  app: AdminAppSummary;
+  item: AdminSmsVerificationItem;
+  code: string;
+  revealedAt: string;
+}
+
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmRoutingStrategy = "auto" | "fixed";
 export type LlmModelKind = "chat" | "embedding";
