@@ -315,6 +315,13 @@ export class InMemoryDatabase extends ApplicationDatabase {
     };
   }
 
+  deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): number {
+    const before = this.smsVerificationRecords.length;
+    const cutoffMs = new Date(cutoffIso).getTime();
+    this.smsVerificationRecords = this.smsVerificationRecords.filter((item) => new Date(item.createdAt).getTime() >= cutoffMs);
+    return before - this.smsVerificationRecords.length;
+  }
+
   insertNotificationJob(record: NotificationJobRecord): void {
     this.notificationJobs.push(structuredClone(record));
   }

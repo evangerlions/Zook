@@ -75,6 +75,7 @@ import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
 import { SmsVerificationRecordService, SMS_VERIFICATION_REVEAL_OPERATION } from "./services/sms-verification-record.service.ts";
+import { SmsVerificationCleanupService } from "./services/sms-verification-cleanup.service.ts";
 import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
 import { RequestLocaleService } from "./services/request-locale.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
@@ -3582,6 +3583,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
   const smsVerificationRecordService = new SmsVerificationRecordService(database);
+  const smsVerificationCleanupService = new SmsVerificationCleanupService(database, kvManager);
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService, logger);

@@ -751,6 +751,14 @@ export class PostgresDatabase extends ApplicationDatabase {
     await this.query(`UPDATE zook_sms_verification_records SET ${fields.join(', ')} WHERE id = $1`, values);
   }
 
+  override async deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): Promise<number> {
+    const result = await this.query(
+      `DELETE FROM zook_sms_verification_records WHERE created_at < $1::timestamptz`,
+      [cutoffIso],
+    );
+    return result.rowCount ?? 0;
+  }
+
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.query(
       `INSERT INTO zook_notification_jobs (id, app_id, recipient_user_id, channel, payload, status, retry_count, created_at)
