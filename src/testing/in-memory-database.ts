@@ -196,6 +196,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
   }
 
+  findUserByPhone(phone: string): UserRecord | undefined {
+    const normalized = phone.trim().toLowerCase();
+    return this.users.find((item) => item.phone?.toLowerCase() === normalized);
+  }
+
   insertUser(record: UserRecord): void {
     this.users.push(structuredClone(record));
   }

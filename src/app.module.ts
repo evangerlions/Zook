@@ -41,7 +41,11 @@ import { AppLogSecretService, APP_LOG_SECRET_READ_OPERATION } from "./services/a
 import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
-import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
+import {
+  CommonEmailConfigService,
+  TENCENT_SECRET_ID_PASSWORD_KEY,
+  TENCENT_SECRET_KEY_PASSWORD_KEY,
+} from "./services/common-email-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import {
   CommonPasswordConfigService,
@@ -74,6 +78,18 @@ import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContext
 import { RequestLocaleService } from "./services/request-locale.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
+import {
+  NoopSmsVerificationSender,
+  TencentSmsVerificationSender,
+  type SmsVerificationSender,
+  type TencentSmsVerificationConfig,
+} from "./services/tencent-sms-verification.service.ts";
+import {
+  NoopCaptchaVerificationService,
+  TencentCaptchaVerificationService,
+  type CaptchaVerificationService,
+  type TencentCaptchaVerificationConfig,
+} from "./services/tencent-captcha-verification.service.ts";
 import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
   AdminAppSummary,
@@ -116,6 +132,10 @@ export interface CreateApplicationOptions {
   emitLogs?: boolean;
   registrationCodeGenerator?: () => string;
   registrationEmailSender?: RegistrationEmailSender;
+  smsVerificationSender?: SmsVerificationSender;
+  captchaVerificationService?: CaptchaVerificationService;
+  tencentSmsVerificationConfig?: TencentSmsVerificationConfig;
+  tencentCaptchaVerificationConfig?: TencentCaptchaVerificationConfig;
   llmProviders?: Record<string, LLMProvider>;
   embeddingProviders?: Record<string, EmbeddingProvider>;
   kvBackend?: KVBackend;
@@ -709,16 +729,32 @@ export class BackendApplication {
       return this.handleLoginEmailCode(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/auth/login/sms-code") {
+      return this.handleLoginSmsCode(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/login/email") {
       return this.handleLoginWithEmailCode(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/login/sms") {
+      return this.handleLoginWithSmsCode(request);
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/password/email-code") {
       return this.handleSendPasswordCode(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/auth/password/sms-code") {
+      return this.handleSendPasswordSmsCode(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/password/reset") {
       return this.handleResetPassword(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/password/reset-by-sms") {
+      return this.handleResetPasswordBySms(request);
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/password/change") {
@@ -733,8 +769,16 @@ export class BackendApplication {
       return this.handleRegisterEmailCode(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/auth/register/sms-code") {
+      return this.handleRegisterSmsCode(request);
+    }
+
     if (request.method === "POST" && request.path === "/api/v1/auth/register") {
       return this.handleRegister(request);
+    }
+
+    if (request.method === "POST" && request.path === "/api/v1/auth/register/sms") {
+      return this.handleRegisterBySms(request);
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/qr-logins") {
@@ -954,6 +998,51 @@ export class BackendApplication {
     }
   }
 
+  private async handleLoginSmsCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.loginSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.login.sms_code",
+        resourceType: "user_login",
+        payload: {
+          phone,
+          phoneNa,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.login.sms_code",
+        resourceType: "user_login",
+        payload: {
+          phone,
+          phoneNa,
+          ipAddress,
+          accepted: false,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
   private async handleLoginWithEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
@@ -1017,6 +1106,62 @@ export class BackendApplication {
     }
   }
 
+  private async handleLoginWithSmsCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const smsCode = this.validationPipe.requireString(body, "smsCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.loginWithSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        smsCode,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId: result.session.appId,
+        actorUserId: result.session.userId,
+        action: "auth.login.sms",
+        resourceType: "user_session",
+        resourceId: result.session.userId,
+        resourceOwnerUserId: result.session.userId,
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+          autoCreatedUser: result.autoCreatedUser,
+        },
+      });
+
+      return this.ok(
+        await this.toAuthPayload(result.session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(result.session.refreshToken, clientType),
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.login.sms",
+        resourceType: "user_login",
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
   private async handleSendPasswordCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
@@ -1071,6 +1216,51 @@ export class BackendApplication {
     }
   }
 
+  private async handleSendPasswordSmsCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.sendPasswordSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.password.sms_code",
+        resourceType: "user_password_reset",
+        payload: {
+          phone,
+          phoneNa,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.password.sms_code",
+        resourceType: "user_password_reset",
+        payload: {
+          phone,
+          phoneNa,
+          ipAddress,
+          accepted: false,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
   private async handleResetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
@@ -1115,6 +1305,63 @@ export class BackendApplication {
         resourceType: "user_password_reset",
         payload: {
           email,
+          clientType,
+          ipAddress,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleResetPasswordBySms(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const password = this.validationPipe.requireString(body, "password");
+    const smsCode = this.validationPipe.requireString(body, "smsCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const session = await this.authService.resetPasswordBySms({
+        appId,
+        phone,
+        phoneNa,
+        password,
+        smsCode,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId: session.appId,
+        actorUserId: session.userId,
+        action: "auth.password.reset_sms",
+        resourceType: "user_session",
+        resourceId: session.userId,
+        resourceOwnerUserId: session.userId,
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+        },
+      });
+
+      return this.ok(
+        await this.toAuthPayload(session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(session.refreshToken, clientType),
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.password.reset_sms",
+        resourceType: "user_password_reset",
+        payload: {
+          phone,
+          phoneNa,
           clientType,
           ipAddress,
           errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
@@ -1234,6 +1481,106 @@ export class BackendApplication {
         resourceType: "user_registration",
         payload: {
           email,
+          clientType,
+          ipAddress,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleRegisterSmsCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.registerSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.register.sms_code",
+        resourceType: "user_registration",
+        payload: {
+          phone,
+          phoneNa,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.register.sms_code",
+        resourceType: "user_registration",
+        payload: {
+          phone,
+          phoneNa,
+          ipAddress,
+          accepted: false,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleRegisterBySms(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const smsCode = this.validationPipe.requireString(body, "smsCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const session = await this.authService.registerWithSms({
+        appId,
+        phone,
+        phoneNa,
+        smsCode,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId: session.appId,
+        actorUserId: session.userId,
+        action: "auth.register.sms",
+        resourceType: "user_session",
+        resourceId: session.userId,
+        resourceOwnerUserId: session.userId,
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+        },
+      });
+
+      return this.ok(
+        await this.toAuthPayload(session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(session.refreshToken, clientType),
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.register.sms",
+        resourceType: "user_registration",
+        payload: {
+          phone,
+          phoneNa,
           clientType,
           ipAddress,
           errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
@@ -3198,11 +3545,22 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const tokenService = new TokenService(accessTokenSecrets.current, {
     previousSecrets: accessTokenSecrets.previous,
   });
+  const tencentCloudCommonCredentials = await resolveTencentCloudCommonCredentials(commonPasswordConfigService);
   const registrationEmailSender =
     options.registrationEmailSender ??
     (options.serviceName === "api"
       ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
       : new NoopRegistrationEmailSender());
+  const smsVerificationSender =
+    options.smsVerificationSender ??
+    (options.serviceName === "api"
+      ? new TencentSmsVerificationSender(resolveTencentSmsVerificationConfig(options, tencentCloudCommonCredentials))
+      : new NoopSmsVerificationSender());
+  const captchaVerificationService =
+    options.captchaVerificationService ??
+    (options.serviceName === "api"
+      ? new TencentCaptchaVerificationService(resolveTencentCaptchaVerificationConfig(options, tencentCloudCommonCredentials))
+      : new NoopCaptchaVerificationService());
   const emailTestSendService = new EmailTestSendService(
     commonEmailConfigService,
     kvManager,
@@ -3236,6 +3594,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     tokenService,
     refreshTokenStore,
     registrationEmailSender,
+    smsVerificationSender,
     options.registrationCodeGenerator,
     resolveSecureRefreshCookie(options),
     resolveRefreshCookieSameSite(options),
@@ -3383,6 +3742,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       clientLogUploadService,
       notificationService,
       failedEventRetryService,
+      smsVerificationSender,
+      captchaVerificationService,
       requestEmailContextService,
       requestLocaleService,
       i18nService,
@@ -3395,5 +3756,68 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       await queue.close?.();
       await database.close();
     },
+  };
+}
+
+async function resolveTencentCloudCommonCredentials(
+  commonPasswordConfigService: CommonPasswordConfigService,
+): Promise<{ secretId?: string; secretKey?: string }> {
+  const [secretId, secretKey] = await Promise.all([
+    commonPasswordConfigService.getValue(TENCENT_SECRET_ID_PASSWORD_KEY),
+    commonPasswordConfigService.getValue(TENCENT_SECRET_KEY_PASSWORD_KEY),
+  ]);
+
+  return {
+    secretId,
+    secretKey,
+  };
+}
+
+function resolveTencentSmsVerificationConfig(
+  options: CreateApplicationOptions,
+  credentials?: { secretId?: string; secretKey?: string },
+): TencentSmsVerificationConfig {
+  return {
+    secretId: options.tencentSmsVerificationConfig?.secretId
+      ?? credentials?.secretId
+      ?? process.env.TENCENT_SMS_SECRET_ID
+      ?? process.env.TZ_SECRET_ID,
+    secretKey: options.tencentSmsVerificationConfig?.secretKey
+      ?? credentials?.secretKey
+      ?? process.env.TENCENT_SMS_SECRET_KEY
+      ?? process.env.TZ_SECRET_KEY,
+    sdkAppId: options.tencentSmsVerificationConfig?.sdkAppId
+      ?? process.env.TENCENT_SMS_SDK_APP_ID,
+    templateId: options.tencentSmsVerificationConfig?.templateId
+      ?? process.env.TENCENT_SMS_TEMPLATE_ID,
+    signName: options.tencentSmsVerificationConfig?.signName
+      ?? process.env.TENCENT_SMS_SIGN_NAME,
+    region: options.tencentSmsVerificationConfig?.region
+      ?? process.env.TENCENT_SMS_REGION
+      ?? "ap-beijing",
+  };
+}
+
+function resolveTencentCaptchaVerificationConfig(
+  options: CreateApplicationOptions,
+  credentials?: { secretId?: string; secretKey?: string },
+): TencentCaptchaVerificationConfig {
+  const rawCaptchaAppId = options.tencentCaptchaVerificationConfig?.captchaAppId
+    ?? Number(process.env.TENCENT_CAPTCHA_APP_ID ?? "0");
+  return {
+    secretId: options.tencentCaptchaVerificationConfig?.secretId
+      ?? credentials?.secretId
+      ?? process.env.TENCENT_CAPTCHA_SECRET_ID
+      ?? process.env.TENCENT_SMS_SECRET_ID
+      ?? process.env.TZ_SECRET_ID,
+    secretKey: options.tencentCaptchaVerificationConfig?.secretKey
+      ?? credentials?.secretKey
+      ?? process.env.TENCENT_CAPTCHA_SECRET_KEY
+      ?? process.env.TENCENT_SMS_SECRET_KEY
+      ?? process.env.TZ_SECRET_KEY,
+    captchaAppId: Number.isInteger(rawCaptchaAppId) && rawCaptchaAppId > 0 ? rawCaptchaAppId : undefined,
+    appSecretKey: options.tencentCaptchaVerificationConfig?.appSecretKey
+      ?? process.env.TENCENT_CAPTCHA_APP_SECRET_KEY
+      ?? process.env.TZ_CAP_SECRET_KEY,
   };
 }

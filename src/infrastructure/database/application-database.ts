@@ -62,6 +62,7 @@ export abstract class ApplicationDatabase {
 
   abstract findUserById(userId: string): MaybePromise<UserRecord | undefined>;
   abstract findUserByAccount(account: string): MaybePromise<UserRecord | undefined>;
+  abstract findUserByPhone(phone: string): MaybePromise<UserRecord | undefined>;
   abstract insertUser(record: UserRecord): MaybePromise<void>;
   abstract updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): MaybePromise<void>;
 

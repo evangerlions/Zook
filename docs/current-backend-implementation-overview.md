@@ -233,45 +233,63 @@
 2. `POST /api/v1/auth/login`
 3. `POST /api/v1/auth/refresh`
 4. `POST /api/v1/auth/logout`
-5. `POST /api/v1/analytics/events/batch`
-6. `GET /api/v1/admin/metrics/overview`
-7. `GET /api/v1/admin/metrics/pages`
-8. `POST /api/v1/files/presign`
-9. `POST /api/v1/files/confirm`
-10. `POST /api/v1/notifications/send`
-11. `GET /api/v1/admin/apps/common/email-service`
-12. `PUT /api/v1/admin/apps/common/email-service`
-13. `GET /api/v1/admin/apps/common/llm-service`
-14. `PUT /api/v1/admin/apps/common/llm-service`
-15. `GET /api/v1/admin/apps/common/llm-service/metrics`
-16. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
-17. `GET /api/v1/admin/apps/{appId}/i18n-settings`
-18. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
-19. `GET /api/v1/admin/apps/{appId}/remote-log-pull`
-20. `PUT /api/v1/admin/apps/{appId}/remote-log-pull`
-21. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
-22. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
-23. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
-24. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
-25. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
-26. `GET /api/v1/admin/apps/{appId}/ai-routing`
-27. `PUT /api/v1/admin/apps/{appId}/ai-routing`
-28. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}`
-29. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore`
-30. `POST /api/v1/admin/sensitive-operations/request-code`
-31. `POST /api/v1/admin/sensitive-operations/verify`
-32. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
-33. `GET /api/v1/logs/policy`
-34. `GET /api/v1/logs/pull-task`
-35. `POST /api/v1/logs/tasks/{taskId}/ack`
-36. `POST /api/v1/logs/tasks/{taskId}/fail`
-37. `POST /api/v1/logs/upload`
-38. `GET /api/v1/{appId}/public/config`
-39. `POST /api/v1/ai_novel/ai/chat-completions`
-40. `POST /api/v1/ai_novel/ai/embeddings`
+5. `POST /api/v1/auth/login/sms-code`
+6. `POST /api/v1/auth/login/sms`
+7. `POST /api/v1/auth/register/sms-code`
+8. `POST /api/v1/auth/register/sms`
+9. `POST /api/v1/auth/password/sms-code`
+10. `POST /api/v1/auth/password/reset-by-sms`
+11. `POST /api/v1/analytics/events/batch`
+12. `GET /api/v1/admin/metrics/overview`
+13. `GET /api/v1/admin/metrics/pages`
+14. `POST /api/v1/files/presign`
+15. `POST /api/v1/files/confirm`
+16. `POST /api/v1/notifications/send`
+17. `GET /api/v1/admin/apps/common/email-service`
+18. `PUT /api/v1/admin/apps/common/email-service`
+19. `GET /api/v1/admin/apps/common/llm-service`
+20. `PUT /api/v1/admin/apps/common/llm-service`
+21. `GET /api/v1/admin/apps/common/llm-service/metrics`
+22. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
+23. `GET /api/v1/admin/apps/{appId}/i18n-settings`
+24. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
+25. `GET /api/v1/admin/apps/{appId}/remote-log-pull`
+26. `PUT /api/v1/admin/apps/{appId}/remote-log-pull`
+27. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+28. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+29. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
+30. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
+31. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
+32. `GET /api/v1/admin/apps/{appId}/ai-routing`
+33. `PUT /api/v1/admin/apps/{appId}/ai-routing`
+34. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}`
+35. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore`
+36. `POST /api/v1/admin/sensitive-operations/request-code`
+37. `POST /api/v1/admin/sensitive-operations/verify`
+38. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
+39. `GET /api/v1/logs/policy`
+40. `GET /api/v1/logs/pull-task`
+41. `POST /api/v1/logs/tasks/{taskId}/ack`
+42. `POST /api/v1/logs/tasks/{taskId}/fail`
+43. `POST /api/v1/logs/upload`
+44. `GET /api/v1/{appId}/public/config`
+45. `POST /api/v1/ai_novel/ai/chat-completions`
+46. `POST /api/v1/ai_novel/ai/embeddings`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。
+
+补充说明：
+
+- 目前仓库里已经预置了腾讯云短信验证码发送能力和腾讯云图形验证码校验能力，分别位于：
+  - `src/services/tencent-sms-verification.service.ts`
+  - `src/services/tencent-captcha-verification.service.ts`
+- 目前腾讯云短信验证码发送能力已经接入对外 auth 主链路，用于短信登录 / 注册 / 密码重置。
+- 腾讯云图形验证码校验能力仍保留在后端，但当前短信主业务默认不启用验证码风控。
+- 运行时默认复用 common password 工作区里的：
+  - `tencent.secret_id`
+  - `tencent.secret_key`
+  作为腾讯云主凭证，不再单独维护短信专用的另一套密钥命名。
 
 ## 4. 当前目录结构
 

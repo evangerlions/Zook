@@ -478,6 +478,18 @@ export class PostgresDatabase extends ApplicationDatabase {
     return result.rows[0] ? parseUser(result.rows[0]) : undefined;
   }
 
+  override async findUserByPhone(phone: string): Promise<UserRecord | undefined> {
+    const normalized = phone.trim().toLowerCase();
+    const result = await this.query(
+      `SELECT id, email, phone, password_hash, password_algo, status, created_at
+       FROM zook_users
+       WHERE lower(coalesce(phone, '')) = $1
+       LIMIT 1`,
+      [normalized],
+    );
+    return result.rows[0] ? parseUser(result.rows[0]) : undefined;
+  }
+
   override async insertUser(record: UserRecord): Promise<void> {
     await this.query(
       `INSERT INTO zook_users (id, email, phone, password_hash, password_algo, status, created_at)

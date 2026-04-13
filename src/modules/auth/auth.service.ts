@@ -10,18 +10,24 @@ import type {
   EmailLoginCommand,
   LoginCommand,
   LogoutCommand,
+  PasswordSmsCodeCommand,
   PasswordEmailCodeCommand,
   RefreshCommand,
+  RegisterBySmsCommand,
   RegisterCommand,
   RegisterEmailCodeCommand,
   RegisterEmailCodeResult,
   ResetPasswordCommand,
+  ResetPasswordBySmsCommand,
   SetPasswordCommand,
+  SmsLoginCodeCommand,
+  SmsLoginCommand,
   UserRecord,
 } from "../../shared/types.ts";
 import { createOpaqueToken, randomId, randomNumericCode, sha256, timingSafeHexCompare, toDateKey, toHourKey } from "../../shared/utils.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
+import type { SmsVerificationSender } from "../../services/tencent-sms-verification.service.ts";
 import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
@@ -74,6 +80,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly registrationEmailSender: RegistrationEmailSender,
+    private readonly smsVerificationSender: SmsVerificationSender,
     private readonly registrationCodeGenerator: () => string = () => randomNumericCode(6),
     private readonly secureRefreshCookie = false,
     private readonly refreshCookieSameSite: "Lax" | "None" | "Strict" = "Lax",
@@ -350,6 +357,169 @@ export class AuthService {
     };
   }
 
+  async registerSmsCode(
+    command: RegisterSmsCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const app = await this.assertSelfRegistrationAllowed(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeRegistrationCodeLimits(app.id, phone, ipAddress, now, "sms");
+
+    const cacheKey = this.buildRegistrationCodeKey(app.id, phone, "sms");
+    const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (
+      existingCode &&
+      now.getTime() - new Date(existingCode.sentAt).getTime() < this.registrationResendCooldownMs
+    ) {
+      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+    }
+
+    const rawCode = this.createVerificationCode();
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      this.createVerificationCodeEntry(rawCode, now),
+      this.registrationCodeTtlMs,
+      now,
+    );
+
+    try {
+      await this.smsVerificationSender.sendVerificationCode({
+        phoneNumber: phone,
+        code: rawCode,
+        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+      });
+    } catch (error) {
+      await this.deleteVerificationCodeEntry(cacheKey);
+      throw error;
+    }
+
+    return this.buildVerificationCodeAcceptedResult();
+  }
+
+  async registerWithSms(
+    command: RegisterBySmsCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
+    const app = await this.assertSelfRegistrationAllowed(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeRegistrationLimits(app.id, phone, ipAddress, now, "sms");
+    await this.assertSmsCodeValid({
+      appId: app.id,
+      subject: phone,
+      code: command.smsCode,
+      kind: "register",
+      now,
+    });
+
+    if (await this.database.findUserByPhone(phone)) {
+      conflict("AUTH_ACCOUNT_ALREADY_EXISTS", "Registration is not available for the provided phone.");
+    }
+
+    const userId = randomId("user");
+    await this.database.insertUser({
+      id: userId,
+      phone,
+      passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
+      passwordAlgo: "sms-code-only",
+      status: "ACTIVE",
+      createdAt: now.toISOString(),
+    });
+    await this.appRegistryService.ensureMembership(app.id, userId, now);
+    return this.issueSessionForUser(userId, app.id, now);
+  }
+
+  async loginSmsCode(
+    command: SmsLoginCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeEmailLoginCodeLimits(app.id, phone, ipAddress, now, "sms");
+
+    const cacheKey = this.buildEmailLoginCodeKey(app.id, phone, "sms");
+    const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (
+      existingCode &&
+      now.getTime() - new Date(existingCode.sentAt).getTime() < this.registrationResendCooldownMs
+    ) {
+      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+    }
+
+    const rawCode = this.createVerificationCode();
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      this.createVerificationCodeEntry(rawCode, now),
+      this.registrationCodeTtlMs,
+      now,
+    );
+
+    try {
+      await this.smsVerificationSender.sendVerificationCode({
+        phoneNumber: phone,
+        code: rawCode,
+        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+      });
+    } catch (error) {
+      await this.deleteVerificationCodeEntry(cacheKey);
+      throw error;
+    }
+
+    return this.buildVerificationCodeAcceptedResult();
+  }
+
+  async loginWithSmsCode(
+    command: SmsLoginCommand,
+    now = new Date(),
+  ): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeEmailLoginLimits(app.id, phone, ipAddress, now, "sms");
+    await this.assertSmsCodeValid({
+      appId: app.id,
+      subject: phone,
+      code: command.smsCode,
+      kind: "login",
+      now,
+    });
+
+    let user = await this.database.findUserByPhone(phone);
+    let autoCreatedUser = false;
+    if (!user) {
+      if (app.joinMode !== "AUTO") {
+        forbidden("APP_JOIN_INVITE_REQUIRED", "This app requires an invite to join.");
+      }
+
+      autoCreatedUser = true;
+      user = {
+        id: randomId("user"),
+        phone,
+        passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
+        passwordAlgo: "sms-code-only",
+        status: "ACTIVE",
+        createdAt: now.toISOString(),
+      };
+      await this.database.insertUser(user);
+    }
+
+    if (user.status === "BLOCKED") {
+      forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
+    }
+
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    return {
+      session: await this.issueSessionForUser(user.id, app.id, now),
+      autoCreatedUser,
+    };
+  }
+
   async refresh(command: RefreshCommand, now = new Date()): Promise<AuthSession> {
     const rawRefreshToken = command.cookieRefreshToken ?? command.refreshToken;
     if (!rawRefreshToken) {
@@ -457,7 +627,7 @@ export class AuthService {
     }
 
     const user = await this.database.findUserByAccount(email);
-    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordEmailFlow(app.id, user.id))) {
+    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordFlow(app.id, user.id))) {
       return {
         accepted: true,
         cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
@@ -504,6 +674,49 @@ export class AuthService {
     };
   }
 
+  async sendPasswordSmsCode(command: PasswordSmsCodeCommand, now = new Date()): Promise<RegisterEmailCodeResult> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumePasswordCodeLimits(app.id, phone, ipAddress, now, "sms");
+
+    const cacheKey = this.buildPasswordResetCodeKey(app.id, phone, "sms");
+    const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (
+      existingCode &&
+      now.getTime() - new Date(existingCode.sentAt).getTime() < this.registrationResendCooldownMs
+    ) {
+      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+    }
+
+    const user = await this.database.findUserByPhone(phone);
+    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordFlow(app.id, user.id))) {
+      return this.buildVerificationCodeAcceptedResult();
+    }
+
+    const rawCode = this.createVerificationCode();
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      this.createVerificationCodeEntry(rawCode, now),
+      this.registrationCodeTtlMs,
+      now,
+    );
+
+    try {
+      await this.smsVerificationSender.sendVerificationCode({
+        phoneNumber: phone,
+        code: rawCode,
+        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+      });
+    } catch (error) {
+      await this.deleteVerificationCodeEntry(cacheKey);
+      throw error;
+    }
+
+    return this.buildVerificationCodeAcceptedResult();
+  }
+
   async resetPassword(command: ResetPasswordCommand, now = new Date()): Promise<AuthSession> {
     const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
@@ -541,12 +754,50 @@ export class AuthService {
     }
 
     const user = await this.database.findUserByAccount(email);
-    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordEmailFlow(app.id, user.id))) {
+    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordFlow(app.id, user.id))) {
       await this.deleteVerificationCodeEntry(cacheKey);
       unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
     }
 
     await this.deleteVerificationCodeEntry(cacheKey);
+    await this.database.updateUserPassword(
+      user.id,
+      this.passwordHasher.hash(command.password),
+      this.passwordHasher.algorithm,
+    );
+
+    await this.revokeAllSessions(app.id, user.id, now);
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    return this.issueSessionForUser(user.id, app.id, now);
+  }
+
+  async resetPasswordBySms(command: ResetPasswordBySmsCommand, now = new Date()): Promise<AuthSession> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumePasswordResetLimits(app.id, phone, ipAddress, now, "sms");
+
+    if (!this.passwordHasher.validateStrength(command.password)) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        "Password must be between 10 and 256 characters and include both letters and numbers.",
+      );
+    }
+
+    await this.assertSmsCodeValid({
+      appId: app.id,
+      subject: phone,
+      code: command.smsCode,
+      kind: "password-reset",
+      now,
+    });
+
+    const user = await this.database.findUserByPhone(phone);
+    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordFlow(app.id, user.id))) {
+      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "SMS verification code is invalid or expired.");
+    }
+
     await this.database.updateUserPassword(
       user.id,
       this.passwordHasher.hash(command.password),
@@ -603,7 +854,7 @@ export class AuthService {
       );
     }
 
-    if (user.passwordAlgo !== "email-code-only") {
+    if (user.passwordAlgo !== "email-code-only" && user.passwordAlgo !== "sms-code-only") {
       conflict("AUTH_PASSWORD_ALREADY_SET", "This account already has a password. Use the change password flow.");
     }
 
@@ -747,7 +998,7 @@ export class AuthService {
     return this.canVerifyPassword(user) && this.passwordHasher.verify(password, user.passwordHash);
   }
 
-  private async canUsePasswordEmailFlow(appId: string, userId: string): Promise<boolean> {
+  private async canUsePasswordFlow(appId: string, userId: string): Promise<boolean> {
     const membership = await this.database.findAppUser(appId, userId);
     if (membership) {
       return membership.status === "ACTIVE";
@@ -774,9 +1025,101 @@ export class AuthService {
     return normalized;
   }
 
+  private createVerificationCode(): string {
+    const rawCode = this.registrationCodeGenerator();
+    if (!/^\d{6}$/.test(rawCode)) {
+      throw new Error("Registration code generator must return a 6-digit numeric string.");
+    }
+
+    return rawCode;
+  }
+
+  private createVerificationCodeEntry(code: string, now = new Date()): EmailVerificationCacheEntry {
+    return {
+      codeHash: sha256(code),
+      expiresAt: new Date(now.getTime() + this.registrationCodeTtlMs).toISOString(),
+      sentAt: now.toISOString(),
+      failedAttempts: 0,
+    };
+  }
+
+  private buildVerificationCodeAcceptedResult(): RegisterEmailCodeResult {
+    return {
+      accepted: true,
+      cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
+      expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+    };
+  }
+
+  private normalizePhone(phone: string, phoneNa?: string): string {
+    const rawPhone = phone.trim();
+    const rawPhoneNa = phoneNa?.trim() || "+86";
+    const normalizedPhoneNa = rawPhoneNa.startsWith("+") ? rawPhoneNa : `+${rawPhoneNa}`;
+    const digitsOnly = rawPhone.replace(/[^\d]/g, "");
+
+    if (!/^\+\d{1,4}$/.test(normalizedPhoneNa)) {
+      badRequest("REQ_INVALID_BODY", "phoneNa must be a valid country calling code.");
+    }
+
+    if (!/^\d{4,20}$/.test(digitsOnly)) {
+      badRequest("REQ_INVALID_BODY", "phone must be a valid phone number.");
+    }
+
+    if (normalizedPhoneNa === "+86" && !/^1\d{10}$/.test(digitsOnly)) {
+      badRequest("REQ_INVALID_BODY", "phone must be a valid mainland China mobile number.");
+    }
+
+    return `${normalizedPhoneNa}${digitsOnly}`;
+  }
+
   private normalizeIpAddress(ipAddress?: string): string {
     const normalized = ipAddress?.trim();
     return normalized ? normalized : "unknown";
+  }
+
+  private async assertSmsCodeValid(command: {
+    appId: string;
+    subject: string;
+    code: string;
+    kind: "login" | "register" | "password-reset";
+    now?: Date;
+  }): Promise<void> {
+    const now = command.now ?? new Date();
+    const smsCode = command.code.trim();
+    if (!smsCode) {
+      unauthorized("AUTH_VERIFICATION_CODE_REQUIRED", "SMS verification code is required.");
+    }
+
+    const cacheKey = this.resolveSmsVerificationCacheKey(command.appId, command.subject, command.kind);
+    const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
+      await this.deleteVerificationCodeEntry(cacheKey);
+      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "SMS verification code is invalid or expired.");
+    }
+
+    if (cachedCode.failedAttempts >= this.registrationMaxFailedCodeAttempts) {
+      await this.deleteVerificationCodeEntry(cacheKey);
+      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "SMS verification code is invalid or expired.");
+    }
+
+    if (!timingSafeHexCompare(sha256(smsCode), cachedCode.codeHash)) {
+      await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
+      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "SMS verification code is invalid or expired.");
+    }
+
+    await this.deleteVerificationCodeEntry(cacheKey);
+  }
+
+  private resolveSmsVerificationCacheKey(appId: string, phone: string, kind: "login" | "register" | "password-reset"): string {
+    if (kind === "register") {
+      return this.buildRegistrationCodeKey(appId, phone, "sms");
+    }
+
+    if (kind === "password-reset") {
+      return this.buildPasswordResetCodeKey(appId, phone, "sms");
+    }
+
+    return this.buildEmailLoginCodeKey(appId, phone, "sms");
   }
 
   private isLocalEmailLoginBypassAccount(email: string, ipAddress: string): boolean {
@@ -798,15 +1141,21 @@ export class AuthService {
       || normalizedIp === "unknown";
   }
 
-  private async consumeRegistrationCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeRegistrationCodeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildRegistrationComboRateKey("email-code", appId, email, ipAddress),
+      this.buildRegistrationComboRateKey("email-code", appId, accountKey, ipAddress, channel),
       this.registrationCodeWindowMs,
       this.registrationCodeWindowLimit,
       now,
     );
     await this.consumeBucketCount(
-      this.buildRegistrationEmailDayRateKey(email, now),
+      this.buildRegistrationDayRateKey(accountKey, now, channel),
       48 * 60 * 60,
       this.registrationEmailDailyLimit,
       now,
@@ -819,24 +1168,36 @@ export class AuthService {
     );
   }
 
-  private async consumeRegistrationLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeRegistrationLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildRegistrationComboRateKey("complete", appId, email, ipAddress),
+      this.buildRegistrationComboRateKey("complete", appId, accountKey, ipAddress, channel),
       this.registrationWindowMs,
       this.registrationWindowLimit,
       now,
     );
   }
 
-  private async consumeEmailLoginCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeEmailLoginCodeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildEmailLoginComboRateKey("email-code", appId, email, ipAddress),
+      this.buildEmailLoginComboRateKey("email-code", appId, accountKey, ipAddress, channel),
       this.registrationCodeWindowMs,
       this.registrationCodeWindowLimit,
       now,
     );
     await this.consumeBucketCount(
-      this.buildEmailLoginEmailDayRateKey(email, now),
+      this.buildEmailLoginDayRateKey(accountKey, now, channel),
       48 * 60 * 60,
       this.registrationEmailDailyLimit,
       now,
@@ -849,24 +1210,36 @@ export class AuthService {
     );
   }
 
-  private async consumeEmailLoginLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeEmailLoginLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildEmailLoginComboRateKey("complete", appId, email, ipAddress),
+      this.buildEmailLoginComboRateKey("complete", appId, accountKey, ipAddress, channel),
       this.registrationWindowMs,
       this.registrationWindowLimit,
       now,
     );
   }
 
-  private async consumePasswordCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumePasswordCodeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildPasswordResetComboRateKey("email-code", appId, email, ipAddress),
+      this.buildPasswordResetComboRateKey("email-code", appId, accountKey, ipAddress, channel),
       this.registrationCodeWindowMs,
       this.registrationCodeWindowLimit,
       now,
     );
     await this.consumeBucketCount(
-      this.buildPasswordResetEmailDayRateKey(email, now),
+      this.buildPasswordResetDayRateKey(accountKey, now, channel),
       48 * 60 * 60,
       this.registrationEmailDailyLimit,
       now,
@@ -879,9 +1252,15 @@ export class AuthService {
     );
   }
 
-  private async consumePasswordResetLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumePasswordResetLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildPasswordResetComboRateKey("complete", appId, email, ipAddress),
+      this.buildPasswordResetComboRateKey("complete", appId, accountKey, ipAddress, channel),
       this.registrationWindowMs,
       this.registrationWindowLimit,
       now,
@@ -952,63 +1331,66 @@ export class AuthService {
     );
   }
 
-  private buildRegistrationCodeKey(appId: string, email: string): string {
-    return `auth:register:code:${appId}:${email}`;
+  private buildRegistrationCodeKey(appId: string, accountKey: string, channel: "email" | "sms" = "email"): string {
+    return `auth:${channel}:register:code:${appId}:${accountKey}`;
   }
 
   private buildRegistrationComboRateKey(
     kind: "email-code" | "complete",
     appId: string,
-    email: string,
+    accountKey: string,
     ipAddress: string,
+    channel: "email" | "sms" = "email",
   ): string {
-    return `auth:register:rate:${kind}:${appId}:${email}:${ipAddress}`;
+    return `auth:${channel}:register:rate:${kind}:${appId}:${accountKey}:${ipAddress}`;
   }
 
-  private buildRegistrationEmailDayRateKey(email: string, now = new Date()): string {
-    return `auth:register:email-day:${toDateKey(now)}:${email}`;
+  private buildRegistrationDayRateKey(accountKey: string, now = new Date(), channel: "email" | "sms" = "email"): string {
+    return `auth:${channel}:register:day:${toDateKey(now)}:${accountKey}`;
   }
 
   private buildRegistrationIpHourRateKey(ipAddress: string, now = new Date()): string {
     return `auth:register:ip-hour:${toHourKey(now)}:${ipAddress}`;
   }
 
-  private buildEmailLoginCodeKey(appId: string, email: string): string {
-    return `auth:email-login:code:${appId}:${email}`;
+  private buildEmailLoginCodeKey(appId: string, accountKey: string, channel: "email" | "sms" = "email"): string {
+    return `auth:${channel}:login:code:${appId}:${accountKey}`;
   }
 
   private buildEmailLoginComboRateKey(
     kind: "email-code" | "complete",
     appId: string,
-    email: string,
+    accountKey: string,
     ipAddress: string,
+    channel: "email" | "sms" = "email",
   ): string {
-    return `auth:email-login:rate:${kind}:${appId}:${email}:${ipAddress}`;
+    return `auth:${channel}:login:rate:${kind}:${appId}:${accountKey}:${ipAddress}`;
   }
 
-  private buildEmailLoginEmailDayRateKey(email: string, now = new Date()): string {
-    return `auth:email-login:email-day:${toDateKey(now)}:${email}`;
+  private buildEmailLoginDayRateKey(accountKey: string, now = new Date(), channel: "email" | "sms" = "email"): string {
+    return `auth:${channel}:login:day:${toDateKey(now)}:${accountKey}`;
   }
 
   private buildEmailLoginIpHourRateKey(ipAddress: string, now = new Date()): string {
     return `auth:email-login:ip-hour:${toHourKey(now)}:${ipAddress}`;
   }
 
-  private buildPasswordResetCodeKey(appId: string, email: string): string {
-    return `auth:password-reset:code:${appId}:${email}`;
+  private buildPasswordResetCodeKey(appId: string, accountKey: string, channel: "email" | "sms" = "email"): string {
+    return `auth:${channel}:password-reset:code:${appId}:${accountKey}`;
   }
 
   private buildPasswordResetComboRateKey(
     kind: "email-code" | "complete",
     appId: string,
-    email: string,
+    accountKey: string,
     ipAddress: string,
+    channel: "email" | "sms" = "email",
   ): string {
-    return `auth:password-reset:rate:${kind}:${appId}:${email}:${ipAddress}`;
+    return `auth:${channel}:password-reset:rate:${kind}:${appId}:${accountKey}:${ipAddress}`;
   }
 
-  private buildPasswordResetEmailDayRateKey(email: string, now = new Date()): string {
-    return `auth:password-reset:email-day:${toDateKey(now)}:${email}`;
+  private buildPasswordResetDayRateKey(accountKey: string, now = new Date(), channel: "email" | "sms" = "email"): string {
+    return `auth:${channel}:password-reset:day:${toDateKey(now)}:${accountKey}`;
   }
 
   private buildPasswordResetIpHourRateKey(ipAddress: string, now = new Date()): string {

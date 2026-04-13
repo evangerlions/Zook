@@ -70,6 +70,10 @@ export type ErrorCode =
   | "FILE_ACCESS_DENIED"
   | "EMAIL_SERVICE_NOT_CONFIGURED"
   | "EMAIL_PROVIDER_REQUEST_FAILED"
+  | "SMS_SERVICE_NOT_CONFIGURED"
+  | "SMS_PROVIDER_REQUEST_FAILED"
+  | "CAPTCHA_SERVICE_NOT_CONFIGURED"
+  | "CAPTCHA_PROVIDER_REQUEST_FAILED"
   | "LLM_MODEL_NOT_FOUND"
   | "LLM_SERVICE_NOT_CONFIGURED"
   | "LLM_ROUTE_NOT_AVAILABLE"
@@ -434,6 +438,52 @@ export interface ResetPasswordCommand {
   appId: string;
   email: string;
   emailCode: string;
+  password: string;
+  ipAddress: string;
+}
+
+export interface RegisterSmsCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+}
+
+export interface RegisterBySmsCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  ipAddress: string;
+}
+
+export interface SmsLoginCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+}
+
+export interface SmsLoginCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  ipAddress: string;
+}
+
+export interface PasswordSmsCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+}
+
+export interface ResetPasswordBySmsCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
   password: string;
   ipAddress: string;
 }
