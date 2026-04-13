@@ -52,3 +52,34 @@ test("createApplication resolves the migration database url before postgres boot
     }
   }
 });
+
+test("api health exposes the current runtime version", async () => {
+  const previousVersion = process.env.APP_VERSION;
+  process.env.APP_VERSION = "20260412_002";
+
+  try {
+    const runtime = await createApplication({
+      queueBackend: "memory",
+      databaseFactory: (seed) => new InMemoryDatabase(seed),
+    });
+
+    const response = await runtime.app.handle({
+      method: "GET",
+      path: "/api/health",
+      headers: {},
+      requestId: "req_health_version",
+    } as never);
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.body.data, {
+      status: "ok",
+      version: "20260412_002",
+    });
+  } finally {
+    if (previousVersion === undefined) {
+      delete process.env.APP_VERSION;
+    } else {
+      process.env.APP_VERSION = previousVersion;
+    }
+  }
+});
