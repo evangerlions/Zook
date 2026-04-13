@@ -216,12 +216,13 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
    `POST /api/v1/auth/login/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`
 5. 短信验证码登录接口：
-   `POST /api/v1/auth/login/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86" }`
+   `POST /api/v1/auth/login/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "test": false }`
    `POST /api/v1/auth/login/sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "clientType": "app" }`
    `phoneNa` 可省略，默认按 `+86` 处理；服务端会把手机号标准化后再存储和查询。
+   `test` 仅对短信发码接口生效；当为 `true` 时，服务端会照常生成并缓存验证码，但不会真正调用短信发送服务，适合联调和自动化测试。
 6. 密码相关接口：
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
-   `POST /api/v1/auth/password/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86" }`
+   `POST /api/v1/auth/password/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "test": false }`
    `POST /api/v1/auth/password/set` 请求体为 `{ "appId": "app_a", "password": "Password1234", "clientType": "app" }`
    `POST /api/v1/auth/password/reset` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "password": "Password1234", "clientType": "app" }`
    `POST /api/v1/auth/password/reset-by-sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "password": "Password1234", "clientType": "app" }`
@@ -231,7 +232,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 7. 注册相关接口：
    `POST /api/v1/auth/register/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/register` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "password": "Password1234", "emailCode": "123456", "clientType": "app" }`
-   `POST /api/v1/auth/register/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86" }`
+   `POST /api/v1/auth/register/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "test": false }`
    `POST /api/v1/auth/register/sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "clientType": "app" }`
 8. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录；手机号不存在时，`POST /api/v1/auth/login/sms` 也会按同样规则自动创建账号并登录。
 9. `POST /api/v1/auth/password/email-code` 和 `POST /api/v1/auth/password/sms-code` 为了避免账号探测，在目标账号不存在、账号被封或当前 app 不允许该账号走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` / `reset-by-sms` 阶段完成。

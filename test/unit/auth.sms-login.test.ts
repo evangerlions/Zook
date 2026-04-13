@@ -313,3 +313,109 @@ test("sms password code hides account existence and sms password reset upgrades 
 
   assert.equal(passwordLoginResponse.statusCode, 200);
 });
+
+test("sms code endpoints accept test=true and skip real sms sending while still issuing usable codes", async () => {
+  const sent: SentVerificationSms[] = [];
+  const runtime = await createApplication({
+    registrationCodeGenerator: () => "444444",
+    smsVerificationSender: createFakeSmsSender(sent),
+  });
+
+  const loginCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/sms-code",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100989",
+      phoneNa: "+86",
+      test: true,
+    },
+    ipAddress: "198.51.100.76",
+  });
+
+  assert.equal(loginCodeResponse.statusCode, 200);
+  assert.equal(sent.length, 0);
+
+  const loginResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/sms",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100989",
+      phoneNa: "+86",
+      smsCode: "444444",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.76",
+  });
+
+  assert.equal(loginResponse.statusCode, 200);
+
+  const registerCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/register/sms-code",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100990",
+      phoneNa: "+86",
+      test: true,
+    },
+    ipAddress: "198.51.100.77",
+  });
+
+  assert.equal(registerCodeResponse.statusCode, 200);
+  assert.equal(sent.length, 0);
+
+  const registerResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/register/sms",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100990",
+      phoneNa: "+86",
+      smsCode: "444444",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.77",
+  });
+
+  assert.equal(registerResponse.statusCode, 200);
+
+  const passwordCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/password/sms-code",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100989",
+      phoneNa: "+86",
+      test: true,
+    },
+    ipAddress: "198.51.100.76",
+  });
+
+  assert.equal(passwordCodeResponse.statusCode, 200);
+  assert.equal(sent.length, 0);
+
+  const resetResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/password/reset-by-sms",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100989",
+      phoneNa: "+86",
+      smsCode: "444444",
+      password: "Password9876",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.76",
+  });
+
+  assert.equal(resetResponse.statusCode, 200);
+  assert.equal(sent.length, 0);
+});

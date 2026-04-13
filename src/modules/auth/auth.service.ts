@@ -384,15 +384,17 @@ export class AuthService {
       now,
     );
 
-    try {
-      await this.smsVerificationSender.sendVerificationCode({
-        phoneNumber: phone,
-        code: rawCode,
-        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
-      });
-    } catch (error) {
-      await this.deleteVerificationCodeEntry(cacheKey);
-      throw error;
+    if (!command.test) {
+      try {
+        await this.smsVerificationSender.sendVerificationCode({
+          phoneNumber: phone,
+          code: rawCode,
+          expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        });
+      } catch (error) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        throw error;
+      }
     }
 
     return this.buildVerificationCodeAcceptedResult();
@@ -459,15 +461,17 @@ export class AuthService {
       now,
     );
 
-    try {
-      await this.smsVerificationSender.sendVerificationCode({
-        phoneNumber: phone,
-        code: rawCode,
-        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
-      });
-    } catch (error) {
-      await this.deleteVerificationCodeEntry(cacheKey);
-      throw error;
+    if (!command.test) {
+      try {
+        await this.smsVerificationSender.sendVerificationCode({
+          phoneNumber: phone,
+          code: rawCode,
+          expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        });
+      } catch (error) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        throw error;
+      }
     }
 
     return this.buildVerificationCodeAcceptedResult();
@@ -703,15 +707,17 @@ export class AuthService {
       now,
     );
 
-    try {
-      await this.smsVerificationSender.sendVerificationCode({
-        phoneNumber: phone,
-        code: rawCode,
-        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
-      });
-    } catch (error) {
-      await this.deleteVerificationCodeEntry(cacheKey);
-      throw error;
+    if (!command.test) {
+      try {
+        await this.smsVerificationSender.sendVerificationCode({
+          phoneNumber: phone,
+          code: rawCode,
+          expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        });
+      } catch (error) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        throw error;
+      }
     }
 
     return this.buildVerificationCodeAcceptedResult();

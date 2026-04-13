@@ -447,6 +447,7 @@ export interface RegisterSmsCodeCommand {
   phone: string;
   phoneNa?: string;
   ipAddress: string;
+  test?: boolean;
 }
 
 export interface RegisterBySmsCommand {
@@ -462,6 +463,7 @@ export interface SmsLoginCodeCommand {
   phone: string;
   phoneNa?: string;
   ipAddress: string;
+  test?: boolean;
 }
 
 export interface SmsLoginCommand {
@@ -477,6 +479,7 @@ export interface PasswordSmsCodeCommand {
   phone: string;
   phoneNa?: string;
   ipAddress: string;
+  test?: boolean;
 }
 
 export interface ResetPasswordBySmsCommand {

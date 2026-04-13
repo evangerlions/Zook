@@ -1003,6 +1003,7 @@ export class BackendApplication {
     const appId = this.appContextResolver.resolvePreAuth(request);
     const phone = this.validationPipe.requireString(body, "phone");
     const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const test = this.validationPipe.optionalBoolean(body, "test");
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
@@ -1010,6 +1011,7 @@ export class BackendApplication {
         appId,
         phone,
         phoneNa,
+        test,
         ipAddress,
       });
 
@@ -1020,6 +1022,7 @@ export class BackendApplication {
         payload: {
           phone,
           phoneNa,
+          test,
           ipAddress,
           accepted: true,
         },
@@ -1034,6 +1037,7 @@ export class BackendApplication {
         payload: {
           phone,
           phoneNa,
+          test,
           ipAddress,
           accepted: false,
           errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
@@ -1221,6 +1225,7 @@ export class BackendApplication {
     const appId = this.appContextResolver.resolvePreAuth(request);
     const phone = this.validationPipe.requireString(body, "phone");
     const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const test = this.validationPipe.optionalBoolean(body, "test");
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
@@ -1228,6 +1233,7 @@ export class BackendApplication {
         appId,
         phone,
         phoneNa,
+        test,
         ipAddress,
       });
 
@@ -1238,6 +1244,7 @@ export class BackendApplication {
         payload: {
           phone,
           phoneNa,
+          test,
           ipAddress,
           accepted: true,
         },
@@ -1252,6 +1259,7 @@ export class BackendApplication {
         payload: {
           phone,
           phoneNa,
+          test,
           ipAddress,
           accepted: false,
           errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
@@ -1495,6 +1503,7 @@ export class BackendApplication {
     const appId = this.appContextResolver.resolvePreAuth(request);
     const phone = this.validationPipe.requireString(body, "phone");
     const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const test = this.validationPipe.optionalBoolean(body, "test");
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
@@ -1502,6 +1511,7 @@ export class BackendApplication {
         appId,
         phone,
         phoneNa,
+        test,
         ipAddress,
       });
 
@@ -1512,6 +1522,7 @@ export class BackendApplication {
         payload: {
           phone,
           phoneNa,
+          test,
           ipAddress,
           accepted: true,
         },
@@ -1526,6 +1537,7 @@ export class BackendApplication {
         payload: {
           phone,
           phoneNa,
+          test,
           ipAddress,
           accepted: false,
           errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
