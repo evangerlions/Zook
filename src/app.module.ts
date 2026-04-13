@@ -158,6 +158,7 @@ interface ResolvedAdminBasicAuth {
 
 const ADMIN_SESSION_COOKIE_NAME = "adminSession";
 const ADMIN_SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
 function resolveAdminBasicAuth(options: CreateApplicationOptions): ResolvedAdminBasicAuth | null {
   const username = options.adminBasicAuth?.username ?? process.env.ADMIN_BASIC_AUTH_USERNAME ?? "";
@@ -236,6 +237,11 @@ function resolveAccessTokenSecrets(options: CreateApplicationOptions): { current
     current: createOpaqueToken("atk_secret"),
     previous: previous.filter(Boolean),
   };
+}
+
+function resolveRuntimeVersion(rawVersion = process.env.APP_VERSION): string {
+  const normalized = rawVersion?.trim();
+  return normalized || DEFAULT_RUNTIME_VERSION;
 }
 
 function safeEqual(left: string, right: string): boolean {
@@ -356,7 +362,7 @@ export class BackendApplication {
 
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
     if (request.method === "GET" && request.path === "/api/health") {
-      return this.ok({ status: "ok" }, request.requestId as string);
+      return this.ok({ status: "ok", version: resolveRuntimeVersion() }, request.requestId as string);
     }
 
     const publicConfigMatch = request.path.match(/^\/api\/v1\/([^/]+)\/public\/config$/);

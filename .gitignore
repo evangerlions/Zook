@@ -14,5 +14,6 @@ db_doc/generated/*
 .gstack/
 .claude/
 .omx/
+.omc/
 
 .storage/
