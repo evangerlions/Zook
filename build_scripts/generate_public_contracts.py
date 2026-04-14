@@ -154,13 +154,24 @@ def ts_type(schema: Any, name_hint: str = "") -> str:
     return "unknown"
 
 
+def resolve_workspace_root(value: str | None) -> Path:
+    if value:
+        return Path(value).resolve()
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        marker = parent / 'PROJECT_PATHS.local.toml'
+        if marker.exists():
+            return parent.resolve()
+    raise SystemExit('workspace root not found; pass --workspace-root explicitly')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workspace-root", required=True)
+    parser.add_argument("--workspace-root")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
-    workspace_root = Path(args.workspace_root).resolve()
+    workspace_root = resolve_workspace_root(args.workspace_root)
     openapi_root = workspace_root / "api" / "openapi"
     out_path = Path(args.out).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)

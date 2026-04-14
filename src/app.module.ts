@@ -1792,8 +1792,8 @@ export class BackendApplication {
     );
     const clientType = this.getClientType(validated);
     const session = await this.authService.refresh({
-      appId: this.validationPipe.optionalString(validated as Record<string, unknown>, "appId"),
-      refreshToken: this.validationPipe.optionalString(validated as Record<string, unknown>, "refreshToken"),
+      appId: validated.appId?.trim(),
+      refreshToken: validated.refreshToken?.trim(),
       cookieRefreshToken: request.cookies?.refreshToken,
     });
 
@@ -1834,8 +1834,7 @@ export class BackendApplication {
       PublicContractValidator.validateLogout(body),
       request,
     );
-    const requestedAppId =
-      this.validationPipe.optionalString(validated as Record<string, unknown>, "appId") ?? auth.appId;
+    const requestedAppId = validated.appId?.trim() ?? auth.appId;
     const scope = validated.scope === "all" ? "all" : "current";
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
@@ -1843,7 +1842,7 @@ export class BackendApplication {
       {
         appId: requestedAppId,
         scope,
-        refreshToken: this.validationPipe.optionalString(body, "refreshToken"),
+        refreshToken: validated.refreshToken?.trim(),
         cookieRefreshToken: request.cookies?.refreshToken,
       },
       auth,
