@@ -17,6 +17,14 @@ function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): 
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
 }
 
+async function issueAccessToken(runtime: Awaited<ReturnType<typeof createApplication>>) {
+  return runtime.services.authService.login({
+    appId: "app_a",
+    account: "alice@example.com",
+    password: "Password1234",
+  });
+}
+
 async function loginAdmin(runtime: Awaited<ReturnType<typeof createApplication>>, username = "admin", password = "AdminPass123!") {
   const response = await runtime.app.handle({
     method: "POST",
@@ -416,6 +424,37 @@ test("public app config API rejects X-App-Id mismatches against the path app", a
 
   assert.equal(response.statusCode, 403);
   assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
+});
+
+test("analytics batch rejects invalid occurredAt with a friendly localized message", async () => {
+  const runtime = await createApplication();
+  const session = await issueAccessToken(runtime);
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/analytics/events/batch",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-app-locale": "en-US",
+    },
+    body: {
+      appId: "app_a",
+      events: [
+        {
+          platform: "web",
+          sessionId: "sess_1",
+          pageKey: "home",
+          eventName: "page_view",
+          occurredAt: "not-a-date",
+        },
+      ],
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.equal(response.body.message, "Please enter a valid date-time value.");
 });
 
 test("admin config API saves normalized JSON back to the app config store", async () => {

@@ -1,3 +1,22 @@
+import type {
+  AnalyticsEventInput as GeneratedAnalyticsEventInput,
+  AuthSessionData as GeneratedAuthSessionData,
+  CurrentUserData as GeneratedCurrentUserData,
+  FileConfirmData as GeneratedFileConfirmData,
+  FilePresignData as GeneratedFilePresignData,
+  LogFailData as GeneratedLogFailData,
+  LogNoDataAckData as GeneratedLogNoDataAckData,
+  LogPolicyData as GeneratedLogPolicyData,
+  LogPullTaskData as GeneratedLogPullTaskData,
+  LogUploadData as GeneratedLogUploadData,
+  NotificationQueuedData as GeneratedNotificationQueuedData,
+  PublicConfigData as GeneratedPublicConfigData,
+  QrLoginConfirmData as GeneratedQrLoginConfirmData,
+  QrLoginCreateData as GeneratedQrLoginCreateData,
+  QrLoginPollData as GeneratedQrLoginPollData,
+  UserSummary as GeneratedUserSummary,
+} from "../generated/openapi/public-contracts.generated.ts";
+
 export type AppStatus = "ACTIVE" | "BLOCKED";
 export type JoinMode = "AUTO" | "INVITE_ONLY";
 export type UserStatus = "ACTIVE" | "BLOCKED";
@@ -651,11 +670,7 @@ export interface AdminAiRoutingDocument {
   revisions: ConfigRevisionMeta[];
 }
 
-export interface PublicAppConfigDocument {
-  appId: string;
-  config: Record<string, unknown>;
-  updatedAt?: string;
-}
+export type PublicAppConfigDocument = GeneratedPublicConfigData;
 
 export interface I18nSettings {
   defaultLocale: string;
@@ -1081,26 +1096,11 @@ export interface AuthSession {
   expiresIn: number;
 }
 
-export interface AuthenticatedUserProfile {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  avatarUrl: string | null;
-  hasPassword: boolean;
-}
+export type AuthenticatedUserProfile = GeneratedUserSummary;
 
-export interface AuthSuccessPayload {
-  accessToken: string;
-  expiresIn: number;
-  refreshToken?: string;
-  user: AuthenticatedUserProfile;
-}
+export type AuthSuccessPayload = GeneratedAuthSessionData;
 
-export interface CurrentUserDocument {
-  appId: string;
-  user: AuthenticatedUserProfile;
-}
+export type CurrentUserDocument = GeneratedCurrentUserData;
 
 export interface RegisterEmailCodeResult {
   accepted: true;
@@ -1125,41 +1125,13 @@ export interface PollQrLoginCommand {
   pollToken: string;
 }
 
-export interface QrLoginCreateResult {
-  loginId: string;
-  qrContent: string;
-  pollToken: string;
-  expiresInSeconds: number;
-  pollIntervalMs: number;
-}
+export type QrLoginCreateResult = GeneratedQrLoginCreateData;
 
-export interface QrLoginConfirmResult {
-  confirmed: true;
-}
+export type QrLoginConfirmResult = GeneratedQrLoginConfirmData;
 
-export type QrLoginPollResult =
-  | {
-      status: "PENDING";
-      expiresInSeconds: number;
-      pollIntervalMs: number;
-    }
-  | {
-      status: "CONFIRMED";
-      accessToken: string;
-      refreshToken: string;
-      expiresIn: number;
-      userId: string;
-    };
+export type QrLoginPollResult = GeneratedQrLoginPollData;
 
-export interface AnalyticsEventInput {
-  platform: Platform;
-  sessionId: string;
-  pageKey: string;
-  eventName: EventName;
-  durationMs?: number;
-  occurredAt: string;
-  metadata?: Record<string, unknown>;
-}
+export type AnalyticsEventInput = GeneratedAnalyticsEventInput;
 
 export interface MetricsOverviewItem {
   date: string;
@@ -1176,63 +1148,28 @@ export interface PageMetricItem {
   avgDurationMs: number;
 }
 
-export interface FilePresignResult {
-  uploadUrl: string;
-  storageKey: string;
-  expireAt: string;
-}
+export type FilePresignResult = GeneratedFilePresignData;
 
-export interface FileConfirmResult {
-  downloadUrl: string;
-  storageKey: string;
-}
+export type FileConfirmResult = GeneratedFileConfirmData;
 
-export type LogPullTaskResult =
-  | {
-      shouldUpload: false;
-    }
-  | {
-      shouldUpload: true;
-      taskId: string;
-      claimToken: string;
-      claimExpireAtMs: number;
-      fromTsMs?: number;
-      toTsMs?: number;
-      maxLines?: number;
-      maxBytes?: number;
-      keyId: string;
-    };
+export type NotificationQueueResult = GeneratedNotificationQueuedData;
 
-export interface LogPolicyResult {
-  enabled: boolean;
-  minPullIntervalSeconds: number;
-}
+export type LogPullTaskResult = GeneratedLogPullTaskData;
 
-export interface LogUploadResult {
-  taskId: string;
-  acceptedCount: number;
-  rejectedCount: number;
-}
+export type LogPolicyResult = GeneratedLogPolicyData;
 
-export interface LogNoDataAckResult {
-  taskId: string;
-  status: "no_data";
-}
+export type LogUploadResult = GeneratedLogUploadData;
 
-export interface LogFailResult {
-  taskId: string;
-  status: "failed";
-  failedAt: string;
-  failureReason?: string;
-}
+export type LogNoDataAckResult = GeneratedLogNoDataAckData;
+
+export type LogFailResult = GeneratedLogFailData;
 
 export interface LogFailCommand {
   auth: AuthContext;
   did: string;
   taskId: string;
   claimToken: string;
-  reason?: string;
-  message?: string;
+  failureReason?: string;
   now?: Date;
 }
 

@@ -78,6 +78,7 @@ import { SmsVerificationRecordService, SMS_VERIFICATION_REVEAL_OPERATION } from 
 import { SmsVerificationCleanupService } from "./services/sms-verification-cleanup.service.ts";
 import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
 import { RequestLocaleService } from "./services/request-locale.service.ts";
+import { PublicApiMessageService } from "./services/public-api-message.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
 import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import {
@@ -129,6 +130,8 @@ import type {
   Platform,
 } from "./shared/types.ts";
 import { createOpaqueToken, getHeader, parseCookies, randomId } from "./shared/utils.ts";
+import { PublicContractValidator } from "./generated/openapi/public-contract-validator.ts";
+import type { ErrorObject } from "ajv";
 
 export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
@@ -327,6 +330,8 @@ export class BackendApplication {
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
     private readonly requestEmailContextService: RequestEmailContextService,
+    private readonly requestLocaleService: RequestLocaleService,
+    private readonly publicApiMessageService: PublicApiMessageService,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
     private readonly httpExceptionFilter: HttpExceptionFilter,
@@ -349,7 +354,7 @@ export class BackendApplication {
         this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt);
         return response;
       } catch (error) {
-        const response = this.httpExceptionFilter.catch(error, request.requestId);
+        const response = this.httpExceptionFilter.catch(error, request, request.requestId);
         this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt, error);
         return response;
       }
@@ -881,10 +886,14 @@ export class BackendApplication {
 
   private async handleLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validatePasswordLogin(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const account = this.validationPipe.requireString(body, "account");
-    const password = this.validationPipe.requireString(body, "password");
-    const clientType = this.getClientType(body);
+    const account = validated.account.trim();
+    const password = validated.password;
+    const clientType = this.getClientType(validated);
     const session = await this.authService.login({ appId, account, password });
 
     await this.auditInterceptor.record({
@@ -907,8 +916,12 @@ export class BackendApplication {
 
   private async handleRegisterEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailCode(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
+    const email = validated.email.trim();
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -961,8 +974,12 @@ export class BackendApplication {
 
   private async handleLoginEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailCode(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
+    const email = validated.email.trim();
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -1064,10 +1081,14 @@ export class BackendApplication {
 
   private async handleLoginWithEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailLogin(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
-    const emailCode = this.validationPipe.requireString(body, "emailCode");
-    const clientType = this.getClientType(body);
+    const email = validated.email.trim();
+    const emailCode = validated.emailCode.trim();
+    const clientType = this.getClientType(validated);
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -1183,8 +1204,12 @@ export class BackendApplication {
 
   private async handleSendPasswordCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailCode(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
+    const email = validated.email.trim();
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -1286,11 +1311,15 @@ export class BackendApplication {
 
   private async handleResetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateResetPassword(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
-    const password = this.validationPipe.requireString(body, "password");
-    const emailCode = this.validationPipe.requireString(body, "emailCode");
-    const clientType = this.getClientType(body);
+    const email = validated.email.trim();
+    const password = validated.password;
+    const emailCode = validated.emailCode.trim();
+    const clientType = this.getClientType(validated);
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
@@ -1397,10 +1426,14 @@ export class BackendApplication {
   private async handleChangePassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
-    const currentPassword = this.validationPipe.requireString(body, "currentPassword");
-    const newPassword = this.validationPipe.requireString(body, "newPassword");
-    const clientType = this.getClientType(body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateChangePassword(body),
+      request,
+    );
+    const requestedAppId = validated.appId ?? auth.appId;
+    const currentPassword = validated.currentPassword;
+    const newPassword = validated.newPassword;
+    const clientType = this.getClientType(validated);
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
     const session = await this.authService.changePassword({
@@ -1431,9 +1464,13 @@ export class BackendApplication {
   private async handleSetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
-    const password = this.validationPipe.requireString(body, "password");
-    const clientType = this.getClientType(body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateSetPassword(body),
+      request,
+    );
+    const requestedAppId = validated.appId ?? auth.appId;
+    const password = validated.password;
+    const clientType = this.getClientType(validated);
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
     const session = await this.authService.setPassword({
@@ -1462,11 +1499,15 @@ export class BackendApplication {
 
   private async handleRegister(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateRegister(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
-    const password = this.validationPipe.requireString(body, "password");
-    const emailCode = this.validationPipe.requireString(body, "emailCode");
-    const clientType = this.getClientType(body);
+    const email = validated.email.trim();
+    const password = validated.password;
+    const emailCode = validated.emailCode.trim();
+    const clientType = this.getClientType(validated);
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
@@ -1618,6 +1659,11 @@ export class BackendApplication {
   }
 
   private async handleCreateQrLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    this.requireValidPublicContract(
+      PublicContractValidator.validateQrLoginCreate(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
 
     try {
@@ -1740,10 +1786,14 @@ export class BackendApplication {
 
   private async handleRefresh(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
-    const clientType = this.getClientType(body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateRefresh(body),
+      request,
+    );
+    const clientType = this.getClientType(validated);
     const session = await this.authService.refresh({
-      appId: this.validationPipe.optionalString(body, "appId"),
-      refreshToken: this.validationPipe.optionalString(body, "refreshToken"),
+      appId: this.validationPipe.optionalString(validated as Record<string, unknown>, "appId"),
+      refreshToken: this.validationPipe.optionalString(validated as Record<string, unknown>, "refreshToken"),
       cookieRefreshToken: request.cookies?.refreshToken,
     });
 
@@ -1780,8 +1830,13 @@ export class BackendApplication {
   private async handleLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request, { requireActiveMembership: false });
     const body = this.validationPipe.asObject(request.body);
-    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
-    const scope = body.scope === "all" ? "all" : "current";
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateLogout(body),
+      request,
+    );
+    const requestedAppId =
+      this.validationPipe.optionalString(validated as Record<string, unknown>, "appId") ?? auth.appId;
+    const scope = validated.scope === "all" ? "all" : "current";
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
     const revoked = await this.authService.logout(
@@ -1818,14 +1873,16 @@ export class BackendApplication {
   private async handleAnalyticsBatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateAnalyticsBatch(body),
+      request,
+    );
+    const appId = this.validationPipe.requireString(validated as Record<string, unknown>, "appId");
     this.appAccessGuard.assertScope(appId, auth.appId);
-
-    const events = this.validationPipe.requireArray<AnalyticsEventInput>(body, "events");
     const result = await this.analyticsService.recordBatch({
       appId: auth.appId,
       userId: auth.userId,
-      events,
+      events: validated.events,
     });
 
     return this.ok(result, request.requestId as string);
@@ -1926,6 +1983,10 @@ export class BackendApplication {
     }
 
     const result = await this.adminConsoleService.getPublicConfig(appId);
+    this.requireValidPublicContract(
+      PublicContractValidator.validatePublicConfigData(result),
+      request,
+    );
     return this.ok(result, request.requestId as string);
   }
 
@@ -2892,15 +2953,19 @@ export class BackendApplication {
   private async handleFilePresign(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateFilePresign(body),
+      request,
+    );
+    const appId = validated.appId.trim();
     this.appAccessGuard.assertScope(appId, auth.appId);
 
     const result = await this.storageService.presignUpload({
       appId: auth.appId,
       ownerUserId: auth.userId,
-      fileName: this.validationPipe.requireString(body, "fileName"),
-      mimeType: this.validationPipe.requireString(body, "mimeType"),
-      sizeBytes: this.validationPipe.requireNumber(body, "sizeBytes"),
+      fileName: validated.fileName.trim(),
+      mimeType: validated.mimeType.trim(),
+      sizeBytes: validated.sizeBytes,
     });
 
     return this.ok(result, request.requestId as string);
@@ -2909,15 +2974,19 @@ export class BackendApplication {
   private async handleFileConfirm(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateFileConfirm(body),
+      request,
+    );
+    const appId = validated.appId.trim();
     this.appAccessGuard.assertScope(appId, auth.appId);
 
     const result = await this.storageService.confirmUpload({
       appId: auth.appId,
       ownerUserId: auth.userId,
-      storageKey: this.validationPipe.requireString(body, "storageKey"),
-      mimeType: this.validationPipe.requireString(body, "mimeType"),
-      sizeBytes: this.validationPipe.requireNumber(body, "sizeBytes"),
+      storageKey: validated.storageKey.trim(),
+      mimeType: validated.mimeType.trim(),
+      sizeBytes: validated.sizeBytes,
     });
 
     await this.auditInterceptor.record({
@@ -2928,7 +2997,7 @@ export class BackendApplication {
       resourceId: result.storageKey,
       resourceOwnerUserId: auth.userId,
       payload: {
-        mimeType: this.validationPipe.requireString(body, "mimeType"),
+        mimeType: validated.mimeType,
       },
     });
 
@@ -2938,15 +3007,19 @@ export class BackendApplication {
   private async handleNotification(request: HttpRequest): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateNotificationSend(body),
+      request,
+    );
+    const appId = validated.appId.trim();
     this.appAccessGuard.assertScope(appId, auth.appId);
     await this.rbacGuard.assertPermission(auth.appId, auth.userId, "notification:send");
 
     const result = await this.notificationService.queueNotification({
       appId: auth.appId,
-      recipientUserId: this.validationPipe.requireString(body, "recipientUserId"),
-      channel: this.validationPipe.requireString(body, "channel") as "email" | "sms" | "push",
-      payload: (body.payload as Record<string, unknown> | undefined) ?? {},
+      recipientUserId: validated.recipientUserId.trim(),
+      channel: validated.channel as "email" | "sms" | "push",
+      payload: (validated.payload as Record<string, unknown> | undefined) ?? {},
     });
 
     return this.ok(result, request.requestId as string);
@@ -3290,16 +3363,16 @@ export class BackendApplication {
   ): Promise<HttpResponse<LogNoDataAckResult>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const status = this.validationPipe.requireString(body, "status");
-    if (status !== "no_data") {
-      throw new ApplicationError(400, "REQ_INVALID_BODY", "status must be no_data.");
-    }
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateLogAck(body),
+      request,
+    );
 
     const result = await this.clientLogUploadService.acknowledgeNoData({
       auth,
       did: this.requireHeader(request, "x-did"),
       taskId,
-      claimToken: this.validationPipe.requireString(body, "claimToken"),
+      claimToken: validated.claimToken,
     });
     return this.ok(result, request.requestId as string);
   }
@@ -3310,13 +3383,16 @@ export class BackendApplication {
   ): Promise<HttpResponse<LogFailResult>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateLogFail(body),
+      request,
+    );
     const result = await this.clientLogUploadService.fail({
       auth,
       did: this.requireHeader(request, "x-did"),
       taskId,
-      claimToken: this.validationPipe.requireString(body, "claimToken"),
-      reason: this.validationPipe.optionalString(body, "reason"),
-      message: this.validationPipe.optionalString(body, "message"),
+      claimToken: validated.claimToken,
+      failureReason: validated.failureReason?.trim(),
     });
 
     await this.auditInterceptor.record({
@@ -3412,6 +3488,71 @@ export class BackendApplication {
 
   private getClientType(body: Record<string, unknown>): ClientType {
     return body.clientType === "app" ? "app" : "web";
+  }
+
+  private requireValidPublicContract<T>(
+    result: { ok: true; data: T } | { ok: false; errors: string[]; details: ErrorObject[] },
+    request?: HttpRequest,
+  ): T {
+    if (result.ok) {
+      return result.data;
+    }
+    throw new ApplicationError(
+      400,
+      "REQ_INVALID_BODY",
+      this.buildPublicContractValidationMessage(result.details, request),
+      { errors: result.errors },
+    );
+  }
+
+  private buildPublicContractValidationMessage(
+    details: ErrorObject[],
+    request?: HttpRequest,
+  ): string {
+    const first = details[0];
+    if (!first) {
+      return this.publicApiMessageService.format(
+        "error.req.invalid_body",
+        request,
+      );
+    }
+
+    if (first.keyword === "format" && first.params && "format" in first.params) {
+      const format = String((first.params as { format?: string }).format ?? "");
+      if (format === "email") {
+        return this.publicApiMessageService.format(
+          "error.req.invalid_email",
+          request,
+        );
+      }
+      if (format === "date-time") {
+        return this.publicApiMessageService.format(
+          "error.req.invalid_datetime",
+          request,
+        );
+      }
+    }
+
+    if (first.keyword === "required" && first.params && "missingProperty" in first.params) {
+      const missing = String((first.params as { missingProperty?: string }).missingProperty ?? "");
+      return this.publicApiMessageService.format(
+        "error.req.missing_required",
+        request,
+        { field: missing },
+      );
+    }
+
+    if (first.keyword === "enum") {
+      return this.publicApiMessageService.format(
+        "error.req.invalid_enum",
+        request,
+      );
+    }
+
+    return this.publicApiMessageService.format(
+      "error.req.invalid_body",
+      request,
+    );
   }
 
   private async toAuthPayload(
@@ -3660,6 +3801,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       : new NoopGeoResolver());
   const requestEmailContextService = new RequestEmailContextService(geoResolver);
   const requestLocaleService = new RequestLocaleService();
+  const publicApiMessageService = new PublicApiMessageService(requestLocaleService);
   const i18nService = new I18nService(appI18nConfigService, requestLocaleService);
   const authService = new AuthService(
     database,
@@ -3744,7 +3886,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const validationPipe = new ValidationPipe();
   const auditInterceptor = new AuditInterceptor(database);
   const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
-  const httpExceptionFilter = new HttpExceptionFilter();
+  const httpExceptionFilter = new HttpExceptionFilter(publicApiMessageService);
   const adminBasicAuth = resolveAdminBasicAuth(options);
 
   const app = new BackendApplication(
@@ -3770,6 +3912,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     notificationService,
     failedEventRetryService,
     requestEmailContextService,
+    requestLocaleService,
+    publicApiMessageService,
     auditInterceptor,
     requestLoggingInterceptor,
     httpExceptionFilter,
@@ -3824,6 +3968,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       captchaVerificationService,
       requestEmailContextService,
       requestLocaleService,
+      publicApiMessageService,
       i18nService,
       appContextResolver,
       authGuard,

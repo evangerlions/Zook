@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "node --experimental-transform-types src/main.ts",
     "dev:stack": "bash ./scripts/dev-stack.sh",
+    "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --workspace-root /Users/zhoukai/.codex/worktrees/25d0/zook-workspace --out src/generated/openapi/public-contracts.generated.ts",
+    "generate:public-i18n": "python3 build_scripts/generate_public_i18n.py --workspace-root /Users/zhoukai/.codex/worktrees/25d0/zook-workspace --out src/generated/i18n/public-api-messages.generated.ts",
     "admin": "node --experimental-transform-types apps/admin-web/server.ts",
     "admin:build": "npm --prefix apps/admin-web run build",
     "admin:dev": "npm --prefix apps/admin-web run dev",
@@ -19,6 +21,8 @@
     "@types/node": "^25.3.5"
   },
   "dependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
     "pg": "^8.20.0",
     "redis": "^5.11.0"
   }

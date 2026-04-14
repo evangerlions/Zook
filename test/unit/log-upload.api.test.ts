@@ -588,8 +588,7 @@ test("logs fail marks a claimed task as FAILED and stores failure reason", async
     },
     body: {
       claimToken: "claim_fail",
-      reason: "upload_failed",
-      message: "network timeout after 5 retries",
+      failureReason: "upload_failed: network timeout after 5 retries",
     },
   });
 

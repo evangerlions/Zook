@@ -203,9 +203,7 @@ export class ClientLogUploadService {
       now,
     );
 
-    const failureReason = [command.reason?.trim(), command.message?.trim()]
-      .filter((item) => item && item.length > 0)
-      .join(": ");
+    const failureReason = command.failureReason?.trim() ?? "";
     const failedAt = now.toISOString();
 
     await this.database.updateClientLogUploadTask(task.id, {

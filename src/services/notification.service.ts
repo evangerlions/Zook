@@ -1,6 +1,7 @@
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
+import type { NotificationQueueResult } from "../shared/types.ts";
 import { randomId } from "../shared/utils.ts";
 
 /**
@@ -18,7 +19,7 @@ export class NotificationService {
     recipientUserId: string;
     channel: "email" | "sms" | "push";
     payload: Record<string, unknown>;
-  }): Promise<{ queued: boolean; notificationJobId: string }> {
+  }): Promise<NotificationQueueResult> {
     const notificationJobId = randomId("notification");
     await this.database.insertNotificationJob({
       id: notificationJobId,
