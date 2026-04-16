@@ -15,10 +15,27 @@ interface OpenAICompatibleChoice {
   message?: {
     content?: string | null;
     reasoning_content?: string | null;
+    tool_calls?: Array<{
+      id?: string;
+      type?: string;
+      function?: {
+        name?: string;
+        arguments?: string;
+      };
+    }> | null;
   };
   delta?: {
     content?: string | null;
     reasoning_content?: string | null;
+    tool_calls?: Array<{
+      index?: number;
+      id?: string;
+      type?: string;
+      function?: {
+        name?: string;
+        arguments?: string;
+      };
+    }> | null;
   };
   finish_reason?: string | null;
 }
@@ -174,11 +191,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
         request.model.providerConfig?.apiKey ?? this.apiKey,
         request.model.providerConfig?.timeoutMs ?? 0,
         {
-          ...request.providerOptions,
-          model: request.model.providerModel,
-          messages: request.messages,
-          ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-          ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
+          ...this.buildChatRequestBody(request),
           stream: true,
           stream_options: {
             ...streamOptions,
@@ -198,6 +211,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     }
 
     let finishReason: string | undefined;
+    const pendingToolCalls = new Map<number, { id?: string; name?: string; args: string }>();
     for await (const eventData of readServerSentEvents(response.body)) {
       if (eventData === "[DONE]") {
         yield {
@@ -242,6 +256,16 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
         finishReason = nextFinishReason;
       }
 
+      for (const deltaToolCall of choice.delta?.tool_calls ?? []) {
+        const index = typeof deltaToolCall.index === "number" ? deltaToolCall.index : 0;
+        const existing = pendingToolCalls.get(index) ?? { args: "" };
+        pendingToolCalls.set(index, {
+          id: deltaToolCall.id ?? existing.id,
+          name: deltaToolCall.function?.name ?? existing.name,
+          args: existing.args + (deltaToolCall.function?.arguments ?? ""),
+        });
+      }
+
       const reasoningDelta = this.readOptionalString(choice.delta?.reasoning_content);
       if (reasoningDelta) {
         yield {
@@ -256,6 +280,33 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
           type: "content_delta",
           text: contentDelta,
         };
+      }
+
+      if (nextFinishReason === "tool_calls" && pendingToolCalls.size > 0) {
+        for (const [index, toolCall] of pendingToolCalls.entries()) {
+          if (!toolCall.name) {
+            continue;
+          }
+          let input: Record<string, unknown>;
+          try {
+            const parsed = JSON.parse(toolCall.args || "{}");
+            input =
+              parsed && typeof parsed === "object" && !Array.isArray(parsed)
+                ? (parsed as Record<string, unknown>)
+                : {};
+          } catch {
+            input = {};
+          }
+          yield {
+            type: "tool_call",
+            toolCall: {
+              id: toolCall.id ?? `${request.model.modelKey}_tool_${index}`,
+              name: toolCall.name,
+              input,
+            },
+          };
+        }
+        pendingToolCalls.clear();
       }
     }
 
@@ -292,7 +343,23 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     return {
       ...request.providerOptions,
       model: request.model.providerModel,
-      messages: request.messages,
+      messages: request.messages.map((message) => ({
+        role: message.role,
+        ...(message.content === undefined ? {} : { content: message.content }),
+        ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
+        ...(Array.isArray(message.toolCalls) && message.toolCalls.length > 0
+          ? {
+              tool_calls: message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                type: 'function',
+                function: {
+                  name: toolCall.name,
+                  arguments: JSON.stringify(toolCall.input ?? {}),
+                },
+              })),
+            }
+          : {}),
+      })),
       ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
       ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
     };

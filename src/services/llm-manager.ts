@@ -6,11 +6,13 @@ import { ApplicationError, badRequest, internalError } from "../shared/errors.ts
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 
 export type LLMProviderName = string;
-export type LLMRole = "system" | "user" | "assistant";
+export type LLMRole = "system" | "user" | "assistant" | "tool";
 
 export interface LLMMessage {
   role: LLMRole;
-  content: string;
+  content?: string;
+  toolCallId?: string;
+  toolCalls?: LLMToolCall[];
 }
 
 export interface LLMCompletionRequest {
@@ -19,6 +21,18 @@ export interface LLMCompletionRequest {
   temperature?: number;
   maxTokens?: number;
   providerOptions?: Record<string, unknown>;
+}
+
+export interface LLMToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
+export interface LLMToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
 }
 
 export interface LLMUsage {
@@ -42,6 +56,7 @@ export type LLMStreamEvent =
   | { type: "reasoning_delta"; text: string }
   | { type: "content_delta"; text: string }
   | { type: "usage"; usage: LLMUsage }
+  | { type: "tool_call"; toolCall: LLMToolCall }
   | { type: "done"; finishReason?: string };
 
 export interface ResolvedLLMModel {
@@ -91,7 +106,7 @@ export const DEFAULT_LLM_MODEL_REGISTRY: LLMModelRegistry = {
   },
 };
 
-const VALID_ROLES = new Set<LLMRole>(["system", "user", "assistant"]);
+const VALID_ROLES = new Set<LLMRole>(["system", "user", "assistant", "tool"]);
 
 export interface LLMManagerOptions {
   commonLlmConfigService?: CommonLlmConfigService;
@@ -215,13 +230,32 @@ export class LLMManager {
         badRequest("REQ_INVALID_BODY", `Unsupported LLM role: ${String(message.role)}.`);
       }
 
-      if (typeof message.content !== "string" || !message.content.trim()) {
+      if (message.role === "tool") {
+        if (typeof message.toolCallId !== "string" || !message.toolCallId.trim()) {
+          badRequest("REQ_INVALID_BODY", "tool messages require toolCallId.");
+        }
+        if (typeof message.content !== "string") {
+          badRequest("REQ_INVALID_BODY", "tool message content must be a string.");
+        }
+        return {
+          role: message.role,
+          content: message.content,
+          toolCallId: message.toolCallId,
+        };
+      }
+
+      const hasToolCalls = Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
+      if (typeof message.content !== "string") {
+        badRequest("REQ_INVALID_BODY", "LLM message content must be a string.");
+      }
+      if (!hasToolCalls && !message.content.trim()) {
         badRequest("REQ_INVALID_BODY", "LLM message content must be a non-empty string.");
       }
 
       return {
         role: message.role,
         content: message.content,
+        ...(hasToolCalls ? { toolCalls: message.toolCalls } : {}),
       };
     });
 

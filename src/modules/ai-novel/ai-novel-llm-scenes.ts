@@ -26,7 +26,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultModelKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 2000,
-    responseMode: "json",
+    responseMode: "text",
   },
   blueprint_gen: {
     taskType: "blueprint_gen",

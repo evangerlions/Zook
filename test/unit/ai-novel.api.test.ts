@@ -2,8 +2,15 @@ import assert from "node:assert/strict";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
-import type { EmbeddingProvider, EmbeddingResult } from "../../src/services/embedding-manager.ts";
-import type { LLMCompletionResult, LLMProvider, LLMStreamEvent } from "../../src/services/llm-manager.ts";
+import type {
+  EmbeddingProvider,
+  EmbeddingResult,
+} from "../../src/services/embedding-manager.ts";
+import type {
+  LLMCompletionResult,
+  LLMProvider,
+  LLMStreamEvent,
+} from "../../src/services/llm-manager.ts";
 import { AI_NOVEL_MODEL_ROUTING_CONFIG_KEY } from "../../src/services/app-ai-routing-config.service.ts";
 
 const AI_TEST_KEY_ID = "logk_d5872ff066b8450b9aeed1c53f0df7f1";
@@ -32,18 +39,32 @@ function encryptAiPayload(payload: Record<string, unknown>, key: Buffer) {
   };
 }
 
-function decryptAiPayload(envelope: Record<string, unknown>, key: Buffer): Record<string, unknown> {
+function decryptAiPayload(
+  envelope: Record<string, unknown>,
+  key: Buffer,
+): Record<string, unknown> {
   const nonce = Buffer.from(String(envelope.nonceBase64), "base64");
   const payload = Buffer.from(String(envelope.ciphertextBase64), "base64");
   const ciphertext = payload.subarray(0, payload.length - 16);
   const authTag = payload.subarray(payload.length - 16);
   const decipher = createDecipheriv("aes-256-gcm", key, nonce);
   decipher.setAuthTag(authTag);
-  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  const plaintext = Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final(),
+  ]);
   return JSON.parse(plaintext.toString("utf8")) as Record<string, unknown>;
 }
 
-async function collectSseEvents(stream: AsyncIterable<string> | undefined): Promise<Record<string, unknown>[]> {
+function normalizeAiEvent(event: Record<string, unknown>): Record<string, unknown> {
+  return event.data && typeof event.data === "object"
+    ? (event.data as Record<string, unknown>)
+    : event;
+}
+
+async function collectSseEvents(
+  stream: AsyncIterable<string> | undefined,
+): Promise<Record<string, unknown>[]> {
   if (!stream) {
     return [];
   }
@@ -61,7 +82,9 @@ async function collectSseEvents(stream: AsyncIterable<string> | undefined): Prom
       if (!dataLine) {
         continue;
       }
-      events.push(JSON.parse(dataLine.slice("data: ".length)) as Record<string, unknown>);
+      events.push(
+        JSON.parse(dataLine.slice("data: ".length)) as Record<string, unknown>,
+      );
     }
   }
   return events;
@@ -206,7 +229,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "qwen-plus",
+            providerModel: "qwen3.5-plus",
             enabled: true,
             weight: 100,
           },
@@ -306,7 +329,10 @@ test("ai_novel chat completions route requires bearer auth", async () => {
 
 test("ai_novel chat completions route resolves taskType to scene model selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -335,7 +361,10 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   });
 
   assert.equal(response.statusCode, 200);
-  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   assert.equal(data.taskType, "continue_chapter");
@@ -352,7 +381,10 @@ test("ai_novel chat completions route resolves taskType to scene model selection
 
 test("ai_novel chat completions route supports encrypted SSE streaming", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -384,30 +416,470 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
 
   const decryptedEvents = events.map((event) => decryptAiPayload(event, aiKey));
   assert.deepEqual(
-    decryptedEvents.map((event) => (event.data as Record<string, unknown>).type),
+    decryptedEvents.map(
+      (event) => (event.data as Record<string, unknown>).type,
+    ),
     ["content_delta", "content_delta", "usage", "done"],
   );
   assert.equal(
-    ((decryptedEvents[0]?.data as Record<string, unknown>).text ?? "").toString(),
+    (
+      (decryptedEvents[0]?.data as Record<string, unknown>).text ?? ""
+    ).toString(),
     "第八十",
   );
   assert.equal(
-    ((decryptedEvents[1]?.data as Record<string, unknown>).text ?? "").toString(),
+    (
+      (decryptedEvents[1]?.data as Record<string, unknown>).text ?? ""
+    ).toString(),
     "一回……",
   );
-  const doneCompletion = ((decryptedEvents[3]?.data as Record<string, unknown>).completion ?? {}) as Record<
-    string,
-    unknown
-  >;
+  const doneCompletion = ((decryptedEvents[3]?.data as Record<string, unknown>)
+    .completion ?? {}) as Record<string, unknown>;
   assert.equal(doneCompletion.modelKey, "ainovel-free-creative");
   assert.equal(doneCompletion.content, "第八十一回……");
   assert.equal(doneCompletion.provider, undefined);
   assert.equal(doneCompletion.providerModel, undefined);
 });
 
+test("ai_novel setup_turn stream emits normalized kickoff action events", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "content_delta",
+        text: "我们先把这本书立住。",
+      };
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_meta_1",
+          name: "update_meta",
+          input: {
+            title: "赛博夜行档案",
+            logline: "被公司流放的异能调查员，在霓虹深城里追查记忆走私案。",
+            readiness: 0.2,
+          },
+        },
+      };
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_ready_1",
+          name: "ready",
+          input: {},
+        },
+      };
+      yield {
+        type: "usage",
+        usage: {
+          promptTokens: 21,
+          completionTokens: 55,
+          totalTokens: 76,
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "setup_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "",
+            logline: "",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [
+          {
+            role: "user",
+            content: "写一个赛博都市异能故事，节奏快一点。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  const types = decryptedEvents.map((event) => event.type);
+  assert.deepEqual(types, [
+    "text_delta",
+    "action.update_meta",
+    "action.ready",
+    "usage",
+    "done",
+  ]);
+
+  const updateMeta = decryptedEvents[1].payload as Record<string, unknown>;
+  assert.equal(updateMeta.title, "赛博夜行档案");
+  assert.equal(updateMeta.readiness, 0.2);
+});
+
+test("ai_novel setup_turn supports read_meta tool loop before terminal tool", async () => {
+  let callCount = 0;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-read-meta-001",
+      };
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      callCount += 1;
+      if (callCount === 1) {
+        yield {
+          type: "tool_call",
+          toolCall: {
+            id: "tool_read_1",
+            name: "read_meta",
+            input: {},
+          },
+        };
+        yield {
+          type: "done",
+          finishReason: "tool_calls",
+        };
+        return;
+      }
+
+      const toolMessage = request.messages.find((message) => message.role === "tool");
+      assert.ok(toolMessage);
+      assert.equal(toolMessage?.toolCallId, "tool_read_1");
+      const toolPayload = JSON.parse(toolMessage?.content ?? "{}");
+      assert.equal(toolPayload.storyDirection, "从边荒求生开始翻案。")
+
+      yield {
+        type: "content_delta",
+        text: "现在方向已经够清楚了。",
+      };
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_ready_2",
+          name: "ready",
+          input: {},
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "setup_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "烬骨长明",
+            logline: "被逐出宗门的天才少年踏上翻案之路。",
+            protagonistAndHook: "林烬被栽赃逐出宗门后得到古老器灵。",
+            storyDirection: "从边荒求生开始翻案。",
+            scale: "长篇",
+            readiness: 0.1,
+          },
+        },
+        messages: [{ role: "user", content: "继续推进这个故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["text_delta", "action.ready", "done"],
+  );
+  assert.equal(callCount, 2);
+});
+
+test("ai_novel setup_turn stream allows assistant-only freeform turns", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-freeform-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "content_delta",
+        text: "我们先把主角和开局钉稳。",
+      };
+      yield {
+        type: "done",
+        finishReason: "stop",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "setup_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "",
+            logline: "",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "继续推进这个故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["text_delta", "done"],
+  );
+  const doneCompletion = (decryptedEvents[1]?.completion ?? {}) as Record<string, unknown>;
+  assert.equal(doneCompletion.content, "我们先把主角和开局钉稳。");
+});
+
+test("ai_novel setup_turn enables thinking and forwards reasoning deltas", async () => {
+  let capturedEnableThinking: unknown;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-thinking-001",
+      };
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedEnableThinking = request.providerOptions?.enable_thinking;
+      yield {
+        type: "reasoning_delta",
+        text: "先确认故事驱动力",
+      };
+      yield {
+        type: "content_delta",
+        text: "我们先把主角和冲突钉稳。",
+      };
+      yield {
+        type: "done",
+        finishReason: "stop",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "setup_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "",
+            logline: "",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "继续推进这个故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+
+  assert.equal(capturedEnableThinking, true);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["reasoning_delta", "text_delta", "done"],
+  );
+  assert.equal(decryptedEvents[0].text, "先确认故事驱动力");
+});
+
+test("ai_novel setup_turn unknown kickoff tool emits encrypted error event", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-unknown-tool-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_unknown_1",
+          name: "invent_new_tool",
+          input: {},
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "setup_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "",
+            logline: "",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "写一个赛博都市异能故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["error", "done"],
+  );
+  const errorPayload = decryptedEvents[0].payload as Record<string, unknown>;
+  assert.equal(errorPayload.code, "KICKOFF_TOOL_UNKNOWN");
+  assert.equal(errorPayload.recoverable, false);
+});
+
 test("ai_novel chat completions route keeps JSON envelope when stream is false", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -435,7 +907,10 @@ test("ai_novel chat completions route keeps JSON envelope when stream is false",
   assert.equal(response.statusCode, 200);
   assert.equal(response.contentType, undefined);
   assert.equal(response.streamBody, undefined);
-  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   assert.equal(data.taskType, "continue_chapter");
@@ -443,7 +918,10 @@ test("ai_novel chat completions route keeps JSON envelope when stream is false",
 
 test("ai_novel chat completions route rejects non-boolean stream values", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -469,7 +947,10 @@ test("ai_novel chat completions route rejects non-boolean stream values", async 
   });
 
   assert.equal(response.statusCode, 200);
-  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
   assert.equal(decrypted.code, "REQ_INVALID_BODY");
   assert.equal(decrypted.message, "stream must be a boolean when provided.");
 });
@@ -488,7 +969,10 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
     },
   };
   const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -520,16 +1004,24 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
 
   const decryptedEvents = events.map((event) => decryptAiPayload(event, aiKey));
   assert.equal(
-    ((decryptedEvents[0]?.data as Record<string, unknown>).type ?? "").toString(),
+    (
+      (decryptedEvents[0]?.data as Record<string, unknown>).type ?? ""
+    ).toString(),
     "content_delta",
   );
   assert.equal(decryptedEvents[1]?.code, "SYS_INTERNAL_ERROR");
-  assert.equal(decryptedEvents[1]?.message, "An unexpected internal error occurred.");
+  assert.equal(
+    decryptedEvents[1]?.message,
+    "An unexpected internal error occurred.",
+  );
 });
 
 test("ai_novel embeddings route resolves taskType to embedding model selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -541,17 +1033,17 @@ test("ai_novel embeddings route resolves taskType to embedding model selection",
     body: encryptAiPayload(
       {
         taskType: "summary_embed",
-        input: [
-          "第一段摘要",
-          "第二段摘要",
-        ],
+        input: ["第一段摘要", "第二段摘要"],
       },
       aiKey,
     ),
   });
 
   assert.equal(response.statusCode, 200);
-  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   assert.equal(data.taskType, "summary_embed");
@@ -564,7 +1056,10 @@ test("ai_novel embeddings route resolves taskType to embedding model selection",
 
 test("ai_novel routes return encrypted business errors after request decryption", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   const invalidModelResponse = await runtime.app.handle({
     method: "POST",
@@ -590,7 +1085,10 @@ test("ai_novel routes return encrypted business errors after request decryption"
 
   assert.equal(invalidModelResponse.statusCode, 200);
   assert.equal(
-    decryptAiPayload(invalidModelResponse.body as Record<string, unknown>, aiKey).code,
+    decryptAiPayload(
+      invalidModelResponse.body as Record<string, unknown>,
+      aiKey,
+    ).code,
     "REQ_INVALID_BODY",
   );
 
@@ -612,14 +1110,20 @@ test("ai_novel routes return encrypted business errors after request decryption"
 
   assert.equal(unsupportedTaskResponse.statusCode, 200);
   assert.equal(
-    decryptAiPayload(unsupportedTaskResponse.body as Record<string, unknown>, aiKey).code,
+    decryptAiPayload(
+      unsupportedTaskResponse.body as Record<string, unknown>,
+      aiKey,
+    ).code,
     "AI_TASK_TYPE_NOT_SUPPORTED",
   );
 });
 
 test("ai_novel routes enforce app scope when bearer auth is present", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "app_a");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "app_a",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -648,7 +1152,10 @@ test("ai_novel routes enforce app scope when bearer auth is present", async () =
 
 test("ai_novel routes reject unknown encryption keys before entering AI flow", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
   const body = encryptAiPayload(
     {
       taskType: "continue_chapter",
@@ -679,7 +1186,10 @@ test("ai_novel routes reject unknown encryption keys before entering AI flow", a
 
 test("ai_novel routes can override model routing from admin config", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
 
   await runtime.services.appAiRoutingConfigService.updateConfig(
     "ai_novel",
@@ -772,7 +1282,10 @@ test("ai_novel routes can override model routing from admin config", async () =>
     ),
   });
 
-  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   const completion = (data.completion ?? {}) as Record<string, unknown>;
   assert.equal(completion.modelKey, "ainovel-plus-creative");
@@ -781,8 +1294,14 @@ test("ai_novel routes can override model routing from admin config", async () =>
 
 test("ai_novel routes fail when routing mapping is missing", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
-  const currentConfig = await runtime.services.appAiRoutingConfigService.getCurrentConfig("ai_novel");
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  const currentConfig =
+    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
+      "ai_novel",
+    );
   delete currentConfig.tiers.free.chat.continue_chapter;
   await runtime.services.appConfigService.setValue(
     "ai_novel",
