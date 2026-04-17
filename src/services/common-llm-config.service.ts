@@ -46,7 +46,7 @@ function createDefaultAinovelModels(): LlmModelConfig[] {
     createDefaultModel("ainovel-free-creative", "AINovel 免费版创作", "chat", "qwen-plus"),
     createDefaultModel("ainovel-free-reasoning", "AINovel 免费版推理", "chat", "qwen3.5-flash"),
     createDefaultModel("ainovel-plus-creative", "AINovel Plus 创作", "chat", "siliconflow/deepseek-v3.2"),
-    createDefaultModel("ainovel-plus-reasoning", "AINovel Plus 推理", "chat", "qwen3.5-plus"),
+    createDefaultModel("ainovel-plus-reasoning", "AINovel Plus 推理", "chat", "glm-5"),
     createDefaultModel("ainovel-super-creative", "AINovel 超级 Plus 创作", "chat", "minimax-m2.7"),
     createDefaultModel("ainovel-super-reasoning", "AINovel 超级 Plus 推理", "chat", "glm-5"),
     createDefaultModel("ainovel-lowcost-structured", "AINovel 低成本结构化", "chat", "qwen3.5-flash"),
