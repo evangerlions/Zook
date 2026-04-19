@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { BailianOpenAICompatibleProvider } from "../../src/services/bailian-openai-compatible-provider.ts";
 import type { ResolvedEmbeddingRequest } from "../../src/services/embedding-manager.ts";
 import type { LLMStreamEvent, ResolvedLLMCompletionRequest } from "../../src/services/llm-manager.ts";
@@ -148,9 +149,21 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
   })));
 
   assert.deepEqual(events, [
-    { type: "reasoning_delta", text: "step 1" },
-    { type: "content_delta", text: "Hello" },
-    { type: "content_delta", text: " world" },
+    {
+      type: "reasoning_delta",
+      text: "step 1",
+      rawEvent: '{"choices":[{"delta":{"reasoning_content":"step 1"},"finish_reason":null}]}',
+    },
+    {
+      type: "content_delta",
+      text: "Hello",
+      rawEvent: '{"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}',
+    },
+    {
+      type: "content_delta",
+      text: " world",
+      rawEvent: '{"choices":[{"delta":{"content":" world"},"finish_reason":"stop"}]}',
+    },
     {
       type: "usage",
       usage: {
@@ -158,9 +171,66 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
         completionTokens: 20,
         totalTokens: 30,
       },
+      rawEvent: '{"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30}}',
     },
     { type: "done", finishReason: "stop" },
   ]);
+});
+
+test("bailian provider logs local provider request body and raw stream chunk", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async () =>
+        createSseResponse([
+          'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+          "data: [DONE]\n\n",
+        ]),
+    });
+
+    await collectEvents(provider.stream(createResolvedRequest({
+      enable_thinking: true,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "ask_question",
+            description: "Ask one focused kickoff question.",
+            parameters: {
+              type: "object",
+              properties: {
+                question: { type: "string" },
+              },
+            },
+          },
+        },
+      ],
+    })));
+
+    const requestLog = logger.records.find((entry) =>
+      entry.message === "ai_novel local provider chat request body"
+    );
+    assert.ok(requestLog);
+    assert.equal(requestLog.mode, "stream");
+    assert.match(String(requestLog.url ?? ""), /chat\/completions$/);
+    assert.equal((requestLog.body as Record<string, unknown>).model, "kimi/kimi-k2.5");
+
+    const chunkLog = logger.records.find((entry) =>
+      entry.message === "ai_novel local provider raw stream chunk"
+    );
+    assert.ok(chunkLog);
+    assert.equal(chunkLog.modelKey, "kimi2.5");
+    assert.equal(
+      chunkLog.chunk,
+      '{"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}',
+    );
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
 });
 
 test("bailian provider turns HTTP failures into provider request errors", async () => {

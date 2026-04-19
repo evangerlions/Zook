@@ -3934,7 +3934,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const bailianProvider = new BailianOpenAICompatibleProvider();
+  const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
   const llmProviders = options.llmProviders ?? {
     bailian: bailianProvider,
     bailian_coding: bailianProvider,
@@ -3979,7 +3979,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmHealthService,
     llmMetricsService,
   });
-  const aiNovelLlmService = new AiNovelLlmService(llmManager, embeddingManager, appAiRoutingConfigService);
+  const aiNovelLlmService = new AiNovelLlmService(
+    llmManager,
+    embeddingManager,
+    appAiRoutingConfigService,
+    logger,
+  );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
   const clientLogUploadService = new ClientLogUploadService(database, logEncryptionKeyResolver, appRemoteLogPullService, {

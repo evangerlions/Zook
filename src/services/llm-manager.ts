@@ -52,12 +52,15 @@ export interface LLMCompletionResult {
   providerRequestId?: string;
 }
 
-export type LLMStreamEvent =
+export type LLMStreamEvent = (
   | { type: "reasoning_delta"; text: string }
   | { type: "content_delta"; text: string }
   | { type: "usage"; usage: LLMUsage }
   | { type: "tool_call"; toolCall: LLMToolCall }
-  | { type: "done"; finishReason?: string };
+  | { type: "done"; finishReason?: string }
+) & {
+  rawEvent?: unknown;
+};
 
 export interface ResolvedLLMModel {
   provider: LLMProviderName;

@@ -551,6 +551,83 @@ test("ai_novel setup_turn stream emits normalized kickoff action events", async 
   assert.equal(updateMeta.readiness, 0.2);
 });
 
+test("ai_novel setup_turn builds one merged system message with workflow prompt and summary", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> | undefined;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-prompt-001",
+      };
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      yield {
+        type: "content_delta",
+        text: "我们先把主角和开局钉稳。",
+      };
+      yield {
+        type: "done",
+        finishReason: "stop",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "setup_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "AI 正在为这本书起名",
+            logline: "校园超自然故事，从一个异常事件开始。",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "写一个校园超自然故事，从一个异常事件开始。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  assert.ok(events.length > 0);
+  assert.ok(capturedMessages);
+
+  const systemMessages = capturedMessages!.filter((message) => message.role === "system");
+  assert.equal(systemMessages.length, 1);
+  assert.match(String(systemMessages[0]?.content ?? ""), /## Role/);
+  assert.match(String(systemMessages[0]?.content ?? ""), /## Workflow discipline/);
+  assert.match(String(systemMessages[0]?.content ?? ""), /may call multiple tools/i);
+  assert.match(String(systemMessages[0]?.content ?? ""), /In most turns, continue by asking the next focused question/i);
+  assert.match(String(systemMessages[0]?.content ?? ""), /Current kickoff summary:/);
+  assert.match(String(systemMessages[0]?.content ?? ""), /- title: AI 正在为这本书起名/);
+});
+
 test("ai_novel setup_turn supports read_meta tool loop before terminal tool", async () => {
   let callCount = 0;
   const llmProvider: LLMProvider = {

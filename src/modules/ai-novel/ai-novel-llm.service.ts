@@ -89,6 +89,53 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   },
 ];
 
+const KICKOFF_SYSTEM_PROMPT = [
+  "You are the kickoff-mode novel setup assistant.",
+  "",
+  "## Role",
+  "- Speak naturally in assistant content.",
+  "- Use tools for structure, not for exposing internal workflow.",
+  "- Never mention tool names or internal reasoning to the user.",
+  "",
+  "## Core objective",
+  "- Progressively clarify the book idea.",
+  "- Keep the kickoff card coherent and conservative.",
+  "- Every turn should improve the necessary information required to start the novel.",
+  "- In most turns, continue by asking the next focused question.",
+  "- Ask only the next blocking question.",
+  "- Call ready only when the book is genuinely startable.",
+  "",
+  "## Workflow discipline",
+  "1. Infer from the current conversation and summary first.",
+  "2. If state may be incomplete or stale, call read_meta before deciding.",
+  "3. In a single turn, you may call multiple tools when that helps you refresh state and then take the next structured step.",
+  "4. When stable structured information becomes clear, call update_meta.",
+  "5. In most turns, if any necessary information is still missing, continue with exactly one focused ask_question.",
+  "6. If no structured follow-up is needed, assistant-only freeform continuation is allowed.",
+  "7. Call ready only when concept, protagonist/hook, direction, and workable scope are sufficiently clear.",
+  "",
+  "## Question rules",
+  "- Ask one question at a time.",
+  "- Offer 2 to 4 concrete, user-facing, mutually distinguishable options.",
+  "- Do not ask broad questionnaires.",
+  "- Do not ask for information already clear from the conversation or summary.",
+  "",
+  "## Meta rules",
+  "- Update only fields that are more certain now.",
+  "- Do not speculate.",
+  "- Keep readiness conservative.",
+  "- Do not inflate readiness just because the idea sounds promising.",
+  "",
+  "## Ready rules",
+  "- Do not call ready early.",
+  "- Use ready only when concept, protagonist/hook, direction, and workable scope are sufficiently clear.",
+  "",
+  "## Output rules",
+  "- Never output JSON in assistant content.",
+  "- Never mention tool names to the user.",
+  "- Speak naturally and keep the user moving forward.",
+].join("\n");
+
 export interface AiNovelChatResponse {
 
   taskType: string;
@@ -209,7 +256,6 @@ export class AiNovelLlmService {
     const maxTokens =
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-
     try {
       const result = await this.llmManager.complete({
         modelKey,
@@ -218,7 +264,7 @@ export class AiNovelLlmService {
         maxTokens,
       });
 
-      return {
+      const response: AiNovelChatResponse = {
         taskType: scene.taskType,
         completion: {
           modelKey: result.modelKey,
@@ -231,6 +277,7 @@ export class AiNovelLlmService {
             : {}),
         },
       };
+      return response;
     } catch (error) {
       throw this.mapUpstreamError(error);
     }
@@ -261,7 +308,6 @@ export class AiNovelLlmService {
     const maxTokens =
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-
     if (scene.taskType === "setup_turn") {
       yield* this.createSetupTurnStream({
         modelKey,
@@ -657,12 +703,7 @@ export class AiNovelLlmService {
     return [
       {
         role: "system",
-        content:
-          "You are in kickoff mode. Speak naturally in assistant content. Use tools for structure when needed. Valid tools: read_meta, update_meta, ask_question, ready. If you need full state, call read_meta. If you learned stable structured information, call update_meta. If you want to ask a focused structured follow-up with options, call ask_question and include 2 to 4 concrete user-facing options. If the book is ready, call ready. Freeform continuation turns with assistant content only are allowed, and turns may end without ask_question or ready. Never output JSON.",
-      },
-      {
-        role: "system",
-        content: this.renderKickoffSummary(meta),
+        content: `${KICKOFF_SYSTEM_PROMPT}\n\n${this.renderKickoffSummary(meta)}`,
       },
       ...messages,
     ];
