@@ -146,7 +146,23 @@ configKey = ai_novel.model_routing
 | `DELETE` | `/api/v1/admin/apps/common/passwords/{key}` | 删除密码项 |
 | `POST` | `/api/v1/admin/apps/common/passwords/{key}/reveal` | 获取密码项明文 |
 
-### 3.9 Common LLM 服务
+### 3.9 Common Auth 风控
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/common/auth-rate-limits` | 获取验证码相关公共风控阈值 |
+| `PUT` | `/api/v1/admin/apps/common/auth-rate-limits` | 更新验证码相关公共风控阈值 |
+| `GET` | `/api/v1/admin/apps/common/auth-rate-limits/revisions/{revision}` | 获取指定历史版本 |
+| `POST` | `/api/v1/admin/apps/common/auth-rate-limits/revisions/{revision}/restore` | 恢复指定历史版本 |
+
+说明：
+1. 这套配置同时作用于邮箱验证码和短信验证码的登录 / 注册 / 密码找回主链路。
+2. `sendCodeWindow*` 控制发码接口的滑动窗口限流，维度为 `appId + account + IP`。
+3. `verifyWindow*` 控制验证码提交接口的滑动窗口限流，维度同样为 `appId + account + IP`。
+4. `accountDailyLimit` 和 `ipHourlyLimit` 暴露的是自然日 / 自然小时语义阈值；底层 48h / 2h TTL 只是清理策略，不需要前端配置。
+5. `verifyWindowLimit` 不能小于 `maxFailedCodeAttempts`，否则单验证码错码阈值会被更外层窗口限流提前遮蔽。
+
+### 3.10 Common LLM 服务
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -158,7 +174,7 @@ configKey = ai_novel.model_routing
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` | 获取单模型指标 |
 | `POST` | `/api/v1/admin/apps/common/llm-service/smoke-test` | 运行冒烟测试 |
 
-### 3.10 Admin 指标
+### 3.11 Admin 指标
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |

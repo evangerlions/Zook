@@ -6,6 +6,7 @@ import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "../../services/app-a
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
+import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
 import { EmailTestSendService } from "../../services/email-test-send.service.ts";
@@ -20,6 +21,7 @@ import { randomId } from "../../shared/utils.ts";
 import type {
   AdminAiRoutingDocument,
   AdminAppSummary,
+  AdminAuthRateLimitDocument,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
@@ -59,6 +61,7 @@ export class AdminConsoleService {
     private readonly appRemoteLogPullService: AppRemoteLogPullService,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
+    private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
     private readonly emailTestSendService: EmailTestSendService,
@@ -366,6 +369,22 @@ export class AdminConsoleService {
 
   async getEmailServiceConfig(revision?: number): Promise<AdminEmailServiceDocument> {
     return this.commonEmailConfigService.getDocument(revision);
+  }
+
+  async getAuthRateLimitConfig(revision?: number): Promise<AdminAuthRateLimitDocument> {
+    return this.commonAuthRateLimitConfigService.getDocument(revision);
+  }
+
+  async updateAuthRateLimitConfig(input: unknown, desc?: string): Promise<AdminAuthRateLimitDocument> {
+    const document = await this.commonAuthRateLimitConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async restoreAuthRateLimitConfig(revision: number, desc?: string): Promise<AdminAuthRateLimitDocument> {
+    const document = await this.commonAuthRateLimitConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
   }
 
   async updateEmailServiceConfig(input: unknown, desc?: string): Promise<AdminEmailServiceDocument> {

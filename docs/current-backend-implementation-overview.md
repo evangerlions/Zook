@@ -245,36 +245,38 @@
 14. `POST /api/v1/files/presign`
 15. `POST /api/v1/files/confirm`
 16. `POST /api/v1/notifications/send`
-17. `GET /api/v1/admin/apps/common/email-service`
-18. `PUT /api/v1/admin/apps/common/email-service`
-19. `GET /api/v1/admin/apps/common/llm-service`
-20. `PUT /api/v1/admin/apps/common/llm-service`
-21. `GET /api/v1/admin/apps/common/llm-service/metrics`
-22. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
-23. `GET /api/v1/admin/apps/{appId}/i18n-settings`
-24. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
-25. `GET /api/v1/admin/apps/{appId}/remote-log-pull`
-26. `PUT /api/v1/admin/apps/{appId}/remote-log-pull`
-27. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
-28. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
-29. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
-30. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
-31. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
-32. `GET /api/v1/admin/apps/{appId}/ai-routing`
-33. `PUT /api/v1/admin/apps/{appId}/ai-routing`
-34. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}`
-35. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore`
-36. `POST /api/v1/admin/sensitive-operations/request-code`
-37. `POST /api/v1/admin/sensitive-operations/verify`
-38. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
-39. `GET /api/v1/logs/policy`
-40. `GET /api/v1/logs/pull-task`
-41. `POST /api/v1/logs/tasks/{taskId}/ack`
-42. `POST /api/v1/logs/tasks/{taskId}/fail`
-43. `POST /api/v1/logs/upload`
-44. `GET /api/v1/{appId}/public/config`
-45. `POST /api/v1/ai_novel/ai/chat-completions`
-46. `POST /api/v1/ai_novel/ai/embeddings`
+17. `GET /api/v1/admin/apps/common/auth-rate-limits`
+18. `PUT /api/v1/admin/apps/common/auth-rate-limits`
+19. `GET /api/v1/admin/apps/common/email-service`
+20. `PUT /api/v1/admin/apps/common/email-service`
+21. `GET /api/v1/admin/apps/common/llm-service`
+22. `PUT /api/v1/admin/apps/common/llm-service`
+23. `GET /api/v1/admin/apps/common/llm-service/metrics`
+24. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
+25. `GET /api/v1/admin/apps/{appId}/i18n-settings`
+26. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
+27. `GET /api/v1/admin/apps/{appId}/remote-log-pull`
+28. `PUT /api/v1/admin/apps/{appId}/remote-log-pull`
+29. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+30. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+31. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
+32. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
+33. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
+34. `GET /api/v1/admin/apps/{appId}/ai-routing`
+35. `PUT /api/v1/admin/apps/{appId}/ai-routing`
+36. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}`
+37. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore`
+38. `POST /api/v1/admin/sensitive-operations/request-code`
+39. `POST /api/v1/admin/sensitive-operations/verify`
+40. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
+41. `GET /api/v1/logs/policy`
+42. `GET /api/v1/logs/pull-task`
+43. `POST /api/v1/logs/tasks/{taskId}/ack`
+44. `POST /api/v1/logs/tasks/{taskId}/fail`
+45. `POST /api/v1/logs/upload`
+46. `GET /api/v1/{appId}/public/config`
+47. `POST /api/v1/ai_novel/ai/chat-completions`
+48. `POST /api/v1/ai_novel/ai/embeddings`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。
@@ -286,8 +288,10 @@
   - `src/services/tencent-captcha-verification.service.ts`
 - 目前腾讯云短信验证码发送能力已经接入对外 auth 主链路，用于短信登录 / 注册 / 密码重置。
 - 后台现已补充一块 `common` 工作区下的短信验证码观测能力，可按 appId 查看最近 7 天短信记录，并通过受控 reveal 查看验证码明文。
+- 后台现已补充一块 `common` 工作区下的认证风控配置页，用来统一调整验证码 TTL、发码冷却、发码 / 提交窗口限流、账号自然日配额、IP 自然小时配额，以及单验证码错码上限。
 - 这些短信验证码记录会由 worker 在每天凌晨 4 点后执行一次硬删除清理，避免过期敏感数据继续保留。
 - 短信发码接口支持一个仅用于联调和自动化测试的 `test` 布尔字段；当为 `true` 时，服务端会继续生成并缓存验证码，但不会真正调用短信发送服务。
+- 当前验证码在有效期内最多允许输错 10 次；超过上限后，验证码立即失效并要求重新发码。
 - 腾讯云图形验证码校验能力仍保留在后端，但当前短信主业务默认不启用验证码风控。
 - 运行时默认复用 common password 工作区里的：
   - `tencent.secret_id`

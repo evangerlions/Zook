@@ -2,6 +2,7 @@ import type {
   AdminAppSummary,
   AdminAiRoutingDocument,
   AdminAppLogSecretRevealDocument,
+  AdminAuthRateLimitDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
@@ -352,6 +353,29 @@ export const adminApi = {
   },
   getEmailService() {
     return requestJson<AdminEmailServiceDocument>(adminPath("/apps/common/email-service"));
+  },
+  getAuthRateLimits() {
+    return requestJson<AdminAuthRateLimitDocument>(adminPath("/apps/common/auth-rate-limits"));
+  },
+  getAuthRateLimitsRevision(revision: number) {
+    return requestJson<AdminAuthRateLimitDocument>(adminPath(`/apps/common/auth-rate-limits/revisions/${revision}`));
+  },
+  updateAuthRateLimits(input: Record<string, unknown>) {
+    return requestJson<AdminAuthRateLimitDocument>(adminPath("/apps/common/auth-rate-limits"), {
+      method: "PUT",
+      body: input,
+    });
+  },
+  restoreAuthRateLimits(revision: number, desc?: string) {
+    return requestJson<AdminAuthRateLimitDocument>(
+      adminPath(`/apps/common/auth-rate-limits/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
+      },
+    );
   },
   getEmailServiceRevision(revision: number) {
     return requestJson<AdminEmailServiceDocument>(adminPath(`/apps/common/email-service/revisions/${revision}`));

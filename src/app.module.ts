@@ -46,6 +46,7 @@ import {
   TENCENT_SECRET_ID_PASSWORD_KEY,
   TENCENT_SECRET_KEY_PASSWORD_KEY,
 } from "./services/common-email-config.service.ts";
+import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import {
   CommonPasswordConfigService,
@@ -97,6 +98,7 @@ import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
   AdminAppSummary,
   AdminAiRoutingDocument,
+  AdminAuthRateLimitDocument,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
@@ -434,6 +436,14 @@ export class BackendApplication {
       return this.handleAdminSendTestEmail(request);
     }
 
+    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/auth-rate-limits") {
+      return this.handleAdminGetAuthRateLimits(request);
+    }
+
+    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/auth-rate-limits") {
+      return this.handleAdminUpdateAuthRateLimits(request);
+    }
+
     const adminEmailRevisionMatch = request.path.match(
       /^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)$/,
     );
@@ -451,6 +461,26 @@ export class BackendApplication {
       return this.handleAdminRestoreEmailServiceRevision(
         request,
         Number(adminEmailRestoreMatch[1]),
+      );
+    }
+
+    const adminAuthRateLimitRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/auth-rate-limits\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminAuthRateLimitRevisionMatch) {
+      return this.handleAdminGetAuthRateLimitsRevision(
+        request,
+        Number(adminAuthRateLimitRevisionMatch[1]),
+      );
+    }
+
+    const adminAuthRateLimitRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/auth-rate-limits\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminAuthRateLimitRestoreMatch) {
+      return this.handleAdminRestoreAuthRateLimitsRevision(
+        request,
+        Number(adminAuthRateLimitRestoreMatch[1]),
       );
     }
 
@@ -2199,6 +2229,89 @@ export class BackendApplication {
     }
   }
 
+  private async handleAdminGetAuthRateLimits(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getAuthRateLimitConfig();
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateAuthRateLimits(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateAuthRateLimitConfig(
+      body as AdminAuthRateLimitDocument["config"],
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetAuthRateLimitsRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getAuthRateLimitConfig(revision);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreAuthRateLimitsRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreAuthRateLimitConfig(revision, desc);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminGetEmailServiceRevision(
     request: HttpRequest,
     revision: number,
@@ -3731,6 +3844,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService, logger);
+  const commonAuthRateLimitConfigService = new CommonAuthRateLimitConfigService(appConfigService);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
   const appLogSecretService = new AppLogSecretService(database, kvManager);
   const logEncryptionKeyResolver = options.logEncryptionKeyResolver
@@ -3810,6 +3924,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     passwordHasher,
     tokenService,
     refreshTokenStore,
+    commonAuthRateLimitConfigService,
     registrationEmailSender,
     smsVerificationSender,
     smsVerificationRecordService,
@@ -3847,6 +3962,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
+    commonAuthRateLimitConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
     emailTestSendService,
@@ -3940,6 +4056,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       refreshTokenStore,
       commonPasswordConfigService,
       commonEmailConfigService,
+      commonAuthRateLimitConfigService,
       commonLlmConfigService,
       appLogSecretService,
       adminSensitiveOperationService,

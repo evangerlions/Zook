@@ -77,6 +77,21 @@ function createEmailServiceRegions() {
   ];
 }
 
+function createAuthRateLimitConfig(overrides: Partial<Record<string, number>> = {}) {
+  return {
+    resendCooldownSeconds: 60,
+    verificationCodeTtlSeconds: 600,
+    sendCodeWindowSeconds: 600,
+    sendCodeWindowLimit: 3,
+    verifyWindowSeconds: 600,
+    verifyWindowLimit: 10,
+    accountDailyLimit: 10,
+    ipHourlyLimit: 20,
+    maxFailedCodeAttempts: 10,
+    ...overrides,
+  };
+}
+
 interface SentTemplateEmail {
   email: string;
   clientRegion: "ap-guangzhou" | "ap-hongkong";
@@ -1510,6 +1525,135 @@ test("admin password reveal requires sensitive verification before copying real 
   assert.equal(revealResponse.body.data.value, "key-v1");
   assert.ok(
     runtime.database.auditLogs.some((item) => item.action === "admin.password.reveal" && item.appId === "common"),
+  );
+});
+
+test("admin auth rate limit API stores common config and auth runtime follows updated limits", async () => {
+  const sent: SentTemplateEmail[] = [];
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    registrationEmailSender: createFakeEmailSender(sent),
+    kvBackend: new InMemoryKVBackend(),
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/auth-rate-limits",
+    headers,
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.equal(defaultResponse.body.data.config.accountDailyLimit, 10);
+  assert.equal(defaultResponse.body.data.config.verifyWindowLimit, 10);
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/auth-rate-limits",
+    headers,
+    body: {
+      ...createAuthRateLimitConfig({
+        resendCooldownSeconds: 1,
+        sendCodeWindowLimit: 20,
+        verifyWindowLimit: 12,
+        accountDailyLimit: 2,
+      }),
+      desc: "初始化认证风控",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.app.appId, "common");
+  assert.equal(updateResponse.body.data.configKey, "common.auth_rate_limits");
+  assert.equal(updateResponse.body.data.config.accountDailyLimit, 2);
+  assert.equal(updateResponse.body.data.config.verifyWindowLimit, 12);
+  assert.equal(updateResponse.body.data.revision, 1);
+  assert.equal(updateResponse.body.data.desc, "初始化认证风控");
+
+  const revisionResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/auth-rate-limits/revisions/1",
+    headers,
+  });
+
+  assert.equal(revisionResponse.statusCode, 200);
+  assert.equal(revisionResponse.body.data.revision, 1);
+  assert.equal(revisionResponse.body.data.isLatest, true);
+
+  const runtimeConfig = await runtime.services.commonAuthRateLimitConfigService.getRuntimeConfig();
+  assert.equal(runtimeConfig.accountDailyLimit, 2);
+  assert.equal(runtimeConfig.verifyWindowLimit, 12);
+
+  const baseTime = new Date("2026-04-20T10:00:00+08:00");
+  for (let index = 0; index < 2; index += 1) {
+    const result = await runtime.services.authService.registerEmailCode(
+      {
+        appId: "app_a",
+        email: "auth-limit@example.com",
+        ipAddress: "203.0.113.30",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
+      },
+      new Date(baseTime.getTime() + index * 61 * 1000),
+    );
+    assert.equal(result.accepted, true);
+  }
+
+  await assert.rejects(
+    runtime.services.authService.registerEmailCode(
+      {
+        appId: "app_a",
+        email: "auth-limit@example.com",
+        ipAddress: "203.0.113.30",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
+      },
+      new Date(baseTime.getTime() + 2 * 61 * 1000),
+    ),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "AUTH_RATE_LIMITED",
+  );
+
+  const invalidResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/auth-rate-limits",
+    headers,
+    body: {
+      ...createAuthRateLimitConfig({
+        verifyWindowLimit: 4,
+        maxFailedCodeAttempts: 5,
+      }),
+    },
+  });
+
+  assert.equal(invalidResponse.statusCode, 400);
+  assert.equal(invalidResponse.body.code, "REQ_INVALID_BODY");
+  assert.match(String(invalidResponse.body.message), /verifyWindowLimit/);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/auth-rate-limits/revisions/1/restore",
+    headers,
+    body: {
+      desc: "回滚到版本 R1",
+    },
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.revision, 2);
+  assert.equal(restoreResponse.body.data.desc, "回滚到版本 R1");
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.auth_rate_limits.update" && item.appId === "common"),
+  );
+  assert.ok(
+    runtime.database.auditLogs.some((item) => item.action === "admin.auth_rate_limits.restore" && item.appId === "common"),
   );
 });
 

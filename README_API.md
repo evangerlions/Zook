@@ -220,6 +220,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
    `POST /api/v1/auth/login/sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "clientType": "app" }`
    `phoneNa` 可省略，默认按 `+86` 处理；服务端会把手机号标准化后再存储和查询。
    `test` 仅对短信发码接口生效；当为 `true` 时，服务端会照常生成并缓存验证码，但不会真正调用短信发送服务，适合联调和自动化测试。
+   同一个验证码在有效期内最多允许输错 10 次；达到上限后，该验证码会立即失效并需要重新发码。
+   默认风控阈值由 admin `common/auth-rate-limits` 工作区统一维护；当前默认值为：发码窗口 10 分钟 3 次、验证提交窗口 10 分钟 10 次、账号自然日 10 次、IP 自然小时 20 次。
 6. 密码相关接口：
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
    `POST /api/v1/auth/password/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "test": false }`

@@ -254,7 +254,8 @@ common.llm_service
 
 1. App 配置页
 2. 邮件服务页
-3. LLM 配置页
+3. 认证风控页
+4. LLM 配置页
 
 ---
 
@@ -275,7 +276,14 @@ common.llm_service
 3. `GET /api/v1/admin/apps/common/email-service/revisions/{revision}`
 4. `POST /api/v1/admin/apps/common/email-service/revisions/{revision}/restore`
 
-### 7.3 Common LLM 接口
+### 7.3 Common 认证风控接口
+
+1. `GET /api/v1/admin/apps/common/auth-rate-limits`
+2. `PUT /api/v1/admin/apps/common/auth-rate-limits`
+3. `GET /api/v1/admin/apps/common/auth-rate-limits/revisions/{revision}`
+4. `POST /api/v1/admin/apps/common/auth-rate-limits/revisions/{revision}/restore`
+
+### 7.4 Common LLM 接口
 
 1. `GET /api/v1/admin/apps/common/llm-service`
 2. `PUT /api/v1/admin/apps/common/llm-service`
