@@ -20,8 +20,8 @@ export interface AiNovelEmbeddingScene {
 }
 
 const CHAT_SCENES: Record<string, AiNovelChatScene> = {
-  setup_turn: {
-    taskType: "setup_turn",
+  kickoff_turn: {
+    taskType: "kickoff_turn",
     kind: "chat",
     defaultModelKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,

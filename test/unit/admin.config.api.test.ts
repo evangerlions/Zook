@@ -300,7 +300,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
     tiers: {
       free: {
         chat: {
-          setup_turn: "ainovel-plus-reasoning",
+          kickoff_turn: "ainovel-plus-reasoning",
           blueprint_gen: "ainovel-free-creative",
           chapter1_draft_gen: "ainovel-free-creative",
           chapter1_critic: "ainovel-free-reasoning",
@@ -320,7 +320,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
       },
       plus: {
         chat: {
-          setup_turn: "ainovel-plus-reasoning",
+          kickoff_turn: "ainovel-plus-reasoning",
           blueprint_gen: "ainovel-plus-creative",
           chapter1_draft_gen: "ainovel-plus-creative",
           chapter1_critic: "ainovel-plus-reasoning",
@@ -340,7 +340,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
       },
       super_plus: {
         chat: {
-          setup_turn: "ainovel-super-reasoning",
+          kickoff_turn: "ainovel-super-reasoning",
           blueprint_gen: "ainovel-super-creative",
           chapter1_draft_gen: "ainovel-super-creative",
           chapter1_critic: "ainovel-super-reasoning",

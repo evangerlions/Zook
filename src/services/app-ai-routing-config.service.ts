@@ -19,7 +19,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
   tiers: {
     free: {
       chat: {
-        setup_turn: "ainovel-plus-reasoning",
+        kickoff_turn: "ainovel-plus-reasoning",
         blueprint_gen: "ainovel-free-creative",
         chapter1_draft_gen: "ainovel-free-creative",
         chapter1_critic: "ainovel-free-reasoning",
@@ -39,7 +39,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     },
     plus: {
       chat: {
-        setup_turn: "ainovel-plus-reasoning",
+        kickoff_turn: "ainovel-plus-reasoning",
         blueprint_gen: "ainovel-plus-creative",
         chapter1_draft_gen: "ainovel-plus-creative",
         chapter1_critic: "ainovel-plus-reasoning",
@@ -59,7 +59,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     },
     super_plus: {
       chat: {
-        setup_turn: "ainovel-super-reasoning",
+        kickoff_turn: "ainovel-super-reasoning",
         blueprint_gen: "ainovel-super-creative",
         chapter1_draft_gen: "ainovel-super-creative",
         chapter1_critic: "ainovel-super-reasoning",
@@ -211,7 +211,7 @@ export class AppAiRoutingConfigService {
     if (
       appId === AI_NOVEL_APP_ID &&
       kind === "chat" &&
-      taskType === "setup_turn" &&
+      taskType === "kickoff_turn" &&
       modelKey === "ainovel-free-reasoning"
     ) {
       return "ainovel-plus-reasoning";

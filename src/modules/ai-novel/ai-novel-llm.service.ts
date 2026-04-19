@@ -237,10 +237,10 @@ export class AiNovelLlmService {
 
     const taskType = this.requireTaskType(body);
     const scene = resolveAiNovelChatScene(taskType);
-    if (scene.taskType === "setup_turn") {
+    if (scene.taskType === "kickoff_turn") {
       badRequest(
         "REQ_INVALID_BODY",
-        "setup_turn requires stream=true.",
+        "kickoff_turn requires stream=true.",
       );
     }
     const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
@@ -308,8 +308,8 @@ export class AiNovelLlmService {
     const maxTokens =
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-    if (scene.taskType === "setup_turn") {
-      yield* this.createSetupTurnStream({
+    if (scene.taskType === "kickoff_turn") {
+      yield* this.createKickoffTurnStream({
         modelKey,
         messages,
         temperature,
@@ -383,7 +383,7 @@ export class AiNovelLlmService {
     }
   }
 
-  private async *createSetupTurnStream(input: {
+  private async *createKickoffTurnStream(input: {
     modelKey: string;
     messages: LLMMessage[];
     temperature: number;
@@ -541,7 +541,7 @@ export class AiNovelLlmService {
             if (sawTerminalTool) {
               badRequest(
                 "LLM_PROVIDER_RESPONSE_INVALID",
-                "setup_turn may emit only one terminal kickoff tool per turn.",
+                "kickoff_turn may emit only one terminal kickoff tool per turn.",
               );
             }
             sawTerminalTool = true;
@@ -577,7 +577,7 @@ export class AiNovelLlmService {
             if (sawTerminalTool) {
               badRequest(
                 "LLM_PROVIDER_RESPONSE_INVALID",
-                "setup_turn may emit only one terminal kickoff tool per turn.",
+                "kickoff_turn may emit only one terminal kickoff tool per turn.",
               );
             }
             sawTerminalTool = true;
@@ -678,7 +678,7 @@ export class AiNovelLlmService {
       type: "error",
       payload: {
         code: "KICKOFF_TOOL_LOOP_EXCEEDED",
-        message: "setup_turn exceeded maximum tool loop depth.",
+        message: "kickoff_turn exceeded maximum tool loop depth.",
         recoverable: false,
       },
     };

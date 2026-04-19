@@ -441,7 +441,7 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   assert.equal(doneCompletion.providerModel, undefined);
 });
 
-test("ai_novel setup_turn stream emits normalized kickoff action events", async () => {
+test("ai_novel kickoff_turn stream emits normalized kickoff action events", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -509,7 +509,7 @@ test("ai_novel setup_turn stream emits normalized kickoff action events", async 
     },
     body: encryptAiPayload(
       {
-        taskType: "setup_turn",
+        taskType: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -551,7 +551,7 @@ test("ai_novel setup_turn stream emits normalized kickoff action events", async 
   assert.equal(updateMeta.readiness, 0.2);
 });
 
-test("ai_novel setup_turn builds one merged system message with workflow prompt and summary", async () => {
+test("ai_novel kickoff_turn builds one merged system message with workflow prompt and summary", async () => {
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -596,7 +596,7 @@ test("ai_novel setup_turn builds one merged system message with workflow prompt 
     },
     body: encryptAiPayload(
       {
-        taskType: "setup_turn",
+        taskType: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -628,7 +628,7 @@ test("ai_novel setup_turn builds one merged system message with workflow prompt 
   assert.match(String(systemMessages[0]?.content ?? ""), /- title: AI 正在为这本书起名/);
 });
 
-test("ai_novel setup_turn supports read_meta tool loop before terminal tool", async () => {
+test("ai_novel kickoff_turn supports read_meta tool loop before terminal tool", async () => {
   let callCount = 0;
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -700,7 +700,7 @@ test("ai_novel setup_turn supports read_meta tool loop before terminal tool", as
     },
     body: encryptAiPayload(
       {
-        taskType: "setup_turn",
+        taskType: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -729,7 +729,7 @@ test("ai_novel setup_turn supports read_meta tool loop before terminal tool", as
   assert.equal(callCount, 2);
 });
 
-test("ai_novel setup_turn stream allows assistant-only freeform turns", async () => {
+test("ai_novel kickoff_turn stream allows assistant-only freeform turns", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -769,7 +769,7 @@ test("ai_novel setup_turn stream allows assistant-only freeform turns", async ()
     },
     body: encryptAiPayload(
       {
-        taskType: "setup_turn",
+        taskType: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -799,7 +799,7 @@ test("ai_novel setup_turn stream allows assistant-only freeform turns", async ()
   assert.equal(doneCompletion.content, "我们先把主角和开局钉稳。");
 });
 
-test("ai_novel setup_turn enables thinking and forwards reasoning deltas", async () => {
+test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", async () => {
   let capturedEnableThinking: unknown;
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -845,7 +845,7 @@ test("ai_novel setup_turn enables thinking and forwards reasoning deltas", async
     },
     body: encryptAiPayload(
       {
-        taskType: "setup_turn",
+        taskType: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -876,7 +876,7 @@ test("ai_novel setup_turn enables thinking and forwards reasoning deltas", async
   assert.equal(decryptedEvents[0].text, "先确认故事驱动力");
 });
 
-test("ai_novel setup_turn unknown kickoff tool emits encrypted error event", async () => {
+test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -920,7 +920,7 @@ test("ai_novel setup_turn unknown kickoff tool emits encrypted error event", asy
     },
     body: encryptAiPayload(
       {
-        taskType: "setup_turn",
+        taskType: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1275,7 +1275,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
       tiers: {
         free: {
           chat: {
-            setup_turn: "ainovel-plus-reasoning",
+            kickoff_turn: "ainovel-plus-reasoning",
             blueprint_gen: "ainovel-plus-creative",
             chapter1_draft_gen: "ainovel-plus-creative",
             chapter1_critic: "ainovel-plus-reasoning",
@@ -1295,7 +1295,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
         },
         plus: {
           chat: {
-            setup_turn: "ainovel-plus-reasoning",
+            kickoff_turn: "ainovel-plus-reasoning",
             blueprint_gen: "ainovel-plus-creative",
             chapter1_draft_gen: "ainovel-plus-creative",
             chapter1_critic: "ainovel-plus-reasoning",
@@ -1315,7 +1315,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
         },
         super_plus: {
           chat: {
-            setup_turn: "ainovel-super-reasoning",
+            kickoff_turn: "ainovel-super-reasoning",
             blueprint_gen: "ainovel-super-creative",
             chapter1_draft_gen: "ainovel-super-creative",
             chapter1_critic: "ainovel-super-reasoning",
