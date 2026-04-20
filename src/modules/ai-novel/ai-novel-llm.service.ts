@@ -155,20 +155,12 @@ export type AiNovelChatStreamChunk =
       text: string;
     }
   | {
-      type: "action.update_meta";
-      payload: Partial<KickoffMeta>;
-    }
-  | {
-      type: "action.ask_question";
-      payload: {
-        question: string;
-        options: string[];
-        allowCustom?: boolean;
+      type: "tool_call";
+      toolCall: {
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
       };
-    }
-  | {
-      type: "action.ready";
-      payload: Record<string, never>;
     }
   | {
       type: "error";
@@ -390,32 +382,22 @@ export class AiNovelLlmService {
     maxTokens: number;
     meta: KickoffMeta;
   }): AsyncIterable<AiNovelChatStreamChunk> {
-    const usageByLoop: Array<{
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
-    }> = [];
-    let currentMeta: KickoffMeta = input.meta;
-    let conversation = this.buildKickoffMessages(input.messages, currentMeta);
-    let finalContent = "";
-    let finalReasoning = "";
+    let assistantText = "";
+    let reasoningText = "";
+    let usage:
+      | {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        }
+      | undefined;
+    let finishReason: string | undefined;
+    const toolCalls: LLMToolCall[] = [];
 
-    for (let loopIndex = 0; loopIndex < 6; loopIndex += 1) {
-      let assistantText = "";
-      let reasoningText = "";
-      let usage:
-        | {
-            promptTokens: number;
-            completionTokens: number;
-            totalTokens: number;
-          }
-        | undefined;
-      const toolCalls: LLMToolCall[] = [];
-      let finishReason: string | undefined;
-
+    try {
       for await (const event of this.llmManager.stream({
         modelKey: input.modelKey,
-        messages: conversation,
+        messages: this.buildKickoffMessages(input.messages, input.meta),
         temperature: input.temperature,
         maxTokens: input.maxTokens,
         providerOptions: {
@@ -459,243 +441,70 @@ export class AiNovelLlmService {
           continue;
         }
 
-        if (event.type === "done") {
-          finishReason = event.finishReason;
-        }
+        finishReason = event.finishReason;
       }
-
-      if (usage) {
-        usageByLoop.push(usage);
-      }
-      finalContent += assistantText;
-      finalReasoning += reasoningText;
-
-      const normalizedToolCalls = toolCalls.map((toolCall, index) => ({
-        ...toolCall,
-        id: toolCall.id || `kickoff_tool_${loopIndex}_${index}`,
-      }));
-      const assistantMessage: LLMMessage = {
-        role: "assistant",
-        ...(assistantText ? { content: assistantText } : { content: "" }),
-        ...(normalizedToolCalls.length > 0 ? { toolCalls: normalizedToolCalls } : {}),
-      };
-      conversation = [...conversation, assistantMessage];
-
-      if (normalizedToolCalls.length === 0) {
-        const finalUsage = usageByLoop.length > 0
-          ? usageByLoop[usageByLoop.length - 1]
-          : undefined;
-        if (finalUsage) {
-          yield {
-            type: "usage",
-            usage: finalUsage,
-          };
-        }
-        yield {
-          type: "done",
-          completion: {
-            modelKey: input.modelKey,
-            content: finalContent,
-            ...(finalReasoning ? { reasoningText: finalReasoning } : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(finalUsage ? { usage: finalUsage } : {}),
-        };
-        return;
-      }
-
-      let sawTerminalTool = false;
-      const toolMessages: LLMMessage[] = [];
-
-      for (const toolCall of normalizedToolCalls) {
-        switch (toolCall.name) {
-          case "read_meta": {
-            toolMessages.push({
-              role: "tool",
-              toolCallId: toolCall.id,
-              content: JSON.stringify(currentMeta),
-            });
-            break;
-          }
-          case "update_meta": {
-            const patch = this.extractMetaPatch(toolCall.input);
-            currentMeta = {
-              ...currentMeta,
-              ...patch,
-            };
-            yield {
-              type: "action.update_meta",
-              payload: patch,
-            };
-            toolMessages.push({
-              role: "tool",
-              toolCallId: toolCall.id,
-              content: JSON.stringify({
-                ok: true,
-                appliedKeys: Object.keys(patch),
-              }),
-            });
-            break;
-          }
-          case "ask_question": {
-            if (sawTerminalTool) {
-              badRequest(
-                "LLM_PROVIDER_RESPONSE_INVALID",
-                "kickoff_turn may emit only one terminal kickoff tool per turn.",
-              );
-            }
-            sawTerminalTool = true;
-            const options = this.asStringList(toolCall.input.options);
-            if (options.length < 2 || options.length > 4) {
-              badRequest(
-                "LLM_PROVIDER_RESPONSE_INVALID",
-                "ask_question requires 2 to 4 options.",
-              );
-            }
-            yield {
-              type: "action.ask_question",
-              payload: {
-                question:
-                  this.readOptionalString(toolCall.input.question) ?? "继续补充",
-                options,
-                ...(toolCall.input.allowCustom === true
-                  ? { allowCustom: true }
-                  : {}),
-              },
-            };
-            toolMessages.push({
-              role: "tool",
-              toolCallId: toolCall.id,
-              content: JSON.stringify({
-                ok: true,
-                optionsCount: options.length,
-              }),
-            });
-            break;
-          }
-          case "ready": {
-            if (sawTerminalTool) {
-              badRequest(
-                "LLM_PROVIDER_RESPONSE_INVALID",
-                "kickoff_turn may emit only one terminal kickoff tool per turn.",
-              );
-            }
-            sawTerminalTool = true;
-            yield {
-              type: "action.ready",
-              payload: {},
-            };
-            toolMessages.push({
-              role: "tool",
-              toolCallId: toolCall.id,
-              content: JSON.stringify({ ok: true }),
-            });
-            break;
-          }
-          default: {
-            yield {
-              type: "error",
-              payload: {
-                code: "KICKOFF_TOOL_UNKNOWN",
-                message: `Unknown kickoff tool: ${toolCall.name}`,
-                recoverable: false,
-              },
-            };
-            if (usage) {
-              yield {
-                type: "usage",
-                usage,
-              };
-            }
-            yield {
-              type: "done",
-              completion: {
-                modelKey: input.modelKey,
-                content: finalContent,
-                ...(finalReasoning ? { reasoningText: finalReasoning } : {}),
-                ...(finishReason ? { finishReason } : {}),
-              },
-              ...(usage ? { usage } : {}),
-            };
-            return;
-          }
-        }
-      }
-
-      const finalUsage = usageByLoop.length > 0
-        ? usageByLoop[usageByLoop.length - 1]
-        : undefined;
-      if (sawTerminalTool) {
-        if (finalUsage) {
-          yield {
-            type: "usage",
-            usage: finalUsage,
-          };
-        }
-        yield {
-          type: "done",
-          completion: {
-            modelKey: input.modelKey,
-            content: finalContent,
-            ...(finalReasoning ? { reasoningText: finalReasoning } : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(finalUsage ? { usage: finalUsage } : {}),
-        };
-        return;
-      }
-
-      const onlyReadMeta = normalizedToolCalls.length > 0 &&
-        normalizedToolCalls.every((toolCall) => toolCall.name === "read_meta");
-      if (onlyReadMeta) {
-        conversation = [...conversation, ...toolMessages];
-        continue;
-      }
-
-      if (finalUsage) {
-        yield {
-          type: "usage",
-          usage: finalUsage,
-        };
-      }
-      yield {
-        type: "done",
-        completion: {
-          modelKey: input.modelKey,
-          content: finalContent,
-          ...(finalReasoning ? { reasoningText: finalReasoning } : {}),
-          ...(finishReason ? { finishReason } : {}),
-        },
-        ...(finalUsage ? { usage: finalUsage } : {}),
-      };
-      return;
+    } catch (error) {
+      throw this.mapUpstreamError(error);
     }
 
-    const finalUsage = usageByLoop.length > 0
-      ? usageByLoop[usageByLoop.length - 1]
-      : undefined;
-    yield {
-      type: "error",
-      payload: {
-        code: "KICKOFF_TOOL_LOOP_EXCEEDED",
-        message: "kickoff_turn exceeded maximum tool loop depth.",
-        recoverable: false,
-      },
-    };
-    if (finalUsage) {
+
+    for (const [index, toolCall] of toolCalls.entries()) {
+      const normalizedToolCallId =
+        toolCall.id && toolCall.id.trim().length > 0
+          ? toolCall.id
+          : `${input.modelKey}_kickoff_tool_${index}`;
+      if (!kickoffToolDefinitions.some((tool) => tool.name === toolCall.name)) {
+        yield {
+          type: "error",
+          payload: {
+            code: "KICKOFF_TOOL_UNKNOWN",
+            message: `Unknown kickoff tool: ${toolCall.name}`,
+            recoverable: false,
+          },
+        };
+        if (usage) {
+          yield {
+            type: "usage",
+            usage,
+          };
+        }
+        yield {
+          type: "done",
+          completion: {
+            modelKey: input.modelKey,
+            content: assistantText,
+            ...(reasoningText ? { reasoningText } : {}),
+            ...(finishReason ? { finishReason } : {}),
+          },
+          ...(usage ? { usage } : {}),
+        };
+        return;
+      }
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: normalizedToolCallId,
+          name: toolCall.name,
+          input: toolCall.input,
+        },
+      };
+    }
+
+    if (usage) {
       yield {
         type: "usage",
-        usage: finalUsage,
+        usage,
       };
     }
     yield {
       type: "done",
       completion: {
         modelKey: input.modelKey,
-        content: finalContent,
-        ...(finalReasoning ? { reasoningText: finalReasoning } : {}),
+        content: assistantText,
+        ...(reasoningText ? { reasoningText } : {}),
+        ...(finishReason ? { finishReason } : {}),
       },
-      ...(finalUsage ? { usage: finalUsage } : {}),
+      ...(usage ? { usage } : {}),
     };
   }
 
@@ -736,50 +545,12 @@ export class AiNovelLlmService {
     };
   }
 
-  private extractMetaPatch(value: unknown): Partial<KickoffMeta> {
-    if (!isRecord(value)) {
-      return {};
-    }
-    const patch: Partial<KickoffMeta> = {};
-    for (const key of [
-      "title",
-      "logline",
-      "protagonistAndHook",
-      "storyDirection",
-      "scale",
-    ] as const) {
-      const next = this.readOptionalString(value[key]);
-      if (next !== undefined) {
-        patch[key] = next;
-      }
-    }
-    if (value.readiness !== undefined) {
-      patch.readiness = this.normalizeReadiness(value.readiness);
-    }
-    if (Object.keys(patch).length === 0) {
-      badRequest(
-        "LLM_PROVIDER_RESPONSE_INVALID",
-        "update_meta must include at least one valid field.",
-      );
-    }
-    return patch;
-  }
-
   private readOptionalString(value: unknown): string | undefined {
     if (typeof value !== "string") {
       return undefined;
     }
     const normalized = value.trim();
     return normalized ? normalized : undefined;
-  }
-
-  private asStringList(value: unknown): string[] {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-    return value
-      .map((item) => (typeof item === "string" ? item.trim() : ""))
-      .filter((item) => item.length > 0);
   }
 
   private normalizeReadiness(value: unknown): number {
@@ -851,25 +622,86 @@ export class AiNovelLlmService {
         badRequest("REQ_INVALID_BODY", "Each message must be a JSON object.");
       }
 
-      const role = (item as Record<string, unknown>).role;
-      const content = (item as Record<string, unknown>).content;
-      if (role !== "system" && role !== "user" && role !== "assistant") {
+      const record = item as Record<string, unknown>;
+      const role = record.role;
+      const content = record.content;
+      if (
+        role !== "system" &&
+        role !== "user" &&
+        role !== "assistant" &&
+        role !== "tool"
+      ) {
         badRequest(
           "REQ_INVALID_BODY",
           `Unsupported LLM role: ${String(role)}.`,
         );
       }
 
-      if (typeof content !== "string" || !content.trim()) {
+      if (typeof content !== "string") {
         badRequest(
           "REQ_INVALID_BODY",
-          "Each message content must be a non-empty string.",
+          "Each message content must be a string.",
+        );
+      }
+
+      const toolCallId = this.readOptionalString(record.toolCallId);
+      const toolCalls = this.normalizeToolCalls(record.toolCalls);
+      if (role === "tool") {
+        if (!toolCallId) {
+          badRequest("REQ_INVALID_BODY", "tool messages require toolCallId.");
+        }
+        if (!content.trim()) {
+          badRequest(
+            "REQ_INVALID_BODY",
+            "tool message content must be a non-empty string.",
+          );
+        }
+      } else if (!content.trim() && toolCalls.length === 0) {
+        badRequest(
+          "REQ_INVALID_BODY",
+          "assistant/system/user messages need content or toolCalls.",
         );
       }
 
       return {
         role,
-        content: content.trim(),
+        content,
+        ...(toolCallId ? { toolCallId } : {}),
+        ...(toolCalls.length > 0 ? { toolCalls } : {}),
+      };
+    });
+  }
+
+  private normalizeToolCalls(value: unknown): LLMToolCall[] {
+    if (value === undefined || value === null) {
+      return [];
+    }
+    if (!Array.isArray(value)) {
+      badRequest("REQ_INVALID_BODY", "toolCalls must be an array when provided.");
+    }
+    return value.map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        badRequest(
+          "REQ_INVALID_BODY",
+          `toolCalls[${index}] must be a JSON object.`,
+        );
+      }
+      const record = item as Record<string, unknown>;
+      const id = this.readOptionalString(record.id);
+      const name = this.readOptionalString(record.name);
+      if (!id || !name) {
+        badRequest(
+          "REQ_INVALID_BODY",
+          `toolCalls[${index}] requires id and name.`,
+        );
+      }
+      const input = isRecord(record.input)
+        ? (record.input as Record<string, unknown>)
+        : {};
+      return {
+        id,
+        name,
+        input,
       };
     });
   }

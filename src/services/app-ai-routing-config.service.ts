@@ -220,7 +220,7 @@ export class AppAiRoutingConfigService {
   }
 
   private parseStoredConfig(raw: string): AiNovelModelRoutingConfig {
-    return this.validateInput(this.parseStoredJson(raw));
+    return this.validateInput(this.normalizeLegacyTaskTypes(this.parseStoredJson(raw)));
   }
 
   private parseStoredJson(raw: string): unknown {
@@ -237,6 +237,40 @@ export class AppAiRoutingConfigService {
     } catch {
       badRequest("REQ_INVALID_BODY", "AI routing config must be valid JSON.");
     }
+  }
+
+  private normalizeLegacyTaskTypes(input: unknown): unknown {
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      return input;
+    }
+
+    const source = structuredClone(input as Record<string, unknown>);
+    const tiers = source.tiers;
+    if (!tiers || typeof tiers !== "object" || Array.isArray(tiers)) {
+      return source;
+    }
+
+    for (const tierValue of Object.values(tiers as Record<string, unknown>)) {
+      if (!tierValue || typeof tierValue !== "object" || Array.isArray(tierValue)) {
+        continue;
+      }
+      const chat = (tierValue as Record<string, unknown>).chat;
+      if (!chat || typeof chat !== "object" || Array.isArray(chat)) {
+        continue;
+      }
+      const chatRecord = chat as Record<string, unknown>;
+      if (
+        typeof chatRecord.setup_turn === "string" &&
+        (!("kickoff_turn" in chatRecord) ||
+          typeof chatRecord.kickoff_turn !== "string" ||
+          !chatRecord.kickoff_turn.trim())
+      ) {
+        chatRecord.kickoff_turn = chatRecord.setup_turn;
+      }
+      delete chatRecord.setup_turn;
+    }
+
+    return source;
   }
 
   private validateInput(input: unknown): AiNovelModelRoutingConfig {

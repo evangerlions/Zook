@@ -199,6 +199,7 @@
 4. 请求与响应都支持 `AES-256-GCM` JSON envelope
 5. 解密成功后的业务成功与业务错误都会加密返回
 6. `taskType` 继续作为 scene-first 选模入口，不允许客户端直传底层模型字段
+7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写
 
 对应核心文件：
 

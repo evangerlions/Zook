@@ -540,15 +540,91 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
   const types = decryptedEvents.map((event) => event.type);
   assert.deepEqual(types, [
     "text_delta",
-    "action.update_meta",
-    "action.ready",
+    "tool_call",
+    "tool_call",
     "usage",
     "done",
   ]);
 
-  const updateMeta = decryptedEvents[1].payload as Record<string, unknown>;
-  assert.equal(updateMeta.title, "赛博夜行档案");
-  assert.equal(updateMeta.readiness, 0.2);
+  const updateMeta = decryptedEvents[1].toolCall as Record<string, unknown>;
+  assert.equal(updateMeta.name, "update_meta");
+  assert.equal(((updateMeta.input as Record<string, unknown>).title ?? '').toString(), "赛博夜行档案");
+  assert.equal(((updateMeta.input as Record<string, unknown>).readiness ?? 0), 0.2);
+});
+
+test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits it", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-fallback-id-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "",
+          name: "read_meta",
+          input: {},
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "",
+            logline: "",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "继续推进这个故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["tool_call", "done"],
+  );
+  const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "read_meta");
+  assert.match(String(toolCall.id), /^ainovel-.*_kickoff_tool_0$/);
 });
 
 test("ai_novel kickoff_turn builds one merged system message with workflow prompt and summary", async () => {
@@ -628,7 +704,7 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   assert.match(String(systemMessages[0]?.content ?? ""), /- title: AI 正在为这本书起名/);
 });
 
-test("ai_novel kickoff_turn supports read_meta tool loop before terminal tool", async () => {
+test("ai_novel kickoff_turn streams a single round and relays read_meta tool calls without internal loop", async () => {
   let callCount = 0;
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -641,39 +717,13 @@ test("ai_novel kickoff_turn supports read_meta tool loop before terminal tool", 
         providerRequestId: "chat-req-setup-read-meta-001",
       };
     },
-    async *stream(request): AsyncIterable<LLMStreamEvent> {
+    async *stream(): AsyncIterable<LLMStreamEvent> {
       callCount += 1;
-      if (callCount === 1) {
-        yield {
-          type: "tool_call",
-          toolCall: {
-            id: "tool_read_1",
-            name: "read_meta",
-            input: {},
-          },
-        };
-        yield {
-          type: "done",
-          finishReason: "tool_calls",
-        };
-        return;
-      }
-
-      const toolMessage = request.messages.find((message) => message.role === "tool");
-      assert.ok(toolMessage);
-      assert.equal(toolMessage?.toolCallId, "tool_read_1");
-      const toolPayload = JSON.parse(toolMessage?.content ?? "{}");
-      assert.equal(toolPayload.storyDirection, "从边荒求生开始翻案。")
-
-      yield {
-        type: "content_delta",
-        text: "现在方向已经够清楚了。",
-      };
       yield {
         type: "tool_call",
         toolCall: {
-          id: "tool_ready_2",
-          name: "ready",
+          id: "tool_read_1",
+          name: "read_meta",
           input: {},
         },
       };
@@ -724,9 +774,10 @@ test("ai_novel kickoff_turn supports read_meta tool loop before terminal tool", 
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["text_delta", "action.ready", "done"],
+    ["tool_call", "done"],
   );
-  assert.equal(callCount, 2);
+  assert.equal(((decryptedEvents[0].toolCall as Record<string, unknown>).name ?? '').toString(), "read_meta");
+  assert.equal(callCount, 1);
 });
 
 test("ai_novel kickoff_turn stream allows assistant-only freeform turns", async () => {
@@ -1367,6 +1418,67 @@ test("ai_novel routes can override model routing from admin config", async () =>
   const completion = (data.completion ?? {}) as Record<string, unknown>;
   assert.equal(completion.modelKey, "ainovel-plus-creative");
   assert.equal(completion.providerModel, "siliconflow/deepseek-v3.2");
+});
+
+test("ai_novel routes normalize legacy setup_turn routing configs on read", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const currentConfig =
+    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
+      "ai_novel",
+    );
+  const legacyConfig = structuredClone(currentConfig);
+  for (const tier of Object.values(legacyConfig.tiers)) {
+    tier.chat.setup_turn = tier.chat.kickoff_turn;
+    delete tier.chat.kickoff_turn;
+  }
+
+  await runtime.services.appConfigService.setValue(
+    "ai_novel",
+    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+    JSON.stringify(legacyConfig, null, 2),
+    "test-legacy-setup-turn",
+  );
+
+  const normalized =
+    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
+      "ai_novel",
+    );
+  assert.equal(normalized.tiers.free.chat.kickoff_turn, "ainovel-plus-reasoning");
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "",
+            logline: "",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "继续推进这个故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
 });
 
 test("ai_novel routes fail when routing mapping is missing", async () => {
