@@ -13,6 +13,7 @@ import {
   AppAiRoutingConfigService,
   AI_NOVEL_APP_ID,
 } from "../../services/app-ai-routing-config.service.ts";
+import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import {
   resolveAiNovelChatScene,
   resolveAiNovelEmbeddingScene,
@@ -222,6 +223,7 @@ export class AiNovelLlmService {
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
+    private readonly logger?: StructuredLogger,
   ) {}
 
   async createChatCompletion(
@@ -487,12 +489,44 @@ export class AiNovelLlmService {
         };
         return;
       }
+      const normalizedToolCall = this.normalizeKickoffToolCall({
+        id: normalizedToolCallId,
+        name: toolCall.name,
+        input: toolCall.input,
+      });
+      if (!normalizedToolCall) {
+        yield {
+          type: "error",
+          payload: {
+            code: "KICKOFF_TOOL_INVALID_PAYLOAD",
+            message: `Invalid kickoff tool payload: ${toolCall.name}`,
+            recoverable: true,
+          },
+        };
+        if (usage) {
+          yield {
+            type: "usage",
+            usage,
+          };
+        }
+        yield {
+          type: "done",
+          completion: {
+            modelKey: input.modelKey,
+            content: assistantText,
+            ...(reasoningText ? { reasoningText } : {}),
+            ...(finishReason ? { finishReason } : {}),
+          },
+          ...(usage ? { usage } : {}),
+        };
+        return;
+      }
       yield {
         type: "tool_call",
         toolCall: {
-          id: normalizedToolCallId,
-          name: toolCall.name,
-          input: toolCall.input,
+          id: normalizedToolCall.id,
+          name: normalizedToolCall.name,
+          input: normalizedToolCall.input,
         },
       };
     }
@@ -565,6 +599,234 @@ export class AiNovelLlmService {
       return 0;
     }
     return Math.max(0, Math.min(1, value));
+  }
+
+  private normalizeKickoffToolCall(
+    toolCall: LLMToolCall,
+  ): LLMToolCall | undefined {
+    switch (toolCall.name) {
+      case "ask_question":
+        return this.normalizeKickoffAskQuestionToolCall(toolCall);
+      case "update_meta":
+        return this.normalizeKickoffUpdateMetaToolCall(toolCall);
+      case "read_meta":
+      case "ready":
+        return {
+          id: toolCall.id,
+          name: toolCall.name,
+          input: {},
+        };
+      default:
+        return toolCall;
+    }
+  }
+
+  private normalizeKickoffAskQuestionToolCall(
+    toolCall: LLMToolCall,
+  ): LLMToolCall | undefined {
+    const reasons = new Set<string>();
+    const question = this.readOptionalString(toolCall.input.question);
+    if (typeof toolCall.input.question !== "string") {
+      reasons.add("question_missing_or_not_string");
+    } else if (toolCall.input.question.trim() !== toolCall.input.question) {
+      reasons.add("question_trimmed");
+    }
+    const options = this.normalizeKickoffQuestionStrings(
+      toolCall.input.options,
+      4,
+    );
+    if (!Array.isArray(toolCall.input.options)) {
+      reasons.add("options_missing_or_not_array");
+    } else {
+      const rawOptions = toolCall.input.options;
+      if (rawOptions.length > 4) {
+        reasons.add("options_truncated_to_contract");
+      }
+      if (rawOptions.length !== options.length) {
+        reasons.add("options_filtered_or_deduplicated");
+      }
+    }
+    if (!question || options.length < 2) {
+      if (options.length < 2) {
+        reasons.add("options_below_minimum_after_normalization");
+      }
+      this.logKickoffCompatibilityFallback({
+        toolCall,
+        reasons: [...reasons],
+      });
+      return undefined;
+    }
+
+    const input: Record<string, unknown> = {
+      question,
+      options,
+    };
+    const optionSubtitles = this.normalizeKickoffQuestionStrings(
+      toolCall.input.optionSubtitles,
+      options.length,
+    );
+    if (toolCall.input.optionSubtitles !== undefined) {
+      if (!Array.isArray(toolCall.input.optionSubtitles)) {
+        reasons.add("option_subtitles_not_array");
+      } else if (optionSubtitles.length !== options.length) {
+        reasons.add("option_subtitles_dropped_for_alignment");
+      } else if (toolCall.input.optionSubtitles.length !== optionSubtitles.length) {
+        reasons.add("option_subtitles_filtered_or_trimmed");
+      }
+    }
+    if (optionSubtitles.length === options.length) {
+      input.optionSubtitles = optionSubtitles;
+    }
+    if (toolCall.input.allowCustom === true) {
+      input.allowCustom = true;
+    } else if (toolCall.input.allowCustom !== undefined) {
+      reasons.add("allow_custom_ignored");
+    }
+    const normalizedToolCall = {
+      id: toolCall.id,
+      name: toolCall.name,
+      input,
+    };
+    this.logKickoffCompatibilityFallback({
+      toolCall,
+      normalizedToolCall,
+      reasons: [...reasons],
+    });
+    return normalizedToolCall;
+  }
+
+  private normalizeKickoffUpdateMetaToolCall(toolCall: LLMToolCall): LLMToolCall {
+    const reasons = new Set<string>();
+    const input: Record<string, unknown> = {};
+    const title = this.readOptionalString(toolCall.input.title);
+    const logline = this.readOptionalString(toolCall.input.logline);
+    const protagonistAndHook = this.readOptionalString(
+      toolCall.input.protagonistAndHook,
+    );
+    const storyDirection = this.readOptionalString(
+      toolCall.input.storyDirection,
+    );
+    const scale = this.readOptionalString(toolCall.input.scale);
+    const knownKeys = new Set([
+      "title",
+      "logline",
+      "protagonistAndHook",
+      "storyDirection",
+      "scale",
+      "readiness",
+    ]);
+    for (const key of Object.keys(toolCall.input)) {
+      if (!knownKeys.has(key)) {
+        reasons.add("unknown_update_meta_fields_dropped");
+        break;
+      }
+    }
+    if (title) {
+      input.title = title;
+      if (toolCall.input.title !== title) {
+        reasons.add("title_trimmed");
+      }
+    } else if (toolCall.input.title !== undefined) {
+      reasons.add("title_dropped");
+    }
+    if (logline) {
+      input.logline = logline;
+      if (toolCall.input.logline !== logline) {
+        reasons.add("logline_trimmed");
+      }
+    } else if (toolCall.input.logline !== undefined) {
+      reasons.add("logline_dropped");
+    }
+    if (protagonistAndHook) {
+      input.protagonistAndHook = protagonistAndHook;
+      if (toolCall.input.protagonistAndHook !== protagonistAndHook) {
+        reasons.add("protagonist_and_hook_trimmed");
+      }
+    } else if (toolCall.input.protagonistAndHook !== undefined) {
+      reasons.add("protagonist_and_hook_dropped");
+    }
+    if (storyDirection) {
+      input.storyDirection = storyDirection;
+      if (toolCall.input.storyDirection !== storyDirection) {
+        reasons.add("story_direction_trimmed");
+      }
+    } else if (toolCall.input.storyDirection !== undefined) {
+      reasons.add("story_direction_dropped");
+    }
+    if (scale) {
+      input.scale = scale;
+      if (toolCall.input.scale !== scale) {
+        reasons.add("scale_trimmed");
+      }
+    } else if (toolCall.input.scale !== undefined) {
+      reasons.add("scale_dropped");
+    }
+    if (typeof toolCall.input.readiness === "number") {
+      const normalizedReadiness = this.normalizeReadiness(toolCall.input.readiness);
+      input.readiness = normalizedReadiness;
+      if (normalizedReadiness !== toolCall.input.readiness) {
+        reasons.add("readiness_clamped");
+      }
+    } else if (toolCall.input.readiness !== undefined) {
+      reasons.add("readiness_dropped");
+    }
+    const normalizedToolCall = {
+      id: toolCall.id,
+      name: toolCall.name,
+      input,
+    };
+    this.logKickoffCompatibilityFallback({
+      toolCall,
+      normalizedToolCall,
+      reasons: [...reasons],
+    });
+    return normalizedToolCall;
+  }
+
+  private normalizeKickoffQuestionStrings(
+    value: unknown,
+    maxItems: number,
+  ): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    const normalized: string[] = [];
+    const seen = new Set<string>();
+    for (const item of value) {
+      if (typeof item !== "string") {
+        continue;
+      }
+      const next = item.trim();
+      if (!next || seen.has(next)) {
+        continue;
+      }
+      normalized.push(next);
+      seen.add(next);
+      if (normalized.length >= maxItems) {
+        break;
+      }
+    }
+    return normalized;
+  }
+
+  private logKickoffCompatibilityFallback(input: {
+    toolCall: LLMToolCall;
+    reasons: string[];
+    normalizedToolCall?: LLMToolCall;
+  }): void {
+    if (!this.logger || input.reasons.length === 0) {
+      return;
+    }
+    this.logger.error("ai_novel kickoff compatibility fallback applied", {
+      taskType: "kickoff_turn",
+      toolName: input.toolCall.name,
+      toolCallId: input.toolCall.id,
+      reasons: input.reasons,
+      originalInput: input.toolCall.input,
+      ...(input.normalizedToolCall
+        ? { normalizedInput: input.normalizedToolCall.input }
+        : {}),
+    });
   }
 
   async createEmbeddings(

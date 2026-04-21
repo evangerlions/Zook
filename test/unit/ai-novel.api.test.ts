@@ -552,6 +552,127 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
   assert.equal(((updateMeta.input as Record<string, unknown>).readiness ?? 0), 0.2);
 });
 
+test("ai_novel kickoff_turn normalizes ask_question payloads before relaying them", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-normalize-ask-question-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_question_1",
+          name: "ask_question",
+          input: {
+            question: "  主角被逐出山门后，故事的核心走向是什么？  ",
+            options: [
+              "复仇打脸",
+              "另起炉灶",
+              "洗冤归宗",
+              "揭开阴谋",
+              "浪迹天涯",
+              "复仇打脸",
+              "",
+            ],
+            optionSubtitles: [
+              "向背叛者清算",
+              "建立新势力",
+              "重回宗门",
+              "冤案背后另有黑手",
+              "不再回头",
+              "重复项应被丢弃",
+            ],
+            allowCustom: true,
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            title: "",
+            logline: "",
+            protagonistAndHook: "",
+            storyDirection: "",
+            scale: "待定",
+            readiness: 0,
+          },
+        },
+        messages: [
+          {
+            role: "user",
+            content: "继续推进这个故事。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  const askQuestion = decryptedEvents.find((event) => event.type === "tool_call");
+  assert.ok(askQuestion);
+  const toolCall = askQuestion!.toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "ask_question");
+  assert.deepEqual(
+    (toolCall.input as Record<string, unknown>).options,
+    ["复仇打脸", "另起炉灶", "洗冤归宗", "揭开阴谋"],
+  );
+  assert.deepEqual(
+    (toolCall.input as Record<string, unknown>).optionSubtitles,
+    ["向背叛者清算", "建立新势力", "重回宗门", "冤案背后另有黑手"],
+  );
+  assert.equal(
+    (toolCall.input as Record<string, unknown>).question,
+    "主角被逐出山门后，故事的核心走向是什么？",
+  );
+  assert.equal((toolCall.input as Record<string, unknown>).allowCustom, true);
+  const fallbackLog = runtime.logger.records.find((entry) =>
+    entry.message === "ai_novel kickoff compatibility fallback applied"
+  );
+  assert.ok(fallbackLog);
+  assert.equal(fallbackLog.level, "error");
+  assert.deepEqual(fallbackLog.reasons, [
+    "question_trimmed",
+    "options_truncated_to_contract",
+    "options_filtered_or_deduplicated",
+    "option_subtitles_filtered_or_trimmed",
+  ]);
+});
+
 test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits it", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
