@@ -61,7 +61,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   },
   {
     name: "ask_question",
-    description: "Ask one focused kickoff question with 2-4 user-facing options.",
+    description: "Ask one focused kickoff question with 2-4 user-facing options. optionSubtitles are optional; when provided, they should align one-to-one with options so the UI can render short explanatory subtitles directly.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -70,6 +70,13 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         question: { type: "string" },
         options: {
           type: "array",
+          items: { type: "string" },
+          minItems: 2,
+          maxItems: 4,
+        },
+        optionSubtitles: {
+          type: "array",
+          description: "Optional short subtitle for each option. Only include this field when subtitles add real value. If provided, it must align one-to-one with options and be suitable for direct UI display.",
           items: { type: "string" },
           minItems: 2,
           maxItems: 4,
