@@ -24,7 +24,6 @@ import {
 } from "./ai-novel-llm-prompts.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
 
-
 interface KickoffMeta {
   title: string;
   logline: string;
@@ -33,7 +32,6 @@ interface KickoffMeta {
   scale: string;
   readiness: number;
 }
-
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -47,7 +45,7 @@ const kickoffToolWireNames = {
 } as const;
 
 type KickoffToolKind =
-  typeof kickoffToolWireNames[keyof typeof kickoffToolWireNames];
+  (typeof kickoffToolWireNames)[keyof typeof kickoffToolWireNames];
 
 const kickoffToolKindByWireName = new Map<string, KickoffToolKind>(
   Object.values(kickoffToolWireNames).map((name) => [name, name]),
@@ -65,7 +63,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   },
   {
     name: kickoffToolWireNames.updateMeta,
-    description: "Replace one or more fields in the current kickoff meta card.",
+    description: "Patch one or more fields in the current kickoff meta card.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -81,7 +79,8 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   },
   {
     name: kickoffToolWireNames.askQuestion,
-    description: "Ask one focused kickoff question with 2-4 user-facing options. optionSubtitles are optional; when provided, they should align one-to-one with options so the UI can render short explanatory subtitles directly.",
+    description:
+      "Ask one focused kickoff question with 2-4 user-facing options. optionSubtitles are optional; when provided, they should align one-to-one with options so the UI can render short explanatory subtitles directly.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -96,7 +95,8 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         },
         optionSubtitles: {
           type: "array",
-          description: "Optional short subtitle for each option. Only include this field when subtitles add real value. If provided, it must align one-to-one with options and be suitable for direct UI display.",
+          description:
+            "Optional short subtitle for each option. Only include this field when subtitles add real value. If provided, it must align one-to-one with options and be suitable for direct UI display.",
           items: { type: "string" },
           minItems: 2,
           maxItems: 4,
@@ -164,7 +164,6 @@ const KICKOFF_SYSTEM_PROMPT = [
 ].join("\n");
 
 export interface AiNovelChatResponse {
-
   taskType: string;
   completion: {
     modelKey: string;
@@ -258,16 +257,10 @@ export class AiNovelLlmService {
     const taskType = this.requireTaskType(body);
     const scene = resolveAiNovelChatScene(taskType);
     if (scene.taskType === "kickoff_turn") {
-      badRequest(
-        "REQ_INVALID_BODY",
-        "kickoff_turn requires stream=true.",
-      );
+      badRequest("REQ_INVALID_BODY", "kickoff_turn requires stream=true.");
     }
     if (scene.requiresStream) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        `${scene.taskType} requires stream=true.`,
-      );
+      badRequest("REQ_INVALID_BODY", `${scene.taskType} requires stream=true.`);
     }
     const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
       AI_NOVEL_APP_ID,
@@ -602,7 +595,6 @@ export class AiNovelLlmService {
       throw this.mapUpstreamError(error);
     }
 
-
     for (const [index, toolCall] of toolCalls.entries()) {
       const normalizedToolCallId =
         toolCall.id && toolCall.id.trim().length > 0
@@ -699,7 +691,10 @@ export class AiNovelLlmService {
     };
   }
 
-  private buildKickoffMessages(messages: LLMMessage[], meta: KickoffMeta): LLMMessage[] {
+  private buildKickoffMessages(
+    messages: LLMMessage[],
+    meta: KickoffMeta,
+  ): LLMMessage[] {
     return [
       {
         role: "system",
@@ -721,15 +716,17 @@ export class AiNovelLlmService {
   }
 
   private normalizeKickoffMetaContext(value: unknown): KickoffMeta {
-    const meta = isRecord(value) && isRecord(value.meta)
-      ? (value.meta as Record<string, unknown>)
-      : isRecord(value)
-        ? (value as Record<string, unknown>)
-        : {};
+    const meta =
+      isRecord(value) && isRecord(value.meta)
+        ? (value.meta as Record<string, unknown>)
+        : isRecord(value)
+          ? (value as Record<string, unknown>)
+          : {};
     return {
       title: this.readOptionalString(meta.title) ?? "待定书名",
       logline: this.readOptionalString(meta.logline) ?? "",
-      protagonistAndHook: this.readOptionalString(meta.protagonistAndHook) ?? "",
+      protagonistAndHook:
+        this.readOptionalString(meta.protagonistAndHook) ?? "",
       storyDirection: this.readOptionalString(meta.storyDirection) ?? "",
       scale: this.readOptionalString(meta.scale) ?? "待定",
       readiness: this.normalizeReadiness(meta.readiness),
@@ -830,7 +827,9 @@ export class AiNovelLlmService {
         reasons.add("option_subtitles_not_array");
       } else if (optionSubtitles.length !== options.length) {
         reasons.add("option_subtitles_dropped_for_alignment");
-      } else if (toolCall.input.optionSubtitles.length !== optionSubtitles.length) {
+      } else if (
+        toolCall.input.optionSubtitles.length !== optionSubtitles.length
+      ) {
         reasons.add("option_subtitles_filtered_or_trimmed");
       }
     }
@@ -855,7 +854,9 @@ export class AiNovelLlmService {
     return normalizedToolCall;
   }
 
-  private normalizeKickoffUpdateMetaToolCall(toolCall: LLMToolCall): LLMToolCall {
+  private normalizeKickoffUpdateMetaToolCall(
+    toolCall: LLMToolCall,
+  ): LLMToolCall {
     const reasons = new Set<string>();
     const input: Record<string, unknown> = {};
     const title = this.readOptionalString(toolCall.input.title);
@@ -922,7 +923,9 @@ export class AiNovelLlmService {
       reasons.add("scale_dropped");
     }
     if (typeof toolCall.input.readiness === "number") {
-      const normalizedReadiness = this.normalizeReadiness(toolCall.input.readiness);
+      const normalizedReadiness = this.normalizeReadiness(
+        toolCall.input.readiness,
+      );
       input.readiness = normalizedReadiness;
       if (normalizedReadiness !== toolCall.input.readiness) {
         reasons.add("readiness_clamped");
@@ -1106,7 +1109,10 @@ export class AiNovelLlmService {
       return [];
     }
     if (!Array.isArray(value)) {
-      badRequest("REQ_INVALID_BODY", "toolCalls must be an array when provided.");
+      badRequest(
+        "REQ_INVALID_BODY",
+        "toolCalls must be an array when provided.",
+      );
     }
     return value.map((item, index) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) {

@@ -1943,6 +1943,15 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
   const legacyConfig = structuredClone(currentConfig);
   for (const tier of Object.values(legacyConfig.tiers)) {
     tier.chat.setup_turn = tier.chat.kickoff_turn;
+    tier.chat.blueprint_gen = "ainovel-free-creative";
+    tier.chat.chapter1_draft_gen = "ainovel-free-creative";
+    tier.chat.chapter1_critic = "ainovel-free-reasoning";
+    tier.chat.fact_extract = "ainovel-lowcost-structured";
+    tier.chat.episode_extract = "ainovel-lowcost-structured";
+    tier.chat.continue_chapter = "ainovel-free-creative";
+    tier.chat.chapter_transition = "ainovel-free-reasoning";
+    tier.chat.chapter2_planner = "ainovel-free-reasoning";
+    tier.chat.chapter2_draft_gen = "ainovel-free-creative";
     delete tier.chat.kickoff_turn;
     delete tier.chat.write_turn;
     delete tier.chat.chapter_draft;
@@ -1977,6 +1986,8 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
     normalized.tiers.free.chat.snapshot_generation,
     "ainovel-lowcost-structured",
   );
+  assert.equal("continue_chapter" in normalized.tiers.free.chat, false);
+  assert.equal("chapter2_draft_gen" in normalized.tiers.free.chat, false);
 
   const response = await runtime.app.handle({
     method: "POST",

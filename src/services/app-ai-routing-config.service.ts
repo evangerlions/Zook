@@ -29,6 +29,17 @@ const ADDITIVE_STORED_CHAT_TASK_TYPES = [
   "snapshot_generation",
   "next_chapter_brief",
 ] as const;
+const REMOVED_STORED_CHAT_TASK_TYPES = [
+  "blueprint_gen",
+  "chapter1_draft_gen",
+  "chapter1_critic",
+  "fact_extract",
+  "episode_extract",
+  "continue_chapter",
+  "chapter_transition",
+  "chapter2_planner",
+  "chapter2_draft_gen",
+] as const;
 
 const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
   defaultTier: "free",
@@ -346,6 +357,9 @@ export class AppAiRoutingConfigService {
         chatRecord.kickoff_turn = chatRecord.setup_turn;
       }
       delete chatRecord.setup_turn;
+      for (const taskType of REMOVED_STORED_CHAT_TASK_TYPES) {
+        delete chatRecord[taskType];
+      }
       if (!VALID_TIERS.has(tierName as AiNovelModelRoutingTier)) {
         continue;
       }
