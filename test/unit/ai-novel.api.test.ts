@@ -488,8 +488,27 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
           id: "tool_meta_1",
           name: "update_meta",
           input: {
-            title: "赛博夜行档案",
-            logline: "被公司流放的异能调查员，在霓虹深城里追查记忆走私案。",
+            titleCandidate: "赛博夜行档案",
+            storyPromise: "赛博都市异能调查爽文。",
+            storyCenter: ["被流放的异能调查员"],
+            trigger: "卷入记忆走私案。",
+            drive: { mode: "discover", object: "记忆走私案真相" },
+            pressureSources: ["公司追杀", "城市神经网络"],
+            stakes: {
+              external: "城市被记忆交易吞掉",
+              relational: "旧搭档被卷入",
+              internal: "主角无法确认自己的记忆",
+            },
+            worldConstraints: ["异能会留下可追踪的记忆残响"],
+            changeHorizon: "从自保调查走向揭开城市权力结构。",
+            premiseScale: {
+              length: "长篇",
+              povCount: "单视角",
+              threadCount: "主线为主",
+              pace: "快节奏",
+            },
+            language: "简体中文",
+            toneRegister: "冷峻但爽快",
             readiness: 0.2,
           },
         },
@@ -537,12 +556,12 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
         stream: true,
         context: {
           meta: {
-            title: "",
-            logline: "",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
+            storyPromise: "校园超自然异常调查。",
+            storyCenter: ["转学生", "旧校舍"],
+            trigger: "第一晚听见广播点名不存在的学生。",
+            language: "简体中文",
           },
         },
         messages: [
@@ -573,13 +592,113 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
   const updateMeta = decryptedEvents[1].toolCall as Record<string, unknown>;
   assert.equal(updateMeta.name, "update_meta");
   assert.equal(
-    ((updateMeta.input as Record<string, unknown>).title ?? "").toString(),
+    (
+      (updateMeta.input as Record<string, unknown>).titleCandidate ?? ""
+    ).toString(),
     "赛博夜行档案",
   );
   assert.equal(
     (updateMeta.input as Record<string, unknown>).readiness ?? 0,
     0.2,
   );
+  assert.equal(
+    (updateMeta.input as Record<string, unknown>).storyPromise,
+    "赛博都市异能调查爽文。",
+  );
+  assert.deepEqual((updateMeta.input as Record<string, unknown>).storyCenter, [
+    "被流放的异能调查员",
+  ]);
+  assert.deepEqual((updateMeta.input as Record<string, unknown>).drive, {
+    mode: "discover",
+    object: "记忆走私案真相",
+  });
+});
+
+test("ai_novel kickoff_turn maps legacy kickoff card fields into contract fields", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-legacy-meta-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_meta_legacy",
+          name: "update_meta",
+          input: {
+            title: "烬骨长明",
+            logline: "被逐弟子在边荒靠残魂活下来。",
+            protagonistAndHook: "被逐出宗门的真传弟子濒死觉醒残魂。",
+            storyDirection: "边荒求生，反查阴谋，最终回宗清算。",
+            scale: "长篇",
+            readiness: 0.8,
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            titleCandidate: "",
+            readiness: 0,
+          },
+        },
+        messages: [
+          {
+            role: "user",
+            content: "写一个玄幻升级流，后面你帮我定。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  const updateMeta = decryptedEvents.find((event) => event.type === "tool_call")
+    ?.toolCall as Record<string, unknown>;
+  assert.equal(updateMeta.name, "update_meta");
+  assert.deepEqual(updateMeta.input, {
+    titleCandidate: "烬骨长明",
+    readiness: 0.8,
+    storyPromise: "被逐弟子在边荒靠残魂活下来。",
+    storyCenter: ["被逐出宗门的真传弟子濒死觉醒残魂。"],
+    changeHorizon: "边荒求生，反查阴谋，最终回宗清算。",
+    premiseScale: { length: "长篇" },
+  });
 });
 
 test("ai_novel kickoff_turn normalizes ask_question payloads before relaying them", async () => {
@@ -650,12 +769,12 @@ test("ai_novel kickoff_turn normalizes ask_question payloads before relaying the
         stream: true,
         context: {
           meta: {
-            title: "",
-            logline: "",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
+            storyPromise: "校园超自然异常调查。",
+            storyCenter: ["转学生", "旧校舍"],
+            trigger: "第一晚听见广播点名不存在的学生。",
+            language: "简体中文",
           },
         },
         messages: [
@@ -756,11 +875,7 @@ test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits 
         stream: true,
         context: {
           meta: {
-            title: "",
-            logline: "",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
           },
         },
@@ -832,12 +947,12 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
         stream: true,
         context: {
           meta: {
-            title: "AI 正在为这本书起名",
-            logline: "校园超自然故事，从一个异常事件开始。",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
+            storyPromise: "校园超自然异常调查。",
+            storyCenter: ["转学生", "旧校舍"],
+            trigger: "第一晚听见广播点名不存在的学生。",
+            language: "简体中文",
           },
         },
         messages: [
@@ -876,9 +991,18 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     String(systemMessages[0]?.content ?? ""),
     /Current kickoff summary:/,
   );
+  assert.match(String(systemMessages[0]?.content ?? ""), /- titleCandidate: /);
   assert.match(
     String(systemMessages[0]?.content ?? ""),
-    /- title: AI 正在为这本书起名/,
+    /Current canonical premise \/ contract:/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /- storyPromise: 校园超自然异常调查。/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /- language: 简体中文/,
   );
 });
 
@@ -932,12 +1056,12 @@ test("ai_novel kickoff_turn streams a single round and relays read_meta tool cal
         stream: true,
         context: {
           meta: {
-            title: "烬骨长明",
-            logline: "被逐出宗门的天才少年踏上翻案之路。",
-            protagonistAndHook: "林烬被栽赃逐出宗门后得到古老器灵。",
-            storyDirection: "从边荒求生开始翻案。",
-            scale: "长篇",
+            titleCandidate: "烬骨长明",
             readiness: 0.1,
+            storyPromise: "被逐出宗门的天才少年踏上翻案之路。",
+            storyCenter: ["林烬被栽赃逐出宗门后得到古老器灵。"],
+            changeHorizon: "从边荒求生开始翻案。",
+            premiseScale: { length: "长篇" },
           },
         },
         messages: [{ role: "user", content: "继续推进这个故事。" }],
@@ -1007,11 +1131,7 @@ test("ai_novel kickoff_turn stream allows assistant-only freeform turns", async 
         stream: true,
         context: {
           meta: {
-            title: "",
-            logline: "",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
           },
         },
@@ -1086,11 +1206,7 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
         stream: true,
         context: {
           meta: {
-            title: "",
-            logline: "",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
           },
         },
@@ -1116,6 +1232,7 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
 test("ai_novel write_turn injects server prompt and documented write tools", async () => {
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   let capturedToolNames: string[] = [];
+  let capturedTools: Array<Record<string, unknown>> = [];
   const llmProvider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
       throw new Error("complete should not be called");
@@ -1128,6 +1245,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
       const tools = request.providerOptions?.tools as
         | Array<Record<string, unknown>>
         | undefined;
+      capturedTools = tools ?? [];
       capturedToolNames = (tools ?? []).map((tool) =>
         String(
           (tool.function as Record<string, unknown> | undefined)?.name ?? "",
@@ -1241,6 +1359,38 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
       "set_main_line",
       "upsert_future_instruction",
       "write_draft",
+    ].sort(),
+  );
+  const contractTool = capturedTools.find(
+    (tool) =>
+      String(
+        (tool.function as Record<string, unknown> | undefined)?.name ?? "",
+      ) === "set_book_contract",
+  );
+  assert.ok(contractTool);
+  const contractParameters = (contractTool.function as Record<string, unknown>)
+    .parameters as Record<string, unknown>;
+  const patchSchema = (contractParameters.properties as Record<string, unknown>)
+    .patch as Record<string, unknown>;
+  const patchProperties = patchSchema.properties as Record<string, unknown>;
+  assert.deepEqual(
+    Object.keys(patchProperties).sort(),
+    [
+      "changeHorizon",
+      "drive",
+      "extras",
+      "focalization",
+      "language",
+      "pressureSources",
+      "readiness",
+      "scale",
+      "stakes",
+      "startState",
+      "storyCenter",
+      "storyPromise",
+      "toneRegister",
+      "trigger",
+      "worldConstraints",
     ].sort(),
   );
 });
@@ -1490,11 +1640,7 @@ test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", a
         stream: true,
         context: {
           meta: {
-            title: "",
-            logline: "",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
           },
         },
@@ -2003,11 +2149,7 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
         stream: true,
         context: {
           meta: {
-            title: "",
-            logline: "",
-            protagonistAndHook: "",
-            storyDirection: "",
-            scale: "待定",
+            titleCandidate: "",
             readiness: 0,
           },
         },

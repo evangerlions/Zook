@@ -25,12 +25,40 @@ import {
 import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
 
 interface KickoffMeta {
-  title: string;
-  logline: string;
-  protagonistAndHook: string;
-  storyDirection: string;
-  scale: string;
+  titleCandidate: string;
   readiness: number;
+  storyPromise: string;
+  storyCenter: string[];
+  focalization: string;
+  startState: string;
+  trigger: string;
+  drive: KickoffDrive;
+  pressureSources: string[];
+  stakes: KickoffStakes;
+  worldConstraints: string[];
+  changeHorizon: string;
+  premiseScale: KickoffScale;
+  language: string;
+  toneRegister: string;
+  extras: Record<string, unknown>;
+}
+
+interface KickoffDrive {
+  mode: string;
+  object: string;
+}
+
+interface KickoffStakes {
+  external: string;
+  relational: string;
+  internal: string;
+}
+
+interface KickoffScale {
+  length: string;
+  povCount: string;
+  threadCount: string;
+  pace: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -54,7 +82,7 @@ const kickoffToolKindByWireName = new Map<string, KickoffToolKind>(
 const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.readMeta,
-    description: "Read the full current kickoff meta card.",
+    description: "Read the full current kickoff premise draft.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -63,17 +91,52 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   },
   {
     name: kickoffToolWireNames.updateMeta,
-    description: "Patch one or more fields in the current kickoff meta card.",
+    description:
+      "Patch one or more fields in the current kickoff premise draft.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       properties: {
-        title: { type: "string" },
-        logline: { type: "string" },
-        protagonistAndHook: { type: "string" },
-        storyDirection: { type: "string" },
-        scale: { type: "string" },
+        titleCandidate: { type: "string" },
         readiness: { type: "number" },
+        storyPromise: { type: "string" },
+        storyCenter: { type: "array", items: { type: "string" } },
+        focalization: { type: "string" },
+        startState: { type: "string" },
+        trigger: { type: "string" },
+        drive: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            mode: { type: "string" },
+            object: { type: "string" },
+          },
+        },
+        pressureSources: { type: "array", items: { type: "string" } },
+        stakes: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            external: { type: "string" },
+            relational: { type: "string" },
+            internal: { type: "string" },
+          },
+        },
+        worldConstraints: { type: "array", items: { type: "string" } },
+        changeHorizon: { type: "string" },
+        premiseScale: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            length: { type: "string" },
+            povCount: { type: "string" },
+            threadCount: { type: "string" },
+            pace: { type: "string" },
+          },
+        },
+        language: { type: "string" },
+        toneRegister: { type: "string" },
+        extras: { type: "object" },
       },
     },
   },
@@ -128,6 +191,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Progressively clarify the book idea.",
   "- Keep the kickoff card coherent and conservative.",
   "- Every turn should improve the necessary information required to start the novel.",
+  "- Treat kickoff as the process of filling the Premise/Contract fields.",
   "- In most turns, continue by asking the next focused question.",
   "- Ask only the next blocking question.",
   "- Call ready only when the book is genuinely startable.",
@@ -139,7 +203,8 @@ const KICKOFF_SYSTEM_PROMPT = [
   "4. When stable structured information becomes clear, call update_meta.",
   "5. In most turns, if any necessary information is still missing, continue with exactly one focused ask_question.",
   "6. If no structured follow-up is needed, assistant-only freeform continuation is allowed.",
-  "7. Call ready only when concept, protagonist/hook, direction, and workable scope are sufficiently clear.",
+  "7. Call ready only when storyPromise, storyCenter, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
+  "8. If the user says you may decide or start directly, infer sensible defaults from the conversation, call update_meta with every required canonical field first, then call ready only after those fields are non-empty.",
   "",
   "## Question rules",
   "- Ask one question at a time.",
@@ -149,13 +214,16 @@ const KICKOFF_SYSTEM_PROMPT = [
   "",
   "## Meta rules",
   "- Update only fields that are more certain now.",
+  "- Use canonical premise fields as the durable contract: storyPromise, storyCenter, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, toneRegister, extras.",
+  "- Use titleCandidate only for the candidate book title; the client derives kickoff card UI text from the canonical premise.",
   "- Do not speculate.",
   "- Keep readiness conservative.",
   "- Do not inflate readiness just because the idea sounds promising.",
   "",
   "## Ready rules",
   "- Do not call ready early.",
-  "- Use ready only when concept, protagonist/hook, direction, and workable scope are sufficiently clear.",
+  "- Use ready only when the canonical premise/contract fields are sufficiently clear to start writing.",
+  "- Never call ready with empty placeholder contract fields.",
   "",
   "## Output rules",
   "- Never output JSON in assistant content.",
@@ -707,11 +775,28 @@ export class AiNovelLlmService {
   private renderKickoffSummary(meta: KickoffMeta): string {
     return [
       "Current kickoff summary:",
-      `- title: ${meta.title}`,
-      `- logline: ${meta.logline}`,
-      `- storyDirection: ${meta.storyDirection}`,
-      `- scale: ${meta.scale}`,
+      `- titleCandidate: ${meta.titleCandidate}`,
       `- readiness: ${meta.readiness.toFixed(2)}`,
+      "",
+      "Current canonical premise / contract:",
+      `- storyPromise: ${meta.storyPromise}`,
+      `- storyCenter: ${meta.storyCenter.join(" / ")}`,
+      `- focalization: ${meta.focalization}`,
+      `- startState: ${meta.startState}`,
+      `- trigger: ${meta.trigger}`,
+      `- drive: ${meta.drive.mode} ${meta.drive.object}`.trim(),
+      `- pressureSources: ${meta.pressureSources.join(" / ")}`,
+      `- stakes.external: ${meta.stakes.external}`,
+      `- stakes.relational: ${meta.stakes.relational}`,
+      `- stakes.internal: ${meta.stakes.internal}`,
+      `- worldConstraints: ${meta.worldConstraints.join(" / ")}`,
+      `- changeHorizon: ${meta.changeHorizon}`,
+      `- premiseScale.length: ${meta.premiseScale.length}`,
+      `- premiseScale.povCount: ${meta.premiseScale.povCount}`,
+      `- premiseScale.threadCount: ${meta.premiseScale.threadCount}`,
+      `- premiseScale.pace: ${meta.premiseScale.pace}`,
+      `- language: ${meta.language}`,
+      `- toneRegister: ${meta.toneRegister}`,
     ].join("\n");
   }
 
@@ -723,13 +808,55 @@ export class AiNovelLlmService {
           ? (value as Record<string, unknown>)
           : {};
     return {
-      title: this.readOptionalString(meta.title) ?? "待定书名",
-      logline: this.readOptionalString(meta.logline) ?? "",
-      protagonistAndHook:
-        this.readOptionalString(meta.protagonistAndHook) ?? "",
-      storyDirection: this.readOptionalString(meta.storyDirection) ?? "",
-      scale: this.readOptionalString(meta.scale) ?? "待定",
+      titleCandidate: this.readOptionalString(meta.titleCandidate) ?? "",
       readiness: this.normalizeReadiness(meta.readiness),
+      storyPromise: this.readOptionalString(meta.storyPromise) ?? "",
+      storyCenter: this.normalizeKickoffQuestionStrings(meta.storyCenter, 12),
+      focalization: this.readOptionalString(meta.focalization) ?? "",
+      startState: this.readOptionalString(meta.startState) ?? "",
+      trigger: this.readOptionalString(meta.trigger) ?? "",
+      drive: this.normalizeKickoffDrive(meta.drive),
+      pressureSources: this.normalizeKickoffQuestionStrings(
+        meta.pressureSources,
+        12,
+      ),
+      stakes: this.normalizeKickoffStakes(meta.stakes),
+      worldConstraints: this.normalizeKickoffQuestionStrings(
+        meta.worldConstraints,
+        12,
+      ),
+      changeHorizon: this.readOptionalString(meta.changeHorizon) ?? "",
+      premiseScale: this.normalizeKickoffScale(meta.premiseScale),
+      language: this.readOptionalString(meta.language) ?? "",
+      toneRegister: this.readOptionalString(meta.toneRegister) ?? "",
+      extras: isRecord(meta.extras) ? meta.extras : {},
+    };
+  }
+
+  private normalizeKickoffDrive(value: unknown): KickoffDrive {
+    const record = isRecord(value) ? value : {};
+    return {
+      mode: this.readOptionalString(record.mode) ?? "",
+      object: this.readOptionalString(record.object) ?? "",
+    };
+  }
+
+  private normalizeKickoffStakes(value: unknown): KickoffStakes {
+    const record = isRecord(value) ? value : {};
+    return {
+      external: this.readOptionalString(record.external) ?? "",
+      relational: this.readOptionalString(record.relational) ?? "",
+      internal: this.readOptionalString(record.internal) ?? "",
+    };
+  }
+
+  private normalizeKickoffScale(value: unknown): KickoffScale {
+    const record = isRecord(value) ? value : {};
+    return {
+      length: this.readOptionalString(record.length) ?? "",
+      povCount: this.readOptionalString(record.povCount) ?? "",
+      threadCount: this.readOptionalString(record.threadCount) ?? "",
+      pace: this.readOptionalString(record.pace) ?? "",
     };
   }
 
@@ -859,22 +986,44 @@ export class AiNovelLlmService {
   ): LLMToolCall {
     const reasons = new Set<string>();
     const input: Record<string, unknown> = {};
-    const title = this.readOptionalString(toolCall.input.title);
-    const logline = this.readOptionalString(toolCall.input.logline);
-    const protagonistAndHook = this.readOptionalString(
-      toolCall.input.protagonistAndHook,
-    );
-    const storyDirection = this.readOptionalString(
-      toolCall.input.storyDirection,
-    );
-    const scale = this.readOptionalString(toolCall.input.scale);
+    const titleCandidate =
+      this.readOptionalString(toolCall.input.titleCandidate) ??
+      this.readOptionalString(toolCall.input.title) ??
+      this.readOptionalString(toolCall.input.bookTitle);
+    const storyPromise =
+      this.readOptionalString(toolCall.input.storyPromise) ??
+      this.readOptionalString(toolCall.input.logline) ??
+      this.readOptionalString(toolCall.input.summary);
+    const storyCenter = this.readKickoffStoryCenter(toolCall.input);
+    const changeHorizon =
+      this.readOptionalString(toolCall.input.changeHorizon) ??
+      this.readOptionalString(toolCall.input.storyDirection);
+    const premiseScale = this.readKickoffPremiseScale(toolCall.input);
     const knownKeys = new Set([
+      "titleCandidate",
       "title",
-      "logline",
-      "protagonistAndHook",
-      "storyDirection",
-      "scale",
+      "bookTitle",
       "readiness",
+      "storyPromise",
+      "logline",
+      "summary",
+      "storyCenter",
+      "protagonistAndHook",
+      "protagonist",
+      "focalization",
+      "startState",
+      "trigger",
+      "drive",
+      "pressureSources",
+      "stakes",
+      "worldConstraints",
+      "changeHorizon",
+      "storyDirection",
+      "premiseScale",
+      "scale",
+      "language",
+      "toneRegister",
+      "extras",
     ]);
     for (const key of Object.keys(toolCall.input)) {
       if (!knownKeys.has(key)) {
@@ -882,45 +1031,15 @@ export class AiNovelLlmService {
         break;
       }
     }
-    if (title) {
-      input.title = title;
-      if (toolCall.input.title !== title) {
-        reasons.add("title_trimmed");
+    if (titleCandidate) {
+      input.titleCandidate = titleCandidate;
+      if (toolCall.input.titleCandidate === undefined) {
+        reasons.add("legacy_title_mapped");
+      } else if (toolCall.input.titleCandidate !== titleCandidate) {
+        reasons.add("title_candidate_trimmed");
       }
-    } else if (toolCall.input.title !== undefined) {
-      reasons.add("title_dropped");
-    }
-    if (logline) {
-      input.logline = logline;
-      if (toolCall.input.logline !== logline) {
-        reasons.add("logline_trimmed");
-      }
-    } else if (toolCall.input.logline !== undefined) {
-      reasons.add("logline_dropped");
-    }
-    if (protagonistAndHook) {
-      input.protagonistAndHook = protagonistAndHook;
-      if (toolCall.input.protagonistAndHook !== protagonistAndHook) {
-        reasons.add("protagonist_and_hook_trimmed");
-      }
-    } else if (toolCall.input.protagonistAndHook !== undefined) {
-      reasons.add("protagonist_and_hook_dropped");
-    }
-    if (storyDirection) {
-      input.storyDirection = storyDirection;
-      if (toolCall.input.storyDirection !== storyDirection) {
-        reasons.add("story_direction_trimmed");
-      }
-    } else if (toolCall.input.storyDirection !== undefined) {
-      reasons.add("story_direction_dropped");
-    }
-    if (scale) {
-      input.scale = scale;
-      if (toolCall.input.scale !== scale) {
-        reasons.add("scale_trimmed");
-      }
-    } else if (toolCall.input.scale !== undefined) {
-      reasons.add("scale_dropped");
+    } else if (toolCall.input.titleCandidate !== undefined) {
+      reasons.add("title_candidate_dropped");
     }
     if (typeof toolCall.input.readiness === "number") {
       const normalizedReadiness = this.normalizeReadiness(
@@ -933,6 +1052,80 @@ export class AiNovelLlmService {
     } else if (toolCall.input.readiness !== undefined) {
       reasons.add("readiness_dropped");
     }
+    if (storyPromise) {
+      input.storyPromise = storyPromise;
+      if (toolCall.input.storyPromise === undefined) {
+        reasons.add("legacy_story_promise_mapped");
+      } else if (toolCall.input.storyPromise !== storyPromise) {
+        reasons.add("storyPromise_trimmed");
+      }
+    } else if (toolCall.input.storyPromise !== undefined) {
+      reasons.add("storyPromise_dropped");
+    }
+    this.copyOptionalStringField(
+      toolCall.input,
+      input,
+      reasons,
+      "focalization",
+    );
+    this.copyOptionalStringField(toolCall.input, input, reasons, "startState");
+    this.copyOptionalStringField(toolCall.input, input, reasons, "trigger");
+    if (changeHorizon) {
+      input.changeHorizon = changeHorizon;
+      if (toolCall.input.changeHorizon === undefined) {
+        reasons.add("legacy_change_horizon_mapped");
+      } else if (toolCall.input.changeHorizon !== changeHorizon) {
+        reasons.add("changeHorizon_trimmed");
+      }
+    } else if (toolCall.input.changeHorizon !== undefined) {
+      reasons.add("changeHorizon_dropped");
+    }
+    this.copyOptionalStringField(toolCall.input, input, reasons, "language");
+    this.copyOptionalStringField(
+      toolCall.input,
+      input,
+      reasons,
+      "toneRegister",
+    );
+    if (storyCenter.length > 0) {
+      input.storyCenter = storyCenter;
+      if (toolCall.input.storyCenter === undefined) {
+        reasons.add("legacy_story_center_mapped");
+      } else {
+        const rawValue = toolCall.input.storyCenter;
+        if (
+          !Array.isArray(rawValue) ||
+          storyCenter.length !== rawValue.length
+        ) {
+          reasons.add("storyCenter_normalized");
+        }
+      }
+    } else if (toolCall.input.storyCenter !== undefined) {
+      reasons.add("storyCenter_dropped");
+    }
+    this.copyOptionalStringArrayField(
+      toolCall.input,
+      input,
+      reasons,
+      "pressureSources",
+    );
+    this.copyOptionalStringArrayField(
+      toolCall.input,
+      input,
+      reasons,
+      "worldConstraints",
+    );
+    this.copyOptionalObjectField(toolCall.input, input, reasons, "drive");
+    this.copyOptionalObjectField(toolCall.input, input, reasons, "stakes");
+    if (premiseScale !== undefined) {
+      input.premiseScale = premiseScale;
+      if (toolCall.input.premiseScale === undefined) {
+        reasons.add("legacy_scale_mapped");
+      }
+    } else if (toolCall.input.premiseScale !== undefined) {
+      reasons.add("premiseScale_dropped");
+    }
+    this.copyOptionalObjectField(toolCall.input, input, reasons, "extras");
     const normalizedToolCall = {
       id: toolCall.id,
       name: toolCall.name,
@@ -944,6 +1137,84 @@ export class AiNovelLlmService {
       reasons: [...reasons],
     });
     return normalizedToolCall;
+  }
+
+  private copyOptionalStringField(
+    source: Record<string, unknown>,
+    target: Record<string, unknown>,
+    reasons: Set<string>,
+    key: string,
+  ): void {
+    const value = this.readOptionalString(source[key]);
+    if (value) {
+      target[key] = value;
+      if (source[key] !== value) {
+        reasons.add(`${key}_trimmed`);
+      }
+    } else if (source[key] !== undefined) {
+      reasons.add(`${key}_dropped`);
+    }
+  }
+
+  private copyOptionalStringArrayField(
+    source: Record<string, unknown>,
+    target: Record<string, unknown>,
+    reasons: Set<string>,
+    key: string,
+  ): void {
+    const value = this.normalizeKickoffQuestionStrings(source[key], 12);
+    if (value.length > 0) {
+      target[key] = value;
+      const rawValue = source[key];
+      if (!Array.isArray(rawValue) || value.length !== rawValue.length) {
+        reasons.add(`${key}_normalized`);
+      }
+    } else if (source[key] !== undefined) {
+      reasons.add(`${key}_dropped`);
+    }
+  }
+
+  private readKickoffStoryCenter(source: Record<string, unknown>): string[] {
+    const canonical = this.normalizeKickoffQuestionStrings(
+      source.storyCenter,
+      12,
+    );
+    if (canonical.length > 0) {
+      return canonical;
+    }
+    const legacy =
+      this.readOptionalString(source.protagonistAndHook) ??
+      this.readOptionalString(source.protagonist);
+    return legacy ? [legacy] : [];
+  }
+
+  private readKickoffPremiseScale(
+    source: Record<string, unknown>,
+  ): Record<string, unknown> | undefined {
+    if (isRecord(source.premiseScale)) {
+      return source.premiseScale;
+    }
+    if (isRecord(source.scale)) {
+      return source.scale;
+    }
+    const legacyLength = this.readOptionalString(source.scale);
+    if (legacyLength) {
+      return { length: legacyLength };
+    }
+    return undefined;
+  }
+
+  private copyOptionalObjectField(
+    source: Record<string, unknown>,
+    target: Record<string, unknown>,
+    reasons: Set<string>,
+    key: string,
+  ): void {
+    if (isRecord(source[key])) {
+      target[key] = source[key];
+    } else if (source[key] !== undefined) {
+      reasons.add(`${key}_dropped`);
+    }
   }
 
   private normalizeKickoffQuestionStrings(

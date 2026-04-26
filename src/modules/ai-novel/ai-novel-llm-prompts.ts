@@ -41,17 +41,51 @@ const contextReadTools: LLMToolDefinition[] = [
 const writeStateTools: LLMToolDefinition[] = [
   createTool(
     "set_book_contract",
-    "Patch durable long-term book contract rules.",
+    "Patch durable premise-based book contract fields.",
     {
       patch: {
         type: "object",
         additionalProperties: false,
         properties: {
-          rules: { type: "string" },
+          storyPromise: { type: "string" },
+          storyCenter: { type: "array", items: { type: "string" } },
+          focalization: { type: "string" },
+          startState: { type: "string" },
+          trigger: { type: "string" },
+          drive: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              mode: { type: "string" },
+              object: { type: "string" },
+            },
+          },
+          pressureSources: { type: "array", items: { type: "string" } },
+          stakes: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              external: { type: "string" },
+              relational: { type: "string" },
+              internal: { type: "string" },
+            },
+          },
+          worldConstraints: { type: "array", items: { type: "string" } },
+          changeHorizon: { type: "string" },
+          scale: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              length: { type: "string" },
+              povCount: { type: "string" },
+              threadCount: { type: "string" },
+              pace: { type: "string" },
+            },
+          },
           language: { type: "string" },
-          pov: { type: "string" },
-          tone: { type: "string" },
-          hardConstraints: { type: "array", items: { type: "string" } },
+          toneRegister: { type: "string" },
+          extras: { type: "object" },
+          readiness: { type: "number" },
         },
       },
       reason: { type: "string" },
