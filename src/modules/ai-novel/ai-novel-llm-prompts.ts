@@ -18,85 +18,136 @@ interface AiNovelPromptAssembly {
 }
 
 const contextReadTools: LLMToolDefinition[] = [
-  createTool("read_book_contract", "Read the current book contract fragment.", {}),
+  createTool(
+    "read_book_contract",
+    "Read the current book contract fragment.",
+    {},
+  ),
   createTool("read_main_line", "Read the current main-line fragment.", {}),
   createTool("read_chapter_frame", "Read the current chapter frame.", {}),
-  createTool("read_story_window", "Read the default continuity window around the current chapter.", {}),
-  createTool("read_future_instructions", "Read active future instructions relevant to the current chapter.", {}),
+  createTool(
+    "read_story_window",
+    "Read the default continuity window around the current chapter.",
+    {},
+  ),
+  createTool(
+    "read_future_instructions",
+    "Read active future instructions relevant to the current chapter.",
+    {},
+  ),
   createTool("read_current_brief", "Read the current next-chapter brief.", {}),
 ];
 
 const writeStateTools: LLMToolDefinition[] = [
-  createTool("set_book_contract", "Replace durable long-term book contract rules.", {
-    patch: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        rules: { type: "string" },
-        language: { type: "string" },
-        pov: { type: "string" },
-        tone: { type: "string" },
-        hardConstraints: { type: "array", items: { type: "string" } },
+  createTool(
+    "set_book_contract",
+    "Patch durable long-term book contract rules.",
+    {
+      patch: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          rules: { type: "string" },
+          language: { type: "string" },
+          pov: { type: "string" },
+          tone: { type: "string" },
+          hardConstraints: { type: "array", items: { type: "string" } },
+        },
       },
+      reason: { type: "string" },
     },
-    reason: { type: "string" },
-  }, ["patch", "reason"]),
-  createTool("set_main_line", "Replace the current arc-level main line.", {
-    patch: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        currentArc: { type: "string" },
-        drivingQuestion: { type: "string" },
-        nearTermDirection: { type: "string" },
-        avoidDrift: { type: "string" },
+    ["patch", "reason"],
+  ),
+  createTool(
+    "set_main_line",
+    "Patch the current arc-level main line.",
+    {
+      patch: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          currentArc: { type: "string" },
+          drivingQuestion: { type: "string" },
+          nearTermDirection: { type: "string" },
+          avoidDrift: { type: "string" },
+        },
       },
+      reason: { type: "string" },
     },
-    reason: { type: "string" },
-  }, ["patch", "reason"]),
-  createTool("upsert_future_instruction", "Create or update a future-facing instruction.", {
-    instruction_id: { type: "string" },
-    instruction: { type: "string" },
-    from_chapter: { type: "integer" },
-    until_chapter: { type: "integer" },
-    rationale: { type: "string" },
-  }, ["instruction"]),
-  createTool("resolve_instruction", "Mark a future instruction as completed, expired, or withdrawn.", {
-    instruction_id: { type: "string" },
-    resolution: { type: "string" },
-  }, ["instruction_id", "resolution"]),
+    ["patch", "reason"],
+  ),
+  createTool(
+    "upsert_future_instruction",
+    "Create or update a future-facing instruction.",
+    {
+      instruction_id: { type: "string" },
+      instruction: { type: "string" },
+      from_chapter: { type: "integer" },
+      until_chapter: { type: "integer" },
+      rationale: { type: "string" },
+    },
+    ["instruction"],
+  ),
+  createTool(
+    "resolve_instruction",
+    "Mark a future instruction as completed, expired, or withdrawn.",
+    {
+      instruction_id: { type: "string" },
+      resolution: { type: "string" },
+    },
+    ["instruction_id", "resolution"],
+  ),
 ];
 
-const readDraftTool = createTool("read_draft", "Read the bound current chapter draft.", {
-  offset: { type: "integer", minimum: 0 },
-  limit: { type: "integer", minimum: 1 },
-});
+const readDraftTool = createTool(
+  "read_draft",
+  "Read the bound current chapter draft.",
+  {
+    offset: { type: "integer", minimum: 0 },
+    limit: { type: "integer", minimum: 1 },
+  },
+);
 
-const writeDraftTool = createTool("write_draft", "Persist a full replacement of the bound chapter draft.", {
+const writeDraftTool = createTool(
+  "write_draft",
+  "Persist a full replacement of the bound chapter draft.",
+  {
     title: { type: "string" },
     content: { type: "string" },
-}, ["content"]);
+  },
+  ["content"],
+);
 
 const draftTools: LLMToolDefinition[] = [readDraftTool, writeDraftTool];
 
 const interactionTools: LLMToolDefinition[] = [
-  createTool("ask_question", "Ask one focused question when user clarification is required.", {
-    question: { type: "string" },
-    options: {
-      type: "array",
-      items: { type: "string" },
-      minItems: 2,
-      maxItems: 4,
+  createTool(
+    "ask_question",
+    "Ask one focused question when user clarification is required.",
+    {
+      question: { type: "string" },
+      options: {
+        type: "array",
+        items: { type: "string" },
+        minItems: 2,
+        maxItems: 4,
+      },
+      allowCustom: { type: "boolean" },
     },
-    allowCustom: { type: "boolean" },
-  }, ["question", "options"]),
+    ["question", "options"],
+  ),
 ];
 
 const storyHistoryTools: LLMToolDefinition[] = [
-  createTool("search_story_history", "Search distant accepted story history by query.", {
-    query: { type: "string" },
-    limit: { type: "integer", minimum: 1, maximum: 10 },
-  }, ["query"]),
+  createTool(
+    "search_story_history",
+    "Search distant accepted story history by query.",
+    {
+      query: { type: "string" },
+      limit: { type: "integer", minimum: 1, maximum: 10 },
+    },
+    ["query"],
+  ),
 ];
 
 export const WRITE_TURN_TOOLS: LLMToolDefinition[] = [
@@ -187,7 +238,9 @@ export function buildAiNovelPromptAssembly(input: {
   messages: LLMMessage[];
   context: unknown;
 }): AiNovelPromptAssembly {
-  const userMessages = input.messages.filter((message) => message.role !== "system");
+  const userMessages = input.messages.filter(
+    (message) => message.role !== "system",
+  );
   const contextMessage = renderDynamicContext(input.context);
   if (input.profile === "write_turn") {
     return {
@@ -277,7 +330,9 @@ function toJsonSafeValue(value: unknown): unknown {
   }
   if (typeof value === "object") {
     const output: Record<string, unknown> = {};
-    for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
+    for (const [key, nestedValue] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
       output[key] = toJsonSafeValue(nestedValue);
     }
     return output;

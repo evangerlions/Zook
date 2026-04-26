@@ -7,12 +7,19 @@ import type {
   AiNovelModelRoutingTier,
   AiNovelTierRoutingConfig,
 } from "../shared/types.ts";
-import { AI_NOVEL_CHAT_TASK_TYPES, AI_NOVEL_EMBEDDING_TASK_TYPES } from "../modules/ai-novel/ai-novel-llm-scenes.ts";
+import {
+  AI_NOVEL_CHAT_TASK_TYPES,
+  AI_NOVEL_EMBEDDING_TASK_TYPES,
+} from "../modules/ai-novel/ai-novel-llm-scenes.ts";
 
 export const AI_NOVEL_APP_ID = "ai_novel";
 export const AI_NOVEL_MODEL_ROUTING_CONFIG_KEY = "ai_novel.model_routing";
 
-const VALID_TIERS = new Set<AiNovelModelRoutingTier>(["free", "plus", "super_plus"]);
+const VALID_TIERS = new Set<AiNovelModelRoutingTier>([
+  "free",
+  "plus",
+  "super_plus",
+]);
 const ADDITIVE_STORED_CHAT_TASK_TYPES = [
   "write_turn",
   "chapter_draft",
@@ -29,15 +36,6 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     free: {
       chat: {
         kickoff_turn: "ainovel-plus-reasoning",
-        blueprint_gen: "ainovel-free-creative",
-        chapter1_draft_gen: "ainovel-free-creative",
-        chapter1_critic: "ainovel-free-reasoning",
-        fact_extract: "ainovel-lowcost-structured",
-        episode_extract: "ainovel-lowcost-structured",
-        continue_chapter: "ainovel-free-creative",
-        chapter_transition: "ainovel-free-reasoning",
-        chapter2_planner: "ainovel-free-reasoning",
-        chapter2_draft_gen: "ainovel-free-creative",
         write_turn: "ainovel-free-creative",
         chapter_draft: "ainovel-free-creative",
         chapter_summary: "ainovel-lowcost-structured",
@@ -56,15 +54,6 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     plus: {
       chat: {
         kickoff_turn: "ainovel-plus-reasoning",
-        blueprint_gen: "ainovel-plus-creative",
-        chapter1_draft_gen: "ainovel-plus-creative",
-        chapter1_critic: "ainovel-plus-reasoning",
-        fact_extract: "ainovel-lowcost-structured",
-        episode_extract: "ainovel-lowcost-structured",
-        continue_chapter: "ainovel-plus-creative",
-        chapter_transition: "ainovel-plus-reasoning",
-        chapter2_planner: "ainovel-plus-reasoning",
-        chapter2_draft_gen: "ainovel-plus-creative",
         write_turn: "ainovel-plus-creative",
         chapter_draft: "ainovel-plus-creative",
         chapter_summary: "ainovel-lowcost-structured",
@@ -83,15 +72,6 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     super_plus: {
       chat: {
         kickoff_turn: "ainovel-super-reasoning",
-        blueprint_gen: "ainovel-super-creative",
-        chapter1_draft_gen: "ainovel-super-creative",
-        chapter1_critic: "ainovel-super-reasoning",
-        fact_extract: "ainovel-lowcost-structured",
-        episode_extract: "ainovel-lowcost-structured",
-        continue_chapter: "ainovel-super-creative",
-        chapter_transition: "ainovel-super-reasoning",
-        chapter2_planner: "ainovel-super-reasoning",
-        chapter2_draft_gen: "ainovel-super-creative",
         write_turn: "ainovel-super-creative",
         chapter_draft: "ainovel-super-creative",
         chapter_summary: "ainovel-lowcost-structured",
@@ -113,16 +93,33 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
 export class AppAiRoutingConfigService {
   constructor(private readonly appConfigService: VersionedAppConfigService) {}
 
-  async getDocument(app: AdminAppSummary, revision?: number): Promise<AdminAiRoutingDocument> {
+  async getDocument(
+    app: AdminAppSummary,
+    revision?: number,
+  ): Promise<AdminAiRoutingDocument> {
     this.assertAiNovelAppId(app.appId);
-    const revisions = await this.appConfigService.listRevisions(app.appId, AI_NOVEL_MODEL_ROUTING_CONFIG_KEY);
+    const revisions = await this.appConfigService.listRevisions(
+      app.appId,
+      AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+    );
     const latestRevision = revisions.at(-1)?.revision;
     const record = revision
-      ? await this.appConfigService.getRevision(app.appId, AI_NOVEL_MODEL_ROUTING_CONFIG_KEY, revision)
-      : await this.appConfigService.getLatestRevision(app.appId, AI_NOVEL_MODEL_ROUTING_CONFIG_KEY);
+      ? await this.appConfigService.getRevision(
+          app.appId,
+          AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+          revision,
+        )
+      : await this.appConfigService.getLatestRevision(
+          app.appId,
+          AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+        );
 
     if (revision && !record) {
-      throw new ApplicationError(404, "REQ_INVALID_QUERY", `AI routing revision ${revision} was not found.`);
+      throw new ApplicationError(
+        404,
+        "REQ_INVALID_QUERY",
+        `AI routing revision ${revision} was not found.`,
+      );
     }
 
     const config = record
@@ -133,7 +130,12 @@ export class AppAiRoutingConfigService {
       app,
       configKey: AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
       rawJson: JSON.stringify(config, null, 2),
-      updatedAt: record?.createdAt ?? await this.appConfigService.getUpdatedAt(app.appId, AI_NOVEL_MODEL_ROUTING_CONFIG_KEY),
+      updatedAt:
+        record?.createdAt ??
+        (await this.appConfigService.getUpdatedAt(
+          app.appId,
+          AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+        )),
       revision: record?.revision,
       desc: record?.desc,
       isLatest: !record || record.revision === latestRevision,
@@ -143,13 +145,24 @@ export class AppAiRoutingConfigService {
 
   async getCurrentConfig(appId: string): Promise<AiNovelModelRoutingConfig> {
     this.assertAiNovelAppId(appId);
-    const stored = await this.appConfigService.getValue(appId, AI_NOVEL_MODEL_ROUTING_CONFIG_KEY);
+    const stored = await this.appConfigService.getValue(
+      appId,
+      AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+    );
     return stored ? this.parseStoredConfig(stored) : this.createDefaultConfig();
   }
 
-  async updateConfig(appId: string, rawJson: string, desc?: string): Promise<void> {
+  async updateConfig(
+    appId: string,
+    rawJson: string,
+    desc?: string,
+  ): Promise<void> {
     this.assertAiNovelAppId(appId);
-    const normalized = JSON.stringify(this.validateInput(this.parseInputJson(rawJson)), null, 2);
+    const normalized = JSON.stringify(
+      this.validateInput(this.parseInputJson(rawJson)),
+      null,
+      2,
+    );
     await this.appConfigService.setValue(
       appId,
       AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
@@ -158,11 +171,23 @@ export class AppAiRoutingConfigService {
     );
   }
 
-  async restoreConfig(appId: string, revision: number, desc?: string): Promise<void> {
+  async restoreConfig(
+    appId: string,
+    revision: number,
+    desc?: string,
+  ): Promise<void> {
     this.assertAiNovelAppId(appId);
-    const existing = await this.appConfigService.getRevision(appId, AI_NOVEL_MODEL_ROUTING_CONFIG_KEY, revision);
+    const existing = await this.appConfigService.getRevision(
+      appId,
+      AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+      revision,
+    );
     if (!existing) {
-      throw new ApplicationError(404, "REQ_INVALID_QUERY", `AI routing revision ${revision} was not found.`);
+      throw new ApplicationError(
+        404,
+        "REQ_INVALID_QUERY",
+        `AI routing revision ${revision} was not found.`,
+      );
     }
 
     await this.appConfigService.restoreValue(
@@ -173,9 +198,15 @@ export class AppAiRoutingConfigService {
     );
   }
 
-  async initializeAppConfig(appId: string, desc = "ai-novel-model-routing-init"): Promise<boolean> {
+  async initializeAppConfig(
+    appId: string,
+    desc = "ai-novel-model-routing-init",
+  ): Promise<boolean> {
     this.assertAiNovelAppId(appId);
-    const existing = await this.appConfigService.getValue(appId, AI_NOVEL_MODEL_ROUTING_CONFIG_KEY);
+    const existing = await this.appConfigService.getValue(
+      appId,
+      AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+    );
     if (existing) {
       return false;
     }
@@ -225,7 +256,12 @@ export class AppAiRoutingConfigService {
       );
     }
 
-    return this.normalizeResolvedModelKey(appId, kind, taskType, modelKey.trim());
+    return this.normalizeResolvedModelKey(
+      appId,
+      kind,
+      taskType,
+      modelKey.trim(),
+    );
   }
 
   createDefaultConfig(): AiNovelModelRoutingConfig {
@@ -250,14 +286,20 @@ export class AppAiRoutingConfigService {
   }
 
   private parseStoredConfig(raw: string): AiNovelModelRoutingConfig {
-    return this.validateInput(this.normalizeStoredConfig(this.parseStoredJson(raw)));
+    return this.validateInput(
+      this.normalizeStoredConfig(this.parseStoredJson(raw)),
+    );
   }
 
   private parseStoredJson(raw: string): unknown {
     try {
       return JSON.parse(raw);
     } catch {
-      throw new ApplicationError(500, "SYS_INTERNAL_ERROR", "Stored AI routing config is invalid.");
+      throw new ApplicationError(
+        500,
+        "SYS_INTERNAL_ERROR",
+        "Stored AI routing config is invalid.",
+      );
     }
   }
 
@@ -280,8 +322,14 @@ export class AppAiRoutingConfigService {
       return source;
     }
 
-    for (const [tierName, tierValue] of Object.entries(tiers as Record<string, unknown>)) {
-      if (!tierValue || typeof tierValue !== "object" || Array.isArray(tierValue)) {
+    for (const [tierName, tierValue] of Object.entries(
+      tiers as Record<string, unknown>,
+    )) {
+      if (
+        !tierValue ||
+        typeof tierValue !== "object" ||
+        Array.isArray(tierValue)
+      ) {
         continue;
       }
       const chat = (tierValue as Record<string, unknown>).chat;
@@ -302,7 +350,9 @@ export class AppAiRoutingConfigService {
         continue;
       }
       const defaultChat =
-        DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG.tiers[tierName as AiNovelModelRoutingTier].chat;
+        DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG.tiers[
+          tierName as AiNovelModelRoutingTier
+        ].chat;
       for (const taskType of ADDITIVE_STORED_CHAT_TASK_TYPES) {
         const modelKey = chatRecord[taskType];
         if (typeof modelKey !== "string" || !modelKey.trim()) {
@@ -316,13 +366,20 @@ export class AppAiRoutingConfigService {
 
   private validateInput(input: unknown): AiNovelModelRoutingConfig {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
-      badRequest("REQ_INVALID_BODY", "AI routing config must be a JSON object.");
+      badRequest(
+        "REQ_INVALID_BODY",
+        "AI routing config must be a JSON object.",
+      );
     }
 
     const source = input as Record<string, unknown>;
     const defaultTier = this.normalizeTier(source.defaultTier);
     const tiersSource = source.tiers;
-    if (!tiersSource || typeof tiersSource !== "object" || Array.isArray(tiersSource)) {
+    if (
+      !tiersSource ||
+      typeof tiersSource !== "object" ||
+      Array.isArray(tiersSource)
+    ) {
       badRequest("REQ_INVALID_BODY", "AI routing tiers must be a JSON object.");
     }
 
@@ -330,7 +387,10 @@ export class AppAiRoutingConfigService {
     const tiers = {
       free: this.normalizeTierConfig(tiersRecord.free, "free"),
       plus: this.normalizeTierConfig(tiersRecord.plus, "plus"),
-      super_plus: this.normalizeTierConfig(tiersRecord.super_plus, "super_plus"),
+      super_plus: this.normalizeTierConfig(
+        tiersRecord.super_plus,
+        "super_plus",
+      ),
     } satisfies Record<AiNovelModelRoutingTier, AiNovelTierRoutingConfig>;
 
     for (const key of Object.keys(tiersRecord)) {
@@ -346,21 +406,38 @@ export class AppAiRoutingConfigService {
   }
 
   private normalizeTier(value: unknown): AiNovelModelRoutingTier {
-    if (typeof value !== "string" || !VALID_TIERS.has(value as AiNovelModelRoutingTier)) {
-      badRequest("REQ_INVALID_BODY", `defaultTier must be one of: ${[...VALID_TIERS].join(", ")}.`);
+    if (
+      typeof value !== "string" ||
+      !VALID_TIERS.has(value as AiNovelModelRoutingTier)
+    ) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        `defaultTier must be one of: ${[...VALID_TIERS].join(", ")}.`,
+      );
     }
     return value as AiNovelModelRoutingTier;
   }
 
-  private normalizeTierConfig(value: unknown, tier: AiNovelModelRoutingTier): AiNovelTierRoutingConfig {
+  private normalizeTierConfig(
+    value: unknown,
+    tier: AiNovelModelRoutingTier,
+  ): AiNovelTierRoutingConfig {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       badRequest("REQ_INVALID_BODY", `Tier ${tier} must be a JSON object.`);
     }
 
     const source = value as Record<string, unknown>;
     return {
-      chat: this.normalizeTaskMap(source.chat, AI_NOVEL_CHAT_TASK_TYPES, `${tier}.chat`),
-      embedding: this.normalizeTaskMap(source.embedding, AI_NOVEL_EMBEDDING_TASK_TYPES, `${tier}.embedding`),
+      chat: this.normalizeTaskMap(
+        source.chat,
+        AI_NOVEL_CHAT_TASK_TYPES,
+        `${tier}.chat`,
+      ),
+      embedding: this.normalizeTaskMap(
+        source.embedding,
+        AI_NOVEL_EMBEDDING_TASK_TYPES,
+        `${tier}.embedding`,
+      ),
     };
   }
 
@@ -379,14 +456,20 @@ export class AppAiRoutingConfigService {
     for (const taskType of taskTypes) {
       const modelKey = source[taskType];
       if (typeof modelKey !== "string" || !modelKey.trim()) {
-        badRequest("REQ_INVALID_BODY", `${fieldName}.${taskType} must be a non-empty string.`);
+        badRequest(
+          "REQ_INVALID_BODY",
+          `${fieldName}.${taskType} must be a non-empty string.`,
+        );
       }
       normalized[taskType] = modelKey.trim();
     }
 
     for (const key of Object.keys(source)) {
       if (!taskTypes.includes(key)) {
-        badRequest("REQ_INVALID_BODY", `${fieldName} contains unsupported taskType: ${key}.`);
+        badRequest(
+          "REQ_INVALID_BODY",
+          `${fieldName} contains unsupported taskType: ${key}.`,
+        );
       }
     }
 
@@ -395,7 +478,11 @@ export class AppAiRoutingConfigService {
 
   private assertAiNovelAppId(appId: string): void {
     if (appId !== AI_NOVEL_APP_ID) {
-      throw new ApplicationError(404, "APP_NOT_FOUND", `AI routing is not supported for app ${appId}.`);
+      throw new ApplicationError(
+        404,
+        "APP_NOT_FOUND",
+        `AI routing is not supported for app ${appId}.`,
+      );
     }
   }
 }

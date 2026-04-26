@@ -56,7 +56,9 @@ function decryptAiPayload(
   return JSON.parse(plaintext.toString("utf8")) as Record<string, unknown>;
 }
 
-function normalizeAiEvent(event: Record<string, unknown>): Record<string, unknown> {
+function normalizeAiEvent(
+  event: Record<string, unknown>,
+): Record<string, unknown> {
   return event.data && typeof event.data === "object"
     ? (event.data as Record<string, unknown>)
     : event;
@@ -311,7 +313,7 @@ test("ai_novel chat completions route requires bearer auth", async () => {
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -344,7 +346,7 @@ test("ai_novel chat completions route resolves taskType to scene model selection
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "chapter_summary",
         messages: [
           {
             role: "system",
@@ -367,11 +369,11 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
-  assert.equal(data.taskType, "continue_chapter");
+  assert.equal(data.taskType, "chapter_summary");
   const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.modelKey, "ainovel-free-creative");
+  assert.equal(completion.modelKey, "ainovel-lowcost-structured");
   assert.equal(completion.provider, "bailian");
-  assert.equal(completion.providerModel, "qwen-plus");
+  assert.equal(completion.providerModel, "qwen3.5-flash");
   assert.equal(completion.providerRequestId, "chat-req-001");
   assert.equal(
     (response.body as Record<string, unknown>).localDebugResponseText,
@@ -387,15 +389,6 @@ test("ai_novel model routing config validates all novel-engine chat taskTypes", 
     );
   const expectedTaskTypes = [
     "kickoff_turn",
-    "blueprint_gen",
-    "chapter1_draft_gen",
-    "chapter1_critic",
-    "fact_extract",
-    "episode_extract",
-    "continue_chapter",
-    "chapter_transition",
-    "chapter2_planner",
-    "chapter2_draft_gen",
     "write_turn",
     "chapter_draft",
     "chapter_summary",
@@ -427,7 +420,7 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "write_turn",
         stream: true,
         messages: [
           {
@@ -579,8 +572,14 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
 
   const updateMeta = decryptedEvents[1].toolCall as Record<string, unknown>;
   assert.equal(updateMeta.name, "update_meta");
-  assert.equal(((updateMeta.input as Record<string, unknown>).title ?? '').toString(), "赛博夜行档案");
-  assert.equal(((updateMeta.input as Record<string, unknown>).readiness ?? 0), 0.2);
+  assert.equal(
+    ((updateMeta.input as Record<string, unknown>).title ?? "").toString(),
+    "赛博夜行档案",
+  );
+  assert.equal(
+    (updateMeta.input as Record<string, unknown>).readiness ?? 0,
+    0.2,
+  );
 });
 
 test("ai_novel kickoff_turn normalizes ask_question payloads before relaying them", async () => {
@@ -674,14 +673,18 @@ test("ai_novel kickoff_turn normalizes ask_question payloads before relaying the
   const decryptedEvents = events
     .map((event) => decryptAiPayload(event, aiKey))
     .map(normalizeAiEvent);
-  const askQuestion = decryptedEvents.find((event) => event.type === "tool_call");
+  const askQuestion = decryptedEvents.find(
+    (event) => event.type === "tool_call",
+  );
   assert.ok(askQuestion);
   const toolCall = askQuestion!.toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "ask_question");
-  assert.deepEqual(
-    (toolCall.input as Record<string, unknown>).options,
-    ["复仇打脸", "另起炉灶", "洗冤归宗", "揭开阴谋"],
-  );
+  assert.deepEqual((toolCall.input as Record<string, unknown>).options, [
+    "复仇打脸",
+    "另起炉灶",
+    "洗冤归宗",
+    "揭开阴谋",
+  ]);
   assert.deepEqual(
     (toolCall.input as Record<string, unknown>).optionSubtitles,
     ["向背叛者清算", "建立新势力", "重回宗门", "冤案背后另有黑手"],
@@ -691,8 +694,9 @@ test("ai_novel kickoff_turn normalizes ask_question payloads before relaying the
     "主角被逐出山门后，故事的核心走向是什么？",
   );
   assert.equal((toolCall.input as Record<string, unknown>).allowCustom, true);
-  const fallbackLog = runtime.logger.records.find((entry) =>
-    entry.message === "ai_novel kickoff compatibility fallback applied"
+  const fallbackLog = runtime.logger.records.find(
+    (entry) =>
+      entry.message === "ai_novel kickoff compatibility fallback applied",
   );
   assert.ok(fallbackLog);
   assert.equal(fallbackLog.level, "error");
@@ -836,7 +840,12 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
             readiness: 0,
           },
         },
-        messages: [{ role: "user", content: "写一个校园超自然故事，从一个异常事件开始。" }],
+        messages: [
+          {
+            role: "user",
+            content: "写一个校园超自然故事，从一个异常事件开始。",
+          },
+        ],
       },
       aiKey,
     ),
@@ -846,14 +855,31 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   assert.ok(events.length > 0);
   assert.ok(capturedMessages);
 
-  const systemMessages = capturedMessages!.filter((message) => message.role === "system");
+  const systemMessages = capturedMessages!.filter(
+    (message) => message.role === "system",
+  );
   assert.equal(systemMessages.length, 1);
   assert.match(String(systemMessages[0]?.content ?? ""), /## Role/);
-  assert.match(String(systemMessages[0]?.content ?? ""), /## Workflow discipline/);
-  assert.match(String(systemMessages[0]?.content ?? ""), /may call multiple tools/i);
-  assert.match(String(systemMessages[0]?.content ?? ""), /In most turns, continue by asking the next focused question/i);
-  assert.match(String(systemMessages[0]?.content ?? ""), /Current kickoff summary:/);
-  assert.match(String(systemMessages[0]?.content ?? ""), /- title: AI 正在为这本书起名/);
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /## Workflow discipline/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /may call multiple tools/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /In most turns, continue by asking the next focused question/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /Current kickoff summary:/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /- title: AI 正在为这本书起名/,
+  );
 });
 
 test("ai_novel kickoff_turn streams a single round and relays read_meta tool calls without internal loop", async () => {
@@ -928,7 +954,12 @@ test("ai_novel kickoff_turn streams a single round and relays read_meta tool cal
     decryptedEvents.map((event) => event.type),
     ["tool_call", "done"],
   );
-  assert.equal(((decryptedEvents[0].toolCall as Record<string, unknown>).name ?? '').toString(), "read_meta");
+  assert.equal(
+    (
+      (decryptedEvents[0].toolCall as Record<string, unknown>).name ?? ""
+    ).toString(),
+    "read_meta",
+  );
   assert.equal(callCount, 1);
 });
 
@@ -998,7 +1029,10 @@ test("ai_novel kickoff_turn stream allows assistant-only freeform turns", async 
     decryptedEvents.map((event) => event.type),
     ["text_delta", "done"],
   );
-  const doneCompletion = (decryptedEvents[1]?.completion ?? {}) as Record<string, unknown>;
+  const doneCompletion = (decryptedEvents[1]?.completion ?? {}) as Record<
+    string,
+    unknown
+  >;
   assert.equal(doneCompletion.content, "我们先把主角和开局钉稳。");
 });
 
@@ -1091,9 +1125,13 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
         role: message.role,
         content: message.content,
       }));
-      const tools = request.providerOptions?.tools as Array<Record<string, unknown>> | undefined;
+      const tools = request.providerOptions?.tools as
+        | Array<Record<string, unknown>>
+        | undefined;
       capturedToolNames = (tools ?? []).map((tool) =>
-        String(((tool.function as Record<string, unknown> | undefined)?.name) ?? ""),
+        String(
+          (tool.function as Record<string, unknown> | undefined)?.name ?? "",
+        ),
       );
       yield {
         type: "tool_call",
@@ -1147,7 +1185,8 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
         messages: [
           {
             role: "system",
-            content: "client supplied system prompt should not become the stable scene prompt",
+            content:
+              "client supplied system prompt should not become the stable scene prompt",
           },
           {
             role: "user",
@@ -1170,8 +1209,14 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
   );
   assert.ok(capturedMessages);
   assert.equal(capturedMessages![0].role, "system");
-  assert.match(String(capturedMessages![0].content ?? ""), /write-mode AINovel agent/);
-  assert.match(String(capturedMessages![1].content ?? ""), /Dynamic scene context from client payload/);
+  assert.match(
+    String(capturedMessages![0].content ?? ""),
+    /write-mode AINovel agent/,
+  );
+  assert.match(
+    String(capturedMessages![1].content ?? ""),
+    /Dynamic scene context from client payload/,
+  );
   assert.match(String(capturedMessages![1].content ?? ""), /雨夜线索/);
   assert.equal(
     capturedMessages!.some((message) =>
@@ -1179,22 +1224,25 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
     ),
     false,
   );
-  assert.deepEqual(capturedToolNames.sort(), [
-    "ask_question",
-    "read_book_contract",
-    "read_chapter_frame",
-    "read_current_brief",
-    "read_draft",
-    "read_future_instructions",
-    "read_main_line",
-    "read_story_window",
-    "resolve_instruction",
-    "search_story_history",
-    "set_book_contract",
-    "set_main_line",
-    "upsert_future_instruction",
-    "write_draft",
-  ].sort());
+  assert.deepEqual(
+    capturedToolNames.sort(),
+    [
+      "ask_question",
+      "read_book_contract",
+      "read_chapter_frame",
+      "read_current_brief",
+      "read_draft",
+      "read_future_instructions",
+      "read_main_line",
+      "read_story_window",
+      "resolve_instruction",
+      "search_story_history",
+      "set_book_contract",
+      "set_main_line",
+      "upsert_future_instruction",
+      "write_draft",
+    ].sort(),
+  );
 });
 
 test("ai_novel chapter_draft supplies only search history and draft write tools", async () => {
@@ -1209,9 +1257,13 @@ test("ai_novel chapter_draft supplies only search history and draft write tools"
         role: message.role,
         content: message.content,
       }));
-      const tools = request.providerOptions?.tools as Array<Record<string, unknown>> | undefined;
+      const tools = request.providerOptions?.tools as
+        | Array<Record<string, unknown>>
+        | undefined;
       capturedToolNames = (tools ?? []).map((tool) =>
-        String(((tool.function as Record<string, unknown> | undefined)?.name) ?? ""),
+        String(
+          (tool.function as Record<string, unknown> | undefined)?.name ?? "",
+        ),
       );
       yield {
         type: "tool_call",
@@ -1299,7 +1351,7 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
         provider: request.model.provider,
         modelKey: request.model.modelKey,
         providerModel: request.model.providerModel,
-        text: "{\"summary\":\"雨夜事故引出调查线索\"}",
+        text: '{"summary":"雨夜事故引出调查线索"}',
         finishReason: "stop",
         providerRequestId: "chat-req-summary-001",
       };
@@ -1353,7 +1405,10 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
   assert.equal(completion.modelKey, "ainovel-lowcost-structured");
   assert.equal(capturedTools, undefined);
   assert.ok(capturedMessages);
-  assert.match(String(capturedMessages![0].content ?? ""), /ChapterSummaryGenerationJob/);
+  assert.match(
+    String(capturedMessages![0].content ?? ""),
+    /ChapterSummaryGenerationJob/,
+  );
   assert.match(String(capturedMessages![1].content ?? ""), /sourceTextHash/);
 
   const streamResponse = await runtime.app.handle({
@@ -1479,7 +1534,7 @@ test("ai_novel chat completions route keeps JSON envelope when stream is false",
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "chapter_summary",
         stream: false,
         messages: [
           {
@@ -1501,7 +1556,7 @@ test("ai_novel chat completions route keeps JSON envelope when stream is false",
   );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
-  assert.equal(data.taskType, "continue_chapter");
+  assert.equal(data.taskType, "chapter_summary");
 });
 
 test("ai_novel chat completions route rejects non-boolean stream values", async () => {
@@ -1521,7 +1576,7 @@ test("ai_novel chat completions route rejects non-boolean stream values", async 
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "write_turn",
         stream: "true",
         messages: [
           {
@@ -1572,7 +1627,7 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "write_turn",
         stream: true,
         messages: [
           {
@@ -1658,7 +1713,7 @@ test("ai_novel routes return encrypted business errors after request decryption"
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "chapter_summary",
         model: "glm-5",
         messages: [
           {
@@ -1722,7 +1777,7 @@ test("ai_novel routes enforce app scope when bearer auth is present", async () =
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -1746,7 +1801,7 @@ test("ai_novel routes reject unknown encryption keys before entering AI flow", a
   );
   const body = encryptAiPayload(
     {
-      taskType: "continue_chapter",
+      taskType: "chapter_summary",
       messages: [
         {
           role: "user",
@@ -1787,18 +1842,9 @@ test("ai_novel routes can override model routing from admin config", async () =>
         free: {
           chat: {
             kickoff_turn: "ainovel-plus-reasoning",
-            blueprint_gen: "ainovel-plus-creative",
-            chapter1_draft_gen: "ainovel-plus-creative",
-            chapter1_critic: "ainovel-plus-reasoning",
-            fact_extract: "ainovel-lowcost-structured",
-            episode_extract: "ainovel-lowcost-structured",
-            continue_chapter: "ainovel-plus-creative",
-            chapter_transition: "ainovel-plus-reasoning",
-            chapter2_planner: "ainovel-plus-reasoning",
-            chapter2_draft_gen: "ainovel-plus-creative",
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
-            chapter_summary: "ainovel-lowcost-structured",
+            chapter_summary: "ainovel-plus-creative",
             future_instruction_cleanup: "ainovel-lowcost-structured",
             main_line_review: "ainovel-plus-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
@@ -1814,15 +1860,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
         plus: {
           chat: {
             kickoff_turn: "ainovel-plus-reasoning",
-            blueprint_gen: "ainovel-plus-creative",
-            chapter1_draft_gen: "ainovel-plus-creative",
-            chapter1_critic: "ainovel-plus-reasoning",
-            fact_extract: "ainovel-lowcost-structured",
-            episode_extract: "ainovel-lowcost-structured",
-            continue_chapter: "ainovel-plus-creative",
-            chapter_transition: "ainovel-plus-reasoning",
-            chapter2_planner: "ainovel-plus-reasoning",
-            chapter2_draft_gen: "ainovel-plus-creative",
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-lowcost-structured",
@@ -1841,15 +1878,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
         super_plus: {
           chat: {
             kickoff_turn: "ainovel-super-reasoning",
-            blueprint_gen: "ainovel-super-creative",
-            chapter1_draft_gen: "ainovel-super-creative",
-            chapter1_critic: "ainovel-super-reasoning",
-            fact_extract: "ainovel-lowcost-structured",
-            episode_extract: "ainovel-lowcost-structured",
-            continue_chapter: "ainovel-super-creative",
-            chapter_transition: "ainovel-super-reasoning",
-            chapter2_planner: "ainovel-super-reasoning",
-            chapter2_draft_gen: "ainovel-super-creative",
             write_turn: "ainovel-super-creative",
             chapter_draft: "ainovel-super-creative",
             chapter_summary: "ainovel-lowcost-structured",
@@ -1879,7 +1907,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -1936,10 +1964,19 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
     await runtime.services.appAiRoutingConfigService.getCurrentConfig(
       "ai_novel",
     );
-  assert.equal(normalized.tiers.free.chat.kickoff_turn, "ainovel-plus-reasoning");
+  assert.equal(
+    normalized.tiers.free.chat.kickoff_turn,
+    "ainovel-plus-reasoning",
+  );
   assert.equal(normalized.tiers.free.chat.write_turn, "ainovel-free-creative");
-  assert.equal(normalized.tiers.free.chat.chapter_draft, "ainovel-free-creative");
-  assert.equal(normalized.tiers.free.chat.snapshot_generation, "ainovel-lowcost-structured");
+  assert.equal(
+    normalized.tiers.free.chat.chapter_draft,
+    "ainovel-free-creative",
+  );
+  assert.equal(
+    normalized.tiers.free.chat.snapshot_generation,
+    "ainovel-lowcost-structured",
+  );
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -1982,7 +2019,7 @@ test("ai_novel routes fail when routing mapping is missing", async () => {
     await runtime.services.appAiRoutingConfigService.getCurrentConfig(
       "ai_novel",
     );
-  delete currentConfig.tiers.free.chat.continue_chapter;
+  delete currentConfig.tiers.free.chat.kickoff_turn;
   await runtime.services.appConfigService.setValue(
     "ai_novel",
     AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
@@ -1999,7 +2036,7 @@ test("ai_novel routes fail when routing mapping is missing", async () => {
     },
     body: encryptAiPayload(
       {
-        taskType: "continue_chapter",
+        taskType: "chapter_summary",
         messages: [
           {
             role: "user",
