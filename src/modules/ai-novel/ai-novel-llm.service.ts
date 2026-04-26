@@ -18,6 +18,11 @@ import {
   resolveAiNovelChatScene,
   resolveAiNovelEmbeddingScene,
 } from "./ai-novel-llm-scenes.ts";
+import {
+  buildAiNovelPromptAssembly,
+  toOpenAiToolDefinitions,
+} from "./ai-novel-llm-prompts.ts";
+import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
 
 
 interface KickoffMeta {
@@ -34,9 +39,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+const kickoffToolWireNames = {
+  readMeta: "read_meta",
+  updateMeta: "update_meta",
+  askQuestion: "ask_question",
+  ready: "ready",
+} as const;
+
+type KickoffToolKind =
+  typeof kickoffToolWireNames[keyof typeof kickoffToolWireNames];
+
+const kickoffToolKindByWireName = new Map<string, KickoffToolKind>(
+  Object.values(kickoffToolWireNames).map((name) => [name, name]),
+);
+
 const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
-    name: "read_meta",
+    name: kickoffToolWireNames.readMeta,
     description: "Read the full current kickoff meta card.",
     inputSchema: {
       type: "object",
@@ -45,7 +64,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
     },
   },
   {
-    name: "update_meta",
+    name: kickoffToolWireNames.updateMeta,
     description: "Replace one or more fields in the current kickoff meta card.",
     inputSchema: {
       type: "object",
@@ -61,7 +80,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
     },
   },
   {
-    name: "ask_question",
+    name: kickoffToolWireNames.askQuestion,
     description: "Ask one focused kickoff question with 2-4 user-facing options. optionSubtitles are optional; when provided, they should align one-to-one with options so the UI can render short explanatory subtitles directly.",
     inputSchema: {
       type: "object",
@@ -87,7 +106,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
     },
   },
   {
-    name: "ready",
+    name: kickoffToolWireNames.ready,
     description: "Declare the kickoff sufficient to start writing.",
     inputSchema: {
       type: "object",
@@ -244,6 +263,12 @@ export class AiNovelLlmService {
         "kickoff_turn requires stream=true.",
       );
     }
+    if (scene.requiresStream) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        `${scene.taskType} requires stream=true.`,
+      );
+    }
     const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
       AI_NOVEL_APP_ID,
       "chat",
@@ -251,6 +276,13 @@ export class AiNovelLlmService {
       "free",
     );
     const messages = this.normalizeMessages(body.messages);
+    const promptAssembly = scene.profile
+      ? buildAiNovelPromptAssembly({
+          profile: scene.profile,
+          messages,
+          context: body.context,
+        })
+      : { messages, tools: [] };
     const temperature =
       this.optionalNumber(body.temperature, "temperature") ??
       scene.defaultTemperature;
@@ -260,9 +292,17 @@ export class AiNovelLlmService {
     try {
       const result = await this.llmManager.complete({
         modelKey,
-        messages,
+        messages: promptAssembly.messages,
         temperature,
         maxTokens,
+        ...(promptAssembly.tools.length > 0
+          ? {
+              providerOptions: {
+                tools: toOpenAiToolDefinitions(promptAssembly.tools),
+                tool_choice: "auto",
+              },
+            }
+          : {}),
       });
 
       const response: AiNovelChatResponse = {
@@ -296,6 +336,12 @@ export class AiNovelLlmService {
 
     const taskType = this.requireTaskType(body);
     const scene = resolveAiNovelChatScene(taskType);
+    if (scene.supportsStream === false) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        `${scene.taskType} requires stream=false.`,
+      );
+    }
     const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
       AI_NOVEL_APP_ID,
       "chat",
@@ -316,6 +362,17 @@ export class AiNovelLlmService {
         temperature,
         maxTokens,
         meta: this.normalizeKickoffMetaContext(body.context),
+      });
+      return;
+    }
+    if (scene.profile) {
+      yield* this.createPromptedSceneStream({
+        modelKey,
+        messages,
+        temperature,
+        maxTokens,
+        context: body.context,
+        profile: scene.profile,
       });
       return;
     }
@@ -370,6 +427,95 @@ export class AiNovelLlmService {
           type: "done",
           completion: {
             modelKey,
+            content: aggregatedContent,
+            ...(aggregatedReasoning
+              ? { reasoningText: aggregatedReasoning }
+              : {}),
+            ...(finishReason ? { finishReason } : {}),
+          },
+          ...(usage ? { usage } : {}),
+        };
+      }
+    } catch (error) {
+      throw this.mapUpstreamError(error);
+    }
+  }
+
+  private async *createPromptedSceneStream(input: {
+    modelKey: string;
+    messages: LLMMessage[];
+    temperature: number;
+    maxTokens: number;
+    context: unknown;
+    profile: AiNovelPromptProfile;
+  }): AsyncIterable<AiNovelChatStreamChunk> {
+    let aggregatedContent = "";
+    let aggregatedReasoning = "";
+    let finishReason: string | undefined;
+    let usage:
+      | {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        }
+      | undefined;
+    const promptAssembly = buildAiNovelPromptAssembly({
+      profile: input.profile,
+      messages: input.messages,
+      context: input.context,
+    });
+
+    try {
+      for await (const event of this.llmManager.stream({
+        modelKey: input.modelKey,
+        messages: promptAssembly.messages,
+        temperature: input.temperature,
+        maxTokens: input.maxTokens,
+        providerOptions: {
+          tools: toOpenAiToolDefinitions(promptAssembly.tools),
+          tool_choice: "auto",
+        },
+      })) {
+        if (event.type === "reasoning_delta") {
+          aggregatedReasoning += event.text;
+          yield {
+            type: "reasoning_delta",
+            text: event.text,
+          };
+          continue;
+        }
+
+        if (event.type === "content_delta") {
+          aggregatedContent += event.text;
+          yield {
+            type: "content_delta",
+            text: event.text,
+          };
+          continue;
+        }
+
+        if (event.type === "tool_call") {
+          yield {
+            type: "tool_call",
+            toolCall: event.toolCall,
+          };
+          continue;
+        }
+
+        if (event.type === "usage") {
+          usage = event.usage;
+          yield {
+            type: "usage",
+            usage: event.usage,
+          };
+          continue;
+        }
+
+        finishReason = event.finishReason;
+        yield {
+          type: "done",
+          completion: {
+            modelKey: input.modelKey,
             content: aggregatedContent,
             ...(aggregatedReasoning
               ? { reasoningText: aggregatedReasoning }
@@ -462,7 +608,8 @@ export class AiNovelLlmService {
         toolCall.id && toolCall.id.trim().length > 0
           ? toolCall.id
           : `${input.modelKey}_kickoff_tool_${index}`;
-      if (!kickoffToolDefinitions.some((tool) => tool.name === toolCall.name)) {
+      const toolKind = kickoffToolKindByWireName.get(toolCall.name);
+      if (!toolKind) {
         yield {
           type: "error",
           payload: {
@@ -489,11 +636,14 @@ export class AiNovelLlmService {
         };
         return;
       }
-      const normalizedToolCall = this.normalizeKickoffToolCall({
-        id: normalizedToolCallId,
-        name: toolCall.name,
-        input: toolCall.input,
-      });
+      const normalizedToolCall = this.normalizeKickoffToolCall(
+        {
+          id: normalizedToolCallId,
+          name: toolCall.name,
+          input: toolCall.input,
+        },
+        toolKind,
+      );
       if (!normalizedToolCall) {
         yield {
           type: "error",
@@ -603,22 +753,32 @@ export class AiNovelLlmService {
 
   private normalizeKickoffToolCall(
     toolCall: LLMToolCall,
+    toolKind: KickoffToolKind,
   ): LLMToolCall | undefined {
-    switch (toolCall.name) {
-      case "ask_question":
-        return this.normalizeKickoffAskQuestionToolCall(toolCall);
-      case "update_meta":
-        return this.normalizeKickoffUpdateMetaToolCall(toolCall);
-      case "read_meta":
-      case "ready":
-        return {
-          id: toolCall.id,
-          name: toolCall.name,
-          input: {},
-        };
-      default:
-        return toolCall;
-    }
+    const normalizer = this.kickoffToolNormalizers[toolKind];
+    return normalizer(toolCall);
+  }
+
+  private readonly kickoffToolNormalizers: Record<
+    KickoffToolKind,
+    (toolCall: LLMToolCall) => LLMToolCall | undefined
+  > = {
+    [kickoffToolWireNames.askQuestion]: (toolCall) =>
+      this.normalizeKickoffAskQuestionToolCall(toolCall),
+    [kickoffToolWireNames.updateMeta]: (toolCall) =>
+      this.normalizeKickoffUpdateMetaToolCall(toolCall),
+    [kickoffToolWireNames.readMeta]: (toolCall) =>
+      this.emptyPayloadKickoffToolCall(toolCall),
+    [kickoffToolWireNames.ready]: (toolCall) =>
+      this.emptyPayloadKickoffToolCall(toolCall),
+  };
+
+  private emptyPayloadKickoffToolCall(toolCall: LLMToolCall): LLMToolCall {
+    return {
+      id: toolCall.id,
+      name: toolCall.name,
+      input: {},
+    };
   }
 
   private normalizeKickoffAskQuestionToolCall(

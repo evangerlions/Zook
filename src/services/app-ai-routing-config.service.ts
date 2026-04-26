@@ -13,6 +13,15 @@ export const AI_NOVEL_APP_ID = "ai_novel";
 export const AI_NOVEL_MODEL_ROUTING_CONFIG_KEY = "ai_novel.model_routing";
 
 const VALID_TIERS = new Set<AiNovelModelRoutingTier>(["free", "plus", "super_plus"]);
+const ADDITIVE_STORED_CHAT_TASK_TYPES = [
+  "write_turn",
+  "chapter_draft",
+  "chapter_summary",
+  "future_instruction_cleanup",
+  "main_line_review",
+  "snapshot_generation",
+  "next_chapter_brief",
+] as const;
 
 const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
   defaultTier: "free",
@@ -29,6 +38,13 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
         chapter_transition: "ainovel-free-reasoning",
         chapter2_planner: "ainovel-free-reasoning",
         chapter2_draft_gen: "ainovel-free-creative",
+        write_turn: "ainovel-free-creative",
+        chapter_draft: "ainovel-free-creative",
+        chapter_summary: "ainovel-lowcost-structured",
+        future_instruction_cleanup: "ainovel-lowcost-structured",
+        main_line_review: "ainovel-free-reasoning",
+        snapshot_generation: "ainovel-lowcost-structured",
+        next_chapter_brief: "ainovel-lowcost-structured",
       },
       embedding: {
         fact_embed: "ainovel-embedding-default",
@@ -49,6 +65,13 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
         chapter_transition: "ainovel-plus-reasoning",
         chapter2_planner: "ainovel-plus-reasoning",
         chapter2_draft_gen: "ainovel-plus-creative",
+        write_turn: "ainovel-plus-creative",
+        chapter_draft: "ainovel-plus-creative",
+        chapter_summary: "ainovel-lowcost-structured",
+        future_instruction_cleanup: "ainovel-lowcost-structured",
+        main_line_review: "ainovel-plus-reasoning",
+        snapshot_generation: "ainovel-lowcost-structured",
+        next_chapter_brief: "ainovel-lowcost-structured",
       },
       embedding: {
         fact_embed: "ainovel-embedding-default",
@@ -69,6 +92,13 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
         chapter_transition: "ainovel-super-reasoning",
         chapter2_planner: "ainovel-super-reasoning",
         chapter2_draft_gen: "ainovel-super-creative",
+        write_turn: "ainovel-super-creative",
+        chapter_draft: "ainovel-super-creative",
+        chapter_summary: "ainovel-lowcost-structured",
+        future_instruction_cleanup: "ainovel-lowcost-structured",
+        main_line_review: "ainovel-super-reasoning",
+        snapshot_generation: "ainovel-lowcost-structured",
+        next_chapter_brief: "ainovel-lowcost-structured",
       },
       embedding: {
         fact_embed: "ainovel-embedding-default",
@@ -220,7 +250,7 @@ export class AppAiRoutingConfigService {
   }
 
   private parseStoredConfig(raw: string): AiNovelModelRoutingConfig {
-    return this.validateInput(this.normalizeLegacyTaskTypes(this.parseStoredJson(raw)));
+    return this.validateInput(this.normalizeStoredConfig(this.parseStoredJson(raw)));
   }
 
   private parseStoredJson(raw: string): unknown {
@@ -239,7 +269,7 @@ export class AppAiRoutingConfigService {
     }
   }
 
-  private normalizeLegacyTaskTypes(input: unknown): unknown {
+  private normalizeStoredConfig(input: unknown): unknown {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
       return input;
     }
@@ -250,7 +280,7 @@ export class AppAiRoutingConfigService {
       return source;
     }
 
-    for (const tierValue of Object.values(tiers as Record<string, unknown>)) {
+    for (const [tierName, tierValue] of Object.entries(tiers as Record<string, unknown>)) {
       if (!tierValue || typeof tierValue !== "object" || Array.isArray(tierValue)) {
         continue;
       }
@@ -268,6 +298,17 @@ export class AppAiRoutingConfigService {
         chatRecord.kickoff_turn = chatRecord.setup_turn;
       }
       delete chatRecord.setup_turn;
+      if (!VALID_TIERS.has(tierName as AiNovelModelRoutingTier)) {
+        continue;
+      }
+      const defaultChat =
+        DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG.tiers[tierName as AiNovelModelRoutingTier].chat;
+      for (const taskType of ADDITIVE_STORED_CHAT_TASK_TYPES) {
+        const modelKey = chatRecord[taskType];
+        if (typeof modelKey !== "string" || !modelKey.trim()) {
+          chatRecord[taskType] = defaultChat[taskType];
+        }
+      }
     }
 
     return source;

@@ -379,6 +379,37 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   );
 });
 
+test("ai_novel model routing config validates all novel-engine chat taskTypes", async () => {
+  const { runtime } = await createAiNovelRuntime();
+  const config =
+    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
+      "ai_novel",
+    );
+  const expectedTaskTypes = [
+    "kickoff_turn",
+    "blueprint_gen",
+    "chapter1_draft_gen",
+    "chapter1_critic",
+    "fact_extract",
+    "episode_extract",
+    "continue_chapter",
+    "chapter_transition",
+    "chapter2_planner",
+    "chapter2_draft_gen",
+    "write_turn",
+    "chapter_draft",
+    "chapter_summary",
+    "future_instruction_cleanup",
+    "main_line_review",
+    "snapshot_generation",
+    "next_chapter_brief",
+  ];
+
+  for (const tier of Object.values(config.tiers)) {
+    assert.deepEqual(Object.keys(tier.chat).sort(), expectedTaskTypes.sort());
+  }
+});
+
 test("ai_novel chat completions route supports encrypted SSE streaming", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
@@ -1048,6 +1079,314 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
   assert.equal(decryptedEvents[0].text, "先确认故事驱动力");
 });
 
+test("ai_novel write_turn injects server prompt and documented write tools", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> | undefined;
+  let capturedToolNames: string[] = [];
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      const tools = request.providerOptions?.tools as Array<Record<string, unknown>> | undefined;
+      capturedToolNames = (tools ?? []).map((tool) =>
+        String(((tool.function as Record<string, unknown> | undefined)?.name) ?? ""),
+      );
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_write_1",
+          name: "write_draft",
+          input: {
+            title: "雨夜线索",
+            content: "第一段正文。",
+          },
+        },
+      };
+      yield {
+        type: "content_delta",
+        text: "我已经把本章草稿推进了一版。",
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "write_turn",
+        stream: true,
+        context: {
+          contract: "POV 固定为女主第三人称。",
+          mainLine: {
+            current_arc: "女主调查记忆走私案。",
+          },
+          currentChapter: {
+            chapterId: 2,
+            title: "雨夜线索",
+          },
+        },
+        messages: [
+          {
+            role: "system",
+            content: "client supplied system prompt should not become the stable scene prompt",
+          },
+          {
+            role: "user",
+            content: "把这一章改得更有压迫感。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["tool_call", "content_delta", "done"],
+  );
+  assert.ok(capturedMessages);
+  assert.equal(capturedMessages![0].role, "system");
+  assert.match(String(capturedMessages![0].content ?? ""), /write-mode AINovel agent/);
+  assert.match(String(capturedMessages![1].content ?? ""), /Dynamic scene context from client payload/);
+  assert.match(String(capturedMessages![1].content ?? ""), /雨夜线索/);
+  assert.equal(
+    capturedMessages!.some((message) =>
+      String(message.content ?? "").includes("client supplied system prompt"),
+    ),
+    false,
+  );
+  assert.deepEqual(capturedToolNames.sort(), [
+    "ask_question",
+    "read_book_contract",
+    "read_chapter_frame",
+    "read_current_brief",
+    "read_draft",
+    "read_future_instructions",
+    "read_main_line",
+    "read_story_window",
+    "resolve_instruction",
+    "search_story_history",
+    "set_book_contract",
+    "set_main_line",
+    "upsert_future_instruction",
+    "write_draft",
+  ].sort());
+});
+
+test("ai_novel chapter_draft supplies only search history and draft write tools", async () => {
+  let capturedToolNames: string[] = [];
+  let capturedMessages: Array<{ role: string; content?: string }> | undefined;
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      const tools = request.providerOptions?.tools as Array<Record<string, unknown>> | undefined;
+      capturedToolNames = (tools ?? []).map((tool) =>
+        String(((tool.function as Record<string, unknown> | undefined)?.name) ?? ""),
+      );
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_draft_1",
+          name: "write_draft",
+          input: {
+            title: "第一章 夜航",
+            content: "夜航开始。",
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "chapter_draft",
+        stream: true,
+        context: {
+          contract: "冷硬科幻悬疑。",
+          targetChapter: {
+            chapterId: 0,
+            chapterIndex: 1,
+          },
+          brief: "用雨夜事故开篇。",
+        },
+        messages: [
+          {
+            role: "user",
+            content: "生成目标章节首稿。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["tool_call", "done"],
+  );
+  assert.deepEqual(capturedToolNames.sort(), [
+    "search_story_history",
+    "write_draft",
+  ]);
+  assert.ok(capturedMessages);
+  assert.match(String(capturedMessages![0].content ?? ""), /ChapterDraftAgent/);
+  assert.match(String(capturedMessages![1].content ?? ""), /用雨夜事故开篇/);
+});
+
+test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> | undefined;
+  let capturedTools: unknown;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      capturedTools = request.providerOptions?.tools;
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{\"summary\":\"雨夜事故引出调查线索\"}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-summary-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      throw new Error("stream should not be called");
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "chapter_summary",
+        context: {
+          chapterId: 3,
+          sourceTextHash: "hash-3",
+          chapterText: "雨夜事故引出调查线索。",
+        },
+        messages: [
+          {
+            role: "user",
+            content: "summarize fixed input",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
+  assert.equal(decrypted.code, "OK");
+  const data = (decrypted.data ?? {}) as Record<string, unknown>;
+  assert.equal(data.taskType, "chapter_summary");
+  const completion = (data.completion ?? {}) as Record<string, unknown>;
+  assert.equal(completion.modelKey, "ainovel-lowcost-structured");
+  assert.equal(capturedTools, undefined);
+  assert.ok(capturedMessages);
+  assert.match(String(capturedMessages![0].content ?? ""), /ChapterSummaryGenerationJob/);
+  assert.match(String(capturedMessages![1].content ?? ""), /sourceTextHash/);
+
+  const streamResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "chapter_summary",
+        stream: true,
+        context: {
+          chapterText: "雨夜事故引出调查线索。",
+        },
+        messages: [
+          {
+            role: "user",
+            content: "summarize fixed input",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+  assert.equal(streamResponse.statusCode, 200);
+  const streamEvents = await collectSseEvents(streamResponse.streamBody);
+  const error = decryptAiPayload(streamEvents[0], aiKey);
+  assert.equal(error.code, "REQ_INVALID_BODY");
+  assert.match(String(error.message), /chapter_summary requires stream=false/);
+});
+
 test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -1457,6 +1796,13 @@ test("ai_novel routes can override model routing from admin config", async () =>
             chapter_transition: "ainovel-plus-reasoning",
             chapter2_planner: "ainovel-plus-reasoning",
             chapter2_draft_gen: "ainovel-plus-creative",
+            write_turn: "ainovel-plus-creative",
+            chapter_draft: "ainovel-plus-creative",
+            chapter_summary: "ainovel-lowcost-structured",
+            future_instruction_cleanup: "ainovel-lowcost-structured",
+            main_line_review: "ainovel-plus-reasoning",
+            snapshot_generation: "ainovel-lowcost-structured",
+            next_chapter_brief: "ainovel-lowcost-structured",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -1477,6 +1823,13 @@ test("ai_novel routes can override model routing from admin config", async () =>
             chapter_transition: "ainovel-plus-reasoning",
             chapter2_planner: "ainovel-plus-reasoning",
             chapter2_draft_gen: "ainovel-plus-creative",
+            write_turn: "ainovel-plus-creative",
+            chapter_draft: "ainovel-plus-creative",
+            chapter_summary: "ainovel-lowcost-structured",
+            future_instruction_cleanup: "ainovel-lowcost-structured",
+            main_line_review: "ainovel-plus-reasoning",
+            snapshot_generation: "ainovel-lowcost-structured",
+            next_chapter_brief: "ainovel-lowcost-structured",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -1497,6 +1850,13 @@ test("ai_novel routes can override model routing from admin config", async () =>
             chapter_transition: "ainovel-super-reasoning",
             chapter2_planner: "ainovel-super-reasoning",
             chapter2_draft_gen: "ainovel-super-creative",
+            write_turn: "ainovel-super-creative",
+            chapter_draft: "ainovel-super-creative",
+            chapter_summary: "ainovel-lowcost-structured",
+            future_instruction_cleanup: "ainovel-lowcost-structured",
+            main_line_review: "ainovel-super-reasoning",
+            snapshot_generation: "ainovel-lowcost-structured",
+            next_chapter_brief: "ainovel-lowcost-structured",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -1556,6 +1916,13 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
   for (const tier of Object.values(legacyConfig.tiers)) {
     tier.chat.setup_turn = tier.chat.kickoff_turn;
     delete tier.chat.kickoff_turn;
+    delete tier.chat.write_turn;
+    delete tier.chat.chapter_draft;
+    delete tier.chat.chapter_summary;
+    delete tier.chat.future_instruction_cleanup;
+    delete tier.chat.main_line_review;
+    delete tier.chat.snapshot_generation;
+    delete tier.chat.next_chapter_brief;
   }
 
   await runtime.services.appConfigService.setValue(
@@ -1570,6 +1937,9 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
       "ai_novel",
     );
   assert.equal(normalized.tiers.free.chat.kickoff_turn, "ainovel-plus-reasoning");
+  assert.equal(normalized.tiers.free.chat.write_turn, "ainovel-free-creative");
+  assert.equal(normalized.tiers.free.chat.chapter_draft, "ainovel-free-creative");
+  assert.equal(normalized.tiers.free.chat.snapshot_generation, "ainovel-lowcost-structured");
 
   const response = await runtime.app.handle({
     method: "POST",
