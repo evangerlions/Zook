@@ -28,7 +28,7 @@ interface KickoffMeta {
   titleCandidate: string;
   readiness: number;
   storyPromise: string;
-  storyCenter: string[];
+  storyAnchors: StoryAnchor[];
   focalization: string;
   startState: string;
   trigger: string;
@@ -41,6 +41,12 @@ interface KickoffMeta {
   language: string;
   toneRegister: string;
   extras: Record<string, unknown>;
+}
+
+interface StoryAnchor {
+  label: string;
+  role: string;
+  rules: string[];
 }
 
 interface KickoffDrive {
@@ -149,11 +155,32 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
           description:
             "The durable reader-facing promise/core appeal of the book.",
         },
-        storyCenter: {
+        storyAnchors: {
           type: "array",
           description:
-            "Real JSON array of concise center objects: people, relationships, problems, or desires the story truly revolves around.",
-          items: { type: "string" },
+            "Real JSON array of durable story anchors. Anchors can be a protagonist, protagonist group, central relationship, mystery, pressure source, or story stage. This is not a character database.",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["label", "role", "rules"],
+            properties: {
+              label: {
+                type: "string",
+                description: "Concise anchor name, e.g. 林砚, 铁三角, 地下谜团.",
+              },
+              role: {
+                type: "string",
+                description:
+                  "Anchor role, e.g. 单主角, 主角团, 核心关系, 核心谜题, 长期压力源, 核心舞台.",
+              },
+              rules: {
+                type: "array",
+                description:
+                  "Durable rules or constraints for this anchor; keep 1-5 concise items.",
+                items: { type: "string" },
+              },
+            },
+          },
         },
         focalization: {
           type: "string",
@@ -335,7 +362,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "4. When stable structured information becomes clear, call update_meta.",
   "5. In most turns, if any necessary information is still missing, continue with exactly one focused ask_question.",
   "6. If no structured follow-up is needed, assistant-only freeform continuation is allowed.",
-  "7. Call ready only when titleCandidate, storyPromise, storyCenter, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
+  "7. Call ready only when titleCandidate, storyPromise, storyAnchors, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
   "8. If the user says you may decide or start directly, infer sensible defaults from the conversation, call update_meta with every required canonical field first, then call ready only after those fields are non-empty.",
   "",
   "## Question rules",
@@ -352,12 +379,13 @@ const KICKOFF_SYSTEM_PROMPT = [
   "## Tool payload rules",
   "- Follow each tool schema exactly.",
   "- Never pass arrays or objects as strings containing JSON.",
-  "- For update_meta, array fields such as storyCenter, pressureSources, and worldConstraints must be real arrays.",
+  "- For update_meta, array fields such as storyAnchors, pressureSources, and worldConstraints must be real arrays.",
   "- For update_meta, object fields such as drive, stakes, premiseScale, and extras must be real objects.",
   "",
   "## Meta rules",
   "- Update only fields that are more certain now.",
-  "- Use canonical premise fields as the durable contract: storyPromise, storyCenter, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, toneRegister, extras.",
+  "- Use canonical premise fields as the durable contract: storyPromise, storyAnchors, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, toneRegister, extras.",
+  "- storyAnchors are long-term story roots, not a full character list. Use them to prevent drift around the protagonist or protagonist group, central relationship, core mystery, durable pressure source, or core stage.",
   "- Use titleCandidate only for the candidate book title; the client derives kickoff card UI text from the canonical premise.",
   "- Before ready, titleCandidate must be a concrete book title you generated or refined from the conversation.",
   "- Never use placeholder titles such as 待定书名, 暂定书名, Untitled, TBD, or AI 正在为这本书起名.",
@@ -923,7 +951,7 @@ export class AiNovelLlmService {
       "",
       "Current canonical premise / contract:",
       `- storyPromise: ${meta.storyPromise}`,
-      `- storyCenter: ${meta.storyCenter.join(" / ")}`,
+      `- storyAnchors: ${JSON.stringify(meta.storyAnchors)}`,
       `- focalization: ${meta.focalization}`,
       `- startState: ${meta.startState}`,
       `- trigger: ${meta.trigger}`,
@@ -954,7 +982,7 @@ export class AiNovelLlmService {
       titleCandidate: this.readOptionalString(meta.titleCandidate) ?? "",
       readiness: this.normalizeReadiness(meta.readiness),
       storyPromise: this.readOptionalString(meta.storyPromise) ?? "",
-      storyCenter: this.normalizeKickoffQuestionStrings(meta.storyCenter, 12),
+      storyAnchors: this.normalizeStoryAnchors(meta.storyAnchors, 12),
       focalization: this.readOptionalString(meta.focalization) ?? "",
       startState: this.readOptionalString(meta.startState) ?? "",
       trigger: this.readOptionalString(meta.trigger) ?? "",
@@ -1001,6 +1029,34 @@ export class AiNovelLlmService {
       threadCount: this.readOptionalString(record.threadCount) ?? "",
       pace: this.readOptionalString(record.pace) ?? "",
     };
+  }
+
+  private normalizeStoryAnchors(value: unknown, maxItems: number): StoryAnchor[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    const anchors: StoryAnchor[] = [];
+    const seen = new Set<string>();
+    for (const item of value) {
+      if (!isRecord(item)) {
+        continue;
+      }
+      const label = this.readOptionalString(item.label);
+      const role = this.readOptionalString(item.role);
+      if (!label || !role || seen.has(label)) {
+        continue;
+      }
+      anchors.push({
+        label,
+        role,
+        rules: this.normalizeKickoffQuestionStrings(item.rules, 5),
+      });
+      seen.add(label);
+      if (anchors.length >= maxItems) {
+        break;
+      }
+    }
+    return anchors;
   }
 
   private readOptionalString(value: unknown): string | undefined {
@@ -1174,8 +1230,8 @@ export class AiNovelLlmService {
       toolCall.input.titleCandidate,
     );
     const storyPromise = this.readOptionalString(toolCall.input.storyPromise);
-    const storyCenter = this.normalizeKickoffQuestionStrings(
-      toolCall.input.storyCenter,
+    const storyAnchors = this.normalizeStoryAnchors(
+      toolCall.input.storyAnchors,
       12,
     );
     const changeHorizon = this.readOptionalString(
@@ -1188,7 +1244,7 @@ export class AiNovelLlmService {
       "titleCandidate",
       "readiness",
       "storyPromise",
-      "storyCenter",
+      "storyAnchors",
       "focalization",
       "startState",
       "trigger",
@@ -1258,14 +1314,14 @@ export class AiNovelLlmService {
       reasons,
       "toneRegister",
     );
-    if (storyCenter.length > 0) {
-      input.storyCenter = storyCenter;
-      const rawValue = toolCall.input.storyCenter;
-      if (!Array.isArray(rawValue) || storyCenter.length !== rawValue.length) {
-        reasons.add("storyCenter_normalized");
+    if (storyAnchors.length > 0) {
+      input.storyAnchors = storyAnchors;
+      const rawValue = toolCall.input.storyAnchors;
+      if (!Array.isArray(rawValue) || storyAnchors.length !== rawValue.length) {
+        reasons.add("storyAnchors_normalized");
       }
-    } else if (toolCall.input.storyCenter !== undefined) {
-      reasons.add("storyCenter_dropped");
+    } else if (toolCall.input.storyAnchors !== undefined) {
+      reasons.add("storyAnchors_dropped");
     }
     this.copyOptionalStringArrayField(
       toolCall.input,

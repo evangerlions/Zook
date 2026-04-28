@@ -499,7 +499,13 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
           input: {
             titleCandidate: "赛博夜行档案",
             storyPromise: "赛博都市异能调查爽文。",
-            storyCenter: ["被流放的异能调查员"],
+            storyAnchors: [
+              {
+                label: "被流放的异能调查员",
+                role: "单主角",
+                rules: ["被公司流放后调查记忆走私案"],
+              },
+            ],
             trigger: "卷入记忆走私案。",
             drive: { mode: "discover", object: "记忆走私案真相" },
             pressureSources: ["公司追杀", "城市神经网络"],
@@ -570,7 +576,18 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
             titleCandidate: "",
             readiness: 0,
             storyPromise: "校园超自然异常调查。",
-            storyCenter: ["转学生", "旧校舍"],
+            storyAnchors: [
+              {
+                label: "转学生",
+                role: "单主角",
+                rules: ["以转学生视角进入旧校舍异常"],
+              },
+              {
+                label: "旧校舍",
+                role: "核心舞台",
+                rules: ["旧校舍承载主要异常线索"],
+              },
+            ],
             trigger: "第一晚听见广播点名不存在的学生。",
             language: "简体中文",
           },
@@ -622,8 +639,12 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
     (updateMeta.input as Record<string, unknown>).storyPromise,
     "赛博都市异能调查爽文。",
   );
-  assert.deepEqual((updateMeta.input as Record<string, unknown>).storyCenter, [
-    "被流放的异能调查员",
+  assert.deepEqual((updateMeta.input as Record<string, unknown>).storyAnchors, [
+    {
+      label: "被流放的异能调查员",
+      role: "单主角",
+      rules: ["被公司流放后调查记忆走私案"],
+    },
   ]);
   assert.deepEqual((updateMeta.input as Record<string, unknown>).drive, {
     mode: "discover",
@@ -637,7 +658,7 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
   );
 });
 
-test("ai_novel kickoff_turn drops deprecated kickoff card fields before relaying update_meta", async () => {
+test("ai_novel kickoff_turn drops unknown update_meta fields before relaying", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -656,11 +677,8 @@ test("ai_novel kickoff_turn drops deprecated kickoff card fields before relaying
           id: "tool_meta_deprecated",
           name: "update_meta",
           input: {
-            title: "烬骨长明",
-            logline: "被逐弟子在边荒靠残魂活下来。",
-            protagonistAndHook: "被逐出宗门的真传弟子濒死觉醒残魂。",
-            storyDirection: "边荒求生，反查阴谋，最终回宗清算。",
-            scale: "长篇",
+            unknownTitleField: "烬骨长明",
+            unknownSummaryField: "被逐弟子在边荒靠残魂活下来。",
             readiness: 0.8,
           },
         },
@@ -790,7 +808,18 @@ test("ai_novel kickoff_turn normalizes ask_question payloads before relaying the
             titleCandidate: "",
             readiness: 0,
             storyPromise: "校园超自然异常调查。",
-            storyCenter: ["转学生", "旧校舍"],
+            storyAnchors: [
+              {
+                label: "转学生",
+                role: "单主角",
+                rules: ["以转学生视角进入旧校舍异常"],
+              },
+              {
+                label: "旧校舍",
+                role: "核心舞台",
+                rules: ["旧校舍承载主要异常线索"],
+              },
+            ],
             trigger: "第一晚听见广播点名不存在的学生。",
             language: "简体中文",
           },
@@ -1260,7 +1289,18 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
             titleCandidate: "",
             readiness: 0,
             storyPromise: "校园超自然异常调查。",
-            storyCenter: ["转学生", "旧校舍"],
+            storyAnchors: [
+              {
+                label: "转学生",
+                role: "单主角",
+                rules: ["以转学生视角进入旧校舍异常"],
+              },
+              {
+                label: "旧校舍",
+                role: "核心舞台",
+                rules: ["旧校舍承载主要异常线索"],
+              },
+            ],
             trigger: "第一晚听见广播点名不存在的学生。",
             language: "简体中文",
           },
@@ -1398,7 +1438,13 @@ test("ai_novel kickoff_turn streams a single round and relays read_meta tool cal
             titleCandidate: "烬骨长明",
             readiness: 0.1,
             storyPromise: "被逐出宗门的天才少年踏上翻案之路。",
-            storyCenter: ["林烬被栽赃逐出宗门后得到古老器灵。"],
+            storyAnchors: [
+              {
+                label: "林烬",
+                role: "单主角",
+                rules: ["被栽赃逐出宗门后得到古老器灵"],
+              },
+            ],
             changeHorizon: "从边荒求生开始翻案。",
             premiseScale: { length: "长篇" },
           },
@@ -1725,7 +1771,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
       "scale",
       "stakes",
       "startState",
-      "storyCenter",
+      "storyAnchors",
       "storyPromise",
       "toneRegister",
       "trigger",

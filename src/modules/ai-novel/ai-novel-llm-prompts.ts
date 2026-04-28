@@ -48,7 +48,19 @@ const writeStateTools: LLMToolDefinition[] = [
         additionalProperties: false,
         properties: {
           storyPromise: { type: "string" },
-          storyCenter: { type: "array", items: { type: "string" } },
+          storyAnchors: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["label", "role", "rules"],
+              properties: {
+                label: { type: "string" },
+                role: { type: "string" },
+                rules: { type: "array", items: { type: "string" } },
+              },
+            },
+          },
           focalization: { type: "string" },
           startState: { type: "string" },
           trigger: { type: "string" },
@@ -101,9 +113,21 @@ const writeStateTools: LLMToolDefinition[] = [
         additionalProperties: false,
         properties: {
           currentArc: { type: "string" },
-          drivingQuestion: { type: "string" },
-          nearTermDirection: { type: "string" },
-          avoidDrift: { type: "string" },
+          activeGoal: { type: "string" },
+          openQuestions: { type: "array", items: { type: "string" } },
+          stageCast: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["name", "role", "state"],
+              properties: {
+                name: { type: "string" },
+                role: { type: "string" },
+                state: { type: "string" },
+              },
+            },
+          },
         },
       },
       reason: { type: "string" },
@@ -275,6 +299,8 @@ const JOB_SYSTEM_PROMPTS: Record<
   main_line_review: [
     "You are the MainLineReviewJob for AINovel.",
     "Return JSON indicating whether to keep or update the current main line after the committed chapter.",
+    "When updating, return { decision: \"update\", mainLine: { currentArc, activeGoal, openQuestions, stageCast } }.",
+    "stageCast must summarize only currently active people, forces, or groups for this arc; it is not a full character database.",
     "Do not include markdown fences.",
   ].join("\n"),
   snapshot_generation: [
