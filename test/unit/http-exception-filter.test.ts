@@ -15,6 +15,18 @@ const publicRequest = {
   path: "/api/v1/demo/public",
   headers: {},
 } as const;
+const zhPublicRequest = {
+  method: "GET",
+  path: "/api/v1/demo/public",
+  headers: {
+    "x-app-locale": "zh-CN",
+  },
+} as const;
+const adminRequest = {
+  method: "GET",
+  path: "/api/v1/admin/demo",
+  headers: {},
+} as const;
 
 // --- ApplicationError handling ---
 
@@ -30,9 +42,41 @@ test("HttpExceptionFilter converts ApplicationError to HttpResponse envelope", (
   assert.equal(response.statusCode, 400);
   assert.deepEqual(response.body, {
     code: "REQ_INVALID_BODY",
-    message: "Bad request",
+    message: "Request content is invalid. Please review it and try again.",
     data: null,
     requestId: "req_001",
+  });
+});
+
+test("HttpExceptionFilter localizes public API errors from request locale", () => {
+  const response = filter.catch(
+    new ApplicationError(401, "AUTH_INVALID_TOKEN", "Token expired"),
+    zhPublicRequest,
+    "req_001_zh",
+  );
+
+  assert.equal(response.statusCode, 401);
+  assert.deepEqual(response.body, {
+    code: "AUTH_INVALID_TOKEN",
+    message: "当前登录态无效，请重新登录。",
+    data: null,
+    requestId: "req_001_zh",
+  });
+});
+
+test("HttpExceptionFilter keeps raw admin error messages", () => {
+  const response = filter.catch(
+    new ApplicationError(400, "REQ_INVALID_BODY", "Admin form is invalid"),
+    adminRequest,
+    "req_admin_001",
+  );
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.body, {
+    code: "REQ_INVALID_BODY",
+    message: "Admin form is invalid",
+    data: null,
+    requestId: "req_admin_001",
   });
 });
 
@@ -70,7 +114,10 @@ test("HttpExceptionFilter includes details in ApplicationError", () => {
   );
 
   assert.equal(response.body.code, "REQ_INVALID_BODY");
-  assert.equal(response.body.message, "Invalid");
+  assert.equal(
+    response.body.message,
+    "Request content is invalid. Please review it and try again.",
+  );
   assert.equal(response.body.data, null);
 });
 

@@ -3184,7 +3184,7 @@ export class BackendApplication {
         keyId,
         {
           code: applicationError.code,
-          message: applicationError.message,
+          message: this.localizePublicErrorMessage(applicationError, request),
           data: null,
           requestId: request.requestId as string,
         },
@@ -3235,7 +3235,7 @@ export class BackendApplication {
         keyId,
         {
           code: applicationError.code,
-          message: applicationError.message,
+          message: this.localizePublicErrorMessage(applicationError, request),
           data: null,
           requestId: request.requestId as string,
         },
@@ -3298,6 +3298,7 @@ export class BackendApplication {
     const shouldExposeLocalDebug = this.shouldExposeLocalAiDebugFields(request);
 
     const streamBody = this.createEncryptedAiSseStream(
+      request,
       keyId,
       requestId,
       stream,
@@ -3323,6 +3324,7 @@ export class BackendApplication {
   }
 
   private async *createEncryptedAiSseStream(
+    request: HttpRequest,
     keyId: string,
     requestId: string,
     stream: AsyncIterable<unknown>,
@@ -3330,10 +3332,11 @@ export class BackendApplication {
   ): AsyncIterable<string> {
     try {
       for await (const item of stream) {
+        const localizedItem = this.localizeAiStreamItem(item, request);
         const payload = {
           code: "OK",
           message: "success",
-          data: item,
+          data: localizedItem,
           requestId,
         };
         const encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
@@ -3361,7 +3364,7 @@ export class BackendApplication {
         Buffer.from(
           JSON.stringify({
             code: applicationError.code,
-            message: applicationError.message,
+            message: this.localizePublicErrorMessage(applicationError, request),
             data: null,
             requestId,
           }),
@@ -3370,6 +3373,71 @@ export class BackendApplication {
         keyId,
       );
       yield `data: ${JSON.stringify(encrypted)}\n\n`;
+    }
+  }
+
+  private localizePublicErrorMessage(error: ApplicationError, request: HttpRequest): string {
+    return this.publicApiMessageService.fromErrorCode(
+      error.code,
+      request,
+      error.message,
+    ) ?? error.message;
+  }
+
+  private localizeAiStreamItem(item: unknown, request: HttpRequest): unknown {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return item;
+    }
+
+    const record = item as Record<string, unknown>;
+    if (record.type !== "error") {
+      return item;
+    }
+
+    const payload = record.payload;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return item;
+    }
+
+    const payloadRecord = payload as Record<string, unknown>;
+    const code = typeof payloadRecord.code === "string" ? payloadRecord.code : undefined;
+    const fallback = typeof payloadRecord.message === "string" ? payloadRecord.message : undefined;
+    const message = this.localizePublicAiEventMessage(code, request, fallback);
+    if (!message || message === fallback) {
+      return item;
+    }
+
+    return {
+      ...record,
+      payload: {
+        ...payloadRecord,
+        message,
+      },
+    };
+  }
+
+  private localizePublicAiEventMessage(
+    code: string | undefined,
+    request: HttpRequest,
+    fallback?: string,
+  ): string | undefined {
+    switch (code) {
+      case "KICKOFF_TOOL_INVALID_PAYLOAD":
+        return this.publicApiMessageService.format(
+          "error.ai.kickoff_tool_invalid_payload",
+          request,
+          {},
+          fallback,
+        );
+      case "KICKOFF_TOOL_UNKNOWN":
+        return this.publicApiMessageService.format(
+          "error.ai.kickoff_tool_unknown",
+          request,
+          {},
+          fallback,
+        );
+      default:
+        return fallback;
     }
   }
 

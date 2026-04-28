@@ -435,6 +435,7 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.contentType, "text/event-stream; charset=utf-8");
+  assert.equal((response.body as Record<string, unknown>).message, "streaming");
   const events = await collectSseEvents(response.streamBody);
   assert.equal(events.length, 4);
 
@@ -1567,6 +1568,7 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
     headers: {
       authorization: `Bearer ${token}`,
       "X-App-Id": "ai_novel",
+      "x-app-locale": "zh-CN",
     },
     body: encryptAiPayload(
       {
@@ -1589,7 +1591,7 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
   const streamEvents = await collectSseEvents(streamResponse.streamBody);
   const error = decryptAiPayload(streamEvents[0], aiKey);
   assert.equal(error.code, "REQ_INVALID_BODY");
-  assert.match(String(error.message), /chapter_summary requires stream=false/);
+  assert.equal(error.message, "请求内容不合法，请检查后重试。");
 });
 
 test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", async () => {
@@ -1633,6 +1635,7 @@ test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", a
       authorization: `Bearer ${token}`,
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
+      "x-app-locale": "zh-CN",
     },
     body: encryptAiPayload(
       {
@@ -1660,6 +1663,7 @@ test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", a
   );
   const errorPayload = decryptedEvents[0].payload as Record<string, unknown>;
   assert.equal(errorPayload.code, "KICKOFF_TOOL_UNKNOWN");
+  assert.equal(errorPayload.message, "AI 返回了暂不支持的开书信息，请重试。");
   assert.equal(errorPayload.recoverable, false);
 });
 
@@ -1677,6 +1681,7 @@ test("ai_novel chat completions route keeps JSON envelope when stream is false",
       authorization: `Bearer ${token}`,
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
+      "x-app-locale": "zh-CN",
     },
     body: encryptAiPayload(
       {
@@ -1719,6 +1724,7 @@ test("ai_novel chat completions route rejects non-boolean stream values", async 
       authorization: `Bearer ${token}`,
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
+      "x-app-locale": "zh-CN",
     },
     body: encryptAiPayload(
       {
@@ -1741,7 +1747,7 @@ test("ai_novel chat completions route rejects non-boolean stream values", async 
     aiKey,
   );
   assert.equal(decrypted.code, "REQ_INVALID_BODY");
-  assert.equal(decrypted.message, "stream must be a boolean when provided.");
+  assert.equal(decrypted.message, "请求内容不合法，请检查后重试。");
 });
 
 test("ai_novel chat completions route emits encrypted error event when stream fails mid-flight", async () => {
@@ -1770,6 +1776,7 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
       authorization: `Bearer ${token}`,
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
+      "x-app-locale": "zh-CN",
     },
     body: encryptAiPayload(
       {
@@ -1799,10 +1806,7 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
     "content_delta",
   );
   assert.equal(decryptedEvents[1]?.code, "SYS_INTERNAL_ERROR");
-  assert.equal(
-    decryptedEvents[1]?.message,
-    "An unexpected internal error occurred.",
-  );
+  assert.equal(decryptedEvents[1]?.message, "系统出现异常，请稍后重试。");
 });
 
 test("ai_novel embeddings route resolves taskType to embedding model selection", async () => {

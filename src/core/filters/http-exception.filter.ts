@@ -15,11 +15,7 @@ export class HttpExceptionFilter {
     if (isApplicationError(error)) {
       const localized = request.path.startsWith("/api/v1/admin")
         ? error.message
-        : this.publicApiMessageService.fromErrorCode(
-            error.code,
-            request,
-            error.message,
-          ) ?? error.message;
+        : this.resolvePublicMessage(error, request);
       return {
         statusCode: error.statusCode,
         body: {
@@ -52,5 +48,30 @@ export class HttpExceptionFilter {
         requestId,
       },
     };
+  }
+
+  private resolvePublicMessage(error: ApplicationError, request: HttpRequest): string {
+    if (this.shouldKeepPublicValidationMessage(error)) {
+      return error.message;
+    }
+
+    return this.publicApiMessageService.fromErrorCode(
+      error.code,
+      request,
+      error.message,
+    ) ?? error.message;
+  }
+
+  private shouldKeepPublicValidationMessage(error: ApplicationError): boolean {
+    if (error.code !== "REQ_INVALID_BODY") {
+      return false;
+    }
+
+    if (!error.details || typeof error.details !== "object" || Array.isArray(error.details)) {
+      return false;
+    }
+
+    const errors = (error.details as Record<string, unknown>).errors;
+    return Array.isArray(errors) && errors.length > 0;
   }
 }
