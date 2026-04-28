@@ -517,10 +517,19 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
             worldConstraints: ["异能会留下可追踪的记忆残响"],
             changeHorizon: "从自保调查走向揭开城市权力结构。",
             premiseScale: {
-              length: "长篇",
-              povCount: "单视角",
-              threadCount: "主线为主",
-              pace: "快节奏",
+              length: { preset: "long", note: "长篇" },
+              chapterLength: {
+                preset: "standard",
+                minChars: 3000,
+                maxChars: 5000,
+                note: "标准网文章",
+              },
+              pov: { preset: "single_pov", note: "单视角" },
+              threadDensity: {
+                preset: "single_main_thread",
+                note: "主线为主",
+              },
+              pace: { preset: "fast", note: "快节奏" },
             },
             language: "简体中文",
             toneRegister: "冷峻但爽快",
@@ -742,6 +751,90 @@ test("ai_novel kickoff_turn drops unknown update_meta fields before relaying", a
       entry.reasons.includes("unknown_update_meta_fields_dropped"),
   );
   assert.ok(normalizationLog);
+});
+
+test("ai_novel kickoff_turn collapses inverted chapterLength ranges to the larger value", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_meta_scale_range",
+          name: "update_meta",
+          input: {
+            premiseScale: {
+              length: { preset: "long", note: "长篇" },
+              chapterLength: {
+                preset: "standard",
+                minChars: 5000,
+                maxChars: 3000,
+                note: "标准网文章",
+              },
+              pov: { preset: "single_pov", note: "单视角" },
+              threadDensity: {
+                preset: "single_main_thread",
+                note: "主线为主",
+              },
+              pace: { preset: "fast", note: "快节奏" },
+            },
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        messages: [{ role: "user", content: "设定单章长度。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  const updateMeta = decryptedEvents.find((event) => event.type === "tool_call")
+    ?.toolCall as Record<string, unknown>;
+  const input = updateMeta.input as Record<string, unknown>;
+  const premiseScale = input.premiseScale as Record<string, unknown>;
+  const chapterLength = premiseScale.chapterLength as Record<string, unknown>;
+  assert.equal(chapterLength.minChars, 5000);
+  assert.equal(chapterLength.maxChars, 5000);
+  assert.ok(
+    runtime.logger.records.some(
+      (entry) =>
+        entry.message === "ai_novel kickoff tool payload normalized" &&
+        Array.isArray(entry.reasons) &&
+        entry.reasons.includes(
+          "premiseScale.chapterLength_range_inverted_collapsed",
+        ),
+    ),
+  );
 });
 
 test("ai_novel kickoff_turn normalizes ask_question payloads before relaying them", async () => {
@@ -1355,6 +1448,14 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     /titleCandidate must be a concrete book title/i,
   );
   assert.match(String(systemMessages[0]?.content ?? ""), /待定书名/);
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /fixed English preset values/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /chapterLength\.minChars/,
+  );
   assert.match(String(systemMessages[0]?.content ?? ""), /- titleCandidate: /);
   assert.match(
     String(systemMessages[0]?.content ?? ""),
@@ -1383,6 +1484,35 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   assert.match(String(options.description), /real JSON array/);
   const optionItem = options.items as Record<string, unknown>;
   assert.deepEqual(optionItem.required, ["label", "subtitle"]);
+  const updateMetaTool = capturedTools?.find((tool) => {
+    const fn = (tool as Record<string, unknown>).function as
+      | Record<string, unknown>
+      | undefined;
+    return fn?.name === "update_meta";
+  }) as Record<string, unknown> | undefined;
+  assert.ok(updateMetaTool);
+  const updateMetaFn = updateMetaTool.function as Record<string, unknown>;
+  const updateMetaParameters =
+    updateMetaFn.parameters as Record<string, unknown>;
+  const updateMetaProperties = updateMetaParameters.properties as Record<
+    string,
+    unknown
+  >;
+  const premiseScale = updateMetaProperties.premiseScale as Record<
+    string,
+    unknown
+  >;
+  assert.deepEqual(premiseScale.required, [
+    "length",
+    "chapterLength",
+    "pov",
+    "threadDensity",
+    "pace",
+  ]);
+  const scaleProperties = premiseScale.properties as Record<string, unknown>;
+  const chapterLength =
+    scaleProperties.chapterLength as Record<string, unknown>;
+  assert.deepEqual(chapterLength.required, ["preset", "note"]);
 });
 
 test("ai_novel kickoff_turn streams a single round and relays read_meta tool calls without internal loop", async () => {
@@ -1446,7 +1576,21 @@ test("ai_novel kickoff_turn streams a single round and relays read_meta tool cal
               },
             ],
             changeHorizon: "从边荒求生开始翻案。",
-            premiseScale: { length: "长篇" },
+            premiseScale: {
+              length: { preset: "long", note: "长篇" },
+              chapterLength: {
+                preset: "standard",
+                minChars: 3000,
+                maxChars: 5000,
+                note: "标准网文章",
+              },
+              pov: { preset: "single_pov", note: "单视角" },
+              threadDensity: {
+                preset: "single_main_thread",
+                note: "主线为主",
+              },
+              pace: { preset: "fast", note: "快节奏" },
+            },
           },
         },
         messages: [{ role: "user", content: "继续推进这个故事。" }],

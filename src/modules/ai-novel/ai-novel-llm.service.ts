@@ -61,10 +61,23 @@ interface KickoffStakes {
 }
 
 interface KickoffScale {
-  length: string;
-  povCount: string;
-  threadCount: string;
-  pace: string;
+  length: KickoffScaleChoice;
+  chapterLength: KickoffChapterLength;
+  pov: KickoffScaleChoice;
+  threadDensity: KickoffScaleChoice;
+  pace: KickoffScaleChoice;
+}
+
+interface KickoffScaleChoice {
+  preset: string;
+  note: string;
+}
+
+interface KickoffChapterLength {
+  preset: string;
+  minChars?: number;
+  maxChars?: number;
+  note: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -79,6 +92,39 @@ const kickoffToolWireNames = {
 } as const;
 
 const kickoffAskQuestionRuntimeOptionLimit = 6;
+const kickoffScalePresetCustom = "custom";
+const kickoffScaleLengthPresets = new Set([
+  "short",
+  "medium",
+  "long",
+  "epic",
+  kickoffScalePresetCustom,
+]);
+const kickoffChapterLengthPresets = new Set([
+  "short",
+  "standard",
+  "long",
+  "extra_long",
+  kickoffScalePresetCustom,
+]);
+const kickoffPovPresets = new Set([
+  "single_pov",
+  "dual_pov",
+  "ensemble_pov",
+  kickoffScalePresetCustom,
+]);
+const kickoffThreadDensityPresets = new Set([
+  "single_main_thread",
+  "main_with_subthreads",
+  "multi_thread",
+  kickoffScalePresetCustom,
+]);
+const kickoffPacePresets = new Set([
+  "fast",
+  "moderate",
+  "slow_burn",
+  kickoffScalePresetCustom,
+]);
 
 type KickoffToolKind =
   (typeof kickoffToolWireNames)[keyof typeof kickoffToolWireNames];
@@ -121,6 +167,86 @@ interface KickoffQuestionOptionItem {
 const kickoffToolKindByWireName = new Map<string, KickoffToolKind>(
   Object.values(kickoffToolWireNames).map((name) => [name, name]),
 );
+
+function kickoffScaleChoiceSchema(
+  presets: string[],
+  description: string,
+): Record<string, unknown> {
+  return {
+    type: "object",
+    description,
+    additionalProperties: false,
+    required: ["preset", "note"],
+    properties: {
+      preset: {
+        type: "string",
+        enum: presets,
+        description:
+          "Canonical fixed English preset. Use custom only when no fixed preset fits; do not invent new preset strings.",
+      },
+      note: {
+        type: "string",
+        description:
+          "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
+      },
+    },
+  };
+}
+
+const kickoffChapterLengthSchema: Record<string, unknown> = {
+  type: "object",
+  description:
+    "Target length for one chapter body. This constrains draft generation; title/volume title are not counted.",
+  additionalProperties: false,
+  required: ["preset", "note"],
+  properties: {
+    preset: {
+      type: "string",
+      enum: [...kickoffChapterLengthPresets],
+      description:
+        "Canonical fixed English chapter-length preset. custom is a fixed value, not a free-text slot.",
+    },
+    minChars: {
+      type: "number",
+      description:
+        "Lower bound for target chapter body length. Number only, no units.",
+    },
+    maxChars: {
+      type: "number",
+      description:
+        "Upper bound for target chapter body length. Number only, no units.",
+    },
+    note: {
+      type: "string",
+      description:
+        "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
+    },
+  },
+};
+
+const kickoffPremiseScaleSchema: Record<string, unknown> = {
+  type: "object",
+  description:
+    "Real JSON object for book scale. Use fixed English presets plus note; never put free text directly in preset.",
+  additionalProperties: false,
+  required: ["length", "chapterLength", "pov", "threadDensity", "pace"],
+  properties: {
+    length: kickoffScaleChoiceSchema(
+      [...kickoffScaleLengthPresets],
+      "Overall book length scale.",
+    ),
+    chapterLength: kickoffChapterLengthSchema,
+    pov: kickoffScaleChoiceSchema(
+      [...kickoffPovPresets],
+      "Narrative POV scale.",
+    ),
+    threadDensity: kickoffScaleChoiceSchema(
+      [...kickoffThreadDensityPresets],
+      "Main-thread/subthread density.",
+    ),
+    pace: kickoffScaleChoiceSchema([...kickoffPacePresets], "Story pacing."),
+  },
+};
 
 const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
@@ -242,22 +368,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
           description: "The expected long-range transformation arc.",
         },
         premiseScale: {
-          type: "object",
-          description:
-            "Real JSON object describing story scale; use free text if needed.",
-          additionalProperties: false,
-          properties: {
-            length: { type: "string", description: "Short/medium/long/etc." },
-            povCount: {
-              type: "string",
-              description: "Single POV, multiple POV, or similar.",
-            },
-            threadCount: {
-              type: "string",
-              description: "Main thread only, dual thread, ensemble, etc.",
-            },
-            pace: { type: "string", description: "Expected pacing." },
-          },
+          ...kickoffPremiseScaleSchema,
         },
         language: {
           type: "string",
@@ -381,6 +492,10 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Never pass arrays or objects as strings containing JSON.",
   "- For update_meta, array fields such as storyAnchors, pressureSources, and worldConstraints must be real arrays.",
   "- For update_meta, object fields such as drive, stakes, premiseScale, and extras must be real objects.",
+  "- For premiseScale, use only the fixed English preset values from the tool schema.",
+  "- `custom` is a fixed preset string, not a place for free text. If a scale dimension needs custom handling, set preset to `custom` and explain it in `note`.",
+  "- `chapterLength.minChars` and `chapterLength.maxChars` must be plain numbers without units. If the user did not specify chapter length, choose a reasonable range from genre/platform convention.",
+  "- Use the user's writing language for premiseScale notes, but keep preset values in English.",
   "",
   "## Meta rules",
   "- Update only fields that are more certain now.",
@@ -962,13 +1077,32 @@ export class AiNovelLlmService {
       `- stakes.internal: ${meta.stakes.internal}`,
       `- worldConstraints: ${meta.worldConstraints.join(" / ")}`,
       `- changeHorizon: ${meta.changeHorizon}`,
-      `- premiseScale.length: ${meta.premiseScale.length}`,
-      `- premiseScale.povCount: ${meta.premiseScale.povCount}`,
-      `- premiseScale.threadCount: ${meta.premiseScale.threadCount}`,
-      `- premiseScale.pace: ${meta.premiseScale.pace}`,
+      `- premiseScale.length: ${this.renderScaleChoice(meta.premiseScale.length)}`,
+      `- premiseScale.chapterLength: ${this.renderChapterLength(meta.premiseScale.chapterLength)}`,
+      `- premiseScale.pov: ${this.renderScaleChoice(meta.premiseScale.pov)}`,
+      `- premiseScale.threadDensity: ${this.renderScaleChoice(meta.premiseScale.threadDensity)}`,
+      `- premiseScale.pace: ${this.renderScaleChoice(meta.premiseScale.pace)}`,
       `- language: ${meta.language}`,
       `- toneRegister: ${meta.toneRegister}`,
     ].join("\n");
+  }
+
+  private renderScaleChoice(choice: KickoffScaleChoice): string {
+    return [choice.preset, choice.note].filter(Boolean).join(" / ");
+  }
+
+  private renderChapterLength(chapterLength: KickoffChapterLength): string {
+    const range =
+      chapterLength.minChars !== undefined && chapterLength.maxChars !== undefined
+        ? `${chapterLength.minChars}-${chapterLength.maxChars}`
+        : chapterLength.minChars !== undefined
+          ? `>=${chapterLength.minChars}`
+          : chapterLength.maxChars !== undefined
+            ? `<=${chapterLength.maxChars}`
+            : "";
+    return [chapterLength.preset, range, chapterLength.note]
+      .filter(Boolean)
+      .join(" / ");
   }
 
   private normalizeKickoffMetaContext(value: unknown): KickoffMeta {
@@ -1024,11 +1158,39 @@ export class AiNovelLlmService {
   private normalizeKickoffScale(value: unknown): KickoffScale {
     const record = isRecord(value) ? value : {};
     return {
-      length: this.readOptionalString(record.length) ?? "",
-      povCount: this.readOptionalString(record.povCount) ?? "",
-      threadCount: this.readOptionalString(record.threadCount) ?? "",
-      pace: this.readOptionalString(record.pace) ?? "",
+      length: this.normalizeScaleChoiceContext(record.length),
+      chapterLength: this.normalizeChapterLengthContext(record.chapterLength),
+      pov: this.normalizeScaleChoiceContext(record.pov),
+      threadDensity: this.normalizeScaleChoiceContext(record.threadDensity),
+      pace: this.normalizeScaleChoiceContext(record.pace),
     };
+  }
+
+  private normalizeScaleChoiceContext(value: unknown): KickoffScaleChoice {
+    const record = isRecord(value) ? value : {};
+    return {
+      preset: this.readOptionalString(record.preset) ?? "",
+      note: this.readOptionalString(record.note) ?? "",
+    };
+  }
+
+  private normalizeChapterLengthContext(
+    value: unknown,
+  ): KickoffChapterLength {
+    const record = isRecord(value) ? value : {};
+    const chapterLength: KickoffChapterLength = {
+      preset: this.readOptionalString(record.preset) ?? "",
+      note: this.readOptionalString(record.note) ?? "",
+    };
+    const minChars = this.readOptionalPositiveInteger(record.minChars);
+    const maxChars = this.readOptionalPositiveInteger(record.maxChars);
+    if (minChars !== undefined) {
+      chapterLength.minChars = minChars;
+    }
+    if (maxChars !== undefined) {
+      chapterLength.maxChars = maxChars;
+    }
+    return chapterLength;
   }
 
   private normalizeStoryAnchors(value: unknown, maxItems: number): StoryAnchor[] {
@@ -1065,6 +1227,14 @@ export class AiNovelLlmService {
     }
     const normalized = value.trim();
     return normalized ? normalized : undefined;
+  }
+
+  private readOptionalPositiveInteger(value: unknown): number | undefined {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return undefined;
+    }
+    const normalized = Math.trunc(value);
+    return normalized > 0 ? normalized : undefined;
   }
 
   private normalizeReadiness(value: unknown): number {
@@ -1237,9 +1407,10 @@ export class AiNovelLlmService {
     const changeHorizon = this.readOptionalString(
       toolCall.input.changeHorizon,
     );
-    const premiseScale = isRecord(toolCall.input.premiseScale)
-      ? toolCall.input.premiseScale
-      : undefined;
+    const premiseScale = this.normalizeKickoffScaleToolInput(
+      toolCall.input.premiseScale,
+      reasons,
+    );
     const knownKeys = new Set([
       "titleCandidate",
       "readiness",
@@ -1367,6 +1538,127 @@ export class AiNovelLlmService {
         reasons: [...reasons],
       }),
     };
+  }
+
+  private normalizeKickoffScaleToolInput(
+    value: unknown,
+    reasons: Set<string>,
+  ): KickoffScale | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (!isRecord(value)) {
+      reasons.add("premiseScale_not_object");
+      return undefined;
+    }
+    const length = this.normalizeScaleChoiceToolInput(
+      value.length,
+      "premiseScale.length",
+      kickoffScaleLengthPresets,
+      reasons,
+    );
+    const chapterLength = this.normalizeChapterLengthToolInput(
+      value.chapterLength,
+      reasons,
+    );
+    const pov = this.normalizeScaleChoiceToolInput(
+      value.pov,
+      "premiseScale.pov",
+      kickoffPovPresets,
+      reasons,
+    );
+    const threadDensity = this.normalizeScaleChoiceToolInput(
+      value.threadDensity,
+      "premiseScale.threadDensity",
+      kickoffThreadDensityPresets,
+      reasons,
+    );
+    const pace = this.normalizeScaleChoiceToolInput(
+      value.pace,
+      "premiseScale.pace",
+      kickoffPacePresets,
+      reasons,
+    );
+    if (!length || !chapterLength || !pov || !threadDensity || !pace) {
+      reasons.add("premiseScale_incomplete_or_invalid");
+      return undefined;
+    }
+    return { length, chapterLength, pov, threadDensity, pace };
+  }
+
+  private normalizeScaleChoiceToolInput(
+    value: unknown,
+    field: string,
+    allowedPresets: Set<string>,
+    reasons: Set<string>,
+  ): KickoffScaleChoice | undefined {
+    if (!isRecord(value)) {
+      reasons.add(`${field}_not_object`);
+      return undefined;
+    }
+    const preset = this.readOptionalString(value.preset);
+    const note = this.readOptionalString(value.note) ?? "";
+    if (!preset) {
+      reasons.add(`${field}_preset_missing`);
+      return undefined;
+    }
+    if (!allowedPresets.has(preset)) {
+      reasons.add(`${field}_preset_unknown`);
+      return undefined;
+    }
+    if (preset === kickoffScalePresetCustom && !note) {
+      reasons.add(`${field}_custom_note_missing`);
+      return undefined;
+    }
+    return { preset, note };
+  }
+
+  private normalizeChapterLengthToolInput(
+    value: unknown,
+    reasons: Set<string>,
+  ): KickoffChapterLength | undefined {
+    if (!isRecord(value)) {
+      reasons.add("premiseScale.chapterLength_not_object");
+      return undefined;
+    }
+    const preset = this.readOptionalString(value.preset);
+    const note = this.readOptionalString(value.note) ?? "";
+    if (!preset) {
+      reasons.add("premiseScale.chapterLength_preset_missing");
+      return undefined;
+    }
+    if (!kickoffChapterLengthPresets.has(preset)) {
+      reasons.add("premiseScale.chapterLength_preset_unknown");
+      return undefined;
+    }
+    if (preset === kickoffScalePresetCustom && !note) {
+      reasons.add("premiseScale.chapterLength_custom_note_missing");
+      return undefined;
+    }
+    const chapterLength: KickoffChapterLength = { preset, note };
+    const minChars = this.readOptionalPositiveInteger(value.minChars);
+    const maxChars = this.readOptionalPositiveInteger(value.maxChars);
+    if (minChars !== undefined) {
+      chapterLength.minChars = minChars;
+    } else if (value.minChars !== undefined) {
+      reasons.add("premiseScale.chapterLength_minChars_dropped");
+    }
+    if (maxChars !== undefined) {
+      chapterLength.maxChars = maxChars;
+    } else if (value.maxChars !== undefined) {
+      reasons.add("premiseScale.chapterLength_maxChars_dropped");
+    }
+    if (
+      chapterLength.minChars !== undefined &&
+      chapterLength.maxChars !== undefined &&
+      chapterLength.minChars > chapterLength.maxChars
+    ) {
+      const normalizedValue = chapterLength.minChars;
+      chapterLength.minChars = normalizedValue;
+      chapterLength.maxChars = normalizedValue;
+      reasons.add("premiseScale.chapterLength_range_inverted_collapsed");
+    }
+    return chapterLength;
   }
 
   private copyOptionalStringField(

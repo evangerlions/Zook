@@ -17,6 +17,76 @@ interface AiNovelPromptAssembly {
   tools: LLMToolDefinition[];
 }
 
+function scaleChoiceSchema(
+  presets: string[],
+  description: string,
+): Record<string, unknown> {
+  return {
+    type: "object",
+    description,
+    additionalProperties: false,
+    required: ["preset", "note"],
+    properties: {
+      preset: {
+        type: "string",
+        enum: [...presets, "custom"],
+        description:
+          "Fixed English preset. Use custom only when no fixed preset fits; explain custom in note.",
+      },
+      note: {
+        type: "string",
+        description:
+          "Freeform note in the user's writing language; required and meaningful when preset is custom.",
+      },
+    },
+  };
+}
+
+const chapterLengthSchema: Record<string, unknown> = {
+  type: "object",
+  description: "Target length for one chapter body.",
+  additionalProperties: false,
+  required: ["preset", "note"],
+  properties: {
+    preset: {
+      type: "string",
+      enum: ["short", "standard", "long", "extra_long", "custom"],
+    },
+    minChars: {
+      type: "number",
+      description: "Lower target body length. Number only, no units.",
+    },
+    maxChars: {
+      type: "number",
+      description: "Upper target body length. Number only, no units.",
+    },
+    note: {
+      type: "string",
+      description:
+        "Freeform note in the user's writing language; required and meaningful when preset is custom.",
+    },
+  },
+};
+
+const bookScaleSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: ["length", "chapterLength", "pov", "threadDensity", "pace"],
+  properties: {
+    length: scaleChoiceSchema(["short", "medium", "long", "epic"], "Book length."),
+    chapterLength: chapterLengthSchema,
+    pov: scaleChoiceSchema(
+      ["single_pov", "dual_pov", "ensemble_pov"],
+      "Narrative POV scale.",
+    ),
+    threadDensity: scaleChoiceSchema(
+      ["single_main_thread", "main_with_subthreads", "multi_thread"],
+      "Main-thread/subthread density.",
+    ),
+    pace: scaleChoiceSchema(["fast", "moderate", "slow_burn"], "Pacing."),
+  },
+};
+
 const contextReadTools: LLMToolDefinition[] = [
   createTool(
     "read_book_contract",
@@ -85,14 +155,7 @@ const writeStateTools: LLMToolDefinition[] = [
           worldConstraints: { type: "array", items: { type: "string" } },
           changeHorizon: { type: "string" },
           scale: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              length: { type: "string" },
-              povCount: { type: "string" },
-              threadCount: { type: "string" },
-              pace: { type: "string" },
-            },
+            ...bookScaleSchema,
           },
           language: { type: "string" },
           toneRegister: { type: "string" },
@@ -257,6 +320,8 @@ const WRITE_TURN_SYSTEM_PROMPT = [
   "- Use read_draft/write_draft for current chapter draft text or title changes.",
   "- Use search_story_history only for distant history not covered by the story window.",
   "- Ask one focused question only when the user's intent is genuinely blocked.",
+  "- When updating Contract.scale, follow the fixed English preset + note schema exactly. `custom` is a fixed preset value; put free explanation in note.",
+  "- Contract.scale.chapterLength controls chapter body length. minChars/maxChars are numbers only, without units.",
   "",
   "## Output contract",
   "- Final assistant text is only a user-facing reply.",
@@ -275,6 +340,7 @@ const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "## Tool discipline",
   "- You may search distant story history only when the supplied context is not enough.",
   "- You must persist the chapter with write_draft.",
+  "- Use Contract.scale.chapterLength as the target body-length constraint when it is present.",
   "- You cannot update Contract, MainLine, or FutureInstructions in this scene because those tools are not supplied.",
   "",
   "## Output contract",
