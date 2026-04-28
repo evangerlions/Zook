@@ -243,6 +243,14 @@ export interface AiNovelChatResponse {
   };
 }
 
+interface AiNovelUsagePayload {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  contextWindowTokens?: number;
+  contextUsedRatio?: number;
+}
+
 export type AiNovelChatStreamChunk =
   | {
       type: "text_delta";
@@ -274,11 +282,7 @@ export type AiNovelChatStreamChunk =
     }
   | {
       type: "usage";
-      usage: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-      };
+      usage: AiNovelUsagePayload;
     }
   | {
       type: "done";
@@ -288,11 +292,7 @@ export type AiNovelChatStreamChunk =
         reasoningText?: string;
         finishReason?: string;
       };
-      usage?: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-      };
+      usage?: AiNovelUsagePayload;
     };
 
 export interface AiNovelEmbeddingsResponse {
@@ -441,13 +441,7 @@ export class AiNovelLlmService {
     let aggregatedContent = "";
     let aggregatedReasoning = "";
     let finishReason: string | undefined;
-    let usage:
-      | {
-          promptTokens: number;
-          completionTokens: number;
-          totalTokens: number;
-        }
-      | undefined;
+    let usage: AiNovelUsagePayload | undefined;
 
     try {
       for await (const event of this.llmManager.stream({
@@ -513,13 +507,7 @@ export class AiNovelLlmService {
     let aggregatedContent = "";
     let aggregatedReasoning = "";
     let finishReason: string | undefined;
-    let usage:
-      | {
-          promptTokens: number;
-          completionTokens: number;
-          totalTokens: number;
-        }
-      | undefined;
+    let usage: AiNovelUsagePayload | undefined;
     const promptAssembly = buildAiNovelPromptAssembly({
       profile: input.profile,
       messages: input.messages,
@@ -600,13 +588,7 @@ export class AiNovelLlmService {
   }): AsyncIterable<AiNovelChatStreamChunk> {
     let assistantText = "";
     let reasoningText = "";
-    let usage:
-      | {
-          promptTokens: number;
-          completionTokens: number;
-          totalTokens: number;
-        }
-      | undefined;
+    let usage: AiNovelUsagePayload | undefined;
     let finishReason: string | undefined;
     const toolCalls: LLMToolCall[] = [];
 

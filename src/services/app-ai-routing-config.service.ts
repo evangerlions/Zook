@@ -21,6 +21,7 @@ const VALID_TIERS = new Set<AiNovelModelRoutingTier>([
   "super_plus",
 ]);
 const ADDITIVE_STORED_CHAT_TASK_TYPES = [
+  "chat_compaction",
   "write_turn",
   "chapter_draft",
   "chapter_summary",
@@ -47,6 +48,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     free: {
       chat: {
         kickoff_turn: "ainovel-plus-reasoning",
+        chat_compaction: "ainovel-lowcost-structured",
         write_turn: "ainovel-free-creative",
         chapter_draft: "ainovel-free-creative",
         chapter_summary: "ainovel-lowcost-structured",
@@ -65,6 +67,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     plus: {
       chat: {
         kickoff_turn: "ainovel-plus-reasoning",
+        chat_compaction: "ainovel-lowcost-structured",
         write_turn: "ainovel-plus-creative",
         chapter_draft: "ainovel-plus-creative",
         chapter_summary: "ainovel-lowcost-structured",
@@ -83,6 +86,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
     super_plus: {
       chat: {
         kickoff_turn: "ainovel-super-reasoning",
+        chat_compaction: "ainovel-lowcost-structured",
         write_turn: "ainovel-super-creative",
         chapter_draft: "ainovel-super-creative",
         chapter_summary: "ainovel-lowcost-structured",

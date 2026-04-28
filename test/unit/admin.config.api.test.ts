@@ -330,6 +330,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
         free: {
           chat: {
             kickoff_turn: "ainovel-plus-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-free-creative",
             chapter_summary: "ainovel-lowcost-structured",
@@ -348,6 +349,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
         plus: {
           chat: {
             kickoff_turn: "ainovel-plus-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-lowcost-structured",
@@ -366,6 +368,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
         super_plus: {
           chat: {
             kickoff_turn: "ainovel-super-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
             write_turn: "ainovel-super-creative",
             chapter_draft: "ainovel-super-creative",
             chapter_summary: "ainovel-lowcost-structured",

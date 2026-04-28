@@ -389,6 +389,7 @@ test("ai_novel model routing config validates all novel-engine chat taskTypes", 
     );
   const expectedTaskTypes = [
     "kickoff_turn",
+    "chat_compaction",
     "write_turn",
     "chapter_draft",
     "chapter_summary",
@@ -458,8 +459,15 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
     ).toString(),
     "一回……",
   );
+  const usage = ((decryptedEvents[2]?.data as Record<string, unknown>).usage ??
+    {}) as Record<string, unknown>;
+  assert.equal(usage.contextWindowTokens, 131_072);
+  assert.equal(usage.contextUsedRatio, 12 / 131_072);
   const doneCompletion = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .completion ?? {}) as Record<string, unknown>;
+  const doneUsage = ((decryptedEvents[3]?.data as Record<string, unknown>)
+    .usage ?? {}) as Record<string, unknown>;
+  assert.equal(doneUsage.contextWindowTokens, 131_072);
   assert.equal(doneCompletion.modelKey, "ainovel-free-creative");
   assert.equal(doneCompletion.content, "第八十一回……");
   assert.equal(doneCompletion.provider, undefined);
@@ -589,6 +597,12 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
     "usage",
     "done",
   ]);
+  const usageEvent = (decryptedEvents[3].usage ?? {}) as Record<
+    string,
+    unknown
+  >;
+  assert.equal(usageEvent.contextWindowTokens, 1_000_000);
+  assert.equal(usageEvent.contextUsedRatio, 21 / 1_000_000);
 
   const updateMeta = decryptedEvents[1].toolCall as Record<string, unknown>;
   assert.equal(updateMeta.name, "update_meta");
@@ -1992,6 +2006,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
         free: {
           chat: {
             kickoff_turn: "ainovel-plus-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-plus-creative",
@@ -2010,6 +2025,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
         plus: {
           chat: {
             kickoff_turn: "ainovel-plus-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-lowcost-structured",
@@ -2028,6 +2044,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
         super_plus: {
           chat: {
             kickoff_turn: "ainovel-super-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
             write_turn: "ainovel-super-creative",
             chapter_draft: "ainovel-super-creative",
             chapter_summary: "ainovel-lowcost-structured",
@@ -2103,6 +2120,7 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
     tier.chat.chapter2_planner = "ainovel-free-reasoning";
     tier.chat.chapter2_draft_gen = "ainovel-free-creative";
     delete tier.chat.kickoff_turn;
+    delete tier.chat.chat_compaction;
     delete tier.chat.write_turn;
     delete tier.chat.chapter_draft;
     delete tier.chat.chapter_summary;
@@ -2128,6 +2146,10 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
     "ainovel-plus-reasoning",
   );
   assert.equal(normalized.tiers.free.chat.write_turn, "ainovel-free-creative");
+  assert.equal(
+    normalized.tiers.free.chat.chat_compaction,
+    "ainovel-lowcost-structured",
+  );
   assert.equal(
     normalized.tiers.free.chat.chapter_draft,
     "ainovel-free-creative",

@@ -39,6 +39,15 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 2000,
     responseMode: "text",
   },
+  chat_compaction: {
+    taskType: "chat_compaction",
+    kind: "chat",
+    defaultModelKey: "ainovel-lowcost-structured",
+    defaultTemperature: 0,
+    defaultMaxTokens: 1600,
+    responseMode: "text",
+    supportsStream: false,
+  },
   write_turn: {
     taskType: "write_turn",
     kind: "chat",
