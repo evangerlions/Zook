@@ -527,7 +527,9 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
         toolCall: {
           id: "tool_ready_1",
           name: "ready",
-          input: {},
+          input: {
+            summary: "一部冷峻爽快的赛博都市异能调查长篇。",
+          },
         },
       };
       yield {
@@ -627,9 +629,15 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
     mode: "discover",
     object: "记忆走私案真相",
   });
+  const ready = decryptedEvents[2].toolCall as Record<string, unknown>;
+  assert.equal(ready.name, "ready");
+  assert.equal(
+    (ready.input as Record<string, unknown>).summary,
+    "一部冷峻爽快的赛博都市异能调查长篇。",
+  );
 });
 
-test("ai_novel kickoff_turn maps legacy kickoff card fields into contract fields", async () => {
+test("ai_novel kickoff_turn drops deprecated kickoff card fields before relaying update_meta", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -638,14 +646,14 @@ test("ai_novel kickoff_turn maps legacy kickoff card fields into contract fields
         providerModel: request.model.providerModel,
         text: "{}",
         finishReason: "stop",
-        providerRequestId: "chat-req-setup-legacy-meta-001",
+        providerRequestId: "chat-req-setup-deprecated-meta-001",
       };
     },
     async *stream(): AsyncIterable<LLMStreamEvent> {
       yield {
         type: "tool_call",
         toolCall: {
-          id: "tool_meta_legacy",
+          id: "tool_meta_deprecated",
           name: "update_meta",
           input: {
             title: "烬骨长明",
@@ -707,13 +715,15 @@ test("ai_novel kickoff_turn maps legacy kickoff card fields into contract fields
     ?.toolCall as Record<string, unknown>;
   assert.equal(updateMeta.name, "update_meta");
   assert.deepEqual(updateMeta.input, {
-    titleCandidate: "烬骨长明",
     readiness: 0.8,
-    storyPromise: "被逐弟子在边荒靠残魂活下来。",
-    storyCenter: ["被逐出宗门的真传弟子濒死觉醒残魂。"],
-    changeHorizon: "边荒求生，反查阴谋，最终回宗清算。",
-    premiseScale: { length: "长篇" },
   });
+  const normalizationLog = runtime.logger.records.find(
+    (entry) =>
+      entry.message === "ai_novel kickoff tool payload normalized" &&
+      Array.isArray(entry.reasons) &&
+      entry.reasons.includes("unknown_update_meta_fields_dropped"),
+  );
+  assert.ok(normalizationLog);
 });
 
 test("ai_novel kickoff_turn normalizes ask_question payloads before relaying them", async () => {
@@ -737,21 +747,14 @@ test("ai_novel kickoff_turn normalizes ask_question payloads before relaying the
           input: {
             question: "  主角被逐出山门后，故事的核心走向是什么？  ",
             options: [
-              "复仇打脸",
-              "另起炉灶",
-              "洗冤归宗",
-              "揭开阴谋",
-              "浪迹天涯",
-              "复仇打脸",
-              "",
-            ],
-            optionSubtitles: [
-              "向背叛者清算",
-              "建立新势力",
-              "重回宗门",
-              "冤案背后另有黑手",
-              "不再回头",
-              "重复项应被丢弃",
+              { label: "复仇打脸", subtitle: "向背叛者清算" },
+              { label: "另起炉灶", subtitle: "建立新势力" },
+              { label: "洗冤归宗", subtitle: "重回宗门" },
+              { label: "揭开阴谋", subtitle: "冤案背后另有黑手" },
+              { label: "浪迹天涯", subtitle: "不再回头" },
+              { label: "建立宗门", subtitle: "另立山门" },
+              { label: "隐姓埋名", subtitle: "彻底离开旧身份" },
+              { label: "孤身远走", subtitle: "独自寻找新生路" },
             ],
             allowCustom: true,
           },
@@ -818,28 +821,318 @@ test("ai_novel kickoff_turn normalizes ask_question payloads before relaying the
     "另起炉灶",
     "洗冤归宗",
     "揭开阴谋",
+    "浪迹天涯",
+    "建立宗门",
   ]);
   assert.deepEqual(
     (toolCall.input as Record<string, unknown>).optionSubtitles,
-    ["向背叛者清算", "建立新势力", "重回宗门", "冤案背后另有黑手"],
+    [
+      "向背叛者清算",
+      "建立新势力",
+      "重回宗门",
+      "冤案背后另有黑手",
+      "不再回头",
+      "另立山门",
+    ],
   );
   assert.equal(
     (toolCall.input as Record<string, unknown>).question,
     "主角被逐出山门后，故事的核心走向是什么？",
   );
   assert.equal((toolCall.input as Record<string, unknown>).allowCustom, true);
-  const fallbackLog = runtime.logger.records.find(
+  const normalizationLog = runtime.logger.records.find(
     (entry) =>
-      entry.message === "ai_novel kickoff compatibility fallback applied",
+      entry.message === "ai_novel kickoff tool payload normalized",
   );
-  assert.ok(fallbackLog);
-  assert.equal(fallbackLog.level, "error");
-  assert.deepEqual(fallbackLog.reasons, [
+  assert.ok(normalizationLog);
+  assert.equal(normalizationLog.level, "warn");
+  assert.deepEqual(normalizationLog.reasons, [
     "question_trimmed",
-    "options_truncated_to_contract",
+    "options_truncated_to_runtime_limit",
     "options_filtered_or_deduplicated",
-    "option_subtitles_filtered_or_trimmed",
   ]);
+});
+
+test("ai_novel kickoff_turn parses legacy JSON-string ask_question options", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-json-string-question-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_question_json_string_options",
+          name: "ask_question",
+          input: {
+            question: "你希望用什么叙事视角？",
+            options:
+              '["单主角第三人称——全程跟随主角视角","单主角第一人称——以我视角叙述"]',
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            titleCandidate: "",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "继续。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.equal(
+    decryptedEvents.some((event) => event.type === "error"),
+    false,
+  );
+  const toolCall = decryptedEvents.find((event) => event.type === "tool_call")
+    ?.toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "ask_question");
+  assert.deepEqual((toolCall.input as Record<string, unknown>).options, [
+    "单主角第三人称——全程跟随主角视角",
+    "单主角第一人称——以我视角叙述",
+  ]);
+  const normalizationLog = runtime.logger.records.find(
+    (entry) =>
+      entry.message === "ai_novel kickoff tool payload normalized" &&
+      entry.toolName === "ask_question",
+  );
+  assert.ok(normalizationLog);
+  assert.deepEqual(normalizationLog.reasons, [
+    "options_json_string_parsed",
+    "options_legacy_string_items_normalized",
+  ]);
+});
+
+test("ai_novel kickoff_turn accepts one ask_question option at runtime", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-one-option-question-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_question_one",
+          name: "ask_question",
+          input: {
+            question: "就按这个方向继续吗？",
+            options: ["继续"],
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            titleCandidate: "",
+            readiness: 0,
+          },
+        },
+        messages: [
+          {
+            role: "user",
+            content: "先这样吧。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.equal(
+    decryptedEvents.some((event) => event.type === "error"),
+    false,
+  );
+  const askQuestion = decryptedEvents.find(
+    (event) => event.type === "tool_call",
+  );
+  assert.ok(askQuestion);
+  const toolCall = askQuestion!.toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "ask_question");
+  assert.deepEqual((toolCall.input as Record<string, unknown>).options, [
+    "继续",
+  ]);
+});
+
+test("ai_novel kickoff_turn reports malformed ask_question string diagnostics", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-invalid-question-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "tool_question_string_options",
+          name: "ask_question",
+          input: {
+            question: "故事发生在什么样的世界？",
+            options:
+              `["纯现代世界，异世界元素悄悄渗透进来", "现代世界与异世界有通道/连接点", "主角是唯一从异世界来的"异类"", "还没想好，你来定"]`,
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            titleCandidate: "",
+            readiness: 0,
+          },
+        },
+        messages: [
+          {
+            role: "user",
+            content: "继续。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  const errorEvent = decryptedEvents.find((event) => event.type === "error");
+  assert.ok(errorEvent);
+  const payload = errorEvent!.payload as Record<string, unknown>;
+  assert.equal(payload.code, "KICKOFF_TOOL_INVALID_PAYLOAD");
+  const details = payload.details as Record<string, unknown>;
+  assert.equal(details.toolName, "ask_question");
+  assert.equal(details.toolCallId, "tool_question_string_options");
+  assert.deepEqual(details.reasons, [
+    "options_missing_or_not_array",
+    "options_string_json_parse_failed",
+    "options_below_minimum_after_normalization",
+  ]);
+  assert.equal(
+    (details.originalInput as Record<string, unknown>).options,
+    `["纯现代世界，异世界元素悄悄渗透进来", "现代世界与异世界有通道/连接点", "主角是唯一从异世界来的"异类"", "还没想好，你来定"]`,
+  );
+  const toolDefinition = details.toolDefinition as Record<string, unknown>;
+  assert.equal(toolDefinition.name, "ask_question");
+  const inputSchema = toolDefinition.inputSchema as Record<string, unknown>;
+  const properties = inputSchema.properties as Record<string, unknown>;
+  const optionsSchema = properties.options as Record<string, unknown>;
+  assert.match(
+    String(optionsSchema.description),
+    /Do not pass a JSON-encoded string/,
+  );
+  const optionItemSchema = optionsSchema.items as Record<string, unknown>;
+  assert.deepEqual(optionItemSchema.required, ["label", "subtitle"]);
+
+  const rejectedLog = runtime.logger.records.find(
+    (entry) =>
+      entry.message === "ai_novel kickoff tool payload rejected" &&
+      entry.toolName === "ask_question",
+  );
+  assert.ok(rejectedLog);
+  assert.deepEqual(rejectedLog.reasons, details.reasons);
 });
 
 test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits it", async () => {
@@ -915,6 +1208,7 @@ test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits 
 
 test("ai_novel kickoff_turn builds one merged system message with workflow prompt and summary", async () => {
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
+  let capturedTools: unknown[] | undefined;
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -931,6 +1225,7 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
         role: message.role,
         content: message.content,
       }));
+      capturedTools = (request.providerOptions?.tools as unknown[]) ?? [];
       yield {
         type: "content_delta",
         text: "我们先把主角和开局钉稳。",
@@ -1000,12 +1295,26 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   );
   assert.match(
     String(systemMessages[0]?.content ?? ""),
-    /In most turns, continue by asking the next focused question/i,
+    /exactly one focused ask_question/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /options.*real JSON array of objects/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /Never pass arrays or objects as strings containing JSON/i,
   );
   assert.match(
     String(systemMessages[0]?.content ?? ""),
     /Current kickoff summary:/,
   );
+  assert.match(String(systemMessages[0]?.content ?? ""), /include summary/i);
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /titleCandidate must be a concrete book title/i,
+  );
+  assert.match(String(systemMessages[0]?.content ?? ""), /待定书名/);
   assert.match(String(systemMessages[0]?.content ?? ""), /- titleCandidate: /);
   assert.match(
     String(systemMessages[0]?.content ?? ""),
@@ -1019,6 +1328,21 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     String(systemMessages[0]?.content ?? ""),
     /- language: 简体中文/,
   );
+  const askQuestionTool = capturedTools?.find((tool) => {
+    const fn = (tool as Record<string, unknown>).function as
+      | Record<string, unknown>
+      | undefined;
+    return fn?.name === "ask_question";
+  }) as Record<string, unknown> | undefined;
+  assert.ok(askQuestionTool);
+  const askQuestionFn = askQuestionTool.function as Record<string, unknown>;
+  const parameters = askQuestionFn.parameters as Record<string, unknown>;
+  const properties = parameters.properties as Record<string, unknown>;
+  assert.equal((properties.question as Record<string, unknown>).type, "string");
+  const options = properties.options as Record<string, unknown>;
+  assert.match(String(options.description), /real JSON array/);
+  const optionItem = options.items as Record<string, unknown>;
+  assert.deepEqual(optionItem.required, ["label", "subtitle"]);
 });
 
 test("ai_novel kickoff_turn streams a single round and relays read_meta tool calls without internal loop", async () => {
@@ -1408,6 +1732,28 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
       "worldConstraints",
     ].sort(),
   );
+  const askQuestionTool = capturedTools.find(
+    (tool) =>
+      String(
+        (tool.function as Record<string, unknown> | undefined)?.name ?? "",
+      ) === "ask_question",
+  );
+  assert.ok(askQuestionTool);
+  const askQuestionParameters = (
+    askQuestionTool.function as Record<string, unknown>
+  ).parameters as Record<string, unknown>;
+  const askQuestionProperties = askQuestionParameters.properties as Record<
+    string,
+    unknown
+  >;
+  assert.equal(
+    (askQuestionProperties.question as Record<string, unknown>).type,
+    "string",
+  );
+  const optionsSchema = askQuestionProperties.options as Record<string, unknown>;
+  assert.equal(optionsSchema.type, "array");
+  const optionItemSchema = optionsSchema.items as Record<string, unknown>;
+  assert.deepEqual(optionItemSchema.required, ["label", "subtitle"]);
 });
 
 test("ai_novel chapter_draft supplies only search history and draft write tools", async () => {

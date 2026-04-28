@@ -157,16 +157,38 @@ const draftTools: LLMToolDefinition[] = [readDraftTool, writeDraftTool];
 const interactionTools: LLMToolDefinition[] = [
   createTool(
     "ask_question",
-    "Ask one focused question when user clarification is required.",
+    "Ask one focused question when user clarification is required. Options must be a real JSON array of { label, subtitle } objects, never a JSON string. This is single-select; use allowCustom when custom input is acceptable.",
     {
-      question: { type: "string" },
+      question: {
+        type: "string",
+        description: "Complete focused question to ask the user.",
+      },
       options: {
         type: "array",
-        items: { type: "string" },
+        description:
+          "Available choices as a real JSON array. Do not pass a JSON-encoded string.",
         minItems: 2,
         maxItems: 4,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["label", "subtitle"],
+          properties: {
+            label: {
+              type: "string",
+              description: "Concise option display text.",
+            },
+            subtitle: {
+              type: "string",
+              description: "Short user-facing explanation shown under this option.",
+            },
+          },
+        },
       },
-      allowCustom: { type: "boolean" },
+      allowCustom: {
+        type: "boolean",
+        description: "Allow typing a custom answer. Defaults to true.",
+      },
     },
     ["question", "options"],
   ),

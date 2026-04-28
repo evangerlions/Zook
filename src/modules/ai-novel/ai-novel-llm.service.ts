@@ -72,8 +72,45 @@ const kickoffToolWireNames = {
   ready: "ready",
 } as const;
 
+const kickoffAskQuestionRuntimeOptionLimit = 6;
+
 type KickoffToolKind =
   (typeof kickoffToolWireNames)[keyof typeof kickoffToolWireNames];
+
+interface KickoffToolNormalizationDiagnostics {
+  toolName: string;
+  toolCallId: string;
+  reasons: string[];
+  originalInput: Record<string, unknown>;
+  normalizedInput?: Record<string, unknown>;
+  toolDefinition?: {
+    name: string;
+    description: string;
+    inputSchema: Record<string, unknown>;
+  };
+}
+
+type KickoffToolNormalizationResult =
+  | {
+      toolCall: LLMToolCall;
+      diagnostics?: KickoffToolNormalizationDiagnostics;
+    }
+  | {
+      toolCall?: undefined;
+      diagnostics: KickoffToolNormalizationDiagnostics;
+    };
+
+interface KickoffQuestionOptionNormalization {
+  options: string[];
+  optionSubtitles: string[];
+  reasons: string[];
+}
+
+interface KickoffQuestionOptionItem {
+  label: string;
+  subtitle: string;
+  kind: "object" | "string";
+}
 
 const kickoffToolKindByWireName = new Map<string, KickoffToolKind>(
   Object.values(kickoffToolWireNames).map((name) => [name, name]),
@@ -82,7 +119,8 @@ const kickoffToolKindByWireName = new Map<string, KickoffToolKind>(
 const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.readMeta,
-    description: "Read the full current kickoff premise draft.",
+    description:
+      "Read the full current kickoff premise draft. Call with an empty object `{}` and no arguments.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -92,89 +130,183 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.updateMeta,
     description:
-      "Patch one or more fields in the current kickoff premise draft.",
+      "Patch one or more fields in the current kickoff premise draft. Arrays must be real JSON arrays and objects must be real JSON objects, never strings containing JSON.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       properties: {
-        titleCandidate: { type: "string" },
-        readiness: { type: "number" },
-        storyPromise: { type: "string" },
-        storyCenter: { type: "array", items: { type: "string" } },
-        focalization: { type: "string" },
-        startState: { type: "string" },
-        trigger: { type: "string" },
+        titleCandidate: {
+          type: "string",
+          description:
+            "Concrete candidate book title. Never use placeholders such as 待定书名, Untitled, or TBD.",
+        },
+        readiness: {
+          type: "number",
+          description: "Conservative readiness score from 0 to 1.",
+        },
+        storyPromise: {
+          type: "string",
+          description:
+            "The durable reader-facing promise/core appeal of the book.",
+        },
+        storyCenter: {
+          type: "array",
+          description:
+            "Real JSON array of concise center objects: people, relationships, problems, or desires the story truly revolves around.",
+          items: { type: "string" },
+        },
+        focalization: {
+          type: "string",
+          description: "Narrative viewpoint/information limit.",
+        },
+        startState: {
+          type: "string",
+          description: "The protagonist/world state before the trigger.",
+        },
+        trigger: {
+          type: "string",
+          description: "The concrete event that starts the story movement.",
+        },
         drive: {
           type: "object",
+          description:
+            "Real JSON object describing what the protagonist/story is trying to do.",
           additionalProperties: false,
           properties: {
-            mode: { type: "string" },
-            object: { type: "string" },
+            mode: {
+              type: "string",
+              description:
+                "Free-text drive mode, for example discover, escape, protect, repair, survive, or a more specific phrase.",
+            },
+            object: {
+              type: "string",
+              description: "The concrete target or problem being pursued.",
+            },
           },
         },
-        pressureSources: { type: "array", items: { type: "string" } },
+        pressureSources: {
+          type: "array",
+          description:
+            "Real JSON array of external/relational/internal forces pressing on the story.",
+          items: { type: "string" },
+        },
         stakes: {
           type: "object",
+          description:
+            "Real JSON object describing what is at risk on external, relational, and internal layers.",
           additionalProperties: false,
           properties: {
-            external: { type: "string" },
-            relational: { type: "string" },
-            internal: { type: "string" },
+            external: { type: "string", description: "External/world risk." },
+            relational: {
+              type: "string",
+              description: "Relationship/social risk.",
+            },
+            internal: { type: "string", description: "Inner/moral risk." },
           },
         },
-        worldConstraints: { type: "array", items: { type: "string" } },
-        changeHorizon: { type: "string" },
+        worldConstraints: {
+          type: "array",
+          description:
+            "Real JSON array of hard world/genre/rule constraints the engine must preserve.",
+          items: { type: "string" },
+        },
+        changeHorizon: {
+          type: "string",
+          description: "The expected long-range transformation arc.",
+        },
         premiseScale: {
           type: "object",
+          description:
+            "Real JSON object describing story scale; use free text if needed.",
           additionalProperties: false,
           properties: {
-            length: { type: "string" },
-            povCount: { type: "string" },
-            threadCount: { type: "string" },
-            pace: { type: "string" },
+            length: { type: "string", description: "Short/medium/long/etc." },
+            povCount: {
+              type: "string",
+              description: "Single POV, multiple POV, or similar.",
+            },
+            threadCount: {
+              type: "string",
+              description: "Main thread only, dual thread, ensemble, etc.",
+            },
+            pace: { type: "string", description: "Expected pacing." },
           },
         },
-        language: { type: "string" },
-        toneRegister: { type: "string" },
-        extras: { type: "object" },
+        language: {
+          type: "string",
+          description: "Language used by the user in kickoff chat.",
+        },
+        toneRegister: {
+          type: "string",
+          description: "Tone/register/style constraints inferred from chat.",
+        },
+        extras: {
+          type: "object",
+          description:
+            "Real JSON object for rare extra premise facts that do not fit canonical fields.",
+        },
       },
     },
   },
   {
     name: kickoffToolWireNames.askQuestion,
     description:
-      "Ask one focused kickoff question with 2-4 user-facing options. optionSubtitles are optional; when provided, they should align one-to-one with options so the UI can render short explanatory subtitles directly.",
+      "Ask the user one focused kickoff question. Use this to gather preferences, clarify ambiguous premise details, or offer concrete directions. `options` must be a real JSON array of option objects with `label` and `subtitle`, never a string containing JSON.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
       required: ["question", "options"],
       properties: {
-        question: { type: "string" },
+        question: {
+          type: "string",
+          description: "Complete focused question to ask the user.",
+        },
         options: {
           type: "array",
-          items: { type: "string" },
-          minItems: 2,
-          maxItems: 4,
-        },
-        optionSubtitles: {
-          type: "array",
           description:
-            "Optional short subtitle for each option. Only include this field when subtitles add real value. If provided, it must align one-to-one with options and be suitable for direct UI display.",
-          items: { type: "string" },
+            "Available choices as a real JSON array. Do not pass a JSON-encoded string.",
           minItems: 2,
           maxItems: 4,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["label", "subtitle"],
+            properties: {
+              label: {
+                type: "string",
+                description: "Concise option display text.",
+              },
+              subtitle: {
+                type: "string",
+                description:
+                  "Short user-facing explanation shown under this option.",
+              },
+            },
+          },
         },
-        allowCustom: { type: "boolean" },
+        allowCustom: {
+          type: "boolean",
+          description:
+            "Allow typing a custom answer. Defaults to true in the client UI.",
+        },
       },
     },
   },
   {
     name: kickoffToolWireNames.ready,
-    description: "Declare the kickoff sufficient to start writing.",
+    description:
+      "Declare the kickoff sufficient to start writing and provide one user-facing book summary for the ready card.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      properties: {},
+      required: ["summary"],
+      properties: {
+        summary: {
+          type: "string",
+          description:
+            "A concise natural-language description of what this book is like. This is shown on the ready card; it is not a contract field.",
+        },
+      },
     },
   },
 ];
@@ -203,19 +335,32 @@ const KICKOFF_SYSTEM_PROMPT = [
   "4. When stable structured information becomes clear, call update_meta.",
   "5. In most turns, if any necessary information is still missing, continue with exactly one focused ask_question.",
   "6. If no structured follow-up is needed, assistant-only freeform continuation is allowed.",
-  "7. Call ready only when storyPromise, storyCenter, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
+  "7. Call ready only when titleCandidate, storyPromise, storyCenter, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
   "8. If the user says you may decide or start directly, infer sensible defaults from the conversation, call update_meta with every required canonical field first, then call ready only after those fields are non-empty.",
   "",
   "## Question rules",
   "- Ask one question at a time.",
   "- Offer 2 to 4 concrete, user-facing, mutually distinguishable options.",
+  "- When calling ask_question, pass `question` and `options` directly.",
+  "- `options` must be a real JSON array of objects shaped as { label, subtitle }, never a JSON-encoded string.",
+  "- Do not add multiple-selection fields; kickoff choices are single-select.",
+  "- Do not add catch-all options such as Other or 还没想好 when allowCustom can cover custom input.",
+  "- Keep each option label concise and put the explanation in subtitle.",
   "- Do not ask broad questionnaires.",
   "- Do not ask for information already clear from the conversation or summary.",
+  "",
+  "## Tool payload rules",
+  "- Follow each tool schema exactly.",
+  "- Never pass arrays or objects as strings containing JSON.",
+  "- For update_meta, array fields such as storyCenter, pressureSources, and worldConstraints must be real arrays.",
+  "- For update_meta, object fields such as drive, stakes, premiseScale, and extras must be real objects.",
   "",
   "## Meta rules",
   "- Update only fields that are more certain now.",
   "- Use canonical premise fields as the durable contract: storyPromise, storyCenter, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, toneRegister, extras.",
   "- Use titleCandidate only for the candidate book title; the client derives kickoff card UI text from the canonical premise.",
+  "- Before ready, titleCandidate must be a concrete book title you generated or refined from the conversation.",
+  "- Never use placeholder titles such as 待定书名, 暂定书名, Untitled, TBD, or AI 正在为这本书起名.",
   "- Do not speculate.",
   "- Keep readiness conservative.",
   "- Do not inflate readiness just because the idea sounds promising.",
@@ -223,6 +368,8 @@ const KICKOFF_SYSTEM_PROMPT = [
   "## Ready rules",
   "- Do not call ready early.",
   "- Use ready only when the canonical premise/contract fields are sufficiently clear to start writing.",
+  "- Do not call ready until titleCandidate is concrete and non-placeholder.",
+  "- When calling ready, include summary: one polished natural-language paragraph describing what this book is like for the ready card.",
   "- Never call ready with empty placeholder contract fields.",
   "",
   "## Output rules",
@@ -270,6 +417,7 @@ export type AiNovelChatStreamChunk =
         code: string;
         message: string;
         recoverable: boolean;
+        details?: Record<string, unknown>;
       };
     }
   | {
@@ -652,12 +800,23 @@ export class AiNovelLlmService {
           : `${input.modelKey}_kickoff_tool_${index}`;
       const toolKind = kickoffToolKindByWireName.get(toolCall.name);
       if (!toolKind) {
+        const details: Record<string, unknown> = {
+          toolName: toolCall.name,
+          toolCallId: normalizedToolCallId,
+          originalInput: toolCall.input,
+          availableTools: Object.values(kickoffToolWireNames),
+        };
+        this.logger?.warn("ai_novel kickoff unknown tool rejected", {
+          taskType: "kickoff_turn",
+          ...details,
+        });
         yield {
           type: "error",
           payload: {
             code: "KICKOFF_TOOL_UNKNOWN",
             message: `Unknown kickoff tool: ${toolCall.name}`,
             recoverable: false,
+            details,
           },
         };
         if (usage) {
@@ -678,7 +837,7 @@ export class AiNovelLlmService {
         };
         return;
       }
-      const normalizedToolCall = this.normalizeKickoffToolCall(
+      const normalization = this.normalizeKickoffToolCall(
         {
           id: normalizedToolCallId,
           name: toolCall.name,
@@ -686,6 +845,7 @@ export class AiNovelLlmService {
         },
         toolKind,
       );
+      const normalizedToolCall = normalization.toolCall;
       if (!normalizedToolCall) {
         yield {
           type: "error",
@@ -693,6 +853,7 @@ export class AiNovelLlmService {
             code: "KICKOFF_TOOL_INVALID_PAYLOAD",
             message: `Invalid kickoff tool payload: ${toolCall.name}`,
             recoverable: true,
+            details: normalization.diagnostics,
           },
         };
         if (usage) {
@@ -860,14 +1021,14 @@ export class AiNovelLlmService {
   private normalizeKickoffToolCall(
     toolCall: LLMToolCall,
     toolKind: KickoffToolKind,
-  ): LLMToolCall | undefined {
+  ): KickoffToolNormalizationResult {
     const normalizer = this.kickoffToolNormalizers[toolKind];
     return normalizer(toolCall);
   }
 
   private readonly kickoffToolNormalizers: Record<
     KickoffToolKind,
-    (toolCall: LLMToolCall) => LLMToolCall | undefined
+    (toolCall: LLMToolCall) => KickoffToolNormalizationResult
   > = {
     [kickoffToolWireNames.askQuestion]: (toolCall) =>
       this.normalizeKickoffAskQuestionToolCall(toolCall),
@@ -876,20 +1037,59 @@ export class AiNovelLlmService {
     [kickoffToolWireNames.readMeta]: (toolCall) =>
       this.emptyPayloadKickoffToolCall(toolCall),
     [kickoffToolWireNames.ready]: (toolCall) =>
-      this.emptyPayloadKickoffToolCall(toolCall),
+      this.normalizeKickoffReadyToolCall(toolCall),
   };
 
-  private emptyPayloadKickoffToolCall(toolCall: LLMToolCall): LLMToolCall {
+  private emptyPayloadKickoffToolCall(
+    toolCall: LLMToolCall,
+  ): KickoffToolNormalizationResult {
     return {
+      toolCall: {
+        id: toolCall.id,
+        name: toolCall.name,
+        input: {},
+      },
+    };
+  }
+
+  private normalizeKickoffReadyToolCall(
+    toolCall: LLMToolCall,
+  ): KickoffToolNormalizationResult {
+    const reasons = new Set<string>();
+    const summary = this.readOptionalString(toolCall.input.summary);
+    if (typeof toolCall.input.summary !== "string") {
+      reasons.add("summary_missing_or_not_string");
+    } else if (toolCall.input.summary.trim() !== toolCall.input.summary) {
+      reasons.add("summary_trimmed");
+    }
+    if (!summary) {
+      return {
+        diagnostics: this.logKickoffToolNormalization({
+          accepted: false,
+          toolCall,
+          reasons: [...reasons],
+        }),
+      };
+    }
+    const normalizedToolCall = {
       id: toolCall.id,
       name: toolCall.name,
-      input: {},
+      input: { summary },
+    };
+    return {
+      toolCall: normalizedToolCall,
+      diagnostics: this.logKickoffToolNormalization({
+        accepted: true,
+        toolCall,
+        normalizedToolCall,
+        reasons: [...reasons],
+      }),
     };
   }
 
   private normalizeKickoffAskQuestionToolCall(
     toolCall: LLMToolCall,
-  ): LLMToolCall | undefined {
+  ): KickoffToolNormalizationResult {
     const reasons = new Set<string>();
     const question = this.readOptionalString(toolCall.input.question);
     if (typeof toolCall.input.question !== "string") {
@@ -897,47 +1097,46 @@ export class AiNovelLlmService {
     } else if (toolCall.input.question.trim() !== toolCall.input.question) {
       reasons.add("question_trimmed");
     }
-    const options = this.normalizeKickoffQuestionStrings(
+    const optionNormalization = this.normalizeKickoffQuestionOptions(
       toolCall.input.options,
-      4,
+      kickoffAskQuestionRuntimeOptionLimit,
     );
-    if (!Array.isArray(toolCall.input.options)) {
-      reasons.add("options_missing_or_not_array");
-    } else {
-      const rawOptions = toolCall.input.options;
-      if (rawOptions.length > 4) {
-        reasons.add("options_truncated_to_contract");
-      }
-      if (rawOptions.length !== options.length) {
-        reasons.add("options_filtered_or_deduplicated");
-      }
+    for (const reason of optionNormalization.reasons) {
+      reasons.add(reason);
     }
-    if (!question || options.length < 2) {
-      if (options.length < 2) {
+    const options = optionNormalization.options;
+    if (!question || options.length === 0) {
+      if (options.length === 0) {
         reasons.add("options_below_minimum_after_normalization");
       }
-      this.logKickoffCompatibilityFallback({
-        toolCall,
-        reasons: [...reasons],
-      });
-      return undefined;
+      return {
+        diagnostics: this.logKickoffToolNormalization({
+          accepted: false,
+          toolCall,
+          reasons: [...reasons],
+        }),
+      };
     }
 
     const input: Record<string, unknown> = {
       question,
       options,
     };
-    const optionSubtitles = this.normalizeKickoffQuestionStrings(
+    const optionSubtitlesFromOptions = optionNormalization.optionSubtitles;
+    const legacyOptionSubtitles = this.normalizeKickoffQuestionStrings(
       toolCall.input.optionSubtitles,
       options.length,
     );
+    const optionSubtitles = optionSubtitlesFromOptions.length === options.length
+      ? optionSubtitlesFromOptions
+      : legacyOptionSubtitles;
     if (toolCall.input.optionSubtitles !== undefined) {
       if (!Array.isArray(toolCall.input.optionSubtitles)) {
         reasons.add("option_subtitles_not_array");
-      } else if (optionSubtitles.length !== options.length) {
+      } else if (legacyOptionSubtitles.length !== options.length) {
         reasons.add("option_subtitles_dropped_for_alignment");
       } else if (
-        toolCall.input.optionSubtitles.length !== optionSubtitles.length
+        toolCall.input.optionSubtitles.length !== legacyOptionSubtitles.length
       ) {
         reasons.add("option_subtitles_filtered_or_trimmed");
       }
@@ -955,43 +1154,41 @@ export class AiNovelLlmService {
       name: toolCall.name,
       input,
     };
-    this.logKickoffCompatibilityFallback({
-      toolCall,
-      normalizedToolCall,
-      reasons: [...reasons],
-    });
-    return normalizedToolCall;
+    return {
+      toolCall: normalizedToolCall,
+      diagnostics: this.logKickoffToolNormalization({
+        accepted: true,
+        toolCall,
+        normalizedToolCall,
+        reasons: [...reasons],
+      }),
+    };
   }
 
   private normalizeKickoffUpdateMetaToolCall(
     toolCall: LLMToolCall,
-  ): LLMToolCall {
+  ): KickoffToolNormalizationResult {
     const reasons = new Set<string>();
     const input: Record<string, unknown> = {};
-    const titleCandidate =
-      this.readOptionalString(toolCall.input.titleCandidate) ??
-      this.readOptionalString(toolCall.input.title) ??
-      this.readOptionalString(toolCall.input.bookTitle);
-    const storyPromise =
-      this.readOptionalString(toolCall.input.storyPromise) ??
-      this.readOptionalString(toolCall.input.logline) ??
-      this.readOptionalString(toolCall.input.summary);
-    const storyCenter = this.readKickoffStoryCenter(toolCall.input);
-    const changeHorizon =
-      this.readOptionalString(toolCall.input.changeHorizon) ??
-      this.readOptionalString(toolCall.input.storyDirection);
-    const premiseScale = this.readKickoffPremiseScale(toolCall.input);
+    const titleCandidate = this.readOptionalString(
+      toolCall.input.titleCandidate,
+    );
+    const storyPromise = this.readOptionalString(toolCall.input.storyPromise);
+    const storyCenter = this.normalizeKickoffQuestionStrings(
+      toolCall.input.storyCenter,
+      12,
+    );
+    const changeHorizon = this.readOptionalString(
+      toolCall.input.changeHorizon,
+    );
+    const premiseScale = isRecord(toolCall.input.premiseScale)
+      ? toolCall.input.premiseScale
+      : undefined;
     const knownKeys = new Set([
       "titleCandidate",
-      "title",
-      "bookTitle",
       "readiness",
       "storyPromise",
-      "logline",
-      "summary",
       "storyCenter",
-      "protagonistAndHook",
-      "protagonist",
       "focalization",
       "startState",
       "trigger",
@@ -1000,9 +1197,7 @@ export class AiNovelLlmService {
       "stakes",
       "worldConstraints",
       "changeHorizon",
-      "storyDirection",
       "premiseScale",
-      "scale",
       "language",
       "toneRegister",
       "extras",
@@ -1015,9 +1210,7 @@ export class AiNovelLlmService {
     }
     if (titleCandidate) {
       input.titleCandidate = titleCandidate;
-      if (toolCall.input.titleCandidate === undefined) {
-        reasons.add("legacy_title_mapped");
-      } else if (toolCall.input.titleCandidate !== titleCandidate) {
+      if (toolCall.input.titleCandidate !== titleCandidate) {
         reasons.add("title_candidate_trimmed");
       }
     } else if (toolCall.input.titleCandidate !== undefined) {
@@ -1036,9 +1229,7 @@ export class AiNovelLlmService {
     }
     if (storyPromise) {
       input.storyPromise = storyPromise;
-      if (toolCall.input.storyPromise === undefined) {
-        reasons.add("legacy_story_promise_mapped");
-      } else if (toolCall.input.storyPromise !== storyPromise) {
+      if (toolCall.input.storyPromise !== storyPromise) {
         reasons.add("storyPromise_trimmed");
       }
     } else if (toolCall.input.storyPromise !== undefined) {
@@ -1054,9 +1245,7 @@ export class AiNovelLlmService {
     this.copyOptionalStringField(toolCall.input, input, reasons, "trigger");
     if (changeHorizon) {
       input.changeHorizon = changeHorizon;
-      if (toolCall.input.changeHorizon === undefined) {
-        reasons.add("legacy_change_horizon_mapped");
-      } else if (toolCall.input.changeHorizon !== changeHorizon) {
+      if (toolCall.input.changeHorizon !== changeHorizon) {
         reasons.add("changeHorizon_trimmed");
       }
     } else if (toolCall.input.changeHorizon !== undefined) {
@@ -1071,16 +1260,9 @@ export class AiNovelLlmService {
     );
     if (storyCenter.length > 0) {
       input.storyCenter = storyCenter;
-      if (toolCall.input.storyCenter === undefined) {
-        reasons.add("legacy_story_center_mapped");
-      } else {
-        const rawValue = toolCall.input.storyCenter;
-        if (
-          !Array.isArray(rawValue) ||
-          storyCenter.length !== rawValue.length
-        ) {
-          reasons.add("storyCenter_normalized");
-        }
+      const rawValue = toolCall.input.storyCenter;
+      if (!Array.isArray(rawValue) || storyCenter.length !== rawValue.length) {
+        reasons.add("storyCenter_normalized");
       }
     } else if (toolCall.input.storyCenter !== undefined) {
       reasons.add("storyCenter_dropped");
@@ -1101,24 +1283,34 @@ export class AiNovelLlmService {
     this.copyOptionalObjectField(toolCall.input, input, reasons, "stakes");
     if (premiseScale !== undefined) {
       input.premiseScale = premiseScale;
-      if (toolCall.input.premiseScale === undefined) {
-        reasons.add("legacy_scale_mapped");
-      }
     } else if (toolCall.input.premiseScale !== undefined) {
       reasons.add("premiseScale_dropped");
     }
     this.copyOptionalObjectField(toolCall.input, input, reasons, "extras");
+    if (Object.keys(input).length === 0) {
+      reasons.add("update_meta_empty_after_normalization");
+      return {
+        diagnostics: this.logKickoffToolNormalization({
+          accepted: false,
+          toolCall,
+          reasons: [...reasons],
+        }),
+      };
+    }
     const normalizedToolCall = {
       id: toolCall.id,
       name: toolCall.name,
       input,
     };
-    this.logKickoffCompatibilityFallback({
-      toolCall,
-      normalizedToolCall,
-      reasons: [...reasons],
-    });
-    return normalizedToolCall;
+    return {
+      toolCall: normalizedToolCall,
+      diagnostics: this.logKickoffToolNormalization({
+        accepted: true,
+        toolCall,
+        normalizedToolCall,
+        reasons: [...reasons],
+      }),
+    };
   }
 
   private copyOptionalStringField(
@@ -1154,36 +1346,6 @@ export class AiNovelLlmService {
     } else if (source[key] !== undefined) {
       reasons.add(`${key}_dropped`);
     }
-  }
-
-  private readKickoffStoryCenter(source: Record<string, unknown>): string[] {
-    const canonical = this.normalizeKickoffQuestionStrings(
-      source.storyCenter,
-      12,
-    );
-    if (canonical.length > 0) {
-      return canonical;
-    }
-    const legacy =
-      this.readOptionalString(source.protagonistAndHook) ??
-      this.readOptionalString(source.protagonist);
-    return legacy ? [legacy] : [];
-  }
-
-  private readKickoffPremiseScale(
-    source: Record<string, unknown>,
-  ): Record<string, unknown> | undefined {
-    if (isRecord(source.premiseScale)) {
-      return source.premiseScale;
-    }
-    if (isRecord(source.scale)) {
-      return source.scale;
-    }
-    const legacyLength = this.readOptionalString(source.scale);
-    if (legacyLength) {
-      return { length: legacyLength };
-    }
-    return undefined;
   }
 
   private copyOptionalObjectField(
@@ -1225,16 +1387,130 @@ export class AiNovelLlmService {
     return normalized;
   }
 
-  private logKickoffCompatibilityFallback(input: {
+  private normalizeKickoffQuestionOptions(
+    value: unknown,
+    maxItems: number,
+  ): KickoffQuestionOptionNormalization {
+    const reasons = new Set<string>();
+    const source = this.readKickoffQuestionOptionArray(value, reasons);
+    if (!source) {
+      return { options: [], optionSubtitles: [], reasons: [...reasons] };
+    }
+    const options: string[] = [];
+    const optionSubtitles: string[] = [];
+    const seen = new Set<string>();
+    let filteredOrDeduplicated = false;
+    let sawObjectOption = false;
+    let sawStringOption = false;
+    let sawMissingSubtitle = false;
+
+    for (const item of source) {
+      const normalized = this.normalizeKickoffQuestionOptionItem(item);
+      if (!normalized) {
+        filteredOrDeduplicated = true;
+        continue;
+      }
+      if (normalized.kind === "object") {
+        sawObjectOption = true;
+      } else {
+        sawStringOption = true;
+      }
+      if (!normalized.subtitle) {
+        sawMissingSubtitle = true;
+      }
+      if (seen.has(normalized.label)) {
+        filteredOrDeduplicated = true;
+        continue;
+      }
+      options.push(normalized.label);
+      optionSubtitles.push(normalized.subtitle);
+      seen.add(normalized.label);
+      if (options.length >= maxItems) {
+        break;
+      }
+    }
+
+    if (source.length > maxItems) {
+      reasons.add("options_truncated_to_runtime_limit");
+    }
+    if (filteredOrDeduplicated || source.length !== options.length) {
+      reasons.add("options_filtered_or_deduplicated");
+    }
+    if (sawObjectOption && sawStringOption) {
+      reasons.add("options_mixed_object_and_string_items");
+    } else if (sawStringOption) {
+      reasons.add("options_legacy_string_items_normalized");
+    }
+    if (sawObjectOption && sawMissingSubtitle) {
+      reasons.add("option_subtitles_missing_or_empty");
+    }
+
+    return {
+      options,
+      optionSubtitles: optionSubtitles.every((item) => item.length > 0)
+        ? optionSubtitles
+        : [],
+      reasons: [...reasons],
+    };
+  }
+
+  private readKickoffQuestionOptionArray(
+    value: unknown,
+    reasons: Set<string>,
+  ): unknown[] | undefined {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    if (typeof value !== "string") {
+      reasons.add("options_missing_or_not_array");
+      return undefined;
+    }
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) {
+        reasons.add("options_json_string_not_array");
+        return undefined;
+      }
+      reasons.add("options_json_string_parsed");
+      return parsed;
+    } catch {
+      reasons.add("options_missing_or_not_array");
+      reasons.add("options_string_json_parse_failed");
+      return undefined;
+    }
+  }
+
+  private normalizeKickoffQuestionOptionItem(
+    value: unknown,
+  ): KickoffQuestionOptionItem | undefined {
+    if (typeof value === "string") {
+      const label = this.readOptionalString(value);
+      return label ? { label, subtitle: "", kind: "string" } : undefined;
+    }
+    if (!isRecord(value)) {
+      return undefined;
+    }
+    const label = this.readOptionalString(value.label);
+    if (!label) {
+      return undefined;
+    }
+    return {
+      label,
+      subtitle: this.readOptionalString(value.subtitle) ?? "",
+      kind: "object",
+    };
+  }
+
+  private logKickoffToolNormalization(input: {
+    accepted: boolean;
     toolCall: LLMToolCall;
     reasons: string[];
     normalizedToolCall?: LLMToolCall;
-  }): void {
-    if (!this.logger || input.reasons.length === 0) {
-      return;
-    }
-    this.logger.error("ai_novel kickoff compatibility fallback applied", {
-      taskType: "kickoff_turn",
+  }): KickoffToolNormalizationDiagnostics {
+    const toolDefinition = this.kickoffToolDefinitionDebug(
+      input.toolCall.name,
+    );
+    const diagnostics: KickoffToolNormalizationDiagnostics = {
       toolName: input.toolCall.name,
       toolCallId: input.toolCall.id,
       reasons: input.reasons,
@@ -1242,7 +1518,37 @@ export class AiNovelLlmService {
       ...(input.normalizedToolCall
         ? { normalizedInput: input.normalizedToolCall.input }
         : {}),
-    });
+      ...(toolDefinition ? { toolDefinition } : {}),
+    };
+    if (this.logger && input.reasons.length > 0) {
+      this.logger.warn(
+        input.accepted
+          ? "ai_novel kickoff tool payload normalized"
+          : "ai_novel kickoff tool payload rejected",
+        {
+          taskType: "kickoff_turn",
+          accepted: input.accepted,
+          ...diagnostics,
+        },
+      );
+    }
+    return diagnostics;
+  }
+
+  private kickoffToolDefinitionDebug(
+    toolName: string,
+  ): KickoffToolNormalizationDiagnostics["toolDefinition"] | undefined {
+    const definition = kickoffToolDefinitions.find(
+      (tool) => tool.name === toolName,
+    );
+    if (!definition) {
+      return undefined;
+    }
+    return {
+      name: definition.name,
+      description: definition.description,
+      inputSchema: definition.inputSchema,
+    };
   }
 
   async createEmbeddings(
