@@ -50,6 +50,12 @@ export abstract class ApplicationDatabase {
   abstract listAppUsers(appId?: string): MaybePromise<AppUserRecord[]>;
   abstract findAppUser(appId: string, userId: string): MaybePromise<AppUserRecord | undefined>;
   abstract insertAppUser(record: AppUserRecord): MaybePromise<void>;
+  abstract updateAppUserStatus(
+    appId: string,
+    userId: string,
+    status: AppUserRecord["status"],
+  ): MaybePromise<AppUserRecord | undefined>;
+  abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;

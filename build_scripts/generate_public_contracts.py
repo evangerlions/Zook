@@ -31,6 +31,8 @@ SPECS: dict[str, list[str]] = {
         "QrLoginPollData",
     ],
     "common/users.yaml": [
+        "AccountDeletionRequest",
+        "AccountDeletionData",
         "CurrentUserData",
     ],
     "common/analytics.yaml": [

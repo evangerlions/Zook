@@ -406,6 +406,31 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
   }
 
+  override async updateAppUserStatus(
+    appId: string,
+    userId: string,
+    status: AppUserRecord["status"],
+  ): Promise<AppUserRecord | undefined> {
+    const result = await this.query(
+      `UPDATE zook_app_users
+       SET status = $3, updated_at = NOW()
+       WHERE app_id = $1 AND user_id = $2
+       RETURNING id, app_id, user_id, status, joined_at`,
+      [appId, userId, status],
+    );
+    return result.rows[0] ? parseAppUser(result.rows[0]) : undefined;
+  }
+
+  override async deleteAppUserRuntimeData(appId: string, userId: string): Promise<void> {
+    await this.query("DELETE FROM zook_user_roles WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+    await this.query("DELETE FROM zook_notification_jobs WHERE app_id = $1 AND recipient_user_id = $2", [appId, userId]);
+    await this.query("DELETE FROM zook_analytics_events WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+    await this.query("DELETE FROM zook_files WHERE app_id = $1 AND owner_user_id = $2", [appId, userId]);
+    await this.query("DELETE FROM zook_client_log_lines WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+    await this.query("DELETE FROM zook_client_log_uploads WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+    await this.query("DELETE FROM zook_client_log_upload_tasks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  }
+
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
     const result = appId
       ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])

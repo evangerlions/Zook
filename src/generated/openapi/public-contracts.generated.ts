@@ -672,6 +672,53 @@ export type QrLoginPollData = {
 };
 };
 
+export const AccountDeletionRequestSchema = {
+  "type": "object",
+  "required": [
+    "appId",
+    "confirmation"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "appId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confirmation": {
+      "type": "string",
+      "const": "DELETE"
+    }
+  }
+} as const;
+
+export type AccountDeletionRequest = {
+  "appId": string;
+  "confirmation": string;
+};
+
+export const AccountDeletionDataSchema = {
+  "type": "object",
+  "required": [
+    "deleted",
+    "revokedSessions"
+  ],
+  "properties": {
+    "deleted": {
+      "type": "boolean",
+      "const": true
+    },
+    "revokedSessions": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type AccountDeletionData = {
+  "deleted": boolean;
+  "revokedSessions": number;
+};
+
 export const CurrentUserDataSchema = {
   "type": "object",
   "required": [
@@ -1400,6 +1447,8 @@ export type LogFailResult = LogFailData;
 
 export const GeneratedPublicContractNames = [
   "AINovelPublicConfig",
+  "AccountDeletionData",
+  "AccountDeletionRequest",
   "AnalyticsAcceptedData",
   "AnalyticsBatchRequest",
   "AnalyticsEventInput",

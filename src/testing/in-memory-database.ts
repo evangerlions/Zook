@@ -147,6 +147,53 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.appUsers.push(structuredClone(record));
   }
 
+  updateAppUserStatus(
+    appId: string,
+    userId: string,
+    status: AppUserRecord["status"],
+  ): AppUserRecord | undefined {
+    const membership = this.findAppUser(appId, userId);
+    if (!membership) {
+      return undefined;
+    }
+    membership.status = status;
+    return structuredClone(membership);
+  }
+
+  deleteAppUserRuntimeData(appId: string, userId: string): void {
+    const uploadIds = this.clientLogUploads
+      .filter((item) => item.appId === appId && item.userId === userId)
+      .map((item) => item.id);
+    const taskIds = this.clientLogUploadTasks
+      .filter((item) => item.appId === appId && item.userId === userId)
+      .map((item) => item.id);
+
+    this.userRoles = this.userRoles.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.notificationJobs = this.notificationJobs.filter(
+      (item) => item.appId !== appId || item.recipientUserId !== userId,
+    );
+    this.analyticsEvents = this.analyticsEvents.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.files = this.files.filter(
+      (item) => item.appId !== appId || item.ownerUserId !== userId,
+    );
+    this.clientLogLines = this.clientLogLines.filter(
+      (item) =>
+        (item.appId !== appId || item.userId !== userId) &&
+        !uploadIds.includes(item.uploadId) &&
+        !taskIds.includes(item.taskId),
+    );
+    this.clientLogUploads = this.clientLogUploads.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.clientLogUploadTasks = this.clientLogUploadTasks.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+  }
+
   listRoles(appId?: string): RoleRecord[] {
     return appId ? this.roles.filter((item) => item.appId === appId) : this.roles;
   }

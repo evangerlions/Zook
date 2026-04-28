@@ -240,19 +240,23 @@
 8. `POST /api/v1/auth/register/sms`
 9. `POST /api/v1/auth/password/sms-code`
 10. `POST /api/v1/auth/password/reset-by-sms`
-11. `POST /api/v1/analytics/events/batch`
-12. `GET /api/v1/admin/metrics/overview`
-13. `GET /api/v1/admin/metrics/pages`
-14. `POST /api/v1/files/presign`
-15. `POST /api/v1/files/confirm`
-16. `POST /api/v1/notifications/send`
-17. `GET /api/v1/admin/apps/common/auth-rate-limits`
-18. `PUT /api/v1/admin/apps/common/auth-rate-limits`
-19. `GET /api/v1/admin/apps/common/email-service`
-20. `PUT /api/v1/admin/apps/common/email-service`
-21. `GET /api/v1/admin/apps/common/llm-service`
-22. `PUT /api/v1/admin/apps/common/llm-service`
-23. `GET /api/v1/admin/apps/common/llm-service/metrics`
+11. `GET /api/v1/users/me`
+12. `POST /api/v1/users/me/delete`
+13. `POST /api/v1/analytics/events/batch`
+14. `GET /api/v1/admin/metrics/overview`
+15. `GET /api/v1/admin/metrics/pages`
+16. `POST /api/v1/files/presign`
+17. `POST /api/v1/files/confirm`
+18. `POST /api/v1/notifications/send`
+19. `GET /api/v1/admin/apps/common/auth-rate-limits`
+20. `PUT /api/v1/admin/apps/common/auth-rate-limits`
+21. `GET /api/v1/admin/apps/common/email-service`
+22. `PUT /api/v1/admin/apps/common/email-service`
+23. `GET /api/v1/admin/apps/common/llm-service`
+24. `PUT /api/v1/admin/apps/common/llm-service`
+25. `GET /api/v1/admin/apps/common/llm-service/metrics`
+
+账号删除当前按 app-scoped 语义实现：`users/me/delete` 会将当前 app membership 标记为 `DELETED`，撤销该 app 下用户 session，清理 app 侧 analytics、files metadata、client logs、notification jobs、user roles，并保留全局 `zook_users` 与 audit logs。
 24. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
 25. `GET /api/v1/admin/apps/{appId}/i18n-settings`
 26. `PUT /api/v1/admin/apps/{appId}/i18n-settings`

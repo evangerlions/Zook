@@ -853,6 +853,10 @@ export class BackendApplication {
       return this.handleLogout(request);
     }
 
+    if (request.method === "POST" && request.path === "/api/v1/users/me/delete") {
+      return this.handleDeleteCurrentAppAccount(request);
+    }
+
     if (request.method === "GET" && request.path === "/api/v1/users/me") {
       return this.handleGetCurrentUser(request);
     }
@@ -1897,6 +1901,55 @@ export class BackendApplication {
         "Set-Cookie": this.authService.buildClearRefreshCookie(),
       },
     );
+  }
+
+  private async handleDeleteCurrentAppAccount(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.validationPipe.requireString(body, "appId").trim();
+    const confirmation = this.validationPipe.requireString(body, "confirmation");
+    this.appAccessGuard.assertScope(appId, auth.appId);
+
+    try {
+      const result = await this.authService.deleteCurrentAppAccount({
+        appId,
+        userId: auth.userId,
+        confirmation,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        actorUserId: auth.userId,
+        action: "user.account.delete_app",
+        resourceType: "app_user",
+        resourceOwnerUserId: auth.userId,
+        payload: {
+          deleted: true,
+          revokedSessions: result.revokedSessions,
+        },
+      });
+
+      return this.ok(
+        result,
+        request.requestId as string,
+        {
+          "Set-Cookie": this.authService.buildClearRefreshCookie(),
+        },
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        actorUserId: auth.userId,
+        action: "user.account.delete_app",
+        resourceType: "app_user",
+        resourceOwnerUserId: auth.userId,
+        payload: {
+          deleted: false,
+          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
   }
 
   private async handleAnalyticsBatch(request: HttpRequest): Promise<HttpResponse<unknown>> {

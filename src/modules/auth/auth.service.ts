@@ -2,6 +2,7 @@ import { ApplicationDatabase } from "../../infrastructure/database/application-d
 import { KVManager } from "../../infrastructure/kv/kv-manager.ts";
 import { badRequest, conflict, forbidden, tooManyRequests, unauthorized } from "../../shared/errors.ts";
 import type {
+  AccountDeletionResult,
   AuthContext,
   AuthRateLimitConfig,
   AuthSession,
@@ -647,6 +648,36 @@ export class AuthService {
     record.revokedAt = now.toISOString();
     await this.refreshTokenStore.update(record);
     return 1;
+  }
+
+  async deleteCurrentAppAccount(
+    command: {
+      appId: string;
+      userId: string;
+      confirmation: string;
+    },
+    now = new Date(),
+  ): Promise<AccountDeletionResult> {
+    if (command.confirmation !== "DELETE") {
+      badRequest(
+        "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID",
+        "Type DELETE to confirm account deletion.",
+      );
+    }
+
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    await this.userService.getById(command.userId);
+    await this.appRegistryService.ensureExistingMembership(app.id, command.userId);
+
+    return this.database.withExclusiveSession(async () => {
+      await this.database.deleteAppUserRuntimeData(app.id, command.userId);
+      await this.database.updateAppUserStatus(app.id, command.userId, "DELETED");
+      const revokedSessions = await this.revokeAllSessions(app.id, command.userId, now);
+      return {
+        deleted: true,
+        revokedSessions,
+      };
+    });
   }
 
   buildRefreshCookie(refreshToken: string, clientType: ClientType): string | undefined {

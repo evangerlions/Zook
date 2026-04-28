@@ -1,4 +1,5 @@
 import type {
+  AccountDeletionData as GeneratedAccountDeletionData,
   AnalyticsEventInput as GeneratedAnalyticsEventInput,
   AuthSessionData as GeneratedAuthSessionData,
   CurrentUserData as GeneratedCurrentUserData,
@@ -20,7 +21,7 @@ import type {
 export type AppStatus = "ACTIVE" | "BLOCKED";
 export type JoinMode = "AUTO" | "INVITE_ONLY";
 export type UserStatus = "ACTIVE" | "BLOCKED";
-export type AppUserStatus = "ACTIVE" | "BLOCKED";
+export type AppUserStatus = "ACTIVE" | "BLOCKED" | "DELETED";
 export type RoleStatus = "ACTIVE" | "BLOCKED";
 export type PermissionStatus = "ACTIVE" | "BLOCKED";
 export type FileStatus = "PENDING" | "CONFIRMED" | "EXPIRED";
@@ -72,6 +73,7 @@ export type ErrorCode =
   | "AUTH_VERIFICATION_CODE_REQUIRED"
   | "AUTH_VERIFICATION_CODE_INVALID"
   | "AUTH_ACCOUNT_ALREADY_EXISTS"
+  | "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID"
   | "AUTH_PASSWORD_ALREADY_SET"
   | "AUTH_RATE_LIMITED"
   | "AUTH_QR_LOGIN_TOKEN_REQUIRED"
@@ -85,6 +87,7 @@ export type ErrorCode =
   | "APP_BLOCKED"
   | "APP_JOIN_INVITE_REQUIRED"
   | "APP_MEMBER_BLOCKED"
+  | "APP_MEMBER_DELETED"
   | "IAM_PERMISSION_DENIED"
   | "FILE_ACCESS_DENIED"
   | "EMAIL_SERVICE_NOT_CONFIGURED"
@@ -1124,6 +1127,8 @@ export type AuthenticatedUserProfile = GeneratedUserSummary;
 export type AuthSuccessPayload = GeneratedAuthSessionData;
 
 export type CurrentUserDocument = GeneratedCurrentUserData;
+
+export type AccountDeletionResult = GeneratedAccountDeletionData;
 
 export interface RegisterEmailCodeResult {
   accepted: true;

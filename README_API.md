@@ -195,6 +195,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/auth/refresh` | 刷新 Access Token |
 | `POST` | `/api/v1/auth/logout` | 登出 |
 | `GET` | `/api/v1/users/me` | 获取当前 Bearer Token 对应的用户信息 |
+| `POST` | `/api/v1/users/me/delete` | 删除当前产品账号访问关系与当前 app 侧个人数据 |
 | `POST` | `/api/v1/analytics/events/batch` | 行为事件上报 |
 | `POST` | `/api/v1/files/presign` | 获取上传预签名 |
 | `POST` | `/api/v1/files/confirm` | 确认上传完成 |
@@ -238,6 +239,10 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
    `POST /api/v1/auth/register/sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "clientType": "app" }`
 8. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录；手机号不存在时，`POST /api/v1/auth/login/sms` 也会按同样规则自动创建账号并登录。
 9. `POST /api/v1/auth/password/email-code` 和 `POST /api/v1/auth/password/sms-code` 为了避免账号探测，在目标账号不存在、账号被封或当前 app 不允许该账号走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` / `reset-by-sms` 阶段完成。
+10. 账号删除接口：
+   `POST /api/v1/users/me/delete` 需要 Bearer 鉴权，请求体为 `{ "appId": "app_a", "confirmation": "DELETE" }`。
+   删除语义是 app-scoped：服务端会把当前 `zook_app_users(appId,userId)` 标记为 `DELETED`，撤销该 app 下当前用户所有 session，并清理该 app 下可归属到该用户的运行数据；不会删除或匿名化全局 `zook_users` 身份记录，audit logs 会保留。
+   删除后同一 Zook 身份不能被自动重新加入当前 app，后续登录会返回 `403 APP_MEMBER_DELETED`。
 10. 当前短信验证码能力已经接入腾讯云短信发送；腾讯云图形验证码能力已在服务端预置，但目前短信主业务默认不启用验证码风控。
 11. 本轮不做账号合并和手机号绑定。如果某个手机号已经属于另一条用户记录，短信注册会直接拒绝，不会自动合并或转移绑定。
 12. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/login/sms`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/reset-by-sms`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/register/sms`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
