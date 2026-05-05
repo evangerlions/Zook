@@ -425,7 +425,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         allowCustom: {
           type: "boolean",
           description:
-            "Allow typing a custom answer. Defaults to true in the client UI.",
+            "Allow typing a custom answer. Defaults to true when omitted; pass false only when custom input must be disabled.",
         },
       },
     },
@@ -1370,9 +1370,15 @@ export class AiNovelLlmService {
     if (optionSubtitles.length === options.length) {
       input.optionSubtitles = optionSubtitles;
     }
-    if (toolCall.input.allowCustom === true) {
+    if (toolCall.input.allowCustom !== false) {
       input.allowCustom = true;
-    } else if (toolCall.input.allowCustom !== undefined) {
+    } else {
+      input.allowCustom = false;
+    }
+    if (
+      toolCall.input.allowCustom !== undefined &&
+      typeof toolCall.input.allowCustom !== "boolean"
+    ) {
       reasons.add("allow_custom_ignored");
     }
     const normalizedToolCall = {

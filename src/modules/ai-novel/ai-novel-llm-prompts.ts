@@ -244,7 +244,7 @@ const draftTools: LLMToolDefinition[] = [readDraftTool, writeDraftTool];
 const interactionTools: LLMToolDefinition[] = [
   createTool(
     "ask_question",
-    "Ask one focused question when user clarification is required. Options must be a real JSON array of { label, subtitle } objects, never a JSON string. This is single-select; use allowCustom when custom input is acceptable.",
+    "Ask one focused question when user clarification is required. Options must be a real JSON array of { label, subtitle } objects, never a JSON string. This is single-select; custom input is enabled by default, so pass allowCustom=false only when custom input must be disabled.",
     {
       question: {
         type: "string",
@@ -274,7 +274,8 @@ const interactionTools: LLMToolDefinition[] = [
       },
       allowCustom: {
         type: "boolean",
-        description: "Allow typing a custom answer. Defaults to true.",
+        description:
+          "Allow typing a custom answer. Defaults to true when omitted.",
       },
     },
     ["question", "options"],
