@@ -330,12 +330,13 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
             properties: {
               label: {
                 type: "string",
-                description: "Concise anchor name, e.g. 林砚, 铁三角, 地下谜团.",
+                description:
+                  "Concise anchor name in the user's writing language, e.g. the protagonist name, protagonist group, central relationship, core mystery, or main stage.",
               },
               role: {
                 type: "string",
                 description:
-                  "Anchor role, e.g. 单主角, 主角团, 核心关系, 核心谜题, 长期压力源, 核心舞台.",
+                  "Free-text anchor role in the user's writing language. Do not use a fixed taxonomy; write the role naturally for this book.",
               },
               rules: {
                 type: "array",
@@ -533,7 +534,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- For premiseScale, use only the fixed English preset values from the tool schema.",
   "- `custom` is a fixed preset string, not a place for free text. If a scale dimension needs custom handling, set preset to `custom` and explain it in `note`.",
   "- `chapterLength.minChars` and `chapterLength.maxChars` must be plain numbers without units. If the user did not specify chapter length, choose a reasonable range from genre/platform convention.",
-  "- Use the user's writing language for premiseScale notes, but keep preset values in English.",
+  "- Use the user's writing language for all free-text premise fields, storyAnchors labels/roles/rules, ready summary, and premiseScale notes, but keep preset values in English.",
   "",
   "## Meta rules",
   "- Update only fields that are more certain now.",
