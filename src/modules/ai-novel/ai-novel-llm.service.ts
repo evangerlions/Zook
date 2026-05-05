@@ -164,9 +164,47 @@ interface KickoffQuestionOptionItem {
   kind: "object" | "string";
 }
 
+interface KickoffTurnAttempt {
+  assistantText: string;
+  reasoningText: string;
+  usage?: AiNovelUsagePayload;
+  finishReason?: string;
+  toolCalls: LLMToolCall[];
+  previewChunks: AiNovelChatStreamChunk[];
+}
+
+interface KickoffInvalidToolRepair {
+  failedToolCall: LLMToolCall;
+  diagnostics: KickoffToolNormalizationDiagnostics;
+}
+
+type KickoffAttemptFinalization =
+  | {
+      type: "success";
+      chunks: AiNovelChatStreamChunk[];
+    }
+  | {
+      type: "error";
+      code: "KICKOFF_TOOL_UNKNOWN" | "KICKOFF_TOOL_INVALID_PAYLOAD";
+      chunks: AiNovelChatStreamChunk[];
+      diagnostics?:
+        | KickoffToolNormalizationDiagnostics
+        | Record<string, unknown>;
+    }
+  | {
+      type: "repair";
+      repair: KickoffInvalidToolRepair;
+    };
+
 const kickoffToolKindByWireName = new Map<string, KickoffToolKind>(
   Object.values(kickoffToolWireNames).map((name) => [name, name]),
 );
+
+const kickoffToolKindByLowerWireName = new Map<string, KickoffToolKind>(
+  Object.values(kickoffToolWireNames).map((name) => [name.toLowerCase(), name]),
+);
+
+const kickoffInvalidToolName = "invalid";
 
 function kickoffScaleChoiceSchema(
   presets: string[],
@@ -877,16 +915,97 @@ export class AiNovelLlmService {
     maxTokens: number;
     meta: KickoffMeta;
   }): AsyncIterable<AiNovelChatStreamChunk> {
+    const baseMessages = this.buildKickoffMessages(input.messages, input.meta);
+    const firstAttempt = await this.runKickoffTurnAttempt({
+      ...input,
+      messages: baseMessages,
+    });
+    const firstFinalization = this.finalizeKickoffTurnAttempt({
+      modelKey: input.modelKey,
+      attempt: firstAttempt,
+      attemptNumber: 1,
+      allowRepair: true,
+    });
+
+    if (firstFinalization.type !== "repair") {
+      yield* this.yieldKickoffChunks(firstFinalization.chunks);
+      return;
+    }
+
+    const repair = firstFinalization.repair;
+    this.logger?.warn("ai_novel kickoff invalid tool repair scheduled", {
+      taskType: "kickoff_turn",
+      attempt: 1,
+      toolName: repair.failedToolCall.name,
+      toolCallId: repair.failedToolCall.id,
+      reasons: repair.diagnostics.reasons,
+      originalInput: repair.diagnostics.originalInput,
+    });
+
+    const secondAttempt = await this.runKickoffTurnAttempt({
+      ...input,
+      messages: [
+        ...baseMessages,
+        this.buildKickoffInvalidToolAssistantMessage(
+          firstAttempt,
+          repair.failedToolCall,
+          repair.diagnostics,
+        ),
+        this.buildKickoffInvalidToolResultMessage(
+          repair.failedToolCall.id,
+          repair.diagnostics,
+        ),
+      ],
+    });
+    const repairedAttempt: KickoffTurnAttempt = {
+      ...secondAttempt,
+      usage: this.mergeKickoffUsage(firstAttempt.usage, secondAttempt.usage),
+    };
+    const secondFinalization = this.finalizeKickoffTurnAttempt({
+      modelKey: input.modelKey,
+      attempt: repairedAttempt,
+      attemptNumber: 2,
+      allowRepair: false,
+    });
+    if (secondFinalization.type === "success") {
+      this.logger?.warn("ai_novel kickoff invalid tool repair recovered", {
+        taskType: "kickoff_turn",
+        attempt: 2,
+        toolName: repair.failedToolCall.name,
+        toolCallId: repair.failedToolCall.id,
+        reasons: repair.diagnostics.reasons,
+        originalInput: repair.diagnostics.originalInput,
+      });
+    } else {
+      this.logger?.warn("ai_novel kickoff invalid tool repair exhausted", {
+        taskType: "kickoff_turn",
+        attempt: 2,
+        toolName: repair.failedToolCall.name,
+        toolCallId: repair.failedToolCall.id,
+        reasons: repair.diagnostics.reasons,
+        originalInput: repair.diagnostics.originalInput,
+      });
+    }
+    yield* this.yieldKickoffChunks(secondFinalization.chunks);
+  }
+
+  private async runKickoffTurnAttempt(input: {
+    modelKey: string;
+    messages: LLMMessage[];
+    temperature: number;
+    maxTokens: number;
+  }): Promise<KickoffTurnAttempt> {
     let assistantText = "";
     let reasoningText = "";
     let usage: AiNovelUsagePayload | undefined;
     let finishReason: string | undefined;
     const toolCalls: LLMToolCall[] = [];
+    const previewChunks: AiNovelChatStreamChunk[] = [];
 
     try {
       for await (const event of this.llmManager.stream({
         modelKey: input.modelKey,
-        messages: this.buildKickoffMessages(input.messages, input.meta),
+        messages: input.messages,
         temperature: input.temperature,
         maxTokens: input.maxTokens,
         providerOptions: {
@@ -904,19 +1023,19 @@ export class AiNovelLlmService {
       })) {
         if (event.type === "reasoning_delta") {
           reasoningText += event.text;
-          yield {
+          previewChunks.push({
             type: "reasoning_delta",
             text: event.text,
-          };
+          });
           continue;
         }
 
         if (event.type === "content_delta") {
           assistantText += event.text;
-          yield {
+          previewChunks.push({
             type: "text_delta",
             text: event.text,
-          };
+          });
           continue;
         }
 
@@ -936,12 +1055,36 @@ export class AiNovelLlmService {
       throw this.mapUpstreamError(error);
     }
 
-    for (const [index, toolCall] of toolCalls.entries()) {
+    return {
+      assistantText,
+      reasoningText,
+      usage,
+      finishReason,
+      toolCalls,
+      previewChunks,
+    };
+  }
+
+  private finalizeKickoffTurnAttempt(input: {
+    modelKey: string;
+    attempt: KickoffTurnAttempt;
+    attemptNumber: number;
+    allowRepair: boolean;
+  }): KickoffAttemptFinalization {
+    const chunks: AiNovelChatStreamChunk[] = [...input.attempt.previewChunks];
+
+    for (const [index, toolCall] of input.attempt.toolCalls.entries()) {
       const normalizedToolCallId =
         toolCall.id && toolCall.id.trim().length > 0
-          ? toolCall.id
+          ? toolCall.id.trim()
           : `${input.modelKey}_kickoff_tool_${index}`;
-      const toolKind = kickoffToolKindByWireName.get(toolCall.name);
+      const toolNameResolution = this.resolveKickoffToolName({
+        attempt: input.attemptNumber,
+        toolName: toolCall.name,
+        toolCallId: normalizedToolCallId,
+        originalInput: toolCall.input,
+      });
+      const toolKind = toolNameResolution.toolKind;
       if (!toolKind) {
         const details: Record<string, unknown> = {
           toolName: toolCall.name,
@@ -953,7 +1096,7 @@ export class AiNovelLlmService {
           taskType: "kickoff_turn",
           ...details,
         });
-        yield {
+        chunks.push({
           type: "error",
           payload: {
             code: "KICKOFF_TOOL_UNKNOWN",
@@ -961,87 +1104,210 @@ export class AiNovelLlmService {
             recoverable: false,
             details,
           },
+        });
+        this.appendKickoffAttemptUsageAndDone(
+          chunks,
+          input.modelKey,
+          input.attempt,
+        );
+        return {
+          type: "error",
+          code: "KICKOFF_TOOL_UNKNOWN",
+          chunks,
+          diagnostics: details,
         };
-        if (usage) {
-          yield {
-            type: "usage",
-            usage,
-          };
-        }
-        yield {
-          type: "done",
-          completion: {
-            modelKey: input.modelKey,
-            content: assistantText,
-            ...(reasoningText ? { reasoningText } : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(usage ? { usage } : {}),
-        };
-        return;
       }
+      const normalizedName = toolNameResolution.normalizedToolName ?? toolCall.name;
       const normalization = this.normalizeKickoffToolCall(
         {
           id: normalizedToolCallId,
-          name: toolCall.name,
+          name: normalizedName,
           input: toolCall.input,
         },
         toolKind,
       );
       const normalizedToolCall = normalization.toolCall;
       if (!normalizedToolCall) {
-        yield {
+        if (input.allowRepair) {
+          return {
+            type: "repair",
+            repair: {
+              failedToolCall: {
+                id: normalizedToolCallId,
+                name: normalizedName,
+                input: toolCall.input,
+              },
+              diagnostics: normalization.diagnostics,
+            },
+          };
+        }
+        chunks.push({
           type: "error",
           payload: {
             code: "KICKOFF_TOOL_INVALID_PAYLOAD",
-            message: `Invalid kickoff tool payload: ${toolCall.name}`,
+            message: `Invalid kickoff tool payload: ${normalizedName}`,
             recoverable: true,
             details: normalization.diagnostics,
           },
+        });
+        this.appendKickoffAttemptUsageAndDone(
+          chunks,
+          input.modelKey,
+          input.attempt,
+        );
+        return {
+          type: "error",
+          code: "KICKOFF_TOOL_INVALID_PAYLOAD",
+          chunks,
+          diagnostics: normalization.diagnostics,
         };
-        if (usage) {
-          yield {
-            type: "usage",
-            usage,
-          };
-        }
-        yield {
-          type: "done",
-          completion: {
-            modelKey: input.modelKey,
-            content: assistantText,
-            ...(reasoningText ? { reasoningText } : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(usage ? { usage } : {}),
-        };
-        return;
       }
-      yield {
+      chunks.push({
         type: "tool_call",
         toolCall: {
           id: normalizedToolCall.id,
           name: normalizedToolCall.name,
           input: normalizedToolCall.input,
         },
-      };
+      });
     }
 
-    if (usage) {
-      yield {
+    this.appendKickoffAttemptUsageAndDone(chunks, input.modelKey, input.attempt);
+    return { type: "success", chunks };
+  }
+
+  private appendKickoffAttemptUsageAndDone(
+    chunks: AiNovelChatStreamChunk[],
+    modelKey: string,
+    attempt: KickoffTurnAttempt,
+  ): void {
+    if (attempt.usage) {
+      chunks.push({
         type: "usage",
-        usage,
-      };
+        usage: attempt.usage,
+      });
     }
-    yield {
+    chunks.push({
       type: "done",
       completion: {
-        modelKey: input.modelKey,
-        content: assistantText,
-        ...(reasoningText ? { reasoningText } : {}),
-        ...(finishReason ? { finishReason } : {}),
+        modelKey,
+        content: attempt.assistantText,
+        ...(attempt.reasoningText ? { reasoningText: attempt.reasoningText } : {}),
+        ...(attempt.finishReason ? { finishReason: attempt.finishReason } : {}),
       },
-      ...(usage ? { usage } : {}),
+      ...(attempt.usage ? { usage: attempt.usage } : {}),
+    });
+  }
+
+  private async *yieldKickoffChunks(
+    chunks: AiNovelChatStreamChunk[],
+  ): AsyncIterable<AiNovelChatStreamChunk> {
+    for (const chunk of chunks) {
+      yield chunk;
+    }
+  }
+
+  private resolveKickoffToolName(input: {
+    attempt: number;
+    toolName: string;
+    toolCallId: string;
+    originalInput: Record<string, unknown>;
+  }): {
+    toolKind?: KickoffToolKind;
+    normalizedToolName?: KickoffToolKind;
+  } {
+    const directKind = kickoffToolKindByWireName.get(input.toolName);
+    if (directKind) {
+      return { toolKind: directKind, normalizedToolName: directKind };
+    }
+    const lowerKind = kickoffToolKindByLowerWireName.get(
+      input.toolName.toLowerCase(),
+    );
+    if (!lowerKind) {
+      return {};
+    }
+    this.logger?.warn("ai_novel kickoff tool name repaired", {
+      taskType: "kickoff_turn",
+      attempt: input.attempt,
+      toolName: input.toolName,
+      repairedToolName: lowerKind,
+      toolCallId: input.toolCallId,
+      reasons: ["tool_name_case_mismatch"],
+      originalInput: input.originalInput,
+    });
+    return { toolKind: lowerKind, normalizedToolName: lowerKind };
+  }
+
+  private buildKickoffInvalidToolAssistantMessage(
+    attempt: KickoffTurnAttempt,
+    failedToolCall: LLMToolCall,
+    diagnostics: KickoffToolNormalizationDiagnostics,
+  ): LLMMessage {
+    return {
+      role: "assistant",
+      content: attempt.assistantText,
+      toolCalls: [
+        {
+          id: failedToolCall.id,
+          name: kickoffInvalidToolName,
+          input: {
+            tool: failedToolCall.name,
+            error: this.formatKickoffInvalidToolError(diagnostics),
+          },
+        },
+      ],
+    };
+  }
+
+  private buildKickoffInvalidToolResultMessage(
+    toolCallId: string,
+    diagnostics: KickoffToolNormalizationDiagnostics,
+  ): LLMMessage {
+    return {
+      role: "tool",
+      toolCallId,
+      content:
+        `The arguments provided to tool "${diagnostics.toolName}" are invalid: ` +
+        `${this.formatKickoffInvalidToolError(diagnostics)} ` +
+        "Please call the correct kickoff tool again with arguments that satisfy the schema.",
+    };
+  }
+
+  private formatKickoffInvalidToolError(
+    diagnostics: KickoffToolNormalizationDiagnostics,
+  ): string {
+    const reasons = diagnostics.reasons.length > 0
+      ? diagnostics.reasons.join(", ")
+      : "payload did not satisfy the tool schema";
+    return `${reasons}. Original input: ${JSON.stringify(diagnostics.originalInput)}`;
+  }
+
+  private mergeKickoffUsage(
+    first: AiNovelUsagePayload | undefined,
+    second: AiNovelUsagePayload | undefined,
+  ): AiNovelUsagePayload | undefined {
+    if (!first) {
+      return second;
+    }
+    if (!second) {
+      return first;
+    }
+    return {
+      promptTokens: first.promptTokens + second.promptTokens,
+      completionTokens: first.completionTokens + second.completionTokens,
+      totalTokens: first.totalTokens + second.totalTokens,
+      ...(second.contextWindowTokens ?? first.contextWindowTokens
+        ? {
+            contextWindowTokens:
+              second.contextWindowTokens ?? first.contextWindowTokens,
+          }
+        : {}),
+      ...(second.contextUsedRatio ?? first.contextUsedRatio
+        ? {
+            contextUsedRatio:
+              second.contextUsedRatio ?? first.contextUsedRatio,
+          }
+        : {}),
     };
   }
 
