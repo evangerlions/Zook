@@ -28,6 +28,8 @@ export class DevelopmentPasswordHasher {
 
   validateStrength(password: string): boolean {
     return password.length >= this.minPasswordLength &&
-      password.length <= this.maxPasswordLength;
+      password.length <= this.maxPasswordLength &&
+      /[A-Za-z]/.test(password) &&
+      /\d/.test(password);
   }
 }

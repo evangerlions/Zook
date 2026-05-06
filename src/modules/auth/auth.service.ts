@@ -253,7 +253,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 8 and 64 characters.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
@@ -839,7 +839,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 8 and 64 characters.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
@@ -894,7 +894,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 8 and 64 characters.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
@@ -931,7 +931,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.newPassword)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 8 and 64 characters.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
@@ -964,7 +964,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 8 and 64 characters.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 

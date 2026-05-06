@@ -95,11 +95,9 @@ test("signed but malformed access token payloads return AUTH_INVALID_TOKEN", asy
   assert.equal(response.body.code, "AUTH_INVALID_TOKEN");
 });
 
-test("password strength accepts 8-64 character passwords", () => {
+test("password strength accepts 8-64 character passwords with letters and numbers", () => {
   const hasher = new DevelopmentPasswordHasher();
 
-  assert.equal(hasher.validateStrength("abcdefgh"), true);
-  assert.equal(hasher.validateStrength("12345678"), true);
   assert.equal(hasher.validateStrength("Password1234"), true);
 });
 
@@ -108,4 +106,11 @@ test("password strength rejects passwords outside the 8-64 character range", () 
 
   assert.equal(hasher.validateStrength("1234567"), false);
   assert.equal(hasher.validateStrength("A".repeat(65)), false);
+});
+
+test("password strength rejects passwords without both letters and numbers", () => {
+  const hasher = new DevelopmentPasswordHasher();
+
+  assert.equal(hasher.validateStrength("abcdefgh"), false);
+  assert.equal(hasher.validateStrength("12345678"), false);
 });

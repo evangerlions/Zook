@@ -180,7 +180,8 @@ export const SetPasswordRequestSchema = {
     "password": {
       "type": "string",
       "minLength": 8,
-      "maxLength": 64
+      "maxLength": 64,
+      "pattern": "^(?=.*[A-Za-z])(?=.*\\d).*$"
     },
     "clientType": {
       "type": "string",
@@ -221,7 +222,8 @@ export const ResetPasswordRequestSchema = {
     "password": {
       "type": "string",
       "minLength": 8,
-      "maxLength": 64
+      "maxLength": 64,
+      "pattern": "^(?=.*[A-Za-z])(?=.*\\d).*$"
     },
     "clientType": {
       "type": "string",
@@ -259,7 +261,8 @@ export const ChangePasswordRequestSchema = {
     "newPassword": {
       "type": "string",
       "minLength": 8,
-      "maxLength": 64
+      "maxLength": 64,
+      "pattern": "^(?=.*[A-Za-z])(?=.*\\d).*$"
     },
     "clientType": {
       "type": "string",
@@ -301,7 +304,8 @@ export const RegisterRequestSchema = {
     "password": {
       "type": "string",
       "minLength": 8,
-      "maxLength": 64
+      "maxLength": 64,
+      "pattern": "^(?=.*[A-Za-z])(?=.*\\d).*$"
     },
     "clientType": {
       "type": "string",
