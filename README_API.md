@@ -230,7 +230,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
    `POST /api/v1/auth/password/reset` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "password": "Password1234", "clientType": "app" }`
    `POST /api/v1/auth/password/reset-by-sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "password": "Password1234", "clientType": "app" }`
    `POST /api/v1/auth/password/change` 请求体为 `{ "appId": "app_a", "currentPassword": "OldPass1234", "newPassword": "NewPass1234", "clientType": "app" }`
-   `password` / `newPassword` 当前要求为 10-256 个字符，且同时包含字母和数字。
+   `password` / `newPassword` 当前要求为 8-64 个字符。
    `password/set` 只允许当前已登录且仍为 `email-code-only` 的账号调用；如果该账号已经有密码，会返回 `409 AUTH_PASSWORD_ALREADY_SET`，此时应改走 `password/change`。
 7. 注册相关接口：
    `POST /api/v1/auth/register/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
