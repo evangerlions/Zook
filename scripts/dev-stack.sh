@@ -12,6 +12,29 @@ log() {
   printf '[dev:stack] %s\n' "$*"
 }
 
+color_enabled() {
+  [[ -t 1 && -z "${NO_COLOR:-}" ]]
+}
+
+colorize() {
+  local code="$1"
+  local text="$2"
+  if color_enabled; then
+    printf '\033[%sm%s\033[0m' "$code" "$text"
+  else
+    printf '%s' "$text"
+  fi
+}
+
+service_prefix() {
+  local name="$1"
+  local color_code="36"
+  if [[ "$name" == "admin" ]]; then
+    color_code="35"
+  fi
+  colorize "$color_code" "[$name]"
+}
+
 load_env_file() {
   local file="$1"
   if [[ -f "$file" ]]; then
@@ -117,7 +140,7 @@ start_service() {
 
   (
     "$@" 2>&1 | while IFS= read -r line; do
-      printf '[%s] %s\n' "$name" "$line"
+      printf '%s %s\n' "$(service_prefix "$name")" "$line"
     done
   ) &
 
@@ -213,7 +236,11 @@ log "构建 Admin Web..."
 npm run admin:build
 
 log "启动 API 和 Admin Web..."
-start_service api env PORT="$API_PORT" npm run dev
+start_service api env \
+  PORT="$API_PORT" \
+  ZOOK_LOG_FORMAT="${ZOOK_LOG_FORMAT:-pretty}" \
+  FORCE_COLOR="${FORCE_COLOR:-1}" \
+  npm run dev
 start_service admin env PORT="$ADMIN_PORT" ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" npm run admin
 
 wait_for_http "http://127.0.0.1:$API_PORT/api/health" "API"
