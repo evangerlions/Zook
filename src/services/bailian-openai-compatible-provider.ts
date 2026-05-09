@@ -286,8 +286,8 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
         const index = typeof deltaToolCall.index === "number" ? deltaToolCall.index : 0;
         const existing = pendingToolCalls.get(index) ?? { args: "" };
         pendingToolCalls.set(index, {
-          id: deltaToolCall.id ?? existing.id,
-          name: deltaToolCall.function?.name ?? existing.name,
+          id: this.readOptionalNonBlankString(deltaToolCall.id) ?? existing.id,
+          name: this.readOptionalNonBlankString(deltaToolCall.function?.name) ?? existing.name,
           args: existing.args + (deltaToolCall.function?.arguments ?? ""),
         });
       }
@@ -328,7 +328,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
           yield {
             type: "tool_call",
             toolCall: {
-              id: toolCall.id ?? `${request.model.modelKey}_tool_${index}`,
+              id: toolCall.id ?? this.buildFallbackToolCallId(request.model.modelKey, index),
               name: toolCall.name,
               input,
             },
@@ -520,6 +520,18 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
 
   private readOptionalString(value: unknown): string | undefined {
     return typeof value === "string" ? value : undefined;
+  }
+
+  private readOptionalNonBlankString(value: unknown): string | undefined {
+    if (typeof value !== "string") {
+      return undefined;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  private buildFallbackToolCallId(modelKey: string, index: number): string {
+    return `${modelKey}_tool_${index}`;
   }
 
   private throwProviderRequestFailed(statusCode: number, payload: OpenAICompatibleResponsePayload): never {

@@ -475,6 +475,60 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   assert.equal(doneCompletion.providerModel, undefined);
 });
 
+test("ai_novel local debug envelopes expose upstream LLM request body", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  const payload = {
+    taskType: "write_turn",
+    stream: true,
+    messages: [
+      {
+        role: "user",
+        content: "继续写当前章节。",
+      },
+    ],
+  };
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: {
+      ...encryptAiPayload(payload, aiKey),
+      localDebugRequestPlaintext: JSON.stringify(payload),
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  const debugEvent = decryptedEvents[0];
+  assert.equal(debugEvent.type, "local_debug_llm_request");
+  const debugPayload = debugEvent.payload as Record<string, unknown>;
+  const requestBody = debugPayload.requestBody as Record<string, unknown>;
+  const messages = requestBody.messages as Record<string, unknown>[];
+  const providerOptions = requestBody.providerOptions as Record<
+    string,
+    unknown
+  >;
+  assert.equal(debugPayload.taskType, "write_turn");
+  assert.equal(messages[0].role, "system");
+  assert.ok(
+    String(messages[0].content ?? "").includes("write-mode AINovel agent"),
+  );
+  assert.ok(Array.isArray(providerOptions.tools));
+  assert.equal(decryptedEvents[1].type, "content_delta");
+});
+
 test("ai_novel kickoff_turn stream emits normalized kickoff action events", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -668,7 +722,7 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
   );
 });
 
-test("ai_novel kickoff_turn drops unknown update_meta fields before relaying", async () => {
+test("ai_novel kickoff_turn relays update_meta payloads without backend repair", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -743,18 +797,19 @@ test("ai_novel kickoff_turn drops unknown update_meta fields before relaying", a
     ?.toolCall as Record<string, unknown>;
   assert.equal(updateMeta.name, "update_meta");
   assert.deepEqual(updateMeta.input, {
+    unknownTitleField: "烬骨长明",
+    unknownSummaryField: "被逐弟子在边荒靠残魂活下来。",
     readiness: 0.8,
   });
-  const normalizationLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff tool payload normalized" &&
-      Array.isArray(entry.reasons) &&
-      entry.reasons.includes("unknown_update_meta_fields_dropped"),
+  assert.equal(
+    runtime.logger.records.some((entry) =>
+      String(entry.message).includes("kickoff tool payload"),
+    ),
+    false,
   );
-  assert.ok(normalizationLog);
 });
 
-test("ai_novel kickoff_turn collapses inverted chapterLength ranges to the larger value", async () => {
+test("ai_novel kickoff_turn relays inverted chapterLength ranges to the client agent", async () => {
   const llmProvider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
       throw new Error("complete should not be called");
@@ -825,20 +880,16 @@ test("ai_novel kickoff_turn collapses inverted chapterLength ranges to the large
   const premiseScale = input.premiseScale as Record<string, unknown>;
   const chapterLength = premiseScale.chapterLength as Record<string, unknown>;
   assert.equal(chapterLength.minChars, 5000);
-  assert.equal(chapterLength.maxChars, 5000);
-  assert.ok(
-    runtime.logger.records.some(
-      (entry) =>
-        entry.message === "ai_novel kickoff tool payload normalized" &&
-        Array.isArray(entry.reasons) &&
-        entry.reasons.includes(
-          "premiseScale.chapterLength_range_inverted_collapsed",
-        ),
+  assert.equal(chapterLength.maxChars, 3000);
+  assert.equal(
+    runtime.logger.records.some((entry) =>
+      String(entry.message).includes("kickoff tool payload"),
     ),
+    false,
   );
 });
 
-test("ai_novel kickoff_turn normalizes ask_question payloads before relaying them", async () => {
+test("ai_novel kickoff_turn relays ask_question payloads without backend normalization", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -940,43 +991,29 @@ test("ai_novel kickoff_turn normalizes ask_question payloads before relaying the
   const toolCall = askQuestion!.toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "ask_question");
   assert.deepEqual((toolCall.input as Record<string, unknown>).options, [
-    "复仇打脸",
-    "另起炉灶",
-    "洗冤归宗",
-    "揭开阴谋",
-    "浪迹天涯",
-    "建立宗门",
+    { label: "复仇打脸", subtitle: "向背叛者清算" },
+    { label: "另起炉灶", subtitle: "建立新势力" },
+    { label: "洗冤归宗", subtitle: "重回宗门" },
+    { label: "揭开阴谋", subtitle: "冤案背后另有黑手" },
+    { label: "浪迹天涯", subtitle: "不再回头" },
+    { label: "建立宗门", subtitle: "另立山门" },
+    { label: "隐姓埋名", subtitle: "彻底离开旧身份" },
+    { label: "孤身远走", subtitle: "独自寻找新生路" },
   ]);
-  assert.deepEqual(
-    (toolCall.input as Record<string, unknown>).optionSubtitles,
-    [
-      "向背叛者清算",
-      "建立新势力",
-      "重回宗门",
-      "冤案背后另有黑手",
-      "不再回头",
-      "另立山门",
-    ],
-  );
   assert.equal(
     (toolCall.input as Record<string, unknown>).question,
-    "主角被逐出山门后，故事的核心走向是什么？",
+    "  主角被逐出山门后，故事的核心走向是什么？  ",
   );
   assert.equal((toolCall.input as Record<string, unknown>).allowCustom, true);
-  const normalizationLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff tool payload normalized",
+  assert.equal(
+    runtime.logger.records.some((entry) =>
+      String(entry.message).includes("kickoff tool payload"),
+    ),
+    false,
   );
-  assert.ok(normalizationLog);
-  assert.equal(normalizationLog.level, "warn");
-  assert.deepEqual(normalizationLog.reasons, [
-    "question_trimmed",
-    "options_truncated_to_runtime_limit",
-    "options_filtered_or_deduplicated",
-  ]);
 });
 
-test("ai_novel kickoff_turn parses legacy JSON-string ask_question options", async () => {
+test("ai_novel kickoff_turn relays legacy JSON-string ask_question options", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -1049,23 +1086,13 @@ test("ai_novel kickoff_turn parses legacy JSON-string ask_question options", asy
   const toolCall = decryptedEvents.find((event) => event.type === "tool_call")
     ?.toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "ask_question");
-  assert.deepEqual((toolCall.input as Record<string, unknown>).options, [
-    "单主角第三人称——全程跟随主角视角",
-    "单主角第一人称——以我视角叙述",
-  ]);
-  const normalizationLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff tool payload normalized" &&
-      entry.toolName === "ask_question",
+  assert.equal(
+    (toolCall.input as Record<string, unknown>).options,
+    '["单主角第三人称——全程跟随主角视角","单主角第一人称——以我视角叙述"]',
   );
-  assert.ok(normalizationLog);
-  assert.deepEqual(normalizationLog.reasons, [
-    "options_json_string_parsed",
-    "options_legacy_string_items_normalized",
-  ]);
 });
 
-test("ai_novel kickoff_turn repairs kickoff tool name casing", async () => {
+test("ai_novel kickoff_turn relays kickoff tool name casing to the client agent", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -1138,20 +1165,17 @@ test("ai_novel kickoff_turn repairs kickoff tool name casing", async () => {
     ["tool_call", "done"],
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
-  assert.equal(toolCall.name, "ask_question");
-  const repairLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff tool name repaired" &&
-      entry.toolName === "Ask_Question",
+  assert.equal(toolCall.name, "Ask_Question");
+  assert.equal(
+    runtime.logger.records.some((entry) =>
+      String(entry.message).includes("kickoff tool name repaired"),
+    ),
+    false,
   );
-  assert.ok(repairLog);
-  assert.equal(repairLog.repairedToolName, "ask_question");
 });
 
-test("ai_novel kickoff_turn repairs invalid ask_question payload inside backend loop", async () => {
+test("ai_novel kickoff_turn relays invalid ask_question payload without backend repair", async () => {
   let streamCalls = 0;
-  let secondAttemptMessages: LLMMessage[] = [];
-  let secondAttemptTools: unknown[] = [];
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -1163,60 +1187,28 @@ test("ai_novel kickoff_turn repairs invalid ask_question payload inside backend 
         providerRequestId: "chat-req-setup-tool-repair-recovered-001",
       };
     },
-    async *stream(request): AsyncIterable<LLMStreamEvent> {
+    async *stream(): AsyncIterable<LLMStreamEvent> {
       streamCalls += 1;
-      if (streamCalls === 1) {
-        yield {
-          type: "content_delta",
-          text: "我先确认一个关键点。",
-        };
-        yield {
-          type: "tool_call",
-          toolCall: {
-            id: "tool_question_invalid_once",
-            name: "ask_question",
-            input: {
-              question: "主角的第一阶段目标是什么？",
-            },
-          },
-        };
-        yield {
-          type: "usage",
-          usage: {
-            promptTokens: 10,
-            completionTokens: 2,
-            totalTokens: 12,
-          },
-        };
-        yield {
-          type: "done",
-          finishReason: "tool_calls",
-        };
-        return;
-      }
-
-      secondAttemptMessages = request.messages;
-      secondAttemptTools = (request.providerOptions?.tools as unknown[]) ?? [];
+      yield {
+        type: "content_delta",
+        text: "我先确认一个关键点。",
+      };
       yield {
         type: "tool_call",
         toolCall: {
-          id: "tool_question_repaired",
+          id: "tool_question_invalid_once",
           name: "ask_question",
           input: {
             question: "主角的第一阶段目标是什么？",
-            options: [
-              { label: "洗清冤屈", subtitle: "先证明自己没有背叛宗门" },
-              { label: "活下去", subtitle: "先在追杀和贫瘠环境中站稳" },
-            ],
           },
         },
       };
       yield {
         type: "usage",
         usage: {
-          promptTokens: 20,
-          completionTokens: 3,
-          totalTokens: 23,
+          promptTokens: 10,
+          completionTokens: 2,
+          totalTokens: 12,
         },
       };
       yield {
@@ -1260,75 +1252,30 @@ test("ai_novel kickoff_turn repairs invalid ask_question payload inside backend 
   const decryptedEvents = events
     .map((event) => decryptAiPayload(event, aiKey))
     .map(normalizeAiEvent);
-  assert.equal(streamCalls, 2);
+  assert.equal(streamCalls, 1);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["text_delta", "tool_call", "usage", "done"],
   );
-  const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
-  assert.equal(toolCall.id, "tool_question_repaired");
+  const toolCall = decryptedEvents[1].toolCall as Record<string, unknown>;
+  assert.equal(toolCall.id, "tool_question_invalid_once");
   assert.equal(toolCall.name, "ask_question");
-  assert.deepEqual((toolCall.input as Record<string, unknown>).options, [
-    "洗清冤屈",
-    "活下去",
-  ]);
+  assert.deepEqual(toolCall.input, {
+    question: "主角的第一阶段目标是什么？",
+  });
+  const usageEvent = decryptedEvents[2].usage as Record<string, unknown>;
+  assert.equal(usageEvent.promptTokens, 10);
+  assert.equal(usageEvent.completionTokens, 2);
+  assert.equal(usageEvent.totalTokens, 12);
   assert.equal(
-    decryptedEvents.some((event) => event.type === "text_delta"),
-    false,
-  );
-
-  const invalidAssistantMessage = secondAttemptMessages.find(
-    (message) =>
-      message.role === "assistant" &&
-      message.toolCalls?.[0]?.name === "invalid",
-  );
-  assert.ok(invalidAssistantMessage);
-  assert.equal(
-    invalidAssistantMessage.toolCalls?.[0]?.id,
-    "tool_question_invalid_once",
-  );
-  const invalidToolMessage = secondAttemptMessages.find(
-    (message) => message.role === "tool",
-  );
-  assert.ok(invalidToolMessage);
-  assert.equal(invalidToolMessage.toolCallId, "tool_question_invalid_once");
-  assert.match(
-    String(invalidToolMessage.content),
-    /The arguments provided to tool "ask_question" are invalid/,
-  );
-  assert.equal(
-    secondAttemptTools.some((tool) =>
-      JSON.stringify(tool).includes('"name":"invalid"'),
+    runtime.logger.records.some((entry) =>
+      String(entry.message).includes("invalid tool repair"),
     ),
     false,
   );
-  const usageEvent = decryptedEvents[1].usage as Record<string, unknown>;
-  assert.equal(usageEvent.promptTokens, 30);
-  assert.equal(usageEvent.completionTokens, 5);
-  assert.equal(usageEvent.totalTokens, 35);
-  const doneUsage = decryptedEvents[2].usage as Record<string, unknown>;
-  assert.equal(doneUsage.promptTokens, 30);
-  assert.equal(doneUsage.completionTokens, 5);
-  assert.equal(doneUsage.totalTokens, 35);
-
-  const scheduledLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff invalid tool repair scheduled",
-  );
-  const recoveredLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff invalid tool repair recovered",
-  );
-  assert.ok(scheduledLog);
-  assert.ok(recoveredLog);
-  assert.deepEqual(scheduledLog.reasons, [
-    "options_missing_or_not_array",
-    "options_below_minimum_after_normalization",
-  ]);
-  assert.equal(recoveredLog.attempt, 2);
 });
 
-test("ai_novel kickoff_turn reports one invalid payload after repair is exhausted", async () => {
+test("ai_novel kickoff_turn relays repeated invalid ask_question payloads as a single backend turn", async () => {
   let streamCalls = 0;
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -1394,27 +1341,17 @@ test("ai_novel kickoff_turn reports one invalid payload after repair is exhauste
   const decryptedEvents = events
     .map((event) => decryptAiPayload(event, aiKey))
     .map(normalizeAiEvent);
-  assert.equal(streamCalls, 2);
+  assert.equal(streamCalls, 1);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["error", "done"],
+    ["tool_call", "done"],
   );
-  const errorPayload = decryptedEvents[0].payload as Record<string, unknown>;
-  assert.equal(errorPayload.code, "KICKOFF_TOOL_INVALID_PAYLOAD");
-  const details = errorPayload.details as Record<string, unknown>;
-  assert.equal(details.toolCallId, "tool_question_still_invalid_2");
-
-  const scheduledLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff invalid tool repair scheduled",
-  );
-  const exhaustedLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff invalid tool repair exhausted",
-  );
-  assert.ok(scheduledLog);
-  assert.ok(exhaustedLog);
-  assert.equal(exhaustedLog.attempt, 2);
+  const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
+  assert.equal(toolCall.id, "tool_question_still_invalid_1");
+  assert.equal(toolCall.name, "ask_question");
+  assert.deepEqual(toolCall.input, {
+    question: "主角的第一阶段目标是什么？",
+  });
 });
 
 test("ai_novel kickoff_turn accepts one ask_question option at runtime", async () => {
@@ -1502,7 +1439,7 @@ test("ai_novel kickoff_turn accepts one ask_question option at runtime", async (
   ]);
 });
 
-test("ai_novel kickoff_turn reports malformed ask_question string diagnostics", async () => {
+test("ai_novel kickoff_turn relays malformed ask_question string options", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -1573,41 +1510,23 @@ test("ai_novel kickoff_turn reports malformed ask_question string diagnostics", 
   const decryptedEvents = events
     .map((event) => decryptAiPayload(event, aiKey))
     .map(normalizeAiEvent);
-  const errorEvent = decryptedEvents.find((event) => event.type === "error");
-  assert.ok(errorEvent);
-  const payload = errorEvent!.payload as Record<string, unknown>;
-  assert.equal(payload.code, "KICKOFF_TOOL_INVALID_PAYLOAD");
-  const details = payload.details as Record<string, unknown>;
-  assert.equal(details.toolName, "ask_question");
-  assert.equal(details.toolCallId, "tool_question_string_options");
-  assert.deepEqual(details.reasons, [
-    "options_missing_or_not_array",
-    "options_string_json_parse_failed",
-    "options_below_minimum_after_normalization",
-  ]);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["tool_call", "done"],
+  );
+  const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "ask_question");
+  assert.equal(toolCall.id, "tool_question_string_options");
   assert.equal(
-    (details.originalInput as Record<string, unknown>).options,
+    (toolCall.input as Record<string, unknown>).options,
     `["纯现代世界，异世界元素悄悄渗透进来", "现代世界与异世界有通道/连接点", "主角是唯一从异世界来的"异类"", "还没想好，你来定"]`,
   );
-  const toolDefinition = details.toolDefinition as Record<string, unknown>;
-  assert.equal(toolDefinition.name, "ask_question");
-  const inputSchema = toolDefinition.inputSchema as Record<string, unknown>;
-  const properties = inputSchema.properties as Record<string, unknown>;
-  const optionsSchema = properties.options as Record<string, unknown>;
-  assert.match(
-    String(optionsSchema.description),
-    /Do not pass a JSON-encoded string/,
+  assert.equal(
+    runtime.logger.records.some((entry) =>
+      String(entry.message).includes("kickoff tool payload rejected"),
+    ),
+    false,
   );
-  const optionItemSchema = optionsSchema.items as Record<string, unknown>;
-  assert.deepEqual(optionItemSchema.required, ["label", "subtitle"]);
-
-  const rejectedLog = runtime.logger.records.find(
-    (entry) =>
-      entry.message === "ai_novel kickoff tool payload rejected" &&
-      entry.toolName === "ask_question",
-  );
-  assert.ok(rejectedLog);
-  assert.deepEqual(rejectedLog.reasons, details.reasons);
 });
 
 test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits it", async () => {
@@ -2299,6 +2218,72 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
   assert.deepEqual(optionItemSchema.required, ["label", "subtitle"]);
 });
 
+test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "",
+          name: "read_draft",
+          input: {
+            offset: 0,
+            limit: 100,
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "write_turn",
+        stream: true,
+        messages: [
+          {
+            role: "user",
+            content: "读取当前草稿再继续写。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["tool_call", "done"],
+  );
+  const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "read_draft");
+  assert.match(String(toolCall.id), /^ainovel-.*_prompted_tool_0$/);
+});
+
 test("ai_novel chapter_draft supplies only search history and draft write tools", async () => {
   let capturedToolNames: string[] = [];
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
@@ -2497,7 +2482,7 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
   assert.equal(error.message, "请求内容不合法，请检查后重试。");
 });
 
-test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", async () => {
+test("ai_novel kickoff_turn relays unknown kickoff tool to the client agent", async () => {
   let streamCalls = 0;
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
@@ -2565,12 +2550,12 @@ test("ai_novel kickoff_turn unknown kickoff tool emits encrypted error event", a
   assert.equal(streamCalls, 1);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["error", "done"],
+    ["tool_call", "done"],
   );
-  const errorPayload = decryptedEvents[0].payload as Record<string, unknown>;
-  assert.equal(errorPayload.code, "KICKOFF_TOOL_UNKNOWN");
-  assert.equal(errorPayload.message, "AI 返回了暂不支持的开书信息，请重试。");
-  assert.equal(errorPayload.recoverable, false);
+  const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
+  assert.equal(toolCall.id, "tool_unknown_1");
+  assert.equal(toolCall.name, "invent_new_tool");
+  assert.deepEqual(toolCall.input, {});
 });
 
 test("ai_novel chat completions route keeps JSON envelope when stream is false", async () => {

@@ -177,6 +177,52 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
   ]);
 });
 
+test("bailian provider treats blank streamed tool call ids as missing", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createSseResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"","function":{"name":"read_draft","arguments":"{\\"limit\\":100}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+  });
+
+  const events = await collectEvents(provider.stream(createResolvedRequest()));
+
+  assert.deepEqual(events, [
+    {
+      type: "tool_call",
+      toolCall: {
+        id: "kimi2.5_tool_0",
+        name: "read_draft",
+        input: {
+          limit: 100,
+        },
+      },
+      rawEvent:
+        '{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"","function":{"name":"read_draft","arguments":"{\\"limit\\":100}"}}]},"finish_reason":"tool_calls"}]}',
+    },
+    { type: "done", finishReason: "tool_calls" },
+  ]);
+});
+
+test("bailian provider does not overwrite a valid streamed tool call id with a later blank id", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createSseResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"tool-valid","function":{"name":"read_draft","arguments":"{\\"limit\\""}}]},"finish_reason":null}]}\n\n',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"   ","function":{"arguments":":100}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+  });
+
+  const events = await collectEvents(provider.stream(createResolvedRequest()));
+  const toolCallEvent = events.find((event) => event.type === "tool_call");
+
+  assert.ok(toolCallEvent);
+  assert.equal(toolCallEvent.toolCall.id, "tool-valid");
+  assert.deepEqual(toolCallEvent.toolCall.input, { limit: 100 });
+});
+
 test("bailian provider logs local provider request body and raw stream chunk", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "local";
