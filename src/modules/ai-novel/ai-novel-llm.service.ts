@@ -45,6 +45,7 @@ interface KickoffMeta {
 
 interface StoryAnchor {
   label: string;
+  name?: string;
   role: string;
   rules: string[];
 }
@@ -250,7 +251,12 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
               label: {
                 type: "string",
                 description:
-                  "Concise anchor name in the user's writing language, e.g. the protagonist name, protagonist group, central relationship, core mystery, or main stage.",
+                  "Concise anchor label in the user's writing language, e.g. protagonist, protagonist group, central relationship, core mystery, or main stage.",
+              },
+              name: {
+                type: "string",
+                description:
+                  "Optional concrete character name when this anchor represents the protagonist or another named character. For protagonist anchors, this must be a real name, alias, or codename, never a pronoun such as 我/I or a generic label such as 主角.",
               },
               role: {
                 type: "string",
@@ -431,7 +437,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "4. When stable structured information becomes clear, call update_meta.",
   "5. In most turns, if any necessary information is still missing, continue with exactly one focused ask_question.",
   "6. If no structured follow-up is needed, assistant-only freeform continuation is allowed.",
-  "7. Call ready only when titleCandidate, storyPromise, storyAnchors, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
+  "7. Call ready only when titleCandidate, storyPromise, storyAnchors, protagonist name, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
   "8. If the user says you may decide or start directly, infer sensible defaults from the conversation, call update_meta with every required canonical field first, then call ready only after those fields are non-empty.",
   "",
   "## Question rules",
@@ -459,6 +465,10 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Update only fields that are more certain now.",
   "- Use canonical premise fields as the durable contract: storyPromise, storyAnchors, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, toneRegister, extras.",
   "- storyAnchors are long-term story roots, not a full character list. Use them to prevent drift around the protagonist or protagonist group, central relationship, core mystery, durable pressure source, or core stage.",
+  "- When a storyAnchor represents the protagonist, include `name`: a concrete character name, alias, or codename suitable for the user's genre and language.",
+  "- Do not use pronouns or generic labels as protagonist `name`: never use 我, I, 主角, 男主, 女主, 他, 她, 少年, 青年, protagonist, hero, heroine, or main character unless the user explicitly states that exact string is the character's literal name.",
+  "- For first-person novels, keep `name` as the character's real name/alias and describe first-person narration in focalization or the protagonist anchor rules; do not set name to 我/I.",
+  "- If the user did not provide a protagonist name, generate a fitting one before ready instead of asking a separate naming question unless the naming choice is genuinely user-blocking.",
   "- Use titleCandidate only for the candidate book title; the client derives kickoff card UI text from the canonical premise.",
   "- Before ready, titleCandidate must be a concrete book title you generated or refined from the conversation.",
   "- Never use placeholder titles such as 待定书名, 暂定书名, Untitled, TBD, or AI 正在为这本书起名.",
@@ -470,6 +480,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Do not call ready early.",
   "- Use ready only when the canonical premise/contract fields are sufficiently clear to start writing.",
   "- Do not call ready until titleCandidate is concrete and non-placeholder.",
+  "- Do not call ready until the protagonist anchor has a concrete non-placeholder `name`.",
   "- When calling ready, include summary: one polished natural-language paragraph describing what this book is like for the ready card.",
   "- Never call ready with empty placeholder contract fields.",
   "",
@@ -1186,12 +1197,14 @@ export class AiNovelLlmService {
         continue;
       }
       const label = this.readOptionalString(item.label);
+      const name = this.readOptionalString(item.name);
       const role = this.readOptionalString(item.role);
       if (!label || !role || seen.has(label)) {
         continue;
       }
       anchors.push({
         label,
+        ...(name ? { name } : {}),
         role,
         rules: this.normalizeKickoffQuestionStrings(item.rules, 5),
       });

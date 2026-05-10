@@ -37,3 +37,27 @@ test("next_chapter_brief prompt keeps compatible brief string shape", () => {
   assert.match(systemPrompt, /variation from the previous chapter/);
   assert.match(systemPrompt, /Do not include markdown fences/);
 });
+
+test("book contract tool preserves optional story anchor names", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "write_turn",
+    messages: [],
+  });
+
+  const setBookContract = assembly.tools.find(
+    (tool) => tool.name === "set_book_contract",
+  );
+  const schema = setBookContract?.inputSchema as Record<string, unknown>;
+  assert.ok(schema);
+  const patch = (schema.properties as Record<string, unknown>).patch as Record<
+    string,
+    unknown
+  >;
+  const storyAnchors = (patch.properties as Record<string, unknown>)
+    .storyAnchors as Record<string, unknown>;
+  const items = storyAnchors.items as Record<string, unknown>;
+  const properties = items.properties as Record<string, unknown>;
+
+  assert.ok(properties.name);
+  assert.deepEqual(items.required, ["label", "role", "rules"]);
+});

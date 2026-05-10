@@ -643,6 +643,7 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
             storyAnchors: [
               {
                 label: "转学生",
+                name: "林砚",
                 role: "单主角",
                 rules: ["以转学生视角进入旧校舍异常"],
               },
@@ -956,6 +957,7 @@ test("ai_novel kickoff_turn relays ask_question payloads without backend normali
             storyAnchors: [
               {
                 label: "转学生",
+                name: "林砚",
                 role: "单主角",
                 rules: ["以转学生视角进入旧校舍异常"],
               },
@@ -1657,6 +1659,7 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
             storyAnchors: [
               {
                 label: "转学生",
+                name: "林砚",
                 role: "单主角",
                 rules: ["以转学生视角进入旧校舍异常"],
               },
@@ -1719,6 +1722,10 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     String(systemMessages[0]?.content ?? ""),
     /titleCandidate must be a concrete book title/i,
   );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /protagonist anchor has a concrete non-placeholder `name`/,
+  );
   assert.match(String(systemMessages[0]?.content ?? ""), /待定书名/);
   assert.match(
     String(systemMessages[0]?.content ?? ""),
@@ -1737,6 +1744,7 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     String(systemMessages[0]?.content ?? ""),
     /- storyPromise: 校园超自然异常调查。/,
   );
+  assert.match(String(systemMessages[0]?.content ?? ""), /"name":"林砚"/);
   assert.match(
     String(systemMessages[0]?.content ?? ""),
     /- language: 简体中文/,
@@ -1774,6 +1782,16 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     string,
     unknown
   >;
+  const storyAnchors = updateMetaProperties.storyAnchors as Record<
+    string,
+    unknown
+  >;
+  const storyAnchorItems = storyAnchors.items as Record<string, unknown>;
+  const storyAnchorProperties = storyAnchorItems.properties as Record<
+    string,
+    unknown
+  >;
+  assert.ok(storyAnchorProperties.name);
   assert.deepEqual(premiseScale.required, [
     "length",
     "chapterLength",

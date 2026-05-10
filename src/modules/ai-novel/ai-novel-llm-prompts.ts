@@ -126,6 +126,11 @@ const writeStateTools: LLMToolDefinition[] = [
               required: ["label", "role", "rules"],
               properties: {
                 label: { type: "string" },
+                name: {
+                  type: "string",
+                  description:
+                    "Concrete character name when this anchor represents a named character. For protagonist anchors, use the real name/alias, not pronouns such as 我/I.",
+                },
                 role: { type: "string" },
                 rules: { type: "array", items: { type: "string" } },
               },
