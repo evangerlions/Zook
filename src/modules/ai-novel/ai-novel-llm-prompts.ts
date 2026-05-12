@@ -7,7 +7,6 @@ export type AiNovelPromptProfile =
   | "write_turn"
   | "chapter_draft"
   | "chapter_summary"
-  | "future_instruction_cleanup"
   | "main_line_review"
   | "snapshot_generation"
   | "next_chapter_brief";
@@ -100,11 +99,6 @@ const contextReadTools: LLMToolDefinition[] = [
     "Read the default continuity window around the current chapter.",
     {},
   ),
-  createTool(
-    "read_future_instructions",
-    "Read active future instructions relevant to the current chapter.",
-    {},
-  ),
   createTool("read_current_brief", "Read the current next-chapter brief.", {}),
 ];
 
@@ -183,6 +177,7 @@ const writeStateTools: LLMToolDefinition[] = [
           currentArc: { type: "string" },
           activeGoal: { type: "string" },
           openQuestions: { type: "array", items: { type: "string" } },
+          futureInstructions: { type: "array", items: { type: "string" } },
           stageCast: {
             type: "array",
             items: {
@@ -201,27 +196,6 @@ const writeStateTools: LLMToolDefinition[] = [
       reason: { type: "string" },
     },
     ["patch", "reason"],
-  ),
-  createTool(
-    "upsert_future_instruction",
-    "Create or update a future-facing instruction.",
-    {
-      instruction_id: { type: "string" },
-      instruction: { type: "string" },
-      from_chapter: { type: "integer" },
-      until_chapter: { type: "integer" },
-      rationale: { type: "string" },
-    },
-    ["instruction"],
-  ),
-  createTool(
-    "resolve_instruction",
-    "Mark a future instruction as completed, expired, or withdrawn.",
-    {
-      instruction_id: { type: "string" },
-      resolution: { type: "string" },
-    },
-    ["instruction_id", "resolution"],
   ),
 ];
 
@@ -322,7 +296,8 @@ const WRITE_TURN_SYSTEM_PROMPT = [
   "",
   "## Tool discipline",
   "- Use supplied read tools when dynamic context is insufficient or stale.",
-  "- Use state tools only for Contract, MainLine, or FutureInstruction changes.",
+  "- Use state tools only for Contract or MainLine changes.",
+  "- Add, remove, or update future reminders through MainLine.futureInstructions in set_main_line; do not invent separate instruction state.",
   "- Use read_draft/write_draft for current chapter draft text or title changes.",
   "- Use search_story_history only for distant history not covered by the story window.",
   "- Ask one focused question only when the user's intent is genuinely blocked.",
@@ -340,7 +315,7 @@ const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "",
   "## Role",
   "- Generate a complete draft for the bound target chapter.",
-  "- Use the supplied context to preserve Contract, MainLine, story continuity, active instructions, and target chapter intent.",
+  "- Use the supplied context to preserve Contract, MainLine, MainLine.futureInstructions, story continuity, and target chapter intent.",
   "- Do not wait for user input.",
   "",
   "## Chapter execution contract",
@@ -362,7 +337,7 @@ const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "- You may search distant story history only when the supplied context is not enough.",
   "- You must persist the chapter with write_draft.",
   "- Use Contract.scale.chapterLength as the target body-length constraint when it is present.",
-  "- You cannot update Contract, MainLine, or FutureInstructions in this scene because those tools are not supplied.",
+  "- You cannot update Contract or MainLine in this scene because those tools are not supplied.",
   "",
   "## Output contract",
   "- Final assistant text is a concise execution status only.",
@@ -378,15 +353,11 @@ const JOB_SYSTEM_PROMPTS: Record<
     "Return a compact JSON summary of the supplied chapter text and source references.",
     "Do not include markdown fences.",
   ].join("\n"),
-  future_instruction_cleanup: [
-    "You are the FutureInstructionCleanupJob for AINovel.",
-    "Return JSON decisions for each supplied future instruction: keep, resolve, or update.",
-    "Do not include markdown fences.",
-  ].join("\n"),
   main_line_review: [
     "You are the MainLineReviewJob for AINovel.",
     "Return JSON indicating whether to keep or update the current main line after the committed chapter.",
-    "When updating, return { decision: \"update\", mainLine: { currentArc, activeGoal, openQuestions, stageCast } }.",
+    "When updating, return { decision: \"update\", mainLine: { currentArc, activeGoal, openQuestions, stageCast, futureInstructions } }.",
+    "futureInstructions is a lightweight string list inside MainLine; add, remove, or rewrite reminders there instead of creating another state.",
     "stageCast must summarize only currently active people, forces, or groups for this arc; it is not a full character database.",
     "Do not include markdown fences.",
   ].join("\n"),

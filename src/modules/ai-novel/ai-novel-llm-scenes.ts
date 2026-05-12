@@ -6,7 +6,6 @@ export type AiNovelChatSceneProfile =
   | "write_turn"
   | "chapter_draft"
   | "chapter_summary"
-  | "future_instruction_cleanup"
   | "main_line_review"
   | "snapshot_generation"
   | "next_chapter_brief";
@@ -76,16 +75,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 1600,
     responseMode: "json",
     profile: "chapter_summary",
-    supportsStream: false,
-  },
-  future_instruction_cleanup: {
-    taskType: "future_instruction_cleanup",
-    kind: "chat",
-    defaultModelKey: "ainovel-lowcost-structured",
-    defaultTemperature: 0,
-    defaultMaxTokens: 1800,
-    responseMode: "json",
-    profile: "future_instruction_cleanup",
     supportsStream: false,
   },
   main_line_review: {

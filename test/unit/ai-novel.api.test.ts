@@ -394,7 +394,6 @@ test("ai_novel model routing config validates all novel-engine chat taskTypes", 
     "write_turn",
     "chapter_draft",
     "chapter_summary",
-    "future_instruction_cleanup",
     "main_line_review",
     "snapshot_generation",
     "next_chapter_brief",
@@ -2169,14 +2168,11 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
       "read_chapter_frame",
       "read_current_brief",
       "read_draft",
-      "read_future_instructions",
       "read_main_line",
       "read_story_window",
-      "resolve_instruction",
       "search_story_history",
       "set_book_contract",
       "set_main_line",
-      "upsert_future_instruction",
       "write_draft",
     ].sort(),
   );
@@ -2905,7 +2901,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-plus-creative",
-            future_instruction_cleanup: "ainovel-lowcost-structured",
             main_line_review: "ainovel-plus-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
@@ -2924,7 +2919,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-lowcost-structured",
-            future_instruction_cleanup: "ainovel-lowcost-structured",
             main_line_review: "ainovel-plus-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
@@ -2943,7 +2937,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
             write_turn: "ainovel-super-creative",
             chapter_draft: "ainovel-super-creative",
             chapter_summary: "ainovel-lowcost-structured",
-            future_instruction_cleanup: "ainovel-lowcost-structured",
             main_line_review: "ainovel-super-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
@@ -3019,7 +3012,6 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
     delete tier.chat.write_turn;
     delete tier.chat.chapter_draft;
     delete tier.chat.chapter_summary;
-    delete tier.chat.future_instruction_cleanup;
     delete tier.chat.main_line_review;
     delete tier.chat.snapshot_generation;
     delete tier.chat.next_chapter_brief;
