@@ -80,6 +80,7 @@ export type ErrorCode =
   | "AUTH_QR_LOGIN_INVALID"
   | "AUTH_QR_LOGIN_EXPIRED"
   | "AUTH_QR_LOGIN_ALREADY_USED"
+  | "AUTH_ONE_CLICK_TOKEN_INVALID"
   | "AUTH_APP_SCOPE_MISMATCH"
   | "AUTH_LOGIN_TEMPORARILY_LOCKED"
   | "AUTH_USER_BLOCKED"
@@ -94,6 +95,8 @@ export type ErrorCode =
   | "EMAIL_PROVIDER_REQUEST_FAILED"
   | "SMS_SERVICE_NOT_CONFIGURED"
   | "SMS_PROVIDER_REQUEST_FAILED"
+  | "ONE_CLICK_SERVICE_NOT_CONFIGURED"
+  | "ONE_CLICK_PROVIDER_REQUEST_FAILED"
   | "CAPTCHA_SERVICE_NOT_CONFIGURED"
   | "CAPTCHA_PROVIDER_REQUEST_FAILED"
   | "LLM_MODEL_NOT_FOUND"
@@ -273,7 +276,12 @@ export interface FileRecord {
   createdAt: string;
 }
 
-export type ClientLogUploadTaskStatus = "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED" | "FAILED";
+export type ClientLogUploadTaskStatus =
+  | "PENDING"
+  | "CLAIMED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "FAILED";
 
 export interface ClientLogUploadTaskRecord {
   id: string;
@@ -497,6 +505,13 @@ export interface SmsLoginCommand {
   ipAddress: string;
 }
 
+export interface OneClickLoginCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+}
+
 export interface PasswordSmsCodeCommand {
   appId: string;
   phone: string;
@@ -568,7 +583,6 @@ export interface AdminSensitiveOperationGrantDocument {
   granted: true;
   expiresAt: string;
 }
-
 
 export type SmsVerificationScene = "login" | "register" | "password-reset";
 export type SmsVerificationChannel = "sms";

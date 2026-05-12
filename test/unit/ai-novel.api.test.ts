@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
 import type {
@@ -526,6 +529,152 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
   );
   assert.ok(Array.isArray(providerOptions.tools));
   assert.equal(decryptedEvents[1].type, "content_delta");
+});
+
+test("ai_novel audit-file endpoint is hidden outside local debug hosts", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zook-audit-hidden-"));
+  const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/debug/audit-file",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "api.example.com",
+      "X-App-Id": "ai_novel",
+    },
+    body: {
+      sessionId: "session_1",
+      html: "<!doctype html><html></html>",
+    },
+  });
+
+  assert.equal(response.statusCode, 404);
+});
+
+test("ai_novel audit-file endpoint is hidden in production", async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    const root = await mkdtemp(join(tmpdir(), "zook-audit-production-"));
+    const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+    const token = runtime.services.tokenService.issueAccessToken(
+      "user_alice",
+      "ai_novel",
+    );
+
+    const response = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/ai_novel/debug/audit-file",
+      headers: {
+        authorization: `Bearer ${token}`,
+        host: "127.0.0.1:3100",
+        "X-App-Id": "ai_novel",
+      },
+      body: {
+        sessionId: "session_1",
+        html: "<!doctype html><html></html>",
+      },
+    });
+
+    assert.equal(response.statusCode, 404);
+  } finally {
+    if (previousNodeEnv == null) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  }
+});
+
+test("ai_novel audit-file endpoint requires ai_novel bearer auth", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zook-audit-auth-"));
+  const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/debug/audit-file",
+    headers: {
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: {
+      sessionId: "session_1",
+      html: "<!doctype html><html></html>",
+    },
+  });
+
+  assert.equal(response.statusCode, 401);
+  assert.equal(response.body.code, "AUTH_BEARER_REQUIRED");
+});
+
+test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session path", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zook-audit-file-"));
+  const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  const baseRequest = {
+    method: "POST",
+    path: "/api/v1/ai_novel/debug/audit-file",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "localhost:3100",
+      "X-App-Id": "ai_novel",
+    },
+  };
+
+  const first = await runtime.app.handle({
+    ...baseRequest,
+    body: {
+      sessionId: "../bad/session",
+      html: "<!doctype html><html>first</html>",
+    },
+  });
+  const second = await runtime.app.handle({
+    ...baseRequest,
+    body: {
+      sessionId: "../bad/session",
+      html: "<!doctype html><html>second</html>",
+    },
+  });
+
+  assert.equal(first.statusCode, 200);
+  assert.equal(second.statusCode, 200);
+  const firstData = first.body.data as Record<string, unknown>;
+  const secondData = second.body.data as Record<string, unknown>;
+  assert.equal(firstData.filePath, join(root, "bad_session", "generation-audit.html"));
+  assert.equal(secondData.filePath, firstData.filePath);
+  assert.equal(
+    secondData.viewUrl,
+    "http://localhost:3100/api/v1/ai_novel/debug/audit-file/bad_session",
+  );
+  assert.equal(
+    await readFile(firstData.filePath as string, "utf8"),
+    "<!doctype html><html>second</html>",
+  );
+  assert.match(String(secondData.fileUrl), /^file:\/\/.*generation-audit\.html$/);
+  assert.match(String(secondData.updatedAt), /^\d{4}-\d{2}-\d{2}T/);
+
+  const view = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/audit-file/bad_session",
+    headers: {
+      host: "localhost:3100",
+    },
+  });
+  let viewedHtml = "";
+  for await (const chunk of view.streamBody ?? []) {
+    viewedHtml += chunk;
+  }
+  assert.equal(view.statusCode, 200);
+  assert.equal(view.contentType, "text/html; charset=utf-8");
+  assert.equal(viewedHtml, "<!doctype html><html>second</html>");
 });
 
 test("ai_novel kickoff_turn stream emits normalized kickoff action events", async () => {

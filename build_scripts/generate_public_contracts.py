@@ -16,6 +16,7 @@ SPECS: dict[str, list[str]] = {
         "SmsCodeRequest",
         "EmailLoginRequest",
         "SmsLoginRequest",
+        "OneClickLoginRequest",
         "SetPasswordRequest",
         "ResetPasswordRequest",
         "ChangePasswordRequest",

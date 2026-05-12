@@ -10,6 +10,7 @@ import type {
   LogAckRequest,
   LogFailRequest,
   NotificationSendRequest,
+  OneClickLoginRequest,
   PasswordLoginRequest,
   PublicConfigData,
   QrLoginCreateRequest,
@@ -32,6 +33,7 @@ import {
   LogFailRequestSchema,
   LogoutRequestSchema,
   NotificationSendRequestSchema,
+  OneClickLoginRequestSchema,
   PasswordLoginRequestSchema,
   PublicConfigDataSchema,
   QrLoginCreateRequestSchema,
@@ -72,6 +74,7 @@ const validators = {
   emailLogin: ajv.compile(EmailLoginRequestSchema),
   smsCode: ajv.compile(SmsCodeRequestSchema),
   smsLogin: ajv.compile(SmsLoginRequestSchema),
+  oneClickLogin: ajv.compile(OneClickLoginRequestSchema),
   setPassword: ajv.compile(SetPasswordRequestSchema),
   resetPassword: ajv.compile(ResetPasswordRequestSchema),
   changePassword: ajv.compile(ChangePasswordRequestSchema),
@@ -103,6 +106,9 @@ export const PublicContractValidator = {
   },
   validateSmsLogin(input: unknown) {
     return validateWithSchema<SmsLoginRequest>(validators.smsLogin, input);
+  },
+  validateOneClickLogin(input: unknown) {
+    return validateWithSchema<OneClickLoginRequest>(validators.oneClickLogin, input);
   },
   validateSetPassword(input: unknown) {
     return validateWithSchema<SetPasswordRequest>(validators.setPassword, input);

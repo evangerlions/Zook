@@ -166,6 +166,53 @@ export type SmsLoginRequest = {
   "clientType": "app" | "web";
 };
 
+export const OneClickLoginRequestSchema = {
+  "type": "object",
+  "required": [
+    "appId",
+    "token",
+    "gyuid",
+    "clientType"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "token": {
+      "type": "string",
+      "description": "Carrier token returned by the Getui GeYan one-click login SDK."
+    },
+    "gyuid": {
+      "type": "string",
+      "description": "Getui GeYan SDK user identifier returned with the one-click login result."
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    },
+    "operator": {
+      "type": "string",
+      "description": "Optional carrier/operator code returned by the SDK."
+    },
+    "sdkPlatform": {
+      "type": "string",
+      "description": "Optional SDK platform label such as android, ios, or ohos."
+    }
+  }
+} as const;
+
+export type OneClickLoginRequest = {
+  "appId": string;
+  "token": string;
+  "gyuid": string;
+  "clientType": "app" | "web";
+  "operator"?: string;
+  "sdkPlatform"?: string;
+};
+
 export const SetPasswordRequestSchema = {
   "type": "object",
   "required": [
@@ -1477,6 +1524,7 @@ export const GeneratedPublicContractNames = [
   "LogoutRequest",
   "NotificationQueuedData",
   "NotificationSendRequest",
+  "OneClickLoginRequest",
   "PasswordLoginRequest",
   "PublicConfigData",
   "QrLoginConfirmData",

@@ -2,7 +2,7 @@ import { PublicApiMessages } from "../generated/i18n/public-api-messages.generat
 import { RequestLocaleService } from "./request-locale.service.ts";
 import type { ErrorCode, HttpRequest } from "../shared/types.ts";
 
-type PublicApiMessageKey = keyof typeof PublicApiMessages["en-US"];
+type PublicApiMessageKey = keyof (typeof PublicApiMessages)["en-US"];
 
 const PUBLIC_ERROR_MESSAGE_KEYS = {
   AI_DECRYPT_FAILED: "error.ai.decrypt_failed",
@@ -19,7 +19,8 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   APP_MEMBER_BLOCKED: "error.app.member_blocked",
   APP_MEMBER_DELETED: "error.app.member_deleted",
   APP_NOT_FOUND: "error.app.not_found",
-  AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID: "error.auth.account_delete_confirmation_invalid",
+  AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID:
+    "error.auth.account_delete_confirmation_invalid",
   AUTH_ACCOUNT_ALREADY_EXISTS: "error.auth.account_already_exists",
   AUTH_APP_SCOPE_MISMATCH: "error.auth.app_scope_mismatch",
   AUTH_BEARER_REQUIRED: "error.auth.bearer_required",
@@ -31,6 +32,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   AUTH_QR_LOGIN_EXPIRED: "error.auth.qr_login_expired",
   AUTH_QR_LOGIN_INVALID: "error.auth.qr_login_invalid",
   AUTH_QR_LOGIN_TOKEN_REQUIRED: "error.auth.qr_login_token_required",
+  AUTH_ONE_CLICK_TOKEN_INVALID: "error.auth.one_click_token_invalid",
   AUTH_RATE_LIMITED: "error.auth.rate_limited",
   AUTH_REFRESH_TOKEN_REQUIRED: "error.auth.refresh_token_required",
   AUTH_REFRESH_TOKEN_REVOKED: "error.auth.refresh_token_revoked",
@@ -64,6 +66,8 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   REQ_INVALID_QUERY: "error.req.invalid_query",
   SMS_PROVIDER_REQUEST_FAILED: "error.sms.provider_failed",
   SMS_SERVICE_NOT_CONFIGURED: "error.sms.service_not_configured",
+  ONE_CLICK_PROVIDER_REQUEST_FAILED: "error.one_click.provider_failed",
+  ONE_CLICK_SERVICE_NOT_CONFIGURED: "error.one_click.service_not_configured",
   SYS_INTERNAL_ERROR: "error.system.internal",
 } satisfies Partial<Record<ErrorCode, PublicApiMessageKey>>;
 
@@ -95,10 +99,16 @@ export class PublicApiMessageService {
   ): string {
     const locale = this.resolveLocale(request);
     const template =
-      PublicApiMessages[locale][key as keyof typeof PublicApiMessages["en-US"]] ??
-      PublicApiMessages["en-US"][key as keyof typeof PublicApiMessages["en-US"]];
+      PublicApiMessages[locale][
+        key as keyof (typeof PublicApiMessages)["en-US"]
+      ] ??
+      PublicApiMessages["en-US"][
+        key as keyof (typeof PublicApiMessages)["en-US"]
+      ];
     const base = typeof template === "string" ? template : fallback;
-    return base.replace(/\{(\w+)\}/g, (_, name: string) => String(params[name] ?? `{${name}}`));
+    return base.replace(/\{(\w+)\}/g, (_, name: string) =>
+      String(params[name] ?? `{${name}}`),
+    );
   }
 
   fromErrorCode(
