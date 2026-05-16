@@ -4168,7 +4168,10 @@ export class BackendApplication {
         );
       }
 
-      const result = await this.aiNovelLlmService.createChatCompletion(body);
+      const result = await this.aiNovelLlmService.createChatCompletion(body, {
+        exposeLocalDebug:
+          this.shouldExposeLocalAiRequestDebugFields(request),
+      });
       const localDebugResponseText =
         this.extractLocalAiDebugResponseText(result);
       return await this.encryptedAiResponse(

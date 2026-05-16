@@ -397,16 +397,111 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.ready,
     description:
-      "Declare the kickoff sufficient to start writing and provide one user-facing book summary for the ready card.",
+      "Declare the kickoff sufficient to start writing and provide the user-facing ready card summary plus the first rolling arc plan.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["summary"],
+      required: ["summary", "currentArcPlan"],
       properties: {
         summary: {
           type: "string",
           description:
             "A concise natural-language description of what this book is like. This is shown on the ready card; it is not a contract field.",
+        },
+        currentArcPlan: {
+          type: "object",
+          additionalProperties: false,
+          required: [
+            "revisionId",
+            "title",
+            "summary",
+            "arcPromise",
+            "arcRules",
+            "startChapterIndex",
+            "endChapterIndex",
+            "beats",
+          ],
+          properties: {
+            revisionId: {
+              type: "string",
+              description:
+                "Use kickoff for the first ready plan. Later runtime may replace it with another revision.",
+            },
+            title: {
+              type: "string",
+              description:
+                "User-facing title for the opening arc or first stage.",
+            },
+            summary: {
+              type: "string",
+              description:
+                "User-facing 1-2 sentence summary of the first 6-10 chapters.",
+            },
+            arcPromise: {
+              type: "string",
+              description:
+                "The user-facing reading promise for this opening arc or current stage.",
+            },
+            arcRules: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Concrete current-stage rules derived from the Contract and user anti-trope constraints.",
+            },
+            startChapterIndex: { type: "integer", minimum: 1 },
+            endChapterIndex: { type: "integer", minimum: 1 },
+            beats: {
+              type: "array",
+              minItems: 6,
+              maxItems: 10,
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: [
+                  "id",
+                  "chapterIndex",
+                  "goal",
+                  "mustCover",
+                  "forbidden",
+                  "change",
+                  "endBoundary",
+                  "endingOpenQuestion",
+                ],
+                properties: {
+                  id: { type: "string" },
+                  chapterIndex: { type: "integer", minimum: 1 },
+                  goal: {
+                    type: "string",
+                    description:
+                      "Concrete chapter-level movement, not a slogan.",
+                  },
+                  mustCover: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  forbidden: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  change: {
+                    type: "string",
+                    description:
+                      "What irreversible story state changes in this chapter.",
+                  },
+                  endBoundary: {
+                    type: "string",
+                    description:
+                      "Where this chapter must stop. It must tell the draft agent what later beat not to narrate yet.",
+                  },
+                  endingOpenQuestion: {
+                    type: "string",
+                    description:
+                      "Concrete unresolved pressure or question, may be empty if not natural.",
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -482,6 +577,14 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Do not call ready until titleCandidate is concrete and non-placeholder.",
   "- Do not call ready until the protagonist anchor has a concrete non-placeholder `name`.",
   "- When calling ready, include summary: one polished natural-language paragraph describing what this book is like for the ready card.",
+  "- When calling ready, include currentArcPlan: a user-facing rolling plan for the first 6-10 chapters. This is the opening arc the user will confirm on the ready card before drafting starts.",
+  "- currentArcPlan must describe what this stage roughly does, like a human writer's first-volume direction. It must be concrete enough to prevent per-chapter improvisation, but not so rigid that every chapter needs a forced hook.",
+  "- currentArcPlan.arcPromise must state the opening/current arc's reading promise. currentArcPlan.arcRules must turn user anti-trope or genre constraints into concrete stage rules.",
+  "- currentArcPlan.beats must be written in the user's writing language. Each beat must include goal, mustCover array, forbidden array, change, and endBoundary.",
+  "- currentArcPlan.beats[].endingOpenQuestion must exist but may be an empty string when a hook would feel forced.",
+  "- currentArcPlan.beats[].endBoundary must say where the chapter stops and which later movement should not be narrated yet.",
+  "- For departure, leave-home, leave-village, or leave-ruins beats, do not make endBoundary so narrow that a standard chapter can only write the first step. Allow farewell, preparation, burial/cleanup when relevant, and immediate same-scene survival pressure, while forbidding overnight rest, next-day travel, first outsider encounter, arrival at a new location, explicit destination lock-in, or the next major crisis.",
+  "- mustCover and forbidden arrays may be empty for quiet transition chapters, but the fields must still be present.",
   "- Never call ready with empty placeholder contract fields.",
   "",
   "## Output rules",
@@ -500,6 +603,7 @@ export interface AiNovelChatResponse {
     finishReason?: string;
     providerRequestId?: string;
   };
+  localDebugLlmRequest?: AiNovelLocalDebugLlmRequestPayload;
 }
 
 interface AiNovelUsagePayload {
@@ -598,6 +702,7 @@ export class AiNovelLlmService {
 
   async createChatCompletion(
     body: Record<string, unknown>,
+    options: AiNovelLocalDebugOptions = {},
   ): Promise<AiNovelChatResponse> {
     if (body.model !== undefined) {
       badRequest(
@@ -634,20 +739,20 @@ export class AiNovelLlmService {
     const maxTokens =
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
+    const providerOptions =
+      promptAssembly.tools.length > 0
+        ? {
+            tools: toOpenAiToolDefinitions(promptAssembly.tools),
+            tool_choice: "auto",
+          }
+        : undefined;
     try {
       const result = await this.llmManager.complete({
         modelKey,
         messages: promptAssembly.messages,
         temperature,
         maxTokens,
-        ...(promptAssembly.tools.length > 0
-          ? {
-              providerOptions: {
-                tools: toOpenAiToolDefinitions(promptAssembly.tools),
-                tool_choice: "auto",
-              },
-            }
-          : {}),
+        ...(providerOptions ? { providerOptions } : {}),
       });
 
       const response: AiNovelChatResponse = {
@@ -662,6 +767,20 @@ export class AiNovelLlmService {
             ? { providerRequestId: result.providerRequestId }
             : {}),
         },
+        ...(options.exposeLocalDebug === true
+          ? {
+              localDebugLlmRequest: this.buildLocalDebugLlmRequestPayload({
+                taskType: scene.taskType,
+                modelKey,
+                messages: promptAssembly.messages,
+                temperature,
+                maxTokens,
+                providerOptions,
+                profile: scene.profile,
+                stream: false,
+              }),
+            }
+          : {}),
       };
       return response;
     } catch (error) {
@@ -1020,6 +1139,35 @@ export class AiNovelLlmService {
     ];
   }
 
+  private buildLocalDebugLlmRequestPayload(input: {
+    taskType: string;
+    modelKey: string;
+    messages: LLMMessage[];
+    temperature: number;
+    maxTokens: number;
+    providerOptions?: Record<string, unknown>;
+    profile?: AiNovelPromptProfile;
+    stream: boolean;
+  }): AiNovelLocalDebugLlmRequestPayload {
+    return {
+      taskType: input.taskType,
+      modelKey: input.modelKey,
+      temperature: input.temperature,
+      maxTokens: input.maxTokens,
+      ...(input.profile ? { profile: input.profile } : {}),
+      requestBody: {
+        modelKey: input.modelKey,
+        messages: input.messages,
+        temperature: input.temperature,
+        maxTokens: input.maxTokens,
+        stream: input.stream,
+        ...(input.providerOptions
+          ? { providerOptions: input.providerOptions }
+          : {}),
+      },
+    };
+  }
+
   private buildLocalDebugLlmRequestChunk(input: {
     taskType: string;
     modelKey: string;
@@ -1031,23 +1179,10 @@ export class AiNovelLlmService {
   }): AiNovelChatStreamChunk {
     return {
       type: "local_debug_llm_request",
-      payload: {
-        taskType: input.taskType,
-        modelKey: input.modelKey,
-        temperature: input.temperature,
-        maxTokens: input.maxTokens,
-        ...(input.profile ? { profile: input.profile } : {}),
-        requestBody: {
-          modelKey: input.modelKey,
-          messages: input.messages,
-          temperature: input.temperature,
-          maxTokens: input.maxTokens,
-          stream: true,
-          ...(input.providerOptions
-            ? { providerOptions: input.providerOptions }
-            : {}),
-        },
-      },
+      payload: this.buildLocalDebugLlmRequestPayload({
+        ...input,
+        stream: true,
+      }),
     };
   }
 
@@ -1086,7 +1221,8 @@ export class AiNovelLlmService {
 
   private renderChapterLength(chapterLength: KickoffChapterLength): string {
     const range =
-      chapterLength.minChars !== undefined && chapterLength.maxChars !== undefined
+      chapterLength.minChars !== undefined &&
+      chapterLength.maxChars !== undefined
         ? `${chapterLength.minChars}-${chapterLength.maxChars}`
         : chapterLength.minChars !== undefined
           ? `>=${chapterLength.minChars}`
@@ -1167,9 +1303,7 @@ export class AiNovelLlmService {
     };
   }
 
-  private normalizeChapterLengthContext(
-    value: unknown,
-  ): KickoffChapterLength {
+  private normalizeChapterLengthContext(value: unknown): KickoffChapterLength {
     const record = isRecord(value) ? value : {};
     const chapterLength: KickoffChapterLength = {
       preset: this.readOptionalString(record.preset) ?? "",
@@ -1186,7 +1320,10 @@ export class AiNovelLlmService {
     return chapterLength;
   }
 
-  private normalizeStoryAnchors(value: unknown, maxItems: number): StoryAnchor[] {
+  private normalizeStoryAnchors(
+    value: unknown,
+    maxItems: number,
+  ): StoryAnchor[] {
     if (!Array.isArray(value)) {
       return [];
     }
@@ -1229,11 +1366,10 @@ export class AiNovelLlmService {
     modelKey: string,
     fallbackIndex: number,
   ): LLMToolCall {
-    const id =
-      this.normalizeToolCallId(
-        toolCall.id,
-        this.buildFallbackToolCallId(modelKey, "prompted", fallbackIndex),
-      );
+    const id = this.normalizeToolCallId(
+      toolCall.id,
+      this.buildFallbackToolCallId(modelKey, "prompted", fallbackIndex),
+    );
     const name = this.readOptionalString(toolCall.name);
     if (!name) {
       throw new ApplicationError(
