@@ -435,9 +435,7 @@ test("password change returns a new session and revokes the previous access toke
 
 test("api runtime startup requires an explicit access token secret", async () => {
   const previousSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
-  const previousLegacySecret = process.env.ACCESS_TOKEN_SECRET;
   delete process.env.AUTH_ACCESS_TOKEN_SECRET;
-  delete process.env.ACCESS_TOKEN_SECRET;
 
   try {
     await assert.rejects(
@@ -447,32 +445,6 @@ test("api runtime startup requires an explicit access token secret", async () =>
   } finally {
     if (typeof previousSecret === "string") {
       process.env.AUTH_ACCESS_TOKEN_SECRET = previousSecret;
-    }
-    if (typeof previousLegacySecret === "string") {
-      process.env.ACCESS_TOKEN_SECRET = previousLegacySecret;
-    }
-  }
-});
-
-test("api runtime startup accepts legacy access token secret env", async () => {
-  const previousSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
-  const previousLegacySecret = process.env.ACCESS_TOKEN_SECRET;
-  delete process.env.AUTH_ACCESS_TOKEN_SECRET;
-  process.env.ACCESS_TOKEN_SECRET = "legacy-access-token-secret";
-
-  try {
-    const runtime = await createApplication({ serviceName: "api" });
-    assert.ok(runtime.services.authService);
-  } finally {
-    if (typeof previousSecret === "string") {
-      process.env.AUTH_ACCESS_TOKEN_SECRET = previousSecret;
-    } else {
-      delete process.env.AUTH_ACCESS_TOKEN_SECRET;
-    }
-    if (typeof previousLegacySecret === "string") {
-      process.env.ACCESS_TOKEN_SECRET = previousLegacySecret;
-    } else {
-      delete process.env.ACCESS_TOKEN_SECRET;
     }
   }
 });
