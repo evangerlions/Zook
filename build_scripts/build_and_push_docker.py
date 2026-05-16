@@ -432,6 +432,22 @@ def get_service_status(project_name: str, service_name: str) -> str | None:
     return command_output(["docker", "inspect", "--format", "{{.State.Status}}", container_id])
 
 
+def get_service_health(project_name: str, service_name: str) -> str | None:
+    container_id = get_service_container_id(project_name, service_name)
+    if not container_id:
+        return None
+    health_status = command_output(
+        [
+            "docker",
+            "inspect",
+            "--format",
+            "{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}",
+            container_id,
+        ]
+    )
+    return None if health_status == "none" else health_status
+
+
 def compose_command(project_name: str, compose_files: list[Path], compose_env_file: Path, *extra_args: str) -> list[str]:
     command = [
         "docker",
@@ -491,11 +507,13 @@ def wait_for_release(
         api_status = get_service_status(project_name, "api")
         worker_status = get_service_status(project_name, "worker")
         admin_status = get_service_status(project_name, "admin-web")
+        worker_health = get_service_health(project_name, "worker")
         healthy = check_http_health(bind_ip, host_port, health_path)
+        worker_healthy = worker_health == "healthy"
         admin_healthy = check_http_health(bind_ip, admin_host_port, admin_health_path)
         current_state = (
             f"api={api_status} worker={worker_status} admin={admin_status} "
-            f"healthy={healthy} adminHealthy={admin_healthy}"
+            f"healthy={healthy} workerHealthy={worker_healthy} adminHealthy={admin_healthy}"
         )
         if current_state != last_state:
             print(f"wait release status: {current_state}")
@@ -505,6 +523,7 @@ def wait_for_release(
             and worker_status == "running"
             and admin_status == "running"
             and healthy
+            and worker_healthy
             and admin_healthy
         ):
             return True
