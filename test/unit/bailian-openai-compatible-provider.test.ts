@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { BailianOpenAICompatibleProvider } from "../../src/services/bailian-openai-compatible-provider.ts";
+import type { ResolvedEmbeddingRequest } from "../../src/services/embedding-manager.ts";
 import type { LLMStreamEvent, ResolvedLLMCompletionRequest } from "../../src/services/llm-manager.ts";
 
 function createResolvedRequest(providerOptions?: Record<string, unknown>): ResolvedLLMCompletionRequest {
@@ -22,6 +24,18 @@ function createResolvedRequest(providerOptions?: Record<string, unknown>): Resol
     ],
     temperature: 0.2,
     maxTokens: 128,
+    providerOptions,
+  };
+}
+
+function createResolvedEmbeddingRequest(providerOptions?: Record<string, unknown>): ResolvedEmbeddingRequest {
+  return {
+    model: {
+      provider: "bailian",
+      modelKey: "novel-embedding",
+      providerModel: "text-embedding-v4",
+    },
+    input: ["hello world"],
     providerOptions,
   };
 }
@@ -72,6 +86,7 @@ test("bailian provider sends the expected completion request and parses the resp
       capturedUrl = String(input);
       capturedInit = init;
       return createJsonResponse({
+        id: "chatcmpl-test-id",
         choices: [
           {
             message: {
@@ -109,6 +124,7 @@ test("bailian provider sends the expected completion request and parses the resp
   assert.equal(result.text, "2");
   assert.equal(result.reasoningText, "basic arithmetic");
   assert.equal(result.finishReason, "stop");
+  assert.equal(result.providerRequestId, "chatcmpl-test-id");
   assert.deepEqual(result.usage, {
     promptTokens: 12,
     completionTokens: 4,
@@ -133,9 +149,21 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
   })));
 
   assert.deepEqual(events, [
-    { type: "reasoning_delta", text: "step 1" },
-    { type: "content_delta", text: "Hello" },
-    { type: "content_delta", text: " world" },
+    {
+      type: "reasoning_delta",
+      text: "step 1",
+      rawEvent: '{"choices":[{"delta":{"reasoning_content":"step 1"},"finish_reason":null}]}',
+    },
+    {
+      type: "content_delta",
+      text: "Hello",
+      rawEvent: '{"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}',
+    },
+    {
+      type: "content_delta",
+      text: " world",
+      rawEvent: '{"choices":[{"delta":{"content":" world"},"finish_reason":"stop"}]}',
+    },
     {
       type: "usage",
       usage: {
@@ -143,9 +171,112 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
         completionTokens: 20,
         totalTokens: 30,
       },
+      rawEvent: '{"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30}}',
     },
     { type: "done", finishReason: "stop" },
   ]);
+});
+
+test("bailian provider treats blank streamed tool call ids as missing", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createSseResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"","function":{"name":"read_draft","arguments":"{\\"limit\\":100}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+  });
+
+  const events = await collectEvents(provider.stream(createResolvedRequest()));
+
+  assert.deepEqual(events, [
+    {
+      type: "tool_call",
+      toolCall: {
+        id: "kimi2.5_tool_0",
+        name: "read_draft",
+        input: {
+          limit: 100,
+        },
+      },
+      rawEvent:
+        '{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"","function":{"name":"read_draft","arguments":"{\\"limit\\":100}"}}]},"finish_reason":"tool_calls"}]}',
+    },
+    { type: "done", finishReason: "tool_calls" },
+  ]);
+});
+
+test("bailian provider does not overwrite a valid streamed tool call id with a later blank id", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createSseResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"tool-valid","function":{"name":"read_draft","arguments":"{\\"limit\\""}}]},"finish_reason":null}]}\n\n',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"   ","function":{"arguments":":100}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+  });
+
+  const events = await collectEvents(provider.stream(createResolvedRequest()));
+  const toolCallEvent = events.find((event) => event.type === "tool_call");
+
+  assert.ok(toolCallEvent);
+  assert.equal(toolCallEvent.toolCall.id, "tool-valid");
+  assert.deepEqual(toolCallEvent.toolCall.input, { limit: 100 });
+});
+
+test("bailian provider logs local provider request body and raw stream chunk", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async () =>
+        createSseResponse([
+          'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+          "data: [DONE]\n\n",
+        ]),
+    });
+
+    await collectEvents(provider.stream(createResolvedRequest({
+      enable_thinking: true,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "ask_question",
+            description: "Ask one focused kickoff question.",
+            parameters: {
+              type: "object",
+              properties: {
+                question: { type: "string" },
+              },
+            },
+          },
+        },
+      ],
+    })));
+
+    const requestLog = logger.records.find((entry) =>
+      entry.message === "ai_novel local provider chat request body"
+    );
+    assert.ok(requestLog);
+    assert.equal(requestLog.mode, "stream");
+    assert.match(String(requestLog.url ?? ""), /chat\/completions$/);
+    assert.equal((requestLog.body as Record<string, unknown>).model, "kimi/kimi-k2.5");
+
+    const chunkLog = logger.records.find((entry) =>
+      entry.message === "ai_novel local provider raw stream chunk"
+    );
+    assert.ok(chunkLog);
+    assert.equal(chunkLog.modelKey, "kimi2.5");
+    assert.equal(
+      chunkLog.chunk,
+      '{"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}',
+    );
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
 });
 
 test("bailian provider turns HTTP failures into provider request errors", async () => {
@@ -169,6 +300,50 @@ test("bailian provider turns HTTP failures into provider request errors", async 
       "code" in error &&
       error.code === "LLM_PROVIDER_REQUEST_FAILED",
   );
+});
+
+test("bailian provider sends the expected embedding request and parses the response", async () => {
+  let capturedUrl: string | undefined;
+  let capturedInit: RequestInit | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    apiKey: "mock-bailian-key",
+    fetchImplementation: async (input, init) => {
+      capturedUrl = String(input);
+      capturedInit = init;
+      return createJsonResponse({
+        id: "embd-test-id",
+        data: [
+          {
+            index: 0,
+            embedding: [0.12, -0.03, 0.44],
+          },
+        ],
+        usage: {
+          prompt_tokens: 8,
+          total_tokens: 8,
+        },
+      });
+    },
+  });
+
+  const result = await provider.embed(createResolvedEmbeddingRequest({
+    encoding_format: "float",
+  }));
+
+  assert.equal(capturedUrl, "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings");
+  assert.equal(capturedInit?.method, "POST");
+  assert.equal((capturedInit?.headers as Record<string, string>).Authorization, "Bearer mock-bailian-key");
+  const parsedBody = JSON.parse(String(capturedInit?.body)) as Record<string, unknown>;
+  assert.equal(parsedBody.model, "text-embedding-v4");
+  assert.equal(parsedBody.encoding_format, "float");
+  assert.deepEqual(parsedBody.input, ["hello world"]);
+  assert.equal(result.providerRequestId, "embd-test-id");
+  assert.equal(result.vectors.length, 1);
+  assert.deepEqual(result.usage, {
+    promptTokens: 8,
+    completionTokens: 0,
+    totalTokens: 8,
+  });
 });
 
 test("bailian provider rejects invalid SSE chunks", async () => {

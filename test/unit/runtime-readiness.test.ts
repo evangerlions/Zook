@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   isContainerRuntime,
   resolveRuntimeDatabaseUrl,
+  resolvePersistentFileStorageRoot,
   resolveRuntimeRedisUrl,
 } from "../../src/infrastructure/runtime/runtime-readiness.ts";
 
@@ -64,4 +65,9 @@ test("container runtime detection recognizes container markers", () => {
   } else {
     process.env.CONTAINER = originalContainer;
   }
+});
+
+test("persistent storage root follows runtime environment", () => {
+  assert.equal(resolvePersistentFileStorageRoot(false), "/var/lib/zook/appRunData");
+  assert.equal(resolvePersistentFileStorageRoot(true), "/app/appRunData");
 });

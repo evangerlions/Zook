@@ -5,6 +5,9 @@
 
 ```bash
 npm test
+npm run dev:stack
+npm run admin:install
+npm run admin:build
 npm run admin
 npm run dev
 npm run worker
@@ -18,10 +21,24 @@ npm run worker
 npm run dev
 ```
 
+一键启动本地 API + Admin Web：
+
+```bash
+npm run dev:stack
+```
+
 启动 Admin Web：
 
 ```bash
+npm run admin:install
+npm run admin:build
 npm run admin
+```
+
+本地开发 Admin Web 前端：
+
+```bash
+npm run admin:dev
 ```
 
 启动 Worker：
@@ -35,6 +52,28 @@ npm run worker
 ```bash
 npm test
 ```
+
+推荐先准备一份本地专用环境文件：
+
+```bash
+cp deploy_configs/local.env.example deploy_configs/local.env
+```
+
+然后直接运行 `npm run dev:stack`。脚本会优先读取 `deploy_configs/local.env`，再读取 `.env.local`，自动构建 Admin Web，并把 API 与 Admin Web 一起拉起。
+
+在首次启动前，需要先准备固定的持久化目录：
+
+```bash
+sudo mkdir -p /var/lib/zook/appRunData
+sudo chmod -R 777 /var/lib/zook/appRunData
+```
+
+运行时固定约定：
+
+- 宿主机：`/var/lib/zook/appRunData`
+- 容器内：`/app/appRunData`
+
+启动阶段会执行文件系统冒烟测试，覆盖写入 `hello_world.txt` 并立即读回；失败时 API / Worker 会直接启动失败。
 
 ## 生产发布常用命令
 
@@ -165,8 +204,16 @@ docker compose build
 执行数据库迁移：
 
 ```bash
-prisma migrate deploy
+node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts
 ```
+
+说明：
+
+- `build_scripts/build_and_push_docker.py` 现在会在 `docker compose up` 之前自动执行这一步。
+- 迁移优先使用 `DIRECT_URL`，建议这里始终配置 `migrator` 账号；运行时容器继续使用 `DATABASE_URL`。
+- 部署时会重放所有 SQL 迁移文件，因此每个脚本都必须按幂等方式编写。
+- 只有数据库迁移成功，才会继续发布新的 `api` / `worker` / `admin-web` 容器。
+- 发布后的 `api` / `worker` 会共享 Redis 队列处理通知任务，因此部署环境中的 `REDIS_URL` 必须可被两个容器共同访问。
 
 发布 API 和 Worker：
 

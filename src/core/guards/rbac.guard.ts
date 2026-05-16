@@ -6,7 +6,7 @@ import { RbacService } from "../../modules/iam/rbac.service.ts";
 export class RbacGuard {
   constructor(private readonly rbacService: RbacService) {}
 
-  assertPermission(appId: string, userId: string, permissionCode: string): void {
-    this.rbacService.assertPermission(appId, userId, permissionCode);
+  async assertPermission(appId: string, userId: string, permissionCode: string): Promise<void> {
+    await this.rbacService.assertPermission(appId, userId, permissionCode);
   }
 }

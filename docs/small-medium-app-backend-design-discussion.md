@@ -93,7 +93,7 @@ flowchart LR
 │   │   ├── app-registry/
 │   │   └── analytics/
 │   ├── services/
-│   │   ├── app-config.service.ts
+│   │   ├── versioned-app-config.service.ts
 │   │   └── notification.service.ts
 │   ├── infrastructure/
 │   │   ├── database/prisma/

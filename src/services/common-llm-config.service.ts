@@ -1,4 +1,4 @@
-import { AppConfigService } from "./app-config.service.ts";
+import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { maskSensitiveString } from "../shared/utils.ts";
 import { SecretReferenceResolver, isSecretReference } from "./secret-reference-resolver.ts";
@@ -6,6 +6,7 @@ import type {
   AdminAppSummary,
   AdminLlmServiceDocument,
   LlmModelConfig,
+  LlmModelKind,
   LlmModelRouteConfig,
   LlmProviderConfig,
   LlmRoutingStrategy,
@@ -19,18 +20,65 @@ const COMMON_APP_SUMMARY: AdminAppSummary = {
   appId: COMMON_APP_ID,
   appCode: COMMON_APP_ID,
   appName: "服务端配置",
+  appNameI18n: {
+    "zh-CN": "服务端配置",
+    "en-US": "Server Config",
+  },
   status: "ACTIVE",
   canDelete: false,
+  logSecret: {
+    keyId: "common",
+    secretMasked: "",
+    updatedAt: "",
+  },
 };
 const DEFAULT_PROVIDER_TIMEOUT_MS = 30000;
+const DEFAULT_MODEL_KIND: LlmModelKind = "chat";
+const VALID_MODEL_KINDS = new Set<LlmModelKind>(["chat", "embedding"]);
 const VALID_ROUTING_STRATEGIES = new Set<LlmRoutingStrategy>(["auto", "fixed"]);
 const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WEIGHT_PRECISION = 100;
+const DEFAULT_AINOVEL_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+
+function createDefaultAinovelModels(): LlmModelConfig[] {
+  return [
+    createDefaultModel("ainovel-free-creative", "AINovel 免费版创作", "chat", "qwen-plus"),
+    createDefaultModel("ainovel-free-reasoning", "AINovel 免费版推理", "chat", "qwen3.5-flash"),
+    createDefaultModel("ainovel-plus-creative", "AINovel Plus 创作", "chat", "siliconflow/deepseek-v3.2"),
+    createDefaultModel("ainovel-plus-reasoning", "AINovel Plus 推理", "chat", "glm-5"),
+    createDefaultModel("ainovel-super-creative", "AINovel 超级 Plus 创作", "chat", "minimax-m2.7"),
+    createDefaultModel("ainovel-super-reasoning", "AINovel 超级 Plus 推理", "chat", "glm-5"),
+    createDefaultModel("ainovel-lowcost-structured", "AINovel 低成本结构化", "chat", "qwen3.5-flash"),
+    createDefaultModel("ainovel-embedding-default", "AINovel 默认向量模型", "embedding", "text-embedding-v4"),
+  ];
+}
+
+function createDefaultModel(
+  key: string,
+  label: string,
+  kind: LlmModelKind,
+  providerModel: string,
+): LlmModelConfig {
+  return {
+    key,
+    label,
+    kind,
+    strategy: "fixed",
+    routes: [
+      {
+        provider: "bailian",
+        providerModel,
+        enabled: true,
+        weight: 100,
+      },
+    ],
+  };
+}
 
 export class CommonLlmConfigService {
   constructor(
-    private readonly appConfigService: AppConfigService,
+    private readonly appConfigService: VersionedAppConfigService,
     private readonly secretReferenceResolver?: SecretReferenceResolver,
   ) {}
 
@@ -45,13 +93,13 @@ export class CommonLlmConfigService {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `LLM service revision ${revision} was not found.`);
     }
 
-    const config = record ? this.parseConfig(record.content) : this.getCurrentConfig();
+    const config = record ? this.parseConfig(record.content) : await this.getCurrentConfig();
 
     return {
       app: COMMON_APP_SUMMARY,
       configKey: LLM_SERVICE_CONFIG_KEY,
       config: this.maskSensitiveConfig(config),
-      updatedAt: record?.createdAt ?? this.getUpdatedAt(),
+      updatedAt: record?.createdAt ?? await this.getUpdatedAt(),
       revision: record?.revision,
       desc: record?.desc,
       isLatest: !record || record.revision === latestRevision,
@@ -60,7 +108,7 @@ export class CommonLlmConfigService {
   }
 
   async updateConfig(input: unknown, desc?: string): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
-    const existingConfig = this.getCurrentConfig();
+    const existingConfig = await this.getCurrentConfig();
     const normalized = this.validateInput(input, existingConfig);
     await this.appConfigService.setValue(
       COMMON_APP_ID,
@@ -71,7 +119,7 @@ export class CommonLlmConfigService {
     return this.getDocument();
   }
 
-  async restoreConfig(revision: number): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
+  async restoreConfig(revision: number, desc?: string): Promise<Omit<AdminLlmServiceDocument, "runtime">> {
     const existing = await this.appConfigService.getRevision(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `LLM service revision ${revision} was not found.`);
@@ -81,19 +129,19 @@ export class CommonLlmConfigService {
       COMMON_APP_ID,
       LLM_SERVICE_CONFIG_KEY,
       revision,
-      `恢复到版本 R${revision}`,
+      desc?.trim() || `恢复到版本 R${revision}`,
     );
 
     return this.getDocument();
   }
 
-  getCurrentConfig(): LlmServiceConfig {
-    const stored = this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
+  async getCurrentConfig(): Promise<LlmServiceConfig> {
+    const stored = await this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
   async getRuntimeConfig(): Promise<LlmServiceConfig | undefined> {
-    const stored = this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
+    const stored = await this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
     if (!stored) {
       return undefined;
     }
@@ -112,8 +160,22 @@ export class CommonLlmConfigService {
     }
   }
 
-  hasStoredConfig(): boolean {
-    return Boolean(this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY));
+  async hasStoredConfig(): Promise<boolean> {
+    return Boolean(await this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY));
+  }
+
+  async initializeDefaultConfig(desc = "common-llm-service-init"): Promise<boolean> {
+    if (await this.hasStoredConfig()) {
+      return false;
+    }
+
+    await this.appConfigService.setValue(
+      COMMON_APP_ID,
+      LLM_SERVICE_CONFIG_KEY,
+      JSON.stringify(this.createDefaultConfig(), null, 2),
+      desc,
+    );
+    return true;
   }
 
   createEmptyRuntimeSnapshot(): LlmRuntimeSnapshot {
@@ -123,8 +185,8 @@ export class CommonLlmConfigService {
     };
   }
 
-  private getUpdatedAt(): string | undefined {
-    return this.appConfigService.getRecord(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY)?.updatedAt;
+  private async getUpdatedAt(): Promise<string | undefined> {
+    return this.appConfigService.getUpdatedAt(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
   }
 
   private parseConfig(raw: string): LlmServiceConfig {
@@ -174,8 +236,13 @@ export class CommonLlmConfigService {
       badRequest("ADMIN_LLM_SERVICE_INVALID", "defaultModelKey is required when LLM service is enabled.");
     }
 
-    if (!config.models.some((item) => item.key === config.defaultModelKey)) {
+    const defaultModel = config.models.find((item) => item.key === config.defaultModelKey);
+    if (!defaultModel) {
       badRequest("ADMIN_LLM_SERVICE_INVALID", "defaultModelKey must reference an existing model.");
+    }
+
+    if (defaultModel.kind !== "chat") {
+      badRequest("ADMIN_LLM_SERVICE_INVALID", "defaultModelKey must reference a chat model.");
     }
 
     return config;
@@ -184,9 +251,18 @@ export class CommonLlmConfigService {
   private createDefaultConfig(): LlmServiceConfig {
     return {
       enabled: false,
-      defaultModelKey: "",
-      providers: [],
-      models: [],
+      defaultModelKey: "ainovel-free-creative",
+      providers: [
+        {
+          key: "bailian",
+          label: "阿里云百炼",
+          enabled: false,
+          baseUrl: DEFAULT_AINOVEL_BAILIAN_BASE_URL,
+          apiKey: "",
+          timeoutMs: DEFAULT_PROVIDER_TIMEOUT_MS,
+        },
+      ],
+      models: createDefaultAinovelModels(),
     };
   }
 
@@ -246,12 +322,14 @@ export class CommonLlmConfigService {
       const source = item as Record<string, unknown>;
       const key = this.normalizeModelKey(source.key);
       const label = this.requireTrimmedString(source.label, `Model ${key || `#${index + 1}`} label is required.`);
+      const kind = this.normalizeKind(source.kind);
       const strategy = this.normalizeStrategy(source.strategy);
       const routes = this.normalizeRoutes(source.routes, key, providerKeys);
 
       return {
         key,
         label,
+        kind,
         strategy,
         routes,
       } satisfies LlmModelConfig;
@@ -339,6 +417,19 @@ export class CommonLlmConfigService {
       badRequest("ADMIN_LLM_SERVICE_INVALID", `Unsupported LLM routing strategy: ${String(value)}.`);
     }
     return normalized;
+  }
+
+  private normalizeKind(value: unknown): LlmModelKind {
+    const normalized = this.optionalString(value);
+    if (!normalized) {
+      return DEFAULT_MODEL_KIND;
+    }
+
+    if (!VALID_MODEL_KINDS.has(normalized as LlmModelKind)) {
+      badRequest("ADMIN_LLM_SERVICE_INVALID", `Unsupported LLM model kind: ${String(value)}.`);
+    }
+
+    return normalized as LlmModelKind;
   }
 
   private normalizeWeight(value: unknown, modelKey: string, routeIndex: number): number {

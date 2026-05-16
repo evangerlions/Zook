@@ -1,18 +1,33 @@
 import { createHash } from "node:crypto";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { maskSensitiveString, matchesMaskedSensitiveString } from "../shared/utils.ts";
-import type { AdminAppSummary, AdminPasswordDocument, PasswordEntry } from "../shared/types.ts";
+import type {
+  AdminAppSummary,
+  AdminPasswordDocument,
+  AdminPasswordRevealDocument,
+  PasswordEntry,
+} from "../shared/types.ts";
 import { PasswordManager } from "./password-manager.ts";
 
 const COMMON_APP_ID = "common";
 const PASSWORD_CONFIG_KEY = "common.passwords";
 const PASSWORD_SCOPE = "common-passwords";
+export const PASSWORD_VALUE_READ_OPERATION = "password.value.read";
 const COMMON_APP_SUMMARY: AdminAppSummary = {
   appId: COMMON_APP_ID,
   appCode: COMMON_APP_ID,
   appName: "服务端配置",
+  appNameI18n: {
+    "zh-CN": "服务端配置",
+    "en-US": "Server Config",
+  },
   status: "ACTIVE",
   canDelete: false,
+  logSecret: {
+    keyId: "common",
+    secretMasked: "",
+    updatedAt: "",
+  },
 };
 const PASSWORD_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
@@ -69,6 +84,28 @@ export class CommonPasswordConfigService {
 
   async getValue(key: string): Promise<string | undefined> {
     return this.passwordManager.getValue(PASSWORD_SCOPE, key);
+  }
+
+  async revealValue(key: string): Promise<AdminPasswordRevealDocument> {
+    const normalizedKey = this.optionalString(key);
+    if (!normalizedKey) {
+      badRequest("ADMIN_PASSWORD_INVALID", "Password key is required.");
+    }
+
+    const items = await this.passwordManager.list(PASSWORD_SCOPE);
+    const entry = items.find((item) => item.key === normalizedKey);
+    if (!entry) {
+      throw new ApplicationError(404, "ADMIN_PASSWORD_NOT_FOUND", `Password key ${normalizedKey} was not found.`);
+    }
+
+    return {
+      app: COMMON_APP_SUMMARY,
+      configKey: PASSWORD_CONFIG_KEY,
+      key: entry.key,
+      desc: entry.desc,
+      value: entry.value,
+      updatedAt: entry.updatedAt,
+    };
   }
 
   private toDocument(items: PasswordEntry[]): AdminPasswordDocument {

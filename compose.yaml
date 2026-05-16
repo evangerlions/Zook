@@ -7,10 +7,13 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
+      APP_VERSION: "${APP_VERSION:-}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/lib/zook/appRunData:/app/appRunData
     ports:
       - "${HOST_BIND_IP:-127.0.0.1}:${HOST_PORT:-3100}:${CONTAINER_PORT:-3100}"
     command: ["node", "--experimental-transform-types", "src/main.ts"]
@@ -33,10 +36,13 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${CONTAINER_PORT:-3100}"
+      APP_VERSION: "${APP_VERSION:-}"
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required}"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/lib/zook/appRunData:/app/appRunData
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
 
   admin-web:
@@ -47,6 +53,7 @@ services:
       - "${APP_ENV_FILE:-.env}"
     environment:
       PORT: "${ADMIN_CONTAINER_PORT:-3110}"
+      APP_VERSION: "${APP_VERSION:-}"
       ADMIN_API_PROXY_TARGET: "http://api:${CONTAINER_PORT:-3100}"
       ADMIN_BRAND_NAME: "${ADMIN_BRAND_NAME:-Zook Control Room}"
       ADMIN_DEFAULT_APP_ID: "${ADMIN_DEFAULT_APP_ID:-}"

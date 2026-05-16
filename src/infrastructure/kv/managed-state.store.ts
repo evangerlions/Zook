@@ -1,5 +1,5 @@
 import type { DatabaseSeed } from "../../shared/types.ts";
-import { InMemoryDatabase } from "../database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../database/application-database.ts";
 import { KVManager } from "./kv-manager.ts";
 
 interface ManagedStatePayload {
@@ -14,9 +14,18 @@ const MANAGED_STATE_SCOPE = "zook.managed-state";
 const MANAGED_STATE_KEY = "bootstrap";
 
 export class ManagedStateStore {
-  constructor(private readonly kvManager: KVManager) {}
+  constructor(
+    private readonly kvManager: KVManager,
+    private readonly options: {
+      enabled?: boolean;
+    } = {},
+  ) {}
 
   async load(): Promise<Partial<DatabaseSeed>> {
+    if (this.options.enabled === false) {
+      return {};
+    }
+
     const payload = await this.kvManager.getJson<ManagedStatePayload>(
       MANAGED_STATE_SCOPE,
       MANAGED_STATE_KEY,
@@ -33,13 +42,18 @@ export class ManagedStateStore {
     };
   }
 
-  async save(database: InMemoryDatabase): Promise<void> {
+  async save(database: ApplicationDatabase): Promise<void> {
+    if (this.options.enabled === false) {
+      return;
+    }
+
+    const state = await database.exportManagedState();
     const payload: ManagedStatePayload = {
       version: 1,
-      apps: structuredClone(database.apps),
-      roles: structuredClone(database.roles),
-      rolePermissions: structuredClone(database.rolePermissions),
-      appConfigs: structuredClone(database.appConfigs),
+      apps: structuredClone(state.apps),
+      roles: structuredClone(state.roles),
+      rolePermissions: structuredClone(state.rolePermissions),
+      appConfigs: structuredClone(state.appConfigs),
     };
 
     await this.kvManager.setJson(MANAGED_STATE_SCOPE, MANAGED_STATE_KEY, payload);

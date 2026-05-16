@@ -39,6 +39,10 @@ export function tooManyRequests(code: ErrorCode, message: string, details?: unkn
   throw new ApplicationError(429, code, message, details);
 }
 
+export function payloadTooLarge(code: ErrorCode, message: string, details?: unknown): never {
+  throw new ApplicationError(413, code, message, details);
+}
+
 export function internalError(message: string, details?: unknown): never {
   throw new ApplicationError(500, "SYS_INTERNAL_ERROR", message, details);
 }

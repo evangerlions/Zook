@@ -83,7 +83,11 @@ else
   echo "Created version tag: ${version_tag}"
 fi
 
+git push "${REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
 git push "${PUSH_REMOTE}" "${TARGET_BRANCH}" "${version_tag}"
+
+release_head="$(git rev-parse HEAD)"
+release_short_head="$(git rev-parse --short=8 HEAD)"
 
 if [[ "${ORIGINAL_REF_TYPE}" == "branch" ]]; then
   git checkout "${ORIGINAL_REF_NAME}"
@@ -95,4 +99,8 @@ echo "Release branch updated successfully."
 echo "  branch: ${TARGET_BRANCH}"
 echo "  source: ${SOURCE_BRANCH}"
 echo "  tag:    ${version_tag}"
+echo "  version: ${version_core}"
+echo "  app_version: ${version_core}"
+echo "  release_head: ${release_head}"
+echo "  release_short_head: ${release_short_head}"
 echo "  returned to: ${ORIGINAL_REF_NAME}"

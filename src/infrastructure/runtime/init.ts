@@ -5,9 +5,10 @@ import {
   resolveRuntimeRedisUrl,
 } from "./runtime-readiness.ts";
 
-type RuntimeServiceName = NonNullable<CreateApplicationOptions["serviceName"]>;
+type RuntimeCreateApplicationOptions = Omit<CreateApplicationOptions, "database" | "databaseFactory">;
+type RuntimeServiceName = NonNullable<RuntimeCreateApplicationOptions["serviceName"]>;
 
-export interface RuntimeInitOptions extends CreateApplicationOptions {
+export interface RuntimeInitOptions extends RuntimeCreateApplicationOptions {
   serviceName: RuntimeServiceName;
 }
 

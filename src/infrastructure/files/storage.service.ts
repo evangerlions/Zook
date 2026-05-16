@@ -1,7 +1,7 @@
 import { forbidden, badRequest } from "../../shared/errors.ts";
 import type { FileConfirmResult, FilePresignResult } from "../../shared/types.ts";
 import { randomId } from "../../shared/utils.ts";
-import { InMemoryDatabase } from "../database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../database/application-database.ts";
 
 /**
  * StorageService models the documented presign -> confirm -> download authorization flow.
@@ -9,15 +9,15 @@ import { InMemoryDatabase } from "../database/prisma/in-memory-database.ts";
 export class StorageService {
   private readonly maxFileSizeBytes = 20 * 1024 * 1024;
 
-  constructor(private readonly database: InMemoryDatabase) {}
+  constructor(private readonly database: ApplicationDatabase) {}
 
-  presignUpload(command: {
+  async presignUpload(command: {
     appId: string;
     ownerUserId: string;
     fileName: string;
     mimeType: string;
     sizeBytes: number;
-  }): FilePresignResult {
+  }): Promise<FilePresignResult> {
     if (command.sizeBytes <= 0 || command.sizeBytes > this.maxFileSizeBytes) {
       badRequest("REQ_INVALID_BODY", "File size is outside the allowed range.");
     }
@@ -26,7 +26,7 @@ export class StorageService {
       "file",
     )}-${command.fileName}`;
 
-    this.database.files.push({
+    await this.database.insertFile({
       id: randomId("db_file"),
       appId: command.appId,
       ownerUserId: command.ownerUserId,
@@ -44,38 +44,36 @@ export class StorageService {
     };
   }
 
-  confirmUpload(command: {
+  async confirmUpload(command: {
     appId: string;
     ownerUserId: string;
     storageKey: string;
     mimeType: string;
     sizeBytes: number;
-  }): FileConfirmResult {
-    const fileRecord = this.database.files.find(
-      (item) =>
-        item.appId === command.appId &&
-        item.ownerUserId === command.ownerUserId &&
-        item.storageKey === command.storageKey,
+  }): Promise<FileConfirmResult> {
+    const fileRecord = await this.database.findFileByOwnerAndStorageKey(
+      command.appId,
+      command.ownerUserId,
+      command.storageKey,
     );
 
     if (!fileRecord) {
       forbidden("FILE_ACCESS_DENIED", "File confirmation is not allowed for this owner.");
     }
 
-    fileRecord.status = "CONFIRMED";
-    fileRecord.mimeType = command.mimeType;
-    fileRecord.sizeBytes = command.sizeBytes;
+    const confirmed = await this.database.confirmFile(fileRecord.id, command.mimeType, command.sizeBytes);
+    if (!confirmed) {
+      forbidden("FILE_ACCESS_DENIED", "File confirmation is not allowed for this owner.");
+    }
 
     return {
-      storageKey: fileRecord.storageKey,
-      downloadUrl: this.getDownloadUrl(command.appId, command.ownerUserId, command.storageKey),
+      storageKey: confirmed.storageKey,
+      downloadUrl: await this.getDownloadUrl(command.appId, command.ownerUserId, command.storageKey),
     };
   }
 
-  getDownloadUrl(appId: string, userId: string, storageKey: string): string {
-    const fileRecord = this.database.files.find(
-      (item) => item.appId === appId && item.storageKey === storageKey,
-    );
+  async getDownloadUrl(appId: string, userId: string, storageKey: string): Promise<string> {
+    const fileRecord = await this.database.findFileByAppAndStorageKey(appId, storageKey);
 
     if (!fileRecord || fileRecord.ownerUserId !== userId || fileRecord.status !== "CONFIRMED") {
       forbidden("FILE_ACCESS_DENIED", "File download is not allowed for this user.");

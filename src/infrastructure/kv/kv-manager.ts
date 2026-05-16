@@ -2,7 +2,7 @@ import { createClient, type RedisClientType } from "redis";
 
 export interface KVBackend {
   get(key: string): Promise<string | null>;
-  set(key: string, value: string): Promise<void>;
+  set(key: string, value: string, ttlSeconds?: number): Promise<void>;
   delete(key: string): Promise<void>;
   assertReady(): Promise<void>;
   disconnect?(): Promise<void>;
@@ -28,8 +28,15 @@ class RedisKVBackend implements KVBackend {
     return this.client.get(key);
   }
 
-  async set(key: string, value: string): Promise<void> {
+  async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
     await this.ensureConnected();
+    if (typeof ttlSeconds === "number" && ttlSeconds > 0) {
+      await this.client.set(key, value, {
+        EX: ttlSeconds,
+      });
+      return;
+    }
+
     await this.client.set(key, value);
   }
 
@@ -67,14 +74,29 @@ class RedisKVBackend implements KVBackend {
 }
 
 export class InMemoryKVBackend implements KVBackend {
-  private readonly store = new Map<string, string>();
+  private readonly store = new Map<string, { value: string; expiresAt?: number }>();
 
   async get(key: string): Promise<string | null> {
-    return this.store.get(key) ?? null;
+    const entry = this.store.get(key);
+    if (!entry) {
+      return null;
+    }
+
+    if (entry.expiresAt && entry.expiresAt <= Date.now()) {
+      this.store.delete(key);
+      return null;
+    }
+
+    return entry.value;
   }
 
-  async set(key: string, value: string): Promise<void> {
-    this.store.set(key, value);
+  async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    this.store.set(key, {
+      value,
+      expiresAt: typeof ttlSeconds === "number" && ttlSeconds > 0
+        ? Date.now() + ttlSeconds * 1000
+        : undefined,
+    });
   }
 
   async delete(key: string): Promise<void> {
@@ -119,8 +141,8 @@ export class KVManager {
     return value ?? undefined;
   }
 
-  async setString(scope: string, key: string, value: string): Promise<void> {
-    await this.backend.set(this.buildStorageKey(scope, key), value);
+  async setString(scope: string, key: string, value: string, ttlSeconds?: number): Promise<void> {
+    await this.backend.set(this.buildStorageKey(scope, key), value, ttlSeconds);
   }
 
   async delete(scope: string, key: string): Promise<void> {
@@ -136,8 +158,8 @@ export class KVManager {
     return JSON.parse(raw) as T;
   }
 
-  async setJson(scope: string, key: string, value: unknown): Promise<void> {
-    await this.setString(scope, key, JSON.stringify(value));
+  async setJson(scope: string, key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+    await this.setString(scope, key, JSON.stringify(value), ttlSeconds);
   }
 
   async disconnect(): Promise<void> {

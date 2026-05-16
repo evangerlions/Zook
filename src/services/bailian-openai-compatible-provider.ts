@@ -1,4 +1,6 @@
 import { ApplicationError } from "../shared/errors.ts";
+import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
+import type { EmbeddingProvider, EmbeddingResult, ResolvedEmbeddingRequest } from "./embedding-manager.ts";
 import type {
   LLMCompletionResult,
   LLMProvider,
@@ -14,16 +16,53 @@ interface OpenAICompatibleChoice {
   message?: {
     content?: string | null;
     reasoning_content?: string | null;
+    tool_calls?: Array<{
+      id?: string;
+      type?: string;
+      function?: {
+        name?: string;
+        arguments?: string;
+      };
+    }> | null;
   };
   delta?: {
     content?: string | null;
     reasoning_content?: string | null;
+    tool_calls?: Array<{
+      index?: number;
+      id?: string;
+      type?: string;
+      function?: {
+        name?: string;
+        arguments?: string;
+      };
+    }> | null;
   };
   finish_reason?: string | null;
 }
 
 interface OpenAICompatibleResponsePayload {
+  id?: string;
   choices?: OpenAICompatibleChoice[];
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  } | null;
+  error?: {
+    message?: string;
+    code?: string;
+    type?: string;
+  };
+  message?: string;
+}
+
+interface OpenAICompatibleEmbeddingPayload {
+  id?: string;
+  data?: Array<{
+    index?: number;
+    embedding?: number[];
+  }>;
   usage?: {
     prompt_tokens?: number;
     completion_tokens?: number;
@@ -41,17 +80,20 @@ export interface BailianOpenAICompatibleProviderOptions {
   baseUrl?: string;
   apiKey?: string;
   fetchImplementation?: typeof fetch;
+  logger?: StructuredLogger;
 }
 
-export class BailianOpenAICompatibleProvider implements LLMProvider {
+export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingProvider {
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly fetchImplementation: typeof fetch;
+  private readonly logger?: StructuredLogger;
 
   constructor(options: BailianOpenAICompatibleProviderOptions = {}) {
     this.baseUrl = normalizeBaseUrl(options.baseUrl ?? process.env.BAILIAN_BASE_URL ?? DEFAULT_BAILIAN_BASE_URL);
     this.apiKey = options.apiKey ?? process.env.BAILIAN_API_KEY ?? DEFAULT_BAILIAN_API_KEY;
     this.fetchImplementation = options.fetchImplementation ?? globalThis.fetch;
+    this.logger = options.logger;
 
     if (!this.fetchImplementation) {
       throw new Error("fetch is not available in the current runtime.");
@@ -59,9 +101,21 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
   }
 
   async complete(request: ResolvedLLMCompletionRequest): Promise<LLMCompletionResult> {
-    const response = await this.fetchImplementation(
-      this.buildUrl(request),
-      this.buildRequestInit(request, this.buildRequestBody(request)),
+    const requestBody = this.buildChatRequestBody(request);
+    this.logLocalProviderChatRequest({
+      mode: "complete",
+      url: this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      modelKey: request.model.modelKey,
+      providerModel: request.model.providerModel,
+      body: requestBody,
+    });
+    const response = await this.execute(
+      this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      this.buildRequestInit(
+        request.model.providerConfig?.apiKey ?? this.apiKey,
+        request.model.providerConfig?.timeoutMs ?? 0,
+        requestBody,
+      ),
     );
     const payload = await this.readJsonPayload(response, !response.ok);
 
@@ -86,26 +140,85 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
       text,
       reasoningText: this.readOptionalString(choice.message.reasoning_content),
       finishReason: this.readOptionalString(choice.finish_reason),
-      usage: this.parseUsage(payload.usage),
+      usage: this.parseChatUsage(payload.usage),
+      providerRequestId: this.readOptionalString(payload.id),
+    };
+  }
+
+  async embed(request: ResolvedEmbeddingRequest): Promise<EmbeddingResult> {
+    const response = await this.execute(
+      this.buildEmbeddingsUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      this.buildRequestInit(
+        request.model.providerConfig?.apiKey ?? this.apiKey,
+        request.model.providerConfig?.timeoutMs ?? 0,
+        {
+          ...request.providerOptions,
+          model: request.model.providerModel,
+          input: request.input,
+        },
+      ),
+    );
+    const payload = await this.readEmbeddingPayload(response, !response.ok);
+
+    if (!response.ok || payload.error) {
+      this.throwEmbeddingRequestFailed(response.status, payload);
+    }
+
+    if (!Array.isArray(payload.data) || payload.data.length === 0) {
+      this.throwProviderResponseInvalid("Embedding response does not contain any vectors.");
+    }
+
+    const vectors = payload.data.map((item, index) => {
+      if (
+        typeof item.index !== "number" ||
+        !Array.isArray(item.embedding) ||
+        item.embedding.some((value) => typeof value !== "number" || Number.isNaN(value))
+      ) {
+        this.throwProviderResponseInvalid("Embedding response contains an invalid vector item.", {
+          index,
+        });
+      }
+
+      return {
+        index: item.index,
+        embedding: item.embedding,
+      };
+    });
+
+    return {
+      provider: request.model.provider,
+      modelKey: request.model.modelKey,
+      providerModel: request.model.providerModel,
+      vectors,
+      usage: this.parseEmbeddingUsage(payload.usage),
+      providerRequestId: this.readOptionalString(payload.id),
     };
   }
 
   async *stream(request: ResolvedLLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
+    const requestBody = {
+      ...this.buildChatRequestBody(request),
+      stream: true,
+      stream_options: {
+        ...this.getProviderStreamOptions(request.providerOptions),
+        include_usage: true,
+      },
+    };
+    this.logLocalProviderChatRequest({
+      mode: "stream",
+      url: this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      modelKey: request.model.modelKey,
+      providerModel: request.model.providerModel,
+      body: requestBody,
+    });
     const streamOptions = this.getProviderStreamOptions(request.providerOptions);
-    const response = await this.fetchImplementation(
-      this.buildUrl(request),
-      this.buildRequestInit(request, {
-        ...request.providerOptions,
-        model: request.model.providerModel,
-        messages: request.messages,
-        ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-        ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
-        stream: true,
-        stream_options: {
-          ...streamOptions,
-          include_usage: true,
-        },
-      }),
+    const response = await this.execute(
+      this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+      this.buildRequestInit(
+        request.model.providerConfig?.apiKey ?? this.apiKey,
+        request.model.providerConfig?.timeoutMs ?? 0,
+        requestBody,
+      ),
     );
 
     if (!response.ok) {
@@ -118,7 +231,13 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     }
 
     let finishReason: string | undefined;
+    const pendingToolCalls = new Map<number, { id?: string; name?: string; args: string }>();
     for await (const eventData of readServerSentEvents(response.body)) {
+      this.logLocalProviderRawStreamChunk({
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        chunk: eventData,
+      });
       if (eventData === "[DONE]") {
         yield {
           type: "done",
@@ -141,11 +260,12 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
         this.throwProviderRequestFailed(response.status, payload);
       }
 
-      const usage = this.parseUsage(payload.usage);
+      const usage = this.parseChatUsage(payload.usage);
       if (usage) {
         yield {
           type: "usage",
           usage,
+          rawEvent: eventData,
         };
       }
 
@@ -162,11 +282,22 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
         finishReason = nextFinishReason;
       }
 
+      for (const deltaToolCall of choice.delta?.tool_calls ?? []) {
+        const index = typeof deltaToolCall.index === "number" ? deltaToolCall.index : 0;
+        const existing = pendingToolCalls.get(index) ?? { args: "" };
+        pendingToolCalls.set(index, {
+          id: this.readOptionalNonBlankString(deltaToolCall.id) ?? existing.id,
+          name: this.readOptionalNonBlankString(deltaToolCall.function?.name) ?? existing.name,
+          args: existing.args + (deltaToolCall.function?.arguments ?? ""),
+        });
+      }
+
       const reasoningDelta = this.readOptionalString(choice.delta?.reasoning_content);
       if (reasoningDelta) {
         yield {
           type: "reasoning_delta",
           text: reasoningDelta,
+          rawEvent: eventData,
         };
       }
 
@@ -175,31 +306,61 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
         yield {
           type: "content_delta",
           text: contentDelta,
+          rawEvent: eventData,
         };
+      }
+
+      if (nextFinishReason === "tool_calls" && pendingToolCalls.size > 0) {
+        for (const [index, toolCall] of pendingToolCalls.entries()) {
+          if (!toolCall.name) {
+            continue;
+          }
+          let input: Record<string, unknown>;
+          try {
+            const parsed = JSON.parse(toolCall.args || "{}");
+            input =
+              parsed && typeof parsed === "object" && !Array.isArray(parsed)
+                ? (parsed as Record<string, unknown>)
+                : {};
+          } catch {
+            input = {};
+          }
+          yield {
+            type: "tool_call",
+            toolCall: {
+              id: toolCall.id ?? this.buildFallbackToolCallId(request.model.modelKey, index),
+              name: toolCall.name,
+              input,
+            },
+            rawEvent: eventData,
+          };
+        }
+        pendingToolCalls.clear();
       }
     }
 
     this.throwProviderResponseInvalid("Streaming response ended before [DONE].");
   }
 
-  private buildUrl(request: ResolvedLLMCompletionRequest): string {
-    const baseUrl = normalizeBaseUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl);
-    return `${baseUrl}/chat/completions`;
+  private buildChatUrl(baseUrl: string): string {
+    return `${normalizeBaseUrl(baseUrl)}/chat/completions`;
   }
 
-  private buildHeaders(request: ResolvedLLMCompletionRequest): Record<string, string> {
-    const apiKey = request.model.providerConfig?.apiKey ?? this.apiKey;
+  private buildEmbeddingsUrl(baseUrl: string): string {
+    return `${normalizeBaseUrl(baseUrl)}/embeddings`;
+  }
+
+  private buildHeaders(apiKey: string): Record<string, string> {
     return {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     };
   }
 
-  private buildRequestInit(request: ResolvedLLMCompletionRequest, body: Record<string, unknown>): RequestInit {
-    const timeoutMs = request.model.providerConfig?.timeoutMs ?? 0;
+  private buildRequestInit(apiKey: string, timeoutMs: number, body: Record<string, unknown>): RequestInit {
     return {
       method: "POST",
-      headers: this.buildHeaders(request),
+      headers: this.buildHeaders(apiKey),
       body: JSON.stringify(body),
       ...(timeoutMs > 0 && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
         ? { signal: AbortSignal.timeout(timeoutMs) }
@@ -207,14 +368,55 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     };
   }
 
-  private buildRequestBody(request: ResolvedLLMCompletionRequest): Record<string, unknown> {
+  private buildChatRequestBody(request: ResolvedLLMCompletionRequest): Record<string, unknown> {
     return {
       ...request.providerOptions,
       model: request.model.providerModel,
-      messages: request.messages,
+      messages: request.messages.map((message) => ({
+        role: message.role,
+        ...(message.content === undefined ? {} : { content: message.content }),
+        ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
+        ...(Array.isArray(message.toolCalls) && message.toolCalls.length > 0
+          ? {
+              tool_calls: message.toolCalls.map((toolCall) => ({
+                id: toolCall.id,
+                type: 'function',
+                function: {
+                  name: toolCall.name,
+                  arguments: JSON.stringify(toolCall.input ?? {}),
+                },
+              })),
+            }
+          : {}),
+      })),
       ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
       ...(request.maxTokens === undefined ? {} : { max_tokens: request.maxTokens }),
     };
+  }
+
+  private async execute(url: string, init: RequestInit): Promise<Response> {
+    try {
+      return await this.fetchImplementation(url, init);
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new ApplicationError(504, "LLM_PROVIDER_REQUEST_FAILED", "Bailian request timed out.", {
+          provider: "bailian",
+          reason: "timeout",
+          cause: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      throw new ApplicationError(
+        502,
+        "LLM_PROVIDER_REQUEST_FAILED",
+        "Bailian request failed before a response was received.",
+        {
+          provider: "bailian",
+          reason: "network_error",
+          cause: error instanceof Error ? error.message : String(error),
+        },
+      );
+    }
   }
 
   private async readJsonPayload(response: Response, allowInvalidJsonDetails: boolean): Promise<OpenAICompatibleResponsePayload> {
@@ -239,7 +441,32 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     }
   }
 
-  private parseUsage(usage: OpenAICompatibleResponsePayload["usage"]): LLMUsage | undefined {
+  private async readEmbeddingPayload(
+    response: Response,
+    allowInvalidJsonDetails: boolean,
+  ): Promise<OpenAICompatibleEmbeddingPayload> {
+    const rawBody = await response.text();
+    if (!rawBody) {
+      this.throwProviderResponseInvalid("Provider response body is empty.");
+    }
+
+    try {
+      return JSON.parse(rawBody) as OpenAICompatibleEmbeddingPayload;
+    } catch (error) {
+      if (allowInvalidJsonDetails) {
+        this.throwProviderRequestFailed(response.status, {
+          message: `Provider returned non-JSON error payload: ${rawBody}`,
+        });
+      }
+
+      this.throwProviderResponseInvalid("Provider response is not valid JSON.", {
+        cause: error instanceof Error ? error.message : String(error),
+        body: rawBody,
+      });
+    }
+  }
+
+  private parseChatUsage(usage: OpenAICompatibleResponsePayload["usage"]): LLMUsage | undefined {
     if (!usage) {
       return undefined;
     }
@@ -262,6 +489,24 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     };
   }
 
+  private parseEmbeddingUsage(usage: OpenAICompatibleEmbeddingPayload["usage"]): LLMUsage | undefined {
+    if (!usage) {
+      return undefined;
+    }
+
+    const promptTokens = usage.prompt_tokens;
+    const totalTokens = usage.total_tokens;
+    if (typeof promptTokens !== "number" || typeof totalTokens !== "number") {
+      this.throwProviderResponseInvalid("Provider embedding usage payload is invalid.");
+    }
+
+    return {
+      promptTokens,
+      completionTokens: typeof usage.completion_tokens === "number" ? usage.completion_tokens : 0,
+      totalTokens,
+    };
+  }
+
   private getProviderStreamOptions(
     providerOptions: Record<string, unknown> | undefined,
   ): Record<string, unknown> | undefined {
@@ -275,6 +520,18 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
 
   private readOptionalString(value: unknown): string | undefined {
     return typeof value === "string" ? value : undefined;
+  }
+
+  private readOptionalNonBlankString(value: unknown): string | undefined {
+    if (typeof value !== "string") {
+      return undefined;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  private buildFallbackToolCallId(modelKey: string, index: number): string {
+    return `${modelKey}_tool_${index}`;
   }
 
   private throwProviderRequestFailed(statusCode: number, payload: OpenAICompatibleResponsePayload): never {
@@ -291,10 +548,67 @@ export class BailianOpenAICompatibleProvider implements LLMProvider {
     });
   }
 
+  private throwEmbeddingRequestFailed(statusCode: number, payload: OpenAICompatibleEmbeddingPayload): never {
+    const errorMessage =
+      payload.error?.message ??
+      payload.message ??
+      `Bailian embedding request failed with status ${statusCode}.`;
+
+    throw new ApplicationError(502, "LLM_PROVIDER_REQUEST_FAILED", errorMessage, {
+      provider: "bailian",
+      statusCode,
+      errorCode: payload.error?.code,
+      errorType: payload.error?.type,
+    });
+  }
+
   private throwProviderResponseInvalid(message: string, details?: unknown): never {
     throw new ApplicationError(502, "LLM_PROVIDER_RESPONSE_INVALID", message, {
       provider: "bailian",
       ...toRecord(details),
+    });
+  }
+
+  private shouldLogLocalProviderTraffic(): boolean {
+    const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
+    return appEnv === "local"
+      || appEnv === "dev"
+      || appEnv === "development"
+      || nodeEnv === "development";
+  }
+
+  private logLocalProviderChatRequest(input: {
+    mode: "complete" | "stream";
+    url: string;
+    modelKey: string;
+    providerModel: string;
+    body: Record<string, unknown>;
+  }): void {
+    if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
+      return;
+    }
+    this.logger.info("ai_novel local provider chat request body", {
+      mode: input.mode,
+      url: input.url,
+      modelKey: input.modelKey,
+      providerModel: input.providerModel,
+      body: input.body,
+    });
+  }
+
+  private logLocalProviderRawStreamChunk(input: {
+    modelKey: string;
+    providerModel: string;
+    chunk: string;
+  }): void {
+    if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
+      return;
+    }
+    this.logger.info("ai_novel local provider raw stream chunk", {
+      modelKey: input.modelKey,
+      providerModel: input.providerModel,
+      chunk: input.chunk,
     });
   }
 }
@@ -350,6 +664,10 @@ function normalizeBaseUrl(baseUrl: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
 }
 
 function toRecord(details: unknown): Record<string, unknown> {

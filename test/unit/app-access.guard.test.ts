@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createApplication } from "../../src/app.module.ts";
+import { createApplication } from "../support/create-test-application.ts";
 
 test("app access guard rejects explicit appId mismatches against the bearer token", async () => {
   const runtime = await createApplication();

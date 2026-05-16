@@ -520,6 +520,24 @@ def deploy_release(repo_root: Path, project_name: str, compose_files: list[Path]
     )
 
 
+def run_database_migrations(image_full_name: str, app_env_file: Path) -> None:
+    run_command(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--env-file",
+            str(app_env_file),
+            "--add-host",
+            "host.docker.internal:host-gateway",
+            image_full_name,
+            "node",
+            "--experimental-transform-types",
+            "src/infrastructure/database/postgres/migrate.ts",
+        ]
+    )
+
+
 def resolve_runtime_paths(repo_root: Path, args: argparse.Namespace) -> tuple[Path, Path, Path]:
     compose_file = Path(args.compose_file)
     if not compose_file.is_absolute():
@@ -579,6 +597,44 @@ def is_managed_release_image(image_ref: str, image_name: str, tag_suffix: str) -
     return tag.endswith(f"-{tag_suffix}") or tag.endswith(f"-{tag_suffix}-dirty")
 
 
+def parse_docker_image_created(raw: str) -> datetime | None:
+    """Parse docker image Created field which may have multiple formats."""
+    if not raw:
+        return None
+
+    raw = raw.strip()
+
+    # Format 1: ISO 8601 with timezone (2026-04-03T10:23:45+00:00)
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        pass
+
+    # Format 2: Docker default format (2026-04-03 10:23:45.123456789 +0000 UTC)
+    # or (2026-04-03 10:23:45 +0000 UTC)
+    import re
+    match = re.match(r"^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})(?:\.\d+)?\s+([+-]\d{4})\s*(?:UTC)?$", raw)
+    if match:
+        date_part, time_part, tz_part = match.groups()
+        try:
+            iso_str = f"{date_part}T{time_part}{tz_part[:3]}:{tz_part[3:]}"
+            return datetime.fromisoformat(iso_str)
+        except ValueError:
+            pass
+
+    # Format 3: Without microseconds (2026-04-03 10:23:45 +0000 UTC)
+    match = re.match(r"^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})\s+([+-]\d{4})\s*(?:UTC)?$", raw)
+    if match:
+        date_part, time_part, tz_part = match.groups()
+        try:
+            iso_str = f"{date_part}T{time_part}{tz_part[:3]}:{tz_part[3:]}"
+            return datetime.fromisoformat(iso_str)
+        except ValueError:
+            pass
+
+    return None
+
+
 def list_managed_release_images(image_name: str, tag_suffix: str) -> list[tuple[str, datetime]]:
     try:
         output = command_output(["docker", "image", "ls", image_name, "--format", "{{.Repository}}:{{.Tag}}"])
@@ -598,9 +654,11 @@ def list_managed_release_images(image_name: str, tag_suffix: str) -> list[tuple[
         created_at = datetime.fromtimestamp(0, tz=timezone.utc)
         try:
             created_raw = command_output(["docker", "image", "inspect", image_ref, "--format", "{{.Created}}"])
-            created_at = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
-        except (subprocess.CalledProcessError, ValueError):
-            print(f"warning: cannot inspect image creation time, fallback to oldest ordering: {image_ref}")
+            parsed = parse_docker_image_created(created_raw)
+            if parsed:
+                created_at = parsed
+        except subprocess.CalledProcessError:
+            pass
 
         image_refs.append((image_ref, created_at))
 
@@ -704,6 +762,7 @@ def build_compose_env(
     *,
     image_name: str,
     image_tag: str,
+    app_version: str,
     project_name: str,
     app_env_file: Path,
     host_port: str,
@@ -717,6 +776,7 @@ def build_compose_env(
     return {
         "DEPLOY_IMAGE": image_name,
         "IMAGE_TAG": image_tag,
+        "APP_VERSION": app_version,
         "COMPOSE_PROJECT_NAME": project_name,
         "APP_ENV_FILE": str(app_env_file),
         "HOST_BIND_IP": bind_ip,
@@ -923,6 +983,7 @@ def main() -> int:
         compose_env = build_compose_env(
             image_name=image_name,
             image_tag=image_tag,
+            app_version=version or image_tag,
             project_name=project_name,
             app_env_file=app_env_file,
             host_port=host_port,
@@ -945,6 +1006,11 @@ def main() -> int:
         print(f"===== END BUILD LOCAL IMAGE cost: {print_time(get_time() - build_start)} =====")
 
         write_compose_env(compose_env_file, compose_env)
+
+        migrate_start = get_time()
+        print("===== START DATABASE MIGRATION =====")
+        run_database_migrations(image_full_name, app_env_file)
+        print(f"===== END DATABASE MIGRATION cost: {print_time(get_time() - migrate_start)} =====")
 
         deploy_start = get_time()
         print("===== START DEPLOY LOCAL RELEASE =====")
@@ -1017,6 +1083,7 @@ def main() -> int:
             previous_compose_env = build_compose_env(
                 image_name=previous_release["image_name"],
                 image_tag=previous_release["image_tag"],
+                app_version=(previous_release.get("version") or previous_release["image_tag"]),
                 project_name=project_name,
                 app_env_file=app_env_file,
                 host_port=host_port,

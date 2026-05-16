@@ -69,10 +69,24 @@ src/
 npm run dev
 ```
 
+一键启动本地 API + Admin Web：
+
+```bash
+npm run dev:stack
+```
+
 启动 Admin Web：
 
 ```bash
+npm run admin:install
+npm run admin:build
 npm run admin
+```
+
+本地开发 Admin Web 前端：
+
+```bash
+npm run admin:dev
 ```
 
 启动 Worker：
@@ -87,9 +101,41 @@ npm run worker
 npm test
 ```
 
+手动执行数据库迁移：
+
+```bash
+node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts
+```
+
+迁移会优先使用 `DIRECT_URL`，只有没配置时才回退到 `DATABASE_URL`。
+部署时会按文件名顺序重放所有数据库脚本，所以每个 SQL 文件都必须保持幂等。
+
 默认 API 端口是 `3100`，也可以通过 `PORT` 环境变量覆盖。
 默认 Admin Web 端口是 `3110`。
 运行时会强校验 `REDIS_URL` 和 `DATABASE_URL`，依赖不可用时直接启动失败。
+`api` / `worker` 运行时默认使用 PostgreSQL 持久化业务状态，不再使用纯内存态数据集。
+通知任务队列运行时默认使用共享 Redis，不再使用单进程内存队列。
 容器访问宿主机 Redis / PostgreSQL 时，推荐在连接串里使用 `host.docker.internal`。
+
+如果你想把本地数据库、Redis 和管理员账号固定下来，推荐先复制：
+
+```bash
+cp deploy_configs/local.env.example deploy_configs/local.env
+```
+
+`npm run dev:stack` 会优先读取 `deploy_configs/local.env`，再读取 `.env.local`。这样本地联调配置就固定在 `deploy_configs` 里，不再需要单独维护一个 `local/` 目录。
+在首次启动前，请先准备持久化运行目录：
+
+```bash
+sudo mkdir -p /var/lib/zook/appRunData
+sudo chmod -R 777 /var/lib/zook/appRunData
+```
+
+运行时会固定使用：
+
+- 宿主机：`/var/lib/zook/appRunData`
+- 容器内：`/app/appRunData`
+
+API / Worker 启动前会执行一个文件系统冒烟测试：覆盖写入 `/app/appRunData/hello_world.txt`，再立即读回校验；如果失败，服务不会启动。
 
 健康检查路径为 `/api/health`。

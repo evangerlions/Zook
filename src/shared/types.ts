@@ -1,7 +1,27 @@
+import type {
+  AccountDeletionData as GeneratedAccountDeletionData,
+  AnalyticsEventInput as GeneratedAnalyticsEventInput,
+  AuthSessionData as GeneratedAuthSessionData,
+  CurrentUserData as GeneratedCurrentUserData,
+  FileConfirmData as GeneratedFileConfirmData,
+  FilePresignData as GeneratedFilePresignData,
+  LogFailData as GeneratedLogFailData,
+  LogNoDataAckData as GeneratedLogNoDataAckData,
+  LogPolicyData as GeneratedLogPolicyData,
+  LogPullTaskData as GeneratedLogPullTaskData,
+  LogUploadData as GeneratedLogUploadData,
+  NotificationQueuedData as GeneratedNotificationQueuedData,
+  PublicConfigData as GeneratedPublicConfigData,
+  QrLoginConfirmData as GeneratedQrLoginConfirmData,
+  QrLoginCreateData as GeneratedQrLoginCreateData,
+  QrLoginPollData as GeneratedQrLoginPollData,
+  UserSummary as GeneratedUserSummary,
+} from "../generated/openapi/public-contracts.generated.ts";
+
 export type AppStatus = "ACTIVE" | "BLOCKED";
 export type JoinMode = "AUTO" | "INVITE_ONLY";
 export type UserStatus = "ACTIVE" | "BLOCKED";
-export type AppUserStatus = "ACTIVE" | "BLOCKED";
+export type AppUserStatus = "ACTIVE" | "BLOCKED" | "DELETED";
 export type RoleStatus = "ACTIVE" | "BLOCKED";
 export type PermissionStatus = "ACTIVE" | "BLOCKED";
 export type FileStatus = "PENDING" | "CONFIRMED" | "EXPIRED";
@@ -16,18 +36,35 @@ export type EventName = "page_view" | "page_leave" | "page_heartbeat";
 export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
 export type LlmRoutingStrategy = "auto" | "fixed";
+export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ErrorCode =
+  | "AI_DECRYPT_FAILED"
+  | "AI_EMBEDDING_INPUT_INVALID"
+  | "AI_ENCRYPT_FAILED"
+  | "AI_RESPONSE_FORMAT_INVALID"
+  | "AI_TASK_TYPE_NOT_SUPPORTED"
+  | "AI_UNKNOWN_KEY_ID"
+  | "AI_UNSUPPORTED_ALGORITHM"
+  | "AI_UPSTREAM_BAD_GATEWAY"
+  | "AI_UPSTREAM_TIMEOUT"
+  | "ADMIN_AUTH_REQUIRED"
   | "ADMIN_BASIC_AUTH_REQUIRED"
+  | "ADMIN_INVALID_CREDENTIAL"
   | "ADMIN_CONFIG_INVALID_JSON"
   | "ADMIN_APP_ALREADY_EXISTS"
   | "ADMIN_APP_ID_RESERVED"
   | "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG"
   | "ADMIN_EMAIL_SERVICE_INVALID"
+  | "ADMIN_I18N_INVALID"
   | "ADMIN_LLM_SERVICE_INVALID"
   | "ADMIN_PASSWORD_INVALID"
   | "ADMIN_RATE_LIMITED"
+  | "ADMIN_SENSITIVE_OPERATION_REQUIRED"
+  | "ADMIN_SENSITIVE_CODE_REQUIRED"
+  | "ADMIN_SENSITIVE_CODE_INVALID"
+  | "ADMIN_SENSITIVE_RATE_LIMITED"
   | "AUTH_INVALID_CREDENTIAL"
   | "AUTH_BEARER_REQUIRED"
   | "AUTH_INVALID_TOKEN"
@@ -36,11 +73,14 @@ export type ErrorCode =
   | "AUTH_VERIFICATION_CODE_REQUIRED"
   | "AUTH_VERIFICATION_CODE_INVALID"
   | "AUTH_ACCOUNT_ALREADY_EXISTS"
+  | "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID"
+  | "AUTH_PASSWORD_ALREADY_SET"
   | "AUTH_RATE_LIMITED"
   | "AUTH_QR_LOGIN_TOKEN_REQUIRED"
   | "AUTH_QR_LOGIN_INVALID"
   | "AUTH_QR_LOGIN_EXPIRED"
   | "AUTH_QR_LOGIN_ALREADY_USED"
+  | "AUTH_ONE_CLICK_TOKEN_INVALID"
   | "AUTH_APP_SCOPE_MISMATCH"
   | "AUTH_LOGIN_TEMPORARILY_LOCKED"
   | "AUTH_USER_BLOCKED"
@@ -48,16 +88,33 @@ export type ErrorCode =
   | "APP_BLOCKED"
   | "APP_JOIN_INVITE_REQUIRED"
   | "APP_MEMBER_BLOCKED"
+  | "APP_MEMBER_DELETED"
   | "IAM_PERMISSION_DENIED"
   | "FILE_ACCESS_DENIED"
   | "EMAIL_SERVICE_NOT_CONFIGURED"
   | "EMAIL_PROVIDER_REQUEST_FAILED"
+  | "SMS_SERVICE_NOT_CONFIGURED"
+  | "SMS_PROVIDER_REQUEST_FAILED"
+  | "ONE_CLICK_SERVICE_NOT_CONFIGURED"
+  | "ONE_CLICK_PROVIDER_REQUEST_FAILED"
+  | "CAPTCHA_SERVICE_NOT_CONFIGURED"
+  | "CAPTCHA_PROVIDER_REQUEST_FAILED"
   | "LLM_MODEL_NOT_FOUND"
   | "LLM_SERVICE_NOT_CONFIGURED"
   | "LLM_ROUTE_NOT_AVAILABLE"
   | "LLM_PROVIDER_REQUEST_FAILED"
   | "LLM_PROVIDER_RESPONSE_INVALID"
+  | "LOG_UNSUPPORTED_ENCRYPTION"
+  | "LOG_DECRYPT_FAILED"
+  | "LOG_DECOMPRESS_FAILED"
+  | "LOG_INVALID_NDJSON"
+  | "LOG_CLAIM_MISMATCH"
+  | "LOG_CLAIM_EXPIRED"
+  | "LOG_TASK_ALREADY_COMPLETED"
+  | "LOG_TASK_MISMATCH"
+  | "LOG_PAYLOAD_TOO_LARGE"
   | "REQ_INVALID_BODY"
+  | "REQ_INVALID_HEADER"
   | "REQ_INVALID_QUERY"
   | "REQ_INVALID_EVENT"
   | "REQ_DATE_RANGE_INVALID"
@@ -67,10 +124,17 @@ export interface AppRecord {
   id: string;
   code: string;
   name: string;
+  nameI18n: AppNameI18n;
   status: AppStatus;
   apiDomain?: string;
   joinMode: JoinMode;
   createdAt: string;
+}
+
+export interface AppNameI18n {
+  "zh-CN": string;
+  "en-US": string;
+  [locale: string]: string;
 }
 
 export interface UserRecord {
@@ -127,6 +191,13 @@ export interface RefreshTokenRecord {
   expiresAt: string;
   revokedAt?: string;
   replacedBy?: string;
+}
+
+export interface AdminSessionRecord {
+  id: string;
+  username: string;
+  createdAt: string;
+  expiresAt: string;
 }
 
 export interface AuditLogRecord {
@@ -205,6 +276,68 @@ export interface FileRecord {
   createdAt: string;
 }
 
+export type ClientLogUploadTaskStatus =
+  | "PENDING"
+  | "CLAIMED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "FAILED";
+
+export interface ClientLogUploadTaskRecord {
+  id: string;
+  appId: string;
+  userId?: string;
+  did?: string;
+  keyId: string;
+  fromTsMs?: number;
+  toTsMs?: number;
+  maxLines?: number;
+  maxBytes?: number;
+  status: ClientLogUploadTaskStatus;
+  claimToken?: string;
+  claimExpireAt?: string;
+  createdAt: string;
+  expiresAt?: string;
+  uploadedAt?: string;
+  uploadedFileName?: string;
+  uploadedFilePath?: string;
+  uploadedFileSizeBytes?: number;
+  uploadedLineCount?: number;
+  failedAt?: string;
+  failureReason?: string;
+}
+
+export interface ClientLogUploadRecord {
+  id: string;
+  taskId: string;
+  appId: string;
+  userId: string;
+  keyId: string;
+  encryption: "aes-256-gcm";
+  contentEncoding: "ndjson+gzip";
+  nonceBase64: string;
+  lineCountReported?: number;
+  plainBytesReported?: number;
+  compressedBytesReported?: number;
+  encryptedBytes: number;
+  acceptedCount: number;
+  rejectedCount: number;
+  uploadedAt: string;
+}
+
+export interface ClientLogLineRecord {
+  id: string;
+  uploadId: string;
+  taskId: string;
+  appId: string;
+  userId: string;
+  timestampMs?: number;
+  level?: string;
+  message?: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -217,9 +350,13 @@ export interface DatabaseSeed {
   auditLogs?: AuditLogRecord[];
   notificationJobs?: NotificationJobRecord[];
   failedEvents?: FailedEventRecord[];
+  smsVerificationRecords?: SmsVerificationRecord[];
   appConfigs?: AppConfigRecord[];
   analyticsEvents?: AnalyticsEventRecord[];
   files?: FileRecord[];
+  clientLogUploadTasks?: ClientLogUploadTaskRecord[];
+  clientLogUploads?: ClientLogUploadRecord[];
+  clientLogLines?: ClientLogLineRecord[];
 }
 
 export interface AccessTokenPayload {
@@ -227,6 +364,7 @@ export interface AccessTokenPayload {
   app_id: string;
   type: "access";
   jti: string;
+  ver: number;
   iat: number;
   exp: number;
 }
@@ -235,6 +373,7 @@ export interface AuthContext {
   userId: string;
   appId: string;
   tokenId: string;
+  tokenVersion: number;
   expiresAt: string;
 }
 
@@ -250,12 +389,15 @@ export interface HttpRequest {
   requestId?: string;
   cookies?: Record<string, string>;
   auth?: AuthContext;
+  adminSession?: AdminSessionRecord | null;
 }
 
 export interface HttpResponse<T> {
   statusCode: number;
   headers?: Record<string, string>;
   body: ResultEnvelope<T>;
+  contentType?: string;
+  streamBody?: AsyncIterable<string>;
 }
 
 export interface ResultEnvelope<T> {
@@ -288,6 +430,8 @@ export interface RegisterEmailCodeCommand {
   appId: string;
   email: string;
   ipAddress: string;
+  locale: string;
+  region: TencentSesRegion;
 }
 
 export interface RegisterCommand {
@@ -298,17 +442,214 @@ export interface RegisterCommand {
   ipAddress: string;
 }
 
+export interface EmailLoginCodeCommand {
+  appId: string;
+  email: string;
+  ipAddress: string;
+  locale: string;
+  region: TencentSesRegion;
+}
+
+export interface EmailLoginCommand {
+  appId: string;
+  email: string;
+  emailCode: string;
+  ipAddress: string;
+}
+
+export interface PasswordEmailCodeCommand {
+  appId: string;
+  email: string;
+  ipAddress: string;
+  locale: string;
+  region: TencentSesRegion;
+}
+
+export interface ResetPasswordCommand {
+  appId: string;
+  email: string;
+  emailCode: string;
+  password: string;
+  ipAddress: string;
+}
+
+export interface RegisterSmsCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+  test?: boolean;
+}
+
+export interface RegisterBySmsCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  ipAddress: string;
+}
+
+export interface SmsLoginCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+  test?: boolean;
+}
+
+export interface SmsLoginCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  ipAddress: string;
+}
+
+export interface OneClickLoginCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+}
+
+export interface PasswordSmsCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+  test?: boolean;
+}
+
+export interface ResetPasswordBySmsCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  password: string;
+  ipAddress: string;
+}
+
+export interface ChangePasswordCommand {
+  appId: string;
+  userId: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface SetPasswordCommand {
+  appId: string;
+  userId: string;
+  password: string;
+}
+
+export interface AdminAppLogSecretSummary {
+  keyId: string;
+  secretMasked: string;
+  updatedAt: string;
+}
+
 export interface AdminAppSummary {
   appId: string;
   appCode: string;
   appName: string;
+  appNameI18n: AppNameI18n;
   status: AppStatus;
   canDelete: boolean;
+  logSecret: AdminAppLogSecretSummary;
 }
 
 export interface AdminBootstrapResult {
   adminUser: string;
   apps: AdminAppSummary[];
+  sessionExpiresAt?: string;
+}
+
+export interface AdminAppLogSecretRevealDocument {
+  app: AdminAppSummary;
+  keyId: string;
+  secret: string;
+  updatedAt: string;
+}
+
+export interface AdminSensitiveOperationCodeRequestDocument {
+  operation: string;
+  recipientEmailMasked: string;
+  cooldownSeconds: number;
+  expiresInSeconds: number;
+}
+
+export interface AdminSensitiveOperationGrantDocument {
+  operation: string;
+  granted: true;
+  expiresAt: string;
+}
+
+export type SmsVerificationScene = "login" | "register" | "password-reset";
+export type SmsVerificationChannel = "sms";
+export type SmsVerificationLifecycle =
+  | "created"
+  | "test_generated"
+  | "provider_accepted"
+  | "provider_failed"
+  | "consumed"
+  | "expired";
+
+export interface SmsVerificationRecord {
+  id: string;
+  appId: string;
+  scene: SmsVerificationScene;
+  channel: SmsVerificationChannel;
+  phoneMasked: string;
+  phoneHash: string;
+  phoneNa?: string;
+  codePlaintext: string;
+  status: SmsVerificationLifecycle;
+  isTest: boolean;
+  provider: "tencent_sms";
+  providerRequestId?: string;
+  providerSerialNo?: string;
+  providerMessage?: string;
+  sentAt: string;
+  expiresAt: string;
+  consumedAt?: string;
+  failedAt?: string;
+  revealCount: number;
+  lastRevealedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSmsVerificationItem {
+  id: string;
+  appId: string;
+  scene: SmsVerificationScene;
+  channel: SmsVerificationChannel;
+  phoneMasked: string;
+  phoneNa?: string;
+  status: SmsVerificationLifecycle;
+  isTest: boolean;
+  provider: "tencent_sms";
+  providerRequestId?: string;
+  providerSerialNo?: string;
+  providerMessage?: string;
+  sentAt: string;
+  expiresAt: string;
+  consumedAt?: string;
+  failedAt?: string;
+  revealCount: number;
+  lastRevealedAt?: string;
+}
+
+export interface AdminSmsVerificationListDocument {
+  app: AdminAppSummary;
+  items: AdminSmsVerificationItem[];
+}
+
+export interface AdminSmsVerificationRevealDocument {
+  app: AdminAppSummary;
+  item: AdminSmsVerificationItem;
+  code: string;
+  revealedAt: string;
 }
 
 export interface AdminConfigDocument {
@@ -322,10 +663,120 @@ export interface AdminConfigDocument {
   revisions: ConfigRevisionMeta[];
 }
 
+export type AiNovelModelRoutingTier = "free" | "plus" | "super_plus";
+export type AiNovelRoutingChannel = "chat" | "embedding";
+
+export interface AiNovelTierRoutingConfig {
+  chat: Record<string, string>;
+  embedding: Record<string, string>;
+}
+
+export interface AiNovelModelRoutingConfig {
+  defaultTier: AiNovelModelRoutingTier;
+  tiers: Record<AiNovelModelRoutingTier, AiNovelTierRoutingConfig>;
+}
+
+export interface AdminAiRoutingDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  rawJson: string;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export type PublicAppConfigDocument = GeneratedPublicConfigData;
+
+export interface I18nSettings {
+  defaultLocale: string;
+  supportedLocales: string[];
+  fallbackLocales: Record<string, string[]>;
+}
+
+export interface AppI18nConfigDocument {
+  configKey: string;
+  config: I18nSettings;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAppI18nDocument extends AppI18nConfigDocument {
+  app: AdminAppSummary;
+}
+
+export interface RemoteLogPullSettings {
+  enabled: boolean;
+  minPullIntervalSeconds: number;
+  claimTtlSeconds: number;
+  taskDefaults: {
+    lookbackMinutes: number;
+    maxLines: number;
+    maxBytes: number;
+  };
+}
+
+export interface RemoteLogPullSettingsDocument {
+  configKey: string;
+  config: RemoteLogPullSettings;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAppRemoteLogPullSettingsDocument extends RemoteLogPullSettingsDocument {
+  app: AdminAppSummary;
+}
+
+export interface AdminRemoteLogPullTaskSummary {
+  taskId: string;
+  userId: string;
+  did: string;
+  keyId: string;
+  status: ClientLogUploadTaskStatus;
+  fromTsMs?: number;
+  toTsMs?: number;
+  maxLines?: number;
+  maxBytes?: number;
+  claimExpireAt?: string;
+  uploadedAt?: string;
+  uploadedFileName?: string;
+  uploadedFileSizeBytes?: number;
+  uploadedLineCount?: number;
+  createdAt: string;
+}
+
+export interface AdminAppRemoteLogPullTaskListDocument {
+  app: AdminAppSummary;
+  items: AdminRemoteLogPullTaskSummary[];
+}
+
+export interface AdminRemoteLogPullTaskDocument {
+  app: AdminAppSummary;
+  item: AdminRemoteLogPullTaskSummary;
+}
+
+export interface AdminRemoteLogPullTaskFileDocument {
+  appId: string;
+  taskId: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  lineCount?: number;
+  content: string;
+}
+
 export interface EmailServiceTemplateConfig {
   locale: string;
   templateId: number;
   name: string;
+  subject: string;
 }
 
 export interface EmailSenderConfig {
@@ -333,10 +784,15 @@ export interface EmailSenderConfig {
   address: string;
 }
 
+export interface EmailServiceRegionConfig {
+  region: TencentSesRegion;
+  sender?: EmailSenderConfig | null;
+  templates: EmailServiceTemplateConfig[];
+}
+
 export interface EmailServiceConfig {
   enabled: boolean;
-  senders: EmailSenderConfig[];
-  templates: EmailServiceTemplateConfig[];
+  regions: EmailServiceRegionConfig[];
 }
 
 export interface AdminEmailServiceDocument {
@@ -351,6 +807,88 @@ export interface AdminEmailServiceDocument {
   revisions: ConfigRevisionMeta[];
 }
 
+export interface AuthRateLimitConfig {
+  resendCooldownSeconds: number;
+  verificationCodeTtlSeconds: number;
+  sendCodeWindowSeconds: number;
+  sendCodeWindowLimit: number;
+  verifyWindowSeconds: number;
+  verifyWindowLimit: number;
+  accountDailyLimit: number;
+  ipHourlyLimit: number;
+  maxFailedCodeAttempts: number;
+}
+
+export interface AdminAuthRateLimitDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: AuthRateLimitConfig;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminEmailTestSendCommand {
+  recipientEmail: string;
+  region: TencentSesRegion;
+  templateId: number;
+  appName: string;
+  code: string;
+  expireMinutes: number;
+}
+
+export interface AdminEmailTestSendDocument {
+  executedAt: string;
+  cooldownSeconds: number;
+  recipientEmail: string;
+  clientRegion: TencentSesRegion;
+  resolvedRegion: TencentSesRegion;
+  sender: {
+    id: string;
+    address: string;
+    region: TencentSesRegion;
+  };
+  template: {
+    locale: string;
+    templateId: number;
+    name: string;
+    subject: string;
+  };
+  templateData: {
+    appName: string;
+    expireMinutes: number;
+    code: string;
+  };
+  provider: "tencent_ses";
+  providerRequestId?: string;
+  providerMessageId?: string;
+  debug?: {
+    request: {
+      endpoint: string;
+      method: "POST";
+      clientRegion: TencentSesRegion;
+      resolvedRegion: TencentSesRegion;
+      headers: Record<string, string>;
+      credentials: {
+        secretIdMasked: string;
+        secretKeyMasked: string;
+      };
+      body: Record<string, unknown>;
+    };
+    response?: {
+      statusCode: number;
+      ok: boolean;
+      body: unknown;
+      requestId?: string;
+      messageId?: string;
+      errorCode?: string;
+      errorMessage?: string;
+    };
+  };
+}
+
 export interface PasswordEntry {
   key: string;
   desc: string;
@@ -363,6 +901,15 @@ export interface AdminPasswordDocument {
   app: AdminAppSummary;
   configKey: string;
   items: PasswordEntry[];
+  updatedAt?: string;
+}
+
+export interface AdminPasswordRevealDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  key: string;
+  desc: string;
+  value: string;
   updatedAt?: string;
 }
 
@@ -385,6 +932,7 @@ export interface LlmModelRouteConfig {
 export interface LlmModelConfig {
   key: string;
   label: string;
+  kind: LlmModelKind;
   strategy: LlmRoutingStrategy;
   routes: LlmModelRouteConfig[];
 }
@@ -411,6 +959,7 @@ export interface LlmRouteRuntimeStatus {
 
 export interface LlmModelRuntimeStatus {
   key: string;
+  kind: LlmModelKind;
   strategy: LlmRoutingStrategy;
   routes: LlmRouteRuntimeStatus[];
 }
@@ -491,27 +1040,37 @@ export interface AdminLlmSmokeTestSummary {
 }
 
 export interface AdminLlmSmokeTestRequestPayload {
+  modelKind: LlmModelKind;
   provider: string;
   modelKey: string;
   providerModel: string;
   baseUrl: string;
   timeoutMs: number;
-  messages: Array<{
+  messages?: Array<{
     role: "system" | "user" | "assistant";
     content: string;
   }>;
+  input?: string[];
   temperature?: number;
   maxTokens?: number;
   providerOptions: Record<string, unknown>;
 }
 
 export interface AdminLlmSmokeTestResponsePayload {
+  modelKind: LlmModelKind;
   provider: string;
   modelKey: string;
   providerModel: string;
-  text: string;
+  text?: string;
   reasoningText?: string;
   finishReason?: string;
+  vectorCount?: number;
+  dimensions?: number;
+  vectorPreview?: Array<{
+    index: number;
+    embedding: number[];
+  }>;
+  providerRequestId?: string;
   usage?: {
     promptTokens: number;
     completionTokens: number;
@@ -543,6 +1102,7 @@ export interface AdminLlmSmokeTestDetails {
 }
 
 export interface AdminLlmSmokeTestItem {
+  modelKind: LlmModelKind;
   modelKey: string;
   modelLabel: string;
   provider: string;
@@ -576,6 +1136,14 @@ export interface AuthSession {
   expiresIn: number;
 }
 
+export type AuthenticatedUserProfile = GeneratedUserSummary;
+
+export type AuthSuccessPayload = GeneratedAuthSessionData;
+
+export type CurrentUserDocument = GeneratedCurrentUserData;
+
+export type AccountDeletionResult = GeneratedAccountDeletionData;
+
 export interface RegisterEmailCodeResult {
   accepted: true;
   cooldownSeconds: number;
@@ -599,40 +1167,13 @@ export interface PollQrLoginCommand {
   pollToken: string;
 }
 
-export interface QrLoginCreateResult {
-  loginId: string;
-  qrContent: string;
-  pollToken: string;
-  expiresInSeconds: number;
-  pollIntervalMs: number;
-}
+export type QrLoginCreateResult = GeneratedQrLoginCreateData;
 
-export interface QrLoginConfirmResult {
-  confirmed: true;
-}
+export type QrLoginConfirmResult = GeneratedQrLoginConfirmData;
 
-export type QrLoginPollResult =
-  | {
-      status: "PENDING";
-      expiresInSeconds: number;
-      pollIntervalMs: number;
-    }
-  | {
-      status: "CONFIRMED";
-      accessToken: string;
-      refreshToken: string;
-      expiresIn: number;
-    };
+export type QrLoginPollResult = GeneratedQrLoginPollData;
 
-export interface AnalyticsEventInput {
-  platform: Platform;
-  sessionId: string;
-  pageKey: string;
-  eventName: EventName;
-  durationMs?: number;
-  occurredAt: string;
-  metadata?: Record<string, unknown>;
-}
+export type AnalyticsEventInput = GeneratedAnalyticsEventInput;
 
 export interface MetricsOverviewItem {
   date: string;
@@ -649,15 +1190,29 @@ export interface PageMetricItem {
   avgDurationMs: number;
 }
 
-export interface FilePresignResult {
-  uploadUrl: string;
-  storageKey: string;
-  expireAt: string;
-}
+export type FilePresignResult = GeneratedFilePresignData;
 
-export interface FileConfirmResult {
-  downloadUrl: string;
-  storageKey: string;
+export type FileConfirmResult = GeneratedFileConfirmData;
+
+export type NotificationQueueResult = GeneratedNotificationQueuedData;
+
+export type LogPullTaskResult = GeneratedLogPullTaskData;
+
+export type LogPolicyResult = GeneratedLogPolicyData;
+
+export type LogUploadResult = GeneratedLogUploadData;
+
+export type LogNoDataAckResult = GeneratedLogNoDataAckData;
+
+export type LogFailResult = GeneratedLogFailData;
+
+export interface LogFailCommand {
+  auth: AuthContext;
+  did: string;
+  taskId: string;
+  claimToken: string;
+  failureReason?: string;
+  now?: Date;
 }
 
 export interface QueueJob<T = Record<string, unknown>> {

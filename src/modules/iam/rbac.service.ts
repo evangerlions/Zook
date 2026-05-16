@@ -1,39 +1,37 @@
 import { forbidden } from "../../shared/errors.ts";
-import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { randomId } from "../../shared/utils.ts";
 
 /**
  * RbacService evaluates app-scoped permissions via roles -> role_permissions -> permissions.
  */
 export class RbacService {
-  constructor(private readonly database: InMemoryDatabase) {}
+  constructor(private readonly database: ApplicationDatabase) {}
 
-  getPermissionCodes(appId: string, userId: string): string[] {
-    return this.database.getPermissionCodes(appId, userId);
+  async getPermissionCodes(appId: string, userId: string): Promise<string[]> {
+    return await this.database.getPermissionCodes(appId, userId);
   }
 
-  hasPermission(appId: string, userId: string, permissionCode: string): boolean {
-    return this.getPermissionCodes(appId, userId).includes(permissionCode);
+  async hasPermission(appId: string, userId: string, permissionCode: string): Promise<boolean> {
+    return (await this.getPermissionCodes(appId, userId)).includes(permissionCode);
   }
 
-  assertPermission(appId: string, userId: string, permissionCode: string): void {
-    if (!this.hasPermission(appId, userId, permissionCode)) {
+  async assertPermission(appId: string, userId: string, permissionCode: string): Promise<void> {
+    if (!(await this.hasPermission(appId, userId, permissionCode))) {
       forbidden("IAM_PERMISSION_DENIED", `Missing permission: ${permissionCode}.`);
     }
   }
 
-  assignRole(appId: string, userId: string, roleCode: string): void {
-    const role = this.database.findRole(appId, roleCode);
+  async assignRole(appId: string, userId: string, roleCode: string): Promise<void> {
+    const role = await this.database.findRole(appId, roleCode);
     if (!role) {
       return;
     }
 
-    const existing = this.database.userRoles.find(
-      (item) => item.appId === appId && item.userId === userId && item.roleId === role.id,
-    );
+    const existing = await this.database.findUserRole(appId, userId, role.id);
 
     if (!existing) {
-      this.database.userRoles.push({
+      await this.database.insertUserRole({
         id: randomId("user_role"),
         appId,
         userId,

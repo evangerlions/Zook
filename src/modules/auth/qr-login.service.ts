@@ -1,7 +1,6 @@
 import { InMemoryCache } from "../../infrastructure/cache/redis/in-memory-cache.ts";
 import { conflict, forbidden, unauthorized } from "../../shared/errors.ts";
 import type {
-  AuthSession,
   ConfirmQrLoginCommand,
   CreateQrLoginCommand,
   PollQrLoginCommand,
@@ -9,7 +8,7 @@ import type {
   QrLoginCreateResult,
   QrLoginPollResult,
 } from "../../shared/types.ts";
-import { createOpaqueToken, randomId, sha256 } from "../../shared/utils.ts";
+import { createOpaqueToken, randomId, sha256, timingSafeHexCompare } from "../../shared/utils.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
 import { AuthService } from "./auth.service.ts";
@@ -24,7 +23,6 @@ interface StoredQrLoginSession {
   expiresAt: string;
   confirmedAt?: string;
   confirmedByUserId?: string;
-  authSession?: AuthSession;
 }
 
 /**
@@ -42,8 +40,8 @@ export class QrLoginService {
     private readonly authService: AuthService,
   ) {}
 
-  createSession(command: CreateQrLoginCommand, now = new Date()): QrLoginCreateResult {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+  async createSession(command: CreateQrLoginCommand, now = new Date()): Promise<QrLoginCreateResult> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const loginId = randomId("qr_login");
     const scanToken = createOpaqueToken("qrs");
     const pollToken = createOpaqueToken("qrp");
@@ -73,9 +71,9 @@ export class QrLoginService {
   }
 
   async confirm(command: ConfirmQrLoginCommand, now = new Date()): Promise<QrLoginConfirmResult> {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
-    const user = this.userService.getById(command.userId);
-    this.appRegistryService.ensureExistingMembership(app.id, user.id);
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const user = await this.userService.getById(command.userId);
+    await this.appRegistryService.ensureExistingMembership(app.id, user.id);
 
     const session = this.getSessionOrThrow(command.loginId, now);
     this.assertSessionScope(session, app.id);
@@ -88,7 +86,6 @@ export class QrLoginService {
     session.status = "CONFIRMED";
     session.confirmedAt = now.toISOString();
     session.confirmedByUserId = user.id;
-    session.authSession = await this.authService.issueSession(user.id, app.id, now);
 
     this.saveSession(session, now);
 
@@ -97,8 +94,8 @@ export class QrLoginService {
     };
   }
 
-  poll(command: PollQrLoginCommand, now = new Date()): QrLoginPollResult {
-    const app = this.appRegistryService.getAppOrThrow(command.appId);
+  async poll(command: PollQrLoginCommand, now = new Date()): Promise<QrLoginPollResult> {
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const session = this.getSessionOrThrow(command.loginId, now);
     this.assertSessionScope(session, app.id);
     this.assertPollToken(session, command.pollToken);
@@ -111,13 +108,14 @@ export class QrLoginService {
       };
     }
 
-    if (session.status !== "CONFIRMED" || !session.authSession) {
+    if (session.status !== "CONFIRMED" || !session.confirmedByUserId) {
       conflict("AUTH_QR_LOGIN_ALREADY_USED", "QR login session is already completed.");
     }
 
-    const authSession = session.authSession;
+    const user = await this.userService.getById(session.confirmedByUserId);
+    await this.appRegistryService.ensureExistingMembership(app.id, user.id);
+    const authSession = await this.authService.issueSession(user.id, app.id, now);
     session.status = "COMPLETED";
-    session.authSession = undefined;
     this.saveSession(session, now);
 
     return {
@@ -125,6 +123,7 @@ export class QrLoginService {
       accessToken: authSession.accessToken,
       refreshToken: authSession.refreshToken,
       expiresIn: authSession.expiresIn,
+      userId: authSession.userId,
     };
   }
 
@@ -153,7 +152,7 @@ export class QrLoginService {
       unauthorized("AUTH_QR_LOGIN_TOKEN_REQUIRED", "QR login scan token is required.");
     }
 
-    if (sha256(scanToken.trim()) !== session.scanTokenHash) {
+    if (!timingSafeHexCompare(sha256(scanToken.trim()), session.scanTokenHash)) {
       unauthorized("AUTH_QR_LOGIN_INVALID", "QR login session is invalid.");
     }
   }
@@ -163,7 +162,7 @@ export class QrLoginService {
       unauthorized("AUTH_QR_LOGIN_TOKEN_REQUIRED", "QR login poll token is required.");
     }
 
-    if (sha256(pollToken.trim()) !== session.pollTokenHash) {
+    if (!timingSafeHexCompare(sha256(pollToken.trim()), session.pollTokenHash)) {
       unauthorized("AUTH_QR_LOGIN_INVALID", "QR login session is invalid.");
     }
   }

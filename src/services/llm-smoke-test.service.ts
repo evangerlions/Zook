@@ -9,10 +9,12 @@ import type {
   AdminLlmSmokeTestResponsePayload,
   AdminLlmSmokeTestSkipPayload,
   AdminLlmSmokeTestSummary,
+  LlmModelConfig,
   LlmProviderConfig,
   LlmServiceConfig,
 } from "../shared/types.ts";
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
+import type { EmbeddingProvider, EmbeddingResult, ResolvedEmbeddingRequest } from "./embedding-manager.ts";
 import type { LLMProvider, ResolvedLLMCompletionRequest } from "./llm-manager.ts";
 
 const SMOKE_TEST_SCOPE = "admin-llm-smoke-test";
@@ -20,6 +22,7 @@ const SMOKE_TEST_COOLDOWN_KEY = "cooldown";
 const DEFAULT_COOLDOWN_MS = 10_000;
 const RESPONSE_PREVIEW_LIMIT = 120;
 const ERROR_STACK_PREVIEW_LIMIT = 6;
+const VECTOR_PREVIEW_LIMIT = 8;
 const SMOKE_MESSAGES = [
   {
     role: "system" as const,
@@ -30,6 +33,9 @@ const SMOKE_MESSAGES = [
     content: "Please reply with OK.",
   },
 ];
+const SMOKE_EMBEDDING_INPUT = [
+  "Smoke test embedding text.",
+];
 
 export interface LlmSmokeTestServiceOptions {
   now?: () => Date;
@@ -37,8 +43,7 @@ export interface LlmSmokeTestServiceOptions {
 }
 
 interface SmokeMatrixItem {
-  modelKey: string;
-  modelLabel: string;
+  model: LlmModelConfig;
   provider: LlmProviderConfig;
   route?: LlmServiceConfig["models"][number]["routes"][number];
 }
@@ -47,7 +52,8 @@ export class LlmSmokeTestService {
   constructor(
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly kvManager: KVManager,
-    private readonly providers: Record<string, LLMProvider>,
+    private readonly chatProviders: Record<string, LLMProvider>,
+    private readonly embeddingProviders: Record<string, EmbeddingProvider>,
     private readonly options: LlmSmokeTestServiceOptions = {},
   ) {}
 
@@ -95,8 +101,7 @@ export class LlmSmokeTestService {
   private buildMatrix(config: LlmServiceConfig): SmokeMatrixItem[] {
     return config.models.flatMap((model) =>
       config.providers.map((provider) => ({
-        modelKey: model.key,
-        modelLabel: model.label,
+        model,
         provider,
         route: model.routes.find((route) => route.provider === provider.key),
       })),
@@ -105,8 +110,9 @@ export class LlmSmokeTestService {
 
   private async runItem(item: SmokeMatrixItem): Promise<AdminLlmSmokeTestItem> {
     const base: Omit<AdminLlmSmokeTestItem, "status" | "message"> = {
-      modelKey: item.modelKey,
-      modelLabel: item.modelLabel,
+      modelKind: item.model.kind,
+      modelKey: item.model.key,
+      modelLabel: item.model.label,
       provider: item.provider.key,
       providerLabel: item.provider.label,
       providerModel: item.route?.providerModel ?? "",
@@ -125,8 +131,7 @@ export class LlmSmokeTestService {
       };
     }
 
-    const request = this.buildRequest(item);
-    const requestDetails = this.buildRequestDetails(request);
+    const requestDetails = this.buildRequestDetails(item);
 
     if (!item.provider.enabled) {
       return {
@@ -152,31 +157,77 @@ export class LlmSmokeTestService {
       };
     }
 
-    const provider = this.providers[item.provider.key];
-    if (!provider) {
-      return {
-        ...base,
-        status: "failed",
-        message: "当前运行时还没有接入这个供应商适配器。",
-        details: {
-          request: requestDetails,
-          error: this.buildErrorDetails(
-            new ApplicationError(
-              503,
-              "LLM_ROUTE_NOT_AVAILABLE",
-              "当前运行时还没有接入这个供应商适配器。",
-              {
-                provider: item.provider.key,
-              },
-            ),
-          ),
-        },
-      };
-    }
-
     const startedAt = this.getNow().getTime();
 
     try {
+      if (item.model.kind === "embedding") {
+        const provider = this.embeddingProviders[item.provider.key];
+        if (!provider) {
+          return {
+            ...base,
+            status: "failed",
+            message: "当前运行时还没有接入这个 embedding 供应商适配器。",
+            details: {
+              request: requestDetails,
+              error: this.buildErrorDetails(
+                new ApplicationError(
+                  503,
+                  "LLM_ROUTE_NOT_AVAILABLE",
+                  "当前运行时还没有接入这个 embedding 供应商适配器。",
+                  {
+                    provider: item.provider.key,
+                    kind: "embedding",
+                  },
+                ),
+              ),
+            },
+          };
+        }
+
+        const request = this.buildEmbeddingRequest(item);
+        const response = await provider.embed(request);
+        const latencyMs = this.getNow().getTime() - startedAt;
+
+        return {
+          ...base,
+          status: "success",
+          latencyMs,
+          message: "Embedding 请求成功，供应商返回了有效向量。",
+          responsePreview: truncateText(
+            `${response.vectors.length} vectors · dim ${response.vectors[0]?.embedding.length ?? 0}`,
+            RESPONSE_PREVIEW_LIMIT,
+          ),
+          details: {
+            request: requestDetails,
+            response: this.buildEmbeddingResponseDetails(response),
+          },
+        };
+      }
+
+      const provider = this.chatProviders[item.provider.key];
+      if (!provider) {
+        return {
+          ...base,
+          status: "failed",
+          message: "当前运行时还没有接入这个供应商适配器。",
+          details: {
+            request: requestDetails,
+            error: this.buildErrorDetails(
+              new ApplicationError(
+                503,
+                "LLM_ROUTE_NOT_AVAILABLE",
+                "当前运行时还没有接入这个供应商适配器。",
+                {
+                  provider: item.provider.key,
+                  kind: "chat",
+                },
+              ),
+            ),
+          },
+        };
+      }
+
+      const request = this.buildChatRequest(item);
       const response = await provider.complete(request);
       const latencyMs = this.getNow().getTime() - startedAt;
 
@@ -188,7 +239,7 @@ export class LlmSmokeTestService {
         responsePreview: truncateText(response.text || response.reasoningText || "", RESPONSE_PREVIEW_LIMIT),
         details: {
           request: requestDetails,
-          response: this.buildResponseDetails(response),
+          response: this.buildChatResponseDetails(response),
         },
       };
     } catch (error) {
@@ -206,7 +257,7 @@ export class LlmSmokeTestService {
     }
   }
 
-  private buildRequest(item: SmokeMatrixItem): ResolvedLLMCompletionRequest {
+  private buildChatRequest(item: SmokeMatrixItem): ResolvedLLMCompletionRequest {
     const route = item.route;
     if (!route) {
       throw new Error("Smoke test route is missing.");
@@ -219,7 +270,29 @@ export class LlmSmokeTestService {
       providerOptions: {},
       model: {
         provider: item.provider.key,
-        modelKey: item.modelKey,
+        modelKey: item.model.key,
+        providerModel: route.providerModel,
+        providerConfig: {
+          baseUrl: item.provider.baseUrl,
+          apiKey: item.provider.apiKey,
+          timeoutMs: item.provider.timeoutMs,
+        },
+      },
+    };
+  }
+
+  private buildEmbeddingRequest(item: SmokeMatrixItem): ResolvedEmbeddingRequest {
+    const route = item.route;
+    if (!route) {
+      throw new Error("Smoke test route is missing.");
+    }
+
+    return {
+      input: SMOKE_EMBEDDING_INPUT,
+      providerOptions: {},
+      model: {
+        provider: item.provider.key,
+        modelKey: item.model.key,
         providerModel: route.providerModel,
         providerConfig: {
           baseUrl: item.provider.baseUrl,
@@ -270,31 +343,73 @@ export class LlmSmokeTestService {
     return this.options.now?.() ?? new Date();
   }
 
-  private buildRequestDetails(request: ResolvedLLMCompletionRequest): AdminLlmSmokeTestRequestPayload {
-    return {
-      provider: request.model.provider,
-      modelKey: request.model.modelKey,
-      providerModel: request.model.providerModel,
-      baseUrl: request.model.providerConfig?.baseUrl ?? "",
-      timeoutMs: request.model.providerConfig?.timeoutMs ?? 0,
-      messages: request.messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
-      ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-      ...(request.maxTokens === undefined ? {} : { maxTokens: request.maxTokens }),
-      providerOptions: toPlainRecord(request.providerOptions),
-    };
+  private buildRequestDetails(item: SmokeMatrixItem): AdminLlmSmokeTestRequestPayload | undefined {
+    if (!item.route) {
+      return undefined;
+    }
+
+    return item.model.kind === "embedding"
+      ? {
+          modelKind: "embedding",
+          provider: item.provider.key,
+          modelKey: item.model.key,
+          providerModel: item.route.providerModel,
+          baseUrl: item.provider.baseUrl,
+          timeoutMs: item.provider.timeoutMs,
+          input: [...SMOKE_EMBEDDING_INPUT],
+          providerOptions: {},
+        }
+      : {
+          modelKind: "chat",
+          provider: item.provider.key,
+          modelKey: item.model.key,
+          providerModel: item.route.providerModel,
+          baseUrl: item.provider.baseUrl,
+          timeoutMs: item.provider.timeoutMs,
+          messages: SMOKE_MESSAGES.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+          temperature: 0,
+          maxTokens: 24,
+          providerOptions: {},
+        };
   }
 
-  private buildResponseDetails(response: Awaited<ReturnType<LLMProvider["complete"]>>): AdminLlmSmokeTestResponsePayload {
+  private buildChatResponseDetails(response: Awaited<ReturnType<LLMProvider["complete"]>>): AdminLlmSmokeTestResponsePayload {
     return {
+      modelKind: "chat",
       provider: response.provider,
       modelKey: response.modelKey,
       providerModel: response.providerModel,
       text: response.text,
       ...(response.reasoningText ? { reasoningText: response.reasoningText } : {}),
       ...(response.finishReason ? { finishReason: response.finishReason } : {}),
+      ...(response.providerRequestId ? { providerRequestId: response.providerRequestId } : {}),
+      ...(response.usage ? { usage: response.usage } : {}),
+    };
+  }
+
+  private buildEmbeddingResponseDetails(response: EmbeddingResult): AdminLlmSmokeTestResponsePayload {
+    const firstVector = response.vectors[0];
+    return {
+      modelKind: "embedding",
+      provider: response.provider,
+      modelKey: response.modelKey,
+      providerModel: response.providerModel,
+      vectorCount: response.vectors.length,
+      ...(firstVector ? { dimensions: firstVector.embedding.length } : {}),
+      ...(firstVector
+        ? {
+            vectorPreview: [
+              {
+                index: firstVector.index,
+                embedding: firstVector.embedding.slice(0, VECTOR_PREVIEW_LIMIT),
+              },
+            ],
+          }
+        : {}),
+      ...(response.providerRequestId ? { providerRequestId: response.providerRequestId } : {}),
       ...(response.usage ? { usage: response.usage } : {}),
     };
   }
@@ -356,22 +471,12 @@ function truncateStack(stack: string): string[] {
     .slice(0, ERROR_STACK_PREVIEW_LIMIT);
 }
 
-function toPlainRecord(value: Record<string, unknown> | undefined): Record<string, unknown> {
-  if (!value) {
-    return {};
+function toJsonSafeValue(value: unknown): unknown {
+  if (value === undefined || value === null) {
+    return value;
   }
 
-  return toJsonSafeValue(value) as Record<string, unknown>;
-}
-
-function toJsonSafeValue(value: unknown): unknown {
-  if (
-    value === null ||
-    value === undefined ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean"
-  ) {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     return value;
   }
 

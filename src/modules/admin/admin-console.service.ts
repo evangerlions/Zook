@@ -1,60 +1,89 @@
-import { InMemoryDatabase } from "../../infrastructure/database/prisma/in-memory-database.ts";
+import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
-import { AppConfigService } from "../../services/app-config.service.ts";
+import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
+import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
+import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "../../services/app-ai-routing-config.service.ts";
+import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
+import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
+import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
+import { EmailTestSendService } from "../../services/email-test-send.service.ts";
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
+import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
+import { createAppNameI18n, normalizeAppNameI18n, resolveAdminAppName } from "../../shared/app-name.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
+  AdminAiRoutingDocument,
   AdminAppSummary,
+  AdminAuthRateLimitDocument,
+  AdminAppI18nDocument,
+  AdminAppLogSecretRevealDocument,
+  AdminAppRemoteLogPullSettingsDocument,
+  AdminAppRemoteLogPullTaskListDocument,
+  AdminRemoteLogPullTaskDocument,
+  AdminRemoteLogPullTaskFileDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
+  AdminEmailTestSendCommand,
+  AdminEmailTestSendDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
   AdminLlmSmokeTestDocument,
   AdminLlmServiceDocument,
   AdminPasswordDocument,
+  AdminPasswordRevealDocument,
+  AdminSmsVerificationListDocument,
+  AdminSmsVerificationRevealDocument,
   AppRecord,
   LlmMetricsRange,
+  PublicAppConfigDocument,
   RoleRecord,
 } from "../../shared/types.ts";
 
 const ADMIN_CONFIG_KEY = "admin.delivery_config";
-const EMPTY_CONFIG_TEMPLATE = {};
 const COMMON_APP_ID = "common";
+const APP_ID_PATTERN = /^[a-z0-9_]+$/;
 
 export class AdminConsoleService {
   constructor(
-    private readonly database: InMemoryDatabase,
-    private readonly appConfigService: AppConfigService,
+    private readonly database: ApplicationDatabase,
+    private readonly appConfigService: VersionedAppConfigService,
+    private readonly appI18nConfigService: AppI18nConfigService,
+    private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
+    private readonly appRemoteLogPullService: AppRemoteLogPullService,
+    private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
+    private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
+    private readonly emailTestSendService: EmailTestSendService,
     private readonly llmHealthService: LlmHealthService,
     private readonly llmMetricsService: LlmMetricsService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly refreshTokenStore: RefreshTokenStore,
+    private readonly smsVerificationRecordService: SmsVerificationRecordService,
     private readonly managedStateStore: ManagedStateStore,
   ) {}
 
-  getBootstrap(adminUser: string): AdminBootstrapResult {
+  async getBootstrap(adminUser: string): Promise<AdminBootstrapResult> {
+    const apps = await this.database.listApps();
     return {
       adminUser,
-      apps: this.database.apps
-        .map((app) => this.toSummary(app))
+      apps: (await Promise.all(apps.map((app) => this.toSummary(app))))
         .sort((left, right) => left.appName.localeCompare(right.appName, "zh-CN")),
     };
   }
 
   async getConfig(appId: string, revision?: number): Promise<AdminConfigDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const revisions = await this.appConfigService.listRevisions(app.id, ADMIN_CONFIG_KEY);
     const latestRevision = revisions.at(-1)?.revision;
     const record = revision
@@ -63,16 +92,13 @@ export class AdminConsoleService {
     if (revision && !record) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
-    const fallbackRecord = this.database.appConfigs.find(
-      (item) => item.appId === app.id && item.configKey === ADMIN_CONFIG_KEY,
-    );
-    const rawJson = record ? this.normalizeConfig(record.content) : this.readNormalizedConfig(app.id);
+    const rawJson = record ? this.normalizeConfig(record.content) : await this.readNormalizedConfig(app.id);
 
     return {
-      app: this.toSummary(app),
+      app: await this.toSummary(app),
       configKey: ADMIN_CONFIG_KEY,
       rawJson,
-      updatedAt: record?.createdAt ?? fallbackRecord?.updatedAt,
+      updatedAt: record?.createdAt ?? await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY),
       revision: record?.revision,
       desc: record?.desc,
       isLatest: !record || record.revision === latestRevision,
@@ -80,8 +106,46 @@ export class AdminConsoleService {
     };
   }
 
+  async getAiRouting(appId: string, revision?: number): Promise<AdminAiRoutingDocument> {
+    const app = await this.requireConfigApp(appId);
+    return this.appAiRoutingConfigService.getDocument(await this.toSummary(app), revision);
+  }
+
+  async updateAiRouting(appId: string, rawJson: string, desc?: string): Promise<AdminAiRoutingDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appAiRoutingConfigService.updateConfig(app.id, rawJson, desc);
+    await this.managedStateStore.save(this.database);
+    return this.appAiRoutingConfigService.getDocument(await this.toSummary(app));
+  }
+
+  async restoreAiRouting(appId: string, revision: number, desc?: string): Promise<AdminAiRoutingDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appAiRoutingConfigService.restoreConfig(app.id, revision, desc);
+    await this.managedStateStore.save(this.database);
+    return this.appAiRoutingConfigService.getDocument(await this.toSummary(app));
+  }
+
+  async getPublicConfig(appId: string): Promise<PublicAppConfigDocument> {
+    const app = await this.requireApp(appId);
+    if (app.id === COMMON_APP_ID) {
+      throw new ApplicationError(404, "APP_NOT_FOUND", "App common does not expose public config.");
+    }
+
+    if (app.status === "BLOCKED") {
+      throw new ApplicationError(403, "APP_BLOCKED", "The app is blocked.");
+    }
+
+    const rawJson = await this.readNormalizedConfig(app.id);
+
+    return {
+      appId: app.id,
+      config: JSON.parse(rawJson) as Record<string, unknown>,
+      updatedAt: await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY),
+    };
+  }
+
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {
-    const app = this.requireConfigApp(appId);
+    const app = await this.requireConfigApp(appId);
     const normalized = this.normalizeConfig(rawJson);
 
     await this.appConfigService.setValue(
@@ -95,51 +159,100 @@ export class AdminConsoleService {
     return this.getConfig(app.id);
   }
 
-  async restoreConfig(appId: string, revision: number): Promise<AdminConfigDocument> {
-    const app = this.requireConfigApp(appId);
+  async restoreConfig(appId: string, revision: number, desc?: string): Promise<AdminConfigDocument> {
+    const app = await this.requireConfigApp(appId);
     const existing = await this.appConfigService.getRevision(app.id, ADMIN_CONFIG_KEY, revision);
     if (!existing) {
       throw new ApplicationError(404, "REQ_INVALID_QUERY", `Config revision ${revision} was not found.`);
     }
-    await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, `恢复到版本 R${revision}`);
+    await this.appConfigService.restoreValue(app.id, ADMIN_CONFIG_KEY, revision, desc?.trim() || `恢复到版本 R${revision}`);
     await this.managedStateStore.save(this.database);
     return this.getConfig(app.id);
   }
 
-  async createApp(appId: string, appName?: string): Promise<AdminAppSummary> {
+  async createApp(appId: string, appNameZhCn: string, appNameEnUs: string): Promise<AdminAppSummary> {
     const normalizedId = appId.trim();
     if (!normalizedId) {
       badRequest("REQ_INVALID_BODY", "appId must be a non-empty string.");
+    }
+
+    if (!APP_ID_PATTERN.test(normalizedId)) {
+      badRequest("REQ_INVALID_BODY", "appId must contain only lowercase letters, numbers, and underscores.");
+    }
+
+    const normalizedZhCnName = appNameZhCn.trim();
+    const normalizedEnUsName = appNameEnUs.trim();
+    if (!normalizedZhCnName) {
+      badRequest("REQ_INVALID_BODY", "appNameZhCn must be a non-empty string.");
+    }
+
+    if (!normalizedEnUsName) {
+      badRequest("REQ_INVALID_BODY", "appNameEnUs must be a non-empty string.");
     }
 
     if (normalizedId.toLowerCase() === COMMON_APP_ID) {
       conflict("ADMIN_APP_ID_RESERVED", "App ID common is reserved.");
     }
 
-    if (this.database.findApp(normalizedId)) {
+    if (await this.database.findApp(normalizedId)) {
       conflict("ADMIN_APP_ALREADY_EXISTS", `App ${normalizedId} already exists.`);
     }
 
     const record: AppRecord = {
       id: normalizedId,
       code: normalizedId,
-      name: (appName ?? normalizedId).trim() || normalizedId,
+      name: normalizedEnUsName,
+      nameI18n: createAppNameI18n(normalizedZhCnName, normalizedEnUsName),
       status: "ACTIVE",
       joinMode: "AUTO",
       createdAt: new Date().toISOString(),
     };
 
-    this.database.apps.push(record);
-    this.createDefaultRoles(record.id);
+    await this.database.insertApp(record);
+    await this.createDefaultRoles(record.id);
+    await this.appLogSecretService.ensureSecret(record.id);
+    const defaultConfig = this.buildDefaultConfigTemplate(record.id);
     await this.appConfigService.setValue(
       record.id,
       ADMIN_CONFIG_KEY,
-      JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2),
+      JSON.stringify(defaultConfig, null, 2),
       "app-created",
     );
+    await this.appI18nConfigService.initializeAppConfig(record.id, "app-created");
+    await this.appRemoteLogPullService.initializeAppConfig(record.id, "app-created");
+    if (record.id === AI_NOVEL_APP_ID) {
+      await this.appAiRoutingConfigService.initializeAppConfig(record.id, "app-created");
+    }
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
+  }
+
+  async updateAppNames(appId: string, appNameI18n: unknown): Promise<AdminAppSummary> {
+    const app = await this.requireApp(appId);
+    const normalizedNames = this.normalizeRequiredAppNames(appNameI18n);
+    await this.database.updateAppNames(app.id, normalizedNames["en-US"], normalizedNames);
+    await this.managedStateStore.save(this.database);
+    return await this.toSummary({
+      ...app,
+      name: normalizedNames["en-US"],
+      nameI18n: normalizedNames,
+    });
+  }
+
+  async revealAppLogSecret(appId: string): Promise<AdminAppLogSecretRevealDocument> {
+    const app = await this.requireApp(appId);
+    const ensured = await this.appLogSecretService.ensureSecret(app.id);
+    if (ensured.created) {
+      await this.managedStateStore.save(this.database);
+    }
+
+    return {
+      app: await this.toSummary(app),
+      keyId: ensured.record.keyId,
+      secret: ensured.record.secret,
+      updatedAt: ensured.record.updatedAt,
+    };
   }
 
   async deleteApp(appId: string): Promise<AdminDeleteAppResult> {
@@ -147,31 +260,16 @@ export class AdminConsoleService {
       conflict("ADMIN_APP_ID_RESERVED", "App ID common is reserved.");
     }
 
-    const app = this.requireApp(appId);
+    const app = await this.requireApp(appId);
 
-    if (!this.isDeleteAllowed(app.id)) {
+    if (!(await this.isDeleteAllowed(app.id))) {
       conflict(
         "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG",
         "Config must be an empty JSON object before deleting the app.",
       );
     }
 
-    const roleIds = this.database.roles
-      .filter((item) => item.appId === app.id)
-      .map((item) => item.id);
-
-    this.database.apps = this.database.apps.filter((item) => item.id !== app.id);
-    this.database.appUsers = this.database.appUsers.filter((item) => item.appId !== app.id);
-    this.database.roles = this.database.roles.filter((item) => item.appId !== app.id);
-    this.database.userRoles = this.database.userRoles.filter((item) => item.appId !== app.id);
-    this.database.rolePermissions = this.database.rolePermissions.filter(
-      (item) => !roleIds.includes(item.roleId),
-    );
-    this.database.auditLogs = this.database.auditLogs.filter((item) => item.appId !== app.id);
-    this.database.notificationJobs = this.database.notificationJobs.filter((item) => item.appId !== app.id);
-    this.database.failedEvents = this.database.failedEvents.filter((item) => item.appId !== app.id);
-    this.database.analyticsEvents = this.database.analyticsEvents.filter((item) => item.appId !== app.id);
-    this.database.files = this.database.files.filter((item) => item.appId !== app.id);
+    await this.database.deleteApp(app.id);
     await this.appConfigService.deleteByApp(app.id);
     await this.refreshTokenStore.deleteByApp(app.id);
     await this.managedStateStore.save(this.database);
@@ -182,8 +280,20 @@ export class AdminConsoleService {
     };
   }
 
-  private requireApp(appId: string): AppRecord {
-    const app = this.database.findApp(appId);
+  async revealPasswordValue(key: string): Promise<AdminPasswordRevealDocument> {
+    return this.commonPasswordConfigService.revealValue(key);
+  }
+
+  async listSmsVerificationRecords(filterAppId?: string): Promise<AdminSmsVerificationListDocument> {
+    return this.smsVerificationRecordService.listForAdmin(await this.commonAppSummary(), filterAppId);
+  }
+
+  async revealSmsVerificationRecord(recordId: string): Promise<AdminSmsVerificationRevealDocument> {
+    return this.smsVerificationRecordService.revealForAdmin(await this.commonAppSummary(), recordId);
+  }
+
+  private async requireApp(appId: string): Promise<AppRecord> {
+    const app = await this.database.findApp(appId);
     if (!app) {
       throw new ApplicationError(404, "APP_NOT_FOUND", `App ${appId} was not found.`);
     }
@@ -191,33 +301,90 @@ export class AdminConsoleService {
     return app;
   }
 
-  private requireConfigApp(appId: string): AppRecord {
+  private async requireConfigApp(appId: string): Promise<AppRecord> {
     if (appId === COMMON_APP_ID) {
       throw new ApplicationError(404, "APP_NOT_FOUND", "App common does not have app-scoped config.");
     }
 
-    return this.requireApp(appId);
+    return await this.requireApp(appId);
   }
 
-  private readNormalizedConfig(appId: string): string {
-    const stored = this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
+  private async readNormalizedConfig(appId: string): Promise<string> {
+    const stored = await this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
     if (!stored) {
-      return JSON.stringify(EMPTY_CONFIG_TEMPLATE, null, 2);
+      return JSON.stringify(this.buildDefaultConfigTemplate(appId), null, 2);
     }
 
     return this.normalizeConfig(stored);
   }
 
-  private isDeleteAllowed(appId: string): boolean {
+  private normalizeRequiredAppNames(value: unknown) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n must be a JSON object.");
+    }
+
+    const source = value as Record<string, unknown>;
+    const zhCnName = typeof source["zh-CN"] === "string" ? source["zh-CN"].trim() : "";
+    const enUsName = typeof source["en-US"] === "string" ? source["en-US"].trim() : "";
+    if (!zhCnName) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n.zh-CN must be a non-empty string.");
+    }
+
+    if (!enUsName) {
+      badRequest("REQ_INVALID_BODY", "appNameI18n.en-US must be a non-empty string.");
+    }
+
+    return normalizeAppNameI18n(source, enUsName);
+  }
+
+  private async isDeleteAllowed(appId: string): Promise<boolean> {
     if (appId === COMMON_APP_ID) {
       return false;
     }
 
-    return this.readNormalizedConfig(appId) === JSON.stringify({}, null, 2);
+    const raw = await this.appConfigService.getValue(appId, ADMIN_CONFIG_KEY);
+    if (!raw || !raw.trim()) {
+      return true;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return false;
+    }
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return false;
+    }
+
+    return Object.keys(parsed as Record<string, unknown>).length === 0;
+  }
+
+  private buildDefaultConfigTemplate(appId: string): Record<string, string> {
+    return {
+      app: `make_${appId}_great_again`,
+    };
   }
 
   async getEmailServiceConfig(revision?: number): Promise<AdminEmailServiceDocument> {
     return this.commonEmailConfigService.getDocument(revision);
+  }
+
+  async getAuthRateLimitConfig(revision?: number): Promise<AdminAuthRateLimitDocument> {
+    return this.commonAuthRateLimitConfigService.getDocument(revision);
+  }
+
+  async updateAuthRateLimitConfig(input: unknown, desc?: string): Promise<AdminAuthRateLimitDocument> {
+    const document = await this.commonAuthRateLimitConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async restoreAuthRateLimitConfig(revision: number, desc?: string): Promise<AdminAuthRateLimitDocument> {
+    const document = await this.commonAuthRateLimitConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
   }
 
   async updateEmailServiceConfig(input: unknown, desc?: string): Promise<AdminEmailServiceDocument> {
@@ -226,10 +393,14 @@ export class AdminConsoleService {
     return document;
   }
 
-  async restoreEmailServiceConfig(revision: number): Promise<AdminEmailServiceDocument> {
-    const document = await this.commonEmailConfigService.restoreConfig(revision);
+  async restoreEmailServiceConfig(revision: number, desc?: string): Promise<AdminEmailServiceDocument> {
+    const document = await this.commonEmailConfigService.restoreConfig(revision, desc);
     await this.managedStateStore.save(this.database);
     return document;
+  }
+
+  async sendEmailTest(input: AdminEmailTestSendCommand): Promise<AdminEmailTestSendDocument> {
+    return this.emailTestSendService.run(input);
   }
 
   async getPasswordConfig(): Promise<AdminPasswordDocument> {
@@ -250,6 +421,103 @@ export class AdminConsoleService {
     const document = await this.commonPasswordConfigService.deleteItem(key);
     await this.managedStateStore.save(this.database);
     return document;
+  }
+
+  async getI18nSettings(appId: string, revision?: number): Promise<AdminAppI18nDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appI18nConfigService.getDocument(app.id, revision);
+
+    return {
+      app: await this.toSummary(app),
+      ...document,
+    };
+  }
+
+  async getRemoteLogPullSettings(
+    appId: string,
+    revision?: number,
+  ): Promise<AdminAppRemoteLogPullSettingsDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appRemoteLogPullService.getDocument(app.id, revision);
+    return {
+      app: await this.toSummary(app),
+      ...document,
+    };
+  }
+
+  async getAiRoutingSettings(appId: string, revision?: number): Promise<AdminAiRoutingDocument> {
+    return this.getAiRouting(appId, revision);
+  }
+
+  async updateRemoteLogPullSettings(
+    appId: string,
+    input: unknown,
+    desc?: string,
+  ): Promise<AdminAppRemoteLogPullSettingsDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appRemoteLogPullService.updateConfig(app.id, input, desc);
+    await this.managedStateStore.save(this.database);
+    return await this.getRemoteLogPullSettings(app.id, document.revision);
+  }
+
+  async restoreRemoteLogPullSettings(
+    appId: string,
+    revision: number,
+    desc?: string,
+  ): Promise<AdminAppRemoteLogPullSettingsDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appRemoteLogPullService.restoreConfig(app.id, revision, desc);
+    await this.managedStateStore.save(this.database);
+    return await this.getRemoteLogPullSettings(app.id, document.revision);
+  }
+
+  async listRemoteLogPullTasks(appId: string): Promise<AdminAppRemoteLogPullTaskListDocument> {
+    const app = await this.requireConfigApp(appId);
+    return {
+      app: await this.toSummary(app),
+      items: await this.appRemoteLogPullService.listTasks(app.id),
+    };
+  }
+
+  async createRemoteLogPullTask(appId: string, input: unknown): Promise<AdminAppRemoteLogPullTaskListDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appRemoteLogPullService.createTask(app.id, input);
+    await this.managedStateStore.save(this.database);
+    return await this.listRemoteLogPullTasks(app.id);
+  }
+
+  async cancelRemoteLogPullTask(appId: string, taskId: string): Promise<AdminAppRemoteLogPullTaskListDocument> {
+    const app = await this.requireConfigApp(appId);
+    await this.appRemoteLogPullService.cancelTask(app.id, taskId);
+    await this.managedStateStore.save(this.database);
+    return await this.listRemoteLogPullTasks(app.id);
+  }
+
+  async getRemoteLogPullTaskFile(appId: string, taskId: string): Promise<AdminRemoteLogPullTaskFileDocument> {
+    const app = await this.requireConfigApp(appId);
+    return await this.appRemoteLogPullService.getTaskFile(app.id, taskId);
+  }
+
+  async getRemoteLogPullTask(appId: string, taskId: string): Promise<AdminRemoteLogPullTaskDocument> {
+    const app = await this.requireConfigApp(appId);
+    return {
+      app: await this.toSummary(app),
+      item: await this.appRemoteLogPullService.getTask(app.id, taskId),
+    };
+  }
+
+  async updateI18nSettings(appId: string, input: unknown, desc?: string): Promise<AdminAppI18nDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appI18nConfigService.updateConfig(app.id, input, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getI18nSettings(app.id, document.revision);
+  }
+
+  async restoreI18nSettings(appId: string, revision: number, desc?: string): Promise<AdminAppI18nDocument> {
+    const app = await this.requireConfigApp(appId);
+    const document = await this.appI18nConfigService.restoreConfig(app.id, revision, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getI18nSettings(app.id, document.revision);
   }
 
   async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {
@@ -273,18 +541,22 @@ export class AdminConsoleService {
     return this.getLlmServiceConfig(document.revision);
   }
 
-  async restoreLlmServiceConfig(revision: number): Promise<AdminLlmServiceDocument> {
-    const document = await this.commonLlmConfigService.restoreConfig(revision);
+  async restoreLlmServiceConfig(revision: number, desc?: string): Promise<AdminLlmServiceDocument> {
+    const document = await this.commonLlmConfigService.restoreConfig(revision, desc);
     await this.managedStateStore.save(this.database);
     return this.getLlmServiceConfig(document.revision);
   }
 
   async getLlmMetrics(range: LlmMetricsRange): Promise<AdminLlmMetricsDocument> {
-    return this.llmMetricsService.getOverview(this.commonLlmConfigService.getCurrentConfig(), range);
+    return this.llmMetricsService.getOverview(await this.commonLlmConfigService.getCurrentConfig(), range);
   }
 
   async getLlmModelMetrics(modelKey: string, range: LlmMetricsRange): Promise<AdminLlmModelMetricsDocument> {
-    return this.llmMetricsService.getModelDetail(this.commonLlmConfigService.getCurrentConfig(), modelKey, range);
+    return this.llmMetricsService.getModelDetail(
+      await this.commonLlmConfigService.getCurrentConfig(),
+      modelKey,
+      range,
+    );
   }
 
   async runLlmSmokeTest(): Promise<AdminLlmSmokeTestDocument> {
@@ -307,16 +579,42 @@ export class AdminConsoleService {
     return JSON.stringify(parsed, null, 2);
   }
 
-  private toSummary(app: AppRecord): AdminAppSummary {
+  private async commonAppSummary(): Promise<AdminAppSummary> {
+    return {
+      appId: COMMON_APP_ID,
+      appCode: COMMON_APP_ID,
+      appName: "Common",
+      appNameI18n: {
+        "zh-CN": "公共工作区",
+        "en-US": "Common",
+      },
+      status: "ACTIVE",
+      canDelete: false,
+      logSecret: {
+        keyId: COMMON_APP_ID,
+        secretMasked: "internal",
+        updatedAt: new Date(0).toISOString(),
+      },
+    };
+  }
+
+  private async toSummary(app: AppRecord): Promise<AdminAppSummary> {
+    const logSecret = await this.appLogSecretService.getSummary(app.id);
+    if (!logSecret) {
+      throw new ApplicationError(500, "SYS_INTERNAL_ERROR", `App ${app.id} log secret is missing.`);
+    }
+
     return {
       appId: app.id,
       appCode: app.code,
-      appName: app.name,
+      appName: resolveAdminAppName(app.nameI18n, app.name),
+      appNameI18n: normalizeAppNameI18n(app.nameI18n, app.name),
       status: app.status,
-      canDelete: this.isDeleteAllowed(app.id),
+      canDelete: await this.isDeleteAllowed(app.id),
+      logSecret,
     };
   }
-  private createDefaultRoles(appId: string): void {
+  private async createDefaultRoles(appId: string): Promise<void> {
     const memberRole: RoleRecord = {
       id: randomId(`role_${appId}_member`),
       appId,
@@ -332,11 +630,12 @@ export class AdminConsoleService {
       status: "ACTIVE",
     };
 
-    this.database.roles.push(memberRole, adminRole);
+    await this.database.insertRoles([memberRole, adminRole]);
 
-    const permissionMap = new Map(this.database.permissions.map((item) => [item.code, item.id]));
+    const permissionMap = new Map((await this.database.listPermissions()).map((item) => [item.code, item.id]));
     const memberPermissions = ["file:read"];
     const adminPermissions = ["file:read", "metrics:read", "notification:send"];
+    const rolePermissionRecords = [];
 
     memberPermissions.forEach((code) => {
       const permissionId = permissionMap.get(code);
@@ -344,7 +643,7 @@ export class AdminConsoleService {
         return;
       }
 
-      this.database.rolePermissions.push({
+      rolePermissionRecords.push({
         id: randomId(`rp_${appId}_member`),
         roleId: memberRole.id,
         permissionId,
@@ -357,11 +656,12 @@ export class AdminConsoleService {
         return;
       }
 
-      this.database.rolePermissions.push({
+      rolePermissionRecords.push({
         id: randomId(`rp_${appId}_admin`),
         roleId: adminRole.id,
         permissionId,
       });
     });
+    await this.database.insertRolePermissions(rolePermissionRecords);
   }
 }

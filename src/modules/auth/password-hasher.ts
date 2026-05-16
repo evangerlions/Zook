@@ -5,6 +5,10 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
  * The production binding should be swapped to Argon2id exactly as the design doc requires.
  */
 export class DevelopmentPasswordHasher {
+  readonly algorithm = "scrypt";
+  private readonly minPasswordLength = 8;
+  private readonly maxPasswordLength = 64;
+
   hash(password: string): string {
     const salt = randomBytes(16).toString("hex");
     const digest = scryptSync(password, salt, 64).toString("hex");
@@ -23,6 +27,9 @@ export class DevelopmentPasswordHasher {
   }
 
   validateStrength(password: string): boolean {
-    return password.length >= 10 && /[A-Za-z]/.test(password) && /\d/.test(password);
+    return password.length >= this.minPasswordLength &&
+      password.length <= this.maxPasswordLength &&
+      /[A-Za-z]/.test(password) &&
+      /\d/.test(password);
   }
 }

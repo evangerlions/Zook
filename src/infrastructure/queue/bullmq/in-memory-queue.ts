@@ -1,10 +1,11 @@
 import { randomId } from "../../../shared/utils.ts";
 import type { QueueJob } from "../../../shared/types.ts";
+import type { JobQueue } from "../job-queue.ts";
 
 /**
  * InMemoryJobQueue simulates the BullMQ direct-enqueue and retry contract from the design doc.
  */
-export class InMemoryJobQueue {
+export class InMemoryJobQueue implements JobQueue {
   readonly jobs: QueueJob[] = [];
   readonly deadLetterQueue: QueueJob[] = [];
   private failNextAdd = false;
@@ -13,11 +14,11 @@ export class InMemoryJobQueue {
     this.failNextAdd = true;
   }
 
-  add(
+  async add(
     name: string,
     payload: Record<string, unknown>,
     options: { attempts?: number; backoffMs?: number } = {},
-  ): QueueJob {
+  ): Promise<QueueJob> {
     if (this.failNextAdd) {
       this.failNextAdd = false;
       throw new Error("Queue add failed");

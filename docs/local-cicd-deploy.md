@@ -89,9 +89,18 @@ DEPLOY_BUILDER_PRUNE_UNTIL=168h
 cd /home/ubuntu/app/zook
 cp deploy_configs/online.env.example deploy_configs/online.env
 cp deploy_configs/dev.env.example deploy_configs/dev.env
+sudo mkdir -p /var/lib/zook/appRunData
+sudo chmod -R 777 /var/lib/zook/appRunData
 ```
 
 然后分别把 `deploy_configs/online.env` 和 `deploy_configs/dev.env` 中的业务配置补齐。
+
+持久化运行目录固定为：
+
+- 宿主机：`/var/lib/zook/appRunData`
+- 容器内：`/app/appRunData`
+
+`api` / `worker` 会通过 bind mount 共享这一目录。启动前会先执行文件系统冒烟测试：覆盖写入 `/app/appRunData/hello_world.txt` 并立即读回；如果失败，容器会直接启动失败，部署脚本按现有健康检查失败链路处理。
 
 确保服务器上已经安装并可直接执行：
 
@@ -138,12 +147,13 @@ python3 build_scripts/build_and_push_docker.py --branch main --skip-git-sync --a
 4. 根据 `branch + version + shortsha` 生成本地镜像 tag。
 5. 本地构建镜像。
 6. 按槽位写入 `.deploy/<slot>/compose.env`
-7. 执行 `docker compose up -d --force-recreate --remove-orphans`
-8. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
-9. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`
-10. 成功后默认保留最近 `5` 个本地发布镜像，并额外保留各槽位当前与上一个回滚点
-11. 成功后再执行一次温和的 `docker builder prune`
-12. 如果健康检查失败，则收集日志并回滚到上一个成功版本
+7. 使用新镜像执行 `node --experimental-transform-types src/infrastructure/database/postgres/migrate.ts`，迁移优先读取 `DIRECT_URL`，并按顺序重放所有幂等 SQL 脚本
+8. 只有迁移成功才继续执行 `docker compose up -d --force-recreate --remove-orphans`
+9. 轮询 `http://127.0.0.1:<port>/<health_path>`，同时检查 Admin Web 的 `http://127.0.0.1:<admin_port>/<admin_health_path>`
+10. 如果健康检查通过，则写 `.deploy/<slot>/deploy_state.json`
+11. 成功后默认保留最近 `5` 个本地发布镜像，并额外保留各槽位当前与上一个回滚点
+12. 成功后再执行一次温和的 `docker builder prune`
+13. 如果健康检查失败，则收集日志并回滚到上一个成功版本
 
 ## CICD 服务怎么改
 

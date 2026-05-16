@@ -2,13 +2,25 @@
 
 ## 1. 文档目标
 
-本文档用于统一多产品共用后端时的 API 路径与命名规范。适用场景是多个业务完全不同的产品共用一套服务基础设施，例如 `novel`、`pomodoro`、`ppt`、`my-todo`。
+本文档只面向外部 App / Web / H5 接入方。
 
-核心原则只有一句：
+它回答的是：
 
-```text
-平台能力平台化，产品能力产品化，管理能力后台化。
-```
+1. 别的产品如果要接入 Zook 服务，路径应该怎么设计
+2. 当前有哪些对外可调用接口
+3. Header、鉴权、作用域、响应格式应该怎么遵守
+
+不包含：
+
+1. `admin` 后台接口
+2. 内部配置管理接口
+3. Zook 运营后台自己的协议细节
+
+内部运营与后台接口请看：
+
+- [docs/admin-api-spec.md](docs/admin-api-spec.md)
+
+## 2. 核心原则
 
 统一业务前缀：
 
@@ -16,34 +28,24 @@
 /api/v1
 ```
 
-健康检查独立使用：
+健康检查：
 
 ```text
 /api/health
 ```
 
-## 2. 路径分层
-
-API 按职责分三层：
-
-| 层级 | Path 模板 | 说明 | 示例 |
-| --- | --- | --- | --- |
-| 平台公共能力 | `/api/v1/{commonScope}/...` | 登录、用户、文件、支付、通知、配置等 | `/api/v1/auth/login` |
-| 产品业务能力 | `/api/v1/{productKey}/...` | 某个产品独有的业务接口 | `/api/v1/ppt/projects` |
-| 管理能力 | `/api/v1/admin/...` | 运营后台、审核、系统配置 | `/api/v1/admin/users` |
-
-管理后台如果要管理某个具体产品，继续嵌套：
+核心原则只有一句：
 
 ```text
-/api/v1/admin/{productKey}/...
+平台能力平台化，产品能力产品化。
 ```
 
-例如：
+## 3. 路径分层
 
-```text
-/api/v1/admin/novel/projects
-/api/v1/admin/ppt/templates
-```
+| 层级         | Path 模板                   | 说明                           | 示例                   |
+| ------------ | --------------------------- | ------------------------------ | ---------------------- |
+| 平台公共能力 | `/api/v1/{commonScope}/...` | 登录、用户、文件、通知、统计等 | `/api/v1/auth/login`   |
+| 产品业务能力 | `/api/v1/{productKey}/...`  | 某个产品独有的业务接口         | `/api/v1/ppt/projects` |
 
 平台公共模块推荐固定为：
 
@@ -51,16 +53,34 @@ API 按职责分三层：
 /api/v1/auth/...
 /api/v1/users/...
 /api/v1/files/...
-/api/v1/billing/...
 /api/v1/notifications/...
-/api/v1/config/...
+/api/v1/analytics/...
 ```
 
-规则：
+产品路径规则：
 
-1. 平台公共能力必须抽离，不要在每个产品下重复实现。
-2. 产品路径使用稳定的技术 key，不用营销名。推荐：`novel`、`pomodoro`、`ppt`、`my-todo`。
-3. 产品登录前公开能力、回调、Webhook 仍挂在产品前缀下：
+1. 使用稳定技术 key，不用营销名
+2. 路径统一小写
+3. 单词优先使用中划线
+4. 如果 Path、Header、Token 同时带产品标识，它们必须一致，否则返回 `403 AUTH_APP_SCOPE_MISMATCH`
+
+## 4. 产品接入模板
+
+假设新增产品 key 为 `my-todo`。
+
+### 4.1 私有业务接口
+
+```text
+GET    /api/v1/my-todo/todos
+POST   /api/v1/my-todo/todos
+GET    /api/v1/my-todo/todos/{todoId}
+PATCH  /api/v1/my-todo/todos/{todoId}
+DELETE /api/v1/my-todo/todos/{todoId}
+```
+
+### 4.2 产品公开接口
+
+推荐对外结构：
 
 ```text
 /api/v1/{productKey}/public/...
@@ -68,15 +88,43 @@ API 按职责分三层：
 /api/v1/{productKey}/webhooks/...
 ```
 
-## 3. 命名与 Method 规则
+例如：
 
-1. 路径统一小写，单词使用中划线。
-2. 资源优先使用复数名词，如 `/projects`、`/chapters`、`/sessions`。
-3. 查询使用 `GET`，创建使用 `POST`，局部更新使用 `PATCH`，删除使用 `DELETE`。
-4. 生成、导出、取消、结算这类不适合资源建模的动作，使用 `POST`。
-5. 查询条件放 query，写操作参数放 JSON body。
-6. 版本只放大版本号，统一使用 `/api/v1`；不使用 `/api/v1.1` 这类小版本路径。
-7. 如果 Path、Header、Token 同时携带产品标识，它们必须一致，否则返回 `403 AUTH_APP_SCOPE_MISMATCH`。
+```text
+GET  /api/v1/my-todo/public/config
+GET  /api/v1/my-todo/public/bootstrap
+POST /api/v1/my-todo/webhooks/stripe
+GET  /api/v1/my-todo/callbacks/oauth/google
+```
+
+说明：
+
+1. 这是推荐接入规范，不代表当前仓库已经把所有模板接口都实现完
+2. 当前仓库已经提供通用的 `GET /api/v1/{productKey}/public/config` 实现
+3. 这条接口当前返回的是后台 `admin.delivery_config` 中维护的 app 级公共配置
+4. 其他 `/public/*` 模板接口仍需按产品需要补齐
+
+当前返回示例：
+
+```json
+{
+  "appId": "flutter_demo",
+  "config": {
+    "app": "make_flutter_demo_great_again"
+  },
+  "updatedAt": "2026-04-04T02:03:31.907Z"
+}
+```
+
+## 5. 命名与 Method 规则
+
+1. 查询使用 `GET`
+2. 创建使用 `POST`
+3. 局部更新使用 `PATCH`
+4. 删除使用 `DELETE`
+5. 查询条件放 query
+6. 写操作参数放 JSON body
+7. 版本统一使用 `/api/v1`
 
 推荐：
 
@@ -93,87 +141,9 @@ POST   /api/v1/ppt/exports/pptx
 /api/v1/pptProjects
 /api/v1/createSlide
 /api/v1/magic-super-ppt-maker/projects
-/api/v1/ppt/login
 ```
 
-## 4. 新产品接入模板
-
-假设新增产品 key 为 `my-todo`，有以下业务资源：
-
-1. `todos`
-2. `projects`
-3. `tags`
-
-### 4.1 私有业务接口
-
-已登录用户的私有业务接口，直接挂在产品前缀下：
-
-```text
-GET    /api/v1/my-todo/todos
-POST   /api/v1/my-todo/todos
-GET    /api/v1/my-todo/todos/{todoId}
-PATCH  /api/v1/my-todo/todos/{todoId}
-DELETE /api/v1/my-todo/todos/{todoId}
-
-GET    /api/v1/my-todo/projects
-POST   /api/v1/my-todo/projects
-GET    /api/v1/my-todo/projects/{projectId}
-
-GET    /api/v1/my-todo/tags
-POST   /api/v1/my-todo/tags
-GET    /api/v1/my-todo/tags/{tagId}
-```
-
-规则：
-
-1. 这类场景不要写成 `/api/v1/todos`，因为这里不是“单产品多资源”，而是“多产品共用后端”。
-2. 产品边界直接体现在 path 上，便于网关、权限、日志和文档按产品收口。
-3. 如果 Token 中带有 `app_id` 或 `productKey`，它必须与 path 中的 `my-todo` 一致。
-
-### 4.2 产品公开接口
-
-登录前公开能力也放在产品前缀下：
-
-```text
-GET /api/v1/my-todo/public/config
-GET /api/v1/my-todo/public/bootstrap
-GET /api/v1/my-todo/public/tags
-```
-
-适用场景：
-
-1. 启动配置
-2. 品牌配置
-3. 公开字典或模板数据
-
-### 4.3 产品回调与 Webhook
-
-```text
-GET  /api/v1/my-todo/callbacks/oauth/google
-GET  /api/v1/my-todo/callbacks/wechat-login
-
-POST /api/v1/my-todo/webhooks/stripe
-POST /api/v1/my-todo/webhooks/github
-```
-
-规则：
-
-1. `callbacks` 用于 OAuth、支付页面跳回等回调入口。
-2. `webhooks` 用于第三方系统主动推送事件。
-3. 这类接口应使用签名、密钥或白名单鉴权，不依赖普通用户 Bearer Token。
-
-### 4.4 一眼看懂的模板
-
-| 需求 | 推荐 Path |
-| --- | --- |
-| 登录 | `/api/v1/auth/login` |
-| 产品资源列表 | `/api/v1/my-todo/todos` |
-| 产品资源详情 | `/api/v1/my-todo/todos/{todoId}` |
-| 产品公开配置 | `/api/v1/my-todo/public/config` |
-| 产品回调 | `/api/v1/my-todo/callbacks/oauth/google` |
-| 产品 Webhook | `/api/v1/my-todo/webhooks/stripe` |
-
-## 5. Header 与查询参数
+## 6. Header 约定
 
 推荐 Header：
 
@@ -183,53 +153,142 @@ X-App-Id: my-todo
 X-Platform: ios
 X-App-Version: 1.2.0
 X-Request-Id: xxxxxx
+X-App-Locale: zh-CN
+X-App-Country-Code: CN
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 ```
 
 说明：
 
-1. `X-App-Id` 可用于日志、埋点、网关或前置校验。
-2. 如果请求同时带 `X-App-Id` 和产品路径，两者必须一致。
-3. 列表查询统一通过 query 表达，例如 `page`、`page_size`、`keyword`、`status`、`sort_by`、`sort_order`、`cursor`。
+1. `X-App-Id` 可用于日志、埋点、网关或前置校验
+2. `X-App-Locale` 推荐传 BCP 47，如 `zh-CN`、`en-US`
+3. `X-App-Country-Code` 推荐传 ISO 3166-1 alpha-2 大写值，如 `CN`、`US`
+4. `Accept-Language` 可作为 Web / 浏览器环境的兜底语言来源
+5. 邮件发送场景的 region 优先级是：
+   `X-Country-Code（可信网关） > X-App-Country-Code > Geo`
 
-示例：
+## 7. 当前已开放的对外接口
 
-```text
-GET /api/v1/ppt/projects?page=1&page_size=20
-GET /api/v1/novel/projects?status=active
-GET /api/v1/pomodoro/sessions?date=2026-03-18
-```
+当前仓库已经开放的对外接口，主要是平台层与产品薄代理能力：
 
-## 6. 当前已开放接口
-
-当前仓库已经挂出的接口主要是平台层与管理层能力：
-
-| 方法 | Path | 说明 |
-| --- | --- | --- |
-| `GET` | `/api/health` | 健康检查 |
-| `POST` | `/api/v1/auth/login` | 登录 |
-| `POST` | `/api/v1/auth/register/email-code` | 发送注册邮箱验证码 |
-| `POST` | `/api/v1/auth/register` | 邮箱注册并创建账号 |
-| `POST` | `/api/v1/auth/qr-logins` | 创建扫码登录会话并生成二维码内容 |
-| `POST` | `/api/v1/auth/qr-logins/{loginId}/confirm` | 移动端确认扫码登录 |
-| `GET` | `/api/v1/auth/qr-logins/{loginId}` | PC 端轮询扫码登录结果 |
-| `POST` | `/api/v1/auth/refresh` | 刷新 Access Token |
-| `POST` | `/api/v1/auth/logout` | 登出 |
-| `POST` | `/api/v1/analytics/events/batch` | 行为事件上报 |
-| `GET` | `/api/v1/admin/metrics/overview` | 概览指标 |
-| `GET` | `/api/v1/admin/metrics/pages` | 页面指标 |
-| `POST` | `/api/v1/files/presign` | 获取上传预签名 |
-| `POST` | `/api/v1/files/confirm` | 确认上传完成 |
-| `POST` | `/api/v1/notifications/send` | 发送通知任务 |
+| 方法   | Path                                       | 说明                                                                                                                                |
+| ------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/health`                              | 健康检查                                                                                                                            |
+| `POST` | `/api/v1/auth/login`                       | 密码登录                                                                                                                            |
+| `POST` | `/api/v1/auth/login/email-code`            | 发送邮箱登录验证码                                                                                                                  |
+| `POST` | `/api/v1/auth/login/email`                 | 使用邮箱验证码登录，必要时自动创建账号                                                                                              |
+| `POST` | `/api/v1/auth/login/sms-code`              | 发送短信登录验证码                                                                                                                  |
+| `POST` | `/api/v1/auth/login/sms`                   | 使用短信验证码登录，必要时自动创建账号                                                                                              |
+| `POST` | `/api/v1/auth/login/one-click`             | 使用运营商一键登录 token 登录，必要时自动创建账号                                                                                   |
+| `POST` | `/api/v1/auth/password/email-code`         | 发送密码设置 / 重置邮箱验证码                                                                                                       |
+| `POST` | `/api/v1/auth/password/sms-code`           | 发送密码设置 / 重置短信验证码                                                                                                       |
+| `POST` | `/api/v1/auth/password/set`                | 已登录的邮箱验证码账号直接设置密码，并签发新会话                                                                                    |
+| `POST` | `/api/v1/auth/password/reset`              | 使用邮箱验证码重置密码，并直接签发新会话                                                                                            |
+| `POST` | `/api/v1/auth/password/reset-by-sms`       | 使用短信验证码重置密码，并直接签发新会话                                                                                            |
+| `POST` | `/api/v1/auth/password/change`             | 已登录用户修改密码，并直接签发新会话                                                                                                |
+| `POST` | `/api/v1/auth/register/email-code`         | 发送注册邮箱验证码                                                                                                                  |
+| `POST` | `/api/v1/auth/register`                    | 邮箱注册并创建账号                                                                                                                  |
+| `POST` | `/api/v1/auth/register/sms-code`           | 发送注册短信验证码                                                                                                                  |
+| `POST` | `/api/v1/auth/register/sms`                | 短信注册并创建账号                                                                                                                  |
+| `POST` | `/api/v1/auth/qr-logins`                   | 创建扫码登录会话并生成二维码内容                                                                                                    |
+| `POST` | `/api/v1/auth/qr-logins/{loginId}/confirm` | 移动端确认扫码登录                                                                                                                  |
+| `GET`  | `/api/v1/auth/qr-logins/{loginId}`         | PC/Web 轮询扫码登录结果                                                                                                             |
+| `POST` | `/api/v1/auth/refresh`                     | 刷新 Access Token                                                                                                                   |
+| `POST` | `/api/v1/auth/logout`                      | 登出                                                                                                                                |
+| `GET`  | `/api/v1/users/me`                         | 获取当前 Bearer Token 对应的用户信息                                                                                                |
+| `POST` | `/api/v1/users/me/delete`                  | 删除当前产品账号访问关系与当前 app 侧个人数据                                                                                       |
+| `POST` | `/api/v1/analytics/events/batch`           | 行为事件上报                                                                                                                        |
+| `POST` | `/api/v1/files/presign`                    | 获取上传预签名                                                                                                                      |
+| `POST` | `/api/v1/files/confirm`                    | 确认上传完成                                                                                                                        |
+| `GET`  | `/api/v1/logs/policy`                      | 获取客户端日志回捞策略                                                                                                              |
+| `GET`  | `/api/v1/logs/pull-task`                   | 拉取客户端日志上传任务                                                                                                              |
+| `POST` | `/api/v1/logs/tasks/{taskId}/ack`          | 客户端无日志时回执 `no_data`                                                                                                        |
+| `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
+| `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
+| `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`                                                                  |
+| `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `taskType` 选择服务端 scene 与逻辑模型；解密后的 inner body 可用 `stream=true` 切到 SSE |
+| `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `taskType` 选择服务端 scene 与逻辑模型                                            |
 
 说明：
 
-1. 当前脚手架尚未挂出 `novel`、`pomodoro`、`ppt`、`my-todo` 这类产品业务路由。
+1. 当前仓库已经挂出一个产品级薄代理示例：`ai_novel`，其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
-3. 扫码登录的对外接入说明见 [doc/public-api-spec.md](doc/public-api-spec.md)。
+3. 扫码登录的对外接入说明见 [docs/public-api-spec.md](docs/public-api-spec.md)。
+4. 邮箱验证码登录接口：
+   `POST /api/v1/auth/login/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
+   `POST /api/v1/auth/login/email` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "clientType": "app" }`
+5. 短信验证码登录接口：
+   `POST /api/v1/auth/login/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "test": false }`
+   `POST /api/v1/auth/login/sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "clientType": "app" }`
+   `phoneNa` 可省略，默认按 `+86` 处理；服务端会把手机号标准化后再存储和查询。
+   `test` 仅对短信发码接口生效；当为 `true` 时，服务端会照常生成并缓存验证码，但不会真正调用短信发送服务，适合联调和自动化测试。
+   同一个验证码在有效期内最多允许输错 10 次；达到上限后，该验证码会立即失效并需要重新发码。
+   默认风控阈值由 admin `common/auth-rate-limits` 工作区统一维护；当前默认值为：发码窗口 10 分钟 3 次、验证提交窗口 10 分钟 10 次、账号自然日 10 次、IP 自然小时 20 次。
+6. 一键登录接口：
+   `POST /api/v1/auth/login/one-click` 请求体为 `{ "appId": "app_a", "token": "native-token", "gyuid": "gyuid", "clientType": "app", "operator": "CM", "sdkPlatform": "android" }`。
+   服务端使用 `common.getui_gy_service` 配置和 password workspace 中的 `getui.gy.app_key` / `getui.gy.master_secret` 调用个验服务端取号，不接受客户端直接传手机号。
+   个验取号成功后会复用手机号登录语义：手机号不存在且 app 允许自动加入时创建 `sms-code-only` 账号并签发会话。
+7. 密码相关接口：
+   `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
+   `POST /api/v1/auth/password/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "test": false }`
+   `POST /api/v1/auth/password/set` 请求体为 `{ "appId": "app_a", "password": "Password1234", "clientType": "app" }`
+   `POST /api/v1/auth/password/reset` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "emailCode": "123456", "password": "Password1234", "clientType": "app" }`
+   `POST /api/v1/auth/password/reset-by-sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "password": "Password1234", "clientType": "app" }`
+   `POST /api/v1/auth/password/change` 请求体为 `{ "appId": "app_a", "currentPassword": "OldPass1234", "newPassword": "NewPass1234", "clientType": "app" }`
+   `password` / `newPassword` 当前要求为 8-64 个字符，且同时包含字母和数字。
+   `password/set` 只允许当前已登录且仍为 `email-code-only` 的账号调用；如果该账号已经有密码，会返回 `409 AUTH_PASSWORD_ALREADY_SET`，此时应改走 `password/change`。
+8. 注册相关接口：
+   `POST /api/v1/auth/register/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
+   `POST /api/v1/auth/register` 请求体为 `{ "appId": "app_a", "email": "user@example.com", "password": "Password1234", "emailCode": "123456", "clientType": "app" }`
+   `POST /api/v1/auth/register/sms-code` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "test": false }`
+   `POST /api/v1/auth/register/sms` 请求体为 `{ "appId": "app_a", "phone": "18710100985", "phoneNa": "+86", "smsCode": "123456", "clientType": "app" }`
+9. 邮箱不存在时，`POST /api/v1/auth/login/email` 在验证码校验成功后会自动创建账号并完成登录；手机号不存在时，`POST /api/v1/auth/login/sms` 也会按同样规则自动创建账号并登录。
+10. `POST /api/v1/auth/password/email-code` 和 `POST /api/v1/auth/password/sms-code` 为了避免账号探测，在目标账号不存在、账号被封或当前 app 不允许该账号走密码找回时，也会返回 `{ accepted: true }`；真正的校验在 `reset` / `reset-by-sms` 阶段完成。
+11. 账号删除接口：
+    `POST /api/v1/users/me/delete` 需要 Bearer 鉴权，请求体为 `{ "appId": "app_a", "confirmation": "DELETE" }`。
+    删除语义是 app-scoped：服务端会把当前 `zook_app_users(appId,userId)` 标记为 `DELETED`，撤销该 app 下当前用户所有 session，并清理该 app 下可归属到该用户的运行数据；不会删除或匿名化全局 `zook_users` 身份记录，audit logs 会保留。
+    删除后同一 Zook 身份不能被自动重新加入当前 app，后续登录会返回 `403 APP_MEMBER_DELETED`。
+12. 当前短信验证码能力已经接入腾讯云短信发送；腾讯云图形验证码能力已在服务端预置，但目前短信主业务默认不启用验证码风控。
+13. 本轮不做账号合并和手机号绑定。如果某个手机号已经属于另一条用户记录，短信注册会直接拒绝，不会自动合并或转移绑定。
+14. `POST /api/v1/auth/login`、`POST /api/v1/auth/login/email`、`POST /api/v1/auth/login/sms`、`POST /api/v1/auth/password/reset`、`POST /api/v1/auth/password/reset-by-sms`、`POST /api/v1/auth/password/change`、`POST /api/v1/auth/register`、`POST /api/v1/auth/register/sms`、`POST /api/v1/auth/refresh` 以及扫码登录轮询成功时，响应体里都会直接带 `user`，客户端不需要为了首屏再补打一枪用户信息。
+15. `GET /api/v1/users/me` 用于 App 重启、刷新页面或恢复登录态时重新拉取当前用户信息；它会按 Bearer Token 的 `app_id` 校验作用域，如果同时传 `X-App-Id`，必须与 token 一致。
+16. `clientType = "web"` 时，服务端会通过 `Set-Cookie` 写入 refresh token。当前 API 默认使用跨站友好的 `SameSite=None; Secure`，前端请求必须带 `credentials: "include"`；如果是同站部署，也可以通过 `AUTH_REFRESH_COOKIE_SAMESITE=Lax` 切回更保守的策略。
+17. 当前 `user` 结构为：
 
-## 7. 统一响应格式
+```json
+{
+  "id": "user_alice",
+  "name": "alice",
+  "email": "alice@example.com",
+  "phone": null,
+  "avatarUrl": null,
+  "hasPassword": true
+}
+```
 
-当前实现统一返回：
+16. 目前 `name` 会根据现有账号信息推导，优先取邮箱前缀，其次取手机号；`avatarUrl` 预留为 `null`，后续可平滑扩展。
+17. `hasPassword` 用于标识当前账号是否已经设置过密码：
+
+- `false`：当前仍是 `email-code-only` 或 `sms-code-only` 账号，前端应展示“设置密码”
+- `true`：前端应展示“修改密码”
+
+18. `POST /api/v1/auth/logout` 当 `scope = "all"` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
+19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
+20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `taskType`，不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。
+21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `taskType + messages`；`chat_compaction` 是无工具、非流式的 hard compact 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `taskType + input`。
+22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
+23. 一旦 AI 请求解密成功，业务成功结果与业务错误都会加密返回；客户端需要先解密，再读取其中的标准 `code + message + data + requestId` 响应包。
+24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时会返回 `text/event-stream`；每个 SSE `data:` 事件仍然是一个加密 outer envelope。解密后的正常事件类型通常为 `reasoning_delta`、`content_delta`、`usage`、`done`；其中 `taskType = kickoff_turn` 改为使用 `text_delta`、`tool_call`、`usage`、`done`，用于把 assistant 本轮 kickoff 文本与 tool 请求原样回传给客户端引擎。`usage` 与 `done.usage` 包含 `promptTokens`、`completionTokens`、`totalTokens`，并在服务端能识别模型窗口时额外携带 `contextWindowTokens`、`contextUsedRatio`，客户端应以这些字段判断 hard compact 阈值。`done.completion` 当前保证包含 `modelKey`、`content`，并按需携带 `reasoningText`、`finishReason`。对于 `kickoff_turn`，Zook 只负责单轮 assistant content / tool_call 输出，不在服务端内部继续 kickoff tool loop；后续 tool 执行与下一轮请求由 AINovel engine 负责。服务端会在 relay `ask_question` 时再次规范化 payload：`options` 只保留 2 到 4 个非空、去重后的字符串；`optionSubtitles` 只有在与 `options` 一一对应时才会继续下发；如果规范化后仍不合法，则改为发出流式错误事件而不是把非法 `tool_call` 直接交给客户端。如果在请求解密成功后发生 mid-stream 业务失败，服务端会发出一个加密后的非 `OK` 业务错误 envelope，客户端应把该事件视为流式失败，且后续不应再期待 `done` 事件。
+25. **仅 local 联调环境**允许在 AI 加密 envelope 外层额外挂一个明文字段用于第 8 人员排查：客户端请求体可带 `localDebugRequestPlaintext`，服务端 chat-completion 成功响应可带 `localDebugResponseText`。这两个字段都只是调试镜像，前后端业务逻辑都不得依赖它们。
+26. **仅 local 联调环境**开放 `POST /api/v1/ai_novel/debug/audit-file`，用于 Flutter Web 把完整自包含的 generation audit HTML 上传给本机 Zook。该接口仍要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；生产环境或非 localhost/127.0.0.1 host 返回 `404`。请求体为 `{ "sessionId": "...", "html": "..." }`；服务端只 sanitize `sessionId` 并覆盖写入 AINovel 仓库 `.zook/quality-generation/app/{safeSessionId}/generation-audit.html`，响应 `filePath`、`fileUrl`、`viewUrl`、`updatedAt`。其中 `viewUrl` 是 local-only HTTP 查看地址，用于 Flutter Web 在新标签页打开报告；Zook 不解析 HTML 或 audit JSON。
+27. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Did` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
+28. 服务端不再把上传日志逐行落库；上传成功后会把解密解压后的 `.ndjson` 文件直接存到本地，并在 admin 的 `Remote Log Pull` 页面里提供“查看日志 / 下载原始文件”。日志浏览解析发生在前端，不做服务端分页。
+29. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
+30. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点“查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
+
+## 8. 统一响应格式
+
+成功响应：
 
 ```json
 {
@@ -240,7 +299,7 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 }
 ```
 
-失败时：
+失败响应：
 
 ```json
 {
@@ -253,45 +312,27 @@ GET /api/v1/pomodoro/sessions?date=2026-03-18
 
 客户端应优先根据 `HTTP Status + code` 做分支处理。
 
-## 8. 常用错误码
+## 9. 常用错误码
 
-| HTTP Status | code | 说明 |
-| --- | --- | --- |
-| `400` | `REQ_INVALID_BODY` | 请求体不合法或缺字段 |
-| `400` | `REQ_INVALID_QUERY` | 查询参数不合法 |
-| `401` | `AUTH_BEARER_REQUIRED` | 缺失 Bearer Token |
-| `401` | `AUTH_INVALID_TOKEN` | Token 非法、签名错误或过期 |
-| `401` | `AUTH_REFRESH_TOKEN_REQUIRED` | 需要 Refresh Token 但未提供 |
-| `401` | `AUTH_REFRESH_TOKEN_REVOKED` | Refresh Token 已失效或已撤销 |
-| `401` | `AUTH_VERIFICATION_CODE_REQUIRED` | 注册验证码缺失 |
-| `401` | `AUTH_VERIFICATION_CODE_INVALID` | 注册验证码错误、过期或已失效 |
-| `401` | `AUTH_QR_LOGIN_TOKEN_REQUIRED` | 扫码登录所需的一次性 token 缺失 |
-| `401` | `AUTH_QR_LOGIN_INVALID` | 扫码登录会话或 token 非法 |
-| `401` | `AUTH_QR_LOGIN_EXPIRED` | 扫码登录二维码已过期 |
-| `409` | `AUTH_ACCOUNT_ALREADY_EXISTS` | 邮箱已注册 |
-| `409` | `AUTH_QR_LOGIN_ALREADY_USED` | 扫码登录会话已确认或已消费 |
-| `429` | `AUTH_RATE_LIMITED` | 注册发送或提交频率过高 |
-| `403` | `AUTH_APP_SCOPE_MISMATCH` | Header、Path、Token 的产品标识不一致 |
-| `403` | `IAM_PERMISSION_DENIED` | 当前用户没有对应权限 |
-| `500` | `SYS_INTERNAL_ERROR` | 服务端内部异常 |
-
-## 9. 最终落地模板
-
-新增接口时，优先按下面的骨架设计：
-
-```text
-/api/v1/auth/...
-/api/v1/users/...
-/api/v1/files/...
-/api/v1/billing/...
-/api/v1/notifications/...
-/api/v1/config/...
-
-/api/v1/{productKey}/...
-/api/v1/{productKey}/public/...
-/api/v1/{productKey}/callbacks/...
-/api/v1/{productKey}/webhooks/...
-
-/api/v1/admin/...
-/api/v1/admin/{productKey}/...
-```
+| HTTP Status | code                                | 说明                                 |
+| ----------- | ----------------------------------- | ------------------------------------ |
+| `400`       | `REQ_INVALID_BODY`                  | 请求体不合法或缺字段                 |
+| `400`       | `REQ_INVALID_QUERY`                 | 查询参数不合法                       |
+| `401`       | `AUTH_BEARER_REQUIRED`              | 缺失 Bearer Token                    |
+| `401`       | `AUTH_INVALID_TOKEN`                | Token 非法、签名错误或过期           |
+| `401`       | `AUTH_REFRESH_TOKEN_REQUIRED`       | 需要 Refresh Token 但未提供          |
+| `401`       | `AUTH_REFRESH_TOKEN_REVOKED`        | Refresh Token 已失效或已撤销         |
+| `401`       | `AUTH_VERIFICATION_CODE_REQUIRED`   | 验证码缺失                           |
+| `401`       | `AUTH_VERIFICATION_CODE_INVALID`    | 验证码错误、过期或已失效             |
+| `401`       | `AUTH_QR_LOGIN_TOKEN_REQUIRED`      | 扫码登录所需的一次性 token 缺失      |
+| `401`       | `AUTH_QR_LOGIN_INVALID`             | 扫码登录会话或 token 非法            |
+| `401`       | `AUTH_QR_LOGIN_EXPIRED`             | 扫码登录二维码已过期                 |
+| `401`       | `AUTH_ONE_CLICK_TOKEN_INVALID`      | 一键登录 token 非法或已失效          |
+| `403`       | `AUTH_APP_SCOPE_MISMATCH`           | Header、Path、Token 的产品标识不一致 |
+| `403`       | `IAM_PERMISSION_DENIED`             | 当前用户没有对应权限                 |
+| `409`       | `AUTH_ACCOUNT_ALREADY_EXISTS`       | 邮箱已注册                           |
+| `409`       | `AUTH_QR_LOGIN_ALREADY_USED`        | 扫码登录会话已确认或已消费           |
+| `429`       | `AUTH_RATE_LIMITED`                 | 提交频率过高                         |
+| `503`       | `ONE_CLICK_SERVICE_NOT_CONFIGURED`  | 一键登录服务未配置                   |
+| `502`       | `ONE_CLICK_PROVIDER_REQUEST_FAILED` | 个验服务端校验失败或不可用           |
+| `500`       | `SYS_INTERNAL_ERROR`                | 服务端内部异常                       |

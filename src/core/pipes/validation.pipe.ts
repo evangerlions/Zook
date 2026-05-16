@@ -38,6 +38,19 @@ export class ValidationPipe {
     return value.trim();
   }
 
+  optionalBoolean(container: Record<string, unknown>, key: string): boolean | undefined {
+    const value = container[key];
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    if (typeof value !== "boolean") {
+      badRequest("REQ_INVALID_BODY", `${key} must be a boolean when provided.`);
+    }
+
+    return value;
+  }
+
   requireNumber(container: Record<string, unknown>, key: string): number {
     const value = container[key];
     if (typeof value !== "number" || Number.isNaN(value)) {
