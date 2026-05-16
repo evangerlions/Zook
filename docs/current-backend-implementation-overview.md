@@ -279,9 +279,12 @@
   - `tencent.secret_id`
   - `tencent.secret_key`
     作为腾讯云主凭证，不再单独维护短信专用的另一套密钥命名。
-- 个验一键登录服务通过 `common.getui_gy_service` 启用，密钥字段只允许引用 common password 工作区：
-  - `getui.gy.app_key`
-  - `getui.gy.master_secret`
+- 个验一键登录服务通过 `common.getui_gy_service` 启用，每个 Zook AppID 独立映射一套直接保存的个验凭据：
+  - `apps[appId].appId`
+  - `apps[appId].appKey`
+  - `apps[appId].appSecret`
+  - `apps[appId].masterSecret`
+- 后台读取配置时会对 `appKey`、`appSecret`、`masterSecret` 脱敏；需要输入二级密码后才能查看明文。
 
 ## 4. 当前目录结构
 

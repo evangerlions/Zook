@@ -37,10 +37,11 @@ export class GetuiGyOneClickLoginService {
   constructor(private readonly configService: CommonGetuiGyConfigService) {}
 
   async exchangeToken(command: {
+    appId: string;
     token: string;
     gyuid: string;
   }): Promise<GetuiGyPhoneResult> {
-    const config = await this.configService.getRuntimeConfig();
+    const config = await this.configService.getRuntimeConfig(command.appId);
     const token = command.token.trim();
     const gyuid = command.gyuid.trim();
     if (!token || !gyuid) {

@@ -61,7 +61,10 @@ import {
   TENCENT_SECRET_KEY_PASSWORD_KEY,
 } from "./services/common-email-config.service.ts";
 import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
-import { CommonGetuiGyConfigService } from "./services/common-getui-gy-config.service.ts";
+import {
+  CommonGetuiGyConfigService,
+  GETUI_GY_CREDENTIAL_READ_OPERATION,
+} from "./services/common-getui-gy-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import {
   CommonPasswordConfigService,
@@ -138,6 +141,7 @@ import type {
   AdminRemoteLogPullTaskFileDocument,
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
+  AdminGetuiGyCredentialRevealDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
   AdminSmsVerificationListDocument,
@@ -147,6 +151,7 @@ import type {
   AdminSensitiveOperationCodeRequestDocument,
   AdminSensitiveOperationGrantDocument,
   AdminPasswordDocument,
+  GetuiGySensitiveCredentialField,
   AnalyticsEventInput,
   AuthSuccessPayload,
   ClientType,
@@ -570,6 +575,20 @@ export class BackendApplication {
       return this.handleAdminUpdateAuthRateLimits(request);
     }
 
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/getui-gy-service"
+    ) {
+      return this.handleAdminGetGetuiGyService(request);
+    }
+
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/getui-gy-service"
+    ) {
+      return this.handleAdminUpdateGetuiGyService(request);
+    }
+
     const adminEmailRevisionMatch = request.path.match(
       /^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)$/,
     );
@@ -607,6 +626,37 @@ export class BackendApplication {
       return this.handleAdminRestoreAuthRateLimitsRevision(
         request,
         Number(adminAuthRateLimitRestoreMatch[1]),
+      );
+    }
+
+    const adminGetuiGyRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/getui-gy-service\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminGetuiGyRevisionMatch) {
+      return this.handleAdminGetGetuiGyServiceRevision(
+        request,
+        Number(adminGetuiGyRevisionMatch[1]),
+      );
+    }
+
+    const adminGetuiGyRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/getui-gy-service\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminGetuiGyRestoreMatch) {
+      return this.handleAdminRestoreGetuiGyServiceRevision(
+        request,
+        Number(adminGetuiGyRestoreMatch[1]),
+      );
+    }
+
+    const adminGetuiGyCredentialRevealMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/getui-gy-service\/apps\/([^/]+)\/(appKey|appSecret|masterSecret)\/reveal$/,
+    );
+    if (request.method === "POST" && adminGetuiGyCredentialRevealMatch) {
+      return this.handleAdminRevealGetuiGyCredentialValue(
+        request,
+        decodeURIComponent(adminGetuiGyCredentialRevealMatch[1]),
+        adminGetuiGyCredentialRevealMatch[2] as GetuiGySensitiveCredentialField,
       );
     }
 
@@ -1594,6 +1644,7 @@ export class BackendApplication {
 
     try {
       const phoneResult = await this.getuiGyOneClickLoginService.exchangeToken({
+        appId,
         token,
         gyuid,
       });
@@ -1665,7 +1716,7 @@ export class BackendApplication {
     request: HttpRequest,
   ): Promise<HttpResponse<unknown>> {
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const config = await this.commonGetuiGyConfigService.getRuntimeConfig();
+    const config = await this.commonGetuiGyConfigService.getRuntimeConfig(appId);
     return this.ok(
       {
         available: true,
@@ -3032,6 +3083,127 @@ export class BackendApplication {
       payload: {
         adminUser,
         revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetGetuiGyService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getGetuiGyServiceConfig();
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.getui_gy_service.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateGetuiGyService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateGetuiGyServiceConfig(
+      body,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.getui_gy_service.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetGetuiGyServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result =
+      await this.adminConsoleService.getGetuiGyServiceConfig(revision);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.getui_gy_service.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreGetuiGyServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreGetuiGyServiceConfig(
+      revision,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.getui_gy_service.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRevealGetuiGyCredentialValue(
+    request: HttpRequest,
+    zookAppId: string,
+    field: GetuiGySensitiveCredentialField,
+  ): Promise<HttpResponse<AdminGetuiGyCredentialRevealDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      GETUI_GY_CREDENTIAL_READ_OPERATION,
+    );
+    const result = await this.adminConsoleService.revealGetuiGyCredentialValue(
+      zookAppId,
+      field,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.getui_gy_service.credential.reveal",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${zookAppId}:${field}`,
+      payload: {
+        adminUser: session.username,
+        zookAppId,
+        field,
       },
     });
 
@@ -4983,7 +5155,6 @@ export async function createApplication(
   );
   const commonGetuiGyConfigService = new CommonGetuiGyConfigService(
     appConfigService,
-    secretReferenceResolver,
   );
   const commonLlmConfigService = new CommonLlmConfigService(
     appConfigService,
@@ -5155,6 +5326,7 @@ export async function createApplication(
     appLogSecretService,
     commonEmailConfigService,
     commonAuthRateLimitConfigService,
+    commonGetuiGyConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
     emailTestSendService,
