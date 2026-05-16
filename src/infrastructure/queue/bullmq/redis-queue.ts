@@ -48,7 +48,7 @@ export class RedisJobQueue implements JobQueue {
 
     while (true) {
       const popped = await this.client.zPopMin(DUE_JOBS_KEY);
-      const first = popped[0];
+      const first = popped?.[0];
       if (!first) {
         return;
       }
@@ -74,7 +74,8 @@ export class RedisJobQueue implements JobQueue {
         await this.client.del(this.buildJobKey(job.id));
       } catch (error) {
         job.attemptsMade += 1;
-        job.failedReason = error instanceof Error ? error.message : "Unknown queue error";
+        job.failedReason =
+          error instanceof Error ? error.message : "Unknown queue error";
 
         if (job.attemptsMade >= job.maxAttempts) {
           await this.client.del(this.buildJobKey(job.id));
