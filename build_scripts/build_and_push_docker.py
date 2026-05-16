@@ -83,6 +83,7 @@ def run_command(
     cwd: Path | None = None,
     capture_output: bool = False,
     stdin_text: str | None = None,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     print(f"+ {format_command(command)}")
     return subprocess.run(
@@ -92,6 +93,7 @@ def run_command(
         text=True,
         input=stdin_text,
         capture_output=capture_output,
+        env=env,
     )
 
 
@@ -376,6 +378,27 @@ def write_compose_env(path: Path, values: dict[str, str]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def read_compose_env(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, raw_value = line.split("=", 1)
+        value = raw_value.strip()
+        if value.startswith('"') and value.endswith('"'):
+            value = json.loads(value)
+        values[key.strip()] = value
+    return values
+
+
+def compose_subprocess_env(compose_env_file: Path) -> dict[str, str]:
+    return {
+        **os.environ,
+        **read_compose_env(compose_env_file),
+    }
+
+
 def get_service_container_id(project_name: str, service_name: str) -> str | None:
     try:
         output = command_output(
@@ -407,6 +430,22 @@ def get_service_status(project_name: str, service_name: str) -> str | None:
     if not container_id:
         return None
     return command_output(["docker", "inspect", "--format", "{{.State.Status}}", container_id])
+
+
+def get_service_health(project_name: str, service_name: str) -> str | None:
+    container_id = get_service_container_id(project_name, service_name)
+    if not container_id:
+        return None
+    health_status = command_output(
+        [
+            "docker",
+            "inspect",
+            "--format",
+            "{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}",
+            container_id,
+        ]
+    )
+    return None if health_status == "none" else health_status
 
 
 def compose_command(project_name: str, compose_files: list[Path], compose_env_file: Path, *extra_args: str) -> list[str]:
@@ -468,11 +507,13 @@ def wait_for_release(
         api_status = get_service_status(project_name, "api")
         worker_status = get_service_status(project_name, "worker")
         admin_status = get_service_status(project_name, "admin-web")
+        worker_health = get_service_health(project_name, "worker")
         healthy = check_http_health(bind_ip, host_port, health_path)
+        worker_healthy = worker_health == "healthy"
         admin_healthy = check_http_health(bind_ip, admin_host_port, admin_health_path)
         current_state = (
             f"api={api_status} worker={worker_status} admin={admin_status} "
-            f"healthy={healthy} adminHealthy={admin_healthy}"
+            f"healthy={healthy} workerHealthy={worker_healthy} adminHealthy={admin_healthy}"
         )
         if current_state != last_state:
             print(f"wait release status: {current_state}")
@@ -482,6 +523,7 @@ def wait_for_release(
             and worker_status == "running"
             and admin_status == "running"
             and healthy
+            and worker_healthy
             and admin_healthy
         ):
             return True
@@ -517,6 +559,7 @@ def deploy_release(repo_root: Path, project_name: str, compose_files: list[Path]
     run_command(
         compose_command(project_name, compose_files, compose_env_file, "up", "-d", "--force-recreate", "--remove-orphans"),
         cwd=repo_root,
+        env=compose_subprocess_env(compose_env_file),
     )
 
 

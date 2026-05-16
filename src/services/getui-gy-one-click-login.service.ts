@@ -12,6 +12,12 @@ export interface GetuiGyPhoneResult {
     appId: string;
     gyuidMasked: string;
     tokenMasked: string;
+    providerRequest: {
+      method: string;
+      url: string;
+      headers: Record<string, string>;
+      body: Record<string, string | number>;
+    };
   };
 }
 
@@ -52,14 +58,20 @@ export class GetuiGyOneClickLoginService {
       token,
       sign: sha256Hex(`${config.appKey}${timestamp}${config.masterSecret}`),
     };
+    const providerRequest = {
+      method: "POST",
+      url: config.endpoint,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body,
+    };
 
     let response: Response;
     try {
       response = await fetch(config.endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        method: providerRequest.method,
+        headers: providerRequest.headers,
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(config.timeoutMs),
       });
@@ -70,6 +82,7 @@ export class GetuiGyOneClickLoginService {
         "Getui GeYan one-click login request failed.",
         {
           provider: "getui_gy",
+          providerRequest,
           error: error instanceof Error ? error.message : String(error),
         },
       );
@@ -85,6 +98,7 @@ export class GetuiGyOneClickLoginService {
         "Getui GeYan one-click login response is not valid JSON.",
         {
           provider: "getui_gy",
+          providerRequest,
           statusCode: response.status,
           error: error instanceof Error ? error.message : String(error),
         },
@@ -109,6 +123,7 @@ export class GetuiGyOneClickLoginService {
           "Getui GeYan one-click login provider rejected the token.",
         {
           provider: "getui_gy",
+          providerRequest,
           statusCode: response.status,
           errno: payload.errno,
           result: providerResult,
@@ -126,6 +141,7 @@ export class GetuiGyOneClickLoginService {
         "Getui GeYan one-click login response does not contain a phone number.",
         {
           provider: "getui_gy",
+          providerRequest,
           result: providerResult,
           msg: providerMessage,
         },
@@ -140,6 +156,7 @@ export class GetuiGyOneClickLoginService {
         "Getui GeYan phone number could not be decrypted.",
         {
           provider: "getui_gy",
+          providerRequest,
           result: providerResult,
           msg: providerMessage,
         },
@@ -155,6 +172,7 @@ export class GetuiGyOneClickLoginService {
         appId: config.appId,
         gyuidMasked: maskSensitiveString(gyuid),
         tokenMasked: maskSensitiveString(token),
+        providerRequest,
       },
     };
   }

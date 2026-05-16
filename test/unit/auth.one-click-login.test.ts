@@ -4,6 +4,8 @@ import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
 
 test("one-click login verifies provider token and persists session", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "dev";
   const runtime = await createApplication();
   await runtime.services.commonPasswordConfigService.set(
     "getui.gy.app_key",
@@ -81,31 +83,152 @@ test("one-click login verifies provider token and persists session", async () =>
       runtime.database.auditLogs.some(
         (item) =>
           item.action === "auth.login.one_click" &&
-          item.resourceOwnerUserId === createdUser.id,
+          item.resourceOwnerUserId === createdUser.id &&
+          (item.payload as { replayRequest?: { body?: { token?: string } } })
+            .replayRequest?.body?.token === "native-token" &&
+          (item.payload as { providerRequest?: { body?: { token?: string } } })
+            .providerRequest?.body?.token === "native-token",
       ),
     );
   } finally {
     globalThis.fetch = originalFetch;
+    restoreAppEnv(previousAppEnv);
   }
 });
 
-test("one-click login reports missing Getui config", async () => {
+test("one-click login status fails fast when Getui config is missing", async () => {
   const runtime = await createApplication();
   const response = await runtime.app.handle({
-    method: "POST",
-    path: "/api/v1/auth/login/one-click",
+    method: "GET",
+    path: "/api/v1/auth/login/one-click/status",
     headers: {},
-    body: {
+    query: {
       appId: "app_a",
-      token: "native-token",
-      gyuid: "gy-user",
-      clientType: "app",
     },
+    body: null,
     ipAddress: "198.51.100.80",
   });
 
   assert.equal(response.statusCode, 503);
   assert.equal(response.body.code, "ONE_CLICK_SERVICE_NOT_CONFIGURED");
+});
+
+test("one-click login status reports backend readiness", async () => {
+  const runtime = await createApplication();
+  await runtime.services.commonPasswordConfigService.set(
+    "getui.gy.app_key",
+    "Getui app key",
+    "app-key",
+  );
+  await runtime.services.commonPasswordConfigService.set(
+    "getui.gy.master_secret",
+    "Getui master secret",
+    "master-secret",
+  );
+  await runtime.services.appConfigService.setValue(
+    "common",
+    "common.getui_gy_service",
+    JSON.stringify({
+      enabled: true,
+      appId: "getui-app-id",
+      endpoint: "https://getui.example.test/gy_get_pn",
+      appKey: "{{ zook.ps.getui.gy.app_key }}",
+      masterSecret: "{{ zook.ps.getui.gy.master_secret }}",
+      timeoutMs: 1000,
+    }),
+  );
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/auth/login/one-click/status",
+    headers: {},
+    query: {
+      appId: "app_a",
+    },
+    body: null,
+    ipAddress: "198.51.100.80",
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.data.available, true);
+  assert.equal(response.body.data.provider, "getui_gy");
+  assert.equal(response.body.data.providerAppId, "getui-app-id");
+  assert.equal(
+    response.body.data.endpoint,
+    "https://getui.example.test/gy_get_pn",
+  );
+});
+
+test("one-click login reports missing Getui config", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "dev";
+  const runtime = await createApplication();
+  try {
+    const response = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/auth/login/one-click",
+      headers: {},
+      body: {
+        appId: "app_a",
+        token: "native-token",
+        gyuid: "gy-user",
+        clientType: "app",
+      },
+      ipAddress: "198.51.100.80",
+    });
+
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.body.code, "ONE_CLICK_SERVICE_NOT_CONFIGURED");
+    assert.ok(
+      runtime.database.auditLogs.some(
+        (item) =>
+          item.action === "auth.login.one_click" &&
+          (item.payload as { replayRequest?: { body?: { token?: string } } })
+            .replayRequest?.body?.token === "native-token",
+      ),
+    );
+  } finally {
+    restoreAppEnv(previousAppEnv);
+  }
+});
+
+test("one-click login does not audit replayable request outside dev", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "production";
+  const runtime = await createApplication();
+  try {
+    await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/auth/login/one-click",
+      headers: {},
+      body: {
+        appId: "app_a",
+        token: "native-token",
+        gyuid: "gy-user",
+        clientType: "app",
+      },
+      ipAddress: "198.51.100.80",
+    });
+
+    const audit = runtime.database.auditLogs.find(
+      (item) => item.action === "auth.login.one_click",
+    );
+    assert.ok(audit);
+    const payload = audit.payload as {
+      replayRequest?: unknown;
+      providerRequest?: unknown;
+      errorDetails?: unknown;
+      requestSummary?: { tokenMasked?: string; gyuidMasked?: string };
+    };
+    assert.equal(payload.replayRequest, undefined);
+    assert.equal(payload.providerRequest, undefined);
+    assert.equal(payload.errorDetails, undefined);
+    assert.ok(payload.requestSummary);
+    assert.notEqual(payload.requestSummary?.tokenMasked, "native-token");
+    assert.notEqual(payload.requestSummary?.gyuidMasked, "gy-user");
+  } finally {
+    restoreAppEnv(previousAppEnv);
+  }
 });
 
 function encryptPhone(phone: string, masterSecret: string): string {
@@ -125,4 +248,12 @@ function buildAesKey(masterSecret: string): Buffer {
     key += masterSecret;
   }
   return Buffer.from(key.slice(0, 16), "utf8");
+}
+
+function restoreAppEnv(previousAppEnv: string | undefined): void {
+  if (previousAppEnv === undefined) {
+    delete process.env.APP_ENV;
+    return;
+  }
+  process.env.APP_ENV = previousAppEnv;
 }

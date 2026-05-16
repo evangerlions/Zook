@@ -13,7 +13,9 @@ interface SentVerificationEmail {
   templateName?: string;
 }
 
-function createFakeSender(sent: SentVerificationEmail[]): RegistrationEmailSender {
+function createFakeSender(
+  sent: SentVerificationEmail[],
+): RegistrationEmailSender {
   return {
     async sendTemplateEmail() {
       return {
@@ -64,7 +66,11 @@ test("register email verification codes survive runtime restarts when KV storage
   );
 
   assert.ok(session.accessToken);
-  assert.equal(secondRuntime.database.findUserByAccount("persisted-register@example.com")?.passwordAlgo, "scrypt");
+  assert.equal(
+    secondRuntime.database.findUserByAccount("persisted-register@example.com")
+      ?.passwordAlgo,
+    "scrypt",
+  );
 });
 
 test("logout all invalidates the current access token immediately", async () => {
@@ -154,7 +160,11 @@ test("password reset upgrades email-code-only accounts into password accounts", 
   });
 
   assert.equal(emailLoginResponse.statusCode, 200);
-  assert.equal(runtime.database.findUserByAccount("setup-password@example.com")?.passwordAlgo, "email-code-only");
+  assert.equal(
+    runtime.database.findUserByAccount("setup-password@example.com")
+      ?.passwordAlgo,
+    "email-code-only",
+  );
 
   nextCode = "222222";
   const sendPasswordCodeResponse = await runtime.app.handle({
@@ -190,7 +200,11 @@ test("password reset upgrades email-code-only accounts into password accounts", 
   assert.equal(resetResponse.statusCode, 200);
   assert.ok(typeof resetResponse.body.data.accessToken === "string");
   assert.ok(typeof resetResponse.body.data.refreshToken === "string");
-  assert.equal(runtime.database.findUserByAccount("setup-password@example.com")?.passwordAlgo, "scrypt");
+  assert.equal(
+    runtime.database.findUserByAccount("setup-password@example.com")
+      ?.passwordAlgo,
+    "scrypt",
+  );
 
   const passwordLoginResponse = await runtime.app.handle({
     method: "POST",
@@ -247,7 +261,10 @@ test("logged-in email-code-only users can set a password directly", async () => 
   });
 
   assert.equal(emailLoginResponse.statusCode, 200);
-  assert.equal(runtime.database.findUserByAccount("set-direct@example.com")?.passwordAlgo, "email-code-only");
+  assert.equal(
+    runtime.database.findUserByAccount("set-direct@example.com")?.passwordAlgo,
+    "email-code-only",
+  );
 
   const setPasswordResponse = await runtime.app.handle({
     method: "POST",
@@ -267,7 +284,10 @@ test("logged-in email-code-only users can set a password directly", async () => 
   assert.equal(setPasswordResponse.statusCode, 200);
   assert.ok(typeof setPasswordResponse.body.data.accessToken === "string");
   assert.ok(typeof setPasswordResponse.body.data.refreshToken === "string");
-  assert.equal(runtime.database.findUserByAccount("set-direct@example.com")?.passwordAlgo, "scrypt");
+  assert.equal(
+    runtime.database.findUserByAccount("set-direct@example.com")?.passwordAlgo,
+    "scrypt",
+  );
 
   const staleMeResponse = await runtime.app.handle({
     method: "GET",

@@ -44,6 +44,16 @@ services:
     volumes:
       - /var/lib/zook/appRunData:/app/appRunData
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "ps | grep -F 'src/worker.ts' | grep -v grep >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
   admin-web:
     image: "${DEPLOY_IMAGE:?DEPLOY_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}"
