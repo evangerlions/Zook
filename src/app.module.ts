@@ -165,6 +165,7 @@ import type {
 import {
   createOpaqueToken,
   getHeader,
+  maskSensitiveString,
   parseCookies,
   randomId,
 } from "./shared/utils.ts";
@@ -385,6 +386,7 @@ export class BackendApplication {
     private readonly database: ApplicationDatabase,
     private readonly authService: AuthService,
     private readonly getuiGyOneClickLoginService: GetuiGyOneClickLoginService,
+    private readonly commonGetuiGyConfigService: CommonGetuiGyConfigService,
     private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
     private readonly adminConsoleService: AdminConsoleService,
@@ -997,6 +999,13 @@ export class BackendApplication {
     }
 
     if (
+      request.method === "GET" &&
+      request.path === "/api/v1/auth/login/one-click/status"
+    ) {
+      return this.handleOneClickLoginStatus(request);
+    }
+
+    if (
       request.method === "POST" &&
       request.path === "/api/v1/auth/login/one-click"
     ) {
@@ -1574,6 +1583,14 @@ export class BackendApplication {
     const ipAddress = request.ipAddress ?? "unknown";
     const operator = validated.operator?.trim();
     const sdkPlatform = validated.sdkPlatform?.trim();
+    const replayRequest = this.buildOneClickLoginReplayRequest({
+      appId,
+      token,
+      gyuid,
+      clientType,
+      operator,
+      sdkPlatform,
+    });
 
     try {
       const phoneResult = await this.getuiGyOneClickLoginService.exchangeToken({
@@ -1603,6 +1620,12 @@ export class BackendApplication {
           sdkPlatform,
           providerResult: phoneResult.providerResult,
           providerMessage: phoneResult.providerMessage,
+          ...this.buildOneClickLoginAuditDebugPayload({
+            replayRequest,
+            providerRequest: phoneResult.debug.providerRequest,
+            token,
+            gyuid,
+          }),
         },
       });
 
@@ -1621,6 +1644,13 @@ export class BackendApplication {
           ipAddress,
           operator,
           sdkPlatform,
+          ...this.buildOneClickLoginAuditDebugPayload({
+            replayRequest,
+            errorDetails:
+              error instanceof ApplicationError ? error.details : undefined,
+            token,
+            gyuid,
+          }),
           errorCode:
             error instanceof ApplicationError
               ? error.code
@@ -1629,6 +1659,86 @@ export class BackendApplication {
       });
       throw error;
     }
+  }
+
+  private async handleOneClickLoginStatus(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const config = await this.commonGetuiGyConfigService.getRuntimeConfig();
+    return this.ok(
+      {
+        available: true,
+        appId,
+        provider: "getui_gy",
+        providerAppId: config.appId,
+        endpoint: config.endpoint,
+        timeoutMs: config.timeoutMs,
+      },
+      request.requestId as string,
+    );
+  }
+
+  private buildOneClickLoginReplayRequest(input: {
+    appId: string;
+    token: string;
+    gyuid: string;
+    clientType: string;
+    operator?: string;
+    sdkPlatform?: string;
+  }): Record<string, unknown> {
+    return {
+      method: "POST",
+      path: "/api/v1/auth/login/one-click",
+      body: {
+        appId: input.appId,
+        token: input.token,
+        gyuid: input.gyuid,
+        clientType: input.clientType,
+        ...(input.operator ? { operator: input.operator } : {}),
+        ...(input.sdkPlatform ? { sdkPlatform: input.sdkPlatform } : {}),
+      },
+    };
+  }
+
+  private buildOneClickLoginAuditDebugPayload(input: {
+    replayRequest: Record<string, unknown>;
+    providerRequest?: unknown;
+    errorDetails?: unknown;
+    token: string;
+    gyuid: string;
+  }): Record<string, unknown> {
+    if (this.shouldLogFullOneClickLoginRequest()) {
+      return {
+        replayRequest: input.replayRequest,
+        ...(input.providerRequest
+          ? { providerRequest: input.providerRequest }
+          : {}),
+        ...(input.errorDetails ? { errorDetails: input.errorDetails } : {}),
+      };
+    }
+
+    return {
+      requestSummary: {
+        tokenMasked: maskSensitiveString(input.token),
+        gyuidMasked: maskSensitiveString(input.gyuid),
+      },
+    };
+  }
+
+  private shouldLogFullOneClickLoginRequest(): boolean {
+    const appEnv = String(process.env.APP_ENV ?? "")
+      .trim()
+      .toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV ?? "")
+      .trim()
+      .toLowerCase();
+    return (
+      appEnv === "dev" ||
+      appEnv === "development" ||
+      appEnv === "local" ||
+      nodeEnv === "development"
+    );
   }
 
   private async handleSendPasswordCode(
@@ -5104,6 +5214,7 @@ export async function createApplication(
     database,
     authService,
     getuiGyOneClickLoginService,
+    commonGetuiGyConfigService,
     qrLoginService,
     analyticsService,
     adminConsoleService,
