@@ -309,6 +309,7 @@ function resolveAccessTokenSecrets(options: CreateApplicationOptions): {
   const current =
     options.accessTokenSecret?.trim() ||
     process.env.AUTH_ACCESS_TOKEN_SECRET?.trim() ||
+    process.env.ACCESS_TOKEN_SECRET?.trim() ||
     "";
   const previous =
     options.accessTokenPreviousSecrets ??

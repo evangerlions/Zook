@@ -6,7 +6,9 @@ import { isContainerRuntime } from "../runtime/runtime-readiness.ts";
 export const HOST_APP_RUN_DATA_ROOT = "/var/lib/zook/appRunData";
 export const CONTAINER_APP_RUN_DATA_ROOT = "/app/appRunData";
 
-export function resolvePersistentFileStorageRoot(insideContainer = isContainerRuntime()): string {
+export function resolvePersistentFileStorageRoot(
+  insideContainer = isContainerRuntime(),
+): string {
   return insideContainer ? CONTAINER_APP_RUN_DATA_ROOT : HOST_APP_RUN_DATA_ROOT;
 }
 
@@ -33,7 +35,10 @@ export class PersistentFileStore {
     return dirPath;
   }
 
-  async writeText(relativePath: string, content: string): Promise<PersistentFileWriteResult> {
+  async writeText(
+    relativePath: string,
+    content: string,
+  ): Promise<PersistentFileWriteResult> {
     const filePath = this.resolvePath(relativePath);
     await mkdir(dirname(filePath), { recursive: true });
     await writeFile(filePath, content, "utf8");
@@ -44,7 +49,10 @@ export class PersistentFileStore {
     };
   }
 
-  async writeBuffer(relativePath: string, content: Buffer): Promise<PersistentFileWriteResult> {
+  async writeBuffer(
+    relativePath: string,
+    content: Buffer,
+  ): Promise<PersistentFileWriteResult> {
     const filePath = this.resolvePath(relativePath);
     await mkdir(dirname(filePath), { recursive: true });
     await writeFile(filePath, content);
@@ -64,15 +72,19 @@ export class PersistentFileStore {
   }
 }
 
-export async function assertPersistentFileStoreReady(rootDir = resolvePersistentFileStorageRoot()): Promise<void> {
+export async function assertPersistentFileStoreReady(
+  rootDir = resolvePersistentFileStorageRoot(),
+): Promise<void> {
   const store = new PersistentFileStore(rootDir);
   const randomToken = randomBytes(8).toString("hex");
-  const relativePath = "hello_world.txt";
+  const relativePath = `.smoke/hello_world_${process.pid}_${randomToken}.txt`;
   const expected = `hello_world:${randomToken}`;
   const writeResult = await store.writeText(relativePath, expected);
   const actual = await store.readText(writeResult.filePath);
 
   if (actual !== expected) {
-    throw new Error("Persistent file storage smoke test failed: content mismatch.");
+    throw new Error(
+      "Persistent file storage smoke test failed: content mismatch.",
+    );
   }
 }

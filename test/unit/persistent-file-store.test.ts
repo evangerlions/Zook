@@ -16,7 +16,10 @@ test("persistent file store writes and reads text content", async () => {
   const root = mkdtempSync(join(tmpdir(), "zook-file-store-"));
   const store = new PersistentFileStore(root);
 
-  const written = await store.writeText("client-log-uploads/app_a/hello.txt", "hello-world");
+  const written = await store.writeText(
+    "client-log-uploads/app_a/hello.txt",
+    "hello-world",
+  );
   const readBack = await store.readText(written.filePath);
 
   assert.match(written.filePath, /client-log-uploads\/app_a\/hello\.txt$/);
@@ -29,7 +32,19 @@ test("persistent file store smoke test writes random content and reads it back",
   await assert.doesNotReject(() => assertPersistentFileStoreReady(root));
 });
 
+test("persistent file store smoke test tolerates concurrent startup checks", async () => {
+  const root = mkdtempSync(join(tmpdir(), "zook-file-smoke-concurrent-"));
+  await assert.doesNotReject(() =>
+    Promise.all(
+      Array.from({ length: 8 }, () => assertPersistentFileStoreReady(root)),
+    ),
+  );
+});
+
 test("persistent storage root resolves to host path outside containers and container path inside containers", () => {
   assert.equal(resolvePersistentFileStorageRoot(false), HOST_APP_RUN_DATA_ROOT);
-  assert.equal(resolvePersistentFileStorageRoot(true), CONTAINER_APP_RUN_DATA_ROOT);
+  assert.equal(
+    resolvePersistentFileStorageRoot(true),
+    CONTAINER_APP_RUN_DATA_ROOT,
+  );
 });
