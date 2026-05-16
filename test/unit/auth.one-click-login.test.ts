@@ -7,26 +7,27 @@ test("one-click login verifies provider token and persists session", async () =>
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "dev";
   const runtime = await createApplication();
-  await runtime.services.commonPasswordConfigService.set(
-    "getui.gy.app_key",
-    "Getui app key",
-    "app-key",
-  );
-  await runtime.services.commonPasswordConfigService.set(
-    "getui.gy.master_secret",
-    "Getui master secret",
-    "master-secret",
-  );
   await runtime.services.appConfigService.setValue(
     "common",
     "common.getui_gy_service",
     JSON.stringify({
       enabled: true,
-      appId: "getui-app-id",
       endpoint: "https://getui.example.test/gy_get_pn",
-      appKey: "{{ zook.ps.getui.gy.app_key }}",
-      masterSecret: "{{ zook.ps.getui.gy.master_secret }}",
       timeoutMs: 1000,
+      apps: {
+        app_a: {
+          appId: "getui-app-a",
+          appKey: "app-key",
+          appSecret: "app-secret",
+          masterSecret: "master-secret",
+        },
+        flutter_demo: {
+          appId: "getui-flutter",
+          appKey: "flutter-app-key",
+          appSecret: "flutter-app-secret",
+          masterSecret: "flutter-master-secret",
+        },
+      },
     }),
   );
 
@@ -73,7 +74,7 @@ test("one-click login verifies provider token and persists session", async () =>
     assert.ok(typeof response.body.data.refreshToken === "string");
     assert.equal(response.body.data.user.phone, "+8618710100985");
     assert.equal(requests.length, 1);
-    assert.equal((requests[0] as { appId: string }).appId, "getui-app-id");
+    assert.equal((requests[0] as { appId: string }).appId, "getui-app-a");
     assert.equal((requests[0] as { token: string }).token, "native-token");
 
     const createdUser = runtime.database.findUserByPhone("+8618710100985");
@@ -115,26 +116,27 @@ test("one-click login status fails fast when Getui config is missing", async () 
 
 test("one-click login status reports backend readiness", async () => {
   const runtime = await createApplication();
-  await runtime.services.commonPasswordConfigService.set(
-    "getui.gy.app_key",
-    "Getui app key",
-    "app-key",
-  );
-  await runtime.services.commonPasswordConfigService.set(
-    "getui.gy.master_secret",
-    "Getui master secret",
-    "master-secret",
-  );
   await runtime.services.appConfigService.setValue(
     "common",
     "common.getui_gy_service",
     JSON.stringify({
       enabled: true,
-      appId: "getui-app-id",
       endpoint: "https://getui.example.test/gy_get_pn",
-      appKey: "{{ zook.ps.getui.gy.app_key }}",
-      masterSecret: "{{ zook.ps.getui.gy.master_secret }}",
       timeoutMs: 1000,
+      apps: {
+        app_a: {
+          appId: "getui-app-a",
+          appKey: "app-key",
+          appSecret: "app-secret",
+          masterSecret: "master-secret",
+        },
+        flutter_demo: {
+          appId: "getui-flutter",
+          appKey: "flutter-app-key",
+          appSecret: "flutter-app-secret",
+          masterSecret: "flutter-master-secret",
+        },
+      },
     }),
   );
 
@@ -152,7 +154,7 @@ test("one-click login status reports backend readiness", async () => {
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.available, true);
   assert.equal(response.body.data.provider, "getui_gy");
-  assert.equal(response.body.data.providerAppId, "getui-app-id");
+  assert.equal(response.body.data.providerAppId, "getui-app-a");
   assert.equal(
     response.body.data.endpoint,
     "https://getui.example.test/gy_get_pn",

@@ -162,7 +162,17 @@ configKey = ai_novel.model_routing
 4. `accountDailyLimit` 和 `ipHourlyLimit` 暴露的是自然日 / 自然小时语义阈值；底层 48h / 2h TTL 只是清理策略，不需要前端配置。
 5. `verifyWindowLimit` 不能小于 `maxFailedCodeAttempts`，否则单验证码错码阈值会被更外层窗口限流提前遮蔽。
 
-### 3.10 Common LLM 服务
+### 3.10 Common GeYan 一键登录
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/common/getui-gy-service` | 获取 GeYan 一键登录配置（敏感字段脱敏） |
+| `PUT` | `/api/v1/admin/apps/common/getui-gy-service` | 更新 GeYan 一键登录配置 |
+| `GET` | `/api/v1/admin/apps/common/getui-gy-service/revisions/{revision}` | 获取指定历史版本（敏感字段脱敏） |
+| `POST` | `/api/v1/admin/apps/common/getui-gy-service/revisions/{revision}/restore` | 恢复指定历史版本 |
+| `POST` | `/api/v1/admin/apps/common/getui-gy-service/apps/{appId}/{field}/reveal` | 二级密码验证后获取 `appKey` / `appSecret` / `masterSecret` 明文 |
+
+### 3.11 Common LLM 服务
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -174,7 +184,7 @@ configKey = ai_novel.model_routing
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` | 获取单模型指标 |
 | `POST` | `/api/v1/admin/apps/common/llm-service/smoke-test` | 运行冒烟测试 |
 
-### 3.11 Admin 指标
+### 3.12 Admin 指标
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |

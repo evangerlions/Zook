@@ -7,6 +7,7 @@ import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
 import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
+import { CommonGetuiGyConfigService } from "../../services/common-getui-gy-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
 import { EmailTestSendService } from "../../services/email-test-send.service.ts";
@@ -34,6 +35,9 @@ import type {
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
   AdminEmailTestSendDocument,
+  AdminGetuiGyCredentialRevealDocument,
+  AdminGetuiGyServiceDocument,
+  GetuiGySensitiveCredentialField,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
   AdminLlmSmokeTestDocument,
@@ -62,6 +66,7 @@ export class AdminConsoleService {
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
+    private readonly commonGetuiGyConfigService: CommonGetuiGyConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
     private readonly emailTestSendService: EmailTestSendService,
@@ -385,6 +390,32 @@ export class AdminConsoleService {
     const document = await this.commonAuthRateLimitConfigService.restoreConfig(revision, desc);
     await this.managedStateStore.save(this.database);
     return document;
+  }
+
+  async getGetuiGyServiceConfig(revision?: number): Promise<AdminGetuiGyServiceDocument> {
+    return this.commonGetuiGyConfigService.getDocument(revision);
+  }
+
+  async updateGetuiGyServiceConfig(input: unknown, desc?: string): Promise<AdminGetuiGyServiceDocument> {
+    const document = await this.commonGetuiGyConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async restoreGetuiGyServiceConfig(revision: number, desc?: string): Promise<AdminGetuiGyServiceDocument> {
+    const document = await this.commonGetuiGyConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async revealGetuiGyCredentialValue(
+    zookAppId: string,
+    field: GetuiGySensitiveCredentialField,
+  ): Promise<AdminGetuiGyCredentialRevealDocument> {
+    return this.commonGetuiGyConfigService.revealCredentialValue(
+      zookAppId,
+      field,
+    );
   }
 
   async updateEmailServiceConfig(input: unknown, desc?: string): Promise<AdminEmailServiceDocument> {

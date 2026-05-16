@@ -244,6 +244,9 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
       username: "admin",
       password: "AdminPass123!",
     },
+    adminSensitiveOperation: {
+      secondaryPassword: "199510",
+    },
   });
   const headers = {
     authorization: createAdminAuthHeader(),
@@ -1802,6 +1805,193 @@ test("admin auth rate limit API stores common config and auth runtime follows up
     runtime.database.auditLogs.some(
       (item) =>
         item.action === "admin.auth_rate_limits.restore" &&
+        item.appId === "common",
+    ),
+  );
+});
+
+test("admin Getui GeYan service API stores common one-click login config", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/getui-gy-service",
+    headers,
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.equal(defaultResponse.body.data.configKey, "common.getui_gy_service");
+  assert.equal(defaultResponse.body.data.config.enabled, false);
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/getui-gy-service",
+    headers,
+    body: {
+      enabled: true,
+      apps: {
+        app_a: {
+          appId: "getui-app-a",
+          appKey: "app-key-a",
+          appSecret: "app-secret-a",
+          masterSecret: "master-secret-a",
+        },
+        flutter_demo: {
+          appId: "getui-flutter",
+          appKey: "flutter-app-key",
+          appSecret: "flutter-app-secret",
+          masterSecret: "flutter-master-secret",
+        },
+      },
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1000,
+      desc: "启用 GeYan 一键登录",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.app.appId, "common");
+  assert.equal(updateResponse.body.data.config.enabled, true);
+  assert.equal(updateResponse.body.data.config.apps.app_a.appId, "getui-app-a");
+  assert.equal(
+    updateResponse.body.data.config.apps.app_a.appSecret,
+    maskSensitiveString("app-secret-a"),
+  );
+  assert.equal(
+    (await runtime.services.commonGetuiGyConfigService.getRuntimeConfig("app_a"))
+      .appSecret,
+    "app-secret-a",
+  );
+  assert.equal(updateResponse.body.data.revision, 2);
+  assert.equal(updateResponse.body.data.desc, "启用 GeYan 一键登录");
+
+  const maskedReplayResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/getui-gy-service",
+    headers,
+    body: {
+      enabled: true,
+      apps: updateResponse.body.data.config.apps,
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1200,
+      desc: "只调整超时",
+    },
+  });
+
+  assert.equal(maskedReplayResponse.statusCode, 200);
+  assert.equal(
+    (await runtime.services.commonGetuiGyConfigService.getRuntimeConfig("app_a"))
+      .masterSecret,
+    "master-secret-a",
+  );
+
+  const cookie = await loginAdmin(runtime);
+  const directRevealResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/getui-gy-service/apps/app_a/masterSecret/reveal",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(directRevealResponse.statusCode, 403);
+  assert.equal(
+    directRevealResponse.body.code,
+    "ADMIN_SENSITIVE_OPERATION_REQUIRED",
+  );
+
+  await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "getui_gy.credential.read",
+    },
+  });
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "getui_gy.credential.read",
+      code: "199510",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+
+  const revealResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/getui-gy-service/apps/app_a/masterSecret/reveal",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(revealResponse.statusCode, 200);
+  assert.equal(revealResponse.body.data.value, "master-secret-a");
+
+  const revisionResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/getui-gy-service/revisions/3",
+    headers,
+  });
+
+  assert.equal(revisionResponse.statusCode, 200);
+  assert.equal(revisionResponse.body.data.revision, 3);
+  assert.equal(revisionResponse.body.data.config.apps.app_a.appId, "getui-app-a");
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/getui-gy-service/revisions/3/restore",
+    headers,
+    body: {
+      desc: "回滚到 GeYan R2",
+    },
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.revision, 4);
+  assert.equal(restoreResponse.body.data.desc, "回滚到 GeYan R2");
+
+  const invalidResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/getui-gy-service",
+    headers,
+    body: {
+      enabled: true,
+      apps: {},
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1000,
+    },
+  });
+
+  assert.equal(invalidResponse.statusCode, 503);
+  assert.equal(invalidResponse.body.code, "ONE_CLICK_SERVICE_NOT_CONFIGURED");
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.getui_gy_service.update" &&
+        item.appId === "common",
+    ),
+  );
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.getui_gy_service.restore" &&
         item.appId === "common",
     ),
   );

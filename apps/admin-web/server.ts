@@ -100,6 +100,19 @@ function sanitizeProxyHeaders(request: IncomingMessage): Headers {
   return headers;
 }
 
+async function readRequestBody(request: IncomingMessage): Promise<Buffer | undefined> {
+  if (request.method === "GET" || request.method === "HEAD") {
+    return undefined;
+  }
+
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return chunks.length > 0 ? Buffer.concat(chunks) : Buffer.alloc(0);
+}
+
 async function proxyApiRequest(
   request: IncomingMessage,
   response: ServerResponse,
@@ -107,15 +120,16 @@ async function proxyApiRequest(
 ): Promise<void> {
   const upstreamUrl = new URL(request.url ?? "/", proxyTarget);
   const method = request.method ?? "GET";
-  const init: RequestInit & { duplex?: "half" } = {
+  const body = await readRequestBody(request);
+  const init: RequestInit = {
     method,
     headers: sanitizeProxyHeaders(request),
     redirect: "manual",
   };
 
-  if (method !== "GET" && method !== "HEAD") {
-    init.body = request as never;
-    init.duplex = "half";
+  if (body !== undefined) {
+    init.body = body;
+    init.headers.set("content-length", String(body.byteLength));
   }
 
   try {

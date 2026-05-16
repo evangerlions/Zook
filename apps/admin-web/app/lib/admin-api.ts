@@ -9,6 +9,9 @@ import type {
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
   AdminEmailTestSendDocument,
+  AdminGetuiGyCredentialRevealDocument,
+  AdminGetuiGyServiceDocument,
+  GetuiGySensitiveCredentialField,
   AdminRemoteLogPullSettingsDocument,
   AdminRemoteLogPullTaskDocument,
   AdminRemoteLogPullTaskFileDocument,
@@ -374,6 +377,40 @@ export const adminApi = {
         body: {
           desc: desc || undefined,
         },
+      },
+    );
+  },
+  getGetuiGyService() {
+    return requestJson<AdminGetuiGyServiceDocument>(adminPath("/apps/common/getui-gy-service"));
+  },
+  getGetuiGyServiceRevision(revision: number) {
+    return requestJson<AdminGetuiGyServiceDocument>(adminPath(`/apps/common/getui-gy-service/revisions/${revision}`));
+  },
+  updateGetuiGyService(input: Record<string, unknown>) {
+    return requestJson<AdminGetuiGyServiceDocument>(adminPath("/apps/common/getui-gy-service"), {
+      method: "PUT",
+      body: input,
+    });
+  },
+  restoreGetuiGyService(revision: number, desc?: string) {
+    return requestJson<AdminGetuiGyServiceDocument>(
+      adminPath(`/apps/common/getui-gy-service/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
+      },
+    );
+  },
+  revealGetuiGyCredentialValue(
+    zookAppId: string,
+    field: GetuiGySensitiveCredentialField,
+  ) {
+    return requestJson<AdminGetuiGyCredentialRevealDocument>(
+      adminPath(`/apps/common/getui-gy-service/apps/${encodeURIComponent(zookAppId)}/${field}/reveal`),
+      {
+        method: "POST",
       },
     );
   },
