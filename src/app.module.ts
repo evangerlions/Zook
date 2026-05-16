@@ -5293,6 +5293,7 @@ export async function createApplication(
       notificationService,
       failedEventRetryService,
       smsVerificationSender,
+      smsVerificationCleanupService,
       captchaVerificationService,
       requestEmailContextService,
       requestLocaleService,
