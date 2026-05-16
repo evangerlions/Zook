@@ -25,7 +25,7 @@ const AI_NOVEL_MODEL_ALIASES: Record<string, AiNovelModelAlias> = {
   "ainovel-plus-reasoning": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "qwen3.5-plus",
+    providerModel: "glm-5",
   },
   "ainovel-super-creative": {
     kind: "chat",

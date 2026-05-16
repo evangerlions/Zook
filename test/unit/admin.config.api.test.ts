@@ -13,11 +13,28 @@ import {
 import { type RegistrationEmailSender } from "../../src/services/tencent-ses-registration-email.service.ts";
 import { maskSensitiveString } from "../../src/shared/utils.ts";
 
-function createAdminAuthHeader(username = "admin", password = "AdminPass123!"): string {
+function createAdminAuthHeader(
+  username = "admin",
+  password = "AdminPass123!",
+): string {
   return `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
 }
 
-async function loginAdmin(runtime: Awaited<ReturnType<typeof createApplication>>, username = "admin", password = "AdminPass123!") {
+async function issueAccessToken(
+  runtime: Awaited<ReturnType<typeof createApplication>>,
+) {
+  return runtime.services.authService.login({
+    appId: "app_a",
+    account: "alice@example.com",
+    password: "Password1234",
+  });
+}
+
+async function loginAdmin(
+  runtime: Awaited<ReturnType<typeof createApplication>>,
+  username = "admin",
+  password = "AdminPass123!",
+) {
   const response = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/admin/auth/login",
@@ -69,6 +86,23 @@ function createEmailServiceRegions() {
   ];
 }
 
+function createAuthRateLimitConfig(
+  overrides: Partial<Record<string, number>> = {},
+) {
+  return {
+    resendCooldownSeconds: 60,
+    verificationCodeTtlSeconds: 600,
+    sendCodeWindowSeconds: 600,
+    sendCodeWindowLimit: 3,
+    verifyWindowSeconds: 600,
+    verifyWindowLimit: 10,
+    accountDailyLimit: 10,
+    ipHourlyLimit: 20,
+    maxFailedCodeAttempts: 10,
+    ...overrides,
+  };
+}
+
 interface SentTemplateEmail {
   email: string;
   clientRegion: "ap-guangzhou" | "ap-hongkong";
@@ -79,7 +113,9 @@ interface SentTemplateEmail {
   templateData: Record<string, unknown>;
 }
 
-function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSender {
+function createFakeEmailSender(
+  sent: SentTemplateEmail[],
+): RegistrationEmailSender {
   return {
     async sendTemplateEmail(command) {
       sent.push({
@@ -144,50 +180,55 @@ function createFakeEmailSender(sent: SentTemplateEmail[]): RegistrationEmailSend
 function createFailingEmailSender(): RegistrationEmailSender {
   return {
     async sendTemplateEmail(command) {
-      throw new ApplicationError(502, "EMAIL_PROVIDER_REQUEST_FAILED", "FailedOperation.SendEmailErr: region mismatch", {
-        requestId: "req-failed-email",
-        provider: "tencent_ses",
-        debug: {
-          request: {
-            endpoint: "https://ses.tencentcloudapi.com/",
-            method: "POST",
-            clientRegion: command.clientRegion,
-            resolvedRegion: command.region,
-            headers: {
-              "X-TC-Region": command.region,
-            },
-            credentials: {
-              secretIdMasked: "sid-****",
-              secretKeyMasked: "sk-d****",
-            },
-            body: {
-              FromEmailAddress: command.fromEmailAddress,
-              Destination: [command.email],
-              Subject: command.subject,
-              Template: {
-                TemplateID: command.templateId,
-                TemplateData: JSON.stringify(command.templateData),
+      throw new ApplicationError(
+        502,
+        "EMAIL_PROVIDER_REQUEST_FAILED",
+        "FailedOperation.SendEmailErr: region mismatch",
+        {
+          requestId: "req-failed-email",
+          provider: "tencent_ses",
+          debug: {
+            request: {
+              endpoint: "https://ses.tencentcloudapi.com/",
+              method: "POST",
+              clientRegion: command.clientRegion,
+              resolvedRegion: command.region,
+              headers: {
+                "X-TC-Region": command.region,
               },
-            },
-          },
-          response: {
-            statusCode: 400,
-            ok: false,
-            body: {
-              Response: {
-                RequestId: "req-failed-email",
-                Error: {
-                  Code: "FailedOperation.SendEmailErr",
-                  Message: "region mismatch",
+              credentials: {
+                secretIdMasked: "sid-****",
+                secretKeyMasked: "sk-d****",
+              },
+              body: {
+                FromEmailAddress: command.fromEmailAddress,
+                Destination: [command.email],
+                Subject: command.subject,
+                Template: {
+                  TemplateID: command.templateId,
+                  TemplateData: JSON.stringify(command.templateData),
                 },
               },
             },
-            requestId: "req-failed-email",
-            errorCode: "FailedOperation.SendEmailErr",
-            errorMessage: "region mismatch",
+            response: {
+              statusCode: 400,
+              ok: false,
+              body: {
+                Response: {
+                  RequestId: "req-failed-email",
+                  Error: {
+                    Code: "FailedOperation.SendEmailErr",
+                    Message: "region mismatch",
+                  },
+                },
+              },
+              requestId: "req-failed-email",
+              errorCode: "FailedOperation.SendEmailErr",
+              errorMessage: "region mismatch",
+            },
           },
         },
-      });
+      );
     },
     async sendVerificationCode() {
       return {
@@ -222,15 +263,22 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
     ["ai_novel", "app_a", "app_b"],
   );
   assert.equal(
-    bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")?.canDelete,
+    bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")
+      ?.canDelete,
     false,
   );
   assert.match(
-    String(bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")?.logSecret.keyId),
+    String(
+      bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")
+        ?.logSecret.keyId,
+    ),
     /^logk_/,
   );
   assert.match(
-    String(bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")?.logSecret.secretMasked),
+    String(
+      bootstrapResponse.body.data.apps.find((item) => item.appId === "app_a")
+        ?.logSecret.secretMasked,
+    ),
     /\*/,
   );
 
@@ -270,73 +318,74 @@ test("admin ai routing APIs expose default config and support revisions", async 
   assert.equal(getResponse.body.data.app.appId, "ai_novel");
   assert.equal(getResponse.body.data.configKey, "ai_novel.model_routing");
   assert.match(getResponse.body.data.rawJson, /"defaultTier": "free"/);
-  assert.match(getResponse.body.data.rawJson, /"continue_chapter": "ainovel-free-creative"/);
+  assert.match(
+    getResponse.body.data.rawJson,
+    /"write_turn": "ainovel-free-creative"/,
+  );
 
-  const updatedRawJson = JSON.stringify({
-    defaultTier: "free",
-    tiers: {
-      free: {
-        chat: {
-          setup_turn: "ainovel-plus-reasoning",
-          blueprint_gen: "ainovel-free-creative",
-          chapter1_draft_gen: "ainovel-free-creative",
-          chapter1_critic: "ainovel-free-reasoning",
-          fact_extract: "ainovel-lowcost-structured",
-          episode_extract: "ainovel-lowcost-structured",
-          continue_chapter: "ainovel-plus-creative",
-          chapter_transition: "ainovel-free-reasoning",
-          chapter2_planner: "ainovel-free-reasoning",
-          chapter2_draft_gen: "ainovel-free-creative",
+  const updatedRawJson = JSON.stringify(
+    {
+      defaultTier: "free",
+      tiers: {
+        free: {
+          chat: {
+            kickoff_turn: "ainovel-plus-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
+            write_turn: "ainovel-plus-creative",
+            chapter_draft: "ainovel-free-creative",
+            chapter_summary: "ainovel-lowcost-structured",
+            main_line_review: "ainovel-free-reasoning",
+            snapshot_generation: "ainovel-lowcost-structured",
+            next_chapter_brief: "ainovel-lowcost-structured",
+          },
+          embedding: {
+            fact_embed: "ainovel-embedding-default",
+            episode_embed: "ainovel-embedding-default",
+            summary_embed: "ainovel-embedding-default",
+            query_memory_embed: "ainovel-embedding-default",
+          },
         },
-        embedding: {
-          fact_embed: "ainovel-embedding-default",
-          episode_embed: "ainovel-embedding-default",
-          summary_embed: "ainovel-embedding-default",
-          query_memory_embed: "ainovel-embedding-default",
+        plus: {
+          chat: {
+            kickoff_turn: "ainovel-plus-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
+            write_turn: "ainovel-plus-creative",
+            chapter_draft: "ainovel-plus-creative",
+            chapter_summary: "ainovel-lowcost-structured",
+            main_line_review: "ainovel-plus-reasoning",
+            snapshot_generation: "ainovel-lowcost-structured",
+            next_chapter_brief: "ainovel-lowcost-structured",
+          },
+          embedding: {
+            fact_embed: "ainovel-embedding-default",
+            episode_embed: "ainovel-embedding-default",
+            summary_embed: "ainovel-embedding-default",
+            query_memory_embed: "ainovel-embedding-default",
+          },
         },
-      },
-      plus: {
-        chat: {
-          setup_turn: "ainovel-plus-reasoning",
-          blueprint_gen: "ainovel-plus-creative",
-          chapter1_draft_gen: "ainovel-plus-creative",
-          chapter1_critic: "ainovel-plus-reasoning",
-          fact_extract: "ainovel-lowcost-structured",
-          episode_extract: "ainovel-lowcost-structured",
-          continue_chapter: "ainovel-plus-creative",
-          chapter_transition: "ainovel-plus-reasoning",
-          chapter2_planner: "ainovel-plus-reasoning",
-          chapter2_draft_gen: "ainovel-plus-creative",
-        },
-        embedding: {
-          fact_embed: "ainovel-embedding-default",
-          episode_embed: "ainovel-embedding-default",
-          summary_embed: "ainovel-embedding-default",
-          query_memory_embed: "ainovel-embedding-default",
-        },
-      },
-      super_plus: {
-        chat: {
-          setup_turn: "ainovel-super-reasoning",
-          blueprint_gen: "ainovel-super-creative",
-          chapter1_draft_gen: "ainovel-super-creative",
-          chapter1_critic: "ainovel-super-reasoning",
-          fact_extract: "ainovel-lowcost-structured",
-          episode_extract: "ainovel-lowcost-structured",
-          continue_chapter: "ainovel-super-creative",
-          chapter_transition: "ainovel-super-reasoning",
-          chapter2_planner: "ainovel-super-reasoning",
-          chapter2_draft_gen: "ainovel-super-creative",
-        },
-        embedding: {
-          fact_embed: "ainovel-embedding-default",
-          episode_embed: "ainovel-embedding-default",
-          summary_embed: "ainovel-embedding-default",
-          query_memory_embed: "ainovel-embedding-default",
+        super_plus: {
+          chat: {
+            kickoff_turn: "ainovel-super-reasoning",
+            chat_compaction: "ainovel-lowcost-structured",
+            write_turn: "ainovel-super-creative",
+            chapter_draft: "ainovel-super-creative",
+            chapter_summary: "ainovel-lowcost-structured",
+            main_line_review: "ainovel-super-reasoning",
+            snapshot_generation: "ainovel-lowcost-structured",
+            next_chapter_brief: "ainovel-lowcost-structured",
+          },
+          embedding: {
+            fact_embed: "ainovel-embedding-default",
+            episode_embed: "ainovel-embedding-default",
+            summary_embed: "ainovel-embedding-default",
+            query_memory_embed: "ainovel-embedding-default",
+          },
         },
       },
     },
-  }, null, 2);
+    null,
+    2,
+  );
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -344,12 +393,15 @@ test("admin ai routing APIs expose default config and support revisions", async 
     headers,
     body: {
       rawJson: updatedRawJson,
-      desc: "switch continue chapter default route",
+      desc: "switch write turn default route",
     },
   });
 
   assert.equal(updateResponse.statusCode, 200);
-  assert.match(updateResponse.body.data.rawJson, /"continue_chapter": "ainovel-plus-creative"/);
+  assert.match(
+    updateResponse.body.data.rawJson,
+    /"write_turn": "ainovel-plus-creative"/,
+  );
   assert.equal(updateResponse.body.data.revisions.length, 2);
 
   const revisionResponse = await runtime.app.handle({
@@ -359,7 +411,10 @@ test("admin ai routing APIs expose default config and support revisions", async 
   });
 
   assert.equal(revisionResponse.statusCode, 200);
-  assert.match(revisionResponse.body.data.rawJson, /"continue_chapter": "ainovel-free-creative"/);
+  assert.match(
+    revisionResponse.body.data.rawJson,
+    /"write_turn": "ainovel-free-creative"/,
+  );
 
   const restoreResponse = await runtime.app.handle({
     method: "POST",
@@ -371,7 +426,10 @@ test("admin ai routing APIs expose default config and support revisions", async 
   });
 
   assert.equal(restoreResponse.statusCode, 200);
-  assert.match(restoreResponse.body.data.rawJson, /"continue_chapter": "ainovel-free-creative"/);
+  assert.match(
+    restoreResponse.body.data.rawJson,
+    /"write_turn": "ainovel-free-creative"/,
+  );
 });
 
 test("public app config API exposes admin delivery config for the requested app", async () => {
@@ -418,6 +476,37 @@ test("public app config API rejects X-App-Id mismatches against the path app", a
   assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
 });
 
+test("analytics batch rejects invalid occurredAt with a friendly localized message", async () => {
+  const runtime = await createApplication();
+  const session = await issueAccessToken(runtime);
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/analytics/events/batch",
+    headers: {
+      authorization: `Bearer ${session.accessToken}`,
+      "x-app-id": "app_a",
+      "x-app-locale": "en-US",
+    },
+    body: {
+      appId: "app_a",
+      events: [
+        {
+          platform: "web",
+          sessionId: "sess_1",
+          pageKey: "home",
+          eventName: "page_view",
+          occurredAt: "not-a-date",
+        },
+      ],
+    },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.equal(response.body.message, "Please enter a valid date-time value.");
+});
+
 test("admin config API saves normalized JSON back to the app config store", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
@@ -435,7 +524,8 @@ test("admin config API saves normalized JSON back to the app config store", asyn
     path: "/api/v1/admin/apps/app_b/config",
     headers,
     body: {
-      rawJson: '{"release":{"version":"2026.03.21","channel":"stable"},"featureFlags":{"enableVipBanner":false},"settings":{"theme":"dawn"}}',
+      rawJson:
+        '{"release":{"version":"2026.03.21","channel":"stable"},"featureFlags":{"enableVipBanner":false},"settings":{"theme":"dawn"}}',
       desc: "发布稳定版本",
     },
   });
@@ -453,7 +543,10 @@ test("admin config API saves normalized JSON back to the app config store", asyn
     ),
   );
 
-  const storedValue = await runtime.services.appConfigService.getValue("app_b", "admin.delivery_config");
+  const storedValue = await runtime.services.appConfigService.getValue(
+    "app_b",
+    "admin.delivery_config",
+  );
   assert.equal(
     storedValue,
     JSON.stringify(
@@ -621,7 +714,10 @@ test("admin auth logout clears the session cookie and invalidates the admin sess
   });
 
   assert.equal(logoutResponse.statusCode, 200);
-  assert.match(String(logoutResponse.headers?.["Set-Cookie"] ?? ""), /Max-Age=0/);
+  assert.match(
+    String(logoutResponse.headers?.["Set-Cookie"] ?? ""),
+    /Max-Age=0/,
+  );
 
   const bootstrapResponse = await runtime.app.handle({
     method: "GET",
@@ -668,7 +764,9 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   assert.match(String(createResponse.body.data.logSecret.keyId), /^logk_/);
   assert.match(String(createResponse.body.data.logSecret.secretMasked), /\*/);
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.app.create" && item.appId === "app_c"),
+    runtime.database.auditLogs.some(
+      (item) => item.action === "admin.app.create" && item.appId === "app_c",
+    ),
   );
 
   const createdConfigResponse = await runtime.app.handle({
@@ -696,7 +794,10 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   });
 
   assert.equal(blockedDeleteResponse.statusCode, 409);
-  assert.equal(blockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
+  assert.equal(
+    blockedDeleteResponse.body.code,
+    "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG",
+  );
 
   const clearConfigResponse = await runtime.app.handle({
     method: "PUT",
@@ -717,7 +818,10 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   });
 
   assert.equal(stillBlockedDeleteResponse.statusCode, 409);
-  assert.equal(stillBlockedDeleteResponse.body.code, "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG");
+  assert.equal(
+    stillBlockedDeleteResponse.body.code,
+    "ADMIN_APP_DELETE_REQUIRES_EMPTY_CONFIG",
+  );
 
   const deleteResponse = await runtime.app.handle({
     method: "DELETE",
@@ -729,7 +833,9 @@ test("admin app APIs can add new apps and only delete apps with empty config", a
   assert.equal(deleteResponse.body.data.deleted, true);
   assert.equal(runtime.database.findApp("app_c"), undefined);
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.app.delete" && item.appId === "app_c"),
+    runtime.database.auditLogs.some(
+      (item) => item.action === "admin.app.delete" && item.appId === "app_c",
+    ),
   );
 });
 
@@ -757,7 +863,10 @@ test("admin app create rejects app ids outside lowercase letters numbers and und
 
   assert.equal(response.statusCode, 400);
   assert.equal(response.body.code, "REQ_INVALID_BODY");
-  assert.match(String(response.body.message), /lowercase letters, numbers, and underscores/);
+  assert.match(
+    String(response.body.message),
+    /lowercase letters, numbers, and underscores/,
+  );
 });
 
 test("admin app config reads and delete guards follow latest revision even if direct config record is stale", async () => {
@@ -793,7 +902,8 @@ test("admin app config reads and delete guards follow latest revision even if di
   });
 
   const staleRecord = runtime.database.appConfigs.find(
-    (item) => item.appId === "app_c" && item.configKey === "admin.delivery_config",
+    (item) =>
+      item.appId === "app_c" && item.configKey === "admin.delivery_config",
   );
   assert.ok(staleRecord);
   staleRecord.configValue = '{"stale":true}';
@@ -806,7 +916,9 @@ test("admin app config reads and delete guards follow latest revision even if di
   });
 
   assert.equal(bootstrapResponse.statusCode, 200);
-  const appSummary = bootstrapResponse.body.data.apps.find((item: { appId: string }) => item.appId === "app_c");
+  const appSummary = bootstrapResponse.body.data.apps.find(
+    (item: { appId: string }) => item.appId === "app_c",
+  );
   assert.equal(appSummary?.canDelete, true);
 
   const configResponse = await runtime.app.handle({
@@ -867,7 +979,10 @@ test("admin app APIs can update localized app names and add extra locales", asyn
     "ja-JP": "ノベル工房",
   });
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.app.update_names" && item.appId === "app_a"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.app.update_names" && item.appId === "app_a",
+    ),
   );
 
   const bootstrapResponse = await runtime.app.handle({
@@ -877,7 +992,9 @@ test("admin app APIs can update localized app names and add extra locales", asyn
   });
 
   assert.equal(bootstrapResponse.statusCode, 200);
-  const updatedApp = bootstrapResponse.body.data.apps.find((item: { appId: string }) => item.appId === "app_a");
+  const updatedApp = bootstrapResponse.body.data.apps.find(
+    (item: { appId: string }) => item.appId === "app_a",
+  );
   assert.equal(updatedApp?.appName, "小说工坊");
   assert.equal(updatedApp?.appNameI18n?.["ja-JP"], "ノベル工房");
 });
@@ -961,7 +1078,10 @@ test("admin remote log pull settings API exposes defaults, updates revisions, an
   assert.equal(updateResponse.body.data.revision, 2);
   assert.equal(updateResponse.body.data.desc, "incident tuning");
   assert.equal(updateResponse.body.data.config.enabled, true);
-  assert.equal(updateResponse.body.data.config.taskDefaults.lookbackMinutes, 30);
+  assert.equal(
+    updateResponse.body.data.config.taskDefaults.lookbackMinutes,
+    30,
+  );
 
   const restoreResponse = await runtime.app.handle({
     method: "POST",
@@ -1019,7 +1139,10 @@ test("admin remote log pull task API creates tasks from defaults and can cancel 
   assert.equal(createResponse.body.data.items[0]?.did, "did_ios_001");
   assert.equal(createResponse.body.data.items[0]?.maxLines, 500);
   assert.equal(createResponse.body.data.items[0]?.maxBytes, 32768);
-  assert.equal(createResponse.body.data.items[0]?.keyId.startsWith("logk_"), true);
+  assert.equal(
+    createResponse.body.data.items[0]?.keyId.startsWith("logk_"),
+    true,
+  );
   assert.equal(createResponse.body.data.items[0]?.status, "PENDING");
 
   const taskId = createResponse.body.data.items[0]?.taskId;
@@ -1033,7 +1156,9 @@ test("admin remote log pull task API creates tasks from defaults and can cancel 
 
   assert.equal(cancelResponse.statusCode, 200);
   assert.equal(
-    cancelResponse.body.data.items.find((item: { taskId: string }) => item.taskId === taskId)?.status,
+    cancelResponse.body.data.items.find(
+      (item: { taskId: string }) => item.taskId === taskId,
+    )?.status,
     "CANCELLED",
   );
 });
@@ -1061,7 +1186,10 @@ test("admin remote log pull task detail and file APIs return task metadata and s
     createdAt: "2026-04-08T10:00:00.000Z",
     uploadedAt: "2026-04-08T10:01:00.000Z",
     uploadedFileName: "log_task_detail_001.ndjson",
-    uploadedFilePath: join(mkdtempSync(join(tmpdir(), "zook-admin-log-")), "log_task_detail_001.ndjson"),
+    uploadedFilePath: join(
+      mkdtempSync(join(tmpdir(), "zook-admin-log-")),
+      "log_task_detail_001.ndjson",
+    ),
     uploadedFileSizeBytes: 64,
     uploadedLineCount: 2,
   });
@@ -1080,7 +1208,10 @@ test("admin remote log pull task detail and file APIs return task metadata and s
   assert.equal(taskResponse.statusCode, 200);
   assert.equal(taskResponse.body.data.item.taskId, "log_task_detail_001");
   assert.equal(taskResponse.body.data.item.did, "did_web_001");
-  assert.equal(taskResponse.body.data.item.uploadedFileName, "log_task_detail_001.ndjson");
+  assert.equal(
+    taskResponse.body.data.item.uploadedFileName,
+    "log_task_detail_001.ndjson",
+  );
 
   const fileResponse = await runtime.app.handle({
     method: "GET",
@@ -1116,7 +1247,10 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
   });
 
   assert.equal(directRevealResponse.statusCode, 403);
-  assert.equal(directRevealResponse.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
+  assert.equal(
+    directRevealResponse.body.code,
+    "ADMIN_SENSITIVE_OPERATION_REQUIRED",
+  );
 
   const requestCodeResponse = await runtime.app.handle({
     method: "POST",
@@ -1158,10 +1292,16 @@ test("admin app log secret reveal requires sensitive verification and grants 1h 
 
   assert.equal(revealResponse.statusCode, 200);
   assert.equal(revealResponse.body.data.app.appId, "app_a");
-  assert.equal(revealResponse.body.data.keyId, (await runtime.services.appLogSecretService.getSummary("app_a"))?.keyId);
+  assert.equal(
+    revealResponse.body.data.keyId,
+    (await runtime.services.appLogSecretService.getSummary("app_a"))?.keyId,
+  );
   assert.equal(revealResponse.body.data.secret.length > 20, true);
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.app.log_secret.reveal" && item.appId === "app_a"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.app.log_secret.reveal" && item.appId === "app_a",
+    ),
   );
 });
 
@@ -1194,7 +1334,10 @@ test("admin password API stores masked common secrets without revision history",
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.configKey, "common.passwords");
   assert.equal(updateResponse.body.data.items[0]?.value, "sid-****");
-  assert.equal(updateResponse.body.data.items[0]?.valueMd5, "b4d7390125134c3b8485c802e1efe692");
+  assert.equal(
+    updateResponse.body.data.items[0]?.valueMd5,
+    "b4d7390125134c3b8485c802e1efe692",
+  );
 
   const fetchResponse = await runtime.app.handle({
     method: "GET",
@@ -1205,8 +1348,16 @@ test("admin password API stores masked common secrets without revision history",
   assert.equal(fetchResponse.statusCode, 200);
   assert.equal(fetchResponse.body.data.items[0]?.desc, "腾讯 SES SecretId");
   assert.equal(fetchResponse.body.data.items[0]?.value, "sid-****");
-  assert.equal(fetchResponse.body.data.items[0]?.valueMd5, "b4d7390125134c3b8485c802e1efe692");
-  assert.equal(await runtime.services.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_ID_PASSWORD_KEY), "sid-demo");
+  assert.equal(
+    fetchResponse.body.data.items[0]?.valueMd5,
+    "b4d7390125134c3b8485c802e1efe692",
+  );
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+    ),
+    "sid-demo",
+  );
 });
 
 test("admin password API supports per-item upsert and delete", async () => {
@@ -1233,7 +1384,12 @@ test("admin password API supports per-item upsert and delete", async () => {
 
   assert.equal(upsertResponse.statusCode, 200);
   assert.equal(upsertResponse.body.data.items[0]?.key, "bailian.api_key");
-  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v1");
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      "bailian.api_key",
+    ),
+    "key-v1",
+  );
 
   const maskedReplayResponse = await runtime.app.handle({
     method: "PUT",
@@ -1248,7 +1404,12 @@ test("admin password API supports per-item upsert and delete", async () => {
   });
 
   assert.equal(maskedReplayResponse.statusCode, 200);
-  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v1");
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      "bailian.api_key",
+    ),
+    "key-v1",
+  );
 
   const renameResponse = await runtime.app.handle({
     method: "PUT",
@@ -1264,8 +1425,18 @@ test("admin password API supports per-item upsert and delete", async () => {
 
   assert.equal(renameResponse.statusCode, 400);
   assert.equal(renameResponse.body.code, "ADMIN_PASSWORD_INVALID");
-  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v1");
-  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.runtime_api_key"), undefined);
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      "bailian.api_key",
+    ),
+    "key-v1",
+  );
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      "bailian.runtime_api_key",
+    ),
+    undefined,
+  );
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -1280,7 +1451,12 @@ test("admin password API supports per-item upsert and delete", async () => {
   });
 
   assert.equal(updateResponse.statusCode, 200);
-  assert.equal(await runtime.services.commonPasswordConfigService.getValue("bailian.api_key"), "key-v2");
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      "bailian.api_key",
+    ),
+    "key-v2",
+  );
 
   const deleteResponse = await runtime.app.handle({
     method: "DELETE",
@@ -1290,6 +1466,119 @@ test("admin password API supports per-item upsert and delete", async () => {
 
   assert.equal(deleteResponse.statusCode, 200);
   assert.equal(deleteResponse.body.data.items.length, 0);
+});
+
+test("admin sms verification list and reveal follow sensitive verification flow", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    adminSensitiveOperation: {
+      secondaryPassword: "199510",
+    },
+    registrationCodeGenerator: () => "123456",
+  });
+
+  await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/sms-code",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100985",
+      phoneNa: "+86",
+      test: true,
+    },
+    ipAddress: "198.51.100.70",
+  });
+
+  const cookie = await loginAdmin(runtime);
+
+  const listResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/sms-verifications",
+    headers: {
+      cookie,
+    },
+    query: {
+      appId: "app_a",
+    },
+  });
+
+  assert.equal(listResponse.statusCode, 200);
+  assert.equal(listResponse.body.data.items.length, 1);
+  assert.equal(listResponse.body.data.items[0].appId, "app_a");
+  assert.equal(listResponse.body.data.items[0].status, "test_generated");
+  assert.equal(
+    listResponse.body.data.items[0].phoneMasked.includes("****"),
+    true,
+  );
+
+  const directRevealResponse = await runtime.app.handle({
+    method: "POST",
+    path: `/api/v1/admin/apps/common/sms-verifications/${listResponse.body.data.items[0].id}/reveal`,
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(directRevealResponse.statusCode, 403);
+  assert.equal(
+    directRevealResponse.body.code,
+    "ADMIN_SENSITIVE_OPERATION_REQUIRED",
+  );
+
+  const requestCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "sms.verification.reveal",
+    },
+  });
+
+  assert.equal(requestCodeResponse.statusCode, 200);
+  assert.equal(
+    requestCodeResponse.body.data.operation,
+    "sms.verification.reveal",
+  );
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "sms.verification.reveal",
+      code: "199510",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+  assert.equal(verifyResponse.body.data.granted, true);
+
+  const revealResponse = await runtime.app.handle({
+    method: "POST",
+    path: `/api/v1/admin/apps/common/sms-verifications/${listResponse.body.data.items[0].id}/reveal`,
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(revealResponse.statusCode, 200);
+  assert.equal(revealResponse.body.data.code, "123456");
+  assert.equal(revealResponse.body.data.item.revealCount, 1);
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.sms_verification.reveal" &&
+        item.appId === "app_a",
+    ),
+  );
 });
 
 test("admin password reveal requires sensitive verification before copying real value", async () => {
@@ -1327,7 +1616,10 @@ test("admin password reveal requires sensitive verification before copying real 
   });
 
   assert.equal(directRevealResponse.statusCode, 403);
-  assert.equal(directRevealResponse.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
+  assert.equal(
+    directRevealResponse.body.code,
+    "ADMIN_SENSITIVE_OPERATION_REQUIRED",
+  );
 
   const requestCodeResponse = await runtime.app.handle({
     method: "POST",
@@ -1370,7 +1662,148 @@ test("admin password reveal requires sensitive verification before copying real 
   assert.equal(revealResponse.body.data.key, "bailian.api_key");
   assert.equal(revealResponse.body.data.value, "key-v1");
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.password.reveal" && item.appId === "common"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.password.reveal" && item.appId === "common",
+    ),
+  );
+});
+
+test("admin auth rate limit API stores common config and auth runtime follows updated limits", async () => {
+  const sent: SentTemplateEmail[] = [];
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    registrationEmailSender: createFakeEmailSender(sent),
+    kvBackend: new InMemoryKVBackend(),
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/auth-rate-limits",
+    headers,
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.equal(defaultResponse.body.data.config.accountDailyLimit, 10);
+  assert.equal(defaultResponse.body.data.config.verifyWindowLimit, 10);
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/auth-rate-limits",
+    headers,
+    body: {
+      ...createAuthRateLimitConfig({
+        resendCooldownSeconds: 1,
+        sendCodeWindowLimit: 20,
+        verifyWindowLimit: 12,
+        accountDailyLimit: 2,
+      }),
+      desc: "初始化认证风控",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.app.appId, "common");
+  assert.equal(updateResponse.body.data.configKey, "common.auth_rate_limits");
+  assert.equal(updateResponse.body.data.config.accountDailyLimit, 2);
+  assert.equal(updateResponse.body.data.config.verifyWindowLimit, 12);
+  assert.equal(updateResponse.body.data.revision, 1);
+  assert.equal(updateResponse.body.data.desc, "初始化认证风控");
+
+  const revisionResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/auth-rate-limits/revisions/1",
+    headers,
+  });
+
+  assert.equal(revisionResponse.statusCode, 200);
+  assert.equal(revisionResponse.body.data.revision, 1);
+  assert.equal(revisionResponse.body.data.isLatest, true);
+
+  const runtimeConfig =
+    await runtime.services.commonAuthRateLimitConfigService.getRuntimeConfig();
+  assert.equal(runtimeConfig.accountDailyLimit, 2);
+  assert.equal(runtimeConfig.verifyWindowLimit, 12);
+
+  const baseTime = new Date("2026-04-20T10:00:00+08:00");
+  for (let index = 0; index < 2; index += 1) {
+    const result = await runtime.services.authService.registerEmailCode(
+      {
+        appId: "app_a",
+        email: "auth-limit@example.com",
+        ipAddress: "203.0.113.30",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
+      },
+      new Date(baseTime.getTime() + index * 61 * 1000),
+    );
+    assert.equal(result.accepted, true);
+  }
+
+  await assert.rejects(
+    runtime.services.authService.registerEmailCode(
+      {
+        appId: "app_a",
+        email: "auth-limit@example.com",
+        ipAddress: "203.0.113.30",
+        locale: "zh-CN",
+        region: "ap-guangzhou",
+      },
+      new Date(baseTime.getTime() + 2 * 61 * 1000),
+    ),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "AUTH_RATE_LIMITED",
+  );
+
+  const invalidResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/auth-rate-limits",
+    headers,
+    body: {
+      ...createAuthRateLimitConfig({
+        verifyWindowLimit: 4,
+        maxFailedCodeAttempts: 5,
+      }),
+    },
+  });
+
+  assert.equal(invalidResponse.statusCode, 400);
+  assert.equal(invalidResponse.body.code, "REQ_INVALID_BODY");
+  assert.match(String(invalidResponse.body.message), /verifyWindowLimit/);
+
+  const restoreResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/auth-rate-limits/revisions/1/restore",
+    headers,
+    body: {
+      desc: "回滚到版本 R1",
+    },
+  });
+
+  assert.equal(restoreResponse.statusCode, 200);
+  assert.equal(restoreResponse.body.data.revision, 2);
+  assert.equal(restoreResponse.body.data.desc, "回滚到版本 R1");
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.auth_rate_limits.update" &&
+        item.appId === "common",
+    ),
+  );
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.auth_rate_limits.restore" &&
+        item.appId === "common",
+    ),
   );
 });
 
@@ -1406,10 +1839,22 @@ test("admin email service API stores common config and exposes resolved region",
   });
 
   assert.equal(passwordResponse.statusCode, 200);
-  assert.equal(passwordResponse.body.data.items[0]?.value, maskSensitiveString("sid-demo"));
-  assert.equal(passwordResponse.body.data.items[1]?.value, maskSensitiveString("sk-demo"));
-  assert.equal(passwordResponse.body.data.items[0]?.valueMd5, "b4d7390125134c3b8485c802e1efe692");
-  assert.equal(passwordResponse.body.data.items[1]?.valueMd5, "663d6ce05d17561635f0ffe690a0cb75");
+  assert.equal(
+    passwordResponse.body.data.items[0]?.value,
+    maskSensitiveString("sid-demo"),
+  );
+  assert.equal(
+    passwordResponse.body.data.items[1]?.value,
+    maskSensitiveString("sk-demo"),
+  );
+  assert.equal(
+    passwordResponse.body.data.items[0]?.valueMd5,
+    "b4d7390125134c3b8485c802e1efe692",
+  );
+  assert.equal(
+    passwordResponse.body.data.items[1]?.valueMd5,
+    "663d6ce05d17561635f0ffe690a0cb75",
+  );
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -1430,13 +1875,34 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal(updateResponse.body.data.isLatest, true);
   assert.equal(updateResponse.body.data.desc, "初始化邮件服务");
   assert.equal(updateResponse.body.data.revisions.length, 1);
-  assert.equal(updateResponse.body.data.config.regions[0]?.region, "ap-guangzhou");
-  assert.equal(updateResponse.body.data.config.regions[0]?.sender?.id, "default");
-  assert.equal(updateResponse.body.data.config.regions[1]?.sender?.address, "Support <support@example.com>");
-  assert.equal(updateResponse.body.data.config.regions[0]?.templates[0]?.templateId, 100001);
-  assert.equal(updateResponse.body.data.config.regions[1]?.templates[0]?.locale, "en-US");
-  assert.equal(updateResponse.body.data.config.regions[1]?.templates[0]?.name, "verify-code");
-  assert.equal(updateResponse.body.data.config.regions[1]?.templates[0]?.subject, "Verification Code");
+  assert.equal(
+    updateResponse.body.data.config.regions[0]?.region,
+    "ap-guangzhou",
+  );
+  assert.equal(
+    updateResponse.body.data.config.regions[0]?.sender?.id,
+    "default",
+  );
+  assert.equal(
+    updateResponse.body.data.config.regions[1]?.sender?.address,
+    "Support <support@example.com>",
+  );
+  assert.equal(
+    updateResponse.body.data.config.regions[0]?.templates[0]?.templateId,
+    100001,
+  );
+  assert.equal(
+    updateResponse.body.data.config.regions[1]?.templates[0]?.locale,
+    "en-US",
+  );
+  assert.equal(
+    updateResponse.body.data.config.regions[1]?.templates[0]?.name,
+    "verify-code",
+  );
+  assert.equal(
+    updateResponse.body.data.config.regions[1]?.templates[0]?.subject,
+    "Verification Code",
+  );
 
   const fetchResponse = await runtime.app.handle({
     method: "GET",
@@ -1446,8 +1912,16 @@ test("admin email service API stores common config and exposes resolved region",
 
   assert.equal(fetchResponse.statusCode, 200);
   assert.equal(fetchResponse.body.data.config.regions.length, 2);
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretId, "sid-demo");
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretKey, "sk-demo");
+  assert.equal(
+    (await runtime.services.commonEmailConfigService.getRuntimeConfig())
+      .secretId,
+    "sid-demo",
+  );
+  assert.equal(
+    (await runtime.services.commonEmailConfigService.getRuntimeConfig())
+      .secretKey,
+    "sk-demo",
+  );
 
   const maskedUpdateResponse = await runtime.app.handle({
     method: "PUT",
@@ -1471,8 +1945,18 @@ test("admin email service API stores common config and exposes resolved region",
 
   assert.equal(maskedUpdateResponse.statusCode, 200);
   assert.equal(maskedUpdateResponse.body.data.items[0]?.value, "sid-****");
-  assert.equal((await runtime.services.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_ID_PASSWORD_KEY)), "sid-demo");
-  assert.equal((await runtime.services.commonPasswordConfigService.getValue(TENCENT_SES_SECRET_KEY_PASSWORD_KEY)), "sk-demo");
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+    ),
+    "sid-demo",
+  );
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+    ),
+    "sk-demo",
+  );
 
   const templateUpdateResponse = await runtime.app.handle({
     method: "PUT",
@@ -1481,7 +1965,7 @@ test("admin email service API stores common config and exposes resolved region",
     body: {
       ...fetchResponse.body.data.config,
       desc: "补充中文模板",
-      regions: fetchResponse.body.data.config.regions.map((region) => (
+      regions: fetchResponse.body.data.config.regions.map((region) =>
         region.region === "ap-guangzhou"
           ? {
               ...region,
@@ -1495,8 +1979,8 @@ test("admin email service API stores common config and exposes resolved region",
                 },
               ],
             }
-          : region
-      )),
+          : region,
+      ),
     },
   });
 
@@ -1507,23 +1991,59 @@ test("admin email service API stores common config and exposes resolved region",
     templateUpdateResponse.body.data.revisions.map((item) => item.revision),
     [2, 1],
   );
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretId, "sid-demo");
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig()).secretKey, "sk-demo");
   assert.equal(
-    (await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).sender.address,
+    (await runtime.services.commonEmailConfigService.getRuntimeConfig())
+      .secretId,
+    "sid-demo",
+  );
+  assert.equal(
+    (await runtime.services.commonEmailConfigService.getRuntimeConfig())
+      .secretKey,
+    "sk-demo",
+  );
+  assert.equal(
+    (
+      await runtime.services.commonEmailConfigService.getRuntimeConfig(
+        "en-US",
+        "ap-hongkong",
+      )
+    ).sender.address,
     "Support <support@example.com>",
   );
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).template.name, "verify-code");
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong")).template.templateId, 100002);
-  assert.equal((await runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW")).template.templateId, 100003);
+  assert.equal(
+    (
+      await runtime.services.commonEmailConfigService.getRuntimeConfig(
+        "en-US",
+        "ap-hongkong",
+      )
+    ).template.name,
+    "verify-code",
+  );
+  assert.equal(
+    (
+      await runtime.services.commonEmailConfigService.getRuntimeConfig(
+        "en-US",
+        "ap-hongkong",
+      )
+    ).template.templateId,
+    100002,
+  );
+  assert.equal(
+    (await runtime.services.commonEmailConfigService.getRuntimeConfig("zh-TW"))
+      .template.templateId,
+    100003,
+  );
   await assert.rejects(
-    runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong", "missing-template"),
-    (error: unknown) => (
-      error instanceof ApplicationError
-      && error.statusCode === 503
-      && error.code === "EMAIL_SERVICE_NOT_CONFIGURED"
-      && /missing-template/.test(error.message)
+    runtime.services.commonEmailConfigService.getRuntimeConfig(
+      "en-US",
+      "ap-hongkong",
+      "missing-template",
     ),
+    (error: unknown) =>
+      error instanceof ApplicationError &&
+      error.statusCode === 503 &&
+      error.code === "EMAIL_SERVICE_NOT_CONFIGURED" &&
+      /missing-template/.test(error.message),
   );
 
   await runtime.services.commonEmailConfigService.updateConfig({
@@ -1568,7 +2088,12 @@ test("admin email service API stores common config and exposes resolved region",
     ],
   });
 
-  const verificationRuntime = await runtime.services.commonEmailConfigService.getRuntimeConfig("en-US", "ap-hongkong", "verify-code");
+  const verificationRuntime =
+    await runtime.services.commonEmailConfigService.getRuntimeConfig(
+      "en-US",
+      "ap-hongkong",
+      "verify-code",
+    );
   assert.equal(verificationRuntime.template.templateId, 100102);
   assert.equal(verificationRuntime.template.name, "verify-code");
 
@@ -1581,8 +2106,14 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal(revisionOneResponse.statusCode, 200);
   assert.equal(revisionOneResponse.body.data.revision, 1);
   assert.equal(revisionOneResponse.body.data.isLatest, false);
-  assert.equal(revisionOneResponse.body.data.config.regions[0]?.templates.length, 1);
-  assert.equal(revisionOneResponse.body.data.config.regions[1]?.templates.length, 1);
+  assert.equal(
+    revisionOneResponse.body.data.config.regions[0]?.templates.length,
+    1,
+  );
+  assert.equal(
+    revisionOneResponse.body.data.config.regions[1]?.templates.length,
+    1,
+  );
 
   const restoreResponse = await runtime.app.handle({
     method: "POST",
@@ -1594,13 +2125,26 @@ test("admin email service API stores common config and exposes resolved region",
   assert.equal(restoreResponse.body.data.revision, 4);
   assert.equal(restoreResponse.body.data.isLatest, true);
   assert.equal(restoreResponse.body.data.desc, "恢复到版本 R1");
-  assert.equal(restoreResponse.body.data.config.regions[0]?.templates.length, 1);
-  assert.equal(restoreResponse.body.data.config.regions[1]?.templates.length, 1);
-  assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.email_service.update" && item.appId === "common"),
+  assert.equal(
+    restoreResponse.body.data.config.regions[0]?.templates.length,
+    1,
+  );
+  assert.equal(
+    restoreResponse.body.data.config.regions[1]?.templates.length,
+    1,
   );
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.email_service.restore" && item.appId === "common"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.email_service.update" && item.appId === "common",
+    ),
+  );
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.email_service.restore" &&
+        item.appId === "common",
+    ),
   );
 });
 
@@ -1616,11 +2160,21 @@ test("common email service runtime follows latest revision even if direct config
     enabled: true,
     regions: createEmailServiceRegions(),
   });
-  await runtime.services.commonPasswordConfigService.set(TENCENT_SES_SECRET_ID_PASSWORD_KEY, "腾讯 SES SecretId", "sid-demo");
-  await runtime.services.commonPasswordConfigService.set(TENCENT_SES_SECRET_KEY_PASSWORD_KEY, "腾讯 SES SecretKey", "sk-demo");
+  await runtime.services.commonPasswordConfigService.set(
+    TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+    "腾讯 SES SecretId",
+    "sid-demo",
+  );
+  await runtime.services.commonPasswordConfigService.set(
+    TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+    "腾讯 SES SecretKey",
+    "sk-demo",
+  );
 
   const staleEmailRecord = runtime.database.appConfigs.find(
-    (item) => item.appId === "common" && item.configKey === "common.email_service_regions",
+    (item) =>
+      item.appId === "common" &&
+      item.configKey === "common.email_service_regions",
   );
   assert.ok(staleEmailRecord);
   staleEmailRecord.configValue = JSON.stringify({
@@ -1628,11 +2182,16 @@ test("common email service runtime follows latest revision even if direct config
     regions: createEmailServiceRegions(),
   });
 
-  const document = await runtime.services.commonEmailConfigService.getDocument();
+  const document =
+    await runtime.services.commonEmailConfigService.getDocument();
   assert.equal(document.config.enabled, true);
   assert.equal(document.revision, 1);
 
-  const runtimeConfig = await runtime.services.commonEmailConfigService.getRuntimeConfigByTemplateId(100001, "ap-guangzhou");
+  const runtimeConfig =
+    await runtime.services.commonEmailConfigService.getRuntimeConfigByTemplateId(
+      100001,
+      "ap-guangzhou",
+    );
   assert.equal(runtimeConfig.config.enabled, true);
   assert.equal(runtimeConfig.template.templateId, 100001);
   assert.equal(runtimeConfig.secretId, "sid-demo");
@@ -1727,7 +2286,10 @@ test("admin email service API rejects duplicate email region, duplicate template
   });
 
   assert.equal(duplicateRegionResponse.statusCode, 400);
-  assert.equal(duplicateRegionResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.equal(
+    duplicateRegionResponse.body.code,
+    "ADMIN_EMAIL_SERVICE_INVALID",
+  );
   assert.match(duplicateRegionResponse.body.message, /Duplicate email region/);
 
   const duplicateTemplateKeyResponse = await runtime.app.handle({
@@ -1763,8 +2325,14 @@ test("admin email service API rejects duplicate email region, duplicate template
   });
 
   assert.equal(duplicateTemplateKeyResponse.statusCode, 400);
-  assert.equal(duplicateTemplateKeyResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
-  assert.match(duplicateTemplateKeyResponse.body.message, /Duplicate template name \+ locale/);
+  assert.equal(
+    duplicateTemplateKeyResponse.body.code,
+    "ADMIN_EMAIL_SERVICE_INVALID",
+  );
+  assert.match(
+    duplicateTemplateKeyResponse.body.message,
+    /Duplicate template name \+ locale/,
+  );
 
   const duplicateTemplateIdResponse = await runtime.app.handle({
     method: "PUT",
@@ -1808,8 +2376,14 @@ test("admin email service API rejects duplicate email region, duplicate template
   });
 
   assert.equal(duplicateTemplateIdResponse.statusCode, 400);
-  assert.equal(duplicateTemplateIdResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
-  assert.match(duplicateTemplateIdResponse.body.message, /Duplicate template ID/);
+  assert.equal(
+    duplicateTemplateIdResponse.body.code,
+    "ADMIN_EMAIL_SERVICE_INVALID",
+  );
+  assert.match(
+    duplicateTemplateIdResponse.body.message,
+    /Duplicate template ID/,
+  );
 
   const missingSubjectResponse = await runtime.app.handle({
     method: "PUT",
@@ -1839,7 +2413,10 @@ test("admin email service API rejects duplicate email region, duplicate template
 
   assert.equal(missingSubjectResponse.statusCode, 400);
   assert.equal(missingSubjectResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
-  assert.match(missingSubjectResponse.body.message, /Template subject is required/);
+  assert.match(
+    missingSubjectResponse.body.message,
+    /Template subject is required/,
+  );
 
   const missingVerificationTemplateResponse = await runtime.app.handle({
     method: "PUT",
@@ -1868,7 +2445,10 @@ test("admin email service API rejects duplicate email region, duplicate template
   });
 
   assert.equal(missingVerificationTemplateResponse.statusCode, 400);
-  assert.equal(missingVerificationTemplateResponse.body.code, "ADMIN_EMAIL_SERVICE_INVALID");
+  assert.equal(
+    missingVerificationTemplateResponse.body.code,
+    "ADMIN_EMAIL_SERVICE_INVALID",
+  );
   assert.match(missingVerificationTemplateResponse.body.message, /verify-code/);
 });
 
@@ -1981,14 +2561,29 @@ test("admin email service test-send API requires super-admin auth and enforces 2
   assert.equal(firstResponse.body.data.recipientEmail, "tester@example.com");
   assert.equal(firstResponse.body.data.clientRegion, "ap-hongkong");
   assert.equal(firstResponse.body.data.resolvedRegion, "ap-hongkong");
-  assert.equal(firstResponse.body.data.sender.address, "Global <global@example.com>");
+  assert.equal(
+    firstResponse.body.data.sender.address,
+    "Global <global@example.com>",
+  );
   assert.equal(firstResponse.body.data.template.templateId, 100002);
   assert.equal(firstResponse.body.data.providerRequestId, "req-test-email");
   assert.equal(firstResponse.body.data.providerMessageId, "msg-test-email");
-  assert.equal(firstResponse.body.data.debug.request.clientRegion, "ap-hongkong");
-  assert.equal(firstResponse.body.data.debug.request.resolvedRegion, "ap-hongkong");
-  assert.equal(firstResponse.body.data.debug.request.credentials.secretIdMasked, "sid-****");
-  assert.equal(firstResponse.body.data.debug.response.requestId, "req-test-email");
+  assert.equal(
+    firstResponse.body.data.debug.request.clientRegion,
+    "ap-hongkong",
+  );
+  assert.equal(
+    firstResponse.body.data.debug.request.resolvedRegion,
+    "ap-hongkong",
+  );
+  assert.equal(
+    firstResponse.body.data.debug.request.credentials.secretIdMasked,
+    "sid-****",
+  );
+  assert.equal(
+    firstResponse.body.data.debug.response.requestId,
+    "req-test-email",
+  );
   assert.deepEqual(sent, [
     {
       email: "tester@example.com",
@@ -2022,7 +2617,11 @@ test("admin email service test-send API requires super-admin auth and enforces 2
   assert.equal(rateLimitedResponse.statusCode, 429);
   assert.equal(rateLimitedResponse.body.code, "ADMIN_RATE_LIMITED");
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.email_service.test_send" && item.appId === "common"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.email_service.test_send" &&
+        item.appId === "common",
+    ),
   );
 });
 
@@ -2102,11 +2701,26 @@ test("admin email service test-send API returns masked provider debug details on
   assert.equal(failedResponse.body.code, "EMAIL_PROVIDER_REQUEST_FAILED");
   assert.equal(failedResponse.body.data.provider, "tencent_ses");
   assert.equal(failedResponse.body.data.requestId, "req-failed-email");
-  assert.equal(failedResponse.body.data.debug.request.clientRegion, "ap-guangzhou");
-  assert.equal(failedResponse.body.data.debug.request.resolvedRegion, "ap-guangzhou");
-  assert.equal(failedResponse.body.data.debug.request.credentials.secretIdMasked, "sid-****");
-  assert.equal(failedResponse.body.data.debug.request.credentials.secretKeyMasked, "sk-d****");
-  assert.equal(failedResponse.body.data.debug.response.errorCode, "FailedOperation.SendEmailErr");
+  assert.equal(
+    failedResponse.body.data.debug.request.clientRegion,
+    "ap-guangzhou",
+  );
+  assert.equal(
+    failedResponse.body.data.debug.request.resolvedRegion,
+    "ap-guangzhou",
+  );
+  assert.equal(
+    failedResponse.body.data.debug.request.credentials.secretIdMasked,
+    "sid-****",
+  );
+  assert.equal(
+    failedResponse.body.data.debug.request.credentials.secretKeyMasked,
+    "sk-d****",
+  );
+  assert.equal(
+    failedResponse.body.data.debug.response.errorCode,
+    "FailedOperation.SendEmailErr",
+  );
 });
 
 test("admin llm service API stores versioned common config and exposes metrics", async () => {
@@ -2173,7 +2787,10 @@ test("admin llm service API stores versioned common config and exposes metrics",
 
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.revision, 2);
-  assert.equal(updateResponse.body.data.config.providers[0]?.apiKey, maskSensitiveString("mock-bailian-api-key"));
+  assert.equal(
+    updateResponse.body.data.config.providers[0]?.apiKey,
+    maskSensitiveString("mock-bailian-api-key"),
+  );
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes.length, 2);
 
   await runtime.services.llmMetricsService.recordCall({
@@ -2265,10 +2882,16 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(restoreResponse.body.data.revision, 4);
   assert.equal(restoreResponse.body.data.config.models[0]?.strategy, "auto");
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.update" && item.appId === "common"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.llm_service.update" && item.appId === "common",
+    ),
   );
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.restore" && item.appId === "common"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.llm_service.restore" && item.appId === "common",
+    ),
   );
 });
 
@@ -2334,9 +2957,13 @@ test("admin llm service keeps password references visible in config and resolves
   });
 
   assert.equal(updateResponse.statusCode, 200);
-  assert.equal(updateResponse.body.data.config.providers[0]?.apiKey, "{{zook.ps.bailian.api_key}}");
+  assert.equal(
+    updateResponse.body.data.config.providers[0]?.apiKey,
+    "{{zook.ps.bailian.api_key}}",
+  );
 
-  const runtimeConfig = await runtime.services.commonLlmConfigService.getRuntimeConfig();
+  const runtimeConfig =
+    await runtime.services.commonLlmConfigService.getRuntimeConfig();
   assert.equal(runtimeConfig?.providers[0]?.apiKey, "resolved-bailian-key");
 });
 
@@ -2405,9 +3032,18 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
   assert.equal(firstResponse.body.data.summary.totalCount, 1);
   assert.equal(firstResponse.body.data.summary.failureCount, 1);
   assert.equal(firstResponse.body.data.items[0]?.status, "failed");
-  assert.equal(firstResponse.body.data.items[0]?.details.request?.provider, "volcengine");
-  assert.equal(firstResponse.body.data.items[0]?.details.request?.providerModel, "kimi-2.5");
-  assert.equal(firstResponse.body.data.items[0]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
+  assert.equal(
+    firstResponse.body.data.items[0]?.details.request?.provider,
+    "volcengine",
+  );
+  assert.equal(
+    firstResponse.body.data.items[0]?.details.request?.providerModel,
+    "kimi-2.5",
+  );
+  assert.equal(
+    firstResponse.body.data.items[0]?.details.error?.code,
+    "LLM_ROUTE_NOT_AVAILABLE",
+  );
 
   const rateLimitedResponse = await runtime.app.handle({
     method: "POST",
@@ -2419,7 +3055,11 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
   assert.equal(rateLimitedResponse.body.code, "ADMIN_RATE_LIMITED");
   assert.match(rateLimitedResponse.body.message, /10 秒内只能触发一次/);
   assert.ok(
-    runtime.database.auditLogs.some((item) => item.action === "admin.llm_service.smoke_test" && item.appId === "common"),
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.llm_service.smoke_test" &&
+        item.appId === "common",
+    ),
   );
 });
 
@@ -2497,7 +3137,9 @@ test("managed app state persists app and config changes through kv backend", asy
 
   assert.equal(bootstrapResponse.statusCode, 200);
   assert.ok(
-    bootstrapResponse.body.data.apps.some((item) => item.appId === "app_persisted"),
+    bootstrapResponse.body.data.apps.some(
+      (item) => item.appId === "app_persisted",
+    ),
   );
 
   const persistedConfigResponse = await secondRuntime.app.handle({

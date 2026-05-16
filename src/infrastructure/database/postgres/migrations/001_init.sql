@@ -240,3 +240,33 @@ CREATE TABLE IF NOT EXISTS zook_client_log_lines (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS zook_client_log_lines_upload_idx ON zook_client_log_lines (upload_id);
+
+
+CREATE TABLE IF NOT EXISTS zook_sms_verification_records (
+  id TEXT PRIMARY KEY,
+  app_id TEXT NOT NULL REFERENCES zook_apps(id) ON DELETE CASCADE,
+  scene TEXT NOT NULL,
+  channel TEXT NOT NULL,
+  phone_masked TEXT NOT NULL,
+  phone_hash TEXT NOT NULL,
+  phone_na TEXT,
+  code_plaintext TEXT NOT NULL,
+  status TEXT NOT NULL,
+  is_test BOOLEAN NOT NULL DEFAULT FALSE,
+  provider TEXT NOT NULL,
+  provider_request_id TEXT,
+  provider_serial_no TEXT,
+  provider_message TEXT,
+  sent_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  consumed_at TIMESTAMPTZ,
+  failed_at TIMESTAMPTZ,
+  reveal_count INTEGER NOT NULL DEFAULT 0,
+  last_revealed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS zook_sms_verification_records_app_created_idx
+  ON zook_sms_verification_records (app_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS zook_sms_verification_records_status_idx
+  ON zook_sms_verification_records (status, created_at DESC);

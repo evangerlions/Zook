@@ -158,7 +158,7 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
   });
   const baseTime = new Date("2026-03-19T08:00:00+08:00");
 
-  for (let index = 0; index < 5; index += 1) {
+  for (let index = 0; index < 10; index += 1) {
     const now = new Date(baseTime.getTime() + index * 11 * 60 * 1000);
     const result = await runtime.services.authService.registerEmailCode(
       {
@@ -182,7 +182,7 @@ test("registerEmailCode enforces daily email limit and hourly IP limit", async (
         locale: "zh-CN",
         region: "ap-guangzhou",
       },
-      new Date(baseTime.getTime() + 55 * 60 * 1000),
+      new Date(baseTime.getTime() + 110 * 60 * 1000),
     ),
     (error: unknown) =>
       error instanceof Error &&

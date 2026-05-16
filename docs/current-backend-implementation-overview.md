@@ -199,6 +199,8 @@
 4. 请求与响应都支持 `AES-256-GCM` JSON envelope
 5. 解密成功后的业务成功与业务错误都会加密返回
 6. `taskType` 继续作为 scene-first 选模入口，不允许客户端直传底层模型字段
+7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
+8. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
 
 对应核心文件：
 
@@ -233,45 +235,53 @@
 2. `POST /api/v1/auth/login`
 3. `POST /api/v1/auth/refresh`
 4. `POST /api/v1/auth/logout`
-5. `POST /api/v1/analytics/events/batch`
-6. `GET /api/v1/admin/metrics/overview`
-7. `GET /api/v1/admin/metrics/pages`
-8. `POST /api/v1/files/presign`
-9. `POST /api/v1/files/confirm`
-10. `POST /api/v1/notifications/send`
-11. `GET /api/v1/admin/apps/common/email-service`
-12. `PUT /api/v1/admin/apps/common/email-service`
-13. `GET /api/v1/admin/apps/common/llm-service`
-14. `PUT /api/v1/admin/apps/common/llm-service`
-15. `GET /api/v1/admin/apps/common/llm-service/metrics`
-16. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
-17. `GET /api/v1/admin/apps/{appId}/i18n-settings`
-18. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
-19. `GET /api/v1/admin/apps/{appId}/remote-log-pull`
-20. `PUT /api/v1/admin/apps/{appId}/remote-log-pull`
-21. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
-22. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
-23. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
-24. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
-25. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
-26. `GET /api/v1/admin/apps/{appId}/ai-routing`
-27. `PUT /api/v1/admin/apps/{appId}/ai-routing`
-28. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}`
-29. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore`
-30. `POST /api/v1/admin/sensitive-operations/request-code`
-31. `POST /api/v1/admin/sensitive-operations/verify`
-32. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
-33. `GET /api/v1/logs/policy`
-34. `GET /api/v1/logs/pull-task`
-35. `POST /api/v1/logs/tasks/{taskId}/ack`
-36. `POST /api/v1/logs/tasks/{taskId}/fail`
-37. `POST /api/v1/logs/upload`
-38. `GET /api/v1/{appId}/public/config`
-39. `POST /api/v1/ai_novel/ai/chat-completions`
-40. `POST /api/v1/ai_novel/ai/embeddings`
+5. `POST /api/v1/auth/login/sms-code`
+6. `POST /api/v1/auth/login/sms`
+7. `POST /api/v1/auth/login/one-click`
+8. `POST /api/v1/auth/register/sms-code`
+9. `POST /api/v1/auth/register/sms`
+10. `POST /api/v1/auth/password/sms-code`
+11. `POST /api/v1/auth/password/reset-by-sms`
+12. `GET /api/v1/users/me`
+13. `POST /api/v1/users/me/delete`
+14. `POST /api/v1/analytics/events/batch`
+15. `GET /api/v1/admin/metrics/overview`
+16. `GET /api/v1/admin/metrics/pages`
+17. `POST /api/v1/files/presign`
+18. `POST /api/v1/files/confirm`
+19. `POST /api/v1/notifications/send`
+20. `GET /api/v1/admin/apps/common/auth-rate-limits`
+21. `PUT /api/v1/admin/apps/common/auth-rate-limits`
+22. `GET /api/v1/admin/apps/common/email-service`
+23. `PUT /api/v1/admin/apps/common/email-service`
+24. `GET /api/v1/admin/apps/common/llm-service`
+25. `PUT /api/v1/admin/apps/common/llm-service`
+26. `GET /api/v1/admin/apps/common/llm-service/metrics`
+
+账号删除当前按 app-scoped 语义实现：`users/me/delete` 会将当前 app membership 标记为 `DELETED`，撤销该 app 下用户 session，清理 app 侧 analytics、files metadata、client logs、notification jobs、user roles，并保留全局 `zook_users` 与 audit logs。24. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` 25. `GET /api/v1/admin/apps/{appId}/i18n-settings` 26. `PUT /api/v1/admin/apps/{appId}/i18n-settings` 27. `GET /api/v1/admin/apps/{appId}/remote-log-pull` 28. `PUT /api/v1/admin/apps/{appId}/remote-log-pull` 29. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks` 30. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks` 31. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel` 32. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}` 33. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file` 34. `GET /api/v1/admin/apps/{appId}/ai-routing` 35. `PUT /api/v1/admin/apps/{appId}/ai-routing` 36. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}` 37. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore` 38. `POST /api/v1/admin/sensitive-operations/request-code` 39. `POST /api/v1/admin/sensitive-operations/verify` 40. `POST /api/v1/admin/apps/{appId}/log-secret/reveal` 41. `GET /api/v1/logs/policy` 42. `GET /api/v1/logs/pull-task` 43. `POST /api/v1/logs/tasks/{taskId}/ack` 44. `POST /api/v1/logs/tasks/{taskId}/fail` 45. `POST /api/v1/logs/upload` 46. `GET /api/v1/{appId}/public/config` 47. `POST /api/v1/ai_novel/ai/chat-completions` 48. `POST /api/v1/ai_novel/ai/embeddings` 49. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。
+
+补充说明：
+
+- 目前仓库里已经预置了腾讯云短信验证码发送能力和腾讯云图形验证码校验能力，分别位于：
+  - `src/services/tencent-sms-verification.service.ts`
+  - `src/services/tencent-captcha-verification.service.ts`
+- 目前腾讯云短信验证码发送能力已经接入对外 auth 主链路，用于短信登录 / 注册 / 密码重置。
+- 后台现已补充一块 `common` 工作区下的短信验证码观测能力，可按 appId 查看最近 7 天短信记录，并通过受控 reveal 查看验证码明文。
+- 后台现已补充一块 `common` 工作区下的认证风控配置页，用来统一调整验证码 TTL、发码冷却、发码 / 提交窗口限流、账号自然日配额、IP 自然小时配额，以及单验证码错码上限。
+- 这些短信验证码记录会由 worker 在每天凌晨 4 点后执行一次硬删除清理，避免过期敏感数据继续保留。
+- 短信发码接口支持一个仅用于联调和自动化测试的 `test` 布尔字段；当为 `true` 时，服务端会继续生成并缓存验证码，但不会真正调用短信发送服务。
+- 当前验证码在有效期内最多允许输错 10 次；超过上限后，验证码立即失效并要求重新发码。
+- 腾讯云图形验证码校验能力仍保留在后端，但当前短信主业务默认不启用验证码风控。
+- 运行时默认复用 common password 工作区里的：
+  - `tencent.secret_id`
+  - `tencent.secret_key`
+    作为腾讯云主凭证，不再单独维护短信专用的另一套密钥命名。
+- 个验一键登录服务通过 `common.getui_gy_service` 启用，密钥字段只允许引用 common password 工作区：
+  - `getui.gy.app_key`
+  - `getui.gy.master_secret`
 
 ## 4. 当前目录结构
 

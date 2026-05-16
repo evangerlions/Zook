@@ -12,6 +12,7 @@ const runtime = await init({
 async function runTick(): Promise<void> {
   await runtime.database.withExclusiveSession(async () => {
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
+    const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     await runtime.queue.processDueJobs((job) => runtime.services.notificationService.processQueueJob(job));
 
     runtime.logger.info("worker tick completed", {
@@ -20,6 +21,8 @@ async function runTick(): Promise<void> {
       statusCode: 200,
       latencyMs: 0,
       error: replay.remaining ? `remaining=${replay.remaining}` : undefined,
+      smsCleanupRan: smsCleanup.ran,
+      smsCleanupDeleted: smsCleanup.deletedCount,
     });
   });
 }

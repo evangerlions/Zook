@@ -6,6 +6,7 @@ import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "../../services/app-a
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
+import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
 import { EmailTestSendService } from "../../services/email-test-send.service.ts";
@@ -13,12 +14,14 @@ import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
+import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
 import { createAppNameI18n, normalizeAppNameI18n, resolveAdminAppName } from "../../shared/app-name.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import type {
   AdminAiRoutingDocument,
   AdminAppSummary,
+  AdminAuthRateLimitDocument,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
@@ -37,6 +40,8 @@ import type {
   AdminLlmServiceDocument,
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
+  AdminSmsVerificationListDocument,
+  AdminSmsVerificationRevealDocument,
   AppRecord,
   LlmMetricsRange,
   PublicAppConfigDocument,
@@ -56,6 +61,7 @@ export class AdminConsoleService {
     private readonly appRemoteLogPullService: AppRemoteLogPullService,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
+    private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
     private readonly emailTestSendService: EmailTestSendService,
@@ -63,6 +69,7 @@ export class AdminConsoleService {
     private readonly llmMetricsService: LlmMetricsService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly refreshTokenStore: RefreshTokenStore,
+    private readonly smsVerificationRecordService: SmsVerificationRecordService,
     private readonly managedStateStore: ManagedStateStore,
   ) {}
 
@@ -277,6 +284,14 @@ export class AdminConsoleService {
     return this.commonPasswordConfigService.revealValue(key);
   }
 
+  async listSmsVerificationRecords(filterAppId?: string): Promise<AdminSmsVerificationListDocument> {
+    return this.smsVerificationRecordService.listForAdmin(await this.commonAppSummary(), filterAppId);
+  }
+
+  async revealSmsVerificationRecord(recordId: string): Promise<AdminSmsVerificationRevealDocument> {
+    return this.smsVerificationRecordService.revealForAdmin(await this.commonAppSummary(), recordId);
+  }
+
   private async requireApp(appId: string): Promise<AppRecord> {
     const app = await this.database.findApp(appId);
     if (!app) {
@@ -354,6 +369,22 @@ export class AdminConsoleService {
 
   async getEmailServiceConfig(revision?: number): Promise<AdminEmailServiceDocument> {
     return this.commonEmailConfigService.getDocument(revision);
+  }
+
+  async getAuthRateLimitConfig(revision?: number): Promise<AdminAuthRateLimitDocument> {
+    return this.commonAuthRateLimitConfigService.getDocument(revision);
+  }
+
+  async updateAuthRateLimitConfig(input: unknown, desc?: string): Promise<AdminAuthRateLimitDocument> {
+    const document = await this.commonAuthRateLimitConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async restoreAuthRateLimitConfig(revision: number, desc?: string): Promise<AdminAuthRateLimitDocument> {
+    const document = await this.commonAuthRateLimitConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
   }
 
   async updateEmailServiceConfig(input: unknown, desc?: string): Promise<AdminEmailServiceDocument> {
@@ -546,6 +577,25 @@ export class AdminConsoleService {
     }
 
     return JSON.stringify(parsed, null, 2);
+  }
+
+  private async commonAppSummary(): Promise<AdminAppSummary> {
+    return {
+      appId: COMMON_APP_ID,
+      appCode: COMMON_APP_ID,
+      appName: "Common",
+      appNameI18n: {
+        "zh-CN": "公共工作区",
+        "en-US": "Common",
+      },
+      status: "ACTIVE",
+      canDelete: false,
+      logSecret: {
+        keyId: COMMON_APP_ID,
+        secretMasked: "internal",
+        updatedAt: new Date(0).toISOString(),
+      },
+    };
   }
 
   private async toSummary(app: AppRecord): Promise<AdminAppSummary> {

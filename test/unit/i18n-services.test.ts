@@ -6,6 +6,7 @@ import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-man
 import { VersionedAppConfigService } from "../../src/services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../src/services/app-i18n-config.service.ts";
 import { RequestLocaleService } from "../../src/services/request-locale.service.ts";
+import { PublicApiMessageService } from "../../src/services/public-api-message.service.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
 import { DEFAULT_APP_I18N_SETTINGS, localizeFields, pickI18nText, resolveI18nText } from "../../src/shared/i18n.ts";
 import type { HttpRequest, I18nSettings } from "../../src/shared/types.ts";
@@ -164,6 +165,57 @@ test("request locale service resolves locale from query/header/accept-language w
   assert.equal(acceptLanguageResult.locale, "en-US");
   assert.equal(acceptLanguageResult.localeSource, "accept_language");
   assert.equal(acceptLanguageResult.matchType, "default");
+});
+
+test("public API message service localizes representative frontend-visible errors", () => {
+  const service = new PublicApiMessageService();
+  const zhHeaderRequest = createRequest({
+    headers: {
+      "x-app-locale": "zh-CN",
+    },
+  });
+  const zhAcceptLanguageRequest = createRequest({
+    headers: {
+      "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+    },
+  });
+  const unsupportedLocaleRequest = createRequest({
+    headers: {
+      "x-app-locale": "fr-FR",
+    },
+  });
+
+  assert.equal(service.resolveLocale(zhHeaderRequest), "zh-CN");
+  assert.equal(service.resolveLocale(zhAcceptLanguageRequest), "zh-CN");
+  assert.equal(service.resolveLocale(unsupportedLocaleRequest), "en-US");
+  assert.equal(
+    service.fromErrorCode("AUTH_INVALID_TOKEN", zhHeaderRequest),
+    "当前登录态无效，请重新登录。",
+  );
+  assert.equal(
+    service.fromErrorCode("AI_UPSTREAM_TIMEOUT", zhHeaderRequest),
+    "AI 服务响应超时，请重试。",
+  );
+  assert.equal(
+    service.fromErrorCode("LOG_TASK_MISMATCH", zhHeaderRequest),
+    "日志上传任务不可用，请重新拉取任务后重试。",
+  );
+  assert.equal(
+    service.fromErrorCode("APP_MEMBER_BLOCKED", zhHeaderRequest),
+    "你在当前应用中的访问暂不可用。",
+  );
+  assert.equal(
+    service.fromErrorCode("FILE_ACCESS_DENIED", zhHeaderRequest),
+    "你没有权限访问该文件。",
+  );
+  assert.equal(
+    service.fromErrorCode("REQ_INVALID_EVENT", zhHeaderRequest),
+    "埋点事件不合法，请检查后重试。",
+  );
+  assert.equal(
+    service.fromErrorCode("REQ_INVALID_HEADER", unsupportedLocaleRequest),
+    "Request headers are invalid. Please review them and try again.",
+  );
 });
 
 test("app i18n config service stores normalized settings and revisions", async () => {

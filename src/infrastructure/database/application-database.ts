@@ -17,6 +17,7 @@ import type {
   RoleRecord,
   UserRecord,
   UserRoleRecord,
+  SmsVerificationRecord,
 } from "../../shared/types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
@@ -49,6 +50,12 @@ export abstract class ApplicationDatabase {
   abstract listAppUsers(appId?: string): MaybePromise<AppUserRecord[]>;
   abstract findAppUser(appId: string, userId: string): MaybePromise<AppUserRecord | undefined>;
   abstract insertAppUser(record: AppUserRecord): MaybePromise<void>;
+  abstract updateAppUserStatus(
+    appId: string,
+    userId: string,
+    status: AppUserRecord["status"],
+  ): MaybePromise<AppUserRecord | undefined>;
+  abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;
@@ -62,6 +69,7 @@ export abstract class ApplicationDatabase {
 
   abstract findUserById(userId: string): MaybePromise<UserRecord | undefined>;
   abstract findUserByAccount(account: string): MaybePromise<UserRecord | undefined>;
+  abstract findUserByPhone(phone: string): MaybePromise<UserRecord | undefined>;
   abstract insertUser(record: UserRecord): MaybePromise<void>;
   abstract updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): MaybePromise<void>;
 
@@ -83,6 +91,21 @@ export abstract class ApplicationDatabase {
   ): MaybePromise<FileRecord | undefined>;
   abstract findFileByAppAndStorageKey(appId: string, storageKey: string): MaybePromise<FileRecord | undefined>;
   abstract confirmFile(fileId: string, mimeType: string, sizeBytes: number): MaybePromise<FileRecord | undefined>;
+
+  abstract listSmsVerificationRecords(appId?: string): MaybePromise<SmsVerificationRecord[]>;
+  abstract findSmsVerificationRecord(recordId: string): MaybePromise<SmsVerificationRecord | undefined>;
+  abstract insertSmsVerificationRecord(record: SmsVerificationRecord): MaybePromise<void>;
+  abstract updateSmsVerificationRecord(
+    recordId: string,
+    patch: Partial<
+      Pick<
+        SmsVerificationRecord,
+        "status" | "providerRequestId" | "providerSerialNo" | "providerMessage" | "consumedAt" | "failedAt" | "revealCount" | "lastRevealedAt" | "updatedAt"
+      >
+    >,
+  ): MaybePromise<void>;
+
+  abstract deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
 
   abstract insertNotificationJob(record: NotificationJobRecord): MaybePromise<void>;
   abstract findNotificationJob(jobId: string): MaybePromise<NotificationJobRecord | undefined>;

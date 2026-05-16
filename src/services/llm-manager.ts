@@ -6,11 +6,13 @@ import { ApplicationError, badRequest, internalError } from "../shared/errors.ts
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 
 export type LLMProviderName = string;
-export type LLMRole = "system" | "user" | "assistant";
+export type LLMRole = "system" | "user" | "assistant" | "tool";
 
 export interface LLMMessage {
   role: LLMRole;
-  content: string;
+  content?: string;
+  toolCallId?: string;
+  toolCalls?: LLMToolCall[];
 }
 
 export interface LLMCompletionRequest {
@@ -21,10 +23,24 @@ export interface LLMCompletionRequest {
   providerOptions?: Record<string, unknown>;
 }
 
+export interface LLMToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
+export interface LLMToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
 export interface LLMUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  contextWindowTokens?: number;
+  contextUsedRatio?: number;
 }
 
 export interface LLMCompletionResult {
@@ -38,11 +54,15 @@ export interface LLMCompletionResult {
   providerRequestId?: string;
 }
 
-export type LLMStreamEvent =
+export type LLMStreamEvent = (
   | { type: "reasoning_delta"; text: string }
   | { type: "content_delta"; text: string }
   | { type: "usage"; usage: LLMUsage }
-  | { type: "done"; finishReason?: string };
+  | { type: "tool_call"; toolCall: LLMToolCall }
+  | { type: "done"; finishReason?: string }
+) & {
+  rawEvent?: unknown;
+};
 
 export interface ResolvedLLMModel {
   provider: LLMProviderName;
@@ -91,7 +111,7 @@ export const DEFAULT_LLM_MODEL_REGISTRY: LLMModelRegistry = {
   },
 };
 
-const VALID_ROLES = new Set<LLMRole>(["system", "user", "assistant"]);
+const VALID_ROLES = new Set<LLMRole>(["system", "user", "assistant", "tool"]);
 
 export interface LLMManagerOptions {
   commonLlmConfigService?: CommonLlmConfigService;
@@ -114,17 +134,19 @@ export class LLMManager {
 
     try {
       const result = await this.providers[resolution.request.model.provider].complete(resolution.request);
+      const usage = this.withContextUsage(result.usage, resolution.request.model);
       const completedAt = this.getNow();
       const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
       await this.recordRouteResult(resolution.routeRef, {
         ok: true,
         firstByteLatencyMs: totalLatencyMs,
         totalLatencyMs,
-        usage: result.usage,
+        usage,
         occurredAt: completedAt,
       });
       return {
         ...result,
+        usage,
         provider: resolution.request.model.provider,
         modelKey: resolution.request.model.modelKey,
         providerModel: resolution.request.model.providerModel,
@@ -159,7 +181,12 @@ export class LLMManager {
         }
 
         if (event.type === "usage") {
-          usage = event.usage;
+          usage = this.withContextUsage(event.usage, resolution.request.model);
+          yield {
+            ...event,
+            usage,
+          };
+          continue;
         }
 
         if (event.type === "done") {
@@ -215,13 +242,32 @@ export class LLMManager {
         badRequest("REQ_INVALID_BODY", `Unsupported LLM role: ${String(message.role)}.`);
       }
 
-      if (typeof message.content !== "string" || !message.content.trim()) {
+      if (message.role === "tool") {
+        if (typeof message.toolCallId !== "string" || !message.toolCallId.trim()) {
+          badRequest("REQ_INVALID_BODY", "tool messages require toolCallId.");
+        }
+        if (typeof message.content !== "string") {
+          badRequest("REQ_INVALID_BODY", "tool message content must be a string.");
+        }
+        return {
+          role: message.role,
+          content: message.content,
+          toolCallId: message.toolCallId,
+        };
+      }
+
+      const hasToolCalls = Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
+      if (typeof message.content !== "string") {
+        badRequest("REQ_INVALID_BODY", "LLM message content must be a string.");
+      }
+      if (!hasToolCalls && !message.content.trim()) {
         badRequest("REQ_INVALID_BODY", "LLM message content must be a non-empty string.");
       }
 
       return {
         role: message.role,
         content: message.content,
+        ...(hasToolCalls ? { toolCalls: message.toolCalls } : {}),
       };
     });
 
@@ -453,4 +499,54 @@ export class LLMManager {
   private getNow(): Date {
     return this.options.now?.() ?? new Date();
   }
+
+  private withContextUsage(usage: LLMUsage | undefined, model: ResolvedLLMModel): LLMUsage | undefined {
+    if (!usage) {
+      return undefined;
+    }
+    const contextWindowTokens = inferContextWindowTokens(model.modelKey, model.providerModel);
+    if (!contextWindowTokens || contextWindowTokens <= 0) {
+      return usage;
+    }
+    return {
+      ...usage,
+      contextWindowTokens,
+      contextUsedRatio: clampRatio(usage.promptTokens / contextWindowTokens),
+    };
+  }
+}
+
+const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
+  "kimi/kimi-k2.5": 256_000,
+  "kimi-2.5": 256_000,
+  "qwen-plus": 131_072,
+  "qwen3.5-flash": 1_000_000,
+  "qwen3.5-plus": 1_000_000,
+  "deepseek-v3.2": 128_000,
+  "siliconflow/deepseek-v3.2": 128_000,
+  "glm-5": 128_000,
+  "minimax-m2.7": 200_000,
+  "minimax/minimax-m2.7": 200_000,
+};
+
+const MODEL_KEY_CONTEXT_WINDOWS: Record<string, number> = {
+  "ainovel-free-creative": 131_072,
+  "ainovel-free-reasoning": 1_000_000,
+  "ainovel-plus-creative": 128_000,
+  "ainovel-plus-reasoning": 1_000_000,
+  "ainovel-super-creative": 200_000,
+  "ainovel-super-reasoning": 128_000,
+  "ainovel-lowcost-structured": 131_072,
+};
+
+function inferContextWindowTokens(modelKey: string, providerModel: string): number | undefined {
+  const normalizedProviderModel = providerModel.trim().toLowerCase();
+  return MODEL_CONTEXT_WINDOWS[normalizedProviderModel] ?? MODEL_KEY_CONTEXT_WINDOWS[modelKey.trim()];
+}
+
+function clampRatio(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, value));
 }

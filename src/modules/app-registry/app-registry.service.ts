@@ -51,6 +51,9 @@ export class AppRegistryService {
       if (membership.status === "BLOCKED") {
         forbidden("APP_MEMBER_BLOCKED", "The user is blocked in the current app.");
       }
+      if (membership.status === "DELETED") {
+        forbidden("APP_MEMBER_DELETED", "The user deleted access to the current app.");
+      }
 
       return membership;
     }
@@ -80,6 +83,9 @@ export class AppRegistryService {
 
     if (membership.status === "BLOCKED") {
       forbidden("APP_MEMBER_BLOCKED", "The user is blocked in the current app.");
+    }
+    if (membership.status === "DELETED") {
+      forbidden("APP_MEMBER_DELETED", "The user deleted access to the current app.");
     }
 
     return membership;

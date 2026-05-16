@@ -12,6 +12,10 @@ export class UserService {
     return await this.database.findUserByAccount(account);
   }
 
+  async findByPhone(phone: string) {
+    return await this.database.findUserByPhone(phone);
+  }
+
   async getById(userId: string) {
     const user = await this.database.findUserById(userId);
     if (!user) {
@@ -42,7 +46,7 @@ export class UserService {
   }
 
   private hasPassword(user: UserRecord): boolean {
-    return user.passwordAlgo !== "email-code-only";
+    return user.passwordAlgo !== "email-code-only" && user.passwordAlgo !== "sms-code-only";
   }
 
   private deriveName(user: UserRecord): string {

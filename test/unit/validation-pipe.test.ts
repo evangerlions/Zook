@@ -119,6 +119,26 @@ test("ValidationPipe.optionalString rejects non-string value", () => {
   );
 });
 
+test("ValidationPipe.optionalBoolean returns boolean when present", () => {
+  assert.equal(pipe.optionalBoolean({ test: true }, "test"), true);
+  assert.equal(pipe.optionalBoolean({ test: false }, "test"), false);
+});
+
+test("ValidationPipe.optionalBoolean returns undefined when missing", () => {
+  assert.equal(pipe.optionalBoolean({}, "test"), undefined);
+  assert.equal(pipe.optionalBoolean({ test: null }, "test"), undefined);
+});
+
+test("ValidationPipe.optionalBoolean rejects non-boolean value", () => {
+  assert.throws(
+    () => pipe.optionalBoolean({ test: "true" }, "test"),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "REQ_INVALID_BODY",
+  );
+});
+
 // --- requireNumber ---
 
 test("ValidationPipe.requireNumber returns number", () => {

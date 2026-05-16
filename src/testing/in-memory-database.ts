@@ -17,6 +17,7 @@ import type {
   RoleRecord,
   UserRecord,
   UserRoleRecord,
+  SmsVerificationRecord,
 } from "../shared/types.ts";
 import {
   ApplicationDatabase,
@@ -38,6 +39,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   auditLogs: AuditLogRecord[];
   notificationJobs: NotificationJobRecord[];
   failedEvents: FailedEventRecord[];
+  smsVerificationRecords: SmsVerificationRecord[];
   appConfigs: AppConfigRecord[];
   analyticsEvents: AnalyticsEventRecord[];
   files: FileRecord[];
@@ -57,6 +59,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.auditLogs = structuredClone(seed.auditLogs ?? []);
     this.notificationJobs = structuredClone(seed.notificationJobs ?? []);
     this.failedEvents = structuredClone(seed.failedEvents ?? []);
+    this.smsVerificationRecords = structuredClone(seed.smsVerificationRecords ?? []);
     this.appConfigs = structuredClone(seed.appConfigs ?? []);
     this.analyticsEvents = structuredClone(seed.analyticsEvents ?? []);
     this.files = structuredClone(seed.files ?? []);
@@ -123,6 +126,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.auditLogs = this.auditLogs.filter((item) => item.appId !== appId);
     this.notificationJobs = this.notificationJobs.filter((item) => item.appId !== appId);
     this.failedEvents = this.failedEvents.filter((item) => item.appId !== appId);
+    this.smsVerificationRecords = this.smsVerificationRecords.filter((item) => item.appId !== appId);
     this.appConfigs = this.appConfigs.filter((item) => item.appId !== appId);
     this.analyticsEvents = this.analyticsEvents.filter((item) => item.appId !== appId);
     this.files = this.files.filter((item) => item.appId !== appId);
@@ -141,6 +145,53 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   insertAppUser(record: AppUserRecord): void {
     this.appUsers.push(structuredClone(record));
+  }
+
+  updateAppUserStatus(
+    appId: string,
+    userId: string,
+    status: AppUserRecord["status"],
+  ): AppUserRecord | undefined {
+    const membership = this.findAppUser(appId, userId);
+    if (!membership) {
+      return undefined;
+    }
+    membership.status = status;
+    return structuredClone(membership);
+  }
+
+  deleteAppUserRuntimeData(appId: string, userId: string): void {
+    const uploadIds = this.clientLogUploads
+      .filter((item) => item.appId === appId && item.userId === userId)
+      .map((item) => item.id);
+    const taskIds = this.clientLogUploadTasks
+      .filter((item) => item.appId === appId && item.userId === userId)
+      .map((item) => item.id);
+
+    this.userRoles = this.userRoles.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.notificationJobs = this.notificationJobs.filter(
+      (item) => item.appId !== appId || item.recipientUserId !== userId,
+    );
+    this.analyticsEvents = this.analyticsEvents.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.files = this.files.filter(
+      (item) => item.appId !== appId || item.ownerUserId !== userId,
+    );
+    this.clientLogLines = this.clientLogLines.filter(
+      (item) =>
+        (item.appId !== appId || item.userId !== userId) &&
+        !uploadIds.includes(item.uploadId) &&
+        !taskIds.includes(item.taskId),
+    );
+    this.clientLogUploads = this.clientLogUploads.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.clientLogUploadTasks = this.clientLogUploadTasks.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
   }
 
   listRoles(appId?: string): RoleRecord[] {
@@ -194,6 +245,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
       (item) =>
         item.email?.toLowerCase() === normalized || item.phone?.toLowerCase() === normalized,
     );
+  }
+
+  findUserByPhone(phone: string): UserRecord | undefined {
+    const normalized = phone.trim().toLowerCase();
+    return this.users.find((item) => item.phone?.toLowerCase() === normalized);
   }
 
   insertUser(record: UserRecord): void {
@@ -271,6 +327,46 @@ export class InMemoryDatabase extends ApplicationDatabase {
     file.mimeType = mimeType;
     file.sizeBytes = sizeBytes;
     return file;
+  }
+
+  listSmsVerificationRecords(appId?: string): SmsVerificationRecord[] {
+    const items = appId ? this.smsVerificationRecords.filter((item) => item.appId === appId) : this.smsVerificationRecords;
+    return structuredClone(items).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  findSmsVerificationRecord(recordId: string): SmsVerificationRecord | undefined {
+    const found = this.smsVerificationRecords.find((item) => item.id === recordId);
+    return found ? structuredClone(found) : undefined;
+  }
+
+  insertSmsVerificationRecord(record: SmsVerificationRecord): void {
+    this.smsVerificationRecords.push(structuredClone(record));
+  }
+
+  updateSmsVerificationRecord(
+    recordId: string,
+    patch: Partial<
+      Pick<
+        SmsVerificationRecord,
+        "status" | "providerRequestId" | "providerSerialNo" | "providerMessage" | "consumedAt" | "failedAt" | "revealCount" | "lastRevealedAt" | "updatedAt"
+      >
+    >,
+  ): void {
+    const index = this.smsVerificationRecords.findIndex((item) => item.id === recordId);
+    if (index === -1) {
+      return;
+    }
+    this.smsVerificationRecords[index] = {
+      ...this.smsVerificationRecords[index],
+      ...structuredClone(patch),
+    };
+  }
+
+  deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): number {
+    const before = this.smsVerificationRecords.length;
+    const cutoffMs = new Date(cutoffIso).getTime();
+    this.smsVerificationRecords = this.smsVerificationRecords.filter((item) => new Date(item.createdAt).getTime() >= cutoffMs);
+    return before - this.smsVerificationRecords.length;
   }
 
   insertNotificationJob(record: NotificationJobRecord): void {

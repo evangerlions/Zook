@@ -22,6 +22,7 @@ function createFakeSender(): RegistrationEmailSender {
 
 test("verification attempt rate limits persist across regenerated email codes", async () => {
   const generatedCodes = ["111111", "222222", "333333"];
+  const attemptsPerGeneration = [4, 4, 3];
   let codeIndex = 0;
   const runtime = await createApplication({
     registrationCodeGenerator: () => generatedCodes[Math.min(codeIndex, generatedCodes.length - 1)] as string,
@@ -31,7 +32,9 @@ test("verification attempt rate limits persist across regenerated email codes", 
   const ipAddress = "203.0.113.90";
   const baseTime = new Date("2026-03-30T10:00:00+08:00");
 
-  for (let generation = 0; generation < 3; generation += 1) {
+  let attemptCounter = 0;
+
+  for (let generation = 0; generation < attemptsPerGeneration.length; generation += 1) {
     codeIndex = generation;
     const issueTime = new Date(baseTime.getTime() + generation * 61 * 1000);
     await runtime.services.authService.registerEmailCode(
@@ -45,9 +48,10 @@ test("verification attempt rate limits persist across regenerated email codes", 
       issueTime,
     );
 
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < attemptsPerGeneration[generation]!; attempt += 1) {
+      attemptCounter += 1;
       const attemptTime = new Date(issueTime.getTime() + (attempt + 1) * 1000);
-      const expectedCode = generation === 2 && attempt === 1 ? "AUTH_RATE_LIMITED" : "AUTH_VERIFICATION_CODE_INVALID";
+      const expectedCode = attemptCounter > 10 ? "AUTH_RATE_LIMITED" : "AUTH_VERIFICATION_CODE_INVALID";
 
       await assert.rejects(
         () =>
@@ -91,10 +95,22 @@ test("signed but malformed access token payloads return AUTH_INVALID_TOKEN", asy
   assert.equal(response.body.code, "AUTH_INVALID_TOKEN");
 });
 
-test("password strength rejects passwords longer than 256 characters", () => {
+test("password strength accepts 8-64 character passwords with letters and numbers", () => {
   const hasher = new DevelopmentPasswordHasher();
-  const tooLongPassword = `${"A".repeat(256)}1`;
 
   assert.equal(hasher.validateStrength("Password1234"), true);
-  assert.equal(hasher.validateStrength(tooLongPassword), false);
+});
+
+test("password strength rejects passwords outside the 8-64 character range", () => {
+  const hasher = new DevelopmentPasswordHasher();
+
+  assert.equal(hasher.validateStrength("1234567"), false);
+  assert.equal(hasher.validateStrength("A".repeat(65)), false);
+});
+
+test("password strength rejects passwords without both letters and numbers", () => {
+  const hasher = new DevelopmentPasswordHasher();
+
+  assert.equal(hasher.validateStrength("abcdefgh"), false);
+  assert.equal(hasher.validateStrength("12345678"), false);
 });

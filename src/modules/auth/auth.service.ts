@@ -1,8 +1,16 @@
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { KVManager } from "../../infrastructure/kv/kv-manager.ts";
-import { badRequest, conflict, forbidden, tooManyRequests, unauthorized } from "../../shared/errors.ts";
+import {
+  badRequest,
+  conflict,
+  forbidden,
+  tooManyRequests,
+  unauthorized,
+} from "../../shared/errors.ts";
 import type {
+  AccountDeletionResult,
   AuthContext,
+  AuthRateLimitConfig,
   AuthSession,
   ChangePasswordCommand,
   ClientType,
@@ -10,18 +18,35 @@ import type {
   EmailLoginCommand,
   LoginCommand,
   LogoutCommand,
+  OneClickLoginCommand,
+  PasswordSmsCodeCommand,
   PasswordEmailCodeCommand,
   RefreshCommand,
+  RegisterBySmsCommand,
   RegisterCommand,
   RegisterEmailCodeCommand,
   RegisterEmailCodeResult,
   ResetPasswordCommand,
+  ResetPasswordBySmsCommand,
   SetPasswordCommand,
+  SmsLoginCodeCommand,
+  SmsLoginCommand,
   UserRecord,
 } from "../../shared/types.ts";
-import { createOpaqueToken, randomId, randomNumericCode, sha256, timingSafeHexCompare, toDateKey, toHourKey } from "../../shared/utils.ts";
+import {
+  createOpaqueToken,
+  randomId,
+  randomNumericCode,
+  sha256,
+  timingSafeHexCompare,
+  toDateKey,
+  toHourKey,
+} from "../../shared/utils.ts";
+import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
+import type { SmsVerificationSender } from "../../services/tencent-sms-verification.service.ts";
+import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
 import { VERIFICATION_EMAIL_TEMPLATE_NAME } from "../../services/common-email-config.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
@@ -41,6 +66,18 @@ interface EmailVerificationCacheEntry {
   failedAttempts: number;
 }
 
+interface AuthRateLimitRuntimeConfig {
+  resendCooldownMs: number;
+  verificationCodeTtlMs: number;
+  sendCodeWindowMs: number;
+  sendCodeWindowLimit: number;
+  verifyWindowMs: number;
+  verifyWindowLimit: number;
+  accountDailyLimit: number;
+  ipHourlyLimit: number;
+  maxFailedCodeAttempts: number;
+}
+
 /**
  * AuthService implements the document's shared-account, password-only, bearer-only auth workflow.
  */
@@ -53,15 +90,6 @@ export class AuthService {
   private readonly failureWindowMs = 15 * 60 * 1000;
   private readonly maxFailedAttempts = 10;
   private readonly lockDurationMs = 15 * 60 * 1000;
-  private readonly registrationCodeTtlMs = 10 * 60 * 1000;
-  private readonly registrationResendCooldownMs = 60 * 1000;
-  private readonly registrationEmailDailyLimit = 5;
-  private readonly registrationIpHourlyLimit = 20;
-  private readonly registrationCodeWindowMs = 10 * 60 * 1000;
-  private readonly registrationCodeWindowLimit = 3;
-  private readonly registrationWindowMs = 10 * 60 * 1000;
-  private readonly registrationWindowLimit = 5;
-  private readonly registrationMaxFailedCodeAttempts = 5;
   private readonly localEmailLoginBypassEmail = "evangerlions@gmail.com";
   private readonly localEmailLoginBypassCode = "852133";
 
@@ -73,8 +101,12 @@ export class AuthService {
     private readonly passwordHasher: DevelopmentPasswordHasher,
     private readonly tokenService: TokenService,
     private readonly refreshTokenStore: RefreshTokenStore,
+    private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
     private readonly registrationEmailSender: RegistrationEmailSender,
-    private readonly registrationCodeGenerator: () => string = () => randomNumericCode(6),
+    private readonly smsVerificationSender: SmsVerificationSender,
+    private readonly smsVerificationRecordService: SmsVerificationRecordService,
+    private readonly registrationCodeGenerator: () => string = () =>
+      randomNumericCode(6),
     private readonly secureRefreshCookie = false,
     private readonly refreshCookieSameSite: "Lax" | "None" | "Strict" = "Lax",
   ) {}
@@ -86,7 +118,10 @@ export class AuthService {
     const user = await this.database.findUserByAccount(normalizedAccount);
     if (!user || !this.verifyPassword(user, command.password)) {
       await this.registerFailure(normalizedAccount, now);
-      unauthorized("AUTH_INVALID_CREDENTIAL", "Account or password is invalid.");
+      unauthorized(
+        "AUTH_INVALID_CREDENTIAL",
+        "Account or password is invalid.",
+      );
     }
 
     if (user.status === "BLOCKED") {
@@ -104,34 +139,54 @@ export class AuthService {
     command: RegisterEmailCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
     const app = await this.assertSelfRegistrationAllowed(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
-    await this.consumeRegistrationCodeLimits(app.id, email, ipAddress, now);
+    await this.consumeRegistrationCodeLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
 
     const cacheKey = this.buildRegistrationCodeKey(app.id, email);
     const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
     if (
       existingCode &&
-      now.getTime() - new Date(existingCode.sentAt).getTime() < this.registrationResendCooldownMs
+      now.getTime() - new Date(existingCode.sentAt).getTime() <
+        rateLimit.resendCooldownMs
     ) {
-      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
     }
 
     const rawCode = this.registrationCodeGenerator();
     if (!/^\d{6}$/.test(rawCode)) {
-      throw new Error("Registration code generator must return a 6-digit numeric string.");
+      throw new Error(
+        "Registration code generator must return a 6-digit numeric string.",
+      );
     }
 
     const entry = {
       codeHash: sha256(rawCode),
-      expiresAt: new Date(now.getTime() + this.registrationCodeTtlMs).toISOString(),
+      expiresAt: new Date(
+        now.getTime() + rateLimit.verificationCodeTtlMs,
+      ).toISOString(),
       sentAt: now.toISOString(),
       failedAttempts: 0,
     } satisfies EmailVerificationCacheEntry;
 
-    await this.setVerificationCodeEntry(cacheKey, entry, this.registrationCodeTtlMs, now);
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      entry,
+      rateLimit.verificationCodeTtlMs,
+      now,
+    );
 
     try {
       await this.registrationEmailSender.sendVerificationCode({
@@ -143,7 +198,9 @@ export class AuthService {
         code: rawCode,
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
-        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        expireMinutes: Math.floor(
+          rateLimit.verificationCodeTtlMs / (60 * 1000),
+        ),
         templateName: VERIFICATION_EMAIL_TEMPLATE_NAME,
       });
     } catch (error) {
@@ -153,8 +210,8 @@ export class AuthService {
 
     return {
       accepted: true,
-      cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
-      expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+      cooldownSeconds: Math.floor(rateLimit.resendCooldownMs / 1000),
+      expiresInSeconds: Math.floor(rateLimit.verificationCodeTtlMs / 1000),
     };
   }
 
@@ -162,17 +219,24 @@ export class AuthService {
     command: EmailLoginCodeCommand,
     now = new Date(),
   ): Promise<RegisterEmailCodeResult> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
     const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
-    await this.consumeEmailLoginCodeLimits(app.id, email, ipAddress, now);
+    await this.consumeEmailLoginCodeLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
 
     if (this.isLocalEmailLoginBypassAccount(email, ipAddress)) {
       return {
         accepted: true,
-        cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
-        expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+        cooldownSeconds: Math.floor(rateLimit.resendCooldownMs / 1000),
+        expiresInSeconds: Math.floor(rateLimit.verificationCodeTtlMs / 1000),
       };
     }
 
@@ -180,24 +244,37 @@ export class AuthService {
     const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
     if (
       existingCode &&
-      now.getTime() - new Date(existingCode.sentAt).getTime() < this.registrationResendCooldownMs
+      now.getTime() - new Date(existingCode.sentAt).getTime() <
+        rateLimit.resendCooldownMs
     ) {
-      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
     }
 
     const rawCode = this.registrationCodeGenerator();
     if (!/^\d{6}$/.test(rawCode)) {
-      throw new Error("Registration code generator must return a 6-digit numeric string.");
+      throw new Error(
+        "Registration code generator must return a 6-digit numeric string.",
+      );
     }
 
     const entry = {
       codeHash: sha256(rawCode),
-      expiresAt: new Date(now.getTime() + this.registrationCodeTtlMs).toISOString(),
+      expiresAt: new Date(
+        now.getTime() + rateLimit.verificationCodeTtlMs,
+      ).toISOString(),
       sentAt: now.toISOString(),
       failedAttempts: 0,
     } satisfies EmailVerificationCacheEntry;
 
-    await this.setVerificationCodeEntry(cacheKey, entry, this.registrationCodeTtlMs, now);
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      entry,
+      rateLimit.verificationCodeTtlMs,
+      now,
+    );
 
     try {
       await this.registrationEmailSender.sendVerificationCode({
@@ -209,7 +286,9 @@ export class AuthService {
         code: rawCode,
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
-        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        expireMinutes: Math.floor(
+          rateLimit.verificationCodeTtlMs / (60 * 1000),
+        ),
         templateName: VERIFICATION_EMAIL_TEMPLATE_NAME,
       });
     } catch (error) {
@@ -219,49 +298,79 @@ export class AuthService {
 
     return {
       accepted: true,
-      cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
-      expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+      cooldownSeconds: Math.floor(rateLimit.resendCooldownMs / 1000),
+      expiresInSeconds: Math.floor(rateLimit.verificationCodeTtlMs / 1000),
     };
   }
 
-  async register(command: RegisterCommand, now = new Date()): Promise<AuthSession> {
+  async register(
+    command: RegisterCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
     const app = await this.assertSelfRegistrationAllowed(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
-    await this.consumeRegistrationLimits(app.id, email, ipAddress, now);
+    await this.consumeRegistrationLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
 
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 10 and 256 characters and include both letters and numbers.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
     const emailCode = command.emailCode.trim();
     if (!emailCode) {
-      unauthorized("AUTH_VERIFICATION_CODE_REQUIRED", "Email verification code is required.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_REQUIRED",
+        "Email verification code is required.",
+      );
     }
 
     const cacheKey = this.buildRegistrationCodeKey(app.id, email);
     const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
     if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
       await this.deleteVerificationCodeEntry(cacheKey);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "Email verification code is invalid or expired.",
+      );
     }
 
-    if (cachedCode.failedAttempts >= this.registrationMaxFailedCodeAttempts) {
+    if (cachedCode.failedAttempts >= rateLimit.maxFailedCodeAttempts) {
       await this.deleteVerificationCodeEntry(cacheKey);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "Email verification code is invalid or expired.",
+      );
     }
 
     if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
-      await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      await this.recordFailedCodeAttempt(
+        cacheKey,
+        cachedCode,
+        rateLimit.maxFailedCodeAttempts,
+        now,
+      );
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "Email verification code is invalid or expired.",
+      );
     }
 
     if (await this.database.findUserByAccount(email)) {
-      conflict("AUTH_ACCOUNT_ALREADY_EXISTS", "Registration is not available for the provided email.");
+      conflict(
+        "AUTH_ACCOUNT_ALREADY_EXISTS",
+        "Registration is not available for the provided email.",
+      );
     }
 
     await this.deleteVerificationCodeEntry(cacheKey);
@@ -284,18 +393,32 @@ export class AuthService {
     command: EmailLoginCommand,
     now = new Date(),
   ): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
     const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
     const emailCode = command.emailCode.trim();
     if (!emailCode) {
-      unauthorized("AUTH_VERIFICATION_CODE_REQUIRED", "Email verification code is required.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_REQUIRED",
+        "Email verification code is required.",
+      );
     }
 
-    const bypassMatched = this.matchesLocalEmailLoginBypass(email, emailCode, ipAddress);
+    const bypassMatched = this.matchesLocalEmailLoginBypass(
+      email,
+      emailCode,
+      ipAddress,
+    );
     if (!bypassMatched) {
-      await this.consumeEmailLoginLimits(app.id, email, ipAddress, now);
+      await this.consumeEmailLoginLimits(
+        app.id,
+        email,
+        ipAddress,
+        rateLimit,
+        now,
+      );
     }
 
     if (!bypassMatched) {
@@ -303,17 +426,31 @@ export class AuthService {
       const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
       if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
         await this.deleteVerificationCodeEntry(cacheKey);
-        unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+        unauthorized(
+          "AUTH_VERIFICATION_CODE_INVALID",
+          "Email verification code is invalid or expired.",
+        );
       }
 
-      if (cachedCode.failedAttempts >= this.registrationMaxFailedCodeAttempts) {
+      if (cachedCode.failedAttempts >= rateLimit.maxFailedCodeAttempts) {
         await this.deleteVerificationCodeEntry(cacheKey);
-        unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+        unauthorized(
+          "AUTH_VERIFICATION_CODE_INVALID",
+          "Email verification code is invalid or expired.",
+        );
       }
 
       if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
-        await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
-        unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+        await this.recordFailedCodeAttempt(
+          cacheKey,
+          cachedCode,
+          rateLimit.maxFailedCodeAttempts,
+          now,
+        );
+        unauthorized(
+          "AUTH_VERIFICATION_CODE_INVALID",
+          "Email verification code is invalid or expired.",
+        );
       }
 
       await this.deleteVerificationCodeEntry(cacheKey);
@@ -323,7 +460,10 @@ export class AuthService {
     let autoCreatedUser = false;
     if (!user) {
       if (app.joinMode !== "AUTO") {
-        forbidden("APP_JOIN_INVITE_REQUIRED", "This app requires an invite to join.");
+        forbidden(
+          "APP_JOIN_INVITE_REQUIRED",
+          "This app requires an invite to join.",
+        );
       }
 
       autoCreatedUser = true;
@@ -350,7 +490,340 @@ export class AuthService {
     };
   }
 
-  async refresh(command: RefreshCommand, now = new Date()): Promise<AuthSession> {
+  async registerSmsCode(
+    command: RegisterSmsCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
+    const app = await this.assertSelfRegistrationAllowed(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeRegistrationCodeLimits(
+      app.id,
+      phone,
+      ipAddress,
+      rateLimit,
+      now,
+      "sms",
+    );
+
+    const cacheKey = this.buildRegistrationCodeKey(app.id, phone, "sms");
+    const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (
+      existingCode &&
+      now.getTime() - new Date(existingCode.sentAt).getTime() <
+        rateLimit.resendCooldownMs
+    ) {
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
+    }
+
+    const rawCode = this.createVerificationCode();
+    const verificationEntry = this.createVerificationCodeEntry(
+      rawCode,
+      now,
+      rateLimit.verificationCodeTtlMs,
+    );
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      verificationEntry,
+      rateLimit.verificationCodeTtlMs,
+      now,
+    );
+    const smsRecord = await this.smsVerificationRecordService.recordIssued({
+      appId: app.id,
+      scene: "register",
+      phone,
+      phoneNa: command.phoneNa,
+      code: rawCode,
+      isTest: command.test === true,
+      sentAt: verificationEntry.sentAt,
+      expiresAt: verificationEntry.expiresAt,
+    });
+
+    if (!command.test) {
+      try {
+        const sendResult =
+          await this.smsVerificationSender.sendVerificationCode({
+            phoneNumber: phone,
+            code: rawCode,
+            expireMinutes: Math.floor(
+              rateLimit.verificationCodeTtlMs / (60 * 1000),
+            ),
+          });
+        await this.smsVerificationRecordService.markProviderAccepted(
+          smsRecord.id,
+          {
+            providerRequestId: sendResult.requestId,
+            providerSerialNo: sendResult.sendSerialNo,
+          },
+        );
+      } catch (error) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        await this.smsVerificationRecordService.markProviderFailed(
+          smsRecord.id,
+          {
+            providerMessage:
+              error instanceof Error ? error.message : String(error),
+          },
+        );
+        throw error;
+      }
+    }
+
+    return this.buildVerificationCodeAcceptedResult(rateLimit);
+  }
+
+  async registerWithSms(
+    command: RegisterBySmsCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
+    const app = await this.assertSelfRegistrationAllowed(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeRegistrationLimits(
+      app.id,
+      phone,
+      ipAddress,
+      rateLimit,
+      now,
+      "sms",
+    );
+    await this.assertSmsCodeValid({
+      appId: app.id,
+      subject: phone,
+      code: command.smsCode,
+      kind: "register",
+      maxFailedCodeAttempts: rateLimit.maxFailedCodeAttempts,
+      now,
+    });
+
+    if (await this.database.findUserByPhone(phone)) {
+      conflict(
+        "AUTH_ACCOUNT_ALREADY_EXISTS",
+        "Registration is not available for the provided phone.",
+      );
+    }
+
+    const userId = randomId("user");
+    await this.database.insertUser({
+      id: userId,
+      phone,
+      passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
+      passwordAlgo: "sms-code-only",
+      status: "ACTIVE",
+      createdAt: now.toISOString(),
+    });
+    await this.appRegistryService.ensureMembership(app.id, userId, now);
+    return this.issueSessionForUser(userId, app.id, now);
+  }
+
+  async loginSmsCode(
+    command: SmsLoginCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeEmailLoginCodeLimits(
+      app.id,
+      phone,
+      ipAddress,
+      rateLimit,
+      now,
+      "sms",
+    );
+
+    const cacheKey = this.buildEmailLoginCodeKey(app.id, phone, "sms");
+    const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (
+      existingCode &&
+      now.getTime() - new Date(existingCode.sentAt).getTime() <
+        rateLimit.resendCooldownMs
+    ) {
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
+    }
+
+    const rawCode = this.createVerificationCode();
+    const verificationEntry = this.createVerificationCodeEntry(
+      rawCode,
+      now,
+      rateLimit.verificationCodeTtlMs,
+    );
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      verificationEntry,
+      rateLimit.verificationCodeTtlMs,
+      now,
+    );
+    const smsRecord = await this.smsVerificationRecordService.recordIssued({
+      appId: app.id,
+      scene: "login",
+      phone,
+      phoneNa: command.phoneNa,
+      code: rawCode,
+      isTest: command.test === true,
+      sentAt: verificationEntry.sentAt,
+      expiresAt: verificationEntry.expiresAt,
+    });
+
+    if (!command.test) {
+      try {
+        const sendResult =
+          await this.smsVerificationSender.sendVerificationCode({
+            phoneNumber: phone,
+            code: rawCode,
+            expireMinutes: Math.floor(
+              rateLimit.verificationCodeTtlMs / (60 * 1000),
+            ),
+          });
+        await this.smsVerificationRecordService.markProviderAccepted(
+          smsRecord.id,
+          {
+            providerRequestId: sendResult.requestId,
+            providerSerialNo: sendResult.sendSerialNo,
+          },
+        );
+      } catch (error) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        await this.smsVerificationRecordService.markProviderFailed(
+          smsRecord.id,
+          {
+            providerMessage:
+              error instanceof Error ? error.message : String(error),
+          },
+        );
+        throw error;
+      }
+    }
+
+    return this.buildVerificationCodeAcceptedResult(rateLimit);
+  }
+
+  async loginWithSmsCode(
+    command: SmsLoginCommand,
+    now = new Date(),
+  ): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeEmailLoginLimits(
+      app.id,
+      phone,
+      ipAddress,
+      rateLimit,
+      now,
+      "sms",
+    );
+    await this.assertSmsCodeValid({
+      appId: app.id,
+      subject: phone,
+      code: command.smsCode,
+      kind: "login",
+      maxFailedCodeAttempts: rateLimit.maxFailedCodeAttempts,
+      now,
+    });
+
+    let user = await this.database.findUserByPhone(phone);
+    let autoCreatedUser = false;
+    if (!user) {
+      if (app.joinMode !== "AUTO") {
+        forbidden(
+          "APP_JOIN_INVITE_REQUIRED",
+          "This app requires an invite to join.",
+        );
+      }
+
+      autoCreatedUser = true;
+      user = {
+        id: randomId("user"),
+        phone,
+        passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
+        passwordAlgo: "sms-code-only",
+        status: "ACTIVE",
+        createdAt: now.toISOString(),
+      };
+      await this.database.insertUser(user);
+    }
+
+    if (user.status === "BLOCKED") {
+      forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
+    }
+
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    return {
+      session: await this.issueSessionForUser(user.id, app.id, now),
+      autoCreatedUser,
+    };
+  }
+
+  async loginWithOneClickPhone(
+    command: OneClickLoginCommand,
+    now = new Date(),
+  ): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumeEmailLoginLimits(
+      app.id,
+      phone,
+      ipAddress,
+      rateLimit,
+      now,
+      "sms",
+    );
+
+    let user = await this.database.findUserByPhone(phone);
+    let autoCreatedUser = false;
+    if (!user) {
+      if (app.joinMode !== "AUTO") {
+        forbidden(
+          "APP_JOIN_INVITE_REQUIRED",
+          "This app requires an invite to join.",
+        );
+      }
+
+      autoCreatedUser = true;
+      user = {
+        id: randomId("user"),
+        phone,
+        passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
+        passwordAlgo: "sms-code-only",
+        status: "ACTIVE",
+        createdAt: now.toISOString(),
+      };
+      await this.database.insertUser(user);
+    }
+
+    if (user.status === "BLOCKED") {
+      forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
+    }
+
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    return {
+      session: await this.issueSessionForUser(user.id, app.id, now),
+      autoCreatedUser,
+    };
+  }
+
+  async refresh(
+    command: RefreshCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
     const rawRefreshToken = command.cookieRefreshToken ?? command.refreshToken;
     if (!rawRefreshToken) {
       unauthorized("AUTH_REFRESH_TOKEN_REQUIRED", "Refresh token is required.");
@@ -366,12 +839,18 @@ export class AuthService {
     }
 
     if (command.appId && command.appId !== existingRecord.appId) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Refresh token app scope does not match the request.");
+      forbidden(
+        "AUTH_APP_SCOPE_MISMATCH",
+        "Refresh token app scope does not match the request.",
+      );
     }
 
     const user = await this.userService.getById(existingRecord.userId);
     await this.appRegistryService.getAppOrThrow(existingRecord.appId);
-    await this.appRegistryService.ensureExistingMembership(existingRecord.appId, user.id);
+    await this.appRegistryService.ensureExistingMembership(
+      existingRecord.appId,
+      user.id,
+    );
 
     const accessToken = this.tokenService.issueAccessToken(
       user.id,
@@ -397,9 +876,16 @@ export class AuthService {
     };
   }
 
-  async logout(command: LogoutCommand, auth: AuthContext, now = new Date()): Promise<number> {
+  async logout(
+    command: LogoutCommand,
+    auth: AuthContext,
+    now = new Date(),
+  ): Promise<number> {
     if (command.appId !== auth.appId) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Logout app scope does not match the access token.");
+      forbidden(
+        "AUTH_APP_SCOPE_MISMATCH",
+        "Logout app scope does not match the access token.",
+      );
     }
 
     if (command.scope === "all") {
@@ -408,12 +894,23 @@ export class AuthService {
 
     const rawRefreshToken = command.cookieRefreshToken ?? command.refreshToken;
     if (!rawRefreshToken) {
-      unauthorized("AUTH_REFRESH_TOKEN_REQUIRED", "Refresh token is required for current-device logout.");
+      unauthorized(
+        "AUTH_REFRESH_TOKEN_REQUIRED",
+        "Refresh token is required for current-device logout.",
+      );
     }
 
     const record = await this.getRefreshTokenRecord(rawRefreshToken);
-    if (!record || record.revokedAt || record.userId !== auth.userId || record.appId !== auth.appId) {
-      unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is already invalid.");
+    if (
+      !record ||
+      record.revokedAt ||
+      record.userId !== auth.userId ||
+      record.appId !== auth.appId
+    ) {
+      unauthorized(
+        "AUTH_REFRESH_TOKEN_REVOKED",
+        "Refresh token is already invalid.",
+      );
     }
 
     record.revokedAt = now.toISOString();
@@ -421,7 +918,51 @@ export class AuthService {
     return 1;
   }
 
-  buildRefreshCookie(refreshToken: string, clientType: ClientType): string | undefined {
+  async deleteCurrentAppAccount(
+    command: {
+      appId: string;
+      userId: string;
+      confirmation: string;
+    },
+    now = new Date(),
+  ): Promise<AccountDeletionResult> {
+    if (command.confirmation !== "DELETE") {
+      badRequest(
+        "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID",
+        "Type DELETE to confirm account deletion.",
+      );
+    }
+
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    await this.userService.getById(command.userId);
+    await this.appRegistryService.ensureExistingMembership(
+      app.id,
+      command.userId,
+    );
+
+    return this.database.withExclusiveSession(async () => {
+      await this.database.deleteAppUserRuntimeData(app.id, command.userId);
+      await this.database.updateAppUserStatus(
+        app.id,
+        command.userId,
+        "DELETED",
+      );
+      const revokedSessions = await this.revokeAllSessions(
+        app.id,
+        command.userId,
+        now,
+      );
+      return {
+        deleted: true,
+        revokedSessions,
+      };
+    });
+  }
+
+  buildRefreshCookie(
+    refreshToken: string,
+    clientType: ClientType,
+  ): string | undefined {
     if (clientType !== "web") {
       return undefined;
     }
@@ -436,48 +977,79 @@ export class AuthService {
     return this.buildRefreshCookieValue("refreshToken=", "Max-Age=0");
   }
 
-  async issueSession(userId: string, appId: string, now = new Date()): Promise<AuthSession> {
+  async issueSession(
+    userId: string,
+    appId: string,
+    now = new Date(),
+  ): Promise<AuthSession> {
     return this.issueSessionForUser(userId, appId, now);
   }
 
-  async sendPasswordCode(command: PasswordEmailCodeCommand, now = new Date()): Promise<RegisterEmailCodeResult> {
+  async sendPasswordCode(
+    command: PasswordEmailCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
     const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
-    await this.consumePasswordCodeLimits(app.id, email, ipAddress, now);
+    await this.consumePasswordCodeLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
 
     const cacheKey = this.buildPasswordResetCodeKey(app.id, email);
     const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
     if (
       existingCode &&
-      now.getTime() - new Date(existingCode.sentAt).getTime() < this.registrationResendCooldownMs
+      now.getTime() - new Date(existingCode.sentAt).getTime() <
+        rateLimit.resendCooldownMs
     ) {
-      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
     }
 
     const user = await this.database.findUserByAccount(email);
-    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordEmailFlow(app.id, user.id))) {
+    if (
+      !user ||
+      user.status === "BLOCKED" ||
+      !(await this.canUsePasswordFlow(app.id, user.id))
+    ) {
       return {
         accepted: true,
-        cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
-        expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+        cooldownSeconds: Math.floor(rateLimit.resendCooldownMs / 1000),
+        expiresInSeconds: Math.floor(rateLimit.verificationCodeTtlMs / 1000),
       };
     }
 
     const rawCode = this.registrationCodeGenerator();
     if (!/^\d{6}$/.test(rawCode)) {
-      throw new Error("Registration code generator must return a 6-digit numeric string.");
+      throw new Error(
+        "Registration code generator must return a 6-digit numeric string.",
+      );
     }
 
     const entry = {
       codeHash: sha256(rawCode),
-      expiresAt: new Date(now.getTime() + this.registrationCodeTtlMs).toISOString(),
+      expiresAt: new Date(
+        now.getTime() + rateLimit.verificationCodeTtlMs,
+      ).toISOString(),
       sentAt: now.toISOString(),
       failedAttempts: 0,
     } satisfies EmailVerificationCacheEntry;
 
-    await this.setVerificationCodeEntry(cacheKey, entry, this.registrationCodeTtlMs, now);
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      entry,
+      rateLimit.verificationCodeTtlMs,
+      now,
+    );
 
     try {
       await this.registrationEmailSender.sendVerificationCode({
@@ -489,7 +1061,9 @@ export class AuthService {
         code: rawCode,
         locale: command.locale.trim() || "zh-CN",
         region: command.region,
-        expireMinutes: Math.floor(this.registrationCodeTtlMs / (60 * 1000)),
+        expireMinutes: Math.floor(
+          rateLimit.verificationCodeTtlMs / (60 * 1000),
+        ),
         templateName: VERIFICATION_EMAIL_TEMPLATE_NAME,
       });
     } catch (error) {
@@ -499,51 +1073,181 @@ export class AuthService {
 
     return {
       accepted: true,
-      cooldownSeconds: Math.floor(this.registrationResendCooldownMs / 1000),
-      expiresInSeconds: Math.floor(this.registrationCodeTtlMs / 1000),
+      cooldownSeconds: Math.floor(rateLimit.resendCooldownMs / 1000),
+      expiresInSeconds: Math.floor(rateLimit.verificationCodeTtlMs / 1000),
     };
   }
 
-  async resetPassword(command: ResetPasswordCommand, now = new Date()): Promise<AuthSession> {
+  async sendPasswordSmsCode(
+    command: PasswordSmsCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumePasswordCodeLimits(
+      app.id,
+      phone,
+      ipAddress,
+      rateLimit,
+      now,
+      "sms",
+    );
+
+    const cacheKey = this.buildPasswordResetCodeKey(app.id, phone, "sms");
+    const existingCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (
+      existingCode &&
+      now.getTime() - new Date(existingCode.sentAt).getTime() <
+        rateLimit.resendCooldownMs
+    ) {
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
+    }
+
+    const user = await this.database.findUserByPhone(phone);
+    if (
+      !user ||
+      user.status === "BLOCKED" ||
+      !(await this.canUsePasswordFlow(app.id, user.id))
+    ) {
+      return this.buildVerificationCodeAcceptedResult(rateLimit);
+    }
+
+    const rawCode = this.createVerificationCode();
+    const verificationEntry = this.createVerificationCodeEntry(
+      rawCode,
+      now,
+      rateLimit.verificationCodeTtlMs,
+    );
+    await this.setVerificationCodeEntry(
+      cacheKey,
+      verificationEntry,
+      rateLimit.verificationCodeTtlMs,
+      now,
+    );
+    const smsRecord = await this.smsVerificationRecordService.recordIssued({
+      appId: app.id,
+      scene: "password-reset",
+      phone,
+      phoneNa: command.phoneNa,
+      code: rawCode,
+      isTest: command.test === true,
+      sentAt: verificationEntry.sentAt,
+      expiresAt: verificationEntry.expiresAt,
+    });
+
+    if (!command.test) {
+      try {
+        const sendResult =
+          await this.smsVerificationSender.sendVerificationCode({
+            phoneNumber: phone,
+            code: rawCode,
+            expireMinutes: Math.floor(
+              rateLimit.verificationCodeTtlMs / (60 * 1000),
+            ),
+          });
+        await this.smsVerificationRecordService.markProviderAccepted(
+          smsRecord.id,
+          {
+            providerRequestId: sendResult.requestId,
+            providerSerialNo: sendResult.sendSerialNo,
+          },
+        );
+      } catch (error) {
+        await this.deleteVerificationCodeEntry(cacheKey);
+        await this.smsVerificationRecordService.markProviderFailed(
+          smsRecord.id,
+          {
+            providerMessage:
+              error instanceof Error ? error.message : String(error),
+          },
+        );
+        throw error;
+      }
+    }
+
+    return this.buildVerificationCodeAcceptedResult(rateLimit);
+  }
+
+  async resetPassword(
+    command: ResetPasswordCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
     const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const email = this.normalizeEmail(command.email);
     const ipAddress = this.normalizeIpAddress(command.ipAddress);
 
-    await this.consumePasswordResetLimits(app.id, email, ipAddress, now);
+    await this.consumePasswordResetLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
 
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 10 and 256 characters and include both letters and numbers.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
     const emailCode = command.emailCode.trim();
     if (!emailCode) {
-      unauthorized("AUTH_VERIFICATION_CODE_REQUIRED", "Email verification code is required.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_REQUIRED",
+        "Email verification code is required.",
+      );
     }
 
     const cacheKey = this.buildPasswordResetCodeKey(app.id, email);
     const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
     if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
       await this.deleteVerificationCodeEntry(cacheKey);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "Email verification code is invalid or expired.",
+      );
     }
 
-    if (cachedCode.failedAttempts >= this.registrationMaxFailedCodeAttempts) {
+    if (cachedCode.failedAttempts >= rateLimit.maxFailedCodeAttempts) {
       await this.deleteVerificationCodeEntry(cacheKey);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "Email verification code is invalid or expired.",
+      );
     }
 
     if (!timingSafeHexCompare(sha256(emailCode), cachedCode.codeHash)) {
-      await this.recordFailedCodeAttempt(cacheKey, cachedCode, now);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      await this.recordFailedCodeAttempt(
+        cacheKey,
+        cachedCode,
+        rateLimit.maxFailedCodeAttempts,
+        now,
+      );
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "Email verification code is invalid or expired.",
+      );
     }
 
     const user = await this.database.findUserByAccount(email);
-    if (!user || user.status === "BLOCKED" || !(await this.canUsePasswordEmailFlow(app.id, user.id))) {
+    if (
+      !user ||
+      user.status === "BLOCKED" ||
+      !(await this.canUsePasswordFlow(app.id, user.id))
+    ) {
       await this.deleteVerificationCodeEntry(cacheKey);
-      unauthorized("AUTH_VERIFICATION_CODE_INVALID", "Email verification code is invalid or expired.");
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "Email verification code is invalid or expired.",
+      );
     }
 
     await this.deleteVerificationCodeEntry(cacheKey);
@@ -558,7 +1262,67 @@ export class AuthService {
     return this.issueSessionForUser(user.id, app.id, now);
   }
 
-  async changePassword(command: ChangePasswordCommand, now = new Date()): Promise<AuthSession> {
+  async resetPasswordBySms(
+    command: ResetPasswordBySmsCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
+    const rateLimit = await this.getAuthRateLimitRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const phone = this.normalizePhone(command.phone, command.phoneNa);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+
+    await this.consumePasswordResetLimits(
+      app.id,
+      phone,
+      ipAddress,
+      rateLimit,
+      now,
+      "sms",
+    );
+
+    if (!this.passwordHasher.validateStrength(command.password)) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        "Password must be 8-64 characters and include both letters and numbers.",
+      );
+    }
+
+    await this.assertSmsCodeValid({
+      appId: app.id,
+      subject: phone,
+      code: command.smsCode,
+      kind: "password-reset",
+      maxFailedCodeAttempts: rateLimit.maxFailedCodeAttempts,
+      now,
+    });
+
+    const user = await this.database.findUserByPhone(phone);
+    if (
+      !user ||
+      user.status === "BLOCKED" ||
+      !(await this.canUsePasswordFlow(app.id, user.id))
+    ) {
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "SMS verification code is invalid or expired.",
+      );
+    }
+
+    await this.database.updateUserPassword(
+      user.id,
+      this.passwordHasher.hash(command.password),
+      this.passwordHasher.algorithm,
+    );
+
+    await this.revokeAllSessions(app.id, user.id, now);
+    await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    return this.issueSessionForUser(user.id, app.id, now);
+  }
+
+  async changePassword(
+    command: ChangePasswordCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
     const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const user = await this.userService.getById(command.userId);
     await this.appRegistryService.ensureExistingMembership(app.id, user.id);
@@ -566,7 +1330,7 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.newPassword)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 10 and 256 characters and include both letters and numbers.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
@@ -578,7 +1342,10 @@ export class AuthService {
     }
 
     if (!this.verifyPassword(user, command.currentPassword)) {
-      unauthorized("AUTH_INVALID_CREDENTIAL", "Account or password is invalid.");
+      unauthorized(
+        "AUTH_INVALID_CREDENTIAL",
+        "Account or password is invalid.",
+      );
     }
 
     await this.database.updateUserPassword(
@@ -591,7 +1358,10 @@ export class AuthService {
     return this.issueSessionForUser(user.id, app.id, now);
   }
 
-  async setPassword(command: SetPasswordCommand, now = new Date()): Promise<AuthSession> {
+  async setPassword(
+    command: SetPasswordCommand,
+    now = new Date(),
+  ): Promise<AuthSession> {
     const app = await this.appRegistryService.getAppOrThrow(command.appId);
     const user = await this.userService.getById(command.userId);
     await this.appRegistryService.ensureExistingMembership(app.id, user.id);
@@ -599,12 +1369,18 @@ export class AuthService {
     if (!this.passwordHasher.validateStrength(command.password)) {
       badRequest(
         "REQ_INVALID_BODY",
-        "Password must be between 10 and 256 characters and include both letters and numbers.",
+        "Password must be 8-64 characters and include both letters and numbers.",
       );
     }
 
-    if (user.passwordAlgo !== "email-code-only") {
-      conflict("AUTH_PASSWORD_ALREADY_SET", "This account already has a password. Use the change password flow.");
+    if (
+      user.passwordAlgo !== "email-code-only" &&
+      user.passwordAlgo !== "sms-code-only"
+    ) {
+      conflict(
+        "AUTH_PASSWORD_ALREADY_SET",
+        "This account already has a password. Use the change password flow.",
+      );
     }
 
     await this.database.updateUserPassword(
@@ -618,20 +1394,34 @@ export class AuthService {
   }
 
   async assertAccessTokenActive(auth: AuthContext): Promise<void> {
-    const currentVersion = await this.getAccessTokenVersion(auth.userId, auth.appId);
+    const currentVersion = await this.getAccessTokenVersion(
+      auth.userId,
+      auth.appId,
+    );
     if (auth.tokenVersion !== currentVersion) {
-      unauthorized("AUTH_INVALID_TOKEN", "Bearer token is revoked or out of date.");
+      unauthorized(
+        "AUTH_INVALID_TOKEN",
+        "Bearer token is revoked or out of date.",
+      );
     }
   }
 
-  private async issueSessionForUser(userId: string, appId: string, now = new Date()): Promise<AuthSession> {
+  private async issueSessionForUser(
+    userId: string,
+    appId: string,
+    now = new Date(),
+  ): Promise<AuthSession> {
     const accessToken = this.tokenService.issueAccessToken(
       userId,
       appId,
       await this.getAccessTokenVersion(userId, appId),
       now,
     );
-    const { rawToken: refreshToken } = await this.issueRefreshToken(userId, appId, now);
+    const { rawToken: refreshToken } = await this.issueRefreshToken(
+      userId,
+      appId,
+      now,
+    );
 
     return {
       userId,
@@ -665,7 +1455,10 @@ export class AuthService {
     return this.refreshTokenStore.getByRawToken(rawToken);
   }
 
-  private async assertNotLocked(account: string, now = new Date()): Promise<void> {
+  private async assertNotLocked(
+    account: string,
+    now = new Date(),
+  ): Promise<void> {
     const state = await this.getFailureState(account);
     if (!state?.lockedUntil) {
       return;
@@ -681,11 +1474,17 @@ export class AuthService {
     await this.clearFailureState(account);
   }
 
-  private async registerFailure(account: string, now = new Date()): Promise<void> {
+  private async registerFailure(
+    account: string,
+    now = new Date(),
+  ): Promise<void> {
     const previous = await this.getFailureState(account);
     const currentTime = now.getTime();
 
-    if (!previous || currentTime - previous.windowStartedAt > this.failureWindowMs) {
+    if (
+      !previous ||
+      currentTime - previous.windowStartedAt > this.failureWindowMs
+    ) {
       await this.setFailureState(account, {
         count: 1,
         windowStartedAt: currentTime,
@@ -708,23 +1507,41 @@ export class AuthService {
     await this.setFailureState(account, nextState);
   }
 
-  private async getFailureState(account: string): Promise<LoginFailureState | undefined> {
-    return this.kvManager.getJson<LoginFailureState>(this.loginFailureScope, this.buildFailureKey(account));
+  private async getFailureState(
+    account: string,
+  ): Promise<LoginFailureState | undefined> {
+    return this.kvManager.getJson<LoginFailureState>(
+      this.loginFailureScope,
+      this.buildFailureKey(account),
+    );
   }
 
-  private async setFailureState(account: string, state: LoginFailureState): Promise<void> {
-    await this.kvManager.setJson(this.loginFailureScope, this.buildFailureKey(account), state);
+  private async setFailureState(
+    account: string,
+    state: LoginFailureState,
+  ): Promise<void> {
+    await this.kvManager.setJson(
+      this.loginFailureScope,
+      this.buildFailureKey(account),
+      state,
+    );
   }
 
   private async clearFailureState(account: string): Promise<void> {
-    await this.kvManager.delete(this.loginFailureScope, this.buildFailureKey(account));
+    await this.kvManager.delete(
+      this.loginFailureScope,
+      this.buildFailureKey(account),
+    );
   }
 
   private buildFailureKey(account: string): string {
     return sha256(account.trim().toLowerCase());
   }
 
-  private buildRefreshCookieValue(namePart: string, maxAgePart: string): string {
+  private buildRefreshCookieValue(
+    namePart: string,
+    maxAgePart: string,
+  ): string {
     const parts = [
       namePart,
       "HttpOnly",
@@ -740,26 +1557,40 @@ export class AuthService {
   }
 
   private canVerifyPassword(user: UserRecord): boolean {
-    return user.passwordAlgo === this.passwordHasher.algorithm || user.passwordAlgo === "argon2id-adapter";
+    return (
+      user.passwordAlgo === this.passwordHasher.algorithm ||
+      user.passwordAlgo === "argon2id-adapter"
+    );
   }
 
   private verifyPassword(user: UserRecord, password: string): boolean {
-    return this.canVerifyPassword(user) && this.passwordHasher.verify(password, user.passwordHash);
+    return (
+      this.canVerifyPassword(user) &&
+      this.passwordHasher.verify(password, user.passwordHash)
+    );
   }
 
-  private async canUsePasswordEmailFlow(appId: string, userId: string): Promise<boolean> {
+  private async canUsePasswordFlow(
+    appId: string,
+    userId: string,
+  ): Promise<boolean> {
     const membership = await this.database.findAppUser(appId, userId);
     if (membership) {
       return membership.status === "ACTIVE";
     }
 
-    return (await this.appRegistryService.getAppOrThrow(appId)).joinMode === "AUTO";
+    return (
+      (await this.appRegistryService.getAppOrThrow(appId)).joinMode === "AUTO"
+    );
   }
 
   private async assertSelfRegistrationAllowed(appId: string) {
     const app = await this.appRegistryService.getAppOrThrow(appId);
     if (app.joinMode !== "AUTO") {
-      forbidden("APP_JOIN_INVITE_REQUIRED", "This app requires an invite to join.");
+      forbidden(
+        "APP_JOIN_INVITE_REQUIRED",
+        "This app requires an invite to join.",
+      );
     }
 
     return app;
@@ -774,116 +1605,354 @@ export class AuthService {
     return normalized;
   }
 
+  private createVerificationCode(): string {
+    const rawCode = this.registrationCodeGenerator();
+    if (!/^\d{6}$/.test(rawCode)) {
+      throw new Error(
+        "Registration code generator must return a 6-digit numeric string.",
+      );
+    }
+
+    return rawCode;
+  }
+
+  private createVerificationCodeEntry(
+    code: string,
+    now = new Date(),
+    verificationCodeTtlMs: number,
+  ): EmailVerificationCacheEntry {
+    return {
+      codeHash: sha256(code),
+      expiresAt: new Date(now.getTime() + verificationCodeTtlMs).toISOString(),
+      sentAt: now.toISOString(),
+      failedAttempts: 0,
+    };
+  }
+
+  private buildVerificationCodeAcceptedResult(
+    rateLimit: AuthRateLimitRuntimeConfig,
+  ): RegisterEmailCodeResult {
+    return {
+      accepted: true,
+      cooldownSeconds: Math.floor(rateLimit.resendCooldownMs / 1000),
+      expiresInSeconds: Math.floor(rateLimit.verificationCodeTtlMs / 1000),
+    };
+  }
+
+  private normalizePhone(phone: string, phoneNa?: string): string {
+    const rawPhone = phone.trim();
+    const rawPhoneNa = phoneNa?.trim() || "+86";
+    const normalizedPhoneNa = rawPhoneNa.startsWith("+")
+      ? rawPhoneNa
+      : `+${rawPhoneNa}`;
+    const digitsOnly = rawPhone.replace(/[^\d]/g, "");
+
+    if (!/^\+\d{1,4}$/.test(normalizedPhoneNa)) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        "phoneNa must be a valid country calling code.",
+      );
+    }
+
+    if (!/^\d{4,20}$/.test(digitsOnly)) {
+      badRequest("REQ_INVALID_BODY", "phone must be a valid phone number.");
+    }
+
+    if (normalizedPhoneNa === "+86" && !/^1\d{10}$/.test(digitsOnly)) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        "phone must be a valid mainland China mobile number.",
+      );
+    }
+
+    return `${normalizedPhoneNa}${digitsOnly}`;
+  }
+
   private normalizeIpAddress(ipAddress?: string): string {
     const normalized = ipAddress?.trim();
     return normalized ? normalized : "unknown";
   }
 
-  private isLocalEmailLoginBypassAccount(email: string, ipAddress: string): boolean {
-    return this.isLocalEmailLoginBypassEnabled(ipAddress) && email === this.localEmailLoginBypassEmail;
+  private async assertSmsCodeValid(command: {
+    appId: string;
+    subject: string;
+    code: string;
+    kind: "login" | "register" | "password-reset";
+    maxFailedCodeAttempts: number;
+    now?: Date;
+  }): Promise<void> {
+    const now = command.now ?? new Date();
+    const smsCode = command.code.trim();
+    if (!smsCode) {
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_REQUIRED",
+        "SMS verification code is required.",
+      );
+    }
+
+    const cacheKey = this.resolveSmsVerificationCacheKey(
+      command.appId,
+      command.subject,
+      command.kind,
+    );
+    const cachedCode = await this.getVerificationCodeEntry(cacheKey, now);
+    if (!cachedCode || new Date(cachedCode.expiresAt) <= now) {
+      await this.deleteVerificationCodeEntry(cacheKey);
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "SMS verification code is invalid or expired.",
+      );
+    }
+
+    if (cachedCode.failedAttempts >= command.maxFailedCodeAttempts) {
+      await this.deleteVerificationCodeEntry(cacheKey);
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "SMS verification code is invalid or expired.",
+      );
+    }
+
+    if (!timingSafeHexCompare(sha256(smsCode), cachedCode.codeHash)) {
+      await this.recordFailedCodeAttempt(
+        cacheKey,
+        cachedCode,
+        command.maxFailedCodeAttempts,
+        now,
+      );
+      unauthorized(
+        "AUTH_VERIFICATION_CODE_INVALID",
+        "SMS verification code is invalid or expired.",
+      );
+    }
+
+    await this.deleteVerificationCodeEntry(cacheKey);
+    await this.smsVerificationRecordService.markConsumed({
+      appId: command.appId,
+      scene: command.kind,
+      phone: command.subject,
+      code: smsCode,
+      now,
+    });
   }
 
-  private matchesLocalEmailLoginBypass(email: string, emailCode: string, ipAddress: string): boolean {
-    return this.isLocalEmailLoginBypassAccount(email, ipAddress) && emailCode === this.localEmailLoginBypassCode;
+  private resolveSmsVerificationCacheKey(
+    appId: string,
+    phone: string,
+    kind: "login" | "register" | "password-reset",
+  ): string {
+    if (kind === "register") {
+      return this.buildRegistrationCodeKey(appId, phone, "sms");
+    }
+
+    if (kind === "password-reset") {
+      return this.buildPasswordResetCodeKey(appId, phone, "sms");
+    }
+
+    return this.buildEmailLoginCodeKey(appId, phone, "sms");
+  }
+
+  private isLocalEmailLoginBypassAccount(
+    email: string,
+    ipAddress: string,
+  ): boolean {
+    return (
+      this.isLocalEmailLoginBypassEnabled(ipAddress) &&
+      email === this.localEmailLoginBypassEmail
+    );
+  }
+
+  private matchesLocalEmailLoginBypass(
+    email: string,
+    emailCode: string,
+    ipAddress: string,
+  ): boolean {
+    return (
+      this.isLocalEmailLoginBypassAccount(email, ipAddress) &&
+      emailCode === this.localEmailLoginBypassCode
+    );
   }
 
   private isLocalEmailLoginBypassEnabled(ipAddress: string): boolean {
-    const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
-    const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
+    const appEnv = String(process.env.APP_ENV ?? "")
+      .trim()
+      .toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV ?? "")
+      .trim()
+      .toLowerCase();
     const normalizedIp = ipAddress.trim();
-    return appEnv === "local"
-      || nodeEnv === "development"
-      || normalizedIp === "127.0.0.1"
-      || normalizedIp === "::1"
-      || normalizedIp === "unknown";
+    return (
+      appEnv === "local" ||
+      nodeEnv === "development" ||
+      normalizedIp === "127.0.0.1" ||
+      normalizedIp === "::1" ||
+      normalizedIp === "unknown"
+    );
   }
 
-  private async consumeRegistrationCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeRegistrationCodeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildRegistrationComboRateKey("email-code", appId, email, ipAddress),
-      this.registrationCodeWindowMs,
-      this.registrationCodeWindowLimit,
+      this.buildRegistrationComboRateKey(
+        "email-code",
+        appId,
+        accountKey,
+        ipAddress,
+        channel,
+      ),
+      rateLimit.sendCodeWindowMs,
+      rateLimit.sendCodeWindowLimit,
       now,
     );
     await this.consumeBucketCount(
-      this.buildRegistrationEmailDayRateKey(email, now),
+      this.buildRegistrationDayRateKey(accountKey, now, channel),
       48 * 60 * 60,
-      this.registrationEmailDailyLimit,
+      rateLimit.accountDailyLimit,
       now,
     );
     await this.consumeBucketCount(
       this.buildRegistrationIpHourRateKey(ipAddress, now),
       2 * 60 * 60,
-      this.registrationIpHourlyLimit,
+      rateLimit.ipHourlyLimit,
       now,
     );
   }
 
-  private async consumeRegistrationLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeRegistrationLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildRegistrationComboRateKey("complete", appId, email, ipAddress),
-      this.registrationWindowMs,
-      this.registrationWindowLimit,
+      this.buildRegistrationComboRateKey(
+        "complete",
+        appId,
+        accountKey,
+        ipAddress,
+        channel,
+      ),
+      rateLimit.verifyWindowMs,
+      rateLimit.verifyWindowLimit,
       now,
     );
   }
 
-  private async consumeEmailLoginCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeEmailLoginCodeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildEmailLoginComboRateKey("email-code", appId, email, ipAddress),
-      this.registrationCodeWindowMs,
-      this.registrationCodeWindowLimit,
+      this.buildEmailLoginComboRateKey(
+        "email-code",
+        appId,
+        accountKey,
+        ipAddress,
+        channel,
+      ),
+      rateLimit.sendCodeWindowMs,
+      rateLimit.sendCodeWindowLimit,
       now,
     );
     await this.consumeBucketCount(
-      this.buildEmailLoginEmailDayRateKey(email, now),
+      this.buildEmailLoginDayRateKey(accountKey, now, channel),
       48 * 60 * 60,
-      this.registrationEmailDailyLimit,
+      rateLimit.accountDailyLimit,
       now,
     );
     await this.consumeBucketCount(
       this.buildEmailLoginIpHourRateKey(ipAddress, now),
       2 * 60 * 60,
-      this.registrationIpHourlyLimit,
+      rateLimit.ipHourlyLimit,
       now,
     );
   }
 
-  private async consumeEmailLoginLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumeEmailLoginLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildEmailLoginComboRateKey("complete", appId, email, ipAddress),
-      this.registrationWindowMs,
-      this.registrationWindowLimit,
+      this.buildEmailLoginComboRateKey(
+        "complete",
+        appId,
+        accountKey,
+        ipAddress,
+        channel,
+      ),
+      rateLimit.verifyWindowMs,
+      rateLimit.verifyWindowLimit,
       now,
     );
   }
 
-  private async consumePasswordCodeLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumePasswordCodeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildPasswordResetComboRateKey("email-code", appId, email, ipAddress),
-      this.registrationCodeWindowMs,
-      this.registrationCodeWindowLimit,
+      this.buildPasswordResetComboRateKey(
+        "email-code",
+        appId,
+        accountKey,
+        ipAddress,
+        channel,
+      ),
+      rateLimit.sendCodeWindowMs,
+      rateLimit.sendCodeWindowLimit,
       now,
     );
     await this.consumeBucketCount(
-      this.buildPasswordResetEmailDayRateKey(email, now),
+      this.buildPasswordResetDayRateKey(accountKey, now, channel),
       48 * 60 * 60,
-      this.registrationEmailDailyLimit,
+      rateLimit.accountDailyLimit,
       now,
     );
     await this.consumeBucketCount(
       this.buildPasswordResetIpHourRateKey(ipAddress, now),
       2 * 60 * 60,
-      this.registrationIpHourlyLimit,
+      rateLimit.ipHourlyLimit,
       now,
     );
   }
 
-  private async consumePasswordResetLimits(appId: string, email: string, ipAddress: string, now = new Date()): Promise<void> {
+  private async consumePasswordResetLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): Promise<void> {
     await this.consumeRollingWindow(
-      this.buildPasswordResetComboRateKey("complete", appId, email, ipAddress),
-      this.registrationWindowMs,
-      this.registrationWindowLimit,
+      this.buildPasswordResetComboRateKey(
+        "complete",
+        appId,
+        accountKey,
+        ipAddress,
+        channel,
+      ),
+      rateLimit.verifyWindowMs,
+      rateLimit.verifyWindowLimit,
       now,
     );
   }
@@ -903,39 +1972,63 @@ export class AuthService {
     limit: number,
     now = new Date(),
   ): Promise<void> {
-    const currentWindow = ((await this.kvManager.getJson<number[]>(this.rateLimitScope, key)) ?? []).filter(
-      (timestamp) => now.getTime() - timestamp < windowMs,
-    );
+    const currentWindow = (
+      (await this.kvManager.getJson<number[]>(this.rateLimitScope, key)) ?? []
+    ).filter((timestamp) => now.getTime() - timestamp < windowMs);
 
     if (currentWindow.length >= limit) {
-      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
     }
 
     currentWindow.push(now.getTime());
-    await this.kvManager.setJson(this.rateLimitScope, key, currentWindow, Math.ceil(windowMs / 1000));
+    await this.kvManager.setJson(
+      this.rateLimitScope,
+      key,
+      currentWindow,
+      Math.ceil(windowMs / 1000),
+    );
   }
 
-  private async consumeBucketCount(key: string, ttlSeconds: number, limit: number, now = new Date()): Promise<void> {
-    const current = (await this.kvManager.getJson<number>(this.rateLimitScope, key)) ?? 0;
+  private async consumeBucketCount(
+    key: string,
+    ttlSeconds: number,
+    limit: number,
+    now = new Date(),
+  ): Promise<void> {
+    const current =
+      (await this.kvManager.getJson<number>(this.rateLimitScope, key)) ?? 0;
     if (current >= limit) {
-      tooManyRequests("AUTH_RATE_LIMITED", "Request rate is too high. Please retry later.");
+      tooManyRequests(
+        "AUTH_RATE_LIMITED",
+        "Request rate is too high. Please retry later.",
+      );
     }
 
-    await this.kvManager.setJson(this.rateLimitScope, key, current + 1, ttlSeconds);
+    await this.kvManager.setJson(
+      this.rateLimitScope,
+      key,
+      current + 1,
+      ttlSeconds,
+    );
   }
 
   private async recordFailedCodeAttempt(
     cacheKey: string,
     cachedCode: EmailVerificationCacheEntry,
+    maxFailedCodeAttempts: number,
     now = new Date(),
   ): Promise<void> {
     const nextFailedAttempts = cachedCode.failedAttempts + 1;
-    if (nextFailedAttempts >= this.registrationMaxFailedCodeAttempts) {
+    if (nextFailedAttempts >= maxFailedCodeAttempts) {
       await this.deleteVerificationCodeEntry(cacheKey);
       return;
     }
 
-    const remainingMs = new Date(cachedCode.expiresAt).getTime() - now.getTime();
+    const remainingMs =
+      new Date(cachedCode.expiresAt).getTime() - now.getTime();
     if (remainingMs <= 0) {
       await this.deleteVerificationCodeEntry(cacheKey);
       return;
@@ -952,71 +2045,135 @@ export class AuthService {
     );
   }
 
-  private buildRegistrationCodeKey(appId: string, email: string): string {
-    return `auth:register:code:${appId}:${email}`;
+  private async getAuthRateLimitRuntimeConfig(): Promise<AuthRateLimitRuntimeConfig> {
+    const config =
+      await this.commonAuthRateLimitConfigService.getRuntimeConfig();
+    return this.toAuthRateLimitRuntimeConfig(config);
+  }
+
+  private toAuthRateLimitRuntimeConfig(
+    config: AuthRateLimitConfig,
+  ): AuthRateLimitRuntimeConfig {
+    return {
+      resendCooldownMs: config.resendCooldownSeconds * 1000,
+      verificationCodeTtlMs: config.verificationCodeTtlSeconds * 1000,
+      sendCodeWindowMs: config.sendCodeWindowSeconds * 1000,
+      sendCodeWindowLimit: config.sendCodeWindowLimit,
+      verifyWindowMs: config.verifyWindowSeconds * 1000,
+      verifyWindowLimit: config.verifyWindowLimit,
+      accountDailyLimit: config.accountDailyLimit,
+      ipHourlyLimit: config.ipHourlyLimit,
+      maxFailedCodeAttempts: config.maxFailedCodeAttempts,
+    };
+  }
+
+  private buildRegistrationCodeKey(
+    appId: string,
+    accountKey: string,
+    channel: "email" | "sms" = "email",
+  ): string {
+    return `auth:${channel}:register:code:${appId}:${accountKey}`;
   }
 
   private buildRegistrationComboRateKey(
     kind: "email-code" | "complete",
     appId: string,
-    email: string,
+    accountKey: string,
     ipAddress: string,
+    channel: "email" | "sms" = "email",
   ): string {
-    return `auth:register:rate:${kind}:${appId}:${email}:${ipAddress}`;
+    return `auth:${channel}:register:rate:${kind}:${appId}:${accountKey}:${ipAddress}`;
   }
 
-  private buildRegistrationEmailDayRateKey(email: string, now = new Date()): string {
-    return `auth:register:email-day:${toDateKey(now)}:${email}`;
+  private buildRegistrationDayRateKey(
+    accountKey: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): string {
+    return `auth:${channel}:register:day:${toDateKey(now)}:${accountKey}`;
   }
 
-  private buildRegistrationIpHourRateKey(ipAddress: string, now = new Date()): string {
+  private buildRegistrationIpHourRateKey(
+    ipAddress: string,
+    now = new Date(),
+  ): string {
     return `auth:register:ip-hour:${toHourKey(now)}:${ipAddress}`;
   }
 
-  private buildEmailLoginCodeKey(appId: string, email: string): string {
-    return `auth:email-login:code:${appId}:${email}`;
+  private buildEmailLoginCodeKey(
+    appId: string,
+    accountKey: string,
+    channel: "email" | "sms" = "email",
+  ): string {
+    return `auth:${channel}:login:code:${appId}:${accountKey}`;
   }
 
   private buildEmailLoginComboRateKey(
     kind: "email-code" | "complete",
     appId: string,
-    email: string,
+    accountKey: string,
     ipAddress: string,
+    channel: "email" | "sms" = "email",
   ): string {
-    return `auth:email-login:rate:${kind}:${appId}:${email}:${ipAddress}`;
+    return `auth:${channel}:login:rate:${kind}:${appId}:${accountKey}:${ipAddress}`;
   }
 
-  private buildEmailLoginEmailDayRateKey(email: string, now = new Date()): string {
-    return `auth:email-login:email-day:${toDateKey(now)}:${email}`;
+  private buildEmailLoginDayRateKey(
+    accountKey: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): string {
+    return `auth:${channel}:login:day:${toDateKey(now)}:${accountKey}`;
   }
 
-  private buildEmailLoginIpHourRateKey(ipAddress: string, now = new Date()): string {
+  private buildEmailLoginIpHourRateKey(
+    ipAddress: string,
+    now = new Date(),
+  ): string {
     return `auth:email-login:ip-hour:${toHourKey(now)}:${ipAddress}`;
   }
 
-  private buildPasswordResetCodeKey(appId: string, email: string): string {
-    return `auth:password-reset:code:${appId}:${email}`;
+  private buildPasswordResetCodeKey(
+    appId: string,
+    accountKey: string,
+    channel: "email" | "sms" = "email",
+  ): string {
+    return `auth:${channel}:password-reset:code:${appId}:${accountKey}`;
   }
 
   private buildPasswordResetComboRateKey(
     kind: "email-code" | "complete",
     appId: string,
-    email: string,
+    accountKey: string,
     ipAddress: string,
+    channel: "email" | "sms" = "email",
   ): string {
-    return `auth:password-reset:rate:${kind}:${appId}:${email}:${ipAddress}`;
+    return `auth:${channel}:password-reset:rate:${kind}:${appId}:${accountKey}:${ipAddress}`;
   }
 
-  private buildPasswordResetEmailDayRateKey(email: string, now = new Date()): string {
-    return `auth:password-reset:email-day:${toDateKey(now)}:${email}`;
+  private buildPasswordResetDayRateKey(
+    accountKey: string,
+    now = new Date(),
+    channel: "email" | "sms" = "email",
+  ): string {
+    return `auth:${channel}:password-reset:day:${toDateKey(now)}:${accountKey}`;
   }
 
-  private buildPasswordResetIpHourRateKey(ipAddress: string, now = new Date()): string {
+  private buildPasswordResetIpHourRateKey(
+    ipAddress: string,
+    now = new Date(),
+  ): string {
     return `auth:password-reset:ip-hour:${toHourKey(now)}:${ipAddress}`;
   }
 
-  private async getVerificationCodeEntry(key: string, now = new Date()): Promise<EmailVerificationCacheEntry | undefined> {
-    const entry = await this.kvManager.getJson<EmailVerificationCacheEntry>(this.verificationCodeScope, key);
+  private async getVerificationCodeEntry(
+    key: string,
+    now = new Date(),
+  ): Promise<EmailVerificationCacheEntry | undefined> {
+    const entry = await this.kvManager.getJson<EmailVerificationCacheEntry>(
+      this.verificationCodeScope,
+      key,
+    );
     if (!entry) {
       return undefined;
     }
@@ -1037,25 +2194,41 @@ export class AuthService {
   ): Promise<void> {
     const ttlSeconds = Math.max(
       1,
-      Math.ceil(Math.min(ttlMs, new Date(entry.expiresAt).getTime() - now.getTime()) / 1000),
+      Math.ceil(
+        Math.min(ttlMs, new Date(entry.expiresAt).getTime() - now.getTime()) /
+          1000,
+      ),
     );
-    await this.kvManager.setJson(this.verificationCodeScope, key, entry, ttlSeconds);
+    await this.kvManager.setJson(
+      this.verificationCodeScope,
+      key,
+      entry,
+      ttlSeconds,
+    );
   }
 
   private async deleteVerificationCodeEntry(key: string): Promise<void> {
     await this.kvManager.delete(this.verificationCodeScope, key);
   }
 
-  private async getAccessTokenVersion(userId: string, appId: string): Promise<number> {
+  private async getAccessTokenVersion(
+    userId: string,
+    appId: string,
+  ): Promise<number> {
     const rawVersion = await this.kvManager.getString(
       this.accessTokenVersionScope,
       this.buildAccessTokenVersionKey(appId, userId),
     );
     const parsedVersion = rawVersion ? Number(rawVersion) : NaN;
-    return Number.isInteger(parsedVersion) && parsedVersion > 0 ? parsedVersion : 1;
+    return Number.isInteger(parsedVersion) && parsedVersion > 0
+      ? parsedVersion
+      : 1;
   }
 
-  private async bumpAccessTokenVersion(userId: string, appId: string): Promise<number> {
+  private async bumpAccessTokenVersion(
+    userId: string,
+    appId: string,
+  ): Promise<number> {
     const nextVersion = (await this.getAccessTokenVersion(userId, appId)) + 1;
     await this.kvManager.setString(
       this.accessTokenVersionScope,
@@ -1065,8 +2238,16 @@ export class AuthService {
     return nextVersion;
   }
 
-  private async revokeAllSessions(appId: string, userId: string, now = new Date()): Promise<number> {
-    const revoked = await this.refreshTokenStore.revokeAllByUserAndApp(appId, userId, now.toISOString());
+  private async revokeAllSessions(
+    appId: string,
+    userId: string,
+    now = new Date(),
+  ): Promise<number> {
+    const revoked = await this.refreshTokenStore.revokeAllByUserAndApp(
+      appId,
+      userId,
+      now.toISOString(),
+    );
     await this.bumpAccessTokenVersion(userId, appId);
     return revoked;
   }

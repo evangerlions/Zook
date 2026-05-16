@@ -1,7 +1,27 @@
+import type {
+  AccountDeletionData as GeneratedAccountDeletionData,
+  AnalyticsEventInput as GeneratedAnalyticsEventInput,
+  AuthSessionData as GeneratedAuthSessionData,
+  CurrentUserData as GeneratedCurrentUserData,
+  FileConfirmData as GeneratedFileConfirmData,
+  FilePresignData as GeneratedFilePresignData,
+  LogFailData as GeneratedLogFailData,
+  LogNoDataAckData as GeneratedLogNoDataAckData,
+  LogPolicyData as GeneratedLogPolicyData,
+  LogPullTaskData as GeneratedLogPullTaskData,
+  LogUploadData as GeneratedLogUploadData,
+  NotificationQueuedData as GeneratedNotificationQueuedData,
+  PublicConfigData as GeneratedPublicConfigData,
+  QrLoginConfirmData as GeneratedQrLoginConfirmData,
+  QrLoginCreateData as GeneratedQrLoginCreateData,
+  QrLoginPollData as GeneratedQrLoginPollData,
+  UserSummary as GeneratedUserSummary,
+} from "../generated/openapi/public-contracts.generated.ts";
+
 export type AppStatus = "ACTIVE" | "BLOCKED";
 export type JoinMode = "AUTO" | "INVITE_ONLY";
 export type UserStatus = "ACTIVE" | "BLOCKED";
-export type AppUserStatus = "ACTIVE" | "BLOCKED";
+export type AppUserStatus = "ACTIVE" | "BLOCKED" | "DELETED";
 export type RoleStatus = "ACTIVE" | "BLOCKED";
 export type PermissionStatus = "ACTIVE" | "BLOCKED";
 export type FileStatus = "PENDING" | "CONFIRMED" | "EXPIRED";
@@ -53,12 +73,14 @@ export type ErrorCode =
   | "AUTH_VERIFICATION_CODE_REQUIRED"
   | "AUTH_VERIFICATION_CODE_INVALID"
   | "AUTH_ACCOUNT_ALREADY_EXISTS"
+  | "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID"
   | "AUTH_PASSWORD_ALREADY_SET"
   | "AUTH_RATE_LIMITED"
   | "AUTH_QR_LOGIN_TOKEN_REQUIRED"
   | "AUTH_QR_LOGIN_INVALID"
   | "AUTH_QR_LOGIN_EXPIRED"
   | "AUTH_QR_LOGIN_ALREADY_USED"
+  | "AUTH_ONE_CLICK_TOKEN_INVALID"
   | "AUTH_APP_SCOPE_MISMATCH"
   | "AUTH_LOGIN_TEMPORARILY_LOCKED"
   | "AUTH_USER_BLOCKED"
@@ -66,10 +88,17 @@ export type ErrorCode =
   | "APP_BLOCKED"
   | "APP_JOIN_INVITE_REQUIRED"
   | "APP_MEMBER_BLOCKED"
+  | "APP_MEMBER_DELETED"
   | "IAM_PERMISSION_DENIED"
   | "FILE_ACCESS_DENIED"
   | "EMAIL_SERVICE_NOT_CONFIGURED"
   | "EMAIL_PROVIDER_REQUEST_FAILED"
+  | "SMS_SERVICE_NOT_CONFIGURED"
+  | "SMS_PROVIDER_REQUEST_FAILED"
+  | "ONE_CLICK_SERVICE_NOT_CONFIGURED"
+  | "ONE_CLICK_PROVIDER_REQUEST_FAILED"
+  | "CAPTCHA_SERVICE_NOT_CONFIGURED"
+  | "CAPTCHA_PROVIDER_REQUEST_FAILED"
   | "LLM_MODEL_NOT_FOUND"
   | "LLM_SERVICE_NOT_CONFIGURED"
   | "LLM_ROUTE_NOT_AVAILABLE"
@@ -247,7 +276,12 @@ export interface FileRecord {
   createdAt: string;
 }
 
-export type ClientLogUploadTaskStatus = "PENDING" | "CLAIMED" | "COMPLETED" | "CANCELLED" | "FAILED";
+export type ClientLogUploadTaskStatus =
+  | "PENDING"
+  | "CLAIMED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "FAILED";
 
 export interface ClientLogUploadTaskRecord {
   id: string;
@@ -316,6 +350,7 @@ export interface DatabaseSeed {
   auditLogs?: AuditLogRecord[];
   notificationJobs?: NotificationJobRecord[];
   failedEvents?: FailedEventRecord[];
+  smsVerificationRecords?: SmsVerificationRecord[];
   appConfigs?: AppConfigRecord[];
   analyticsEvents?: AnalyticsEventRecord[];
   files?: FileRecord[];
@@ -438,6 +473,62 @@ export interface ResetPasswordCommand {
   ipAddress: string;
 }
 
+export interface RegisterSmsCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+  test?: boolean;
+}
+
+export interface RegisterBySmsCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  ipAddress: string;
+}
+
+export interface SmsLoginCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+  test?: boolean;
+}
+
+export interface SmsLoginCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  ipAddress: string;
+}
+
+export interface OneClickLoginCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+}
+
+export interface PasswordSmsCodeCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  ipAddress: string;
+  test?: boolean;
+}
+
+export interface ResetPasswordBySmsCommand {
+  appId: string;
+  phone: string;
+  phoneNa?: string;
+  smsCode: string;
+  password: string;
+  ipAddress: string;
+}
+
 export interface ChangePasswordCommand {
   appId: string;
   userId: string;
@@ -493,6 +584,74 @@ export interface AdminSensitiveOperationGrantDocument {
   expiresAt: string;
 }
 
+export type SmsVerificationScene = "login" | "register" | "password-reset";
+export type SmsVerificationChannel = "sms";
+export type SmsVerificationLifecycle =
+  | "created"
+  | "test_generated"
+  | "provider_accepted"
+  | "provider_failed"
+  | "consumed"
+  | "expired";
+
+export interface SmsVerificationRecord {
+  id: string;
+  appId: string;
+  scene: SmsVerificationScene;
+  channel: SmsVerificationChannel;
+  phoneMasked: string;
+  phoneHash: string;
+  phoneNa?: string;
+  codePlaintext: string;
+  status: SmsVerificationLifecycle;
+  isTest: boolean;
+  provider: "tencent_sms";
+  providerRequestId?: string;
+  providerSerialNo?: string;
+  providerMessage?: string;
+  sentAt: string;
+  expiresAt: string;
+  consumedAt?: string;
+  failedAt?: string;
+  revealCount: number;
+  lastRevealedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSmsVerificationItem {
+  id: string;
+  appId: string;
+  scene: SmsVerificationScene;
+  channel: SmsVerificationChannel;
+  phoneMasked: string;
+  phoneNa?: string;
+  status: SmsVerificationLifecycle;
+  isTest: boolean;
+  provider: "tencent_sms";
+  providerRequestId?: string;
+  providerSerialNo?: string;
+  providerMessage?: string;
+  sentAt: string;
+  expiresAt: string;
+  consumedAt?: string;
+  failedAt?: string;
+  revealCount: number;
+  lastRevealedAt?: string;
+}
+
+export interface AdminSmsVerificationListDocument {
+  app: AdminAppSummary;
+  items: AdminSmsVerificationItem[];
+}
+
+export interface AdminSmsVerificationRevealDocument {
+  app: AdminAppSummary;
+  item: AdminSmsVerificationItem;
+  code: string;
+  revealedAt: string;
+}
+
 export interface AdminConfigDocument {
   app: AdminAppSummary;
   configKey: string;
@@ -528,11 +687,7 @@ export interface AdminAiRoutingDocument {
   revisions: ConfigRevisionMeta[];
 }
 
-export interface PublicAppConfigDocument {
-  appId: string;
-  config: Record<string, unknown>;
-  updatedAt?: string;
-}
+export type PublicAppConfigDocument = GeneratedPublicConfigData;
 
 export interface I18nSettings {
   defaultLocale: string;
@@ -645,6 +800,29 @@ export interface AdminEmailServiceDocument {
   configKey: string;
   config: EmailServiceConfig;
   resolvedRegion: TencentSesRegion;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AuthRateLimitConfig {
+  resendCooldownSeconds: number;
+  verificationCodeTtlSeconds: number;
+  sendCodeWindowSeconds: number;
+  sendCodeWindowLimit: number;
+  verifyWindowSeconds: number;
+  verifyWindowLimit: number;
+  accountDailyLimit: number;
+  ipHourlyLimit: number;
+  maxFailedCodeAttempts: number;
+}
+
+export interface AdminAuthRateLimitDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: AuthRateLimitConfig;
   updatedAt?: string;
   revision?: number;
   desc?: string;
@@ -958,26 +1136,13 @@ export interface AuthSession {
   expiresIn: number;
 }
 
-export interface AuthenticatedUserProfile {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  avatarUrl: string | null;
-  hasPassword: boolean;
-}
+export type AuthenticatedUserProfile = GeneratedUserSummary;
 
-export interface AuthSuccessPayload {
-  accessToken: string;
-  expiresIn: number;
-  refreshToken?: string;
-  user: AuthenticatedUserProfile;
-}
+export type AuthSuccessPayload = GeneratedAuthSessionData;
 
-export interface CurrentUserDocument {
-  appId: string;
-  user: AuthenticatedUserProfile;
-}
+export type CurrentUserDocument = GeneratedCurrentUserData;
+
+export type AccountDeletionResult = GeneratedAccountDeletionData;
 
 export interface RegisterEmailCodeResult {
   accepted: true;
@@ -1002,41 +1167,13 @@ export interface PollQrLoginCommand {
   pollToken: string;
 }
 
-export interface QrLoginCreateResult {
-  loginId: string;
-  qrContent: string;
-  pollToken: string;
-  expiresInSeconds: number;
-  pollIntervalMs: number;
-}
+export type QrLoginCreateResult = GeneratedQrLoginCreateData;
 
-export interface QrLoginConfirmResult {
-  confirmed: true;
-}
+export type QrLoginConfirmResult = GeneratedQrLoginConfirmData;
 
-export type QrLoginPollResult =
-  | {
-      status: "PENDING";
-      expiresInSeconds: number;
-      pollIntervalMs: number;
-    }
-  | {
-      status: "CONFIRMED";
-      accessToken: string;
-      refreshToken: string;
-      expiresIn: number;
-      userId: string;
-    };
+export type QrLoginPollResult = GeneratedQrLoginPollData;
 
-export interface AnalyticsEventInput {
-  platform: Platform;
-  sessionId: string;
-  pageKey: string;
-  eventName: EventName;
-  durationMs?: number;
-  occurredAt: string;
-  metadata?: Record<string, unknown>;
-}
+export type AnalyticsEventInput = GeneratedAnalyticsEventInput;
 
 export interface MetricsOverviewItem {
   date: string;
@@ -1053,63 +1190,28 @@ export interface PageMetricItem {
   avgDurationMs: number;
 }
 
-export interface FilePresignResult {
-  uploadUrl: string;
-  storageKey: string;
-  expireAt: string;
-}
+export type FilePresignResult = GeneratedFilePresignData;
 
-export interface FileConfirmResult {
-  downloadUrl: string;
-  storageKey: string;
-}
+export type FileConfirmResult = GeneratedFileConfirmData;
 
-export type LogPullTaskResult =
-  | {
-      shouldUpload: false;
-    }
-  | {
-      shouldUpload: true;
-      taskId: string;
-      claimToken: string;
-      claimExpireAtMs: number;
-      fromTsMs?: number;
-      toTsMs?: number;
-      maxLines?: number;
-      maxBytes?: number;
-      keyId: string;
-    };
+export type NotificationQueueResult = GeneratedNotificationQueuedData;
 
-export interface LogPolicyResult {
-  enabled: boolean;
-  minPullIntervalSeconds: number;
-}
+export type LogPullTaskResult = GeneratedLogPullTaskData;
 
-export interface LogUploadResult {
-  taskId: string;
-  acceptedCount: number;
-  rejectedCount: number;
-}
+export type LogPolicyResult = GeneratedLogPolicyData;
 
-export interface LogNoDataAckResult {
-  taskId: string;
-  status: "no_data";
-}
+export type LogUploadResult = GeneratedLogUploadData;
 
-export interface LogFailResult {
-  taskId: string;
-  status: "failed";
-  failedAt: string;
-  failureReason?: string;
-}
+export type LogNoDataAckResult = GeneratedLogNoDataAckData;
+
+export type LogFailResult = GeneratedLogFailData;
 
 export interface LogFailCommand {
   auth: AuthContext;
   did: string;
   taskId: string;
   claimToken: string;
-  reason?: string;
-  message?: string;
+  failureReason?: string;
   now?: Date;
 }
 

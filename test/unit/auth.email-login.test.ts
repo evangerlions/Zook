@@ -223,6 +223,44 @@ test("email-code delivery falls back to english app name outside mainland when l
   assert.equal(sent[0]?.region, "ap-hongkong");
 });
 
+test("email-code login rejects invalid email with a friendly localized message", async () => {
+  const runtime = await createApplication();
+
+  const zhResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/email-code",
+    headers: {
+      "x-app-locale": "zh-CN",
+    },
+    body: {
+      appId: "app_a",
+      email: "not-an-email",
+    },
+    ipAddress: "198.51.100.10",
+  });
+
+  assert.equal(zhResponse.statusCode, 400);
+  assert.equal(zhResponse.body.code, "REQ_INVALID_BODY");
+  assert.equal(zhResponse.body.message, "请输入有效的邮箱地址。");
+
+  const enResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/email-code",
+    headers: {
+      "x-app-locale": "en-US",
+    },
+    body: {
+      appId: "app_a",
+      email: "not-an-email",
+    },
+    ipAddress: "198.51.100.11",
+  });
+
+  assert.equal(enResponse.statusCode, 400);
+  assert.equal(enResponse.body.code, "REQ_INVALID_BODY");
+  assert.equal(enResponse.body.message, "Please enter a valid email address.");
+});
+
 test("local env allows the designated email to use the fixed bypass code for email login", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "local";

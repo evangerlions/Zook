@@ -121,6 +121,7 @@ async function proxyApiRequest(
   try {
     const upstreamResponse = await fetch(upstreamUrl, init);
     response.statusCode = upstreamResponse.status;
+    const contentType = upstreamResponse.headers.get("content-type") ?? "";
 
     upstreamResponse.headers.forEach((value, key) => {
       if (key.toLowerCase() === "set-cookie") {
@@ -132,6 +133,37 @@ async function proxyApiRequest(
     const setCookies = upstreamResponse.headers.getSetCookie?.() ?? [];
     if (setCookies.length > 0) {
       response.setHeader("Set-Cookie", setCookies);
+    }
+
+    if (contentType.toLowerCase().includes("text/event-stream") && upstreamResponse.body) {
+      response.setHeader("Cache-Control", "no-cache, no-transform");
+      response.setHeader("Connection", "keep-alive");
+      response.flushHeaders();
+
+      const reader = upstreamResponse.body.getReader();
+      const cancelReader = () => {
+        void reader.cancel().catch(() => undefined);
+      };
+      request.once("close", cancelReader);
+      response.once("close", cancelReader);
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          if (value) {
+            response.write(Buffer.from(value));
+          }
+        }
+      } finally {
+        request.off("close", cancelReader);
+        response.off("close", cancelReader);
+      }
+
+      response.end();
+      return;
     }
 
     const buffer = Buffer.from(await upstreamResponse.arrayBuffer());

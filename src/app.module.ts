@@ -13,8 +13,15 @@ import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-da
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { StorageService } from "./infrastructure/files/storage.service.ts";
 import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
-import { InMemoryKVBackend, KVManager, type KVBackend } from "./infrastructure/kv/kv-manager.ts";
-import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
+import {
+  InMemoryKVBackend,
+  KVManager,
+  type KVBackend,
+} from "./infrastructure/kv/kv-manager.ts";
+import {
+  ManagedStateStore,
+  applyManagedState,
+} from "./infrastructure/kv/managed-state.store.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
 import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
@@ -26,6 +33,7 @@ import {
 } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
+import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
@@ -36,18 +44,33 @@ import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
-import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "./services/app-ai-routing-config.service.ts";
-import { AppLogSecretService, APP_LOG_SECRET_READ_OPERATION } from "./services/app-log-secret.service.ts";
+import {
+  AppAiRoutingConfigService,
+  AI_NOVEL_APP_ID,
+} from "./services/app-ai-routing-config.service.ts";
+import {
+  AppLogSecretService,
+  APP_LOG_SECRET_READ_OPERATION,
+} from "./services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
-import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
+import {
+  CommonEmailConfigService,
+  TENCENT_SECRET_ID_PASSWORD_KEY,
+  TENCENT_SECRET_KEY_PASSWORD_KEY,
+} from "./services/common-email-config.service.ts";
+import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
+import { CommonGetuiGyConfigService } from "./services/common-getui-gy-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import {
   CommonPasswordConfigService,
   PASSWORD_VALUE_READ_OPERATION,
 } from "./services/common-password-config.service.ts";
-import { EmbeddingManager, type EmbeddingProvider } from "./services/embedding-manager.ts";
+import {
+  EmbeddingManager,
+  type EmbeddingProvider,
+} from "./services/embedding-manager.ts";
 import {
   ClientLogUploadService,
   type ClientLogEncryptionKeyResolver,
@@ -62,6 +85,7 @@ import {
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
+import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
@@ -70,14 +94,42 @@ import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { RefreshTokenStore } from "./services/refresh-token-store.ts";
-import { HttpGeoResolver, NoopGeoResolver, type GeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
+import {
+  SmsVerificationRecordService,
+  SMS_VERIFICATION_REVEAL_OPERATION,
+} from "./services/sms-verification-record.service.ts";
+import { SmsVerificationCleanupService } from "./services/sms-verification-cleanup.service.ts";
+import {
+  HttpGeoResolver,
+  NoopGeoResolver,
+  type GeoResolver,
+  RequestEmailContextService,
+} from "./services/request-email-context.service.ts";
 import { RequestLocaleService } from "./services/request-locale.service.ts";
+import { PublicApiMessageService } from "./services/public-api-message.service.ts";
 import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
-import { NoopRegistrationEmailSender, type RegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
+import {
+  NoopRegistrationEmailSender,
+  type RegistrationEmailSender,
+  TencentSesRegistrationEmailSender,
+} from "./services/tencent-ses-registration-email.service.ts";
+import {
+  NoopSmsVerificationSender,
+  TencentSmsVerificationSender,
+  type SmsVerificationSender,
+  type TencentSmsVerificationConfig,
+} from "./services/tencent-sms-verification.service.ts";
+import {
+  NoopCaptchaVerificationService,
+  TencentCaptchaVerificationService,
+  type CaptchaVerificationService,
+  type TencentCaptchaVerificationConfig,
+} from "./services/tencent-captcha-verification.service.ts";
 import { ApplicationError, isApplicationError } from "./shared/errors.ts";
 import type {
   AdminAppSummary,
   AdminAiRoutingDocument,
+  AdminAuthRateLimitDocument,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
@@ -88,6 +140,8 @@ import type {
   AdminEmailTestSendDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
+  AdminSmsVerificationListDocument,
+  AdminSmsVerificationRevealDocument,
   PublicAppConfigDocument,
   AdminSessionRecord,
   AdminSensitiveOperationCodeRequestDocument,
@@ -108,7 +162,14 @@ import type {
   LlmMetricsRange,
   Platform,
 } from "./shared/types.ts";
-import { createOpaqueToken, getHeader, parseCookies, randomId } from "./shared/utils.ts";
+import {
+  createOpaqueToken,
+  getHeader,
+  parseCookies,
+  randomId,
+} from "./shared/utils.ts";
+import { PublicContractValidator } from "./generated/openapi/public-contract-validator.ts";
+import type { ErrorObject } from "ajv";
 
 export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
@@ -116,6 +177,10 @@ export interface CreateApplicationOptions {
   emitLogs?: boolean;
   registrationCodeGenerator?: () => string;
   registrationEmailSender?: RegistrationEmailSender;
+  smsVerificationSender?: SmsVerificationSender;
+  captchaVerificationService?: CaptchaVerificationService;
+  tencentSmsVerificationConfig?: TencentSmsVerificationConfig;
+  tencentCaptchaVerificationConfig?: TencentCaptchaVerificationConfig;
   llmProviders?: Record<string, LLMProvider>;
   embeddingProviders?: Record<string, EmbeddingProvider>;
   kvBackend?: KVBackend;
@@ -144,11 +209,14 @@ export interface CreateApplicationOptions {
   /**
    * Test-only factory for constructing a database double from the resolved seed.
    */
-  databaseFactory?: (seed: DatabaseSeed) => Promise<ApplicationDatabase> | ApplicationDatabase;
+  databaseFactory?: (
+    seed: DatabaseSeed,
+  ) => Promise<ApplicationDatabase> | ApplicationDatabase;
   queueBackend?: "memory" | "redis";
   queue?: JobQueue;
   queueRedisUrl?: string;
   fileStorageRoot?: string;
+  aiNovelAuditFileRoot?: string;
 }
 
 interface ResolvedAdminBasicAuth {
@@ -160,16 +228,26 @@ const ADMIN_SESSION_COOKIE_NAME = "adminSession";
 const ADMIN_SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
-function resolveAdminBasicAuth(options: CreateApplicationOptions): ResolvedAdminBasicAuth | null {
-  const username = options.adminBasicAuth?.username ?? process.env.ADMIN_BASIC_AUTH_USERNAME ?? "";
-  const password = options.adminBasicAuth?.password ?? process.env.ADMIN_BASIC_AUTH_PASSWORD ?? "";
+function resolveAdminBasicAuth(
+  options: CreateApplicationOptions,
+): ResolvedAdminBasicAuth | null {
+  const username =
+    options.adminBasicAuth?.username ??
+    process.env.ADMIN_BASIC_AUTH_USERNAME ??
+    "";
+  const password =
+    options.adminBasicAuth?.password ??
+    process.env.ADMIN_BASIC_AUTH_PASSWORD ??
+    "";
 
   if (!username && !password) {
     return null;
   }
 
   if (!username || !password) {
-    throw new Error("ADMIN_BASIC_AUTH_USERNAME and ADMIN_BASIC_AUTH_PASSWORD must be configured together.");
+    throw new Error(
+      "ADMIN_BASIC_AUTH_USERNAME and ADMIN_BASIC_AUTH_PASSWORD must be configured together.",
+    );
   }
 
   return {
@@ -178,7 +256,9 @@ function resolveAdminBasicAuth(options: CreateApplicationOptions): ResolvedAdmin
   };
 }
 
-function resolveSecureRefreshCookie(options: CreateApplicationOptions): boolean {
+function resolveSecureRefreshCookie(
+  options: CreateApplicationOptions,
+): boolean {
   if (typeof options.secureRefreshCookie === "boolean") {
     return options.secureRefreshCookie;
   }
@@ -191,9 +271,12 @@ function resolveSecureRefreshCookie(options: CreateApplicationOptions): boolean 
   return options.serviceName === "api" || process.env.NODE_ENV === "production";
 }
 
-function resolveRefreshCookieSameSite(options: CreateApplicationOptions): "Lax" | "None" | "Strict" {
+function resolveRefreshCookieSameSite(
+  options: CreateApplicationOptions,
+): "Lax" | "None" | "Strict" {
   const runtimeServiceName = options.serviceName ?? "api";
-  const configured = options.refreshCookieSameSite ?? process.env.AUTH_REFRESH_COOKIE_SAMESITE;
+  const configured =
+    options.refreshCookieSameSite ?? process.env.AUTH_REFRESH_COOKIE_SAMESITE;
   if (configured) {
     const normalized = configured.trim().toLowerCase();
     if (normalized === "lax") {
@@ -206,7 +289,9 @@ function resolveRefreshCookieSameSite(options: CreateApplicationOptions): "Lax" 
       return "Strict";
     }
 
-    throw new Error("AUTH_REFRESH_COOKIE_SAMESITE must be one of: Lax, None, Strict.");
+    throw new Error(
+      "AUTH_REFRESH_COOKIE_SAMESITE must be one of: Lax, None, Strict.",
+    );
   }
 
   if (runtimeServiceName === "api" || process.env.NODE_ENV === "production") {
@@ -216,11 +301,20 @@ function resolveRefreshCookieSameSite(options: CreateApplicationOptions): "Lax" 
   return "Lax";
 }
 
-function resolveAccessTokenSecrets(options: CreateApplicationOptions): { current: string; previous: string[] } {
-  const current = options.accessTokenSecret?.trim() || process.env.AUTH_ACCESS_TOKEN_SECRET?.trim() || "";
-  const previous = options.accessTokenPreviousSecrets
-    ?? process.env.AUTH_ACCESS_TOKEN_PREVIOUS_SECRETS?.split(",").map((item) => item.trim()).filter(Boolean)
-    ?? [];
+function resolveAccessTokenSecrets(options: CreateApplicationOptions): {
+  current: string;
+  previous: string[];
+} {
+  const current =
+    options.accessTokenSecret?.trim() ||
+    process.env.AUTH_ACCESS_TOKEN_SECRET?.trim() ||
+    "";
+  const previous =
+    options.accessTokenPreviousSecrets ??
+    process.env.AUTH_ACCESS_TOKEN_PREVIOUS_SECRETS?.split(",")
+      .map((item) => item.trim())
+      .filter(Boolean) ??
+    [];
 
   if (current) {
     return {
@@ -230,7 +324,9 @@ function resolveAccessTokenSecrets(options: CreateApplicationOptions): { current
   }
 
   if (options.serviceName === "api") {
-    throw new Error("AUTH_ACCESS_TOKEN_SECRET must be configured before starting the API service.");
+    throw new Error(
+      "AUTH_ACCESS_TOKEN_SECRET must be configured before starting the API service.",
+    );
   }
 
   return {
@@ -255,13 +351,18 @@ function safeEqual(left: string, right: string): boolean {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-function parseBasicAuthorization(headerValue?: string): { username: string; password: string } | null {
+function parseBasicAuthorization(
+  headerValue?: string,
+): { username: string; password: string } | null {
   if (!headerValue || !headerValue.startsWith("Basic ")) {
     return null;
   }
 
   try {
-    const decoded = Buffer.from(headerValue.slice("Basic ".length), "base64").toString("utf8");
+    const decoded = Buffer.from(
+      headerValue.slice("Basic ".length),
+      "base64",
+    ).toString("utf8");
     const separatorIndex = decoded.indexOf(":");
     if (separatorIndex <= 0) {
       return null;
@@ -283,6 +384,7 @@ export class BackendApplication {
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly authService: AuthService,
+    private readonly getuiGyOneClickLoginService: GetuiGyOneClickLoginService,
     private readonly qrLoginService: QrLoginService,
     private readonly analyticsService: AnalyticsService,
     private readonly adminConsoleService: AdminConsoleService,
@@ -296,6 +398,7 @@ export class BackendApplication {
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly llmSmokeTestService: LlmSmokeTestService,
+    private readonly aiNovelAuditFileService: AiNovelAuditFileService,
     private readonly aiNovelLlmService: AiNovelLlmService,
     private readonly aiPayloadCryptoService: AesGcmPayloadCryptoService,
     private readonly storageService: StorageService,
@@ -303,6 +406,8 @@ export class BackendApplication {
     private readonly notificationService: NotificationService,
     private readonly failedEventRetryService: FailedEventRetryService,
     private readonly requestEmailContextService: RequestEmailContextService,
+    private readonly requestLocaleService: RequestLocaleService,
+    private readonly publicApiMessageService: PublicApiMessageService,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
     private readonly httpExceptionFilter: HttpExceptionFilter,
@@ -322,11 +427,24 @@ export class BackendApplication {
 
       try {
         const response = await this.dispatch(request);
-        this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt);
+        this.requestLoggingInterceptor.log(
+          request,
+          response,
+          Date.now() - startedAt,
+        );
         return response;
       } catch (error) {
-        const response = this.httpExceptionFilter.catch(error, request.requestId);
-        this.requestLoggingInterceptor.log(request, response, Date.now() - startedAt, error);
+        const response = this.httpExceptionFilter.catch(
+          error,
+          request,
+          request.requestId,
+        );
+        this.requestLoggingInterceptor.log(
+          request,
+          response,
+          Date.now() - startedAt,
+          error,
+        );
         return response;
       }
     };
@@ -341,6 +459,7 @@ export class BackendApplication {
   get runtimeServices() {
     return {
       authService: this.authService,
+      getuiGyOneClickLoginService: this.getuiGyOneClickLoginService,
       qrLoginService: this.qrLoginService,
       analyticsService: this.analyticsService,
       adminConsoleService: this.adminConsoleService,
@@ -351,6 +470,7 @@ export class BackendApplication {
       llmManager: this.llmManager,
       embeddingManager: this.embeddingManager,
       llmSmokeTestService: this.llmSmokeTestService,
+      aiNovelAuditFileService: this.aiNovelAuditFileService,
       aiNovelLlmService: this.aiNovelLlmService,
       aiPayloadCryptoService: this.aiPayloadCryptoService,
       storageService: this.storageService,
@@ -362,10 +482,15 @@ export class BackendApplication {
 
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
     if (request.method === "GET" && request.path === "/api/health") {
-      return this.ok({ status: "ok", version: resolveRuntimeVersion() }, request.requestId as string);
+      return this.ok(
+        { status: "ok", version: resolveRuntimeVersion() },
+        request.requestId as string,
+      );
     }
 
-    const publicConfigMatch = request.path.match(/^\/api\/v1\/([^/]+)\/public\/config$/);
+    const publicConfigMatch = request.path.match(
+      /^\/api\/v1\/([^/]+)\/public\/config$/,
+    );
     if (request.method === "GET" && publicConfigMatch) {
       return this.handleGetPublicAppConfig(
         request,
@@ -373,36 +498,74 @@ export class BackendApplication {
       );
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/admin/auth/login") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/admin/auth/login"
+    ) {
       return this.handleAdminLogin(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/admin/auth/logout") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/admin/auth/logout"
+    ) {
       return this.handleAdminLogout(request);
     }
 
-    if (request.method === "GET" && request.path === "/api/v1/admin/bootstrap") {
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/bootstrap"
+    ) {
       return this.handleAdminBootstrap(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/admin/sensitive-operations/request-code") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/admin/sensitive-operations/request-code"
+    ) {
       return this.handleAdminRequestSensitiveOperationCode(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/admin/sensitive-operations/verify") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/admin/sensitive-operations/verify"
+    ) {
       return this.handleAdminVerifySensitiveOperationCode(request);
     }
 
-    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/email-service") {
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/email-service"
+    ) {
       return this.handleAdminGetEmailService(request);
     }
 
-    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/email-service") {
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/email-service"
+    ) {
       return this.handleAdminUpdateEmailService(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/email-service/test-send") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/admin/apps/common/email-service/test-send"
+    ) {
       return this.handleAdminSendTestEmail(request);
+    }
+
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/auth-rate-limits"
+    ) {
+      return this.handleAdminGetAuthRateLimits(request);
+    }
+
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/auth-rate-limits"
+    ) {
+      return this.handleAdminUpdateAuthRateLimits(request);
     }
 
     const adminEmailRevisionMatch = request.path.match(
@@ -425,15 +588,44 @@ export class BackendApplication {
       );
     }
 
-    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/passwords") {
+    const adminAuthRateLimitRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/auth-rate-limits\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminAuthRateLimitRevisionMatch) {
+      return this.handleAdminGetAuthRateLimitsRevision(
+        request,
+        Number(adminAuthRateLimitRevisionMatch[1]),
+      );
+    }
+
+    const adminAuthRateLimitRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/auth-rate-limits\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminAuthRateLimitRestoreMatch) {
+      return this.handleAdminRestoreAuthRateLimitsRevision(
+        request,
+        Number(adminAuthRateLimitRestoreMatch[1]),
+      );
+    }
+
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/passwords"
+    ) {
       return this.handleAdminGetPasswords(request);
     }
 
-    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/passwords") {
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/passwords"
+    ) {
       return this.handleAdminUpdatePasswords(request);
     }
 
-    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/passwords/item") {
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/passwords/item"
+    ) {
       return this.handleAdminUpsertPasswordItem(request);
     }
 
@@ -441,21 +633,50 @@ export class BackendApplication {
       /^\/api\/v1\/admin\/apps\/common\/passwords\/([^/]+)\/reveal$/,
     );
     if (request.method === "POST" && adminPasswordRevealMatch) {
-      return this.handleAdminRevealPasswordValue(request, decodeURIComponent(adminPasswordRevealMatch[1]));
+      return this.handleAdminRevealPasswordValue(
+        request,
+        decodeURIComponent(adminPasswordRevealMatch[1]),
+      );
     }
 
     const adminPasswordDeleteMatch = request.path.match(
       /^\/api\/v1\/admin\/apps\/common\/passwords\/([^/]+)$/,
     );
     if (request.method === "DELETE" && adminPasswordDeleteMatch) {
-      return this.handleAdminDeletePasswordItem(request, decodeURIComponent(adminPasswordDeleteMatch[1]));
+      return this.handleAdminDeletePasswordItem(
+        request,
+        decodeURIComponent(adminPasswordDeleteMatch[1]),
+      );
     }
 
-    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service") {
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/sms-verifications"
+    ) {
+      return this.handleAdminListSmsVerificationRecords(request);
+    }
+
+    const adminSmsVerificationRevealMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/sms-verifications\/([^/]+)\/reveal$/,
+    );
+    if (request.method === "POST" && adminSmsVerificationRevealMatch) {
+      return this.handleAdminRevealSmsVerificationRecord(
+        request,
+        decodeURIComponent(adminSmsVerificationRevealMatch[1]),
+      );
+    }
+
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/llm-service"
+    ) {
       return this.handleAdminGetLlmService(request);
     }
 
-    if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/llm-service") {
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/llm-service"
+    ) {
       return this.handleAdminUpdateLlmService(request);
     }
 
@@ -479,11 +700,17 @@ export class BackendApplication {
       );
     }
 
-    if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service/metrics") {
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/llm-service/metrics"
+    ) {
       return this.handleAdminGetLlmMetrics(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/llm-service/smoke-test") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/admin/apps/common/llm-service/smoke-test"
+    ) {
       return this.handleAdminRunLlmSmokeTest(request);
     }
 
@@ -501,14 +728,24 @@ export class BackendApplication {
       return this.handleAdminCreateApp(request);
     }
 
-    const adminAppNamesMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/names$/);
+    const adminAppNamesMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/names$/,
+    );
     if (request.method === "PUT" && adminAppNamesMatch) {
-      return this.handleAdminUpdateAppNames(request, decodeURIComponent(adminAppNamesMatch[1] as string));
+      return this.handleAdminUpdateAppNames(
+        request,
+        decodeURIComponent(adminAppNamesMatch[1] as string),
+      );
     }
 
-    const adminAppMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)$/);
+    const adminAppMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)$/,
+    );
     if (request.method === "DELETE" && adminAppMatch) {
-      return this.handleAdminDeleteApp(request, decodeURIComponent(adminAppMatch[1] as string));
+      return this.handleAdminDeleteApp(
+        request,
+        decodeURIComponent(adminAppMatch[1] as string),
+      );
     }
 
     const adminAppLogSecretRevealMatch = request.path.match(
@@ -521,13 +758,21 @@ export class BackendApplication {
       );
     }
 
-    const adminI18nSettingsMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings$/);
+    const adminI18nSettingsMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/i18n-settings$/,
+    );
     if (request.method === "GET" && adminI18nSettingsMatch) {
-      return this.handleAdminGetI18nSettings(request, decodeURIComponent(adminI18nSettingsMatch[1] as string));
+      return this.handleAdminGetI18nSettings(
+        request,
+        decodeURIComponent(adminI18nSettingsMatch[1] as string),
+      );
     }
 
     if (request.method === "PUT" && adminI18nSettingsMatch) {
-      return this.handleAdminUpdateI18nSettings(request, decodeURIComponent(adminI18nSettingsMatch[1] as string));
+      return this.handleAdminUpdateI18nSettings(
+        request,
+        decodeURIComponent(adminI18nSettingsMatch[1] as string),
+      );
     }
 
     const adminI18nRevisionMatch = request.path.match(
@@ -552,7 +797,9 @@ export class BackendApplication {
       );
     }
 
-    const adminRemoteLogPullMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull$/);
+    const adminRemoteLogPullMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/remote-log-pull$/,
+    );
     if (request.method === "GET" && adminRemoteLogPullMatch) {
       return this.handleAdminGetRemoteLogPullSettings(
         request,
@@ -639,13 +886,21 @@ export class BackendApplication {
       );
     }
 
-    const adminAiRoutingMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/ai-routing$/);
+    const adminAiRoutingMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/ai-routing$/,
+    );
     if (request.method === "GET" && adminAiRoutingMatch) {
-      return this.handleAdminGetAiRouting(request, decodeURIComponent(adminAiRoutingMatch[1] as string));
+      return this.handleAdminGetAiRouting(
+        request,
+        decodeURIComponent(adminAiRoutingMatch[1] as string),
+      );
     }
 
     if (request.method === "PUT" && adminAiRoutingMatch) {
-      return this.handleAdminUpdateAiRouting(request, decodeURIComponent(adminAiRoutingMatch[1] as string));
+      return this.handleAdminUpdateAiRouting(
+        request,
+        decodeURIComponent(adminAiRoutingMatch[1] as string),
+      );
     }
 
     const adminAiRoutingRevisionMatch = request.path.match(
@@ -670,13 +925,21 @@ export class BackendApplication {
       );
     }
 
-    const adminConfigMatch = request.path.match(/^\/api\/v1\/admin\/apps\/([^/]+)\/config$/);
+    const adminConfigMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/([^/]+)\/config$/,
+    );
     if (request.method === "GET" && adminConfigMatch) {
-      return this.handleAdminGetConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
+      return this.handleAdminGetConfig(
+        request,
+        decodeURIComponent(adminConfigMatch[1] as string),
+      );
     }
 
     if (request.method === "PUT" && adminConfigMatch) {
-      return this.handleAdminUpdateConfig(request, decodeURIComponent(adminConfigMatch[1] as string));
+      return this.handleAdminUpdateConfig(
+        request,
+        decodeURIComponent(adminConfigMatch[1] as string),
+      );
     }
 
     const adminConfigRevisionMatch = request.path.match(
@@ -705,50 +968,133 @@ export class BackendApplication {
       return this.handleLogin(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/login/email-code") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/login/email-code"
+    ) {
       return this.handleLoginEmailCode(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/login/email") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/login/sms-code"
+    ) {
+      return this.handleLoginSmsCode(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/login/email"
+    ) {
       return this.handleLoginWithEmailCode(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/password/email-code") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/login/sms"
+    ) {
+      return this.handleLoginWithSmsCode(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/login/one-click"
+    ) {
+      return this.handleLoginWithOneClick(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/password/email-code"
+    ) {
       return this.handleSendPasswordCode(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/password/reset") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/password/sms-code"
+    ) {
+      return this.handleSendPasswordSmsCode(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/password/reset"
+    ) {
       return this.handleResetPassword(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/password/change") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/password/reset-by-sms"
+    ) {
+      return this.handleResetPasswordBySms(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/password/change"
+    ) {
       return this.handleChangePassword(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/password/set") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/password/set"
+    ) {
       return this.handleSetPassword(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/register/email-code") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/register/email-code"
+    ) {
       return this.handleRegisterEmailCode(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/register/sms-code"
+    ) {
+      return this.handleRegisterSmsCode(request);
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/register") {
       return this.handleRegister(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/auth/qr-logins") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/register/sms"
+    ) {
+      return this.handleRegisterBySms(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/auth/qr-logins"
+    ) {
       return this.handleCreateQrLogin(request);
     }
 
-    const qrLoginConfirmMatch = request.path.match(/^\/api\/v1\/auth\/qr-logins\/([^/]+)\/confirm$/);
+    const qrLoginConfirmMatch = request.path.match(
+      /^\/api\/v1\/auth\/qr-logins\/([^/]+)\/confirm$/,
+    );
     if (request.method === "POST" && qrLoginConfirmMatch) {
-      return this.handleConfirmQrLogin(request, decodeURIComponent(qrLoginConfirmMatch[1] as string));
+      return this.handleConfirmQrLogin(
+        request,
+        decodeURIComponent(qrLoginConfirmMatch[1] as string),
+      );
     }
 
-    const qrLoginPollMatch = request.path.match(/^\/api\/v1\/auth\/qr-logins\/([^/]+)$/);
+    const qrLoginPollMatch = request.path.match(
+      /^\/api\/v1\/auth\/qr-logins\/([^/]+)$/,
+    );
     if (request.method === "GET" && qrLoginPollMatch) {
-      return this.handlePollQrLogin(request, decodeURIComponent(qrLoginPollMatch[1] as string));
+      return this.handlePollQrLogin(
+        request,
+        decodeURIComponent(qrLoginPollMatch[1] as string),
+      );
     }
 
     if (request.method === "POST" && request.path === "/api/v1/auth/refresh") {
@@ -759,19 +1105,35 @@ export class BackendApplication {
       return this.handleLogout(request);
     }
 
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/users/me/delete"
+    ) {
+      return this.handleDeleteCurrentAppAccount(request);
+    }
+
     if (request.method === "GET" && request.path === "/api/v1/users/me") {
       return this.handleGetCurrentUser(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/analytics/events/batch") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/analytics/events/batch"
+    ) {
       return this.handleAnalyticsBatch(request);
     }
 
-    if (request.method === "GET" && request.path === "/api/v1/admin/metrics/overview") {
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/metrics/overview"
+    ) {
       return this.handleMetricsOverview(request);
     }
 
-    if (request.method === "GET" && request.path === "/api/v1/admin/metrics/pages") {
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/metrics/pages"
+    ) {
       return this.handleMetricsPages(request);
     }
 
@@ -783,16 +1145,41 @@ export class BackendApplication {
       return this.handleFileConfirm(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/notifications/send") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/notifications/send"
+    ) {
       return this.handleNotification(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/chat-completions") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/ai_novel/ai/chat-completions"
+    ) {
       return this.handleAiNovelChatCompletions(request);
     }
 
-    if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") {
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/ai_novel/ai/embeddings"
+    ) {
       return this.handleAiNovelEmbeddings(request);
+    }
+
+    const aiNovelAuditFileViewMatch = request.path.match(
+      /^\/api\/v1\/ai_novel\/debug\/audit-file\/([^/]+)$/,
+    );
+    if (request.method === "GET" && aiNovelAuditFileViewMatch) {
+      return this.handleAiNovelAuditFileView(
+        request,
+        aiNovelAuditFileViewMatch[1] ?? "",
+      );
+    }
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/ai_novel/debug/audit-file"
+    ) {
+      return this.handleAiNovelAuditFile(request);
     }
 
     if (request.method === "GET" && request.path === "/api/v1/logs/pull-task") {
@@ -807,12 +1194,19 @@ export class BackendApplication {
       return this.handleLogsUpload(request);
     }
 
-    const logAckMatch = request.path.match(/^\/api\/v1\/logs\/tasks\/([^/]+)\/ack$/);
+    const logAckMatch = request.path.match(
+      /^\/api\/v1\/logs\/tasks\/([^/]+)\/ack$/,
+    );
     if (request.method === "POST" && logAckMatch) {
-      return this.handleLogsAckNoData(request, decodeURIComponent(logAckMatch[1]));
+      return this.handleLogsAckNoData(
+        request,
+        decodeURIComponent(logAckMatch[1]),
+      );
     }
 
-    const logFailMatch = request.path.match(/^\/api\/v1\/logs\/tasks\/([^/]+)\/fail$/);
+    const logFailMatch = request.path.match(
+      /^\/api\/v1\/logs\/tasks\/([^/]+)\/fail$/,
+    );
     if (request.method === "POST" && logFailMatch) {
       return this.handleLogsFail(request, decodeURIComponent(logFailMatch[1]));
     }
@@ -820,12 +1214,18 @@ export class BackendApplication {
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
   }
 
-  private async handleLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleLogin(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validatePasswordLogin(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const account = this.validationPipe.requireString(body, "account");
-    const password = this.validationPipe.requireString(body, "password");
-    const clientType = this.getClientType(body);
+    const account = validated.account.trim();
+    const password = validated.password;
+    const clientType = this.getClientType(validated);
     const session = await this.authService.login({ appId, account, password });
 
     await this.auditInterceptor.record({
@@ -846,10 +1246,16 @@ export class BackendApplication {
     );
   }
 
-  private async handleRegisterEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleRegisterEmailCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailCode(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
+    const email = validated.email.trim();
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -893,17 +1299,26 @@ export class BackendApplication {
           resolvedCountryCode: emailContext.countryCode,
           countrySource: emailContext.countrySource,
           resolvedRegion: emailContext.region,
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleLoginEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleLoginEmailCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailCode(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
+    const email = validated.email.trim();
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -947,19 +1362,82 @@ export class BackendApplication {
           resolvedCountryCode: emailContext.countryCode,
           countrySource: emailContext.countrySource,
           resolvedRegion: emailContext.region,
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleLoginWithEmailCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleLoginSmsCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
-    const emailCode = this.validationPipe.requireString(body, "emailCode");
-    const clientType = this.getClientType(body);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const test = this.validationPipe.optionalBoolean(body, "test");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.loginSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        test,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.login.sms_code",
+        resourceType: "user_login",
+        payload: {
+          phone,
+          phoneNa,
+          test,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.login.sms_code",
+        resourceType: "user_login",
+        payload: {
+          phone,
+          phoneNa,
+          test,
+          ipAddress,
+          accepted: false,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleLoginWithEmailCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailLogin(body),
+      request,
+    );
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = validated.email.trim();
+    const emailCode = validated.emailCode.trim();
+    const clientType = this.getClientType(validated);
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -1010,17 +1488,159 @@ export class BackendApplication {
           resolvedCountryCode: emailContext.countryCode,
           countrySource: emailContext.countrySource,
           resolvedRegion: emailContext.region,
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleSendPasswordCode(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleLoginWithSmsCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const smsCode = this.validationPipe.requireString(body, "smsCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.loginWithSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        smsCode,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId: result.session.appId,
+        actorUserId: result.session.userId,
+        action: "auth.login.sms",
+        resourceType: "user_session",
+        resourceId: result.session.userId,
+        resourceOwnerUserId: result.session.userId,
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+          autoCreatedUser: result.autoCreatedUser,
+        },
+      });
+
+      return this.ok(
+        await this.toAuthPayload(result.session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(result.session.refreshToken, clientType),
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.login.sms",
+        resourceType: "user_login",
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleLoginWithOneClick(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateOneClickLogin(body),
+      request,
+    );
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const token = validated.token.trim();
+    const gyuid = validated.gyuid.trim();
+    const clientType = this.getClientType(validated);
+    const ipAddress = request.ipAddress ?? "unknown";
+    const operator = validated.operator?.trim();
+    const sdkPlatform = validated.sdkPlatform?.trim();
+
+    try {
+      const phoneResult = await this.getuiGyOneClickLoginService.exchangeToken({
+        token,
+        gyuid,
+      });
+      const phone = phoneResult.phone.replace(/^\+86/, "");
+      const result = await this.authService.loginWithOneClickPhone({
+        appId,
+        phone,
+        phoneNa: "+86",
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId: result.session.appId,
+        actorUserId: result.session.userId,
+        action: "auth.login.one_click",
+        resourceType: "user_session",
+        resourceId: result.session.userId,
+        resourceOwnerUserId: result.session.userId,
+        payload: {
+          clientType,
+          ipAddress,
+          autoCreatedUser: result.autoCreatedUser,
+          operator,
+          sdkPlatform,
+          providerResult: phoneResult.providerResult,
+          providerMessage: phoneResult.providerMessage,
+        },
+      });
+
+      return this.ok(
+        await this.toAuthPayload(result.session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(result.session.refreshToken, clientType),
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.login.one_click",
+        resourceType: "user_login",
+        payload: {
+          clientType,
+          ipAddress,
+          operator,
+          sdkPlatform,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleSendPasswordCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateEmailCode(body),
+      request,
+    );
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = validated.email.trim();
     const ipAddress = request.ipAddress ?? "unknown";
     const emailContext = await this.requestEmailContextService.resolve(request);
 
@@ -1064,20 +1684,83 @@ export class BackendApplication {
           resolvedCountryCode: emailContext.countryCode,
           countrySource: emailContext.countrySource,
           resolvedRegion: emailContext.region,
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleResetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleSendPasswordSmsCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
-    const password = this.validationPipe.requireString(body, "password");
-    const emailCode = this.validationPipe.requireString(body, "emailCode");
-    const clientType = this.getClientType(body);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const test = this.validationPipe.optionalBoolean(body, "test");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.sendPasswordSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        test,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.password.sms_code",
+        resourceType: "user_password_reset",
+        payload: {
+          phone,
+          phoneNa,
+          test,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.password.sms_code",
+        resourceType: "user_password_reset",
+        payload: {
+          phone,
+          phoneNa,
+          test,
+          ipAddress,
+          accepted: false,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleResetPassword(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateResetPassword(body),
+      request,
+    );
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const email = validated.email.trim();
+    const password = validated.password;
+    const emailCode = validated.emailCode.trim();
+    const clientType = this.getClientType(validated);
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
@@ -1117,20 +1800,91 @@ export class BackendApplication {
           email,
           clientType,
           ipAddress,
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleChangePassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleResetPasswordBySms(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const password = this.validationPipe.requireString(body, "password");
+    const smsCode = this.validationPipe.requireString(body, "smsCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const session = await this.authService.resetPasswordBySms({
+        appId,
+        phone,
+        phoneNa,
+        password,
+        smsCode,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId: session.appId,
+        actorUserId: session.userId,
+        action: "auth.password.reset_sms",
+        resourceType: "user_session",
+        resourceId: session.userId,
+        resourceOwnerUserId: session.userId,
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+        },
+      });
+
+      return this.ok(
+        await this.toAuthPayload(session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(session.refreshToken, clientType),
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.password.reset_sms",
+        resourceType: "user_password_reset",
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleChangePassword(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
-    const currentPassword = this.validationPipe.requireString(body, "currentPassword");
-    const newPassword = this.validationPipe.requireString(body, "newPassword");
-    const clientType = this.getClientType(body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateChangePassword(body),
+      request,
+    );
+    const requestedAppId = validated.appId ?? auth.appId;
+    const currentPassword = validated.currentPassword;
+    const newPassword = validated.newPassword;
+    const clientType = this.getClientType(validated);
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
     const session = await this.authService.changePassword({
@@ -1158,12 +1912,18 @@ export class BackendApplication {
     );
   }
 
-  private async handleSetPassword(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleSetPassword(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
-    const password = this.validationPipe.requireString(body, "password");
-    const clientType = this.getClientType(body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateSetPassword(body),
+      request,
+    );
+    const requestedAppId = validated.appId ?? auth.appId;
+    const password = validated.password;
+    const clientType = this.getClientType(validated);
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
     const session = await this.authService.setPassword({
@@ -1190,13 +1950,19 @@ export class BackendApplication {
     );
   }
 
-  private async handleRegister(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleRegister(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateRegister(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const email = this.validationPipe.requireString(body, "email");
-    const password = this.validationPipe.requireString(body, "password");
-    const emailCode = this.validationPipe.requireString(body, "emailCode");
-    const clientType = this.getClientType(body);
+    const email = validated.email.trim();
+    const password = validated.password;
+    const emailCode = validated.emailCode.trim();
+    const clientType = this.getClientType(validated);
     const ipAddress = request.ipAddress ?? "unknown";
 
     try {
@@ -1236,14 +2002,138 @@ export class BackendApplication {
           email,
           clientType,
           ipAddress,
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleCreateQrLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleRegisterSmsCode(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const test = this.validationPipe.optionalBoolean(body, "test");
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const result = await this.authService.registerSmsCode({
+        appId,
+        phone,
+        phoneNa,
+        test,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.register.sms_code",
+        resourceType: "user_registration",
+        payload: {
+          phone,
+          phoneNa,
+          test,
+          ipAddress,
+          accepted: true,
+        },
+      });
+
+      return this.ok(result, request.requestId as string);
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.register.sms_code",
+        resourceType: "user_registration",
+        payload: {
+          phone,
+          phoneNa,
+          test,
+          ipAddress,
+          accepted: false,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleRegisterBySms(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    const appId = this.appContextResolver.resolvePreAuth(request);
+    const phone = this.validationPipe.requireString(body, "phone");
+    const phoneNa = this.validationPipe.optionalString(body, "phoneNa");
+    const smsCode = this.validationPipe.requireString(body, "smsCode");
+    const clientType = this.getClientType(body);
+    const ipAddress = request.ipAddress ?? "unknown";
+
+    try {
+      const session = await this.authService.registerWithSms({
+        appId,
+        phone,
+        phoneNa,
+        smsCode,
+        ipAddress,
+      });
+
+      await this.auditInterceptor.record({
+        appId: session.appId,
+        actorUserId: session.userId,
+        action: "auth.register.sms",
+        resourceType: "user_session",
+        resourceId: session.userId,
+        resourceOwnerUserId: session.userId,
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+        },
+      });
+
+      return this.ok(
+        await this.toAuthPayload(session, clientType),
+        request.requestId as string,
+        this.buildAuthHeaders(session.refreshToken, clientType),
+      );
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        action: "auth.register.sms",
+        resourceType: "user_registration",
+        payload: {
+          phone,
+          phoneNa,
+          clientType,
+          ipAddress,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleCreateQrLogin(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const body = this.validationPipe.asObject(request.body);
+    this.requireValidPublicContract(
+      PublicContractValidator.validateQrLoginCreate(body),
+      request,
+    );
     const appId = this.appContextResolver.resolvePreAuth(request);
 
     try {
@@ -1266,17 +2156,24 @@ export class BackendApplication {
         action: "auth.qr_login.create",
         resourceType: "qr_login_session",
         payload: {
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleConfirmQrLogin(request: HttpRequest, loginId: string): Promise<HttpResponse<unknown>> {
+  private async handleConfirmQrLogin(
+    request: HttpRequest,
+    loginId: string,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
+    const appId =
+      this.validationPipe.optionalString(body, "appId") ?? auth.appId;
     const scanToken = this.validationPipe.requireString(body, "scanToken");
 
     try {
@@ -1310,16 +2207,25 @@ export class BackendApplication {
         resourceOwnerUserId: auth.userId,
         payload: {
           confirmed: false,
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handlePollQrLogin(request: HttpRequest, loginId: string): Promise<HttpResponse<unknown>> {
+  private async handlePollQrLogin(
+    request: HttpRequest,
+    loginId: string,
+  ): Promise<HttpResponse<unknown>> {
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const pollToken = this.validationPipe.requireQueryString(request.query, "pollToken");
+    const pollToken = this.validationPipe.requireQueryString(
+      request.query,
+      "pollToken",
+    );
 
     try {
       const result = await this.qrLoginService.poll({
@@ -1357,19 +2263,28 @@ export class BackendApplication {
         resourceType: "qr_login_session",
         resourceId: loginId,
         payload: {
-          errorCode: error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
         },
       });
       throw error;
     }
   }
 
-  private async handleRefresh(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleRefresh(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const body = this.validationPipe.asObject(request.body);
-    const clientType = this.getClientType(body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateRefresh(body),
+      request,
+    );
+    const clientType = this.getClientType(validated);
     const session = await this.authService.refresh({
-      appId: this.validationPipe.optionalString(body, "appId"),
-      refreshToken: this.validationPipe.optionalString(body, "refreshToken"),
+      appId: validated.appId?.trim(),
+      refreshToken: validated.refreshToken?.trim(),
       cookieRefreshToken: request.cookies?.refreshToken,
     });
 
@@ -1380,7 +2295,9 @@ export class BackendApplication {
     );
   }
 
-  private async handleGetCurrentUser(request: HttpRequest): Promise<HttpResponse<CurrentUserDocument>> {
+  private async handleGetCurrentUser(
+    request: HttpRequest,
+  ): Promise<HttpResponse<CurrentUserDocument>> {
     const auth = await this.authenticate(request);
     const appId = this.appContextResolver.resolvePostAuth(request, auth.appId);
     const result: CurrentUserDocument = {
@@ -1403,18 +2320,26 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
-    const auth = await this.authenticate(request, { requireActiveMembership: false });
+  private async handleLogout(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request, {
+      requireActiveMembership: false,
+    });
     const body = this.validationPipe.asObject(request.body);
-    const requestedAppId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
-    const scope = body.scope === "all" ? "all" : "current";
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateLogout(body),
+      request,
+    );
+    const requestedAppId = validated.appId?.trim() ?? auth.appId;
+    const scope = validated.scope === "all" ? "all" : "current";
 
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
     const revoked = await this.authService.logout(
       {
         appId: requestedAppId,
         scope,
-        refreshToken: this.validationPipe.optionalString(body, "refreshToken"),
+        refreshToken: validated.refreshToken?.trim(),
         cookieRefreshToken: request.cookies?.refreshToken,
       },
       auth,
@@ -1432,70 +2357,168 @@ export class BackendApplication {
       },
     });
 
-    return this.ok(
-      { revoked },
-      request.requestId as string,
-      {
-        "Set-Cookie": this.authService.buildClearRefreshCookie(),
-      },
-    );
+    return this.ok({ revoked }, request.requestId as string, {
+      "Set-Cookie": this.authService.buildClearRefreshCookie(),
+    });
   }
 
-  private async handleAnalyticsBatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleDeleteCurrentAppAccount(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const appId = this.validationPipe.requireString(body, "appId").trim();
+    const confirmation = this.validationPipe.requireString(
+      body,
+      "confirmation",
+    );
     this.appAccessGuard.assertScope(appId, auth.appId);
 
-    const events = this.validationPipe.requireArray<AnalyticsEventInput>(body, "events");
+    try {
+      const result = await this.authService.deleteCurrentAppAccount({
+        appId,
+        userId: auth.userId,
+        confirmation,
+      });
+
+      await this.auditInterceptor.record({
+        appId,
+        actorUserId: auth.userId,
+        action: "user.account.delete_app",
+        resourceType: "app_user",
+        resourceOwnerUserId: auth.userId,
+        payload: {
+          deleted: true,
+          revokedSessions: result.revokedSessions,
+        },
+      });
+
+      return this.ok(result, request.requestId as string, {
+        "Set-Cookie": this.authService.buildClearRefreshCookie(),
+      });
+    } catch (error) {
+      await this.auditInterceptor.record({
+        appId,
+        actorUserId: auth.userId,
+        action: "user.account.delete_app",
+        resourceType: "app_user",
+        resourceOwnerUserId: auth.userId,
+        payload: {
+          deleted: false,
+          errorCode:
+            error instanceof ApplicationError
+              ? error.code
+              : "SYS_INTERNAL_ERROR",
+        },
+      });
+      throw error;
+    }
+  }
+
+  private async handleAnalyticsBatch(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const auth = await this.authenticate(request);
+    const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateAnalyticsBatch(body),
+      request,
+    );
+    const appId = this.validationPipe.requireString(
+      validated as Record<string, unknown>,
+      "appId",
+    );
+    this.appAccessGuard.assertScope(appId, auth.appId);
     const result = await this.analyticsService.recordBatch({
       appId: auth.appId,
       userId: auth.userId,
-      events,
+      events: validated.events,
     });
 
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleMetricsOverview(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleMetricsOverview(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
-    await this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
+    await this.rbacGuard.assertPermission(
+      auth.appId,
+      auth.userId,
+      "metrics:read",
+    );
 
     const requestedAppId = request.query?.appId ?? auth.appId;
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
 
-    const dateFrom = this.validationPipe.requireQueryString(request.query, "dateFrom");
-    const dateTo = this.validationPipe.requireQueryString(request.query, "dateTo");
-    const result = await this.analyticsService.getOverview(auth.appId, dateFrom, dateTo);
+    const dateFrom = this.validationPipe.requireQueryString(
+      request.query,
+      "dateFrom",
+    );
+    const dateTo = this.validationPipe.requireQueryString(
+      request.query,
+      "dateTo",
+    );
+    const result = await this.analyticsService.getOverview(
+      auth.appId,
+      dateFrom,
+      dateTo,
+    );
 
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleMetricsPages(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleMetricsPages(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
-    await this.rbacGuard.assertPermission(auth.appId, auth.userId, "metrics:read");
+    await this.rbacGuard.assertPermission(
+      auth.appId,
+      auth.userId,
+      "metrics:read",
+    );
 
     const requestedAppId = request.query?.appId ?? auth.appId;
     this.appAccessGuard.assertScope(requestedAppId, auth.appId);
 
-    const dateFrom = this.validationPipe.requireQueryString(request.query, "dateFrom");
-    const dateTo = this.validationPipe.requireQueryString(request.query, "dateTo");
+    const dateFrom = this.validationPipe.requireQueryString(
+      request.query,
+      "dateFrom",
+    );
+    const dateTo = this.validationPipe.requireQueryString(
+      request.query,
+      "dateTo",
+    );
     const platform = request.query?.platform as Platform | undefined;
-    const result = await this.analyticsService.getPageMetrics(auth.appId, dateFrom, dateTo, platform);
+    const result = await this.analyticsService.getPageMetrics(
+      auth.appId,
+      dateFrom,
+      dateTo,
+      platform,
+    );
 
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminLogin(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminLogin(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     if (!this.adminBasicAuth) {
-      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
+      throw new ApplicationError(
+        401,
+        "ADMIN_AUTH_REQUIRED",
+        "Admin authentication is required.",
+      );
     }
 
     const body = this.validationPipe.asObject(request.body);
     const username = this.validationPipe.requireString(body, "username");
     const password = this.validationPipe.requireString(body, "password");
     const adminUser = this.validateAdminCredentials(username, password);
-    const session = await this.adminSessionStore.create(adminUser, ADMIN_SESSION_TTL_MS);
+    const session = await this.adminSessionStore.create(
+      adminUser,
+      ADMIN_SESSION_TTL_MS,
+    );
     const bootstrap = await this.adminConsoleService.getBootstrap(adminUser);
 
     return this.ok(
@@ -1508,7 +2531,9 @@ export class BackendApplication {
     );
   }
 
-  private async handleAdminLogout(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminLogout(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const sessionId = request.cookies?.[ADMIN_SESSION_COOKIE_NAME];
     if (sessionId) {
       await this.adminSessionStore.delete(sessionId);
@@ -1521,7 +2546,9 @@ export class BackendApplication {
     );
   }
 
-  private async handleAdminBootstrap(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminBootstrap(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getBootstrap(adminUser);
 
@@ -1547,11 +2574,19 @@ export class BackendApplication {
     } else {
       const requestAppId = getHeader(request.headers, "x-app-id");
       if (requestAppId && requestAppId !== appId) {
-        throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${appId}.`);
+        throw new ApplicationError(
+          403,
+          "AUTH_APP_SCOPE_MISMATCH",
+          `X-App-Id must match ${appId}.`,
+        );
       }
     }
 
     const result = await this.adminConsoleService.getPublicConfig(appId);
+    this.requireValidPublicContract(
+      PublicContractValidator.validatePublicConfigData(result),
+      request,
+    );
     return this.ok(result, request.requestId as string);
   }
 
@@ -1561,7 +2596,10 @@ export class BackendApplication {
     const session = this.requireAdminSession(request);
     const body = this.validationPipe.asObject(request.body);
     const operation = this.validationPipe.requireString(body, "operation");
-    const result = await this.adminSensitiveOperationService.requestCode(session, operation);
+    const result = await this.adminSensitiveOperationService.requestCode(
+      session,
+      operation,
+    );
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -1584,7 +2622,11 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const operation = this.validationPipe.requireString(body, "operation");
     const code = this.validationPipe.requireString(body, "code");
-    const result = await this.adminSensitiveOperationService.verifyCode(session, operation, code);
+    const result = await this.adminSensitiveOperationService.verifyCode(
+      session,
+      operation,
+      code,
+    );
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -1600,13 +2642,19 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminCreateApp(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminCreateApp(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const appId = this.validationPipe.requireString(body, "appId");
     const appNameZhCn = this.validationPipe.requireString(body, "appNameZhCn");
     const appNameEnUs = this.validationPipe.requireString(body, "appNameEnUs");
-    const result = await this.adminConsoleService.createApp(appId, appNameZhCn, appNameEnUs);
+    const result = await this.adminConsoleService.createApp(
+      appId,
+      appNameZhCn,
+      appNameEnUs,
+    );
 
     await this.auditInterceptor.record({
       appId: result.appId,
@@ -1628,7 +2676,10 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const appNameI18n = this.validationPipe.asObject(body.appNameI18n);
-    const result = await this.adminConsoleService.updateAppNames(appId, appNameI18n);
+    const result = await this.adminConsoleService.updateAppNames(
+      appId,
+      appNameI18n,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -1649,7 +2700,10 @@ export class BackendApplication {
     appId: string,
   ): Promise<HttpResponse<AdminAppLogSecretRevealDocument>> {
     const session = this.requireAdminSession(request);
-    await this.adminSensitiveOperationService.assertGranted(session, APP_LOG_SECRET_READ_OPERATION);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      APP_LOG_SECRET_READ_OPERATION,
+    );
     const result = await this.adminConsoleService.revealAppLogSecret(appId);
 
     await this.auditInterceptor.record({
@@ -1665,7 +2719,10 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminDeleteApp(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
+  private async handleAdminDeleteApp(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.deleteApp(appId);
 
@@ -1682,7 +2739,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminGetEmailService(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminGetEmailService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getEmailServiceConfig();
 
@@ -1699,7 +2758,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminUpdateEmailService(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminUpdateEmailService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const desc = this.validationPipe.optionalString(body, "desc");
@@ -1721,13 +2782,21 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminSendTestEmail(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminSendTestEmail(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     try {
       const adminUser = this.authenticateAdminSuperUser(request);
       const body = this.validationPipe.asObject(request.body);
       const result = await this.adminConsoleService.sendEmailTest({
-        recipientEmail: this.validationPipe.requireString(body, "recipientEmail"),
-        region: this.validationPipe.requireString(body, "region") as AdminEmailTestSendDocument["sender"]["region"],
+        recipientEmail: this.validationPipe.requireString(
+          body,
+          "recipientEmail",
+        ),
+        region: this.validationPipe.requireString(
+          body,
+          "region",
+        ) as AdminEmailTestSendDocument["sender"]["region"],
         templateId: this.validationPipe.requireNumber(body, "templateId"),
         appName: this.validationPipe.requireString(body, "appName"),
         code: this.validationPipe.requireString(body, "code"),
@@ -1749,7 +2818,10 @@ export class BackendApplication {
 
       return this.ok(result, request.requestId as string);
     } catch (error) {
-      if (isApplicationError(error) && error.code === "EMAIL_PROVIDER_REQUEST_FAILED") {
+      if (
+        isApplicationError(error) &&
+        error.code === "EMAIL_PROVIDER_REQUEST_FAILED"
+      ) {
         return {
           statusCode: error.statusCode,
           body: {
@@ -1765,12 +2837,104 @@ export class BackendApplication {
     }
   }
 
+  private async handleAdminGetAuthRateLimits(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getAuthRateLimitConfig();
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateAuthRateLimits(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateAuthRateLimitConfig(
+      body as AdminAuthRateLimitDocument["config"],
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetAuthRateLimitsRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result =
+      await this.adminConsoleService.getAuthRateLimitConfig(revision);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreAuthRateLimitsRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreAuthRateLimitConfig(
+      revision,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.auth_rate_limits.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminGetEmailServiceRevision(
     request: HttpRequest,
     revision: number,
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.getEmailServiceConfig(revision);
+    const result =
+      await this.adminConsoleService.getEmailServiceConfig(revision);
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -1793,7 +2957,10 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body ?? {});
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.restoreEmailServiceConfig(revision, desc);
+    const result = await this.adminConsoleService.restoreEmailServiceConfig(
+      revision,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -1809,7 +2976,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminGetPasswords(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminGetPasswords(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getPasswordConfig();
 
@@ -1831,7 +3000,10 @@ export class BackendApplication {
     key: string,
   ): Promise<HttpResponse<AdminPasswordRevealDocument>> {
     const session = this.requireAdminSession(request);
-    await this.adminSensitiveOperationService.assertGranted(session, PASSWORD_VALUE_READ_OPERATION);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      PASSWORD_VALUE_READ_OPERATION,
+    );
     const result = await this.adminConsoleService.revealPasswordValue(key);
 
     await this.auditInterceptor.record({
@@ -1847,7 +3019,61 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminUpdatePasswords(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminListSmsVerificationRecords(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSmsVerificationListDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const filterAppId =
+      typeof request.query?.appId === "string"
+        ? request.query.appId.trim()
+        : "";
+    const result = await this.adminConsoleService.listSmsVerificationRecords(
+      filterAppId || undefined,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_verification.read",
+      resourceType: "sms_verification",
+      resourceId: filterAppId || "all",
+      payload: {
+        adminUser,
+        filterAppId: filterAppId || undefined,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRevealSmsVerificationRecord(
+    request: HttpRequest,
+    recordId: string,
+  ): Promise<HttpResponse<AdminSmsVerificationRevealDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      SMS_VERIFICATION_REVEAL_OPERATION,
+    );
+    const result =
+      await this.adminConsoleService.revealSmsVerificationRecord(recordId);
+
+    await this.auditInterceptor.record({
+      appId: result.item.appId,
+      action: "admin.sms_verification.reveal",
+      resourceType: "sms_verification",
+      resourceId: recordId,
+      payload: {
+        adminUser: session.username,
+        appId: result.item.appId,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdatePasswords(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const result = await this.adminConsoleService.updatePasswordConfig(body);
@@ -1865,7 +3091,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminUpsertPasswordItem(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminUpsertPasswordItem(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const result = await this.adminConsoleService.upsertPasswordItem(body);
@@ -1905,7 +3133,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminGetLlmService(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminGetLlmService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getLlmServiceConfig();
 
@@ -1922,7 +3152,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminUpdateLlmService(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminUpdateLlmService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const desc = this.validationPipe.optionalString(body, "desc");
@@ -1972,7 +3204,10 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body ?? {});
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.restoreLlmServiceConfig(revision, desc);
+    const result = await this.adminConsoleService.restoreLlmServiceConfig(
+      revision,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -1988,7 +3223,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminGetLlmMetrics(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminGetLlmMetrics(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const range = this.parseLlmMetricsRange(request.query?.range);
     const result = await this.adminConsoleService.getLlmMetrics(range);
@@ -2013,7 +3250,10 @@ export class BackendApplication {
   ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const range = this.parseLlmMetricsRange(request.query?.range);
-    const result = await this.adminConsoleService.getLlmModelMetrics(modelKey, range);
+    const result = await this.adminConsoleService.getLlmModelMetrics(
+      modelKey,
+      range,
+    );
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -2030,7 +3270,9 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminRunLlmSmokeTest(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAdminRunLlmSmokeTest(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdminSuperUser(request);
     const result = await this.adminConsoleService.runLlmSmokeTest();
 
@@ -2048,7 +3290,10 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAdminGetConfig(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
+  private async handleAdminGetConfig(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const result = await this.adminConsoleService.getConfig(appId);
 
@@ -2091,7 +3336,11 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const rawJson = this.validationPipe.requireString(body, "rawJson");
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.updateAiRouting(appId, rawJson, desc);
+    const result = await this.adminConsoleService.updateAiRouting(
+      appId,
+      rawJson,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -2131,7 +3380,11 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body ?? {});
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.restoreAiRouting(appId, revision, desc);
+    const result = await this.adminConsoleService.restoreAiRouting(
+      appId,
+      revision,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -2172,7 +3425,11 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const desc = this.validationPipe.optionalString(body, "desc");
     const config = body.config ?? body;
-    const result = await this.adminConsoleService.updateI18nSettings(appId, config, desc);
+    const result = await this.adminConsoleService.updateI18nSettings(
+      appId,
+      config,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -2192,7 +3449,8 @@ export class BackendApplication {
     appId: string,
   ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.getRemoteLogPullSettings(appId);
+    const result =
+      await this.adminConsoleService.getRemoteLogPullSettings(appId);
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.read",
@@ -2211,7 +3469,11 @@ export class BackendApplication {
     const body = this.validationPipe.asObject(request.body);
     const desc = this.validationPipe.optionalString(body, "desc");
     const config = body.config ?? body;
-    const result = await this.adminConsoleService.updateRemoteLogPullSettings(appId, config, desc);
+    const result = await this.adminConsoleService.updateRemoteLogPullSettings(
+      appId,
+      config,
+      desc,
+    );
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.update",
@@ -2228,7 +3490,10 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<AdminAppRemoteLogPullSettingsDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.getRemoteLogPullSettings(appId, revision);
+    const result = await this.adminConsoleService.getRemoteLogPullSettings(
+      appId,
+      revision,
+    );
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.revision.read",
@@ -2247,7 +3512,11 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body ?? {});
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.restoreRemoteLogPullSettings(appId, revision, desc);
+    const result = await this.adminConsoleService.restoreRemoteLogPullSettings(
+      appId,
+      revision,
+      desc,
+    );
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.restore",
@@ -2299,7 +3568,10 @@ export class BackendApplication {
     taskId: string,
   ): Promise<HttpResponse<AdminAppRemoteLogPullTaskListDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.cancelRemoteLogPullTask(appId, taskId);
+    const result = await this.adminConsoleService.cancelRemoteLogPullTask(
+      appId,
+      taskId,
+    );
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.task.cancel",
@@ -2316,7 +3588,10 @@ export class BackendApplication {
     taskId: string,
   ): Promise<HttpResponse<AdminRemoteLogPullTaskFileDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.getRemoteLogPullTaskFile(appId, taskId);
+    const result = await this.adminConsoleService.getRemoteLogPullTaskFile(
+      appId,
+      taskId,
+    );
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.task.file.read",
@@ -2333,7 +3608,10 @@ export class BackendApplication {
     taskId: string,
   ): Promise<HttpResponse<AdminRemoteLogPullTaskDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.getRemoteLogPullTask(appId, taskId);
+    const result = await this.adminConsoleService.getRemoteLogPullTask(
+      appId,
+      taskId,
+    );
     await this.auditInterceptor.record({
       appId,
       action: "admin.remote_log_pull.task.read",
@@ -2350,7 +3628,10 @@ export class BackendApplication {
     revision: number,
   ): Promise<HttpResponse<AdminAppI18nDocument>> {
     const adminUser = this.authenticateAdmin(request);
-    const result = await this.adminConsoleService.getI18nSettings(appId, revision);
+    const result = await this.adminConsoleService.getI18nSettings(
+      appId,
+      revision,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -2374,7 +3655,11 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body ?? {});
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.restoreI18nSettings(appId, revision, desc);
+    const result = await this.adminConsoleService.restoreI18nSettings(
+      appId,
+      revision,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -2399,19 +3684,30 @@ export class BackendApplication {
       return value;
     }
 
-    throw new ApplicationError(400, "REQ_INVALID_QUERY", `Unsupported range: ${value}.`);
+    throw new ApplicationError(
+      400,
+      "REQ_INVALID_QUERY",
+      `Unsupported range: ${value}.`,
+    );
   }
 
   private authenticateAdminSuperUser(request: HttpRequest): string {
     return this.authenticateAdmin(request);
   }
 
-  private async handleAdminUpdateConfig(request: HttpRequest, appId: string): Promise<HttpResponse<unknown>> {
+  private async handleAdminUpdateConfig(
+    request: HttpRequest,
+    appId: string,
+  ): Promise<HttpResponse<unknown>> {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body);
     const rawJson = this.validationPipe.requireString(body, "rawJson");
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.updateConfig(appId, rawJson, desc);
+    const result = await this.adminConsoleService.updateConfig(
+      appId,
+      rawJson,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -2456,7 +3752,11 @@ export class BackendApplication {
     const adminUser = this.authenticateAdmin(request);
     const body = this.validationPipe.asObject(request.body ?? {});
     const desc = this.validationPipe.optionalString(body, "desc");
-    const result = await this.adminConsoleService.restoreConfig(appId, revision, desc);
+    const result = await this.adminConsoleService.restoreConfig(
+      appId,
+      revision,
+      desc,
+    );
 
     await this.auditInterceptor.record({
       appId,
@@ -2472,35 +3772,47 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleFilePresign(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleFilePresign(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateFilePresign(body),
+      request,
+    );
+    const appId = validated.appId.trim();
     this.appAccessGuard.assertScope(appId, auth.appId);
 
     const result = await this.storageService.presignUpload({
       appId: auth.appId,
       ownerUserId: auth.userId,
-      fileName: this.validationPipe.requireString(body, "fileName"),
-      mimeType: this.validationPipe.requireString(body, "mimeType"),
-      sizeBytes: this.validationPipe.requireNumber(body, "sizeBytes"),
+      fileName: validated.fileName.trim(),
+      mimeType: validated.mimeType.trim(),
+      sizeBytes: validated.sizeBytes,
     });
 
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleFileConfirm(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleFileConfirm(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateFileConfirm(body),
+      request,
+    );
+    const appId = validated.appId.trim();
     this.appAccessGuard.assertScope(appId, auth.appId);
 
     const result = await this.storageService.confirmUpload({
       appId: auth.appId,
       ownerUserId: auth.userId,
-      storageKey: this.validationPipe.requireString(body, "storageKey"),
-      mimeType: this.validationPipe.requireString(body, "mimeType"),
-      sizeBytes: this.validationPipe.requireNumber(body, "sizeBytes"),
+      storageKey: validated.storageKey.trim(),
+      mimeType: validated.mimeType.trim(),
+      sizeBytes: validated.sizeBytes,
     });
 
     await this.auditInterceptor.record({
@@ -2511,31 +3823,43 @@ export class BackendApplication {
       resourceId: result.storageKey,
       resourceOwnerUserId: auth.userId,
       payload: {
-        mimeType: this.validationPipe.requireString(body, "mimeType"),
+        mimeType: validated.mimeType,
       },
     });
 
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleNotification(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleNotification(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const appId = this.validationPipe.requireString(body, "appId");
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateNotificationSend(body),
+      request,
+    );
+    const appId = validated.appId.trim();
     this.appAccessGuard.assertScope(appId, auth.appId);
-    await this.rbacGuard.assertPermission(auth.appId, auth.userId, "notification:send");
+    await this.rbacGuard.assertPermission(
+      auth.appId,
+      auth.userId,
+      "notification:send",
+    );
 
     const result = await this.notificationService.queueNotification({
       appId: auth.appId,
-      recipientUserId: this.validationPipe.requireString(body, "recipientUserId"),
-      channel: this.validationPipe.requireString(body, "channel") as "email" | "sms" | "push",
-      payload: (body.payload as Record<string, unknown> | undefined) ?? {},
+      recipientUserId: validated.recipientUserId.trim(),
+      channel: validated.channel as "email" | "sms" | "push",
+      payload: (validated.payload as Record<string, unknown> | undefined) ?? {},
     });
 
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleAiNovelChatCompletions(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAiNovelChatCompletions(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     await this.authenticateProductRequest(request, "ai_novel");
     const { keyId, plaintext } = await this.decryptAiRequestBody(request);
 
@@ -2544,19 +3868,27 @@ export class BackendApplication {
       const body = this.validationPipe.asObject(parsed);
       const stream = body.stream === true;
       if (!stream && body.stream !== undefined && body.stream !== false) {
-        throw new ApplicationError(400, "REQ_INVALID_BODY", "stream must be a boolean when provided.");
+        throw new ApplicationError(
+          400,
+          "REQ_INVALID_BODY",
+          "stream must be a boolean when provided.",
+        );
       }
 
       if (stream) {
         return this.encryptedAiStreamResponse(
           request,
           keyId,
-          this.aiNovelLlmService.createChatCompletionStream(body),
+          this.aiNovelLlmService.createChatCompletionStream(body, {
+            exposeLocalDebug:
+              this.shouldExposeLocalAiRequestDebugFields(request),
+          }),
         );
       }
 
       const result = await this.aiNovelLlmService.createChatCompletion(body);
-      const localDebugResponseText = this.extractLocalAiDebugResponseText(result);
+      const localDebugResponseText =
+        this.extractLocalAiDebugResponseText(result);
       return await this.encryptedAiResponse(
         request,
         keyId,
@@ -2571,29 +3903,100 @@ export class BackendApplication {
     } catch (error) {
       const applicationError =
         error instanceof SyntaxError
-          ? new ApplicationError(400, "REQ_INVALID_BODY", "Decrypted AI request body must be valid JSON.")
+          ? new ApplicationError(
+              400,
+              "REQ_INVALID_BODY",
+              "Decrypted AI request body must be valid JSON.",
+            )
           : error;
       if (!isApplicationError(applicationError)) {
         throw error;
       }
 
-      return await this.encryptedAiResponse(
-        request,
-        keyId,
-        {
-          code: applicationError.code,
-          message: applicationError.message,
-          data: null,
-          requestId: request.requestId as string,
-        },
-      );
+      return await this.encryptedAiResponse(request, keyId, {
+        code: applicationError.code,
+        message: this.localizePublicErrorMessage(applicationError, request),
+        data: null,
+        requestId: request.requestId as string,
+      });
     }
   }
 
-  private async handleAiNovelEmbeddings(request: HttpRequest): Promise<HttpResponse<unknown>> {
+  private async handleAiNovelEmbeddings(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
     return this.handleEncryptedAiRequest(request, async (body) => {
       return await this.aiNovelLlmService.createEmbeddings(body);
     });
+  }
+
+  private async handleAiNovelAuditFile(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    if (!this.shouldServeLocalDebugEndpoint(request)) {
+      throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
+    }
+
+    await this.authenticateProductRequest(request, "ai_novel");
+    const body = this.validationPipe.asObject(request.body);
+    const sessionId = typeof body.sessionId === "string" ? body.sessionId : "";
+    const html = typeof body.html === "string" ? body.html : "";
+    if (sessionId.trim().isEmpty) {
+      throw new ApplicationError(
+        400,
+        "REQ_INVALID_BODY",
+        "sessionId is required.",
+      );
+    }
+    if (html.trim().isEmpty) {
+      throw new ApplicationError(400, "REQ_INVALID_BODY", "html is required.");
+    }
+
+    const result = await this.aiNovelAuditFileService.writeAuditFile({
+      sessionId,
+      html,
+    });
+    return this.ok(
+      {
+        ...result,
+        viewUrl: this.buildLocalDebugAuditFileViewUrl(request, sessionId),
+      },
+      request.requestId as string,
+    );
+  }
+
+  private async handleAiNovelAuditFileView(
+    request: HttpRequest,
+    encodedSessionId: string,
+  ): Promise<HttpResponse<unknown>> {
+    if (!this.shouldServeLocalDebugEndpoint(request)) {
+      throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
+    }
+    const sessionId = decodeURIComponent(encodedSessionId);
+    if (sessionId.trim().isEmpty) {
+      throw new ApplicationError(
+        400,
+        "REQ_INVALID_BODY",
+        "sessionId is required.",
+      );
+    }
+    const html = await this.aiNovelAuditFileService.readAuditFile(sessionId);
+    return {
+      statusCode: 200,
+      contentType: "text/html; charset=utf-8",
+      headers: {
+        "Cache-Control": "no-store",
+      },
+      body: {
+        code: "OK",
+        message: "success",
+        data: null,
+        requestId: request.requestId as string,
+      },
+      streamBody: (async function* () {
+        yield html;
+      })(),
+    };
   }
 
   private async handleEncryptedAiRequest(
@@ -2607,7 +4010,8 @@ export class BackendApplication {
       const parsed = JSON.parse(plaintext.toString("utf8"));
       const body = this.validationPipe.asObject(parsed);
       const result = await handler(body);
-      const localDebugResponseText = this.extractLocalAiDebugResponseText(result);
+      const localDebugResponseText =
+        this.extractLocalAiDebugResponseText(result);
       return await this.encryptedAiResponse(
         request,
         keyId,
@@ -2622,22 +4026,22 @@ export class BackendApplication {
     } catch (error) {
       const applicationError =
         error instanceof SyntaxError
-          ? new ApplicationError(400, "REQ_INVALID_BODY", "Decrypted AI request body must be valid JSON.")
+          ? new ApplicationError(
+              400,
+              "REQ_INVALID_BODY",
+              "Decrypted AI request body must be valid JSON.",
+            )
           : error;
       if (!isApplicationError(applicationError)) {
         throw error;
       }
 
-      return await this.encryptedAiResponse(
-        request,
-        keyId,
-        {
-          code: applicationError.code,
-          message: applicationError.message,
-          data: null,
-          requestId: request.requestId as string,
-        },
-      );
+      return await this.encryptedAiResponse(request, keyId, {
+        code: applicationError.code,
+        message: this.localizePublicErrorMessage(applicationError, request),
+        data: null,
+        requestId: request.requestId as string,
+      });
     }
   }
 
@@ -2647,7 +4051,8 @@ export class BackendApplication {
     const envelope = this.validationPipe.asObject(request.body);
     let decrypted: { keyId: string; plaintext: Buffer };
     try {
-      decrypted = await this.aiPayloadCryptoService.decryptJsonEnvelope(envelope);
+      decrypted =
+        await this.aiPayloadCryptoService.decryptJsonEnvelope(envelope);
     } catch (error) {
       this.mapAiCryptoError(error);
     }
@@ -2680,9 +4085,10 @@ export class BackendApplication {
       statusCode: 200,
       body: {
         ...encrypted,
-        ...(this.shouldExposeLocalAiDebugFields(request) && localDebugResponseText
-            ? { localDebugResponseText }
-            : {}),
+        ...(this.shouldExposeLocalAiDebugFields(request) &&
+        localDebugResponseText
+          ? { localDebugResponseText }
+          : {}),
       } as unknown as never,
     };
   }
@@ -2696,6 +4102,7 @@ export class BackendApplication {
     const shouldExposeLocalDebug = this.shouldExposeLocalAiDebugFields(request);
 
     const streamBody = this.createEncryptedAiSseStream(
+      request,
       keyId,
       requestId,
       stream,
@@ -2721,6 +4128,7 @@ export class BackendApplication {
   }
 
   private async *createEncryptedAiSseStream(
+    request: HttpRequest,
     keyId: string,
     requestId: string,
     stream: AsyncIterable<unknown>,
@@ -2739,9 +4147,9 @@ export class BackendApplication {
           keyId,
         );
         const localDebugResponseText = shouldExposeLocalDebug
-          ? this.extractLocalAiDebugResponseText(
+          ? this.extractLocalAiDebugCompletionText(
               item && typeof item === "object" && !Array.isArray(item)
-                ? { completion: (item as Record<string, unknown>).completion }
+                ? (item as Record<string, unknown>).completion
                 : undefined,
             )
           : undefined;
@@ -2754,12 +4162,16 @@ export class BackendApplication {
     } catch (error) {
       const applicationError = isApplicationError(error)
         ? error
-        : new ApplicationError(500, "SYS_INTERNAL_ERROR", "An unexpected internal error occurred.");
+        : new ApplicationError(
+            500,
+            "SYS_INTERNAL_ERROR",
+            "An unexpected internal error occurred.",
+          );
       const encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
         Buffer.from(
           JSON.stringify({
             code: applicationError.code,
-            message: applicationError.message,
+            message: this.localizePublicErrorMessage(applicationError, request),
             data: null,
             requestId,
           }),
@@ -2771,13 +4183,63 @@ export class BackendApplication {
     }
   }
 
+  private localizePublicErrorMessage(
+    error: ApplicationError,
+    request: HttpRequest,
+  ): string {
+    return (
+      this.publicApiMessageService.fromErrorCode(
+        error.code,
+        request,
+        error.message,
+      ) ?? error.message
+    );
+  }
+
   private shouldExposeLocalAiDebugFields(request: HttpRequest): boolean {
     const host =
-      getHeader(request.headers, "x-forwarded-host")
-      ?? getHeader(request.headers, "host")
-      ?? "";
-    return /(?:^|:\/\/)(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(host)
-      || /(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(host);
+      getHeader(request.headers, "x-forwarded-host") ??
+      getHeader(request.headers, "host") ??
+      "";
+    return (
+      /(?:^|:\/\/)(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(host) ||
+      /(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(host)
+    );
+  }
+
+  private shouldServeLocalDebugEndpoint(request: HttpRequest): boolean {
+    return (
+      process.env.NODE_ENV !== "production" &&
+      this.shouldExposeLocalAiDebugFields(request)
+    );
+  }
+
+  private buildLocalDebugAuditFileViewUrl(
+    request: HttpRequest,
+    sessionId: string,
+  ): string {
+    const host =
+      getHeader(request.headers, "x-forwarded-host") ??
+      getHeader(request.headers, "host") ??
+      "localhost";
+    const protocol = getHeader(request.headers, "x-forwarded-proto") ?? "http";
+    return `${protocol}://${host}/api/v1/ai_novel/debug/audit-file/${encodeURIComponent(
+      this.aiNovelAuditFileService.sanitizeSessionId(sessionId),
+    )}`;
+  }
+
+  private shouldExposeLocalAiRequestDebugFields(request: HttpRequest): boolean {
+    if (!this.shouldExposeLocalAiDebugFields(request)) {
+      return false;
+    }
+    const body = request.body;
+    return Boolean(
+      body &&
+      typeof body === "object" &&
+      !Array.isArray(body) &&
+      typeof (body as Record<string, unknown>).localDebugRequestPlaintext ===
+        "string",
+    );
   }
 
   private extractLocalAiDebugResponseText(result: unknown): string | undefined {
@@ -2786,7 +4248,17 @@ export class BackendApplication {
     }
 
     const completion = (result as Record<string, unknown>).completion;
-    if (!completion || typeof completion !== "object" || Array.isArray(completion)) {
+    return this.extractLocalAiDebugCompletionText(completion);
+  }
+
+  private extractLocalAiDebugCompletionText(
+    completion: unknown,
+  ): string | undefined {
+    if (
+      !completion ||
+      typeof completion !== "object" ||
+      Array.isArray(completion)
+    ) {
       return undefined;
     }
 
@@ -2805,33 +4277,62 @@ export class BackendApplication {
 
     switch (error.code) {
       case "UNSUPPORTED_ALGORITHM":
-        throw new ApplicationError(400, "AI_UNSUPPORTED_ALGORITHM", "Unsupported AI encryption algorithm.");
+        throw new ApplicationError(
+          400,
+          "AI_UNSUPPORTED_ALGORITHM",
+          "Unsupported AI encryption algorithm.",
+        );
       case "UNKNOWN_KEY":
-        throw new ApplicationError(400, "AI_UNKNOWN_KEY_ID", "Unknown AI encryption key id.");
+        throw new ApplicationError(
+          400,
+          "AI_UNKNOWN_KEY_ID",
+          "Unknown AI encryption key id.",
+        );
       case "INVALID_ENVELOPE":
-        throw new ApplicationError(400, "REQ_INVALID_BODY", "Encrypted AI request envelope is invalid.");
+        throw new ApplicationError(
+          400,
+          "REQ_INVALID_BODY",
+          "Encrypted AI request envelope is invalid.",
+        );
       case "INVALID_NONCE":
       case "PAYLOAD_TOO_SMALL":
       case "DECRYPT_FAILED":
-        throw new ApplicationError(400, "AI_DECRYPT_FAILED", "Unable to decrypt AI payload.");
+        throw new ApplicationError(
+          400,
+          "AI_DECRYPT_FAILED",
+          "Unable to decrypt AI payload.",
+        );
       case "ENCRYPT_FAILED":
-        throw new ApplicationError(500, "AI_ENCRYPT_FAILED", "Unable to encrypt AI response.");
+        throw new ApplicationError(
+          500,
+          "AI_ENCRYPT_FAILED",
+          "Unable to encrypt AI response.",
+        );
     }
   }
 
-  private async handleLogsPolicy(request: HttpRequest): Promise<HttpResponse<LogPolicyResult>> {
+  private async handleLogsPolicy(
+    request: HttpRequest,
+  ): Promise<HttpResponse<LogPolicyResult>> {
     const auth = await this.authenticate(request);
     const result = await this.clientLogUploadService.getPolicy(auth);
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleLogsPullTask(request: HttpRequest): Promise<HttpResponse<LogPullTaskResult>> {
+  private async handleLogsPullTask(
+    request: HttpRequest,
+  ): Promise<HttpResponse<LogPullTaskResult>> {
     const auth = await this.authenticate(request);
-    const result = await this.clientLogUploadService.getPullTask(auth, this.requireHeader(request, "x-did"));
+    const result = await this.clientLogUploadService.getPullTask(
+      auth,
+      this.requireHeader(request, "x-did"),
+    );
     return this.ok(result, request.requestId as string);
   }
 
-  private async handleLogsUpload(request: HttpRequest): Promise<HttpResponse<LogUploadResult>> {
+  private async handleLogsUpload(
+    request: HttpRequest,
+  ): Promise<HttpResponse<LogUploadResult>> {
     const auth = await this.authenticate(request);
     const result = await this.clientLogUploadService.upload({
       auth,
@@ -2842,9 +4343,18 @@ export class BackendApplication {
       encryption: this.requireHeader(request, "x-log-enc"),
       nonceBase64: this.requireHeader(request, "x-log-nonce"),
       contentEncoding: this.requireHeader(request, "x-log-content"),
-      lineCountReported: this.optionalIntegerHeader(request, "x-log-line-count"),
-      plainBytesReported: this.optionalIntegerHeader(request, "x-log-plain-bytes"),
-      compressedBytesReported: this.optionalIntegerHeader(request, "x-log-compressed-bytes"),
+      lineCountReported: this.optionalIntegerHeader(
+        request,
+        "x-log-line-count",
+      ),
+      plainBytesReported: this.optionalIntegerHeader(
+        request,
+        "x-log-plain-bytes",
+      ),
+      compressedBytesReported: this.optionalIntegerHeader(
+        request,
+        "x-log-compressed-bytes",
+      ),
       body: this.requireBinaryBody(request.body),
     });
 
@@ -2869,16 +4379,16 @@ export class BackendApplication {
   ): Promise<HttpResponse<LogNoDataAckResult>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
-    const status = this.validationPipe.requireString(body, "status");
-    if (status !== "no_data") {
-      throw new ApplicationError(400, "REQ_INVALID_BODY", "status must be no_data.");
-    }
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateLogAck(body),
+      request,
+    );
 
     const result = await this.clientLogUploadService.acknowledgeNoData({
       auth,
       did: this.requireHeader(request, "x-did"),
       taskId,
-      claimToken: this.validationPipe.requireString(body, "claimToken"),
+      claimToken: validated.claimToken,
     });
     return this.ok(result, request.requestId as string);
   }
@@ -2889,13 +4399,16 @@ export class BackendApplication {
   ): Promise<HttpResponse<LogFailResult>> {
     const auth = await this.authenticate(request);
     const body = this.validationPipe.asObject(request.body);
+    const validated = this.requireValidPublicContract(
+      PublicContractValidator.validateLogFail(body),
+      request,
+    );
     const result = await this.clientLogUploadService.fail({
       auth,
       did: this.requireHeader(request, "x-did"),
       taskId,
-      claimToken: this.validationPipe.requireString(body, "claimToken"),
-      reason: this.validationPipe.optionalString(body, "reason"),
-      message: this.validationPipe.optionalString(body, "message"),
+      claimToken: validated.claimToken,
+      failureReason: validated.failureReason?.trim(),
     });
 
     await this.auditInterceptor.record({
@@ -2913,7 +4426,10 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
-  private async authenticate(request: HttpRequest, options: { requireActiveMembership?: boolean } = {}) {
+  private async authenticate(
+    request: HttpRequest,
+    options: { requireActiveMembership?: boolean } = {},
+  ) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     const explicitAppId = this.appContextResolver.extractExplicitAppId(request);
@@ -2926,13 +4442,19 @@ export class BackendApplication {
     if (options.requireActiveMembership !== false) {
       await this.userService.getById(auth.userId);
       await this.appRegistryService.getAppOrThrow(auth.appId);
-      await this.appRegistryService.ensureExistingMembership(auth.appId, auth.userId);
+      await this.appRegistryService.ensureExistingMembership(
+        auth.appId,
+        auth.userId,
+      );
     }
 
     return auth;
   }
 
-  private async authenticateProductRequest(request: HttpRequest, appId: string) {
+  private async authenticateProductRequest(
+    request: HttpRequest,
+    appId: string,
+  ) {
     const auth = this.authGuard.canActivate(request);
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     this.appAccessGuard.assertScope(appId, auth.appId);
@@ -2946,20 +4468,35 @@ export class BackendApplication {
     }
 
     if (!this.adminBasicAuth) {
-      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
+      throw new ApplicationError(
+        401,
+        "ADMIN_AUTH_REQUIRED",
+        "Admin authentication is required.",
+      );
     }
 
     const credentials = parseBasicAuthorization(request.headers.authorization);
     if (!credentials) {
-      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
+      throw new ApplicationError(
+        401,
+        "ADMIN_AUTH_REQUIRED",
+        "Admin authentication is required.",
+      );
     }
 
-    return this.validateAdminCredentials(credentials.username, credentials.password);
+    return this.validateAdminCredentials(
+      credentials.username,
+      credentials.password,
+    );
   }
 
   private requireAdminSession(request: HttpRequest): AdminSessionRecord {
     if (!request.adminSession) {
-      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin session login is required.");
+      throw new ApplicationError(
+        401,
+        "ADMIN_AUTH_REQUIRED",
+        "Admin session login is required.",
+      );
     }
 
     return request.adminSession;
@@ -2967,20 +4504,30 @@ export class BackendApplication {
 
   private validateAdminCredentials(username: string, password: string): string {
     if (!this.adminBasicAuth) {
-      throw new ApplicationError(401, "ADMIN_AUTH_REQUIRED", "Admin authentication is required.");
+      throw new ApplicationError(
+        401,
+        "ADMIN_AUTH_REQUIRED",
+        "Admin authentication is required.",
+      );
     }
 
     if (
       !safeEqual(username, this.adminBasicAuth.username) ||
       !safeEqual(password, this.adminBasicAuth.password)
     ) {
-      throw new ApplicationError(401, "ADMIN_INVALID_CREDENTIAL", "Admin username or password is invalid.");
+      throw new ApplicationError(
+        401,
+        "ADMIN_INVALID_CREDENTIAL",
+        "Admin username or password is invalid.",
+      );
     }
 
     return username;
   }
 
-  private async resolveAdminSession(request: HttpRequest): Promise<AdminSessionRecord | null> {
+  private async resolveAdminSession(
+    request: HttpRequest,
+  ): Promise<AdminSessionRecord | null> {
     const sessionId = request.cookies?.[ADMIN_SESSION_COOKIE_NAME];
     if (!sessionId) {
       return null;
@@ -2993,8 +4540,90 @@ export class BackendApplication {
     return body.clientType === "app" ? "app" : "web";
   }
 
+  private requireValidPublicContract<T>(
+    result:
+      | { ok: true; data: T }
+      | { ok: false; errors: string[]; details: ErrorObject[] },
+    request?: HttpRequest,
+  ): T {
+    if (result.ok) {
+      return result.data;
+    }
+    throw new ApplicationError(
+      400,
+      "REQ_INVALID_BODY",
+      this.buildPublicContractValidationMessage(result.details, request),
+      { errors: result.errors },
+    );
+  }
+
+  private buildPublicContractValidationMessage(
+    details: ErrorObject[],
+    request?: HttpRequest,
+  ): string {
+    const first = details[0];
+    if (!first) {
+      return this.publicApiMessageService.format(
+        "error.req.invalid_body",
+        request,
+      );
+    }
+
+    if (
+      first.keyword === "format" &&
+      first.params &&
+      "format" in first.params
+    ) {
+      const format = String((first.params as { format?: string }).format ?? "");
+      if (format === "email") {
+        return this.publicApiMessageService.format(
+          "error.req.invalid_email",
+          request,
+        );
+      }
+      if (format === "date-time") {
+        return this.publicApiMessageService.format(
+          "error.req.invalid_datetime",
+          request,
+        );
+      }
+    }
+
+    if (
+      first.keyword === "required" &&
+      first.params &&
+      "missingProperty" in first.params
+    ) {
+      const missing = String(
+        (first.params as { missingProperty?: string }).missingProperty ?? "",
+      );
+      return this.publicApiMessageService.format(
+        "error.req.missing_required",
+        request,
+        { field: missing },
+      );
+    }
+
+    if (first.keyword === "enum") {
+      return this.publicApiMessageService.format(
+        "error.req.invalid_enum",
+        request,
+      );
+    }
+
+    return this.publicApiMessageService.format(
+      "error.req.invalid_body",
+      request,
+    );
+  }
+
   private async toAuthPayload(
-    session: { userId: string; accessToken: string; refreshToken: string; expiresIn: number },
+    session: {
+      userId: string;
+      accessToken: string;
+      refreshToken: string;
+      expiresIn: number;
+    },
     clientType: ClientType,
   ): Promise<AuthSuccessPayload> {
     const user = await this.userService.getProfile(session.userId);
@@ -3012,24 +4641,38 @@ export class BackendApplication {
         };
   }
 
-  private buildAuthHeaders(refreshToken: string, clientType: ClientType): Record<string, string> | undefined {
-    const cookie = this.authService.buildRefreshCookie(refreshToken, clientType);
+  private buildAuthHeaders(
+    refreshToken: string,
+    clientType: ClientType,
+  ): Record<string, string> | undefined {
+    const cookie = this.authService.buildRefreshCookie(
+      refreshToken,
+      clientType,
+    );
     return cookie ? { "Set-Cookie": cookie } : undefined;
   }
 
   private buildAdminSessionHeaders(sessionId: string): Record<string, string> {
     return {
-      "Set-Cookie": this.buildAdminSessionCookie(`${ADMIN_SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}`),
+      "Set-Cookie": this.buildAdminSessionCookie(
+        `${ADMIN_SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}`,
+      ),
     };
   }
 
   private buildAdminSessionClearHeaders(): Record<string, string> {
     return {
-      "Set-Cookie": this.buildAdminSessionCookie(`${ADMIN_SESSION_COOKIE_NAME}=`, "Max-Age=0"),
+      "Set-Cookie": this.buildAdminSessionCookie(
+        `${ADMIN_SESSION_COOKIE_NAME}=`,
+        "Max-Age=0",
+      ),
     };
   }
 
-  private buildAdminSessionCookie(base: string, maxAgePart = `Max-Age=${Math.floor(ADMIN_SESSION_TTL_MS / 1000)}`): string {
+  private buildAdminSessionCookie(
+    base: string,
+    maxAgePart = `Max-Age=${Math.floor(ADMIN_SESSION_TTL_MS / 1000)}`,
+  ): string {
     const parts = [
       base,
       "HttpOnly",
@@ -3060,13 +4703,20 @@ export class BackendApplication {
   private requireHeader(request: HttpRequest, headerName: string): string {
     const value = getHeader(request.headers, headerName)?.trim();
     if (!value) {
-      throw new ApplicationError(400, "REQ_INVALID_HEADER", `${headerName} header is required.`);
+      throw new ApplicationError(
+        400,
+        "REQ_INVALID_HEADER",
+        `${headerName} header is required.`,
+      );
     }
 
     return value;
   }
 
-  private optionalIntegerHeader(request: HttpRequest, headerName: string): number | undefined {
+  private optionalIntegerHeader(
+    request: HttpRequest,
+    headerName: string,
+  ): number | undefined {
     const rawValue = getHeader(request.headers, headerName)?.trim();
     if (!rawValue) {
       return undefined;
@@ -3074,7 +4724,11 @@ export class BackendApplication {
 
     const value = Number(rawValue);
     if (!Number.isInteger(value) || value < 0) {
-      throw new ApplicationError(400, "REQ_INVALID_HEADER", `${headerName} header must be a non-negative integer.`);
+      throw new ApplicationError(
+        400,
+        "REQ_INVALID_HEADER",
+        `${headerName} header must be a non-negative integer.`,
+      );
     }
 
     return value;
@@ -3093,10 +4747,18 @@ export class BackendApplication {
       return Buffer.from(body);
     }
 
-    throw new ApplicationError(400, "REQ_INVALID_BODY", "Request body must be binary.");
+    throw new ApplicationError(
+      400,
+      "REQ_INVALID_BODY",
+      "Request body must be binary.",
+    );
   }
 
-  private ok<T>(data: T, requestId: string, headers?: Record<string, string>): HttpResponse<T> {
+  private ok<T>(
+    data: T,
+    requestId: string,
+    headers?: Record<string, string>,
+  ): HttpResponse<T> {
     return {
       statusCode: 200,
       headers,
@@ -3113,7 +4775,9 @@ export class BackendApplication {
 /**
  * createApplication produces a full runtime context that tests can reuse without real infra.
  */
-export async function createApplication(options: CreateApplicationOptions = {}) {
+export async function createApplication(
+  options: CreateApplicationOptions = {},
+) {
   const passwordHasher = new DevelopmentPasswordHasher();
   const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher);
   const kvManager =
@@ -3123,7 +4787,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       : resolveRuntimeRedisUrl()
         ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
         : await KVManager.create({ backend: new InMemoryKVBackend() }));
-  const shouldLoadManagedState = Boolean(options.database || options.databaseFactory);
+  const shouldLoadManagedState = Boolean(
+    options.database || options.databaseFactory,
+  );
   const managedStateStore = new ManagedStateStore(kvManager, {
     enabled: shouldLoadManagedState,
   });
@@ -3131,62 +4797,126 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     ? applyManagedState(baseSeed, await managedStateStore.load())
     : baseSeed;
   const database =
-    options.database
-    ?? (options.databaseFactory
+    options.database ??
+    (options.databaseFactory
       ? await options.databaseFactory(seed)
       : await PostgresDatabase.create(
-          options.databaseUrl?.trim() || resolveRuntimeDatabaseUrl() || (() => {
-            throw new Error("DATABASE_URL must be configured before starting PostgreSQL.");
-          })(),
+          options.databaseUrl?.trim() ||
+            resolveRuntimeDatabaseUrl() ||
+            (() => {
+              throw new Error(
+                "DATABASE_URL must be configured before starting PostgreSQL.",
+              );
+            })(),
           seed,
           {
             migrationConnectionString:
-              options.migrationDatabaseUrl?.trim() || resolveRuntimeMigrationDatabaseUrl(),
+              options.migrationDatabaseUrl?.trim() ||
+              resolveRuntimeMigrationDatabaseUrl(),
           },
         ));
   const cache = new InMemoryCache();
-  const defaultQueueBackend = options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl() ? "redis" : "memory";
+  const defaultQueueBackend =
+    options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl()
+      ? "redis"
+      : "memory";
   const resolvedQueueBackend = options.queueBackend ?? defaultQueueBackend;
-  const queue = options.queue ??
+  const queue =
+    options.queue ??
     (resolvedQueueBackend === "redis"
       ? new RedisJobQueue(
-          options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl() || (() => {
-            throw new Error("REDIS_URL must be configured before starting the Redis job queue backend.");
-          })(),
+          options.queueRedisUrl?.trim() ||
+            resolveRuntimeRedisUrl() ||
+            (() => {
+              throw new Error(
+                "REDIS_URL must be configured before starting the Redis job queue backend.",
+              );
+            })(),
         )
       : new InMemoryJobQueue());
   const logger = new StructuredLogger(options.serviceName ?? "api", {
     emitToConsole: options.emitLogs ?? false,
   });
 
-  const appConfigService = new VersionedAppConfigService(database, cache, kvManager);
+  const appConfigService = new VersionedAppConfigService(
+    database,
+    cache,
+    kvManager,
+  );
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
-  const appAiRoutingConfigService = new AppAiRoutingConfigService(appConfigService);
+  const appAiRoutingConfigService = new AppAiRoutingConfigService(
+    appConfigService,
+  );
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
-  const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
-  const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
-  const commonEmailConfigService = new CommonEmailConfigService(appConfigService, commonPasswordConfigService, logger);
-  const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
+  const smsVerificationRecordService = new SmsVerificationRecordService(
+    database,
+  );
+  const smsVerificationCleanupService = new SmsVerificationCleanupService(
+    database,
+    kvManager,
+  );
+  const commonPasswordConfigService = new CommonPasswordConfigService(
+    passwordManager,
+  );
+  const secretReferenceResolver = new SecretReferenceResolver(
+    commonPasswordConfigService,
+  );
+  const commonEmailConfigService = new CommonEmailConfigService(
+    appConfigService,
+    commonPasswordConfigService,
+    logger,
+  );
+  const commonAuthRateLimitConfigService = new CommonAuthRateLimitConfigService(
+    appConfigService,
+  );
+  const commonGetuiGyConfigService = new CommonGetuiGyConfigService(
+    appConfigService,
+    secretReferenceResolver,
+  );
+  const commonLlmConfigService = new CommonLlmConfigService(
+    appConfigService,
+    secretReferenceResolver,
+  );
   const appLogSecretService = new AppLogSecretService(database, kvManager);
-  const logEncryptionKeyResolver = options.logEncryptionKeyResolver
-    ?? new CompositeAesGcmEncryptionKeyResolver([
+  const logEncryptionKeyResolver =
+    options.logEncryptionKeyResolver ??
+    new CompositeAesGcmEncryptionKeyResolver([
       new StaticAesGcmEncryptionKeyResolver(options.logEncryptionKeys),
       appLogSecretService,
     ]);
-  const aiPayloadCryptoService = new AesGcmPayloadCryptoService(logEncryptionKeyResolver);
-  const appRemoteLogPullService = new AppRemoteLogPullService(appConfigService, database, appLogSecretService);
+  const aiPayloadCryptoService = new AesGcmPayloadCryptoService(
+    logEncryptionKeyResolver,
+  );
+  const appRemoteLogPullService = new AppRemoteLogPullService(
+    appConfigService,
+    database,
+    appLogSecretService,
+  );
   await database.withExclusiveSession(async () => {
-    const initializedCommonLlmConfig = await commonLlmConfigService.initializeDefaultConfig();
-    const initializedAppLogSecrets = await appLogSecretService.initializeSecrets(await database.listAppIds());
-    const initializedRemoteLogPullConfigs = await appRemoteLogPullService.initializeMissingConfigs(
-      await database.listAppIds(),
-    );
-    const initializedAiRoutingConfig = (await database.listAppIds()).includes(AI_NOVEL_APP_ID)
+    const initializedCommonLlmConfig =
+      await commonLlmConfigService.initializeDefaultConfig();
+    const initializedAppLogSecrets =
+      await appLogSecretService.initializeSecrets(await database.listAppIds());
+    const initializedRemoteLogPullConfigs =
+      await appRemoteLogPullService.initializeMissingConfigs(
+        await database.listAppIds(),
+      );
+    const initializedGetuiGyConfig =
+      await commonGetuiGyConfigService.initializeDefaultConfig();
+    const initializedAiRoutingConfig = (await database.listAppIds()).includes(
+      AI_NOVEL_APP_ID,
+    )
       ? await appAiRoutingConfigService.initializeAppConfig(AI_NOVEL_APP_ID)
       : false;
-    if (initializedCommonLlmConfig || initializedAppLogSecrets || initializedRemoteLogPullConfigs || initializedAiRoutingConfig) {
+    if (
+      initializedCommonLlmConfig ||
+      initializedAppLogSecrets ||
+      initializedRemoteLogPullConfigs ||
+      initializedGetuiGyConfig ||
+      initializedAiRoutingConfig
+    ) {
       await managedStateStore.save(database);
     }
   });
@@ -3198,11 +4928,33 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const tokenService = new TokenService(accessTokenSecrets.current, {
     previousSecrets: accessTokenSecrets.previous,
   });
+  const tencentCloudCommonCredentials =
+    await resolveTencentCloudCommonCredentials(commonPasswordConfigService);
   const registrationEmailSender =
     options.registrationEmailSender ??
     (options.serviceName === "api"
       ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
       : new NoopRegistrationEmailSender());
+  const smsVerificationSender =
+    options.smsVerificationSender ??
+    (options.serviceName === "api"
+      ? new TencentSmsVerificationSender(
+          resolveTencentSmsVerificationConfig(
+            options,
+            tencentCloudCommonCredentials,
+          ),
+        )
+      : new NoopSmsVerificationSender());
+  const captchaVerificationService =
+    options.captchaVerificationService ??
+    (options.serviceName === "api"
+      ? new TencentCaptchaVerificationService(
+          resolveTencentCaptchaVerificationConfig(
+            options,
+            tencentCloudCommonCredentials,
+          ),
+        )
+      : new NoopCaptchaVerificationService());
   const emailTestSendService = new EmailTestSendService(
     commonEmailConfigService,
     kvManager,
@@ -3224,9 +4976,17 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
           cache,
         )
       : new NoopGeoResolver());
-  const requestEmailContextService = new RequestEmailContextService(geoResolver);
+  const requestEmailContextService = new RequestEmailContextService(
+    geoResolver,
+  );
   const requestLocaleService = new RequestLocaleService();
-  const i18nService = new I18nService(appI18nConfigService, requestLocaleService);
+  const publicApiMessageService = new PublicApiMessageService(
+    requestLocaleService,
+  );
+  const i18nService = new I18nService(
+    appI18nConfigService,
+    requestLocaleService,
+  );
   const authService = new AuthService(
     database,
     kvManager,
@@ -3235,14 +4995,25 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     passwordHasher,
     tokenService,
     refreshTokenStore,
+    commonAuthRateLimitConfigService,
     registrationEmailSender,
+    smsVerificationSender,
+    smsVerificationRecordService,
     options.registrationCodeGenerator,
     resolveSecureRefreshCookie(options),
     resolveRefreshCookieSameSite(options),
   );
-  const qrLoginService = new QrLoginService(cache, appRegistryService, userService, authService);
+  const qrLoginService = new QrLoginService(
+    cache,
+    appRegistryService,
+    userService,
+    authService,
+  );
+  const getuiGyOneClickLoginService = new GetuiGyOneClickLoginService(
+    commonGetuiGyConfigService,
+  );
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const bailianProvider = new BailianOpenAICompatibleProvider();
+  const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
   const llmProviders = options.llmProviders ?? {
     bailian: bailianProvider,
     bailian_coding: bailianProvider,
@@ -3262,6 +5033,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmProviders,
     embeddingProviders,
   );
+  const aiNovelAuditFileService = new AiNovelAuditFileService(
+    options.aiNovelAuditFileRoot,
+  );
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
@@ -3270,6 +5044,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
+    commonAuthRateLimitConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
     emailTestSendService,
@@ -3277,6 +5052,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmMetricsService,
     llmSmokeTestService,
     refreshTokenStore,
+    smsVerificationRecordService,
     managedStateStore,
   );
   const rbacService = new RbacService(database);
@@ -3285,14 +5061,28 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmHealthService,
     llmMetricsService,
   });
-  const aiNovelLlmService = new AiNovelLlmService(llmManager, embeddingManager, appAiRoutingConfigService);
+  const aiNovelLlmService = new AiNovelLlmService(
+    llmManager,
+    embeddingManager,
+    appAiRoutingConfigService,
+    logger,
+  );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
-  const clientLogUploadService = new ClientLogUploadService(database, logEncryptionKeyResolver, appRemoteLogPullService, {
-    fileStore: persistentFileStore,
-  });
+  const clientLogUploadService = new ClientLogUploadService(
+    database,
+    logEncryptionKeyResolver,
+    appRemoteLogPullService,
+    {
+      fileStore: persistentFileStore,
+    },
+  );
   const notificationService = new NotificationService(database, queue, logger);
-  const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
+  const failedEventRetryService = new FailedEventRetryService(
+    database,
+    queue,
+    logger,
+  );
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(
     new Map(
@@ -3307,12 +5097,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const validationPipe = new ValidationPipe();
   const auditInterceptor = new AuditInterceptor(database);
   const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
-  const httpExceptionFilter = new HttpExceptionFilter();
+  const httpExceptionFilter = new HttpExceptionFilter(publicApiMessageService);
   const adminBasicAuth = resolveAdminBasicAuth(options);
 
   const app = new BackendApplication(
     database,
     authService,
+    getuiGyOneClickLoginService,
     qrLoginService,
     analyticsService,
     adminConsoleService,
@@ -3326,6 +5117,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmManager,
     embeddingManager,
     llmSmokeTestService,
+    aiNovelAuditFileService,
     aiNovelLlmService,
     aiPayloadCryptoService,
     storageService,
@@ -3333,6 +5125,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     notificationService,
     failedEventRetryService,
     requestEmailContextService,
+    requestLocaleService,
+    publicApiMessageService,
     auditInterceptor,
     requestLoggingInterceptor,
     httpExceptionFilter,
@@ -3360,6 +5154,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       refreshTokenStore,
       commonPasswordConfigService,
       commonEmailConfigService,
+      commonAuthRateLimitConfigService,
+      commonGetuiGyConfigService,
       commonLlmConfigService,
       appLogSecretService,
       adminSensitiveOperationService,
@@ -3369,6 +5165,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       appAiRoutingConfigService,
       tokenService,
       authService,
+      getuiGyOneClickLoginService,
       qrLoginService,
       analyticsService,
       adminConsoleService,
@@ -3377,14 +5174,18 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       llmHealthService,
       llmMetricsService,
       llmSmokeTestService,
+      aiNovelAuditFileService,
       aiNovelLlmService,
       rbacService,
       storageService,
       clientLogUploadService,
       notificationService,
       failedEventRetryService,
+      smsVerificationSender,
+      captchaVerificationService,
       requestEmailContextService,
       requestLocaleService,
+      publicApiMessageService,
       i18nService,
       appContextResolver,
       authGuard,
@@ -3395,5 +5196,81 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       await queue.close?.();
       await database.close();
     },
+  };
+}
+
+async function resolveTencentCloudCommonCredentials(
+  commonPasswordConfigService: CommonPasswordConfigService,
+): Promise<{ secretId?: string; secretKey?: string }> {
+  const [secretId, secretKey] = await Promise.all([
+    commonPasswordConfigService.getValue(TENCENT_SECRET_ID_PASSWORD_KEY),
+    commonPasswordConfigService.getValue(TENCENT_SECRET_KEY_PASSWORD_KEY),
+  ]);
+
+  return {
+    secretId,
+    secretKey,
+  };
+}
+
+function resolveTencentSmsVerificationConfig(
+  options: CreateApplicationOptions,
+  credentials?: { secretId?: string; secretKey?: string },
+): TencentSmsVerificationConfig {
+  return {
+    secretId:
+      options.tencentSmsVerificationConfig?.secretId ??
+      credentials?.secretId ??
+      process.env.TENCENT_SMS_SECRET_ID ??
+      process.env.TZ_SECRET_ID,
+    secretKey:
+      options.tencentSmsVerificationConfig?.secretKey ??
+      credentials?.secretKey ??
+      process.env.TENCENT_SMS_SECRET_KEY ??
+      process.env.TZ_SECRET_KEY,
+    sdkAppId:
+      options.tencentSmsVerificationConfig?.sdkAppId ??
+      process.env.TENCENT_SMS_SDK_APP_ID,
+    templateId:
+      options.tencentSmsVerificationConfig?.templateId ??
+      process.env.TENCENT_SMS_TEMPLATE_ID,
+    signName:
+      options.tencentSmsVerificationConfig?.signName ??
+      process.env.TENCENT_SMS_SIGN_NAME,
+    region:
+      options.tencentSmsVerificationConfig?.region ??
+      process.env.TENCENT_SMS_REGION ??
+      "ap-beijing",
+  };
+}
+
+function resolveTencentCaptchaVerificationConfig(
+  options: CreateApplicationOptions,
+  credentials?: { secretId?: string; secretKey?: string },
+): TencentCaptchaVerificationConfig {
+  const rawCaptchaAppId =
+    options.tencentCaptchaVerificationConfig?.captchaAppId ??
+    Number(process.env.TENCENT_CAPTCHA_APP_ID ?? "0");
+  return {
+    secretId:
+      options.tencentCaptchaVerificationConfig?.secretId ??
+      credentials?.secretId ??
+      process.env.TENCENT_CAPTCHA_SECRET_ID ??
+      process.env.TENCENT_SMS_SECRET_ID ??
+      process.env.TZ_SECRET_ID,
+    secretKey:
+      options.tencentCaptchaVerificationConfig?.secretKey ??
+      credentials?.secretKey ??
+      process.env.TENCENT_CAPTCHA_SECRET_KEY ??
+      process.env.TENCENT_SMS_SECRET_KEY ??
+      process.env.TZ_SECRET_KEY,
+    captchaAppId:
+      Number.isInteger(rawCaptchaAppId) && rawCaptchaAppId > 0
+        ? rawCaptchaAppId
+        : undefined,
+    appSecretKey:
+      options.tencentCaptchaVerificationConfig?.appSecretKey ??
+      process.env.TENCENT_CAPTCHA_APP_SECRET_KEY ??
+      process.env.TZ_CAP_SECRET_KEY,
   };
 }

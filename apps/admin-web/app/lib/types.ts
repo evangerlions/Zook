@@ -183,6 +183,29 @@ export interface AdminEmailServiceDocument {
   revisions: ConfigRevisionMeta[];
 }
 
+export interface AuthRateLimitConfig {
+  resendCooldownSeconds: number;
+  verificationCodeTtlSeconds: number;
+  sendCodeWindowSeconds: number;
+  sendCodeWindowLimit: number;
+  verifyWindowSeconds: number;
+  verifyWindowLimit: number;
+  accountDailyLimit: number;
+  ipHourlyLimit: number;
+  maxFailedCodeAttempts: number;
+}
+
+export interface AdminAuthRateLimitDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: AuthRateLimitConfig;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
 export interface AdminEmailTestSendCommand {
   recipientEmail: string;
   region: "ap-guangzhou" | "ap-hongkong";
@@ -250,6 +273,45 @@ export interface AdminPasswordRevealDocument {
 export interface AdminDeleteAppResult {
   deleted: true;
   appId: string;
+}
+
+export interface AdminSmsVerificationItem {
+  id: string;
+  appId: string;
+  scene: "login" | "register" | "password-reset";
+  channel: "sms";
+  phoneMasked: string;
+  phoneNa?: string;
+  status:
+    | "created"
+    | "test_generated"
+    | "provider_accepted"
+    | "provider_failed"
+    | "consumed"
+    | "expired";
+  isTest: boolean;
+  provider: "tencent_sms";
+  providerRequestId?: string;
+  providerSerialNo?: string;
+  providerMessage?: string;
+  sentAt: string;
+  expiresAt: string;
+  consumedAt?: string;
+  failedAt?: string;
+  revealCount: number;
+  lastRevealedAt?: string;
+}
+
+export interface AdminSmsVerificationListDocument {
+  app: AdminAppSummary;
+  items: AdminSmsVerificationItem[];
+}
+
+export interface AdminSmsVerificationRevealDocument {
+  app: AdminAppSummary;
+  item: AdminSmsVerificationItem;
+  code: string;
+  revealedAt: string;
 }
 
 export type LlmMetricsRange = "24h" | "7d" | "30d";

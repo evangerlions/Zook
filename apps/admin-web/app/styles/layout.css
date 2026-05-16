@@ -247,6 +247,15 @@
   color: var(--text-soft);
 }
 
+.plain-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
 .toggle-field {
   display: flex;
   align-items: center;
