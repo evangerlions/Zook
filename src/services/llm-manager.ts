@@ -522,6 +522,7 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "qwen-plus": 131_072,
   "qwen3.5-flash": 1_000_000,
   "qwen3.5-plus": 1_000_000,
+  "qwen3.6-plus": 1_000_000,
   "deepseek-v3.2": 128_000,
   "siliconflow/deepseek-v3.2": 128_000,
   "glm-5": 128_000,
@@ -530,13 +531,13 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
 };
 
 const MODEL_KEY_CONTEXT_WINDOWS: Record<string, number> = {
-  "ainovel-free-creative": 131_072,
+  "ainovel-free-creative": 1_000_000,
   "ainovel-free-reasoning": 1_000_000,
-  "ainovel-plus-creative": 128_000,
+  "ainovel-plus-creative": 1_000_000,
   "ainovel-plus-reasoning": 1_000_000,
-  "ainovel-super-creative": 200_000,
-  "ainovel-super-reasoning": 128_000,
-  "ainovel-lowcost-structured": 131_072,
+  "ainovel-super-creative": 1_000_000,
+  "ainovel-super-reasoning": 1_000_000,
+  "ainovel-lowcost-structured": 1_000_000,
 };
 
 function inferContextWindowTokens(modelKey: string, providerModel: string): number | undefined {

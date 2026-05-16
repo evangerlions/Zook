@@ -193,7 +193,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "qwen-plus",
+            providerModel: "qwen3.6-plus",
             enabled: true,
             weight: 100,
           },
@@ -207,7 +207,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "qwen3.5-flash",
+            providerModel: "qwen3.6-plus",
             enabled: true,
             weight: 100,
           },
@@ -221,7 +221,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "siliconflow/deepseek-v3.2",
+            providerModel: "qwen3.6-plus",
             enabled: true,
             weight: 100,
           },
@@ -235,7 +235,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "qwen3.5-plus",
+            providerModel: "qwen3.6-plus",
             enabled: true,
             weight: 100,
           },
@@ -249,7 +249,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "minimax-m2.7",
+            providerModel: "qwen3.6-plus",
             enabled: true,
             weight: 100,
           },
@@ -263,7 +263,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "glm-5",
+            providerModel: "qwen3.6-plus",
             enabled: true,
             weight: 100,
           },
@@ -277,7 +277,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         routes: [
           {
             provider: "bailian",
-            providerModel: "qwen3.5-flash",
+            providerModel: "qwen3.6-plus",
             enabled: true,
             weight: 100,
           },
@@ -377,7 +377,7 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   const completion = (data.completion ?? {}) as Record<string, unknown>;
   assert.equal(completion.modelKey, "ainovel-lowcost-structured");
   assert.equal(completion.provider, "bailian");
-  assert.equal(completion.providerModel, "qwen3.5-flash");
+  assert.equal(completion.providerModel, "qwen3.6-plus");
   assert.equal(completion.providerRequestId, "chat-req-001");
   assert.equal(
     (response.body as Record<string, unknown>).localDebugResponseText,
@@ -397,6 +397,7 @@ test("ai_novel model routing config validates all novel-engine chat taskTypes", 
     "write_turn",
     "chapter_draft",
     "chapter_summary",
+    "chapter_draft_review",
     "main_line_review",
     "snapshot_generation",
     "next_chapter_brief",
@@ -464,13 +465,13 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   );
   const usage = ((decryptedEvents[2]?.data as Record<string, unknown>).usage ??
     {}) as Record<string, unknown>;
-  assert.equal(usage.contextWindowTokens, 131_072);
-  assert.equal(usage.contextUsedRatio, 12 / 131_072);
+  assert.equal(usage.contextWindowTokens, 1_000_000);
+  assert.equal(usage.contextUsedRatio, 12 / 1_000_000);
   const doneCompletion = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .completion ?? {}) as Record<string, unknown>;
   const doneUsage = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .usage ?? {}) as Record<string, unknown>;
-  assert.equal(doneUsage.contextWindowTokens, 131_072);
+  assert.equal(doneUsage.contextWindowTokens, 1_000_000);
   assert.equal(doneCompletion.modelKey, "ainovel-free-creative");
   assert.equal(doneCompletion.content, "第八十一回……");
   assert.equal(doneCompletion.provider, undefined);
@@ -648,7 +649,10 @@ test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session pat
   assert.equal(second.statusCode, 200);
   const firstData = first.body.data as Record<string, unknown>;
   const secondData = second.body.data as Record<string, unknown>;
-  assert.equal(firstData.filePath, join(root, "bad_session", "generation-audit.html"));
+  assert.equal(
+    firstData.filePath,
+    join(root, "bad_session", "generation-audit.html"),
+  );
   assert.equal(secondData.filePath, firstData.filePath);
   assert.equal(
     secondData.viewUrl,
@@ -658,7 +662,10 @@ test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session pat
     await readFile(firstData.filePath as string, "utf8"),
     "<!doctype html><html>second</html>",
   );
-  assert.match(String(secondData.fileUrl), /^file:\/\/.*generation-audit\.html$/);
+  assert.match(
+    String(secondData.fileUrl),
+    /^file:\/\/.*generation-audit\.html$/,
+  );
   assert.match(String(secondData.updatedAt), /^\d{4}-\d{2}-\d{2}T/);
 
   const view = await runtime.app.handle({
@@ -747,6 +754,24 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
           name: "ready",
           input: {
             summary: "一部冷峻爽快的赛博都市异能调查长篇。",
+            currentArcPlan: {
+              revisionId: "kickoff",
+              title: "记忆走私开局",
+              summary: "前六章让主角从流放状态进入第一段调查。",
+              arcPromise: "用冷峻都市调查推进记忆走私真相。",
+              arcRules: ["不要提前揭开记忆走私幕后主使。"],
+              startChapterIndex: 1,
+              endChapterIndex: 6,
+              beats: Array.from({ length: 6 }, (_, index) => ({
+                id: `beat-${index + 1}`,
+                chapterIndex: index + 1,
+                goal: `推进第 ${index + 1} 个调查节点。`,
+                mustCover: [],
+                forbidden: [],
+                change: `调查态势发生第 ${index + 1} 次变化。`,
+                endBoundary: `停在第 ${index + 1} 个调查节点完成,不要写到下一章。`,
+              })),
+            },
           },
         },
       };
@@ -1609,8 +1634,7 @@ test("ai_novel kickoff_turn relays malformed ask_question string options", async
           name: "ask_question",
           input: {
             question: "故事发生在什么样的世界？",
-            options:
-              `["纯现代世界，异世界元素悄悄渗透进来", "现代世界与异世界有通道/连接点", "主角是唯一从异世界来的"异类"", "还没想好，你来定"]`,
+            options: `["纯现代世界，异世界元素悄悄渗透进来", "现代世界与异世界有通道/连接点", "主角是唯一从异世界来的"异类"", "还没想好，你来定"]`,
           },
         },
       };
@@ -1920,8 +1944,10 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   }) as Record<string, unknown> | undefined;
   assert.ok(updateMetaTool);
   const updateMetaFn = updateMetaTool.function as Record<string, unknown>;
-  const updateMetaParameters =
-    updateMetaFn.parameters as Record<string, unknown>;
+  const updateMetaParameters = updateMetaFn.parameters as Record<
+    string,
+    unknown
+  >;
   const updateMetaProperties = updateMetaParameters.properties as Record<
     string,
     unknown
@@ -1948,8 +1974,10 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     "pace",
   ]);
   const scaleProperties = premiseScale.properties as Record<string, unknown>;
-  const chapterLength =
-    scaleProperties.chapterLength as Record<string, unknown>;
+  const chapterLength = scaleProperties.chapterLength as Record<
+    string,
+    unknown
+  >;
   assert.deepEqual(chapterLength.required, ["preset", "note"]);
 });
 
@@ -2293,16 +2321,25 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
     ["tool_call", "content_delta", "done"],
   );
   assert.ok(capturedMessages);
+  assert.equal(
+    capturedMessages!.filter((message) => message.role === "system").length,
+    1,
+  );
   assert.equal(capturedMessages![0].role, "system");
   assert.match(
     String(capturedMessages![0].content ?? ""),
     /write-mode AINovel agent/,
   );
+  assert.equal(capturedMessages![1].role, "user");
   assert.match(
     String(capturedMessages![1].content ?? ""),
     /Dynamic scene context from client payload/,
   );
   assert.match(String(capturedMessages![1].content ?? ""), /雨夜线索/);
+  assert.match(
+    String(capturedMessages![1].content ?? ""),
+    /把这一章改得更有压迫感/,
+  );
   assert.equal(
     capturedMessages!.some((message) =>
       String(message.content ?? "").includes("client supplied system prompt"),
@@ -2375,7 +2412,10 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
     (askQuestionProperties.question as Record<string, unknown>).type,
     "string",
   );
-  const optionsSchema = askQuestionProperties.options as Record<string, unknown>;
+  const optionsSchema = askQuestionProperties.options as Record<
+    string,
+    unknown
+  >;
   assert.equal(optionsSchema.type, "array");
   const optionItemSchema = optionsSchema.items as Record<string, unknown>;
   assert.deepEqual(optionItemSchema.required, ["label", "subtitle"]);
@@ -2447,7 +2487,7 @@ test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", a
   assert.match(String(toolCall.id), /^ainovel-.*_prompted_tool_0$/);
 });
 
-test("ai_novel chapter_draft supplies only search history and draft write tools", async () => {
+test("ai_novel chapter_draft supplies read, search history, and draft write tools", async () => {
   let capturedToolNames: string[] = [];
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   const llmProvider: LLMProvider = {
@@ -2531,12 +2571,21 @@ test("ai_novel chapter_draft supplies only search history and draft write tools"
     ["tool_call", "done"],
   );
   assert.deepEqual(capturedToolNames.sort(), [
+    "read_draft",
     "search_story_history",
     "write_draft",
   ]);
   assert.ok(capturedMessages);
+  assert.equal(capturedMessages.length, 2);
+  assert.equal(capturedMessages[0].role, "system");
+  assert.equal(capturedMessages[1].role, "user");
   assert.match(String(capturedMessages![0].content ?? ""), /ChapterDraftAgent/);
   assert.match(String(capturedMessages![1].content ?? ""), /用雨夜事故开篇/);
+  assert.match(String(capturedMessages![1].content ?? ""), /生成目标章节首稿/);
+  assert.equal(
+    capturedMessages.filter((message) => message.role === "system").length,
+    1,
+  );
 });
 
 test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", async () => {
@@ -2569,30 +2618,36 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
     "ai_novel",
   );
 
+  const chapterSummaryPayload = {
+    taskType: "chapter_summary",
+    context: {
+      chapterId: 3,
+      sourceTextHash: "hash-3",
+      chapterText: "雨夜事故引出调查线索。",
+    },
+    messages: [
+      {
+        role: "user",
+        content: "summarize fixed input",
+      },
+    ],
+  };
+  const encryptedChapterSummaryPayload = encryptAiPayload(
+    chapterSummaryPayload,
+    aiKey,
+  );
   const response = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai/chat-completions",
     headers: {
       authorization: `Bearer ${token}`,
       "X-App-Id": "ai_novel",
+      host: "127.0.0.1:3110",
     },
-    body: encryptAiPayload(
-      {
-        taskType: "chapter_summary",
-        context: {
-          chapterId: 3,
-          sourceTextHash: "hash-3",
-          chapterText: "雨夜事故引出调查线索。",
-        },
-        messages: [
-          {
-            role: "user",
-            content: "summarize fixed input",
-          },
-        ],
-      },
-      aiKey,
-    ),
+    body: {
+      ...encryptedChapterSummaryPayload,
+      localDebugRequestPlaintext: JSON.stringify(chapterSummaryPayload),
+    },
   });
 
   assert.equal(response.statusCode, 200);
@@ -2605,13 +2660,102 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
   assert.equal(data.taskType, "chapter_summary");
   const completion = (data.completion ?? {}) as Record<string, unknown>;
   assert.equal(completion.modelKey, "ainovel-lowcost-structured");
+  const localDebugLlmRequest = (data.localDebugLlmRequest ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const localDebugRequestBody = (localDebugLlmRequest.requestBody ??
+    {}) as Record<string, unknown>;
+  assert.equal(localDebugLlmRequest.taskType, "chapter_summary");
+  assert.equal(localDebugRequestBody.stream, false);
+  assert.deepEqual(
+    (localDebugRequestBody.messages as Array<Record<string, unknown>>).map(
+      (message) => message.role,
+    ),
+    ["system", "user"],
+  );
   assert.equal(capturedTools, undefined);
   assert.ok(capturedMessages);
+  assert.equal(
+    capturedMessages!.filter((message) => message.role === "system").length,
+    1,
+  );
   assert.match(
     String(capturedMessages![0].content ?? ""),
     /ChapterSummaryGenerationJob/,
   );
+  assert.equal(capturedMessages![1].role, "user");
   assert.match(String(capturedMessages![1].content ?? ""), /sourceTextHash/);
+  assert.match(
+    String(capturedMessages![1].content ?? ""),
+    /summarize fixed input/,
+  );
+
+  const chapterDraftReviewPayload = {
+    taskType: "chapter_draft_review",
+    context: {
+      round: "initial",
+      draft: {
+        title: "雨夜",
+        content: "雨夜事故引出调查线索。",
+      },
+      currentBrief: "检查草稿是否推进新行动。",
+    },
+    messages: [
+      {
+        role: "user",
+        content: "review fixed input",
+      },
+    ],
+  };
+  const chapterDraftReviewResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+      host: "127.0.0.1:3110",
+    },
+    body: {
+      ...encryptAiPayload(chapterDraftReviewPayload, aiKey),
+      localDebugRequestPlaintext: JSON.stringify(chapterDraftReviewPayload),
+    },
+  });
+
+  assert.equal(chapterDraftReviewResponse.statusCode, 200);
+  const decryptedReview = decryptAiPayload(
+    chapterDraftReviewResponse.body as Record<string, unknown>,
+    aiKey,
+  );
+  assert.equal(decryptedReview.code, "OK");
+  const reviewData = (decryptedReview.data ?? {}) as Record<string, unknown>;
+  assert.equal(reviewData.taskType, "chapter_draft_review");
+  const reviewDebugLlmRequest = (reviewData.localDebugLlmRequest ??
+    {}) as Record<string, unknown>;
+  const reviewDebugRequestBody = (reviewDebugLlmRequest.requestBody ??
+    {}) as Record<string, unknown>;
+  assert.equal(reviewDebugLlmRequest.taskType, "chapter_draft_review");
+  assert.equal(reviewDebugRequestBody.stream, false);
+  assert.deepEqual(
+    (reviewDebugRequestBody.messages as Array<Record<string, unknown>>).map(
+      (message) => message.role,
+    ),
+    ["system", "user"],
+  );
+  assert.ok(capturedMessages);
+  assert.equal(
+    capturedMessages!.filter((message) => message.role === "system").length,
+    1,
+  );
+  assert.match(
+    String(capturedMessages![0].content ?? ""),
+    /ChapterDraftReviewJob/,
+  );
+  assert.match(String(capturedMessages![1].content ?? ""), /round/);
+  assert.match(
+    String(capturedMessages![1].content ?? ""),
+    /review fixed input/,
+  );
 
   const streamResponse = await runtime.app.handle({
     method: "POST",
@@ -3050,6 +3194,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-plus-creative",
+            chapter_draft_review: "ainovel-lowcost-structured",
             main_line_review: "ainovel-plus-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
@@ -3068,6 +3213,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
             write_turn: "ainovel-plus-creative",
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-lowcost-structured",
+            chapter_draft_review: "ainovel-lowcost-structured",
             main_line_review: "ainovel-plus-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
@@ -3086,6 +3232,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
             write_turn: "ainovel-super-creative",
             chapter_draft: "ainovel-super-creative",
             chapter_summary: "ainovel-lowcost-structured",
+            chapter_draft_review: "ainovel-lowcost-structured",
             main_line_review: "ainovel-super-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
@@ -3130,7 +3277,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   const completion = (data.completion ?? {}) as Record<string, unknown>;
   assert.equal(completion.modelKey, "ainovel-plus-creative");
-  assert.equal(completion.providerModel, "siliconflow/deepseek-v3.2");
+  assert.equal(completion.providerModel, "qwen3.6-plus");
 });
 
 test("ai_novel routes normalize legacy setup_turn routing configs on read", async () => {
