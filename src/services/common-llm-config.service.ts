@@ -41,7 +41,7 @@ const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WEIGHT_PRECISION = 100;
 const DEFAULT_AINOVEL_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
-function createDefaultAinovelModels(): LlmModelConfig[] {
+export function createDefaultAinovelModels(): LlmModelConfig[] {
   return [
     createDefaultModel("ainovel-free-creative", "AINovel 免费版创作", "chat", "qwen3.6-plus"),
     createDefaultModel("ainovel-free-reasoning", "AINovel 免费版推理", "chat", "qwen3.6-plus"),

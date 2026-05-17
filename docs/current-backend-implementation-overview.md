@@ -135,8 +135,9 @@
 2. `common.llm_service` 的强类型配置、版本记录与恢复
 3. LLM 按 `auto / fixed` 两种策略路由
 4. LLM 健康窗口记录
-5. LLM 小时级监控聚合
+5. LLM 小时级监控聚合，并在模型对比中优先展示当前时间范围内有请求量的模型
 6. Admin Web 的 LLM 配置页与监控页
+7. LLM metrics 视图会补齐 AINovel 默认逻辑模型，避免 AINovel alias 调用只进入总指标而无法进入模型维度指标，同时不改变已保存的 `common.llm_service` 配置和冒烟测试范围
 
 对应核心文件：
 
