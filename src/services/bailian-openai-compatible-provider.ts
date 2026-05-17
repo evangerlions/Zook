@@ -111,7 +111,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     });
     const response = await this.execute(
       this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
-      this.buildRequestInit(
+      this.buildCompletionRequestInit(
         request.model.providerConfig?.apiKey ?? this.apiKey,
         request.model.providerConfig?.timeoutMs ?? 0,
         requestBody,
@@ -148,7 +148,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
   async embed(request: ResolvedEmbeddingRequest): Promise<EmbeddingResult> {
     const response = await this.execute(
       this.buildEmbeddingsUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
-      this.buildRequestInit(
+      this.buildCompletionRequestInit(
         request.model.providerConfig?.apiKey ?? this.apiKey,
         request.model.providerConfig?.timeoutMs ?? 0,
         {
@@ -212,14 +212,20 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       body: requestBody,
     });
     const streamOptions = this.getProviderStreamOptions(request.providerOptions);
+    const streamController = new AbortController();
+    const streamConnectTimeout = this.createStreamConnectTimeout(
+      streamController,
+      request.model.providerConfig?.timeoutMs ?? 0,
+    );
     const response = await this.execute(
       this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
       this.buildRequestInit(
         request.model.providerConfig?.apiKey ?? this.apiKey,
-        request.model.providerConfig?.timeoutMs ?? 0,
         requestBody,
+        streamController.signal,
       ),
     );
+    streamConnectTimeout.clear();
 
     if (!response.ok) {
       const payload = await this.readJsonPayload(response, true);
@@ -357,14 +363,46 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     };
   }
 
-  private buildRequestInit(apiKey: string, timeoutMs: number, body: Record<string, unknown>): RequestInit {
+  private buildRequestInit(
+    apiKey: string,
+    body: Record<string, unknown>,
+    signal?: AbortSignal,
+  ): RequestInit {
     return {
       method: "POST",
       headers: this.buildHeaders(apiKey),
       body: JSON.stringify(body),
-      ...(timeoutMs > 0 && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
-        ? { signal: AbortSignal.timeout(timeoutMs) }
-        : {}),
+      ...(signal ? { signal } : {}),
+    };
+  }
+
+  private buildCompletionRequestInit(
+    apiKey: string,
+    timeoutMs: number,
+    body: Record<string, unknown>,
+  ): RequestInit {
+    return this.buildRequestInit(
+      apiKey,
+      body,
+      timeoutMs > 0 && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+        ? AbortSignal.timeout(timeoutMs)
+        : undefined,
+    );
+  }
+
+  private createStreamConnectTimeout(
+    controller: AbortController,
+    timeoutMs: number,
+  ): { clear: () => void } {
+    if (timeoutMs <= 0) {
+      return { clear: () => undefined };
+    }
+
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+    return {
+      clear: () => clearTimeout(timeout),
     };
   }
 

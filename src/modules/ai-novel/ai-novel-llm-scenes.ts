@@ -21,6 +21,7 @@ export interface AiNovelChatScene {
   profile?: AiNovelChatSceneProfile;
   requiresStream?: boolean;
   supportsStream?: boolean;
+  completeViaStream?: boolean;
 }
 
 export interface AiNovelEmbeddingScene {
@@ -77,6 +78,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     responseMode: "json",
     profile: "chapter_summary",
     supportsStream: false,
+    completeViaStream: true,
   },
   chapter_draft_review: {
     taskType: "chapter_draft_review",
@@ -87,6 +89,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     responseMode: "json",
     profile: "chapter_draft_review",
     supportsStream: false,
+    completeViaStream: true,
   },
   main_line_review: {
     taskType: "main_line_review",
@@ -97,6 +100,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     responseMode: "json",
     profile: "main_line_review",
     supportsStream: false,
+    completeViaStream: true,
   },
   snapshot_generation: {
     taskType: "snapshot_generation",
@@ -107,6 +111,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     responseMode: "json",
     profile: "snapshot_generation",
     supportsStream: false,
+    completeViaStream: true,
   },
   next_chapter_brief: {
     taskType: "next_chapter_brief",
@@ -117,6 +122,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     responseMode: "json",
     profile: "next_chapter_brief",
     supportsStream: false,
+    completeViaStream: true,
   },
 };
 

@@ -378,11 +378,89 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   assert.equal(completion.modelKey, "ainovel-lowcost-structured");
   assert.equal(completion.provider, "bailian");
   assert.equal(completion.providerModel, "qwen3.6-plus");
-  assert.equal(completion.providerRequestId, "chat-req-001");
   assert.equal(
     (response.body as Record<string, unknown>).localDebugResponseText,
     "第八十一回……",
   );
+});
+
+test("ai_novel structured workflow scenes use streamed completion internally", async () => {
+  const structuredTaskTypes = [
+    "chapter_summary",
+    "chapter_draft_review",
+    "main_line_review",
+    "snapshot_generation",
+    "next_chapter_brief",
+  ];
+  let completeCalls = 0;
+  let streamCalls = 0;
+  const { runtime, aiKey } = await createAiNovelRuntime({
+    llmProvider: {
+      async complete(): Promise<LLMCompletionResult> {
+        completeCalls += 1;
+        throw new Error("structured workflow scenes should not use complete");
+      },
+      async *stream(request): AsyncIterable<LLMStreamEvent> {
+        streamCalls += 1;
+        assert.match(request.model.modelKey, /^ainovel-/);
+        assert.equal(request.model.providerModel, "qwen3.6-plus");
+        assert.equal(request.providerOptions?.enable_thinking, false);
+        yield {
+          type: "content_delta",
+          text: '{"ok":true}',
+        };
+        yield {
+          type: "done",
+          finishReason: "stop",
+        };
+      },
+    },
+  });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  for (const taskType of structuredTaskTypes) {
+    const response = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/ai_novel/ai/chat-completions",
+      headers: {
+        authorization: `Bearer ${token}`,
+        host: "127.0.0.1:3100",
+        "X-App-Id": "ai_novel",
+      },
+      body: encryptAiPayload(
+        {
+          taskType,
+          messages: [
+            {
+              role: "user",
+              content: "Create structured output.",
+            },
+          ],
+          context: {
+            targetChapterIndex: 1,
+            fragments: {},
+          },
+        },
+        aiKey,
+      ),
+    });
+
+    assert.equal(response.statusCode, 200);
+    const decrypted = decryptAiPayload(
+      response.body as Record<string, unknown>,
+      aiKey,
+    );
+    assert.equal(decrypted.code, "OK");
+    const data = (decrypted.data ?? {}) as Record<string, unknown>;
+    const completion = (data.completion ?? {}) as Record<string, unknown>;
+    assert.equal(completion.content, '{"ok":true}');
+  }
+
+  assert.equal(completeCalls, 0);
+  assert.equal(streamCalls, structuredTaskTypes.length);
 });
 
 test("ai_novel model routing config validates all novel-engine chat taskTypes", async () => {
@@ -2588,27 +2666,30 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
   );
 });
 
-test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", async () => {
+test("ai_novel job scenes use fixed input/output prompts over internal streamed completion", async () => {
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   let capturedTools: unknown;
+  let streamCalls = 0;
   const llmProvider: LLMProvider = {
-    async complete(request): Promise<LLMCompletionResult> {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("job scenes should not use non-streaming complete");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      streamCalls += 1;
+      assert.equal(request.providerOptions?.enable_thinking, false);
       capturedMessages = request.messages.map((message) => ({
         role: message.role,
         content: message.content,
       }));
       capturedTools = request.providerOptions?.tools;
-      return {
-        provider: request.model.provider,
-        modelKey: request.model.modelKey,
-        providerModel: request.model.providerModel,
+      yield {
+        type: "content_delta",
         text: '{"summary":"雨夜事故引出调查线索"}',
-        finishReason: "stop",
-        providerRequestId: "chat-req-summary-001",
       };
-    },
-    async *stream(): AsyncIterable<LLMStreamEvent> {
-      throw new Error("stream should not be called");
+      yield {
+        type: "done",
+        finishReason: "stop",
+      };
     },
   };
 
@@ -2787,6 +2868,7 @@ test("ai_novel job scenes are non-streaming fixed input/output prompt scenes", a
   const error = decryptAiPayload(streamEvents[0], aiKey);
   assert.equal(error.code, "REQ_INVALID_BODY");
   assert.equal(error.message, "请求内容不合法，请检查后重试。");
+  assert.equal(streamCalls, 2);
 });
 
 test("ai_novel kickoff_turn relays unknown kickoff tool to the client agent", async () => {

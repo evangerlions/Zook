@@ -177,6 +177,61 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
   ]);
 });
 
+test("bailian provider does not abort an active stream by total request timeout", async () => {
+  const encoder = new TextEncoder();
+  let capturedSignal: AbortSignal | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      capturedSignal = init?.signal ?? undefined;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            capturedSignal?.addEventListener("abort", () => {
+              controller.error(capturedSignal?.reason ?? new Error("aborted"));
+            });
+            controller.enqueue(
+              encoder.encode(
+                'data: {"choices":[{"delta":{"content":"slow"},"finish_reason":null}]}\n\n',
+              ),
+            );
+            setTimeout(() => {
+              controller.enqueue(
+                encoder.encode(
+                  'data: {"choices":[{"delta":{"content":" stream"},"finish_reason":"stop"}]}\n\n',
+                ),
+              );
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            }, 30);
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+          },
+        },
+      );
+    },
+  });
+
+  const request = createResolvedRequest();
+  request.model.providerConfig = {
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    apiKey: "mock-bailian-key",
+    timeoutMs: 10,
+  };
+
+  const events = await collectEvents(provider.stream(request));
+
+  assert.equal(capturedSignal?.aborted, false);
+  assert.deepEqual(events.map((event) => event.type), [
+    "content_delta",
+    "content_delta",
+    "done",
+  ]);
+});
+
 test("bailian provider treats blank streamed tool call ids as missing", async () => {
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async () =>

@@ -26,15 +26,12 @@ test("chapter_draft prompt prioritizes chapter-level execution without early pay
   assert.match(systemPrompt, /final beat must stay at that threshold/);
   assert.match(systemPrompt, /contract signing/);
   assert.match(systemPrompt, /Do not turn an emotional relationship beat/);
-  assert.match(
-    systemPrompt,
-    /explicit numeric Contract\.scale\.chapterLength\.minChars\/maxChars/,
-  );
-  assert.match(systemPrompt, /chapterLength\.note contains a numeric range/);
+  assert.match(systemPrompt, /target density guidance/);
+  assert.doesNotMatch(systemPrompt, /target chapter-length lower bound/);
   assert.match(systemPrompt, /quiet setup beat/);
   assert.match(systemPrompt, /distinct scene movements/);
   assert.match(systemPrompt, /repeat cooking medicine/);
-  assert.match(systemPrompt, /Meet the target chapter length/);
+  assert.match(systemPrompt, /Aim for the target density/);
   assert.match(systemPrompt, /resource accounting/);
   assert.match(systemPrompt, /Repair mode/);
   assert.match(systemPrompt, /expand and repair that draft/);
@@ -44,7 +41,7 @@ test("chapter_draft prompt prioritizes chapter-level execution without early pay
   assert.match(systemPrompt, /High\/medium timing/);
   assert.match(systemPrompt, /review suggestion is not canon/i);
   assert.match(systemPrompt, /the boundary wins/);
-  assert.match(systemPrompt, /target length lower bound/);
+  assert.match(systemPrompt, /chapter reads complete/);
   assert.match(systemPrompt, /Fix the boundary first/);
   assert.match(systemPrompt, /follow that instruction literally/);
   assert.match(systemPrompt, /later beat/);
@@ -72,8 +69,11 @@ test("chapter_draft_review prompt does not suggest future beat fixes", () => {
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
-  assert.match(systemPrompt, /chapterLength\.note contains a numeric range/);
-  assert.match(systemPrompt, /do not block on non-numeric/);
+  assert.match(systemPrompt, /target density guidance/);
+  assert.match(systemPrompt, /not hard acceptance gates/);
+  assert.match(systemPrompt, /Do not fail a chapter solely/);
+  assert.doesNotMatch(systemPrompt, /10% hard acceptance variance/);
+  assert.doesNotMatch(systemPrompt, /minChars \\* 0\\.9/);
   assert.match(systemPrompt, /later CurrentArcPlan beat/);
   assert.match(systemPrompt, /current beat's unresolved consequence/);
   assert.match(systemPrompt, /not from advancing later chase/);

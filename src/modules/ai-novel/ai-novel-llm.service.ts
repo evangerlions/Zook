@@ -2,6 +2,7 @@ import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type {
   LLMMessage,
   LLMManager,
+  LLMCompletionResult,
   LLMToolDefinition,
   LLMToolCall,
 } from "../../services/llm-manager.ts";
@@ -693,6 +694,8 @@ export interface AiNovelEmbeddingsResponse {
 }
 
 export class AiNovelLlmService {
+  private static readonly STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
+
   constructor(
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
@@ -740,20 +743,31 @@ export class AiNovelLlmService {
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
     const providerOptions =
-      promptAssembly.tools.length > 0
+      scene.completeViaStream || promptAssembly.tools.length > 0
         ? {
-            tools: toOpenAiToolDefinitions(promptAssembly.tools),
-            tool_choice: "auto",
+            ...(scene.completeViaStream ? { enable_thinking: false } : {}),
+            ...(promptAssembly.tools.length > 0
+              ? {
+                  tools: toOpenAiToolDefinitions(promptAssembly.tools),
+                  tool_choice: "auto",
+                }
+              : {}),
           }
         : undefined;
     try {
-      const result = await this.llmManager.complete({
+      const llmRequest = {
         modelKey,
         messages: promptAssembly.messages,
         temperature,
         maxTokens,
         ...(providerOptions ? { providerOptions } : {}),
-      });
+      };
+      const result: LLMCompletionResult = scene.completeViaStream
+        ? await this.llmManager.completeViaStream(llmRequest, {
+            firstContentTimeoutMs:
+              AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
+          })
+        : await this.llmManager.complete(llmRequest);
 
       const response: AiNovelChatResponse = {
         taskType: scene.taskType,
