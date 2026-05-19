@@ -7,7 +7,6 @@ export type AiNovelChatSceneProfile =
   | "chapter_draft"
   | "chapter_summary"
   | "chapter_draft_review"
-  | "main_line_review"
   | "snapshot_generation"
   | "next_chapter_brief";
 
@@ -88,17 +87,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 3000,
     responseMode: "json",
     profile: "chapter_draft_review",
-    supportsStream: false,
-    completeViaStream: true,
-  },
-  main_line_review: {
-    taskType: "main_line_review",
-    kind: "chat",
-    defaultModelKey: "ainovel-free-reasoning",
-    defaultTemperature: 0.2,
-    defaultMaxTokens: 3000,
-    responseMode: "json",
-    profile: "main_line_review",
     supportsStream: false,
     completeViaStream: true,
   },

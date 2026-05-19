@@ -224,12 +224,99 @@ test("bailian provider does not abort an active stream by total request timeout"
 
   const events = await collectEvents(provider.stream(request));
 
-  assert.equal(capturedSignal?.aborted, false);
+  assert.ok(capturedSignal);
+  assert.equal(capturedSignal.aborted, false);
   assert.deepEqual(events.map((event) => event.type), [
     "content_delta",
     "content_delta",
     "done",
   ]);
+});
+
+test("bailian provider does not use provider timeout as streamed generation timeout before headers", async () => {
+  const encoder = new TextEncoder();
+  let capturedSignal: AbortSignal | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      capturedSignal = init?.signal ?? undefined;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"write_draft","arguments":"{\\"content\\":\\"slow draft\\"}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+              ),
+            );
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+          },
+        },
+      );
+    },
+  });
+
+  const request = createResolvedRequest();
+  request.model.providerConfig = {
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    apiKey: "mock-bailian-key",
+    timeoutMs: 10,
+  };
+
+  const events = await collectEvents(provider.stream(request));
+
+  assert.ok(capturedSignal);
+  assert.equal(capturedSignal.aborted, false);
+  assert.deepEqual(events, [
+    {
+      type: "tool_call",
+      toolCall: {
+        id: "kimi2.5_tool_0",
+        name: "write_draft",
+        input: {
+          content: "slow draft",
+        },
+      },
+      rawEvent:
+        '{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"write_draft","arguments":"{\\"content\\":\\"slow draft\\"}"}}]},"finish_reason":"tool_calls"}]}',
+    },
+    { type: "done", finishReason: "tool_calls" },
+  ]);
+});
+
+test("bailian provider aborts streams that do not return headers before first-event timeout", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      await new Promise<void>((resolve, reject) => {
+        const signal = init?.signal;
+        const timer = setTimeout(resolve, 50);
+        signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          reject(signal.reason ?? new Error("aborted"));
+        });
+      });
+      return createSseResponse(["data: [DONE]\n\n"]);
+    },
+  });
+
+  await assert.rejects(
+    async () =>
+      collectEvents(provider.stream(createResolvedRequest({
+        stream_options: {
+          first_event_timeout_ms: 5,
+        },
+      }))),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "LLM_PROVIDER_REQUEST_FAILED",
+  );
 });
 
 test("bailian provider treats blank streamed tool call ids as missing", async () => {

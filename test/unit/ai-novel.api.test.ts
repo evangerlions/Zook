@@ -388,7 +388,6 @@ test("ai_novel structured workflow scenes use streamed completion internally", a
   const structuredTaskTypes = [
     "chapter_summary",
     "chapter_draft_review",
-    "main_line_review",
     "snapshot_generation",
     "next_chapter_brief",
   ];
@@ -476,7 +475,6 @@ test("ai_novel model routing config validates all novel-engine chat taskTypes", 
     "chapter_draft",
     "chapter_summary",
     "chapter_draft_review",
-    "main_line_review",
     "snapshot_generation",
     "next_chapter_brief",
   ];
@@ -3277,7 +3275,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-plus-creative",
             chapter_draft_review: "ainovel-lowcost-structured",
-            main_line_review: "ainovel-plus-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
           },
@@ -3296,7 +3293,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
             chapter_draft: "ainovel-plus-creative",
             chapter_summary: "ainovel-lowcost-structured",
             chapter_draft_review: "ainovel-lowcost-structured",
-            main_line_review: "ainovel-plus-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
           },
@@ -3315,7 +3311,6 @@ test("ai_novel routes can override model routing from admin config", async () =>
             chapter_draft: "ainovel-super-creative",
             chapter_summary: "ainovel-lowcost-structured",
             chapter_draft_review: "ainovel-lowcost-structured",
-            main_line_review: "ainovel-super-reasoning",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
           },
@@ -3390,7 +3385,6 @@ test("ai_novel routes normalize legacy setup_turn routing configs on read", asyn
     delete tier.chat.write_turn;
     delete tier.chat.chapter_draft;
     delete tier.chat.chapter_summary;
-    delete tier.chat.main_line_review;
     delete tier.chat.snapshot_generation;
     delete tier.chat.next_chapter_brief;
   }

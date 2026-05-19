@@ -11,6 +11,8 @@ import type {
 
 const DEFAULT_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 const DEFAULT_BAILIAN_API_KEY = "mock-bailian-api-key";
+const DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS = 20_000;
+const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 20_000;
 
 interface OpenAICompatibleChoice {
   message?: {
@@ -212,20 +214,27 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       body: requestBody,
     });
     const streamOptions = this.getProviderStreamOptions(request.providerOptions);
-    const streamController = new AbortController();
-    const streamConnectTimeout = this.createStreamConnectTimeout(
-      streamController,
-      request.model.providerConfig?.timeoutMs ?? 0,
-    );
-    const response = await this.execute(
-      this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
-      this.buildRequestInit(
-        request.model.providerConfig?.apiKey ?? this.apiKey,
-        requestBody,
-        streamController.signal,
-      ),
-    );
-    streamConnectTimeout.clear();
+    const streamTimeouts = resolveStreamTimeouts(streamOptions);
+    const controller = new AbortController();
+    const firstEventTimeout = setTimeout(() => {
+      controller.abort(new DOMException(
+        "Bailian stream did not return response headers before the first-event timeout.",
+        "TimeoutError",
+      ));
+    }, streamTimeouts.firstEventTimeoutMs);
+    let response: Response;
+    try {
+      response = await this.execute(
+        this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+        this.buildRequestInit(
+          request.model.providerConfig?.apiKey ?? this.apiKey,
+          requestBody,
+          controller.signal,
+        ),
+      );
+    } finally {
+      clearTimeout(firstEventTimeout);
+    }
 
     if (!response.ok) {
       const payload = await this.readJsonPayload(response, true);
@@ -238,7 +247,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
 
     let finishReason: string | undefined;
     const pendingToolCalls = new Map<number, { id?: string; name?: string; args: string }>();
-    for await (const eventData of readServerSentEvents(response.body)) {
+    for await (const eventData of readServerSentEvents(response.body, streamTimeouts)) {
       this.logLocalProviderRawStreamChunk({
         modelKey: request.model.modelKey,
         providerModel: request.model.providerModel,
@@ -388,22 +397,6 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
         ? AbortSignal.timeout(timeoutMs)
         : undefined,
     );
-  }
-
-  private createStreamConnectTimeout(
-    controller: AbortController,
-    timeoutMs: number,
-  ): { clear: () => void } {
-    if (timeoutMs <= 0) {
-      return { clear: () => undefined };
-    }
-
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, timeoutMs);
-    return {
-      clear: () => clearTimeout(timeout),
-    };
   }
 
   private buildChatRequestBody(request: ResolvedLLMCompletionRequest): Record<string, unknown> {
@@ -651,36 +644,54 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
   }
 }
 
-async function* readServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIterable<string> {
+async function* readServerSentEvents(
+  body: ReadableStream<Uint8Array>,
+  options: StreamTimeoutOptions = {},
+): AsyncIterable<string> {
+  const firstEventTimeoutMs = options.firstEventTimeoutMs ?? 0;
+  const idleTimeoutMs = options.idleTimeoutMs ?? 0;
   const decoder = new TextDecoder();
+  const reader = body.getReader();
   let buffer = "";
   let eventDataLines: string[] = [];
+  let hasEvent = false;
 
-  for await (const chunk of body) {
-    buffer += decoder.decode(chunk, { stream: true });
-
+  try {
     while (true) {
-      const newlineIndex = buffer.indexOf("\n");
-      if (newlineIndex === -1) {
+      const timeoutMs = hasEvent ? idleTimeoutMs : firstEventTimeoutMs;
+      const result = await readStreamChunkWithTimeout(reader, timeoutMs, hasEvent);
+      if (result.done) {
         break;
       }
 
-      const rawLine = buffer.slice(0, newlineIndex);
-      buffer = buffer.slice(newlineIndex + 1);
-      const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+      buffer += decoder.decode(result.value, { stream: true });
 
-      if (!line) {
-        if (eventDataLines.length > 0) {
-          yield eventDataLines.join("\n");
-          eventDataLines = [];
+      while (true) {
+        const newlineIndex = buffer.indexOf("\n");
+        if (newlineIndex === -1) {
+          break;
         }
-        continue;
-      }
 
-      if (line.startsWith("data:")) {
-        eventDataLines.push(line.slice("data:".length).trimStart());
+        const rawLine = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+        const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+
+        if (!line) {
+          if (eventDataLines.length > 0) {
+            hasEvent = true;
+            yield eventDataLines.join("\n");
+            eventDataLines = [];
+          }
+          continue;
+        }
+
+        if (line.startsWith("data:")) {
+          eventDataLines.push(line.slice("data:".length).trimStart());
+        }
       }
     }
+  } finally {
+    reader.releaseLock();
   }
 
   buffer += decoder.decode();
@@ -693,6 +704,68 @@ async function* readServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIte
 
   if (eventDataLines.length > 0) {
     yield eventDataLines.join("\n");
+  }
+}
+
+interface StreamTimeoutOptions {
+  firstEventTimeoutMs?: number;
+  idleTimeoutMs?: number;
+}
+
+function resolveStreamTimeouts(streamOptions: Record<string, unknown> | undefined): Required<StreamTimeoutOptions> {
+  return {
+    firstEventTimeoutMs: readPositiveInteger(
+      streamOptions?.first_event_timeout_ms,
+      DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS,
+    ),
+    idleTimeoutMs: readPositiveInteger(
+      streamOptions?.idle_timeout_ms,
+      DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+    ),
+  };
+}
+
+function readPositiveInteger(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : fallback;
+}
+
+async function readStreamChunkWithTimeout(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  timeoutMs: number,
+  hasEvent: boolean,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  if (timeoutMs <= 0) {
+    return reader.read();
+  }
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      reader.read(),
+      new Promise<ReadableStreamReadResult<Uint8Array>>((_, reject) => {
+        timeout = setTimeout(() => {
+          reject(
+            new ApplicationError(
+              504,
+              "LLM_PROVIDER_REQUEST_FAILED",
+              hasEvent
+                ? "Bailian stream stalled before completion."
+                : "Bailian stream did not produce an initial event in time.",
+              {
+                provider: "bailian",
+                reason: hasEvent ? "stream_idle_timeout" : "stream_first_event_timeout",
+                timeoutMs,
+              },
+            ),
+          );
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
   }
 }
 

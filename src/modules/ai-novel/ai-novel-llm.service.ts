@@ -398,18 +398,18 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.ready,
     description:
-      "Declare the kickoff sufficient to start writing and provide the user-facing ready card summary plus the first rolling arc plan.",
+      "Declare the kickoff sufficient to start writing and provide the user-facing ready card summary plus the first MainLine plan.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["summary", "currentArcPlan"],
+      required: ["summary", "mainLine"],
       properties: {
         summary: {
           type: "string",
           description:
             "A concise natural-language description of what this book is like. This is shown on the ready card; it is not a contract field.",
         },
-        currentArcPlan: {
+        mainLine: {
           type: "object",
           additionalProperties: false,
           required: [
@@ -578,13 +578,13 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Do not call ready until titleCandidate is concrete and non-placeholder.",
   "- Do not call ready until the protagonist anchor has a concrete non-placeholder `name`.",
   "- When calling ready, include summary: one polished natural-language paragraph describing what this book is like for the ready card.",
-  "- When calling ready, include currentArcPlan: a user-facing rolling plan for the first 6-10 chapters. This is the opening arc the user will confirm on the ready card before drafting starts.",
-  "- currentArcPlan must describe what this stage roughly does, like a human writer's first-volume direction. It must be concrete enough to prevent per-chapter improvisation, but not so rigid that every chapter needs a forced hook.",
-  "- currentArcPlan.arcPromise must state the opening/current arc's reading promise. currentArcPlan.arcRules must turn user anti-trope or genre constraints into concrete stage rules.",
-  "- currentArcPlan.beats must be written in the user's writing language. Each beat must include goal, mustCover array, forbidden array, change, and endBoundary.",
-  "- currentArcPlan.beats[].endingOpenQuestion must exist but may be an empty string when a hook would feel forced.",
-  "- currentArcPlan.beats[].endBoundary must say where the chapter stops and which later movement should not be narrated yet.",
-  "- For departure, leave-home, leave-village, or leave-ruins beats, do not make endBoundary so narrow that a standard chapter can only write the first step. Allow farewell, preparation, burial/cleanup when relevant, and immediate same-scene survival pressure, while forbidding overnight rest, next-day travel, first outsider encounter, arrival at a new location, explicit destination lock-in, or the next major crisis.",
+  "- When calling ready, include mainLine: a user-facing rolling plan for the first 6-10 chapters. This is the opening arc the user will confirm on the ready card before drafting starts.",
+  "- mainLine must describe what this stage roughly does, like a human writer's first-volume direction. It must be concrete enough to prevent per-chapter improvisation, but not so rigid that every chapter needs a forced hook.",
+  "- mainLine.arcPromise must state the opening/current arc's reading promise. mainLine.arcRules must turn user anti-trope or genre constraints into concrete stage rules.",
+  "- mainLine.beats must be written in the user's writing language. Each beat must include goal, mustCover array, forbidden array, change, and endBoundary.",
+  "- mainLine.beats[].endingOpenQuestion must exist but may be an empty string when a hook would feel forced.",
+  "- mainLine.beats[].endBoundary must say where the chapter stops and which later movement should not be narrated yet.",
+  "- For transition or threshold beats, do not make endBoundary so narrow that a standard chapter can only write the first step. Allow relevant same-scene preparation, emotional consequence, immediate pressure, and concrete threshold detail, while forbidding later-location movement, next-stage planning, or the next major crisis unless the beat explicitly asks for it.",
   "- mustCover and forbidden arrays may be empty for quiet transition chapters, but the fields must still be present.",
   "- Never call ready with empty placeholder contract fields.",
   "",
