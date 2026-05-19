@@ -5,6 +5,8 @@ import type {
   AdminAuthRateLimitDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
+  AdminContentSafetyDocument,
+  AdminContentSafetyTestDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
@@ -471,6 +473,39 @@ export const adminApi = {
       adminPath(`/apps/common/passwords/${encodeURIComponent(key)}/reveal`),
       {
         method: "POST",
+      },
+    );
+  },
+  getContentSafety() {
+    return requestJson<AdminContentSafetyDocument>(adminPath("/apps/common/content-safety"));
+  },
+  getContentSafetyRevision(revision: number) {
+    return requestJson<AdminContentSafetyDocument>(
+      adminPath(`/apps/common/content-safety/revisions/${revision}`),
+    );
+  },
+  updateContentSafety(input: Record<string, unknown>) {
+    return requestJson<AdminContentSafetyDocument>(adminPath("/apps/common/content-safety"), {
+      method: "PUT",
+      body: input,
+    });
+  },
+  testContentSafety(text: string) {
+    return requestJson<AdminContentSafetyTestDocument>(adminPath("/apps/common/content-safety/test"), {
+      method: "POST",
+      body: {
+        text,
+      },
+    });
+  },
+  restoreContentSafety(revision: number, desc?: string) {
+    return requestJson<AdminContentSafetyDocument>(
+      adminPath(`/apps/common/content-safety/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
       },
     );
   },

@@ -43,6 +43,7 @@ export type ErrorCode =
   | "AI_DECRYPT_FAILED"
   | "AI_EMBEDDING_INPUT_INVALID"
   | "AI_ENCRYPT_FAILED"
+  | "AI_INPUT_CONTENT_SENSITIVE"
   | "AI_RESPONSE_FORMAT_INVALID"
   | "AI_TASK_TYPE_NOT_SUPPORTED"
   | "AI_UNKNOWN_KEY_ID"
@@ -828,6 +829,98 @@ export interface AdminAuthRateLimitDocument {
   desc?: string;
   isLatest: boolean;
   revisions: ConfigRevisionMeta[];
+}
+
+export interface ContentSafetyKeywordRule {
+  id: string;
+  term: string;
+  enabled: boolean;
+  category?: string;
+  note?: string;
+}
+
+export interface ContentSafetyKeywordConfig {
+  enabled: boolean;
+  rules: ContentSafetyKeywordRule[];
+}
+
+export interface ContentSafetyLlmConfig {
+  enabled: boolean;
+  modelKey: string;
+  timeoutMs: number;
+}
+
+export interface ContentSafetyAliyunConfig {
+  enabled: boolean;
+  endpoint: string;
+  region: string;
+  service: string;
+  accessKeyIdPasswordKey: string;
+  accessKeySecretPasswordKey: string;
+  timeoutMs: number;
+}
+
+export interface ContentSafetyConfig {
+  enabled: boolean;
+  longTextThresholdChars: number;
+  keyword: ContentSafetyKeywordConfig;
+  llm: ContentSafetyLlmConfig;
+  aliyun: ContentSafetyAliyunConfig;
+}
+
+export interface AdminContentSafetyDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: ContentSafetyConfig;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminContentSafetyTestDocument {
+  allowed: boolean;
+  blocked: boolean;
+  layer: "disabled" | "empty" | "keyword" | "llm" | "aliyun" | "failed_open";
+  code: "OK" | "AI_INPUT_CONTENT_SENSITIVE";
+  message: string;
+  textLength: number;
+  category?: string;
+  keywordId?: string;
+  failureReason?: string;
+  failureDetail?: string;
+  llmDebug?: {
+    input: {
+      modelKey: string;
+      temperature: number;
+      maxTokens: number;
+      timeoutMs: number;
+      providerOptions?: Record<string, unknown>;
+      messages: Array<{
+        role: string;
+        content?: string;
+      }>;
+    };
+    output?: {
+      provider: string;
+      modelKey: string;
+      providerModel: string;
+      text: string;
+      reasoningText?: string;
+      finishReason?: string;
+      providerRequestId?: string;
+      usage?: Record<string, unknown>;
+      parsedDecision?: {
+        blocked: boolean;
+        category?: string;
+      };
+      parseError?: {
+        reason: string;
+        detail: string;
+      };
+    };
+  };
 }
 
 export interface GetuiGyAppCredentials {

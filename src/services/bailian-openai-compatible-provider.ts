@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ApplicationError } from "../shared/errors.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { EmbeddingProvider, EmbeddingResult, ResolvedEmbeddingRequest } from "./embedding-manager.ts";
@@ -13,6 +14,7 @@ const DEFAULT_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode
 const DEFAULT_BAILIAN_API_KEY = "mock-bailian-api-key";
 const DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS = 20_000;
 const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 20_000;
+const ZOOK_LOG_BODY_MODE_OPTION = "zookLogBodyMode";
 
 interface OpenAICompatibleChoice {
   message?: {
@@ -110,6 +112,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       body: requestBody,
+      redactBody: this.shouldRedactProviderLog(request.providerOptions),
     });
     const response = await this.execute(
       this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
@@ -154,7 +157,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
         request.model.providerConfig?.apiKey ?? this.apiKey,
         request.model.providerConfig?.timeoutMs ?? 0,
         {
-          ...request.providerOptions,
+          ...this.getForwardedProviderOptions(request.providerOptions),
           model: request.model.providerModel,
           input: request.input,
         },
@@ -212,6 +215,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       body: requestBody,
+      redactBody: this.shouldRedactProviderLog(request.providerOptions),
     });
     const streamOptions = this.getProviderStreamOptions(request.providerOptions);
     const streamTimeouts = resolveStreamTimeouts(streamOptions);
@@ -401,7 +405,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
 
   private buildChatRequestBody(request: ResolvedLLMCompletionRequest): Record<string, unknown> {
     return {
-      ...request.providerOptions,
+      ...this.getForwardedProviderOptions(request.providerOptions),
       model: request.model.providerModel,
       messages: request.messages.map((message) => ({
         role: message.role,
@@ -549,6 +553,19 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     return isRecord(value) ? value : undefined;
   }
 
+  private getForwardedProviderOptions(providerOptions: Record<string, unknown> | undefined): Record<string, unknown> {
+    if (!providerOptions) {
+      return {};
+    }
+    const forwarded = { ...providerOptions };
+    delete forwarded[ZOOK_LOG_BODY_MODE_OPTION];
+    return forwarded;
+  }
+
+  private shouldRedactProviderLog(providerOptions: Record<string, unknown> | undefined): boolean {
+    return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted";
+  }
+
   private readOptionalString(value: unknown): string | undefined {
     return typeof value === "string" ? value : undefined;
   }
@@ -611,10 +628,11 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
 
   private logLocalProviderChatRequest(input: {
     mode: "complete" | "stream";
-    url: string;
-    modelKey: string;
-    providerModel: string;
-    body: Record<string, unknown>;
+	    url: string;
+	    modelKey: string;
+	    providerModel: string;
+	    body: Record<string, unknown>;
+    redactBody?: boolean;
   }): void {
     if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
       return;
@@ -624,7 +642,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       url: input.url,
       modelKey: input.modelKey,
       providerModel: input.providerModel,
-      body: input.body,
+      body: input.redactBody ? redactProviderRequestBody(input.body) : input.body,
     });
   }
 
@@ -783,4 +801,31 @@ function isAbortError(error: unknown): boolean {
 
 function toRecord(details: unknown): Record<string, unknown> {
   return isRecord(details) ? details : {};
+}
+
+function redactProviderRequestBody(body: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...body,
+    ...(Array.isArray(body.messages)
+      ? {
+          messages: body.messages.map((message) => redactProviderLogMessage(message)),
+        }
+      : {}),
+  };
+}
+
+function redactProviderLogMessage(message: unknown): unknown {
+  if (!isRecord(message)) {
+    return message;
+  }
+  const content = message.content;
+  if (typeof content !== "string") {
+    return message;
+  }
+  return {
+    ...message,
+    content: "[redacted]",
+    contentLength: content.length,
+    contentHash: createHash("sha256").update(content, "utf8").digest("hex"),
+  };
 }

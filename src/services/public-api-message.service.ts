@@ -8,6 +8,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   AI_DECRYPT_FAILED: "error.ai.decrypt_failed",
   AI_EMBEDDING_INPUT_INVALID: "error.ai.embedding_input_invalid",
   AI_ENCRYPT_FAILED: "error.ai.encrypt_failed",
+  AI_INPUT_CONTENT_SENSITIVE: "error.ai.input_content_sensitive",
   AI_RESPONSE_FORMAT_INVALID: "error.ai.response_format_invalid",
   AI_TASK_TYPE_NOT_SUPPORTED: "error.ai.task_type_not_supported",
   AI_UNKNOWN_KEY_ID: "error.ai.unknown_key",

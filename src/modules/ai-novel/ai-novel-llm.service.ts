@@ -15,6 +15,7 @@ import {
   AI_NOVEL_APP_ID,
 } from "../../services/app-ai-routing-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
+import type { ContentSafetyService } from "../../services/content-safety.service.ts";
 import {
   resolveAiNovelChatScene,
   resolveAiNovelEmbeddingScene,
@@ -701,6 +702,7 @@ export class AiNovelLlmService {
     private readonly embeddingManager: EmbeddingManager,
     private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
     private readonly logger?: StructuredLogger,
+    private readonly contentSafetyService?: ContentSafetyService,
   ) {}
 
   async createChatCompletion(
@@ -729,6 +731,7 @@ export class AiNovelLlmService {
       "free",
     );
     const messages = this.normalizeMessages(body.messages);
+    await this.assertLatestUserInputAllowed(body, messages, scene.taskType);
     const promptAssembly = scene.profile
       ? buildAiNovelPromptAssembly({
           profile: scene.profile,
@@ -828,6 +831,7 @@ export class AiNovelLlmService {
       "free",
     );
     const messages = this.normalizeMessages(body.messages);
+    await this.assertLatestUserInputAllowed(body, messages, scene.taskType);
     const temperature =
       this.optionalNumber(body.temperature, "temperature") ??
       scene.defaultTemperature;
@@ -1563,6 +1567,31 @@ export class AiNovelLlmService {
         ...(toolCallId ? { toolCallId } : {}),
         ...(toolCalls.length > 0 ? { toolCalls } : {}),
       };
+    });
+  }
+
+  private async assertLatestUserInputAllowed(
+    body: Record<string, unknown>,
+    messages: LLMMessage[],
+    taskType: string,
+  ): Promise<void> {
+    const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+    const content = latestUserMessage?.content?.trim();
+    if (!content || !this.contentSafetyService) {
+      return;
+    }
+
+    const context = body.context && typeof body.context === "object" && !Array.isArray(body.context)
+      ? body.context as Record<string, unknown>
+      : {};
+    const userId = typeof context.userId === "string" ? context.userId : undefined;
+    const requestId = typeof context.requestId === "string" ? context.requestId : undefined;
+    await this.contentSafetyService.assertUserInputAllowed({
+      appId: AI_NOVEL_APP_ID,
+      userId,
+      requestId,
+      taskType,
+      text: content,
     });
   }
 

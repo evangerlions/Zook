@@ -421,6 +421,66 @@ test("bailian provider logs local provider request body and raw stream chunk", a
   }
 });
 
+test("bailian provider redacts local provider request body when requested", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+  let capturedInit: RequestInit | undefined;
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async (_input, init) => {
+        capturedInit = init;
+        return createJsonResponse({
+          id: "chatcmpl-redacted-log",
+          choices: [
+            {
+              message: {
+                content: '{"decision":"pass","category":"safe"}',
+              },
+              finish_reason: "stop",
+            },
+          ],
+        });
+      },
+    });
+
+    await provider.complete({
+      ...createResolvedRequest({
+        enable_thinking: false,
+        zookLogBodyMode: "redacted",
+      }),
+      messages: [
+        {
+          role: "system",
+          content: "moderation system prompt",
+        },
+        {
+          role: "user",
+          content: "very sensitive moderation sample",
+        },
+      ],
+    });
+
+    const providerBody = JSON.parse(String(capturedInit?.body)) as Record<string, unknown>;
+    assert.equal(providerBody.zookLogBodyMode, undefined);
+    assert.match(JSON.stringify(providerBody), /very sensitive moderation sample/);
+
+    const requestLog = logger.records.find((entry) =>
+      entry.message === "ai_novel local provider chat request body"
+    );
+    assert.ok(requestLog);
+    const logBodyText = JSON.stringify(requestLog.body);
+    assert.doesNotMatch(logBodyText, /very sensitive moderation sample/);
+    assert.doesNotMatch(logBodyText, /moderation system prompt/);
+    assert.match(logBodyText, /contentHash/);
+    assert.match(logBodyText, /contentLength/);
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
+});
+
 test("bailian provider turns HTTP failures into provider request errors", async () => {
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async () =>

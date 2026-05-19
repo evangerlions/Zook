@@ -67,9 +67,14 @@ import {
 } from "./services/common-getui-gy-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import {
+  CommonContentSafetyConfigService,
+  CONTENT_SAFETY_MANAGE_OPERATION,
+} from "./services/common-content-safety-config.service.ts";
+import {
   CommonPasswordConfigService,
   PASSWORD_VALUE_READ_OPERATION,
 } from "./services/common-password-config.service.ts";
+import { ContentSafetyService } from "./services/content-safety.service.ts";
 import {
   EmbeddingManager,
   type EmbeddingProvider,
@@ -142,6 +147,8 @@ import type {
   AdminEmailServiceDocument,
   AdminEmailTestSendDocument,
   AdminGetuiGyCredentialRevealDocument,
+  AdminContentSafetyDocument,
+  AdminContentSafetyTestDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
   AdminSmsVerificationListDocument,
@@ -404,6 +411,7 @@ export class BackendApplication {
     private readonly adminSensitiveOperationService: AdminSensitiveOperationService,
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
+    private readonly contentSafetyService: ContentSafetyService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelAuditFileService: AiNovelAuditFileService,
     private readonly aiNovelLlmService: AiNovelLlmService,
@@ -715,6 +723,47 @@ export class BackendApplication {
       return this.handleAdminRevealSmsVerificationRecord(
         request,
         decodeURIComponent(adminSmsVerificationRevealMatch[1]),
+      );
+    }
+
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/content-safety"
+    ) {
+      return this.handleAdminGetContentSafety(request);
+    }
+
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/content-safety"
+    ) {
+      return this.handleAdminUpdateContentSafety(request);
+    }
+
+    if (
+      request.method === "POST" &&
+      request.path === "/api/v1/admin/apps/common/content-safety/test"
+    ) {
+      return this.handleAdminTestContentSafety(request);
+    }
+
+    const adminContentSafetyRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/content-safety\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminContentSafetyRevisionMatch) {
+      return this.handleAdminGetContentSafetyRevision(
+        request,
+        Number(adminContentSafetyRevisionMatch[1]),
+      );
+    }
+
+    const adminContentSafetyRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/content-safety\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminContentSafetyRestoreMatch) {
+      return this.handleAdminRestoreContentSafetyRevision(
+        request,
+        Number(adminContentSafetyRestoreMatch[1]),
       );
     }
 
@@ -3373,6 +3422,147 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminGetContentSafety(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminContentSafetyDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      CONTENT_SAFETY_MANAGE_OPERATION,
+    );
+    const result = await this.adminConsoleService.getContentSafetyConfig();
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.content_safety.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser: session.username,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateContentSafety(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminContentSafetyDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      CONTENT_SAFETY_MANAGE_OPERATION,
+    );
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateContentSafetyConfig(
+      body,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.content_safety.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser: session.username,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminTestContentSafety(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminContentSafetyTestDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      CONTENT_SAFETY_MANAGE_OPERATION,
+    );
+    const body = this.validationPipe.asObject(request.body);
+    const text = this.validationPipe.requireString(body, "text");
+    const result = await this.contentSafetyService.testUserInput({
+      appId: "admin",
+      userId: session.username,
+      requestId: request.requestId as string,
+      taskType: "admin_content_safety_test",
+      text,
+    });
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.content_safety.test",
+      resourceType: "app_config",
+      resourceId: "common.content_safety",
+      payload: {
+        adminUser: session.username,
+        allowed: result.allowed,
+        layer: result.layer,
+        textLength: result.textLength,
+        failureReason: result.failureReason,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetContentSafetyRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<AdminContentSafetyDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      CONTENT_SAFETY_MANAGE_OPERATION,
+    );
+    const result = await this.adminConsoleService.getContentSafetyConfig(revision);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.content_safety.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser: session.username,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreContentSafetyRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<AdminContentSafetyDocument>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      CONTENT_SAFETY_MANAGE_OPERATION,
+    );
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreContentSafetyConfig(
+      revision,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.content_safety.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser: session.username,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminUpsertPasswordItem(
     request: HttpRequest,
   ): Promise<HttpResponse<unknown>> {
@@ -5163,6 +5353,9 @@ export async function createApplication(
     appConfigService,
     secretReferenceResolver,
   );
+  const commonContentSafetyConfigService = new CommonContentSafetyConfigService(
+    appConfigService,
+  );
   const appLogSecretService = new AppLogSecretService(database, kvManager);
   const logEncryptionKeyResolver =
     options.logEncryptionKeyResolver ??
@@ -5331,6 +5524,7 @@ export async function createApplication(
     commonAuthRateLimitConfigService,
     commonGetuiGyConfigService,
     commonLlmConfigService,
+    commonContentSafetyConfigService,
     commonPasswordConfigService,
     emailTestSendService,
     llmHealthService,
@@ -5346,11 +5540,18 @@ export async function createApplication(
     llmHealthService,
     llmMetricsService,
   });
+  const contentSafetyService = new ContentSafetyService(
+    commonContentSafetyConfigService,
+    llmManager,
+    commonPasswordConfigService,
+    logger,
+  );
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
     appAiRoutingConfigService,
     logger,
+    contentSafetyService,
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
@@ -5402,6 +5603,7 @@ export async function createApplication(
     adminSensitiveOperationService,
     llmManager,
     embeddingManager,
+    contentSafetyService,
     llmSmokeTestService,
     aiNovelAuditFileService,
     aiNovelLlmService,
@@ -5443,6 +5645,7 @@ export async function createApplication(
       commonAuthRateLimitConfigService,
       commonGetuiGyConfigService,
       commonLlmConfigService,
+      commonContentSafetyConfigService,
       appLogSecretService,
       adminSensitiveOperationService,
       appRegistryService,
@@ -5457,6 +5660,7 @@ export async function createApplication(
       adminConsoleService,
       llmManager,
       embeddingManager,
+      contentSafetyService,
       llmHealthService,
       llmMetricsService,
       llmSmokeTestService,

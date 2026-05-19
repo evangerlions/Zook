@@ -3492,3 +3492,154 @@ test("ai_novel routes fail when routing mapping is missing", async () => {
     "AI_UPSTREAM_BAD_GATEWAY",
   );
 });
+
+test("ai_novel chat completions rejects keyword-sensitive user input before LLM", async () => {
+  let llmCallCount = 0;
+  const { runtime, aiKey } = await createAiNovelRuntime({
+    llmProvider: {
+      async complete(request): Promise<LLMCompletionResult> {
+        llmCallCount += 1;
+        return {
+          provider: request.model.provider,
+          modelKey: request.model.modelKey,
+          providerModel: request.model.providerModel,
+          text: "should not run",
+        };
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        llmCallCount += 1;
+        yield { type: "done" };
+      },
+    },
+  });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  await runtime.services.commonContentSafetyConfigService.updateConfig({
+    enabled: true,
+    longTextThresholdChars: 2000,
+    keyword: {
+      enabled: true,
+      rules: [
+        {
+          id: "blocked_1",
+          term: "不该发送",
+          enabled: true,
+          category: "test",
+        },
+      ],
+    },
+    llm: {
+      enabled: true,
+      modelKey: "qwen3.5-flash",
+      timeoutMs: 1000,
+    },
+    aliyun: {
+      enabled: false,
+      endpoint: "https://green-cip.cn-shanghai.aliyuncs.com",
+      region: "cn-shanghai",
+      service: "chat_detection",
+      accessKeyIdPasswordKey: "",
+      accessKeySecretPasswordKey: "",
+      timeoutMs: 1000,
+    },
+  });
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "accept-language": "zh-CN",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "chapter_summary",
+        messages: [
+          {
+            role: "user",
+            content: "这段不该发送的内容",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  assert.equal(response.statusCode, 200);
+  assert.equal(decrypted.code, "AI_INPUT_CONTENT_SENSITIVE");
+  assert.equal(decrypted.message, "这段内容暂时无法发送，请调整后再试。");
+  assert.equal(llmCallCount, 0);
+  assert.deepEqual(decrypted.data, null);
+});
+
+test("ai_novel streamed chat returns sensitive error event for blocked input", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  await runtime.services.commonContentSafetyConfigService.updateConfig({
+    enabled: true,
+    longTextThresholdChars: 2000,
+    keyword: {
+      enabled: true,
+      rules: [
+        {
+          id: "blocked_2",
+          term: "禁止发送",
+          enabled: true,
+          category: "test",
+        },
+      ],
+    },
+    llm: {
+      enabled: true,
+      modelKey: "qwen3.5-flash",
+      timeoutMs: 1000,
+    },
+    aliyun: {
+      enabled: false,
+      endpoint: "https://green-cip.cn-shanghai.aliyuncs.com",
+      region: "cn-shanghai",
+      service: "chat_detection",
+      accessKeyIdPasswordKey: "",
+      accessKeySecretPasswordKey: "",
+      timeoutMs: 1000,
+    },
+  });
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "accept-language": "zh-CN",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            titleCandidate: "",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "禁止发送" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decrypted = decryptAiPayload(events[0], aiKey);
+  assert.equal(response.statusCode, 200);
+  assert.equal(decrypted.code, "AI_INPUT_CONTENT_SENSITIVE");
+  assert.equal(decrypted.message, "这段内容暂时无法发送，请调整后再试。");
+  assert.equal(decrypted.data, null);
+});

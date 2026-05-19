@@ -39,6 +39,107 @@
   font-weight: 700;
 }
 
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-heading h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+}
+
+.section-heading p {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.content-safety-section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(191, 208, 229, 0.7);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(247, 249, 253, 0.62));
+}
+
+.content-safety-basic-grid,
+.content-safety-provider-grid,
+.content-safety-test-grid {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.content-safety-basic-grid {
+  grid-template-columns: minmax(280px, 1.15fr) minmax(220px, 0.85fr);
+  align-items: stretch;
+}
+
+.content-safety-provider-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.content-safety-test-grid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  align-items: stretch;
+}
+
+.content-safety-test-result {
+  display: grid;
+  min-height: 220px;
+}
+
+.content-safety-test-result .empty-inline {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 24px;
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  text-align: center;
+}
+
+.content-safety-keyword-table {
+  min-width: 0;
+}
+
+.field .ant-input-number {
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .section-heading {
+    display: grid;
+  }
+
+  .section-actions {
+    justify-content: flex-start;
+  }
+
+  .content-safety-basic-grid,
+  .content-safety-provider-grid,
+  .content-safety-test-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .action-icon-button.ant-btn {
   width: 38px;
   min-width: 38px;

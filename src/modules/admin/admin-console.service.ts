@@ -9,6 +9,7 @@ import { CommonEmailConfigService } from "../../services/common-email-config.ser
 import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import { CommonGetuiGyConfigService } from "../../services/common-getui-gy-config.service.ts";
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
+import { CommonContentSafetyConfigService } from "../../services/common-content-safety-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
 import { EmailTestSendService } from "../../services/email-test-send.service.ts";
 import { LlmHealthService } from "../../services/llm-health.service.ts";
@@ -37,6 +38,7 @@ import type {
   AdminEmailTestSendDocument,
   AdminGetuiGyCredentialRevealDocument,
   AdminGetuiGyServiceDocument,
+  AdminContentSafetyDocument,
   GetuiGySensitiveCredentialField,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
@@ -68,6 +70,7 @@ export class AdminConsoleService {
     private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
     private readonly commonGetuiGyConfigService: CommonGetuiGyConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
+    private readonly commonContentSafetyConfigService: CommonContentSafetyConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
     private readonly emailTestSendService: EmailTestSendService,
     private readonly llmHealthService: LlmHealthService,
@@ -592,6 +595,22 @@ export class AdminConsoleService {
 
   async runLlmSmokeTest(): Promise<AdminLlmSmokeTestDocument> {
     return this.llmSmokeTestService.run();
+  }
+
+  async getContentSafetyConfig(revision?: number): Promise<AdminContentSafetyDocument> {
+    return this.commonContentSafetyConfigService.getDocument(revision);
+  }
+
+  async updateContentSafetyConfig(input: unknown, desc?: string): Promise<AdminContentSafetyDocument> {
+    const document = await this.commonContentSafetyConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getContentSafetyConfig(document.revision);
+  }
+
+  async restoreContentSafetyConfig(revision: number, desc?: string): Promise<AdminContentSafetyDocument> {
+    const document = await this.commonContentSafetyConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getContentSafetyConfig(document.revision);
   }
 
   private normalizeConfig(rawJson: string): string {

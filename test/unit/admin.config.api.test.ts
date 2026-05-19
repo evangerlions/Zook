@@ -1672,6 +1672,208 @@ test("admin password reveal requires sensitive verification before copying real 
   );
 });
 
+test("admin content safety config requires sensitive verification and stores password references", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    adminSensitiveOperation: {
+      secondaryPassword: "199510",
+    },
+  });
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/passwords",
+    headers: {
+      authorization: createAdminAuthHeader(),
+    },
+    body: {
+      items: [
+        {
+          key: "aliyun.green.access_key_id",
+          desc: "Aliyun Green AccessKeyId",
+          value: "ak-id-demo",
+        },
+        {
+          key: "aliyun.green.access_key_secret",
+          desc: "Aliyun Green AccessKeySecret",
+          value: "ak-secret-demo",
+        },
+      ],
+    },
+  });
+
+  const cookie = await loginAdmin(runtime);
+
+  const blockedResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/content-safety",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(blockedResponse.statusCode, 403);
+  assert.equal(
+    blockedResponse.body.code,
+    "ADMIN_SENSITIVE_OPERATION_REQUIRED",
+  );
+
+  const blockedTestResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/content-safety/test",
+    headers: {
+      cookie,
+    },
+    body: {
+      text: "hello",
+    },
+  });
+
+  assert.equal(blockedTestResponse.statusCode, 403);
+  assert.equal(
+    blockedTestResponse.body.code,
+    "ADMIN_SENSITIVE_OPERATION_REQUIRED",
+  );
+
+  await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/request-code",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "content_safety.sensitive_words.manage",
+    },
+  });
+
+  const verifyResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/sensitive-operations/verify",
+    headers: {
+      cookie,
+    },
+    body: {
+      operation: "content_safety.sensitive_words.manage",
+      code: "199510",
+    },
+  });
+
+  assert.equal(verifyResponse.statusCode, 200);
+  assert.equal(verifyResponse.body.data.granted, true);
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/content-safety",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.equal(defaultResponse.body.data.config.llm.modelKey, "qwen3.5-flash");
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/content-safety",
+    headers: {
+      cookie,
+    },
+    body: {
+      enabled: true,
+      longTextThresholdChars: 1200,
+      keyword: {
+        enabled: true,
+        rules: [
+          {
+            id: "rule_sensitive",
+            term: "forbidden",
+            category: "policy",
+            enabled: true,
+          },
+        ],
+      },
+      llm: {
+        enabled: true,
+        modelKey: "qwen3.5-flash",
+        timeoutMs: 3000,
+      },
+      aliyun: {
+        enabled: true,
+        endpoint: "https://green-cip.cn-shanghai.aliyuncs.com",
+        region: "cn-shanghai",
+        service: "chat_detection",
+        accessKeyIdPasswordKey: "aliyun.green.access_key_id",
+        accessKeySecretPasswordKey: "aliyun.green.access_key_secret",
+        timeoutMs: 5000,
+      },
+      desc: "启用内容安全",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.config.enabled, true);
+  assert.equal(updateResponse.body.data.config.keyword.rules[0].term, "forbidden");
+  assert.equal(
+    updateResponse.body.data.config.aliyun.accessKeySecretPasswordKey,
+    "aliyun.green.access_key_secret",
+  );
+  assert.equal(updateResponse.body.data.revision, 1);
+  assert.equal(updateResponse.body.data.desc, "启用内容安全");
+  assert.equal(
+    await runtime.services.commonPasswordConfigService.getValue(
+      "aliyun.green.access_key_secret",
+    ),
+    "ak-secret-demo",
+  );
+
+  const testResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/content-safety/test",
+    headers: {
+      cookie,
+    },
+    body: {
+      text: "this has forbidden content",
+    },
+  });
+
+  assert.equal(testResponse.statusCode, 200);
+  assert.equal(testResponse.body.data.allowed, false);
+  assert.equal(testResponse.body.data.blocked, true);
+  assert.equal(testResponse.body.data.layer, "keyword");
+  assert.equal(testResponse.body.data.code, "AI_INPUT_CONTENT_SENSITIVE");
+  assert.equal(testResponse.body.data.category, "policy");
+  assert.equal(testResponse.body.data.keywordId, "rule_sensitive");
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) =>
+        item.action === "admin.content_safety.test" &&
+        item.payload.allowed === false &&
+        item.payload.layer === "keyword",
+    ),
+  );
+
+  const failedOpenResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/content-safety/test",
+    headers: {
+      cookie,
+    },
+    body: {
+      text: "safe text",
+    },
+  });
+
+  assert.equal(failedOpenResponse.statusCode, 200);
+  assert.equal(failedOpenResponse.body.data.allowed, true);
+  assert.equal(failedOpenResponse.body.data.layer, "failed_open");
+  assert.ok(failedOpenResponse.body.data.failureReason);
+  assert.ok(failedOpenResponse.body.data.failureDetail);
+});
+
 test("admin auth rate limit API stores common config and auth runtime follows updated limits", async () => {
   const sent: SentTemplateEmail[] = [];
   const runtime = await createApplication({
