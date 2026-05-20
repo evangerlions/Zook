@@ -748,11 +748,16 @@ export class AiNovelLlmService {
     const providerOptions =
       scene.completeViaStream || promptAssembly.tools.length > 0
         ? {
-            ...(scene.completeViaStream ? { enable_thinking: false } : {}),
+            ...(scene.completeViaStream ? { enable_thinking: true } : {}),
             ...(promptAssembly.tools.length > 0
               ? {
                   tools: toOpenAiToolDefinitions(promptAssembly.tools),
-                  tool_choice: "auto",
+                  tool_choice: promptAssembly.forcedToolName
+                    ? {
+                        type: "function",
+                        function: { name: promptAssembly.forcedToolName },
+                      }
+                    : "auto",
                 }
               : {}),
           }
@@ -771,6 +776,10 @@ export class AiNovelLlmService {
               AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
           })
         : await this.llmManager.complete(llmRequest);
+      const completionContent = this.resolvePromptAssemblyCompletionText(
+        promptAssembly.forcedToolName,
+        result,
+      );
 
       const response: AiNovelChatResponse = {
         taskType: scene.taskType,
@@ -778,7 +787,7 @@ export class AiNovelLlmService {
           modelKey: result.modelKey,
           provider: result.provider,
           providerModel: result.providerModel,
-          content: result.text,
+          content: completionContent,
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
           ...(result.providerRequestId
             ? { providerRequestId: result.providerRequestId }
@@ -803,6 +812,32 @@ export class AiNovelLlmService {
     } catch (error) {
       throw this.mapUpstreamError(error);
     }
+  }
+
+  private resolvePromptAssemblyCompletionText(
+    forcedToolName: string | undefined,
+    result: LLMCompletionResult,
+  ): string {
+    if (!forcedToolName) {
+      return result.text;
+    }
+
+    const toolCall = result.toolCalls?.find(
+      (candidate) => candidate.name === forcedToolName,
+    );
+    if (!toolCall) {
+      throw new ApplicationError(
+        502,
+        "LLM_PROVIDER_RESPONSE_INVALID",
+        `Provider did not call required tool ${forcedToolName}.`,
+        {
+          forcedToolName,
+          finishReason: result.finishReason,
+          textLength: result.text.length,
+        },
+      );
+    }
+    return JSON.stringify(toolCall.input ?? {});
   }
 
   async *createChatCompletionStream(
@@ -952,6 +987,7 @@ export class AiNovelLlmService {
       context: input.context,
     });
     const providerOptions = {
+      enable_thinking: true,
       tools: toOpenAiToolDefinitions(promptAssembly.tools),
       tool_choice: "auto",
     };

@@ -14,6 +14,7 @@ export type AiNovelPromptProfile =
 interface AiNovelPromptAssembly {
   messages: LLMMessage[];
   tools: LLMToolDefinition[];
+  forcedToolName?: string;
 }
 
 function scaleChoiceSchema(
@@ -295,6 +296,109 @@ const storyHistoryTools: LLMToolDefinition[] = [
   ),
 ];
 
+const SUBMIT_CHAPTER_SUMMARY_TOOL = createTool(
+  "submit_chapter_summary",
+  "Submit the structured chapter summary and continuity facts.",
+  {
+    summary: {
+      type: "string",
+      description: "Compact chapter summary in the target writing language.",
+    },
+    facts: {
+      type: "object",
+      description:
+        "Optional durable continuity facts such as actualEvents, coveredBeatIds, deviations, unresolvedQuestions, characterStateChanges, and objectStates.",
+      additionalProperties: true,
+    },
+  },
+  ["summary"],
+);
+
+const SUBMIT_CHAPTER_REVIEW_TOOL = createTool(
+  "submit_chapter_review",
+  "Submit the structured chapter draft review result.",
+  {
+    verdict: {
+      type: "string",
+      enum: ["pass", "needs_repair"],
+    },
+    summary: {
+      type: "string",
+      description: "Concise review summary in the target writing language.",
+    },
+    issues: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["severity", "message", "suggestion", "blocking"],
+        properties: {
+          severity: {
+            type: "string",
+            enum: ["low", "medium", "high"],
+          },
+          message: { type: "string" },
+          suggestion: { type: "string" },
+          blocking: { type: "boolean" },
+        },
+      },
+    },
+    planned: { type: "array", items: { type: "string" } },
+    covered: { type: "array", items: { type: "string" } },
+    missed: { type: "array", items: { type: "string" } },
+    extra: { type: "array", items: { type: "string" } },
+  },
+  ["verdict", "summary", "issues", "planned", "covered", "missed", "extra"],
+);
+
+const SUBMIT_SNAPSHOT_TOOL = createTool(
+  "submit_snapshot",
+  "Submit the rolling long-term story snapshot.",
+  {
+    snapshot: {
+      type: "string",
+      description: "Rolling long-term story snapshot in the target language.",
+    },
+  },
+  ["snapshot"],
+);
+
+const SUBMIT_NEXT_CHAPTER_BRIEF_TOOL = createTool(
+  "submit_next_chapter_brief",
+  "Submit the structured next-chapter writing task sheet.",
+  {
+    brief: {
+      type: "string",
+      description: "Concise chapter task brief for the ChapterDraftAgent.",
+    },
+    taskBook: {
+      type: "object",
+      additionalProperties: true,
+    },
+    required: {
+      type: "object",
+      additionalProperties: true,
+    },
+    strategy: {
+      type: "object",
+      additionalProperties: true,
+    },
+    contextRefs: {
+      type: "object",
+      additionalProperties: true,
+    },
+    sourceBeatId: { type: "string" },
+    sourcePlanRevision: { type: "string" },
+    sourceBeat: {
+      type: "object",
+      additionalProperties: true,
+    },
+    adaptedFromBeat: { type: "boolean" },
+    adaptationReason: { type: "string" },
+  },
+  ["brief"],
+);
+
 export const WRITE_TURN_TOOLS: LLMToolDefinition[] = [
   ...contextReadTools,
   ...interactionTools,
@@ -342,10 +446,10 @@ const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "- Do not wait for user input.",
   "",
   "## Chapter execution contract",
-  "- Treat chapterFrame and currentBrief, when present, as the execution contract for this target chapter. If currentBrief contains taskBook, chapterCommission, chapterStory, chapterCharacters, writingFlow, endingPoint, required, or strategy, treat those fields as the concrete chapter task book.",
-  "- Treat MainLine as the rolling 6-10 chapter plan confirmed by the user. The current chapter must advance its matching planned beat unless the brief explicitly says the plan was revised.",
-  "- Treat MainLine.futureMilestones and currentBrief.required.reservedFutureMilestones as negative constraints only: they describe later chapter milestones that must not be paid off, depicted as already true, or borrowed for current-chapter abilities, objects, locations, reveals, power/progression/status changes, or planned events.",
-  "- Treat structured forbidden fields, required.forbiddenFacts, and explicit plot-boundary prohibitions inside currentBrief/chapterFrame as hard constraints. Natural-language negative preferences should guide the draft, but only become hard constraints when they clearly describe a plot boundary or forbidden payoff.",
+  "- Treat MainLine.sourceBeat as the source of truth for this chapter's planned beat; currentBrief is only a concise execution note derived from that beat and runtime state.",
+  "- Treat MainLine as the rolling 6-10 chapter plan confirmed by the user. The current chapter must advance its matching sourceBeat unless currentBrief explicitly says the plan was revised.",
+  "- Treat MainLine.futureMilestones as negative constraints only: they describe later chapter milestones that must not be paid off, depicted as already true, or borrowed for current-chapter abilities, objects, locations, reveals, power/progression/status changes, or planned events.",
+  "- Treat sourceBeat.forbidden and explicit plot-boundary prohibitions inside currentBrief/chapterFrame as hard constraints. Natural-language negative preferences should guide the draft, but only become hard constraints when they clearly describe a plot boundary or forbidden payoff.",
   "- Before calling write_draft, internally check the draft against every explicit prohibition in currentBrief/chapterFrame. If the draft contains a forbidden payoff, replace that passage before saving.",
   "- Do not fill length by advancing the next MainLine beat. If this beat ends at a boundary, stop there and expand only safe current-beat details, dialogue, sensory pressure, and inner conflict.",
   "- Do not turn long-term Contract/MainLine promises into current on-page events unless currentBrief/sourceBeat explicitly requires them.",
@@ -354,8 +458,8 @@ const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "- Avoid obviously thin drafts when safe current-beat material is still available. A hard endBoundary limits what can happen next; it does not prevent richer treatment of the allowed scene.",
   "- Do not invent causal explanations, named artifacts, power systems, victories, rescues, or safe resolutions just because they are mentioned in Contract/MainLine as long-term promises.",
   "- Treat Contract and MainLine as long-term story constraints, not a checklist to pay off in this chapter.",
-  "- Advance the nearest required beat from chapterFrame/currentBrief while preserving unresolved long-term promises.",
-  "- If chapterFrame/currentBrief conflict with Contract/MainLine, preserve Contract/MainLine and fulfill the closest compatible chapter intent.",
+  "- Advance the required beat from MainLine.sourceBeat; use currentBrief only as a concise runtime note while preserving unresolved long-term promises.",
+  "- If sourceBeat/currentBrief conflict with Contract/MainLine, preserve Contract/MainLine and fulfill the closest compatible chapter intent.",
   "",
   "## Repair mode",
   "- If the user message contains Review issues JSON or asks to repair/expand a saved draft, this is repair mode.",
@@ -368,7 +472,7 @@ const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "- Save one complete replacement title/body through write_draft.",
   "",
   "## Pacing and continuity",
-  "- Usually center the chapter on one primary dramatic movement or irreversible story change, unless the supplied chapterFrame/currentBrief explicitly requires multiple movements.",
+  "- Usually center the chapter on one primary dramatic movement or irreversible story change, unless the supplied sourceBeat/currentBrief explicitly requires multiple movements.",
   "- Increase, redirect, or clarify pressure in a way that fits the book's genre, tone, and pace.",
   "- Preserve open questions that are not ready to resolve; do not collapse long-term tension merely because it is mentioned.",
   "- Avoid unearned conflict resolution through sudden ability jumps, unsupported reveals, outside rescue, coincidence, or any shortcut solution unless the supplied context clearly sets it up or requires it.",
@@ -401,45 +505,46 @@ const JOB_SYSTEM_PROMPTS: Record<
 > = {
   chapter_summary: [
     "You are the ChapterSummaryGenerationJob for AINovel.",
-    "Return a compact JSON summary of the supplied chapter text and source references.",
+    "Think through the supplied chapter text and source references, then call submit_chapter_summary exactly once. Do not put the summary JSON in final assistant text.",
     "Return facts as an object that may include actualEvents, coveredBeatIds, deviations, unresolvedQuestions, characterStateChanges, and objectStates. Do not create a separate outcome schema.",
     "Use objectStates for durable continuity facts about important items, clues, tokens, letters, weapons, documents, or hidden objects. Each entry should capture name, holder or owner, physical location, status, lastSeen, and brief evidence when known.",
     "Only record facts that actually happened on page or are clearly established by the chapter. Do not infer future payoffs or invent object meanings.",
     "Write summary text and all fact values in the target writing language from Contract.language when present.",
-    "Do not include markdown fences.",
+    "Do not include markdown fences or prose outside the required tool call.",
   ].join("\n"),
   chapter_draft_review: [
     "You are the ChapterDraftReviewJob for AINovel.",
-    "Review the supplied generated chapter draft against its brief, MainLine beat, story window, language, and continuity constraints.",
-    "Return strict JSON.",
+    "Review the supplied generated chapter draft against plannedChecklist, story window, language, and continuity constraints.",
+    "Think through the review carefully, then call submit_chapter_review exactly once with the structured result. Do not put the review JSON in final assistant text.",
     "Use context.draft.characterCount and context.draft.lengthGuidance when present; do not estimate length from the visible prompt text.",
     "Treat Contract.scale.chapterLength.minChars/maxChars and numeric chapterLength notes as target density guidance, not hard acceptance gates. Do not fail a chapter solely because it is outside the target range when the beat still feels complete. Use needs_repair for length only when the prose is plainly rushed, thin, underdeveloped, padded, or structurally incomplete for the current beat.",
     "Every issue must include a boolean blocking field: true only for issues that must block acceptance now; false for soft notes, preference suggestions, or ordinary target-range concerns.",
-    'Return only valid JSON shaped as { "verdict": "pass" | "needs_repair", "summary": string, "issues": [{ "severity": "low" | "medium" | "high", "message": string, "suggestion": string, "blocking": boolean }], "planned": string[], "covered": string[], "missed": string[], "extra": string[] }.',
-    "Assess planned/covered/missed/extra explicitly: planned is the supplied plannedChecklist; covered are items fulfilled by the draft; missed are required items absent or too weak; extra are unplanned additions, forbidden facts, or endBoundary/change violations.",
+    'The submit_chapter_review arguments must be shaped as { "verdict": "pass" | "needs_repair", "summary": string, "issues": [{ "severity": "low" | "medium" | "high", "message": string, "suggestion": string, "blocking": boolean }], "planned": string[], "covered": string[], "missed": string[], "extra": string[] }.',
+    "Assess planned/covered/missed/extra explicitly: plannedChecklist is the single source of truth for the current chapter plan; covered are items fulfilled by the draft; missed are required items absent or too weak; extra are unplanned additions, forbidden facts, or endBoundary/change violations.",
     "Use needs_repair when missed/extra shows the chapter is scattered, crosses the current beat boundary, omits mustCover, violates forbidden, or fails to complete the planned change.",
     "Use needs_repair when the draft copies, lightly rewrites, or replays prior chapter prose instead of advancing new action.",
-    "Use needs_repair when the draft crosses required.endBoundary or pays off forbidden facts from the current plannedChecklist.",
-    "Use needs_repair when the draft pays off plannedChecklist.reservedFutureMilestones, fragments.mainLine.futureMilestones, or currentBrief.required.reservedFutureMilestones before their chapter, including premature abilities, power/progression/status changes, objects, locations, reveals, or planned events.",
+    "Use needs_repair when the draft crosses plannedChecklist.endBoundary or pays off plannedChecklist.forbidden facts.",
+    "Use needs_repair when the draft pays off plannedChecklist.reservedFutureMilestones before their chapter, including premature abilities, power/progression/status changes, objects, locations, reveals, or planned events.",
     "Use needs_repair when the draft contradicts storyWindow facts about character state, knowledge, injuries, location, promises, or key object possession/location/status. If an item, clue, token, letter, weapon, document, or hidden object was last stored, lost, broken, hidden, held by someone else, or not yet obtained, the draft must depict a plausible retrieval or transfer before the protagonist can carry, use, or know it.",
     "Use needs_repair when the draft drifts from the planned beat, introduces mixed-language text, repeats encounter patterns, lacks causal motivation for major movement, or ends with a vague slogan only when the issue materially breaks the current beat, continuity, or reader-facing ending pressure; otherwise report it as a nonblocking issue.",
     "If Contract.language specifies a target prose language, untranslated foreign prose words or phrases inside the chapter body are blocking mixed-language issues, except for established proper nouns, code-like tokens, or names explicitly supplied by context.",
     "Use needs_repair when the prose exposes workflow/meta language to readers, such as referring to the previous chapter, current beat, brief, MainLine, plan, task, review, sourceBeat, 上一章, 前前章, 本章, 章节, or similar process labels instead of natural story continuity.",
     "Also flag weak expression, repeated scene patterns, logic gaps, or AI-like vague filler when they materially hurt the chapter.",
     "For quiet opening, low-conflict setup, or discovery/setup beats, do not require an external threat, next-action plan, or dramatic hook. A concrete unresolved ending can be small and current-scene bound.",
-    "When suggesting fixes, use only the current plannedChecklist, current brief, story window, and draft. Do not invent a remedy by moving beyond required.endBoundary.",
+    "When suggesting fixes, use only plannedChecklist, story window, and draft. Do not invent a remedy by moving beyond plannedChecklist.endBoundary.",
     "Ending pressure must come from the current beat's unresolved consequence, not from advancing beyond the current chapter boundary.",
     "Write summary and issue messages in the target writing language from Contract.language when present.",
-    "Do not include markdown fences.",
+    "Do not include markdown fences or prose outside the required tool call.",
   ].join("\n"),
   snapshot_generation: [
     "You are the SnapshotGenerationJob for AINovel.",
-    "Return JSON containing a rolling long-term story snapshot for the supplied chapter range.",
-    "Do not include markdown fences.",
+    "Think through the supplied chapter range, then call submit_snapshot exactly once with the rolling long-term story snapshot.",
+    "Do not include markdown fences or prose outside the required tool call.",
   ].join("\n"),
   next_chapter_brief: [
     "You are the NextChapterBriefGenerationJob for AINovel.",
-    "Return only a compact valid JSON object containing a string field named `brief` and, when useful, taskBook/required/strategy/contextRefs.",
+    "Think through the next chapter task, then call submit_next_chapter_brief exactly once with a compact structured payload.",
+    "The tool arguments must contain a string field named `brief` and, when useful, taskBook/required/strategy/contextRefs.",
     "`brief` must be a concise chapter task brief for the next ChapterDraftAgent, derived from MainLine.sourceBeat plus runtime state, not a new durable world rule.",
     "Inside `brief`, cover: must advance, must not resolve yet, pressure to carry, continuity notes, variation from the previous chapter, and draft focus.",
     "Use storyWindow to avoid replaying the latest chapter. If the previous chapter already established ordinary life or setup, do not ask the draft agent to repeat the same scaffold; guide it to enter the next meaningful pressure or beat as early as the scene naturally allows.",
@@ -451,8 +556,20 @@ const JOB_SYSTEM_PROMPTS: Record<
     "If the matching beat cannot be followed exactly because of accepted chapter facts or Contract constraints, keep sourceBeatId/sourcePlanRevision/sourceBeat, set adaptedFromBeat true, and explain adaptationReason. Never silently rewrite the user's confirmed plan.",
     "Keep each part brief and concrete. Do not introduce new durable powers, identities, world rules, or goals unless they are already implied by the supplied context.",
     "Write brief, taskBook, required, strategy, and any user-readable values in the target writing language from Contract.language when present.",
-    "Do not include markdown fences.",
+    "Do not include markdown fences or prose outside the required tool call.",
   ].join("\n"),
+};
+
+const JOB_FORCED_TOOLS: Partial<
+  Record<
+    Exclude<AiNovelPromptProfile, "write_turn" | "chapter_draft">,
+    LLMToolDefinition
+  >
+> = {
+  chapter_summary: SUBMIT_CHAPTER_SUMMARY_TOOL,
+  chapter_draft_review: SUBMIT_CHAPTER_REVIEW_TOOL,
+  snapshot_generation: SUBMIT_SNAPSHOT_TOOL,
+  next_chapter_brief: SUBMIT_NEXT_CHAPTER_BRIEF_TOOL,
 };
 
 export function buildAiNovelPromptAssembly(input: {
@@ -487,13 +604,22 @@ export function buildAiNovelPromptAssembly(input: {
     };
   }
 
-  return {
+  const jobAssembly: AiNovelPromptAssembly = {
     messages: [
       { role: "system", content: JOB_SYSTEM_PROMPTS[input.profile] },
       ...messagesWithContext,
     ],
     tools: [],
   };
+  const forcedTool = JOB_FORCED_TOOLS[input.profile];
+  if (forcedTool) {
+    return {
+      ...jobAssembly,
+      tools: [forcedTool],
+      forcedToolName: forcedTool.name,
+    };
+  }
+  return jobAssembly;
 }
 
 export function toOpenAiToolDefinitions(

@@ -96,6 +96,49 @@ async function collectSseEvents(
   return events;
 }
 
+function toolNamesFromProviderOptions(
+  providerOptions: Record<string, unknown> | undefined,
+): string[] {
+  return ((providerOptions?.tools as Array<Record<string, unknown>> | undefined) ??
+    []).map((tool) =>
+    String((tool.function as Record<string, unknown> | undefined)?.name ?? ""),
+  );
+}
+
+function forcedStructuredToolPayload(
+  toolName: string,
+): Record<string, unknown> {
+  if (toolName === "submit_chapter_summary") {
+    return {
+      summary: "雨夜事故引出调查线索",
+      facts: { actualEvents: ["事故发生"] },
+    };
+  }
+  if (toolName === "submit_chapter_review") {
+    return {
+      verdict: "pass",
+      summary: "章节达成计划。",
+      issues: [],
+      planned: [],
+      covered: [],
+      missed: [],
+      extra: [],
+    };
+  }
+  if (toolName === "submit_snapshot") {
+    return { snapshot: "长期线索仍围绕雨夜事故。" };
+  }
+  if (toolName === "submit_next_chapter_brief") {
+    return {
+      brief: "下一章推进调查线索。",
+      required: { chapterGoal: "推进调查线索" },
+      strategy: { mustCover: ["线索"] },
+      contextRefs: {},
+    };
+  }
+  return { ok: true };
+}
+
 interface CreateAiNovelRuntimeOptions {
   llmProvider?: LLMProvider;
 }
@@ -113,7 +156,25 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
         providerRequestId: "chat-req-001",
       };
     },
-    async *stream(): AsyncIterable<LLMStreamEvent> {
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      const toolName = toolNamesFromProviderOptions(
+        request.providerOptions,
+      ).find((name) => name.startsWith("submit_"));
+      if (toolName) {
+        yield {
+          type: "tool_call",
+          toolCall: {
+            id: `call_${toolName}_default`,
+            name: toolName,
+            input: forcedStructuredToolPayload(toolName),
+          },
+        };
+        yield {
+          type: "done",
+          finishReason: "tool_calls",
+        };
+        return;
+      }
       yield {
         type: "content_delta",
         text: "第八十",
@@ -380,7 +441,7 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   assert.equal(completion.providerModel, "qwen3.6-plus");
   assert.equal(
     (response.body as Record<string, unknown>).localDebugResponseText,
-    "第八十一回……",
+    JSON.stringify(forcedStructuredToolPayload("submit_chapter_summary")),
   );
 });
 
@@ -403,11 +464,33 @@ test("ai_novel structured workflow scenes use streamed completion internally", a
         streamCalls += 1;
         assert.match(request.model.modelKey, /^ainovel-/);
         assert.equal(request.model.providerModel, "qwen3.6-plus");
-        assert.equal(request.providerOptions?.enable_thinking, false);
-        yield {
-          type: "content_delta",
-          text: '{"ok":true}',
-        };
+        assert.equal(request.providerOptions?.enable_thinking, true);
+        const toolName = toolNamesFromProviderOptions(
+          request.providerOptions,
+        ).find((name) => name.startsWith("submit_"));
+        if (toolName) {
+          assert.deepEqual(request.providerOptions?.tool_choice, {
+            type: "function",
+            function: { name: toolName },
+          });
+          yield {
+            type: "reasoning_delta",
+            text: "整理结构化工作流输出。",
+          };
+          yield {
+            type: "tool_call",
+            toolCall: {
+              id: `call_${toolName}_1`,
+              name: toolName,
+              input: forcedStructuredToolPayload(toolName),
+            },
+          };
+        } else {
+          yield {
+            type: "content_delta",
+            text: '{"ok":true}',
+          };
+        }
         yield {
           type: "done",
           finishReason: "stop",
@@ -455,7 +538,9 @@ test("ai_novel structured workflow scenes use streamed completion internally", a
     assert.equal(decrypted.code, "OK");
     const data = (decrypted.data ?? {}) as Record<string, unknown>;
     const completion = (data.completion ?? {}) as Record<string, unknown>;
-    assert.equal(completion.content, '{"ok":true}');
+    assert.notEqual(completion.content, '{"ok":true}');
+    assert.equal(typeof completion.content, "string");
+    assert.ok(JSON.parse(String(completion.content)));
   }
 
   assert.equal(completeCalls, 0);
@@ -2304,11 +2389,13 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   let capturedToolNames: string[] = [];
   let capturedTools: Array<Record<string, unknown>> = [];
+  let capturedEnableThinking: unknown;
   const llmProvider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
       throw new Error("complete should not be called");
     },
     async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedEnableThinking = request.providerOptions?.enable_thinking;
       capturedMessages = request.messages.map((message) => ({
         role: message.role,
         content: message.content,
@@ -2396,6 +2483,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
     decryptedEvents.map((event) => event.type),
     ["tool_call", "content_delta", "done"],
   );
+  assert.equal(capturedEnableThinking, true);
   assert.ok(capturedMessages);
   assert.equal(
     capturedMessages!.filter((message) => message.role === "system").length,
@@ -2566,11 +2654,13 @@ test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", a
 test("ai_novel chapter_draft supplies read, search history, and draft write tools", async () => {
   let capturedToolNames: string[] = [];
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
+  let capturedEnableThinking: unknown;
   const llmProvider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
       throw new Error("complete should not be called");
     },
     async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedEnableThinking = request.providerOptions?.enable_thinking;
       capturedMessages = request.messages.map((message) => ({
         role: message.role,
         content: message.content,
@@ -2646,6 +2736,7 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
     decryptedEvents.map((event) => event.type),
     ["tool_call", "done"],
   );
+  assert.equal(capturedEnableThinking, true);
   assert.deepEqual(capturedToolNames.sort(), [
     "read_draft",
     "search_story_history",
@@ -2674,12 +2765,38 @@ test("ai_novel job scenes use fixed input/output prompts over internal streamed 
     },
     async *stream(request): AsyncIterable<LLMStreamEvent> {
       streamCalls += 1;
-      assert.equal(request.providerOptions?.enable_thinking, false);
+      assert.equal(request.providerOptions?.enable_thinking, true);
       capturedMessages = request.messages.map((message) => ({
         role: message.role,
         content: message.content,
       }));
       capturedTools = request.providerOptions?.tools;
+      const toolName = toolNamesFromProviderOptions(
+        request.providerOptions,
+      ).find((name) => name.startsWith("submit_"));
+      if (toolName) {
+        assert.deepEqual(request.providerOptions?.tool_choice, {
+          type: "function",
+          function: { name: toolName },
+        });
+        yield {
+          type: "reasoning_delta",
+          text: "整理结构化工作流输出。",
+        };
+        yield {
+          type: "tool_call",
+          toolCall: {
+            id: `call_${toolName}_fixed_1`,
+            name: toolName,
+            input: forcedStructuredToolPayload(toolName),
+          },
+        };
+        yield {
+          type: "done",
+          finishReason: "tool_calls",
+        };
+        return;
+      }
       yield {
         type: "content_delta",
         text: '{"summary":"雨夜事故引出调查线索"}',
@@ -2753,7 +2870,15 @@ test("ai_novel job scenes use fixed input/output prompts over internal streamed 
     ),
     ["system", "user"],
   );
-  assert.equal(capturedTools, undefined);
+  assert.deepEqual(
+    ((capturedTools as Array<Record<string, unknown>> | undefined) ?? []).map(
+      (tool) =>
+        String(
+          (tool.function as Record<string, unknown> | undefined)?.name ?? "",
+        ),
+    ),
+    ["submit_chapter_summary"],
+  );
   assert.ok(capturedMessages);
   assert.equal(
     capturedMessages!.filter((message) => message.role === "system").length,

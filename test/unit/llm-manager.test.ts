@@ -98,6 +98,41 @@ test("llm manager completeViaStream fails fast when no stream content arrives", 
   assert.ok(Date.now() - startedAt < 1_000);
 });
 
+test("llm manager completeViaStream captures streamed tool calls", async () => {
+  const manager = new LLMManager({
+    bailian: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("should use stream");
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        yield {
+          type: "tool_call",
+          toolCall: {
+            id: "call_review_1",
+            name: "submit_chapter_review",
+            input: { verdict: "pass" },
+          },
+        };
+        yield { type: "done", finishReason: "tool_calls" };
+      },
+    },
+  });
+
+  const result = await manager.completeViaStream({
+    modelKey: "kimi2.5",
+    messages: [{ role: "user", content: "review" }],
+  });
+
+  assert.equal(result.finishReason, "tool_calls");
+  assert.deepEqual(result.toolCalls, [
+    {
+      id: "call_review_1",
+      name: "submit_chapter_review",
+      input: { verdict: "pass" },
+    },
+  ]);
+});
+
 test("createApplication exposes llmManager through runtime services", async () => {
   const runtime = await createApplication();
 

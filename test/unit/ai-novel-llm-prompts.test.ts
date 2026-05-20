@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { resolveAiNovelChatScene } from "../../src/modules/ai-novel/ai-novel-llm-scenes.ts";
 import { buildAiNovelPromptAssembly } from "../../src/modules/ai-novel/ai-novel-llm-prompts.ts";
 
 test("chapter_draft prompt prioritizes chapter-level execution without early payoff", () => {
@@ -14,14 +15,15 @@ test("chapter_draft prompt prioritizes chapter-level execution without early pay
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
   assert.match(systemPrompt, /Chapter execution contract/);
-  assert.match(systemPrompt, /chapterFrame and currentBrief/);
-  assert.match(systemPrompt, /concrete chapter task book/);
+  assert.match(systemPrompt, /MainLine\.sourceBeat/);
+  assert.match(systemPrompt, /source of truth/);
+  assert.match(systemPrompt, /concise execution note/);
   assert.match(systemPrompt, /long-term story constraints/);
   assert.match(systemPrompt, /Preserve open questions/);
   assert.match(systemPrompt, /Avoid unearned conflict resolution/);
   assert.match(systemPrompt, /explicit prohibition/);
   assert.match(systemPrompt, /forbidden payoff/);
-  assert.match(systemPrompt, /structured forbidden fields/);
+  assert.match(systemPrompt, /sourceBeat\.forbidden/);
   assert.match(systemPrompt, /Natural-language negative preferences/);
   assert.doesNotMatch(systemPrompt, /`不要`.*hard constraints/);
   assert.match(systemPrompt, /Do not fill length by advancing/);
@@ -37,7 +39,6 @@ test("chapter_draft prompt prioritizes chapter-level execution without early pay
   assert.match(systemPrompt, /Review issues JSON/);
   assert.match(systemPrompt, /Treat review suggestions as examples, not canon/);
   assert.match(systemPrompt, /MainLine\.futureMilestones/);
-  assert.match(systemPrompt, /reservedFutureMilestones/);
   assert.match(systemPrompt, /negative constraints/);
   assert.match(systemPrompt, /power\/progression\/status changes/);
   assert.doesNotMatch(systemPrompt, /repeated medicine cooking/);
@@ -66,6 +67,11 @@ test("chapter_draft_review prompt does not suggest future beat fixes", () => {
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
+    "submit_chapter_review",
+  ]);
+  assert.equal(assembly.forcedToolName, "submit_chapter_review");
+  assert.match(systemPrompt, /call submit_chapter_review exactly once/);
   assert.match(systemPrompt, /target density guidance/);
   assert.match(systemPrompt, /not hard acceptance gates/);
   assert.match(systemPrompt, /Do not fail a chapter solely/);
@@ -76,10 +82,10 @@ test("chapter_draft_review prompt does not suggest future beat fixes", () => {
   assert.doesNotMatch(systemPrompt, /minChars \\* 0\\.9/);
   assert.doesNotMatch(systemPrompt, /later MainLine beat/);
   assert.match(systemPrompt, /reservedFutureMilestones/);
-  assert.match(systemPrompt, /fragments\.mainLine\.futureMilestones/);
   assert.match(systemPrompt, /power\/progression\/status changes/);
   assert.doesNotMatch(systemPrompt, /cultivation\/status changes/);
-  assert.match(systemPrompt, /current plannedChecklist/);
+  assert.match(systemPrompt, /single source of truth/);
+  assert.match(systemPrompt, /plannedChecklist\.endBoundary/);
   assert.match(systemPrompt, /current beat's unresolved consequence/);
   assert.match(systemPrompt, /current chapter boundary/);
   assert.match(systemPrompt, /storyWindow facts/);
@@ -102,6 +108,11 @@ test("chapter_summary prompt keeps generated context in target language", () => 
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
+    "submit_chapter_summary",
+  ]);
+  assert.equal(assembly.forcedToolName, "submit_chapter_summary");
+  assert.match(systemPrompt, /call submit_chapter_summary exactly once/);
   assert.match(systemPrompt, /target writing language/);
   assert.match(systemPrompt, /Contract\.language/);
   assert.match(systemPrompt, /all fact values/);
@@ -118,6 +129,10 @@ test("next_chapter_brief prompt keeps compatible brief string shape", () => {
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
+    "submit_next_chapter_brief",
+  ]);
+  assert.equal(assembly.forcedToolName, "submit_next_chapter_brief");
   assert.match(systemPrompt, /string field named `brief`/);
   assert.match(systemPrompt, /taskBook/);
   assert.match(systemPrompt, /must advance/);
@@ -131,6 +146,26 @@ test("next_chapter_brief prompt keeps compatible brief string shape", () => {
   assert.match(systemPrompt, /concrete current-chapter constraints/);
   assert.match(systemPrompt, /target writing language/);
   assert.match(systemPrompt, /Do not include markdown fences/);
+});
+
+test("snapshot_generation prompt uses a required structured output tool", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "snapshot_generation",
+    messages: [],
+  });
+
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
+    "submit_snapshot",
+  ]);
+  assert.equal(assembly.forcedToolName, "submit_snapshot");
+  assert.match(systemPrompt, /call submit_snapshot exactly once/);
+});
+
+test("next_chapter_brief scene uses light planning temperature", () => {
+  const scene = resolveAiNovelChatScene("next_chapter_brief");
+
+  assert.equal(scene.defaultTemperature, 0.15);
 });
 
 test("book contract tool preserves optional story anchor names", () => {

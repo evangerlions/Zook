@@ -105,7 +105,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     taskType: "next_chapter_brief",
     kind: "chat",
     defaultModelKey: "ainovel-lowcost-structured",
-    defaultTemperature: 0,
+    defaultTemperature: 0.15,
     defaultMaxTokens: 3000,
     responseMode: "json",
     profile: "next_chapter_brief",

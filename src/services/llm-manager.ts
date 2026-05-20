@@ -52,6 +52,7 @@ export interface LLMCompletionResult {
   modelKey: string;
   providerModel: string;
   text: string;
+  toolCalls?: LLMToolCall[];
   reasoningText?: string;
   finishReason?: string;
   usage?: LLMUsage;
@@ -179,6 +180,7 @@ export class LLMManager {
     let finishReason: string | undefined;
     let text = "";
     let reasoningText = "";
+    const toolCalls: LLMToolCall[] = [];
     const iterator = this.providers[resolution.request.model.provider]
       .stream(resolution.request)[Symbol.asyncIterator]();
 
@@ -193,13 +195,19 @@ export class LLMManager {
         }
 
         const event = next.value;
-        if (event.type === "content_delta" || event.type === "reasoning_delta") {
+        if (
+          event.type === "content_delta" ||
+          event.type === "reasoning_delta" ||
+          event.type === "tool_call"
+        ) {
           firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
         }
         if (event.type === "content_delta") {
           text += event.text;
         } else if (event.type === "reasoning_delta") {
           reasoningText += event.text;
+        } else if (event.type === "tool_call") {
+          toolCalls.push(event.toolCall);
         } else if (event.type === "usage") {
           usage = this.withContextUsage(event.usage, resolution.request.model);
         } else if (event.type === "done") {
@@ -221,6 +229,7 @@ export class LLMManager {
         modelKey: resolution.request.model.modelKey,
         providerModel: resolution.request.model.providerModel,
         text,
+        ...(toolCalls.length > 0 ? { toolCalls } : {}),
         ...(reasoningText ? { reasoningText } : {}),
         ...(finishReason ? { finishReason } : {}),
         ...(usage ? { usage } : {}),
@@ -250,7 +259,9 @@ export class LLMManager {
       for await (const event of this.providers[resolution.request.model.provider].stream(resolution.request)) {
         if (
           firstByteLatencyMs === undefined &&
-          (event.type === "reasoning_delta" || event.type === "content_delta")
+          (event.type === "reasoning_delta" ||
+            event.type === "content_delta" ||
+            event.type === "tool_call")
         ) {
           firstByteLatencyMs = this.getNow().getTime() - startedAt.getTime();
         }
