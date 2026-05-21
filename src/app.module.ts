@@ -747,6 +747,20 @@ export class BackendApplication {
       return this.handleAdminTestContentSafety(request);
     }
 
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/content-safety/block-records"
+    ) {
+      return this.handleAdminListContentSafetyBlockRecords(request);
+    }
+
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/content-safety/stats"
+    ) {
+      return this.handleAdminGetContentSafetyStats(request);
+    }
+
     const adminContentSafetyRevisionMatch = request.path.match(
       /^\/api\/v1\/admin\/apps\/common\/content-safety\/revisions\/(\d+)$/,
     );
@@ -3488,6 +3502,7 @@ export class BackendApplication {
       userId: session.username,
       requestId: request.requestId as string,
       taskType: "admin_content_safety_test",
+      source: "admin_test",
       text,
     });
 
@@ -3502,6 +3517,81 @@ export class BackendApplication {
         layer: result.layer,
         textLength: result.textLength,
         failureReason: result.failureReason,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminListContentSafetyBlockRecords(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      CONTENT_SAFETY_MANAGE_OPERATION,
+    );
+    const result = await this.contentSafetyService.listBlockRecords({
+      dateFrom: request.query?.dateFrom,
+      dateTo: request.query?.dateTo,
+      appId: request.query?.appId,
+      source: request.query?.source,
+      method: request.query?.method,
+      taskType: request.query?.taskType,
+    });
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.content_safety.block_records.read",
+      resourceType: "content_safety_check",
+      resourceId: "blocked_records",
+      payload: {
+        adminUser: session.username,
+        dateFrom: request.query?.dateFrom,
+        dateTo: request.query?.dateTo,
+        appId: request.query?.appId,
+        source: request.query?.source,
+        method: request.query?.method,
+        taskType: request.query?.taskType,
+        itemCount: result.items.length,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetContentSafetyStats(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const session = this.requireAdminSession(request);
+    await this.adminSensitiveOperationService.assertGranted(
+      session,
+      CONTENT_SAFETY_MANAGE_OPERATION,
+    );
+    const result = await this.contentSafetyService.getStats({
+      dateFrom: request.query?.dateFrom,
+      dateTo: request.query?.dateTo,
+      appId: request.query?.appId,
+      source: request.query?.source,
+      method: request.query?.method,
+      taskType: request.query?.taskType,
+    });
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.content_safety.stats.read",
+      resourceType: "content_safety_check",
+      resourceId: "stats",
+      payload: {
+        adminUser: session.username,
+        dateFrom: request.query?.dateFrom,
+        dateTo: request.query?.dateTo,
+        appId: request.query?.appId,
+        source: request.query?.source,
+        method: request.query?.method,
+        taskType: request.query?.taskType,
+        total: result.summary.total,
+        blocked: result.summary.blocked,
       },
     });
 
@@ -5544,6 +5634,7 @@ export async function createApplication(
     commonContentSafetyConfigService,
     llmManager,
     commonPasswordConfigService,
+    database,
     logger,
   );
   const aiNovelLlmService = new AiNovelLlmService(

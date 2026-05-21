@@ -8,6 +8,7 @@ import type {
   ClientLogLineRecord,
   ClientLogUploadRecord,
   ClientLogUploadTaskRecord,
+  ContentSafetyCheckRecord,
   DatabaseSeed,
   FailedEventRecord,
   FileRecord,
@@ -46,6 +47,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   clientLogUploadTasks: ClientLogUploadTaskRecord[];
   clientLogUploads: ClientLogUploadRecord[];
   clientLogLines: ClientLogLineRecord[];
+  contentSafetyCheckRecords: ContentSafetyCheckRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -66,6 +68,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.clientLogUploadTasks = structuredClone(seed.clientLogUploadTasks ?? []);
     this.clientLogUploads = structuredClone(seed.clientLogUploads ?? []);
     this.clientLogLines = structuredClone(seed.clientLogLines ?? []);
+    this.contentSafetyCheckRecords = structuredClone(seed.contentSafetyCheckRecords ?? []);
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -133,6 +136,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.clientLogUploadTasks = this.clientLogUploadTasks.filter((item) => item.appId !== appId);
     this.clientLogUploads = this.clientLogUploads.filter((item) => item.appId !== appId);
     this.clientLogLines = this.clientLogLines.filter((item) => item.appId !== appId);
+    this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -190,6 +194,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
       (item) => item.appId !== appId || item.userId !== userId,
     );
     this.clientLogUploadTasks = this.clientLogUploadTasks.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter(
       (item) => item.appId !== appId || item.userId !== userId,
     );
   }
@@ -488,6 +495,38 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   insertClientLogLines(records: ClientLogLineRecord[]): void {
     this.clientLogLines.push(...structuredClone(records));
+  }
+
+  insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): void {
+    this.contentSafetyCheckRecords.push(structuredClone(record));
+  }
+
+  listContentSafetyCheckRecords(filter: {
+    createdAtFromIso?: string;
+    createdAtToIso?: string;
+    appId?: string;
+    source?: ContentSafetyCheckRecord["source"];
+    method?: ContentSafetyCheckRecord["method"];
+    taskType?: string;
+    decision?: ContentSafetyCheckRecord["decision"];
+    limit?: number;
+  } = {}): ContentSafetyCheckRecord[] {
+    const records = structuredClone(this.contentSafetyCheckRecords)
+      .filter((item) => filter.createdAtFromIso ? item.createdAt >= filter.createdAtFromIso : true)
+      .filter((item) => filter.createdAtToIso ? item.createdAt < filter.createdAtToIso : true)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
+      .filter((item) => filter.source ? item.source === filter.source : true)
+      .filter((item) => filter.method ? item.method === filter.method : true)
+      .filter((item) => filter.taskType ? item.taskType === filter.taskType : true)
+      .filter((item) => filter.decision ? item.decision === filter.decision : true)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return typeof filter.limit === "number" && filter.limit > 0 ? records.slice(0, filter.limit) : records;
+  }
+
+  deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): number {
+    const before = this.contentSafetyCheckRecords.length;
+    this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.createdAt >= cutoffIso);
+    return before - this.contentSafetyCheckRecords.length;
   }
 
   get seedManagedState(): ManagedStateSnapshot {

@@ -39,6 +39,9 @@ export type LlmRoutingStrategy = "auto" | "fixed";
 export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
+export type ContentSafetyCheckSource = "business" | "admin_test";
+export type ContentSafetyCheckMethod = "disabled" | "keyword" | "llm" | "aliyun" | "failed_open";
+export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
   | "AI_DECRYPT_FAILED"
   | "AI_EMBEDDING_INPUT_INVALID"
@@ -339,6 +342,30 @@ export interface ClientLogLineRecord {
   createdAt: string;
 }
 
+export interface ContentSafetyCheckRecord {
+  id: string;
+  appId: string;
+  userId?: string;
+  requestId?: string;
+  taskType?: string;
+  source: ContentSafetyCheckSource;
+  method: ContentSafetyCheckMethod;
+  decision: ContentSafetyDecision;
+  category?: string;
+  keywordId?: string;
+  text?: string;
+  textLength: number;
+  textHash: string;
+  latencyMs?: number;
+  modelKey?: string;
+  provider?: string;
+  providerModel?: string;
+  failureReason?: string;
+  failureDetail?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -358,6 +385,7 @@ export interface DatabaseSeed {
   clientLogUploadTasks?: ClientLogUploadTaskRecord[];
   clientLogUploads?: ClientLogUploadRecord[];
   clientLogLines?: ClientLogLineRecord[];
+  contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
 }
 
 export interface AccessTokenPayload {
@@ -886,11 +914,13 @@ export interface AdminContentSafetyTestDocument {
   code: "OK" | "AI_INPUT_CONTENT_SENSITIVE";
   message: string;
   textLength: number;
+  elapsedMs: number;
   category?: string;
   keywordId?: string;
   failureReason?: string;
   failureDetail?: string;
   llmDebug?: {
+    latencyMs?: number;
     input: {
       modelKey: string;
       temperature: number;
@@ -921,6 +951,69 @@ export interface AdminContentSafetyTestDocument {
       };
     };
   };
+}
+
+export interface AdminContentSafetyBlockRecordItem {
+  id: string;
+  appId: string;
+  userId?: string;
+  requestId?: string;
+  taskType?: string;
+  source: ContentSafetyCheckSource;
+  method: Exclude<ContentSafetyCheckMethod, "disabled" | "failed_open">;
+  category?: string;
+  keywordId?: string;
+  text: string;
+  textLength: number;
+  textHash: string;
+  modelKey?: string;
+  provider?: string;
+  providerModel?: string;
+  createdAt: string;
+}
+
+export interface AdminContentSafetyBlockRecordsDocument {
+  timezone: string;
+  items: AdminContentSafetyBlockRecordItem[];
+}
+
+export interface AdminContentSafetyStatsBucket {
+  key: string;
+  count: number;
+  blocked: number;
+  failedOpen: number;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+}
+
+export interface AdminContentSafetyDailyStatsItem {
+  date: string;
+  total: number;
+  passed: number;
+  blocked: number;
+  failedOpen: number;
+}
+
+export interface AdminContentSafetyStatsDocument {
+  timezone: string;
+  summary: {
+    total: number;
+    passed: number;
+    blocked: number;
+    failedOpen: number;
+    blockRate: number;
+    failedOpenRate: number;
+    avgLatencyMs: number;
+    p95LatencyMs: number;
+  };
+  daily: AdminContentSafetyDailyStatsItem[];
+  byMethod: AdminContentSafetyStatsBucket[];
+  bySource: AdminContentSafetyStatsBucket[];
+  byApp: AdminContentSafetyStatsBucket[];
+  byTaskType: AdminContentSafetyStatsBucket[];
+  byCategory: AdminContentSafetyStatsBucket[];
+  byFailureReason: AdminContentSafetyStatsBucket[];
+  byLengthBucket: AdminContentSafetyStatsBucket[];
 }
 
 export interface GetuiGyAppCredentials {

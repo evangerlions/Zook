@@ -1,7 +1,10 @@
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { Alert, Button, Input, InputNumber, Segmented, Select, Switch, Table, Tag } from "antd";
+import { Button, Input, InputNumber, Segmented, Select, Switch, Table, Tag } from "antd";
 import { useMemo, useState } from "react";
 
+import { ContentSafetyBlockRecordsTab } from "../components/content-safety-block-records-tab";
+import { ContentSafetyStatsTab } from "../components/content-safety-stats-tab";
+import { ContentSafetyTestTab } from "../components/content-safety-test-tab";
 import { Field, ToggleField } from "../components/field";
 import { JsonPreview } from "../components/json-preview";
 import { MetricCard } from "../components/metric-card";
@@ -14,13 +17,12 @@ import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import type {
   AdminContentSafetyDocument,
-  AdminContentSafetyTestDocument,
   AdminPasswordDocument,
   ContentSafetyConfig,
   ContentSafetyKeywordRule,
 } from "../lib/types";
 
-type ContentSafetyTab = "strategy" | "keywords" | "providers" | "test";
+type ContentSafetyTab = "strategy" | "keywords" | "providers" | "test" | "blockRecords" | "stats";
 
 const CONTENT_SAFETY_OPERATION = "content_safety.sensitive_words.manage";
 const CONTENT_SAFETY_TABS: Array<{ label: string; value: ContentSafetyTab }> = [
@@ -28,6 +30,8 @@ const CONTENT_SAFETY_TABS: Array<{ label: string; value: ContentSafetyTab }> = [
   { label: "敏感词", value: "keywords" },
   { label: "模型/API", value: "providers" },
   { label: "测试", value: "test" },
+  { label: "拦截记录", value: "blockRecords" },
+  { label: "数据统计", value: "stats" },
 ];
 
 function createDefaultConfig(): ContentSafetyConfig {
@@ -97,9 +101,6 @@ export default function ContentSafetyRoute() {
   const [restoreOldValue, setRestoreOldValue] = useState("");
   const [restoreNewValue, setRestoreNewValue] = useState("");
   const [tab, setTab] = useState<ContentSafetyTab>("strategy");
-  const [testText, setTestText] = useState("");
-  const [testLoading, setTestLoading] = useState(false);
-  const [testResult, setTestResult] = useState<AdminContentSafetyTestDocument | null>(null);
   const passwordOptions = useMemo(
     () => (passwords?.items ?? []).map((item) => ({
       label: `${item.key}${item.desc ? ` · ${item.desc}` : ""}`,
@@ -231,24 +232,6 @@ export default function ContentSafetyRoute() {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
       setRestoringRevision(null);
-    }
-  }
-
-  async function handleTestContentSafety() {
-    const text = testText.trim();
-    if (!text) {
-      setNotice(makeNotice("error", "请输入要测试的文本。"));
-      return;
-    }
-    setTestLoading(true);
-    setTestResult(null);
-    clearNotice();
-    try {
-      setTestResult(await adminApi.testContentSafety(text));
-    } catch (error) {
-      setNotice(makeNotice("error", formatApiError(error)));
-    } finally {
-      setTestLoading(false);
     }
   }
 
@@ -568,63 +551,11 @@ export default function ContentSafetyRoute() {
               </>
             ) : null}
 
-            {tab === "test" ? (
-              <section className="content-safety-section">
-                <div className="section-heading">
-                  <div>
-                    <h3>审核测试</h3>
-                    <p>仅管理员可调用。使用当前已保存配置真实执行审核链路，不保存测试文本。</p>
-                  </div>
-                  <Button
-                    disabled={!testText.trim()}
-                    loading={testLoading}
-                    onClick={() => void handleTestContentSafety()}
-                    type="primary"
-                  >
-                    测试审核
-                  </Button>
-                </div>
-                <div className="content-safety-test-grid">
-                  <Field label="测试文本" hint="测试文本只参与本次请求，不会持久化。">
-                    <Input.TextArea
-                      autoSize={{ minRows: 7, maxRows: 12 }}
-                      onChange={(event) => setTestText(event.target.value)}
-                      placeholder="输入一段文本，查看关键词 / LLM / 阿里云审核结果"
-                      value={testText}
-                    />
-                  </Field>
-                  <div className="content-safety-test-result">
-                    {testResult ? (
-                      <Alert
-                        message={testResult.allowed ? "允许发送" : "命中拦截"}
-                        description={
-                          <div className="stack">
-                            <div>结果：{testResult.message}</div>
-                            <div>层级：{testResult.layer}</div>
-                            <div>错误码：{testResult.code}</div>
-                            <div>文本长度：{testResult.textLength}</div>
-                            {testResult.category ? <div>分类：{testResult.category}</div> : null}
-                            {testResult.keywordId ? <div>关键词规则 ID：{testResult.keywordId}</div> : null}
-                            {testResult.failureReason ? <div>失败原因：{testResult.failureReason}</div> : null}
-                            {testResult.failureDetail ? <div>失败详情：{testResult.failureDetail}</div> : null}
-                            {testResult.llmDebug ? (
-                              <div>
-                                <div>LLM 输入 / 输出：</div>
-                                <JsonPreview value={testResult.llmDebug} />
-                              </div>
-                            ) : null}
-                          </div>
-                        }
-                        showIcon
-                        type={testResult.allowed ? "success" : "error"}
-                      />
-                    ) : (
-                      <div className="empty-inline">输入文本后点击测试审核，结果会显示在这里。</div>
-                    )}
-                  </div>
-                </div>
-              </section>
-            ) : null}
+            {tab === "test" ? <ContentSafetyTestTab /> : null}
+
+            {tab === "blockRecords" ? <ContentSafetyBlockRecordsTab /> : null}
+
+            {tab === "stats" ? <ContentSafetyStatsTab /> : null}
           </main>
 
           <RevisionHistoryDock expanded={historyExpanded} onToggle={() => setHistoryExpanded((value) => !value)}>

@@ -5,7 +5,9 @@ import type {
   AdminAuthRateLimitDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
+  AdminContentSafetyBlockRecordsDocument,
   AdminContentSafetyDocument,
+  AdminContentSafetyStatsDocument,
   AdminContentSafetyTestDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
@@ -57,6 +59,12 @@ export class ApiError extends Error {
 
 function adminPath(pathname: string): string {
   return `${ADMIN_API_PREFIX}${pathname}`;
+}
+
+function cleanQuery(query: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(query).filter((entry): entry is [string, string] => Boolean(entry[1])),
+  );
 }
 
 async function parseResponsePayload<T>(response: Response): Promise<ApiEnvelope<T>> {
@@ -497,6 +505,16 @@ export const adminApi = {
         text,
       },
     });
+  },
+  listContentSafetyBlockRecords(query: Record<string, string | undefined>) {
+    return requestJson<AdminContentSafetyBlockRecordsDocument>(
+      adminPath(`/apps/common/content-safety/block-records?${new URLSearchParams(cleanQuery(query)).toString()}`),
+    );
+  },
+  getContentSafetyStats(query: Record<string, string | undefined>) {
+    return requestJson<AdminContentSafetyStatsDocument>(
+      adminPath(`/apps/common/content-safety/stats?${new URLSearchParams(cleanQuery(query)).toString()}`),
+    );
   },
   restoreContentSafety(revision: number, desc?: string) {
     return requestJson<AdminContentSafetyDocument>(

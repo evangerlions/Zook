@@ -10,6 +10,7 @@ import type {
   ClientLogLineRecord,
   ClientLogUploadRecord,
   ClientLogUploadTaskRecord,
+  ContentSafetyCheckRecord,
   DatabaseSeed,
   FailedEventRecord,
   FileRecord,
@@ -246,6 +247,32 @@ function parseClientLogUploadTask(row: QueryResultRow): ClientLogUploadTaskRecor
   };
 }
 
+function parseContentSafetyCheckRecord(row: QueryResultRow): ContentSafetyCheckRecord {
+  return {
+    id: String(row.id),
+    appId: String(row.app_id),
+    userId: row.user_id ?? undefined,
+    requestId: row.request_id ?? undefined,
+    taskType: row.task_type ?? undefined,
+    source: row.source as ContentSafetyCheckRecord["source"],
+    method: row.method as ContentSafetyCheckRecord["method"],
+    decision: row.decision as ContentSafetyCheckRecord["decision"],
+    category: row.category ?? undefined,
+    keywordId: row.keyword_id ?? undefined,
+    text: row.blocked_text ?? undefined,
+    textLength: Number(row.text_length ?? 0),
+    textHash: String(row.text_hash),
+    latencyMs: row.latency_ms === null || row.latency_ms === undefined ? undefined : Number(row.latency_ms),
+    modelKey: row.model_key ?? undefined,
+    provider: row.provider ?? undefined,
+    providerModel: row.provider_model ?? undefined,
+    failureReason: row.failure_reason ?? undefined,
+    failureDetail: row.failure_detail ?? undefined,
+    metadata: (row.metadata ?? {}) as Record<string, unknown>,
+    createdAt: toIsoString(row.created_at) as string,
+  };
+}
+
 export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private initialized = false;
@@ -374,6 +401,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     await this.query("DELETE FROM zook_notification_jobs WHERE app_id = $1", [appId]);
     await this.query("DELETE FROM zook_failed_events WHERE app_id = $1", [appId]);
     await this.query("DELETE FROM zook_analytics_events WHERE app_id = $1", [appId]);
+    await this.query("DELETE FROM zook_content_safety_checks WHERE app_id = $1", [appId]);
     await this.query("DELETE FROM zook_files WHERE app_id = $1", [appId]);
     await this.query("DELETE FROM zook_client_log_lines WHERE app_id = $1", [appId]);
     await this.query("DELETE FROM zook_client_log_uploads WHERE app_id = $1", [appId]);
@@ -425,6 +453,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     await this.query("DELETE FROM zook_user_roles WHERE app_id = $1 AND user_id = $2", [appId, userId]);
     await this.query("DELETE FROM zook_notification_jobs WHERE app_id = $1 AND recipient_user_id = $2", [appId, userId]);
     await this.query("DELETE FROM zook_analytics_events WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+    await this.query("DELETE FROM zook_content_safety_checks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
     await this.query("DELETE FROM zook_files WHERE app_id = $1 AND owner_user_id = $2", [appId, userId]);
     await this.query("DELETE FROM zook_client_log_lines WHERE app_id = $1 AND user_id = $2", [appId, userId]);
     await this.query("DELETE FROM zook_client_log_uploads WHERE app_id = $1 AND user_id = $2", [appId, userId]);
@@ -1057,6 +1086,108 @@ export class PostgresDatabase extends ApplicationDatabase {
         ],
       );
     }
+  }
+
+  override async insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): Promise<void> {
+    await this.query(
+      `INSERT INTO zook_content_safety_checks (
+         id, app_id, user_id, request_id, task_type, source, method, decision,
+         category, keyword_id, blocked_text, text_length, text_hash, latency_ms,
+         model_key, provider, provider_model, failure_reason, failure_detail, metadata, created_at
+       ) VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8,
+         $9, $10, $11, $12, $13, $14,
+         $15, $16, $17, $18, $19, $20::jsonb, $21::timestamptz
+       )`,
+      [
+        record.id,
+        record.appId,
+        record.userId ?? null,
+        record.requestId ?? null,
+        record.taskType ?? null,
+        record.source,
+        record.method,
+        record.decision,
+        record.category ?? null,
+        record.keywordId ?? null,
+        record.text ?? null,
+        record.textLength,
+        record.textHash,
+        record.latencyMs ?? null,
+        record.modelKey ?? null,
+        record.provider ?? null,
+        record.providerModel ?? null,
+        record.failureReason ?? null,
+        record.failureDetail ?? null,
+        JSON.stringify(record.metadata ?? {}),
+        record.createdAt,
+      ],
+    );
+  }
+
+  override async listContentSafetyCheckRecords(filter: {
+    createdAtFromIso?: string;
+    createdAtToIso?: string;
+    appId?: string;
+    source?: ContentSafetyCheckRecord["source"];
+    method?: ContentSafetyCheckRecord["method"];
+    taskType?: string;
+    decision?: ContentSafetyCheckRecord["decision"];
+    limit?: number;
+  } = {}): Promise<ContentSafetyCheckRecord[]> {
+    const clauses: string[] = [];
+    const values: unknown[] = [];
+    const add = (clause: string, value: unknown) => {
+      values.push(value);
+      clauses.push(clause.replace("?", `$${values.length}`));
+    };
+
+    if (filter.createdAtFromIso) {
+      add("created_at >= ?::timestamptz", filter.createdAtFromIso);
+    }
+    if (filter.createdAtToIso) {
+      add("created_at < ?::timestamptz", filter.createdAtToIso);
+    }
+    if (filter.appId) {
+      add("app_id = ?", filter.appId);
+    }
+    if (filter.source) {
+      add("source = ?", filter.source);
+    }
+    if (filter.method) {
+      add("method = ?", filter.method);
+    }
+    if (filter.taskType) {
+      add("task_type = ?", filter.taskType);
+    }
+    if (filter.decision) {
+      add("decision = ?", filter.decision);
+    }
+
+    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+    const limit = typeof filter.limit === "number" && filter.limit > 0
+      ? `LIMIT ${Math.min(Math.floor(filter.limit), 5000)}`
+      : "";
+    const result = await this.query(
+      `SELECT
+         id, app_id, user_id, request_id, task_type, source, method, decision,
+         category, keyword_id, blocked_text, text_length, text_hash, latency_ms,
+         model_key, provider, provider_model, failure_reason, failure_detail, metadata, created_at
+       FROM zook_content_safety_checks
+       ${where}
+       ORDER BY created_at DESC
+       ${limit}`,
+      values,
+    );
+    return result.rows.map(parseContentSafetyCheckRecord);
+  }
+
+  override async deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): Promise<number> {
+    const result = await this.query(
+      "DELETE FROM zook_content_safety_checks WHERE created_at < $1::timestamptz",
+      [cutoffIso],
+    );
+    return result.rowCount ?? 0;
   }
 
   private async initialize(): Promise<void> {
