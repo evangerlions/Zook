@@ -68,7 +68,7 @@ export function ContentSafetyTestTab() {
                   {result.failureReason ? <div>失败原因：{result.failureReason}</div> : null}
                   {result.failureDetail ? <div>失败详情：{result.failureDetail}</div> : null}
                   {result.llmDebug ? (
-                    <div>
+                    <div className="content-safety-test-debug">
                       <div>LLM 输入 / 输出：</div>
                       <JsonPreview value={result.llmDebug} />
                     </div>

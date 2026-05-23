@@ -16,7 +16,7 @@ import type { StructuredLogger } from "../infrastructure/logging/pino-logger.mod
 import type { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { CommonContentSafetyConfigService } from "./common-content-safety-config.service.ts";
 import { CommonPasswordConfigService } from "./common-password-config.service.ts";
-import { LLMManager } from "./llm-manager.ts";
+import { LLMManager, type LLMCompletionResult } from "./llm-manager.ts";
 import { sendAliyunTextModerationRequest } from "./aliyun-content-safety-request.ts";
 import { enumerateDateKeys, randomId, toDateKey } from "../shared/utils.ts";
 
@@ -51,6 +51,76 @@ type ContentSafetyStatsFilter = {
 type ParsedLlmDecision =
   | { parsed: true; blocked: boolean; category?: string }
   | { parsed: false; reason: string; detail: string };
+
+export const CONTENT_SAFETY_LLM_SYSTEM_PROMPT = `你是面向中国大陆互联网产品的用户输入内容安全审核器。
+
+任务：只判断“这条用户输入是否应被阻断发送”。不要改写文本，不要补充解释，不要输出自然语言。
+
+你必须调用 submit_content_safety_decision function，且只提交以下字段：
+- decision: "pass" 或 "block"
+- category: 下方枚举之一
+
+当且仅当用户输入明确命中以下高风险内容时，decision="block"，category 使用下列枚举之一：
+1. geopolitics：任何地缘政治、国际政治冲突、国家/地区主权争议、边界争议、外交对抗、制裁、战争冲突、台海/港澳/藏疆等相关内容。只要提及即阻断。
+2. national_leaders：任何国家领导人、现任或前任国家元首、政府首脑、党政军最高层人物、其姓名/职务/代称/影射/评价/传闻。只要提及即阻断。
+3. political_security：反对宪法基本原则；危害国家安全、泄露国家秘密、颠覆国家政权、破坏国家统一；煽动分裂国家、民族仇恨、地域歧视或破坏民族团结；侮辱英烈；散布会扰乱公共秩序或社会稳定的政治谣言。
+4. terrorism_extremism：宣扬、教唆、支持恐怖主义、极端主义、暴力极端组织，或提供相关实施方法、招募、筹资、制造、传播指引。
+5. violence_crime：教唆、策划或提供现实违法犯罪方法；制作/购买/交易枪支爆炸物、毒品、管制刀具等违禁品；严重血腥暴力、虐杀、报复社会、校园暴力实施指引。
+6. pornography_obscenity：淫秽色情、性交易招嫖、露骨性描写、未成年人性化内容、偷拍传播或非自愿性内容。
+7. gambling_drugs_illegal_trade：赌博引流或组织、毒品制售吸食、走私、洗钱、黑灰产、买卖公民信息、证件伪造、刷单诈骗等非法交易。
+8. fraud_privacy_abuse：诈骗话术、钓鱼、盗号、绕过风控、恶意攻击、隐私泄露、人肉搜索、骚扰威胁的可执行请求。
+9. minors_self_harm_harmful：诱导未成年人违法或危险行为；鼓励自杀自残、厌食伤害、危险挑战，或提供具体实施方法。
+10. cult_superstition_harmful：宣扬邪教组织，或以迷信名义实施敛财、控制、恐吓、伤害他人的内容。
+
+不要误判为 block 的情况：
+- 正常小说、角色扮演、历史/新闻/政策/法律/学术讨论，只要不涉及地缘政治和国家领导人，也没有现实煽动、组织动员、实施步骤、违法交易或露骨细节。
+- 对非政治类公共事件、普通社会问题的理性评论、求助、投诉、事实陈述。
+- 非露骨的成人恋爱、普通冲突、轻微打斗、悬疑恐怖气氛、虚构世界观设定。
+- 安全教育、反诈提醒、合规风控、内容治理测试样例。
+
+判断原则：
+- 地缘政治和国家领导人是零容忍类别，提及即 block。
+- 有明确违法有害意图或可执行细节时阻断。
+- 只有关键词但语义安全时放行。
+- 无法确定时优先 pass，交给关键词层或传统审核 API 兜底。`;
+
+const CONTENT_SAFETY_DECISION_TOOL_NAME = "submit_content_safety_decision";
+const CONTENT_SAFETY_DECISION_TOOL = {
+  type: "function",
+  function: {
+    name: CONTENT_SAFETY_DECISION_TOOL_NAME,
+    description: "Submit the final moderation decision for one user input.",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      required: ["decision", "category"],
+      properties: {
+        decision: {
+          type: "string",
+          enum: ["pass", "block"],
+          description: "Whether the user input should be allowed or blocked.",
+        },
+        category: {
+          type: "string",
+          enum: [
+            "safe",
+            "geopolitics",
+            "national_leaders",
+            "political_security",
+            "terrorism_extremism",
+            "violence_crime",
+            "pornography_obscenity",
+            "gambling_drugs_illegal_trade",
+            "fraud_privacy_abuse",
+            "minors_self_harm_harmful",
+            "cult_superstition_harmful",
+          ],
+          description: "Use safe when decision is pass; otherwise use the blocking category.",
+        },
+      },
+    },
+  },
+};
 
 export class ContentSafetyService {
   constructor(
@@ -190,12 +260,16 @@ export class ContentSafetyService {
       providerOptions: {
         enable_thinking: false,
         zookLogBodyMode: "redacted",
+        tools: [CONTENT_SAFETY_DECISION_TOOL],
+        tool_choice: {
+          type: "function",
+          function: { name: CONTENT_SAFETY_DECISION_TOOL_NAME },
+        },
       },
       messages: [
         {
           role: "system",
-          content:
-            "你是内容安全审核器。只判断用户输入是否需要阻断。返回严格 JSON：{\"decision\":\"pass\"|\"block\",\"category\":\"...\"}。不要输出解释。",
+          content: CONTENT_SAFETY_LLM_SYSTEM_PROMPT,
         },
         {
           role: "user",
@@ -205,7 +279,7 @@ export class ContentSafetyService {
     } satisfies NonNullable<AdminContentSafetyTestDocument["llmDebug"]>["input"];
     try {
       const result = await withTimeout(this.llmManager.complete(llmInput), config.llm.timeoutMs);
-      const decision = parseLlmDecision(result.text);
+      const decision = parseLlmDecision(result);
       const latencyMs = Date.now() - startedAt;
       const llmDebug = {
         latencyMs,
@@ -215,6 +289,7 @@ export class ContentSafetyService {
           modelKey: result.modelKey,
           providerModel: result.providerModel,
           text: result.text,
+          ...(result.toolCalls ? { toolCalls: result.toolCalls } : {}),
           ...(result.reasoningText ? { reasoningText: result.reasoningText } : {}),
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
           ...(result.providerRequestId ? { providerRequestId: result.providerRequestId } : {}),
@@ -294,6 +369,51 @@ export class ContentSafetyService {
     } catch (error) {
       if (error instanceof ApplicationError && error.code === "AI_INPUT_CONTENT_SENSITIVE") {
         throw error;
+      }
+      if (error instanceof ApplicationError && error.code === "LLM_PROVIDER_CONTENT_SENSITIVE") {
+        const latencyMs = Date.now() - startedAt;
+        const category = "provider_data_inspection";
+        const failure = describeFailure(error);
+        this.logDecision("warn", "content safety llm provider precheck rejected user input", command, config, "llm", {
+          decision: "block",
+          category,
+          latencyMs,
+          modelKey: config.llm.modelKey,
+          timeoutMs: config.llm.timeoutMs,
+          failureReason: failure.reason,
+          failureDetail: failure.detail,
+          errorCode: failure.errorCode,
+          statusCode: failure.statusCode,
+        });
+        await this.recordCheck(command, config, {
+          method: "llm",
+          decision: "block",
+          text,
+          blockedText: text,
+          category,
+          latencyMs,
+          modelKey: config.llm.modelKey,
+          failureReason: failure.reason,
+          failureDetail: failure.detail,
+          metadata: {
+            errorCode: failure.errorCode,
+            statusCode: failure.statusCode,
+          },
+        });
+        this.throwSensitive("llm", category, {
+          latencyMs,
+          input: llmInput,
+          output: {
+            provider: "bailian",
+            modelKey: config.llm.modelKey,
+            providerModel: config.llm.modelKey,
+            text: "",
+            parseError: {
+              reason: failure.reason,
+              detail: failure.detail,
+            },
+          },
+        });
       }
       const failure = describeFailure(error);
       this.logDecision("warn", "content safety llm failed open", command, config, "llm", {
@@ -703,31 +823,38 @@ export class ContentSafetyService {
   }
 }
 
-function parseLlmDecision(text: string): ParsedLlmDecision {
-  const trimmed = text.trim();
-  const jsonText = trimmed.match(/\{[\s\S]*\}/)?.[0] ?? trimmed;
-  try {
-    const parsed = JSON.parse(jsonText) as Record<string, unknown>;
-    const decision = typeof parsed.decision === "string" ? parsed.decision.toLowerCase() : "";
-    if (decision !== "pass" && decision !== "block") {
-      return {
-        parsed: false,
-        reason: "llm_output_parse_failed",
-        detail: `LLM moderation output has invalid decision: ${decision || "<empty>"}.`,
-      };
-    }
-    return {
-      parsed: true,
-      blocked: decision === "block",
-      category: typeof parsed.category === "string" ? parsed.category.slice(0, 80) : undefined,
-    };
-  } catch (error) {
+function parseLlmDecision(result: Pick<LLMCompletionResult, "text" | "toolCalls">): ParsedLlmDecision {
+  const decisionToolCall = result.toolCalls?.find((toolCall) =>
+    toolCall.name === CONTENT_SAFETY_DECISION_TOOL_NAME
+  );
+  if (decisionToolCall) {
+    return parseLlmDecisionObject(decisionToolCall.input);
+  }
+
+  return {
+    parsed: false,
+    reason: "llm_tool_call_missing",
+    detail:
+      `LLM moderation output did not call ${CONTENT_SAFETY_DECISION_TOOL_NAME}. Text output: ${
+        result.text.trim().slice(0, 500) || "<empty>"
+      }`,
+  };
+}
+
+function parseLlmDecisionObject(parsed: Record<string, unknown>): ParsedLlmDecision {
+  const decision = typeof parsed.decision === "string" ? parsed.decision.toLowerCase() : "";
+  if (decision !== "pass" && decision !== "block") {
     return {
       parsed: false,
       reason: "llm_output_parse_failed",
-      detail: error instanceof Error ? error.message : String(error),
+      detail: `LLM moderation output has invalid decision: ${decision || "<empty>"}.`,
     };
   }
+  return {
+    parsed: true,
+    blocked: decision === "block",
+    category: typeof parsed.category === "string" ? parsed.category.slice(0, 80) : undefined,
+  };
 }
 
 function normalizeText(value: string): string {

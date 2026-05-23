@@ -106,6 +106,7 @@ export type ErrorCode =
   | "LLM_MODEL_NOT_FOUND"
   | "LLM_SERVICE_NOT_CONFIGURED"
   | "LLM_ROUTE_NOT_AVAILABLE"
+  | "LLM_PROVIDER_CONTENT_SENSITIVE"
   | "LLM_PROVIDER_REQUEST_FAILED"
   | "LLM_PROVIDER_RESPONSE_INVALID"
   | "LOG_UNSUPPORTED_ENCRYPTION"
@@ -937,6 +938,11 @@ export interface AdminContentSafetyTestDocument {
       modelKey: string;
       providerModel: string;
       text: string;
+      toolCalls?: Array<{
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }>;
       reasoningText?: string;
       finishReason?: string;
       providerRequestId?: string;

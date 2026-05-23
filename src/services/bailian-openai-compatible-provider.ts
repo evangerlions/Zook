@@ -47,6 +47,7 @@ interface OpenAICompatibleChoice {
 
 interface OpenAICompatibleResponsePayload {
   id?: string;
+  request_id?: string;
   choices?: OpenAICompatibleChoice[];
   usage?: {
     prompt_tokens?: number;
@@ -134,15 +135,20 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     }
 
     const text = this.readOptionalString(choice.message.content);
-    if (text === undefined) {
-      this.throwProviderResponseInvalid("Completion response message content is missing.");
+    const toolCalls = this.parseCompletionToolCalls(
+      choice.message.tool_calls,
+      request.model.modelKey,
+    );
+    if (text === undefined && toolCalls.length === 0) {
+      this.throwProviderResponseInvalid("Completion response message content or tool calls are missing.");
     }
 
     return {
       provider: request.model.provider,
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
-      text,
+      text: text ?? "",
+      ...(toolCalls.length > 0 ? { toolCalls } : {}),
       reasoningText: this.readOptionalString(choice.message.reasoning_content),
       finishReason: this.readOptionalString(choice.finish_reason),
       usage: this.parseChatUsage(payload.usage),
@@ -578,11 +584,65 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     return trimmed.length > 0 ? trimmed : undefined;
   }
 
+  private parseCompletionToolCalls(
+    toolCalls: NonNullable<OpenAICompatibleChoice["message"]>["tool_calls"],
+    modelKey: string,
+  ): NonNullable<LLMCompletionResult["toolCalls"]> {
+    if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
+      return [];
+    }
+
+    return toolCalls.map((toolCall, index) => {
+      const name = this.readOptionalNonBlankString(toolCall.function?.name);
+      if (!name) {
+        this.throwProviderResponseInvalid("Completion response tool call is missing a function name.");
+      }
+
+      let input: Record<string, unknown>;
+      try {
+        const parsed = JSON.parse(toolCall.function?.arguments || "{}");
+        if (!isRecord(parsed)) {
+          this.throwProviderResponseInvalid("Completion response tool call arguments must be a JSON object.");
+        }
+        input = parsed;
+      } catch (error) {
+        if (error instanceof ApplicationError) {
+          throw error;
+        }
+        this.throwProviderResponseInvalid("Completion response tool call arguments are not valid JSON.", {
+          cause: error instanceof Error ? error.message : String(error),
+          toolName: name,
+        });
+      }
+
+      return {
+        id: this.readOptionalNonBlankString(toolCall.id) ?? this.buildFallbackToolCallId(modelKey, index),
+        name,
+        input,
+      };
+    });
+  }
+
   private buildFallbackToolCallId(modelKey: string, index: number): string {
     return `${modelKey}_tool_${index}`;
   }
 
   private throwProviderRequestFailed(statusCode: number, payload: OpenAICompatibleResponsePayload): never {
+    if (this.isDataInspectionFailure(payload)) {
+      throw new ApplicationError(
+        400,
+        "LLM_PROVIDER_CONTENT_SENSITIVE",
+        payload.error?.message ?? payload.message ?? "Bailian content inspection rejected the request.",
+        {
+          provider: "bailian",
+          statusCode,
+          errorCode: payload.error?.code,
+          errorType: payload.error?.type,
+          providerRequestId: payload.request_id ?? payload.id,
+        },
+      );
+    }
+
     const errorMessage =
       payload.error?.message ??
       payload.message ??
@@ -594,6 +654,24 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       errorCode: payload.error?.code,
       errorType: payload.error?.type,
     });
+  }
+
+  private isDataInspectionFailure(payload: OpenAICompatibleResponsePayload): boolean {
+    const values = [
+      payload.error?.code,
+      payload.error?.type,
+      payload.message,
+      payload.error?.message,
+    ]
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim().toLowerCase());
+
+    return values.some((value) =>
+      value === "data_inspection_failed" ||
+      value === "datainspectionfailed" ||
+      value.includes("data inspection failed") ||
+      value.includes("data_inspection_failed")
+    );
   }
 
   private throwEmbeddingRequestFailed(statusCode: number, payload: OpenAICompatibleEmbeddingPayload): never {

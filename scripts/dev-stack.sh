@@ -277,13 +277,13 @@ fi
 REQUESTED_API_PORT="$API_PORT"
 API_PORT="$(find_available_port "$REQUESTED_API_PORT" "API")"
 if [[ "$API_PORT" != "$REQUESTED_API_PORT" ]]; then
-  log "API 端口 $REQUESTED_API_PORT 已被占用，自动改用 $API_PORT。"
+  log "API 端口 ${REQUESTED_API_PORT} 已被占用，自动改用 ${API_PORT}。"
 fi
 
 REQUESTED_ADMIN_PORT="$ADMIN_PORT"
 ADMIN_PORT="$(find_available_port "$REQUESTED_ADMIN_PORT" "Admin Web" "$API_PORT")"
 if [[ "$ADMIN_PORT" != "$REQUESTED_ADMIN_PORT" ]]; then
-  log "Admin Web 端口 $REQUESTED_ADMIN_PORT 已被占用，自动改用 $ADMIN_PORT。"
+  log "Admin Web 端口 ${REQUESTED_ADMIN_PORT} 已被占用，自动改用 ${ADMIN_PORT}。"
 fi
 
 if [[ ! -d "$ROOT_DIR/node_modules" ]]; then

@@ -93,6 +93,10 @@
   align-items: start;
 }
 
+.page-grid > * {
+  min-width: 0;
+}
+
 .page-grid--wide {
   grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1.05fr);
 }
@@ -111,6 +115,7 @@
 .side-card,
 .metric-card,
 .table-card {
+  min-width: 0;
   border: 1px solid rgba(191, 208, 229, 0.72);
   border-radius: var(--radius-xl);
   background: var(--surface);
