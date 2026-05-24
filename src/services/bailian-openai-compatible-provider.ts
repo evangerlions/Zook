@@ -126,8 +126,21 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     const payload = await this.readJsonPayload(response, !response.ok);
 
     if (!response.ok || payload.error) {
+      this.logLocalProviderChatErrorResponse({
+        mode: "complete",
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        statusCode: response.status,
+        payload,
+      });
       this.throwProviderRequestFailed(response.status, payload);
     }
+    this.logLocalProviderChatResponse({
+      mode: "complete",
+      modelKey: request.model.modelKey,
+      providerModel: request.model.providerModel,
+      payload,
+    });
 
     const choice = payload.choices?.[0];
     if (!choice?.message) {
@@ -736,6 +749,56 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       modelKey: input.modelKey,
       providerModel: input.providerModel,
       chunk: input.chunk,
+    });
+  }
+
+  private logLocalProviderChatResponse(input: {
+    mode: "complete";
+    modelKey: string;
+    providerModel: string;
+    payload: OpenAICompatibleResponsePayload;
+  }): void {
+    if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
+      return;
+    }
+    const choice = input.payload.choices?.[0];
+    this.logger.info("ai_novel local provider chat response body", {
+      mode: input.mode,
+      modelKey: input.modelKey,
+      providerModel: input.providerModel,
+      id: input.payload.id,
+      finishReason: choice?.finish_reason,
+      contentPreview:
+        typeof choice?.message?.content === "string"
+          ? choice.message.content.slice(0, 500)
+          : choice?.message?.content,
+      toolCalls: choice?.message?.tool_calls?.map((toolCall) => ({
+        id: toolCall.id,
+        name: toolCall.function?.name,
+        argumentsPreview: toolCall.function?.arguments?.slice(0, 500),
+      })),
+      usage: input.payload.usage,
+    });
+  }
+
+  private logLocalProviderChatErrorResponse(input: {
+    mode: "complete";
+    modelKey: string;
+    providerModel: string;
+    statusCode: number;
+    payload: OpenAICompatibleResponsePayload;
+  }): void {
+    if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
+      return;
+    }
+    this.logger.warn("ai_novel local provider chat error response body", {
+      mode: input.mode,
+      modelKey: input.modelKey,
+      providerModel: input.providerModel,
+      statusCode: input.statusCode,
+      error: input.payload.error,
+      message: input.payload.message,
+      id: input.payload.id,
     });
   }
 }

@@ -696,6 +696,7 @@ export interface AiNovelEmbeddingsResponse {
 
 export class AiNovelLlmService {
   private static readonly STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
+  private static readonly REQUIRED_TOOL_STREAM_ATTEMPTS = 2;
 
   constructor(
     private readonly llmManager: LLMManager,
@@ -745,19 +746,15 @@ export class AiNovelLlmService {
     const maxTokens =
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
+    const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
     const providerOptions =
-      scene.completeViaStream || promptAssembly.tools.length > 0
+      shouldUseStreamedCompletion || promptAssembly.tools.length > 0
         ? {
-            ...(scene.completeViaStream ? { enable_thinking: true } : {}),
+            ...(shouldUseStreamedCompletion ? { enable_thinking: true } : {}),
             ...(promptAssembly.tools.length > 0
               ? {
                   tools: toOpenAiToolDefinitions(promptAssembly.tools),
-                  tool_choice: promptAssembly.forcedToolName
-                    ? {
-                        type: "function",
-                        function: { name: promptAssembly.forcedToolName },
-                      }
-                    : "auto",
+                  tool_choice: "auto",
                 }
               : {}),
           }
@@ -770,12 +767,18 @@ export class AiNovelLlmService {
         maxTokens,
         ...(providerOptions ? { providerOptions } : {}),
       };
-      const result: LLMCompletionResult = scene.completeViaStream
-        ? await this.llmManager.completeViaStream(llmRequest, {
-            firstContentTimeoutMs:
-              AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
-          })
-        : await this.llmManager.complete(llmRequest);
+      const result: LLMCompletionResult =
+        shouldUseStreamedCompletion && promptAssembly.forcedToolName
+          ? await this.completeRequiredToolViaStream({
+              ...llmRequest,
+              forcedToolName: promptAssembly.forcedToolName,
+            })
+          : shouldUseStreamedCompletion
+            ? await this.llmManager.completeViaStream(llmRequest, {
+                firstContentTimeoutMs:
+                  AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
+              })
+            : await this.llmManager.complete(llmRequest);
       const completionContent = this.resolvePromptAssemblyCompletionText(
         promptAssembly.forcedToolName,
         result,
@@ -803,7 +806,7 @@ export class AiNovelLlmService {
                 maxTokens,
                 providerOptions,
                 profile: scene.profile,
-                stream: false,
+                stream: shouldUseStreamedCompletion,
               }),
             }
           : {}),
@@ -814,6 +817,67 @@ export class AiNovelLlmService {
     }
   }
 
+  private async completeRequiredToolViaStream(input: {
+    modelKey: string;
+    messages: LLMMessage[];
+    temperature?: number;
+    maxTokens?: number;
+    providerOptions?: Record<string, unknown>;
+    forcedToolName: string;
+  }): Promise<LLMCompletionResult> {
+    let messages = input.messages;
+    let result: LLMCompletionResult | undefined;
+
+    for (
+      let attempt = 1;
+      attempt <= AiNovelLlmService.REQUIRED_TOOL_STREAM_ATTEMPTS;
+      attempt += 1
+    ) {
+      result = await this.llmManager.completeViaStream(
+        {
+          modelKey: input.modelKey,
+          messages,
+          temperature: input.temperature,
+          maxTokens: input.maxTokens,
+          ...(input.providerOptions
+            ? { providerOptions: input.providerOptions }
+            : {}),
+        },
+        {
+          firstContentTimeoutMs:
+            AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
+        },
+      );
+      if (this.findToolCall(result, input.forcedToolName)) {
+        return result;
+      }
+
+      this.logger?.warn("ai_novel required streamed tool call missing", {
+        forcedToolName: input.forcedToolName,
+        attempt,
+        finishReason: result.finishReason,
+        textLength: result.text.length,
+        textPreview: result.text.slice(0, 500),
+        toolCallNames: result.toolCalls?.map((candidate) => candidate.name) ?? [],
+        modelKey: result.modelKey,
+        providerModel: result.providerModel,
+        providerRequestId: result.providerRequestId,
+      });
+
+      if (attempt < AiNovelLlmService.REQUIRED_TOOL_STREAM_ATTEMPTS) {
+        messages = [
+          ...input.messages,
+          {
+            role: "user",
+            content: this.buildRequiredToolRetryMessage(input.forcedToolName),
+          },
+        ];
+      }
+    }
+
+    return result!;
+  }
+
   private resolvePromptAssemblyCompletionText(
     forcedToolName: string | undefined,
     result: LLMCompletionResult,
@@ -822,10 +886,18 @@ export class AiNovelLlmService {
       return result.text;
     }
 
-    const toolCall = result.toolCalls?.find(
-      (candidate) => candidate.name === forcedToolName,
-    );
+    const toolCall = this.findToolCall(result, forcedToolName);
     if (!toolCall) {
+      this.logger?.warn("ai_novel required tool call missing from provider result", {
+        forcedToolName,
+        finishReason: result.finishReason,
+        textLength: result.text.length,
+        textPreview: result.text.slice(0, 500),
+        toolCallNames: result.toolCalls?.map((candidate) => candidate.name) ?? [],
+        modelKey: result.modelKey,
+        providerModel: result.providerModel,
+        providerRequestId: result.providerRequestId,
+      });
       throw new ApplicationError(
         502,
         "LLM_PROVIDER_RESPONSE_INVALID",
@@ -838,6 +910,21 @@ export class AiNovelLlmService {
       );
     }
     return JSON.stringify(toolCall.input ?? {});
+  }
+
+  private findToolCall(
+    result: LLMCompletionResult,
+    toolName: string,
+  ): LLMToolCall | undefined {
+    return result.toolCalls?.find((candidate) => candidate.name === toolName);
+  }
+
+  private buildRequiredToolRetryMessage(toolName: string): string {
+    return [
+      `The previous assistant turn did not call ${toolName}.`,
+      `You must now call ${toolName} exactly once with the required structured arguments.`,
+      "Do not answer with plain text or markdown.",
+    ].join(" ");
   }
 
   async *createChatCompletionStream(

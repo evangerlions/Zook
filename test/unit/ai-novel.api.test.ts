@@ -445,7 +445,7 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   );
 });
 
-test("ai_novel structured workflow scenes use streamed completion internally", async () => {
+test("ai_novel structured workflow scenes use thinking streams with required tool validation", async () => {
   const structuredTaskTypes = [
     "chapter_summary",
     "chapter_draft_review",
@@ -465,35 +465,26 @@ test("ai_novel structured workflow scenes use streamed completion internally", a
         assert.match(request.model.modelKey, /^ainovel-/);
         assert.equal(request.model.providerModel, "qwen3.6-plus");
         assert.equal(request.providerOptions?.enable_thinking, true);
+        assert.equal(request.providerOptions?.tool_choice, "auto");
         const toolName = toolNamesFromProviderOptions(
           request.providerOptions,
         ).find((name) => name.startsWith("submit_"));
-        if (toolName) {
-          assert.deepEqual(request.providerOptions?.tool_choice, {
-            type: "function",
-            function: { name: toolName },
-          });
-          yield {
-            type: "reasoning_delta",
-            text: "整理结构化工作流输出。",
-          };
-          yield {
-            type: "tool_call",
-            toolCall: {
-              id: `call_${toolName}_1`,
-              name: toolName,
-              input: forcedStructuredToolPayload(toolName),
-            },
-          };
-        } else {
-          yield {
-            type: "content_delta",
-            text: '{"ok":true}',
-          };
-        }
+        assert.ok(toolName);
+        yield {
+          type: "reasoning_delta",
+          text: "整理结构化工作流输出。",
+        };
+        yield {
+          type: "tool_call",
+          toolCall: {
+            id: `call_${toolName}_1`,
+            name: toolName,
+            input: forcedStructuredToolPayload(toolName),
+          },
+        };
         yield {
           type: "done",
-          finishReason: "stop",
+          finishReason: "tool_calls",
         };
       },
     },
@@ -545,6 +536,95 @@ test("ai_novel structured workflow scenes use streamed completion internally", a
 
   assert.equal(completeCalls, 0);
   assert.equal(streamCalls, structuredTaskTypes.length);
+});
+
+test("ai_novel structured workflow scenes retry when the required submit tool is missing", async () => {
+  let streamCalls = 0;
+  let retryMessages: LLMMessage[] = [];
+  const { runtime, aiKey } = await createAiNovelRuntime({
+    llmProvider: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("structured workflow scenes should not use complete");
+      },
+      async *stream(request): AsyncIterable<LLMStreamEvent> {
+        streamCalls += 1;
+        retryMessages = request.messages;
+        assert.equal(request.providerOptions?.enable_thinking, true);
+        assert.equal(request.providerOptions?.tool_choice, "auto");
+        const toolName = toolNamesFromProviderOptions(
+          request.providerOptions,
+        ).find((name) => name.startsWith("submit_"));
+        assert.ok(toolName);
+        if (streamCalls === 1) {
+          yield {
+            type: "content_delta",
+            text: "plain text instead of tool call",
+          };
+          yield {
+            type: "done",
+            finishReason: "stop",
+          };
+          return;
+        }
+        yield {
+          type: "tool_call",
+          toolCall: {
+            id: `call_${toolName}_retry`,
+            name: toolName,
+            input: forcedStructuredToolPayload(toolName),
+          },
+        };
+        yield {
+          type: "done",
+          finishReason: "tool_calls",
+        };
+      },
+    },
+  });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        taskType: "chapter_summary",
+        messages: [
+          {
+            role: "user",
+            content: "Create structured output.",
+          },
+        ],
+        context: {
+          chapterText: "雨夜事故引出调查线索。",
+        },
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
+  assert.equal(decrypted.code, "OK");
+  const data = (decrypted.data ?? {}) as Record<string, unknown>;
+  const completion = (data.completion ?? {}) as Record<string, unknown>;
+  assert.ok(JSON.parse(String(completion.content)));
+  assert.equal(streamCalls, 2);
+  assert.match(
+    retryMessages.at(-1)?.content ?? "",
+    /must now call submit_chapter_summary exactly once/,
+  );
 });
 
 test("ai_novel model routing config validates all novel-engine chat taskTypes", async () => {
@@ -2755,17 +2835,20 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
   );
 });
 
-test("ai_novel job scenes use fixed input/output prompts over internal streamed completion", async () => {
+test("ai_novel job scenes use fixed input/output prompts over thinking tool streams", async () => {
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   let capturedTools: unknown;
+  let completeCalls = 0;
   let streamCalls = 0;
   const llmProvider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
+      completeCalls += 1;
       throw new Error("job scenes should not use non-streaming complete");
     },
     async *stream(request): AsyncIterable<LLMStreamEvent> {
       streamCalls += 1;
       assert.equal(request.providerOptions?.enable_thinking, true);
+      assert.equal(request.providerOptions?.tool_choice, "auto");
       capturedMessages = request.messages.map((message) => ({
         role: message.role,
         content: message.content,
@@ -2774,11 +2857,8 @@ test("ai_novel job scenes use fixed input/output prompts over internal streamed 
       const toolName = toolNamesFromProviderOptions(
         request.providerOptions,
       ).find((name) => name.startsWith("submit_"));
+      assert.ok(toolName);
       if (toolName) {
-        assert.deepEqual(request.providerOptions?.tool_choice, {
-          type: "function",
-          function: { name: toolName },
-        });
         yield {
           type: "reasoning_delta",
           text: "整理结构化工作流输出。",
@@ -2863,7 +2943,7 @@ test("ai_novel job scenes use fixed input/output prompts over internal streamed 
   const localDebugRequestBody = (localDebugLlmRequest.requestBody ??
     {}) as Record<string, unknown>;
   assert.equal(localDebugLlmRequest.taskType, "chapter_summary");
-  assert.equal(localDebugRequestBody.stream, false);
+  assert.equal(localDebugRequestBody.stream, true);
   assert.deepEqual(
     (localDebugRequestBody.messages as Array<Record<string, unknown>>).map(
       (message) => message.role,
@@ -2939,7 +3019,7 @@ test("ai_novel job scenes use fixed input/output prompts over internal streamed 
   const reviewDebugRequestBody = (reviewDebugLlmRequest.requestBody ??
     {}) as Record<string, unknown>;
   assert.equal(reviewDebugLlmRequest.taskType, "chapter_draft_review");
-  assert.equal(reviewDebugRequestBody.stream, false);
+  assert.equal(reviewDebugRequestBody.stream, true);
   assert.deepEqual(
     (reviewDebugRequestBody.messages as Array<Record<string, unknown>>).map(
       (message) => message.role,
@@ -2991,6 +3071,7 @@ test("ai_novel job scenes use fixed input/output prompts over internal streamed 
   const error = decryptAiPayload(streamEvents[0], aiKey);
   assert.equal(error.code, "REQ_INVALID_BODY");
   assert.equal(error.message, "请求内容不合法，请检查后重试。");
+  assert.equal(completeCalls, 0);
   assert.equal(streamCalls, 2);
 });
 

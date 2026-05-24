@@ -132,6 +132,52 @@ test("bailian provider sends the expected completion request and parses the resp
   });
 });
 
+test("bailian provider parses non-streaming completion tool calls", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createJsonResponse({
+        id: "chatcmpl-tool-id",
+        choices: [
+          {
+            message: {
+              content: null,
+              tool_calls: [
+                {
+                  id: "tool-call-1",
+                  type: "function",
+                  function: {
+                    name: "submit_chapter_summary",
+                    arguments:
+                      '{"summary":"雨夜事故引出调查线索","facts":{"actualEvents":["事故"]}}',
+                  },
+                },
+              ],
+            },
+            finish_reason: "tool_calls",
+          },
+        ],
+      }),
+  });
+
+  const result = await provider.complete(createResolvedRequest());
+
+  assert.equal(result.text, "");
+  assert.equal(result.finishReason, "tool_calls");
+  assert.equal(result.providerRequestId, "chatcmpl-tool-id");
+  assert.deepEqual(result.toolCalls, [
+    {
+      id: "tool-call-1",
+      name: "submit_chapter_summary",
+      input: {
+        summary: "雨夜事故引出调查线索",
+        facts: {
+          actualEvents: ["事故"],
+        },
+      },
+    },
+  ]);
+});
+
 test("bailian provider parses reasoning, content, usage and done events from SSE", async () => {
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async () =>
