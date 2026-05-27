@@ -6,6 +6,7 @@ import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-man
 import { VersionedAppConfigService } from "../../src/services/versioned-app-config.service.ts";
 import { CommonLlmConfigService } from "../../src/services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../src/services/common-password-config.service.ts";
+import { EmbeddingManager, type EmbeddingResult } from "../../src/services/embedding-manager.ts";
 import { LlmHealthService } from "../../src/services/llm-health.service.ts";
 import { LLMManager, type LLMCompletionResult, type LLMProvider, type LLMStreamEvent } from "../../src/services/llm-manager.ts";
 import { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
@@ -380,6 +381,203 @@ test("llm manager resolves {{zook.ps.xxx}} apiKey references from password works
   assert.equal(resolvedApiKey, "resolved-bailian-key");
 });
 
+test("llm manager records AINovel scene route keys under concrete model keys", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "ainovel-premium-creative",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "ainovel-premium-creative",
+        label: "AINovel Premium Creative",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "glm-5",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+
+  const manager = new LLMManager(
+    {
+      bailian: {
+        async complete(request): Promise<LLMCompletionResult> {
+          return {
+            provider: request.model.provider,
+            modelKey: request.model.modelKey,
+            providerModel: request.model.providerModel,
+            text: "ok",
+          };
+        },
+        async *stream(): AsyncIterable<LLMStreamEvent> {
+          yield { type: "done" };
+        },
+      },
+    },
+    undefined,
+    {
+      commonLlmConfigService: fixture.commonLlmConfigService,
+      llmHealthService: fixture.llmHealthService,
+      llmMetricsService: fixture.llmMetricsService,
+      now: () => new Date("2026-03-24T10:20:00+08:00"),
+    },
+  );
+
+  await manager.complete({
+    modelKey: "ainovel-premium-creative",
+    messages: [{ role: "user", content: "hello" }],
+  });
+
+  const overview = await fixture.llmMetricsService.getOverview(
+    await fixture.commonLlmConfigService.getCurrentConfig(),
+    "24h",
+    new Date("2026-03-24T10:50:00+08:00"),
+  );
+  assert.equal(overview.models.some((item) => item.modelKey === "ainovel-premium-creative"), false);
+  assert.equal(overview.models[0]?.modelKey, "glm-5");
+  assert.equal(overview.models[0]?.summary.requestCount, 1);
+  assert.equal(
+    (
+      await fixture.llmHealthService.getRouteSnapshot({
+        modelKey: "ainovel-premium-creative",
+        provider: "bailian",
+        providerModel: "glm-5",
+      })
+    ).totalCalls,
+    1,
+  );
+  assert.equal(
+    (
+      await fixture.llmHealthService.getRouteSnapshot({
+        modelKey: "glm-5",
+        provider: "bailian",
+        providerModel: "glm-5",
+      })
+    ).totalCalls,
+    0,
+  );
+});
+
+test("embedding manager records AINovel scene route keys under concrete model keys", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "qwen3.6-plus",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "qwen3.6-plus",
+        label: "Qwen 3.6 Plus",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "ainovel-embedding-default",
+        label: "AINovel Embedding Default",
+        kind: "embedding",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "text-embedding-v4",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+
+  const manager = new EmbeddingManager(
+    {
+      bailian: {
+        async embed(request): Promise<EmbeddingResult> {
+          return {
+            provider: request.model.provider,
+            modelKey: request.model.modelKey,
+            providerModel: request.model.providerModel,
+            vectors: [{ index: 0, embedding: [0.1, 0.2] }],
+          };
+        },
+      },
+    },
+    undefined,
+    {
+      commonLlmConfigService: fixture.commonLlmConfigService,
+      llmHealthService: fixture.llmHealthService,
+      llmMetricsService: fixture.llmMetricsService,
+      now: () => new Date("2026-03-24T10:20:00+08:00"),
+    },
+  );
+
+  await manager.embed({
+    modelKey: "ainovel-embedding-default",
+    input: ["hello"],
+  });
+
+  const overview = await fixture.llmMetricsService.getOverview(
+    await fixture.commonLlmConfigService.getCurrentConfig(),
+    "24h",
+    new Date("2026-03-24T10:50:00+08:00"),
+  );
+  assert.equal(overview.models.some((item) => item.modelKey === "ainovel-embedding-default"), false);
+  assert.equal(overview.models[0]?.modelKey, "text-embedding-v4");
+  assert.equal(overview.models[0]?.summary.requestCount, 1);
+  assert.equal(
+    (
+      await fixture.llmHealthService.getRouteSnapshot({
+        modelKey: "ainovel-embedding-default",
+        provider: "bailian",
+        providerModel: "text-embedding-v4",
+      })
+    ).totalCalls,
+    1,
+  );
+  assert.equal(
+    (
+      await fixture.llmHealthService.getRouteSnapshot({
+        modelKey: "text-embedding-v4",
+        provider: "bailian",
+        providerModel: "text-embedding-v4",
+      })
+    ).totalCalls,
+    0,
+  );
+});
+
 test("llm metrics service aggregates hourly data and prunes buckets older than one year", async () => {
   const fixture = await createLlmFixture();
   const config = {
@@ -474,7 +672,7 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
   assert.equal(expiredBucket, undefined);
 });
 
-test("common llm metrics expose AINovel alias models for older stored configs", async () => {
+test("common llm metrics exclude AINovel scene route keys from model statistics", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -490,6 +688,20 @@ test("common llm metrics expose AINovel alias models for older stored configs", 
       },
     ],
     models: [
+      {
+        key: "ainovel-free-creative",
+        label: "AINovel Free Creative",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
       {
         key: "qwen3.6-plus",
         label: "qwen3.6-plus",
@@ -508,10 +720,10 @@ test("common llm metrics expose AINovel alias models for older stored configs", 
   });
 
   const config = await fixture.commonLlmConfigService.getCurrentConfig();
-  assert.equal(config.models.some((item) => item.key === "ainovel-free-creative"), false);
+  assert.equal(config.models.some((item) => item.key === "ainovel-free-creative"), true);
 
   await fixture.llmMetricsService.recordCall({
-    modelKey: "ainovel-free-creative",
+    modelKey: "qwen3.6-plus",
     provider: "bailian",
     providerModel: "qwen3.6-plus",
     ok: true,
@@ -526,12 +738,13 @@ test("common llm metrics expose AINovel alias models for older stored configs", 
     new Date("2026-03-24T10:50:00+08:00"),
   );
   assert.equal(overview.summary.requestCount, 1);
-  assert.equal(overview.models[0]?.modelKey, "ainovel-free-creative");
+  assert.equal(overview.models.some((item) => item.modelKey === "ainovel-free-creative"), false);
+  assert.equal(overview.models[0]?.modelKey, "qwen3.6-plus");
   assert.equal(overview.models[0]?.summary.requestCount, 1);
 
   const detail = await fixture.llmMetricsService.getModelDetail(
     config,
-    "ainovel-free-creative",
+    "qwen3.6-plus",
     "24h",
     new Date("2026-03-24T10:50:00+08:00"),
   );

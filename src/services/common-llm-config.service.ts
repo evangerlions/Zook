@@ -40,26 +40,29 @@ const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WEIGHT_PRECISION = 100;
 const QWEN_FLASH_MODEL_KEY = "qwen3.5-flash";
+const QWEN_PLUS_MODEL_KEY = "qwen3.6-plus";
+const TEXT_EMBEDDING_MODEL_KEY = "text-embedding-v4";
 const DEFAULT_AINOVEL_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-
-export function createDefaultAinovelModels(): LlmModelConfig[] {
-  return [
-    createDefaultModel("ainovel-free-creative", "AINovel 免费版创作", "chat", "qwen3.6-plus"),
-    createDefaultModel("ainovel-free-reasoning", "AINovel 免费版推理", "chat", "qwen3.6-plus"),
-    createDefaultModel("ainovel-plus-creative", "AINovel Plus 创作", "chat", "qwen3.6-plus"),
-    createDefaultModel("ainovel-plus-reasoning", "AINovel Plus 推理", "chat", "qwen3.6-plus"),
-    createDefaultModel("ainovel-super-creative", "AINovel 超级 Plus 创作", "chat", "qwen3.6-plus"),
-    createDefaultModel("ainovel-super-reasoning", "AINovel 超级 Plus 推理", "chat", "qwen3.6-plus"),
-    createDefaultModel("ainovel-lowcost-structured", "AINovel 低成本结构化", "chat", "qwen3.6-plus"),
-    createDefaultModel("ainovel-embedding-default", "AINovel 默认向量模型", "embedding", "text-embedding-v4"),
-  ];
-}
 
 function createDefaultModels(): LlmModelConfig[] {
   return [
-    ...createDefaultAinovelModels(),
+    createQwenPlusModel(),
+    createTextEmbeddingModel(),
     createQwenFlashModel(),
   ];
+}
+
+function createQwenPlusModel(): LlmModelConfig {
+  return createDefaultModel(QWEN_PLUS_MODEL_KEY, "Qwen 3.6 Plus 通用模型", "chat", QWEN_PLUS_MODEL_KEY);
+}
+
+function createTextEmbeddingModel(): LlmModelConfig {
+  return createDefaultModel(
+    TEXT_EMBEDDING_MODEL_KEY,
+    "Text Embedding v4 通用向量模型",
+    "embedding",
+    TEXT_EMBEDDING_MODEL_KEY,
+  );
 }
 
 function createQwenFlashModel(): LlmModelConfig {
@@ -263,7 +266,7 @@ export class CommonLlmConfigService {
   private createDefaultConfig(): LlmServiceConfig {
     return {
       enabled: false,
-      defaultModelKey: "ainovel-free-creative",
+      defaultModelKey: QWEN_PLUS_MODEL_KEY,
       providers: [
         {
           key: "bailian",

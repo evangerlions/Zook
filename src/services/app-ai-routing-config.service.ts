@@ -8,8 +8,8 @@ import type {
   AiNovelTierRoutingConfig,
 } from "../shared/types.ts";
 import {
-  AI_NOVEL_CHAT_TASK_TYPES,
-  AI_NOVEL_EMBEDDING_TASK_TYPES,
+  AI_NOVEL_CHAT_SCENE_KEYS,
+  AI_NOVEL_EMBEDDING_SCENE_KEYS,
 } from "../modules/ai-novel/ai-novel-llm-scenes.ts";
 
 export const AI_NOVEL_APP_ID = "ai_novel";
@@ -20,27 +20,6 @@ const VALID_TIERS = new Set<AiNovelModelRoutingTier>([
   "plus",
   "super_plus",
 ]);
-const ADDITIVE_STORED_CHAT_TASK_TYPES = [
-  "chat_compaction",
-  "write_turn",
-  "chapter_draft",
-  "chapter_summary",
-  "chapter_draft_review",
-  "snapshot_generation",
-  "next_chapter_brief",
-] as const;
-const REMOVED_STORED_CHAT_TASK_TYPES = [
-  "blueprint_gen",
-  "chapter1_draft_gen",
-  "chapter1_critic",
-  "fact_extract",
-  "episode_extract",
-  "continue_chapter",
-  "chapter_transition",
-  "chapter2_planner",
-  "chapter2_draft_gen",
-] as const;
-
 const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
   defaultTier: "free",
   tiers: {
@@ -231,10 +210,10 @@ export class AppAiRoutingConfigService {
     return true;
   }
 
-  async resolveModelKey(
+  async resolveSceneRouteKey(
     appId: string,
     kind: "chat" | "embedding",
-    taskType: string,
+    sceneKey: string,
     tier?: AiNovelModelRoutingTier,
   ): Promise<string> {
     let config: AiNovelModelRoutingConfig;
@@ -245,61 +224,37 @@ export class AppAiRoutingConfigService {
         throw new ApplicationError(
           502,
           "AI_UPSTREAM_BAD_GATEWAY",
-          `AINovel model routing config is invalid for ${kind}.${taskType}.`,
-          { kind, taskType, tier: tier ?? "free" },
+          `AINovel scene routing config is invalid for ${kind}.${sceneKey}.`,
+          { kind, sceneKey, tier: tier ?? "free" },
         );
       }
       throw error;
     }
     const resolvedTier = tier ?? config.defaultTier;
     const tierConfig = config.tiers[resolvedTier];
-    const modelKey = tierConfig?.[kind]?.[taskType];
-    if (!modelKey?.trim()) {
+    const sceneRouteKey = tierConfig?.[kind]?.[sceneKey];
+    if (!sceneRouteKey?.trim()) {
       throw new ApplicationError(
         502,
         "AI_UPSTREAM_BAD_GATEWAY",
-        `AINovel model routing is missing ${kind} mapping for ${resolvedTier}.${taskType}.`,
+        `AINovel scene routing is missing ${kind} mapping for ${resolvedTier}.${sceneKey}.`,
         {
           tier: resolvedTier,
-          taskType,
+          sceneKey,
           kind,
         },
       );
     }
 
-    return this.normalizeResolvedModelKey(
-      appId,
-      kind,
-      taskType,
-      modelKey.trim(),
-    );
+    return sceneRouteKey.trim();
   }
 
   createDefaultConfig(): AiNovelModelRoutingConfig {
     return structuredClone(DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG);
   }
 
-  private normalizeResolvedModelKey(
-    appId: string,
-    kind: "chat" | "embedding",
-    taskType: string,
-    modelKey: string,
-  ): string {
-    if (
-      appId === AI_NOVEL_APP_ID &&
-      kind === "chat" &&
-      taskType === "kickoff_turn" &&
-      modelKey === "ainovel-free-reasoning"
-    ) {
-      return "ainovel-plus-reasoning";
-    }
-    return modelKey;
-  }
-
   private parseStoredConfig(raw: string): AiNovelModelRoutingConfig {
-    return this.validateInput(
-      this.normalizeStoredConfig(this.parseStoredJson(raw)),
-    );
+    return this.validateInput(this.parseStoredJson(raw));
   }
 
   private parseStoredJson(raw: string): unknown {
@@ -320,62 +275,6 @@ export class AppAiRoutingConfigService {
     } catch {
       badRequest("REQ_INVALID_BODY", "AI routing config must be valid JSON.");
     }
-  }
-
-  private normalizeStoredConfig(input: unknown): unknown {
-    if (!input || typeof input !== "object" || Array.isArray(input)) {
-      return input;
-    }
-
-    const source = structuredClone(input as Record<string, unknown>);
-    const tiers = source.tiers;
-    if (!tiers || typeof tiers !== "object" || Array.isArray(tiers)) {
-      return source;
-    }
-
-    for (const [tierName, tierValue] of Object.entries(
-      tiers as Record<string, unknown>,
-    )) {
-      if (
-        !tierValue ||
-        typeof tierValue !== "object" ||
-        Array.isArray(tierValue)
-      ) {
-        continue;
-      }
-      const chat = (tierValue as Record<string, unknown>).chat;
-      if (!chat || typeof chat !== "object" || Array.isArray(chat)) {
-        continue;
-      }
-      const chatRecord = chat as Record<string, unknown>;
-      if (
-        typeof chatRecord.setup_turn === "string" &&
-        (!("kickoff_turn" in chatRecord) ||
-          typeof chatRecord.kickoff_turn !== "string" ||
-          !chatRecord.kickoff_turn.trim())
-      ) {
-        chatRecord.kickoff_turn = chatRecord.setup_turn;
-      }
-      delete chatRecord.setup_turn;
-      for (const taskType of REMOVED_STORED_CHAT_TASK_TYPES) {
-        delete chatRecord[taskType];
-      }
-      if (!VALID_TIERS.has(tierName as AiNovelModelRoutingTier)) {
-        continue;
-      }
-      const defaultChat =
-        DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG.tiers[
-          tierName as AiNovelModelRoutingTier
-        ].chat;
-      for (const taskType of ADDITIVE_STORED_CHAT_TASK_TYPES) {
-        const modelKey = chatRecord[taskType];
-        if (typeof modelKey !== "string" || !modelKey.trim()) {
-          chatRecord[taskType] = defaultChat[taskType];
-        }
-      }
-    }
-
-    return source;
   }
 
   private validateInput(input: unknown): AiNovelModelRoutingConfig {
@@ -442,22 +341,22 @@ export class AppAiRoutingConfigService {
 
     const source = value as Record<string, unknown>;
     return {
-      chat: this.normalizeTaskMap(
+      chat: this.normalizeSceneRouteMap(
         source.chat,
-        AI_NOVEL_CHAT_TASK_TYPES,
+        AI_NOVEL_CHAT_SCENE_KEYS,
         `${tier}.chat`,
       ),
-      embedding: this.normalizeTaskMap(
+      embedding: this.normalizeSceneRouteMap(
         source.embedding,
-        AI_NOVEL_EMBEDDING_TASK_TYPES,
+        AI_NOVEL_EMBEDDING_SCENE_KEYS,
         `${tier}.embedding`,
       ),
     };
   }
 
-  private normalizeTaskMap(
+  private normalizeSceneRouteMap(
     value: unknown,
-    taskTypes: readonly string[],
+    sceneKeys: readonly string[],
     fieldName: string,
   ): Record<string, string> {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -467,22 +366,22 @@ export class AppAiRoutingConfigService {
     const source = value as Record<string, unknown>;
     const normalized: Record<string, string> = {};
 
-    for (const taskType of taskTypes) {
-      const modelKey = source[taskType];
-      if (typeof modelKey !== "string" || !modelKey.trim()) {
+    for (const sceneKey of sceneKeys) {
+      const sceneRouteKey = source[sceneKey];
+      if (typeof sceneRouteKey !== "string" || !sceneRouteKey.trim()) {
         badRequest(
           "REQ_INVALID_BODY",
-          `${fieldName}.${taskType} must be a non-empty string.`,
+          `${fieldName}.${sceneKey} must be a non-empty string.`,
         );
       }
-      normalized[taskType] = modelKey.trim();
+      normalized[sceneKey] = sceneRouteKey.trim();
     }
 
     for (const key of Object.keys(source)) {
-      if (!taskTypes.includes(key)) {
+      if (!sceneKeys.includes(key)) {
         badRequest(
           "REQ_INVALID_BODY",
-          `${fieldName} contains unsupported taskType: ${key}.`,
+          `${fieldName} contains unsupported scene key: ${key}.`,
         );
       }
     }

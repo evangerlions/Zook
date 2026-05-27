@@ -596,9 +596,9 @@ const KICKOFF_SYSTEM_PROMPT = [
 ].join("\n");
 
 export interface AiNovelChatResponse {
-  taskType: string;
+  sceneKey: string;
   completion: {
-    modelKey: string;
+    sceneRouteKey: string;
     provider: string;
     providerModel: string;
     content: string;
@@ -621,13 +621,13 @@ interface AiNovelLocalDebugOptions {
 }
 
 interface AiNovelLocalDebugLlmRequestPayload {
-  taskType: string;
-  modelKey: string;
+  sceneKey: string;
+  sceneRouteKey: string;
   temperature: number;
   maxTokens: number;
   profile?: AiNovelPromptProfile;
   requestBody: {
-    modelKey: string;
+    sceneRouteKey: string;
     messages: LLMMessage[];
     temperature: number;
     maxTokens: number;
@@ -677,7 +677,7 @@ export type AiNovelChatStreamChunk =
   | {
       type: "done";
       completion: {
-        modelKey: string;
+        sceneRouteKey: string;
         content: string;
         reasoningText?: string;
         finishReason?: string;
@@ -686,8 +686,8 @@ export type AiNovelChatStreamChunk =
     };
 
 export interface AiNovelEmbeddingsResponse {
-  taskType: string;
-  modelKey: string;
+  sceneKey: string;
+  sceneRouteKey: string;
   provider: string;
   providerModel: string;
   vectors: EmbeddingVector[];
@@ -710,29 +710,24 @@ export class AiNovelLlmService {
     body: Record<string, unknown>,
     options: AiNovelLocalDebugOptions = {},
   ): Promise<AiNovelChatResponse> {
-    if (body.model !== undefined) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        "model is not allowed. Use taskType to select the server-side scene.",
-      );
-    }
+    this.assertNoClientModelSelection(body);
 
-    const taskType = this.requireTaskType(body);
-    const scene = resolveAiNovelChatScene(taskType);
-    if (scene.taskType === "kickoff_turn") {
+    const sceneKey = this.requireSceneKey(body);
+    const scene = resolveAiNovelChatScene(sceneKey);
+    if (scene.sceneKey === "kickoff_turn") {
       badRequest("REQ_INVALID_BODY", "kickoff_turn requires stream=true.");
     }
     if (scene.requiresStream) {
-      badRequest("REQ_INVALID_BODY", `${scene.taskType} requires stream=true.`);
+      badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=true.`);
     }
-    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
+    const sceneRouteKey = await this.appAiRoutingConfigService.resolveSceneRouteKey(
       AI_NOVEL_APP_ID,
       "chat",
-      scene.taskType,
+      scene.sceneKey,
       "free",
     );
     const messages = this.normalizeMessages(body.messages);
-    await this.assertLatestUserInputAllowed(body, messages, scene.taskType);
+    await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const promptAssembly = scene.profile
       ? buildAiNovelPromptAssembly({
           profile: scene.profile,
@@ -761,7 +756,8 @@ export class AiNovelLlmService {
         : undefined;
     try {
       const llmRequest = {
-        modelKey,
+        modelKey: sceneRouteKey,
+        modelKeyKind: "scene_route" as const,
         messages: promptAssembly.messages,
         temperature,
         maxTokens,
@@ -770,7 +766,11 @@ export class AiNovelLlmService {
       const result: LLMCompletionResult =
         shouldUseStreamedCompletion && promptAssembly.forcedToolName
           ? await this.completeRequiredToolViaStream({
-              ...llmRequest,
+              sceneRouteKey,
+              messages: promptAssembly.messages,
+              temperature,
+              maxTokens,
+              ...(providerOptions ? { providerOptions } : {}),
               forcedToolName: promptAssembly.forcedToolName,
             })
           : shouldUseStreamedCompletion
@@ -785,9 +785,9 @@ export class AiNovelLlmService {
       );
 
       const response: AiNovelChatResponse = {
-        taskType: scene.taskType,
+        sceneKey: scene.sceneKey,
         completion: {
-          modelKey: result.modelKey,
+          sceneRouteKey: result.modelKey,
           provider: result.provider,
           providerModel: result.providerModel,
           content: completionContent,
@@ -799,8 +799,8 @@ export class AiNovelLlmService {
         ...(options.exposeLocalDebug === true
           ? {
               localDebugLlmRequest: this.buildLocalDebugLlmRequestPayload({
-                taskType: scene.taskType,
-                modelKey,
+                sceneKey: scene.sceneKey,
+                sceneRouteKey,
                 messages: promptAssembly.messages,
                 temperature,
                 maxTokens,
@@ -818,7 +818,7 @@ export class AiNovelLlmService {
   }
 
   private async completeRequiredToolViaStream(input: {
-    modelKey: string;
+    sceneRouteKey: string;
     messages: LLMMessage[];
     temperature?: number;
     maxTokens?: number;
@@ -835,7 +835,8 @@ export class AiNovelLlmService {
     ) {
       result = await this.llmManager.completeViaStream(
         {
-          modelKey: input.modelKey,
+          modelKey: input.sceneRouteKey,
+          modelKeyKind: "scene_route",
           messages,
           temperature: input.temperature,
           maxTokens: input.maxTokens,
@@ -931,38 +932,33 @@ export class AiNovelLlmService {
     body: Record<string, unknown>,
     options: AiNovelLocalDebugOptions = {},
   ): AsyncIterable<AiNovelChatStreamChunk> {
-    if (body.model !== undefined) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        "model is not allowed. Use taskType to select the server-side scene.",
-      );
-    }
+    this.assertNoClientModelSelection(body);
 
-    const taskType = this.requireTaskType(body);
-    const scene = resolveAiNovelChatScene(taskType);
+    const sceneKey = this.requireSceneKey(body);
+    const scene = resolveAiNovelChatScene(sceneKey);
     if (scene.supportsStream === false) {
       badRequest(
         "REQ_INVALID_BODY",
-        `${scene.taskType} requires stream=false.`,
+        `${scene.sceneKey} requires stream=false.`,
       );
     }
-    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
+    const sceneRouteKey = await this.appAiRoutingConfigService.resolveSceneRouteKey(
       AI_NOVEL_APP_ID,
       "chat",
-      scene.taskType,
+      scene.sceneKey,
       "free",
     );
     const messages = this.normalizeMessages(body.messages);
-    await this.assertLatestUserInputAllowed(body, messages, scene.taskType);
+    await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const temperature =
       this.optionalNumber(body.temperature, "temperature") ??
       scene.defaultTemperature;
     const maxTokens =
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-    if (scene.taskType === "kickoff_turn") {
+    if (scene.sceneKey === "kickoff_turn") {
       yield* this.createKickoffTurnStream({
-        modelKey,
+        sceneRouteKey,
         messages,
         temperature,
         maxTokens,
@@ -973,7 +969,7 @@ export class AiNovelLlmService {
     }
     if (scene.profile) {
       yield* this.createPromptedSceneStream({
-        modelKey,
+        sceneRouteKey,
         messages,
         temperature,
         maxTokens,
@@ -993,8 +989,8 @@ export class AiNovelLlmService {
     try {
       if (options.exposeLocalDebug === true) {
         yield this.buildLocalDebugLlmRequestChunk({
-          taskType: scene.taskType,
-          modelKey,
+          sceneKey: scene.sceneKey,
+          sceneRouteKey,
           messages,
           temperature,
           maxTokens,
@@ -1003,7 +999,8 @@ export class AiNovelLlmService {
       }
 
       for await (const event of this.llmManager.stream({
-        modelKey,
+        modelKey: sceneRouteKey,
+        modelKeyKind: "scene_route",
         messages,
         temperature,
         maxTokens,
@@ -1039,7 +1036,7 @@ export class AiNovelLlmService {
         yield {
           type: "done",
           completion: {
-            modelKey,
+            sceneRouteKey,
             content: aggregatedContent,
             ...(aggregatedReasoning
               ? { reasoningText: aggregatedReasoning }
@@ -1055,7 +1052,7 @@ export class AiNovelLlmService {
   }
 
   private async *createPromptedSceneStream(input: {
-    modelKey: string;
+    sceneRouteKey: string;
     messages: LLMMessage[];
     temperature: number;
     maxTokens: number;
@@ -1082,8 +1079,8 @@ export class AiNovelLlmService {
     try {
       if (input.exposeLocalDebug) {
         yield this.buildLocalDebugLlmRequestChunk({
-          taskType: input.profile,
-          modelKey: input.modelKey,
+          sceneKey: input.profile,
+          sceneRouteKey: input.sceneRouteKey,
           messages: promptAssembly.messages,
           temperature: input.temperature,
           maxTokens: input.maxTokens,
@@ -1093,7 +1090,8 @@ export class AiNovelLlmService {
       }
 
       for await (const event of this.llmManager.stream({
-        modelKey: input.modelKey,
+        modelKey: input.sceneRouteKey,
+        modelKeyKind: "scene_route",
         messages: promptAssembly.messages,
         temperature: input.temperature,
         maxTokens: input.maxTokens,
@@ -1122,7 +1120,7 @@ export class AiNovelLlmService {
             type: "tool_call",
             toolCall: this.normalizePromptedSceneToolCall(
               event.toolCall,
-              input.modelKey,
+              input.sceneRouteKey,
               fallbackToolCallIndex,
             ),
           };
@@ -1143,7 +1141,7 @@ export class AiNovelLlmService {
         yield {
           type: "done",
           completion: {
-            modelKey: input.modelKey,
+            sceneRouteKey: input.sceneRouteKey,
             content: aggregatedContent,
             ...(aggregatedReasoning
               ? { reasoningText: aggregatedReasoning }
@@ -1159,7 +1157,7 @@ export class AiNovelLlmService {
   }
 
   private async *createKickoffTurnStream(input: {
-    modelKey: string;
+    sceneRouteKey: string;
     messages: LLMMessage[];
     temperature: number;
     maxTokens: number;
@@ -1188,8 +1186,8 @@ export class AiNovelLlmService {
     try {
       if (input.exposeLocalDebug) {
         yield this.buildLocalDebugLlmRequestChunk({
-          taskType: "kickoff_turn",
-          modelKey: input.modelKey,
+          sceneKey: "kickoff_turn",
+          sceneRouteKey: input.sceneRouteKey,
           messages,
           temperature: input.temperature,
           maxTokens: input.maxTokens,
@@ -1198,7 +1196,8 @@ export class AiNovelLlmService {
       }
 
       for await (const event of this.llmManager.stream({
-        modelKey: input.modelKey,
+        modelKey: input.sceneRouteKey,
+        modelKeyKind: "scene_route",
         messages,
         temperature: input.temperature,
         maxTokens: input.maxTokens,
@@ -1239,7 +1238,7 @@ export class AiNovelLlmService {
               id: this.normalizeToolCallId(
                 event.toolCall.id,
                 this.buildFallbackToolCallId(
-                  input.modelKey,
+                  input.sceneRouteKey,
                   "kickoff",
                   fallbackToolCallIndex,
                 ),
@@ -1254,7 +1253,7 @@ export class AiNovelLlmService {
         yield {
           type: "done",
           completion: {
-            modelKey: input.modelKey,
+            sceneRouteKey: input.sceneRouteKey,
             content: assistantText,
             ...(reasoningText ? { reasoningText } : {}),
             ...(finishReason ? { finishReason } : {}),
@@ -1281,8 +1280,8 @@ export class AiNovelLlmService {
   }
 
   private buildLocalDebugLlmRequestPayload(input: {
-    taskType: string;
-    modelKey: string;
+    sceneKey: string;
+    sceneRouteKey: string;
     messages: LLMMessage[];
     temperature: number;
     maxTokens: number;
@@ -1291,13 +1290,13 @@ export class AiNovelLlmService {
     stream: boolean;
   }): AiNovelLocalDebugLlmRequestPayload {
     return {
-      taskType: input.taskType,
-      modelKey: input.modelKey,
+      sceneKey: input.sceneKey,
+      sceneRouteKey: input.sceneRouteKey,
       temperature: input.temperature,
       maxTokens: input.maxTokens,
       ...(input.profile ? { profile: input.profile } : {}),
       requestBody: {
-        modelKey: input.modelKey,
+        sceneRouteKey: input.sceneRouteKey,
         messages: input.messages,
         temperature: input.temperature,
         maxTokens: input.maxTokens,
@@ -1310,8 +1309,8 @@ export class AiNovelLlmService {
   }
 
   private buildLocalDebugLlmRequestChunk(input: {
-    taskType: string;
-    modelKey: string;
+    sceneKey: string;
+    sceneRouteKey: string;
     messages: LLMMessage[];
     temperature: number;
     maxTokens: number;
@@ -1504,12 +1503,12 @@ export class AiNovelLlmService {
 
   private normalizePromptedSceneToolCall(
     toolCall: LLMToolCall,
-    modelKey: string,
+    sceneRouteKey: string,
     fallbackIndex: number,
   ): LLMToolCall {
     const id = this.normalizeToolCallId(
       toolCall.id,
-      this.buildFallbackToolCallId(modelKey, "prompted", fallbackIndex),
+      this.buildFallbackToolCallId(sceneRouteKey, "prompted", fallbackIndex),
     );
     const name = this.readOptionalString(toolCall.name);
     if (!name) {
@@ -1517,7 +1516,7 @@ export class AiNovelLlmService {
         502,
         "LLM_PROVIDER_RESPONSE_INVALID",
         "Provider emitted a prompted-scene tool call without a name.",
-        { modelKey, toolCallId: id },
+        { sceneRouteKey, toolCallId: id },
       );
     }
 
@@ -1533,11 +1532,11 @@ export class AiNovelLlmService {
   }
 
   private buildFallbackToolCallId(
-    modelKey: string,
+    sceneRouteKey: string,
     phase: "kickoff" | "prompted",
     index: number,
   ): string {
-    return `${modelKey}_${phase}_tool_${index}`;
+    return `${sceneRouteKey}_${phase}_tool_${index}`;
   }
 
   private readOptionalPositiveInteger(value: unknown): number | undefined {
@@ -1584,32 +1583,28 @@ export class AiNovelLlmService {
   async createEmbeddings(
     body: Record<string, unknown>,
   ): Promise<AiNovelEmbeddingsResponse> {
-    if (body.model !== undefined) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        "model is not allowed. Use taskType to select the server-side scene.",
-      );
-    }
+    this.assertNoClientModelSelection(body);
 
-    const taskType = this.requireTaskType(body);
-    const scene = resolveAiNovelEmbeddingScene(taskType);
-    const modelKey = await this.appAiRoutingConfigService.resolveModelKey(
+    const sceneKey = this.requireSceneKey(body);
+    const scene = resolveAiNovelEmbeddingScene(sceneKey);
+    const sceneRouteKey = await this.appAiRoutingConfigService.resolveSceneRouteKey(
       AI_NOVEL_APP_ID,
       "embedding",
-      scene.taskType,
+      scene.sceneKey,
       "free",
     );
     const input = this.normalizeEmbeddingInput(body.input);
 
     try {
       const result = await this.embeddingManager.embed({
-        modelKey,
+        modelKey: sceneRouteKey,
+        modelKeyKind: "scene_route",
         input,
       });
 
       return {
-        taskType: scene.taskType,
-        modelKey: result.modelKey,
+        sceneKey: scene.sceneKey,
+        sceneRouteKey: result.modelKey,
         provider: result.provider,
         providerModel: result.providerModel,
         vectors: result.vectors,
@@ -1622,12 +1617,34 @@ export class AiNovelLlmService {
     }
   }
 
-  private requireTaskType(body: Record<string, unknown>): string {
-    const taskType = body.taskType;
-    if (typeof taskType !== "string" || !taskType.trim()) {
-      badRequest("REQ_INVALID_BODY", "taskType must be a non-empty string.");
+  private assertNoClientModelSelection(body: Record<string, unknown>): void {
+    for (const field of ["model", "modelKey", "providerModel"]) {
+      if (body[field] !== undefined) {
+        badRequest(
+          "REQ_INVALID_BODY",
+          `${field} is not allowed. Use sceneKey or scene_key to select the AINovel scene.`,
+        );
+      }
     }
-    return taskType.trim();
+  }
+
+  private requireSceneKey(body: Record<string, unknown>): string {
+    const candidates = [
+      ["scene_key", body.scene_key],
+      ["sceneKey", body.sceneKey],
+    ] as const;
+    const provided = candidates.filter(([, value]) => typeof value === "string" && value.trim());
+    if (!provided.length) {
+      badRequest("REQ_INVALID_BODY", "sceneKey must be a non-empty string.");
+    }
+
+    const first = provided[0]!;
+    const sceneKey = first[1].trim();
+    const conflicting = provided.find(([, value]) => value.trim() !== sceneKey);
+    if (conflicting) {
+      badRequest("REQ_INVALID_BODY", "scene_key and sceneKey must resolve to the same scene.");
+    }
+    return sceneKey;
   }
 
   private normalizeMessages(value: unknown): LLMMessage[] {
@@ -1696,7 +1713,7 @@ export class AiNovelLlmService {
   private async assertLatestUserInputAllowed(
     body: Record<string, unknown>,
     messages: LLMMessage[],
-    taskType: string,
+    sceneKey: string,
   ): Promise<void> {
     const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
     const content = latestUserMessage?.content?.trim();
@@ -1713,7 +1730,7 @@ export class AiNovelLlmService {
       appId: AI_NOVEL_APP_ID,
       userId,
       requestId,
-      taskType,
+      sceneKey,
       text: content,
     });
   }

@@ -11,9 +11,9 @@ export type AiNovelChatSceneProfile =
   | "next_chapter_brief";
 
 export interface AiNovelChatScene {
-  taskType: string;
+  sceneKey: string;
   kind: "chat";
-  defaultModelKey: string;
+  defaultSceneRouteKey: string;
   defaultTemperature: number;
   defaultMaxTokens: number;
   responseMode: Exclude<AiNovelSceneResponseMode, "embedding">;
@@ -24,34 +24,34 @@ export interface AiNovelChatScene {
 }
 
 export interface AiNovelEmbeddingScene {
-  taskType: string;
+  sceneKey: string;
   kind: "embedding";
-  defaultModelKey: string;
+  defaultSceneRouteKey: string;
   responseMode: "embedding";
 }
 
 const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   kickoff_turn: {
-    taskType: "kickoff_turn",
+    sceneKey: "kickoff_turn",
     kind: "chat",
-    defaultModelKey: "ainovel-free-reasoning",
+    defaultSceneRouteKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 4000,
     responseMode: "text",
   },
   chat_compaction: {
-    taskType: "chat_compaction",
+    sceneKey: "chat_compaction",
     kind: "chat",
-    defaultModelKey: "ainovel-lowcost-structured",
+    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "text",
     supportsStream: false,
   },
   write_turn: {
-    taskType: "write_turn",
+    sceneKey: "write_turn",
     kind: "chat",
-    defaultModelKey: "ainovel-free-creative",
+    defaultSceneRouteKey: "ainovel-free-creative",
     defaultTemperature: 0.55,
     defaultMaxTokens: 8000,
     responseMode: "text",
@@ -59,9 +59,9 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     requiresStream: true,
   },
   chapter_draft: {
-    taskType: "chapter_draft",
+    sceneKey: "chapter_draft",
     kind: "chat",
-    defaultModelKey: "ainovel-free-creative",
+    defaultSceneRouteKey: "ainovel-free-creative",
     defaultTemperature: 0.65,
     defaultMaxTokens: 20000,
     responseMode: "text",
@@ -69,9 +69,9 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     requiresStream: true,
   },
   chapter_summary: {
-    taskType: "chapter_summary",
+    sceneKey: "chapter_summary",
     kind: "chat",
-    defaultModelKey: "ainovel-lowcost-structured",
+    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "json",
@@ -80,9 +80,9 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     completeViaStream: true,
   },
   chapter_draft_review: {
-    taskType: "chapter_draft_review",
+    sceneKey: "chapter_draft_review",
     kind: "chat",
-    defaultModelKey: "ainovel-lowcost-structured",
+    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "json",
@@ -91,9 +91,9 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     completeViaStream: true,
   },
   snapshot_generation: {
-    taskType: "snapshot_generation",
+    sceneKey: "snapshot_generation",
     kind: "chat",
-    defaultModelKey: "ainovel-lowcost-structured",
+    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 4000,
     responseMode: "json",
@@ -102,9 +102,9 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     completeViaStream: true,
   },
   next_chapter_brief: {
-    taskType: "next_chapter_brief",
+    sceneKey: "next_chapter_brief",
     kind: "chat",
-    defaultModelKey: "ainovel-lowcost-structured",
+    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0.15,
     defaultMaxTokens: 3000,
     responseMode: "json",
@@ -116,65 +116,65 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
 
 const EMBEDDING_SCENES: Record<string, AiNovelEmbeddingScene> = {
   fact_embed: {
-    taskType: "fact_embed",
+    sceneKey: "fact_embed",
     kind: "embedding",
-    defaultModelKey: "ainovel-embedding-default",
+    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   episode_embed: {
-    taskType: "episode_embed",
+    sceneKey: "episode_embed",
     kind: "embedding",
-    defaultModelKey: "ainovel-embedding-default",
+    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   summary_embed: {
-    taskType: "summary_embed",
+    sceneKey: "summary_embed",
     kind: "embedding",
-    defaultModelKey: "ainovel-embedding-default",
+    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   query_memory_embed: {
-    taskType: "query_memory_embed",
+    sceneKey: "query_memory_embed",
     kind: "embedding",
-    defaultModelKey: "ainovel-embedding-default",
+    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
 };
 
 const CHAT_ALIASES: Record<string, string> = {};
 
-export const AI_NOVEL_CHAT_TASK_TYPES = Object.freeze(Object.keys(CHAT_SCENES));
-export const AI_NOVEL_EMBEDDING_TASK_TYPES = Object.freeze(
+export const AI_NOVEL_CHAT_SCENE_KEYS = Object.freeze(Object.keys(CHAT_SCENES));
+export const AI_NOVEL_EMBEDDING_SCENE_KEYS = Object.freeze(
   Object.keys(EMBEDDING_SCENES),
 );
 
-export function resolveAiNovelChatScene(taskType: string): AiNovelChatScene {
-  const normalized = normalizeTaskType(taskType);
+export function resolveAiNovelChatScene(sceneKey: string): AiNovelChatScene {
+  const normalized = normalizeSceneKey(sceneKey);
   const canonical = CHAT_ALIASES[normalized] ?? normalized;
   const scene = CHAT_SCENES[canonical];
   if (!scene) {
     badRequest(
-      "AI_TASK_TYPE_NOT_SUPPORTED",
-      `Unsupported ai_novel chat taskType: ${taskType}.`,
+      "AI_SCENE_NOT_SUPPORTED",
+      `Unsupported ai_novel chat sceneKey: ${sceneKey}.`,
     );
   }
   return scene;
 }
 
 export function resolveAiNovelEmbeddingScene(
-  taskType: string,
+  sceneKey: string,
 ): AiNovelEmbeddingScene {
-  const normalized = normalizeTaskType(taskType);
+  const normalized = normalizeSceneKey(sceneKey);
   const scene = EMBEDDING_SCENES[normalized];
   if (!scene) {
     badRequest(
-      "AI_TASK_TYPE_NOT_SUPPORTED",
-      `Unsupported ai_novel embedding taskType: ${taskType}.`,
+      "AI_SCENE_NOT_SUPPORTED",
+      `Unsupported ai_novel embedding sceneKey: ${sceneKey}.`,
     );
   }
   return scene;
 }
 
-function normalizeTaskType(taskType: string): string {
-  return taskType.trim().toLowerCase();
+function normalizeSceneKey(sceneKey: string): string {
+  return sceneKey.trim().toLowerCase();
 }
