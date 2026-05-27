@@ -13,6 +13,7 @@ export default [
     route("mail", "routes/mail.tsx"),
     route("sms", "routes/sms.tsx"),
     route("passwords", "routes/passwords.tsx"),
+    route("content-safety", "routes/content-safety.tsx"),
     route("getui-gy", "routes/getui-gy.tsx"),
     route("llm", "routes/llm.tsx"),
   ]),

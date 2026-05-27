@@ -132,6 +132,52 @@ test("bailian provider sends the expected completion request and parses the resp
   });
 });
 
+test("bailian provider parses non-streaming completion tool calls", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createJsonResponse({
+        id: "chatcmpl-tool-id",
+        choices: [
+          {
+            message: {
+              content: null,
+              tool_calls: [
+                {
+                  id: "tool-call-1",
+                  type: "function",
+                  function: {
+                    name: "submit_chapter_summary",
+                    arguments:
+                      '{"summary":"雨夜事故引出调查线索","facts":{"actualEvents":["事故"]}}',
+                  },
+                },
+              ],
+            },
+            finish_reason: "tool_calls",
+          },
+        ],
+      }),
+  });
+
+  const result = await provider.complete(createResolvedRequest());
+
+  assert.equal(result.text, "");
+  assert.equal(result.finishReason, "tool_calls");
+  assert.equal(result.providerRequestId, "chatcmpl-tool-id");
+  assert.deepEqual(result.toolCalls, [
+    {
+      id: "tool-call-1",
+      name: "submit_chapter_summary",
+      input: {
+        summary: "雨夜事故引出调查线索",
+        facts: {
+          actualEvents: ["事故"],
+        },
+      },
+    },
+  ]);
+});
+
 test("bailian provider parses reasoning, content, usage and done events from SSE", async () => {
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async () =>
@@ -175,6 +221,148 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
     },
     { type: "done", finishReason: "stop" },
   ]);
+});
+
+test("bailian provider does not abort an active stream by total request timeout", async () => {
+  const encoder = new TextEncoder();
+  let capturedSignal: AbortSignal | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      capturedSignal = init?.signal ?? undefined;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            capturedSignal?.addEventListener("abort", () => {
+              controller.error(capturedSignal?.reason ?? new Error("aborted"));
+            });
+            controller.enqueue(
+              encoder.encode(
+                'data: {"choices":[{"delta":{"content":"slow"},"finish_reason":null}]}\n\n',
+              ),
+            );
+            setTimeout(() => {
+              controller.enqueue(
+                encoder.encode(
+                  'data: {"choices":[{"delta":{"content":" stream"},"finish_reason":"stop"}]}\n\n',
+                ),
+              );
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            }, 30);
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+          },
+        },
+      );
+    },
+  });
+
+  const request = createResolvedRequest();
+  request.model.providerConfig = {
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    apiKey: "mock-bailian-key",
+    timeoutMs: 10,
+  };
+
+  const events = await collectEvents(provider.stream(request));
+
+  assert.ok(capturedSignal);
+  assert.equal(capturedSignal.aborted, false);
+  assert.deepEqual(events.map((event) => event.type), [
+    "content_delta",
+    "content_delta",
+    "done",
+  ]);
+});
+
+test("bailian provider does not use provider timeout as streamed generation timeout before headers", async () => {
+  const encoder = new TextEncoder();
+  let capturedSignal: AbortSignal | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      capturedSignal = init?.signal ?? undefined;
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(
+              encoder.encode(
+                'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"write_draft","arguments":"{\\"content\\":\\"slow draft\\"}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+              ),
+            );
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+          },
+        },
+      );
+    },
+  });
+
+  const request = createResolvedRequest();
+  request.model.providerConfig = {
+    baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    apiKey: "mock-bailian-key",
+    timeoutMs: 10,
+  };
+
+  const events = await collectEvents(provider.stream(request));
+
+  assert.ok(capturedSignal);
+  assert.equal(capturedSignal.aborted, false);
+  assert.deepEqual(events, [
+    {
+      type: "tool_call",
+      toolCall: {
+        id: "kimi2.5_tool_0",
+        name: "write_draft",
+        input: {
+          content: "slow draft",
+        },
+      },
+      rawEvent:
+        '{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"write_draft","arguments":"{\\"content\\":\\"slow draft\\"}"}}]},"finish_reason":"tool_calls"}]}',
+    },
+    { type: "done", finishReason: "tool_calls" },
+  ]);
+});
+
+test("bailian provider aborts streams that do not return headers before first-event timeout", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      await new Promise<void>((resolve, reject) => {
+        const signal = init?.signal;
+        const timer = setTimeout(resolve, 50);
+        signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          reject(signal.reason ?? new Error("aborted"));
+        });
+      });
+      return createSseResponse(["data: [DONE]\n\n"]);
+    },
+  });
+
+  await assert.rejects(
+    async () =>
+      collectEvents(provider.stream(createResolvedRequest({
+        stream_options: {
+          first_event_timeout_ms: 5,
+        },
+      }))),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "LLM_PROVIDER_REQUEST_FAILED",
+  );
 });
 
 test("bailian provider treats blank streamed tool call ids as missing", async () => {
@@ -274,6 +462,66 @@ test("bailian provider logs local provider request body and raw stream chunk", a
       chunkLog.chunk,
       '{"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}',
     );
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
+});
+
+test("bailian provider redacts local provider request body when requested", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+  let capturedInit: RequestInit | undefined;
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async (_input, init) => {
+        capturedInit = init;
+        return createJsonResponse({
+          id: "chatcmpl-redacted-log",
+          choices: [
+            {
+              message: {
+                content: '{"decision":"pass","category":"safe"}',
+              },
+              finish_reason: "stop",
+            },
+          ],
+        });
+      },
+    });
+
+    await provider.complete({
+      ...createResolvedRequest({
+        enable_thinking: false,
+        zookLogBodyMode: "redacted",
+      }),
+      messages: [
+        {
+          role: "system",
+          content: "moderation system prompt",
+        },
+        {
+          role: "user",
+          content: "very sensitive moderation sample",
+        },
+      ],
+    });
+
+    const providerBody = JSON.parse(String(capturedInit?.body)) as Record<string, unknown>;
+    assert.equal(providerBody.zookLogBodyMode, undefined);
+    assert.match(JSON.stringify(providerBody), /very sensitive moderation sample/);
+
+    const requestLog = logger.records.find((entry) =>
+      entry.message === "ai_novel local provider chat request body"
+    );
+    assert.ok(requestLog);
+    const logBodyText = JSON.stringify(requestLog.body);
+    assert.doesNotMatch(logBodyText, /very sensitive moderation sample/);
+    assert.doesNotMatch(logBodyText, /moderation system prompt/);
+    assert.match(logBodyText, /contentHash/);
+    assert.match(logBodyText, /contentLength/);
   } finally {
     process.env.APP_ENV = previousAppEnv;
   }

@@ -5,6 +5,10 @@ import type {
   AdminAuthRateLimitDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
+  AdminContentSafetyBlockRecordsDocument,
+  AdminContentSafetyDocument,
+  AdminContentSafetyStatsDocument,
+  AdminContentSafetyTestDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
@@ -55,6 +59,12 @@ export class ApiError extends Error {
 
 function adminPath(pathname: string): string {
   return `${ADMIN_API_PREFIX}${pathname}`;
+}
+
+function cleanQuery(query: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(query).filter((entry): entry is [string, string] => Boolean(entry[1])),
+  );
 }
 
 async function parseResponsePayload<T>(response: Response): Promise<ApiEnvelope<T>> {
@@ -471,6 +481,49 @@ export const adminApi = {
       adminPath(`/apps/common/passwords/${encodeURIComponent(key)}/reveal`),
       {
         method: "POST",
+      },
+    );
+  },
+  getContentSafety() {
+    return requestJson<AdminContentSafetyDocument>(adminPath("/apps/common/content-safety"));
+  },
+  getContentSafetyRevision(revision: number) {
+    return requestJson<AdminContentSafetyDocument>(
+      adminPath(`/apps/common/content-safety/revisions/${revision}`),
+    );
+  },
+  updateContentSafety(input: Record<string, unknown>) {
+    return requestJson<AdminContentSafetyDocument>(adminPath("/apps/common/content-safety"), {
+      method: "PUT",
+      body: input,
+    });
+  },
+  testContentSafety(text: string) {
+    return requestJson<AdminContentSafetyTestDocument>(adminPath("/apps/common/content-safety/test"), {
+      method: "POST",
+      body: {
+        text,
+      },
+    });
+  },
+  listContentSafetyBlockRecords(query: Record<string, string | undefined>) {
+    return requestJson<AdminContentSafetyBlockRecordsDocument>(
+      adminPath(`/apps/common/content-safety/block-records?${new URLSearchParams(cleanQuery(query)).toString()}`),
+    );
+  },
+  getContentSafetyStats(query: Record<string, string | undefined>) {
+    return requestJson<AdminContentSafetyStatsDocument>(
+      adminPath(`/apps/common/content-safety/stats?${new URLSearchParams(cleanQuery(query)).toString()}`),
+    );
+  },
+  restoreContentSafety(revision: number, desc?: string) {
+    return requestJson<AdminContentSafetyDocument>(
+      adminPath(`/apps/common/content-safety/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
       },
     );
   },

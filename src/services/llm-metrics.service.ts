@@ -3,6 +3,7 @@ import type {
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
   LlmHourlySeriesItem,
+  LlmModelMetricsGroup,
   LlmMetricsRange,
   LlmMetricsSummary,
   LlmRouteMetricsGroup,
@@ -10,6 +11,7 @@ import type {
 } from "../shared/types.ts";
 import { badRequest } from "../shared/errors.ts";
 import { toHourKey } from "../shared/utils.ts";
+import { createDefaultAinovelModels } from "./common-llm-config.service.ts";
 import type { LLMUsage } from "./llm-manager.ts";
 
 const METRICS_RETENTION_HOURS = 24 * 365;
@@ -66,8 +68,9 @@ export class LlmMetricsService {
   async getOverview(config: LlmServiceConfig, range: LlmMetricsRange, now = new Date()): Promise<AdminLlmMetricsDocument> {
     const hours = buildHourKeys(range, now);
     const summary = this.summarizeBuckets(await this.readBuckets(this.globalScope(), hours), hours);
+    const metricModels = this.getMetricModels(config);
     const models = await Promise.all(
-      config.models.map(async (model) => ({
+      metricModels.map(async (model) => ({
         modelKey: model.key,
         label: model.label,
         summary: this.summarizeBuckets(await this.readBuckets(this.modelScope(model.key), hours), hours),
@@ -79,7 +82,7 @@ export class LlmMetricsService {
       timezone: DEFAULT_TIMEZONE,
       range,
       summary,
-      models,
+      models: this.sortModelGroups(models),
     };
   }
 
@@ -89,7 +92,7 @@ export class LlmMetricsService {
     range: LlmMetricsRange,
     now = new Date(),
   ): Promise<AdminLlmModelMetricsDocument> {
-    const model = config.models.find((item) => item.key === modelKey);
+    const model = this.getMetricModels(config).find((item) => item.key === modelKey);
     if (!model) {
       badRequest("REQ_INVALID_QUERY", `Unknown modelKey: ${modelKey}.`);
     }
@@ -209,6 +212,28 @@ export class LlmMetricsService {
 
   private routeScope(modelKey: string, provider: string, providerModel: string): string {
     return `llm-metrics:route:${modelKey}:${provider}:${providerModel}`;
+  }
+
+  private sortModelGroups(models: LlmModelMetricsGroup[]): LlmModelMetricsGroup[] {
+    return [...models].sort((left, right) => {
+      const countDelta = right.summary.requestCount - left.summary.requestCount;
+      if (countDelta !== 0) {
+        return countDelta;
+      }
+      return left.label.localeCompare(right.label);
+    });
+  }
+
+  private getMetricModels(config: LlmServiceConfig): LlmServiceConfig["models"] {
+    const providerKeys = new Set(config.providers.map((provider) => provider.key));
+    const existingKeys = new Set(config.models.map((model) => model.key));
+    const aiNovelMetricModels = createDefaultAinovelModels().filter((model) => {
+      if (existingKeys.has(model.key)) {
+        return false;
+      }
+      return model.routes.every((route) => providerKeys.has(route.provider));
+    });
+    return aiNovelMetricModels.length ? [...config.models, ...aiNovelMetricModels] : config.models;
   }
 }
 

@@ -83,6 +83,58 @@ ensure_port_free() {
   fi
 }
 
+is_port_busy() {
+  local port="$1"
+  lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+is_positive_integer() {
+  local value="$1"
+  [[ "$value" =~ ^[0-9]+$ && "$value" -gt 0 && "$value" -le 65535 ]]
+}
+
+find_available_port() {
+  local requested_port="$1"
+  local name="$2"
+  shift 2
+  local offset
+  local candidate
+  local reserved
+  local reserved_port
+
+  if ! is_positive_integer "$requested_port"; then
+    log "$name 端口不是有效端口号: $requested_port"
+    exit 1
+  fi
+
+  for offset in $(seq 0 100); do
+    candidate=$((requested_port + offset))
+    if [[ "$candidate" -gt 65535 ]]; then
+      break
+    fi
+
+    reserved=false
+    for reserved_port in "$@"; do
+      if [[ "$candidate" == "$reserved_port" ]]; then
+        reserved=true
+        break
+      fi
+    done
+
+    if [[ "$reserved" == true ]]; then
+      continue
+    fi
+
+    if ! is_port_busy "$candidate"; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+
+  log "$name 从端口 $requested_port 开始连续 101 个端口都不可用。"
+  exit 1
+}
+
 ensure_command() {
   local command_name="$1"
   if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -222,8 +274,17 @@ if [[ -z "${REDIS_URL:-}" ]]; then
   exit 1
 fi
 
-ensure_port_free "$API_PORT" "API"
-ensure_port_free "$ADMIN_PORT" "Admin Web"
+REQUESTED_API_PORT="$API_PORT"
+API_PORT="$(find_available_port "$REQUESTED_API_PORT" "API")"
+if [[ "$API_PORT" != "$REQUESTED_API_PORT" ]]; then
+  log "API 端口 ${REQUESTED_API_PORT} 已被占用，自动改用 ${API_PORT}。"
+fi
+
+REQUESTED_ADMIN_PORT="$ADMIN_PORT"
+ADMIN_PORT="$(find_available_port "$REQUESTED_ADMIN_PORT" "Admin Web" "$API_PORT")"
+if [[ "$ADMIN_PORT" != "$REQUESTED_ADMIN_PORT" ]]; then
+  log "Admin Web 端口 ${REQUESTED_ADMIN_PORT} 已被占用，自动改用 ${ADMIN_PORT}。"
+fi
 
 if [[ ! -d "$ROOT_DIR/node_modules" ]]; then
   log "安装根依赖..."

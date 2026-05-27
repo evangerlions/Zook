@@ -2,6 +2,7 @@ import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type {
   LLMMessage,
   LLMManager,
+  LLMCompletionResult,
   LLMToolDefinition,
   LLMToolCall,
 } from "../../services/llm-manager.ts";
@@ -14,6 +15,7 @@ import {
   AI_NOVEL_APP_ID,
 } from "../../services/app-ai-routing-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
+import type { ContentSafetyService } from "../../services/content-safety.service.ts";
 import {
   resolveAiNovelChatScene,
   resolveAiNovelEmbeddingScene,
@@ -397,16 +399,111 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.ready,
     description:
-      "Declare the kickoff sufficient to start writing and provide one user-facing book summary for the ready card.",
+      "Declare the kickoff sufficient to start writing and provide the user-facing ready card summary plus the first MainLine plan.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["summary"],
+      required: ["summary", "mainLine"],
       properties: {
         summary: {
           type: "string",
           description:
             "A concise natural-language description of what this book is like. This is shown on the ready card; it is not a contract field.",
+        },
+        mainLine: {
+          type: "object",
+          additionalProperties: false,
+          required: [
+            "revisionId",
+            "title",
+            "summary",
+            "arcPromise",
+            "arcRules",
+            "startChapterIndex",
+            "endChapterIndex",
+            "beats",
+          ],
+          properties: {
+            revisionId: {
+              type: "string",
+              description:
+                "Use kickoff for the first ready plan. Later runtime may replace it with another revision.",
+            },
+            title: {
+              type: "string",
+              description:
+                "User-facing title for the opening arc or first stage.",
+            },
+            summary: {
+              type: "string",
+              description:
+                "User-facing 1-2 sentence summary of the first 6-10 chapters.",
+            },
+            arcPromise: {
+              type: "string",
+              description:
+                "The user-facing reading promise for this opening arc or current stage.",
+            },
+            arcRules: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Concrete current-stage rules derived from the Contract and user anti-trope constraints.",
+            },
+            startChapterIndex: { type: "integer", minimum: 1 },
+            endChapterIndex: { type: "integer", minimum: 1 },
+            beats: {
+              type: "array",
+              minItems: 6,
+              maxItems: 10,
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: [
+                  "id",
+                  "chapterIndex",
+                  "goal",
+                  "mustCover",
+                  "forbidden",
+                  "change",
+                  "endBoundary",
+                  "endingOpenQuestion",
+                ],
+                properties: {
+                  id: { type: "string" },
+                  chapterIndex: { type: "integer", minimum: 1 },
+                  goal: {
+                    type: "string",
+                    description:
+                      "Concrete chapter-level movement, not a slogan.",
+                  },
+                  mustCover: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  forbidden: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  change: {
+                    type: "string",
+                    description:
+                      "What irreversible story state changes in this chapter.",
+                  },
+                  endBoundary: {
+                    type: "string",
+                    description:
+                      "Where this chapter must stop. It must tell the draft agent what later beat not to narrate yet.",
+                  },
+                  endingOpenQuestion: {
+                    type: "string",
+                    description:
+                      "Concrete unresolved pressure or question, may be empty if not natural.",
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -482,6 +579,14 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Do not call ready until titleCandidate is concrete and non-placeholder.",
   "- Do not call ready until the protagonist anchor has a concrete non-placeholder `name`.",
   "- When calling ready, include summary: one polished natural-language paragraph describing what this book is like for the ready card.",
+  "- When calling ready, include mainLine: a user-facing rolling plan for the first 6-10 chapters. This is the opening arc the user will confirm on the ready card before drafting starts.",
+  "- mainLine must describe what this stage roughly does, like a human writer's first-volume direction. It must be concrete enough to prevent per-chapter improvisation, but not so rigid that every chapter needs a forced hook.",
+  "- mainLine.arcPromise must state the opening/current arc's reading promise. mainLine.arcRules must turn user anti-trope or genre constraints into concrete stage rules.",
+  "- mainLine.beats must be written in the user's writing language. Each beat must include goal, mustCover array, forbidden array, change, and endBoundary.",
+  "- mainLine.beats[].endingOpenQuestion must exist but may be an empty string when a hook would feel forced.",
+  "- mainLine.beats[].endBoundary must say where the chapter stops and which later movement should not be narrated yet.",
+  "- For transition or threshold beats, do not make endBoundary so narrow that a standard chapter can only write the first step. Allow relevant same-scene preparation, emotional consequence, immediate pressure, and concrete threshold detail, while forbidding later-location movement, next-stage planning, or the next major crisis unless the beat explicitly asks for it.",
+  "- mustCover and forbidden arrays may be empty for quiet transition chapters, but the fields must still be present.",
   "- Never call ready with empty placeholder contract fields.",
   "",
   "## Output rules",
@@ -500,6 +605,7 @@ export interface AiNovelChatResponse {
     finishReason?: string;
     providerRequestId?: string;
   };
+  localDebugLlmRequest?: AiNovelLocalDebugLlmRequestPayload;
 }
 
 interface AiNovelUsagePayload {
@@ -589,15 +695,20 @@ export interface AiNovelEmbeddingsResponse {
 }
 
 export class AiNovelLlmService {
+  private static readonly STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
+  private static readonly REQUIRED_TOOL_STREAM_ATTEMPTS = 2;
+
   constructor(
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
     private readonly logger?: StructuredLogger,
+    private readonly contentSafetyService?: ContentSafetyService,
   ) {}
 
   async createChatCompletion(
     body: Record<string, unknown>,
+    options: AiNovelLocalDebugOptions = {},
   ): Promise<AiNovelChatResponse> {
     if (body.model !== undefined) {
       badRequest(
@@ -621,6 +732,7 @@ export class AiNovelLlmService {
       "free",
     );
     const messages = this.normalizeMessages(body.messages);
+    await this.assertLatestUserInputAllowed(body, messages, scene.taskType);
     const promptAssembly = scene.profile
       ? buildAiNovelPromptAssembly({
           profile: scene.profile,
@@ -634,21 +746,43 @@ export class AiNovelLlmService {
     const maxTokens =
       this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
+    const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
+    const providerOptions =
+      shouldUseStreamedCompletion || promptAssembly.tools.length > 0
+        ? {
+            ...(shouldUseStreamedCompletion ? { enable_thinking: true } : {}),
+            ...(promptAssembly.tools.length > 0
+              ? {
+                  tools: toOpenAiToolDefinitions(promptAssembly.tools),
+                  tool_choice: "auto",
+                }
+              : {}),
+          }
+        : undefined;
     try {
-      const result = await this.llmManager.complete({
+      const llmRequest = {
         modelKey,
         messages: promptAssembly.messages,
         temperature,
         maxTokens,
-        ...(promptAssembly.tools.length > 0
-          ? {
-              providerOptions: {
-                tools: toOpenAiToolDefinitions(promptAssembly.tools),
-                tool_choice: "auto",
-              },
-            }
-          : {}),
-      });
+        ...(providerOptions ? { providerOptions } : {}),
+      };
+      const result: LLMCompletionResult =
+        shouldUseStreamedCompletion && promptAssembly.forcedToolName
+          ? await this.completeRequiredToolViaStream({
+              ...llmRequest,
+              forcedToolName: promptAssembly.forcedToolName,
+            })
+          : shouldUseStreamedCompletion
+            ? await this.llmManager.completeViaStream(llmRequest, {
+                firstContentTimeoutMs:
+                  AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
+              })
+            : await this.llmManager.complete(llmRequest);
+      const completionContent = this.resolvePromptAssemblyCompletionText(
+        promptAssembly.forcedToolName,
+        result,
+      );
 
       const response: AiNovelChatResponse = {
         taskType: scene.taskType,
@@ -656,17 +790,141 @@ export class AiNovelLlmService {
           modelKey: result.modelKey,
           provider: result.provider,
           providerModel: result.providerModel,
-          content: result.text,
+          content: completionContent,
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
           ...(result.providerRequestId
             ? { providerRequestId: result.providerRequestId }
             : {}),
         },
+        ...(options.exposeLocalDebug === true
+          ? {
+              localDebugLlmRequest: this.buildLocalDebugLlmRequestPayload({
+                taskType: scene.taskType,
+                modelKey,
+                messages: promptAssembly.messages,
+                temperature,
+                maxTokens,
+                providerOptions,
+                profile: scene.profile,
+                stream: shouldUseStreamedCompletion,
+              }),
+            }
+          : {}),
       };
       return response;
     } catch (error) {
       throw this.mapUpstreamError(error);
     }
+  }
+
+  private async completeRequiredToolViaStream(input: {
+    modelKey: string;
+    messages: LLMMessage[];
+    temperature?: number;
+    maxTokens?: number;
+    providerOptions?: Record<string, unknown>;
+    forcedToolName: string;
+  }): Promise<LLMCompletionResult> {
+    let messages = input.messages;
+    let result: LLMCompletionResult | undefined;
+
+    for (
+      let attempt = 1;
+      attempt <= AiNovelLlmService.REQUIRED_TOOL_STREAM_ATTEMPTS;
+      attempt += 1
+    ) {
+      result = await this.llmManager.completeViaStream(
+        {
+          modelKey: input.modelKey,
+          messages,
+          temperature: input.temperature,
+          maxTokens: input.maxTokens,
+          ...(input.providerOptions
+            ? { providerOptions: input.providerOptions }
+            : {}),
+        },
+        {
+          firstContentTimeoutMs:
+            AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
+        },
+      );
+      if (this.findToolCall(result, input.forcedToolName)) {
+        return result;
+      }
+
+      this.logger?.warn("ai_novel required streamed tool call missing", {
+        forcedToolName: input.forcedToolName,
+        attempt,
+        finishReason: result.finishReason,
+        textLength: result.text.length,
+        textPreview: result.text.slice(0, 500),
+        toolCallNames: result.toolCalls?.map((candidate) => candidate.name) ?? [],
+        modelKey: result.modelKey,
+        providerModel: result.providerModel,
+        providerRequestId: result.providerRequestId,
+      });
+
+      if (attempt < AiNovelLlmService.REQUIRED_TOOL_STREAM_ATTEMPTS) {
+        messages = [
+          ...input.messages,
+          {
+            role: "user",
+            content: this.buildRequiredToolRetryMessage(input.forcedToolName),
+          },
+        ];
+      }
+    }
+
+    return result!;
+  }
+
+  private resolvePromptAssemblyCompletionText(
+    forcedToolName: string | undefined,
+    result: LLMCompletionResult,
+  ): string {
+    if (!forcedToolName) {
+      return result.text;
+    }
+
+    const toolCall = this.findToolCall(result, forcedToolName);
+    if (!toolCall) {
+      this.logger?.warn("ai_novel required tool call missing from provider result", {
+        forcedToolName,
+        finishReason: result.finishReason,
+        textLength: result.text.length,
+        textPreview: result.text.slice(0, 500),
+        toolCallNames: result.toolCalls?.map((candidate) => candidate.name) ?? [],
+        modelKey: result.modelKey,
+        providerModel: result.providerModel,
+        providerRequestId: result.providerRequestId,
+      });
+      throw new ApplicationError(
+        502,
+        "LLM_PROVIDER_RESPONSE_INVALID",
+        `Provider did not call required tool ${forcedToolName}.`,
+        {
+          forcedToolName,
+          finishReason: result.finishReason,
+          textLength: result.text.length,
+        },
+      );
+    }
+    return JSON.stringify(toolCall.input ?? {});
+  }
+
+  private findToolCall(
+    result: LLMCompletionResult,
+    toolName: string,
+  ): LLMToolCall | undefined {
+    return result.toolCalls?.find((candidate) => candidate.name === toolName);
+  }
+
+  private buildRequiredToolRetryMessage(toolName: string): string {
+    return [
+      `The previous assistant turn did not call ${toolName}.`,
+      `You must now call ${toolName} exactly once with the required structured arguments.`,
+      "Do not answer with plain text or markdown.",
+    ].join(" ");
   }
 
   async *createChatCompletionStream(
@@ -695,6 +953,7 @@ export class AiNovelLlmService {
       "free",
     );
     const messages = this.normalizeMessages(body.messages);
+    await this.assertLatestUserInputAllowed(body, messages, scene.taskType);
     const temperature =
       this.optionalNumber(body.temperature, "temperature") ??
       scene.defaultTemperature;
@@ -815,6 +1074,7 @@ export class AiNovelLlmService {
       context: input.context,
     });
     const providerOptions = {
+      enable_thinking: true,
       tools: toOpenAiToolDefinitions(promptAssembly.tools),
       tool_choice: "auto",
     };
@@ -1020,6 +1280,35 @@ export class AiNovelLlmService {
     ];
   }
 
+  private buildLocalDebugLlmRequestPayload(input: {
+    taskType: string;
+    modelKey: string;
+    messages: LLMMessage[];
+    temperature: number;
+    maxTokens: number;
+    providerOptions?: Record<string, unknown>;
+    profile?: AiNovelPromptProfile;
+    stream: boolean;
+  }): AiNovelLocalDebugLlmRequestPayload {
+    return {
+      taskType: input.taskType,
+      modelKey: input.modelKey,
+      temperature: input.temperature,
+      maxTokens: input.maxTokens,
+      ...(input.profile ? { profile: input.profile } : {}),
+      requestBody: {
+        modelKey: input.modelKey,
+        messages: input.messages,
+        temperature: input.temperature,
+        maxTokens: input.maxTokens,
+        stream: input.stream,
+        ...(input.providerOptions
+          ? { providerOptions: input.providerOptions }
+          : {}),
+      },
+    };
+  }
+
   private buildLocalDebugLlmRequestChunk(input: {
     taskType: string;
     modelKey: string;
@@ -1031,23 +1320,10 @@ export class AiNovelLlmService {
   }): AiNovelChatStreamChunk {
     return {
       type: "local_debug_llm_request",
-      payload: {
-        taskType: input.taskType,
-        modelKey: input.modelKey,
-        temperature: input.temperature,
-        maxTokens: input.maxTokens,
-        ...(input.profile ? { profile: input.profile } : {}),
-        requestBody: {
-          modelKey: input.modelKey,
-          messages: input.messages,
-          temperature: input.temperature,
-          maxTokens: input.maxTokens,
-          stream: true,
-          ...(input.providerOptions
-            ? { providerOptions: input.providerOptions }
-            : {}),
-        },
-      },
+      payload: this.buildLocalDebugLlmRequestPayload({
+        ...input,
+        stream: true,
+      }),
     };
   }
 
@@ -1086,7 +1362,8 @@ export class AiNovelLlmService {
 
   private renderChapterLength(chapterLength: KickoffChapterLength): string {
     const range =
-      chapterLength.minChars !== undefined && chapterLength.maxChars !== undefined
+      chapterLength.minChars !== undefined &&
+      chapterLength.maxChars !== undefined
         ? `${chapterLength.minChars}-${chapterLength.maxChars}`
         : chapterLength.minChars !== undefined
           ? `>=${chapterLength.minChars}`
@@ -1167,9 +1444,7 @@ export class AiNovelLlmService {
     };
   }
 
-  private normalizeChapterLengthContext(
-    value: unknown,
-  ): KickoffChapterLength {
+  private normalizeChapterLengthContext(value: unknown): KickoffChapterLength {
     const record = isRecord(value) ? value : {};
     const chapterLength: KickoffChapterLength = {
       preset: this.readOptionalString(record.preset) ?? "",
@@ -1186,7 +1461,10 @@ export class AiNovelLlmService {
     return chapterLength;
   }
 
-  private normalizeStoryAnchors(value: unknown, maxItems: number): StoryAnchor[] {
+  private normalizeStoryAnchors(
+    value: unknown,
+    maxItems: number,
+  ): StoryAnchor[] {
     if (!Array.isArray(value)) {
       return [];
     }
@@ -1229,11 +1507,10 @@ export class AiNovelLlmService {
     modelKey: string,
     fallbackIndex: number,
   ): LLMToolCall {
-    const id =
-      this.normalizeToolCallId(
-        toolCall.id,
-        this.buildFallbackToolCallId(modelKey, "prompted", fallbackIndex),
-      );
+    const id = this.normalizeToolCallId(
+      toolCall.id,
+      this.buildFallbackToolCallId(modelKey, "prompted", fallbackIndex),
+    );
     const name = this.readOptionalString(toolCall.name);
     if (!name) {
       throw new ApplicationError(
@@ -1413,6 +1690,31 @@ export class AiNovelLlmService {
         ...(toolCallId ? { toolCallId } : {}),
         ...(toolCalls.length > 0 ? { toolCalls } : {}),
       };
+    });
+  }
+
+  private async assertLatestUserInputAllowed(
+    body: Record<string, unknown>,
+    messages: LLMMessage[],
+    taskType: string,
+  ): Promise<void> {
+    const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+    const content = latestUserMessage?.content?.trim();
+    if (!content || !this.contentSafetyService) {
+      return;
+    }
+
+    const context = body.context && typeof body.context === "object" && !Array.isArray(body.context)
+      ? body.context as Record<string, unknown>
+      : {};
+    const userId = typeof context.userId === "string" ? context.userId : undefined;
+    const requestId = typeof context.requestId === "string" ? context.requestId : undefined;
+    await this.contentSafetyService.assertUserInputAllowed({
+      appId: AI_NOVEL_APP_ID,
+      userId,
+      requestId,
+      taskType,
+      text: content,
     });
   }
 

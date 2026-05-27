@@ -184,6 +184,11 @@ configKey = ai_novel.model_routing
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` | 获取单模型指标 |
 | `POST` | `/api/v1/admin/apps/common/llm-service/smoke-test` | 运行冒烟测试 |
 
+说明：
+
+- `GET /api/v1/admin/apps/common/llm-service/metrics` 的 `models` 会按当前时间范围内的请求量降序返回，便于优先查看真实流量模型。
+- 读取 LLM metrics 时，服务端会为指标视图补齐 AINovel 默认逻辑模型（如 `ainovel-free-creative`、`ainovel-plus-reasoning`、`ainovel-embedding-default`），但不会改变已保存的 `common.llm_service` 配置。这保证 AINovel LLM 调用即使通过 alias fallback 路由，也能在模型对比和单模型明细中看到对应指标。
+
 ### 3.12 Admin 指标
 
 | 方法 | Path | 说明 |

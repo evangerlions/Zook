@@ -65,6 +65,74 @@ test("llm manager rejects unknown model keys", async () => {
   );
 });
 
+test("llm manager completeViaStream fails fast when no stream content arrives", async () => {
+  const manager = new LLMManager({
+    bailian: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("should use stream");
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        await new Promise(() => undefined);
+      },
+    },
+  });
+
+  const startedAt = Date.now();
+  await assert.rejects(
+    async () =>
+      manager.completeViaStream(
+        {
+          modelKey: "kimi2.5",
+          messages: [{ role: "user", content: "hello" }],
+        },
+        { firstContentTimeoutMs: 5 },
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "LLM_PROVIDER_REQUEST_FAILED" &&
+      "details" in error &&
+      (error.details as Record<string, unknown>).reason ===
+        "first_byte_timeout",
+  );
+  assert.ok(Date.now() - startedAt < 1_000);
+});
+
+test("llm manager completeViaStream captures streamed tool calls", async () => {
+  const manager = new LLMManager({
+    bailian: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("should use stream");
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        yield {
+          type: "tool_call",
+          toolCall: {
+            id: "call_review_1",
+            name: "submit_chapter_review",
+            input: { verdict: "pass" },
+          },
+        };
+        yield { type: "done", finishReason: "tool_calls" };
+      },
+    },
+  });
+
+  const result = await manager.completeViaStream({
+    modelKey: "kimi2.5",
+    messages: [{ role: "user", content: "review" }],
+  });
+
+  assert.equal(result.finishReason, "tool_calls");
+  assert.deepEqual(result.toolCalls, [
+    {
+      id: "call_review_1",
+      name: "submit_chapter_review",
+      input: { verdict: "pass" },
+    },
+  ]);
+});
+
 test("createApplication exposes llmManager through runtime services", async () => {
   const runtime = await createApplication();
 
