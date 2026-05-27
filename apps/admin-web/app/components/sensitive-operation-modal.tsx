@@ -36,6 +36,9 @@ export function SensitiveOperationModal({
   }
 
   async function handleVerify() {
+    if (code.trim().length !== 6 || verifying) {
+      return;
+    }
     setVerifying(true);
     setErrorText("");
     try {
@@ -71,20 +74,33 @@ export function SensitiveOperationModal({
       open={open}
       title={title}
     >
-      <div className="stack">
+      <form
+        className="stack"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleVerify();
+        }}
+      >
         <label className="field">
           <Input.OTP
             autoFocus
             formatter={(value) => value.replace(/\D/g, "")}
             length={6}
             onChange={(value) => setCode(value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") {
+                return;
+              }
+              event.preventDefault();
+              void handleVerify();
+            }}
             size="large"
             value={code}
           />
         </label>
 
         {errorText ? <p className="form-error">{errorText}</p> : null}
-      </div>
+      </form>
     </Modal>
   );
 }

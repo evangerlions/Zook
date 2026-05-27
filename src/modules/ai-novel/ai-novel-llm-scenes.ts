@@ -6,7 +6,7 @@ export type AiNovelChatSceneProfile =
   | "write_turn"
   | "chapter_draft"
   | "chapter_summary"
-  | "main_line_review"
+  | "chapter_draft_review"
   | "snapshot_generation"
   | "next_chapter_brief";
 
@@ -20,6 +20,7 @@ export interface AiNovelChatScene {
   profile?: AiNovelChatSceneProfile;
   requiresStream?: boolean;
   supportsStream?: boolean;
+  completeViaStream?: boolean;
 }
 
 export interface AiNovelEmbeddingScene {
@@ -35,7 +36,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     kind: "chat",
     defaultModelKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
-    defaultMaxTokens: 2000,
+    defaultMaxTokens: 4000,
     responseMode: "text",
   },
   chat_compaction: {
@@ -43,7 +44,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     kind: "chat",
     defaultModelKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
-    defaultMaxTokens: 1600,
+    defaultMaxTokens: 3000,
     responseMode: "text",
     supportsStream: false,
   },
@@ -52,7 +53,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     kind: "chat",
     defaultModelKey: "ainovel-free-creative",
     defaultTemperature: 0.55,
-    defaultMaxTokens: 4000,
+    defaultMaxTokens: 8000,
     responseMode: "text",
     profile: "write_turn",
     requiresStream: true,
@@ -62,7 +63,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     kind: "chat",
     defaultModelKey: "ainovel-free-creative",
     defaultTemperature: 0.65,
-    defaultMaxTokens: 5000,
+    defaultMaxTokens: 20000,
     responseMode: "text",
     profile: "chapter_draft",
     requiresStream: true,
@@ -72,40 +73,44 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     kind: "chat",
     defaultModelKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
-    defaultMaxTokens: 1600,
+    defaultMaxTokens: 3000,
     responseMode: "json",
     profile: "chapter_summary",
     supportsStream: false,
+    completeViaStream: true,
   },
-  main_line_review: {
-    taskType: "main_line_review",
+  chapter_draft_review: {
+    taskType: "chapter_draft_review",
     kind: "chat",
-    defaultModelKey: "ainovel-free-reasoning",
-    defaultTemperature: 0.2,
-    defaultMaxTokens: 1800,
+    defaultModelKey: "ainovel-lowcost-structured",
+    defaultTemperature: 0,
+    defaultMaxTokens: 3000,
     responseMode: "json",
-    profile: "main_line_review",
+    profile: "chapter_draft_review",
     supportsStream: false,
+    completeViaStream: true,
   },
   snapshot_generation: {
     taskType: "snapshot_generation",
     kind: "chat",
     defaultModelKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
-    defaultMaxTokens: 2600,
+    defaultMaxTokens: 4000,
     responseMode: "json",
     profile: "snapshot_generation",
     supportsStream: false,
+    completeViaStream: true,
   },
   next_chapter_brief: {
     taskType: "next_chapter_brief",
     kind: "chat",
     defaultModelKey: "ainovel-lowcost-structured",
-    defaultTemperature: 0,
-    defaultMaxTokens: 1400,
+    defaultTemperature: 0.15,
+    defaultMaxTokens: 3000,
     responseMode: "json",
     profile: "next_chapter_brief",
     supportsStream: false,
+    completeViaStream: true,
   },
 };
 

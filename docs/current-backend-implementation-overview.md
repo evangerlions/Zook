@@ -135,8 +135,9 @@
 2. `common.llm_service` 的强类型配置、版本记录与恢复
 3. LLM 按 `auto / fixed` 两种策略路由
 4. LLM 健康窗口记录
-5. LLM 小时级监控聚合
+5. LLM 小时级监控聚合，并在模型对比中优先展示当前时间范围内有请求量的模型
 6. Admin Web 的 LLM 配置页与监控页
+7. LLM metrics 视图会补齐 AINovel 默认逻辑模型，避免 AINovel alias 调用只进入总指标而无法进入模型维度指标，同时不改变已保存的 `common.llm_service` 配置和冒烟测试范围
 
 对应核心文件：
 
@@ -279,9 +280,12 @@
   - `tencent.secret_id`
   - `tencent.secret_key`
     作为腾讯云主凭证，不再单独维护短信专用的另一套密钥命名。
-- 个验一键登录服务通过 `common.getui_gy_service` 启用，密钥字段只允许引用 common password 工作区：
-  - `getui.gy.app_key`
-  - `getui.gy.master_secret`
+- 个验一键登录服务通过 `common.getui_gy_service` 启用，每个 Zook AppID 独立映射一套直接保存的个验凭据：
+  - `apps[appId].appId`
+  - `apps[appId].appKey`
+  - `apps[appId].appSecret`
+  - `apps[appId].masterSecret`
+- 后台读取配置时会对 `appKey`、`appSecret`、`masterSecret` 脱敏；需要输入二级密码后才能查看明文。
 
 ## 4. 当前目录结构
 

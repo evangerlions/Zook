@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ApplicationError } from "../shared/errors.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { EmbeddingProvider, EmbeddingResult, ResolvedEmbeddingRequest } from "./embedding-manager.ts";
@@ -11,6 +12,9 @@ import type {
 
 const DEFAULT_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 const DEFAULT_BAILIAN_API_KEY = "mock-bailian-api-key";
+const DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS = 20_000;
+const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 20_000;
+const ZOOK_LOG_BODY_MODE_OPTION = "zookLogBodyMode";
 
 interface OpenAICompatibleChoice {
   message?: {
@@ -43,6 +47,7 @@ interface OpenAICompatibleChoice {
 
 interface OpenAICompatibleResponsePayload {
   id?: string;
+  request_id?: string;
   choices?: OpenAICompatibleChoice[];
   usage?: {
     prompt_tokens?: number;
@@ -108,10 +113,11 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       body: requestBody,
+      redactBody: this.shouldRedactProviderLog(request.providerOptions),
     });
     const response = await this.execute(
       this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
-      this.buildRequestInit(
+      this.buildCompletionRequestInit(
         request.model.providerConfig?.apiKey ?? this.apiKey,
         request.model.providerConfig?.timeoutMs ?? 0,
         requestBody,
@@ -120,8 +126,21 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     const payload = await this.readJsonPayload(response, !response.ok);
 
     if (!response.ok || payload.error) {
+      this.logLocalProviderChatErrorResponse({
+        mode: "complete",
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        statusCode: response.status,
+        payload,
+      });
       this.throwProviderRequestFailed(response.status, payload);
     }
+    this.logLocalProviderChatResponse({
+      mode: "complete",
+      modelKey: request.model.modelKey,
+      providerModel: request.model.providerModel,
+      payload,
+    });
 
     const choice = payload.choices?.[0];
     if (!choice?.message) {
@@ -129,15 +148,20 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     }
 
     const text = this.readOptionalString(choice.message.content);
-    if (text === undefined) {
-      this.throwProviderResponseInvalid("Completion response message content is missing.");
+    const toolCalls = this.parseCompletionToolCalls(
+      choice.message.tool_calls,
+      request.model.modelKey,
+    );
+    if (text === undefined && toolCalls.length === 0) {
+      this.throwProviderResponseInvalid("Completion response message content or tool calls are missing.");
     }
 
     return {
       provider: request.model.provider,
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
-      text,
+      text: text ?? "",
+      ...(toolCalls.length > 0 ? { toolCalls } : {}),
       reasoningText: this.readOptionalString(choice.message.reasoning_content),
       finishReason: this.readOptionalString(choice.finish_reason),
       usage: this.parseChatUsage(payload.usage),
@@ -148,11 +172,11 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
   async embed(request: ResolvedEmbeddingRequest): Promise<EmbeddingResult> {
     const response = await this.execute(
       this.buildEmbeddingsUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
-      this.buildRequestInit(
+      this.buildCompletionRequestInit(
         request.model.providerConfig?.apiKey ?? this.apiKey,
         request.model.providerConfig?.timeoutMs ?? 0,
         {
-          ...request.providerOptions,
+          ...this.getForwardedProviderOptions(request.providerOptions),
           model: request.model.providerModel,
           input: request.input,
         },
@@ -210,16 +234,30 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       body: requestBody,
+      redactBody: this.shouldRedactProviderLog(request.providerOptions),
     });
     const streamOptions = this.getProviderStreamOptions(request.providerOptions);
-    const response = await this.execute(
-      this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
-      this.buildRequestInit(
-        request.model.providerConfig?.apiKey ?? this.apiKey,
-        request.model.providerConfig?.timeoutMs ?? 0,
-        requestBody,
-      ),
-    );
+    const streamTimeouts = resolveStreamTimeouts(streamOptions);
+    const controller = new AbortController();
+    const firstEventTimeout = setTimeout(() => {
+      controller.abort(new DOMException(
+        "Bailian stream did not return response headers before the first-event timeout.",
+        "TimeoutError",
+      ));
+    }, streamTimeouts.firstEventTimeoutMs);
+    let response: Response;
+    try {
+      response = await this.execute(
+        this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl),
+        this.buildRequestInit(
+          request.model.providerConfig?.apiKey ?? this.apiKey,
+          requestBody,
+          controller.signal,
+        ),
+      );
+    } finally {
+      clearTimeout(firstEventTimeout);
+    }
 
     if (!response.ok) {
       const payload = await this.readJsonPayload(response, true);
@@ -232,7 +270,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
 
     let finishReason: string | undefined;
     const pendingToolCalls = new Map<number, { id?: string; name?: string; args: string }>();
-    for await (const eventData of readServerSentEvents(response.body)) {
+    for await (const eventData of readServerSentEvents(response.body, streamTimeouts)) {
       this.logLocalProviderRawStreamChunk({
         modelKey: request.model.modelKey,
         providerModel: request.model.providerModel,
@@ -357,20 +395,36 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     };
   }
 
-  private buildRequestInit(apiKey: string, timeoutMs: number, body: Record<string, unknown>): RequestInit {
+  private buildRequestInit(
+    apiKey: string,
+    body: Record<string, unknown>,
+    signal?: AbortSignal,
+  ): RequestInit {
     return {
       method: "POST",
       headers: this.buildHeaders(apiKey),
       body: JSON.stringify(body),
-      ...(timeoutMs > 0 && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
-        ? { signal: AbortSignal.timeout(timeoutMs) }
-        : {}),
+      ...(signal ? { signal } : {}),
     };
+  }
+
+  private buildCompletionRequestInit(
+    apiKey: string,
+    timeoutMs: number,
+    body: Record<string, unknown>,
+  ): RequestInit {
+    return this.buildRequestInit(
+      apiKey,
+      body,
+      timeoutMs > 0 && typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+        ? AbortSignal.timeout(timeoutMs)
+        : undefined,
+    );
   }
 
   private buildChatRequestBody(request: ResolvedLLMCompletionRequest): Record<string, unknown> {
     return {
-      ...request.providerOptions,
+      ...this.getForwardedProviderOptions(request.providerOptions),
       model: request.model.providerModel,
       messages: request.messages.map((message) => ({
         role: message.role,
@@ -518,6 +572,19 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     return isRecord(value) ? value : undefined;
   }
 
+  private getForwardedProviderOptions(providerOptions: Record<string, unknown> | undefined): Record<string, unknown> {
+    if (!providerOptions) {
+      return {};
+    }
+    const forwarded = { ...providerOptions };
+    delete forwarded[ZOOK_LOG_BODY_MODE_OPTION];
+    return forwarded;
+  }
+
+  private shouldRedactProviderLog(providerOptions: Record<string, unknown> | undefined): boolean {
+    return providerOptions?.[ZOOK_LOG_BODY_MODE_OPTION] === "redacted";
+  }
+
   private readOptionalString(value: unknown): string | undefined {
     return typeof value === "string" ? value : undefined;
   }
@@ -530,11 +597,65 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
     return trimmed.length > 0 ? trimmed : undefined;
   }
 
+  private parseCompletionToolCalls(
+    toolCalls: NonNullable<OpenAICompatibleChoice["message"]>["tool_calls"],
+    modelKey: string,
+  ): NonNullable<LLMCompletionResult["toolCalls"]> {
+    if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
+      return [];
+    }
+
+    return toolCalls.map((toolCall, index) => {
+      const name = this.readOptionalNonBlankString(toolCall.function?.name);
+      if (!name) {
+        this.throwProviderResponseInvalid("Completion response tool call is missing a function name.");
+      }
+
+      let input: Record<string, unknown>;
+      try {
+        const parsed = JSON.parse(toolCall.function?.arguments || "{}");
+        if (!isRecord(parsed)) {
+          this.throwProviderResponseInvalid("Completion response tool call arguments must be a JSON object.");
+        }
+        input = parsed;
+      } catch (error) {
+        if (error instanceof ApplicationError) {
+          throw error;
+        }
+        this.throwProviderResponseInvalid("Completion response tool call arguments are not valid JSON.", {
+          cause: error instanceof Error ? error.message : String(error),
+          toolName: name,
+        });
+      }
+
+      return {
+        id: this.readOptionalNonBlankString(toolCall.id) ?? this.buildFallbackToolCallId(modelKey, index),
+        name,
+        input,
+      };
+    });
+  }
+
   private buildFallbackToolCallId(modelKey: string, index: number): string {
     return `${modelKey}_tool_${index}`;
   }
 
   private throwProviderRequestFailed(statusCode: number, payload: OpenAICompatibleResponsePayload): never {
+    if (this.isDataInspectionFailure(payload)) {
+      throw new ApplicationError(
+        400,
+        "LLM_PROVIDER_CONTENT_SENSITIVE",
+        payload.error?.message ?? payload.message ?? "Bailian content inspection rejected the request.",
+        {
+          provider: "bailian",
+          statusCode,
+          errorCode: payload.error?.code,
+          errorType: payload.error?.type,
+          providerRequestId: payload.request_id ?? payload.id,
+        },
+      );
+    }
+
     const errorMessage =
       payload.error?.message ??
       payload.message ??
@@ -546,6 +667,24 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       errorCode: payload.error?.code,
       errorType: payload.error?.type,
     });
+  }
+
+  private isDataInspectionFailure(payload: OpenAICompatibleResponsePayload): boolean {
+    const values = [
+      payload.error?.code,
+      payload.error?.type,
+      payload.message,
+      payload.error?.message,
+    ]
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim().toLowerCase());
+
+    return values.some((value) =>
+      value === "data_inspection_failed" ||
+      value === "datainspectionfailed" ||
+      value.includes("data inspection failed") ||
+      value.includes("data_inspection_failed")
+    );
   }
 
   private throwEmbeddingRequestFailed(statusCode: number, payload: OpenAICompatibleEmbeddingPayload): never {
@@ -580,10 +719,11 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
 
   private logLocalProviderChatRequest(input: {
     mode: "complete" | "stream";
-    url: string;
-    modelKey: string;
-    providerModel: string;
-    body: Record<string, unknown>;
+	    url: string;
+	    modelKey: string;
+	    providerModel: string;
+	    body: Record<string, unknown>;
+    redactBody?: boolean;
   }): void {
     if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
       return;
@@ -593,7 +733,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       url: input.url,
       modelKey: input.modelKey,
       providerModel: input.providerModel,
-      body: input.body,
+      body: input.redactBody ? redactProviderRequestBody(input.body) : input.body,
     });
   }
 
@@ -611,38 +751,106 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       chunk: input.chunk,
     });
   }
+
+  private logLocalProviderChatResponse(input: {
+    mode: "complete";
+    modelKey: string;
+    providerModel: string;
+    payload: OpenAICompatibleResponsePayload;
+  }): void {
+    if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
+      return;
+    }
+    const choice = input.payload.choices?.[0];
+    this.logger.info("ai_novel local provider chat response body", {
+      mode: input.mode,
+      modelKey: input.modelKey,
+      providerModel: input.providerModel,
+      id: input.payload.id,
+      finishReason: choice?.finish_reason,
+      contentPreview:
+        typeof choice?.message?.content === "string"
+          ? choice.message.content.slice(0, 500)
+          : choice?.message?.content,
+      toolCalls: choice?.message?.tool_calls?.map((toolCall) => ({
+        id: toolCall.id,
+        name: toolCall.function?.name,
+        argumentsPreview: toolCall.function?.arguments?.slice(0, 500),
+      })),
+      usage: input.payload.usage,
+    });
+  }
+
+  private logLocalProviderChatErrorResponse(input: {
+    mode: "complete";
+    modelKey: string;
+    providerModel: string;
+    statusCode: number;
+    payload: OpenAICompatibleResponsePayload;
+  }): void {
+    if (!this.logger || !this.shouldLogLocalProviderTraffic()) {
+      return;
+    }
+    this.logger.warn("ai_novel local provider chat error response body", {
+      mode: input.mode,
+      modelKey: input.modelKey,
+      providerModel: input.providerModel,
+      statusCode: input.statusCode,
+      error: input.payload.error,
+      message: input.payload.message,
+      id: input.payload.id,
+    });
+  }
 }
 
-async function* readServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIterable<string> {
+async function* readServerSentEvents(
+  body: ReadableStream<Uint8Array>,
+  options: StreamTimeoutOptions = {},
+): AsyncIterable<string> {
+  const firstEventTimeoutMs = options.firstEventTimeoutMs ?? 0;
+  const idleTimeoutMs = options.idleTimeoutMs ?? 0;
   const decoder = new TextDecoder();
+  const reader = body.getReader();
   let buffer = "";
   let eventDataLines: string[] = [];
+  let hasEvent = false;
 
-  for await (const chunk of body) {
-    buffer += decoder.decode(chunk, { stream: true });
-
+  try {
     while (true) {
-      const newlineIndex = buffer.indexOf("\n");
-      if (newlineIndex === -1) {
+      const timeoutMs = hasEvent ? idleTimeoutMs : firstEventTimeoutMs;
+      const result = await readStreamChunkWithTimeout(reader, timeoutMs, hasEvent);
+      if (result.done) {
         break;
       }
 
-      const rawLine = buffer.slice(0, newlineIndex);
-      buffer = buffer.slice(newlineIndex + 1);
-      const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+      buffer += decoder.decode(result.value, { stream: true });
 
-      if (!line) {
-        if (eventDataLines.length > 0) {
-          yield eventDataLines.join("\n");
-          eventDataLines = [];
+      while (true) {
+        const newlineIndex = buffer.indexOf("\n");
+        if (newlineIndex === -1) {
+          break;
         }
-        continue;
-      }
 
-      if (line.startsWith("data:")) {
-        eventDataLines.push(line.slice("data:".length).trimStart());
+        const rawLine = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+        const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+
+        if (!line) {
+          if (eventDataLines.length > 0) {
+            hasEvent = true;
+            yield eventDataLines.join("\n");
+            eventDataLines = [];
+          }
+          continue;
+        }
+
+        if (line.startsWith("data:")) {
+          eventDataLines.push(line.slice("data:".length).trimStart());
+        }
       }
     }
+  } finally {
+    reader.releaseLock();
   }
 
   buffer += decoder.decode();
@@ -655,6 +863,68 @@ async function* readServerSentEvents(body: ReadableStream<Uint8Array>): AsyncIte
 
   if (eventDataLines.length > 0) {
     yield eventDataLines.join("\n");
+  }
+}
+
+interface StreamTimeoutOptions {
+  firstEventTimeoutMs?: number;
+  idleTimeoutMs?: number;
+}
+
+function resolveStreamTimeouts(streamOptions: Record<string, unknown> | undefined): Required<StreamTimeoutOptions> {
+  return {
+    firstEventTimeoutMs: readPositiveInteger(
+      streamOptions?.first_event_timeout_ms,
+      DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS,
+    ),
+    idleTimeoutMs: readPositiveInteger(
+      streamOptions?.idle_timeout_ms,
+      DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+    ),
+  };
+}
+
+function readPositiveInteger(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : fallback;
+}
+
+async function readStreamChunkWithTimeout(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  timeoutMs: number,
+  hasEvent: boolean,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  if (timeoutMs <= 0) {
+    return reader.read();
+  }
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      reader.read(),
+      new Promise<ReadableStreamReadResult<Uint8Array>>((_, reject) => {
+        timeout = setTimeout(() => {
+          reject(
+            new ApplicationError(
+              504,
+              "LLM_PROVIDER_REQUEST_FAILED",
+              hasEvent
+                ? "Bailian stream stalled before completion."
+                : "Bailian stream did not produce an initial event in time.",
+              {
+                provider: "bailian",
+                reason: hasEvent ? "stream_idle_timeout" : "stream_first_event_timeout",
+                timeoutMs,
+              },
+            ),
+          );
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
   }
 }
 
@@ -672,4 +942,31 @@ function isAbortError(error: unknown): boolean {
 
 function toRecord(details: unknown): Record<string, unknown> {
   return isRecord(details) ? details : {};
+}
+
+function redactProviderRequestBody(body: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...body,
+    ...(Array.isArray(body.messages)
+      ? {
+          messages: body.messages.map((message) => redactProviderLogMessage(message)),
+        }
+      : {}),
+  };
+}
+
+function redactProviderLogMessage(message: unknown): unknown {
+  if (!isRecord(message)) {
+    return message;
+  }
+  const content = message.content;
+  if (typeof content !== "string") {
+    return message;
+  }
+  return {
+    ...message,
+    content: "[redacted]",
+    contentLength: content.length,
+    contentHash: createHash("sha256").update(content, "utf8").digest("hex"),
+  };
 }

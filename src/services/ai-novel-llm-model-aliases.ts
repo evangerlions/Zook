@@ -10,37 +10,37 @@ const AI_NOVEL_MODEL_ALIASES: Record<string, AiNovelModelAlias> = {
   "ainovel-free-creative": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "qwen3.5-flash",
+    providerModel: "qwen3.6-plus",
   },
   "ainovel-free-reasoning": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "qwen3.5-flash",
+    providerModel: "qwen3.6-plus",
   },
   "ainovel-plus-creative": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "deepseek-v3.2",
+    providerModel: "qwen3.6-plus",
   },
   "ainovel-plus-reasoning": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "glm-5",
+    providerModel: "qwen3.6-plus",
   },
   "ainovel-super-creative": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "MiniMax/MiniMax-M2.7",
+    providerModel: "qwen3.6-plus",
   },
   "ainovel-super-reasoning": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "glm-5",
+    providerModel: "qwen3.6-plus",
   },
   "ainovel-lowcost-structured": {
     kind: "chat",
     provider: "bailian",
-    providerModel: "qwen3.5-flash",
+    providerModel: "qwen3.6-plus",
   },
   "ainovel-embedding-default": {
     kind: "embedding",

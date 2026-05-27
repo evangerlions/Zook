@@ -39,19 +39,31 @@ const VALID_ROUTING_STRATEGIES = new Set<LlmRoutingStrategy>(["auto", "fixed"]);
 const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WEIGHT_PRECISION = 100;
+const QWEN_FLASH_MODEL_KEY = "qwen3.5-flash";
 const DEFAULT_AINOVEL_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
-function createDefaultAinovelModels(): LlmModelConfig[] {
+export function createDefaultAinovelModels(): LlmModelConfig[] {
   return [
-    createDefaultModel("ainovel-free-creative", "AINovel 免费版创作", "chat", "qwen-plus"),
-    createDefaultModel("ainovel-free-reasoning", "AINovel 免费版推理", "chat", "qwen3.5-flash"),
-    createDefaultModel("ainovel-plus-creative", "AINovel Plus 创作", "chat", "siliconflow/deepseek-v3.2"),
-    createDefaultModel("ainovel-plus-reasoning", "AINovel Plus 推理", "chat", "glm-5"),
-    createDefaultModel("ainovel-super-creative", "AINovel 超级 Plus 创作", "chat", "minimax-m2.7"),
-    createDefaultModel("ainovel-super-reasoning", "AINovel 超级 Plus 推理", "chat", "glm-5"),
-    createDefaultModel("ainovel-lowcost-structured", "AINovel 低成本结构化", "chat", "qwen3.5-flash"),
+    createDefaultModel("ainovel-free-creative", "AINovel 免费版创作", "chat", "qwen3.6-plus"),
+    createDefaultModel("ainovel-free-reasoning", "AINovel 免费版推理", "chat", "qwen3.6-plus"),
+    createDefaultModel("ainovel-plus-creative", "AINovel Plus 创作", "chat", "qwen3.6-plus"),
+    createDefaultModel("ainovel-plus-reasoning", "AINovel Plus 推理", "chat", "qwen3.6-plus"),
+    createDefaultModel("ainovel-super-creative", "AINovel 超级 Plus 创作", "chat", "qwen3.6-plus"),
+    createDefaultModel("ainovel-super-reasoning", "AINovel 超级 Plus 推理", "chat", "qwen3.6-plus"),
+    createDefaultModel("ainovel-lowcost-structured", "AINovel 低成本结构化", "chat", "qwen3.6-plus"),
     createDefaultModel("ainovel-embedding-default", "AINovel 默认向量模型", "embedding", "text-embedding-v4"),
   ];
+}
+
+function createDefaultModels(): LlmModelConfig[] {
+  return [
+    ...createDefaultAinovelModels(),
+    createQwenFlashModel(),
+  ];
+}
+
+function createQwenFlashModel(): LlmModelConfig {
+  return createDefaultModel(QWEN_FLASH_MODEL_KEY, "Qwen 3.5 Flash 通用低成本审核", "chat", QWEN_FLASH_MODEL_KEY);
 }
 
 function createDefaultModel(
@@ -262,7 +274,7 @@ export class CommonLlmConfigService {
           timeoutMs: DEFAULT_PROVIDER_TIMEOUT_MS,
         },
       ],
-      models: createDefaultAinovelModels(),
+      models: createDefaultModels(),
     };
   }
 

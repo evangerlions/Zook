@@ -39,10 +39,14 @@ export type LlmRoutingStrategy = "auto" | "fixed";
 export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
+export type ContentSafetyCheckSource = "business" | "admin_test";
+export type ContentSafetyCheckMethod = "disabled" | "keyword" | "llm" | "aliyun" | "failed_open";
+export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
   | "AI_DECRYPT_FAILED"
   | "AI_EMBEDDING_INPUT_INVALID"
   | "AI_ENCRYPT_FAILED"
+  | "AI_INPUT_CONTENT_SENSITIVE"
   | "AI_RESPONSE_FORMAT_INVALID"
   | "AI_TASK_TYPE_NOT_SUPPORTED"
   | "AI_UNKNOWN_KEY_ID"
@@ -102,6 +106,7 @@ export type ErrorCode =
   | "LLM_MODEL_NOT_FOUND"
   | "LLM_SERVICE_NOT_CONFIGURED"
   | "LLM_ROUTE_NOT_AVAILABLE"
+  | "LLM_PROVIDER_CONTENT_SENSITIVE"
   | "LLM_PROVIDER_REQUEST_FAILED"
   | "LLM_PROVIDER_RESPONSE_INVALID"
   | "LOG_UNSUPPORTED_ENCRYPTION"
@@ -338,6 +343,30 @@ export interface ClientLogLineRecord {
   createdAt: string;
 }
 
+export interface ContentSafetyCheckRecord {
+  id: string;
+  appId: string;
+  userId?: string;
+  requestId?: string;
+  taskType?: string;
+  source: ContentSafetyCheckSource;
+  method: ContentSafetyCheckMethod;
+  decision: ContentSafetyDecision;
+  category?: string;
+  keywordId?: string;
+  text?: string;
+  textLength: number;
+  textHash: string;
+  latencyMs?: number;
+  modelKey?: string;
+  provider?: string;
+  providerModel?: string;
+  failureReason?: string;
+  failureDetail?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -357,6 +386,7 @@ export interface DatabaseSeed {
   clientLogUploadTasks?: ClientLogUploadTaskRecord[];
   clientLogUploads?: ClientLogUploadRecord[];
   clientLogLines?: ClientLogLineRecord[];
+  contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
 }
 
 export interface AccessTokenPayload {
@@ -828,6 +858,206 @@ export interface AdminAuthRateLimitDocument {
   desc?: string;
   isLatest: boolean;
   revisions: ConfigRevisionMeta[];
+}
+
+export interface ContentSafetyKeywordRule {
+  id: string;
+  term: string;
+  enabled: boolean;
+  category?: string;
+  note?: string;
+}
+
+export interface ContentSafetyKeywordConfig {
+  enabled: boolean;
+  rules: ContentSafetyKeywordRule[];
+}
+
+export interface ContentSafetyLlmConfig {
+  enabled: boolean;
+  modelKey: string;
+  timeoutMs: number;
+}
+
+export interface ContentSafetyAliyunConfig {
+  enabled: boolean;
+  endpoint: string;
+  region: string;
+  service: string;
+  accessKeyIdPasswordKey: string;
+  accessKeySecretPasswordKey: string;
+  timeoutMs: number;
+}
+
+export interface ContentSafetyConfig {
+  enabled: boolean;
+  longTextThresholdChars: number;
+  keyword: ContentSafetyKeywordConfig;
+  llm: ContentSafetyLlmConfig;
+  aliyun: ContentSafetyAliyunConfig;
+}
+
+export interface AdminContentSafetyDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: ContentSafetyConfig;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminContentSafetyTestDocument {
+  allowed: boolean;
+  blocked: boolean;
+  layer: "disabled" | "empty" | "keyword" | "llm" | "aliyun" | "failed_open";
+  code: "OK" | "AI_INPUT_CONTENT_SENSITIVE";
+  message: string;
+  textLength: number;
+  elapsedMs: number;
+  category?: string;
+  keywordId?: string;
+  failureReason?: string;
+  failureDetail?: string;
+  llmDebug?: {
+    latencyMs?: number;
+    input: {
+      modelKey: string;
+      temperature: number;
+      maxTokens: number;
+      timeoutMs: number;
+      providerOptions?: Record<string, unknown>;
+      messages: Array<{
+        role: string;
+        content?: string;
+      }>;
+    };
+    output?: {
+      provider: string;
+      modelKey: string;
+      providerModel: string;
+      text: string;
+      toolCalls?: Array<{
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }>;
+      reasoningText?: string;
+      finishReason?: string;
+      providerRequestId?: string;
+      usage?: Record<string, unknown>;
+      parsedDecision?: {
+        blocked: boolean;
+        category?: string;
+      };
+      parseError?: {
+        reason: string;
+        detail: string;
+      };
+    };
+  };
+}
+
+export interface AdminContentSafetyBlockRecordItem {
+  id: string;
+  appId: string;
+  userId?: string;
+  requestId?: string;
+  taskType?: string;
+  source: ContentSafetyCheckSource;
+  method: Exclude<ContentSafetyCheckMethod, "disabled" | "failed_open">;
+  category?: string;
+  keywordId?: string;
+  text: string;
+  textLength: number;
+  textHash: string;
+  modelKey?: string;
+  provider?: string;
+  providerModel?: string;
+  createdAt: string;
+}
+
+export interface AdminContentSafetyBlockRecordsDocument {
+  timezone: string;
+  items: AdminContentSafetyBlockRecordItem[];
+}
+
+export interface AdminContentSafetyStatsBucket {
+  key: string;
+  count: number;
+  blocked: number;
+  failedOpen: number;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+}
+
+export interface AdminContentSafetyDailyStatsItem {
+  date: string;
+  total: number;
+  passed: number;
+  blocked: number;
+  failedOpen: number;
+}
+
+export interface AdminContentSafetyStatsDocument {
+  timezone: string;
+  summary: {
+    total: number;
+    passed: number;
+    blocked: number;
+    failedOpen: number;
+    blockRate: number;
+    failedOpenRate: number;
+    avgLatencyMs: number;
+    p95LatencyMs: number;
+  };
+  daily: AdminContentSafetyDailyStatsItem[];
+  byMethod: AdminContentSafetyStatsBucket[];
+  bySource: AdminContentSafetyStatsBucket[];
+  byApp: AdminContentSafetyStatsBucket[];
+  byTaskType: AdminContentSafetyStatsBucket[];
+  byCategory: AdminContentSafetyStatsBucket[];
+  byFailureReason: AdminContentSafetyStatsBucket[];
+  byLengthBucket: AdminContentSafetyStatsBucket[];
+}
+
+export interface GetuiGyAppCredentials {
+  appId: string;
+  appKey: string;
+  appSecret: string;
+  masterSecret: string;
+}
+
+export interface GetuiGyServiceConfig {
+  enabled: boolean;
+  endpoint: string;
+  timeoutMs: number;
+  apps: Record<string, GetuiGyAppCredentials>;
+}
+
+export interface AdminGetuiGyServiceDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: GetuiGyServiceConfig;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export type GetuiGySensitiveCredentialField =
+  | "appKey"
+  | "appSecret"
+  | "masterSecret";
+
+export interface AdminGetuiGyCredentialRevealDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  zookAppId: string;
+  field: GetuiGySensitiveCredentialField;
+  value: string;
 }
 
 export interface AdminEmailTestSendCommand {

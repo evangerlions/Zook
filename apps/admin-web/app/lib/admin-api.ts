@@ -5,10 +5,17 @@ import type {
   AdminAuthRateLimitDocument,
   AdminBootstrapResult,
   AdminConfigDocument,
+  AdminContentSafetyBlockRecordsDocument,
+  AdminContentSafetyDocument,
+  AdminContentSafetyStatsDocument,
+  AdminContentSafetyTestDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
   AdminEmailTestSendDocument,
+  AdminGetuiGyCredentialRevealDocument,
+  AdminGetuiGyServiceDocument,
+  GetuiGySensitiveCredentialField,
   AdminRemoteLogPullSettingsDocument,
   AdminRemoteLogPullTaskDocument,
   AdminRemoteLogPullTaskFileDocument,
@@ -52,6 +59,12 @@ export class ApiError extends Error {
 
 function adminPath(pathname: string): string {
   return `${ADMIN_API_PREFIX}${pathname}`;
+}
+
+function cleanQuery(query: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(query).filter((entry): entry is [string, string] => Boolean(entry[1])),
+  );
 }
 
 async function parseResponsePayload<T>(response: Response): Promise<ApiEnvelope<T>> {
@@ -377,6 +390,40 @@ export const adminApi = {
       },
     );
   },
+  getGetuiGyService() {
+    return requestJson<AdminGetuiGyServiceDocument>(adminPath("/apps/common/getui-gy-service"));
+  },
+  getGetuiGyServiceRevision(revision: number) {
+    return requestJson<AdminGetuiGyServiceDocument>(adminPath(`/apps/common/getui-gy-service/revisions/${revision}`));
+  },
+  updateGetuiGyService(input: Record<string, unknown>) {
+    return requestJson<AdminGetuiGyServiceDocument>(adminPath("/apps/common/getui-gy-service"), {
+      method: "PUT",
+      body: input,
+    });
+  },
+  restoreGetuiGyService(revision: number, desc?: string) {
+    return requestJson<AdminGetuiGyServiceDocument>(
+      adminPath(`/apps/common/getui-gy-service/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
+      },
+    );
+  },
+  revealGetuiGyCredentialValue(
+    zookAppId: string,
+    field: GetuiGySensitiveCredentialField,
+  ) {
+    return requestJson<AdminGetuiGyCredentialRevealDocument>(
+      adminPath(`/apps/common/getui-gy-service/apps/${encodeURIComponent(zookAppId)}/${field}/reveal`),
+      {
+        method: "POST",
+      },
+    );
+  },
   getEmailServiceRevision(revision: number) {
     return requestJson<AdminEmailServiceDocument>(adminPath(`/apps/common/email-service/revisions/${revision}`));
   },
@@ -434,6 +481,49 @@ export const adminApi = {
       adminPath(`/apps/common/passwords/${encodeURIComponent(key)}/reveal`),
       {
         method: "POST",
+      },
+    );
+  },
+  getContentSafety() {
+    return requestJson<AdminContentSafetyDocument>(adminPath("/apps/common/content-safety"));
+  },
+  getContentSafetyRevision(revision: number) {
+    return requestJson<AdminContentSafetyDocument>(
+      adminPath(`/apps/common/content-safety/revisions/${revision}`),
+    );
+  },
+  updateContentSafety(input: Record<string, unknown>) {
+    return requestJson<AdminContentSafetyDocument>(adminPath("/apps/common/content-safety"), {
+      method: "PUT",
+      body: input,
+    });
+  },
+  testContentSafety(text: string) {
+    return requestJson<AdminContentSafetyTestDocument>(adminPath("/apps/common/content-safety/test"), {
+      method: "POST",
+      body: {
+        text,
+      },
+    });
+  },
+  listContentSafetyBlockRecords(query: Record<string, string | undefined>) {
+    return requestJson<AdminContentSafetyBlockRecordsDocument>(
+      adminPath(`/apps/common/content-safety/block-records?${new URLSearchParams(cleanQuery(query)).toString()}`),
+    );
+  },
+  getContentSafetyStats(query: Record<string, string | undefined>) {
+    return requestJson<AdminContentSafetyStatsDocument>(
+      adminPath(`/apps/common/content-safety/stats?${new URLSearchParams(cleanQuery(query)).toString()}`),
+    );
+  },
+  restoreContentSafety(revision: number, desc?: string) {
+    return requestJson<AdminContentSafetyDocument>(
+      adminPath(`/apps/common/content-safety/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
       },
     );
   },

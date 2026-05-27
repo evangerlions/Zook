@@ -8,6 +8,7 @@ import type {
   ClientLogLineRecord,
   ClientLogUploadRecord,
   ClientLogUploadTaskRecord,
+  ContentSafetyCheckRecord,
   DatabaseSeed,
   FailedEventRecord,
   FileRecord,
@@ -136,6 +137,19 @@ export abstract class ApplicationDatabase {
   ): MaybePromise<void>;
   abstract insertClientLogUpload(record: ClientLogUploadRecord): MaybePromise<void>;
   abstract insertClientLogLines(records: ClientLogLineRecord[]): MaybePromise<void>;
+
+  abstract insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): MaybePromise<void>;
+  abstract listContentSafetyCheckRecords(filter?: {
+    createdAtFromIso?: string;
+    createdAtToIso?: string;
+    appId?: string;
+    source?: ContentSafetyCheckRecord["source"];
+    method?: ContentSafetyCheckRecord["method"];
+    taskType?: string;
+    decision?: ContentSafetyCheckRecord["decision"];
+    limit?: number;
+  }): MaybePromise<ContentSafetyCheckRecord[]>;
+  abstract deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {

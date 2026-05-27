@@ -9,6 +9,7 @@ import {
 } from "../../shared/errors.ts";
 import type {
   AccountDeletionResult,
+  AppRecord,
   AuthContext,
   AuthRateLimitConfig,
   AuthSession,
@@ -736,37 +737,11 @@ export class AuthService {
       now,
     });
 
-    let user = await this.database.findUserByPhone(phone);
-    let autoCreatedUser = false;
-    if (!user) {
-      if (app.joinMode !== "AUTO") {
-        forbidden(
-          "APP_JOIN_INVITE_REQUIRED",
-          "This app requires an invite to join.",
-        );
-      }
-
-      autoCreatedUser = true;
-      user = {
-        id: randomId("user"),
-        phone,
-        passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
-        passwordAlgo: "sms-code-only",
-        status: "ACTIVE",
-        createdAt: now.toISOString(),
-      };
-      await this.database.insertUser(user);
-    }
-
-    if (user.status === "BLOCKED") {
-      forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
-    }
-
-    await this.appRegistryService.ensureMembership(app.id, user.id, now);
-    return {
-      session: await this.issueSessionForUser(user.id, app.id, now),
-      autoCreatedUser,
-    };
+    return this.loginWithVerifiedPhone({
+      app,
+      phone,
+      now,
+    });
   }
 
   async loginWithOneClickPhone(
@@ -787,10 +762,23 @@ export class AuthService {
       "sms",
     );
 
-    let user = await this.database.findUserByPhone(phone);
+    return this.loginWithVerifiedPhone({
+      app,
+      phone,
+      now,
+    });
+  }
+
+  private async loginWithVerifiedPhone(input: {
+    app: AppRecord;
+    phone: string;
+    now: Date;
+  }): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
+    let user = await this.database.findUserByPhone(input.phone);
     let autoCreatedUser = false;
+
     if (!user) {
-      if (app.joinMode !== "AUTO") {
+      if (input.app.joinMode !== "AUTO") {
         forbidden(
           "APP_JOIN_INVITE_REQUIRED",
           "This app requires an invite to join.",
@@ -800,11 +788,11 @@ export class AuthService {
       autoCreatedUser = true;
       user = {
         id: randomId("user"),
-        phone,
+        phone: input.phone,
         passwordHash: this.passwordHasher.hash(createOpaqueToken("pwd")),
         passwordAlgo: "sms-code-only",
         status: "ACTIVE",
-        createdAt: now.toISOString(),
+        createdAt: input.now.toISOString(),
       };
       await this.database.insertUser(user);
     }
@@ -813,9 +801,17 @@ export class AuthService {
       forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
     }
 
-    await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    await this.appRegistryService.ensureMembership(
+      input.app.id,
+      user.id,
+      input.now,
+    );
     return {
-      session: await this.issueSessionForUser(user.id, app.id, now),
+      session: await this.issueSessionForUser(
+        user.id,
+        input.app.id,
+        input.now,
+      ),
       autoCreatedUser,
     };
   }

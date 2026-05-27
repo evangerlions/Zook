@@ -474,6 +474,71 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
   assert.equal(expiredBucket, undefined);
 });
 
+test("common llm metrics expose AINovel alias models for older stored configs", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "qwen3.6-plus",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "qwen3.6-plus",
+        label: "qwen3.6-plus",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+
+  const config = await fixture.commonLlmConfigService.getCurrentConfig();
+  assert.equal(config.models.some((item) => item.key === "ainovel-free-creative"), false);
+
+  await fixture.llmMetricsService.recordCall({
+    modelKey: "ainovel-free-creative",
+    provider: "bailian",
+    providerModel: "qwen3.6-plus",
+    ok: true,
+    firstByteLatencyMs: 100,
+    totalLatencyMs: 600,
+    occurredAt: new Date("2026-03-24T10:20:00+08:00"),
+  });
+
+  const overview = await fixture.llmMetricsService.getOverview(
+    config,
+    "24h",
+    new Date("2026-03-24T10:50:00+08:00"),
+  );
+  assert.equal(overview.summary.requestCount, 1);
+  assert.equal(overview.models[0]?.modelKey, "ainovel-free-creative");
+  assert.equal(overview.models[0]?.summary.requestCount, 1);
+
+  const detail = await fixture.llmMetricsService.getModelDetail(
+    config,
+    "ainovel-free-creative",
+    "24h",
+    new Date("2026-03-24T10:50:00+08:00"),
+  );
+  assert.equal(detail.summary.requestCount, 1);
+  assert.equal(detail.routes[0]?.summary.requestCount, 1);
+});
+
 test("llm smoke test service returns success/failure/skipped matrix results and enforces cooldown", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({

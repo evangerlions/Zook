@@ -23,6 +23,10 @@ export interface LLMCompletionRequest {
   providerOptions?: Record<string, unknown>;
 }
 
+export interface LLMCompleteViaStreamOptions {
+  firstContentTimeoutMs?: number;
+}
+
 export interface LLMToolDefinition {
   name: string;
   description: string;
@@ -48,6 +52,7 @@ export interface LLMCompletionResult {
   modelKey: string;
   providerModel: string;
   text: string;
+  toolCalls?: LLMToolCall[];
   reasoningText?: string;
   finishReason?: string;
   usage?: LLMUsage;
@@ -164,6 +169,85 @@ export class LLMManager {
     }
   }
 
+  async completeViaStream(
+    request: LLMCompletionRequest,
+    options: LLMCompleteViaStreamOptions = {},
+  ): Promise<LLMCompletionResult> {
+    const resolution = await this.resolveRequest(request);
+    const startedAt = this.getNow();
+    let firstByteLatencyMs: number | undefined;
+    let usage: LLMUsage | undefined;
+    let finishReason: string | undefined;
+    let text = "";
+    let reasoningText = "";
+    const toolCalls: LLMToolCall[] = [];
+    const iterator = this.providers[resolution.request.model.provider]
+      .stream(resolution.request)[Symbol.asyncIterator]();
+
+    try {
+      while (true) {
+        const next = await this.nextStreamEvent(iterator, {
+          firstContentSeen: firstByteLatencyMs !== undefined,
+          firstContentTimeoutMs: options.firstContentTimeoutMs,
+        });
+        if (next.done) {
+          break;
+        }
+
+        const event = next.value;
+        if (
+          event.type === "content_delta" ||
+          event.type === "reasoning_delta" ||
+          event.type === "tool_call"
+        ) {
+          firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
+        }
+        if (event.type === "content_delta") {
+          text += event.text;
+        } else if (event.type === "reasoning_delta") {
+          reasoningText += event.text;
+        } else if (event.type === "tool_call") {
+          toolCalls.push(event.toolCall);
+        } else if (event.type === "usage") {
+          usage = this.withContextUsage(event.usage, resolution.request.model);
+        } else if (event.type === "done") {
+          finishReason = event.finishReason;
+        }
+      }
+
+      const completedAt = this.getNow();
+      await this.recordRouteResult(resolution.routeRef, {
+        ok: true,
+        firstByteLatencyMs:
+          firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
+        totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
+        usage,
+        occurredAt: completedAt,
+      });
+      return {
+        provider: resolution.request.model.provider,
+        modelKey: resolution.request.model.modelKey,
+        providerModel: resolution.request.model.providerModel,
+        text,
+        ...(toolCalls.length > 0 ? { toolCalls } : {}),
+        ...(reasoningText ? { reasoningText } : {}),
+        ...(finishReason ? { finishReason } : {}),
+        ...(usage ? { usage } : {}),
+      };
+    } catch (error) {
+      void iterator.return?.();
+      const completedAt = this.getNow();
+      await this.recordRouteResult(resolution.routeRef, {
+        ok: false,
+        firstByteLatencyMs:
+          firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
+        totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
+        occurredAt: completedAt,
+      });
+      throw error;
+    }
+  }
+
   async *stream(request: LLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
     const resolution = await this.resolveRequest(request);
     const startedAt = this.getNow();
@@ -175,7 +259,9 @@ export class LLMManager {
       for await (const event of this.providers[resolution.request.model.provider].stream(resolution.request)) {
         if (
           firstByteLatencyMs === undefined &&
-          (event.type === "reasoning_delta" || event.type === "content_delta")
+          (event.type === "reasoning_delta" ||
+            event.type === "content_delta" ||
+            event.type === "tool_call")
         ) {
           firstByteLatencyMs = this.getNow().getTime() - startedAt.getTime();
         }
@@ -224,6 +310,48 @@ export class LLMManager {
         occurredAt: completedAt,
       });
       throw error;
+    }
+  }
+
+  private async nextStreamEvent(
+    iterator: AsyncIterator<LLMStreamEvent>,
+    options: {
+      firstContentSeen: boolean;
+      firstContentTimeoutMs?: number;
+    },
+  ): Promise<IteratorResult<LLMStreamEvent>> {
+    if (
+      options.firstContentSeen ||
+      options.firstContentTimeoutMs === undefined ||
+      options.firstContentTimeoutMs <= 0
+    ) {
+      return iterator.next();
+    }
+
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        iterator.next(),
+        new Promise<IteratorResult<LLMStreamEvent>>((_, reject) => {
+          timeout = setTimeout(() => {
+            reject(
+              new ApplicationError(
+                504,
+                "LLM_PROVIDER_REQUEST_FAILED",
+                "LLM stream did not produce content before the first-byte timeout.",
+                {
+                  reason: "first_byte_timeout",
+                  timeoutMs: options.firstContentTimeoutMs,
+                },
+              ),
+            );
+          }, options.firstContentTimeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
     }
   }
 
@@ -522,6 +650,7 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "qwen-plus": 131_072,
   "qwen3.5-flash": 1_000_000,
   "qwen3.5-plus": 1_000_000,
+  "qwen3.6-plus": 1_000_000,
   "deepseek-v3.2": 128_000,
   "siliconflow/deepseek-v3.2": 128_000,
   "glm-5": 128_000,
@@ -530,13 +659,13 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
 };
 
 const MODEL_KEY_CONTEXT_WINDOWS: Record<string, number> = {
-  "ainovel-free-creative": 131_072,
+  "ainovel-free-creative": 1_000_000,
   "ainovel-free-reasoning": 1_000_000,
-  "ainovel-plus-creative": 128_000,
+  "ainovel-plus-creative": 1_000_000,
   "ainovel-plus-reasoning": 1_000_000,
-  "ainovel-super-creative": 200_000,
-  "ainovel-super-reasoning": 128_000,
-  "ainovel-lowcost-structured": 131_072,
+  "ainovel-super-creative": 1_000_000,
+  "ainovel-super-reasoning": 1_000_000,
+  "ainovel-lowcost-structured": 1_000_000,
 };
 
 function inferContextWindowTokens(modelKey: string, providerModel: string): number | undefined {
