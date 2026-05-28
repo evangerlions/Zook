@@ -136,6 +136,39 @@ function forcedStructuredToolPayload(
       contextRefs: {},
     };
   }
+  if (toolName === "submit_import_plan_update") {
+    return {
+      contract: { storyPromise: "英雄聚义与忠奸对抗。", language: "zh-Hant" },
+      mainLine: { summary: "延续既有忠义线与收束后的新压力。" },
+      changes: ["保留导入章节建立的忠义主题。"],
+    };
+  }
+  if (toolName === "submit_rolling_snapshot") {
+    return {
+      snapshotTo: 60,
+      snapshot: "前六十回建立忠奸对抗、英雄聚合与姻缘线。",
+    };
+  }
+  if (toolName === "submit_chapter_summaries") {
+    return {
+      chapters: [
+        {
+          chapterIndex: 61,
+          title: "第六十一回",
+          summary: "群雄继续推进忠奸对抗。",
+          facts: { actualEvents: ["群雄推进局势"] },
+        },
+      ],
+    };
+  }
+  if (toolName === "submit_hot_handoff") {
+    return {
+      handoff: "最后几回完成封赏与姻缘收束，续写需保留评话体气口。",
+      unresolvedThreads: [],
+      characterStates: ["群雄受封后进入新局面。"],
+      styleSignals: ["章回体", "对偶回目"],
+    };
+  }
   return { ok: true };
 }
 
@@ -627,6 +660,129 @@ test("ai_novel structured workflow scenes retry when the required submit tool is
   );
 });
 
+test("ai_novel import_book_agent uses non-streaming thinking auto tools", async () => {
+  let completeCalls = 0;
+  let streamCalls = 0;
+  let capturedToolNames: string[] = [];
+  let capturedEnableThinking: unknown;
+  let capturedToolChoice: unknown;
+  let capturedMessages: LLMMessage[] = [];
+  const { runtime, aiKey } = await createAiNovelRuntime({
+    llmProvider: {
+      async complete(request): Promise<LLMCompletionResult> {
+        completeCalls += 1;
+        capturedEnableThinking = request.providerOptions?.enable_thinking;
+        capturedToolChoice = request.providerOptions?.tool_choice;
+        capturedMessages = request.messages;
+        capturedToolNames = toolNamesFromProviderOptions(
+          request.providerOptions,
+        );
+        return {
+          provider: request.model.provider,
+          modelKey: request.model.modelKey,
+          providerModel: request.model.providerModel,
+          text: "",
+          finishReason: "tool_calls",
+          toolCalls: [
+            {
+              id: "call_import_plan",
+              name: "submit_import_plan_update",
+              input: forcedStructuredToolPayload("submit_import_plan_update"),
+            },
+            {
+              id: "call_summaries",
+              name: "submit_chapter_summaries",
+              input: forcedStructuredToolPayload("submit_chapter_summaries"),
+            },
+            {
+              id: "call_snapshot",
+              name: "submit_snapshot",
+              input: forcedStructuredToolPayload("submit_snapshot"),
+            },
+          ],
+        };
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        streamCalls += 1;
+        throw new Error("import_book_agent should not stream");
+      },
+    },
+  });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "import_book_agent",
+        messages: [
+          {
+            role: "user",
+            content: "Import aligned chapters 61..64.",
+          },
+        ],
+        context: {
+          stepName: "recent-batch-61-64",
+          expectedTools: [
+            "submit_import_plan_update",
+            "submit_chapter_summaries",
+            "submit_snapshot",
+          ],
+          suppliedTools: [
+            "submit_import_plan_update",
+            "submit_chapter_summaries",
+            "submit_snapshot",
+          ],
+          importContext: {
+            sourceRange: { startChapterIndex: 61, endChapterIndex: 64 },
+            sourceText: "第六十一回……",
+          },
+        },
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
+  assert.equal(decrypted.code, "OK");
+  const data = (decrypted.data ?? {}) as Record<string, unknown>;
+  assert.equal(data.sceneKey, "import_book_agent");
+  const completion = (data.completion ?? {}) as Record<string, unknown>;
+  assert.equal(completion.sceneRouteKey, "ainovel-plus-reasoning");
+  assert.equal(completion.content, "");
+  assert.equal((completion.toolCalls as unknown[]).length, 3);
+  assert.equal(completeCalls, 1);
+  assert.equal(streamCalls, 0);
+  assert.equal(capturedEnableThinking, true);
+  assert.equal(capturedToolChoice, "auto");
+  assert.deepEqual(capturedToolNames, [
+    "submit_import_plan_update",
+    "submit_chapter_summaries",
+    "submit_snapshot",
+  ]);
+  assert.match(
+    String(capturedMessages[0]?.content ?? ""),
+    /no macro-agent or micro-agent/,
+  );
+  assert.match(
+    String(capturedMessages[1]?.content ?? ""),
+    /recent-batch-61-64/,
+  );
+});
+
 test("ai_novel scene routing config validates all novel-engine chat scene keys", async () => {
   const { runtime } = await createAiNovelRuntime();
   const config =
@@ -642,6 +798,7 @@ test("ai_novel scene routing config validates all novel-engine chat scene keys",
     "chapter_draft_review",
     "snapshot_generation",
     "next_chapter_brief",
+    "import_book_agent",
   ];
 
   for (const tier of Object.values(config.tiers)) {
@@ -3525,6 +3682,7 @@ test("ai_novel routes can override scene routing from admin config", async () =>
             chapter_draft_review: "ainovel-lowcost-structured",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
+            import_book_agent: "ainovel-plus-reasoning",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -3543,6 +3701,7 @@ test("ai_novel routes can override scene routing from admin config", async () =>
             chapter_draft_review: "ainovel-lowcost-structured",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
+            import_book_agent: "ainovel-plus-reasoning",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -3561,6 +3720,7 @@ test("ai_novel routes can override scene routing from admin config", async () =>
             chapter_draft_review: "ainovel-lowcost-structured",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
+            import_book_agent: "ainovel-super-reasoning",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -3603,6 +3763,101 @@ test("ai_novel routes can override scene routing from admin config", async () =>
   const completion = (data.completion ?? {}) as Record<string, unknown>;
   assert.equal(completion.sceneRouteKey, "ainovel-plus-creative");
   assert.equal(completion.providerModel, "qwen3.6-plus");
+});
+
+test("ai_novel routes normalize legacy setup_turn routing configs on read", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const currentConfig =
+    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
+      "ai_novel",
+    );
+  const legacyConfig = structuredClone(currentConfig);
+  for (const tier of Object.values(legacyConfig.tiers)) {
+    tier.chat.setup_turn = tier.chat.kickoff_turn;
+    tier.chat.blueprint_gen = "ainovel-free-creative";
+    tier.chat.chapter1_draft_gen = "ainovel-free-creative";
+    tier.chat.chapter1_critic = "ainovel-free-reasoning";
+    tier.chat.fact_extract = "ainovel-lowcost-structured";
+    tier.chat.episode_extract = "ainovel-lowcost-structured";
+    tier.chat.continue_chapter = "ainovel-free-creative";
+    tier.chat.chapter_transition = "ainovel-free-reasoning";
+    tier.chat.chapter2_planner = "ainovel-free-reasoning";
+    tier.chat.chapter2_draft_gen = "ainovel-free-creative";
+    delete tier.chat.kickoff_turn;
+    delete tier.chat.chat_compaction;
+    delete tier.chat.write_turn;
+    delete tier.chat.chapter_draft;
+    delete tier.chat.chapter_summary;
+    delete tier.chat.snapshot_generation;
+    delete tier.chat.next_chapter_brief;
+    delete tier.chat.import_book_agent;
+  }
+
+  await runtime.services.appConfigService.setValue(
+    "ai_novel",
+    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+    JSON.stringify(legacyConfig, null, 2),
+    "test-legacy-setup-turn",
+  );
+
+  const normalized =
+    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
+      "ai_novel",
+    );
+  assert.equal(
+    normalized.tiers.free.chat.kickoff_turn,
+    "ainovel-plus-reasoning",
+  );
+  assert.equal(normalized.tiers.free.chat.write_turn, "ainovel-free-creative");
+  assert.equal(
+    normalized.tiers.free.chat.chat_compaction,
+    "ainovel-lowcost-structured",
+  );
+  assert.equal(
+    normalized.tiers.free.chat.chapter_draft,
+    "ainovel-free-creative",
+  );
+  assert.equal(
+    normalized.tiers.free.chat.snapshot_generation,
+    "ainovel-lowcost-structured",
+  );
+  assert.equal(
+    normalized.tiers.free.chat.import_book_agent,
+    "ainovel-plus-reasoning",
+  );
+  assert.equal("continue_chapter" in normalized.tiers.free.chat, false);
+  assert.equal("chapter2_draft_gen" in normalized.tiers.free.chat, false);
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            titleCandidate: "",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "继续推进这个故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
 });
 
 test("ai_novel routes fail when routing mapping is missing", async () => {

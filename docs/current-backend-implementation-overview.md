@@ -201,7 +201,8 @@
 5. 解密成功后的业务成功与业务错误都会加密返回
 6. `scene_key` / `sceneKey` 是 AINovel scene-first 入口；客户端不允许直传底层 `model`、`modelKey`、`providerModel` 字段。AINovel routing 中的 `ainovel-*` 值是业务 scene route key，不是 common LLM model key
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
-8. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
+8. `import_book_agent` 目前采用非流式 thinking + `tool_choice=auto` 输出：Zook 注入 import prompt 与本步 submit tools，允许 `completion.content` 为空并回传 `completion.toolCalls`；AINovel engine 负责判断本步是否已经提交所有 required tools、追加重试消息、以及执行导入 loop
+9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
 
 对应核心文件：
 

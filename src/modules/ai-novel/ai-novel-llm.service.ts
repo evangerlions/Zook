@@ -602,6 +602,7 @@ export interface AiNovelChatResponse {
     provider: string;
     providerModel: string;
     content: string;
+    toolCalls?: LLMToolCall[];
     finishReason?: string;
     providerRequestId?: string;
   };
@@ -743,9 +744,13 @@ export class AiNovelLlmService {
       scene.defaultMaxTokens;
     const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
     const providerOptions =
-      shouldUseStreamedCompletion || promptAssembly.tools.length > 0
+      scene.enableThinking ||
+      shouldUseStreamedCompletion ||
+      promptAssembly.tools.length > 0
         ? {
-            ...(shouldUseStreamedCompletion ? { enable_thinking: true } : {}),
+            ...(scene.enableThinking || shouldUseStreamedCompletion
+              ? { enable_thinking: true }
+              : {}),
             ...(promptAssembly.tools.length > 0
               ? {
                   tools: toOpenAiToolDefinitions(promptAssembly.tools),
@@ -791,6 +796,9 @@ export class AiNovelLlmService {
           provider: result.provider,
           providerModel: result.providerModel,
           content: completionContent,
+          ...(result.toolCalls?.length
+            ? { toolCalls: result.toolCalls }
+            : {}),
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
           ...(result.providerRequestId
             ? { providerRequestId: result.providerRequestId }

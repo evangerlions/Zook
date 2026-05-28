@@ -162,6 +162,72 @@ test("snapshot_generation prompt uses a required structured output tool", () => 
   assert.match(systemPrompt, /call submit_snapshot exactly once/);
 });
 
+test("import_book_agent prompt exposes step-scoped submit tools without forced choice", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "import_book_agent",
+    messages: [{ role: "user", content: "Import chapters 61..64." }],
+    context: {
+      expectedTools: [
+        "submit_import_plan_update",
+        "submit_chapter_summaries",
+        "submit_snapshot",
+      ],
+      suppliedTools: [
+        "submit_import_plan_update",
+        "submit_chapter_summaries",
+        "submit_snapshot",
+      ],
+      importContext: {
+        sourceRange: { startChapterIndex: 61, endChapterIndex: 64 },
+      },
+    },
+  });
+
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
+    "submit_import_plan_update",
+    "submit_chapter_summaries",
+    "submit_snapshot",
+  ]);
+  assert.equal(assembly.forcedToolName, undefined);
+  assert.match(systemPrompt, /ImportBookAgent/);
+  assert.match(systemPrompt, /normal bounded agent parallel/);
+  assert.match(systemPrompt, /no macro-agent or micro-agent/);
+  assert.match(systemPrompt, /only source data/);
+  assert.match(systemPrompt, /Do not use prior knowledge/);
+  assert.match(systemPrompt, /If full chapter text is absent/);
+  assert.match(systemPrompt, /## Core concepts/);
+  assert.match(systemPrompt, /`Contract` is the durable book-level agreement/);
+  assert.match(systemPrompt, /## How to choose tools/);
+  assert.match(systemPrompt, /If `submit_import_plan_update` is supplied/);
+  assert.match(systemPrompt, /If `submit_rolling_snapshot` is supplied/);
+  assert.match(systemPrompt, /If `submit_chapter_summaries` is supplied/);
+  assert.match(systemPrompt, /If `submit_chapter_summary` is supplied/);
+  assert.match(systemPrompt, /If `submit_snapshot` is supplied/);
+  assert.match(systemPrompt, /If `submit_hot_handoff` is supplied/);
+  assert.match(systemPrompt, /Call every required submit tool/);
+});
+
+test("import_book_agent single chapter summary tool accepts chapterIndex", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "import_book_agent",
+    messages: [],
+    context: {
+      expectedTools: ["submit_chapter_summary", "submit_hot_handoff"],
+      suppliedTools: ["submit_chapter_summary", "submit_hot_handoff"],
+    },
+  });
+
+  const summaryTool = assembly.tools.find(
+    (tool) => tool.name === "submit_chapter_summary",
+  );
+  assert.ok(summaryTool);
+  const schema = summaryTool.inputSchema as Record<string, unknown>;
+  const properties = schema.properties as Record<string, unknown>;
+  assert.ok(properties.chapterIndex);
+  assert.deepEqual(schema.required, ["summary"]);
+});
+
 test("next_chapter_brief scene uses light planning temperature", () => {
   const scene = resolveAiNovelChatScene("next_chapter_brief");
 

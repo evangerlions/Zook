@@ -242,6 +242,9 @@ export function buildDefaultSeed(
                 "写一个末世生存升级故事，开局就有强冲突。",
               ],
             },
+            importBook: {
+              coldChunkMaxK: 50,
+            },
           },
           null,
           2,

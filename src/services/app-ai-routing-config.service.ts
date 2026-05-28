@@ -20,6 +20,29 @@ const VALID_TIERS = new Set<AiNovelModelRoutingTier>([
   "plus",
   "super_plus",
 ]);
+const ADDITIVE_STORED_CHAT_SCENE_KEYS = [
+  "chat_compaction",
+  "write_turn",
+  "chapter_draft",
+  "chapter_summary",
+  "chapter_draft_review",
+  "snapshot_generation",
+  "next_chapter_brief",
+  "import_book_agent",
+] as const;
+const REMOVED_STORED_CHAT_SCENE_KEYS = [
+  "setup_turn",
+  "blueprint_gen",
+  "chapter1_draft_gen",
+  "chapter1_critic",
+  "fact_extract",
+  "episode_extract",
+  "continue_chapter",
+  "chapter_transition",
+  "chapter2_planner",
+  "chapter2_draft_gen",
+] as const;
+
 const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
   defaultTier: "free",
   tiers: {
@@ -33,6 +56,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
         chapter_draft_review: "ainovel-lowcost-structured",
         snapshot_generation: "ainovel-lowcost-structured",
         next_chapter_brief: "ainovel-lowcost-structured",
+        import_book_agent: "ainovel-plus-reasoning",
       },
       embedding: {
         fact_embed: "ainovel-embedding-default",
@@ -51,6 +75,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
         chapter_draft_review: "ainovel-lowcost-structured",
         snapshot_generation: "ainovel-lowcost-structured",
         next_chapter_brief: "ainovel-lowcost-structured",
+        import_book_agent: "ainovel-plus-reasoning",
       },
       embedding: {
         fact_embed: "ainovel-embedding-default",
@@ -69,6 +94,7 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
         chapter_draft_review: "ainovel-lowcost-structured",
         snapshot_generation: "ainovel-lowcost-structured",
         next_chapter_brief: "ainovel-lowcost-structured",
+        import_book_agent: "ainovel-super-reasoning",
       },
       embedding: {
         fact_embed: "ainovel-embedding-default",
@@ -363,7 +389,10 @@ export class AppAiRoutingConfigService {
       badRequest("REQ_INVALID_BODY", `${fieldName} must be a JSON object.`);
     }
 
-    const source = value as Record<string, unknown>;
+    const source = { ...(value as Record<string, unknown>) };
+    if (fieldName.endsWith(".chat")) {
+      this.normalizeLegacyChatSceneRouteMap(source, fieldName);
+    }
     const normalized: Record<string, string> = {};
 
     for (const sceneKey of sceneKeys) {
@@ -387,6 +416,25 @@ export class AppAiRoutingConfigService {
     }
 
     return normalized;
+  }
+
+  private normalizeLegacyChatSceneRouteMap(
+    source: Record<string, unknown>,
+    fieldName: string,
+  ): void {
+    const tier = fieldName.split(".")[0] as AiNovelModelRoutingTier;
+    const defaultChat = DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG.tiers[tier].chat;
+    if (typeof source.setup_turn === "string" && !source.kickoff_turn) {
+      source.kickoff_turn = source.setup_turn;
+    }
+    for (const sceneKey of ADDITIVE_STORED_CHAT_SCENE_KEYS) {
+      if (typeof source[sceneKey] !== "string" || !source[sceneKey].trim()) {
+        source[sceneKey] = defaultChat[sceneKey];
+      }
+    }
+    for (const sceneKey of REMOVED_STORED_CHAT_SCENE_KEYS) {
+      delete source[sceneKey];
+    }
   }
 
   private assertAiNovelAppId(appId: string): void {

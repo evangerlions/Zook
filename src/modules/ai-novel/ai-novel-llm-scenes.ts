@@ -8,7 +8,8 @@ export type AiNovelChatSceneProfile =
   | "chapter_summary"
   | "chapter_draft_review"
   | "snapshot_generation"
-  | "next_chapter_brief";
+  | "next_chapter_brief"
+  | "import_book_agent";
 
 export interface AiNovelChatScene {
   sceneKey: string;
@@ -21,6 +22,7 @@ export interface AiNovelChatScene {
   requiresStream?: boolean;
   supportsStream?: boolean;
   completeViaStream?: boolean;
+  enableThinking?: boolean;
 }
 
 export interface AiNovelEmbeddingScene {
@@ -111,6 +113,17 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     profile: "next_chapter_brief",
     supportsStream: false,
     completeViaStream: true,
+  },
+  import_book_agent: {
+    sceneKey: "import_book_agent",
+    kind: "chat",
+    defaultSceneRouteKey: "ainovel-plus-reasoning",
+    defaultTemperature: 0.2,
+    defaultMaxTokens: 12000,
+    responseMode: "text",
+    profile: "import_book_agent",
+    supportsStream: false,
+    enableThinking: true,
   },
 };
 

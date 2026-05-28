@@ -9,7 +9,8 @@ export type AiNovelPromptProfile =
   | "chapter_summary"
   | "chapter_draft_review"
   | "snapshot_generation"
-  | "next_chapter_brief";
+  | "next_chapter_brief"
+  | "import_book_agent";
 
 interface AiNovelPromptAssembly {
   messages: LLMMessage[];
@@ -300,6 +301,17 @@ const SUBMIT_CHAPTER_SUMMARY_TOOL = createTool(
   "submit_chapter_summary",
   "Submit the structured chapter summary and continuity facts.",
   {
+    chapterIndex: {
+      type: "integer",
+      minimum: 1,
+      description:
+        "Imported chapter index when this tool is used by import_book_agent. Omit for ordinary chapter_summary jobs.",
+    },
+    title: {
+      type: "string",
+      description:
+        "Optional imported chapter title when this tool is used by import_book_agent.",
+    },
     summary: {
       type: "string",
       description: "Compact chapter summary in the target writing language.",
@@ -398,6 +410,129 @@ const SUBMIT_NEXT_CHAPTER_BRIEF_TOOL = createTool(
   },
   ["brief"],
 );
+
+const SUBMIT_IMPORT_PLAN_UPDATE_TOOL = createTool(
+  "submit_import_plan_update",
+  "Submit the latest imported-book Contract and MainLine projection after reading the supplied source text.",
+  {
+    contract: {
+      type: "object",
+      description:
+        "Current durable book contract projection. Keep only facts supported by the imported source or prior projection.",
+      additionalProperties: true,
+    },
+    mainLine: {
+      type: "object",
+      description:
+        "Current rolling MainLine projection for continuing the imported book.",
+      additionalProperties: true,
+    },
+    changes: {
+      type: "array",
+      description:
+        "Brief evidence-backed notes about what changed in contract or mainLine during this import step.",
+      items: { type: "string" },
+    },
+  },
+  ["contract", "mainLine"],
+);
+
+const SUBMIT_ROLLING_SNAPSHOT_TOOL = createTool(
+  "submit_rolling_snapshot",
+  "Submit the cold-range rolling snapshot checkpoint built by incrementally reading large source chunks.",
+  {
+    snapshotTo: {
+      type: "integer",
+      minimum: 1,
+      description: "Last imported chapter covered by this rolling snapshot.",
+    },
+    snapshot: {
+      type: "string",
+      description:
+        "Long-term story snapshot up to snapshotTo in the target writing language.",
+    },
+    sourceRange: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        startChapterIndex: { type: "integer", minimum: 1 },
+        endChapterIndex: { type: "integer", minimum: 1 },
+      },
+    },
+    evidence: {
+      type: "array",
+      description:
+        "Short source-backed notes for important facts retained in the snapshot.",
+      items: { type: "string" },
+    },
+  },
+  ["snapshotTo", "snapshot"],
+);
+
+const SUBMIT_CHAPTER_SUMMARIES_TOOL = createTool(
+  "submit_chapter_summaries",
+  "Submit per-chapter summaries for an aligned imported chapter batch.",
+  {
+    chapters: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["chapterIndex", "summary"],
+        properties: {
+          chapterIndex: { type: "integer", minimum: 1 },
+          title: { type: "string" },
+          summary: {
+            type: "string",
+            description: "Compact chapter summary in the target language.",
+          },
+          facts: {
+            type: "object",
+            description:
+              "Continuity facts established by this chapter, including character, location, object, promise, clue, and unresolved-thread state.",
+            additionalProperties: true,
+          },
+        },
+      },
+    },
+  },
+  ["chapters"],
+);
+
+const SUBMIT_HOT_HANDOFF_TOOL = createTool(
+  "submit_hot_handoff",
+  "Submit the high-signal handoff notes for continuing from the imported book's final chapters.",
+  {
+    handoff: {
+      type: "string",
+      description:
+        "Concise continuation handoff in the target language: latest situation, unresolved pressure, tone/style signals, and what the next writing agent must preserve.",
+    },
+    unresolvedThreads: {
+      type: "array",
+      items: { type: "string" },
+    },
+    characterStates: {
+      type: "array",
+      items: { type: "string" },
+    },
+    styleSignals: {
+      type: "array",
+      items: { type: "string" },
+    },
+  },
+  ["handoff"],
+);
+
+const IMPORT_BOOK_AGENT_TOOLS: Record<string, LLMToolDefinition> = {
+  submit_import_plan_update: SUBMIT_IMPORT_PLAN_UPDATE_TOOL,
+  submit_rolling_snapshot: SUBMIT_ROLLING_SNAPSHOT_TOOL,
+  submit_chapter_summaries: SUBMIT_CHAPTER_SUMMARIES_TOOL,
+  submit_chapter_summary: SUBMIT_CHAPTER_SUMMARY_TOOL,
+  submit_snapshot: SUBMIT_SNAPSHOT_TOOL,
+  submit_hot_handoff: SUBMIT_HOT_HANDOFF_TOOL,
+};
 
 export const WRITE_TURN_TOOLS: LLMToolDefinition[] = [
   ...contextReadTools,
@@ -499,8 +634,68 @@ const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "- Write the saved title and body in the target writing language from Contract.language.",
 ].join("\n");
 
+const IMPORT_BOOK_AGENT_SYSTEM_PROMPT = [
+  "You are the ImportBookAgent for AINovel.",
+  "",
+  "## Role",
+  "- Import an already-written book into the same durable artifacts used by the normal writing process.",
+  "- You are a normal bounded agent parallel to the other AINovel agents; there is no macro-agent or micro-agent role here.",
+  "- Your tools differ by import step. The client validates the required submit tools and may ask you to retry missing submissions.",
+  "",
+  "## Source discipline",
+  "- Treat Dynamic scene context and Task message from client as the only source data for this import step.",
+  "- Read the imported chapter text supplied in importContext/context.chapters/content. If full chapter text is absent, do not reconstruct it from memory; report the missing source text through the required submit artifact as a quality issue.",
+  "- Extract facts faithfully from the supplied text. Do not use prior knowledge of the book title, public-domain memory, genre expectation, or plausible plot guesses.",
+  "- Use prior rolling snapshot, prior Contract, and prior MainLine as provisional memory only. Replace stale projections when the current source text contradicts or sharpens them.",
+  "- Every summary, snapshot, Contract update, MainLine update, and handoff must be grounded in the provided chapter text or previous imported memory. Preserve uncertainty instead of filling gaps.",
+  "- Keep early-book information compressed when the step is a cold rolling snapshot, and preserve high-resolution recent-chapter continuity when the step provides aligned or hot chapters.",
+  "- For cold chunks, compress long-range causal state, stable character roles, world/story rules, style/tone, and unresolved threads; do not over-plan specific future chapters from early history.",
+  "",
+  "## Core concepts",
+  "- `Contract` is the durable book-level agreement for future writing: language, tone/register, story promise, stable anchors, hard rules, forbidden retcons, and other facts that should survive across chapters. It is not a chapter summary.",
+  "- `MainLine` is the rolling continuation plan after the imported material: what the next native writing process should continue from, likely near-future beats, boundaries, and constraints. It must not rewrite completed source chapters.",
+  "- `rolling snapshot` is the compressed long-range memory for cold chapters. It should preserve only durable state that later writing may need, not every scene event.",
+  "- `chapter summary` is per-chapter memory. It must summarize exactly one supplied chapter and preserve continuity facts from that chapter.",
+  "- `snapshot` is the normal native writing checkpoint at a 4-chapter boundary. It should represent story state through that checkpoint and be compatible with normal Write flow snapshots.",
+  "- `hot handoff` is the latest high-signal instruction for the next writing agent after the import finishes: current situation, unresolved pressure, key character states, and style signals.",
+  "",
+  "## How to choose tools",
+  "- If `submit_import_plan_update` is supplied, call it when this step can update or confirm Contract/MainLine. Include both `contract` and `mainLine`. Keep prior fields that remain true; revise fields contradicted by the current source text; add `changes` explaining evidence-backed updates.",
+  "- If `submit_rolling_snapshot` is supplied, call it for cold-range chunks. Set `snapshotTo` to the last chapter covered by this chunk and write a compressed long-term snapshot through that chapter. Include `sourceRange` and concrete `evidence` when possible.",
+  "- If `submit_chapter_summaries` is supplied, call it for aligned recent batches. Return `chapters` with exactly one item per supplied chapter. Each item needs the input `chapterIndex`; include `title` when supplied; use `facts` for characters, locations, objects, promises, clues, style signals, and unresolved threads.",
+  "- If `submit_chapter_summary` is supplied, call it for a single hot chapter. It is the single-chapter version of `submit_chapter_summaries`; do not summarize multiple chapters in it.",
+  "- If `submit_snapshot` is supplied, call it when the current batch ends at a normal snapshot checkpoint. Use the latest rolling/native memory plus the current source text, and set the checkpoint boundary explicitly.",
+  "- If `submit_hot_handoff` is supplied, call it when the step touches the final hot range. Focus on what the next writing agent must know before drafting the next chapter, not on generic praise or book-report commentary.",
+  "- If several of these tools are listed in `expectedTools` or `suppliedTools`, call all of them in the same assistant turn if possible.",
+  "",
+  "## Tool discipline",
+  "- Call every required submit tool listed in context.expectedTools or context.suppliedTools before the turn ends.",
+  "- Use only the submit tools supplied to this step. Do not call tools that are absent from the current tool list.",
+  "- You may call multiple submit tools in one assistant turn when the step requires multiple artifacts.",
+  "- For `submit_import_plan_update`, update only fields supported by evidence in the current text or earlier imported memory; include concise change notes when a projection changes.",
+  "- For `submit_rolling_snapshot` and `submit_snapshot`, state the covered chapter boundary and keep evidence concrete enough that later writing can trust it.",
+  "- For `submit_chapter_summaries`, output exactly one summary object per supplied chapter and keep chapterIndex/title aligned with the input.",
+  "- Do not answer with plain text instead of required tool calls.",
+  "- Keep tool arguments valid JSON objects and keep user-readable values in the target writing language when Contract.language is present.",
+  "",
+  "## Artifact compatibility",
+  "- `submit_import_plan_update` updates the imported book Contract/MainLine projection.",
+  "- `submit_rolling_snapshot` writes the cold-range snapshot checkpoint.",
+  "- `submit_chapter_summaries` writes multiple per-chapter summaries from one aligned batch; each array item must represent one chapter.",
+  "- `submit_chapter_summary` writes one hot per-chapter summary.",
+  "- `submit_snapshot` writes a normal snapshot checkpoint aligned to the writing process cadence.",
+  "- `submit_hot_handoff` records the latest continuation handoff for the next writing agent.",
+  "",
+  "## Output contract",
+  "- Put durable work in tool calls, not in final assistant text.",
+  "- Final assistant text, if any, should be only a short status sentence.",
+].join("\n");
+
 const JOB_SYSTEM_PROMPTS: Record<
-  Exclude<AiNovelPromptProfile, "write_turn" | "chapter_draft">,
+  Exclude<
+    AiNovelPromptProfile,
+    "write_turn" | "chapter_draft" | "import_book_agent"
+  >,
   string
 > = {
   chapter_summary: [
@@ -562,7 +757,10 @@ const JOB_SYSTEM_PROMPTS: Record<
 
 const JOB_FORCED_TOOLS: Partial<
   Record<
-    Exclude<AiNovelPromptProfile, "write_turn" | "chapter_draft">,
+    Exclude<
+      AiNovelPromptProfile,
+      "write_turn" | "chapter_draft" | "import_book_agent"
+    >,
     LLMToolDefinition
   >
 > = {
@@ -604,6 +802,16 @@ export function buildAiNovelPromptAssembly(input: {
     };
   }
 
+  if (input.profile === "import_book_agent") {
+    return {
+      messages: [
+        { role: "system", content: IMPORT_BOOK_AGENT_SYSTEM_PROMPT },
+        ...messagesWithContext,
+      ],
+      tools: resolveImportBookAgentTools(input.context),
+    };
+  }
+
   const jobAssembly: AiNovelPromptAssembly = {
     messages: [
       { role: "system", content: JOB_SYSTEM_PROMPTS[input.profile] },
@@ -620,6 +828,34 @@ export function buildAiNovelPromptAssembly(input: {
     };
   }
   return jobAssembly;
+}
+
+function resolveImportBookAgentTools(context: unknown): LLMToolDefinition[] {
+  const requested = readStringArrayField(context, "suppliedTools");
+  const fallback = readStringArrayField(context, "expectedTools");
+  const toolNames = requested.length > 0 ? requested : fallback;
+  const uniqueToolNames = [...new Set(toolNames)];
+  const tools = uniqueToolNames
+    .map((name) => IMPORT_BOOK_AGENT_TOOLS[name])
+    .filter((tool): tool is LLMToolDefinition => Boolean(tool));
+  if (uniqueToolNames.length > 0) {
+    return tools;
+  }
+  return Object.values(IMPORT_BOOK_AGENT_TOOLS);
+}
+
+function readStringArrayField(context: unknown, fieldName: string): string[] {
+  if (!context || typeof context !== "object" || Array.isArray(context)) {
+    return [];
+  }
+  const value = (context as Record<string, unknown>)[fieldName];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 }
 
 export function toOpenAiToolDefinitions(

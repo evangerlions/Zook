@@ -340,6 +340,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
             chapter_summary: "ainovel-lowcost-structured",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
+            import_book_agent: "ainovel-plus-reasoning",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -358,6 +359,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
             chapter_summary: "ainovel-lowcost-structured",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
+            import_book_agent: "ainovel-plus-reasoning",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -376,6 +378,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
             chapter_summary: "ainovel-lowcost-structured",
             snapshot_generation: "ainovel-lowcost-structured",
             next_chapter_brief: "ainovel-lowcost-structured",
+            import_book_agent: "ainovel-super-reasoning",
           },
           embedding: {
             fact_embed: "ainovel-embedding-default",
@@ -462,6 +465,26 @@ test("public app config API exposes admin delivery config for the requested app"
       apiBasePath: "/api/v1",
     },
   });
+});
+
+test("ai_novel public config exposes import book cold chunk max in K units", async () => {
+  const runtime = await createApplication();
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/public/config",
+    headers: {
+      "x-app-id": "ai_novel",
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.data.appId, "ai_novel");
+  assert.equal(response.body.data.config.importBook.coldChunkMaxK, 50);
+  assert.equal(
+    typeof response.body.data.config.importBook.coldChunkMaxK,
+    "number",
+  );
 });
 
 test("public app config API rejects X-App-Id mismatches against the path app", async () => {
