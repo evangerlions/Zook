@@ -627,6 +627,12 @@ interface AiNovelLocalDebugLlmRequestPayload {
   temperature: number;
   maxTokens: number;
   profile?: AiNovelPromptProfile;
+  providerEvidence?: {
+    providerOptionsCaptured: boolean;
+    enableThinking: boolean;
+    toolChoice?: string;
+    toolCount: number;
+  };
   requestBody: {
     sceneRouteKey: string;
     messages: LLMMessage[];
@@ -1297,12 +1303,25 @@ export class AiNovelLlmService {
     profile?: AiNovelPromptProfile;
     stream: boolean;
   }): AiNovelLocalDebugLlmRequestPayload {
+    const providerTools = Array.isArray(input.providerOptions?.tools)
+      ? input.providerOptions.tools
+      : [];
+    const toolChoice =
+      typeof input.providerOptions?.tool_choice === "string"
+        ? input.providerOptions.tool_choice
+        : undefined;
     return {
       sceneKey: input.sceneKey,
       sceneRouteKey: input.sceneRouteKey,
       temperature: input.temperature,
       maxTokens: input.maxTokens,
       ...(input.profile ? { profile: input.profile } : {}),
+      providerEvidence: {
+        providerOptionsCaptured: input.providerOptions !== undefined,
+        enableThinking: input.providerOptions?.enable_thinking === true,
+        ...(toolChoice ? { toolChoice } : {}),
+        toolCount: providerTools.length,
+      },
       requestBody: {
         sceneRouteKey: input.sceneRouteKey,
         messages: input.messages,

@@ -205,6 +205,9 @@ test("import_book_agent prompt exposes step-scoped submit tools without forced c
   assert.match(systemPrompt, /If `submit_chapter_summary` is supplied/);
   assert.match(systemPrompt, /If `submit_snapshot` is supplied/);
   assert.match(systemPrompt, /If `submit_hot_handoff` is supplied/);
+  assert.match(systemPrompt, /writing-usable snapshot must name/);
+  assert.match(systemPrompt, /continuation plan/);
+  assert.match(systemPrompt, /forbidden rewrites/);
   assert.match(systemPrompt, /Call every required submit tool/);
 });
 

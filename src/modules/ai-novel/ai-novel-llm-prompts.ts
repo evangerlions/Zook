@@ -365,11 +365,12 @@ const SUBMIT_CHAPTER_REVIEW_TOOL = createTool(
 
 const SUBMIT_SNAPSHOT_TOOL = createTool(
   "submit_snapshot",
-  "Submit the rolling long-term story snapshot.",
+  "Submit a normal writing-process snapshot checkpoint for an imported book.",
   {
     snapshot: {
       type: "string",
-      description: "Rolling long-term story snapshot in the target language.",
+      description:
+        "Writing-usable checkpoint in the target language. Include current situation, character states, causal chain, closed/open threads, places/factions/key objects, style constraints, forbidden retcons, and chapter evidence. This must be concrete enough for the next writing agent to continue without rereading the source.",
     },
   },
   ["snapshot"],
@@ -418,13 +419,13 @@ const SUBMIT_IMPORT_PLAN_UPDATE_TOOL = createTool(
     contract: {
       type: "object",
       description:
-        "Current durable book contract projection. Keep only facts supported by the imported source or prior projection.",
+        "Current durable book contract projection. Keep only facts supported by the imported source or prior projection. Preserve language/register, stable promises, anchors, hard rules, forbidden retcons, continuity constraints, and evidence-backed style obligations.",
       additionalProperties: true,
     },
     mainLine: {
       type: "object",
       description:
-        "Current rolling MainLine projection for continuing the imported book.",
+        "Current rolling MainLine continuation plan, not a generic read-to-N note. Include current state, available pressure, next chapter entry, near-future beats, end boundaries, and forbidden rewrites after the imported source.",
       additionalProperties: true,
     },
     changes: {
@@ -449,7 +450,7 @@ const SUBMIT_ROLLING_SNAPSHOT_TOOL = createTool(
     snapshot: {
       type: "string",
       description:
-        "Long-term story snapshot up to snapshotTo in the target writing language.",
+        "Long-term story snapshot up to snapshotTo in the target writing language. Carry forward current situation, durable character/faction states, causal chain, closed/open threads, places/key objects, style constraints, forbidden retcons, and concrete chapter evidence.",
     },
     sourceRange: {
       type: "object",
@@ -462,7 +463,7 @@ const SUBMIT_ROLLING_SNAPSHOT_TOOL = createTool(
     evidence: {
       type: "array",
       description:
-        "Short source-backed notes for important facts retained in the snapshot.",
+        "Short source-backed notes for important facts retained in the snapshot; cite chapter ranges or chapter numbers rather than vague impressions.",
       items: { type: "string" },
     },
   },
@@ -658,10 +659,12 @@ const IMPORT_BOOK_AGENT_SYSTEM_PROMPT = [
   "- `chapter summary` is per-chapter memory. It must summarize exactly one supplied chapter and preserve continuity facts from that chapter.",
   "- `snapshot` is the normal native writing checkpoint at a 4-chapter boundary. It should represent story state through that checkpoint and be compatible with normal Write flow snapshots.",
   "- `hot handoff` is the latest high-signal instruction for the next writing agent after the import finishes: current situation, unresolved pressure, key character states, and style signals.",
+  "- A writing-usable snapshot must name the current situation, character states, causal chain, closed threads, open threads, places/factions/key objects, style constraints, forbidden retcons, and concrete chapter evidence. Do not reduce it to a one-sentence theme.",
+  "- A writing-usable MainLine must tell the next writer where to enter, what pressure can continue, what cannot be rewritten, and what the next beats should do.",
   "",
   "## How to choose tools",
   "- If `submit_import_plan_update` is supplied, call it when this step can update or confirm Contract/MainLine. Include both `contract` and `mainLine`. Keep prior fields that remain true; revise fields contradicted by the current source text; add `changes` explaining evidence-backed updates.",
-  "- If `submit_rolling_snapshot` is supplied, call it for cold-range chunks. Set `snapshotTo` to the last chapter covered by this chunk and write a compressed long-term snapshot through that chapter. Include `sourceRange` and concrete `evidence` when possible.",
+  "- If `submit_rolling_snapshot` is supplied, call it for cold-range chunks. Set `snapshotTo` to the last chapter covered by this chunk and write a compressed long-term snapshot through that chapter. Include `sourceRange` and concrete `evidence` when possible. Keep the snapshot concise enough for long-term memory but specific enough to continue writing.",
   "- If `submit_chapter_summaries` is supplied, call it for aligned recent batches. Return `chapters` with exactly one item per supplied chapter. Each item needs the input `chapterIndex`; include `title` when supplied; use `facts` for characters, locations, objects, promises, clues, style signals, and unresolved threads.",
   "- If `submit_chapter_summary` is supplied, call it for a single hot chapter. It is the single-chapter version of `submit_chapter_summaries`; do not summarize multiple chapters in it.",
   "- If `submit_snapshot` is supplied, call it when the current batch ends at a normal snapshot checkpoint. Use the latest rolling/native memory plus the current source text, and set the checkpoint boundary explicitly.",
@@ -673,7 +676,9 @@ const IMPORT_BOOK_AGENT_SYSTEM_PROMPT = [
   "- Use only the submit tools supplied to this step. Do not call tools that are absent from the current tool list.",
   "- You may call multiple submit tools in one assistant turn when the step requires multiple artifacts.",
   "- For `submit_import_plan_update`, update only fields supported by evidence in the current text or earlier imported memory; include concise change notes when a projection changes.",
+  "- For `submit_import_plan_update.mainLine`, write a continuation plan: current state, next-entry pressure, beats, end boundaries, and forbidden rewrites. Do not merely say that you read through chapter N.",
   "- For `submit_rolling_snapshot` and `submit_snapshot`, state the covered chapter boundary and keep evidence concrete enough that later writing can trust it.",
+  "- For `submit_snapshot`, prefer structured prose with labeled sections when it improves readability: current situation, character states, causal chain, open/closed threads, places/factions/key objects, style constraints, forbidden retcons, and evidence.",
   "- For `submit_chapter_summaries`, output exactly one summary object per supplied chapter and keep chapterIndex/title aligned with the input.",
   "- Do not answer with plain text instead of required tool calls.",
   "- Keep tool arguments valid JSON objects and keep user-readable values in the target writing language when Contract.language is present.",

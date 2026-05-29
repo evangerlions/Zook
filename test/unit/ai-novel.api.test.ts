@@ -172,6 +172,35 @@ function forcedStructuredToolPayload(
   return { ok: true };
 }
 
+function importBookAgentPayload(): Record<string, unknown> {
+  return {
+    scene_key: "import_book_agent",
+    messages: [
+      {
+        role: "user",
+        content: "Import aligned chapters 61..64.",
+      },
+    ],
+    context: {
+      stepName: "recent-batch-61-64",
+      expectedTools: [
+        "submit_import_plan_update",
+        "submit_chapter_summaries",
+        "submit_snapshot",
+      ],
+      suppliedTools: [
+        "submit_import_plan_update",
+        "submit_chapter_summaries",
+        "submit_snapshot",
+      ],
+      importContext: {
+        sourceRange: { startChapterIndex: 61, endChapterIndex: 64 },
+        sourceText: "第六十一回……",
+      },
+    },
+  };
+}
+
 interface CreateAiNovelRuntimeOptions {
   llmProvider?: LLMProvider;
 }
@@ -433,7 +462,6 @@ test("ai_novel chat completions route resolves scene_key to scene route selectio
     "user_alice",
     "ai_novel",
   );
-
   const response = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai/chat-completions",
@@ -618,7 +646,6 @@ test("ai_novel structured workflow scenes retry when the required submit tool is
     "user_alice",
     "ai_novel",
   );
-
   const response = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai/chat-completions",
@@ -721,35 +748,10 @@ test("ai_novel import_book_agent uses non-streaming thinking auto tools", async 
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
     },
-    body: encryptAiPayload(
-      {
-        scene_key: "import_book_agent",
-        messages: [
-          {
-            role: "user",
-            content: "Import aligned chapters 61..64.",
-          },
-        ],
-        context: {
-          stepName: "recent-batch-61-64",
-          expectedTools: [
-            "submit_import_plan_update",
-            "submit_chapter_summaries",
-            "submit_snapshot",
-          ],
-          suppliedTools: [
-            "submit_import_plan_update",
-            "submit_chapter_summaries",
-            "submit_snapshot",
-          ],
-          importContext: {
-            sourceRange: { startChapterIndex: 61, endChapterIndex: 64 },
-            sourceText: "第六十一回……",
-          },
-        },
-      },
-      aiKey,
-    ),
+    body: {
+      ...encryptAiPayload(importBookAgentPayload(), aiKey),
+      localDebugRequestPlaintext: JSON.stringify(importBookAgentPayload()),
+    },
   });
 
   assert.equal(response.statusCode, 200);
@@ -781,6 +783,21 @@ test("ai_novel import_book_agent uses non-streaming thinking auto tools", async 
     String(capturedMessages[1]?.content ?? ""),
     /recent-batch-61-64/,
   );
+  const localDebugLlmRequest = (data.localDebugLlmRequest ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const providerEvidence = (localDebugLlmRequest.providerEvidence ??
+    {}) as Record<string, unknown>;
+  assert.equal(providerEvidence.enableThinking, true);
+  assert.equal(providerEvidence.toolChoice, "auto");
+  assert.equal(providerEvidence.toolCount, 3);
+  const debugRequestBody = (localDebugLlmRequest.requestBody ??
+    {}) as Record<string, unknown>;
+  const providerOptions = (debugRequestBody.providerOptions ??
+    {}) as Record<string, unknown>;
+  assert.equal(providerOptions.enable_thinking, true);
+  assert.equal(providerOptions.tool_choice, "auto");
 });
 
 test("ai_novel scene routing config validates all novel-engine chat scene keys", async () => {
