@@ -1,7 +1,10 @@
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
-import { resolveAiNovelModelAlias } from "./ai-novel-llm-model-aliases.ts";
+import {
+  isAiNovelSceneRouteKey,
+  resolveAiNovelSceneRouteAlias,
+} from "./ai-novel-llm-model-aliases.ts";
 import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 
@@ -17,6 +20,7 @@ export interface LLMMessage {
 
 export interface LLMCompletionRequest {
   modelKey: string;
+  modelKeyKind?: "model" | "scene_route";
   messages: LLMMessage[];
   temperature?: number;
   maxTokens?: number;
@@ -142,7 +146,7 @@ export class LLMManager {
       const usage = this.withContextUsage(result.usage, resolution.request.model);
       const completedAt = this.getNow();
       const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
-      await this.recordRouteResult(resolution.routeRef, {
+      await this.recordRouteResult(resolution.routeRefs, {
         ok: true,
         firstByteLatencyMs: totalLatencyMs,
         totalLatencyMs,
@@ -159,7 +163,7 @@ export class LLMManager {
     } catch (error) {
       const completedAt = this.getNow();
       const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
-      await this.recordRouteResult(resolution.routeRef, {
+      await this.recordRouteResult(resolution.routeRefs, {
         ok: false,
         firstByteLatencyMs: totalLatencyMs,
         totalLatencyMs,
@@ -216,7 +220,7 @@ export class LLMManager {
       }
 
       const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRef, {
+      await this.recordRouteResult(resolution.routeRefs, {
         ok: true,
         firstByteLatencyMs:
           firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
@@ -237,7 +241,7 @@ export class LLMManager {
     } catch (error) {
       void iterator.return?.();
       const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRef, {
+      await this.recordRouteResult(resolution.routeRefs, {
         ok: false,
         firstByteLatencyMs:
           firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
@@ -277,7 +281,7 @@ export class LLMManager {
 
         if (event.type === "done") {
           const completedAt = this.getNow();
-          await this.recordRouteResult(resolution.routeRef, {
+          await this.recordRouteResult(resolution.routeRefs, {
             ok: true,
             firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
             totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
@@ -292,7 +296,7 @@ export class LLMManager {
 
       if (!recorded) {
         const completedAt = this.getNow();
-        await this.recordRouteResult(resolution.routeRef, {
+        await this.recordRouteResult(resolution.routeRefs, {
           ok: true,
           firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
           totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
@@ -302,7 +306,7 @@ export class LLMManager {
       }
     } catch (error) {
       const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRef, {
+      await this.recordRouteResult(resolution.routeRefs, {
         ok: false,
         firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
         totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
@@ -359,7 +363,10 @@ export class LLMManager {
     request: LLMCompletionRequest,
   ): Promise<{
     request: ResolvedLLMCompletionRequest;
-    routeRef: LlmRouteRef;
+    routeRefs: {
+      healthRouteRef: LlmRouteRef;
+      metricRouteRef: LlmRouteRef;
+    };
   }> {
     if (!Array.isArray(request.messages) || request.messages.length === 0) {
       badRequest("REQ_INVALID_BODY", "messages must contain at least one item.");
@@ -413,6 +420,11 @@ export class LLMManager {
       }
 
       const selection = await this.resolveConfiguredModel(commonConfig, modelKey);
+      const healthRouteRef = {
+        modelKey,
+        provider: selection.provider.key,
+        providerModel: selection.route.providerModel,
+      };
       return {
         request: {
           ...request,
@@ -428,11 +440,7 @@ export class LLMManager {
             },
           },
         },
-        routeRef: {
-          modelKey,
-          provider: selection.provider.key,
-          providerModel: selection.route.providerModel,
-        },
+        routeRefs: this.buildRouteRefs(healthRouteRef, modelKey, request.modelKeyKind),
       };
     }
 
@@ -456,10 +464,34 @@ export class LLMManager {
           providerModel: resolvedModel.providerModel,
         },
       },
-      routeRef: {
+      routeRefs: this.buildRouteRefs(
+        {
+          modelKey,
+          provider: resolvedModel.provider,
+          providerModel: resolvedModel.providerModel,
+        },
         modelKey,
-        provider: resolvedModel.provider,
-        providerModel: resolvedModel.providerModel,
+        request.modelKeyKind,
+      ),
+    };
+  }
+
+  private buildRouteRefs(
+    healthRouteRef: LlmRouteRef,
+    requestedModelKey: string,
+    modelKeyKind?: "model" | "scene_route",
+  ): {
+    healthRouteRef: LlmRouteRef;
+    metricRouteRef: LlmRouteRef;
+  } {
+    const metricModelKey = modelKeyKind === "scene_route" || isAiNovelSceneRouteKey(requestedModelKey)
+      ? healthRouteRef.providerModel
+      : healthRouteRef.modelKey;
+    return {
+      healthRouteRef,
+      metricRouteRef: {
+        ...healthRouteRef,
+        modelKey: metricModelKey,
       },
     };
   }
@@ -473,7 +505,7 @@ export class LLMManager {
   }> {
     let model = config.models.find((item) => item.key === modelKey);
     if (!model) {
-      const alias = resolveAiNovelModelAlias(modelKey);
+      const alias = resolveAiNovelSceneRouteAlias(modelKey);
       if (alias?.kind === "chat") {
         const provider = config.providers.find((item) => item.key === alias.provider);
         if (provider?.enabled && this.providers[provider.key]) {
@@ -597,7 +629,10 @@ export class LLMManager {
   }
 
   private async recordRouteResult(
-    routeRef: LlmRouteRef,
+    routeRefs: {
+      healthRouteRef: LlmRouteRef;
+      metricRouteRef: LlmRouteRef;
+    },
     result: {
       ok: boolean;
       firstByteLatencyMs: number;
@@ -607,14 +642,14 @@ export class LLMManager {
     },
   ): Promise<void> {
     await Promise.all([
-      this.options.llmHealthService?.recordResult(routeRef, {
+      this.options.llmHealthService?.recordResult(routeRefs.healthRouteRef, {
         ok: result.ok,
         timestamp: result.occurredAt.toISOString(),
         firstByteLatencyMs: result.firstByteLatencyMs,
         totalLatencyMs: result.totalLatencyMs,
       }),
       this.options.llmMetricsService?.recordCall({
-        ...routeRef,
+        ...routeRefs.metricRouteRef,
         ok: result.ok,
         firstByteLatencyMs: result.firstByteLatencyMs,
         totalLatencyMs: result.totalLatencyMs,

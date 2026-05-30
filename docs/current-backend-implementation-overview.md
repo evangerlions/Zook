@@ -137,7 +137,7 @@
 4. LLM 健康窗口记录
 5. LLM 小时级监控聚合，并在模型对比中优先展示当前时间范围内有请求量的模型
 6. Admin Web 的 LLM 配置页与监控页
-7. LLM metrics 视图会补齐 AINovel 默认逻辑模型，避免 AINovel alias 调用只进入总指标而无法进入模型维度指标，同时不改变已保存的 `common.llm_service` 配置和冒烟测试范围
+7. LLM metrics 视图只展示 common LLM model key；AINovel 的 `ainovel-*` 业务 scene route key 会在记录指标时归入实际 provider model key，避免把业务 key 当作模型展示
 
 对应核心文件：
 
@@ -199,7 +199,7 @@
 3. 两条接口都强制要求 Bearer 鉴权与 `app_id = ai_novel`
 4. 请求与响应都支持 `AES-256-GCM` JSON envelope
 5. 解密成功后的业务成功与业务错误都会加密返回
-6. `taskType` 继续作为 scene-first 选模入口，不允许客户端直传底层模型字段
+6. `scene_key` / `sceneKey` 是 AINovel scene-first 入口；客户端不允许直传底层 `model`、`modelKey`、`providerModel` 字段。AINovel routing 中的 `ainovel-*` 值是业务 scene route key，不是 common LLM model key
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
 8. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
 
@@ -217,8 +217,8 @@
 2. 通过 admin 接口读写、记录 revision、支持 restore
 3. 当前运行时固定按 `free` 档位取路由
 4. `plus / super_plus` 本期只落配置结构，不接会员权益判定
-5. `fact_embed / episode_embed / summary_embed / query_memory_embed` 继续走独立 embedding 逻辑模型
-6. `common.llm_service` 默认文档会预填 AINovel 所需逻辑模型骨架与占位 route，管理员补齐后再启用
+5. `fact_embed / episode_embed / summary_embed / query_memory_embed` 继续走独立 embedding scene route key
+6. `common.llm_service` 默认文档只预填可统计、可冒烟的实际模型 key；AINovel routing 中的 `ainovel-*` 只作为业务 route key 保留
 
 对应核心文件：
 

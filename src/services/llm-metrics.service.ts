@@ -8,10 +8,14 @@ import type {
   LlmMetricsSummary,
   LlmRouteMetricsGroup,
   LlmServiceConfig,
+  LlmModelConfig,
 } from "../shared/types.ts";
 import { badRequest } from "../shared/errors.ts";
 import { toHourKey } from "../shared/utils.ts";
-import { createDefaultAinovelModels } from "./common-llm-config.service.ts";
+import {
+  createAiNovelMetricModels,
+  isAiNovelSceneRouteKey,
+} from "./ai-novel-llm-model-aliases.ts";
 import type { LLMUsage } from "./llm-manager.ts";
 
 const METRICS_RETENTION_HOURS = 24 * 365;
@@ -226,14 +230,66 @@ export class LlmMetricsService {
 
   private getMetricModels(config: LlmServiceConfig): LlmServiceConfig["models"] {
     const providerKeys = new Set(config.providers.map((provider) => provider.key));
-    const existingKeys = new Set(config.models.map((model) => model.key));
-    const aiNovelMetricModels = createDefaultAinovelModels().filter((model) => {
+    const concreteModels = config.models.filter((model) => !isAiNovelSceneRouteKey(model.key));
+    const existingKeys = new Set(concreteModels.map((model) => model.key));
+    const configuredAiNovelMetricModels = this.createConfiguredAiNovelMetricModels(config, existingKeys);
+    for (const model of configuredAiNovelMetricModels) {
+      existingKeys.add(model.key);
+    }
+    const aiNovelMetricModels = createAiNovelMetricModels().filter((model) => {
       if (existingKeys.has(model.key)) {
         return false;
       }
       return model.routes.every((route) => providerKeys.has(route.provider));
     });
-    return aiNovelMetricModels.length ? [...config.models, ...aiNovelMetricModels] : config.models;
+    return [
+      ...concreteModels,
+      ...configuredAiNovelMetricModels,
+      ...aiNovelMetricModels,
+    ];
+  }
+
+  private createConfiguredAiNovelMetricModels(
+    config: LlmServiceConfig,
+    existingKeys: Set<string>,
+  ): LlmModelConfig[] {
+    const providerKeys = new Set(config.providers.map((provider) => provider.key));
+    const modelsByKey = new Map<string, LlmModelConfig>();
+    for (const sceneRouteModel of config.models) {
+      if (!isAiNovelSceneRouteKey(sceneRouteModel.key)) {
+        continue;
+      }
+      for (const route of sceneRouteModel.routes) {
+        if (!providerKeys.has(route.provider)) {
+          continue;
+        }
+        const metricModelKey = route.providerModel.trim();
+        if (!metricModelKey || existingKeys.has(metricModelKey)) {
+          continue;
+        }
+        const existing = modelsByKey.get(metricModelKey);
+        if (existing) {
+          if (
+            !existing.routes.some(
+              (item) =>
+                item.provider === route.provider &&
+                item.providerModel === route.providerModel,
+            )
+          ) {
+            existing.routes.push({ ...route });
+          }
+          continue;
+        }
+        modelsByKey.set(metricModelKey, {
+          key: metricModelKey,
+          label: metricModelKey,
+          kind: sceneRouteModel.kind,
+          strategy: "fixed",
+          routes: [{ ...route }],
+        });
+      }
+    }
+    return [...modelsByKey.values()];
   }
 }
 
