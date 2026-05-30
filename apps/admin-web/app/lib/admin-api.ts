@@ -27,6 +27,7 @@ import type {
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
   AdminSensitiveOperationCodeRequestDocument,
+  AdminSmsServiceDocument,
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   AdminSensitiveOperationGrantDocument,
@@ -449,6 +450,29 @@ export const adminApi = {
       method: "POST",
       body: input,
     });
+  },
+  getSmsService() {
+    return requestJson<AdminSmsServiceDocument>(adminPath("/apps/common/sms-service"));
+  },
+  getSmsServiceRevision(revision: number) {
+    return requestJson<AdminSmsServiceDocument>(adminPath(`/apps/common/sms-service/revisions/${revision}`));
+  },
+  updateSmsService(input: Record<string, unknown>) {
+    return requestJson<AdminSmsServiceDocument>(adminPath("/apps/common/sms-service"), {
+      method: "PUT",
+      body: input,
+    });
+  },
+  restoreSmsService(revision: number, desc?: string) {
+    return requestJson<AdminSmsServiceDocument>(
+      adminPath(`/apps/common/sms-service/revisions/${revision}/restore`),
+      {
+        method: "POST",
+        body: {
+          desc: desc || undefined,
+        },
+      },
+    );
   },
   getPasswords() {
     return requestJson<AdminPasswordDocument>(adminPath("/apps/common/passwords"));

@@ -4,6 +4,7 @@ import {
   badRequest,
   conflict,
   forbidden,
+  isApplicationError,
   tooManyRequests,
   unauthorized,
 } from "../../shared/errors.ts";
@@ -566,10 +567,7 @@ export class AuthService {
         await this.deleteVerificationCodeEntry(cacheKey);
         await this.smsVerificationRecordService.markProviderFailed(
           smsRecord.id,
-          {
-            providerMessage:
-              error instanceof Error ? error.message : String(error),
-          },
+          this.buildSmsProviderFailure(error),
         );
         throw error;
       }
@@ -699,10 +697,7 @@ export class AuthService {
         await this.deleteVerificationCodeEntry(cacheKey);
         await this.smsVerificationRecordService.markProviderFailed(
           smsRecord.id,
-          {
-            providerMessage:
-              error instanceof Error ? error.message : String(error),
-          },
+          this.buildSmsProviderFailure(error),
         );
         throw error;
       }
@@ -1158,10 +1153,7 @@ export class AuthService {
         await this.deleteVerificationCodeEntry(cacheKey);
         await this.smsVerificationRecordService.markProviderFailed(
           smsRecord.id,
-          {
-            providerMessage:
-              error instanceof Error ? error.message : String(error),
-          },
+          this.buildSmsProviderFailure(error),
         );
         throw error;
       }
@@ -1745,6 +1737,68 @@ export class AuthService {
     }
 
     return this.buildEmailLoginCodeKey(appId, phone, "sms");
+  }
+
+  private buildSmsProviderFailure(error: unknown): {
+    providerRequestId?: string;
+    providerMessage: string;
+  } {
+    if (isApplicationError(error)) {
+      const safeDetails = this.normalizeSmsProviderFailureDetails(error.details);
+      return {
+        providerRequestId:
+          typeof safeDetails.requestId === "string" ? safeDetails.requestId : undefined,
+        providerMessage: JSON.stringify({
+          code: error.code,
+          message: error.message,
+          details: safeDetails,
+        }),
+      };
+    }
+
+    return {
+      providerMessage: JSON.stringify({
+        code: "UNKNOWN_ERROR",
+        message: error instanceof Error ? error.message : String(error),
+      }),
+    };
+  }
+
+  private normalizeSmsProviderFailureDetails(details: unknown): Record<string, unknown> {
+    if (!details || typeof details !== "object" || Array.isArray(details)) {
+      return {};
+    }
+
+    const source = details as Record<string, unknown>;
+    const normalized: Record<string, unknown> = {};
+    for (const key of ["provider", "missingField", "requestId"]) {
+      if (source[key] !== undefined) {
+        normalized[key] = source[key];
+      }
+    }
+
+    const sendStatus = this.normalizeSmsProviderSendStatus(source.sendStatus);
+    if (sendStatus) {
+      normalized.sendStatus = sendStatus;
+    }
+
+    return normalized;
+  }
+
+  private normalizeSmsProviderSendStatus(value: unknown): Record<string, unknown> | undefined {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return undefined;
+    }
+
+    const source = value as Record<string, unknown>;
+    const normalized: Record<string, unknown> = {};
+    for (const key of ["Code", "Message", "SerialNo", "Fee", "IsoCode"]) {
+      if (source[key] !== undefined) {
+        normalized[key] = source[key];
+      }
+    }
+
+    return Object.keys(normalized).length ? normalized : undefined;
   }
 
   private isLocalEmailLoginBypassAccount(

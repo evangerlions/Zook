@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
+import { ApplicationError } from "../../src/shared/errors.ts";
 import type { SmsVerificationSender } from "../../src/services/tencent-sms-verification.service.ts";
 
 interface SentVerificationSms {
@@ -418,4 +419,86 @@ test("sms code endpoints accept test=true and skip real sms sending while still 
 
   assert.equal(resetResponse.statusCode, 200);
   assert.equal(sent.length, 0);
+});
+
+test("sms provider failures persist structured provider details for admin inspection", async () => {
+  const runtime = await createApplication({
+    registrationCodeGenerator: () => "555555",
+    smsVerificationSender: {
+      async sendVerificationCode() {
+        throw new ApplicationError(
+          502,
+          "SMS_PROVIDER_REQUEST_FAILED",
+          "FailedOperation.SignatureIncorrect: SMS signature is invalid.",
+          {
+            provider: "tencent_sms",
+            requestId: "req_sms_failed",
+            debug: {
+              request: {
+                body: {
+                  PhoneNumberSet: ["+8618710100991"],
+                  TemplateParamSet: ["555555", "10"],
+                },
+              },
+              response: {
+                Response: {
+                  RequestId: "req_sms_failed",
+                },
+              },
+            },
+            sendStatus: {
+              Code: "FailedOperation.SignatureIncorrect",
+              Message: "SMS signature is invalid.",
+              PhoneNumber: "+8618710100991",
+              SerialNo: "serial_failed",
+            },
+          },
+        );
+      },
+    },
+  });
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/sms-code",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100991",
+      phoneNa: "+86",
+    },
+    ipAddress: "198.51.100.78",
+  });
+
+  assert.equal(response.statusCode, 502);
+  assert.equal(response.body.code, "SMS_PROVIDER_REQUEST_FAILED");
+  const record = runtime.database.smsVerificationRecords.find(
+    (item) => item.scene === "login" && item.status === "provider_failed",
+  );
+  assert.ok(record);
+  assert.equal(record.status, "provider_failed");
+  assert.equal(record.providerRequestId, "req_sms_failed");
+  assert.ok(record.providerMessage);
+  const providerMessage = JSON.parse(record.providerMessage) as {
+    code: string;
+    message: string;
+    details: {
+      provider: string;
+      requestId: string;
+      debug?: unknown;
+      sendStatus: {
+        Code: string;
+        Message: string;
+        PhoneNumber?: string;
+        SerialNo?: string;
+      };
+    };
+  };
+  assert.equal(providerMessage.code, "SMS_PROVIDER_REQUEST_FAILED");
+  assert.equal(providerMessage.details.provider, "tencent_sms");
+  assert.equal(providerMessage.details.requestId, "req_sms_failed");
+  assert.equal(providerMessage.details.debug, undefined);
+  assert.equal(providerMessage.details.sendStatus.Code, "FailedOperation.SignatureIncorrect");
+  assert.equal(providerMessage.details.sendStatus.SerialNo, "serial_failed");
+  assert.equal(providerMessage.details.sendStatus.PhoneNumber, undefined);
 });

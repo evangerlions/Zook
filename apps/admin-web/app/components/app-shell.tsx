@@ -11,7 +11,7 @@ const SERVER_WORKSPACES = [
   { to: "/apps", label: "应用", code: "APP", description: "管理项目空间与接入状态" },
   { to: "/auth-rate-limits", label: "Auth Limits", code: "ARL", description: "维护邮箱 / 短信验证码共用的公共风控阈值" },
   { to: "/mail", label: "邮件服务", code: "MAIL", description: "统一维护公共邮件配置" },
-  { to: "/sms", label: "SMS", code: "SMS", description: "查看短信验证码与发送状态" },
+  { to: "/sms", label: "SMS", code: "SMS", description: "配置短信服务并查看发送状态" },
   { to: "/passwords", label: "PASSWORDS", code: "PWD", description: "维护公共密钥与密码项" },
   { to: "/content-safety", label: "Content Safety", code: "CSF", description: "配置用户输入内容安全与敏感词" },
   { to: "/getui-gy", label: "GeYan", code: "GY", description: "配置运营商一键登录能力" },

@@ -70,22 +70,76 @@ test("tencent sms verification sender signs and sends a verification sms request
   assert.equal(result.phoneNumber, "+8613812345678");
 });
 
-test("tencent sms verification sender fails clearly when required config is missing", async () => {
-  const sender = new TencentSmsVerificationSender({
-    secretId: "sms-secret-id",
-    secretKey: "sms-secret-key",
-  });
+test("tencent sms verification sender reports the exact missing config field", async () => {
+  const cases = [
+    {
+      config: {
+        secretKey: "sms-secret-key",
+        sdkAppId: "1400849632",
+        templateId: "1907577",
+        signName: "智卓凯科技",
+      },
+      code: "SMS_SERVICE_MISSING_SECRET_ID",
+      field: "TENCENT_SMS_SECRET_ID",
+    },
+    {
+      config: {
+        secretId: "sms-secret-id",
+        sdkAppId: "1400849632",
+        templateId: "1907577",
+        signName: "智卓凯科技",
+      },
+      code: "SMS_SERVICE_MISSING_SECRET_KEY",
+      field: "TENCENT_SMS_SECRET_KEY",
+    },
+    {
+      config: {
+        secretId: "sms-secret-id",
+        secretKey: "sms-secret-key",
+        templateId: "1907577",
+        signName: "智卓凯科技",
+      },
+      code: "SMS_SERVICE_MISSING_SDK_APP_ID",
+      field: "TENCENT_SMS_SDK_APP_ID",
+    },
+    {
+      config: {
+        secretId: "sms-secret-id",
+        secretKey: "sms-secret-key",
+        sdkAppId: "1400849632",
+        signName: "智卓凯科技",
+      },
+      code: "SMS_SERVICE_MISSING_TEMPLATE_ID",
+      field: "TENCENT_SMS_TEMPLATE_ID",
+    },
+    {
+      config: {
+        secretId: "sms-secret-id",
+        secretKey: "sms-secret-key",
+        sdkAppId: "1400849632",
+        templateId: "1907577",
+      },
+      code: "SMS_SERVICE_MISSING_SIGN_NAME",
+      field: "TENCENT_SMS_SIGN_NAME",
+    },
+  ];
 
-  await assert.rejects(
-    () =>
-      sender.sendVerificationCode({
-        phoneNumber: "+8613812345678",
-        code: "852133",
-        expireMinutes: 10,
-      }),
-    (error: unknown) =>
-      error instanceof Error &&
-      "code" in error &&
-      error.code === "SMS_SERVICE_NOT_CONFIGURED",
-  );
+  for (const item of cases) {
+    const sender = new TencentSmsVerificationSender(item.config);
+
+    await assert.rejects(
+      () =>
+        sender.sendVerificationCode({
+          phoneNumber: "+8613812345678",
+          code: "852133",
+          expireMinutes: 10,
+        }),
+      (error: unknown) =>
+        error instanceof Error &&
+        "code" in error &&
+        error.code === item.code &&
+        "details" in error &&
+        (error.details as { missingField?: string }).missingField === item.field,
+    );
+  }
 });
