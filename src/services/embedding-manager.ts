@@ -2,12 +2,16 @@ import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
 import type { LLMManagerOptions, LLMProviderName, LLMUsage, ResolvedLLMModel } from "./llm-manager.ts";
-import { resolveAiNovelModelAlias } from "./ai-novel-llm-model-aliases.ts";
+import {
+  isAiNovelSceneRouteKey,
+  resolveAiNovelSceneRouteAlias,
+} from "./ai-novel-llm-model-aliases.ts";
 import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 
 export interface EmbeddingRequest {
   modelKey: string;
+  modelKeyKind?: "model" | "scene_route";
   input: string[];
   providerOptions?: Record<string, unknown>;
 }
@@ -64,7 +68,7 @@ export class EmbeddingManager {
       const result = await this.providers[resolution.request.model.provider].embed(resolution.request);
       const completedAt = this.getNow();
       const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
-      await this.recordRouteResult(resolution.routeRef, {
+      await this.recordRouteResult(resolution.routeRefs, {
         ok: true,
         totalLatencyMs,
         usage: result.usage,
@@ -78,7 +82,7 @@ export class EmbeddingManager {
       };
     } catch (error) {
       const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRef, {
+      await this.recordRouteResult(resolution.routeRefs, {
         ok: false,
         totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
         occurredAt: completedAt,
@@ -91,7 +95,10 @@ export class EmbeddingManager {
     request: EmbeddingRequest,
   ): Promise<{
     request: ResolvedEmbeddingRequest;
-    routeRef: LlmRouteRef;
+    routeRefs: {
+      healthRouteRef: LlmRouteRef;
+      metricRouteRef: LlmRouteRef;
+    };
   }> {
     const modelKey = request.modelKey.trim();
     if (!modelKey) {
@@ -116,6 +123,11 @@ export class EmbeddingManager {
       }
 
       const selection = await this.resolveConfiguredModel(commonConfig, modelKey);
+      const healthRouteRef = {
+        modelKey,
+        provider: selection.provider.key,
+        providerModel: selection.route.providerModel,
+      };
       return {
         request: {
           ...request,
@@ -131,11 +143,7 @@ export class EmbeddingManager {
             },
           },
         },
-        routeRef: {
-          modelKey,
-          provider: selection.provider.key,
-          providerModel: selection.route.providerModel,
-        },
+        routeRefs: this.buildRouteRefs(healthRouteRef, modelKey, request.modelKeyKind),
       };
     }
 
@@ -158,10 +166,34 @@ export class EmbeddingManager {
           providerModel: resolvedModel.providerModel,
         },
       },
-      routeRef: {
+      routeRefs: this.buildRouteRefs(
+        {
+          modelKey,
+          provider: resolvedModel.provider,
+          providerModel: resolvedModel.providerModel,
+        },
         modelKey,
-        provider: resolvedModel.provider,
-        providerModel: resolvedModel.providerModel,
+        request.modelKeyKind,
+      ),
+    };
+  }
+
+  private buildRouteRefs(
+    healthRouteRef: LlmRouteRef,
+    requestedModelKey: string,
+    modelKeyKind?: "model" | "scene_route",
+  ): {
+    healthRouteRef: LlmRouteRef;
+    metricRouteRef: LlmRouteRef;
+  } {
+    const metricModelKey = modelKeyKind === "scene_route" || isAiNovelSceneRouteKey(requestedModelKey)
+      ? healthRouteRef.providerModel
+      : healthRouteRef.modelKey;
+    return {
+      healthRouteRef,
+      metricRouteRef: {
+        ...healthRouteRef,
+        modelKey: metricModelKey,
       },
     };
   }
@@ -175,7 +207,7 @@ export class EmbeddingManager {
   }> {
     let model = config.models.find((item) => item.key === modelKey);
     if (!model) {
-      const alias = resolveAiNovelModelAlias(modelKey);
+      const alias = resolveAiNovelSceneRouteAlias(modelKey);
       if (alias?.kind === "embedding") {
         const provider = config.providers.find((item) => item.key === alias.provider);
         if (provider?.enabled && this.providers[provider.key]) {
@@ -299,7 +331,10 @@ export class EmbeddingManager {
   }
 
   private async recordRouteResult(
-    routeRef: LlmRouteRef,
+    routeRefs: {
+      healthRouteRef: LlmRouteRef;
+      metricRouteRef: LlmRouteRef;
+    },
     result: {
       ok: boolean;
       totalLatencyMs: number;
@@ -308,14 +343,14 @@ export class EmbeddingManager {
     },
   ): Promise<void> {
     await Promise.all([
-      this.options.llmHealthService?.recordResult(routeRef, {
+      this.options.llmHealthService?.recordResult(routeRefs.healthRouteRef, {
         ok: result.ok,
         timestamp: result.occurredAt.toISOString(),
         firstByteLatencyMs: result.totalLatencyMs,
         totalLatencyMs: result.totalLatencyMs,
       }),
       this.options.llmMetricsService?.recordCall({
-        ...routeRef,
+        ...routeRefs.metricRouteRef,
         ok: result.ok,
         firstByteLatencyMs: result.totalLatencyMs,
         totalLatencyMs: result.totalLatencyMs,

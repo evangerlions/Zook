@@ -191,7 +191,7 @@ export default function AiRoutingRoute() {
       <header className="page-header">
         <div>
           <h1>AI Routing</h1>
-          <p>这里维护 `ai_novel.model_routing` 的 RAW JSON，控制 taskType 到逻辑 modelKey 的默认映射。</p>
+          <p>这里维护 `ai_novel.model_routing` 的 RAW JSON，控制 scene key 到 AINovel 业务 route key 的默认映射。</p>
         </div>
       </header>
 

@@ -20,7 +20,7 @@ const SERVER_WORKSPACES = [
 
 const APP_WORKSPACES = [
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
-  { to: "/ai-routing", label: "AI Routing", code: "AIR", description: "维护 ai_novel 的 taskType 路由" },
+  { to: "/ai-routing", label: "AI Routing", code: "AIR", description: "维护 ai_novel 的 scene 路由" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
 ];
 

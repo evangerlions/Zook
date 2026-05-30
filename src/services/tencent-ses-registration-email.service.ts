@@ -112,7 +112,7 @@ export class TencentSesRegistrationEmailSender implements VerificationEmailSende
       clientRegion: command.region,
       region: resolvedRegion,
       fromEmailAddress: sender.address,
-      subject: template.subject,
+      subject: `${template.subject} - ${command.code}`,
       templateId: template.templateId,
       templateData: {
         appName: command.appName,

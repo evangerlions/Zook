@@ -378,7 +378,7 @@ test("ai_novel chat completions route requires bearer auth", async () => {
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -394,7 +394,7 @@ test("ai_novel chat completions route requires bearer auth", async () => {
   assert.equal(response.body.code, "AUTH_BEARER_REQUIRED");
 });
 
-test("ai_novel chat completions route resolves taskType to scene model selection", async () => {
+test("ai_novel chat completions route resolves scene_key to scene route selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -411,7 +411,7 @@ test("ai_novel chat completions route resolves taskType to scene model selection
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         messages: [
           {
             role: "system",
@@ -434,9 +434,9 @@ test("ai_novel chat completions route resolves taskType to scene model selection
   );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
-  assert.equal(data.taskType, "chapter_summary");
+  assert.equal(data.sceneKey, "chapter_summary");
   const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.modelKey, "ainovel-lowcost-structured");
+  assert.equal(completion.sceneRouteKey, "ainovel-lowcost-structured");
   assert.equal(completion.provider, "bailian");
   assert.equal(completion.providerModel, "qwen3.6-plus");
   assert.equal(
@@ -446,7 +446,7 @@ test("ai_novel chat completions route resolves taskType to scene model selection
 });
 
 test("ai_novel structured workflow scenes use thinking streams with required tool validation", async () => {
-  const structuredTaskTypes = [
+  const structuredSceneKeys = [
     "chapter_summary",
     "chapter_draft_review",
     "snapshot_generation",
@@ -494,7 +494,7 @@ test("ai_novel structured workflow scenes use thinking streams with required too
     "ai_novel",
   );
 
-  for (const taskType of structuredTaskTypes) {
+  for (const sceneKey of structuredSceneKeys) {
     const response = await runtime.app.handle({
       method: "POST",
       path: "/api/v1/ai_novel/ai/chat-completions",
@@ -505,7 +505,7 @@ test("ai_novel structured workflow scenes use thinking streams with required too
       },
       body: encryptAiPayload(
         {
-          taskType,
+          scene_key: sceneKey,
           messages: [
             {
               role: "user",
@@ -535,7 +535,7 @@ test("ai_novel structured workflow scenes use thinking streams with required too
   }
 
   assert.equal(completeCalls, 0);
-  assert.equal(streamCalls, structuredTaskTypes.length);
+  assert.equal(streamCalls, structuredSceneKeys.length);
 });
 
 test("ai_novel structured workflow scenes retry when the required submit tool is missing", async () => {
@@ -596,7 +596,7 @@ test("ai_novel structured workflow scenes retry when the required submit tool is
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -627,13 +627,13 @@ test("ai_novel structured workflow scenes retry when the required submit tool is
   );
 });
 
-test("ai_novel model routing config validates all novel-engine chat taskTypes", async () => {
+test("ai_novel scene routing config validates all novel-engine chat scene keys", async () => {
   const { runtime } = await createAiNovelRuntime();
   const config =
     await runtime.services.appAiRoutingConfigService.getCurrentConfig(
       "ai_novel",
     );
-  const expectedTaskTypes = [
+  const expectedSceneKeys = [
     "kickoff_turn",
     "chat_compaction",
     "write_turn",
@@ -645,7 +645,7 @@ test("ai_novel model routing config validates all novel-engine chat taskTypes", 
   ];
 
   for (const tier of Object.values(config.tiers)) {
-    assert.deepEqual(Object.keys(tier.chat).sort(), expectedTaskTypes.sort());
+    assert.deepEqual(Object.keys(tier.chat).sort(), expectedSceneKeys.sort());
   }
 });
 
@@ -666,7 +666,7 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
     },
     body: encryptAiPayload(
       {
-        taskType: "write_turn",
+        scene_key: "write_turn",
         stream: true,
         messages: [
           {
@@ -713,7 +713,7 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   const doneUsage = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .usage ?? {}) as Record<string, unknown>;
   assert.equal(doneUsage.contextWindowTokens, 1_000_000);
-  assert.equal(doneCompletion.modelKey, "ainovel-free-creative");
+  assert.equal(doneCompletion.sceneRouteKey, "ainovel-free-creative");
   assert.equal(doneCompletion.content, "第八十一回……");
   assert.equal(doneCompletion.provider, undefined);
   assert.equal(doneCompletion.providerModel, undefined);
@@ -726,7 +726,7 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
     "ai_novel",
   );
   const payload = {
-    taskType: "write_turn",
+    scene_key: "write_turn",
     stream: true,
     messages: [
       {
@@ -764,7 +764,10 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
     string,
     unknown
   >;
-  assert.equal(debugPayload.taskType, "write_turn");
+  assert.equal(debugPayload.sceneKey, "write_turn");
+  assert.equal(debugPayload.sceneRouteKey, "ainovel-free-creative");
+  assert.equal(requestBody.sceneRouteKey, "ainovel-free-creative");
+  assert.equal("modelKey" in requestBody, false);
   assert.equal(messages[0].role, "system");
   assert.ok(
     String(messages[0].content ?? "").includes("write-mode AINovel agent"),
@@ -1047,7 +1050,7 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1185,7 +1188,7 @@ test("ai_novel kickoff_turn relays update_meta payloads without backend repair",
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1277,7 +1280,7 @@ test("ai_novel kickoff_turn relays inverted chapterLength ranges to the client a
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         messages: [{ role: "user", content: "设定单章长度。" }],
       },
@@ -1361,7 +1364,7 @@ test("ai_novel kickoff_turn relays ask_question payloads without backend normali
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1429,7 +1432,7 @@ test("ai_novel kickoff_turn relays ask_question payloads without backend normali
   );
 });
 
-test("ai_novel kickoff_turn relays legacy JSON-string ask_question options", async () => {
+test("ai_novel kickoff_turn relays JSON-string ask_question options", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -1477,7 +1480,7 @@ test("ai_novel kickoff_turn relays legacy JSON-string ask_question options", asy
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1558,7 +1561,7 @@ test("ai_novel kickoff_turn relays kickoff tool name casing to the client agent"
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1650,7 +1653,7 @@ test("ai_novel kickoff_turn relays invalid ask_question payload without backend 
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1739,7 +1742,7 @@ test("ai_novel kickoff_turn relays repeated invalid ask_question payloads as a s
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1817,7 +1820,7 @@ test("ai_novel kickoff_turn accepts one ask_question option at runtime", async (
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1902,7 +1905,7 @@ test("ai_novel kickoff_turn relays malformed ask_question string options", async
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -1988,7 +1991,7 @@ test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits 
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -2062,7 +2065,7 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -2268,7 +2271,7 @@ test("ai_novel kickoff_turn streams a single round and relays read_meta tool cal
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -2363,7 +2366,7 @@ test("ai_novel kickoff_turn stream allows assistant-only freeform turns", async 
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -2438,7 +2441,7 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -2526,7 +2529,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
     },
     body: encryptAiPayload(
       {
-        taskType: "write_turn",
+        scene_key: "write_turn",
         stream: true,
         context: {
           contract: "POV 固定为女主第三人称。",
@@ -2704,7 +2707,7 @@ test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", a
     },
     body: encryptAiPayload(
       {
-        taskType: "write_turn",
+        scene_key: "write_turn",
         stream: true,
         messages: [
           {
@@ -2786,7 +2789,7 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_draft",
+        scene_key: "chapter_draft",
         stream: true,
         context: {
           contract: "冷硬科幻悬疑。",
@@ -2895,7 +2898,7 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   );
 
   const chapterSummaryPayload = {
-    taskType: "chapter_summary",
+    scene_key: "chapter_summary",
     context: {
       chapterId: 3,
       sourceTextHash: "hash-3",
@@ -2933,16 +2936,19 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
-  assert.equal(data.taskType, "chapter_summary");
+  assert.equal(data.sceneKey, "chapter_summary");
   const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.modelKey, "ainovel-lowcost-structured");
+  assert.equal(completion.sceneRouteKey, "ainovel-lowcost-structured");
   const localDebugLlmRequest = (data.localDebugLlmRequest ?? {}) as Record<
     string,
     unknown
   >;
   const localDebugRequestBody = (localDebugLlmRequest.requestBody ??
     {}) as Record<string, unknown>;
-  assert.equal(localDebugLlmRequest.taskType, "chapter_summary");
+  assert.equal(localDebugLlmRequest.sceneKey, "chapter_summary");
+  assert.equal(localDebugLlmRequest.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal(localDebugRequestBody.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal("modelKey" in localDebugRequestBody, false);
   assert.equal(localDebugRequestBody.stream, true);
   assert.deepEqual(
     (localDebugRequestBody.messages as Array<Record<string, unknown>>).map(
@@ -2976,7 +2982,7 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   );
 
   const chapterDraftReviewPayload = {
-    taskType: "chapter_draft_review",
+    scene_key: "chapter_draft_review",
     context: {
       round: "initial",
       draft: {
@@ -3013,12 +3019,15 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   );
   assert.equal(decryptedReview.code, "OK");
   const reviewData = (decryptedReview.data ?? {}) as Record<string, unknown>;
-  assert.equal(reviewData.taskType, "chapter_draft_review");
+  assert.equal(reviewData.sceneKey, "chapter_draft_review");
   const reviewDebugLlmRequest = (reviewData.localDebugLlmRequest ??
     {}) as Record<string, unknown>;
   const reviewDebugRequestBody = (reviewDebugLlmRequest.requestBody ??
     {}) as Record<string, unknown>;
-  assert.equal(reviewDebugLlmRequest.taskType, "chapter_draft_review");
+  assert.equal(reviewDebugLlmRequest.sceneKey, "chapter_draft_review");
+  assert.equal(reviewDebugLlmRequest.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal(reviewDebugRequestBody.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal("modelKey" in reviewDebugRequestBody, false);
   assert.equal(reviewDebugRequestBody.stream, true);
   assert.deepEqual(
     (reviewDebugRequestBody.messages as Array<Record<string, unknown>>).map(
@@ -3051,7 +3060,7 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         stream: true,
         context: {
           chapterText: "雨夜事故引出调查线索。",
@@ -3122,7 +3131,7 @@ test("ai_novel kickoff_turn relays unknown kickoff tool to the client agent", as
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
@@ -3169,7 +3178,7 @@ test("ai_novel chat completions route keeps JSON envelope when stream is false",
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         stream: false,
         messages: [
           {
@@ -3191,7 +3200,7 @@ test("ai_novel chat completions route keeps JSON envelope when stream is false",
   );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
-  assert.equal(data.taskType, "chapter_summary");
+  assert.equal(data.sceneKey, "chapter_summary");
 });
 
 test("ai_novel chat completions route rejects non-boolean stream values", async () => {
@@ -3212,7 +3221,7 @@ test("ai_novel chat completions route rejects non-boolean stream values", async 
     },
     body: encryptAiPayload(
       {
-        taskType: "write_turn",
+        scene_key: "write_turn",
         stream: "true",
         messages: [
           {
@@ -3264,7 +3273,7 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
     },
     body: encryptAiPayload(
       {
-        taskType: "write_turn",
+        scene_key: "write_turn",
         stream: true,
         messages: [
           {
@@ -3293,7 +3302,7 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
   assert.equal(decryptedEvents[1]?.message, "系统出现异常，请稍后重试。");
 });
 
-test("ai_novel embeddings route resolves taskType to embedding model selection", async () => {
+test("ai_novel embeddings route resolves scene_key to embedding scene route selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -3309,7 +3318,7 @@ test("ai_novel embeddings route resolves taskType to embedding model selection",
     },
     body: encryptAiPayload(
       {
-        taskType: "summary_embed",
+        scene_key: "summary_embed",
         input: ["第一段摘要", "第二段摘要"],
       },
       aiKey,
@@ -3323,8 +3332,8 @@ test("ai_novel embeddings route resolves taskType to embedding model selection",
   );
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
-  assert.equal(data.taskType, "summary_embed");
-  assert.equal(data.modelKey, "ainovel-embedding-default");
+  assert.equal(data.sceneKey, "summary_embed");
+  assert.equal(data.sceneRouteKey, "ainovel-embedding-default");
   assert.equal(data.provider, "bailian");
   assert.equal(data.providerModel, "text-embedding-v4");
   assert.equal(data.providerRequestId, "emb-req-001");
@@ -3338,7 +3347,40 @@ test("ai_novel routes return encrypted business errors after request decryption"
     "ai_novel",
   );
 
-  const invalidModelResponse = await runtime.app.handle({
+  for (const forbiddenField of ["model", "modelKey", "providerModel"]) {
+    const invalidModelResponse = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/ai_novel/ai/chat-completions",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "X-App-Id": "ai_novel",
+      },
+      body: encryptAiPayload(
+        {
+          scene_key: "chapter_summary",
+          [forbiddenField]: "glm-5",
+          messages: [
+            {
+              role: "user",
+              content: "hello",
+            },
+          ],
+        },
+        aiKey,
+      ),
+    });
+
+    assert.equal(invalidModelResponse.statusCode, 200);
+    assert.equal(
+      decryptAiPayload(
+        invalidModelResponse.body as Record<string, unknown>,
+        aiKey,
+      ).code,
+      "REQ_INVALID_BODY",
+    );
+  }
+
+  const conflictingSceneResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai/chat-completions",
     headers: {
@@ -3347,8 +3389,8 @@ test("ai_novel routes return encrypted business errors after request decryption"
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
-        model: "glm-5",
+        scene_key: "chapter_summary",
+        sceneKey: "next_chapter_brief",
         messages: [
           {
             role: "user",
@@ -3360,10 +3402,10 @@ test("ai_novel routes return encrypted business errors after request decryption"
     ),
   });
 
-  assert.equal(invalidModelResponse.statusCode, 200);
+  assert.equal(conflictingSceneResponse.statusCode, 200);
   assert.equal(
     decryptAiPayload(
-      invalidModelResponse.body as Record<string, unknown>,
+      conflictingSceneResponse.body as Record<string, unknown>,
       aiKey,
     ).code,
     "REQ_INVALID_BODY",
@@ -3378,7 +3420,7 @@ test("ai_novel routes return encrypted business errors after request decryption"
     },
     body: encryptAiPayload(
       {
-        taskType: "unknown_embed",
+        scene_key: "unknown_embed",
         input: ["hello"],
       },
       aiKey,
@@ -3391,7 +3433,7 @@ test("ai_novel routes return encrypted business errors after request decryption"
       unsupportedTaskResponse.body as Record<string, unknown>,
       aiKey,
     ).code,
-    "AI_TASK_TYPE_NOT_SUPPORTED",
+    "AI_SCENE_NOT_SUPPORTED",
   );
 });
 
@@ -3411,7 +3453,7 @@ test("ai_novel routes enforce app scope when bearer auth is present", async () =
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -3435,7 +3477,7 @@ test("ai_novel routes reject unknown encryption keys before entering AI flow", a
   );
   const body = encryptAiPayload(
     {
-      taskType: "chapter_summary",
+      scene_key: "chapter_summary",
       messages: [
         {
           role: "user",
@@ -3461,7 +3503,7 @@ test("ai_novel routes reject unknown encryption keys before entering AI flow", a
   assert.equal(response.body.code, "AI_UNKNOWN_KEY_ID");
 });
 
-test("ai_novel routes can override model routing from admin config", async () => {
+test("ai_novel routes can override scene routing from admin config", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -3541,7 +3583,7 @@ test("ai_novel routes can override model routing from admin config", async () =>
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -3559,98 +3601,8 @@ test("ai_novel routes can override model routing from admin config", async () =>
   );
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.modelKey, "ainovel-plus-creative");
+  assert.equal(completion.sceneRouteKey, "ainovel-plus-creative");
   assert.equal(completion.providerModel, "qwen3.6-plus");
-});
-
-test("ai_novel routes normalize legacy setup_turn routing configs on read", async () => {
-  const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken(
-    "user_alice",
-    "ai_novel",
-  );
-
-  const currentConfig =
-    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
-      "ai_novel",
-    );
-  const legacyConfig = structuredClone(currentConfig);
-  for (const tier of Object.values(legacyConfig.tiers)) {
-    tier.chat.setup_turn = tier.chat.kickoff_turn;
-    tier.chat.blueprint_gen = "ainovel-free-creative";
-    tier.chat.chapter1_draft_gen = "ainovel-free-creative";
-    tier.chat.chapter1_critic = "ainovel-free-reasoning";
-    tier.chat.fact_extract = "ainovel-lowcost-structured";
-    tier.chat.episode_extract = "ainovel-lowcost-structured";
-    tier.chat.continue_chapter = "ainovel-free-creative";
-    tier.chat.chapter_transition = "ainovel-free-reasoning";
-    tier.chat.chapter2_planner = "ainovel-free-reasoning";
-    tier.chat.chapter2_draft_gen = "ainovel-free-creative";
-    delete tier.chat.kickoff_turn;
-    delete tier.chat.chat_compaction;
-    delete tier.chat.write_turn;
-    delete tier.chat.chapter_draft;
-    delete tier.chat.chapter_summary;
-    delete tier.chat.snapshot_generation;
-    delete tier.chat.next_chapter_brief;
-  }
-
-  await runtime.services.appConfigService.setValue(
-    "ai_novel",
-    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
-    JSON.stringify(legacyConfig, null, 2),
-    "test-legacy-setup-turn",
-  );
-
-  const normalized =
-    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
-      "ai_novel",
-    );
-  assert.equal(
-    normalized.tiers.free.chat.kickoff_turn,
-    "ainovel-plus-reasoning",
-  );
-  assert.equal(normalized.tiers.free.chat.write_turn, "ainovel-free-creative");
-  assert.equal(
-    normalized.tiers.free.chat.chat_compaction,
-    "ainovel-lowcost-structured",
-  );
-  assert.equal(
-    normalized.tiers.free.chat.chapter_draft,
-    "ainovel-free-creative",
-  );
-  assert.equal(
-    normalized.tiers.free.chat.snapshot_generation,
-    "ainovel-lowcost-structured",
-  );
-  assert.equal("continue_chapter" in normalized.tiers.free.chat, false);
-  assert.equal("chapter2_draft_gen" in normalized.tiers.free.chat, false);
-
-  const response = await runtime.app.handle({
-    method: "POST",
-    path: "/api/v1/ai_novel/ai/chat-completions",
-    headers: {
-      authorization: `Bearer ${token}`,
-      host: "127.0.0.1:3100",
-      "X-App-Id": "ai_novel",
-    },
-    body: encryptAiPayload(
-      {
-        taskType: "kickoff_turn",
-        stream: true,
-        context: {
-          meta: {
-            titleCandidate: "",
-            readiness: 0,
-          },
-        },
-        messages: [{ role: "user", content: "继续推进这个故事。" }],
-      },
-      aiKey,
-    ),
-  });
-
-  assert.equal(response.statusCode, 200);
 });
 
 test("ai_novel routes fail when routing mapping is missing", async () => {
@@ -3680,7 +3632,7 @@ test("ai_novel routes fail when routing mapping is missing", async () => {
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -3762,7 +3714,7 @@ test("ai_novel chat completions rejects keyword-sensitive user input before LLM"
     },
     body: encryptAiPayload(
       {
-        taskType: "chapter_summary",
+        scene_key: "chapter_summary",
         messages: [
           {
             role: "user",
@@ -3828,7 +3780,7 @@ test("ai_novel streamed chat returns sensitive error event for blocked input", a
     },
     body: encryptAiPayload(
       {
-        taskType: "kickoff_turn",
+        scene_key: "kickoff_turn",
         stream: true,
         context: {
           meta: {
