@@ -148,6 +148,25 @@ test("createApplication resolves sms sender credentials from common password wor
     assert.equal(parsedBody.SignName, "智卓凯科技");
     assert.equal(parsedBody.SmsSdkAppId, "1400849632");
     assert.equal(parsedBody.TemplateId, "1907577");
+
+    await runtime.services.commonSmsConfigService.updateConfig({
+      enabled: true,
+      sdkAppId: "1400999999",
+      templateId: "2999999",
+      signName: "后台配置签名",
+      region: "ap-beijing",
+    });
+
+    await runtime.services.smsVerificationSender.sendVerificationCode({
+      phoneNumber: "18710100985",
+      code: "654321",
+      expireMinutes: 10,
+    });
+
+    const parsedManagedBody = JSON.parse(capturedBody) as Record<string, unknown>;
+    assert.equal(parsedManagedBody.SignName, "后台配置签名");
+    assert.equal(parsedManagedBody.SmsSdkAppId, "1400999999");
+    assert.equal(parsedManagedBody.TemplateId, "2999999");
   } finally {
     globalThis.fetch = previousFetch;
 

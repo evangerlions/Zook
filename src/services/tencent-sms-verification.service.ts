@@ -4,6 +4,7 @@ import {
   type TencentCloudCredentials,
   type TencentCloudRequestDebug,
 } from "./tencent-cloud-request.ts";
+import type { ErrorCode } from "../shared/types.ts";
 
 export interface TencentSmsVerificationConfig {
   secretId?: string;
@@ -74,9 +75,24 @@ export class TencentSmsVerificationSender implements SmsVerificationSender {
     expireMinutes: number;
   }): Promise<SmsVerificationSendResult> {
     const credentials = this.resolveCredentials();
-    const sdkAppId = this.requiredConfig(this.config.sdkAppId, "Tencent SMS SDK App ID");
-    const templateId = this.requiredConfig(this.config.templateId, "Tencent SMS template ID");
-    const signName = this.requiredConfig(this.config.signName, "Tencent SMS sign name");
+    const sdkAppId = this.requiredConfig(
+      this.config.sdkAppId,
+      "Tencent SMS SDK App ID",
+      "SMS_SERVICE_MISSING_SDK_APP_ID",
+      "TENCENT_SMS_SDK_APP_ID",
+    );
+    const templateId = this.requiredConfig(
+      this.config.templateId,
+      "Tencent SMS template ID",
+      "SMS_SERVICE_MISSING_TEMPLATE_ID",
+      "TENCENT_SMS_TEMPLATE_ID",
+    );
+    const signName = this.requiredConfig(
+      this.config.signName,
+      "Tencent SMS sign name",
+      "SMS_SERVICE_MISSING_SIGN_NAME",
+      "TENCENT_SMS_SIGN_NAME",
+    );
     const region = (this.config.region?.trim() || "ap-beijing");
 
     const body = {
@@ -143,15 +159,38 @@ export class TencentSmsVerificationSender implements SmsVerificationSender {
   }
 
   private resolveCredentials(): TencentCloudCredentials {
-    const secretId = this.requiredConfig(this.config.secretId, "Tencent SMS secretId");
-    const secretKey = this.requiredConfig(this.config.secretKey, "Tencent SMS secretKey");
+    const secretId = this.requiredConfig(
+      this.config.secretId,
+      "Tencent SMS secretId",
+      "SMS_SERVICE_MISSING_SECRET_ID",
+      "TENCENT_SMS_SECRET_ID",
+    );
+    const secretKey = this.requiredConfig(
+      this.config.secretKey,
+      "Tencent SMS secretKey",
+      "SMS_SERVICE_MISSING_SECRET_KEY",
+      "TENCENT_SMS_SECRET_KEY",
+    );
     return { secretId, secretKey };
   }
 
-  private requiredConfig(value: string | undefined, label: string): string {
+  private requiredConfig(
+    value: string | undefined,
+    label: string,
+    code: ErrorCode,
+    field: string,
+  ): string {
     const normalized = value?.trim();
     if (!normalized) {
-      throw new ApplicationError(503, "SMS_SERVICE_NOT_CONFIGURED", `${label} is not configured.`);
+      throw new ApplicationError(
+        503,
+        code,
+        `${label} is not configured. Missing field: ${field}.`,
+        {
+          provider: "tencent_sms",
+          missingField: field,
+        },
+      );
     }
 
     return normalized;

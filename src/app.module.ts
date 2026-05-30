@@ -61,6 +61,7 @@ import {
   TENCENT_SECRET_KEY_PASSWORD_KEY,
 } from "./services/common-email-config.service.ts";
 import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
+import { CommonSmsConfigService } from "./services/common-sms-config.service.ts";
 import {
   CommonGetuiGyConfigService,
   GETUI_GY_CREDENTIAL_READ_OPERATION,
@@ -151,6 +152,7 @@ import type {
   AdminContentSafetyTestDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
+  AdminSmsServiceDocument,
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   PublicAppConfigDocument,
@@ -571,6 +573,20 @@ export class BackendApplication {
 
     if (
       request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/sms-service"
+    ) {
+      return this.handleAdminGetSmsService(request);
+    }
+
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/sms-service"
+    ) {
+      return this.handleAdminUpdateSmsService(request);
+    }
+
+    if (
+      request.method === "GET" &&
       request.path === "/api/v1/admin/apps/common/auth-rate-limits"
     ) {
       return this.handleAdminGetAuthRateLimits(request);
@@ -614,6 +630,26 @@ export class BackendApplication {
       return this.handleAdminRestoreEmailServiceRevision(
         request,
         Number(adminEmailRestoreMatch[1]),
+      );
+    }
+
+    const adminSmsServiceRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/sms-service\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminSmsServiceRevisionMatch) {
+      return this.handleAdminGetSmsServiceRevision(
+        request,
+        Number(adminSmsServiceRevisionMatch[1]),
+      );
+    }
+
+    const adminSmsServiceRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/sms-service\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminSmsServiceRestoreMatch) {
+      return this.handleAdminRestoreSmsServiceRevision(
+        request,
+        Number(adminSmsServiceRestoreMatch[1]),
       );
     }
 
@@ -3061,6 +3097,49 @@ export class BackendApplication {
     }
   }
 
+  private async handleAdminGetSmsService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getSmsServiceConfig();
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateSmsService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateSmsServiceConfig(
+      body as AdminSmsServiceDocument["config"],
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminGetAuthRateLimits(
     request: HttpRequest,
   ): Promise<HttpResponse<unknown>> {
@@ -3310,6 +3389,53 @@ export class BackendApplication {
     await this.auditInterceptor.record({
       appId: "common",
       action: "admin.email_service.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetSmsServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getSmsServiceConfig(revision);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreSmsServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<unknown>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreSmsServiceConfig(
+      revision,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.restore",
       resourceType: "app_config",
       resourceId: `${result.configKey}:${revision}`,
       payload: {
@@ -5433,6 +5559,11 @@ export async function createApplication(
     commonPasswordConfigService,
     logger,
   );
+  const commonSmsConfigService = new CommonSmsConfigService(
+    appConfigService,
+    commonPasswordConfigService,
+    logger,
+  );
   const commonAuthRateLimitConfigService = new CommonAuthRateLimitConfigService(
     appConfigService,
   );
@@ -5497,6 +5628,10 @@ export async function createApplication(
   });
   const tencentCloudCommonCredentials =
     await resolveTencentCloudCommonCredentials(commonPasswordConfigService);
+  const baseTencentSmsVerificationConfig = resolveTencentSmsVerificationConfig(
+    options,
+    tencentCloudCommonCredentials,
+  );
   const registrationEmailSender =
     options.registrationEmailSender ??
     (options.serviceName === "api"
@@ -5505,12 +5640,16 @@ export async function createApplication(
   const smsVerificationSender =
     options.smsVerificationSender ??
     (options.serviceName === "api"
-      ? new TencentSmsVerificationSender(
-          resolveTencentSmsVerificationConfig(
-            options,
-            tencentCloudCommonCredentials,
-          ),
-        )
+      ? {
+          async sendVerificationCode(command) {
+            const config = await commonSmsConfigService.getRuntimeConfig(
+              baseTencentSmsVerificationConfig,
+            );
+            return new TencentSmsVerificationSender(config).sendVerificationCode(
+              command,
+            );
+          },
+        } satisfies SmsVerificationSender
       : new NoopSmsVerificationSender());
   const captchaVerificationService =
     options.captchaVerificationService ??
@@ -5611,6 +5750,7 @@ export async function createApplication(
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
+    commonSmsConfigService,
     commonAuthRateLimitConfigService,
     commonGetuiGyConfigService,
     commonLlmConfigService,
@@ -5733,6 +5873,7 @@ export async function createApplication(
       refreshTokenStore,
       commonPasswordConfigService,
       commonEmailConfigService,
+      commonSmsConfigService,
       commonAuthRateLimitConfigService,
       commonGetuiGyConfigService,
       commonLlmConfigService,
