@@ -98,6 +98,11 @@ export type ErrorCode =
   | "EMAIL_SERVICE_NOT_CONFIGURED"
   | "EMAIL_PROVIDER_REQUEST_FAILED"
   | "SMS_SERVICE_NOT_CONFIGURED"
+  | "SMS_SERVICE_MISSING_SECRET_ID"
+  | "SMS_SERVICE_MISSING_SECRET_KEY"
+  | "SMS_SERVICE_MISSING_SDK_APP_ID"
+  | "SMS_SERVICE_MISSING_TEMPLATE_ID"
+  | "SMS_SERVICE_MISSING_SIGN_NAME"
   | "SMS_PROVIDER_REQUEST_FAILED"
   | "ONE_CLICK_SERVICE_NOT_CONFIGURED"
   | "ONE_CLICK_PROVIDER_REQUEST_FAILED"
@@ -680,6 +685,25 @@ export interface AdminSmsVerificationRevealDocument {
   item: AdminSmsVerificationItem;
   code: string;
   revealedAt: string;
+}
+
+export interface SmsServiceConfig {
+  enabled: boolean;
+  sdkAppId: string;
+  templateId: string;
+  signName: string;
+  region: string;
+}
+
+export interface AdminSmsServiceDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: SmsServiceConfig;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
 }
 
 export interface AdminConfigDocument {

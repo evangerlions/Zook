@@ -2696,6 +2696,87 @@ test("admin email service API stores common config and exposes resolved region",
   );
 });
 
+test("admin SMS service API stores common config and runtime resolves it", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  const defaultResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/sms-service",
+    headers,
+  });
+
+  assert.equal(defaultResponse.statusCode, 200);
+  assert.equal(defaultResponse.body.data.configKey, "common.sms_service");
+  assert.equal(defaultResponse.body.data.config.enabled, false);
+  assert.equal(defaultResponse.body.data.config.region, "ap-beijing");
+
+  const updateResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/sms-service",
+    headers,
+    body: {
+      enabled: true,
+      desc: "初始化短信服务",
+      sdkAppId: "1400999999",
+      templateId: "2999999",
+      signName: "后台配置签名",
+      region: "ap-beijing",
+    },
+  });
+
+  assert.equal(updateResponse.statusCode, 200);
+  assert.equal(updateResponse.body.data.app.appId, "common");
+  assert.equal(updateResponse.body.data.revision, 1);
+  assert.equal(updateResponse.body.data.desc, "初始化短信服务");
+  assert.equal(updateResponse.body.data.config.sdkAppId, "1400999999");
+  assert.equal(updateResponse.body.data.config.templateId, "2999999");
+  assert.equal(updateResponse.body.data.config.signName, "后台配置签名");
+
+  const runtimeConfig = await runtime.services.commonSmsConfigService.getRuntimeConfig({
+    secretId: "sid-fallback",
+    secretKey: "sk-fallback",
+    sdkAppId: "env-sdk",
+    templateId: "env-template",
+    signName: "env-sign",
+    region: "ap-guangzhou",
+  });
+
+  assert.equal(runtimeConfig.secretId, "sid-fallback");
+  assert.equal(runtimeConfig.secretKey, "sk-fallback");
+  assert.equal(runtimeConfig.sdkAppId, "1400999999");
+  assert.equal(runtimeConfig.templateId, "2999999");
+  assert.equal(runtimeConfig.signName, "后台配置签名");
+  assert.equal(runtimeConfig.region, "ap-beijing");
+
+  const invalidResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/sms-service",
+    headers,
+    body: {
+      enabled: true,
+      sdkAppId: "1400999999",
+      templateId: "2999999",
+      signName: "",
+    },
+  });
+
+  assert.equal(invalidResponse.statusCode, 400);
+  assert.equal(invalidResponse.body.code, "REQ_INVALID_BODY");
+  assert.ok(
+    runtime.database.auditLogs.some(
+      (item) => item.action === "admin.sms_service.update" && item.appId === "common",
+    ),
+  );
+});
+
 test("common email service runtime follows latest revision even if direct config record is stale", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
