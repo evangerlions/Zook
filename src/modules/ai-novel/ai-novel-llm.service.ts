@@ -16,6 +16,7 @@ import {
 } from "../../services/app-ai-routing-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { ContentSafetyService } from "../../services/content-safety.service.ts";
+import type { AiNovelModelRoutingTier } from "../../shared/types.ts";
 import {
   resolveAiNovelChatScene,
   resolveAiNovelEmbeddingScene,
@@ -616,8 +617,10 @@ interface AiNovelUsagePayload {
   contextUsedRatio?: number;
 }
 
-interface AiNovelLocalDebugOptions {
+interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
+  requestId?: string;
+  routingTier?: AiNovelModelRoutingTier;
 }
 
 interface AiNovelLocalDebugLlmRequestPayload {
@@ -708,7 +711,7 @@ export class AiNovelLlmService {
 
   async createChatCompletion(
     body: Record<string, unknown>,
-    options: AiNovelLocalDebugOptions = {},
+    options: AiNovelRequestOptions = {},
   ): Promise<AiNovelChatResponse> {
     this.assertNoClientModelSelection(body);
 
@@ -720,12 +723,13 @@ export class AiNovelLlmService {
     if (scene.requiresStream) {
       badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=true.`);
     }
-    const sceneRouteKey = await this.appAiRoutingConfigService.resolveSceneRouteKey(
-      AI_NOVEL_APP_ID,
-      "chat",
-      scene.sceneKey,
-      "free",
-    );
+    const sceneRouteKey =
+      await this.appAiRoutingConfigService.resolveSceneRouteKey(
+        AI_NOVEL_APP_ID,
+        "chat",
+        scene.sceneKey,
+        options.routingTier,
+      );
     const messages = this.normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const promptAssembly = scene.profile
@@ -813,7 +817,13 @@ export class AiNovelLlmService {
       };
       return response;
     } catch (error) {
-      throw this.mapUpstreamError(error);
+      throw this.mapAndLogUpstreamError(error, {
+        stage: "chat",
+        requestId: options.requestId,
+        sceneKey: scene.sceneKey,
+        sceneRouteKey,
+        profile: scene.profile,
+      });
     }
   }
 
@@ -859,7 +869,8 @@ export class AiNovelLlmService {
         finishReason: result.finishReason,
         textLength: result.text.length,
         textPreview: result.text.slice(0, 500),
-        toolCallNames: result.toolCalls?.map((candidate) => candidate.name) ?? [],
+        toolCallNames:
+          result.toolCalls?.map((candidate) => candidate.name) ?? [],
         modelKey: result.modelKey,
         providerModel: result.providerModel,
         providerRequestId: result.providerRequestId,
@@ -889,16 +900,20 @@ export class AiNovelLlmService {
 
     const toolCall = this.findToolCall(result, forcedToolName);
     if (!toolCall) {
-      this.logger?.warn("ai_novel required tool call missing from provider result", {
-        forcedToolName,
-        finishReason: result.finishReason,
-        textLength: result.text.length,
-        textPreview: result.text.slice(0, 500),
-        toolCallNames: result.toolCalls?.map((candidate) => candidate.name) ?? [],
-        modelKey: result.modelKey,
-        providerModel: result.providerModel,
-        providerRequestId: result.providerRequestId,
-      });
+      this.logger?.warn(
+        "ai_novel required tool call missing from provider result",
+        {
+          forcedToolName,
+          finishReason: result.finishReason,
+          textLength: result.text.length,
+          textPreview: result.text.slice(0, 500),
+          toolCallNames:
+            result.toolCalls?.map((candidate) => candidate.name) ?? [],
+          modelKey: result.modelKey,
+          providerModel: result.providerModel,
+          providerRequestId: result.providerRequestId,
+        },
+      );
       throw new ApplicationError(
         502,
         "LLM_PROVIDER_RESPONSE_INVALID",
@@ -930,7 +945,7 @@ export class AiNovelLlmService {
 
   async *createChatCompletionStream(
     body: Record<string, unknown>,
-    options: AiNovelLocalDebugOptions = {},
+    options: AiNovelRequestOptions = {},
   ): AsyncIterable<AiNovelChatStreamChunk> {
     this.assertNoClientModelSelection(body);
 
@@ -942,12 +957,13 @@ export class AiNovelLlmService {
         `${scene.sceneKey} requires stream=false.`,
       );
     }
-    const sceneRouteKey = await this.appAiRoutingConfigService.resolveSceneRouteKey(
-      AI_NOVEL_APP_ID,
-      "chat",
-      scene.sceneKey,
-      "free",
-    );
+    const sceneRouteKey =
+      await this.appAiRoutingConfigService.resolveSceneRouteKey(
+        AI_NOVEL_APP_ID,
+        "chat",
+        scene.sceneKey,
+        options.routingTier,
+      );
     const messages = this.normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const temperature =
@@ -964,6 +980,8 @@ export class AiNovelLlmService {
         maxTokens,
         meta: this.normalizeKickoffMetaContext(body.context),
         exposeLocalDebug: options.exposeLocalDebug === true,
+        requestId: options.requestId,
+        sceneKey: scene.sceneKey,
       });
       return;
     }
@@ -976,6 +994,8 @@ export class AiNovelLlmService {
         context: body.context,
         profile: scene.profile,
         exposeLocalDebug: options.exposeLocalDebug === true,
+        requestId: options.requestId,
+        sceneKey: scene.sceneKey,
       });
       return;
     }
@@ -1047,7 +1067,12 @@ export class AiNovelLlmService {
         };
       }
     } catch (error) {
-      throw this.mapUpstreamError(error);
+      throw this.mapAndLogUpstreamError(error, {
+        stage: "chat_stream",
+        requestId: options.requestId,
+        sceneKey: scene.sceneKey,
+        sceneRouteKey,
+      });
     }
   }
 
@@ -1059,6 +1084,8 @@ export class AiNovelLlmService {
     context: unknown;
     profile: AiNovelPromptProfile;
     exposeLocalDebug: boolean;
+    requestId?: string;
+    sceneKey: string;
   }): AsyncIterable<AiNovelChatStreamChunk> {
     let aggregatedContent = "";
     let aggregatedReasoning = "";
@@ -1079,7 +1106,7 @@ export class AiNovelLlmService {
     try {
       if (input.exposeLocalDebug) {
         yield this.buildLocalDebugLlmRequestChunk({
-          sceneKey: input.profile,
+          sceneKey: input.sceneKey,
           sceneRouteKey: input.sceneRouteKey,
           messages: promptAssembly.messages,
           temperature: input.temperature,
@@ -1152,7 +1179,13 @@ export class AiNovelLlmService {
         };
       }
     } catch (error) {
-      throw this.mapUpstreamError(error);
+      throw this.mapAndLogUpstreamError(error, {
+        stage: "chat_stream",
+        requestId: input.requestId,
+        sceneKey: input.sceneKey,
+        sceneRouteKey: input.sceneRouteKey,
+        profile: input.profile,
+      });
     }
   }
 
@@ -1163,6 +1196,8 @@ export class AiNovelLlmService {
     maxTokens: number;
     meta: KickoffMeta;
     exposeLocalDebug: boolean;
+    requestId?: string;
+    sceneKey: string;
   }): AsyncIterable<AiNovelChatStreamChunk> {
     let assistantText = "";
     let reasoningText = "";
@@ -1262,7 +1297,12 @@ export class AiNovelLlmService {
         };
       }
     } catch (error) {
-      throw this.mapUpstreamError(error);
+      throw this.mapAndLogUpstreamError(error, {
+        stage: "chat_stream",
+        requestId: input.requestId,
+        sceneKey: input.sceneKey,
+        sceneRouteKey: input.sceneRouteKey,
+      });
     }
   }
 
@@ -1582,17 +1622,19 @@ export class AiNovelLlmService {
 
   async createEmbeddings(
     body: Record<string, unknown>,
+    options: AiNovelRequestOptions = {},
   ): Promise<AiNovelEmbeddingsResponse> {
     this.assertNoClientModelSelection(body);
 
     const sceneKey = this.requireSceneKey(body);
     const scene = resolveAiNovelEmbeddingScene(sceneKey);
-    const sceneRouteKey = await this.appAiRoutingConfigService.resolveSceneRouteKey(
-      AI_NOVEL_APP_ID,
-      "embedding",
-      scene.sceneKey,
-      "free",
-    );
+    const sceneRouteKey =
+      await this.appAiRoutingConfigService.resolveSceneRouteKey(
+        AI_NOVEL_APP_ID,
+        "embedding",
+        scene.sceneKey,
+        options.routingTier,
+      );
     const input = this.normalizeEmbeddingInput(body.input);
 
     try {
@@ -1613,12 +1655,24 @@ export class AiNovelLlmService {
           : {}),
       };
     } catch (error) {
-      throw this.mapUpstreamError(error);
+      throw this.mapAndLogUpstreamError(error, {
+        stage: "embedding",
+        requestId: options.requestId,
+        sceneKey: scene.sceneKey,
+        sceneRouteKey,
+      });
     }
   }
 
   private assertNoClientModelSelection(body: Record<string, unknown>): void {
-    for (const field of ["model", "modelKey", "providerModel"]) {
+    for (const field of [
+      "model",
+      "modelKey",
+      "providerModel",
+      "tier",
+      "routingTier",
+      "modelTier",
+    ]) {
       if (body[field] !== undefined) {
         badRequest(
           "REQ_INVALID_BODY",
@@ -1633,7 +1687,9 @@ export class AiNovelLlmService {
       ["scene_key", body.scene_key],
       ["sceneKey", body.sceneKey],
     ] as const;
-    const provided = candidates.filter(([, value]) => typeof value === "string" && value.trim());
+    const provided = candidates.filter(
+      ([, value]) => typeof value === "string" && value.trim(),
+    );
     if (!provided.length) {
       badRequest("REQ_INVALID_BODY", "sceneKey must be a non-empty string.");
     }
@@ -1642,7 +1698,10 @@ export class AiNovelLlmService {
     const sceneKey = first[1].trim();
     const conflicting = provided.find(([, value]) => value.trim() !== sceneKey);
     if (conflicting) {
-      badRequest("REQ_INVALID_BODY", "scene_key and sceneKey must resolve to the same scene.");
+      badRequest(
+        "REQ_INVALID_BODY",
+        "scene_key and sceneKey must resolve to the same scene.",
+      );
     }
     return sceneKey;
   }
@@ -1715,17 +1774,24 @@ export class AiNovelLlmService {
     messages: LLMMessage[],
     sceneKey: string,
   ): Promise<void> {
-    const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+    const latestUserMessage = [...messages]
+      .reverse()
+      .find((message) => message.role === "user");
     const content = latestUserMessage?.content?.trim();
     if (!content || !this.contentSafetyService) {
       return;
     }
 
-    const context = body.context && typeof body.context === "object" && !Array.isArray(body.context)
-      ? body.context as Record<string, unknown>
-      : {};
-    const userId = typeof context.userId === "string" ? context.userId : undefined;
-    const requestId = typeof context.requestId === "string" ? context.requestId : undefined;
+    const context =
+      body.context &&
+      typeof body.context === "object" &&
+      !Array.isArray(body.context)
+        ? (body.context as Record<string, unknown>)
+        : {};
+    const userId =
+      typeof context.userId === "string" ? context.userId : undefined;
+    const requestId =
+      typeof context.requestId === "string" ? context.requestId : undefined;
     await this.contentSafetyService.assertUserInputAllowed({
       appId: AI_NOVEL_APP_ID,
       userId,
@@ -1874,6 +1940,40 @@ export class AiNovelLlmService {
 
     return error;
   }
+
+  private mapAndLogUpstreamError(
+    error: unknown,
+    context: {
+      stage: "chat" | "chat_stream" | "embedding";
+      requestId?: string;
+      sceneKey: string;
+      sceneRouteKey: string;
+      profile?: AiNovelPromptProfile;
+    },
+  ): unknown {
+    const mapped = this.mapUpstreamError(error);
+    const original = error instanceof ApplicationError ? error : undefined;
+    const mappedError = mapped instanceof ApplicationError ? mapped : undefined;
+
+    this.logger?.error("ai_novel upstream request failed", {
+      requestId: context.requestId,
+      appId: AI_NOVEL_APP_ID,
+      stage: context.stage,
+      sceneKey: context.sceneKey,
+      sceneRouteKey: context.sceneRouteKey,
+      ...(context.profile ? { profile: context.profile } : {}),
+      originalStatusCode: original?.statusCode,
+      originalCode: original?.code,
+      originalMessage: original?.message,
+      mappedStatusCode: mappedError?.statusCode,
+      mappedCode: mappedError?.code,
+      mappedMessage: mappedError?.message,
+      ...extractUpstreamErrorDetails(original?.details),
+      originalDetailsPreview: previewLogValue(original?.details),
+    });
+
+    return mapped;
+  }
 }
 
 function getDetailString(details: unknown, key: string): string | undefined {
@@ -1883,4 +1983,41 @@ function getDetailString(details: unknown, key: string): string | undefined {
 
   const value = (details as Record<string, unknown>)[key];
   return typeof value === "string" ? value : undefined;
+}
+
+function extractUpstreamErrorDetails(
+  details: unknown,
+): Record<string, unknown> {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    return {};
+  }
+
+  const value = details as Record<string, unknown>;
+  return {
+    provider: value.provider,
+    providerStatusCode: value.statusCode,
+    providerErrorCode: value.errorCode,
+    providerErrorType: value.errorType,
+    providerRequestId: value.providerRequestId,
+    upstreamReason: value.reason,
+    upstreamCause: value.cause,
+    timeoutMs: value.timeoutMs,
+  };
+}
+
+function previewLogValue(value: unknown, limit = 1200): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const text = typeof value === "string" ? value : safeJsonStringify(value);
+  return text.length <= limit ? text : `${text.slice(0, limit)}...`;
+}
+
+function safeJsonStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
 }

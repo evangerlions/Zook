@@ -95,6 +95,10 @@ import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
+import {
+  LocalAiNovelE2eProvider,
+  shouldUseLocalAiNovelE2eProvider,
+} from "./services/local-ainovel-e2e-provider.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
@@ -163,6 +167,8 @@ import type {
   GetuiGySensitiveCredentialField,
   AnalyticsEventInput,
   AuthSuccessPayload,
+  AuthContext,
+  AiNovelModelRoutingTier,
   ClientType,
   CurrentUserDocument,
   DatabaseSeed,
@@ -392,6 +398,23 @@ function parseBasicAuthorization(
   }
 }
 
+function previewAppLogValue(value: unknown, limit = 1200): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const text = typeof value === "string" ? value : safeAppJsonStringify(value);
+  return text.length <= limit ? text : `${text.slice(0, limit)}...`;
+}
+
+function safeAppJsonStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 /**
  * BackendApplication wires the documented modules into a minimal executable runtime.
  */
@@ -425,6 +448,7 @@ export class BackendApplication {
     private readonly requestEmailContextService: RequestEmailContextService,
     private readonly requestLocaleService: RequestLocaleService,
     private readonly publicApiMessageService: PublicApiMessageService,
+    private readonly logger: StructuredLogger,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
     private readonly httpExceptionFilter: HttpExceptionFilter,
@@ -1815,7 +1839,8 @@ export class BackendApplication {
     request: HttpRequest,
   ): Promise<HttpResponse<unknown>> {
     const appId = this.appContextResolver.resolvePreAuth(request);
-    const config = await this.commonGetuiGyConfigService.getRuntimeConfig(appId);
+    const config =
+      await this.commonGetuiGyConfigService.getRuntimeConfig(appId);
     return this.ok(
       {
         available: true,
@@ -3733,7 +3758,8 @@ export class BackendApplication {
       session,
       CONTENT_SAFETY_MANAGE_OPERATION,
     );
-    const result = await this.adminConsoleService.getContentSafetyConfig(revision);
+    const result =
+      await this.adminConsoleService.getContentSafetyConfig(revision);
 
     await this.auditInterceptor.record({
       appId: "common",
@@ -4548,7 +4574,8 @@ export class BackendApplication {
   private async handleAiNovelChatCompletions(
     request: HttpRequest,
   ): Promise<HttpResponse<unknown>> {
-    await this.authenticateProductRequest(request, "ai_novel");
+    const auth = await this.authenticateProductRequest(request, "ai_novel");
+    const routingTier = this.resolveAiNovelModelRoutingTier(auth);
     const { keyId, plaintext } = await this.decryptAiRequestBody(request);
 
     try {
@@ -4570,13 +4597,16 @@ export class BackendApplication {
           this.aiNovelLlmService.createChatCompletionStream(body, {
             exposeLocalDebug:
               this.shouldExposeLocalAiRequestDebugFields(request),
+            requestId: request.requestId as string,
+            routingTier,
           }),
         );
       }
 
       const result = await this.aiNovelLlmService.createChatCompletion(body, {
-        exposeLocalDebug:
-          this.shouldExposeLocalAiRequestDebugFields(request),
+        exposeLocalDebug: this.shouldExposeLocalAiRequestDebugFields(request),
+        requestId: request.requestId as string,
+        routingTier,
       });
       const localDebugResponseText =
         this.extractLocalAiDebugResponseText(result);
@@ -4604,6 +4634,7 @@ export class BackendApplication {
         throw error;
       }
 
+      this.logEncryptedAiBusinessError(request, applicationError, "response");
       return await this.encryptedAiResponse(request, keyId, {
         code: applicationError.code,
         message: this.localizePublicErrorMessage(applicationError, request),
@@ -4616,8 +4647,11 @@ export class BackendApplication {
   private async handleAiNovelEmbeddings(
     request: HttpRequest,
   ): Promise<HttpResponse<unknown>> {
-    return this.handleEncryptedAiRequest(request, async (body) => {
-      return await this.aiNovelLlmService.createEmbeddings(body);
+    return this.handleEncryptedAiRequest(request, async (body, auth) => {
+      return await this.aiNovelLlmService.createEmbeddings(body, {
+        requestId: request.requestId as string,
+        routingTier: this.resolveAiNovelModelRoutingTier(auth),
+      });
     });
   }
 
@@ -4692,15 +4726,18 @@ export class BackendApplication {
 
   private async handleEncryptedAiRequest(
     request: HttpRequest,
-    handler: (body: Record<string, unknown>) => Promise<unknown>,
+    handler: (
+      body: Record<string, unknown>,
+      auth: AuthContext,
+    ) => Promise<unknown>,
   ): Promise<HttpResponse<unknown>> {
-    await this.authenticateProductRequest(request, "ai_novel");
+    const auth = await this.authenticateProductRequest(request, "ai_novel");
     const { keyId, plaintext } = await this.decryptAiRequestBody(request);
 
     try {
       const parsed = JSON.parse(plaintext.toString("utf8"));
       const body = this.validationPipe.asObject(parsed);
-      const result = await handler(body);
+      const result = await handler(body, auth);
       const localDebugResponseText =
         this.extractLocalAiDebugResponseText(result);
       return await this.encryptedAiResponse(
@@ -4727,6 +4764,7 @@ export class BackendApplication {
         throw error;
       }
 
+      this.logEncryptedAiBusinessError(request, applicationError, "response");
       return await this.encryptedAiResponse(request, keyId, {
         code: applicationError.code,
         message: this.localizePublicErrorMessage(applicationError, request),
@@ -4734,6 +4772,13 @@ export class BackendApplication {
         requestId: request.requestId as string,
       });
     }
+  }
+
+  private resolveAiNovelModelRoutingTier(
+    auth: AuthContext,
+  ): AiNovelModelRoutingTier {
+    void auth;
+    return "free";
   }
 
   private async decryptAiRequestBody(
@@ -4858,6 +4903,7 @@ export class BackendApplication {
             "SYS_INTERNAL_ERROR",
             "An unexpected internal error occurred.",
           );
+      this.logEncryptedAiBusinessError(request, applicationError, "stream");
       const encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
         Buffer.from(
           JSON.stringify({
@@ -4872,6 +4918,24 @@ export class BackendApplication {
       );
       yield `data: ${JSON.stringify(encrypted)}\n\n`;
     }
+  }
+
+  private logEncryptedAiBusinessError(
+    request: HttpRequest,
+    error: ApplicationError,
+    transport: "response" | "stream",
+  ): void {
+    this.logger.error("encrypted ai business error", {
+      requestId: request.requestId,
+      appId: request.auth?.appId,
+      userId: request.auth?.userId,
+      path: request.path,
+      transport,
+      statusCode: error.statusCode,
+      code: error.code,
+      errorMessage: error.message,
+      detailsPreview: previewAppLogValue(error.details),
+    });
   }
 
   private localizePublicErrorMessage(
@@ -5640,16 +5704,16 @@ export async function createApplication(
   const smsVerificationSender =
     options.smsVerificationSender ??
     (options.serviceName === "api"
-      ? {
+      ? ({
           async sendVerificationCode(command) {
             const config = await commonSmsConfigService.getRuntimeConfig(
               baseTencentSmsVerificationConfig,
             );
-            return new TencentSmsVerificationSender(config).sendVerificationCode(
-              command,
-            );
+            return new TencentSmsVerificationSender(
+              config,
+            ).sendVerificationCode(command);
           },
-        } satisfies SmsVerificationSender
+        } satisfies SmsVerificationSender)
       : new NoopSmsVerificationSender());
   const captchaVerificationService =
     options.captchaVerificationService ??
@@ -5720,13 +5784,22 @@ export async function createApplication(
   );
   const analyticsService = new AnalyticsService(database, appRegistryService);
   const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
+  const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
+    ? new LocalAiNovelE2eProvider()
+    : undefined;
+  if (localAiNovelE2eProvider) {
+    logger.info("using local AINovel E2E LLM provider", {
+      appEnv: process.env.APP_ENV,
+      nodeEnv: process.env.NODE_ENV,
+    });
+  }
   const llmProviders = options.llmProviders ?? {
-    bailian: bailianProvider,
-    bailian_coding: bailianProvider,
+    bailian: localAiNovelE2eProvider ?? bailianProvider,
+    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
   };
   const embeddingProviders = options.embeddingProviders ?? {
-    bailian: bailianProvider,
-    bailian_coding: bailianProvider,
+    bailian: localAiNovelE2eProvider ?? bailianProvider,
+    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
   };
   const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
     commonLlmConfigService,
@@ -5846,6 +5919,7 @@ export async function createApplication(
     requestEmailContextService,
     requestLocaleService,
     publicApiMessageService,
+    logger,
     auditInterceptor,
     requestLoggingInterceptor,
     httpExceptionFilter,
