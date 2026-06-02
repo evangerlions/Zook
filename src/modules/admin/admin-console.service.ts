@@ -2,7 +2,7 @@ import { ApplicationDatabase } from "../../infrastructure/database/application-d
 import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
-import { AppAiRoutingConfigService, AI_NOVEL_APP_ID } from "../../services/app-ai-routing-config.service.ts";
+import { AppAiRoutingConfigService } from "../../services/app-ai-routing-config.service.ts";
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
@@ -231,9 +231,6 @@ export class AdminConsoleService {
     );
     await this.appI18nConfigService.initializeAppConfig(record.id, "app-created");
     await this.appRemoteLogPullService.initializeAppConfig(record.id, "app-created");
-    if (record.id === AI_NOVEL_APP_ID) {
-      await this.appAiRoutingConfigService.initializeAppConfig(record.id, "app-created");
-    }
     await this.managedStateStore.save(this.database);
 
     return this.toSummary(record);
