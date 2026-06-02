@@ -321,74 +321,21 @@ test("admin ai routing APIs expose default config and support revisions", async 
   assert.equal(getResponse.body.data.app.appId, "ai_novel");
   assert.equal(getResponse.body.data.configKey, "ai_novel.model_routing");
   assert.match(getResponse.body.data.rawJson, /"defaultTier": "free"/);
+  assert.match(getResponse.body.data.rawJson, /"scenes": \{/);
   assert.match(
     getResponse.body.data.rawJson,
-    /"write_turn": "ainovel-free-creative"/,
+    /"free": "ainovel-free-creative"/,
   );
 
-  const updatedRawJson = JSON.stringify(
-    {
-      defaultTier: "free",
-      tiers: {
-        free: {
-          chat: {
-            kickoff_turn: "ainovel-plus-reasoning",
-            chat_compaction: "ainovel-lowcost-structured",
-            write_turn: "ainovel-plus-creative",
-            chapter_draft: "ainovel-free-creative",
-            chapter_draft_review: "ainovel-lowcost-structured",
-            chapter_summary: "ainovel-lowcost-structured",
-            snapshot_generation: "ainovel-lowcost-structured",
-            next_chapter_brief: "ainovel-lowcost-structured",
-          },
-          embedding: {
-            fact_embed: "ainovel-embedding-default",
-            episode_embed: "ainovel-embedding-default",
-            summary_embed: "ainovel-embedding-default",
-            query_memory_embed: "ainovel-embedding-default",
-          },
-        },
-        plus: {
-          chat: {
-            kickoff_turn: "ainovel-plus-reasoning",
-            chat_compaction: "ainovel-lowcost-structured",
-            write_turn: "ainovel-plus-creative",
-            chapter_draft: "ainovel-plus-creative",
-            chapter_draft_review: "ainovel-lowcost-structured",
-            chapter_summary: "ainovel-lowcost-structured",
-            snapshot_generation: "ainovel-lowcost-structured",
-            next_chapter_brief: "ainovel-lowcost-structured",
-          },
-          embedding: {
-            fact_embed: "ainovel-embedding-default",
-            episode_embed: "ainovel-embedding-default",
-            summary_embed: "ainovel-embedding-default",
-            query_memory_embed: "ainovel-embedding-default",
-          },
-        },
-        super_plus: {
-          chat: {
-            kickoff_turn: "ainovel-super-reasoning",
-            chat_compaction: "ainovel-lowcost-structured",
-            write_turn: "ainovel-super-creative",
-            chapter_draft: "ainovel-super-creative",
-            chapter_draft_review: "ainovel-lowcost-structured",
-            chapter_summary: "ainovel-lowcost-structured",
-            snapshot_generation: "ainovel-lowcost-structured",
-            next_chapter_brief: "ainovel-lowcost-structured",
-          },
-          embedding: {
-            fact_embed: "ainovel-embedding-default",
-            episode_embed: "ainovel-embedding-default",
-            summary_embed: "ainovel-embedding-default",
-            query_memory_embed: "ainovel-embedding-default",
-          },
-        },
-      },
-    },
-    null,
-    2,
-  );
+  const updatedConfig = JSON.parse(
+    getResponse.body.data.rawJson,
+  ) as Record<string, unknown>;
+  const scenes = updatedConfig.scenes as Record<string, unknown>;
+  const writeTurn = scenes.write_turn as {
+    routes: Record<string, string>;
+  };
+  writeTurn.routes.free = "ainovel-plus-creative";
+  const updatedRawJson = JSON.stringify(updatedConfig, null, 2);
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
@@ -403,7 +350,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
   assert.equal(updateResponse.statusCode, 200);
   assert.match(
     updateResponse.body.data.rawJson,
-    /"write_turn": "ainovel-plus-creative"/,
+    /"free": "ainovel-plus-creative"/,
   );
   assert.equal(updateResponse.body.data.revisions.length, 2);
 
@@ -416,7 +363,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
   assert.equal(revisionResponse.statusCode, 200);
   assert.match(
     revisionResponse.body.data.rawJson,
-    /"write_turn": "ainovel-free-creative"/,
+    /"free": "ainovel-free-creative"/,
   );
 
   const restoreResponse = await runtime.app.handle({
@@ -431,7 +378,7 @@ test("admin ai routing APIs expose default config and support revisions", async 
   assert.equal(restoreResponse.statusCode, 200);
   assert.match(
     restoreResponse.body.data.rawJson,
-    /"write_turn": "ainovel-free-creative"/,
+    /"free": "ainovel-free-creative"/,
   );
 });
 

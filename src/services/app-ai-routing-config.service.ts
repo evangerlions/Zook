@@ -5,12 +5,14 @@ import type {
   AdminAppSummary,
   AiNovelModelRoutingConfig,
   AiNovelModelRoutingTier,
-  AiNovelTierRoutingConfig,
+  AiNovelRoutingChannel,
+  AiNovelSceneRoutingConfig,
 } from "../shared/types.ts";
 import {
   AI_NOVEL_CHAT_SCENE_KEYS,
   AI_NOVEL_EMBEDDING_SCENE_KEYS,
 } from "../modules/ai-novel/ai-novel-llm-scenes.ts";
+import { shouldUseLocalAiNovelE2eProvider } from "./local-ainovel-e2e-provider.ts";
 
 export const AI_NOVEL_APP_ID = "ai_novel";
 export const AI_NOVEL_MODEL_ROUTING_CONFIG_KEY = "ai_novel.model_routing";
@@ -20,63 +22,54 @@ const VALID_TIERS = new Set<AiNovelModelRoutingTier>([
   "plus",
   "super_plus",
 ]);
+const VALID_CHANNELS = new Set<AiNovelRoutingChannel>(["chat", "embedding"]);
+
+function sceneRoute(
+  kind: AiNovelRoutingChannel,
+  free: string,
+  plus = free,
+  superPlus = plus,
+): AiNovelSceneRoutingConfig {
+  return {
+    kind,
+    routes: {
+      free,
+      plus,
+      super_plus: superPlus,
+    },
+  };
+}
+
 const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
   defaultTier: "free",
-  tiers: {
-    free: {
-      chat: {
-        kickoff_turn: "ainovel-plus-reasoning",
-        chat_compaction: "ainovel-lowcost-structured",
-        write_turn: "ainovel-free-creative",
-        chapter_draft: "ainovel-free-creative",
-        chapter_summary: "ainovel-lowcost-structured",
-        chapter_draft_review: "ainovel-lowcost-structured",
-        snapshot_generation: "ainovel-lowcost-structured",
-        next_chapter_brief: "ainovel-lowcost-structured",
-      },
-      embedding: {
-        fact_embed: "ainovel-embedding-default",
-        episode_embed: "ainovel-embedding-default",
-        summary_embed: "ainovel-embedding-default",
-        query_memory_embed: "ainovel-embedding-default",
-      },
-    },
-    plus: {
-      chat: {
-        kickoff_turn: "ainovel-plus-reasoning",
-        chat_compaction: "ainovel-lowcost-structured",
-        write_turn: "ainovel-plus-creative",
-        chapter_draft: "ainovel-plus-creative",
-        chapter_summary: "ainovel-lowcost-structured",
-        chapter_draft_review: "ainovel-lowcost-structured",
-        snapshot_generation: "ainovel-lowcost-structured",
-        next_chapter_brief: "ainovel-lowcost-structured",
-      },
-      embedding: {
-        fact_embed: "ainovel-embedding-default",
-        episode_embed: "ainovel-embedding-default",
-        summary_embed: "ainovel-embedding-default",
-        query_memory_embed: "ainovel-embedding-default",
-      },
-    },
-    super_plus: {
-      chat: {
-        kickoff_turn: "ainovel-super-reasoning",
-        chat_compaction: "ainovel-lowcost-structured",
-        write_turn: "ainovel-super-creative",
-        chapter_draft: "ainovel-super-creative",
-        chapter_summary: "ainovel-lowcost-structured",
-        chapter_draft_review: "ainovel-lowcost-structured",
-        snapshot_generation: "ainovel-lowcost-structured",
-        next_chapter_brief: "ainovel-lowcost-structured",
-      },
-      embedding: {
-        fact_embed: "ainovel-embedding-default",
-        episode_embed: "ainovel-embedding-default",
-        summary_embed: "ainovel-embedding-default",
-        query_memory_embed: "ainovel-embedding-default",
-      },
-    },
+  scenes: {
+    kickoff_turn: sceneRoute(
+      "chat",
+      "ainovel-plus-reasoning",
+      "ainovel-plus-reasoning",
+      "ainovel-super-reasoning",
+    ),
+    chat_compaction: sceneRoute("chat", "ainovel-lowcost-structured"),
+    write_turn: sceneRoute(
+      "chat",
+      "ainovel-free-creative",
+      "ainovel-plus-creative",
+      "ainovel-super-creative",
+    ),
+    chapter_draft: sceneRoute(
+      "chat",
+      "ainovel-free-creative",
+      "ainovel-plus-creative",
+      "ainovel-super-creative",
+    ),
+    chapter_summary: sceneRoute("chat", "ainovel-lowcost-structured"),
+    chapter_draft_review: sceneRoute("chat", "ainovel-lowcost-structured"),
+    snapshot_generation: sceneRoute("chat", "ainovel-lowcost-structured"),
+    next_chapter_brief: sceneRoute("chat", "ainovel-lowcost-structured"),
+    fact_embed: sceneRoute("embedding", "ainovel-embedding-default"),
+    episode_embed: sceneRoute("embedding", "ainovel-embedding-default"),
+    summary_embed: sceneRoute("embedding", "ainovel-embedding-default"),
+    query_memory_embed: sceneRoute("embedding", "ainovel-embedding-default"),
   },
 };
 
@@ -135,6 +128,10 @@ export class AppAiRoutingConfigService {
 
   async getCurrentConfig(appId: string): Promise<AiNovelModelRoutingConfig> {
     this.assertAiNovelAppId(appId);
+    if (shouldUseLocalAiNovelE2eProvider()) {
+      return this.createDefaultConfig();
+    }
+
     const stored = await this.appConfigService.getValue(
       appId,
       AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
@@ -179,6 +176,7 @@ export class AppAiRoutingConfigService {
         `AI routing revision ${revision} was not found.`,
       );
     }
+    this.parseStoredConfig(existing.content);
 
     await this.appConfigService.restoreValue(
       appId,
@@ -231,13 +229,27 @@ export class AppAiRoutingConfigService {
       throw error;
     }
     const resolvedTier = tier ?? config.defaultTier;
-    const tierConfig = config.tiers[resolvedTier];
-    const sceneRouteKey = tierConfig?.[kind]?.[sceneKey];
+    const sceneConfig = config.scenes[sceneKey];
+    if (sceneConfig?.kind !== kind) {
+      throw new ApplicationError(
+        502,
+        "AI_UPSTREAM_BAD_GATEWAY",
+        `AINovel scene routing kind mismatch for ${kind}.${sceneKey}.`,
+        {
+          tier: resolvedTier,
+          sceneKey,
+          kind,
+          configuredKind: sceneConfig?.kind,
+        },
+      );
+    }
+
+    const sceneRouteKey = sceneConfig.routes[resolvedTier];
     if (!sceneRouteKey?.trim()) {
       throw new ApplicationError(
         502,
         "AI_UPSTREAM_BAD_GATEWAY",
-        `AINovel scene routing is missing ${kind} mapping for ${resolvedTier}.${sceneKey}.`,
+        `AINovel scene routing is missing ${resolvedTier} route for ${kind}.${sceneKey}.`,
         {
           tier: resolvedTier,
           sceneKey,
@@ -287,34 +299,25 @@ export class AppAiRoutingConfigService {
 
     const source = input as Record<string, unknown>;
     const defaultTier = this.normalizeTier(source.defaultTier);
-    const tiersSource = source.tiers;
+    const scenesSource = source.scenes;
     if (
-      !tiersSource ||
-      typeof tiersSource !== "object" ||
-      Array.isArray(tiersSource)
+      !scenesSource ||
+      typeof scenesSource !== "object" ||
+      Array.isArray(scenesSource)
     ) {
-      badRequest("REQ_INVALID_BODY", "AI routing tiers must be a JSON object.");
+      badRequest(
+        "REQ_INVALID_BODY",
+        "AI routing scenes must be a JSON object.",
+      );
     }
 
-    const tiersRecord = tiersSource as Record<string, unknown>;
-    const tiers = {
-      free: this.normalizeTierConfig(tiersRecord.free, "free"),
-      plus: this.normalizeTierConfig(tiersRecord.plus, "plus"),
-      super_plus: this.normalizeTierConfig(
-        tiersRecord.super_plus,
-        "super_plus",
-      ),
-    } satisfies Record<AiNovelModelRoutingTier, AiNovelTierRoutingConfig>;
-
-    for (const key of Object.keys(tiersRecord)) {
-      if (!VALID_TIERS.has(key as AiNovelModelRoutingTier)) {
-        badRequest("REQ_INVALID_BODY", `Unsupported AI routing tier: ${key}.`);
-      }
-    }
+    const scenes = this.normalizeScenes(
+      scenesSource as Record<string, unknown>,
+    );
 
     return {
       defaultTier,
-      tiers,
+      scenes,
     };
   }
 
@@ -331,62 +334,118 @@ export class AppAiRoutingConfigService {
     return value as AiNovelModelRoutingTier;
   }
 
-  private normalizeTierConfig(
-    value: unknown,
-    tier: AiNovelModelRoutingTier,
-  ): AiNovelTierRoutingConfig {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-      badRequest("REQ_INVALID_BODY", `Tier ${tier} must be a JSON object.`);
-    }
-
-    const source = value as Record<string, unknown>;
-    return {
-      chat: this.normalizeSceneRouteMap(
-        source.chat,
-        AI_NOVEL_CHAT_SCENE_KEYS,
-        `${tier}.chat`,
+  private normalizeScenes(
+    source: Record<string, unknown>,
+  ): Record<string, AiNovelSceneRoutingConfig> {
+    const normalized: Record<string, AiNovelSceneRoutingConfig> = {};
+    const expectedScenes = new Map<string, AiNovelRoutingChannel>([
+      ...AI_NOVEL_CHAT_SCENE_KEYS.map(
+        (sceneKey) => [sceneKey, "chat"] as const,
       ),
-      embedding: this.normalizeSceneRouteMap(
-        source.embedding,
-        AI_NOVEL_EMBEDDING_SCENE_KEYS,
-        `${tier}.embedding`,
+      ...AI_NOVEL_EMBEDDING_SCENE_KEYS.map(
+        (sceneKey) => [sceneKey, "embedding"] as const,
       ),
-    };
-  }
+    ]);
 
-  private normalizeSceneRouteMap(
-    value: unknown,
-    sceneKeys: readonly string[],
-    fieldName: string,
-  ): Record<string, string> {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-      badRequest("REQ_INVALID_BODY", `${fieldName} must be a JSON object.`);
-    }
-
-    const source = value as Record<string, unknown>;
-    const normalized: Record<string, string> = {};
-
-    for (const sceneKey of sceneKeys) {
-      const sceneRouteKey = source[sceneKey];
-      if (typeof sceneRouteKey !== "string" || !sceneRouteKey.trim()) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          `${fieldName}.${sceneKey} must be a non-empty string.`,
-        );
-      }
-      normalized[sceneKey] = sceneRouteKey.trim();
+    for (const [sceneKey, kind] of expectedScenes) {
+      normalized[sceneKey] = this.normalizeSceneConfig(
+        source[sceneKey],
+        sceneKey,
+        kind,
+      );
     }
 
     for (const key of Object.keys(source)) {
-      if (!sceneKeys.includes(key)) {
+      if (!expectedScenes.has(key)) {
         badRequest(
           "REQ_INVALID_BODY",
-          `${fieldName} contains unsupported scene key: ${key}.`,
+          `AI routing scenes contains unsupported scene key: ${key}.`,
         );
       }
     }
 
     return normalized;
+  }
+
+  private normalizeSceneConfig(
+    value: unknown,
+    sceneKey: string,
+    expectedKind: AiNovelRoutingChannel,
+  ): AiNovelSceneRoutingConfig {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        `scenes.${sceneKey} must be a JSON object.`,
+      );
+    }
+
+    const source = value as Record<string, unknown>;
+    const kind = source.kind;
+    if (
+      typeof kind !== "string" ||
+      !VALID_CHANNELS.has(kind as AiNovelRoutingChannel)
+    ) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        `scenes.${sceneKey}.kind must be one of: ${[...VALID_CHANNELS].join(", ")}.`,
+      );
+    }
+    if (kind !== expectedKind) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        `scenes.${sceneKey}.kind must be ${expectedKind}.`,
+      );
+    }
+    const normalizedKind = kind as AiNovelRoutingChannel;
+
+    const routesSource = source.routes;
+    if (
+      !routesSource ||
+      typeof routesSource !== "object" ||
+      Array.isArray(routesSource)
+    ) {
+      badRequest(
+        "REQ_INVALID_BODY",
+        `scenes.${sceneKey}.routes must be a JSON object.`,
+      );
+    }
+
+    const routes = this.normalizeSceneRoutes(
+      routesSource as Record<string, unknown>,
+      sceneKey,
+    );
+    return {
+      kind: normalizedKind,
+      routes,
+    };
+  }
+
+  private normalizeSceneRoutes(
+    source: Record<string, unknown>,
+    sceneKey: string,
+  ): Record<AiNovelModelRoutingTier, string> {
+    const routes = {} as Record<AiNovelModelRoutingTier, string>;
+    for (const tier of VALID_TIERS) {
+      const sceneRouteKey = source[tier];
+      if (typeof sceneRouteKey !== "string" || !sceneRouteKey.trim()) {
+        badRequest(
+          "REQ_INVALID_BODY",
+          `scenes.${sceneKey}.routes.${tier} must be a non-empty string.`,
+        );
+      }
+      routes[tier] = sceneRouteKey.trim();
+    }
+
+    for (const key of Object.keys(source)) {
+      if (!VALID_TIERS.has(key as AiNovelModelRoutingTier)) {
+        badRequest(
+          "REQ_INVALID_BODY",
+          `scenes.${sceneKey}.routes contains unsupported tier: ${key}.`,
+        );
+      }
+    }
+
+    return routes;
   }
 
   private assertAiNovelAppId(appId: string): void {

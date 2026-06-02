@@ -720,14 +720,14 @@ export interface AdminConfigDocument {
 export type AiNovelModelRoutingTier = "free" | "plus" | "super_plus";
 export type AiNovelRoutingChannel = "chat" | "embedding";
 
-export interface AiNovelTierRoutingConfig {
-  chat: Record<string, string>;
-  embedding: Record<string, string>;
+export interface AiNovelSceneRoutingConfig {
+  kind: AiNovelRoutingChannel;
+  routes: Record<AiNovelModelRoutingTier, string>;
 }
 
 export interface AiNovelModelRoutingConfig {
   defaultTier: AiNovelModelRoutingTier;
-  tiers: Record<AiNovelModelRoutingTier, AiNovelTierRoutingConfig>;
+  scenes: Record<string, AiNovelSceneRoutingConfig>;
 }
 
 export interface AdminAiRoutingDocument {
