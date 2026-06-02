@@ -1607,6 +1607,209 @@ test("admin sms verification list and reveal follow sensitive verification flow"
   );
 });
 
+test("admin sms service API stores versioned config and runtime uses it after restart", async () => {
+  const previousSmsSdkAppId = process.env.TENCENT_SMS_SDK_APP_ID;
+  const previousSmsTemplateId = process.env.TENCENT_SMS_TEMPLATE_ID;
+  const previousSmsSignName = process.env.TENCENT_SMS_SIGN_NAME;
+  const previousSmsRegion = process.env.TENCENT_SMS_REGION;
+  const previousAccessTokenSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
+  const previousFetch = globalThis.fetch;
+
+  delete process.env.TENCENT_SMS_SDK_APP_ID;
+  delete process.env.TENCENT_SMS_TEMPLATE_ID;
+  delete process.env.TENCENT_SMS_SIGN_NAME;
+  delete process.env.TENCENT_SMS_REGION;
+  process.env.AUTH_ACCESS_TOKEN_SECRET = "sms-service-admin-config-secret";
+
+  const kvBackend = new InMemoryKVBackend();
+  const firstRuntime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+    serviceName: "api",
+    kvBackend,
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  try {
+    await firstRuntime.services.commonPasswordConfigService.set(
+      TENCENT_SES_SECRET_ID_PASSWORD_KEY,
+      "Tencent Secret ID",
+      "admin-config-secret-id",
+    );
+    await firstRuntime.services.commonPasswordConfigService.set(
+      TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
+      "Tencent Secret Key",
+      "admin-config-secret-key",
+    );
+
+    const updateResponse = await firstRuntime.app.handle({
+      method: "PUT",
+      path: "/api/v1/admin/apps/common/sms-service",
+      headers,
+      body: {
+        enabled: true,
+        sdkAppId: "1400849632",
+        templateId: "1906322",
+        signName: "智卓凯科技",
+        region: "ap-beijing",
+        desc: "启用 Admin SMS 配置",
+      },
+    });
+
+    assert.equal(updateResponse.statusCode, 200);
+    assert.equal(updateResponse.body.data.configKey, "common.sms_service");
+    assert.equal(updateResponse.body.data.config.enabled, true);
+    assert.equal(updateResponse.body.data.revision, 1);
+
+    const disabledResponse = await firstRuntime.app.handle({
+      method: "PUT",
+      path: "/api/v1/admin/apps/common/sms-service",
+      headers,
+      body: {
+        enabled: false,
+        sdkAppId: "",
+        templateId: "",
+        signName: "",
+        region: "",
+        desc: "关闭 Admin SMS 配置",
+      },
+    });
+
+    assert.equal(disabledResponse.statusCode, 200);
+    assert.equal(disabledResponse.body.data.config.enabled, false);
+    assert.equal(disabledResponse.body.data.config.region, "ap-beijing");
+    assert.equal(disabledResponse.body.data.revision, 2);
+
+    const fallbackConfig = await firstRuntime.services.commonSmsConfigService.resolveRuntimeConfig({
+      secretId: "env-secret-id",
+      secretKey: "env-secret-key",
+      sdkAppId: "env-sdk-app-id",
+      templateId: "env-template-id",
+      signName: "EnvSign",
+      region: "ap-shanghai",
+    });
+
+    assert.equal(fallbackConfig.sdkAppId, "env-sdk-app-id");
+    assert.equal(fallbackConfig.templateId, "env-template-id");
+    assert.equal(fallbackConfig.signName, "EnvSign");
+    assert.equal(fallbackConfig.region, "ap-shanghai");
+
+    const revisionResponse = await firstRuntime.app.handle({
+      method: "GET",
+      path: "/api/v1/admin/apps/common/sms-service/revisions/1",
+      headers,
+    });
+
+    assert.equal(revisionResponse.statusCode, 200);
+    assert.equal(revisionResponse.body.data.revision, 1);
+    assert.equal(revisionResponse.body.data.config.enabled, true);
+    assert.equal(revisionResponse.body.data.config.templateId, "1906322");
+
+    const restoreResponse = await firstRuntime.app.handle({
+      method: "POST",
+      path: "/api/v1/admin/apps/common/sms-service/revisions/1/restore",
+      headers,
+      body: {
+        desc: "恢复 Admin SMS 配置",
+      },
+    });
+
+    assert.equal(restoreResponse.statusCode, 200);
+    assert.equal(restoreResponse.body.data.revision, 3);
+    assert.equal(restoreResponse.body.data.config.enabled, true);
+
+    let capturedAuthorization = "";
+    let capturedBody = "";
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedAuthorization = String((init?.headers as Record<string, string>).Authorization ?? "");
+      capturedBody = String(init?.body ?? "");
+      return new Response(JSON.stringify({
+        Response: {
+          RequestId: "req_sms_admin_config",
+          SendStatusSet: [
+            {
+              SerialNo: "serial_sms_admin_config",
+              Code: "Ok",
+              Message: "send success",
+            },
+          ],
+        },
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    const secondRuntime = await createApplication({
+      adminBasicAuth: {
+        username: "admin",
+        password: "AdminPass123!",
+      },
+      serviceName: "api",
+      kvBackend,
+    });
+
+    const fetchResponse = await secondRuntime.app.handle({
+      method: "GET",
+      path: "/api/v1/admin/apps/common/sms-service",
+      headers,
+    });
+
+    assert.equal(fetchResponse.statusCode, 200);
+    assert.equal(fetchResponse.body.data.config.enabled, true);
+    assert.equal(fetchResponse.body.data.config.templateId, "1906322");
+
+    const result = await secondRuntime.services.smsVerificationSender.sendVerificationCode({
+      phoneNumber: "18710100985",
+      code: "123456",
+      expireMinutes: 10,
+    });
+
+    assert.equal(result.requestId, "req_sms_admin_config");
+    assert.match(capturedAuthorization, /^TC3-HMAC-SHA256 Credential=admin-config-secret-id\//);
+    const parsedBody = JSON.parse(capturedBody) as Record<string, unknown>;
+    assert.equal(parsedBody.SmsSdkAppId, "1400849632");
+    assert.equal(parsedBody.TemplateId, "1906322");
+    assert.equal(parsedBody.SignName, "智卓凯科技");
+  } finally {
+    globalThis.fetch = previousFetch;
+
+    if (previousSmsSdkAppId === undefined) {
+      delete process.env.TENCENT_SMS_SDK_APP_ID;
+    } else {
+      process.env.TENCENT_SMS_SDK_APP_ID = previousSmsSdkAppId;
+    }
+
+    if (previousSmsTemplateId === undefined) {
+      delete process.env.TENCENT_SMS_TEMPLATE_ID;
+    } else {
+      process.env.TENCENT_SMS_TEMPLATE_ID = previousSmsTemplateId;
+    }
+
+    if (previousSmsSignName === undefined) {
+      delete process.env.TENCENT_SMS_SIGN_NAME;
+    } else {
+      process.env.TENCENT_SMS_SIGN_NAME = previousSmsSignName;
+    }
+
+    if (previousSmsRegion === undefined) {
+      delete process.env.TENCENT_SMS_REGION;
+    } else {
+      process.env.TENCENT_SMS_REGION = previousSmsRegion;
+    }
+
+    if (previousAccessTokenSecret === undefined) {
+      delete process.env.AUTH_ACCESS_TOKEN_SECRET;
+    } else {
+      process.env.AUTH_ACCESS_TOKEN_SECRET = previousAccessTokenSecret;
+    }
+  }
+});
+
 test("admin password reveal requires sensitive verification before copying real value", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {

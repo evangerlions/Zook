@@ -11,6 +11,7 @@ import { CommonGetuiGyConfigService } from "../../services/common-getui-gy-confi
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonContentSafetyConfigService } from "../../services/common-content-safety-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
+import { CommonSmsConfigService } from "../../services/common-sms-config.service.ts";
 import { EmailTestSendService } from "../../services/email-test-send.service.ts";
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
@@ -46,6 +47,7 @@ import type {
   AdminLlmServiceDocument,
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
+  AdminSmsServiceDocument,
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   AppRecord,
@@ -68,6 +70,7 @@ export class AdminConsoleService {
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
+    private readonly commonSmsConfigService: CommonSmsConfigService,
     private readonly commonGetuiGyConfigService: CommonGetuiGyConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonContentSafetyConfigService: CommonContentSafetyConfigService,
@@ -435,6 +438,22 @@ export class AdminConsoleService {
 
   async sendEmailTest(input: AdminEmailTestSendCommand): Promise<AdminEmailTestSendDocument> {
     return this.emailTestSendService.run(input);
+  }
+
+  async getSmsServiceConfig(revision?: number): Promise<AdminSmsServiceDocument> {
+    return this.commonSmsConfigService.getDocument(revision);
+  }
+
+  async updateSmsServiceConfig(input: unknown, desc?: string): Promise<AdminSmsServiceDocument> {
+    const document = await this.commonSmsConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async restoreSmsServiceConfig(revision: number, desc?: string): Promise<AdminSmsServiceDocument> {
+    const document = await this.commonSmsConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
   }
 
   async getPasswordConfig(): Promise<AdminPasswordDocument> {

@@ -1,4 +1,4 @@
-import { Button, Select, Table, Tag } from "antd";
+import { Button, Input, Select, Switch, Table, Tabs, Tag } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
@@ -9,9 +9,19 @@ import type {
   AdminSmsVerificationItem,
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
+  SmsServiceConfig,
 } from "../lib/types";
 
 const SMS_REVEAL_OPERATION = "sms.verification.reveal";
+const DEFAULT_SMS_REGION = "ap-beijing";
+
+const DEFAULT_SMS_CONFIG: SmsServiceConfig = {
+  enabled: false,
+  sdkAppId: "",
+  templateId: "",
+  signName: "",
+  region: DEFAULT_SMS_REGION,
+};
 
 function sceneLabel(scene: AdminSmsVerificationItem["scene"]) {
   switch (scene) {
@@ -32,6 +42,9 @@ export default function SmsRoute() {
   const [revealLoadingId, setRevealLoadingId] = useState<string>("");
   const [pendingRevealId, setPendingRevealId] = useState<string>("");
   const [revealed, setRevealed] = useState<AdminSmsVerificationRevealDocument | null>(null);
+  const [configDraft, setConfigDraft] = useState<SmsServiceConfig>(DEFAULT_SMS_CONFIG);
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configSaving, setConfigSaving] = useState(false);
 
   async function loadData(nextAppId = selectedAppId) {
     setLoading(true);
@@ -45,8 +58,21 @@ export default function SmsRoute() {
     }
   }
 
+  async function loadConfig() {
+    setConfigLoading(true);
+    try {
+      const payload = await adminApi.getSmsService();
+      setConfigDraft(payload.config);
+    } catch (error) {
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      setConfigLoading(false);
+    }
+  }
+
   useEffect(() => {
     void loadData("");
+    void loadConfig();
   }, []);
 
   const options = useMemo(
@@ -77,15 +103,98 @@ export default function SmsRoute() {
     }
   }
 
-  return (
-    <section className="stack">
-      <header className="page-header">
-        <div>
-          <h1>SMS</h1>
-          <p>查看最近 7 天短信验证码记录，默认展示掩码元数据；验证码需通过受控 reveal 查看。</p>
-        </div>
-      </header>
+  function updateConfigDraft(key: keyof SmsServiceConfig, value: SmsServiceConfig[typeof key]) {
+    setConfigDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
 
+  async function saveConfig() {
+    setConfigSaving(true);
+    clearNotice();
+    try {
+      const payload = await adminApi.updateSmsService({
+        ...configDraft,
+        desc: "更新 Admin SMS 配置",
+      });
+      setConfigDraft(payload.config);
+      setNotice(makeNotice("success", "SMS 配置已保存。"));
+    } catch (error) {
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      setConfigSaving(false);
+    }
+  }
+
+  const configPanel = (
+    <section className="surface-card">
+      <div className="card-header">
+        <div>
+          <h2>腾讯云短信配置</h2>
+          <p>SecretId / SecretKey 继续使用 PASSWORDS 中的 `tencent.secret_id` 与 `tencent.secret_key`。</p>
+        </div>
+        <div className="inline-row">
+          <Button loading={configLoading} onClick={() => void loadConfig()} type="default">
+            刷新
+          </Button>
+          <Button loading={configSaving} onClick={() => void saveConfig()} type="primary">
+            保存
+          </Button>
+        </div>
+      </div>
+
+      <div className="stack">
+        <div className="surface-card" style={{ background: "#fbfcf8" }}>
+          <div className="inline-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <strong>启用 Admin SMS 配置</strong>
+              <p>开启后，真实短信发送优先使用这里保存的参数；关闭时继续使用启动环境变量。</p>
+            </div>
+            <Switch
+              checked={configDraft.enabled}
+              onChange={(checked) => updateConfigDraft("enabled", checked)}
+            />
+          </div>
+        </div>
+
+        <div className="config-form-grid">
+          <label className="field">
+            <span className="field-label">TENCENT_SMS_SDK_APP_ID</span>
+            <Input
+              value={configDraft.sdkAppId}
+              onChange={(event) => updateConfigDraft("sdkAppId", event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">TENCENT_SMS_TEMPLATE_ID</span>
+            <Input
+              value={configDraft.templateId}
+              onChange={(event) => updateConfigDraft("templateId", event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">TENCENT_SMS_SIGN_NAME</span>
+            <Input
+              value={configDraft.signName}
+              onChange={(event) => updateConfigDraft("signName", event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span className="field-label">Region</span>
+            <Input
+              value={configDraft.region}
+              onChange={(event) => updateConfigDraft("region", event.target.value)}
+            />
+            <small className="field-hint">默认 ap-beijing；一般不需要改。</small>
+          </label>
+        </div>
+      </div>
+    </section>
+  );
+
+  const recordsPanel = (
+    <>
       <section className="surface-card">
         <div className="inline-row" style={{ justifyContent: "space-between", alignItems: "center" }}>
           <Select
@@ -154,6 +263,25 @@ export default function SmsRoute() {
           </div>
         </section>
       ) : null}
+    </>
+  );
+
+  return (
+    <section className="stack">
+      <header className="page-header">
+        <div>
+          <h1>SMS</h1>
+          <p>查看最近 7 天短信验证码记录，默认展示掩码元数据；验证码需通过受控 reveal 查看。</p>
+        </div>
+      </header>
+
+      <Tabs
+        defaultActiveKey="config"
+        items={[
+          { key: "config", label: "配置", children: configPanel },
+          { key: "records", label: "发送记录", children: recordsPanel },
+        ]}
+      />
 
       <SensitiveOperationModal
         description="为了查看短信验证码明文，需要先输入 6 位二级密码。"

@@ -682,6 +682,25 @@ export interface AdminSmsVerificationRevealDocument {
   revealedAt: string;
 }
 
+export interface SmsServiceConfig {
+  enabled: boolean;
+  sdkAppId: string;
+  templateId: string;
+  signName: string;
+  region: string;
+}
+
+export interface AdminSmsServiceDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: SmsServiceConfig;
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
 export interface AdminConfigDocument {
   app: AdminAppSummary;
   configKey: string;

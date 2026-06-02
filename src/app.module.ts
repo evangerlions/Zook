@@ -74,6 +74,7 @@ import {
   CommonPasswordConfigService,
   PASSWORD_VALUE_READ_OPERATION,
 } from "./services/common-password-config.service.ts";
+import { CommonSmsConfigService } from "./services/common-sms-config.service.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
 import {
   EmbeddingManager,
@@ -122,8 +123,8 @@ import {
   TencentSesRegistrationEmailSender,
 } from "./services/tencent-ses-registration-email.service.ts";
 import {
+  ConfigurableSmsVerificationSender,
   NoopSmsVerificationSender,
-  TencentSmsVerificationSender,
   type SmsVerificationSender,
   type TencentSmsVerificationConfig,
 } from "./services/tencent-sms-verification.service.ts";
@@ -151,6 +152,7 @@ import type {
   AdminContentSafetyTestDocument,
   AdminLlmServiceDocument,
   AdminPasswordRevealDocument,
+  AdminSmsServiceDocument,
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   PublicAppConfigDocument,
@@ -714,6 +716,40 @@ export class BackendApplication {
       request.path === "/api/v1/admin/apps/common/sms-verifications"
     ) {
       return this.handleAdminListSmsVerificationRecords(request);
+    }
+
+    if (
+      request.method === "GET" &&
+      request.path === "/api/v1/admin/apps/common/sms-service"
+    ) {
+      return this.handleAdminGetSmsService(request);
+    }
+
+    if (
+      request.method === "PUT" &&
+      request.path === "/api/v1/admin/apps/common/sms-service"
+    ) {
+      return this.handleAdminUpdateSmsService(request);
+    }
+
+    const adminSmsServiceRevisionMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/sms-service\/revisions\/(\d+)$/,
+    );
+    if (request.method === "GET" && adminSmsServiceRevisionMatch) {
+      return this.handleAdminGetSmsServiceRevision(
+        request,
+        Number(adminSmsServiceRevisionMatch[1]),
+      );
+    }
+
+    const adminSmsServiceRestoreMatch = request.path.match(
+      /^\/api\/v1\/admin\/apps\/common\/sms-service\/revisions\/(\d+)\/restore$/,
+    );
+    if (request.method === "POST" && adminSmsServiceRestoreMatch) {
+      return this.handleAdminRestoreSmsServiceRevision(
+        request,
+        Number(adminSmsServiceRestoreMatch[1]),
+      );
     }
 
     const adminSmsVerificationRevealMatch = request.path.match(
@@ -3416,6 +3452,96 @@ export class BackendApplication {
     return this.ok(result, request.requestId as string);
   }
 
+  private async handleAdminGetSmsService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSmsServiceDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getSmsServiceConfig();
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.read",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminUpdateSmsService(
+    request: HttpRequest,
+  ): Promise<HttpResponse<AdminSmsServiceDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body);
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.updateSmsServiceConfig(
+      body,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.update",
+      resourceType: "app_config",
+      resourceId: result.configKey,
+      payload: {
+        adminUser,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminGetSmsServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<AdminSmsServiceDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const result = await this.adminConsoleService.getSmsServiceConfig(revision);
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.revision.read",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
+  private async handleAdminRestoreSmsServiceRevision(
+    request: HttpRequest,
+    revision: number,
+  ): Promise<HttpResponse<AdminSmsServiceDocument>> {
+    const adminUser = this.authenticateAdmin(request);
+    const body = this.validationPipe.asObject(request.body ?? {});
+    const desc = this.validationPipe.optionalString(body, "desc");
+    const result = await this.adminConsoleService.restoreSmsServiceConfig(
+      revision,
+      desc,
+    );
+
+    await this.auditInterceptor.record({
+      appId: "common",
+      action: "admin.sms_service.restore",
+      resourceType: "app_config",
+      resourceId: `${result.configKey}:${revision}`,
+      payload: {
+        adminUser,
+        revision,
+      },
+    });
+
+    return this.ok(result, request.requestId as string);
+  }
+
   private async handleAdminUpdatePasswords(
     request: HttpRequest,
   ): Promise<HttpResponse<unknown>> {
@@ -5436,6 +5562,10 @@ export async function createApplication(
   const commonAuthRateLimitConfigService = new CommonAuthRateLimitConfigService(
     appConfigService,
   );
+  const commonSmsConfigService = new CommonSmsConfigService(
+    appConfigService,
+    commonPasswordConfigService,
+  );
   const commonGetuiGyConfigService = new CommonGetuiGyConfigService(
     appConfigService,
   );
@@ -5505,7 +5635,8 @@ export async function createApplication(
   const smsVerificationSender =
     options.smsVerificationSender ??
     (options.serviceName === "api"
-      ? new TencentSmsVerificationSender(
+      ? new ConfigurableSmsVerificationSender(
+          commonSmsConfigService,
           resolveTencentSmsVerificationConfig(
             options,
             tencentCloudCommonCredentials,
@@ -5612,6 +5743,7 @@ export async function createApplication(
     appLogSecretService,
     commonEmailConfigService,
     commonAuthRateLimitConfigService,
+    commonSmsConfigService,
     commonGetuiGyConfigService,
     commonLlmConfigService,
     commonContentSafetyConfigService,
@@ -5734,6 +5866,7 @@ export async function createApplication(
       commonPasswordConfigService,
       commonEmailConfigService,
       commonAuthRateLimitConfigService,
+      commonSmsConfigService,
       commonGetuiGyConfigService,
       commonLlmConfigService,
       commonContentSafetyConfigService,

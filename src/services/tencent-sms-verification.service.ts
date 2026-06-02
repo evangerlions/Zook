@@ -4,6 +4,7 @@ import {
   type TencentCloudCredentials,
   type TencentCloudRequestDebug,
 } from "./tencent-cloud-request.ts";
+import { CommonSmsConfigService } from "./common-sms-config.service.ts";
 
 export interface TencentSmsVerificationConfig {
   secretId?: string;
@@ -155,5 +156,22 @@ export class TencentSmsVerificationSender implements SmsVerificationSender {
     }
 
     return normalized;
+  }
+}
+
+export class ConfigurableSmsVerificationSender implements SmsVerificationSender {
+  constructor(
+    private readonly commonSmsConfigService: CommonSmsConfigService,
+    private readonly fallbackConfig: TencentSmsVerificationConfig,
+    private readonly fetchImplementation: typeof fetch = fetch,
+  ) {}
+
+  async sendVerificationCode(command: {
+    phoneNumber: string;
+    code: string;
+    expireMinutes: number;
+  }): Promise<SmsVerificationSendResult> {
+    const config = await this.commonSmsConfigService.resolveRuntimeConfig(this.fallbackConfig);
+    return new TencentSmsVerificationSender(config, this.fetchImplementation).sendVerificationCode(command);
   }
 }

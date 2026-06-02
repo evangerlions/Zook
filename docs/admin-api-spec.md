@@ -110,23 +110,29 @@ configKey = ai_novel.model_routing
 | `GET` | `/api/v1/admin/apps/{appId}/i18n-settings/revisions/{revision}` | 获取指定历史版本 |
 | `POST` | `/api/v1/admin/apps/{appId}/i18n-settings/revisions/{revision}/restore` | 恢复指定历史版本 |
 
-### 3.8 Common 短信验证码观测
+### 3.7 Common SMS 服务配置与验证码观测
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/common/sms-service` | 获取腾讯云短信发送配置 |
+| `PUT` | `/api/v1/admin/apps/common/sms-service` | 保存腾讯云短信发送配置，使用 `common.sms_service` 版本化配置 |
+| `GET` | `/api/v1/admin/apps/common/sms-service/revisions/{revision}` | 获取指定历史版本 |
+| `POST` | `/api/v1/admin/apps/common/sms-service/revisions/{revision}/restore` | 恢复指定历史版本 |
 | `GET` | `/api/v1/admin/apps/common/sms-verifications?appId={appId}` | 查看最近 7 天短信验证码记录，默认返回掩码元数据 |
 | `POST` | `/api/v1/admin/apps/common/sms-verifications/{recordId}/reveal` | 通过敏感操作授权后查看验证码明文 |
 
 说明：
 
 1. 该页面属于 `common` 工作区分组下的固定能力。
-2. 默认列表只返回掩码手机号、appid、场景、模式、状态、时间等元数据。
-3. 验证码明文不会在列表中直接内联展示，只能通过 reveal 接口查看。
-4. reveal 需要先走 `/api/v1/admin/sensitive-operations/request-code` + `/verify`。
-5. 当前验证码明文只保留最近 7 天；worker 会在每天凌晨 4 点后执行一次硬删除清理。
-6. 本期不支持 resend。
+2. `sms-service` 保存字段为 `enabled`、`sdkAppId`、`templateId`、`signName`、`region`；`SecretId / SecretKey` 继续读取 PASSWORDS 中的 `tencent.secret_id` 与 `tencent.secret_key`。
+3. `enabled=true` 时，真实短信发送优先使用 `common.sms_service` 最新版本配置；`enabled=false` 时继续回退到服务启动时解析的 `TENCENT_SMS_*` 环境变量配置。
+4. 默认列表只返回掩码手机号、appid、场景、模式、状态、时间等元数据。
+5. 验证码明文不会在列表中直接内联展示，只能通过 reveal 接口查看。
+6. reveal 需要先走 `/api/v1/admin/sensitive-operations/request-code` + `/verify`。
+7. 当前验证码明文只保留最近 7 天；worker 会在每天凌晨 4 点后执行一次硬删除清理。
+8. 本期不支持 resend。
 
-### 3.7 Common 邮件服务
+### 3.8 Common 邮件服务
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -136,7 +142,7 @@ configKey = ai_novel.model_routing
 | `GET` | `/api/v1/admin/apps/common/email-service/revisions/{revision}` | 获取指定历史版本 |
 | `POST` | `/api/v1/admin/apps/common/email-service/revisions/{revision}/restore` | 恢复指定历史版本 |
 
-### 3.8 Common Passwords
+### 3.9 Common Passwords
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -146,7 +152,7 @@ configKey = ai_novel.model_routing
 | `DELETE` | `/api/v1/admin/apps/common/passwords/{key}` | 删除密码项 |
 | `POST` | `/api/v1/admin/apps/common/passwords/{key}/reveal` | 获取密码项明文 |
 
-### 3.9 Common Auth 风控
+### 3.10 Common Auth 风控
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -162,7 +168,7 @@ configKey = ai_novel.model_routing
 4. `accountDailyLimit` 和 `ipHourlyLimit` 暴露的是自然日 / 自然小时语义阈值；底层 48h / 2h TTL 只是清理策略，不需要前端配置。
 5. `verifyWindowLimit` 不能小于 `maxFailedCodeAttempts`，否则单验证码错码阈值会被更外层窗口限流提前遮蔽。
 
-### 3.10 Common GeYan 一键登录
+### 3.11 Common GeYan 一键登录
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -172,7 +178,7 @@ configKey = ai_novel.model_routing
 | `POST` | `/api/v1/admin/apps/common/getui-gy-service/revisions/{revision}/restore` | 恢复指定历史版本 |
 | `POST` | `/api/v1/admin/apps/common/getui-gy-service/apps/{appId}/{field}/reveal` | 二级密码验证后获取 `appKey` / `appSecret` / `masterSecret` 明文 |
 
-### 3.11 Common LLM 服务
+### 3.12 Common LLM 服务
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -189,7 +195,7 @@ configKey = ai_novel.model_routing
 - `GET /api/v1/admin/apps/common/llm-service/metrics` 的 `models` 只统计 common LLM model key，并按当前时间范围内的请求量降序返回，便于优先查看真实流量模型。
 - AINovel 的 `ainovel-free-creative`、`ainovel-plus-reasoning`、`ainovel-embedding-default` 等值是业务 scene route key，不是 model key；LLM metrics 会过滤这些业务 key，并把 AINovel 调用归入实际 provider model key（如 `qwen3.6-plus`、`text-embedding-v4`）。
 
-### 3.12 Admin 指标
+### 3.13 Admin 指标
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
