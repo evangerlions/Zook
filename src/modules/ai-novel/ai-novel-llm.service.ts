@@ -16,7 +16,7 @@ import {
 } from "../../services/app-ai-routing-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { ContentSafetyService } from "../../services/content-safety.service.ts";
-import type { AiNovelModelRoutingTier } from "../../shared/types.ts";
+import type { AiNovelModelRoutingTier, ErrorCode } from "../../shared/types.ts";
 import {
   resolveAiNovelChatScene,
   resolveAiNovelEmbeddingScene,
@@ -1916,23 +1916,32 @@ export class AiNovelLlmService {
         );
       }
 
+      const providerFailure = classifyProviderRequestFailure(error);
+      return new ApplicationError(
+        providerFailure.statusCode,
+        providerFailure.code,
+        error.message,
+        error.details,
+      );
+    }
+
+    if (error.code === "LLM_PROVIDER_RESPONSE_INVALID") {
       return new ApplicationError(
         502,
-        "AI_UPSTREAM_BAD_GATEWAY",
+        "AI_UPSTREAM_RESPONSE_INVALID",
         error.message,
         error.details,
       );
     }
 
     if (
-      error.code === "LLM_PROVIDER_RESPONSE_INVALID" ||
       error.code === "LLM_ROUTE_NOT_AVAILABLE" ||
       error.code === "LLM_SERVICE_NOT_CONFIGURED" ||
       error.code === "LLM_MODEL_NOT_FOUND"
     ) {
       return new ApplicationError(
         502,
-        "AI_UPSTREAM_BAD_GATEWAY",
+        "AI_UPSTREAM_CONFIG_INVALID",
         error.message,
         error.details,
       );
@@ -1983,6 +1992,88 @@ function getDetailString(details: unknown, key: string): string | undefined {
 
   const value = (details as Record<string, unknown>)[key];
   return typeof value === "string" ? value : undefined;
+}
+
+function getDetailNumber(details: unknown, key: string): number | undefined {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    return undefined;
+  }
+
+  const value = (details as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
+function classifyProviderRequestFailure(error: ApplicationError): {
+  code: ErrorCode;
+  statusCode: number;
+} {
+  const providerStatusCode =
+    getDetailNumber(error.details, "statusCode") ?? error.statusCode;
+  const providerErrorCode = getDetailString(error.details, "errorCode");
+  const providerErrorType = getDetailString(error.details, "errorType");
+  const upstreamReason = getDetailString(error.details, "reason");
+  const searchText = [
+    providerErrorCode,
+    providerErrorType,
+    upstreamReason,
+    error.message,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    providerStatusCode === 401 ||
+    providerStatusCode === 403 ||
+    includesAny(searchText, [
+      "accessdenied",
+      "authentication",
+      "forbidden",
+      "invalid_api_key",
+      "unauthorized",
+    ])
+  ) {
+    return { code: "AI_UPSTREAM_AUTH_FAILED", statusCode: 502 };
+  }
+
+  if (
+    providerStatusCode === 400 ||
+    includesAny(searchText, [
+      "bad_request",
+      "badrequest",
+      "invalid_parameter",
+      "invalid_request",
+      "request body",
+    ])
+  ) {
+    return { code: "AI_UPSTREAM_INVALID_REQUEST", statusCode: 502 };
+  }
+
+  if (
+    providerStatusCode === 429 ||
+    includesAny(searchText, ["rate_limit", "ratelimit", "throttl"])
+  ) {
+    return { code: "AI_UPSTREAM_RATE_LIMITED", statusCode: 429 };
+  }
+
+  if (
+    includesAny(searchText, [
+      "balance",
+      "billing",
+      "insufficient",
+      "quota",
+    ])
+  ) {
+    return { code: "AI_UPSTREAM_QUOTA_EXHAUSTED", statusCode: 503 };
+  }
+
+  return { code: "AI_UPSTREAM_BAD_GATEWAY", statusCode: 502 };
+}
+
+function includesAny(value: string, needles: string[]): boolean {
+  return needles.some((needle) => value.includes(needle));
 }
 
 function extractUpstreamErrorDetails(

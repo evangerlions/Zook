@@ -666,6 +666,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       statusCode,
       errorCode: payload.error?.code,
       errorType: payload.error?.type,
+      providerRequestId: payload.request_id ?? payload.id,
     });
   }
 
@@ -698,6 +699,7 @@ export class BailianOpenAICompatibleProvider implements LLMProvider, EmbeddingPr
       statusCode,
       errorCode: payload.error?.code,
       errorType: payload.error?.type,
+      providerRequestId: payload.request_id ?? payload.id,
     });
   }
 
