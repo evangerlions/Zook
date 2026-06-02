@@ -87,6 +87,8 @@ admin.delivery_config
 
 ### 3.5 AINovel AI Routing
 
+`ai_novel.model_routing` 使用 scene-first RAW JSON：`scenes.{scene_key}.kind` 标记 chat / embedding 通道，`scenes.{scene_key}.routes.{free|plus|super_plus}` 标记该场景在不同用户档位下使用的 AINovel 业务 route key。客户端只提交 `scene_key`，用户档位由 Zook 在运行时判定。
+
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/admin/apps/{appId}/ai-routing` | 获取 `ai_novel.model_routing` 当前配置 |

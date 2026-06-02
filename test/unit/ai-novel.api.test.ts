@@ -16,6 +16,11 @@ import type {
   LLMStreamEvent,
 } from "../../src/services/llm-manager.ts";
 import { AI_NOVEL_MODEL_ROUTING_CONFIG_KEY } from "../../src/services/app-ai-routing-config.service.ts";
+import {
+  AI_NOVEL_CHAT_SCENE_KEYS,
+  AI_NOVEL_EMBEDDING_SCENE_KEYS,
+} from "../../src/modules/ai-novel/ai-novel-llm-scenes.ts";
+import { ApplicationError } from "../../src/shared/errors.ts";
 
 const AI_TEST_KEY_ID = "logk_d5872ff066b8450b9aeed1c53f0df7f1";
 
@@ -634,18 +639,16 @@ test("ai_novel scene routing config validates all novel-engine chat scene keys",
       "ai_novel",
     );
   const expectedSceneKeys = [
-    "kickoff_turn",
-    "chat_compaction",
-    "write_turn",
-    "chapter_draft",
-    "chapter_summary",
-    "chapter_draft_review",
-    "snapshot_generation",
-    "next_chapter_brief",
-  ];
+    ...AI_NOVEL_CHAT_SCENE_KEYS,
+    ...AI_NOVEL_EMBEDDING_SCENE_KEYS,
+  ].sort();
 
-  for (const tier of Object.values(config.tiers)) {
-    assert.deepEqual(Object.keys(tier.chat).sort(), expectedSceneKeys.sort());
+  assert.deepEqual(Object.keys(config.scenes).sort(), expectedSceneKeys);
+  for (const sceneKey of AI_NOVEL_CHAT_SCENE_KEYS) {
+    assert.equal(config.scenes[sceneKey]?.kind, "chat");
+  }
+  for (const sceneKey of AI_NOVEL_EMBEDDING_SCENE_KEYS) {
+    assert.equal(config.scenes[sceneKey]?.kind, "embedding");
   }
 });
 
@@ -3302,6 +3305,92 @@ test("ai_novel chat completions route emits encrypted error event when stream fa
   assert.equal(decryptedEvents[1]?.message, "系统出现异常，请稍后重试。");
 });
 
+test("ai_novel stream errors log upstream and encrypted business error details", async () => {
+  const requestId = "req_ai_log_probe";
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      throw new ApplicationError(
+        502,
+        "LLM_PROVIDER_REQUEST_FAILED",
+        "Provider returned 502 Bad Gateway.",
+        {
+          provider: "bailian",
+          statusCode: 502,
+          errorCode: "UpstreamBadGateway",
+          providerRequestId: "dashscope_req_001",
+          reason: "bad_gateway",
+        },
+      );
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    requestId,
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+      "x-app-locale": "zh-CN",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "kickoff_turn",
+        stream: true,
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events.map((event) => decryptAiPayload(event, aiKey));
+  assert.equal(decryptedEvents[0]?.code, "AI_UPSTREAM_BAD_GATEWAY");
+
+  const upstreamLog = runtime.logger.records.find(
+    (entry) => entry.message === "ai_novel upstream request failed",
+  );
+  assert.ok(upstreamLog);
+  assert.equal(upstreamLog.requestId, requestId);
+  assert.equal(upstreamLog.stage, "chat_stream");
+  assert.equal(upstreamLog.sceneKey, "kickoff_turn");
+  assert.equal(upstreamLog.provider, "bailian");
+  assert.equal(upstreamLog.providerStatusCode, 502);
+  assert.equal(upstreamLog.providerErrorCode, "UpstreamBadGateway");
+  assert.equal(upstreamLog.providerRequestId, "dashscope_req_001");
+  assert.equal(upstreamLog.mappedCode, "AI_UPSTREAM_BAD_GATEWAY");
+
+  const encryptedLog = runtime.logger.records.find(
+    (entry) => entry.message === "encrypted ai business error",
+  );
+  assert.ok(
+    encryptedLog,
+    JSON.stringify(runtime.logger.records.map((entry) => entry.message)),
+  );
+  assert.equal(encryptedLog.requestId, requestId);
+  assert.equal(encryptedLog.path, "/api/v1/ai_novel/ai/chat-completions");
+  assert.equal(encryptedLog.transport, "stream");
+  assert.equal(encryptedLog.code, "AI_UPSTREAM_BAD_GATEWAY");
+  assert.match(
+    String(encryptedLog.detailsPreview),
+    /dashscope_req_001/,
+  );
+});
+
 test("ai_novel embeddings route resolves scene_key to embedding scene route selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
@@ -3347,7 +3436,16 @@ test("ai_novel routes return encrypted business errors after request decryption"
     "ai_novel",
   );
 
-  for (const forbiddenField of ["model", "modelKey", "providerModel"]) {
+  for (
+    const forbiddenField of [
+      "model",
+      "modelKey",
+      "providerModel",
+      "tier",
+      "routingTier",
+      "modelTier",
+    ]
+  ) {
     const invalidModelResponse = await runtime.app.handle({
       method: "POST",
       path: "/api/v1/ai_novel/ai/chat-completions",
@@ -3510,67 +3608,11 @@ test("ai_novel routes can override scene routing from admin config", async () =>
     "ai_novel",
   );
 
+  const config = runtime.services.appAiRoutingConfigService.createDefaultConfig();
+  config.scenes.chapter_summary.routes.free = "ainovel-plus-creative";
   await runtime.services.appAiRoutingConfigService.updateConfig(
     "ai_novel",
-    JSON.stringify({
-      defaultTier: "free",
-      tiers: {
-        free: {
-          chat: {
-            kickoff_turn: "ainovel-plus-reasoning",
-            chat_compaction: "ainovel-lowcost-structured",
-            write_turn: "ainovel-plus-creative",
-            chapter_draft: "ainovel-plus-creative",
-            chapter_summary: "ainovel-plus-creative",
-            chapter_draft_review: "ainovel-lowcost-structured",
-            snapshot_generation: "ainovel-lowcost-structured",
-            next_chapter_brief: "ainovel-lowcost-structured",
-          },
-          embedding: {
-            fact_embed: "ainovel-embedding-default",
-            episode_embed: "ainovel-embedding-default",
-            summary_embed: "ainovel-embedding-default",
-            query_memory_embed: "ainovel-embedding-default",
-          },
-        },
-        plus: {
-          chat: {
-            kickoff_turn: "ainovel-plus-reasoning",
-            chat_compaction: "ainovel-lowcost-structured",
-            write_turn: "ainovel-plus-creative",
-            chapter_draft: "ainovel-plus-creative",
-            chapter_summary: "ainovel-lowcost-structured",
-            chapter_draft_review: "ainovel-lowcost-structured",
-            snapshot_generation: "ainovel-lowcost-structured",
-            next_chapter_brief: "ainovel-lowcost-structured",
-          },
-          embedding: {
-            fact_embed: "ainovel-embedding-default",
-            episode_embed: "ainovel-embedding-default",
-            summary_embed: "ainovel-embedding-default",
-            query_memory_embed: "ainovel-embedding-default",
-          },
-        },
-        super_plus: {
-          chat: {
-            kickoff_turn: "ainovel-super-reasoning",
-            chat_compaction: "ainovel-lowcost-structured",
-            write_turn: "ainovel-super-creative",
-            chapter_draft: "ainovel-super-creative",
-            chapter_summary: "ainovel-lowcost-structured",
-            chapter_draft_review: "ainovel-lowcost-structured",
-            snapshot_generation: "ainovel-lowcost-structured",
-            next_chapter_brief: "ainovel-lowcost-structured",
-          },
-          embedding: {
-            fact_embed: "ainovel-embedding-default",
-            episode_embed: "ainovel-embedding-default",
-            summary_embed: "ainovel-embedding-default",
-            query_memory_embed: "ainovel-embedding-default",
-          },
-        },
-      },
-    }),
+    JSON.stringify(config),
     "test-override",
   );
 
@@ -3605,7 +3647,39 @@ test("ai_novel routes can override scene routing from admin config", async () =>
   assert.equal(completion.providerModel, "qwen3.6-plus");
 });
 
-test("ai_novel routes fail when routing mapping is missing", async () => {
+test("ai_novel rejects stale tier-first routing config", async () => {
+  const { runtime } = await createAiNovelRuntime();
+  await runtime.services.appConfigService.setValue(
+    "ai_novel",
+    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
+    JSON.stringify(
+      {
+        defaultTier: "free",
+        tiers: {
+          free: {
+            chat: {
+              kickoff_turn: "ainovel-plus-reasoning",
+            },
+            embedding: {},
+          },
+        },
+      },
+      null,
+      2,
+    ),
+    "test-stale-route",
+  );
+
+  await assert.rejects(
+    () => runtime.services.appAiRoutingConfigService.getCurrentConfig("ai_novel"),
+    (error) =>
+      error instanceof ApplicationError &&
+      error.code === "REQ_INVALID_BODY" &&
+      /AI routing scenes must be a JSON object/.test(error.message),
+  );
+});
+
+test("ai_novel routes fail when scene route mapping is missing", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -3615,7 +3689,8 @@ test("ai_novel routes fail when routing mapping is missing", async () => {
     await runtime.services.appAiRoutingConfigService.getCurrentConfig(
       "ai_novel",
     );
-  delete currentConfig.tiers.free.chat.kickoff_turn;
+  delete (currentConfig.scenes.chapter_summary.routes as Record<string, string>)
+    .free;
   await runtime.services.appConfigService.setValue(
     "ai_novel",
     AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,

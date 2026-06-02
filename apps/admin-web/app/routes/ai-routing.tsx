@@ -191,7 +191,7 @@ export default function AiRoutingRoute() {
       <header className="page-header">
         <div>
           <h1>AI Routing</h1>
-          <p>这里维护 `ai_novel.model_routing` 的 RAW JSON，控制 scene key 到 AINovel 业务 route key 的默认映射。</p>
+          <p>这里维护 `ai_novel.model_routing` 的 RAW JSON，按 scene key 配置各会员档位对应的 AINovel 业务 route key；运行时由 Zook 判定用户档位。</p>
         </div>
       </header>
 
