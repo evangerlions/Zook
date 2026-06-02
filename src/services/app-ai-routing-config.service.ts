@@ -221,7 +221,7 @@ export class AppAiRoutingConfigService {
       if (error instanceof ApplicationError && error.code !== "APP_NOT_FOUND") {
         throw new ApplicationError(
           502,
-          "AI_UPSTREAM_BAD_GATEWAY",
+          "AI_UPSTREAM_CONFIG_INVALID",
           `AINovel scene routing config is invalid for ${kind}.${sceneKey}.`,
           { kind, sceneKey, tier: tier ?? "free" },
         );
@@ -233,7 +233,7 @@ export class AppAiRoutingConfigService {
     if (sceneConfig?.kind !== kind) {
       throw new ApplicationError(
         502,
-        "AI_UPSTREAM_BAD_GATEWAY",
+        "AI_UPSTREAM_CONFIG_INVALID",
         `AINovel scene routing kind mismatch for ${kind}.${sceneKey}.`,
         {
           tier: resolvedTier,
@@ -248,7 +248,7 @@ export class AppAiRoutingConfigService {
     if (!sceneRouteKey?.trim()) {
       throw new ApplicationError(
         502,
-        "AI_UPSTREAM_BAD_GATEWAY",
+        "AI_UPSTREAM_CONFIG_INVALID",
         `AINovel scene routing is missing ${resolvedTier} route for ${kind}.${sceneKey}.`,
         {
           tier: resolvedTier,

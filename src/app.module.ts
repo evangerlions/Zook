@@ -4635,12 +4635,15 @@ export class BackendApplication {
       }
 
       this.logEncryptedAiBusinessError(request, applicationError, "response");
-      return await this.encryptedAiResponse(request, keyId, {
-        code: applicationError.code,
-        message: this.localizePublicErrorMessage(applicationError, request),
-        data: null,
-        requestId: request.requestId as string,
-      });
+      return await this.encryptedAiResponse(
+        request,
+        keyId,
+        this.buildEncryptedAiErrorPayload(
+          request,
+          applicationError,
+          request.requestId as string,
+        ),
+      );
     }
   }
 
@@ -4765,12 +4768,15 @@ export class BackendApplication {
       }
 
       this.logEncryptedAiBusinessError(request, applicationError, "response");
-      return await this.encryptedAiResponse(request, keyId, {
-        code: applicationError.code,
-        message: this.localizePublicErrorMessage(applicationError, request),
-        data: null,
-        requestId: request.requestId as string,
-      });
+      return await this.encryptedAiResponse(
+        request,
+        keyId,
+        this.buildEncryptedAiErrorPayload(
+          request,
+          applicationError,
+          request.requestId as string,
+        ),
+      );
     }
   }
 
@@ -4906,12 +4912,13 @@ export class BackendApplication {
       this.logEncryptedAiBusinessError(request, applicationError, "stream");
       const encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
         Buffer.from(
-          JSON.stringify({
-            code: applicationError.code,
-            message: this.localizePublicErrorMessage(applicationError, request),
-            data: null,
-            requestId,
-          }),
+          JSON.stringify(
+            this.buildEncryptedAiErrorPayload(
+              request,
+              applicationError,
+              requestId,
+            ),
+          ),
           "utf8",
         ),
         keyId,
@@ -4951,14 +4958,95 @@ export class BackendApplication {
     );
   }
 
+  private buildEncryptedAiErrorPayload(
+    request: HttpRequest,
+    error: ApplicationError,
+    requestId: string,
+  ): {
+    code: string;
+    message: string;
+    data: unknown;
+    requestId: string;
+  } {
+    return {
+      code: error.code,
+      message: this.localizePublicErrorMessage(error, request),
+      data: this.shouldExposeLocalAiDebugFields(request)
+        ? this.buildLocalAiErrorDebugDetails(error)
+        : null,
+      requestId,
+    };
+  }
+
+  private buildLocalAiErrorDebugDetails(
+    error: ApplicationError,
+  ): Record<string, unknown> {
+    const detailObject =
+      error.details &&
+      typeof error.details === "object" &&
+      !Array.isArray(error.details)
+        ? (error.details as Record<string, unknown>)
+        : {};
+    return {
+      statusCode: error.statusCode,
+      code: error.code,
+      provider: detailObject.provider,
+      providerStatusCode: detailObject.statusCode,
+      providerErrorCode: detailObject.errorCode,
+      providerErrorType: detailObject.errorType,
+      providerRequestId: detailObject.providerRequestId,
+      upstreamReason: detailObject.reason,
+      upstreamCause: detailObject.cause,
+      timeoutMs: detailObject.timeoutMs,
+      detailsPreview: previewAppLogValue(error.details),
+    };
+  }
+
   private shouldExposeLocalAiDebugFields(request: HttpRequest): boolean {
+    if (this.isOnlineOrProductionRuntime()) {
+      return false;
+    }
     const host =
       getHeader(request.headers, "x-forwarded-host") ??
       getHeader(request.headers, "host") ??
       "";
     return (
+      this.isLocalOrDevRuntime() ||
       /(?:^|:\/\/)(?:127\.0\.0\.1|localhost)(?::\d+)?$/i.test(host) ||
       /(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(host)
+    );
+  }
+
+  private isOnlineOrProductionRuntime(): boolean {
+    const appEnv = String(process.env.APP_ENV ?? "")
+      .trim()
+      .toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV ?? "")
+      .trim()
+      .toLowerCase();
+    if (appEnv === "online" || appEnv === "prod" || appEnv === "production") {
+      return true;
+    }
+    return !appEnv && nodeEnv === "production";
+  }
+
+  private isLocalOrDevRuntime(): boolean {
+    const appEnv = String(process.env.APP_ENV ?? "")
+      .trim()
+      .toLowerCase();
+    const nodeEnv = String(process.env.NODE_ENV ?? "")
+      .trim()
+      .toLowerCase();
+    if (this.isOnlineOrProductionRuntime()) {
+      return false;
+    }
+    return (
+      appEnv === "dev" ||
+      appEnv === "development" ||
+      appEnv === "local" ||
+      appEnv === "test" ||
+      nodeEnv === "development" ||
+      nodeEnv === "test"
     );
   }
 

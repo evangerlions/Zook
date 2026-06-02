@@ -3391,6 +3391,92 @@ test("ai_novel stream errors log upstream and encrypted business error details",
   );
 });
 
+test("ai_novel upstream auth failures return refined code with local debug details", async () => {
+  const requestId = "req_ai_auth_debug_probe";
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new ApplicationError(
+        502,
+        "LLM_PROVIDER_REQUEST_FAILED",
+        "Incorrect API key provided.",
+        {
+          provider: "bailian",
+          statusCode: 401,
+          errorCode: "invalid_api_key",
+          errorType: "invalid_request_error",
+          providerRequestId: "dashscope_auth_req_001",
+        },
+      );
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      throw new Error("stream should not be called");
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "dev";
+  let response: Awaited<ReturnType<typeof runtime.app.handle>> | undefined;
+  try {
+    response = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/ai_novel/ai/chat-completions",
+      requestId,
+      headers: {
+        authorization: `Bearer ${token}`,
+        "X-App-Id": "ai_novel",
+        "x-app-locale": "zh-CN",
+      },
+      body: encryptAiPayload(
+        {
+          scene_key: "chat_compaction",
+          messages: [
+            {
+              role: "user",
+              content: "hello",
+            },
+          ],
+        },
+        aiKey,
+      ),
+    });
+  } finally {
+    if (previousAppEnv === undefined) {
+      delete process.env.APP_ENV;
+    } else {
+      process.env.APP_ENV = previousAppEnv;
+    }
+  }
+
+  assert.ok(response);
+  assert.equal(response.statusCode, 200);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
+  assert.equal(decrypted.code, "AI_UPSTREAM_AUTH_FAILED");
+  assert.equal(decrypted.message, "AI 服务暂不可用，请稍后重试。");
+  const data = decrypted.data as Record<string, unknown>;
+  assert.equal(data.provider, "bailian");
+  assert.equal(data.providerStatusCode, 401);
+  assert.equal(data.providerErrorCode, "invalid_api_key");
+  assert.equal(data.providerErrorType, "invalid_request_error");
+  assert.equal(data.providerRequestId, "dashscope_auth_req_001");
+  assert.match(String(data.detailsPreview), /dashscope_auth_req_001/);
+
+  const upstreamLog = runtime.logger.records.find(
+    (entry) => entry.message === "ai_novel upstream request failed",
+  );
+  assert.ok(upstreamLog);
+  assert.equal(upstreamLog.requestId, requestId);
+  assert.equal(upstreamLog.mappedCode, "AI_UPSTREAM_AUTH_FAILED");
+  assert.equal(upstreamLog.providerErrorCode, "invalid_api_key");
+});
+
 test("ai_novel embeddings route resolves scene_key to embedding scene route selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
@@ -3722,7 +3808,7 @@ test("ai_novel routes fail when scene route mapping is missing", async () => {
   assert.equal(response.statusCode, 200);
   assert.equal(
     decryptAiPayload(response.body as Record<string, unknown>, aiKey).code,
-    "AI_UPSTREAM_BAD_GATEWAY",
+    "AI_UPSTREAM_CONFIG_INVALID",
   );
 });
 

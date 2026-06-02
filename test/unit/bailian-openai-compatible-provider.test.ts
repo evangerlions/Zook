@@ -532,6 +532,8 @@ test("bailian provider turns HTTP failures into provider request errors", async 
     fetchImplementation: async () =>
       createJsonResponse(
         {
+          id: "chatcmpl-error-id",
+          request_id: "provider-chat-request-id",
           error: {
             message: "upstream failed",
             code: "BadRequest",
@@ -543,10 +545,49 @@ test("bailian provider turns HTTP failures into provider request errors", async 
 
   await assert.rejects(
     async () => provider.complete(createResolvedRequest()),
-    (error: unknown) =>
-      error instanceof Error &&
-      "code" in error &&
-      error.code === "LLM_PROVIDER_REQUEST_FAILED",
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.ok("code" in error);
+      assert.equal(error.code, "LLM_PROVIDER_REQUEST_FAILED");
+      assert.ok("details" in error);
+      assert.equal(
+        (error.details as Record<string, unknown>).providerRequestId,
+        "provider-chat-request-id",
+      );
+      return true;
+    },
+  );
+});
+
+test("bailian provider keeps provider request id on embedding HTTP failures", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createJsonResponse(
+        {
+          id: "embedding-error-id",
+          request_id: "provider-embedding-request-id",
+          error: {
+            message: "embedding upstream failed",
+            code: "BadRequest",
+          },
+        },
+        400,
+      ),
+  });
+
+  await assert.rejects(
+    async () => provider.embed(createResolvedEmbeddingRequest()),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.ok("code" in error);
+      assert.equal(error.code, "LLM_PROVIDER_REQUEST_FAILED");
+      assert.ok("details" in error);
+      assert.equal(
+        (error.details as Record<string, unknown>).providerRequestId,
+        "provider-embedding-request-id",
+      );
+      return true;
+    },
   );
 });
 
