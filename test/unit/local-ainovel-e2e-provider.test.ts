@@ -130,11 +130,7 @@ test("local AINovel E2E mode uses default scene routing without stored admin con
   process.env.NODE_ENV = "development";
 
   try {
-    const service = new AppAiRoutingConfigService({
-      async getValue() {
-        throw new Error("stored config should not be read in local E2E mode");
-      },
-    } as never);
+    const service = new AppAiRoutingConfigService();
 
     const routeKey = await service.resolveSceneRouteKey(
       "ai_novel",

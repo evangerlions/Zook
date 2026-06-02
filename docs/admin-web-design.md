@@ -37,7 +37,7 @@ Admin Web
 └── Main Content
     ├── /apps   -> App 总控页
     ├── /config -> App JSON 配置页
-    ├── /ai-routing -> AINovel AI Routing RAW JSON 配置页
+    ├── /ai-routing -> AINovel AI Routing 硬编码路由只读页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
 ```
@@ -113,13 +113,13 @@ admin.delivery_config
 
 ### 4.4 AINovel AI Routing 页
 
-AI Routing 页挂在 `ai_novel` 工作区下，当前只提供 RAW JSON 编辑能力。
+AI Routing 页挂在 `ai_novel` 工作区下，当前只展示 Zook 代码硬编码的只读路由表，不再作为运行时配置来源。
 
 交互原则：
 
 1. 只在当前选中的 App 是 `ai_novel` 时展示
-2. 直接编辑 `ai_novel.model_routing`
-3. 支持 JSON 预览、版本历史、恢复
+2. 只读展示硬编码的 scene-first routing JSON
+3. 不再支持保存、版本历史、恢复
 4. 不在这页编辑 `provider / providerModel`，那部分仍归 `common.llm_service`
 
 ### 4.5 LLM 页

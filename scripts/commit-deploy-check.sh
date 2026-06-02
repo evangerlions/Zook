@@ -9,6 +9,42 @@ if [[ "${ZOOK_SKIP_COMMIT_DEPLOY_CHECK:-0}" == "1" ]]; then
   exit 0
 fi
 
+is_truthy() {
+  case "${1:-}" in
+    1|true|TRUE|yes|YES|on|ON)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ensure_docker_available() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "[commit-check] Docker CLI is not installed or not on PATH." >&2
+    return 1
+  fi
+
+  if ! docker info >/dev/null 2>&1; then
+    echo "[commit-check] Docker daemon is not reachable." >&2
+    return 1
+  fi
+
+  return 0
+}
+
+if ! ensure_docker_available; then
+  if is_truthy "${ZOOK_COMMIT_CHECK_REQUIRE_DOCKER:-0}"; then
+    echo "[commit-check] failing because ZOOK_COMMIT_CHECK_REQUIRE_DOCKER=1" >&2
+    exit 1
+  fi
+
+  echo "[commit-check] skipped local deployment verification because Docker is unavailable." >&2
+  echo "[commit-check] start Docker or set ZOOK_COMMIT_CHECK_REQUIRE_DOCKER=1 to make this a hard failure." >&2
+  exit 0
+fi
+
 resolve_env_file() {
   if [[ -n "${ZOOK_COMMIT_CHECK_ENV_FILE:-}" ]]; then
     printf '%s\n' "${ZOOK_COMMIT_CHECK_ENV_FILE}"

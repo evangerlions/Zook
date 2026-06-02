@@ -46,7 +46,6 @@ import { VersionedAppConfigService } from "./services/versioned-app-config.servi
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import {
   AppAiRoutingConfigService,
-  AI_NOVEL_APP_ID,
 } from "./services/app-ai-routing-config.service.ts";
 import {
   AppLogSecretService,
@@ -5687,9 +5686,7 @@ export async function createApplication(
     kvManager,
   );
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
-  const appAiRoutingConfigService = new AppAiRoutingConfigService(
-    appConfigService,
-  );
+  const appAiRoutingConfigService = new AppAiRoutingConfigService();
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
@@ -5755,17 +5752,11 @@ export async function createApplication(
       );
     const initializedGetuiGyConfig =
       await commonGetuiGyConfigService.initializeDefaultConfig();
-    const initializedAiRoutingConfig = (await database.listAppIds()).includes(
-      AI_NOVEL_APP_ID,
-    )
-      ? await appAiRoutingConfigService.initializeAppConfig(AI_NOVEL_APP_ID)
-      : false;
     if (
       initializedCommonLlmConfig ||
       initializedAppLogSecrets ||
       initializedRemoteLogPullConfigs ||
-      initializedGetuiGyConfig ||
-      initializedAiRoutingConfig
+      initializedGetuiGyConfig
     ) {
       await managedStateStore.save(database);
     }

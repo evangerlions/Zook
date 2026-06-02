@@ -300,7 +300,7 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
   assert.match(configResponse.body.data.rawJson, /featureFlags/);
 });
 
-test("admin ai routing APIs expose default config and support revisions", async () => {
+test("admin ai routing API exposes hardcoded default config", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
@@ -326,33 +326,21 @@ test("admin ai routing APIs expose default config and support revisions", async 
     getResponse.body.data.rawJson,
     /"free": "ainovel-free-creative"/,
   );
-
-  const updatedConfig = JSON.parse(
-    getResponse.body.data.rawJson,
-  ) as Record<string, unknown>;
-  const scenes = updatedConfig.scenes as Record<string, unknown>;
-  const writeTurn = scenes.write_turn as {
-    routes: Record<string, string>;
-  };
-  writeTurn.routes.free = "ainovel-plus-creative";
-  const updatedRawJson = JSON.stringify(updatedConfig, null, 2);
+  assert.equal(getResponse.body.data.desc, "hardcoded");
+  assert.equal(getResponse.body.data.revisions.length, 0);
 
   const updateResponse = await runtime.app.handle({
     method: "PUT",
     path: "/api/v1/admin/apps/ai_novel/ai-routing",
     headers,
     body: {
-      rawJson: updatedRawJson,
-      desc: "switch write turn default route",
+      rawJson: getResponse.body.data.rawJson,
+      desc: "ignored update",
     },
   });
 
-  assert.equal(updateResponse.statusCode, 200);
-  assert.match(
-    updateResponse.body.data.rawJson,
-    /"free": "ainovel-plus-creative"/,
-  );
-  assert.equal(updateResponse.body.data.revisions.length, 2);
+  assert.equal(updateResponse.statusCode, 400);
+  assert.equal(updateResponse.body.code, "REQ_INVALID_BODY");
 
   const revisionResponse = await runtime.app.handle({
     method: "GET",
@@ -360,11 +348,8 @@ test("admin ai routing APIs expose default config and support revisions", async 
     headers,
   });
 
-  assert.equal(revisionResponse.statusCode, 200);
-  assert.match(
-    revisionResponse.body.data.rawJson,
-    /"free": "ainovel-free-creative"/,
-  );
+  assert.equal(revisionResponse.statusCode, 404);
+  assert.equal(revisionResponse.body.code, "REQ_INVALID_QUERY");
 
   const restoreResponse = await runtime.app.handle({
     method: "POST",
@@ -375,11 +360,8 @@ test("admin ai routing APIs expose default config and support revisions", async 
     },
   });
 
-  assert.equal(restoreResponse.statusCode, 200);
-  assert.match(
-    restoreResponse.body.data.rawJson,
-    /"free": "ainovel-free-creative"/,
-  );
+  assert.equal(restoreResponse.statusCode, 404);
+  assert.equal(restoreResponse.body.code, "REQ_INVALID_QUERY");
 });
 
 test("public app config API exposes admin delivery config for the requested app", async () => {

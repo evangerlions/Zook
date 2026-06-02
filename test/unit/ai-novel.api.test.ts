@@ -3687,7 +3687,7 @@ test("ai_novel routes reject unknown encryption keys before entering AI flow", a
   assert.equal(response.body.code, "AI_UNKNOWN_KEY_ID");
 });
 
-test("ai_novel routes can override scene routing from admin config", async () => {
+test("ai_novel routes ignore admin scene routing overrides", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -3696,8 +3696,9 @@ test("ai_novel routes can override scene routing from admin config", async () =>
 
   const config = runtime.services.appAiRoutingConfigService.createDefaultConfig();
   config.scenes.chapter_summary.routes.free = "ainovel-plus-creative";
-  await runtime.services.appAiRoutingConfigService.updateConfig(
+  await runtime.services.appConfigService.setValue(
     "ai_novel",
+    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
     JSON.stringify(config),
     "test-override",
   );
@@ -3729,11 +3730,11 @@ test("ai_novel routes can override scene routing from admin config", async () =>
   );
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.sceneRouteKey, "ainovel-plus-creative");
+  assert.equal(completion.sceneRouteKey, "ainovel-lowcost-structured");
   assert.equal(completion.providerModel, "qwen3.6-plus");
 });
 
-test("ai_novel rejects stale tier-first routing config", async () => {
+test("ai_novel runtime ignores stale admin routing config", async () => {
   const { runtime } = await createAiNovelRuntime();
   await runtime.services.appConfigService.setValue(
     "ai_novel",
@@ -3744,7 +3745,7 @@ test("ai_novel rejects stale tier-first routing config", async () => {
         tiers: {
           free: {
             chat: {
-              kickoff_turn: "ainovel-plus-reasoning",
+              kickoff_turn: "legacy-admin-route",
             },
             embedding: {},
           },
@@ -3756,16 +3757,17 @@ test("ai_novel rejects stale tier-first routing config", async () => {
     "test-stale-route",
   );
 
-  await assert.rejects(
-    () => runtime.services.appAiRoutingConfigService.getCurrentConfig("ai_novel"),
-    (error) =>
-      error instanceof ApplicationError &&
-      error.code === "REQ_INVALID_BODY" &&
-      /AI routing scenes must be a JSON object/.test(error.message),
+  const config =
+    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
+      "ai_novel",
+    );
+  assert.equal(
+    config.scenes.kickoff_turn?.routes.free,
+    "ainovel-plus-reasoning",
   );
 });
 
-test("ai_novel routes fail when scene route mapping is missing", async () => {
+test("ai_novel routes ignore missing admin route mapping", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -3806,10 +3808,11 @@ test("ai_novel routes fail when scene route mapping is missing", async () => {
   });
 
   assert.equal(response.statusCode, 200);
-  assert.equal(
-    decryptAiPayload(response.body as Record<string, unknown>, aiKey).code,
-    "AI_UPSTREAM_CONFIG_INVALID",
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
   );
+  assert.equal(decrypted.code, "OK");
 });
 
 test("ai_novel chat completions rejects keyword-sensitive user input before LLM", async () => {
