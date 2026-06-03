@@ -1293,6 +1293,10 @@ export class AiNovelLlmService {
           continue;
         }
 
+        if (event.type === "tool_call_delta") {
+          continue;
+        }
+
         if (event.type === "tool_call") {
           yield {
             type: "tool_call",
@@ -1312,17 +1316,19 @@ export class AiNovelLlmService {
           continue;
         }
 
-        finishReason = event.finishReason;
-        yield {
-          type: "done",
-          completion: {
-            sceneRouteKey: input.sceneRouteKey,
-            content: assistantText,
-            ...(reasoningText ? { reasoningText } : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(usage ? { usage } : {}),
-        };
+        if (event.type === "done") {
+          finishReason = event.finishReason;
+          yield {
+            type: "done",
+            completion: {
+              sceneRouteKey: input.sceneRouteKey,
+              content: assistantText,
+              ...(reasoningText ? { reasoningText } : {}),
+              ...(finishReason ? { finishReason } : {}),
+            },
+            ...(usage ? { usage } : {}),
+          };
+        }
       }
     } catch (error) {
       throw this.mapAndLogUpstreamError(error, {
