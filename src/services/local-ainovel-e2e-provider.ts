@@ -12,6 +12,7 @@ import type {
 } from "./llm-manager.ts";
 
 export const AINOVEL_E2E_LLM_PROVIDER_ENV = "AINOVEL_E2E_LLM_PROVIDER";
+export const AINOVEL_E2E_STREAM_DELAY_MS_ENV = "AINOVEL_E2E_STREAM_DELAY_MS";
 
 export function shouldUseLocalAiNovelE2eProvider(env = process.env): boolean {
   if (!isTruthy(env[AINOVEL_E2E_LLM_PROVIDER_ENV])) {
@@ -44,6 +45,9 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
   ): AsyncIterable<LLMStreamEvent> {
     const toolNames = toolNamesFromProviderOptions(request.providerOptions);
     if (isKickoffToolSet(toolNames)) {
+      yield this.reasoningDelta(
+        "本地 E2E 推理：整理 kickoff 元数据并确认首章规划入口。",
+      );
       yield {
         type: "content_delta",
         text: "这个方向已经可以开书了，我先把开局合同整理好。",
@@ -63,6 +67,13 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
 
     const toolName = firstSubmitToolName(request.providerOptions);
     if (toolName) {
+      yield this.reasoningDelta(
+        `本地 E2E 推理：读取上下文后提交 ${toolName} 结构化结果。`,
+      );
+      yield* this.toolArgumentDeltas(
+        toolName,
+        forcedStructuredToolPayload(toolName),
+      );
       yield {
         type: "tool_call",
         toolCall: this.toolCall(
@@ -76,16 +87,33 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     }
 
     if (toolNames.includes("write_draft")) {
+      if (!hasDraftToolRetryMessage(request.messages)) {
+        yield this.reasoningDelta(
+          "本地 E2E 推理：先输出一段普通草稿观察，等待代理要求写入章节工具。",
+        );
+        yield {
+          type: "content_delta",
+          text: "沈烬在边荒雪线里听见黑骨灯轻响，追兵的火把已经压到坡下。",
+        };
+        yield this.usage();
+        yield { type: "done", finishReason: "stop" };
+        return;
+      }
+      yield this.reasoningDelta(
+        "本地 E2E 推理：结合上一轮工具结果和隐藏推理上下文生成章节草稿。",
+      );
+      const draftPayload = {
+        title: "第一章 边荒残火",
+        content: [
+          "雨夜之后，沈烬被逐出山门，拖着断裂的灵脉跌进边荒。",
+          "追杀者沿着血迹逼近时，师父留下的黑骨灯第一次亮起。",
+          "灯中残魂只给了他一个选择：吞下失控灵火，活下来，再回去查清秘卷冤案。",
+        ].join("\n\n"),
+      };
+      yield* this.toolArgumentDeltas("write_draft", draftPayload);
       yield {
         type: "tool_call",
-        toolCall: this.toolCall("write_draft", {
-          title: "第一章 边荒残火",
-          content: [
-            "雨夜之后，沈烬被逐出山门，拖着断裂的灵脉跌进边荒。",
-            "追杀者沿着血迹逼近时，师父留下的黑骨灯第一次亮起。",
-            "灯中残魂只给了他一个选择：吞下失控灵火，活下来，再回去查清秘卷冤案。",
-          ].join("\n\n"),
-        }),
+        toolCall: this.toolCall("write_draft", draftPayload),
       };
       yield this.usage();
       yield { type: "done", finishReason: "tool_calls" };
@@ -93,6 +121,7 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     }
 
     const text = this.defaultText(request);
+    yield this.reasoningDelta("本地 E2E 推理：生成普通文本回复。");
     yield { type: "content_delta", text };
     yield this.usage();
     yield { type: "done", finishReason: "stop" };
@@ -133,6 +162,30 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     };
   }
 
+  private async *toolArgumentDeltas(
+    toolName: string,
+    payload: Record<string, unknown>,
+  ): AsyncIterable<LLMStreamEvent> {
+    const streamDelayMs = localE2eStreamDelayMs();
+    const toolArgumentPath = toolArgumentPathForProgress(toolName);
+    const readableValue = toolArgumentPath ? payload[toolArgumentPath] : null;
+    const text =
+      typeof readableValue === "string"
+        ? readableValue
+        : JSON.stringify(payload);
+    const size = Math.max(24, Math.ceil(text.length / 3));
+    for (let offset = 0; offset < text.length; offset += size) {
+      yield {
+        type: "tool_call_delta",
+        text: text.slice(offset, offset + size),
+        toolCallId: `local-${toolName}`,
+        toolCallName: toolName,
+        toolArgumentPath,
+      };
+      await new Promise((resolve) => setTimeout(resolve, streamDelayMs));
+    }
+  }
+
   private toolCall(name: string, input: Record<string, unknown>): LLMToolCall {
     return {
       id: `local_e2e_${name}`,
@@ -152,6 +205,13 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     };
   }
 
+  private reasoningDelta(text: string): LLMStreamEvent {
+    return {
+      type: "reasoning_delta",
+      text,
+    };
+  }
+
   private defaultText(request: ResolvedLLMCompletionRequest): string {
     const latestUser = [...request.messages]
       .reverse()
@@ -163,12 +223,31 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
   }
 }
 
+function hasDraftToolRetryMessage(messages: ResolvedLLMCompletionRequest["messages"]): boolean {
+  return messages.some(
+    (message) =>
+      message.role === "user" &&
+      message.content.includes("The previous assistant turn did not call write_draft"),
+  );
+}
+
 function isTruthy(value: string | undefined): boolean {
   return ["1", "true", "yes", "on"].includes(
     String(value ?? "")
       .trim()
       .toLowerCase(),
   );
+}
+
+function localE2eStreamDelayMs(env = process.env): number {
+  const parsed = Number.parseInt(
+    String(env[AINOVEL_E2E_STREAM_DELAY_MS_ENV] ?? ""),
+    10,
+  );
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 20;
+  }
+  return Math.min(parsed, 2000);
 }
 
 function isLocalRuntime(env: NodeJS.ProcessEnv): boolean {
@@ -358,11 +437,30 @@ function forcedStructuredToolPayload(
   }
   if (toolName === "submit_next_chapter_brief") {
     return {
-      brief: "下一章继续推进边荒追杀压力，强化黑骨灯反噬代价。",
+      brief: "本章继续推进边荒追杀压力，强化黑骨灯反噬代价。",
       required: { chapterGoal: "推进边荒追杀压力" },
       strategy: { mustCover: ["追兵压迫", "残魂反噬"] },
       contextRefs: {},
     };
   }
   return { ok: true };
+}
+
+function toolArgumentPathForProgress(
+  toolName: string | undefined,
+): string | undefined {
+  switch (toolName) {
+    case "write_draft":
+      return "content";
+    case "submit_next_chapter_brief":
+      return "brief";
+    case "submit_chapter_summary":
+      return "summary";
+    case "submit_chapter_review":
+      return "summary";
+    case "submit_snapshot":
+      return "snapshot";
+    default:
+      return undefined;
+  }
 }

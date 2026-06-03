@@ -3,6 +3,7 @@ import type {
   LLMMessage,
   LLMManager,
   LLMCompletionResult,
+  LLMStreamEvent,
   LLMToolDefinition,
   LLMToolCall,
 } from "../../services/llm-manager.ts";
@@ -613,6 +614,7 @@ interface AiNovelUsagePayload {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  reasoningTokens?: number;
   contextWindowTokens?: number;
   contextUsedRatio?: number;
 }
@@ -654,6 +656,18 @@ export type AiNovelChatStreamChunk =
         id: string;
         name: string;
         input: Record<string, unknown>;
+      };
+    }
+  | {
+      type: "action.workflow_progress";
+      payload: {
+        workflowKey: string;
+        stepKey: string;
+        subStepKey?: string;
+        status: "pending" | "running" | "completed" | "failed";
+        deltaText?: string;
+        snapshotText?: string;
+        processedTokens?: number;
       };
     }
   | {
@@ -795,6 +809,9 @@ export class AiNovelLlmService {
           provider: result.provider,
           providerModel: result.providerModel,
           content: completionContent,
+          ...(result.reasoningText
+            ? { reasoningText: result.reasoningText }
+            : {}),
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
           ...(result.providerRequestId
             ? { providerRequestId: result.providerRequestId }
@@ -1142,6 +1159,17 @@ export class AiNovelLlmService {
           continue;
         }
 
+        if (event.type === "tool_call_delta") {
+          const progress = this.workflowProgressForToolDelta(
+            input.profile,
+            event,
+          );
+          if (progress) {
+            yield progress;
+          }
+          continue;
+        }
+
         if (event.type === "tool_call") {
           yield {
             type: "tool_call",
@@ -1304,6 +1332,31 @@ export class AiNovelLlmService {
         sceneRouteKey: input.sceneRouteKey,
       });
     }
+  }
+
+  private workflowProgressForToolDelta(
+    profile: AiNovelPromptProfile,
+    event: Extract<LLMStreamEvent, { type: "tool_call_delta" }>,
+  ): AiNovelChatStreamChunk | undefined {
+    const mapping = workflowProgressMapping(profile, event.toolCallName);
+    if (!mapping) {
+      return undefined;
+    }
+    const deltaText = readableWorkflowProgressDeltaText(event);
+    if (!deltaText) {
+      return undefined;
+    }
+    return {
+      type: "action.workflow_progress",
+      payload: {
+        workflowKey: mapping.workflowKey,
+        stepKey: mapping.stepKey,
+        subStepKey: mapping.subStepKey,
+        status: "running",
+        deltaText,
+        processedTokens: estimateWorkflowProgressTokens(deltaText),
+      },
+    };
   }
 
   private buildKickoffMessages(
@@ -1743,6 +1796,9 @@ export class AiNovelLlmService {
 
       const toolCallId = this.readOptionalString(record.toolCallId);
       const toolCalls = this.normalizeToolCalls(record.toolCalls);
+      const reasoningContent =
+        this.readOptionalString(record.reasoningContent) ??
+        this.readOptionalString(record.reasoning_content);
       if (role === "tool") {
         if (!toolCallId) {
           badRequest("REQ_INVALID_BODY", "tool messages require toolCallId.");
@@ -1753,10 +1809,14 @@ export class AiNovelLlmService {
             "tool message content must be a non-empty string.",
           );
         }
-      } else if (!content.trim() && toolCalls.length === 0) {
+      } else if (
+        !content.trim() &&
+        toolCalls.length === 0 &&
+        !(role === "assistant" && reasoningContent)
+      ) {
         badRequest(
           "REQ_INVALID_BODY",
-          "assistant/system/user messages need content or toolCalls.",
+          "assistant/system/user messages need content, toolCalls, or assistant reasoningContent.",
         );
       }
 
@@ -1765,6 +1825,9 @@ export class AiNovelLlmService {
         content,
         ...(toolCallId ? { toolCallId } : {}),
         ...(toolCalls.length > 0 ? { toolCalls } : {}),
+        ...(role === "assistant" && reasoningContent
+          ? { reasoningContent }
+          : {}),
       };
     });
   }
@@ -2059,12 +2122,7 @@ function classifyProviderRequestFailure(error: ApplicationError): {
   }
 
   if (
-    includesAny(searchText, [
-      "balance",
-      "billing",
-      "insufficient",
-      "quota",
-    ])
+    includesAny(searchText, ["balance", "billing", "insufficient", "quota"])
   ) {
     return { code: "AI_UPSTREAM_QUOTA_EXHAUSTED", statusCode: 503 };
   }
@@ -2074,6 +2132,201 @@ function classifyProviderRequestFailure(error: ApplicationError): {
 
 function includesAny(value: string, needles: string[]): boolean {
   return needles.some((needle) => value.includes(needle));
+}
+
+function workflowProgressMapping(
+  profile: AiNovelPromptProfile,
+  toolName: string | undefined,
+):
+  | {
+      workflowKey: string;
+      stepKey: string;
+      subStepKey: string;
+    }
+  | undefined {
+  if (profile === "chapter_draft" && toolName === "write_draft") {
+    return {
+      workflowKey: "chapter_generation",
+      stepKey: "draft",
+      subStepKey: "write_draft",
+    };
+  }
+  if (
+    profile === "next_chapter_brief" &&
+    toolName === "submit_next_chapter_brief"
+  ) {
+    return {
+      workflowKey: "chapter_advance",
+      stepKey: "plan",
+      subStepKey: "next_chapter_brief",
+    };
+  }
+  if (
+    profile === "chapter_draft_review" &&
+    toolName === "submit_chapter_review"
+  ) {
+    return {
+      workflowKey: "chapter_generation",
+      stepKey: "draft",
+      subStepKey: "draft_review",
+    };
+  }
+  if (profile === "chapter_summary" && toolName === "submit_chapter_summary") {
+    return {
+      workflowKey: "chapter_advance",
+      stepKey: "plan",
+      subStepKey: "chapter_summary",
+    };
+  }
+  if (profile === "snapshot_generation" && toolName === "submit_snapshot") {
+    return {
+      workflowKey: "chapter_advance",
+      stepKey: "plan",
+      subStepKey: "snapshot_generation",
+    };
+  }
+  return undefined;
+}
+
+function estimateWorkflowProgressTokens(text: string): number {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return 0;
+  }
+  const cjkChars = [...trimmed].filter((char) =>
+    /[\u3400-\u9fff\uf900-\ufaff]/u.test(char),
+  ).length;
+  const nonCjkChars = Math.max(0, trimmed.length - cjkChars);
+  return Math.max(1, Math.ceil(cjkChars + nonCjkChars / 4));
+}
+
+function readableWorkflowProgressDeltaText(
+  event: Extract<LLMStreamEvent, { type: "tool_call_delta" }>,
+): string | undefined {
+  const path =
+    event.toolArgumentPath ?? workflowToolArgumentPath(event.toolCallName);
+  if (!path) {
+    return event.text;
+  }
+  if (event.toolArgumentPath) {
+    return event.text.trim().length > 0 ? event.text : undefined;
+  }
+
+  const parsed = parseJsonObject(event.text);
+  const parsedValue = parsed ? parsed[path] : undefined;
+  if (typeof parsedValue === "string") {
+    return parsedValue;
+  }
+
+  const partialValue = extractTopLevelJsonStringField(event.text, path);
+  return partialValue;
+}
+
+function workflowToolArgumentPath(toolName: string | undefined) {
+  switch (toolName) {
+    case "write_draft":
+      return "content";
+    case "submit_next_chapter_brief":
+      return "brief";
+    case "submit_chapter_summary":
+    case "submit_chapter_review":
+      return "summary";
+    case "submit_snapshot":
+      return "snapshot";
+    default:
+      return undefined;
+  }
+}
+
+function parseJsonObject(value: string): Record<string, unknown> | undefined {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function extractTopLevelJsonStringField(
+  jsonFragment: string,
+  fieldName: string,
+): string | undefined {
+  const propertyToken = JSON.stringify(fieldName);
+  const keyIndex = jsonFragment.indexOf(propertyToken);
+  if (keyIndex < 0) {
+    return undefined;
+  }
+
+  let index = keyIndex + propertyToken.length;
+  while (/\s/.test(jsonFragment[index] ?? "")) {
+    index += 1;
+  }
+  if (jsonFragment[index] !== ":") {
+    return undefined;
+  }
+  index += 1;
+  while (/\s/.test(jsonFragment[index] ?? "")) {
+    index += 1;
+  }
+  if (jsonFragment[index] !== '"') {
+    return undefined;
+  }
+
+  let value = "";
+  index += 1;
+  while (index < jsonFragment.length) {
+    const char = jsonFragment[index];
+    if (char === '"') {
+      return value;
+    }
+    if (char !== "\\") {
+      value += char;
+      index += 1;
+      continue;
+    }
+
+    if (index + 1 >= jsonFragment.length) {
+      return value;
+    }
+    const escapeChar = jsonFragment[index + 1];
+    if (escapeChar === "u") {
+      const code = jsonFragment.slice(index + 2, index + 6);
+      if (!/^[0-9a-fA-F]{4}$/.test(code)) {
+        return value;
+      }
+      value += String.fromCharCode(Number.parseInt(code, 16));
+      index += 6;
+      continue;
+    }
+
+    value += decodeJsonEscape(escapeChar);
+    index += 2;
+  }
+
+  return value;
+}
+
+function decodeJsonEscape(char: string): string {
+  switch (char) {
+    case '"':
+    case "\\":
+    case "/":
+      return char;
+    case "b":
+      return "\b";
+    case "f":
+      return "\f";
+    case "n":
+      return "\n";
+    case "r":
+      return "\r";
+    case "t":
+      return "\t";
+    default:
+      return "";
+  }
 }
 
 function extractUpstreamErrorDetails(

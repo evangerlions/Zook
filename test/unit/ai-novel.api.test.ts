@@ -104,8 +104,9 @@ async function collectSseEvents(
 function toolNamesFromProviderOptions(
   providerOptions: Record<string, unknown> | undefined,
 ): string[] {
-  return ((providerOptions?.tools as Array<Record<string, unknown>> | undefined) ??
-    []).map((tool) =>
+  return (
+    (providerOptions?.tools as Array<Record<string, unknown>> | undefined) ?? []
+  ).map((tool) =>
     String((tool.function as Record<string, unknown> | undefined)?.name ?? ""),
   );
 }
@@ -448,6 +449,75 @@ test("ai_novel chat completions route resolves scene_key to scene route selectio
     (response.body as Record<string, unknown>).localDebugResponseText,
     JSON.stringify(forcedStructuredToolPayload("submit_chapter_summary")),
   );
+});
+
+test("ai_novel chat completion preserves assistant reasoning context for upstream requests", async () => {
+  let capturedMessages: LLMMessage[] | undefined;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      capturedMessages = request.messages;
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "compacted context",
+        finishReason: "stop",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      throw new Error("chat_compaction should not use stream");
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "chat_compaction",
+        messages: [
+          {
+            role: "assistant",
+            content: "",
+            reasoningContent: "上一轮隐藏推理",
+            toolCalls: [
+              {
+                id: "call_1",
+                name: "submit_context",
+                input: { summary: "旧上下文" },
+              },
+            ],
+          },
+          {
+            role: "tool",
+            toolCallId: "call_1",
+            content: "工具结果",
+          },
+          {
+            role: "user",
+            content: "继续压缩上下文。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(capturedMessages);
+  assert.equal(capturedMessages![0]?.role, "assistant");
+  assert.equal(capturedMessages![0]?.reasoningContent, "上一轮隐藏推理");
+  assert.equal(capturedMessages![0]?.toolCalls?.[0]?.id, "call_1");
 });
 
 test("ai_novel structured workflow scenes use thinking streams with required tool validation", async () => {
@@ -2865,16 +2935,31 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
       ).find((name) => name.startsWith("submit_"));
       assert.ok(toolName);
       if (toolName) {
+        const payload = forcedStructuredToolPayload(toolName);
         yield {
           type: "reasoning_delta",
           text: "整理结构化工作流输出。",
+        };
+        yield {
+          type: "tool_call_delta",
+          text: String(
+            payload.summary ?? payload.brief ?? payload.snapshot ?? "",
+          ),
+          toolCallId: `call_${toolName}_fixed_1`,
+          toolCallName: toolName,
+          toolArgumentPath:
+            toolName === "submit_next_chapter_brief"
+              ? "brief"
+              : toolName === "submit_snapshot"
+                ? "snapshot"
+                : "summary",
         };
         yield {
           type: "tool_call",
           toolCall: {
             id: `call_${toolName}_fixed_1`,
             name: toolName,
-            input: forcedStructuredToolPayload(toolName),
+            input: payload,
           },
         };
         yield {
@@ -2949,8 +3034,14 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   const localDebugRequestBody = (localDebugLlmRequest.requestBody ??
     {}) as Record<string, unknown>;
   assert.equal(localDebugLlmRequest.sceneKey, "chapter_summary");
-  assert.equal(localDebugLlmRequest.sceneRouteKey, "ainovel-lowcost-structured");
-  assert.equal(localDebugRequestBody.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal(
+    localDebugLlmRequest.sceneRouteKey,
+    "ainovel-lowcost-structured",
+  );
+  assert.equal(
+    localDebugRequestBody.sceneRouteKey,
+    "ainovel-lowcost-structured",
+  );
   assert.equal("modelKey" in localDebugRequestBody, false);
   assert.equal(localDebugRequestBody.stream, true);
   assert.deepEqual(
@@ -3028,8 +3119,14 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   const reviewDebugRequestBody = (reviewDebugLlmRequest.requestBody ??
     {}) as Record<string, unknown>;
   assert.equal(reviewDebugLlmRequest.sceneKey, "chapter_draft_review");
-  assert.equal(reviewDebugLlmRequest.sceneRouteKey, "ainovel-lowcost-structured");
-  assert.equal(reviewDebugRequestBody.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal(
+    reviewDebugLlmRequest.sceneRouteKey,
+    "ainovel-lowcost-structured",
+  );
+  assert.equal(
+    reviewDebugRequestBody.sceneRouteKey,
+    "ainovel-lowcost-structured",
+  );
   assert.equal("modelKey" in reviewDebugRequestBody, false);
   assert.equal(reviewDebugRequestBody.stream, true);
   assert.deepEqual(
@@ -3080,11 +3177,23 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   });
   assert.equal(streamResponse.statusCode, 200);
   const streamEvents = await collectSseEvents(streamResponse.streamBody);
-  const error = decryptAiPayload(streamEvents[0], aiKey);
-  assert.equal(error.code, "REQ_INVALID_BODY");
-  assert.equal(error.message, "请求内容不合法，请检查后重试。");
+  const decryptedStreamEvents = streamEvents
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedStreamEvents.map((event) => event.type),
+    ["reasoning_delta", "action.workflow_progress", "tool_call", "done"],
+  );
+  const progress = decryptedStreamEvents[1].payload as Record<string, unknown>;
+  assert.equal(progress.workflowKey, "chapter_advance");
+  assert.equal(progress.stepKey, "plan");
+  assert.equal(progress.subStepKey, "chapter_summary");
+  assert.match(String(progress.deltaText ?? ""), /雨夜事故/);
+  assert.doesNotMatch(String(progress.deltaText ?? ""), /[{}"]/);
+  assert.equal(typeof progress.processedTokens, "number");
+  assert.ok(Number(progress.processedTokens) > 0);
   assert.equal(completeCalls, 0);
-  assert.equal(streamCalls, 2);
+  assert.equal(streamCalls, 3);
 });
 
 test("ai_novel kickoff_turn relays unknown kickoff tool to the client agent", async () => {
@@ -3385,10 +3494,7 @@ test("ai_novel stream errors log upstream and encrypted business error details",
   assert.equal(encryptedLog.path, "/api/v1/ai_novel/ai/chat-completions");
   assert.equal(encryptedLog.transport, "stream");
   assert.equal(encryptedLog.code, "AI_UPSTREAM_BAD_GATEWAY");
-  assert.match(
-    String(encryptedLog.detailsPreview),
-    /dashscope_req_001/,
-  );
+  assert.match(String(encryptedLog.detailsPreview), /dashscope_req_001/);
 });
 
 test("ai_novel upstream auth failures return refined code with local debug details", async () => {
@@ -3522,16 +3628,14 @@ test("ai_novel routes return encrypted business errors after request decryption"
     "ai_novel",
   );
 
-  for (
-    const forbiddenField of [
-      "model",
-      "modelKey",
-      "providerModel",
-      "tier",
-      "routingTier",
-      "modelTier",
-    ]
-  ) {
+  for (const forbiddenField of [
+    "model",
+    "modelKey",
+    "providerModel",
+    "tier",
+    "routingTier",
+    "modelTier",
+  ]) {
     const invalidModelResponse = await runtime.app.handle({
       method: "POST",
       path: "/api/v1/ai_novel/ai/chat-completions",
@@ -3694,7 +3798,8 @@ test("ai_novel routes ignore admin scene routing overrides", async () => {
     "ai_novel",
   );
 
-  const config = runtime.services.appAiRoutingConfigService.createDefaultConfig();
+  const config =
+    runtime.services.appAiRoutingConfigService.createDefaultConfig();
   config.scenes.chapter_summary.routes.free = "ainovel-plus-creative";
   await runtime.services.appConfigService.setValue(
     "ai_novel",
@@ -3890,7 +3995,10 @@ test("ai_novel chat completions rejects keyword-sensitive user input before LLM"
     ),
   });
 
-  const decrypted = decryptAiPayload(response.body as Record<string, unknown>, aiKey);
+  const decrypted = decryptAiPayload(
+    response.body as Record<string, unknown>,
+    aiKey,
+  );
   assert.equal(response.statusCode, 200);
   assert.equal(decrypted.code, "AI_INPUT_CONTENT_SENSITIVE");
   assert.equal(decrypted.message, "这段内容暂时无法发送，请调整后再试。");
