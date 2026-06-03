@@ -40,7 +40,12 @@ export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type ContentSafetyCheckSource = "business" | "admin_test";
-export type ContentSafetyCheckMethod = "disabled" | "keyword" | "llm" | "aliyun" | "failed_open";
+export type ContentSafetyCheckMethod =
+  | "disabled"
+  | "keyword"
+  | "llm"
+  | "aliyun"
+  | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
   | "AI_DECRYPT_FAILED"
@@ -1335,6 +1340,7 @@ export interface AdminLlmSmokeTestResponsePayload {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    reasoningTokens?: number;
   };
 }
 

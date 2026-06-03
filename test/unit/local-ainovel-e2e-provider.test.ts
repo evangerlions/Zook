@@ -84,6 +84,13 @@ test("local AINovel E2E provider streams kickoff update and ready tools", async 
     .filter((event) => event.type === "tool_call")
     .map((event) => event.toolCall.name);
   assert.deepEqual(toolNames, ["update_meta", "ready"]);
+  assert.ok(
+    events.some(
+      (event) =>
+        event.type === "reasoning_delta" &&
+        event.text.includes("本地 E2E 推理"),
+    ),
+  );
 
   const ready = events.find(
     (event) => event.type === "tool_call" && event.toolCall.name === "ready",
@@ -120,6 +127,75 @@ test("local AINovel E2E provider returns a pass decision for content safety", as
     category: "safe",
   });
 });
+
+test("local AINovel E2E provider exercises chapter draft reasoning replay", async () => {
+  const provider = new LocalAiNovelE2eProvider();
+  const firstEvents = await collectStream(
+    provider.stream({
+      model: {
+        provider: "bailian",
+        modelKey: "ainovel-plus-reasoning",
+        providerModel: "qwen3.6-plus",
+      },
+      messages: [{ role: "user", content: "写第一章。" }],
+      providerOptions: chapterDraftProviderOptions(),
+    } satisfies ResolvedLLMCompletionRequest),
+  );
+
+  assert.ok(firstEvents.some((event) => event.type === "reasoning_delta"));
+  assert.ok(firstEvents.some((event) => event.type === "content_delta"));
+  assert.equal(
+    firstEvents.some((event) => event.type === "tool_call"),
+    false,
+  );
+
+  const retryEvents = await collectStream(
+    provider.stream({
+      model: {
+        provider: "bailian",
+        modelKey: "ainovel-plus-reasoning",
+        providerModel: "qwen3.6-plus",
+      },
+      messages: [
+        { role: "user", content: "写第一章。" },
+        {
+          role: "assistant",
+          content: "沈烬听见黑骨灯轻响。",
+          reasoningContent: "上一轮隐藏推理应随 assistant 历史回放。",
+        },
+        {
+          role: "user",
+          content:
+            "The previous assistant turn did not call write_draft. You must now call write_draft.",
+        },
+      ],
+      providerOptions: chapterDraftProviderOptions(),
+    } satisfies ResolvedLLMCompletionRequest),
+  );
+
+  const toolCalls = retryEvents.filter((event) => event.type === "tool_call");
+  assert.equal(toolCalls.length, 1);
+  assert.equal(toolCalls[0].toolCall.name, "write_draft");
+});
+
+async function collectStream<T>(stream: AsyncIterable<T>): Promise<T[]> {
+  const events: T[] = [];
+  for await (const event of stream) {
+    events.push(event);
+  }
+  return events;
+}
+
+function chapterDraftProviderOptions(): Record<string, unknown> {
+  return {
+    tools: [
+      {
+        type: "function",
+        function: { name: "write_draft" },
+      },
+    ],
+  };
+}
 
 test("local AINovel E2E mode uses default scene routing without stored admin config", async () => {
   const previousFlag = process.env.AINOVEL_E2E_LLM_PROVIDER;

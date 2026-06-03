@@ -58,6 +58,9 @@ interface OpenAICompatibleResponsePayload {
     prompt_tokens?: number;
     completion_tokens?: number;
     total_tokens?: number;
+    completion_tokens_details?: {
+      reasoning_tokens?: number;
+    } | null;
   } | null;
   error?: {
     message?: string;
@@ -516,6 +519,9 @@ export class BailianOpenAICompatibleProvider
         role: message.role,
         ...(message.content === undefined ? {} : { content: message.content }),
         ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
+        ...(message.role === "assistant" && message.reasoningContent
+          ? { reasoning_content: message.reasoningContent }
+          : {}),
         ...(Array.isArray(message.toolCalls) && message.toolCalls.length > 0
           ? {
               tool_calls: message.toolCalls.map((toolCall) => ({
@@ -634,10 +640,12 @@ export class BailianOpenAICompatibleProvider
     const promptTokens = usage.prompt_tokens;
     const completionTokens = usage.completion_tokens;
     const totalTokens = usage.total_tokens;
+    const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
     if (
       typeof promptTokens !== "number" ||
       typeof completionTokens !== "number" ||
-      typeof totalTokens !== "number"
+      typeof totalTokens !== "number" ||
+      (reasoningTokens !== undefined && typeof reasoningTokens !== "number")
     ) {
       this.throwProviderResponseInvalid("Provider usage payload is invalid.");
     }
@@ -646,6 +654,7 @@ export class BailianOpenAICompatibleProvider
       promptTokens,
       completionTokens,
       totalTokens,
+      ...(reasoningTokens !== undefined ? { reasoningTokens } : {}),
     };
   }
 

@@ -451,6 +451,75 @@ test("ai_novel chat completions route resolves scene_key to scene route selectio
   );
 });
 
+test("ai_novel chat completion preserves assistant reasoning context for upstream requests", async () => {
+  let capturedMessages: LLMMessage[] | undefined;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      capturedMessages = request.messages;
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "compacted context",
+        finishReason: "stop",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      throw new Error("chat_compaction should not use stream");
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "chat_compaction",
+        messages: [
+          {
+            role: "assistant",
+            content: "",
+            reasoningContent: "上一轮隐藏推理",
+            toolCalls: [
+              {
+                id: "call_1",
+                name: "submit_context",
+                input: { summary: "旧上下文" },
+              },
+            ],
+          },
+          {
+            role: "tool",
+            toolCallId: "call_1",
+            content: "工具结果",
+          },
+          {
+            role: "user",
+            content: "继续压缩上下文。",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(capturedMessages);
+  assert.equal(capturedMessages![0]?.role, "assistant");
+  assert.equal(capturedMessages![0]?.reasoningContent, "上一轮隐藏推理");
+  assert.equal(capturedMessages![0]?.toolCalls?.[0]?.id, "call_1");
+});
+
 test("ai_novel structured workflow scenes use thinking streams with required tool validation", async () => {
   const structuredSceneKeys = [
     "chapter_summary",
@@ -2873,7 +2942,9 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
         };
         yield {
           type: "tool_call_delta",
-          text: String(payload.summary ?? payload.brief ?? payload.snapshot ?? ""),
+          text: String(
+            payload.summary ?? payload.brief ?? payload.snapshot ?? "",
+          ),
           toolCallId: `call_${toolName}_fixed_1`,
           toolCallName: toolName,
           toolArgumentPath:

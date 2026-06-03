@@ -109,6 +109,9 @@ test("bailian provider sends the expected completion request and parses the resp
           prompt_tokens: 12,
           completion_tokens: 4,
           total_tokens: 16,
+          completion_tokens_details: {
+            reasoning_tokens: 3,
+          },
         },
       });
     },
@@ -147,7 +150,63 @@ test("bailian provider sends the expected completion request and parses the resp
     promptTokens: 12,
     completionTokens: 4,
     totalTokens: 16,
+    reasoningTokens: 3,
   });
+});
+
+test("bailian provider sends assistant reasoning content in OpenAI-compatible history", async () => {
+  let capturedInit: RequestInit | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      capturedInit = init;
+      return createJsonResponse({
+        choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+        usage: {
+          prompt_tokens: 30,
+          completion_tokens: 2,
+          total_tokens: 32,
+        },
+      });
+    },
+  });
+
+  await provider.complete({
+    ...createResolvedRequest({
+      enable_thinking: true,
+    }),
+    messages: [
+      {
+        role: "assistant",
+        reasoningContent: "previous hidden chain",
+        toolCalls: [
+          {
+            id: "call_1",
+            name: "lookup",
+            input: { query: "chapter context" },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        toolCallId: "call_1",
+        content: "tool result",
+      },
+      {
+        role: "user",
+        content: "continue",
+      },
+    ],
+  });
+
+  const body = JSON.parse(String(capturedInit?.body)) as Record<
+    string,
+    unknown
+  >;
+  const messages = body.messages as Array<Record<string, unknown>>;
+  assert.equal(messages[0]?.role, "assistant");
+  assert.equal("content" in messages[0]!, false);
+  assert.equal(messages[0]?.reasoning_content, "previous hidden chain");
+  assert.ok(Array.isArray(messages[0]?.tool_calls));
 });
 
 test("bailian provider parses non-streaming completion tool calls", async () => {
@@ -203,7 +262,7 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
         'data: {"choices":[{"delta":{"reasoning_content":"step 1"},"finish_reason":null}]}\n\n',
         'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
         'data: {"choices":[{"delta":{"content":" world"},"finish_reason":"stop"}]}\n\n',
-        'data: {"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30}}\n\n',
+        'data: {"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30,"completion_tokens_details":{"reasoning_tokens":7}}}\n\n',
         "data: [DONE]\n\n",
       ]),
   });
@@ -241,9 +300,10 @@ test("bailian provider parses reasoning, content, usage and done events from SSE
         promptTokens: 10,
         completionTokens: 20,
         totalTokens: 30,
+        reasoningTokens: 7,
       },
       rawEvent:
-        '{"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30}}',
+        '{"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30,"completion_tokens_details":{"reasoning_tokens":7}}}',
     },
     { type: "done", finishReason: "stop" },
   ]);

@@ -12,8 +12,7 @@ import type {
 } from "./llm-manager.ts";
 
 export const AINOVEL_E2E_LLM_PROVIDER_ENV = "AINOVEL_E2E_LLM_PROVIDER";
-export const AINOVEL_E2E_STREAM_DELAY_MS_ENV =
-  "AINOVEL_E2E_STREAM_DELAY_MS";
+export const AINOVEL_E2E_STREAM_DELAY_MS_ENV = "AINOVEL_E2E_STREAM_DELAY_MS";
 
 export function shouldUseLocalAiNovelE2eProvider(env = process.env): boolean {
   if (!isTruthy(env[AINOVEL_E2E_LLM_PROVIDER_ENV])) {
@@ -46,6 +45,9 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
   ): AsyncIterable<LLMStreamEvent> {
     const toolNames = toolNamesFromProviderOptions(request.providerOptions);
     if (isKickoffToolSet(toolNames)) {
+      yield this.reasoningDelta(
+        "本地 E2E 推理：整理 kickoff 元数据并确认首章规划入口。",
+      );
       yield {
         type: "content_delta",
         text: "这个方向已经可以开书了，我先把开局合同整理好。",
@@ -65,6 +67,9 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
 
     const toolName = firstSubmitToolName(request.providerOptions);
     if (toolName) {
+      yield this.reasoningDelta(
+        `本地 E2E 推理：读取上下文后提交 ${toolName} 结构化结果。`,
+      );
       yield* this.toolArgumentDeltas(
         toolName,
         forcedStructuredToolPayload(toolName),
@@ -82,6 +87,21 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     }
 
     if (toolNames.includes("write_draft")) {
+      if (!hasDraftToolRetryMessage(request.messages)) {
+        yield this.reasoningDelta(
+          "本地 E2E 推理：先输出一段普通草稿观察，等待代理要求写入章节工具。",
+        );
+        yield {
+          type: "content_delta",
+          text: "沈烬在边荒雪线里听见黑骨灯轻响，追兵的火把已经压到坡下。",
+        };
+        yield this.usage();
+        yield { type: "done", finishReason: "stop" };
+        return;
+      }
+      yield this.reasoningDelta(
+        "本地 E2E 推理：结合上一轮工具结果和隐藏推理上下文生成章节草稿。",
+      );
       const draftPayload = {
         title: "第一章 边荒残火",
         content: [
@@ -101,6 +121,7 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     }
 
     const text = this.defaultText(request);
+    yield this.reasoningDelta("本地 E2E 推理：生成普通文本回复。");
     yield { type: "content_delta", text };
     yield this.usage();
     yield { type: "done", finishReason: "stop" };
@@ -149,7 +170,9 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     const toolArgumentPath = toolArgumentPathForProgress(toolName);
     const readableValue = toolArgumentPath ? payload[toolArgumentPath] : null;
     const text =
-      typeof readableValue === "string" ? readableValue : JSON.stringify(payload);
+      typeof readableValue === "string"
+        ? readableValue
+        : JSON.stringify(payload);
     const size = Math.max(24, Math.ceil(text.length / 3));
     for (let offset = 0; offset < text.length; offset += size) {
       yield {
@@ -182,6 +205,13 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     };
   }
 
+  private reasoningDelta(text: string): LLMStreamEvent {
+    return {
+      type: "reasoning_delta",
+      text,
+    };
+  }
+
   private defaultText(request: ResolvedLLMCompletionRequest): string {
     const latestUser = [...request.messages]
       .reverse()
@@ -191,6 +221,14 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     }
     return "本地 E2E 已生成稳定响应。";
   }
+}
+
+function hasDraftToolRetryMessage(messages: ResolvedLLMCompletionRequest["messages"]): boolean {
+  return messages.some(
+    (message) =>
+      message.role === "user" &&
+      message.content.includes("The previous assistant turn did not call write_draft"),
+  );
 }
 
 function isTruthy(value: string | undefined): boolean {

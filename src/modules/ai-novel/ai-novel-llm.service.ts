@@ -614,6 +614,7 @@ interface AiNovelUsagePayload {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  reasoningTokens?: number;
   contextWindowTokens?: number;
   contextUsedRatio?: number;
 }
@@ -808,6 +809,9 @@ export class AiNovelLlmService {
           provider: result.provider,
           providerModel: result.providerModel,
           content: completionContent,
+          ...(result.reasoningText
+            ? { reasoningText: result.reasoningText }
+            : {}),
           ...(result.finishReason ? { finishReason: result.finishReason } : {}),
           ...(result.providerRequestId
             ? { providerRequestId: result.providerRequestId }
@@ -1792,6 +1796,9 @@ export class AiNovelLlmService {
 
       const toolCallId = this.readOptionalString(record.toolCallId);
       const toolCalls = this.normalizeToolCalls(record.toolCalls);
+      const reasoningContent =
+        this.readOptionalString(record.reasoningContent) ??
+        this.readOptionalString(record.reasoning_content);
       if (role === "tool") {
         if (!toolCallId) {
           badRequest("REQ_INVALID_BODY", "tool messages require toolCallId.");
@@ -1802,10 +1809,14 @@ export class AiNovelLlmService {
             "tool message content must be a non-empty string.",
           );
         }
-      } else if (!content.trim() && toolCalls.length === 0) {
+      } else if (
+        !content.trim() &&
+        toolCalls.length === 0 &&
+        !(role === "assistant" && reasoningContent)
+      ) {
         badRequest(
           "REQ_INVALID_BODY",
-          "assistant/system/user messages need content or toolCalls.",
+          "assistant/system/user messages need content, toolCalls, or assistant reasoningContent.",
         );
       }
 
@@ -1814,6 +1825,9 @@ export class AiNovelLlmService {
         content,
         ...(toolCallId ? { toolCallId } : {}),
         ...(toolCalls.length > 0 ? { toolCalls } : {}),
+        ...(role === "assistant" && reasoningContent
+          ? { reasoningContent }
+          : {}),
       };
     });
   }

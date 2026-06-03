@@ -24,6 +24,7 @@ export interface LLMMessage {
   content?: string;
   toolCallId?: string;
   toolCalls?: LLMToolCall[];
+  reasoningContent?: string;
 }
 
 export interface LLMCompletionRequest {
@@ -55,6 +56,7 @@ export interface LLMUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  reasoningTokens?: number;
   contextWindowTokens?: number;
   contextUsedRatio?: number;
 }
@@ -434,19 +436,24 @@ export class LLMManager {
 
       const hasToolCalls =
         Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
+      const reasoningContent =
+        message.role === "assistant" && message.reasoningContent?.trim()
+          ? message.reasoningContent.trim()
+          : undefined;
       if (typeof message.content !== "string") {
         badRequest("REQ_INVALID_BODY", "LLM message content must be a string.");
       }
-      if (!hasToolCalls && !message.content.trim()) {
+      if (!hasToolCalls && !reasoningContent && !message.content.trim()) {
         badRequest(
           "REQ_INVALID_BODY",
-          "LLM message content must be a non-empty string.",
+          "LLM message content must be a non-empty string unless assistant reasoningContent or toolCalls are present.",
         );
       }
 
       return {
         role: message.role,
         content: message.content,
+        ...(reasoningContent ? { reasoningContent } : {}),
         ...(hasToolCalls ? { toolCalls: message.toolCalls } : {}),
       };
     });
