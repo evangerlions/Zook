@@ -201,7 +201,8 @@
 5. 解密成功后的业务成功与业务错误都会加密返回
 6. `scene_key` / `sceneKey` 是 AINovel scene-first 入口；客户端不允许直传底层 `model`、`modelKey`、`providerModel`、会员档位或 routing tier 字段。AINovel routing 中的 `ainovel-*` 值是业务 scene route key，不是 common LLM model key
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
-8. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
+8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
+9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
 
 对应核心文件：
 
@@ -211,15 +212,14 @@
 
 ### 2.14 AINovel 产品级 AI Routing 配置
 
-当前已经补齐一版 `ai_novel` 专属的产品级模型路由配置：
+当前 `ai_novel` 专属的产品级模型路由由 Zook 代码硬编码：
 
-1. 配置键为 `ai_novel.model_routing`
-2. 通过 admin 接口读写、记录 revision、支持 restore
-3. 配置结构为 scene-first：`scenes.{scene_key}.kind + scenes.{scene_key}.routes.{free|plus|super_plus}`
-4. 运行时由 Zook 根据已认证用户解析 model routing tier，再用 `scene_key + tier` 选择业务 scene route key；当前 resolver 默认返回 `free`，后续接会员权益时只替换 Zook 侧判定
-5. AINovel 客户端只发送 `scene_key`，不参与免费 / 付费档位判断
-6. `fact_embed / episode_embed / summary_embed / query_memory_embed` 继续走独立 embedding scene route key
-7. `common.llm_service` 默认文档只预填可统计、可冒烟的实际模型 key；AINovel routing 中的 `ainovel-*` 只作为业务 route key 保留
+1. Admin 侧的 `ai_novel.model_routing` 只保留只读展示，不再作为运行时配置来源
+2. 配置结构为 scene-first：`scenes.{scene_key}.kind + scenes.{scene_key}.routes.{free|plus|super_plus}`
+3. 运行时由 Zook 根据已认证用户解析 model routing tier，再用 `scene_key + tier` 选择业务 scene route key；当前 resolver 默认返回 `free`，后续接会员权益时只替换 Zook 侧判定
+4. AINovel 客户端只发送 `scene_key`，不参与免费 / 付费档位判断
+5. `fact_embed / episode_embed / summary_embed / query_memory_embed` 继续走独立 embedding scene route key
+6. `common.llm_service` 默认文档只预填可统计、可冒烟的实际模型 key；AINovel routing 中的 `ainovel-*` 只作为业务 route key 保留
 
 对应核心文件：
 

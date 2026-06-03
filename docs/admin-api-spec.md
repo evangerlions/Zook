@@ -87,14 +87,14 @@ admin.delivery_config
 
 ### 3.5 AINovel AI Routing
 
-`ai_novel.model_routing` 使用 scene-first RAW JSON：`scenes.{scene_key}.kind` 标记 chat / embedding 通道，`scenes.{scene_key}.routes.{free|plus|super_plus}` 标记该场景在不同用户档位下使用的 AINovel 业务 route key。客户端只提交 `scene_key`，用户档位由 Zook 在运行时判定。
+AINovel model routing 当前由 Zook 代码硬编码，不再从 admin 配置读取。客户端只提交 `scene_key`，用户档位由 Zook 在运行时判定，随后使用硬编码的 `scene_key + tier` 路由表选择 AINovel 业务 route key。
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
-| `GET` | `/api/v1/admin/apps/{appId}/ai-routing` | 获取 `ai_novel.model_routing` 当前配置 |
-| `PUT` | `/api/v1/admin/apps/{appId}/ai-routing` | 更新 `ai_novel.model_routing` |
-| `GET` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}` | 获取指定历史版本 |
-| `POST` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore` | 恢复指定历史版本 |
+| `GET` | `/api/v1/admin/apps/{appId}/ai-routing` | 获取硬编码路由表的只读 JSON 快照 |
+| `PUT` | `/api/v1/admin/apps/{appId}/ai-routing` | 当前不支持，返回 `REQ_INVALID_BODY` |
+| `GET` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}` | 当前无版本记录，返回 `REQ_INVALID_QUERY` |
+| `POST` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore` | 当前无版本记录，返回 `REQ_INVALID_QUERY` |
 
 当前只支持：
 
