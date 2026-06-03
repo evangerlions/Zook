@@ -5,8 +5,16 @@ import {
   isAiNovelSceneRouteKey,
   resolveAiNovelSceneRouteAlias,
 } from "./ai-novel-llm-model-aliases.ts";
-import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
-import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
+import {
+  ApplicationError,
+  badRequest,
+  internalError,
+} from "../shared/errors.ts";
+import type {
+  LlmModelConfig,
+  LlmProviderConfig,
+  LlmServiceConfig,
+} from "../shared/types.ts";
 
 export type LLMProviderName = string;
 export type LLMRole = "system" | "user" | "assistant" | "tool";
@@ -67,6 +75,13 @@ export type LLMStreamEvent = (
   | { type: "reasoning_delta"; text: string }
   | { type: "content_delta"; text: string }
   | { type: "usage"; usage: LLMUsage }
+  | {
+      type: "tool_call_delta";
+      text: string;
+      toolCallId?: string;
+      toolCallName?: string;
+      toolArgumentPath?: string;
+    }
   | { type: "tool_call"; toolCall: LLMToolCall }
   | { type: "done"; finishReason?: string }
 ) & {
@@ -84,7 +99,10 @@ export interface ResolvedLLMModel {
   };
 }
 
-export interface ResolvedLLMCompletionRequest extends Omit<LLMCompletionRequest, "modelKey"> {
+export interface ResolvedLLMCompletionRequest extends Omit<
+  LLMCompletionRequest,
+  "modelKey"
+> {
   model: ResolvedLLMModel;
 }
 
@@ -142,8 +160,13 @@ export class LLMManager {
     const startedAt = this.getNow();
 
     try {
-      const result = await this.providers[resolution.request.model.provider].complete(resolution.request);
-      const usage = this.withContextUsage(result.usage, resolution.request.model);
+      const result = await this.providers[
+        resolution.request.model.provider
+      ].complete(resolution.request);
+      const usage = this.withContextUsage(
+        result.usage,
+        resolution.request.model,
+      );
       const completedAt = this.getNow();
       const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
       await this.recordRouteResult(resolution.routeRefs, {
@@ -186,7 +209,8 @@ export class LLMManager {
     let reasoningText = "";
     const toolCalls: LLMToolCall[] = [];
     const iterator = this.providers[resolution.request.model.provider]
-      .stream(resolution.request)[Symbol.asyncIterator]();
+      .stream(resolution.request)
+      [Symbol.asyncIterator]();
 
     try {
       while (true) {
@@ -202,6 +226,7 @@ export class LLMManager {
         if (
           event.type === "content_delta" ||
           event.type === "reasoning_delta" ||
+          event.type === "tool_call_delta" ||
           event.type === "tool_call"
         ) {
           firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
@@ -260,11 +285,14 @@ export class LLMManager {
     let recorded = false;
 
     try {
-      for await (const event of this.providers[resolution.request.model.provider].stream(resolution.request)) {
+      for await (const event of this.providers[
+        resolution.request.model.provider
+      ].stream(resolution.request)) {
         if (
           firstByteLatencyMs === undefined &&
           (event.type === "reasoning_delta" ||
             event.type === "content_delta" ||
+            event.type === "tool_call_delta" ||
             event.type === "tool_call")
         ) {
           firstByteLatencyMs = this.getNow().getTime() - startedAt.getTime();
@@ -283,7 +311,8 @@ export class LLMManager {
           const completedAt = this.getNow();
           await this.recordRouteResult(resolution.routeRefs, {
             ok: true,
-            firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
+            firstByteLatencyMs:
+              firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
             totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
             usage,
             occurredAt: completedAt,
@@ -298,7 +327,8 @@ export class LLMManager {
         const completedAt = this.getNow();
         await this.recordRouteResult(resolution.routeRefs, {
           ok: true,
-          firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
+          firstByteLatencyMs:
+            firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
           totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
           usage,
           occurredAt: completedAt,
@@ -308,7 +338,8 @@ export class LLMManager {
       const completedAt = this.getNow();
       await this.recordRouteResult(resolution.routeRefs, {
         ok: false,
-        firstByteLatencyMs: firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
+        firstByteLatencyMs:
+          firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
         totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
         usage,
         occurredAt: completedAt,
@@ -359,9 +390,7 @@ export class LLMManager {
     }
   }
 
-  private async resolveRequest(
-    request: LLMCompletionRequest,
-  ): Promise<{
+  private async resolveRequest(request: LLMCompletionRequest): Promise<{
     request: ResolvedLLMCompletionRequest;
     routeRefs: {
       healthRouteRef: LlmRouteRef;
@@ -369,20 +398,32 @@ export class LLMManager {
     };
   }> {
     if (!Array.isArray(request.messages) || request.messages.length === 0) {
-      badRequest("REQ_INVALID_BODY", "messages must contain at least one item.");
+      badRequest(
+        "REQ_INVALID_BODY",
+        "messages must contain at least one item.",
+      );
     }
 
     const messages = request.messages.map((message) => {
       if (!VALID_ROLES.has(message.role)) {
-        badRequest("REQ_INVALID_BODY", `Unsupported LLM role: ${String(message.role)}.`);
+        badRequest(
+          "REQ_INVALID_BODY",
+          `Unsupported LLM role: ${String(message.role)}.`,
+        );
       }
 
       if (message.role === "tool") {
-        if (typeof message.toolCallId !== "string" || !message.toolCallId.trim()) {
+        if (
+          typeof message.toolCallId !== "string" ||
+          !message.toolCallId.trim()
+        ) {
           badRequest("REQ_INVALID_BODY", "tool messages require toolCallId.");
         }
         if (typeof message.content !== "string") {
-          badRequest("REQ_INVALID_BODY", "tool message content must be a string.");
+          badRequest(
+            "REQ_INVALID_BODY",
+            "tool message content must be a string.",
+          );
         }
         return {
           role: message.role,
@@ -391,12 +432,16 @@ export class LLMManager {
         };
       }
 
-      const hasToolCalls = Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
+      const hasToolCalls =
+        Array.isArray(message.toolCalls) && message.toolCalls.length > 0;
       if (typeof message.content !== "string") {
         badRequest("REQ_INVALID_BODY", "LLM message content must be a string.");
       }
       if (!hasToolCalls && !message.content.trim()) {
-        badRequest("REQ_INVALID_BODY", "LLM message content must be a non-empty string.");
+        badRequest(
+          "REQ_INVALID_BODY",
+          "LLM message content must be a non-empty string.",
+        );
       }
 
       return {
@@ -407,19 +452,31 @@ export class LLMManager {
     });
 
     const requestedModelKey = request.modelKey.trim();
-    const commonConfig = await this.options.commonLlmConfigService?.getRuntimeConfig();
+    const commonConfig =
+      await this.options.commonLlmConfigService?.getRuntimeConfig();
 
     if (await this.options.commonLlmConfigService?.hasStoredConfig()) {
       if (!commonConfig?.enabled) {
-        throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM service is not enabled.");
+        throw new ApplicationError(
+          503,
+          "LLM_SERVICE_NOT_CONFIGURED",
+          "LLM service is not enabled.",
+        );
       }
 
       const modelKey = requestedModelKey || commonConfig.defaultModelKey;
       if (!modelKey) {
-        throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM default modelKey is not configured.");
+        throw new ApplicationError(
+          503,
+          "LLM_SERVICE_NOT_CONFIGURED",
+          "LLM default modelKey is not configured.",
+        );
       }
 
-      const selection = await this.resolveConfiguredModel(commonConfig, modelKey);
+      const selection = await this.resolveConfiguredModel(
+        commonConfig,
+        modelKey,
+      );
       const healthRouteRef = {
         modelKey,
         provider: selection.provider.key,
@@ -440,18 +497,27 @@ export class LLMManager {
             },
           },
         },
-        routeRefs: this.buildRouteRefs(healthRouteRef, modelKey, request.modelKeyKind),
+        routeRefs: this.buildRouteRefs(
+          healthRouteRef,
+          modelKey,
+          request.modelKeyKind,
+        ),
       };
     }
 
     const modelKey = requestedModelKey;
     if (!modelKey || !this.modelRegistry[modelKey]) {
-      badRequest("LLM_MODEL_NOT_FOUND", `Unknown LLM modelKey: ${request.modelKey}.`);
+      badRequest(
+        "LLM_MODEL_NOT_FOUND",
+        `Unknown LLM modelKey: ${request.modelKey}.`,
+      );
     }
 
     const resolvedModel = this.modelRegistry[modelKey];
     if (!this.providers[resolvedModel.provider]) {
-      internalError(`LLM provider ${resolvedModel.provider} is not configured.`);
+      internalError(
+        `LLM provider ${resolvedModel.provider} is not configured.`,
+      );
     }
 
     return {
@@ -484,9 +550,11 @@ export class LLMManager {
     healthRouteRef: LlmRouteRef;
     metricRouteRef: LlmRouteRef;
   } {
-    const metricModelKey = modelKeyKind === "scene_route" || isAiNovelSceneRouteKey(requestedModelKey)
-      ? healthRouteRef.providerModel
-      : healthRouteRef.modelKey;
+    const metricModelKey =
+      modelKeyKind === "scene_route" ||
+      isAiNovelSceneRouteKey(requestedModelKey)
+        ? healthRouteRef.providerModel
+        : healthRouteRef.modelKey;
     return {
       healthRouteRef,
       metricRouteRef: {
@@ -507,7 +575,9 @@ export class LLMManager {
     if (!model) {
       const alias = resolveAiNovelSceneRouteAlias(modelKey);
       if (alias?.kind === "chat") {
-        const provider = config.providers.find((item) => item.key === alias.provider);
+        const provider = config.providers.find(
+          (item) => item.key === alias.provider,
+        );
         if (provider?.enabled && this.providers[provider.key]) {
           return {
             provider,
@@ -527,10 +597,15 @@ export class LLMManager {
     }
 
     if (model.kind !== "chat") {
-      badRequest("LLM_MODEL_NOT_FOUND", `LLM modelKey ${modelKey} is not configured as a chat model.`);
+      badRequest(
+        "LLM_MODEL_NOT_FOUND",
+        `LLM modelKey ${modelKey} is not configured as a chat model.`,
+      );
     }
 
-    const providerMap = new Map(config.providers.map((item) => [item.key, item]));
+    const providerMap = new Map(
+      config.providers.map((item) => [item.key, item]),
+    );
     const chosenRoute =
       model.strategy === "fixed"
         ? this.selectFixedRoute(model, providerMap)
@@ -555,9 +630,13 @@ export class LLMManager {
     model: LlmModelConfig,
     providerMap: Map<string, LlmProviderConfig>,
   ): LlmModelConfig["routes"][number] {
-    const enabledRoutes = model.routes.filter((route) => route.enabled && providerMap.get(route.provider)?.enabled);
+    const enabledRoutes = model.routes.filter(
+      (route) => route.enabled && providerMap.get(route.provider)?.enabled,
+    );
     if (enabledRoutes.length) {
-      return enabledRoutes.reduce((best, route) => (route.weight > best.weight ? route : best));
+      return enabledRoutes.reduce((best, route) =>
+        route.weight > best.weight ? route : best,
+      );
     }
 
     const fallback = model.routes[0];
@@ -575,7 +654,9 @@ export class LLMManager {
     model: LlmModelConfig,
     providerMap: Map<string, LlmProviderConfig>,
   ): Promise<LlmModelConfig["routes"][number]> {
-    const availableRoutes = model.routes.filter((route) => route.enabled && providerMap.get(route.provider)?.enabled);
+    const availableRoutes = model.routes.filter(
+      (route) => route.enabled && providerMap.get(route.provider)?.enabled,
+    );
     if (!availableRoutes.length) {
       throw new ApplicationError(
         503,
@@ -600,12 +681,13 @@ export class LLMManager {
     );
 
     const totalScore = scores.reduce((sum, item) => sum + item.score, 0);
-    const weights = totalScore > 0
-      ? scores
-      : scores.map((item) => ({
-          route: item.route,
-          score: item.route.weight,
-        }));
+    const weights =
+      totalScore > 0
+        ? scores
+        : scores.map((item) => ({
+            route: item.route,
+            score: item.route.weight,
+          }));
     const totalWeight = weights.reduce((sum, item) => sum + item.score, 0);
 
     if (totalWeight <= 0) {
@@ -663,11 +745,17 @@ export class LLMManager {
     return this.options.now?.() ?? new Date();
   }
 
-  private withContextUsage(usage: LLMUsage | undefined, model: ResolvedLLMModel): LLMUsage | undefined {
+  private withContextUsage(
+    usage: LLMUsage | undefined,
+    model: ResolvedLLMModel,
+  ): LLMUsage | undefined {
     if (!usage) {
       return undefined;
     }
-    const contextWindowTokens = inferContextWindowTokens(model.modelKey, model.providerModel);
+    const contextWindowTokens = inferContextWindowTokens(
+      model.modelKey,
+      model.providerModel,
+    );
     if (!contextWindowTokens || contextWindowTokens <= 0) {
       return usage;
     }
@@ -703,9 +791,15 @@ const MODEL_KEY_CONTEXT_WINDOWS: Record<string, number> = {
   "ainovel-lowcost-structured": 1_000_000,
 };
 
-function inferContextWindowTokens(modelKey: string, providerModel: string): number | undefined {
+function inferContextWindowTokens(
+  modelKey: string,
+  providerModel: string,
+): number | undefined {
   const normalizedProviderModel = providerModel.trim().toLowerCase();
-  return MODEL_CONTEXT_WINDOWS[normalizedProviderModel] ?? MODEL_KEY_CONTEXT_WINDOWS[modelKey.trim()];
+  return (
+    MODEL_CONTEXT_WINDOWS[normalizedProviderModel] ??
+    MODEL_KEY_CONTEXT_WINDOWS[modelKey.trim()]
+  );
 }
 
 function clampRatio(value: number): number {

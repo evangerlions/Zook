@@ -76,7 +76,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 3000,
     responseMode: "json",
     profile: "chapter_summary",
-    supportsStream: false,
+    supportsStream: true,
     completeViaStream: true,
   },
   chapter_draft_review: {
@@ -87,7 +87,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 3000,
     responseMode: "json",
     profile: "chapter_draft_review",
-    supportsStream: false,
+    supportsStream: true,
     completeViaStream: true,
   },
   snapshot_generation: {
@@ -98,7 +98,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 4000,
     responseMode: "json",
     profile: "snapshot_generation",
-    supportsStream: false,
+    supportsStream: true,
     completeViaStream: true,
   },
   next_chapter_brief: {
@@ -109,7 +109,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 3000,
     responseMode: "json",
     profile: "next_chapter_brief",
-    supportsStream: false,
+    supportsStream: true,
     completeViaStream: true,
   },
 };
