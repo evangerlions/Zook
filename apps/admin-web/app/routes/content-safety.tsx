@@ -1,8 +1,9 @@
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Input, InputNumber, Segmented, Select, Switch, Table, Tag } from "antd";
+import { Button, Input, InputNumber, Segmented, Switch, Table, Tag } from "antd";
 import { useMemo, useState } from "react";
 
 import { ContentSafetyBlockRecordsTab } from "../components/content-safety-block-records-tab";
+import { ContentSafetyProvidersTab } from "../components/content-safety-providers-tab";
 import { ContentSafetyStatsTab } from "../components/content-safety-stats-tab";
 import { ContentSafetyTestTab } from "../components/content-safety-test-tab";
 import { Field, ToggleField } from "../components/field";
@@ -430,125 +431,11 @@ export default function ContentSafetyRoute() {
             ) : null}
 
             {tab === "providers" ? (
-              <>
-                <section className="content-safety-section">
-                  <div className="section-heading">
-                    <div>
-                      <h3>qwen3.5-flash 审核</h3>
-                      <p>短文本走低成本 LLM 审核，这里填写厂商原始模型名。</p>
-                    </div>
-                    <Switch
-                      checked={draft.llm.enabled}
-                      onChange={(enabled) => setDraft((current) => ({
-                        ...current,
-                        llm: { ...current.llm, enabled },
-                      }))}
-                    />
-                  </div>
-                  <div className="content-safety-provider-grid">
-                    <Field label="Model Key">
-                      <Input
-                        onChange={(event) => setDraft((current) => ({
-                          ...current,
-                          llm: { ...current.llm, modelKey: event.target.value },
-                        }))}
-                        value={draft.llm.modelKey}
-                      />
-                    </Field>
-                    <Field label="超时时间 ms">
-                      <InputNumber
-                        min={1}
-                        onChange={(value) => setDraft((current) => ({
-                          ...current,
-                          llm: { ...current.llm, timeoutMs: Number(value ?? 5000) },
-                        }))}
-                        value={draft.llm.timeoutMs}
-                      />
-                    </Field>
-                  </div>
-                </section>
-
-                <section className="content-safety-section">
-                  <div className="section-heading">
-                    <div>
-                      <h3>阿里云内容安全</h3>
-                      <p>凭据只保存 PASSWORD key 引用，不在本页保存明文。</p>
-                    </div>
-                    <Switch
-                      checked={draft.aliyun.enabled}
-                      onChange={(enabled) => setDraft((current) => ({
-                        ...current,
-                        aliyun: { ...current.aliyun, enabled },
-                      }))}
-                    />
-                  </div>
-                  <div className="content-safety-provider-grid">
-                    <Field label="Endpoint">
-                      <Input
-                        onChange={(event) => setDraft((current) => ({
-                          ...current,
-                          aliyun: { ...current.aliyun, endpoint: event.target.value },
-                        }))}
-                        value={draft.aliyun.endpoint}
-                      />
-                    </Field>
-                    <Field label="Region">
-                      <Input
-                        onChange={(event) => setDraft((current) => ({
-                          ...current,
-                          aliyun: { ...current.aliyun, region: event.target.value },
-                        }))}
-                        value={draft.aliyun.region}
-                      />
-                    </Field>
-                    <Field label="Service">
-                      <Input
-                        onChange={(event) => setDraft((current) => ({
-                          ...current,
-                          aliyun: { ...current.aliyun, service: event.target.value },
-                        }))}
-                        value={draft.aliyun.service}
-                      />
-                    </Field>
-                    <Field label="超时时间 ms">
-                      <InputNumber
-                        min={1}
-                        onChange={(value) => setDraft((current) => ({
-                          ...current,
-                          aliyun: { ...current.aliyun, timeoutMs: Number(value ?? 5000) },
-                        }))}
-                        value={draft.aliyun.timeoutMs}
-                      />
-                    </Field>
-                    <Field label="AccessKeyId Password Key">
-                      <Select
-                        allowClear
-                        onChange={(value) => setDraft((current) => ({
-                          ...current,
-                          aliyun: { ...current.aliyun, accessKeyIdPasswordKey: value ?? "" },
-                        }))}
-                        options={passwordOptions}
-                        placeholder="选择 PASSWORD key"
-                        showSearch
-                        value={draft.aliyun.accessKeyIdPasswordKey || undefined}
-                      />
-                    </Field>
-                    <Field label="AccessKeySecret Password Key">
-                      <Select
-                        allowClear
-                        onChange={(value) => setDraft((current) => ({
-                          ...current,
-                          aliyun: { ...current.aliyun, accessKeySecretPasswordKey: value ?? "" },
-                        }))}
-                        options={passwordOptions}
-                        placeholder="选择 PASSWORD key"
-                        showSearch
-                        value={draft.aliyun.accessKeySecretPasswordKey || undefined}
-                      />
-                    </Field>
-                  </div>
-                </section>
-              </>
+              <ContentSafetyProvidersTab
+                draft={draft}
+                onDraftChange={setDraft}
+                passwordOptions={passwordOptions}
+              />
             ) : null}
 
             {tab === "test" ? <ContentSafetyTestTab /> : null}

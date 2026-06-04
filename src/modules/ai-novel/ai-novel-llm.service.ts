@@ -3,8 +3,6 @@ import type {
   LLMMessage,
   LLMManager,
   LLMCompletionResult,
-  LLMStreamEvent,
-  LLMToolDefinition,
   LLMToolCall,
 } from "../../services/llm-manager.ts";
 import type {
@@ -17,7 +15,7 @@ import {
 } from "../../services/app-ai-routing-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { ContentSafetyService } from "../../services/content-safety.service.ts";
-import type { AiNovelModelRoutingTier, ErrorCode } from "../../shared/types.ts";
+import type { AiNovelModelRoutingTier } from "../../shared/types.ts";
 import {
   resolveAiNovelChatScene,
   resolveAiNovelEmbeddingScene,
@@ -27,575 +25,37 @@ import {
   toOpenAiToolDefinitions,
 } from "./ai-novel-llm-prompts.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
-
-interface KickoffMeta {
-  titleCandidate: string;
-  readiness: number;
-  storyPromise: string;
-  storyAnchors: StoryAnchor[];
-  focalization: string;
-  startState: string;
-  trigger: string;
-  drive: KickoffDrive;
-  pressureSources: string[];
-  stakes: KickoffStakes;
-  worldConstraints: string[];
-  changeHorizon: string;
-  premiseScale: KickoffScale;
-  language: string;
-  toneRegister: string;
-  extras: Record<string, unknown>;
-}
-
-interface StoryAnchor {
-  label: string;
-  name?: string;
-  role: string;
-  rules: string[];
-}
-
-interface KickoffDrive {
-  mode: string;
-  object: string;
-}
-
-interface KickoffStakes {
-  external: string;
-  relational: string;
-  internal: string;
-}
-
-interface KickoffScale {
-  length: KickoffScaleChoice;
-  chapterLength: KickoffChapterLength;
-  pov: KickoffScaleChoice;
-  threadDensity: KickoffScaleChoice;
-  pace: KickoffScaleChoice;
-}
-
-interface KickoffScaleChoice {
-  preset: string;
-  note: string;
-}
-
-interface KickoffChapterLength {
-  preset: string;
-  minChars?: number;
-  maxChars?: number;
-  note: string;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-const kickoffToolWireNames = {
-  readMeta: "read_meta",
-  updateMeta: "update_meta",
-  askQuestion: "ask_question",
-  ready: "ready",
-} as const;
-
-const kickoffScalePresetCustom = "custom";
-const kickoffScaleLengthPresets = new Set([
-  "short",
-  "medium",
-  "long",
-  "epic",
-  kickoffScalePresetCustom,
-]);
-const kickoffChapterLengthPresets = new Set([
-  "short",
-  "standard",
-  "long",
-  "extra_long",
-  kickoffScalePresetCustom,
-]);
-const kickoffPovPresets = new Set([
-  "single_pov",
-  "dual_pov",
-  "ensemble_pov",
-  kickoffScalePresetCustom,
-]);
-const kickoffThreadDensityPresets = new Set([
-  "single_main_thread",
-  "main_with_subthreads",
-  "multi_thread",
-  kickoffScalePresetCustom,
-]);
-const kickoffPacePresets = new Set([
-  "fast",
-  "moderate",
-  "slow_burn",
-  kickoffScalePresetCustom,
-]);
-
-function kickoffScaleChoiceSchema(
-  presets: string[],
-  description: string,
-): Record<string, unknown> {
-  return {
-    type: "object",
-    description,
-    additionalProperties: false,
-    required: ["preset", "note"],
-    properties: {
-      preset: {
-        type: "string",
-        enum: presets,
-        description:
-          "Canonical fixed English preset. Use custom only when no fixed preset fits; do not invent new preset strings.",
-      },
-      note: {
-        type: "string",
-        description:
-          "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
-      },
-    },
-  };
-}
-
-const kickoffChapterLengthSchema: Record<string, unknown> = {
-  type: "object",
-  description:
-    "Target length for one chapter body. This constrains draft generation; title/volume title are not counted.",
-  additionalProperties: false,
-  required: ["preset", "note"],
-  properties: {
-    preset: {
-      type: "string",
-      enum: [...kickoffChapterLengthPresets],
-      description:
-        "Canonical fixed English chapter-length preset. custom is a fixed value, not a free-text slot.",
-    },
-    minChars: {
-      type: "number",
-      description:
-        "Lower bound for target chapter body length. Number only, no units.",
-    },
-    maxChars: {
-      type: "number",
-      description:
-        "Upper bound for target chapter body length. Number only, no units.",
-    },
-    note: {
-      type: "string",
-      description:
-        "Freeform explanation in the user's writing language. Required and meaningful when preset is custom; otherwise keep concise.",
-    },
-  },
-};
-
-const kickoffPremiseScaleSchema: Record<string, unknown> = {
-  type: "object",
-  description:
-    "Real JSON object for book scale. Use fixed English presets plus note; never put free text directly in preset.",
-  additionalProperties: false,
-  required: ["length", "chapterLength", "pov", "threadDensity", "pace"],
-  properties: {
-    length: kickoffScaleChoiceSchema(
-      [...kickoffScaleLengthPresets],
-      "Overall book length scale.",
-    ),
-    chapterLength: kickoffChapterLengthSchema,
-    pov: kickoffScaleChoiceSchema(
-      [...kickoffPovPresets],
-      "Narrative POV scale.",
-    ),
-    threadDensity: kickoffScaleChoiceSchema(
-      [...kickoffThreadDensityPresets],
-      "Main-thread/subthread density.",
-    ),
-    pace: kickoffScaleChoiceSchema([...kickoffPacePresets], "Story pacing."),
-  },
-};
-
-const kickoffToolDefinitions: LLMToolDefinition[] = [
-  {
-    name: kickoffToolWireNames.readMeta,
-    description:
-      "Read the full current kickoff premise draft. Call with an empty object `{}` and no arguments.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      properties: {},
-    },
-  },
-  {
-    name: kickoffToolWireNames.updateMeta,
-    description:
-      "Patch one or more fields in the current kickoff premise draft. Arrays must be real JSON arrays and objects must be real JSON objects, never strings containing JSON.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        titleCandidate: {
-          type: "string",
-          description:
-            "Concrete candidate book title. Never use placeholders such as 待定书名, Untitled, or TBD.",
-        },
-        readiness: {
-          type: "number",
-          description: "Conservative readiness score from 0 to 1.",
-        },
-        storyPromise: {
-          type: "string",
-          description:
-            "The durable reader-facing promise/core appeal of the book.",
-        },
-        storyAnchors: {
-          type: "array",
-          description:
-            "Real JSON array of durable story anchors. Anchors can be a protagonist, protagonist group, central relationship, mystery, pressure source, or story stage. This is not a character database.",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["label", "role", "rules"],
-            properties: {
-              label: {
-                type: "string",
-                description:
-                  "Concise anchor label in the user's writing language, e.g. protagonist, protagonist group, central relationship, core mystery, or main stage.",
-              },
-              name: {
-                type: "string",
-                description:
-                  "Optional concrete character name when this anchor represents the protagonist or another named character. For protagonist anchors, this must be a real name, alias, or codename, never a pronoun such as 我/I or a generic label such as 主角.",
-              },
-              role: {
-                type: "string",
-                description:
-                  "Free-text anchor role in the user's writing language. Do not use a fixed taxonomy; write the role naturally for this book.",
-              },
-              rules: {
-                type: "array",
-                description:
-                  "Durable rules or constraints for this anchor; keep 1-5 concise items.",
-                items: { type: "string" },
-              },
-            },
-          },
-        },
-        focalization: {
-          type: "string",
-          description: "Narrative viewpoint/information limit.",
-        },
-        startState: {
-          type: "string",
-          description: "The protagonist/world state before the trigger.",
-        },
-        trigger: {
-          type: "string",
-          description: "The concrete event that starts the story movement.",
-        },
-        drive: {
-          type: "object",
-          description:
-            "Real JSON object describing what the protagonist/story is trying to do.",
-          additionalProperties: false,
-          properties: {
-            mode: {
-              type: "string",
-              description:
-                "Free-text drive mode, for example discover, escape, protect, repair, survive, or a more specific phrase.",
-            },
-            object: {
-              type: "string",
-              description: "The concrete target or problem being pursued.",
-            },
-          },
-        },
-        pressureSources: {
-          type: "array",
-          description:
-            "Real JSON array of external/relational/internal forces pressing on the story.",
-          items: { type: "string" },
-        },
-        stakes: {
-          type: "object",
-          description:
-            "Real JSON object describing what is at risk on external, relational, and internal layers.",
-          additionalProperties: false,
-          properties: {
-            external: { type: "string", description: "External/world risk." },
-            relational: {
-              type: "string",
-              description: "Relationship/social risk.",
-            },
-            internal: { type: "string", description: "Inner/moral risk." },
-          },
-        },
-        worldConstraints: {
-          type: "array",
-          description:
-            "Real JSON array of hard world/genre/rule constraints the engine must preserve.",
-          items: { type: "string" },
-        },
-        changeHorizon: {
-          type: "string",
-          description: "The expected long-range transformation arc.",
-        },
-        premiseScale: {
-          ...kickoffPremiseScaleSchema,
-        },
-        language: {
-          type: "string",
-          description: "Language used by the user in kickoff chat.",
-        },
-        toneRegister: {
-          type: "string",
-          description: "Tone/register/style constraints inferred from chat.",
-        },
-        extras: {
-          type: "object",
-          description:
-            "Real JSON object for rare extra premise facts that do not fit canonical fields.",
-        },
-      },
-    },
-  },
-  {
-    name: kickoffToolWireNames.askQuestion,
-    description:
-      "Ask the user one focused kickoff question. Use this to gather preferences, clarify ambiguous premise details, or offer concrete directions. `options` must be a real JSON array of option objects with `label` and `subtitle`, never a string containing JSON.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["question", "options"],
-      properties: {
-        question: {
-          type: "string",
-          description: "Complete focused question to ask the user.",
-        },
-        options: {
-          type: "array",
-          description:
-            "Available choices as a real JSON array. Do not pass a JSON-encoded string.",
-          minItems: 2,
-          maxItems: 4,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["label", "subtitle"],
-            properties: {
-              label: {
-                type: "string",
-                description: "Concise option display text.",
-              },
-              subtitle: {
-                type: "string",
-                description:
-                  "Short user-facing explanation shown under this option.",
-              },
-            },
-          },
-        },
-        allowCustom: {
-          type: "boolean",
-          description:
-            "Allow typing a custom answer. Defaults to true when omitted; pass false only when custom input must be disabled.",
-        },
-      },
-    },
-  },
-  {
-    name: kickoffToolWireNames.ready,
-    description:
-      "Declare the kickoff sufficient to start writing and provide the user-facing ready card summary plus the first MainLine plan.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["summary", "mainLine"],
-      properties: {
-        summary: {
-          type: "string",
-          description:
-            "A concise natural-language description of what this book is like. This is shown on the ready card; it is not a contract field.",
-        },
-        mainLine: {
-          type: "object",
-          additionalProperties: false,
-          required: [
-            "revisionId",
-            "title",
-            "summary",
-            "arcPromise",
-            "arcRules",
-            "startChapterIndex",
-            "endChapterIndex",
-            "beats",
-          ],
-          properties: {
-            revisionId: {
-              type: "string",
-              description:
-                "Use kickoff for the first ready plan. Later runtime may replace it with another revision.",
-            },
-            title: {
-              type: "string",
-              description:
-                "User-facing title for the opening arc or first stage.",
-            },
-            summary: {
-              type: "string",
-              description:
-                "User-facing 1-2 sentence summary of the first 6-10 chapters.",
-            },
-            arcPromise: {
-              type: "string",
-              description:
-                "The user-facing reading promise for this opening arc or current stage.",
-            },
-            arcRules: {
-              type: "array",
-              items: { type: "string" },
-              description:
-                "Concrete current-stage rules derived from the Contract and user anti-trope constraints.",
-            },
-            startChapterIndex: { type: "integer", minimum: 1 },
-            endChapterIndex: { type: "integer", minimum: 1 },
-            beats: {
-              type: "array",
-              minItems: 6,
-              maxItems: 10,
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: [
-                  "id",
-                  "chapterIndex",
-                  "goal",
-                  "mustCover",
-                  "forbidden",
-                  "change",
-                  "endBoundary",
-                  "endingOpenQuestion",
-                ],
-                properties: {
-                  id: { type: "string" },
-                  chapterIndex: { type: "integer", minimum: 1 },
-                  goal: {
-                    type: "string",
-                    description:
-                      "Concrete chapter-level movement, not a slogan.",
-                  },
-                  mustCover: {
-                    type: "array",
-                    items: { type: "string" },
-                  },
-                  forbidden: {
-                    type: "array",
-                    items: { type: "string" },
-                  },
-                  change: {
-                    type: "string",
-                    description:
-                      "What irreversible story state changes in this chapter.",
-                  },
-                  endBoundary: {
-                    type: "string",
-                    description:
-                      "Where this chapter must stop. It must tell the draft agent what later beat not to narrate yet.",
-                  },
-                  endingOpenQuestion: {
-                    type: "string",
-                    description:
-                      "Concrete unresolved pressure or question, may be empty if not natural.",
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-];
-
-const KICKOFF_SYSTEM_PROMPT = [
-  "You are the kickoff-mode novel setup assistant.",
-  "",
-  "## Role",
-  "- Speak naturally in assistant content.",
-  "- Use tools for structure, not for exposing internal workflow.",
-  "- Never mention tool names or internal reasoning to the user.",
-  "",
-  "## Core objective",
-  "- Progressively clarify the book idea.",
-  "- Keep the kickoff card coherent and conservative.",
-  "- Every turn should improve the necessary information required to start the novel.",
-  "- Treat kickoff as the process of filling the Premise/Contract fields.",
-  "- In most turns, continue by asking the next focused question.",
-  "- Ask only the next blocking question.",
-  "- Call ready only when the book is genuinely startable.",
-  "",
-  "## Workflow discipline",
-  "1. Infer from the current conversation and summary first.",
-  "2. If state may be incomplete or stale, call read_meta before deciding.",
-  "3. In a single turn, you may call multiple tools when that helps you refresh state and then take the next structured step.",
-  "4. When stable structured information becomes clear, call update_meta.",
-  "5. In most turns, if any necessary information is still missing, continue with exactly one focused ask_question.",
-  "6. If no structured follow-up is needed, assistant-only freeform continuation is allowed.",
-  "7. Call ready only when titleCandidate, storyPromise, storyAnchors, protagonist name, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, and toneRegister are sufficiently clear.",
-  "8. If the user says you may decide or start directly, infer sensible defaults from the conversation, call update_meta with every required canonical field first, then call ready only after those fields are non-empty.",
-  "",
-  "## Question rules",
-  "- Ask one question at a time.",
-  "- Offer 2 to 4 concrete, user-facing, mutually distinguishable options.",
-  "- When calling ask_question, pass `question` and `options` directly.",
-  "- `options` must be a real JSON array of objects shaped as { label, subtitle }, never a JSON-encoded string.",
-  "- Do not add multiple-selection fields; kickoff choices are single-select.",
-  "- Do not add catch-all options such as Other or 还没想好 when allowCustom can cover custom input.",
-  "- Keep each option label concise and put the explanation in subtitle.",
-  "- Do not ask broad questionnaires.",
-  "- Do not ask for information already clear from the conversation or summary.",
-  "",
-  "## Tool payload rules",
-  "- Follow each tool schema exactly.",
-  "- Never pass arrays or objects as strings containing JSON.",
-  "- For update_meta, array fields such as storyAnchors, pressureSources, and worldConstraints must be real arrays.",
-  "- For update_meta, object fields such as drive, stakes, premiseScale, and extras must be real objects.",
-  "- For premiseScale, use only the fixed English preset values from the tool schema.",
-  "- `custom` is a fixed preset string, not a place for free text. If a scale dimension needs custom handling, set preset to `custom` and explain it in `note`.",
-  "- `chapterLength.minChars` and `chapterLength.maxChars` must be plain numbers without units. If the user did not specify chapter length, choose a reasonable range from genre/platform convention.",
-  "- Use the user's writing language for all free-text premise fields, storyAnchors labels/roles/rules, ready summary, and premiseScale notes, but keep preset values in English.",
-  "",
-  "## Meta rules",
-  "- Update only fields that are more certain now.",
-  "- Use canonical premise fields as the durable contract: storyPromise, storyAnchors, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, toneRegister, extras.",
-  "- storyAnchors are long-term story roots, not a full character list. Use them to prevent drift around the protagonist or protagonist group, central relationship, core mystery, durable pressure source, or core stage.",
-  "- When a storyAnchor represents the protagonist, include `name`: a concrete character name, alias, or codename suitable for the user's genre and language.",
-  "- Do not use pronouns or generic labels as protagonist `name`: never use 我, I, 主角, 男主, 女主, 他, 她, 少年, 青年, protagonist, hero, heroine, or main character unless the user explicitly states that exact string is the character's literal name.",
-  "- For first-person novels, keep `name` as the character's real name/alias and describe first-person narration in focalization or the protagonist anchor rules; do not set name to 我/I.",
-  "- If the user did not provide a protagonist name, generate a fitting one before ready instead of asking a separate naming question unless the naming choice is genuinely user-blocking.",
-  "- Use titleCandidate only for the candidate book title; the client derives kickoff card UI text from the canonical premise.",
-  "- Before ready, titleCandidate must be a concrete book title you generated or refined from the conversation.",
-  "- Never use placeholder titles such as 待定书名, 暂定书名, Untitled, TBD, or AI 正在为这本书起名.",
-  "- Do not speculate.",
-  "- Keep readiness conservative.",
-  "- Do not inflate readiness just because the idea sounds promising.",
-  "",
-  "## Ready rules",
-  "- Do not call ready early.",
-  "- Use ready only when the canonical premise/contract fields are sufficiently clear to start writing.",
-  "- Do not call ready until titleCandidate is concrete and non-placeholder.",
-  "- Do not call ready until the protagonist anchor has a concrete non-placeholder `name`.",
-  "- When calling ready, include summary: one polished natural-language paragraph describing what this book is like for the ready card.",
-  "- When calling ready, include mainLine: a user-facing rolling plan for the first 6-10 chapters. This is the opening arc the user will confirm on the ready card before drafting starts.",
-  "- mainLine must describe what this stage roughly does, like a human writer's first-volume direction. It must be concrete enough to prevent per-chapter improvisation, but not so rigid that every chapter needs a forced hook.",
-  "- mainLine.arcPromise must state the opening/current arc's reading promise. mainLine.arcRules must turn user anti-trope or genre constraints into concrete stage rules.",
-  "- mainLine.beats must be written in the user's writing language. Each beat must include goal, mustCover array, forbidden array, change, and endBoundary.",
-  "- mainLine.beats[].endingOpenQuestion must exist but may be an empty string when a hook would feel forced.",
-  "- mainLine.beats[].endBoundary must say where the chapter stops and which later movement should not be narrated yet.",
-  "- For transition or threshold beats, do not make endBoundary so narrow that a standard chapter can only write the first step. Allow relevant same-scene preparation, emotional consequence, immediate pressure, and concrete threshold detail, while forbidding later-location movement, next-stage planning, or the next major crisis unless the beat explicitly asks for it.",
-  "- mustCover and forbidden arrays may be empty for quiet transition chapters, but the fields must still be present.",
-  "- Never call ready with empty placeholder contract fields.",
-  "",
-  "## Output rules",
-  "- Never output JSON in assistant content.",
-  "- Never mention tool names to the user.",
-  "- Speak naturally and keep the user moving forward.",
-].join("\n");
+import {
+  adaptBasicAiNovelStream,
+  adaptKickoffAiNovelStream,
+  adaptPromptedAiNovelStream,
+} from "./ai-novel-llm-stream-adapter.ts";
+import {
+  buildKickoffMessages,
+  normalizeKickoffMetaContext,
+} from "./ai-novel-kickoff-context.ts";
+import { kickoffToolDefinitions } from "./ai-novel-kickoff-tools.ts";
+import type { KickoffMeta } from "./ai-novel-kickoff-types.ts";
+import {
+  assertNoClientModelSelection,
+  isRecord,
+  normalizeEmbeddingInput,
+  normalizeMessages,
+  optionalNumber,
+  optionalPositiveInteger,
+  readOptionalString,
+  requireSceneKey,
+} from "./ai-novel-llm-request-validation.ts";
+import { mapAndLogAiNovelUpstreamError } from "./ai-novel-upstream-errors.ts";
+import {
+  completeRequiredToolViaStream,
+  resolvePromptAssemblyCompletionText,
+} from "./ai-novel-required-tool-completer.ts";
+import {
+  buildLocalDebugLlmRequestChunk,
+  buildLocalDebugLlmRequestPayload,
+} from "./ai-novel-local-debug-request.ts";
+import type { AiNovelLocalDebugLlmRequestPayload } from "./ai-novel-local-debug-request.ts";
 
 export interface AiNovelChatResponse {
   sceneKey: string;
@@ -610,7 +70,7 @@ export interface AiNovelChatResponse {
   localDebugLlmRequest?: AiNovelLocalDebugLlmRequestPayload;
 }
 
-interface AiNovelUsagePayload {
+export interface AiNovelUsagePayload {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
@@ -623,22 +83,6 @@ interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
   requestId?: string;
   routingTier?: AiNovelModelRoutingTier;
-}
-
-interface AiNovelLocalDebugLlmRequestPayload {
-  sceneKey: string;
-  sceneRouteKey: string;
-  temperature: number;
-  maxTokens: number;
-  profile?: AiNovelPromptProfile;
-  requestBody: {
-    sceneRouteKey: string;
-    messages: LLMMessage[];
-    temperature: number;
-    maxTokens: number;
-    stream: boolean;
-    providerOptions?: Record<string, unknown>;
-  };
 }
 
 export type AiNovelChatStreamChunk =
@@ -713,7 +157,6 @@ export interface AiNovelEmbeddingsResponse {
 
 export class AiNovelLlmService {
   private static readonly STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
-  private static readonly REQUIRED_TOOL_STREAM_ATTEMPTS = 2;
 
   constructor(
     private readonly llmManager: LLMManager,
@@ -727,9 +170,9 @@ export class AiNovelLlmService {
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): Promise<AiNovelChatResponse> {
-    this.assertNoClientModelSelection(body);
+    assertNoClientModelSelection(body);
 
-    const sceneKey = this.requireSceneKey(body);
+    const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelChatScene(sceneKey);
     if (scene.sceneKey === "kickoff_turn") {
       badRequest("REQ_INVALID_BODY", "kickoff_turn requires stream=true.");
@@ -744,7 +187,7 @@ export class AiNovelLlmService {
         scene.sceneKey,
         options.routingTier,
       );
-    const messages = this.normalizeMessages(body.messages);
+    const messages = normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const promptAssembly = scene.profile
       ? buildAiNovelPromptAssembly({
@@ -754,10 +197,10 @@ export class AiNovelLlmService {
         })
       : { messages, tools: [] };
     const temperature =
-      this.optionalNumber(body.temperature, "temperature") ??
+      optionalNumber(body.temperature, "temperature") ??
       scene.defaultTemperature;
     const maxTokens =
-      this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
+      optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
     const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
     const providerOptions =
@@ -783,7 +226,7 @@ export class AiNovelLlmService {
       };
       const result: LLMCompletionResult =
         shouldUseStreamedCompletion && promptAssembly.forcedToolName
-          ? await this.completeRequiredToolViaStream({
+          ? await completeRequiredToolViaStream(this.llmManager, {
               sceneRouteKey,
               messages: promptAssembly.messages,
               temperature,
@@ -797,7 +240,7 @@ export class AiNovelLlmService {
                   AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
               })
             : await this.llmManager.complete(llmRequest);
-      const completionContent = this.resolvePromptAssemblyCompletionText(
+      const completionContent = resolvePromptAssemblyCompletionText(
         promptAssembly.forcedToolName,
         result,
       );
@@ -819,7 +262,7 @@ export class AiNovelLlmService {
         },
         ...(options.exposeLocalDebug === true
           ? {
-              localDebugLlmRequest: this.buildLocalDebugLlmRequestPayload({
+              localDebugLlmRequest: buildLocalDebugLlmRequestPayload({
                 sceneKey: scene.sceneKey,
                 sceneRouteKey,
                 messages: promptAssembly.messages,
@@ -844,135 +287,16 @@ export class AiNovelLlmService {
     }
   }
 
-  private async completeRequiredToolViaStream(input: {
-    sceneRouteKey: string;
-    messages: LLMMessage[];
-    temperature?: number;
-    maxTokens?: number;
-    providerOptions?: Record<string, unknown>;
-    forcedToolName: string;
-  }): Promise<LLMCompletionResult> {
-    let messages = input.messages;
-    let result: LLMCompletionResult | undefined;
-
-    for (
-      let attempt = 1;
-      attempt <= AiNovelLlmService.REQUIRED_TOOL_STREAM_ATTEMPTS;
-      attempt += 1
-    ) {
-      result = await this.llmManager.completeViaStream(
-        {
-          modelKey: input.sceneRouteKey,
-          modelKeyKind: "scene_route",
-          messages,
-          temperature: input.temperature,
-          maxTokens: input.maxTokens,
-          ...(input.providerOptions
-            ? { providerOptions: input.providerOptions }
-            : {}),
-        },
-        {
-          firstContentTimeoutMs:
-            AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
-        },
-      );
-      if (this.findToolCall(result, input.forcedToolName)) {
-        return result;
-      }
-
-      this.logger?.warn("ai_novel required streamed tool call missing", {
-        forcedToolName: input.forcedToolName,
-        attempt,
-        finishReason: result.finishReason,
-        textLength: result.text.length,
-        textPreview: result.text.slice(0, 500),
-        toolCallNames:
-          result.toolCalls?.map((candidate) => candidate.name) ?? [],
-        modelKey: result.modelKey,
-        providerModel: result.providerModel,
-        providerRequestId: result.providerRequestId,
-      });
-
-      if (attempt < AiNovelLlmService.REQUIRED_TOOL_STREAM_ATTEMPTS) {
-        messages = [
-          ...input.messages,
-          {
-            role: "user",
-            content: this.buildRequiredToolRetryMessage(input.forcedToolName),
-          },
-        ];
-      }
-    }
-
-    return result!;
-  }
-
-  private resolvePromptAssemblyCompletionText(
-    forcedToolName: string | undefined,
-    result: LLMCompletionResult,
-  ): string {
-    if (!forcedToolName) {
-      return result.text;
-    }
-
-    const toolCall = this.findToolCall(result, forcedToolName);
-    if (!toolCall) {
-      this.logger?.warn(
-        "ai_novel required tool call missing from provider result",
-        {
-          forcedToolName,
-          finishReason: result.finishReason,
-          textLength: result.text.length,
-          textPreview: result.text.slice(0, 500),
-          toolCallNames:
-            result.toolCalls?.map((candidate) => candidate.name) ?? [],
-          modelKey: result.modelKey,
-          providerModel: result.providerModel,
-          providerRequestId: result.providerRequestId,
-        },
-      );
-      throw new ApplicationError(
-        502,
-        "LLM_PROVIDER_RESPONSE_INVALID",
-        `Provider did not call required tool ${forcedToolName}.`,
-        {
-          forcedToolName,
-          finishReason: result.finishReason,
-          textLength: result.text.length,
-        },
-      );
-    }
-    return JSON.stringify(toolCall.input ?? {});
-  }
-
-  private findToolCall(
-    result: LLMCompletionResult,
-    toolName: string,
-  ): LLMToolCall | undefined {
-    return result.toolCalls?.find((candidate) => candidate.name === toolName);
-  }
-
-  private buildRequiredToolRetryMessage(toolName: string): string {
-    return [
-      `The previous assistant turn did not call ${toolName}.`,
-      `You must now call ${toolName} exactly once with the required structured arguments.`,
-      "Do not answer with plain text or markdown.",
-    ].join(" ");
-  }
-
   async *createChatCompletionStream(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): AsyncIterable<AiNovelChatStreamChunk> {
-    this.assertNoClientModelSelection(body);
+    assertNoClientModelSelection(body);
 
-    const sceneKey = this.requireSceneKey(body);
+    const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelChatScene(sceneKey);
     if (scene.supportsStream === false) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        `${scene.sceneKey} requires stream=false.`,
-      );
+      badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=false.`);
     }
     const sceneRouteKey =
       await this.appAiRoutingConfigService.resolveSceneRouteKey(
@@ -981,617 +305,128 @@ export class AiNovelLlmService {
         scene.sceneKey,
         options.routingTier,
       );
-    const messages = this.normalizeMessages(body.messages);
+    const messages = normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const temperature =
-      this.optionalNumber(body.temperature, "temperature") ??
+      optionalNumber(body.temperature, "temperature") ??
       scene.defaultTemperature;
     const maxTokens =
-      this.optionalPositiveInteger(body.maxTokens, "maxTokens") ??
+      optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-    if (scene.sceneKey === "kickoff_turn") {
-      yield* this.createKickoffTurnStream({
-        sceneRouteKey,
-        messages,
-        temperature,
-        maxTokens,
-        meta: this.normalizeKickoffMetaContext(body.context),
-        exposeLocalDebug: options.exposeLocalDebug === true,
-        requestId: options.requestId,
-        sceneKey: scene.sceneKey,
-      });
-      return;
-    }
-    if (scene.profile) {
-      yield* this.createPromptedSceneStream({
-        sceneRouteKey,
-        messages,
-        temperature,
-        maxTokens,
-        context: body.context,
-        profile: scene.profile,
-        exposeLocalDebug: options.exposeLocalDebug === true,
-        requestId: options.requestId,
-        sceneKey: scene.sceneKey,
-      });
-      return;
-    }
-
-    let aggregatedContent = "";
-    let aggregatedReasoning = "";
-    let finishReason: string | undefined;
-    let usage: AiNovelUsagePayload | undefined;
-    const providerOptions: Record<string, unknown> | undefined = undefined;
 
     try {
+      if (scene.sceneKey === "kickoff_turn") {
+        const kickoffMessages = buildKickoffMessages(
+          messages,
+          normalizeKickoffMetaContext(body.context),
+        );
+        const providerOptions = {
+          enable_thinking: true,
+          tools: toOpenAiToolDefinitions(kickoffToolDefinitions),
+          tool_choice: "auto",
+        };
+        if (options.exposeLocalDebug === true) {
+          yield buildLocalDebugLlmRequestChunk({
+            sceneKey: scene.sceneKey,
+            sceneRouteKey,
+            messages: kickoffMessages,
+            temperature,
+            maxTokens,
+            providerOptions,
+          });
+        }
+        yield* adaptKickoffAiNovelStream({
+          sceneRouteKey,
+          events: this.llmManager.stream({
+            modelKey: sceneRouteKey,
+            modelKeyKind: "scene_route",
+            messages: kickoffMessages,
+            temperature,
+            maxTokens,
+            providerOptions,
+          }),
+          normalizeToolCall: (toolCall, fallbackIndex) => ({
+            ...toolCall,
+            id: this.normalizeToolCallId(
+              toolCall.id,
+              this.buildFallbackToolCallId(sceneRouteKey, "kickoff", fallbackIndex),
+            ),
+          }),
+        });
+        return;
+      }
+
+      if (scene.profile) {
+        const promptAssembly = buildAiNovelPromptAssembly({
+          profile: scene.profile,
+          messages,
+          context: body.context,
+        });
+        const providerOptions = {
+          enable_thinking: true,
+          tools: toOpenAiToolDefinitions(promptAssembly.tools),
+          tool_choice: "auto",
+        };
+        if (options.exposeLocalDebug === true) {
+          yield buildLocalDebugLlmRequestChunk({
+            sceneKey: scene.sceneKey,
+            sceneRouteKey,
+            messages: promptAssembly.messages,
+            temperature,
+            maxTokens,
+            providerOptions,
+            profile: scene.profile,
+          });
+        }
+        yield* adaptPromptedAiNovelStream({
+          sceneRouteKey,
+          profile: scene.profile,
+          events: this.llmManager.stream({
+            modelKey: sceneRouteKey,
+            modelKeyKind: "scene_route",
+            messages: promptAssembly.messages,
+            temperature,
+            maxTokens,
+            providerOptions,
+          }),
+          normalizeToolCall: (toolCall, fallbackIndex) =>
+            this.normalizePromptedSceneToolCall(
+              toolCall,
+              sceneRouteKey,
+              fallbackIndex,
+            ),
+        });
+        return;
+      }
+
       if (options.exposeLocalDebug === true) {
-        yield this.buildLocalDebugLlmRequestChunk({
+        yield buildLocalDebugLlmRequestChunk({
           sceneKey: scene.sceneKey,
           sceneRouteKey,
           messages,
           temperature,
           maxTokens,
-          providerOptions,
         });
       }
-
-      for await (const event of this.llmManager.stream({
-        modelKey: sceneRouteKey,
-        modelKeyKind: "scene_route",
-        messages,
-        temperature,
-        maxTokens,
-      })) {
-        if (event.type === "reasoning_delta") {
-          aggregatedReasoning += event.text;
-          yield {
-            type: "reasoning_delta",
-            text: event.text,
-          };
-          continue;
-        }
-
-        if (event.type === "content_delta") {
-          aggregatedContent += event.text;
-          yield {
-            type: "content_delta",
-            text: event.text,
-          };
-          continue;
-        }
-
-        if (event.type === "usage") {
-          usage = event.usage;
-          yield {
-            type: "usage",
-            usage: event.usage,
-          };
-          continue;
-        }
-
-        finishReason = event.finishReason;
-        yield {
-          type: "done",
-          completion: {
-            sceneRouteKey,
-            content: aggregatedContent,
-            ...(aggregatedReasoning
-              ? { reasoningText: aggregatedReasoning }
-              : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(usage ? { usage } : {}),
-        };
-      }
+      yield* adaptBasicAiNovelStream({
+        sceneRouteKey,
+        events: this.llmManager.stream({
+          modelKey: sceneRouteKey,
+          modelKeyKind: "scene_route",
+          messages,
+          temperature,
+          maxTokens,
+        }),
+      });
     } catch (error) {
       throw this.mapAndLogUpstreamError(error, {
         stage: "chat_stream",
         requestId: options.requestId,
         sceneKey: scene.sceneKey,
         sceneRouteKey,
+        profile: scene.profile,
       });
     }
-  }
-
-  private async *createPromptedSceneStream(input: {
-    sceneRouteKey: string;
-    messages: LLMMessage[];
-    temperature: number;
-    maxTokens: number;
-    context: unknown;
-    profile: AiNovelPromptProfile;
-    exposeLocalDebug: boolean;
-    requestId?: string;
-    sceneKey: string;
-  }): AsyncIterable<AiNovelChatStreamChunk> {
-    let aggregatedContent = "";
-    let aggregatedReasoning = "";
-    let finishReason: string | undefined;
-    let usage: AiNovelUsagePayload | undefined;
-    let fallbackToolCallIndex = 0;
-    const promptAssembly = buildAiNovelPromptAssembly({
-      profile: input.profile,
-      messages: input.messages,
-      context: input.context,
-    });
-    const providerOptions = {
-      enable_thinking: true,
-      tools: toOpenAiToolDefinitions(promptAssembly.tools),
-      tool_choice: "auto",
-    };
-
-    try {
-      if (input.exposeLocalDebug) {
-        yield this.buildLocalDebugLlmRequestChunk({
-          sceneKey: input.sceneKey,
-          sceneRouteKey: input.sceneRouteKey,
-          messages: promptAssembly.messages,
-          temperature: input.temperature,
-          maxTokens: input.maxTokens,
-          providerOptions,
-          profile: input.profile,
-        });
-      }
-
-      for await (const event of this.llmManager.stream({
-        modelKey: input.sceneRouteKey,
-        modelKeyKind: "scene_route",
-        messages: promptAssembly.messages,
-        temperature: input.temperature,
-        maxTokens: input.maxTokens,
-        providerOptions,
-      })) {
-        if (event.type === "reasoning_delta") {
-          aggregatedReasoning += event.text;
-          yield {
-            type: "reasoning_delta",
-            text: event.text,
-          };
-          continue;
-        }
-
-        if (event.type === "content_delta") {
-          aggregatedContent += event.text;
-          yield {
-            type: "content_delta",
-            text: event.text,
-          };
-          continue;
-        }
-
-        if (event.type === "tool_call_delta") {
-          const progress = this.workflowProgressForToolDelta(
-            input.profile,
-            event,
-          );
-          if (progress) {
-            yield progress;
-          }
-          continue;
-        }
-
-        if (event.type === "tool_call") {
-          yield {
-            type: "tool_call",
-            toolCall: this.normalizePromptedSceneToolCall(
-              event.toolCall,
-              input.sceneRouteKey,
-              fallbackToolCallIndex,
-            ),
-          };
-          fallbackToolCallIndex += 1;
-          continue;
-        }
-
-        if (event.type === "usage") {
-          usage = event.usage;
-          yield {
-            type: "usage",
-            usage: event.usage,
-          };
-          continue;
-        }
-
-        finishReason = event.finishReason;
-        yield {
-          type: "done",
-          completion: {
-            sceneRouteKey: input.sceneRouteKey,
-            content: aggregatedContent,
-            ...(aggregatedReasoning
-              ? { reasoningText: aggregatedReasoning }
-              : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(usage ? { usage } : {}),
-        };
-      }
-    } catch (error) {
-      throw this.mapAndLogUpstreamError(error, {
-        stage: "chat_stream",
-        requestId: input.requestId,
-        sceneKey: input.sceneKey,
-        sceneRouteKey: input.sceneRouteKey,
-        profile: input.profile,
-      });
-    }
-  }
-
-  private async *createKickoffTurnStream(input: {
-    sceneRouteKey: string;
-    messages: LLMMessage[];
-    temperature: number;
-    maxTokens: number;
-    meta: KickoffMeta;
-    exposeLocalDebug: boolean;
-    requestId?: string;
-    sceneKey: string;
-  }): AsyncIterable<AiNovelChatStreamChunk> {
-    let assistantText = "";
-    let reasoningText = "";
-    let usage: AiNovelUsagePayload | undefined;
-    let finishReason: string | undefined;
-    let fallbackToolCallIndex = 0;
-    const messages = this.buildKickoffMessages(input.messages, input.meta);
-    const providerOptions = {
-      enable_thinking: true,
-      tools: kickoffToolDefinitions.map((tool) => ({
-        type: "function",
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.inputSchema,
-        },
-      })),
-      tool_choice: "auto",
-    };
-
-    try {
-      if (input.exposeLocalDebug) {
-        yield this.buildLocalDebugLlmRequestChunk({
-          sceneKey: "kickoff_turn",
-          sceneRouteKey: input.sceneRouteKey,
-          messages,
-          temperature: input.temperature,
-          maxTokens: input.maxTokens,
-          providerOptions,
-        });
-      }
-
-      for await (const event of this.llmManager.stream({
-        modelKey: input.sceneRouteKey,
-        modelKeyKind: "scene_route",
-        messages,
-        temperature: input.temperature,
-        maxTokens: input.maxTokens,
-        providerOptions,
-      })) {
-        if (event.type === "reasoning_delta") {
-          reasoningText += event.text;
-          yield {
-            type: "reasoning_delta",
-            text: event.text,
-          };
-          continue;
-        }
-
-        if (event.type === "content_delta") {
-          assistantText += event.text;
-          yield {
-            type: "text_delta",
-            text: event.text,
-          };
-          continue;
-        }
-
-        if (event.type === "usage") {
-          usage = event.usage;
-          yield {
-            type: "usage",
-            usage: event.usage,
-          };
-          continue;
-        }
-
-        if (event.type === "tool_call") {
-          yield {
-            type: "tool_call",
-            toolCall: {
-              ...event.toolCall,
-              id: this.normalizeToolCallId(
-                event.toolCall.id,
-                this.buildFallbackToolCallId(
-                  input.sceneRouteKey,
-                  "kickoff",
-                  fallbackToolCallIndex,
-                ),
-              ),
-            },
-          };
-          fallbackToolCallIndex += 1;
-          continue;
-        }
-
-        finishReason = event.finishReason;
-        yield {
-          type: "done",
-          completion: {
-            sceneRouteKey: input.sceneRouteKey,
-            content: assistantText,
-            ...(reasoningText ? { reasoningText } : {}),
-            ...(finishReason ? { finishReason } : {}),
-          },
-          ...(usage ? { usage } : {}),
-        };
-      }
-    } catch (error) {
-      throw this.mapAndLogUpstreamError(error, {
-        stage: "chat_stream",
-        requestId: input.requestId,
-        sceneKey: input.sceneKey,
-        sceneRouteKey: input.sceneRouteKey,
-      });
-    }
-  }
-
-  private workflowProgressForToolDelta(
-    profile: AiNovelPromptProfile,
-    event: Extract<LLMStreamEvent, { type: "tool_call_delta" }>,
-  ): AiNovelChatStreamChunk | undefined {
-    const mapping = workflowProgressMapping(profile, event.toolCallName);
-    if (!mapping) {
-      return undefined;
-    }
-    const deltaText = readableWorkflowProgressDeltaText(event);
-    if (!deltaText) {
-      return undefined;
-    }
-    return {
-      type: "action.workflow_progress",
-      payload: {
-        workflowKey: mapping.workflowKey,
-        stepKey: mapping.stepKey,
-        subStepKey: mapping.subStepKey,
-        status: "running",
-        deltaText,
-        processedTokens: estimateWorkflowProgressTokens(deltaText),
-      },
-    };
-  }
-
-  private buildKickoffMessages(
-    messages: LLMMessage[],
-    meta: KickoffMeta,
-  ): LLMMessage[] {
-    return [
-      {
-        role: "system",
-        content: `${KICKOFF_SYSTEM_PROMPT}\n\n${this.renderKickoffSummary(meta)}`,
-      },
-      ...messages,
-    ];
-  }
-
-  private buildLocalDebugLlmRequestPayload(input: {
-    sceneKey: string;
-    sceneRouteKey: string;
-    messages: LLMMessage[];
-    temperature: number;
-    maxTokens: number;
-    providerOptions?: Record<string, unknown>;
-    profile?: AiNovelPromptProfile;
-    stream: boolean;
-  }): AiNovelLocalDebugLlmRequestPayload {
-    return {
-      sceneKey: input.sceneKey,
-      sceneRouteKey: input.sceneRouteKey,
-      temperature: input.temperature,
-      maxTokens: input.maxTokens,
-      ...(input.profile ? { profile: input.profile } : {}),
-      requestBody: {
-        sceneRouteKey: input.sceneRouteKey,
-        messages: input.messages,
-        temperature: input.temperature,
-        maxTokens: input.maxTokens,
-        stream: input.stream,
-        ...(input.providerOptions
-          ? { providerOptions: input.providerOptions }
-          : {}),
-      },
-    };
-  }
-
-  private buildLocalDebugLlmRequestChunk(input: {
-    sceneKey: string;
-    sceneRouteKey: string;
-    messages: LLMMessage[];
-    temperature: number;
-    maxTokens: number;
-    providerOptions?: Record<string, unknown>;
-    profile?: AiNovelPromptProfile;
-  }): AiNovelChatStreamChunk {
-    return {
-      type: "local_debug_llm_request",
-      payload: this.buildLocalDebugLlmRequestPayload({
-        ...input,
-        stream: true,
-      }),
-    };
-  }
-
-  private renderKickoffSummary(meta: KickoffMeta): string {
-    return [
-      "Current kickoff summary:",
-      `- titleCandidate: ${meta.titleCandidate}`,
-      `- readiness: ${meta.readiness.toFixed(2)}`,
-      "",
-      "Current canonical premise / contract:",
-      `- storyPromise: ${meta.storyPromise}`,
-      `- storyAnchors: ${JSON.stringify(meta.storyAnchors)}`,
-      `- focalization: ${meta.focalization}`,
-      `- startState: ${meta.startState}`,
-      `- trigger: ${meta.trigger}`,
-      `- drive: ${meta.drive.mode} ${meta.drive.object}`.trim(),
-      `- pressureSources: ${meta.pressureSources.join(" / ")}`,
-      `- stakes.external: ${meta.stakes.external}`,
-      `- stakes.relational: ${meta.stakes.relational}`,
-      `- stakes.internal: ${meta.stakes.internal}`,
-      `- worldConstraints: ${meta.worldConstraints.join(" / ")}`,
-      `- changeHorizon: ${meta.changeHorizon}`,
-      `- premiseScale.length: ${this.renderScaleChoice(meta.premiseScale.length)}`,
-      `- premiseScale.chapterLength: ${this.renderChapterLength(meta.premiseScale.chapterLength)}`,
-      `- premiseScale.pov: ${this.renderScaleChoice(meta.premiseScale.pov)}`,
-      `- premiseScale.threadDensity: ${this.renderScaleChoice(meta.premiseScale.threadDensity)}`,
-      `- premiseScale.pace: ${this.renderScaleChoice(meta.premiseScale.pace)}`,
-      `- language: ${meta.language}`,
-      `- toneRegister: ${meta.toneRegister}`,
-    ].join("\n");
-  }
-
-  private renderScaleChoice(choice: KickoffScaleChoice): string {
-    return [choice.preset, choice.note].filter(Boolean).join(" / ");
-  }
-
-  private renderChapterLength(chapterLength: KickoffChapterLength): string {
-    const range =
-      chapterLength.minChars !== undefined &&
-      chapterLength.maxChars !== undefined
-        ? `${chapterLength.minChars}-${chapterLength.maxChars}`
-        : chapterLength.minChars !== undefined
-          ? `>=${chapterLength.minChars}`
-          : chapterLength.maxChars !== undefined
-            ? `<=${chapterLength.maxChars}`
-            : "";
-    return [chapterLength.preset, range, chapterLength.note]
-      .filter(Boolean)
-      .join(" / ");
-  }
-
-  private normalizeKickoffMetaContext(value: unknown): KickoffMeta {
-    const meta =
-      isRecord(value) && isRecord(value.meta)
-        ? (value.meta as Record<string, unknown>)
-        : isRecord(value)
-          ? (value as Record<string, unknown>)
-          : {};
-    return {
-      titleCandidate: this.readOptionalString(meta.titleCandidate) ?? "",
-      readiness: this.normalizeReadiness(meta.readiness),
-      storyPromise: this.readOptionalString(meta.storyPromise) ?? "",
-      storyAnchors: this.normalizeStoryAnchors(meta.storyAnchors, 12),
-      focalization: this.readOptionalString(meta.focalization) ?? "",
-      startState: this.readOptionalString(meta.startState) ?? "",
-      trigger: this.readOptionalString(meta.trigger) ?? "",
-      drive: this.normalizeKickoffDrive(meta.drive),
-      pressureSources: this.normalizeKickoffQuestionStrings(
-        meta.pressureSources,
-        12,
-      ),
-      stakes: this.normalizeKickoffStakes(meta.stakes),
-      worldConstraints: this.normalizeKickoffQuestionStrings(
-        meta.worldConstraints,
-        12,
-      ),
-      changeHorizon: this.readOptionalString(meta.changeHorizon) ?? "",
-      premiseScale: this.normalizeKickoffScale(meta.premiseScale),
-      language: this.readOptionalString(meta.language) ?? "",
-      toneRegister: this.readOptionalString(meta.toneRegister) ?? "",
-      extras: isRecord(meta.extras) ? meta.extras : {},
-    };
-  }
-
-  private normalizeKickoffDrive(value: unknown): KickoffDrive {
-    const record = isRecord(value) ? value : {};
-    return {
-      mode: this.readOptionalString(record.mode) ?? "",
-      object: this.readOptionalString(record.object) ?? "",
-    };
-  }
-
-  private normalizeKickoffStakes(value: unknown): KickoffStakes {
-    const record = isRecord(value) ? value : {};
-    return {
-      external: this.readOptionalString(record.external) ?? "",
-      relational: this.readOptionalString(record.relational) ?? "",
-      internal: this.readOptionalString(record.internal) ?? "",
-    };
-  }
-
-  private normalizeKickoffScale(value: unknown): KickoffScale {
-    const record = isRecord(value) ? value : {};
-    return {
-      length: this.normalizeScaleChoiceContext(record.length),
-      chapterLength: this.normalizeChapterLengthContext(record.chapterLength),
-      pov: this.normalizeScaleChoiceContext(record.pov),
-      threadDensity: this.normalizeScaleChoiceContext(record.threadDensity),
-      pace: this.normalizeScaleChoiceContext(record.pace),
-    };
-  }
-
-  private normalizeScaleChoiceContext(value: unknown): KickoffScaleChoice {
-    const record = isRecord(value) ? value : {};
-    return {
-      preset: this.readOptionalString(record.preset) ?? "",
-      note: this.readOptionalString(record.note) ?? "",
-    };
-  }
-
-  private normalizeChapterLengthContext(value: unknown): KickoffChapterLength {
-    const record = isRecord(value) ? value : {};
-    const chapterLength: KickoffChapterLength = {
-      preset: this.readOptionalString(record.preset) ?? "",
-      note: this.readOptionalString(record.note) ?? "",
-    };
-    const minChars = this.readOptionalPositiveInteger(record.minChars);
-    const maxChars = this.readOptionalPositiveInteger(record.maxChars);
-    if (minChars !== undefined) {
-      chapterLength.minChars = minChars;
-    }
-    if (maxChars !== undefined) {
-      chapterLength.maxChars = maxChars;
-    }
-    return chapterLength;
-  }
-
-  private normalizeStoryAnchors(
-    value: unknown,
-    maxItems: number,
-  ): StoryAnchor[] {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-    const anchors: StoryAnchor[] = [];
-    const seen = new Set<string>();
-    for (const item of value) {
-      if (!isRecord(item)) {
-        continue;
-      }
-      const label = this.readOptionalString(item.label);
-      const name = this.readOptionalString(item.name);
-      const role = this.readOptionalString(item.role);
-      if (!label || !role || seen.has(label)) {
-        continue;
-      }
-      anchors.push({
-        label,
-        ...(name ? { name } : {}),
-        role,
-        rules: this.normalizeKickoffQuestionStrings(item.rules, 5),
-      });
-      seen.add(label);
-      if (anchors.length >= maxItems) {
-        break;
-      }
-    }
-    return anchors;
-  }
-
-  private readOptionalString(value: unknown): string | undefined {
-    if (typeof value !== "string") {
-      return undefined;
-    }
-    const normalized = value.trim();
-    return normalized ? normalized : undefined;
   }
 
   private normalizePromptedSceneToolCall(
@@ -1603,7 +438,7 @@ export class AiNovelLlmService {
       toolCall.id,
       this.buildFallbackToolCallId(sceneRouteKey, "prompted", fallbackIndex),
     );
-    const name = this.readOptionalString(toolCall.name);
+    const name = readOptionalString(toolCall.name);
     if (!name) {
       throw new ApplicationError(
         502,
@@ -1621,7 +456,7 @@ export class AiNovelLlmService {
   }
 
   private normalizeToolCallId(value: unknown, fallbackId: string): string {
-    return this.readOptionalString(value) ?? fallbackId;
+    return readOptionalString(value) ?? fallbackId;
   }
 
   private buildFallbackToolCallId(
@@ -1632,54 +467,13 @@ export class AiNovelLlmService {
     return `${sceneRouteKey}_${phase}_tool_${index}`;
   }
 
-  private readOptionalPositiveInteger(value: unknown): number | undefined {
-    if (typeof value !== "number" || !Number.isFinite(value)) {
-      return undefined;
-    }
-    const normalized = Math.trunc(value);
-    return normalized > 0 ? normalized : undefined;
-  }
-
-  private normalizeReadiness(value: unknown): number {
-    if (typeof value !== "number" || Number.isNaN(value)) {
-      return 0;
-    }
-    return Math.max(0, Math.min(1, value));
-  }
-
-  private normalizeKickoffQuestionStrings(
-    value: unknown,
-    maxItems: number,
-  ): string[] {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-    const normalized: string[] = [];
-    const seen = new Set<string>();
-    for (const item of value) {
-      if (typeof item !== "string") {
-        continue;
-      }
-      const next = item.trim();
-      if (!next || seen.has(next)) {
-        continue;
-      }
-      normalized.push(next);
-      seen.add(next);
-      if (normalized.length >= maxItems) {
-        break;
-      }
-    }
-    return normalized;
-  }
-
   async createEmbeddings(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): Promise<AiNovelEmbeddingsResponse> {
-    this.assertNoClientModelSelection(body);
+    assertNoClientModelSelection(body);
 
-    const sceneKey = this.requireSceneKey(body);
+    const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelEmbeddingScene(sceneKey);
     const sceneRouteKey =
       await this.appAiRoutingConfigService.resolveSceneRouteKey(
@@ -1688,7 +482,7 @@ export class AiNovelLlmService {
         scene.sceneKey,
         options.routingTier,
       );
-    const input = this.normalizeEmbeddingInput(body.input);
+    const input = normalizeEmbeddingInput(body.input);
 
     try {
       const result = await this.embeddingManager.embed({
@@ -1715,121 +509,6 @@ export class AiNovelLlmService {
         sceneRouteKey,
       });
     }
-  }
-
-  private assertNoClientModelSelection(body: Record<string, unknown>): void {
-    for (const field of [
-      "model",
-      "modelKey",
-      "providerModel",
-      "tier",
-      "routingTier",
-      "modelTier",
-    ]) {
-      if (body[field] !== undefined) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          `${field} is not allowed. Use sceneKey or scene_key to select the AINovel scene.`,
-        );
-      }
-    }
-  }
-
-  private requireSceneKey(body: Record<string, unknown>): string {
-    const candidates = [
-      ["scene_key", body.scene_key],
-      ["sceneKey", body.sceneKey],
-    ] as const;
-    const provided = candidates.filter(
-      ([, value]) => typeof value === "string" && value.trim(),
-    );
-    if (!provided.length) {
-      badRequest("REQ_INVALID_BODY", "sceneKey must be a non-empty string.");
-    }
-
-    const first = provided[0]!;
-    const sceneKey = first[1].trim();
-    const conflicting = provided.find(([, value]) => value.trim() !== sceneKey);
-    if (conflicting) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        "scene_key and sceneKey must resolve to the same scene.",
-      );
-    }
-    return sceneKey;
-  }
-
-  private normalizeMessages(value: unknown): LLMMessage[] {
-    if (!Array.isArray(value) || value.length === 0) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        "messages must contain at least one item.",
-      );
-    }
-
-    return value.map((item) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) {
-        badRequest("REQ_INVALID_BODY", "Each message must be a JSON object.");
-      }
-
-      const record = item as Record<string, unknown>;
-      const role = record.role;
-      const content = record.content;
-      if (
-        role !== "system" &&
-        role !== "user" &&
-        role !== "assistant" &&
-        role !== "tool"
-      ) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          `Unsupported LLM role: ${String(role)}.`,
-        );
-      }
-
-      if (typeof content !== "string") {
-        badRequest(
-          "REQ_INVALID_BODY",
-          "Each message content must be a string.",
-        );
-      }
-
-      const toolCallId = this.readOptionalString(record.toolCallId);
-      const toolCalls = this.normalizeToolCalls(record.toolCalls);
-      const reasoningContent =
-        this.readOptionalString(record.reasoningContent) ??
-        this.readOptionalString(record.reasoning_content);
-      if (role === "tool") {
-        if (!toolCallId) {
-          badRequest("REQ_INVALID_BODY", "tool messages require toolCallId.");
-        }
-        if (!content.trim()) {
-          badRequest(
-            "REQ_INVALID_BODY",
-            "tool message content must be a non-empty string.",
-          );
-        }
-      } else if (
-        !content.trim() &&
-        toolCalls.length === 0 &&
-        !(role === "assistant" && reasoningContent)
-      ) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          "assistant/system/user messages need content, toolCalls, or assistant reasoningContent.",
-        );
-      }
-
-      return {
-        role,
-        content,
-        ...(toolCallId ? { toolCallId } : {}),
-        ...(toolCalls.length > 0 ? { toolCalls } : {}),
-        ...(role === "assistant" && reasoningContent
-          ? { reasoningContent }
-          : {}),
-      };
-    });
   }
 
   private async assertLatestUserInputAllowed(
@@ -1864,155 +543,6 @@ export class AiNovelLlmService {
     });
   }
 
-  private normalizeToolCalls(value: unknown): LLMToolCall[] {
-    if (value === undefined || value === null) {
-      return [];
-    }
-    if (!Array.isArray(value)) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        "toolCalls must be an array when provided.",
-      );
-    }
-    return value.map((item, index) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          `toolCalls[${index}] must be a JSON object.`,
-        );
-      }
-      const record = item as Record<string, unknown>;
-      const id = this.readOptionalString(record.id);
-      const name = this.readOptionalString(record.name);
-      if (!id || !name) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          `toolCalls[${index}] requires id and name.`,
-        );
-      }
-      const input = isRecord(record.input)
-        ? (record.input as Record<string, unknown>)
-        : {};
-      return {
-        id,
-        name,
-        input,
-      };
-    });
-  }
-
-  private normalizeEmbeddingInput(value: unknown): string[] {
-    if (!Array.isArray(value) || value.length === 0) {
-      badRequest(
-        "AI_EMBEDDING_INPUT_INVALID",
-        "input must be a non-empty string array.",
-      );
-    }
-
-    return value.map((item) => {
-      if (typeof item !== "string" || !item.trim()) {
-        badRequest(
-          "AI_EMBEDDING_INPUT_INVALID",
-          "input must contain non-empty strings only.",
-        );
-      }
-      return item.trim();
-    });
-  }
-
-  private optionalNumber(
-    value: unknown,
-    fieldName: string,
-  ): number | undefined {
-    if (value === undefined || value === null || value === "") {
-      return undefined;
-    }
-
-    if (typeof value !== "number" || Number.isNaN(value)) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        `${fieldName} must be a number when provided.`,
-      );
-    }
-
-    return value;
-  }
-
-  private optionalPositiveInteger(
-    value: unknown,
-    fieldName: string,
-  ): number | undefined {
-    if (value === undefined || value === null || value === "") {
-      return undefined;
-    }
-
-    if (
-      typeof value !== "number" ||
-      Number.isNaN(value) ||
-      value <= 0 ||
-      !Number.isInteger(value)
-    ) {
-      badRequest(
-        "REQ_INVALID_BODY",
-        `${fieldName} must be a positive integer when provided.`,
-      );
-    }
-
-    return value;
-  }
-
-  private mapUpstreamError(error: unknown): unknown {
-    if (!(error instanceof ApplicationError)) {
-      return error;
-    }
-
-    if (error.code === "LLM_PROVIDER_REQUEST_FAILED") {
-      if (
-        error.statusCode === 504 ||
-        getDetailString(error.details, "reason") === "timeout"
-      ) {
-        return new ApplicationError(
-          504,
-          "AI_UPSTREAM_TIMEOUT",
-          "Upstream model service timed out.",
-          error.details,
-        );
-      }
-
-      const providerFailure = classifyProviderRequestFailure(error);
-      return new ApplicationError(
-        providerFailure.statusCode,
-        providerFailure.code,
-        error.message,
-        error.details,
-      );
-    }
-
-    if (error.code === "LLM_PROVIDER_RESPONSE_INVALID") {
-      return new ApplicationError(
-        502,
-        "AI_UPSTREAM_RESPONSE_INVALID",
-        error.message,
-        error.details,
-      );
-    }
-
-    if (
-      error.code === "LLM_ROUTE_NOT_AVAILABLE" ||
-      error.code === "LLM_SERVICE_NOT_CONFIGURED" ||
-      error.code === "LLM_MODEL_NOT_FOUND"
-    ) {
-      return new ApplicationError(
-        502,
-        "AI_UPSTREAM_CONFIG_INVALID",
-        error.message,
-        error.details,
-      );
-    }
-
-    return error;
-  }
-
   private mapAndLogUpstreamError(
     error: unknown,
     context: {
@@ -2023,345 +553,6 @@ export class AiNovelLlmService {
       profile?: AiNovelPromptProfile;
     },
   ): unknown {
-    const mapped = this.mapUpstreamError(error);
-    const original = error instanceof ApplicationError ? error : undefined;
-    const mappedError = mapped instanceof ApplicationError ? mapped : undefined;
-
-    this.logger?.error("ai_novel upstream request failed", {
-      requestId: context.requestId,
-      appId: AI_NOVEL_APP_ID,
-      stage: context.stage,
-      sceneKey: context.sceneKey,
-      sceneRouteKey: context.sceneRouteKey,
-      ...(context.profile ? { profile: context.profile } : {}),
-      originalStatusCode: original?.statusCode,
-      originalCode: original?.code,
-      originalMessage: original?.message,
-      mappedStatusCode: mappedError?.statusCode,
-      mappedCode: mappedError?.code,
-      mappedMessage: mappedError?.message,
-      ...extractUpstreamErrorDetails(original?.details),
-      originalDetailsPreview: previewLogValue(original?.details),
-    });
-
-    return mapped;
-  }
-}
-
-function getDetailString(details: unknown, key: string): string | undefined {
-  if (!details || typeof details !== "object" || Array.isArray(details)) {
-    return undefined;
-  }
-
-  const value = (details as Record<string, unknown>)[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-function getDetailNumber(details: unknown, key: string): number | undefined {
-  if (!details || typeof details !== "object" || Array.isArray(details)) {
-    return undefined;
-  }
-
-  const value = (details as Record<string, unknown>)[key];
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : undefined;
-}
-
-function classifyProviderRequestFailure(error: ApplicationError): {
-  code: ErrorCode;
-  statusCode: number;
-} {
-  const providerStatusCode =
-    getDetailNumber(error.details, "statusCode") ?? error.statusCode;
-  const providerErrorCode = getDetailString(error.details, "errorCode");
-  const providerErrorType = getDetailString(error.details, "errorType");
-  const upstreamReason = getDetailString(error.details, "reason");
-  const searchText = [
-    providerErrorCode,
-    providerErrorType,
-    upstreamReason,
-    error.message,
-  ]
-    .filter((value): value is string => Boolean(value))
-    .join(" ")
-    .toLowerCase();
-
-  if (
-    providerStatusCode === 401 ||
-    providerStatusCode === 403 ||
-    includesAny(searchText, [
-      "accessdenied",
-      "authentication",
-      "forbidden",
-      "invalid_api_key",
-      "unauthorized",
-    ])
-  ) {
-    return { code: "AI_UPSTREAM_AUTH_FAILED", statusCode: 502 };
-  }
-
-  if (
-    providerStatusCode === 400 ||
-    includesAny(searchText, [
-      "bad_request",
-      "badrequest",
-      "invalid_parameter",
-      "invalid_request",
-      "request body",
-    ])
-  ) {
-    return { code: "AI_UPSTREAM_INVALID_REQUEST", statusCode: 502 };
-  }
-
-  if (
-    providerStatusCode === 429 ||
-    includesAny(searchText, ["rate_limit", "ratelimit", "throttl"])
-  ) {
-    return { code: "AI_UPSTREAM_RATE_LIMITED", statusCode: 429 };
-  }
-
-  if (
-    includesAny(searchText, ["balance", "billing", "insufficient", "quota"])
-  ) {
-    return { code: "AI_UPSTREAM_QUOTA_EXHAUSTED", statusCode: 503 };
-  }
-
-  return { code: "AI_UPSTREAM_BAD_GATEWAY", statusCode: 502 };
-}
-
-function includesAny(value: string, needles: string[]): boolean {
-  return needles.some((needle) => value.includes(needle));
-}
-
-function workflowProgressMapping(
-  profile: AiNovelPromptProfile,
-  toolName: string | undefined,
-):
-  | {
-      workflowKey: string;
-      stepKey: string;
-      subStepKey: string;
-    }
-  | undefined {
-  if (profile === "chapter_draft" && toolName === "write_draft") {
-    return {
-      workflowKey: "chapter_generation",
-      stepKey: "draft",
-      subStepKey: "write_draft",
-    };
-  }
-  if (
-    profile === "next_chapter_brief" &&
-    toolName === "submit_next_chapter_brief"
-  ) {
-    return {
-      workflowKey: "chapter_advance",
-      stepKey: "plan",
-      subStepKey: "next_chapter_brief",
-    };
-  }
-  if (
-    profile === "chapter_draft_review" &&
-    toolName === "submit_chapter_review"
-  ) {
-    return {
-      workflowKey: "chapter_generation",
-      stepKey: "draft",
-      subStepKey: "draft_review",
-    };
-  }
-  if (profile === "chapter_summary" && toolName === "submit_chapter_summary") {
-    return {
-      workflowKey: "chapter_advance",
-      stepKey: "plan",
-      subStepKey: "chapter_summary",
-    };
-  }
-  if (profile === "snapshot_generation" && toolName === "submit_snapshot") {
-    return {
-      workflowKey: "chapter_advance",
-      stepKey: "plan",
-      subStepKey: "snapshot_generation",
-    };
-  }
-  return undefined;
-}
-
-function estimateWorkflowProgressTokens(text: string): number {
-  const trimmed = text.trim();
-  if (!trimmed) {
-    return 0;
-  }
-  const cjkChars = [...trimmed].filter((char) =>
-    /[\u3400-\u9fff\uf900-\ufaff]/u.test(char),
-  ).length;
-  const nonCjkChars = Math.max(0, trimmed.length - cjkChars);
-  return Math.max(1, Math.ceil(cjkChars + nonCjkChars / 4));
-}
-
-function readableWorkflowProgressDeltaText(
-  event: Extract<LLMStreamEvent, { type: "tool_call_delta" }>,
-): string | undefined {
-  const path =
-    event.toolArgumentPath ?? workflowToolArgumentPath(event.toolCallName);
-  if (!path) {
-    return event.text;
-  }
-  if (event.toolArgumentPath) {
-    return event.text.trim().length > 0 ? event.text : undefined;
-  }
-
-  const parsed = parseJsonObject(event.text);
-  const parsedValue = parsed ? parsed[path] : undefined;
-  if (typeof parsedValue === "string") {
-    return parsedValue;
-  }
-
-  const partialValue = extractTopLevelJsonStringField(event.text, path);
-  return partialValue;
-}
-
-function workflowToolArgumentPath(toolName: string | undefined) {
-  switch (toolName) {
-    case "write_draft":
-      return "content";
-    case "submit_next_chapter_brief":
-      return "brief";
-    case "submit_chapter_summary":
-    case "submit_chapter_review":
-      return "summary";
-    case "submit_snapshot":
-      return "snapshot";
-    default:
-      return undefined;
-  }
-}
-
-function parseJsonObject(value: string): Record<string, unknown> | undefined {
-  try {
-    const parsed = JSON.parse(value);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function extractTopLevelJsonStringField(
-  jsonFragment: string,
-  fieldName: string,
-): string | undefined {
-  const propertyToken = JSON.stringify(fieldName);
-  const keyIndex = jsonFragment.indexOf(propertyToken);
-  if (keyIndex < 0) {
-    return undefined;
-  }
-
-  let index = keyIndex + propertyToken.length;
-  while (/\s/.test(jsonFragment[index] ?? "")) {
-    index += 1;
-  }
-  if (jsonFragment[index] !== ":") {
-    return undefined;
-  }
-  index += 1;
-  while (/\s/.test(jsonFragment[index] ?? "")) {
-    index += 1;
-  }
-  if (jsonFragment[index] !== '"') {
-    return undefined;
-  }
-
-  let value = "";
-  index += 1;
-  while (index < jsonFragment.length) {
-    const char = jsonFragment[index];
-    if (char === '"') {
-      return value;
-    }
-    if (char !== "\\") {
-      value += char;
-      index += 1;
-      continue;
-    }
-
-    if (index + 1 >= jsonFragment.length) {
-      return value;
-    }
-    const escapeChar = jsonFragment[index + 1];
-    if (escapeChar === "u") {
-      const code = jsonFragment.slice(index + 2, index + 6);
-      if (!/^[0-9a-fA-F]{4}$/.test(code)) {
-        return value;
-      }
-      value += String.fromCharCode(Number.parseInt(code, 16));
-      index += 6;
-      continue;
-    }
-
-    value += decodeJsonEscape(escapeChar);
-    index += 2;
-  }
-
-  return value;
-}
-
-function decodeJsonEscape(char: string): string {
-  switch (char) {
-    case '"':
-    case "\\":
-    case "/":
-      return char;
-    case "b":
-      return "\b";
-    case "f":
-      return "\f";
-    case "n":
-      return "\n";
-    case "r":
-      return "\r";
-    case "t":
-      return "\t";
-    default:
-      return "";
-  }
-}
-
-function extractUpstreamErrorDetails(
-  details: unknown,
-): Record<string, unknown> {
-  if (!details || typeof details !== "object" || Array.isArray(details)) {
-    return {};
-  }
-
-  const value = details as Record<string, unknown>;
-  return {
-    provider: value.provider,
-    providerStatusCode: value.statusCode,
-    providerErrorCode: value.errorCode,
-    providerErrorType: value.errorType,
-    providerRequestId: value.providerRequestId,
-    upstreamReason: value.reason,
-    upstreamCause: value.cause,
-    timeoutMs: value.timeoutMs,
-  };
-}
-
-function previewLogValue(value: unknown, limit = 1200): string | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  const text = typeof value === "string" ? value : safeJsonStringify(value);
-  return text.length <= limit ? text : `${text.slice(0, limit)}...`;
-}
-
-function safeJsonStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
+    return mapAndLogAiNovelUpstreamError(error, context, this.logger);
   }
 }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV,
   LocalAiNovelE2eProvider,
   shouldUseLocalAiNovelE2eProvider,
 } from "../../src/services/local-ainovel-e2e-provider.ts";
@@ -102,6 +103,53 @@ test("local AINovel E2E provider streams kickoff update and ready tools", async 
   );
 });
 
+test("local AINovel E2E provider can ask once before kickoff ready", async () => {
+  const previousAskFirst = process.env[AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV];
+  process.env[AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV] = "1";
+
+  try {
+    const provider = new LocalAiNovelE2eProvider();
+    const firstEvents = await collectStream(
+      provider.stream(kickoffRequest([{ role: "user", content: "我要写东方玄幻。" }])),
+    );
+    const firstToolCalls = firstEvents.filter(
+      (event) => event.type === "tool_call",
+    );
+
+    assert.equal(firstToolCalls.length, 1);
+    assert.equal(firstToolCalls[0].toolCall.name, "ask_question");
+    assert.deepEqual(
+      (firstToolCalls[0].toolCall.input.options as Array<{ label: string }>).map(
+        (option) => option.label,
+      ),
+      ["追兵压迫", "残魂交易"],
+    );
+
+    const continuationEvents = await collectStream(
+      provider.stream(
+        kickoffRequest([
+          { role: "user", content: "我要写东方玄幻。" },
+          {
+            role: "tool",
+            content: "追兵压迫",
+            toolCallId: "local_e2e_ask_question",
+          },
+        ]),
+      ),
+    );
+    const continuationToolNames = continuationEvents
+      .filter((event) => event.type === "tool_call")
+      .map((event) => event.toolCall.name);
+
+    assert.deepEqual(continuationToolNames, ["update_meta", "ready"]);
+  } finally {
+    restoreOptionalEnv(
+      AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV,
+      previousAskFirst,
+    );
+  }
+});
+
 test("local AINovel E2E provider returns a pass decision for content safety", async () => {
   const provider = new LocalAiNovelE2eProvider();
   const result = await provider.complete({
@@ -194,6 +242,25 @@ function chapterDraftProviderOptions(): Record<string, unknown> {
         function: { name: "write_draft" },
       },
     ],
+  };
+}
+
+function kickoffRequest(
+  messages: ResolvedLLMCompletionRequest["messages"],
+): ResolvedLLMCompletionRequest {
+  return {
+    model: {
+      provider: "bailian",
+      modelKey: "ainovel-plus-reasoning",
+      providerModel: "qwen3.6-plus",
+    },
+    messages,
+    providerOptions: {
+      tools: ["update_meta", "ask_question", "ready"].map((name) => ({
+        type: "function",
+        function: { name },
+      })),
+    },
   };
 }
 
