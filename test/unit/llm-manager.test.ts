@@ -133,6 +133,93 @@ test("llm manager completeViaStream captures streamed tool calls", async () => {
   ]);
 });
 
+test("llm manager completeViaStream rejects streams that end before done", async () => {
+  const manager = new LLMManager({
+    bailian: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("should use stream");
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        yield { type: "content_delta", text: "partial" };
+      },
+    },
+  });
+
+  await assert.rejects(
+    async () =>
+      manager.completeViaStream({
+        modelKey: "kimi2.5",
+        messages: [{ role: "user", content: "hello" }],
+      }),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "LLM_PROVIDER_RESPONSE_INVALID" &&
+      "details" in error &&
+      (error.details as Record<string, unknown>).reason ===
+        "missing_done_event",
+  );
+});
+
+test("llm manager stream rejects streams that end before done", async () => {
+  const manager = new LLMManager({
+    bailian: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("should use stream");
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        yield { type: "content_delta", text: "partial" };
+      },
+    },
+  });
+
+  await assert.rejects(
+    async () => {
+      for await (const _event of manager.stream({
+        modelKey: "kimi2.5",
+        messages: [{ role: "user", content: "hello" }],
+      })) {
+        // Consume the partial event so iterator completion is observed.
+      }
+    },
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "LLM_PROVIDER_RESPONSE_INVALID" &&
+      "details" in error &&
+      (error.details as Record<string, unknown>).reason ===
+        "missing_done_event",
+  );
+});
+
+test("llm manager completeViaStream rejects unknown stream events", async () => {
+  const manager = new LLMManager({
+    bailian: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("should use stream");
+      },
+      async *stream(): AsyncIterable<LLMStreamEvent> {
+        yield { type: "unexpected_event" } as unknown as LLMStreamEvent;
+      },
+    },
+  });
+
+  await assert.rejects(
+    async () =>
+      manager.completeViaStream({
+        modelKey: "kimi2.5",
+        messages: [{ role: "user", content: "hello" }],
+      }),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "LLM_PROVIDER_RESPONSE_INVALID" &&
+      "details" in error &&
+      (error.details as Record<string, unknown>).reason ===
+        "unsupported_stream_event",
+  );
+});
+
 test("createApplication exposes llmManager through runtime services", async () => {
   const runtime = await createApplication();
 

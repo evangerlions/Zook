@@ -314,3 +314,47 @@ test("register rejects expired or reused verification codes", async () => {
         error.code === "AUTH_ACCOUNT_ALREADY_EXISTS"),
   );
 });
+
+test("duplicate email registration does not consume a valid verification code", async () => {
+  const runtime = await createApplication({
+    registrationCodeGenerator: () => "121212",
+    registrationEmailSender: createFakeSender([]),
+  });
+  const now = new Date("2026-03-19T15:00:00+08:00");
+
+  await runtime.services.authService.registerEmailCode(
+    {
+      appId: "app_a",
+      email: "alice@example.com",
+      ipAddress: "203.0.113.16",
+      locale: "zh-CN",
+      region: "ap-guangzhou",
+    },
+    now,
+  );
+
+  await assert.rejects(
+    () =>
+      runtime.services.authService.register(
+        {
+          appId: "app_a",
+          email: "alice@example.com",
+          password: "Password1234",
+          emailCode: "121212",
+          ipAddress: "203.0.113.16",
+        },
+        new Date(now.getTime() + 10 * 1000),
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "AUTH_ACCOUNT_ALREADY_EXISTS",
+  );
+
+  const cacheEntry = await runtime.services.kvManager.getJson(
+    "auth.verification-codes",
+    "auth:email:register:code:app_a:alice@example.com",
+  );
+  assert.ok(cacheEntry);
+  assert.equal((cacheEntry as { failedAttempts: number }).failedAttempts, 0);
+});

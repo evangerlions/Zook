@@ -223,6 +223,54 @@ test("password reset upgrades email-code-only accounts into password accounts", 
   assert.equal(sent.at(-1)?.templateName, "verify-code");
 });
 
+test("password email-code resend cooldown is enforced before blocked-account hiding", async () => {
+  const sent: SentVerificationEmail[] = [];
+  const runtime = await createApplication({
+    registrationCodeGenerator: () => "242424",
+    registrationEmailSender: createFakeSender(sent),
+  });
+  const now = new Date("2026-03-29T11:00:00+08:00");
+
+  const firstResponse = await runtime.services.authService.sendPasswordCode(
+    {
+      appId: "app_a",
+      email: "alice@example.com",
+      ipAddress: "198.51.100.62",
+      locale: "en-US",
+      region: "ap-hongkong",
+    },
+    now,
+  );
+
+  assert.equal(firstResponse.accepted, true);
+  assert.equal(sent.length, 1);
+
+  const alice = runtime.database.findUserByAccount("alice@example.com");
+  assert.ok(alice);
+  alice.status = "BLOCKED";
+
+  await assert.rejects(
+    () =>
+      runtime.services.authService.sendPasswordCode(
+        {
+          appId: "app_a",
+          email: "alice@example.com",
+          ipAddress: "198.51.100.62",
+          locale: "en-US",
+          region: "ap-hongkong",
+        },
+        new Date(now.getTime() + 30 * 1000),
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "AUTH_RATE_LIMITED" &&
+      "statusCode" in error &&
+      error.statusCode === 429,
+  );
+  assert.equal(sent.length, 1);
+});
+
 test("logged-in email-code-only users can set a password directly", async () => {
   const sent: SentVerificationEmail[] = [];
   const runtime = await createApplication({

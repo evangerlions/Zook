@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { Pool, type PoolClient } from "pg";
 import type {
   AnalyticsEventRecord,
   AppConfigRecord,
@@ -24,257 +24,22 @@ import type {
 } from "../../../shared/types.ts";
 import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-database.ts";
 import { runPostgresMigrations } from "./migrate.ts";
-
-function toIsoString(value: unknown): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  return new Date(String(value)).toISOString();
-}
-
-function parseApp(row: QueryResultRow): AppRecord {
-  return {
-    id: String(row.id),
-    code: String(row.code),
-    name: String(row.name),
-    nameI18n: (row.name_i18n ?? {}) as AppNameI18n,
-    status: row.status as AppRecord["status"],
-    apiDomain: row.api_domain ?? undefined,
-    joinMode: row.join_mode as AppRecord["joinMode"],
-    createdAt: toIsoString(row.created_at) as string,
-  };
-}
-
-function parseUser(row: QueryResultRow): UserRecord {
-  return {
-    id: String(row.id),
-    email: row.email ?? undefined,
-    phone: row.phone ?? undefined,
-    passwordHash: String(row.password_hash),
-    passwordAlgo: String(row.password_algo),
-    status: row.status as UserRecord["status"],
-    createdAt: toIsoString(row.created_at) as string,
-  };
-}
-
-function parseAppUser(row: QueryResultRow): AppUserRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    userId: String(row.user_id),
-    status: row.status as AppUserRecord["status"],
-    joinedAt: toIsoString(row.joined_at) as string,
-  };
-}
-
-function parseRole(row: QueryResultRow): RoleRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    code: String(row.code),
-    name: String(row.name),
-    status: row.status as RoleRecord["status"],
-  };
-}
-
-function parsePermission(row: QueryResultRow): PermissionRecord {
-  return {
-    id: String(row.id),
-    code: String(row.code),
-    name: String(row.name),
-    status: row.status as PermissionRecord["status"],
-  };
-}
-
-function parseRolePermission(row: QueryResultRow): RolePermissionRecord {
-  return {
-    id: String(row.id),
-    roleId: String(row.role_id),
-    permissionId: String(row.permission_id),
-  };
-}
-
-function parseUserRole(row: QueryResultRow): UserRoleRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    userId: String(row.user_id),
-    roleId: String(row.role_id),
-  };
-}
-
-function parseAuditLog(row: QueryResultRow): AuditLogRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    actorUserId: row.actor_user_id ?? undefined,
-    action: String(row.action),
-    resourceType: String(row.resource_type),
-    resourceId: row.resource_id ?? undefined,
-    resourceOwnerUserId: row.resource_owner_user_id ?? undefined,
-    payload: (row.payload ?? {}) as Record<string, unknown>,
-    createdAt: toIsoString(row.created_at) as string,
-  };
-}
-
-function parseNotificationJob(row: QueryResultRow): NotificationJobRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    recipientUserId: String(row.recipient_user_id),
-    channel: row.channel as NotificationJobRecord["channel"],
-    payload: (row.payload ?? {}) as Record<string, unknown>,
-    status: row.status as NotificationJobRecord["status"],
-    retryCount: Number(row.retry_count ?? 0),
-  };
-}
-
-function parseSmsVerificationRecord(row: QueryResultRow): SmsVerificationRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    scene: row.scene as SmsVerificationRecord["scene"],
-    channel: row.channel as SmsVerificationRecord["channel"],
-    phoneMasked: String(row.phone_masked),
-    phoneHash: String(row.phone_hash),
-    phoneNa: row.phone_na ?? undefined,
-    codePlaintext: String(row.code_plaintext),
-    status: row.status as SmsVerificationRecord["status"],
-    isTest: row.is_test === true,
-    provider: row.provider as SmsVerificationRecord["provider"],
-    providerRequestId: row.provider_request_id ?? undefined,
-    providerSerialNo: row.provider_serial_no ?? undefined,
-    providerMessage: row.provider_message ?? undefined,
-    sentAt: toIsoString(row.sent_at) as string,
-    expiresAt: toIsoString(row.expires_at) as string,
-    consumedAt: toIsoString(row.consumed_at),
-    failedAt: toIsoString(row.failed_at),
-    revealCount: Number(row.reveal_count ?? 0),
-    lastRevealedAt: toIsoString(row.last_revealed_at),
-    createdAt: toIsoString(row.created_at) as string,
-    updatedAt: toIsoString(row.updated_at) as string,
-  };
-}
-
-function parseFailedEvent(row: QueryResultRow): FailedEventRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    eventType: String(row.event_type),
-    payload: (row.payload ?? {}) as Record<string, unknown>,
-    errorMessage: String(row.error_message ?? ""),
-    retryCount: Number(row.retry_count ?? 0),
-    nextRetryAt: toIsoString(row.next_retry_at) as string,
-    createdAt: toIsoString(row.created_at) as string,
-  };
-}
-
-function parseAppConfig(row: QueryResultRow): AppConfigRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    configKey: String(row.config_key),
-    configValue: String(row.config_value ?? ""),
-    updatedAt: toIsoString(row.updated_at) as string,
-  };
-}
-
-function parseAnalyticsEvent(row: QueryResultRow): AnalyticsEventRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    userId: String(row.user_id),
-    platform: row.platform as AnalyticsEventRecord["platform"],
-    sessionId: String(row.session_id),
-    pageKey: String(row.page_key),
-    eventName: row.event_name as AnalyticsEventRecord["eventName"],
-    durationMs: row.duration_ms === null || row.duration_ms === undefined ? undefined : Number(row.duration_ms),
-    occurredAt: toIsoString(row.occurred_at) as string,
-    receivedAt: toIsoString(row.received_at) as string,
-    metadata: (row.metadata ?? {}) as Record<string, unknown>,
-  };
-}
-
-function parseFile(row: QueryResultRow): FileRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    ownerUserId: String(row.owner_user_id),
-    storageKey: String(row.storage_key),
-    mimeType: String(row.mime_type),
-    sizeBytes: Number(row.size_bytes ?? 0),
-    status: row.status as FileRecord["status"],
-    createdAt: toIsoString(row.created_at) as string,
-  };
-}
-
-function parseClientLogUploadTask(row: QueryResultRow): ClientLogUploadTaskRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    userId: row.user_id ?? undefined,
-    did: row.did ?? row.client_id ?? undefined,
-    keyId: String(row.key_id),
-    fromTsMs: row.from_ts_ms === null || row.from_ts_ms === undefined ? undefined : Number(row.from_ts_ms),
-    toTsMs: row.to_ts_ms === null || row.to_ts_ms === undefined ? undefined : Number(row.to_ts_ms),
-    maxLines: row.max_lines === null || row.max_lines === undefined ? undefined : Number(row.max_lines),
-    maxBytes: row.max_bytes === null || row.max_bytes === undefined ? undefined : Number(row.max_bytes),
-    status: row.status as ClientLogUploadTaskRecord["status"],
-    claimToken: row.claim_token ?? undefined,
-    claimExpireAt: toIsoString(row.claim_expire_at),
-    createdAt: toIsoString(row.created_at) as string,
-    expiresAt: toIsoString(row.expires_at),
-    uploadedAt: toIsoString(row.uploaded_at),
-    uploadedFileName: row.uploaded_file_name ?? undefined,
-    uploadedFilePath: row.uploaded_file_path ?? undefined,
-    uploadedFileSizeBytes: row.uploaded_file_size_bytes === null || row.uploaded_file_size_bytes === undefined
-      ? undefined
-      : Number(row.uploaded_file_size_bytes),
-    uploadedLineCount: row.uploaded_line_count === null || row.uploaded_line_count === undefined
-      ? undefined
-      : Number(row.uploaded_line_count),
-    failedAt: toIsoString(row.failed_at),
-    failureReason: row.failure_reason ?? undefined,
-  };
-}
-
-function parseContentSafetyCheckRecord(row: QueryResultRow): ContentSafetyCheckRecord {
-  return {
-    id: String(row.id),
-    appId: String(row.app_id),
-    userId: row.user_id ?? undefined,
-    requestId: row.request_id ?? undefined,
-    taskType: row.task_type ?? undefined,
-    source: row.source as ContentSafetyCheckRecord["source"],
-    method: row.method as ContentSafetyCheckRecord["method"],
-    decision: row.decision as ContentSafetyCheckRecord["decision"],
-    category: row.category ?? undefined,
-    keywordId: row.keyword_id ?? undefined,
-    text: row.blocked_text ?? undefined,
-    textLength: Number(row.text_length ?? 0),
-    textHash: String(row.text_hash),
-    latencyMs: row.latency_ms === null || row.latency_ms === undefined ? undefined : Number(row.latency_ms),
-    modelKey: row.model_key ?? undefined,
-    provider: row.provider ?? undefined,
-    providerModel: row.provider_model ?? undefined,
-    failureReason: row.failure_reason ?? undefined,
-    failureDetail: row.failure_detail ?? undefined,
-    metadata: (row.metadata ?? {}) as Record<string, unknown>,
-    createdAt: toIsoString(row.created_at) as string,
-  };
-}
+import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
+import { seedPostgresDefaults } from "./postgres-seed.ts";
+import {
+  parseApp,
+  parseAppConfig,
+  parseAppUser,
+  parsePermission,
+  parseRole,
+  parseRolePermission,
+  parseUser,
+  parseUserRole,
+} from "./postgres-row-parsers.ts";
 
 export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
+  private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
 
   private constructor(
@@ -282,6 +47,9 @@ export class PostgresDatabase extends ApplicationDatabase {
     private readonly seed: DatabaseSeed,
   ) {
     super();
+    this.operationalRecords = new PostgresOperationalRecordsStore(
+      async (sql, values = []) => await this.query(sql, values),
+    );
   }
 
   static async create(
@@ -649,119 +417,46 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
 
   override async insertAnalyticsEvents(records: AnalyticsEventRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_analytics_events (
-           id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, $11::jsonb)`,
-        [
-          record.id,
-          record.appId,
-          record.userId,
-          record.platform,
-          record.sessionId,
-          record.pageKey,
-          record.eventName,
-          record.durationMs ?? null,
-          record.occurredAt,
-          record.receivedAt,
-          JSON.stringify(record.metadata ?? {}),
-        ],
-      );
-    }
+    await this.operationalRecords.insertAnalyticsEvents(records);
   }
 
   override async listAnalyticsEvents(appId: string): Promise<AnalyticsEventRecord[]> {
-    const result = await this.query(
-      `SELECT id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata
-       FROM zook_analytics_events
-       WHERE app_id = $1
-       ORDER BY occurred_at ASC`,
-      [appId],
-    );
-    return result.rows.map(parseAnalyticsEvent);
+    return await this.operationalRecords.listAnalyticsEvents(appId);
   }
 
   override async insertFile(record: FileRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_files (id, app_id, owner_user_id, storage_key, mime_type, size_bytes, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz)`,
-      [record.id, record.appId, record.ownerUserId, record.storageKey, record.mimeType, record.sizeBytes, record.status, record.createdAt],
-    );
+    await this.operationalRecords.insertFile(record);
   }
 
   override async findFileByOwnerAndStorageKey(appId: string, ownerUserId: string, storageKey: string): Promise<FileRecord | undefined> {
-    const result = await this.query(
-      `SELECT id, app_id, owner_user_id, storage_key, mime_type, size_bytes, status, created_at
-       FROM zook_files
-       WHERE app_id = $1 AND owner_user_id = $2 AND storage_key = $3
-       LIMIT 1`,
-      [appId, ownerUserId, storageKey],
+    return await this.operationalRecords.findFileByOwnerAndStorageKey(
+      appId,
+      ownerUserId,
+      storageKey,
     );
-    return result.rows[0] ? parseFile(result.rows[0]) : undefined;
   }
 
   override async findFileByAppAndStorageKey(appId: string, storageKey: string): Promise<FileRecord | undefined> {
-    const result = await this.query(
-      `SELECT id, app_id, owner_user_id, storage_key, mime_type, size_bytes, status, created_at
-       FROM zook_files
-       WHERE app_id = $1 AND storage_key = $2
-       LIMIT 1`,
-      [appId, storageKey],
+    return await this.operationalRecords.findFileByAppAndStorageKey(
+      appId,
+      storageKey,
     );
-    return result.rows[0] ? parseFile(result.rows[0]) : undefined;
   }
 
   override async confirmFile(fileId: string, mimeType: string, sizeBytes: number): Promise<FileRecord | undefined> {
-    const result = await this.query(
-      `UPDATE zook_files
-       SET status = 'CONFIRMED', mime_type = $2, size_bytes = $3, updated_at = NOW()
-       WHERE id = $1
-       RETURNING id, app_id, owner_user_id, storage_key, mime_type, size_bytes, status, created_at`,
-      [fileId, mimeType, sizeBytes],
-    );
-    return result.rows[0] ? parseFile(result.rows[0]) : undefined;
+    return await this.operationalRecords.confirmFile(fileId, mimeType, sizeBytes);
   }
 
   override async listSmsVerificationRecords(appId?: string): Promise<SmsVerificationRecord[]> {
-    const result = appId
-      ? await this.query(
-          `SELECT id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
-           FROM zook_sms_verification_records
-           WHERE app_id = $1
-           ORDER BY created_at DESC`,
-          [appId],
-        )
-      : await this.query(
-          `SELECT id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
-           FROM zook_sms_verification_records
-           ORDER BY created_at DESC`,
-        );
-    return result.rows.map(parseSmsVerificationRecord);
+    return await this.operationalRecords.listSmsVerificationRecords(appId);
   }
 
   override async findSmsVerificationRecord(recordId: string): Promise<SmsVerificationRecord | undefined> {
-    const result = await this.query(
-      `SELECT id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
-       FROM zook_sms_verification_records
-       WHERE id = $1
-       LIMIT 1`,
-      [recordId],
-    );
-    return result.rows[0] ? parseSmsVerificationRecord(result.rows[0]) : undefined;
+    return await this.operationalRecords.findSmsVerificationRecord(recordId);
   }
 
   override async insertSmsVerificationRecord(record: SmsVerificationRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_sms_verification_records (
-         id, app_id, scene, channel, phone_masked, phone_hash, phone_na, code_plaintext, status, is_test, provider, provider_request_id, provider_serial_no, provider_message, sent_at, expires_at, consumed_at, failed_at, reveal_count, last_revealed_at, created_at, updated_at
-       ) VALUES (
-         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::timestamptz, $16::timestamptz, $17::timestamptz, $18::timestamptz, $19, $20::timestamptz, $21::timestamptz, $22::timestamptz
-       )`,
-      [
-        record.id, record.appId, record.scene, record.channel, record.phoneMasked, record.phoneHash, record.phoneNa ?? null, record.codePlaintext, record.status, record.isTest, record.provider, record.providerRequestId ?? null, record.providerSerialNo ?? null, record.providerMessage ?? null, record.sentAt, record.expiresAt, record.consumedAt ?? null, record.failedAt ?? null, record.revealCount, record.lastRevealedAt ?? null, record.createdAt, record.updatedAt,
-      ],
-    );
+    await this.operationalRecords.insertSmsVerificationRecord(record);
   }
 
   override async updateSmsVerificationRecord(
@@ -773,191 +468,57 @@ export class PostgresDatabase extends ApplicationDatabase {
       >
     >,
   ): Promise<void> {
-    const fields: string[] = [];
-    const values: unknown[] = [recordId];
-    let index = 2;
-
-    const mapping = {
-      status: 'status',
-      providerRequestId: 'provider_request_id',
-      providerSerialNo: 'provider_serial_no',
-      providerMessage: 'provider_message',
-      consumedAt: 'consumed_at',
-      failedAt: 'failed_at',
-      revealCount: 'reveal_count',
-      lastRevealedAt: 'last_revealed_at',
-      updatedAt: 'updated_at',
-    };
-    for (const [key, column] of Object.entries(mapping)) {
-      if (!(key in patch)) continue;
-      const value = patch[key as keyof typeof patch];
-      if (column.endsWith('_at') || column === 'updated_at') {
-        fields.push(`${column} = $${index++}::timestamptz`);
-      } else {
-        fields.push(`${column} = $${index++}`);
-      }
-      values.push(value ?? null);
-    }
-    if (!('updatedAt' in patch)) {
-      fields.push('updated_at = NOW()');
-    }
-    if (fields.length === 0) return;
-    await this.query(`UPDATE zook_sms_verification_records SET ${fields.join(', ')} WHERE id = $1`, values);
+    await this.operationalRecords.updateSmsVerificationRecord(recordId, patch);
   }
 
   override async deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): Promise<number> {
-    const result = await this.query(
-      `DELETE FROM zook_sms_verification_records WHERE created_at < $1::timestamptz`,
-      [cutoffIso],
-    );
-    return result.rowCount ?? 0;
+    return await this.operationalRecords.deleteSmsVerificationRecordsCreatedBefore(cutoffIso);
   }
 
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_notification_jobs (id, app_id, recipient_user_id, channel, payload, status, retry_count, created_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, NOW())`,
-      [record.id, record.appId, record.recipientUserId, record.channel, JSON.stringify(record.payload ?? {}), record.status, record.retryCount],
-    );
+    await this.operationalRecords.insertNotificationJob(record);
   }
 
   override async findNotificationJob(jobId: string): Promise<NotificationJobRecord | undefined> {
-    const result = await this.query(
-      "SELECT id, app_id, recipient_user_id, channel, payload, status, retry_count FROM zook_notification_jobs WHERE id = $1 LIMIT 1",
-      [jobId],
-    );
-    return result.rows[0] ? parseNotificationJob(result.rows[0]) : undefined;
+    return await this.operationalRecords.findNotificationJob(jobId);
   }
 
   override async updateNotificationJob(
     jobId: string,
     patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
   ): Promise<NotificationJobRecord | undefined> {
-    const fields: string[] = [];
-    const values: unknown[] = [jobId];
-    let index = 2;
-
-    if (patch.status !== undefined) {
-      fields.push(`status = $${index++}`);
-      values.push(patch.status);
-    }
-
-    if (patch.retryCount !== undefined) {
-      fields.push(`retry_count = $${index++}`);
-      values.push(patch.retryCount);
-    }
-
-    if (fields.length === 0) {
-      return this.findNotificationJob(jobId);
-    }
-
-    fields.push("updated_at = NOW()");
-    const result = await this.query(
-      `UPDATE zook_notification_jobs
-       SET ${fields.join(", ")}
-       WHERE id = $1
-       RETURNING id, app_id, recipient_user_id, channel, payload, status, retry_count`,
-      values,
-    );
-    return result.rows[0] ? parseNotificationJob(result.rows[0]) : undefined;
+    return await this.operationalRecords.updateNotificationJob(jobId, patch);
   }
 
   override async insertFailedEvent(record: FailedEventRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_failed_events (
-         id, app_id, event_type, payload, error_message, retry_count, next_retry_at, created_at
-       ) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7::timestamptz, $8::timestamptz)`,
-      [record.id, record.appId, record.eventType, JSON.stringify(record.payload ?? {}), record.errorMessage, record.retryCount, record.nextRetryAt, record.createdAt],
-    );
+    await this.operationalRecords.insertFailedEvent(record);
   }
 
   override async listFailedEvents(appId?: string): Promise<FailedEventRecord[]> {
-    const result = appId
-      ? await this.query(
-          "SELECT id, app_id, event_type, payload, error_message, retry_count, next_retry_at, created_at FROM zook_failed_events WHERE app_id = $1 ORDER BY created_at ASC",
-          [appId],
-        )
-      : await this.query(
-          "SELECT id, app_id, event_type, payload, error_message, retry_count, next_retry_at, created_at FROM zook_failed_events ORDER BY created_at ASC",
-        );
-    return result.rows.map(parseFailedEvent);
+    return await this.operationalRecords.listFailedEvents(appId);
   }
 
   override async deleteFailedEvent(eventId: string): Promise<void> {
-    await this.query("DELETE FROM zook_failed_events WHERE id = $1", [eventId]);
+    await this.operationalRecords.deleteFailedEvent(eventId);
   }
 
   override async updateFailedEvent(
     eventId: string,
     patch: Pick<FailedEventRecord, "retryCount" | "errorMessage" | "nextRetryAt">,
   ): Promise<void> {
-    await this.query(
-      `UPDATE zook_failed_events
-       SET retry_count = $2, error_message = $3, next_retry_at = $4::timestamptz, updated_at = NOW()
-       WHERE id = $1`,
-      [eventId, patch.retryCount, patch.errorMessage, patch.nextRetryAt],
-    );
+    await this.operationalRecords.updateFailedEvent(eventId, patch);
   }
 
   override async listClientLogUploadTasks(appId?: string): Promise<ClientLogUploadTaskRecord[]> {
-    const result = appId
-      ? await this.query(
-          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at, uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
-           FROM zook_client_log_upload_tasks
-           WHERE app_id = $1
-           ORDER BY created_at DESC`,
-          [appId],
-        )
-      : await this.query(
-          `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at, uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
-           FROM zook_client_log_upload_tasks
-           ORDER BY created_at DESC`,
-        );
-    return result.rows.map(parseClientLogUploadTask);
+    return await this.operationalRecords.listClientLogUploadTasks(appId);
   }
 
   override async findClientLogUploadTask(taskId: string): Promise<ClientLogUploadTaskRecord | undefined> {
-    const result = await this.query(
-      `SELECT id, app_id, user_id, did, client_id, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes, status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at, uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
-       FROM zook_client_log_upload_tasks
-       WHERE id = $1
-       LIMIT 1`,
-      [taskId],
-    );
-    return result.rows[0] ? parseClientLogUploadTask(result.rows[0]) : undefined;
+    return await this.operationalRecords.findClientLogUploadTask(taskId);
   }
 
   override async insertClientLogUploadTask(record: ClientLogUploadTaskRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_client_log_upload_tasks (
-         id, app_id, user_id, did, key_id, from_ts_ms, to_ts_ms, max_lines, max_bytes,
-         status, claim_token, claim_expire_at, created_at, expires_at, uploaded_at,
-         uploaded_file_name, uploaded_file_path, uploaded_file_size_bytes, uploaded_line_count, failed_at, failure_reason
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::timestamptz, $13::timestamptz, $14::timestamptz, $15::timestamptz, $16, $17, $18, $19, $20::timestamptz, $21)`,
-      [
-        record.id,
-        record.appId,
-        record.userId ?? null,
-        record.did ?? null,
-        record.keyId,
-        record.fromTsMs ?? null,
-        record.toTsMs ?? null,
-        record.maxLines ?? null,
-        record.maxBytes ?? null,
-        record.status,
-        record.claimToken ?? null,
-        record.claimExpireAt ?? null,
-        record.createdAt,
-        record.expiresAt ?? null,
-        record.uploadedAt ?? null,
-        record.uploadedFileName ?? null,
-        record.uploadedFilePath ?? null,
-        record.uploadedFileSizeBytes ?? null,
-        record.uploadedLineCount ?? null,
-        record.failedAt ?? null,
-        record.failureReason ?? null,
-      ],
-    );
+    await this.operationalRecords.insertClientLogUploadTask(record);
   }
 
   override async updateClientLogUploadTask(
@@ -969,160 +530,19 @@ export class PostgresDatabase extends ApplicationDatabase {
       >
     >,
   ): Promise<void> {
-    const fields: string[] = [];
-    const values: unknown[] = [taskId];
-    let index = 2;
-
-    if ("status" in patch) {
-      fields.push(`status = $${index++}`);
-      values.push(patch.status ?? null);
-    }
-
-    if ("did" in patch) {
-      fields.push(`did = $${index++}`);
-      values.push(patch.did ?? null);
-    }
-
-    if ("claimToken" in patch) {
-      fields.push(`claim_token = $${index++}`);
-      values.push(patch.claimToken ?? null);
-    }
-
-    if ("claimExpireAt" in patch) {
-      fields.push(`claim_expire_at = $${index++}::timestamptz`);
-      values.push(patch.claimExpireAt ?? null);
-    }
-
-    if ("uploadedAt" in patch) {
-      fields.push(`uploaded_at = $${index++}::timestamptz`);
-      values.push(patch.uploadedAt ?? null);
-    }
-
-    if ("uploadedFileName" in patch) {
-      fields.push(`uploaded_file_name = $${index++}`);
-      values.push(patch.uploadedFileName ?? null);
-    }
-
-    if ("uploadedFilePath" in patch) {
-      fields.push(`uploaded_file_path = $${index++}`);
-      values.push(patch.uploadedFilePath ?? null);
-    }
-
-    if ("uploadedFileSizeBytes" in patch) {
-      fields.push(`uploaded_file_size_bytes = $${index++}`);
-      values.push(patch.uploadedFileSizeBytes ?? null);
-    }
-
-    if ("uploadedLineCount" in patch) {
-      fields.push(`uploaded_line_count = $${index++}`);
-      values.push(patch.uploadedLineCount ?? null);
-    }
-    if ("failedAt" in patch) {
-      fields.push(`failed_at = $${index++}::timestamptz`);
-      values.push(patch.failedAt ?? null);
-    }
-    if ("failureReason" in patch) {
-      fields.push(`failure_reason = $${index++}`);
-      values.push(patch.failureReason ?? null);
-    }
-
-    if (fields.length === 0) {
-      return;
-    }
-
-    fields.push("updated_at = NOW()");
-    await this.query(
-      `UPDATE zook_client_log_upload_tasks
-       SET ${fields.join(", ")}
-       WHERE id = $1`,
-      values,
-    );
+    await this.operationalRecords.updateClientLogUploadTask(taskId, patch);
   }
 
   override async insertClientLogUpload(record: ClientLogUploadRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_client_log_uploads (
-         id, task_id, app_id, user_id, key_id, encryption, content_encoding, nonce_base64,
-         line_count_reported, plain_bytes_reported, compressed_bytes_reported, encrypted_bytes,
-         accepted_count, rejected_count, uploaded_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15::timestamptz)`,
-      [
-        record.id,
-        record.taskId,
-        record.appId,
-        record.userId,
-        record.keyId,
-        record.encryption,
-        record.contentEncoding,
-        record.nonceBase64,
-        record.lineCountReported ?? null,
-        record.plainBytesReported ?? null,
-        record.compressedBytesReported ?? null,
-        record.encryptedBytes,
-        record.acceptedCount,
-        record.rejectedCount,
-        record.uploadedAt,
-      ],
-    );
+    await this.operationalRecords.insertClientLogUpload(record);
   }
 
   override async insertClientLogLines(records: ClientLogLineRecord[]): Promise<void> {
-    for (const record of records) {
-      await this.query(
-        `INSERT INTO zook_client_log_lines (
-           id, upload_id, task_id, app_id, user_id, timestamp_ms, level, message, payload, created_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::timestamptz)`,
-        [
-          record.id,
-          record.uploadId,
-          record.taskId,
-          record.appId,
-          record.userId,
-          record.timestampMs ?? null,
-          record.level ?? null,
-          record.message ?? null,
-          JSON.stringify(record.payload ?? {}),
-          record.createdAt,
-        ],
-      );
-    }
+    await this.operationalRecords.insertClientLogLines(records);
   }
 
   override async insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): Promise<void> {
-    await this.query(
-      `INSERT INTO zook_content_safety_checks (
-         id, app_id, user_id, request_id, task_type, source, method, decision,
-         category, keyword_id, blocked_text, text_length, text_hash, latency_ms,
-         model_key, provider, provider_model, failure_reason, failure_detail, metadata, created_at
-       ) VALUES (
-         $1, $2, $3, $4, $5, $6, $7, $8,
-         $9, $10, $11, $12, $13, $14,
-         $15, $16, $17, $18, $19, $20::jsonb, $21::timestamptz
-       )`,
-      [
-        record.id,
-        record.appId,
-        record.userId ?? null,
-        record.requestId ?? null,
-        record.taskType ?? null,
-        record.source,
-        record.method,
-        record.decision,
-        record.category ?? null,
-        record.keywordId ?? null,
-        record.text ?? null,
-        record.textLength,
-        record.textHash,
-        record.latencyMs ?? null,
-        record.modelKey ?? null,
-        record.provider ?? null,
-        record.providerModel ?? null,
-        record.failureReason ?? null,
-        record.failureDetail ?? null,
-        JSON.stringify(record.metadata ?? {}),
-        record.createdAt,
-      ],
-    );
+    await this.operationalRecords.insertContentSafetyCheckRecord(record);
   }
 
   override async listContentSafetyCheckRecords(filter: {
@@ -1135,59 +555,11 @@ export class PostgresDatabase extends ApplicationDatabase {
     decision?: ContentSafetyCheckRecord["decision"];
     limit?: number;
   } = {}): Promise<ContentSafetyCheckRecord[]> {
-    const clauses: string[] = [];
-    const values: unknown[] = [];
-    const add = (clause: string, value: unknown) => {
-      values.push(value);
-      clauses.push(clause.replace("?", `$${values.length}`));
-    };
-
-    if (filter.createdAtFromIso) {
-      add("created_at >= ?::timestamptz", filter.createdAtFromIso);
-    }
-    if (filter.createdAtToIso) {
-      add("created_at < ?::timestamptz", filter.createdAtToIso);
-    }
-    if (filter.appId) {
-      add("app_id = ?", filter.appId);
-    }
-    if (filter.source) {
-      add("source = ?", filter.source);
-    }
-    if (filter.method) {
-      add("method = ?", filter.method);
-    }
-    if (filter.taskType) {
-      add("task_type = ?", filter.taskType);
-    }
-    if (filter.decision) {
-      add("decision = ?", filter.decision);
-    }
-
-    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-    const limit = typeof filter.limit === "number" && filter.limit > 0
-      ? `LIMIT ${Math.min(Math.floor(filter.limit), 5000)}`
-      : "";
-    const result = await this.query(
-      `SELECT
-         id, app_id, user_id, request_id, task_type, source, method, decision,
-         category, keyword_id, blocked_text, text_length, text_hash, latency_ms,
-         model_key, provider, provider_model, failure_reason, failure_detail, metadata, created_at
-       FROM zook_content_safety_checks
-       ${where}
-       ORDER BY created_at DESC
-       ${limit}`,
-      values,
-    );
-    return result.rows.map(parseContentSafetyCheckRecord);
+    return await this.operationalRecords.listContentSafetyCheckRecords(filter);
   }
 
   override async deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): Promise<number> {
-    const result = await this.query(
-      "DELETE FROM zook_content_safety_checks WHERE created_at < $1::timestamptz",
-      [cutoffIso],
-    );
-    return result.rowCount ?? 0;
+    return await this.operationalRecords.deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso);
   }
 
   private async initialize(): Promise<void> {
@@ -1196,64 +568,16 @@ export class PostgresDatabase extends ApplicationDatabase {
     }
 
     await this.withExclusiveSession(async () => {
-      await this.seedDefaults();
+      await seedPostgresDefaults(this.seed, {
+        query: async (sql, values = []) => await this.query(sql, values),
+        insertApp: async (record) => await this.insertApp(record),
+        insertUser: async (record) => await this.insertUser(record),
+        insertAppUser: async (record) => await this.insertAppUser(record),
+        insertSmsVerificationRecord: async (record) =>
+          await this.insertSmsVerificationRecord(record),
+      });
     });
     this.initialized = true;
-  }
-
-  private async seedDefaults(): Promise<void> {
-    for (const record of this.seed.apps ?? []) {
-      await this.insertApp(record);
-    }
-    for (const record of this.seed.users ?? []) {
-      await this.insertUser(record);
-    }
-    for (const record of this.seed.appUsers ?? []) {
-      await this.insertAppUser(record);
-    }
-    for (const record of this.seed.roles ?? []) {
-      await this.query(
-        `INSERT INTO zook_roles (id, app_id, code, name, status)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (app_id, code) DO NOTHING`,
-        [record.id, record.appId, record.code, record.name, record.status],
-      );
-    }
-    for (const record of this.seed.permissions ?? []) {
-      await this.query(
-        `INSERT INTO zook_permissions (id, code, name, status)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id) DO NOTHING`,
-        [record.id, record.code, record.name, record.status],
-      );
-    }
-    for (const record of this.seed.rolePermissions ?? []) {
-      await this.query(
-        `INSERT INTO zook_role_permissions (id, role_id, permission_id)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (id) DO NOTHING`,
-        [record.id, record.roleId, record.permissionId],
-      );
-    }
-    for (const record of this.seed.userRoles ?? []) {
-      await this.query(
-        `INSERT INTO zook_user_roles (id, app_id, user_id, role_id)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id) DO NOTHING`,
-        [record.id, record.appId, record.userId, record.roleId],
-      );
-    }
-    for (const record of this.seed.appConfigs ?? []) {
-      await this.query(
-        `INSERT INTO zook_app_configs (id, app_id, config_key, config_value, updated_at)
-         VALUES ($1, $2, $3, $4, $5::timestamptz)
-         ON CONFLICT (app_id, config_key) DO NOTHING`,
-        [record.id, record.appId, record.configKey, record.configValue, record.updatedAt],
-      );
-    }
-    for (const record of this.seed.smsVerificationRecords ?? []) {
-      await this.insertSmsVerificationRecord(record);
-    }
   }
 
   private async listRolePermissions(): Promise<RolePermissionRecord[]> {
