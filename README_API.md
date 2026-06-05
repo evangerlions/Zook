@@ -272,6 +272,9 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 - `false`：当前仍是 `email-code-only` 或 `sms-code-only` 账号，前端应展示“设置密码”
 - `true`：前端应展示“修改密码”
 
+当 `hasPassword = false` 的账号尝试 `POST /api/v1/auth/login` 密码登录时，服务端返回 `401 AUTH_PASSWORD_NOT_SET`，`message` 会按请求语言本地化，提示用户先使用验证码登录并在账号设置中设置密码。
+如果账号不存在，密码登录返回 `401 AUTH_ACCOUNT_NOT_FOUND`，`message` 会按请求语言本地化提示账号不存在；如果账号存在但密码错误，仍返回 `401 AUTH_INVALID_CREDENTIAL`。
+
 18. `POST /api/v1/auth/logout` 当 `scope = "all"` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
 20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。AINovel 的 `ainovel-free-creative` / `ainovel-plus-reasoning` 等值属于业务 scene route key，不是 common LLM model key。
@@ -324,6 +327,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `401`       | `AUTH_REFRESH_TOKEN_REVOKED`        | Refresh Token 已失效或已撤销         |
 | `401`       | `AUTH_VERIFICATION_CODE_REQUIRED`   | 验证码缺失                           |
 | `401`       | `AUTH_VERIFICATION_CODE_INVALID`    | 验证码错误、过期或已失效             |
+| `401`       | `AUTH_ACCOUNT_NOT_FOUND`            | 账号不存在                           |
+| `401`       | `AUTH_PASSWORD_NOT_SET`             | 账号未设置密码                       |
 | `401`       | `AUTH_QR_LOGIN_TOKEN_REQUIRED`      | 扫码登录所需的一次性 token 缺失      |
 | `401`       | `AUTH_QR_LOGIN_INVALID`             | 扫码登录会话或 token 非法            |
 | `401`       | `AUTH_QR_LOGIN_EXPIRED`             | 扫码登录二维码已过期                 |
