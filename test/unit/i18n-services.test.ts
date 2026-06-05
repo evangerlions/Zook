@@ -193,6 +193,14 @@ test("public API message service localizes representative frontend-visible error
     "当前登录态无效，请重新登录。",
   );
   assert.equal(
+    service.fromErrorCode("AUTH_ACCOUNT_NOT_FOUND", zhHeaderRequest),
+    "账号不存在。",
+  );
+  assert.equal(
+    service.fromErrorCode("AUTH_PASSWORD_NOT_SET", zhHeaderRequest),
+    "该账号未设置密码，请使用验证码登录。",
+  );
+  assert.equal(
     service.fromErrorCode("AI_UPSTREAM_TIMEOUT", zhHeaderRequest),
     "AI 服务响应超时，请重试。",
   );

@@ -127,7 +127,23 @@ export class AuthService {
     await this.assertNotLocked(normalizedAccount, now);
 
     const user = await this.database.findUserByAccount(normalizedAccount);
-    if (!user || !this.verifyPassword(user, command.password)) {
+    if (!user) {
+      await this.registerFailure(normalizedAccount, now);
+      unauthorized(
+        "AUTH_ACCOUNT_NOT_FOUND",
+        "The account does not exist.",
+      );
+    }
+
+    if (this.isPasswordNotSet(user)) {
+      await this.registerFailure(normalizedAccount, now);
+      unauthorized(
+        "AUTH_PASSWORD_NOT_SET",
+        "No password is set. Please sign in with a verification code.",
+      );
+    }
+
+    if (!this.verifyPassword(user, command.password)) {
       await this.registerFailure(normalizedAccount, now);
       unauthorized(
         "AUTH_INVALID_CREDENTIAL",
@@ -447,6 +463,13 @@ export class AuthService {
     return (
       user.passwordAlgo === this.passwordHasher.algorithm ||
       user.passwordAlgo === "argon2id-adapter"
+    );
+  }
+
+  private isPasswordNotSet(user: UserRecord): boolean {
+    return (
+      user.passwordAlgo === "email-code-only" ||
+      user.passwordAlgo === "sms-code-only"
     );
   }
 

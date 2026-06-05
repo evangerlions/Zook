@@ -100,7 +100,11 @@ test("sms-code login sends sms, auto-creates account, and blocks password login 
   });
 
   assert.equal(passwordLoginResponse.statusCode, 401);
-  assert.equal(passwordLoginResponse.body.code, "AUTH_INVALID_CREDENTIAL");
+  assert.equal(passwordLoginResponse.body.code, "AUTH_PASSWORD_NOT_SET");
+  assert.equal(
+    passwordLoginResponse.body.message,
+    "No password is set. Please sign in with a verification code.",
+  );
 });
 
 test("sms login rejects first-login into INVITE_ONLY apps", async () => {

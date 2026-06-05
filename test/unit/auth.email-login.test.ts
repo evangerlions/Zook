@@ -29,6 +29,29 @@ function createFakeSender(sent: SentVerificationEmail[]): RegistrationEmailSende
   };
 }
 
+test("password login returns localized account-not-found for unknown accounts", async () => {
+  const runtime = await createApplication();
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login",
+    headers: {
+      "x-app-locale": "zh-CN",
+    },
+    body: {
+      appId: "app_a",
+      account: "missing@example.com",
+      password: "Password1234",
+      clientType: "app",
+    },
+    ipAddress: "198.51.100.9",
+  });
+
+  assert.equal(response.statusCode, 401);
+  assert.equal(response.body.code, "AUTH_ACCOUNT_NOT_FOUND");
+  assert.equal(response.body.message, "账号不存在。");
+});
+
 test("email-code login sends localized email, auto-creates account, and blocks password login for email-code-only users", async () => {
   const sent: SentVerificationEmail[] = [];
   const runtime = await createApplication({
@@ -110,7 +133,9 @@ test("email-code login sends localized email, auto-creates account, and blocks p
   const passwordLoginResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/auth/login",
-    headers: {},
+    headers: {
+      "x-app-locale": "zh-CN",
+    },
     body: {
       appId: "app_a",
       account: "new-login@example.com",
@@ -121,7 +146,11 @@ test("email-code login sends localized email, auto-creates account, and blocks p
   });
 
   assert.equal(passwordLoginResponse.statusCode, 401);
-  assert.equal(passwordLoginResponse.body.code, "AUTH_INVALID_CREDENTIAL");
+  assert.equal(passwordLoginResponse.body.code, "AUTH_PASSWORD_NOT_SET");
+  assert.equal(
+    passwordLoginResponse.body.message,
+    "该账号未设置密码，请使用验证码登录。",
+  );
 });
 
 test("email-code delivery uses trusted gateway country header before client country header and does not hit geo", async () => {
