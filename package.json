@@ -13,6 +13,7 @@
     "admin:dev": "npm --prefix apps/admin-web run dev",
     "admin:install": "npm --prefix apps/admin-web install --include=optional",
     "admin:typecheck": "npm --prefix apps/admin-web run typecheck",
+    "check:line-count": "node scripts/check-source-line-count.mjs",
     "worker": "node --experimental-transform-types src/worker.ts",
     "test": "node --experimental-transform-types --test test/unit/*.test.ts",
     "sync:api": "bash ./scripts/sync-zook-api-contracts.sh"

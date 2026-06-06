@@ -100,7 +100,11 @@ test("sms-code login sends sms, auto-creates account, and blocks password login 
   });
 
   assert.equal(passwordLoginResponse.statusCode, 401);
-  assert.equal(passwordLoginResponse.body.code, "AUTH_INVALID_CREDENTIAL");
+  assert.equal(passwordLoginResponse.body.code, "AUTH_PASSWORD_NOT_SET");
+  assert.equal(
+    passwordLoginResponse.body.message,
+    "No password is set. Please sign in with a verification code.",
+  );
 });
 
 test("sms login rejects first-login into INVITE_ONLY apps", async () => {
@@ -313,6 +317,73 @@ test("sms password code hides account existence and sms password reset upgrades 
   });
 
   assert.equal(passwordLoginResponse.statusCode, 200);
+});
+
+test("sms password-code resend cooldown is enforced before blocked-account hiding", async () => {
+  const sent: SentVerificationSms[] = [];
+  let nextCode = "626262";
+  const runtime = await createApplication({
+    registrationCodeGenerator: () => nextCode,
+    smsVerificationSender: createFakeSmsSender(sent),
+  });
+  const now = new Date("2026-03-30T10:00:00+08:00");
+
+  await runtime.services.authService.loginSmsCode(
+    {
+      appId: "app_a",
+      phone: "18710100992",
+      phoneNa: "+86",
+      ipAddress: "198.51.100.80",
+    },
+    now,
+  );
+  const login = await runtime.services.authService.loginWithSmsCode(
+    {
+      appId: "app_a",
+      phone: "18710100992",
+      phoneNa: "+86",
+      smsCode: "626262",
+      ipAddress: "198.51.100.80",
+    },
+    new Date(now.getTime() + 10 * 1000),
+  );
+  assert.ok(login.session.accessToken);
+
+  nextCode = "727272";
+  const firstResponse = await runtime.services.authService.sendPasswordSmsCode(
+    {
+      appId: "app_a",
+      phone: "18710100992",
+      phoneNa: "+86",
+      ipAddress: "198.51.100.80",
+    },
+    new Date(now.getTime() + 20 * 1000),
+  );
+  assert.equal(firstResponse.accepted, true);
+
+  const user = runtime.database.findUserByPhone("+8618710100992");
+  assert.ok(user);
+  user.status = "BLOCKED";
+
+  await assert.rejects(
+    () =>
+      runtime.services.authService.sendPasswordSmsCode(
+        {
+          appId: "app_a",
+          phone: "18710100992",
+          phoneNa: "+86",
+          ipAddress: "198.51.100.80",
+        },
+        new Date(now.getTime() + 50 * 1000),
+      ),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "AUTH_RATE_LIMITED" &&
+      "statusCode" in error &&
+      error.statusCode === 429,
+  );
+  assert.deepEqual(sent.map((item) => item.code), ["626262", "727272"]);
 });
 
 test("sms code endpoints accept test=true and skip real sms sending while still issuing usable codes", async () => {

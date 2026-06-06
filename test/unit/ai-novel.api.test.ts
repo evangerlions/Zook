@@ -2091,6 +2091,109 @@ test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits 
   assert.match(String(toolCall.id), /^ainovel-.*_kickoff_tool_0$/);
 });
 
+test("ai_novel kickoff_turn ignores streamed tool argument deltas until final tool_call", async () => {
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+        finishReason: "stop",
+        providerRequestId: "chat-req-setup-tool-delta-001",
+      };
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield {
+        type: "content_delta",
+        text: "我先问一个关键问题。",
+      };
+      yield {
+        type: "tool_call_delta",
+        toolCallId: "call_question_delta",
+        toolCallName: "ask_question",
+        text: '{"question":"你希望主角是谁？"',
+      };
+      yield {
+        type: "tool_call_delta",
+        toolCallId: "call_question_delta",
+        toolCallName: "ask_question",
+        text: ',"options":[]}',
+      };
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "call_question_delta",
+          name: "ask_question",
+          input: {
+            question: "你希望主角是谁？",
+            options: [
+              {
+                label: "普通学生",
+                subtitle: "从日常被异常打破开始。",
+              },
+              {
+                label: "转校生",
+                subtitle: "带着秘密进入校园。",
+              },
+            ],
+          },
+        },
+      };
+      yield {
+        type: "done",
+        finishReason: "tool_calls",
+      };
+    },
+  };
+
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      host: "127.0.0.1:3100",
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "kickoff_turn",
+        stream: true,
+        context: {
+          meta: {
+            titleCandidate: "",
+            readiness: 0,
+          },
+        },
+        messages: [{ role: "user", content: "写一个校园超自然故事。" }],
+      },
+      aiKey,
+    ),
+  });
+
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events
+    .map((event) => decryptAiPayload(event, aiKey))
+    .map(normalizeAiEvent);
+  assert.deepEqual(
+    decryptedEvents.map((event) => event.type),
+    ["text_delta", "tool_call", "done"],
+  );
+  const toolCall = decryptedEvents[1].toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "ask_question");
+  const doneCompletion = (decryptedEvents[2]?.completion ?? {}) as Record<
+    string,
+    unknown
+  >;
+  assert.equal(doneCompletion.finishReason, "tool_calls");
+});
+
 test("ai_novel kickoff_turn builds one merged system message with workflow prompt and summary", async () => {
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   let capturedTools: unknown[] | undefined;

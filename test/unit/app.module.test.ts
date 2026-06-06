@@ -86,6 +86,43 @@ test("api health exposes the current runtime version", async () => {
   }
 });
 
+test("unknown API routes keep the route-not-found contract", async () => {
+  const runtime = await createApplication({
+    queueBackend: "memory",
+    databaseFactory: (seed) => new InMemoryDatabase(seed),
+  });
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/nope",
+    headers: {},
+    requestId: "req_unknown_route",
+  } as never);
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.match(response.body.message, /Request content is invalid|Route not found/);
+});
+
+test("generic encrypted AI route is not exposed outside documented AINovel endpoints", async () => {
+  const runtime = await createApplication({
+    queueBackend: "memory",
+    databaseFactory: (seed) => new InMemoryDatabase(seed),
+  });
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/encrypted",
+    headers: {},
+    body: {},
+    requestId: "req_generic_encrypted_ai_route",
+  } as never);
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.match(response.body.message, /Request content is invalid|Route not found/);
+});
+
 test("createApplication resolves sms sender credentials from common password workspace", async () => {
   const previousSmsSdkAppId = process.env.TENCENT_SMS_SDK_APP_ID;
   const previousSmsTemplateId = process.env.TENCENT_SMS_TEMPLATE_ID;

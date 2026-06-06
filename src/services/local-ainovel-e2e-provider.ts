@@ -13,6 +13,8 @@ import type {
 
 export const AINOVEL_E2E_LLM_PROVIDER_ENV = "AINOVEL_E2E_LLM_PROVIDER";
 export const AINOVEL_E2E_STREAM_DELAY_MS_ENV = "AINOVEL_E2E_STREAM_DELAY_MS";
+export const AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV =
+  "AINOVEL_E2E_KICKOFF_ASK_FIRST";
 
 export function shouldUseLocalAiNovelE2eProvider(env = process.env): boolean {
   if (!isTruthy(env[AINOVEL_E2E_LLM_PROVIDER_ENV])) {
@@ -45,6 +47,25 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
   ): AsyncIterable<LLMStreamEvent> {
     const toolNames = toolNamesFromProviderOptions(request.providerOptions);
     if (isKickoffToolSet(toolNames)) {
+      if (shouldAskKickoffQuestionFirst(request.messages)) {
+        yield this.reasoningDelta(
+          "本地 E2E 推理：先提出一个 kickoff 选项问题，等待用户选择后继续。",
+        );
+        yield {
+          type: "content_delta",
+          text: "先确认第一阶段的开局压力。",
+        };
+        yield {
+          type: "tool_call",
+          toolCall: this.toolCall(
+            "ask_question",
+            kickoffAskQuestionPayload(),
+          ),
+        };
+        yield this.usage();
+        yield { type: "done", finishReason: "tool_calls" };
+        return;
+      }
       yield this.reasoningDelta(
         "本地 E2E 推理：整理 kickoff 元数据并确认首章规划入口。",
       );
@@ -231,6 +252,15 @@ function hasDraftToolRetryMessage(messages: ResolvedLLMCompletionRequest["messag
   );
 }
 
+function shouldAskKickoffQuestionFirst(
+  messages: ResolvedLLMCompletionRequest["messages"],
+): boolean {
+  if (!isTruthy(process.env[AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV])) {
+    return false;
+  }
+  return !messages.some((message) => message.role === "tool");
+}
+
 function isTruthy(value: string | undefined): boolean {
   return ["1", "true", "yes", "on"].includes(
     String(value ?? "")
@@ -397,6 +427,23 @@ function kickoffReadyPayload(): Record<string, unknown> {
         };
       }),
     },
+  };
+}
+
+function kickoffAskQuestionPayload(): Record<string, unknown> {
+  return {
+    question: "第一阶段更想突出哪种开局压力？",
+    options: [
+      {
+        label: "追兵压迫",
+        subtitle: "从边荒追杀和濒死求生切入。",
+      },
+      {
+        label: "残魂交易",
+        subtitle: "从黑骨灯传承的代价切入。",
+      },
+    ],
+    allowCustom: true,
   };
 }
 

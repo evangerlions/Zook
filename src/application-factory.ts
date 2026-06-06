@@ -1,0 +1,537 @@
+import { AppContextResolver } from "./core/context/app-context.resolver.ts";
+import { HttpExceptionFilter } from "./core/filters/http-exception.filter.ts";
+import { AppAccessGuard } from "./core/guards/app-access.guard.ts";
+import { AuthGuard } from "./core/guards/auth.guard.ts";
+import { RbacGuard } from "./core/guards/rbac.guard.ts";
+import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
+import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
+import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
+import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
+import { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
+import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
+import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
+import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
+import { StorageService } from "./infrastructure/files/storage.service.ts";
+import { InMemoryKVBackend, KVManager } from "./infrastructure/kv/kv-manager.ts";
+import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
+import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
+import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
+import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
+import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
+import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
+import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
+import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
+import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
+import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
+import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
+import { AuthService } from "./modules/auth/auth.service.ts";
+import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
+import { QrLoginService } from "./modules/auth/qr-login.service.ts";
+import { TokenService } from "./modules/auth/token.service.ts";
+import { RbacService } from "./modules/iam/rbac.service.ts";
+import { UserService } from "./modules/user/user.service.ts";
+import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
+import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
+import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
+import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
+import { AppLogSecretService } from "./services/app-log-secret.service.ts";
+import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
+import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
+import { ClientLogUploadService } from "./services/client-log-upload.service.ts";
+import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
+import { CommonContentSafetyConfigService } from "./services/common-content-safety-config.service.ts";
+import { CommonEmailConfigService } from "./services/common-email-config.service.ts";
+import { CommonGetuiGyConfigService } from "./services/common-getui-gy-config.service.ts";
+import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
+import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import { CommonSmsConfigService } from "./services/common-sms-config.service.ts";
+import { ContentSafetyService } from "./services/content-safety.service.ts";
+import { EmailTestSendService } from "./services/email-test-send.service.ts";
+import { EmbeddingManager } from "./services/embedding-manager.ts";
+import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
+import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
+import { I18nService } from "./services/i18n.service.ts";
+import { LlmHealthService } from "./services/llm-health.service.ts";
+import { LlmMetricsService } from "./services/llm-metrics.service.ts";
+import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
+import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
+import { LLMManager } from "./services/llm-manager.ts";
+import { NotificationService } from "./services/notification.service.ts";
+import { AdminSessionStore } from "./services/admin-session-store.ts";
+import { PasswordManager } from "./services/password-manager.ts";
+import { PublicApiMessageService } from "./services/public-api-message.service.ts";
+import { RefreshTokenStore } from "./services/refresh-token-store.ts";
+import { HttpGeoResolver, NoopGeoResolver, RequestEmailContextService } from "./services/request-email-context.service.ts";
+import { RequestLocaleService } from "./services/request-locale.service.ts";
+import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts";
+import { SmsVerificationCleanupService } from "./services/sms-verification-cleanup.service.ts";
+import { SmsVerificationRecordService } from "./services/sms-verification-record.service.ts";
+import { NoopCaptchaVerificationService, TencentCaptchaVerificationService } from "./services/tencent-captcha-verification.service.ts";
+import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
+import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
+import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
+import { BackendApplication } from "./app/backend-application.ts";
+import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
+import type { CreateApplicationOptions } from "./application-options.ts";
+import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
+
+/**
+ * createApplication produces a full runtime context that tests can reuse without real infra.
+ */
+export async function createApplication(
+  options: CreateApplicationOptions = {},
+) {
+  const passwordHasher = new DevelopmentPasswordHasher();
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher);
+  const kvManager =
+    options.kvManager ??
+    (options.kvBackend
+      ? await KVManager.create({ backend: options.kvBackend })
+      : resolveRuntimeRedisUrl()
+        ? await KVManager.getShared({ redisUrl: resolveRuntimeRedisUrl() })
+        : await KVManager.create({ backend: new InMemoryKVBackend() }));
+  const shouldLoadManagedState = Boolean(
+    options.database || options.databaseFactory,
+  );
+  const managedStateStore = new ManagedStateStore(kvManager, {
+    enabled: shouldLoadManagedState,
+  });
+  const seed = shouldLoadManagedState
+    ? applyManagedState(baseSeed, await managedStateStore.load())
+    : baseSeed;
+  const database =
+    options.database ??
+    (options.databaseFactory
+      ? await options.databaseFactory(seed)
+      : await PostgresDatabase.create(
+          options.databaseUrl?.trim() ||
+            resolveRuntimeDatabaseUrl() ||
+            (() => {
+              throw new Error(
+                "DATABASE_URL must be configured before starting PostgreSQL.",
+              );
+            })(),
+          seed,
+          {
+            migrationConnectionString:
+              options.migrationDatabaseUrl?.trim() ||
+              resolveRuntimeMigrationDatabaseUrl(),
+          },
+        ));
+  const cache = new InMemoryCache();
+  const defaultQueueBackend =
+    options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl()
+      ? "redis"
+      : "memory";
+  const resolvedQueueBackend = options.queueBackend ?? defaultQueueBackend;
+  const queue =
+    options.queue ??
+    (resolvedQueueBackend === "redis"
+      ? new RedisJobQueue(
+          options.queueRedisUrl?.trim() ||
+            resolveRuntimeRedisUrl() ||
+            (() => {
+              throw new Error(
+                "REDIS_URL must be configured before starting the Redis job queue backend.",
+              );
+            })(),
+        )
+      : new InMemoryJobQueue());
+  const logger = new StructuredLogger(options.serviceName ?? "api", {
+    emitToConsole: options.emitLogs ?? false,
+  });
+
+  const appConfigService = new VersionedAppConfigService(
+    database,
+    cache,
+    kvManager,
+  );
+  const appI18nConfigService = new AppI18nConfigService(appConfigService);
+  const appAiRoutingConfigService = new AppAiRoutingConfigService();
+  const passwordManager = new PasswordManager(kvManager);
+  const adminSessionStore = new AdminSessionStore(kvManager);
+  const refreshTokenStore = new RefreshTokenStore(kvManager);
+  const smsVerificationRecordService = new SmsVerificationRecordService(
+    database,
+  );
+  const smsVerificationCleanupService = new SmsVerificationCleanupService(
+    database,
+    kvManager,
+  );
+  const commonPasswordConfigService = new CommonPasswordConfigService(
+    passwordManager,
+  );
+  const secretReferenceResolver = new SecretReferenceResolver(
+    commonPasswordConfigService,
+  );
+  const commonEmailConfigService = new CommonEmailConfigService(
+    appConfigService,
+    commonPasswordConfigService,
+    logger,
+  );
+  const commonSmsConfigService = new CommonSmsConfigService(
+    appConfigService,
+    commonPasswordConfigService,
+    logger,
+  );
+  const commonAuthRateLimitConfigService = new CommonAuthRateLimitConfigService(
+    appConfigService,
+  );
+  const commonGetuiGyConfigService = new CommonGetuiGyConfigService(
+    appConfigService,
+  );
+  const commonLlmConfigService = new CommonLlmConfigService(
+    appConfigService,
+    secretReferenceResolver,
+  );
+  const commonContentSafetyConfigService = new CommonContentSafetyConfigService(
+    appConfigService,
+  );
+  const appLogSecretService = new AppLogSecretService(database, kvManager);
+  const logEncryptionKeyResolver =
+    options.logEncryptionKeyResolver ??
+    new CompositeAesGcmEncryptionKeyResolver([
+      new StaticAesGcmEncryptionKeyResolver(options.logEncryptionKeys),
+      appLogSecretService,
+    ]);
+  const aiPayloadCryptoService = new AesGcmPayloadCryptoService(
+    logEncryptionKeyResolver,
+  );
+  const appRemoteLogPullService = new AppRemoteLogPullService(
+    appConfigService,
+    database,
+    appLogSecretService,
+  );
+  await database.withExclusiveSession(async () => {
+    const initializedCommonLlmConfig =
+      await commonLlmConfigService.initializeDefaultConfig();
+    const initializedAppLogSecrets =
+      await appLogSecretService.initializeSecrets(await database.listAppIds());
+    const initializedRemoteLogPullConfigs =
+      await appRemoteLogPullService.initializeMissingConfigs(
+        await database.listAppIds(),
+      );
+    const initializedGetuiGyConfig =
+      await commonGetuiGyConfigService.initializeDefaultConfig();
+    if (
+      initializedCommonLlmConfig ||
+      initializedAppLogSecrets ||
+      initializedRemoteLogPullConfigs ||
+      initializedGetuiGyConfig
+    ) {
+      await managedStateStore.save(database);
+    }
+  });
+  const llmHealthService = new LlmHealthService(kvManager);
+  const llmMetricsService = new LlmMetricsService(kvManager);
+  const appRegistryService = new AppRegistryService(database, appConfigService);
+  const userService = new UserService(database);
+  const accessTokenSecrets = resolveAccessTokenSecrets(options);
+  const tokenService = new TokenService(accessTokenSecrets.current, {
+    previousSecrets: accessTokenSecrets.previous,
+  });
+  const tencentCloudCommonCredentials =
+    await resolveTencentCloudCommonCredentials(commonPasswordConfigService);
+  const baseTencentSmsVerificationConfig = resolveTencentSmsVerificationConfig(
+    options,
+    tencentCloudCommonCredentials,
+  );
+  const registrationEmailSender =
+    options.registrationEmailSender ??
+    (options.serviceName === "api"
+      ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
+      : new NoopRegistrationEmailSender());
+  const smsVerificationSender =
+    options.smsVerificationSender ??
+    (options.serviceName === "api"
+      ? ({
+          async sendVerificationCode(command) {
+            const config = await commonSmsConfigService.getRuntimeConfig(
+              baseTencentSmsVerificationConfig,
+            );
+            return new TencentSmsVerificationSender(
+              config,
+            ).sendVerificationCode(command);
+          },
+        } satisfies SmsVerificationSender)
+      : new NoopSmsVerificationSender());
+  const captchaVerificationService =
+    options.captchaVerificationService ??
+    (options.serviceName === "api"
+      ? new TencentCaptchaVerificationService(
+          resolveTencentCaptchaVerificationConfig(
+            options,
+            tencentCloudCommonCredentials,
+          ),
+        )
+      : new NoopCaptchaVerificationService());
+  const emailTestSendService = new EmailTestSendService(
+    commonEmailConfigService,
+    kvManager,
+    registrationEmailSender,
+  );
+  const adminSensitiveOperationService = new AdminSensitiveOperationService(
+    kvManager,
+    options.adminSensitiveOperation,
+  );
+  const geoResolver =
+    options.geoResolver ??
+    (process.env.GEO_RESOLVER_URL?.trim()
+      ? new HttpGeoResolver(
+          {
+            baseUrl: process.env.GEO_RESOLVER_URL,
+            token: process.env.GEO_RESOLVER_TOKEN,
+            timeoutMs: Number(process.env.GEO_RESOLVER_TIMEOUT_MS ?? 1500),
+          },
+          cache,
+        )
+      : new NoopGeoResolver());
+  const requestEmailContextService = new RequestEmailContextService(
+    geoResolver,
+  );
+  const requestLocaleService = new RequestLocaleService();
+  const publicApiMessageService = new PublicApiMessageService(
+    requestLocaleService,
+  );
+  const i18nService = new I18nService(
+    appI18nConfigService,
+    requestLocaleService,
+  );
+  const authService = new AuthService(
+    database,
+    kvManager,
+    userService,
+    appRegistryService,
+    passwordHasher,
+    tokenService,
+    refreshTokenStore,
+    commonAuthRateLimitConfigService,
+    registrationEmailSender,
+    smsVerificationSender,
+    smsVerificationRecordService,
+    options.registrationCodeGenerator,
+    resolveSecureRefreshCookie(options),
+    resolveRefreshCookieSameSite(options),
+  );
+  const qrLoginService = new QrLoginService(
+    cache,
+    appRegistryService,
+    userService,
+    authService,
+  );
+  const getuiGyOneClickLoginService = new GetuiGyOneClickLoginService(
+    commonGetuiGyConfigService,
+  );
+  const analyticsService = new AnalyticsService(database, appRegistryService);
+  const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
+  const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
+    ? new LocalAiNovelE2eProvider()
+    : undefined;
+  if (localAiNovelE2eProvider) {
+    logger.info("using local AINovel E2E LLM provider", {
+      appEnv: process.env.APP_ENV,
+      nodeEnv: process.env.NODE_ENV,
+    });
+  }
+  const llmProviders = options.llmProviders ?? {
+    bailian: localAiNovelE2eProvider ?? bailianProvider,
+    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
+  };
+  const embeddingProviders = options.embeddingProviders ?? {
+    bailian: localAiNovelE2eProvider ?? bailianProvider,
+    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
+  };
+  const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
+    commonLlmConfigService,
+    llmHealthService,
+    llmMetricsService,
+  });
+  const llmSmokeTestService = new LlmSmokeTestService(
+    commonLlmConfigService,
+    kvManager,
+    llmProviders,
+    embeddingProviders,
+  );
+  const aiNovelAuditFileService = new AiNovelAuditFileService(
+    options.aiNovelAuditFileRoot,
+  );
+  const adminConsoleService = new AdminConsoleService(
+    database,
+    appConfigService,
+    appI18nConfigService,
+    appAiRoutingConfigService,
+    appRemoteLogPullService,
+    appLogSecretService,
+    commonEmailConfigService,
+    commonSmsConfigService,
+    commonAuthRateLimitConfigService,
+    commonGetuiGyConfigService,
+    commonLlmConfigService,
+    commonContentSafetyConfigService,
+    commonPasswordConfigService,
+    emailTestSendService,
+    llmHealthService,
+    llmMetricsService,
+    llmSmokeTestService,
+    refreshTokenStore,
+    smsVerificationRecordService,
+    managedStateStore,
+  );
+  const rbacService = new RbacService(database);
+  const llmManager = new LLMManager(llmProviders, undefined, {
+    commonLlmConfigService,
+    llmHealthService,
+    llmMetricsService,
+  });
+  const contentSafetyService = new ContentSafetyService(
+    commonContentSafetyConfigService,
+    llmManager,
+    commonPasswordConfigService,
+    database,
+    logger,
+  );
+  const aiNovelLlmService = new AiNovelLlmService(
+    llmManager,
+    embeddingManager,
+    appAiRoutingConfigService,
+    logger,
+    contentSafetyService,
+  );
+  const storageService = new StorageService(database);
+  const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
+  const clientLogUploadService = new ClientLogUploadService(
+    database,
+    logEncryptionKeyResolver,
+    appRemoteLogPullService,
+    {
+      fileStore: persistentFileStore,
+    },
+  );
+  const notificationService = new NotificationService(database, queue, logger);
+  const failedEventRetryService = new FailedEventRetryService(
+    database,
+    queue,
+    logger,
+  );
+  const apps = await database.listApps();
+  const appContextResolver = new AppContextResolver(
+    new Map(
+      apps
+        .filter((item) => item.apiDomain)
+        .map((item) => [item.apiDomain as string, item.id]),
+    ),
+  );
+  const authGuard = new AuthGuard(tokenService);
+  const appAccessGuard = new AppAccessGuard();
+  const rbacGuard = new RbacGuard(rbacService);
+  const validationPipe = new ValidationPipe();
+  const auditInterceptor = new AuditInterceptor(database);
+  const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
+  const httpExceptionFilter = new HttpExceptionFilter(publicApiMessageService);
+  const adminBasicAuth = resolveAdminBasicAuth(options);
+
+  const app = new BackendApplication(
+    database,
+    authService,
+    getuiGyOneClickLoginService,
+    commonGetuiGyConfigService,
+    qrLoginService,
+    analyticsService,
+    adminConsoleService,
+    appRegistryService,
+    userService,
+    appAiRoutingConfigService,
+    adminBasicAuth,
+    adminSessionStore,
+    appLogSecretService,
+    adminSensitiveOperationService,
+    llmManager,
+    embeddingManager,
+    contentSafetyService,
+    llmSmokeTestService,
+    aiNovelAuditFileService,
+    aiNovelLlmService,
+    aiPayloadCryptoService,
+    storageService,
+    clientLogUploadService,
+    notificationService,
+    failedEventRetryService,
+    requestEmailContextService,
+    requestLocaleService,
+    publicApiMessageService,
+    logger,
+    auditInterceptor,
+    requestLoggingInterceptor,
+    httpExceptionFilter,
+    appContextResolver,
+    authGuard,
+    appAccessGuard,
+    rbacGuard,
+    validationPipe,
+  );
+
+  return {
+    app,
+    database,
+    cache,
+    queue,
+    logger,
+    passwordHasher,
+    services: {
+      appConfigService,
+      appI18nConfigService,
+      appRemoteLogPullService,
+      kvManager,
+      passwordManager,
+      adminSessionStore,
+      refreshTokenStore,
+      commonPasswordConfigService,
+      commonEmailConfigService,
+      commonSmsConfigService,
+      commonAuthRateLimitConfigService,
+      commonGetuiGyConfigService,
+      commonLlmConfigService,
+      commonContentSafetyConfigService,
+      appLogSecretService,
+      adminSensitiveOperationService,
+      appRegistryService,
+      emailTestSendService,
+      userService,
+      appAiRoutingConfigService,
+      tokenService,
+      authService,
+      getuiGyOneClickLoginService,
+      qrLoginService,
+      analyticsService,
+      adminConsoleService,
+      llmManager,
+      embeddingManager,
+      contentSafetyService,
+      llmHealthService,
+      llmMetricsService,
+      llmSmokeTestService,
+      aiNovelAuditFileService,
+      aiNovelLlmService,
+      rbacService,
+      storageService,
+      clientLogUploadService,
+      notificationService,
+      failedEventRetryService,
+      smsVerificationSender,
+      smsVerificationCleanupService,
+      captchaVerificationService,
+      requestEmailContextService,
+      requestLocaleService,
+      publicApiMessageService,
+      i18nService,
+      appContextResolver,
+      authGuard,
+      appAccessGuard,
+      rbacGuard,
+    },
+    close: async () => {
+      await queue.close?.();
+      await database.close();
+    },
+  };
+}
