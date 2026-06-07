@@ -26,6 +26,7 @@ import {
 } from "../../shared/utils.ts";
 import type { SmsVerificationSender } from "../../services/tencent-sms-verification.service.ts";
 import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
+import { CommonTestAccountService } from "../../services/common-test-account.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { DevelopmentPasswordHasher } from "./password-hasher.ts";
 import {
@@ -41,6 +42,7 @@ export class AuthSmsFlow {
     private readonly passwordHasher: DevelopmentPasswordHasher,
     private readonly smsVerificationSender: SmsVerificationSender,
     private readonly smsVerificationRecordService: SmsVerificationRecordService,
+    private readonly commonTestAccountService: CommonTestAccountService,
     private readonly verificationLimiter: AuthVerificationLimiter,
     private readonly issueSession: (
       userId: string,
@@ -53,6 +55,7 @@ export class AuthSmsFlow {
       now: Date,
     ) => Promise<number>,
     private readonly registrationCodeGenerator: () => string,
+    private readonly publicSmsTestBypassEnabled = false,
   ) {}
 
   async registerSmsCode(
@@ -80,7 +83,7 @@ export class AuthSmsFlow {
       scene: "register",
       rateLimit,
       now,
-      test: command.test === true,
+      test: this.shouldUsePublicSmsTestBypass(command.test),
     });
   }
 
@@ -143,6 +146,9 @@ export class AuthSmsFlow {
       now,
       "sms",
     );
+    if (await this.commonTestAccountService.hasEnabledAccount(app.id, phone)) {
+      return this.buildAcceptedResult(rateLimit);
+    }
     return await this.issueSmsCode({
       app,
       phone,
@@ -152,7 +158,7 @@ export class AuthSmsFlow {
       scene: "login",
       rateLimit,
       now,
-      test: command.test === true,
+      test: this.shouldUsePublicSmsTestBypass(command.test),
     });
   }
 
@@ -172,6 +178,16 @@ export class AuthSmsFlow {
       now,
       "sms",
     );
+    if (
+      await this.commonTestAccountService.verifyEnabledCode({
+        appId: app.id,
+        phone,
+        code: command.smsCode,
+        now,
+      })
+    ) {
+      return await this.loginWithVerifiedPhone({ app, phone, now });
+    }
     await this.assertSmsCodeValid({
       appId: app.id,
       subject: phone,
@@ -237,7 +253,7 @@ export class AuthSmsFlow {
       scene: "password-reset",
       rateLimit,
       now,
-      test: command.test === true,
+      test: this.shouldUsePublicSmsTestBypass(command.test),
     });
   }
 
@@ -554,4 +570,7 @@ export class AuthSmsFlow {
     };
   }
 
+  private shouldUsePublicSmsTestBypass(test?: boolean): boolean {
+    return test === true && this.publicSmsTestBypassEnabled;
+  }
 }

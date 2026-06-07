@@ -36,6 +36,11 @@ export interface CreateApplicationOptions {
   };
   secureRefreshCookie?: boolean;
   refreshCookieSameSite?: "Lax" | "None" | "Strict";
+  /**
+   * Dev/debug-only SMS provider bypass for public `test=true` requests.
+   * Production App Review accounts must use CommonTestAccountService instead.
+   */
+  publicSmsTestBypassEnabled?: boolean;
   accessTokenSecret?: string;
   accessTokenPreviousSecrets?: string[];
   databaseUrl?: string;

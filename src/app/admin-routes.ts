@@ -7,12 +7,14 @@ import { tryHandleAdminEmailSmsRoutes } from "./admin-email-sms-routes.ts";
 import { tryHandleAdminLlmRoutes } from "./admin-llm-routes.ts";
 import { tryHandleAdminRemoteLogRoutes } from "./admin-remote-log-routes.ts";
 import { tryHandleAdminSecurityRoutes } from "./admin-security-routes.ts";
+import { tryHandleAdminTestAccountRoutes } from "./admin-test-account-routes.ts";
 
 const adminRouteHandlers = [
   tryHandleAdminCoreRoutes,
   tryHandleAdminEmailSmsRoutes,
   tryHandleAdminAuthGetuiRoutes,
   tryHandleAdminSecurityRoutes,
+  tryHandleAdminTestAccountRoutes,
   tryHandleAdminLlmRoutes,
   tryHandleAdminAppSettingsRoutes,
   tryHandleAdminRemoteLogRoutes,

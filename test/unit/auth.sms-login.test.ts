@@ -389,6 +389,7 @@ test("sms password-code resend cooldown is enforced before blocked-account hidin
 test("sms code endpoints accept test=true and skip real sms sending while still issuing usable codes", async () => {
   const sent: SentVerificationSms[] = [];
   const runtime = await createApplication({
+    publicSmsTestBypassEnabled: true,
     registrationCodeGenerator: () => "444444",
     smsVerificationSender: createFakeSmsSender(sent),
   });
@@ -490,6 +491,31 @@ test("sms code endpoints accept test=true and skip real sms sending while still 
 
   assert.equal(resetResponse.statusCode, 200);
   assert.equal(sent.length, 0);
+});
+
+test("sms code endpoints ignore public test=true bypass unless debug mode is enabled", async () => {
+  const sent: SentVerificationSms[] = [];
+  const runtime = await createApplication({
+    publicSmsTestBypassEnabled: false,
+    registrationCodeGenerator: () => "454545",
+    smsVerificationSender: createFakeSmsSender(sent),
+  });
+
+  const loginCodeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/auth/login/sms-code",
+    headers: {},
+    body: {
+      appId: "app_a",
+      phone: "18710100984",
+      phoneNa: "+86",
+      test: true,
+    },
+    ipAddress: "198.51.100.84",
+  });
+
+  assert.equal(loginCodeResponse.statusCode, 200);
+  assert.deepEqual(sent.map((item) => item.code), ["454545"]);
 });
 
 test("sms provider failures persist structured provider details for admin inspection", async () => {

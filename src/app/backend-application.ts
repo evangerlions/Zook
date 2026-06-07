@@ -29,6 +29,7 @@ import { LlmSmokeTestService } from "../services/llm-smoke-test.service.ts";
 import { LLMManager } from "../services/llm-manager.ts";
 import { NotificationService } from "../services/notification.service.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
+import { CommonTestAccountService } from "../services/common-test-account.service.ts";
 import type { CommonGetuiGyConfigService } from "../services/common-getui-gy-config.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { RequestEmailContextService } from "../services/request-email-context.service.ts";
@@ -94,6 +95,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly appAccessGuard: AppAccessGuard,
     private readonly rbacGuard: RbacGuard,
     private readonly validationPipe: ValidationPipe,
+    private readonly commonTestAccountService: CommonTestAccountService,
   ) {
     super(
       database,
@@ -107,6 +109,7 @@ export class BackendApplication extends BackendRouteContext {
       authGuard,
       appAccessGuard,
       validationPipe,
+      commonTestAccountService,
     );
   }
 
