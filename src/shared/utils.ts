@@ -47,6 +47,20 @@ export function timingSafeHexCompare(left: string, right: string): boolean {
   }
 }
 
+export function timingSafeStringCompare(left: string, right: string): boolean {
+  const normalizedLeft = typeof left === "string" ? left.trim() : "";
+  const normalizedRight = typeof right === "string" ? right.trim() : "";
+
+  if (!normalizedLeft || normalizedLeft.length !== normalizedRight.length) {
+    return false;
+  }
+
+  return timingSafeEqual(
+    Buffer.from(normalizedLeft, "utf8"),
+    Buffer.from(normalizedRight, "utf8"),
+  );
+}
+
 export function signValue(secret: string, value: string): string {
   return createHmac("sha256", secret).update(value).digest("base64url");
 }

@@ -113,6 +113,33 @@ export interface AdminSmsVerificationRevealDocument {
   revealedAt: string;
 }
 
+export interface AdminTestAccountItem {
+  id: string;
+  appId: string;
+  phoneNa: string;
+  phone: string;
+  phoneMasked: string;
+  label: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminTestAccountDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  items: AdminTestAccountItem[];
+  updatedAt?: string;
+}
+
+export interface AdminTestAccountRevealDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  item: AdminTestAccountItem;
+  verifyCode: string;
+  revealedAt: string;
+}
+
 export interface SmsServiceConfig {
   enabled: boolean;
   sdkAppId: string;

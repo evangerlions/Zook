@@ -9,5 +9,6 @@ export type * from "./types/email.ts";
 export type * from "./types/auth-rate-limit.ts";
 export type * from "./types/content-safety.ts";
 export type * from "./types/getui-password.ts";
+export type * from "./types/test-account.ts";
 export type * from "./types/llm.ts";
 export type * from "./types/results.ts";

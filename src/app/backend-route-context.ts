@@ -8,6 +8,7 @@ import { AppRegistryService } from "../modules/app-registry/app-registry.service
 import { AuthService } from "../modules/auth/auth.service.ts";
 import { UserService } from "../modules/user/user.service.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
+import { CommonTestAccountService } from "../services/common-test-account.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
@@ -65,6 +66,7 @@ export class BackendRouteContext {
     protected readonly authGuard: AuthGuard,
     protected readonly appAccessGuard: AppAccessGuard,
     protected readonly validationPipe: ValidationPipe,
+    protected readonly commonTestAccountService: CommonTestAccountService,
   ) {}
 
   public async authenticate(
