@@ -1409,6 +1409,7 @@ test("admin sms verification list and reveal follow sensitive verification flow"
     adminSensitiveOperation: {
       secondaryPassword: "199510",
     },
+    publicSmsTestBypassEnabled: true,
     registrationCodeGenerator: () => "123456",
   });
 

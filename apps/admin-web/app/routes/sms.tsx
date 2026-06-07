@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Field, ToggleField } from "../components/field";
 import { SensitiveOperationModal } from "../components/sensitive-operation-modal";
+import { SmsTestAccountTab } from "../components/sms-test-account-tab";
 import { ApiError, adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
@@ -15,9 +16,10 @@ import type {
 } from "../lib/types";
 
 const SMS_REVEAL_OPERATION = "sms.verification.reveal";
-const SMS_TAB_OPTIONS: Array<{ label: string; value: "config" | "records" }> = [
+const SMS_TAB_OPTIONS: Array<{ label: string; value: "config" | "records" | "test-account" }> = [
   { label: "配置", value: "config" },
   { label: "发送记录", value: "records" },
+  { label: "Test Account", value: "test-account" },
 ];
 
 function createDefaultSmsConfig(): SmsServiceConfig {
@@ -43,7 +45,7 @@ function sceneLabel(scene: AdminSmsVerificationItem["scene"]) {
 
 export default function SmsRoute() {
   const { apps, clearNotice, setNotice } = useAdminSession();
-  const [tab, setTab] = useState<"config" | "records">("config");
+  const [tab, setTab] = useState<"config" | "records" | "test-account">("config");
   const [configDocument, setConfigDocument] = useState<AdminSmsServiceDocument | null>(null);
   const [configDraft, setConfigDraft] = useState<SmsServiceConfig>(createDefaultSmsConfig());
   const [configLoading, setConfigLoading] = useState(false);
@@ -157,13 +159,15 @@ export default function SmsRoute() {
       <div className="tab-row">
         <Segmented
           className="page-segmented"
-          onChange={(value) => setTab(value as "config" | "records")}
+          onChange={(value) => setTab(value as "config" | "records" | "test-account")}
           options={SMS_TAB_OPTIONS}
           value={tab}
         />
       </div>
 
-      {tab === "config" ? (
+      {tab === "test-account" ? (
+        <SmsTestAccountTab apps={apps} clearNotice={clearNotice} setNotice={setNotice} />
+      ) : tab === "config" ? (
         <section className="surface-card">
           <div className="card-header">
             <div>

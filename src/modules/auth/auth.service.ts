@@ -36,6 +36,7 @@ import type {
 import { randomNumericCode, sha256 } from "../../shared/utils.ts";
 import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
+import { CommonTestAccountService } from "../../services/common-test-account.service.ts";
 import type { RegistrationEmailSender } from "../../services/tencent-ses-registration-email.service.ts";
 import type { SmsVerificationSender } from "../../services/tencent-sms-verification.service.ts";
 import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
@@ -79,10 +80,12 @@ export class AuthService {
     private readonly registrationEmailSender: RegistrationEmailSender,
     private readonly smsVerificationSender: SmsVerificationSender,
     private readonly smsVerificationRecordService: SmsVerificationRecordService,
+    private readonly commonTestAccountService: CommonTestAccountService,
     private readonly registrationCodeGenerator: () => string = () =>
       randomNumericCode(6),
     private readonly secureRefreshCookie = false,
     private readonly refreshCookieSameSite: "Lax" | "None" | "Strict" = "Lax",
+    private readonly publicSmsTestBypassEnabled = false,
   ) {
     this.verificationLimiter = new AuthVerificationLimiter(
       kvManager,
@@ -113,12 +116,14 @@ export class AuthService {
       passwordHasher,
       smsVerificationSender,
       smsVerificationRecordService,
+      commonTestAccountService,
       this.verificationLimiter,
       async (userId, appId, now) =>
         await this.sessionManager.issueSession(userId, appId, now),
       async (appId, userId, now) =>
         await this.sessionManager.revokeAllSessions(appId, userId, now),
       registrationCodeGenerator,
+      publicSmsTestBypassEnabled,
     );
   }
 

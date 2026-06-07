@@ -45,6 +45,7 @@ import { CommonGetuiGyConfigService } from "./services/common-getui-gy-config.se
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
 import { CommonSmsConfigService } from "./services/common-sms-config.service.ts";
+import { CommonTestAccountService } from "./services/common-test-account.service.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { EmbeddingManager } from "./services/embedding-manager.ts";
@@ -176,6 +177,13 @@ export async function createApplication(
   );
   const commonAuthRateLimitConfigService = new CommonAuthRateLimitConfigService(
     appConfigService,
+  );
+  const commonTestAccountService = new CommonTestAccountService(
+    database,
+    kvManager,
+    appConfigService,
+    options.registrationCodeGenerator,
+    async () => await managedStateStore.save(database),
   );
   const commonGetuiGyConfigService = new CommonGetuiGyConfigService(
     appConfigService,
@@ -309,9 +317,11 @@ export async function createApplication(
     registrationEmailSender,
     smsVerificationSender,
     smsVerificationRecordService,
+    commonTestAccountService,
     options.registrationCodeGenerator,
     resolveSecureRefreshCookie(options),
     resolveRefreshCookieSameSite(options),
+    resolvePublicSmsTestBypass(options),
   );
   const qrLoginService = new QrLoginService(
     cache,
@@ -468,6 +478,7 @@ export async function createApplication(
     appAccessGuard,
     rbacGuard,
     validationPipe,
+    commonTestAccountService,
   );
 
   return {
@@ -489,6 +500,7 @@ export async function createApplication(
       commonEmailConfigService,
       commonSmsConfigService,
       commonAuthRateLimitConfigService,
+      commonTestAccountService,
       commonGetuiGyConfigService,
       commonLlmConfigService,
       commonContentSafetyConfigService,
@@ -534,4 +546,20 @@ export async function createApplication(
       await database.close();
     },
   };
+}
+
+function resolvePublicSmsTestBypass(options: CreateApplicationOptions): boolean {
+  if (typeof options.publicSmsTestBypassEnabled === "boolean") {
+    return options.publicSmsTestBypassEnabled;
+  }
+  const explicit = process.env.ZOOK_PUBLIC_SMS_TEST_BYPASS?.trim().toLowerCase();
+  if (explicit === "true" || explicit === "1") {
+    return true;
+  }
+  if (explicit === "false" || explicit === "0") {
+    return false;
+  }
+  const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
+  const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
+  return appEnv === "local" || appEnv === "development" || nodeEnv === "development";
 }
