@@ -87,10 +87,6 @@ interface AiNovelRequestOptions {
 
 export type AiNovelChatStreamChunk =
   | {
-      type: "text_delta";
-      text: string;
-    }
-  | {
       type: "local_debug_llm_request";
       payload: AiNovelLocalDebugLlmRequestPayload;
     }
