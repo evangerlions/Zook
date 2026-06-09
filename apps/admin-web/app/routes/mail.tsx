@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { JsonEditor } from "../components/json-editor";
 import { JsonPreview } from "../components/json-preview";
+import { MailCallbackEventsSection } from "../components/mail-callback-events-section";
 import { MailTestSection } from "../components/mail-test-section";
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
@@ -35,9 +36,12 @@ import type {
   MailTestDraft,
 } from "../lib/types";
 
-const MAIL_TAB_OPTIONS: Array<{ label: string; value: "config" | "test" }> = [
+type MailTab = "config" | "test" | "events";
+
+const MAIL_TAB_OPTIONS: Array<{ label: string; value: MailTab }> = [
   { label: "配置", value: "config" },
   { label: "测试发送", value: "test" },
+  { label: "回调记录", value: "events" },
 ];
 const MAIL_CONFIG_MODE_OPTIONS: Array<{ label: string; value: "form" | "raw" }> = [
   { label: "表单", value: "form" },
@@ -46,7 +50,7 @@ const MAIL_CONFIG_MODE_OPTIONS: Array<{ label: string; value: "form" | "raw" }> 
 
 export default function MailRoute() {
   const { clearNotice, setNotice } = useAdminSession();
-  const [tab, setTab] = useState<"config" | "test">("config");
+  const [tab, setTab] = useState<MailTab>("config");
   const [configMode, setConfigMode] = useState<"form" | "raw">("form");
   const [document, setDocument] = useState<AdminEmailServiceDocument | null>(null);
   const [draft, setDraft] = useState<MailConfigDraft>(createDefaultMailConfig());
@@ -284,7 +288,7 @@ export default function MailRoute() {
       <div className="tab-row">
         <Segmented
           className="page-segmented"
-          onChange={(value) => setTab(value as "config" | "test")}
+          onChange={(value) => setTab(value as MailTab)}
           options={MAIL_TAB_OPTIONS}
           value={tab}
         />
@@ -502,7 +506,7 @@ export default function MailRoute() {
             </RevisionHistoryDock>
           </div>
         </div>
-      ) : (
+      ) : tab === "test" ? (
         <MailTestSection
           draft={draft}
           onSend={() => void handleSendTest()}
@@ -511,6 +515,8 @@ export default function MailRoute() {
           testing={testing}
           testResult={testResult}
         />
+      ) : (
+        <MailCallbackEventsSection />
       )}
 
       <SaveConfirmModal

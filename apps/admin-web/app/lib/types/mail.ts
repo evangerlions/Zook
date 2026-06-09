@@ -1,5 +1,15 @@
 import type { AdminAppSummary, ConfigRevisionMeta } from "./core";
 
+export type TencentSesEmailEvent =
+  | "delivered"
+  | "dropped"
+  | "bounce"
+  | "open"
+  | "click"
+  | "spamreport"
+  | "unsubscribe"
+  | "deferred";
+
 export interface EmailServiceTemplateConfig {
   locale: string;
   templateId: number;
@@ -73,6 +83,34 @@ export interface AdminEmailTestSendDocument {
     request: Record<string, unknown>;
     response?: Record<string, unknown>;
   };
+}
+
+export interface AdminEmailDeliveryEventItem {
+  id: string;
+  provider: "tencent_ses";
+  event: TencentSesEmailEvent;
+  eventId?: number;
+  email: string;
+  link?: string;
+  bulkId?: string;
+  timestamp?: number;
+  reason?: string;
+  bounceType?: string;
+  username?: string;
+  from?: string;
+  fromDomain?: string;
+  templateId?: number;
+  subject?: string;
+  messageId?: string;
+  userAgent?: string;
+  sentTimestamp?: number;
+  occurredAt: string;
+  receivedAt: string;
+}
+
+export interface AdminEmailDeliveryEventListDocument {
+  app: AdminAppSummary;
+  items: AdminEmailDeliveryEventItem[];
 }
 
 export interface MailTemplateDraft {

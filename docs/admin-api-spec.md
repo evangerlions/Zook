@@ -135,8 +135,17 @@ configKey = ai_novel.model_routing
 | `GET` | `/api/v1/admin/apps/common/email-service` | 获取邮件服务配置 |
 | `PUT` | `/api/v1/admin/apps/common/email-service` | 更新邮件服务配置 |
 | `POST` | `/api/v1/admin/apps/common/email-service/test-send` | 发送测试邮件 |
+| `GET` | `/api/v1/admin/apps/common/email-service/events?event={event}&email={email}&limit={limit}` | 查看腾讯云 SES 邮件回调记录 |
 | `GET` | `/api/v1/admin/apps/common/email-service/revisions/{revision}` | 获取指定历史版本 |
 | `POST` | `/api/v1/admin/apps/common/email-service/revisions/{revision}/restore` | 恢复指定历史版本 |
+
+邮件服务还提供一个 provider callback 入口：
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v1/email/tencent/callback?token={token}` | 腾讯云 SES 邮件通知事件回调；无用户/Admin 鉴权，必须在公共密码服务中配置 `tencent.ses_callback_token` 且带匹配 token，合法事件会记录到邮件回调记录中 |
+
+支持的腾讯云 SES 事件：`delivered`、`dropped`、`bounce`、`open`、`click`、`spamreport`、`unsubscribe`、`deferred`。未知事件返回 `REQ_INVALID_BODY`，不会写入回调记录。生产环境必须在 Admin 密码服务中配置 `tencent.ses_callback_token`，并在腾讯云控制台回调地址中使用同一个长随机 token。
 
 ### 3.8 Common Passwords
 

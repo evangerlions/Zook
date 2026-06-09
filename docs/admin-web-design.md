@@ -103,13 +103,15 @@ admin.delivery_config
 
 ### 4.3 邮件服务页
 
-邮件服务页挂在 `common` 工作区下，当前用于配置腾讯云 SES。
+邮件服务页挂在 `common` 工作区下，当前用于配置腾讯云 SES、发送测试邮件，并查看腾讯云 SES 邮件通知事件回调记录。
 
 交互原则：
 
 1. 使用固定表单
 2. 支持版本记录与恢复
 3. 敏感字段读取时自动掩码
+4. 回调记录以独立标签展示，支持按事件类型与收件邮箱过滤
+5. 回调记录只用于运营排查投递、退信、打开、点击、退订等反馈，不反向修改登录或邮件发送配置
 
 ### 4.4 AINovel AI Routing 页
 
@@ -273,8 +275,11 @@ common.llm_service
 
 1. `GET /api/v1/admin/apps/common/email-service`
 2. `PUT /api/v1/admin/apps/common/email-service`
-3. `GET /api/v1/admin/apps/common/email-service/revisions/{revision}`
-4. `POST /api/v1/admin/apps/common/email-service/revisions/{revision}/restore`
+3. `POST /api/v1/admin/apps/common/email-service/test-send`
+4. `GET /api/v1/admin/apps/common/email-service/events`
+5. `GET /api/v1/admin/apps/common/email-service/revisions/{revision}`
+6. `POST /api/v1/admin/apps/common/email-service/revisions/{revision}/restore`
+7. `POST /api/v1/email/tencent/callback?token={token}`
 
 ### 7.3 Common 认证风控接口
 

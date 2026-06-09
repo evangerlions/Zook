@@ -68,6 +68,7 @@ import { SecretReferenceResolver } from "./services/secret-reference-resolver.ts
 import { SmsVerificationCleanupService } from "./services/sms-verification-cleanup.service.ts";
 import { SmsVerificationRecordService } from "./services/sms-verification-record.service.ts";
 import { NoopCaptchaVerificationService, TencentCaptchaVerificationService } from "./services/tencent-captcha-verification.service.ts";
+import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-callback.service.ts";
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
@@ -161,6 +162,10 @@ export async function createApplication(
   );
   const commonPasswordConfigService = new CommonPasswordConfigService(
     passwordManager,
+  );
+  const tencentSesEmailCallbackService = new TencentSesEmailCallbackService(
+    database,
+    commonPasswordConfigService,
   );
   const secretReferenceResolver = new SecretReferenceResolver(
     commonPasswordConfigService,
@@ -469,6 +474,7 @@ export async function createApplication(
     requestEmailContextService,
     requestLocaleService,
     publicApiMessageService,
+    tencentSesEmailCallbackService,
     logger,
     auditInterceptor,
     requestLoggingInterceptor,
@@ -529,6 +535,7 @@ export async function createApplication(
       clientLogUploadService,
       notificationService,
       failedEventRetryService,
+      tencentSesEmailCallbackService,
       smsVerificationSender,
       smsVerificationCleanupService,
       captchaVerificationService,

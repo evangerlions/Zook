@@ -10,6 +10,7 @@ import { UserService } from "../modules/user/user.service.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
 import { CommonTestAccountService } from "../services/common-test-account.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
+import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -62,6 +63,7 @@ export class BackendRouteContext {
     protected readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     protected readonly adminSessionStore: AdminSessionStore,
     protected readonly publicApiMessageService: PublicApiMessageService,
+    protected readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     protected readonly appContextResolver: AppContextResolver,
     protected readonly authGuard: AuthGuard,
     protected readonly appAccessGuard: AppAccessGuard,
