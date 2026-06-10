@@ -10,6 +10,7 @@ import type {
   ClientLogUploadTaskRecord,
   ContentSafetyCheckRecord,
   DatabaseSeed,
+  EmailDeliveryEventRecord,
   FailedEventRecord,
   FileRecord,
   NotificationJobRecord,
@@ -26,6 +27,10 @@ import {
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
 
+function normalizeListLimit(limit?: number): number {
+  return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
+}
+
 /**
  * InMemoryDatabase is a test-only database double.
  */
@@ -40,6 +45,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   auditLogs: AuditLogRecord[];
   notificationJobs: NotificationJobRecord[];
   failedEvents: FailedEventRecord[];
+  emailDeliveryEvents: EmailDeliveryEventRecord[];
   smsVerificationRecords: SmsVerificationRecord[];
   appConfigs: AppConfigRecord[];
   analyticsEvents: AnalyticsEventRecord[];
@@ -61,6 +67,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.auditLogs = structuredClone(seed.auditLogs ?? []);
     this.notificationJobs = structuredClone(seed.notificationJobs ?? []);
     this.failedEvents = structuredClone(seed.failedEvents ?? []);
+    this.emailDeliveryEvents = [];
     this.smsVerificationRecords = structuredClone(seed.smsVerificationRecords ?? []);
     this.appConfigs = structuredClone(seed.appConfigs ?? []);
     this.analyticsEvents = structuredClone(seed.analyticsEvents ?? []);
@@ -374,6 +381,24 @@ export class InMemoryDatabase extends ApplicationDatabase {
     const cutoffMs = new Date(cutoffIso).getTime();
     this.smsVerificationRecords = this.smsVerificationRecords.filter((item) => new Date(item.createdAt).getTime() >= cutoffMs);
     return before - this.smsVerificationRecords.length;
+  }
+
+  insertEmailDeliveryEvent(record: EmailDeliveryEventRecord): void {
+    this.emailDeliveryEvents.push(structuredClone(record));
+  }
+
+  listEmailDeliveryEvents(filter: {
+    event?: EmailDeliveryEventRecord["event"];
+    email?: string;
+    limit?: number;
+  } = {}): EmailDeliveryEventRecord[] {
+    const normalizedEmail = filter.email?.trim().toLowerCase() ?? "";
+    const limit = normalizeListLimit(filter.limit);
+    return structuredClone(this.emailDeliveryEvents)
+      .filter((item) => !filter.event || item.event === filter.event)
+      .filter((item) => !normalizedEmail || item.email.toLowerCase().includes(normalizedEmail))
+      .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
+      .slice(0, limit);
   }
 
   insertNotificationJob(record: NotificationJobRecord): void {

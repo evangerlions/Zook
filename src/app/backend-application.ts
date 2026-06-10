@@ -36,6 +36,7 @@ import { RequestEmailContextService } from "../services/request-email-context.se
 import { RequestLocaleService } from "../services/request-locale.service.ts";
 import { StorageService } from "../infrastructure/files/storage.service.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
+import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { parseCookies, randomId } from "../shared/utils.ts";
@@ -45,6 +46,7 @@ import { tryHandleAiNovelRoutes } from "./ai-novel-routes.ts";
 import { tryHandleFileNotificationRoutes } from "./file-notification-routes.ts";
 import { tryHandleLogRoutes } from "./log-routes.ts";
 import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
+import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -86,6 +88,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly requestEmailContextService: RequestEmailContextService,
     private readonly requestLocaleService: RequestLocaleService,
     private readonly publicApiMessageService: PublicApiMessageService,
+    private readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     private readonly logger: StructuredLogger,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
@@ -105,6 +108,7 @@ export class BackendApplication extends BackendRouteContext {
       adminBasicAuth,
       adminSessionStore,
       publicApiMessageService,
+      tencentSesEmailCallbackService,
       appContextResolver,
       authGuard,
       appAccessGuard,
@@ -172,6 +176,7 @@ export class BackendApplication extends BackendRouteContext {
       clientLogUploadService: this.clientLogUploadService,
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
+      tencentSesEmailCallbackService: this.tencentSesEmailCallbackService,
     };
   }
 
@@ -191,6 +196,11 @@ export class BackendApplication extends BackendRouteContext {
     const publicAuthResponse = await tryHandlePublicAuthRoutes.call(this, request);
     if (publicAuthResponse) {
       return publicAuthResponse;
+    }
+
+    const tencentSesEmailCallbackResponse = await tryHandleTencentSesEmailCallbackRoutes.call(this, request);
+    if (tencentSesEmailCallbackResponse) {
+      return tencentSesEmailCallbackResponse;
     }
 
     const fileNotificationResponse = await tryHandleFileNotificationRoutes.call(this, request);

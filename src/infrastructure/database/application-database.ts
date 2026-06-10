@@ -10,6 +10,7 @@ import type {
   ClientLogUploadTaskRecord,
   ContentSafetyCheckRecord,
   DatabaseSeed,
+  EmailDeliveryEventRecord,
   FailedEventRecord,
   FileRecord,
   NotificationJobRecord,
@@ -107,6 +108,13 @@ export abstract class ApplicationDatabase {
   ): MaybePromise<void>;
 
   abstract deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
+
+  abstract insertEmailDeliveryEvent(record: EmailDeliveryEventRecord): MaybePromise<void>;
+  abstract listEmailDeliveryEvents(filter?: {
+    event?: EmailDeliveryEventRecord["event"];
+    email?: string;
+    limit?: number;
+  }): MaybePromise<EmailDeliveryEventRecord[]>;
 
   abstract insertNotificationJob(record: NotificationJobRecord): MaybePromise<void>;
   abstract findNotificationJob(jobId: string): MaybePromise<NotificationJobRecord | undefined>;

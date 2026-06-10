@@ -1165,7 +1165,7 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
     .map(normalizeAiEvent);
   const types = decryptedEvents.map((event) => event.type);
   assert.deepEqual(types, [
-    "text_delta",
+    "content_delta",
     "tool_call",
     "tool_call",
     "usage",
@@ -1747,7 +1747,7 @@ test("ai_novel kickoff_turn relays invalid ask_question payload without backend 
   assert.equal(streamCalls, 1);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["text_delta", "tool_call", "usage", "done"],
+    ["content_delta", "tool_call", "usage", "done"],
   );
   const toolCall = decryptedEvents[1].toolCall as Record<string, unknown>;
   assert.equal(toolCall.id, "tool_question_invalid_once");
@@ -2183,7 +2183,7 @@ test("ai_novel kickoff_turn ignores streamed tool argument deltas until final to
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["text_delta", "tool_call", "done"],
+    ["content_delta", "tool_call", "done"],
   );
   const toolCall = decryptedEvents[1].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "ask_question");
@@ -2562,7 +2562,7 @@ test("ai_novel kickoff_turn stream allows assistant-only freeform turns", async 
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["text_delta", "done"],
+    ["content_delta", "done"],
   );
   const doneCompletion = (decryptedEvents[1]?.completion ?? {}) as Record<
     string,
@@ -2639,7 +2639,7 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
   assert.equal(capturedEnableThinking, true);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["reasoning_delta", "text_delta", "done"],
+    ["reasoning_delta", "content_delta", "done"],
   );
   assert.equal(decryptedEvents[0].text, "先确认故事驱动力");
 });

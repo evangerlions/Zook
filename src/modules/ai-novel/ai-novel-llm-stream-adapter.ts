@@ -109,7 +109,7 @@ export async function* adaptKickoffAiNovelStream(input: {
         break;
       case "content_delta":
         state.content += event.text;
-        yield { type: "text_delta", text: event.text };
+        yield { type: "content_delta", text: event.text };
         break;
       case "usage":
         state.usage = event.usage;

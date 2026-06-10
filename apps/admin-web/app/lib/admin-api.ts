@@ -9,6 +9,7 @@ import type {
   AdminContentSafetyDocument,
   AdminContentSafetyStatsDocument,
   AdminContentSafetyTestDocument,
+  AdminEmailDeliveryEventListDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
@@ -172,10 +173,7 @@ export const adminApi = {
       adminPath("/auth/login"),
       {
         method: "POST",
-        body: {
-          username,
-          password,
-        },
+        body: { username, password },
       },
     );
   },
@@ -192,9 +190,7 @@ export const adminApi = {
       adminPath("/sensitive-operations/request-code"),
       {
         method: "POST",
-        body: {
-          operation,
-        },
+        body: { operation },
       },
     );
   },
@@ -203,29 +199,20 @@ export const adminApi = {
       adminPath("/sensitive-operations/verify"),
       {
         method: "POST",
-        body: {
-          operation,
-          code,
-        },
+        body: { operation, code },
       },
     );
   },
   createApp(appId: string, appNameZhCn: string, appNameEnUs: string) {
     return requestJson<AdminAppSummary>(adminPath("/apps"), {
       method: "POST",
-      body: {
-        appId,
-        appNameZhCn,
-        appNameEnUs,
-      },
+      body: { appId, appNameZhCn, appNameEnUs },
     });
   },
   updateAppNames(appId: string, appNameI18n: Record<string, string>) {
     return requestJson<AdminAppSummary>(adminPath(`/apps/${encodeURIComponent(appId)}/names`), {
       method: "PUT",
-      body: {
-        appNameI18n,
-      },
+      body: { appNameI18n },
     });
   },
   revealAppLogSecret(appId: string) {
@@ -450,6 +437,15 @@ export const adminApi = {
       method: "POST",
       body: input,
     });
+  },
+  getEmailDeliveryEvents(input: { event?: string; email?: string; limit?: number } = {}) {
+    const query = new URLSearchParams(cleanQuery({
+      event: input.event,
+      email: input.email,
+      limit: input.limit ? String(input.limit) : undefined,
+    }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminEmailDeliveryEventListDocument>(adminPath(`/apps/common/email-service/events${suffix}`));
   },
   getSmsService() {
     return requestJson<AdminSmsServiceDocument>(adminPath("/apps/common/sms-service"));
