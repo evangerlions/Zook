@@ -49,6 +49,12 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
       "ainovel-plus-creative",
       "ainovel-super-creative",
     ),
+    import_book_agent: sceneRoute(
+      "chat",
+      "ainovel-plus-reasoning",
+      "ainovel-plus-reasoning",
+      "ainovel-super-reasoning",
+    ),
     chapter_summary: sceneRoute("chat", "ainovel-lowcost-structured"),
     chapter_draft_review: sceneRoute("chat", "ainovel-lowcost-structured"),
     snapshot_generation: sceneRoute("chat", "ainovel-lowcost-structured"),

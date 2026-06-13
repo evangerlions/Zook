@@ -1,6 +1,7 @@
 import type { LLMToolDefinition } from "../../../services/llm-manager.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-prompt-types.ts";
 import {
+  IMPORT_BOOK_AGENT_TOOLS,
   SUBMIT_CHAPTER_REVIEW_TOOL,
   SUBMIT_CHAPTER_SUMMARY_TOOL,
   SUBMIT_NEXT_CHAPTER_BRIEF_TOOL,
@@ -93,8 +94,42 @@ export const CHAPTER_DRAFT_SYSTEM_PROMPT = [
   "- Write the saved title and body in the target writing language from Contract.language.",
 ].join("\n");
 
+export const IMPORT_BOOK_AGENT_SYSTEM_PROMPT = [
+  "You are the ImportBookAgent for AINovel.",
+  "",
+  "## Role",
+  "- Import an already-written manuscript into the same durable artifacts used by the normal writing engine.",
+  "- Extract facts faithfully from the provided imported source text.",
+  "- Do not use memory of the title, genre knowledge, outside knowledge, or guesses.",
+  "- Treat Dynamic scene context and Task message from client as the only source data for this import step.",
+  "- If full chapter text is absent, do not reconstruct it from memory; report the missing source through the required submit tool fields when possible.",
+  "",
+  "## Tool meanings",
+  "- submit_import_plan_update: update source-grounded BookContract and MainLine artifacts from the current imported text plus previous artifacts.",
+  "- submit_rolling_snapshot: compress cold imported chapters into writing-useful long-term memory through the chunk boundary.",
+  "- submit_chapter_summaries: submit one per-chapter summary for each chapter in a recent batch.",
+  "- submit_snapshot: submit a normal chapter checkpoint snapshot at an aligned chapter boundary.",
+  "- submit_hot_handoff: submit the final handoff for continuing at the next chapter after the latest imported chapter.",
+  "",
+  "## Step discipline",
+  "- The client passes expectedTools/suppliedTools in Dynamic scene context. Call every expected submit tool for this step.",
+  "- Use automatic tool choice and thinking. Do not rely on API forced tool choice.",
+  "- If this is a retry after missing tools, continue from the same source context and call only the missing required submit tools unless an update is needed for consistency.",
+  "- Keep previous Contract/MainLine/snapshot as editable evidence-backed state. If new source text contradicts them, update them with concrete source evidence.",
+  "",
+  "## Quality bar",
+  "- Summaries and snapshots must be useful for future writing, not vague audit labels.",
+  "- Include concrete events, current situation, character states, factions, causal chain, open and closed threads, important places/objects, style constraints, and cannot-rewrite boundaries when relevant.",
+  "- Evidence should mention chapter indexes, titles, source ranges, snippets, or hashes when available.",
+  "- Write user-readable artifact text in the manuscript language unless the source context explicitly says otherwise.",
+  "",
+  "## Output contract",
+  "- Submit data through tools. Final assistant text may be empty or a concise status only.",
+  "- Never invent imported chapters, endings, relationships, or resolved conflicts not present in the supplied source text.",
+].join("\n");
+
 export const JOB_SYSTEM_PROMPTS: Record<
-  Exclude<AiNovelPromptProfile, "write_turn" | "chapter_draft">,
+  Exclude<AiNovelPromptProfile, "write_turn" | "chapter_draft" | "import_book_agent">,
   string
 > = {
   chapter_summary: [
@@ -156,7 +191,7 @@ export const JOB_SYSTEM_PROMPTS: Record<
 
 export const JOB_FORCED_TOOLS: Partial<
   Record<
-    Exclude<AiNovelPromptProfile, "write_turn" | "chapter_draft">,
+    Exclude<AiNovelPromptProfile, "write_turn" | "chapter_draft" | "import_book_agent">,
     LLMToolDefinition
   >
 > = {
@@ -165,3 +200,5 @@ export const JOB_FORCED_TOOLS: Partial<
   snapshot_generation: SUBMIT_SNAPSHOT_TOOL,
   next_chapter_brief: SUBMIT_NEXT_CHAPTER_BRIEF_TOOL,
 };
+
+export const IMPORT_BOOK_AGENT_SUBMIT_TOOLS = IMPORT_BOOK_AGENT_TOOLS;

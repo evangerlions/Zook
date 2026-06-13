@@ -382,6 +382,124 @@ export const SUBMIT_NEXT_CHAPTER_BRIEF_TOOL = createTool(
   ["brief"],
 );
 
+export const SUBMIT_IMPORT_PLAN_UPDATE_TOOL = createTool(
+  "submit_import_plan_update",
+  "Submit updated imported-book Contract and MainLine artifacts from the supplied source text. Use this when the import step asks for plan/canon updates.",
+  {
+    contract: {
+      type: "object",
+      description:
+        "Canonical BookContract-compatible imported canon. Include only source-grounded facts and continuity rules.",
+      additionalProperties: true,
+    },
+    mainLine: {
+      type: "object",
+      description:
+        "Canonical MainLine-compatible continuation plan. It should explain current state, next-entry pressure, beats, and forbidden rewrites.",
+      additionalProperties: true,
+    },
+    evidence: {
+      type: "array",
+      description:
+        "Short source evidence refs, chapter indexes, titles, snippets, or hashes that support the update.",
+      items: { type: "string" },
+    },
+  },
+  ["contract", "mainLine"],
+);
+
+export const SUBMIT_ROLLING_SNAPSHOT_TOOL = createTool(
+  "submit_rolling_snapshot",
+  "Submit the rolling snapshot for a cold imported chapter chunk. Use it to compress all source text read so far, not only the latest chapter.",
+  {
+    snapshot: {
+      type: "string",
+      description:
+        "Writing-useful rolling memory: current situation, character states, factions, causal chain, open/closed threads, places, objects, style constraints, and no-rewrite boundaries.",
+    },
+    evidence: {
+      type: "array",
+      description:
+        "Evidence refs from the imported source text that justify the snapshot.",
+      items: { type: "string" },
+    },
+    sourceRange: {
+      type: "object",
+      description: "Chapter range covered by this rolling snapshot.",
+      additionalProperties: true,
+    },
+  },
+  ["snapshot"],
+);
+
+export const SUBMIT_CHAPTER_SUMMARIES_TOOL = createTool(
+  "submit_chapter_summaries",
+  "Submit multiple per-chapter summaries from a recent imported batch. Use one summary item per chapter.",
+  {
+    summaries: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: true,
+        required: ["chapterIndex", "summary"],
+        properties: {
+          chapterIndex: { type: "integer", minimum: 1 },
+          title: { type: "string" },
+          summary: {
+            type: "string",
+            description:
+              "Chapter-specific summary with concrete events and continuity facts.",
+          },
+          facts: {
+            type: "object",
+            additionalProperties: true,
+          },
+          evidence: {
+            type: "array",
+            items: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+  ["summaries"],
+);
+
+export const SUBMIT_HOT_HANDOFF_TOOL = createTool(
+  "submit_hot_handoff",
+  "Submit the final handoff for continuing after the latest imported chapter.",
+  {
+    targetChapterIndex: {
+      type: "integer",
+      minimum: 1,
+      description: "The next chapter index the writer should open.",
+    },
+    handoff: {
+      type: "string",
+      description:
+        "Concrete continuation handoff: where the story stands, what has just changed, and what the next chapter must preserve or advance.",
+    },
+    unresolvedThreads: {
+      type: "array",
+      items: { type: "string" },
+    },
+    characterStates: {
+      type: "array",
+      items: { type: "string" },
+    },
+    styleSignals: {
+      type: "array",
+      items: { type: "string" },
+    },
+    evidence: {
+      type: "array",
+      items: { type: "string" },
+    },
+  },
+  ["targetChapterIndex", "handoff"],
+);
+
 export const WRITE_TURN_TOOLS: LLMToolDefinition[] = [
   ...contextReadTools,
   ...interactionTools,
@@ -394,6 +512,14 @@ export const CHAPTER_DRAFT_TOOLS: LLMToolDefinition[] = [
   readDraftTool,
   ...storyHistoryTools,
   writeDraftTool,
+];
+
+export const IMPORT_BOOK_AGENT_TOOLS: LLMToolDefinition[] = [
+  SUBMIT_IMPORT_PLAN_UPDATE_TOOL,
+  SUBMIT_ROLLING_SNAPSHOT_TOOL,
+  SUBMIT_CHAPTER_SUMMARIES_TOOL,
+  SUBMIT_SNAPSHOT_TOOL,
+  SUBMIT_HOT_HANDOFF_TOOL,
 ];
 
 export function createTool(

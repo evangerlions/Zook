@@ -3,6 +3,8 @@ import type { AiNovelPromptAssembly, AiNovelPromptProfile } from "./prompts/ai-n
 import { CHAPTER_DRAFT_TOOLS, WRITE_TURN_TOOLS } from "./prompts/ai-novel-prompt-tools.ts";
 import {
   CHAPTER_DRAFT_SYSTEM_PROMPT,
+  IMPORT_BOOK_AGENT_SUBMIT_TOOLS,
+  IMPORT_BOOK_AGENT_SYSTEM_PROMPT,
   JOB_FORCED_TOOLS,
   JOB_SYSTEM_PROMPTS,
   WRITE_TURN_SYSTEM_PROMPT,
@@ -40,6 +42,16 @@ export function buildAiNovelPromptAssembly(input: {
         ...messagesWithContext,
       ],
       tools: CHAPTER_DRAFT_TOOLS,
+    };
+  }
+
+  if (input.profile === "import_book_agent") {
+    return {
+      messages: [
+        { role: "system", content: IMPORT_BOOK_AGENT_SYSTEM_PROMPT },
+        ...messagesWithContext,
+      ],
+      tools: IMPORT_BOOK_AGENT_SUBMIT_TOOLS,
     };
   }
 

@@ -166,14 +166,16 @@ function readToolCallDeltaEvent(
   const argumentDelta = deltaToolCall.function?.arguments ?? "";
   const nextName = readOptionalNonBlankString(deltaToolCall.function?.name) ?? existing.name;
   const nextId = readOptionalNonBlankString(deltaToolCall.id) ?? existing.id;
-  const toolArgumentPath = toolArgumentPathForProgress(nextName);
+  const progressSpec = toolProgressSpec(nextName);
   const nextArgs = existing.args + argumentDelta;
-  const nextProgressText = toolArgumentPath
-    ? extractTopLevelJsonStringField(nextArgs, toolArgumentPath)
+  const nextProgressText = progressSpec?.path
+    ? extractTopLevelJsonStringField(nextArgs, progressSpec.path)
     : undefined;
-  const progressDelta = toolArgumentPath
+  const progressDelta = progressSpec?.path
     ? nextProgressText?.slice((existing.progressText ?? "").length)
-    : argumentDelta;
+    : progressSpec?.known
+      ? undefined
+      : argumentDelta;
   pendingToolCalls.set(index, {
     id: nextId,
     name: nextName,
@@ -188,7 +190,7 @@ function readToolCallDeltaEvent(
     text: progressDelta,
     toolCallId: nextId,
     toolCallName: nextName,
-    toolArgumentPath,
+    toolArgumentPath: progressSpec?.path,
     rawEvent: eventData,
   };
 }
@@ -324,18 +326,26 @@ function streamTimeoutError(hasEvent: boolean, timeoutMs: number): ApplicationEr
   );
 }
 
-function toolArgumentPathForProgress(toolName: string | undefined): string | undefined {
+function toolProgressSpec(
+  toolName: string | undefined,
+): { known: true; path?: string } | undefined {
   switch (toolName) {
     case "write_draft":
-      return "content";
+      return { known: true, path: "content" };
     case "submit_next_chapter_brief":
-      return "brief";
+      return { known: true, path: "brief" };
     case "submit_chapter_summary":
-      return "summary";
+      return { known: true, path: "summary" };
     case "submit_chapter_review":
-      return "summary";
+      return { known: true, path: "summary" };
     case "submit_snapshot":
-      return "snapshot";
+    case "submit_rolling_snapshot":
+      return { known: true, path: "snapshot" };
+    case "submit_hot_handoff":
+      return { known: true, path: "handoff" };
+    case "submit_import_plan_update":
+    case "submit_chapter_summaries":
+      return { known: true };
     default:
       return undefined;
   }

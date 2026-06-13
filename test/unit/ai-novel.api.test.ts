@@ -702,6 +702,169 @@ test("ai_novel structured workflow scenes retry when the required submit tool is
   );
 });
 
+test("ai_novel import_book_agent streams thinking tool calls with import progress", async () => {
+  let capturedRequest:
+    | {
+        providerOptions?: Record<string, unknown>;
+        messages: LLMMessage[];
+      }
+    | undefined;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      throw new Error("import_book_agent should not use non-stream complete");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedRequest = {
+        providerOptions: request.providerOptions,
+        messages: request.messages,
+      };
+      yield { type: "reasoning_delta", text: "Reading source evidence." };
+      yield {
+        type: "tool_call_delta",
+        toolCallName: "submit_rolling_snapshot",
+        toolArgumentPath: "snapshotText",
+        text: "Chapter 1 establishes the imported conflict.",
+      };
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "call_import_plan",
+          name: "submit_import_plan_update",
+          input: {
+            contract: {
+              revisionId: "contract-1",
+              storyPromise: "Imported source facts only.",
+            },
+            mainLine: {
+              revisionId: "mainline-1",
+              title: "Imported continuation",
+            },
+            evidence: ["chapter 1"],
+          },
+        },
+      };
+      yield {
+        type: "tool_call",
+        toolCall: {
+          id: "call_rolling_snapshot",
+          name: "submit_rolling_snapshot",
+          input: {
+            snapshotText: "Chapter 1 establishes the imported conflict.",
+            evidence: ["chapter 1"],
+          },
+        },
+      };
+      yield { type: "done", finishReason: "tool_calls" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  const payload = {
+    scene_key: "import_book_agent",
+    stream: true,
+    context: {
+      stepName: "read_cold_chunk",
+      expectedTools: ["submit_import_plan_update", "submit_rolling_snapshot"],
+      importContext: {
+        chapters: [
+          {
+            chapterIndex: 1,
+            title: "第一章",
+            content: "雨夜里，罗家冤案的第一条线索浮出水面。",
+          },
+        ],
+      },
+    },
+    messages: [
+      {
+        role: "user",
+        content: "Read source text and submit required import tools.",
+      },
+    ],
+    temperature: 0.2,
+  };
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+      host: "127.0.0.1:3110",
+    },
+    body: {
+      ...encryptAiPayload(payload, aiKey),
+      localDebugRequestPlaintext: JSON.stringify(payload),
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.contentType, "text/event-stream; charset=utf-8");
+  const events = await collectSseEvents(response.streamBody);
+  assert.ok(capturedRequest);
+  const providerOptions = capturedRequest!.providerOptions ?? {};
+  assert.equal(providerOptions.enable_thinking, true);
+  assert.equal(providerOptions.tool_choice, "auto");
+  assert.deepEqual(providerOptions.stream_options, {
+    first_event_timeout_ms: 120000,
+    idle_timeout_ms: 90000,
+  });
+  assert.deepEqual(toolNamesFromProviderOptions(providerOptions), [
+    "submit_import_plan_update",
+    "submit_rolling_snapshot",
+    "submit_chapter_summaries",
+    "submit_snapshot",
+    "submit_hot_handoff",
+  ]);
+  assert.match(
+    String(capturedRequest!.messages[0]?.content ?? ""),
+    /ImportBookAgent/,
+  );
+
+  const decryptedEvents = events.map((event) => decryptAiPayload(event, aiKey));
+  const eventData = decryptedEvents.map(
+    (event) => event.data as Record<string, unknown>,
+  );
+  assert.deepEqual(
+    eventData.map((event) => event.type),
+    [
+      "local_debug_llm_request",
+      "reasoning_delta",
+      "tool_call_delta",
+      "tool_call",
+      "tool_call",
+      "done",
+    ],
+  );
+  assert.equal(eventData[2]?.toolCallName, "submit_rolling_snapshot");
+  assert.equal(eventData[2]?.text, "Chapter 1 establishes the imported conflict.");
+  const toolCall = eventData[3]?.toolCall as Record<string, unknown>;
+  assert.equal(toolCall.name, "submit_import_plan_update");
+  const localDebugLlmRequest = (eventData[0]?.payload ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const requestBody = (localDebugLlmRequest.requestBody ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const debugProviderOptions = (requestBody.providerOptions ?? {}) as Record<
+    string,
+    unknown
+  >;
+  assert.equal(localDebugLlmRequest.sceneKey, "import_book_agent");
+  assert.equal(requestBody.stream, true);
+  assert.equal(debugProviderOptions.enable_thinking, true);
+  assert.equal(debugProviderOptions.tool_choice, "auto");
+  assert.deepEqual(debugProviderOptions.stream_options, {
+    first_event_timeout_ms: 120000,
+    idle_timeout_ms: 90000,
+  });
+});
+
 test("ai_novel scene routing config validates all novel-engine chat scene keys", async () => {
   const { runtime } = await createAiNovelRuntime();
   const config =
@@ -2091,7 +2254,7 @@ test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits 
   assert.match(String(toolCall.id), /^ainovel-.*_kickoff_tool_0$/);
 });
 
-test("ai_novel kickoff_turn ignores streamed tool argument deltas until final tool_call", async () => {
+test("ai_novel kickoff_turn relays generic tool argument deltas before final tool_call", async () => {
   const llmProvider: LLMProvider = {
     async complete(request): Promise<LLMCompletionResult> {
       return {
@@ -2183,11 +2346,13 @@ test("ai_novel kickoff_turn ignores streamed tool argument deltas until final to
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["content_delta", "tool_call", "done"],
+    ["content_delta", "tool_call_delta", "tool_call_delta", "tool_call", "done"],
   );
-  const toolCall = decryptedEvents[1].toolCall as Record<string, unknown>;
+  assert.equal(decryptedEvents[1].toolCallName, "ask_question");
+  assert.equal(decryptedEvents[2].toolCallName, "ask_question");
+  const toolCall = decryptedEvents[3].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "ask_question");
-  const doneCompletion = (decryptedEvents[2]?.completion ?? {}) as Record<
+  const doneCompletion = (decryptedEvents[4]?.completion ?? {}) as Record<
     string,
     unknown
   >;
@@ -3285,16 +3450,12 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedStreamEvents.map((event) => event.type),
-    ["reasoning_delta", "action.workflow_progress", "tool_call", "done"],
+    ["reasoning_delta", "tool_call_delta", "tool_call", "done"],
   );
-  const progress = decryptedStreamEvents[1].payload as Record<string, unknown>;
-  assert.equal(progress.workflowKey, "chapter_advance");
-  assert.equal(progress.stepKey, "plan");
-  assert.equal(progress.subStepKey, "chapter_summary");
-  assert.match(String(progress.deltaText ?? ""), /雨夜事故/);
-  assert.doesNotMatch(String(progress.deltaText ?? ""), /[{}"]/);
-  assert.equal(typeof progress.processedTokens, "number");
-  assert.ok(Number(progress.processedTokens) > 0);
+  assert.equal(decryptedStreamEvents[1].toolCallName, "submit_chapter_summary");
+  assert.equal(decryptedStreamEvents[1].toolArgumentPath, "summary");
+  assert.match(String(decryptedStreamEvents[1].text ?? ""), /雨夜事故/);
+  assert.doesNotMatch(String(decryptedStreamEvents[1].text ?? ""), /[{}"]/);
   assert.equal(completeCalls, 0);
   assert.equal(streamCalls, 3);
 });

@@ -463,6 +463,87 @@ test("bailian provider extracts mapped tool argument deltas without raw json", a
   });
 });
 
+test("bailian provider extracts import submit tool progress from readable fields only", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createSseResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_rolling_snapshot","arguments":"{\\"snapshot\\":\\"前二十章"}}]}}]}\n\n',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"已压缩\\",\\"evidence\\":[\\"1..20\\"]}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+  });
+
+  const events = await collectEvents(provider.stream(createResolvedRequest()));
+
+  assert.deepEqual(
+    events
+      .filter((event) => event.type === "tool_call_delta")
+      .map((event) => ({
+        text: event.text,
+        toolCallName: event.toolCallName,
+        toolArgumentPath: event.toolArgumentPath,
+      })),
+    [
+      {
+        text: "前二十章",
+        toolCallName: "submit_rolling_snapshot",
+        toolArgumentPath: "snapshot",
+      },
+      {
+        text: "已压缩",
+        toolCallName: "submit_rolling_snapshot",
+        toolArgumentPath: "snapshot",
+      },
+    ],
+  );
+  const toolCall = events.find((event) => event.type === "tool_call");
+  assert.deepEqual(toolCall, {
+    type: "tool_call",
+    toolCall: {
+      id: "kimi2.5_tool_0",
+      name: "submit_rolling_snapshot",
+      input: {
+        snapshot: "前二十章已压缩",
+        evidence: ["1..20"],
+      },
+    },
+    rawEvent:
+      '{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"已压缩\\",\\"evidence\\":[\\"1..20\\"]}"}}]},"finish_reason":"tool_calls"}]}',
+  });
+});
+
+test("bailian provider suppresses raw json deltas for known import tools without readable progress fields", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createSseResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_import_plan_update","arguments":"{\\"contract\\":{\\"storyPromise\\":\\"source only\\"}"}}]}}]}\n\n',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":",\\"mainLine\\":{\\"summary\\":\\"continue\\"}}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+  });
+
+  const events = await collectEvents(provider.stream(createResolvedRequest()));
+
+  assert.deepEqual(
+    events.filter((event) => event.type === "tool_call_delta"),
+    [],
+  );
+  const toolCall = events.find((event) => event.type === "tool_call");
+  assert.deepEqual(toolCall, {
+    type: "tool_call",
+    toolCall: {
+      id: "kimi2.5_tool_0",
+      name: "submit_import_plan_update",
+      input: {
+        contract: { storyPromise: "source only" },
+        mainLine: { summary: "continue" },
+      },
+    },
+    rawEvent:
+      '{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":",\\"mainLine\\":{\\"summary\\":\\"continue\\"}}"}}]},"finish_reason":"tool_calls"}]}',
+  });
+});
+
 test("bailian provider aborts streams that do not return headers before first-event timeout", async () => {
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async (_input, init) => {

@@ -188,8 +188,12 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     payload: Record<string, unknown>,
   ): AsyncIterable<LLMStreamEvent> {
     const streamDelayMs = localE2eStreamDelayMs();
-    const toolArgumentPath = toolArgumentPathForProgress(toolName);
+    const progressSpec = toolProgressSpec(toolName);
+    const toolArgumentPath = progressSpec?.path;
     const readableValue = toolArgumentPath ? payload[toolArgumentPath] : null;
+    if (progressSpec?.known === true && !toolArgumentPath) {
+      return;
+    }
     const text =
       typeof readableValue === "string"
         ? readableValue
@@ -465,6 +469,70 @@ function forcedStructuredToolPayload(
       },
     };
   }
+  if (toolName === "submit_import_plan_update") {
+    return {
+      contract: {
+        revisionId: "local-import-contract",
+        storyPromise: "仅依据导入正文延续忠奸对抗与群像命运。",
+        storyAnchors: [
+          {
+            label: "导入主角群",
+            role: "source-grounded imported cast",
+            rules: ["后续续写不得重写已经导入的关键结局。"],
+          },
+        ],
+        language: "zh-Hans",
+        toneRegister: "原书气口",
+        readiness: 0.82,
+      },
+      mainLine: {
+        revisionId: "local-import-mainline",
+        title: "导入后的续写入口",
+        summary: "本地导入流程已整理已读正文，并准备从最新章节之后继续。",
+        arcPromise: "后续只推进导入正文之后的新压力。",
+        arcRules: ["不得凭空推翻已导入事实。"],
+        startChapterIndex: 2,
+        endChapterIndex: 7,
+        beats: [
+          {
+            id: "local-import-next",
+            chapterIndex: 2,
+            goal: "承接最新导入章节后的余波。",
+            mustCover: ["交代当前人物状态"],
+            forbidden: ["重写已导入结局"],
+            change: "建立新的续写压力。",
+            endBoundary: "停在新压力出现。",
+            endingOpenQuestion: "新压力会把人物推向何处？",
+          },
+        ],
+      },
+      evidence: ["local imported chapter 1"],
+    };
+  }
+  if (toolName === "submit_rolling_snapshot") {
+    return {
+      snapshot:
+        "本地导入正文已建立核心冲突、人物状态和续写边界；后续只能在最新已导入章节之后推进。",
+      evidence: ["local imported chapter 1"],
+      sourceRange: { startChapterIndex: 1, endChapterIndex: 1 },
+    };
+  }
+  if (toolName === "submit_chapter_summaries") {
+    return {
+      summaries: [
+        {
+          chapterIndex: 1,
+          title: "第一章",
+          summary: "第一章建立导入故事的起点、冲突和人物关系。",
+          facts: {
+            characters: ["导入主角群"],
+            stakes: ["续写不能改写已导入事实"],
+          },
+          evidence: ["local imported chapter 1"],
+        },
+      ],
+    };
+  }
   if (toolName === "submit_chapter_review") {
     return {
       verdict: "pass",
@@ -490,23 +558,39 @@ function forcedStructuredToolPayload(
       contextRefs: {},
     };
   }
+  if (toolName === "submit_hot_handoff") {
+    return {
+      targetChapterIndex: 2,
+      handoff: "从最新导入章节之后继续，保留已导入人物状态和未解决压力。",
+      unresolvedThreads: ["新续写压力尚未展开"],
+      characterStates: ["导入主角群：保持最新导入章节后的状态"],
+      styleSignals: ["延续原书气口"],
+      evidence: ["local imported chapter 1"],
+    };
+  }
   return { ok: true };
 }
 
-function toolArgumentPathForProgress(
+function toolProgressSpec(
   toolName: string | undefined,
-): string | undefined {
+): { known: true; path?: string } | undefined {
   switch (toolName) {
     case "write_draft":
-      return "content";
+      return { known: true, path: "content" };
     case "submit_next_chapter_brief":
-      return "brief";
+      return { known: true, path: "brief" };
     case "submit_chapter_summary":
-      return "summary";
+      return { known: true, path: "summary" };
     case "submit_chapter_review":
-      return "summary";
+      return { known: true, path: "summary" };
     case "submit_snapshot":
-      return "snapshot";
+    case "submit_rolling_snapshot":
+      return { known: true, path: "snapshot" };
+    case "submit_hot_handoff":
+      return { known: true, path: "handoff" };
+    case "submit_import_plan_update":
+    case "submit_chapter_summaries":
+      return { known: true };
     default:
       return undefined;
   }

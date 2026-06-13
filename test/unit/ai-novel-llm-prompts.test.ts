@@ -121,6 +121,34 @@ test("chapter_summary prompt keeps generated context in target language", () => 
   assert.match(systemPrompt, /Do not infer future payoffs/);
 });
 
+test("import_book_agent prompt explains import submit tools", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "import_book_agent",
+    messages: [],
+    context: {
+      stepName: "read_cold_chunk",
+      expectedTools: ["submit_import_plan_update", "submit_rolling_snapshot"],
+    },
+  });
+
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
+    "submit_import_plan_update",
+    "submit_rolling_snapshot",
+    "submit_chapter_summaries",
+    "submit_snapshot",
+    "submit_hot_handoff",
+  ]);
+  assert.equal(assembly.forcedToolName, undefined);
+  assert.match(systemPrompt, /Extract facts faithfully/);
+  assert.match(systemPrompt, /Do not use memory/);
+  assert.match(systemPrompt, /submit_import_plan_update/);
+  assert.match(systemPrompt, /submit_rolling_snapshot/);
+  assert.match(systemPrompt, /submit_chapter_summaries/);
+  assert.match(systemPrompt, /submit_hot_handoff/);
+  assert.match(systemPrompt, /Call every expected submit tool/);
+});
+
 test("next_chapter_brief prompt keeps compatible brief string shape", () => {
   const assembly = buildAiNovelPromptAssembly({
     profile: "next_chapter_brief",
