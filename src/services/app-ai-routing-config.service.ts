@@ -36,6 +36,12 @@ const DEFAULT_AI_NOVEL_MODEL_ROUTING_CONFIG: AiNovelModelRoutingConfig = {
       "ainovel-plus-reasoning",
       "ainovel-super-reasoning",
     ),
+    kickoff_turn_imported_book: sceneRoute(
+      "chat",
+      "ainovel-plus-reasoning",
+      "ainovel-plus-reasoning",
+      "ainovel-super-reasoning",
+    ),
     chat_compaction: sceneRoute("chat", "ainovel-lowcost-structured"),
     write_turn: sceneRoute(
       "chat",

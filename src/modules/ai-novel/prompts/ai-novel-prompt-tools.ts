@@ -267,6 +267,24 @@ const interactionTools: LLMToolDefinition[] = [
   ),
 ];
 
+const readyCheckpointTool = createTool(
+  "ready",
+  "Pause at the ready checkpoint when the author-facing plan is reviewable and can be used to start writing.",
+  {
+    summary: {
+      type: "string",
+      description: "Concise user-facing ready-card summary.",
+    },
+    mainLine: {
+      type: "object",
+      description:
+        "The confirmed 6-10 chapter MainLine plan that Writing Entry Preparation will use.",
+      additionalProperties: true,
+    },
+  },
+  ["summary", "mainLine"],
+);
+
 const storyHistoryTools: LLMToolDefinition[] = [
   createTool(
     "search_story_history",
@@ -512,6 +530,66 @@ export const CHAPTER_DRAFT_TOOLS: LLMToolDefinition[] = [
   readDraftTool,
   ...storyHistoryTools,
   writeDraftTool,
+];
+
+export const IMPORTED_BOOK_KICKOFF_TOOLS: LLMToolDefinition[] = [
+  createTool(
+    "read_import_result",
+    "Read the imported-book ready projection: continuation plan, canonical writing artifacts, evidence index, latest imported chapter, and target chapter preview.",
+    {},
+  ),
+  createTool(
+    "search_imported_book",
+    "Search the imported manuscript evidence by query. Return ranked snippets with chapter index/title and source refs when available.",
+    {
+      query: { type: "string" },
+      limit: { type: "integer", minimum: 1, maximum: 10 },
+    },
+    ["query"],
+  ),
+  createTool(
+    "read_imported_chapter",
+    "Read one imported historical chapter by chapter index for source-grounded continuation discussion.",
+    {
+      chapterIndex: { type: "integer", minimum: 1 },
+      offset: { type: "integer", minimum: 0 },
+      limit: { type: "integer", minimum: 1 },
+    },
+    ["chapterIndex"],
+  ),
+  createTool(
+    "update_import_continuation",
+    "Update the imported continuation plan and canonical writing-ready artifacts. Use this after the author changes future direction, canon boundaries, next chapter entry, or 6-10 chapter pressure.",
+    {
+      continuationPlan: {
+        type: "object",
+        description:
+          "Imported continuation plan focused on how to continue the book: overall next-volume direction, next chapter index/cut-in, suggested direction, 6-10 chapter pressure, forbidden boundaries, and optional overview.",
+        additionalProperties: true,
+      },
+      contractPatch: {
+        type: "object",
+        description:
+          "Optional canonical BookContract patch when canon, no-rewrite rules, language, tone, or long-horizon promise changes.",
+        additionalProperties: true,
+      },
+      mainLinePatch: {
+        type: "object",
+        description:
+          "Optional canonical MainLine patch when future writing direction, chapter range, arcPromise, arcRules, or beats change.",
+        additionalProperties: true,
+      },
+      evidenceRefs: {
+        type: "array",
+        description: "Evidence refs from read_import_result/search/read chapter supporting the update.",
+        items: { type: "string" },
+      },
+      reason: { type: "string" },
+    },
+    ["continuationPlan", "reason"],
+  ),
+  ...interactionTools,
+  readyCheckpointTool,
 ];
 
 export const IMPORT_BOOK_AGENT_TOOLS: LLMToolDefinition[] = [

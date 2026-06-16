@@ -345,6 +345,48 @@ export class AiNovelLlmService {
         return;
       }
 
+      if (scene.profile === "kickoff_turn_imported_book") {
+        const promptAssembly = buildAiNovelPromptAssembly({
+          profile: scene.profile,
+          messages,
+          context: body.context,
+        });
+        const providerOptions = this.buildPromptedSceneProviderOptions(
+          scene.profile,
+          promptAssembly.tools,
+          true,
+        );
+        if (options.exposeLocalDebug === true) {
+          yield buildLocalDebugLlmRequestChunk({
+            sceneKey: scene.sceneKey,
+            sceneRouteKey,
+            messages: promptAssembly.messages,
+            temperature,
+            maxTokens,
+            providerOptions,
+            profile: scene.profile,
+          });
+        }
+        yield* adaptKickoffAiNovelStream({
+          sceneRouteKey,
+          events: this.llmManager.stream({
+            modelKey: sceneRouteKey,
+            modelKeyKind: "scene_route",
+            messages: promptAssembly.messages,
+            temperature,
+            maxTokens,
+            providerOptions,
+          }),
+          normalizeToolCall: (toolCall, fallbackIndex) =>
+            this.normalizePromptedSceneToolCall(
+              toolCall,
+              sceneRouteKey,
+              fallbackIndex,
+            ),
+        });
+        return;
+      }
+
       if (scene.profile) {
         const promptAssembly = buildAiNovelPromptAssembly({
           profile: scene.profile,

@@ -1,8 +1,13 @@
 import type { LLMMessage, LLMToolDefinition } from "../../services/llm-manager.ts";
 import type { AiNovelPromptAssembly, AiNovelPromptProfile } from "./prompts/ai-novel-prompt-types.ts";
-import { CHAPTER_DRAFT_TOOLS, WRITE_TURN_TOOLS } from "./prompts/ai-novel-prompt-tools.ts";
+import {
+  CHAPTER_DRAFT_TOOLS,
+  IMPORTED_BOOK_KICKOFF_TOOLS,
+  WRITE_TURN_TOOLS,
+} from "./prompts/ai-novel-prompt-tools.ts";
 import {
   CHAPTER_DRAFT_SYSTEM_PROMPT,
+  IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT,
   IMPORT_BOOK_AGENT_SUBMIT_TOOLS,
   IMPORT_BOOK_AGENT_SYSTEM_PROMPT,
   JOB_FORCED_TOOLS,
@@ -42,6 +47,16 @@ export function buildAiNovelPromptAssembly(input: {
         ...messagesWithContext,
       ],
       tools: CHAPTER_DRAFT_TOOLS,
+    };
+  }
+
+  if (input.profile === "kickoff_turn_imported_book") {
+    return {
+      messages: [
+        { role: "system", content: IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT },
+        ...messagesWithContext,
+      ],
+      tools: IMPORTED_BOOK_KICKOFF_TOOLS,
     };
   }
 

@@ -149,6 +149,43 @@ test("import_book_agent prompt explains import submit tools", () => {
   assert.match(systemPrompt, /Call every expected submit tool/);
 });
 
+test("imported-book kickoff prompt uses continuation tools and ready checkpoint", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "kickoff_turn_imported_book",
+    messages: [{ role: "user", content: "我想改成朝堂线续写" }],
+    context: {
+      meta: {
+        extras: {
+          kickoffMode: "imported_book",
+          bookId: "book_1",
+          latestImportedChapterIndex: 50,
+          targetChapterIndex: 51,
+        },
+      },
+    },
+  });
+
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  const userPrompt = String(assembly.messages[1]?.content ?? "");
+  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
+    "read_import_result",
+    "search_imported_book",
+    "read_imported_chapter",
+    "update_import_continuation",
+    "ask_question",
+    "ready",
+  ]);
+  assert.equal(assembly.forcedToolName, undefined);
+  assert.match(systemPrompt, /imported-book kickoff agent/);
+  assert.match(systemPrompt, /This is not a blank new-book kickoff/);
+  assert.match(systemPrompt, /read_import_result/);
+  assert.match(systemPrompt, /search_imported_book/);
+  assert.match(systemPrompt, /update_import_continuation/);
+  assert.match(systemPrompt, /ready continuation card/);
+  assert.match(userPrompt, /latestImportedChapterIndex/);
+  assert.match(userPrompt, /我想改成朝堂线续写/);
+});
+
 test("next_chapter_brief prompt keeps compatible brief string shape", () => {
   const assembly = buildAiNovelPromptAssembly({
     profile: "next_chapter_brief",

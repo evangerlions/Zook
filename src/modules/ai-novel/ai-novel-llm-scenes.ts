@@ -5,6 +5,7 @@ export type AiNovelSceneResponseMode = "text" | "json" | "embedding";
 export type AiNovelChatSceneProfile =
   | "write_turn"
   | "chapter_draft"
+  | "kickoff_turn_imported_book"
   | "import_book_agent"
   | "chapter_summary"
   | "chapter_draft_review"
@@ -39,6 +40,16 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultTemperature: 0.2,
     defaultMaxTokens: 4000,
     responseMode: "text",
+  },
+  kickoff_turn_imported_book: {
+    sceneKey: "kickoff_turn_imported_book",
+    kind: "chat",
+    defaultSceneRouteKey: "ainovel-plus-reasoning",
+    defaultTemperature: 0.25,
+    defaultMaxTokens: 5000,
+    responseMode: "text",
+    profile: "kickoff_turn_imported_book",
+    requiresStream: true,
   },
   chat_compaction: {
     sceneKey: "chat_compaction",
