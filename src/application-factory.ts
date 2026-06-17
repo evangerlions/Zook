@@ -15,6 +15,7 @@ import { StorageService } from "./infrastructure/files/storage.service.ts";
 import { InMemoryKVBackend, KVManager } from "./infrastructure/kv/kv-manager.ts";
 import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
+import { createLocalRunFileLogSink } from "./infrastructure/logging/local-run-file-log-sink.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
 import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
@@ -140,9 +141,20 @@ export async function createApplication(
             })(),
         )
       : new InMemoryJobQueue());
+  const localRunFileLogSink = createLocalRunFileLogSink({
+    service: options.serviceName ?? "api",
+  });
   const logger = new StructuredLogger(options.serviceName ?? "api", {
     emitToConsole: options.emitLogs ?? false,
+    sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
+  if (localRunFileLogSink) {
+    logger.info("local run file logging enabled", {
+      runId: localRunFileLogSink.runId,
+      logDirectory: localRunFileLogSink.directory,
+      logFile: localRunFileLogSink.currentPath,
+    });
+  }
 
   const appConfigService = new VersionedAppConfigService(
     database,

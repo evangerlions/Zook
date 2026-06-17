@@ -1,6 +1,7 @@
 import type { LogRecord } from "../../shared/types.ts";
 
 type LoggerFormat = "json" | "pretty";
+export type LogSink = (entry: LogRecord) => void;
 
 /**
  * StructuredLogger keeps the JSON logging contract close to nestjs-pino while staying dependency free.
@@ -14,6 +15,7 @@ export class StructuredLogger {
       emitToConsole?: boolean;
       format?: LoggerFormat;
       color?: boolean;
+      sinks?: LogSink[];
     } = {},
   ) {}
 
@@ -43,6 +45,13 @@ export class StructuredLogger {
     };
 
     this.records.push(entry);
+    for (const sink of this.options.sinks ?? []) {
+      try {
+        sink(entry);
+      } catch {
+        // Logging sinks must never affect request handling.
+      }
+    }
 
     if (this.options.emitToConsole !== false) {
       const format = this.options.format ?? resolveLoggerFormat();
