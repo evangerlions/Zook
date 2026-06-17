@@ -16,24 +16,24 @@ function captureConsoleLog(run: () => void): string[] {
   return lines;
 }
 
-test("structured logger pretty-prints JSON string fields for local readability", () => {
+test("structured logger pretty-prints tiny provider stream deltas for local readability", () => {
   const logger = new StructuredLogger("api", {
     format: "pretty",
     color: false,
   });
 
   const lines = captureConsoleLog(() => {
-    logger.info("ai_novel local provider raw stream chunk", {
-      modelKey: "ainovel-free-creative",
-      chunk: '{"choices":[{"delta":{"tool_calls":[{"function":{"arguments":"第二剑擦着他的"}}]}}]}',
+    logger.info("ai_novel local provider stream delta", {
+      preview: "[+]第二剑擦着他的",
     });
   });
 
   assert.equal(lines.length, 1);
-  assert.match(lines[0], /INFO\s+ api ai_novel local provider raw stream chunk/);
-  assert.match(lines[0], /modelKey: ainovel-free-creative/);
-  assert.match(lines[0], /chunk:\n/);
-  assert.match(lines[0], /"arguments": "第二剑擦着他的"/);
+  assert.match(lines[0], /INFO\s+ api ai_novel local provider stream delta/);
+  assert.match(lines[0], /preview: \[\+\]第二剑擦着他的/);
+  assert.doesNotMatch(lines[0], /modelKey:/);
+  assert.doesNotMatch(lines[0], /kind:/);
+  assert.doesNotMatch(lines[0], /deltaLength:/);
 });
 
 test("structured logger colors pretty output by log level when enabled", () => {

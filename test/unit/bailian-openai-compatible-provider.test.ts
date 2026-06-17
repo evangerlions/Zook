@@ -512,7 +512,7 @@ test("bailian provider extracts import submit tool progress from readable fields
   });
 });
 
-test("bailian provider suppresses raw json deltas for known import tools without readable progress fields", async () => {
+test("bailian provider emits sanitized import object progress for known tools without string progress fields", async () => {
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async () =>
       createSseResponse([
@@ -525,8 +525,25 @@ test("bailian provider suppresses raw json deltas for known import tools without
   const events = await collectEvents(provider.stream(createResolvedRequest()));
 
   assert.deepEqual(
-    events.filter((event) => event.type === "tool_call_delta"),
-    [],
+    events
+      .filter((event) => event.type === "tool_call_delta")
+      .map((event) => ({
+        text: event.text,
+        toolCallName: event.toolCallName,
+        toolArgumentPath: event.toolArgumentPath,
+      })),
+    [
+      {
+        text: "contract storyPromise source only",
+        toolCallName: "submit_import_plan_update",
+        toolArgumentPath: undefined,
+      },
+      {
+        text: "mainLine summary continue",
+        toolCallName: "submit_import_plan_update",
+        toolArgumentPath: undefined,
+      },
+    ],
   );
   const toolCall = events.find((event) => event.type === "tool_call");
   assert.deepEqual(toolCall, {
@@ -541,6 +558,49 @@ test("bailian provider suppresses raw json deltas for known import tools without
     },
     rawEvent:
       '{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":",\\"mainLine\\":{\\"summary\\":\\"continue\\"}}"}}]},"finish_reason":"tool_calls"}]}',
+  });
+});
+
+test("bailian provider emits sanitized import array progress for chapter summaries", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () =>
+      createSseResponse([
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_chapter_summaries","arguments":"{\\"chapters\\":[{\\"chapterIndex\\":5,\\"summary\\":\\"new shelter found\\"}"}}]}}]}\n\n',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"]}"}}]},"finish_reason":"tool_calls"}]}\n\n',
+        "data: [DONE]\n\n",
+      ]),
+  });
+
+  const events = await collectEvents(provider.stream(createResolvedRequest()));
+
+  assert.deepEqual(
+    events
+      .filter((event) => event.type === "tool_call_delta")
+      .map((event) => ({
+        text: event.text,
+        toolCallName: event.toolCallName,
+        toolArgumentPath: event.toolArgumentPath,
+      })),
+    [
+      {
+        text: "chapters chapterIndex 5 summary new shelter found",
+        toolCallName: "submit_chapter_summaries",
+        toolArgumentPath: undefined,
+      },
+    ],
+  );
+  const toolCall = events.find((event) => event.type === "tool_call");
+  assert.deepEqual(toolCall, {
+    type: "tool_call",
+    toolCall: {
+      id: "kimi2.5_tool_0",
+      name: "submit_chapter_summaries",
+      input: {
+        chapters: [{ chapterIndex: 5, summary: "new shelter found" }],
+      },
+    },
+    rawEvent:
+      '{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"]}"}}]},"finish_reason":"tool_calls"}]}',
   });
 });
 
@@ -632,7 +692,7 @@ test("bailian provider does not overwrite a valid streamed tool call id with a l
   assert.deepEqual(toolCallEvent.toolCall.input, { limit: 100 });
 });
 
-test("bailian provider logs local provider request body and raw stream chunk", async () => {
+test("bailian provider logs local provider request summary and tiny stream delta", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "local";
   const logger = new StructuredLogger("api", { emitToConsole: false });
@@ -671,25 +731,27 @@ test("bailian provider logs local provider request body and raw stream chunk", a
     );
 
     const requestLog = logger.records.find(
-      (entry) => entry.message === "ai_novel local provider chat request body",
+      (entry) => entry.message === "ai_novel local provider chat request started",
     );
     assert.ok(requestLog);
     assert.equal(requestLog.mode, "stream");
     assert.match(String(requestLog.url ?? ""), /chat\/completions$/);
-    assert.equal(
-      (requestLog.body as Record<string, unknown>).model,
-      "kimi/kimi-k2.5",
-    );
+    const bodySummary = requestLog.bodySummary as Record<string, unknown>;
+    assert.equal(bodySummary.model, "kimi/kimi-k2.5");
+    assert.equal(bodySummary.enableThinking, true);
+    assert.equal(bodySummary.toolCount, 1);
 
     const chunkLog = logger.records.find(
-      (entry) => entry.message === "ai_novel local provider raw stream chunk",
+      (entry) => entry.message === "ai_novel local provider stream delta",
     );
     assert.ok(chunkLog);
-    assert.equal(chunkLog.modelKey, "kimi2.5");
-    assert.equal(
-      chunkLog.chunk,
-      '{"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}',
-    );
+    assert.equal(chunkLog.preview, "[+]Hello");
+    assert.equal(chunkLog.modelKey, undefined);
+    assert.equal(chunkLog.providerModel, undefined);
+    assert.equal(chunkLog.chunkIndex, undefined);
+    assert.equal(chunkLog.elapsedMs, undefined);
+    assert.equal(chunkLog.kind, undefined);
+    assert.equal(chunkLog.deltaLength, undefined);
   } finally {
     process.env.APP_ENV = previousAppEnv;
   }
@@ -697,7 +759,9 @@ test("bailian provider logs local provider request body and raw stream chunk", a
 
 test("bailian provider redacts local provider request body when requested", async () => {
   const previousAppEnv = process.env.APP_ENV;
+  const previousFullBody = process.env.ZOOK_LOG_FULL_PROVIDER_BODY;
   process.env.APP_ENV = "local";
+  process.env.ZOOK_LOG_FULL_PROVIDER_BODY = "1";
   const logger = new StructuredLogger("api", { emitToConsole: false });
   let capturedInit: RequestInit | undefined;
 
@@ -748,7 +812,7 @@ test("bailian provider redacts local provider request body when requested", asyn
     );
 
     const requestLog = logger.records.find(
-      (entry) => entry.message === "ai_novel local provider chat request body",
+      (entry) => entry.message === "ai_novel local provider chat request started",
     );
     assert.ok(requestLog);
     const logBodyText = JSON.stringify(requestLog.body);
@@ -758,6 +822,7 @@ test("bailian provider redacts local provider request body when requested", asyn
     assert.match(logBodyText, /contentLength/);
   } finally {
     process.env.APP_ENV = previousAppEnv;
+    process.env.ZOOK_LOG_FULL_PROVIDER_BODY = previousFullBody;
   }
 });
 

@@ -173,9 +173,11 @@ function readToolCallDeltaEvent(
     : undefined;
   const progressDelta = progressSpec?.path
     ? nextProgressText?.slice((existing.progressText ?? "").length)
-    : progressSpec?.known
-      ? undefined
-      : argumentDelta;
+    : progressSpec?.rawJsonProgress
+      ? readableJsonProgressDelta(argumentDelta)
+      : progressSpec?.known
+        ? undefined
+        : argumentDelta;
   pendingToolCalls.set(index, {
     id: nextId,
     name: nextName,
@@ -328,7 +330,7 @@ function streamTimeoutError(hasEvent: boolean, timeoutMs: number): ApplicationEr
 
 function toolProgressSpec(
   toolName: string | undefined,
-): { known: true; path?: string } | undefined {
+): { known: true; path?: string; rawJsonProgress?: boolean } | undefined {
   switch (toolName) {
     case "write_draft":
       return { known: true, path: "content" };
@@ -345,10 +347,27 @@ function toolProgressSpec(
       return { known: true, path: "handoff" };
     case "submit_import_plan_update":
     case "submit_chapter_summaries":
-      return { known: true };
+      return { known: true, rawJsonProgress: true };
     default:
       return undefined;
   }
+}
+
+function readableJsonProgressDelta(argumentDelta: string): string | undefined {
+  const cleaned = argumentDelta
+    .replace(/\\n/g, " ")
+    .replace(/\\r/g, " ")
+    .replace(/\\t/g, " ")
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) =>
+      String.fromCharCode(Number.parseInt(hex, 16)),
+    )
+    .replace(/[{}\[\]"\\,:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) {
+    return undefined;
+  }
+  return cleaned.length > 180 ? `${cleaned.slice(0, 180)}...` : cleaned;
 }
 
 function extractTopLevelJsonStringField(
