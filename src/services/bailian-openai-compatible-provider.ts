@@ -251,20 +251,25 @@ export class BailianOpenAICompatibleProvider
       throwProviderResponseInvalid("Streaming response body is missing.");
     }
 
-    for await (const event of parseBailianOpenAICompatibleStream({
-      body: response.body,
-      responseStatus: response.status,
+    const streamLog = this.localLogger.beginStream({
       modelKey: request.model.modelKey,
-      parseChatUsage: (usage) => this.parseChatUsage(usage),
-      logRawChunk: (chunk) =>
-        this.localLogger.rawStreamChunk({
-          modelKey: request.model.modelKey,
-          providerModel: request.model.providerModel,
-          chunk,
-        }),
-      streamOptions,
-    })) {
-      yield event;
+      providerModel: request.model.providerModel,
+    });
+
+    try {
+      for await (const event of parseBailianOpenAICompatibleStream({
+        body: response.body,
+        responseStatus: response.status,
+        modelKey: request.model.modelKey,
+        parseChatUsage: (usage) => this.parseChatUsage(usage),
+        logRawChunk: (chunk) => streamLog.rawStreamChunk({ chunk }),
+        streamOptions,
+      })) {
+        yield event;
+      }
+    } catch (error) {
+      streamLog.streamFailure({ error });
+      throw error;
     }
   }
 

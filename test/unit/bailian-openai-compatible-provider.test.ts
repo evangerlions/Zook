@@ -745,13 +745,198 @@ test("bailian provider logs local provider request summary and tiny stream delta
       (entry) => entry.message === "ai_novel local provider stream delta",
     );
     assert.ok(chunkLog);
-    assert.equal(chunkLog.preview, "[+]Hello");
+    assert.equal(chunkLog.preview, "[content +]Hello");
     assert.equal(chunkLog.modelKey, undefined);
     assert.equal(chunkLog.providerModel, undefined);
     assert.equal(chunkLog.chunkIndex, undefined);
     assert.equal(chunkLog.elapsedMs, undefined);
     assert.equal(chunkLog.kind, undefined);
     assert.equal(chunkLog.deltaLength, undefined);
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
+});
+
+test("bailian provider logs last stream event when stream fails mid-flight", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+  const encoder = new TextEncoder();
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(
+                encoder.encode(
+                  'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_chapter_summaries","arguments":"{\\"summaries\\":"}}]},"finish_reason":null}]}\n\n',
+                ),
+              );
+              setTimeout(() => {
+                controller.error(new Error("mock stream socket closed"));
+              }, 0);
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "text/event-stream" },
+          },
+        ),
+    });
+
+    await assert.rejects(
+      collectEvents(provider.stream(createResolvedRequest())),
+      /mock stream socket closed/,
+    );
+
+    const failureLog = logger.records.find(
+      (entry) => entry.message === "ai_novel local provider stream failed",
+    );
+    assert.ok(failureLog);
+    assert.equal(failureLog.chunkCount, 1);
+    assert.equal(failureLog.firstToolDeltaElapsedMs, failureLog.firstEventElapsedMs);
+    assert.equal(failureLog.toolDeltaChars, 13);
+    assert.equal(failureLog.errorName, "Error");
+    assert.equal(failureLog.errorMessage, "mock stream socket closed");
+    const lastStreamEvent = failureLog.lastStreamEvent as Record<string, unknown>;
+    assert.equal(lastStreamEvent.kind, "tool_call_delta");
+    assert.equal(lastStreamEvent.chunkIndex, 1);
+    assert.equal(lastStreamEvent.toolCallName, "submit_chapter_summaries");
+    assert.equal(lastStreamEvent.preview, '[tool +]{"summaries":');
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
+});
+
+test("bailian provider keeps local stream failure diagnostics request-scoped", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+  const encoder = new TextEncoder();
+  let requestIndex = 0;
+  let resolveControllerA:
+    | ((controller: ReadableStreamDefaultController<Uint8Array>) => void)
+    | undefined;
+  let resolveControllerB:
+    | ((controller: ReadableStreamDefaultController<Uint8Array>) => void)
+    | undefined;
+  const controllerAReady = new Promise<ReadableStreamDefaultController<Uint8Array>>(
+    (resolve) => {
+      resolveControllerA = resolve;
+    },
+  );
+  const controllerBReady = new Promise<ReadableStreamDefaultController<Uint8Array>>(
+    (resolve) => {
+      resolveControllerB = resolve;
+    },
+  );
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async () => {
+        const index = requestIndex;
+        requestIndex += 1;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              if (index === 0) {
+                resolveControllerA?.(controller);
+              } else {
+                resolveControllerB?.(controller);
+              }
+            },
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "text/event-stream" },
+          },
+        );
+      },
+    });
+    const requestA = createResolvedRequest();
+    requestA.model.modelKey = "model-a";
+    requestA.model.providerModel = "provider-a";
+    const requestB = createResolvedRequest();
+    requestB.model.modelKey = "model-b";
+    requestB.model.providerModel = "provider-b";
+
+    const streamA = collectEvents(provider.stream(requestA));
+    const streamB = collectEvents(provider.stream(requestB));
+    const [controllerA, controllerB] = await Promise.all([
+      controllerAReady,
+      controllerBReady,
+    ]);
+
+    controllerA.enqueue(
+      encoder.encode(
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_chapter_summaries","arguments":"{\\"summaries\\":"}}]},"finish_reason":null}]}\n\n',
+      ),
+    );
+    controllerB.enqueue(
+      encoder.encode(
+        'data: {"choices":[{"delta":{"content":"B content"},"finish_reason":null}]}\n\n',
+      ),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    controllerA.error(new Error("stream A failed"));
+    controllerB.enqueue(encoder.encode("data: [DONE]\n\n"));
+    controllerB.close();
+
+    await assert.rejects(streamA, /stream A failed/);
+    await streamB;
+
+    const failureLog = logger.records.find(
+      (entry) => entry.message === "ai_novel local provider stream failed",
+    );
+    assert.ok(failureLog);
+    assert.equal(failureLog.modelKey, "model-a");
+    assert.equal(failureLog.providerModel, "provider-a");
+    assert.equal(failureLog.chunkCount, 1);
+    assert.equal(failureLog.errorMessage, "stream A failed");
+    const lastStreamEvent = failureLog.lastStreamEvent as Record<string, unknown>;
+    assert.equal(lastStreamEvent.modelKey, "model-a");
+    assert.equal(lastStreamEvent.providerModel, "provider-a");
+    assert.equal(lastStreamEvent.kind, "tool_call_delta");
+    assert.equal(lastStreamEvent.preview, '[tool +]{"summaries":');
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
+});
+
+test("bailian provider labels unparsable local stream chunks as raw", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async () => createSseResponse(["data: not-json\n\n"]),
+    });
+
+    await assert.rejects(
+      collectEvents(provider.stream(createResolvedRequest())),
+      /Streaming chunk is not valid JSON/,
+    );
+
+    const invalidJsonLog = logger.records.find(
+      (entry) =>
+        entry.message === "ai_novel local provider stream event" &&
+        entry.kind === "invalid_json",
+    );
+    assert.ok(invalidJsonLog);
+    assert.equal(invalidJsonLog.preview, "[raw +]not-json");
+    const failureLog = logger.records.find(
+      (entry) => entry.message === "ai_novel local provider stream failed",
+    );
+    assert.ok(failureLog);
+    const lastStreamEvent = failureLog.lastStreamEvent as Record<string, unknown>;
+    assert.equal(lastStreamEvent.kind, "invalid_json");
+    assert.equal(lastStreamEvent.preview, "[raw +]not-json");
   } finally {
     process.env.APP_ENV = previousAppEnv;
   }

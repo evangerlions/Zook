@@ -1,20 +1,23 @@
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
+import { describeUnknownError } from "../shared/error-diagnostics.ts";
 import type { OpenAICompatibleResponsePayload } from "./bailian-openai-compatible-types.ts";
 import { redactProviderRequestBody } from "./bailian-openai-compatible-utils.ts";
 
 export class BailianOpenAICompatibleLocalLogger {
-  private streamStartedAtMs?: number;
-  private streamChunkCount = 0;
-  private reasoningChars = 0;
-  private contentChars = 0;
-  private toolDeltaChars = 0;
-  private firstEventElapsedMs?: number;
-  private firstReasoningElapsedMs?: number;
-  private firstContentElapsedMs?: number;
-  private firstToolDeltaElapsedMs?: number;
-  private firstUsageElapsedMs?: number;
-
   constructor(private readonly logger?: StructuredLogger) {}
+
+  beginStream(input: {
+    modelKey: string;
+    providerModel: string;
+  }): BailianOpenAICompatibleStreamLogSession {
+    return new BailianOpenAICompatibleStreamLogSession({
+      logger: this.logger,
+      modelKey: input.modelKey,
+      providerModel: input.providerModel,
+      enabled: shouldLogLocalProviderTraffic(),
+      startedAtMs: Date.now(),
+    });
+  }
 
   chatRequest(input: {
     mode: "complete" | "stream";
@@ -26,18 +29,6 @@ export class BailianOpenAICompatibleLocalLogger {
   }): void {
     if (!this.logger || !shouldLogLocalProviderTraffic()) {
       return;
-    }
-    if (input.mode === "stream") {
-      this.streamStartedAtMs = Date.now();
-      this.streamChunkCount = 0;
-      this.reasoningChars = 0;
-      this.contentChars = 0;
-      this.toolDeltaChars = 0;
-      this.firstEventElapsedMs = undefined;
-      this.firstReasoningElapsedMs = undefined;
-      this.firstContentElapsedMs = undefined;
-      this.firstToolDeltaElapsedMs = undefined;
-      this.firstUsageElapsedMs = undefined;
     }
     const bodySummary = summarizeChatRequestBody(input.body);
     this.logger.info("ai_novel local provider chat request started", {
@@ -53,60 +44,6 @@ export class BailianOpenAICompatibleLocalLogger {
               : input.body,
           }
         : {}),
-    });
-  }
-
-  rawStreamChunk(input: {
-    modelKey: string;
-    providerModel: string;
-    chunk: string;
-  }): void {
-    if (!this.logger || !shouldLogLocalProviderTraffic()) {
-      return;
-    }
-    this.streamChunkCount += 1;
-    const elapsedMs = this.streamStartedAtMs === undefined
-      ? undefined
-      : Date.now() - this.streamStartedAtMs;
-    this.firstEventElapsedMs ??= elapsedMs;
-    const event = summarizeStreamChunk(input.chunk);
-    if (event.kind === "reasoning_delta") {
-      this.reasoningChars += event.deltaLength;
-      this.firstReasoningElapsedMs ??= elapsedMs;
-    } else if (event.kind === "content_delta") {
-      this.contentChars += event.deltaLength;
-      this.firstContentElapsedMs ??= elapsedMs;
-    } else if (event.kind === "tool_call_delta") {
-      this.toolDeltaChars += event.deltaLength;
-      this.firstToolDeltaElapsedMs ??= elapsedMs;
-    } else if (event.kind === "usage") {
-      this.firstUsageElapsedMs ??= elapsedMs;
-    }
-    const summary = event.kind === "done"
-      ? {
-          firstEventElapsedMs: this.firstEventElapsedMs,
-          firstReasoningElapsedMs: this.firstReasoningElapsedMs,
-          firstContentElapsedMs: this.firstContentElapsedMs,
-          firstToolDeltaElapsedMs: this.firstToolDeltaElapsedMs,
-          firstUsageElapsedMs: this.firstUsageElapsedMs,
-          reasoningChars: this.reasoningChars,
-          contentChars: this.contentChars,
-          toolDeltaChars: this.toolDeltaChars,
-        }
-      : {};
-    if (isHighFrequencyDeltaEvent(event)) {
-      this.logger.info("ai_novel local provider stream delta", {
-        preview: event.preview,
-      });
-      return;
-    }
-    this.logger.info("ai_novel local provider stream event", {
-      modelKey: input.modelKey,
-      providerModel: input.providerModel,
-      chunkIndex: this.streamChunkCount,
-      elapsedMs,
-      ...event,
-      ...summary,
     });
   }
 
@@ -161,6 +98,117 @@ export class BailianOpenAICompatibleLocalLogger {
   }
 }
 
+export class BailianOpenAICompatibleStreamLogSession {
+  private streamChunkCount = 0;
+  private reasoningChars = 0;
+  private contentChars = 0;
+  private toolDeltaChars = 0;
+  private firstEventElapsedMs?: number;
+  private firstReasoningElapsedMs?: number;
+  private firstContentElapsedMs?: number;
+  private firstToolDeltaElapsedMs?: number;
+  private firstUsageElapsedMs?: number;
+  private lastStreamEvent?: Record<string, unknown>;
+
+  constructor(
+    private readonly input: {
+      logger?: StructuredLogger;
+      modelKey: string;
+      providerModel: string;
+      enabled: boolean;
+      startedAtMs: number;
+    },
+  ) {}
+
+  rawStreamChunk(input: { chunk: string }): void {
+    if (!this.input.logger || !this.input.enabled) {
+      return;
+    }
+    this.streamChunkCount += 1;
+    const elapsedMs = Date.now() - this.input.startedAtMs;
+    this.firstEventElapsedMs ??= elapsedMs;
+    const event = summarizeStreamChunk(input.chunk);
+    this.lastStreamEvent = {
+      modelKey: this.input.modelKey,
+      providerModel: this.input.providerModel,
+      chunkIndex: this.streamChunkCount,
+      elapsedMs,
+      ...event,
+    };
+    this.updateSummary(event, elapsedMs);
+
+    if (isHighFrequencyDeltaEvent(event)) {
+      this.input.logger.info("ai_novel local provider stream delta", {
+        preview: event.preview,
+      });
+      return;
+    }
+    this.input.logger.info("ai_novel local provider stream event", {
+      ...this.lastStreamEvent,
+      ...this.doneSummary(event),
+    });
+  }
+
+  streamFailure(input: { error: unknown }): void {
+    if (!this.input.logger || !this.input.enabled) {
+      return;
+    }
+    const elapsedMs = Date.now() - this.input.startedAtMs;
+    this.input.logger.error("ai_novel local provider stream failed", {
+      modelKey: this.input.modelKey,
+      providerModel: this.input.providerModel,
+      elapsedMs,
+      chunkCount: this.streamChunkCount,
+      firstEventElapsedMs: this.firstEventElapsedMs,
+      firstReasoningElapsedMs: this.firstReasoningElapsedMs,
+      firstContentElapsedMs: this.firstContentElapsedMs,
+      firstToolDeltaElapsedMs: this.firstToolDeltaElapsedMs,
+      firstUsageElapsedMs: this.firstUsageElapsedMs,
+      reasoningChars: this.reasoningChars,
+      contentChars: this.contentChars,
+      toolDeltaChars: this.toolDeltaChars,
+      lastStreamEvent: this.lastStreamEvent,
+      ...describeUnknownError(input.error, "error"),
+    });
+  }
+
+  private updateSummary(
+    event: Record<string, unknown> & { kind: string; deltaLength: number },
+    elapsedMs: number,
+  ): void {
+    if (event.kind === "reasoning_delta") {
+      this.reasoningChars += event.deltaLength;
+      this.firstReasoningElapsedMs ??= elapsedMs;
+    } else if (event.kind === "content_delta") {
+      this.contentChars += event.deltaLength;
+      this.firstContentElapsedMs ??= elapsedMs;
+    } else if (event.kind === "tool_call_delta") {
+      this.toolDeltaChars += event.deltaLength;
+      this.firstToolDeltaElapsedMs ??= elapsedMs;
+    } else if (event.kind === "usage") {
+      this.firstUsageElapsedMs ??= elapsedMs;
+    }
+  }
+
+  private doneSummary(
+    event: Record<string, unknown> & { kind: string },
+  ): Record<string, unknown> {
+    if (event.kind !== "done") {
+      return {};
+    }
+    return {
+      firstEventElapsedMs: this.firstEventElapsedMs,
+      firstReasoningElapsedMs: this.firstReasoningElapsedMs,
+      firstContentElapsedMs: this.firstContentElapsedMs,
+      firstToolDeltaElapsedMs: this.firstToolDeltaElapsedMs,
+      firstUsageElapsedMs: this.firstUsageElapsedMs,
+      reasoningChars: this.reasoningChars,
+      contentChars: this.contentChars,
+      toolDeltaChars: this.toolDeltaChars,
+    };
+  }
+}
+
 function summarizeChatRequestBody(body: Record<string, unknown>): Record<string, unknown> {
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const tools = Array.isArray(body.tools) ? body.tools : [];
@@ -207,7 +255,7 @@ function summarizeStreamChunk(chunk: string): Record<string, unknown> & {
       return {
         kind: "reasoning_delta",
         deltaLength: reasoning.length,
-        preview: deltaPreview(reasoning),
+        preview: deltaPreview(reasoning, "reasoning"),
       };
     }
     const content = choice?.delta?.content;
@@ -215,7 +263,7 @@ function summarizeStreamChunk(chunk: string): Record<string, unknown> & {
       return {
         kind: "content_delta",
         deltaLength: content.length,
-        preview: deltaPreview(content),
+        preview: deltaPreview(content, "content"),
       };
     }
     const toolCall = choice?.delta?.tool_calls?.[0];
@@ -228,7 +276,7 @@ function summarizeStreamChunk(chunk: string): Record<string, unknown> & {
         toolCallIndex: toolCall?.index,
         toolCallId: toolCall?.id,
         toolCallName: toolName,
-        preview: deltaPreview(args),
+        preview: deltaPreview(args, "tool"),
       };
     }
     if (choice?.finish_reason) {
@@ -260,12 +308,12 @@ function isHighFrequencyDeltaEvent(
   );
 }
 
-function deltaPreview(value: string): string {
+function deltaPreview(value: string, origin = "raw"): string {
   const normalized = value.replace(/\s+/g, " ").trim();
   const preview = normalized.length <= 80
     ? normalized
     : `${normalized.slice(0, 80)}...`;
-  return `[+]${preview}`;
+  return `[${origin} +]${preview}`;
 }
 
 function shouldLogFullProviderBody(): boolean {

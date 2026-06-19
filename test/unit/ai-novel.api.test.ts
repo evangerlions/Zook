@@ -3761,6 +3761,90 @@ test("ai_novel stream errors log upstream and encrypted business error details",
   assert.match(String(encryptedLog.detailsPreview), /dashscope_req_001/);
 });
 
+test("ai_novel stream logs raw unknown upstream errors before generic wrapping", async () => {
+  const requestId = "req_ai_stream_unknown_error_probe";
+  const streamError = new Error("stream reader aborted unexpectedly", {
+    cause: new Error("socket closed while reading SSE"),
+  });
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("stream probe should not use complete");
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      yield { type: "reasoning_delta", text: "thinking" };
+      throw streamError;
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    requestId,
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+      "x-app-locale": "zh-CN",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "kickoff_turn",
+        stream: true,
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  const decryptedEvents = events.map((event) => decryptAiPayload(event, aiKey));
+  assert.equal(decryptedEvents[0]?.code, "OK");
+  assert.equal(decryptedEvents[1]?.code, "SYS_INTERNAL_ERROR");
+
+  const upstreamLog = runtime.logger.records.find(
+    (entry) => entry.message === "ai_novel upstream request failed",
+  );
+  assert.ok(upstreamLog);
+  assert.equal(upstreamLog.requestId, requestId);
+  assert.equal(upstreamLog.stage, "chat_stream");
+  assert.equal(upstreamLog.originalName, "Error");
+  assert.equal(upstreamLog.originalMessage, "stream reader aborted unexpectedly");
+  assert.match(
+    String(upstreamLog.originalStack),
+    /stream reader aborted unexpectedly/,
+  );
+  assert.match(
+    String(upstreamLog.originalCausePreview),
+    /socket closed while reading SSE/,
+  );
+
+  const unexpectedLog = runtime.logger.records.find(
+    (entry) => entry.message === "encrypted ai stream unexpected error",
+  );
+  assert.ok(unexpectedLog);
+  assert.equal(unexpectedLog.requestId, requestId);
+  assert.equal(unexpectedLog.errorName, "Error");
+  assert.equal(unexpectedLog.errorMessage, "stream reader aborted unexpectedly");
+  assert.match(
+    String(unexpectedLog.errorStack),
+    /stream reader aborted unexpectedly/,
+  );
+  assert.match(
+    String(unexpectedLog.errorCausePreview),
+    /socket closed while reading SSE/,
+  );
+});
+
 test("ai_novel upstream auth failures return refined code with local debug details", async () => {
   const requestId = "req_ai_auth_debug_probe";
   const llmProvider: LLMProvider = {

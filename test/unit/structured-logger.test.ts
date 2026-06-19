@@ -24,13 +24,13 @@ test("structured logger pretty-prints tiny provider stream deltas for local read
 
   const lines = captureConsoleLog(() => {
     logger.info("ai_novel local provider stream delta", {
-      preview: "[+]第二剑擦着他的",
+      preview: "[reasoning +]第二剑擦着他的",
     });
   });
 
   assert.equal(lines.length, 1);
   assert.match(lines[0], /INFO\s+ api ai_novel local provider stream delta/);
-  assert.match(lines[0], /preview: \[\+\]第二剑擦着他的/);
+  assert.match(lines[0], /preview: \[reasoning \+\]第二剑擦着他的/);
   assert.doesNotMatch(lines[0], /modelKey:/);
   assert.doesNotMatch(lines[0], /kind:/);
   assert.doesNotMatch(lines[0], /deltaLength:/);
