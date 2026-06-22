@@ -173,15 +173,26 @@ export class AdminConsoleCommonConfig {
     return this.getLlmServiceConfig(document.revision);
   }
 
-  async getLlmMetrics(range: LlmMetricsRange): Promise<AdminLlmMetricsDocument> {
-    return this.llmMetricsService.getOverview(await this.commonLlmConfigService.getCurrentConfig(), range);
+  async getLlmMetrics(range: LlmMetricsRange, provider?: string): Promise<AdminLlmMetricsDocument> {
+    return this.llmMetricsService.getOverview(
+      await this.commonLlmConfigService.getCurrentConfig(),
+      range,
+      new Date(),
+      provider,
+    );
   }
 
-  async getLlmModelMetrics(modelKey: string, range: LlmMetricsRange): Promise<AdminLlmModelMetricsDocument> {
+  async getLlmModelMetrics(
+    modelKey: string,
+    range: LlmMetricsRange,
+    provider?: string,
+  ): Promise<AdminLlmModelMetricsDocument> {
     return this.llmMetricsService.getModelDetail(
       await this.commonLlmConfigService.getCurrentConfig(),
       modelKey,
       range,
+      new Date(),
+      provider,
     );
   }
 

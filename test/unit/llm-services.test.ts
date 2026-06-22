@@ -474,6 +474,121 @@ test("llm manager records AINovel scene route keys under concrete model keys", a
   );
 });
 
+test("llm manager resolves AINovel route aliases through configured concrete model routes", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "qwen3.6-plus",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+      {
+        key: "bailian_coding",
+        label: "百炼 Coding Plan",
+        enabled: true,
+        baseUrl: "https://coding.dashscope.aliyuncs.com/v1",
+        apiKey: "mock-coding-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "ainovel-plus-reasoning",
+        label: "stale AINovel Plus Reasoning",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "qwen3.6-plus",
+        label: "qwen3.6-plus",
+        kind: "chat",
+        strategy: "auto",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 1,
+          },
+          {
+            provider: "bailian_coding",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 99,
+          },
+        ],
+      },
+    ],
+  });
+
+  const calls: string[] = [];
+  const manager = new LLMManager(
+    {
+      bailian: createMockProvider("bailian", calls),
+      bailian_coding: createMockProvider("bailian_coding", calls),
+    },
+    undefined,
+    {
+      commonLlmConfigService: fixture.commonLlmConfigService,
+      llmHealthService: fixture.llmHealthService,
+      llmMetricsService: fixture.llmMetricsService,
+      random: () => 0.5,
+      now: () => new Date("2026-03-24T10:20:00+08:00"),
+    },
+  );
+
+  const result = await manager.complete({
+    modelKey: "ainovel-plus-reasoning",
+    modelKeyKind: "scene_route",
+    messages: [{ role: "user", content: "hello" }],
+  });
+
+  assert.deepEqual(calls, ["bailian_coding"]);
+  assert.equal(result.modelKey, "ainovel-plus-reasoning");
+  assert.equal(result.provider, "bailian_coding");
+  assert.equal(result.providerModel, "qwen3.6-plus");
+  assert.equal(
+    (
+      await fixture.llmHealthService.getRouteSnapshot({
+        modelKey: "qwen3.6-plus",
+        provider: "bailian_coding",
+        providerModel: "qwen3.6-plus",
+      })
+    ).totalCalls,
+    1,
+  );
+
+  const detail = await fixture.llmMetricsService.getModelDetail(
+    await fixture.commonLlmConfigService.getCurrentConfig(),
+    "qwen3.6-plus",
+    "24h",
+    new Date("2026-03-24T10:50:00+08:00"),
+  );
+  assert.equal(detail.summary.requestCount, 1);
+  assert.equal(
+    detail.routes.find((item) => item.provider === "bailian_coding")?.summary.requestCount,
+    1,
+  );
+  assert.equal(
+    detail.routes.find((item) => item.provider === "bailian")?.summary.requestCount,
+    0,
+  );
+});
+
 test("embedding manager records AINovel scene route keys under concrete model keys", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
@@ -578,6 +693,139 @@ test("embedding manager records AINovel scene route keys under concrete model ke
   );
 });
 
+test("embedding manager resolves AINovel route aliases through configured concrete model routes", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "qwen3.6-plus",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+      {
+        key: "bailian_coding",
+        label: "百炼 Coding Plan",
+        enabled: true,
+        baseUrl: "https://coding.dashscope.aliyuncs.com/v1",
+        apiKey: "mock-coding-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "qwen3.6-plus",
+        label: "qwen3.6-plus",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "ainovel-embedding-default",
+        label: "stale AINovel Embedding Default",
+        kind: "embedding",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "text-embedding-v4",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "text-embedding-v4",
+        label: "text-embedding-v4",
+        kind: "embedding",
+        strategy: "auto",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "text-embedding-v4",
+            enabled: true,
+            weight: 1,
+          },
+          {
+            provider: "bailian_coding",
+            providerModel: "text-embedding-v4",
+            enabled: true,
+            weight: 99,
+          },
+        ],
+      },
+    ],
+  });
+
+  const calls: string[] = [];
+  const manager = new EmbeddingManager(
+    {
+      bailian: {
+        async embed(request): Promise<EmbeddingResult> {
+          calls.push("bailian");
+          return {
+            provider: request.model.provider,
+            modelKey: request.model.modelKey,
+            providerModel: request.model.providerModel,
+            vectors: [{ index: 0, embedding: [0.1, 0.2] }],
+          };
+        },
+      },
+      bailian_coding: {
+        async embed(request): Promise<EmbeddingResult> {
+          calls.push("bailian_coding");
+          return {
+            provider: request.model.provider,
+            modelKey: request.model.modelKey,
+            providerModel: request.model.providerModel,
+            vectors: [{ index: 0, embedding: [0.3, 0.4] }],
+          };
+        },
+      },
+    },
+    undefined,
+    {
+      commonLlmConfigService: fixture.commonLlmConfigService,
+      llmHealthService: fixture.llmHealthService,
+      llmMetricsService: fixture.llmMetricsService,
+      random: () => 0.5,
+      now: () => new Date("2026-03-24T10:20:00+08:00"),
+    },
+  );
+
+  const result = await manager.embed({
+    modelKey: "ainovel-embedding-default",
+    modelKeyKind: "scene_route",
+    input: ["hello"],
+  });
+
+  assert.deepEqual(calls, ["bailian_coding"]);
+  assert.equal(result.modelKey, "ainovel-embedding-default");
+  assert.equal(result.provider, "bailian_coding");
+  assert.equal(result.providerModel, "text-embedding-v4");
+  assert.equal(
+    (
+      await fixture.llmHealthService.getRouteSnapshot({
+        modelKey: "text-embedding-v4",
+        provider: "bailian_coding",
+        providerModel: "text-embedding-v4",
+      })
+    ).totalCalls,
+    1,
+  );
+});
+
 test("llm metrics service aggregates hourly data and prunes buckets older than one year", async () => {
   const fixture = await createLlmFixture();
   const config = {
@@ -670,6 +918,113 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
 
   const expiredBucket = await fixture.kvManager.getJson("llm-metrics:global", toHourKey(expiredDate));
   assert.equal(expiredBucket, undefined);
+});
+
+test("llm metrics service filters overview and model detail by provider", async () => {
+  const fixture = await createLlmFixture();
+  const config = {
+    enabled: true,
+    defaultModelKey: "qwen3.6-plus",
+    providers: [
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+      {
+        key: "bailian_coding",
+        label: "百炼 Coding Plan",
+        enabled: true,
+        baseUrl: "https://coding.dashscope.aliyuncs.com/v1",
+        apiKey: "mock-coding-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "qwen3.6-plus",
+        label: "qwen3.6-plus",
+        kind: "chat",
+        strategy: "auto",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 1,
+          },
+          {
+            provider: "bailian_coding",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 99,
+          },
+        ],
+      },
+    ],
+  };
+  const now = new Date("2026-03-24T10:20:00+08:00");
+
+  await fixture.llmMetricsService.recordCall({
+    modelKey: "qwen3.6-plus",
+    provider: "bailian",
+    providerModel: "qwen3.6-plus",
+    ok: true,
+    firstByteLatencyMs: 100,
+    totalLatencyMs: 600,
+    usage: {
+      promptTokens: 10,
+      completionTokens: 5,
+      totalTokens: 15,
+    },
+    occurredAt: now,
+  });
+  await fixture.llmMetricsService.recordCall({
+    modelKey: "qwen3.6-plus",
+    provider: "bailian_coding",
+    providerModel: "qwen3.6-plus",
+    ok: true,
+    firstByteLatencyMs: 240,
+    totalLatencyMs: 1800,
+    usage: {
+      promptTokens: 40,
+      completionTokens: 20,
+      totalTokens: 60,
+    },
+    occurredAt: now,
+  });
+
+  const overview = await fixture.llmMetricsService.getOverview(
+    config,
+    "24h",
+    new Date("2026-03-24T10:50:00+08:00"),
+    "bailian_coding",
+  );
+
+  assert.equal(overview.provider, "bailian_coding");
+  assert.deepEqual(overview.providers.map((item) => item.provider), ["bailian", "bailian_coding"]);
+  assert.equal(overview.summary.requestCount, 1);
+  assert.equal(overview.summary.totalTokens, 60);
+  assert.equal(overview.models[0]?.modelKey, "qwen3.6-plus");
+  assert.equal(overview.models[0]?.summary.requestCount, 1);
+  assert.equal(overview.models[0]?.summary.avgTotalLatencyMs, 1800);
+
+  const detail = await fixture.llmMetricsService.getModelDetail(
+    config,
+    "qwen3.6-plus",
+    "24h",
+    new Date("2026-03-24T10:50:00+08:00"),
+    "bailian_coding",
+  );
+
+  assert.equal(detail.provider, "bailian_coding");
+  assert.equal(detail.summary.requestCount, 1);
+  assert.equal(detail.routes.length, 1);
+  assert.equal(detail.routes[0]?.provider, "bailian_coding");
+  assert.equal(detail.routes[0]?.summary.totalTokens, 60);
 });
 
 test("common llm metrics exclude AINovel scene route keys from model statistics", async () => {

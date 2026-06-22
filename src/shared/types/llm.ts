@@ -103,16 +103,24 @@ export interface LlmRouteMetricsGroup {
   items: LlmHourlySeriesItem[];
 }
 
+export interface LlmProviderMetricsOption {
+  provider: string;
+  label: string;
+}
+
 export interface AdminLlmMetricsDocument {
   timezone: string;
   range: LlmMetricsRange;
+  provider?: string;
   summary: LlmMetricsSummary;
+  providers: LlmProviderMetricsOption[];
   models: LlmModelMetricsGroup[];
 }
 
 export interface AdminLlmModelMetricsDocument {
   timezone: string;
   range: LlmMetricsRange;
+  provider?: string;
   modelKey: string;
   label: string;
   summary: LlmMetricsSummary;

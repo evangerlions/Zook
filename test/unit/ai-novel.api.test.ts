@@ -253,6 +253,34 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
     ],
     models: [
       {
+        key: "qwen3.6-plus",
+        label: "Qwen 3.6 Plus",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
+        key: "text-embedding-v4",
+        label: "Text Embedding v4",
+        kind: "embedding",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "text-embedding-v4",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+      {
         key: "ainovel-free-creative",
         label: "AINovel Free Creative",
         kind: "chat",

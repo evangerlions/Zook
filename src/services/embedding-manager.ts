@@ -122,9 +122,13 @@ export class EmbeddingManager {
         throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM service is not enabled.");
       }
 
-      const selection = await this.resolveConfiguredModel(commonConfig, modelKey);
-      const healthRouteRef = {
+      const selection = await this.resolveConfiguredModel(
+        commonConfig,
         modelKey,
+        request.modelKeyKind,
+      );
+      const healthRouteRef = {
+        modelKey: selection.routeModelKey,
         provider: selection.provider.key,
         providerModel: selection.route.providerModel,
       };
@@ -201,35 +205,23 @@ export class EmbeddingManager {
   private async resolveConfiguredModel(
     config: LlmServiceConfig,
     modelKey: string,
+    modelKeyKind?: "model" | "scene_route",
   ): Promise<{
     provider: LlmProviderConfig;
     route: LlmModelConfig["routes"][number];
+    routeModelKey: string;
   }> {
-    let model = config.models.find((item) => item.key === modelKey);
-    if (!model) {
-      const alias = resolveAiNovelSceneRouteAlias(modelKey);
-      if (alias?.kind === "embedding") {
-        const provider = config.providers.find((item) => item.key === alias.provider);
-        if (provider?.enabled && this.providers[provider.key]) {
-          return {
-            provider,
-            route: {
-              provider: alias.provider,
-              providerModel: alias.providerModel,
-              enabled: true,
-              weight: 100,
-            },
-          };
-        }
-      }
-    }
+    const alias =
+      modelKeyKind === "scene_route" ? resolveAiNovelSceneRouteAlias(modelKey) : undefined;
+    const routeModelKey = alias?.kind === "embedding" ? alias.modelKey : modelKey;
+    const model = config.models.find((item) => item.key === routeModelKey);
 
     if (!model) {
       badRequest("LLM_MODEL_NOT_FOUND", `Unknown embedding modelKey: ${modelKey}.`);
     }
 
     if (model.kind !== "embedding") {
-      badRequest("LLM_MODEL_NOT_FOUND", `LLM modelKey ${modelKey} is not configured as an embedding model.`);
+      badRequest("LLM_MODEL_NOT_FOUND", `LLM modelKey ${routeModelKey} is not configured as an embedding model.`);
     }
 
     const providerMap = new Map(config.providers.map((item) => [item.key, item]));
@@ -250,6 +242,7 @@ export class EmbeddingManager {
     return {
       provider,
       route: chosenRoute,
+      routeModelKey: model.key,
     };
   }
 

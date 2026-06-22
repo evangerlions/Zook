@@ -579,16 +579,14 @@ export const adminApi = {
       },
     );
   },
-  getLlmMetrics(range: LlmMetricsRange) {
-    return requestJson<AdminLlmMetricsDocument>(
-      adminPath(`/apps/common/llm-service/metrics?range=${encodeURIComponent(range)}`),
-    );
+  getLlmMetrics(range: LlmMetricsRange, provider?: string) {
+    const query = new URLSearchParams(cleanQuery({ range, provider }));
+    return requestJson<AdminLlmMetricsDocument>(adminPath(`/apps/common/llm-service/metrics?${query.toString()}`));
   },
-  getLlmModelMetrics(modelKey: string, range: LlmMetricsRange) {
+  getLlmModelMetrics(modelKey: string, range: LlmMetricsRange, provider?: string) {
+    const query = new URLSearchParams(cleanQuery({ range, provider }));
     return requestJson<AdminLlmModelMetricsDocument>(
-      adminPath(
-        `/apps/common/llm-service/metrics/models/${encodeURIComponent(modelKey)}?range=${encodeURIComponent(range)}`,
-      ),
+      adminPath(`/apps/common/llm-service/metrics/models/${encodeURIComponent(modelKey)}?${query.toString()}`),
     );
   },
   runLlmSmokeTest() {

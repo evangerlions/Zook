@@ -2,50 +2,41 @@ import type { LlmModelConfig, LlmModelKind } from "../shared/types.ts";
 
 interface AiNovelSceneRouteAlias {
   kind: LlmModelKind;
-  provider: string;
-  providerModel: string;
+  modelKey: string;
 }
 
 const AI_NOVEL_SCENE_ROUTE_ALIASES: Record<string, AiNovelSceneRouteAlias> = {
   "ainovel-free-creative": {
     kind: "chat",
-    provider: "bailian",
-    providerModel: "qwen3.6-plus",
+    modelKey: "qwen3.6-plus",
   },
   "ainovel-free-reasoning": {
     kind: "chat",
-    provider: "bailian",
-    providerModel: "qwen3.6-plus",
+    modelKey: "qwen3.6-plus",
   },
   "ainovel-plus-creative": {
     kind: "chat",
-    provider: "bailian",
-    providerModel: "qwen3.6-plus",
+    modelKey: "qwen3.6-plus",
   },
   "ainovel-plus-reasoning": {
     kind: "chat",
-    provider: "bailian",
-    providerModel: "qwen3.6-plus",
+    modelKey: "qwen3.6-plus",
   },
   "ainovel-super-creative": {
     kind: "chat",
-    provider: "bailian",
-    providerModel: "qwen3.6-plus",
+    modelKey: "qwen3.6-plus",
   },
   "ainovel-super-reasoning": {
     kind: "chat",
-    provider: "bailian",
-    providerModel: "qwen3.6-plus",
+    modelKey: "qwen3.6-plus",
   },
   "ainovel-lowcost-structured": {
     kind: "chat",
-    provider: "bailian",
-    providerModel: "qwen3.6-plus",
+    modelKey: "qwen3.6-plus",
   },
   "ainovel-embedding-default": {
     kind: "embedding",
-    provider: "bailian",
-    providerModel: "text-embedding-v4",
+    modelKey: "text-embedding-v4",
   },
 };
 
@@ -63,18 +54,18 @@ export function isAiNovelSceneRouteKey(value: string): boolean {
 export function createAiNovelMetricModels(): LlmModelConfig[] {
   const modelsByKey = new Map<string, LlmModelConfig>();
   for (const alias of Object.values(AI_NOVEL_SCENE_ROUTE_ALIASES)) {
-    if (modelsByKey.has(alias.providerModel)) {
+    if (modelsByKey.has(alias.modelKey)) {
       continue;
     }
-    modelsByKey.set(alias.providerModel, {
-      key: alias.providerModel,
-      label: alias.providerModel,
+    modelsByKey.set(alias.modelKey, {
+      key: alias.modelKey,
+      label: alias.modelKey,
       kind: alias.kind,
       strategy: "fixed",
       routes: [
         {
-          provider: alias.provider,
-          providerModel: alias.providerModel,
+          provider: "bailian",
+          providerModel: alias.modelKey,
           enabled: true,
           weight: 100,
         },
