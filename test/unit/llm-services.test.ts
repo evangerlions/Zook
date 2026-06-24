@@ -1206,3 +1206,63 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
   const secondRun = await smokeTestService.run();
   assert.equal(secondRun.summary.totalCount, 3);
 });
+
+test("llm smoke test service can exercise qwen3.5-flash through Bailian Coding Plan", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "qwen3.5-flash",
+    providers: [
+      {
+        key: "bailian_coding",
+        label: "百炼 Coding Plan",
+        enabled: true,
+        baseUrl: "https://coding.dashscope.aliyuncs.com/v1",
+        apiKey: "mock-coding-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "qwen3.5-flash",
+        label: "Qwen 3.5 Flash",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian_coding",
+            providerModel: "qwen3.5-flash",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+
+  const calls: string[] = [];
+  const smokeTestService = new LlmSmokeTestService(
+    fixture.commonLlmConfigService,
+    fixture.kvManager,
+    {
+      bailian_coding: createMockProvider("bailian_coding", calls),
+    },
+    {},
+    {
+      now: () => new Date("2026-03-24T10:30:00+08:00"),
+    },
+  );
+
+  const run = await smokeTestService.run();
+
+  assert.deepEqual(calls, ["bailian_coding"]);
+  assert.equal(run.summary.totalCount, 1);
+  assert.equal(run.summary.successCount, 1);
+  assert.equal(run.items[0]?.status, "success");
+  assert.equal(run.items[0]?.provider, "bailian_coding");
+  assert.equal(run.items[0]?.modelKey, "qwen3.5-flash");
+  assert.equal(run.items[0]?.providerModel, "qwen3.5-flash");
+  assert.equal(run.items[0]?.details.request?.baseUrl, "https://coding.dashscope.aliyuncs.com/v1");
+  assert.equal(run.items[0]?.details.response?.provider, "bailian_coding");
+  assert.equal(run.items[0]?.details.response?.providerModel, "qwen3.5-flash");
+});

@@ -149,6 +149,8 @@ export class LlmRequestResolver {
         model: {
           provider: selection.provider.key,
           modelKey,
+          modelKeyKind: request.modelKeyKind,
+          resolvedModelKey: selection.routeModelKey,
           providerModel: selection.route.providerModel,
           providerConfig: {
             baseUrl: selection.provider.baseUrl,
@@ -182,6 +184,8 @@ export class LlmRequestResolver {
         model: {
           provider: resolvedModel.provider,
           modelKey,
+          modelKeyKind: request.modelKeyKind,
+          resolvedModelKey: modelKey,
           providerModel: resolvedModel.providerModel,
         },
       },

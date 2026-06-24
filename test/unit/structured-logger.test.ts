@@ -51,6 +51,21 @@ test("structured logger colors pretty output by log level when enabled", () => {
   assert.match(lines[0], /\u001B\[1msomething needs attention\u001B\[22m/);
 });
 
+test("structured logger supports debug records", () => {
+  const logger = new StructuredLogger("api", {
+    emitToConsole: false,
+  });
+
+  logger.debug("prompt inspected", {
+    promptLength: 42,
+  });
+
+  assert.equal(logger.records.length, 1);
+  assert.equal(logger.records[0]?.level, "debug");
+  assert.equal(logger.records[0]?.message, "prompt inspected");
+  assert.equal(logger.records[0]?.promptLength, 42);
+});
+
 test("structured logger colorizes pretty JSON keys strings and primitives", () => {
   const logger = new StructuredLogger("api", {
     format: "pretty",

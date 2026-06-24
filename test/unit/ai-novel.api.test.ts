@@ -2439,6 +2439,7 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
       authorization: `Bearer ${token}`,
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
+      "X-App-Locale": "zh-CN",
     },
     body: encryptAiPayload(
       {
@@ -2542,6 +2543,29 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     String(systemMessages[0]?.content ?? ""),
     /- language: 简体中文/,
   );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /Localized authoring glossary:/,
+  );
+  assert.match(String(systemMessages[0]?.content ?? ""), /开书、开始写、正式开始/);
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /start this book project from the current kickoff plan/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /user chose to modify the ready proposal/,
+  );
+  assert.match(String(systemMessages[0]?.content ?? ""), /call ready/);
+  assert.match(String(systemMessages[0]?.content ?? ""), /call update_meta/);
+  assert.doesNotMatch(
+    String(systemMessages[0]?.content ?? ""),
+    /Do not ask what these words mean/,
+  );
+  assert.doesNotMatch(
+    String(systemMessages[0]?.content ?? ""),
+    /Do not treat this as opening an existing book file/,
+  );
   const askQuestionTool = capturedTools?.find((tool) => {
     const fn = (tool as Record<string, unknown>).function as
       | Record<string, unknown>
@@ -2557,6 +2581,18 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   assert.match(String(options.description), /real JSON array/);
   const optionItem = options.items as Record<string, unknown>;
   assert.deepEqual(optionItem.required, ["label", "subtitle"]);
+  const readyTool = capturedTools?.find((tool) => {
+    const fn = (tool as Record<string, unknown>).function as
+      | Record<string, unknown>
+      | undefined;
+    return fn?.name === "ready";
+  }) as Record<string, unknown> | undefined;
+  assert.ok(readyTool);
+  const readyFn = readyTool.function as Record<string, unknown>;
+  assert.match(
+    String(readyFn.description),
+    /Call this again after a previous ready result says the user chose to modify the ready proposal/,
+  );
   const updateMetaTool = capturedTools?.find((tool) => {
     const fn = (tool as Record<string, unknown>).function as
       | Record<string, unknown>

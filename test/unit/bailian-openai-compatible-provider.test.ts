@@ -15,6 +15,7 @@ function createResolvedRequest(
     model: {
       provider: "bailian",
       modelKey: "kimi2.5",
+      resolvedModelKey: "kimi2.5",
       providerModel: "kimi/kimi-k2.5",
     },
     messages: [
@@ -40,6 +41,7 @@ function createResolvedEmbeddingRequest(
     model: {
       provider: "bailian",
       modelKey: "novel-embedding",
+      resolvedModelKey: "novel-embedding",
       providerModel: "text-embedding-v4",
     },
     input: ["hello world"],
@@ -696,6 +698,7 @@ test("bailian provider logs local provider request summary and tiny stream delta
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "local";
   const logger = new StructuredLogger("api", { emitToConsole: false });
+  const longUserMessage = `${"a".repeat(205)} middle ${"z".repeat(205)}`;
 
   try {
     const provider = new BailianOpenAICompatibleProvider({
@@ -709,24 +712,41 @@ test("bailian provider logs local provider request summary and tiny stream delta
 
     await collectEvents(
       provider.stream(
-        createResolvedRequest({
-          enable_thinking: true,
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "ask_question",
-                description: "Ask one focused kickoff question.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    question: { type: "string" },
+        {
+          ...createResolvedRequest({
+            enable_thinking: true,
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "ask_question",
+                  description: "Ask one focused kickoff question.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      question: { type: "string" },
+                    },
                   },
                 },
               },
+            ],
+          }),
+          messages: [
+            {
+              role: "system",
+              content: "You are helpful.",
+            },
+            {
+              role: "user",
+              content: longUserMessage,
+            },
+            {
+              role: "tool",
+              toolCallId: "tool_question_1",
+              content: '{"selectedOption":"故乡/故土"}',
             },
           ],
-        }),
+        },
       ),
     );
 
@@ -740,6 +760,54 @@ test("bailian provider logs local provider request summary and tiny stream delta
     assert.equal(bodySummary.model, "kimi/kimi-k2.5");
     assert.equal(bodySummary.enableThinking, true);
     assert.equal(bodySummary.toolCount, 1);
+    assert.equal(requestLog.modelKey, "kimi2.5");
+    assert.equal(requestLog.sceneRouteKey, undefined);
+
+    const systemPromptLog = logger.records.find(
+      (entry) => entry.message === "ai_novel local provider system prompt",
+    );
+    assert.ok(systemPromptLog);
+    assert.equal(systemPromptLog.level, "debug");
+    assert.equal(systemPromptLog.mode, "stream");
+    assert.equal(systemPromptLog.modelKey, "kimi2.5");
+    assert.equal(systemPromptLog.providerModel, "kimi/kimi-k2.5");
+    assert.equal(systemPromptLog.systemPromptCount, 1);
+    assert.deepEqual(systemPromptLog.systemPrompts, ["You are helpful."]);
+    assert.equal(
+      (systemPromptLog.bodySummary as Record<string, unknown>).messageCount,
+      3,
+    );
+    assert.deepEqual(systemPromptLog.chatContext, [
+      `[1][user] [${longUserMessage.length}]${"a".repeat(200)}<<<=======>>>${"z".repeat(200)}`,
+      '[2][tool] {"selectedOption":"故乡/故土"}',
+    ]);
+
+    const toolsContextLog = logger.records.find(
+      (entry) => entry.message === "ai_novel local provider tools context",
+    );
+    assert.ok(toolsContextLog);
+    assert.equal(toolsContextLog.level, "debug");
+    assert.equal(toolsContextLog.mode, undefined);
+    assert.equal(toolsContextLog.url, undefined);
+    assert.equal(toolsContextLog.modelKey, undefined);
+    assert.equal(toolsContextLog.providerModel, undefined);
+    assert.equal(toolsContextLog.toolCount, undefined);
+    assert.equal(toolsContextLog.bodySummary, undefined);
+    const toolsContext = toolsContextLog.toolsContext as Record<
+      string,
+      unknown
+    >[];
+    assert.equal(toolsContext[0]?.type, "function");
+    const toolFunction = toolsContext[0]?.function as Record<string, unknown>;
+    assert.equal(toolFunction.name, "ask_question");
+    assert.equal(toolFunction.description, "Ask one focused kickoff question.");
+    assert.deepEqual(
+      ((toolFunction.parameters as Record<string, unknown>).properties as Record<
+        string,
+        unknown
+      >).question,
+      { type: "string" },
+    );
 
     const chunkLog = logger.records.find(
       (entry) => entry.message === "ai_novel local provider stream delta",
@@ -752,6 +820,46 @@ test("bailian provider logs local provider request summary and tiny stream delta
     assert.equal(chunkLog.elapsedMs, undefined);
     assert.equal(chunkLog.kind, undefined);
     assert.equal(chunkLog.deltaLength, undefined);
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
+});
+
+test("bailian provider local request log separates resolved model and scene route keys", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async () =>
+        createSseResponse([
+          'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+          "data: [DONE]\n\n",
+        ]),
+    });
+
+    await collectEvents(
+      provider.stream({
+        ...createResolvedRequest(),
+        model: {
+          provider: "bailian",
+          modelKey: "ainovel-plus-reasoning",
+          modelKeyKind: "scene_route",
+          resolvedModelKey: "qwen3.6-plus",
+          providerModel: "qwen3.6-plus",
+        },
+      }),
+    );
+
+    const requestLog = logger.records.find(
+      (entry) => entry.message === "ai_novel local provider chat request started",
+    );
+    assert.ok(requestLog);
+    assert.equal(requestLog.modelKey, "qwen3.6-plus");
+    assert.equal(requestLog.sceneRouteKey, "ainovel-plus-reasoning");
+    assert.equal(requestLog.providerModel, "qwen3.6-plus");
   } finally {
     process.env.APP_ENV = previousAppEnv;
   }
@@ -859,9 +967,11 @@ test("bailian provider keeps local stream failure diagnostics request-scoped", a
     });
     const requestA = createResolvedRequest();
     requestA.model.modelKey = "model-a";
+    requestA.model.resolvedModelKey = "model-a";
     requestA.model.providerModel = "provider-a";
     const requestB = createResolvedRequest();
     requestB.model.modelKey = "model-b";
+    requestB.model.resolvedModelKey = "model-b";
     requestB.model.providerModel = "provider-b";
 
     const streamA = collectEvents(provider.stream(requestA));
