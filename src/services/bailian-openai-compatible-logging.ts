@@ -8,11 +8,13 @@ export class BailianOpenAICompatibleLocalLogger {
 
   beginStream(input: {
     modelKey: string;
+    sceneRouteKey?: string;
     providerModel: string;
   }): BailianOpenAICompatibleStreamLogSession {
     return new BailianOpenAICompatibleStreamLogSession({
       logger: this.logger,
       modelKey: input.modelKey,
+      sceneRouteKey: input.sceneRouteKey,
       providerModel: input.providerModel,
       enabled: shouldLogLocalProviderTraffic(),
       startedAtMs: Date.now(),
@@ -23,6 +25,7 @@ export class BailianOpenAICompatibleLocalLogger {
     mode: "complete" | "stream";
     url: string;
     modelKey: string;
+    sceneRouteKey?: string;
     providerModel: string;
     body: Record<string, unknown>;
     redactBody?: boolean;
@@ -35,6 +38,7 @@ export class BailianOpenAICompatibleLocalLogger {
       mode: input.mode,
       url: input.url,
       modelKey: input.modelKey,
+      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
       bodySummary,
       ...(shouldLogFullProviderBody()
@@ -45,11 +49,52 @@ export class BailianOpenAICompatibleLocalLogger {
           }
         : {}),
     });
+    this.logSystemPrompts(input, bodySummary);
+    this.logToolsContext(input.body);
+  }
+
+  private logSystemPrompts(
+    input: {
+      mode: "complete" | "stream";
+      url: string;
+      modelKey: string;
+      sceneRouteKey?: string;
+      providerModel: string;
+      body: Record<string, unknown>;
+    },
+    bodySummary: Record<string, unknown>,
+  ): void {
+    const systemPrompts = extractSystemPrompts(input.body);
+    if (!this.logger || systemPrompts.length === 0) {
+      return;
+    }
+    this.logger.debug("ai_novel local provider system prompt", {
+      mode: input.mode,
+      url: input.url,
+      modelKey: input.modelKey,
+      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
+      providerModel: input.providerModel,
+      systemPromptCount: systemPrompts.length,
+      systemPrompts,
+      chatContext: summarizeNonSystemChatContext(input.body),
+      bodySummary,
+    });
+  }
+
+  private logToolsContext(body: Record<string, unknown>): void {
+    const toolsContext = extractToolsContext(body);
+    if (!this.logger || toolsContext.length === 0) {
+      return;
+    }
+    this.logger.debug("ai_novel local provider tools context", {
+      toolsContext,
+    });
   }
 
   chatResponse(input: {
     mode: "complete";
     modelKey: string;
+    sceneRouteKey?: string;
     providerModel: string;
     payload: OpenAICompatibleResponsePayload;
   }): void {
@@ -60,6 +105,7 @@ export class BailianOpenAICompatibleLocalLogger {
     this.logger.info("ai_novel local provider chat response completed", {
       mode: input.mode,
       modelKey: input.modelKey,
+      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
       id: input.payload.id,
       finishReason: choice?.finish_reason,
@@ -79,6 +125,7 @@ export class BailianOpenAICompatibleLocalLogger {
   chatErrorResponse(input: {
     mode: "complete";
     modelKey: string;
+    sceneRouteKey?: string;
     providerModel: string;
     statusCode: number;
     payload: OpenAICompatibleResponsePayload;
@@ -89,6 +136,7 @@ export class BailianOpenAICompatibleLocalLogger {
     this.logger.warn("ai_novel local provider chat error response body", {
       mode: input.mode,
       modelKey: input.modelKey,
+      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
       statusCode: input.statusCode,
       error: input.payload.error,
@@ -114,6 +162,7 @@ export class BailianOpenAICompatibleStreamLogSession {
     private readonly input: {
       logger?: StructuredLogger;
       modelKey: string;
+      sceneRouteKey?: string;
       providerModel: string;
       enabled: boolean;
       startedAtMs: number;
@@ -130,6 +179,9 @@ export class BailianOpenAICompatibleStreamLogSession {
     const event = summarizeStreamChunk(input.chunk);
     this.lastStreamEvent = {
       modelKey: this.input.modelKey,
+      ...(this.input.sceneRouteKey
+        ? { sceneRouteKey: this.input.sceneRouteKey }
+        : {}),
       providerModel: this.input.providerModel,
       chunkIndex: this.streamChunkCount,
       elapsedMs,
@@ -156,6 +208,9 @@ export class BailianOpenAICompatibleStreamLogSession {
     const elapsedMs = Date.now() - this.input.startedAtMs;
     this.input.logger.error("ai_novel local provider stream failed", {
       modelKey: this.input.modelKey,
+      ...(this.input.sceneRouteKey
+        ? { sceneRouteKey: this.input.sceneRouteKey }
+        : {}),
       providerModel: this.input.providerModel,
       elapsedMs,
       chunkCount: this.streamChunkCount,
@@ -230,6 +285,58 @@ function summarizeChatRequestBody(body: Record<string, unknown>): Record<string,
     }, 0),
     streamOptions: body.stream_options,
   };
+}
+
+function extractSystemPrompts(body: Record<string, unknown>): string[] {
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  return messages
+    .filter((message): message is Record<string, unknown> =>
+      Boolean(message) &&
+      typeof message === "object" &&
+      !Array.isArray(message) &&
+      (message as Record<string, unknown>).role === "system" &&
+      typeof (message as Record<string, unknown>).content === "string",
+    )
+    .map((message) => message.content as string);
+}
+
+function extractToolsContext(body: Record<string, unknown>): unknown[] {
+  return Array.isArray(body.tools) ? body.tools : [];
+}
+
+function summarizeNonSystemChatContext(
+  body: Record<string, unknown>,
+): string[] {
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  return messages.flatMap((message, index) => {
+    if (!isChatMessageRecord(message) || message.role === "system") {
+      return [];
+    }
+    const content = stringifyChatMessageContent(message.content);
+    const preview = previewLongContent(content);
+    return [`[${index}][${String(message.role)}] ${preview}`];
+  });
+}
+
+function isChatMessageRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function stringifyChatMessageContent(content: unknown): string {
+  if (typeof content === "string") {
+    return content;
+  }
+  if (content === undefined) {
+    return "";
+  }
+  return JSON.stringify(content) ?? String(content);
+}
+
+function previewLongContent(content: string): string {
+  if (content.length <= 400) {
+    return content;
+  }
+  return `[${content.length}]${content.slice(0, 200)}<<<=======>>>${content.slice(-200)}`;
 }
 
 function summarizeStreamChunk(chunk: string): Record<string, unknown> & {

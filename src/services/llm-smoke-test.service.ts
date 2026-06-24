@@ -271,6 +271,7 @@ export class LlmSmokeTestService {
       model: {
         provider: item.provider.key,
         modelKey: item.model.key,
+        resolvedModelKey: item.model.key,
         providerModel: route.providerModel,
         providerConfig: {
           baseUrl: item.provider.baseUrl,
@@ -293,6 +294,7 @@ export class LlmSmokeTestService {
       model: {
         provider: item.provider.key,
         modelKey: item.model.key,
+        resolvedModelKey: item.model.key,
         providerModel: route.providerModel,
         providerConfig: {
           baseUrl: item.provider.baseUrl,

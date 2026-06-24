@@ -65,12 +65,13 @@ export class BailianOpenAICompatibleProvider
     request: ResolvedLLMCompletionRequest,
   ): Promise<LLMCompletionResult> {
     const requestBody = this.buildChatRequestBody(request);
+    const localLogModel = this.getLocalLogModel(request);
     this.localLogger.chatRequest({
       mode: "complete",
       url: this.buildChatUrl(
         request.model.providerConfig?.baseUrl ?? this.baseUrl,
       ),
-      modelKey: request.model.modelKey,
+      ...localLogModel,
       providerModel: request.model.providerModel,
       body: requestBody,
       redactBody: this.shouldRedactProviderLog(request.providerOptions),
@@ -88,7 +89,7 @@ export class BailianOpenAICompatibleProvider
     if (!response.ok || payload.error) {
       this.localLogger.chatErrorResponse({
         mode: "complete",
-        modelKey: request.model.modelKey,
+        ...localLogModel,
         providerModel: request.model.providerModel,
         statusCode: response.status,
         payload,
@@ -97,7 +98,7 @@ export class BailianOpenAICompatibleProvider
     }
     this.localLogger.chatResponse({
       mode: "complete",
-      modelKey: request.model.modelKey,
+      ...localLogModel,
       providerModel: request.model.providerModel,
       payload,
     });
@@ -203,12 +204,13 @@ export class BailianOpenAICompatibleProvider
         include_usage: true,
       },
     };
+    const localLogModel = this.getLocalLogModel(request);
     this.localLogger.chatRequest({
       mode: "stream",
       url: this.buildChatUrl(
         request.model.providerConfig?.baseUrl ?? this.baseUrl,
       ),
-      modelKey: request.model.modelKey,
+      ...localLogModel,
       providerModel: request.model.providerModel,
       body: requestBody,
       redactBody: this.shouldRedactProviderLog(request.providerOptions),
@@ -252,7 +254,7 @@ export class BailianOpenAICompatibleProvider
     }
 
     const streamLog = this.localLogger.beginStream({
-      modelKey: request.model.modelKey,
+      ...localLogModel,
       providerModel: request.model.providerModel,
     });
 
@@ -275,6 +277,18 @@ export class BailianOpenAICompatibleProvider
 
   private buildChatUrl(baseUrl: string): string {
     return `${normalizeBaseUrl(baseUrl)}/chat/completions`;
+  }
+
+  private getLocalLogModel(request: ResolvedLLMCompletionRequest): {
+    modelKey: string;
+    sceneRouteKey?: string;
+  } {
+    return {
+      modelKey: request.model.resolvedModelKey || request.model.modelKey,
+      ...(request.model.modelKeyKind === "scene_route"
+        ? { sceneRouteKey: request.model.modelKey }
+        : {}),
+    };
   }
 
   private buildEmbeddingsUrl(baseUrl: string): string {

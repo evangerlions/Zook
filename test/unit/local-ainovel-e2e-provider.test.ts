@@ -68,6 +68,8 @@ test("local AINovel E2E provider streams kickoff update and ready tools", async 
     model: {
       provider: "bailian",
       modelKey: "ainovel-plus-reasoning",
+      modelKeyKind: "scene_route",
+      resolvedModelKey: "qwen3.6-plus",
       providerModel: "qwen3.6-plus",
     },
     messages: [{ role: "user", content: "我要写东方玄幻。" }],
@@ -156,6 +158,7 @@ test("local AINovel E2E provider returns a pass decision for content safety", as
     model: {
       provider: "bailian",
       modelKey: "qwen3.5-flash",
+      resolvedModelKey: "qwen3.5-flash",
       providerModel: "qwen3.5-flash",
     },
     messages: [{ role: "user", content: "审核下面的用户输入：你好" }],
@@ -183,6 +186,8 @@ test("local AINovel E2E provider exercises chapter draft reasoning replay", asyn
       model: {
         provider: "bailian",
         modelKey: "ainovel-plus-reasoning",
+        modelKeyKind: "scene_route",
+        resolvedModelKey: "qwen3.6-plus",
         providerModel: "qwen3.6-plus",
       },
       messages: [{ role: "user", content: "写第一章。" }],
@@ -202,6 +207,8 @@ test("local AINovel E2E provider exercises chapter draft reasoning replay", asyn
       model: {
         provider: "bailian",
         modelKey: "ainovel-plus-reasoning",
+        modelKeyKind: "scene_route",
+        resolvedModelKey: "qwen3.6-plus",
         providerModel: "qwen3.6-plus",
       },
       messages: [
@@ -252,6 +259,8 @@ function kickoffRequest(
     model: {
       provider: "bailian",
       modelKey: "ainovel-plus-reasoning",
+      modelKeyKind: "scene_route",
+      resolvedModelKey: "qwen3.6-plus",
       providerModel: "qwen3.6-plus",
     },
     messages,

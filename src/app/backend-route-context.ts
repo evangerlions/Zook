@@ -109,6 +109,10 @@ export class BackendRouteContext {
     return auth;
   }
 
+  public resolveRequestLocale(request: HttpRequest): string {
+    return this.publicApiMessageService.resolveLocale(request);
+  }
+
   public authenticateAdmin(request: HttpRequest): string {
     if (request.adminSession) {
       return request.adminSession.username;

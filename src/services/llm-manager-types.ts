@@ -79,6 +79,8 @@ export type LLMStreamEvent = (
 export interface ResolvedLLMModel {
   provider: LLMProviderName;
   modelKey: string;
+  modelKeyKind?: "model" | "scene_route";
+  resolvedModelKey: string;
   providerModel: string;
   providerConfig?: {
     baseUrl: string;

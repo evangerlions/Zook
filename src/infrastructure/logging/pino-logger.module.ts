@@ -19,15 +19,31 @@ export class StructuredLogger {
     } = {},
   ) {}
 
-  info(message: string, context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {}): void {
+  debug(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
+    this.write("debug", message, context);
+  }
+
+  info(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
     this.write("info", message, context);
   }
 
-  warn(message: string, context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {}): void {
+  warn(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
     this.write("warn", message, context);
   }
 
-  error(message: string, context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {}): void {
+  error(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
     this.write("error", message, context);
   }
 
@@ -132,6 +148,9 @@ function colorForLevel(level: LogRecord["level"]): AnsiColor {
   }
   if (level === "warn") {
     return "yellow";
+  }
+  if (level === "debug") {
+    return "dim";
   }
   return "green";
 }

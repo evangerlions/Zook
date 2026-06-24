@@ -85,6 +85,7 @@ interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
   requestId?: string;
   routingTier?: AiNovelModelRoutingTier;
+  locale?: string;
 }
 
 export type AiNovelChatStreamChunk =
@@ -308,6 +309,7 @@ export class AiNovelLlmService {
         const kickoffMessages = buildKickoffMessages(
           messages,
           normalizeKickoffMetaContext(body.context),
+          options.locale,
         );
         const providerOptions = {
           enable_thinking: true,
