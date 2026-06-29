@@ -1,4 +1,5 @@
 import type { LLMMessage, LLMToolDefinition } from "../../services/llm-manager.ts";
+import { buildImportedKickoffAuthoringGlossaryHint } from "./ai-novel-kickoff-context.ts";
 import type { AiNovelPromptAssembly, AiNovelPromptProfile } from "./prompts/ai-novel-prompt-types.ts";
 import {
   CHAPTER_DRAFT_TOOLS,
@@ -22,6 +23,7 @@ export function buildAiNovelPromptAssembly(input: {
   profile: AiNovelPromptProfile;
   messages: LLMMessage[];
   context: unknown;
+  locale?: string;
 }): AiNovelPromptAssembly {
   const userMessages = input.messages.filter(
     (message) => message.role !== "system",
@@ -53,7 +55,13 @@ export function buildAiNovelPromptAssembly(input: {
   if (input.profile === "kickoff_turn_imported_book") {
     return {
       messages: [
-        { role: "system", content: IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT },
+        {
+          role: "system",
+          content: [
+            IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT,
+            buildImportedKickoffAuthoringGlossaryHint(input.locale),
+          ].join("\n\n"),
+        },
         ...messagesWithContext,
       ],
       tools: IMPORTED_BOOK_KICKOFF_TOOLS,

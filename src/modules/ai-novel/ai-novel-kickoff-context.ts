@@ -123,17 +123,33 @@ export function buildKickoffMessages(
   ];
 }
 
-function buildKickoffAuthoringGlossaryHint(locale: string): string {
-  const startBookWords = pickI18nText(
+function resolveAuthoringStartBookWords(locale: string): string {
+  return pickI18nText(
     KICKOFF_AUTHORING_START_BOOK_WORDS,
     locale,
     DEFAULT_APP_I18N_SETTINGS,
   );
+}
+
+function buildKickoffAuthoringGlossaryHint(locale: string): string {
+  const startBookWords = resolveAuthoringStartBookWords(locale);
   return [
     "Localized authoring glossary:",
     `- When the user says these words (${startBookWords}), it means they want to start this book project from the current kickoff plan and proceed toward Chapter 1 drafting.`,
     "- If the current canonical kickoff fields are sufficient, call ready, including after the user previously chose to modify a ready proposal.",
     "- If any required field is still missing, first infer sensible defaults from the conversation, call update_meta with the missing canonical fields, then call ready.",
+  ].join("\n");
+}
+
+export function buildImportedKickoffAuthoringGlossaryHint(
+  locale = DEFAULT_APP_I18N_SETTINGS.defaultLocale,
+): string {
+  const startBookWords = resolveAuthoringStartBookWords(locale);
+  return [
+    "Localized authoring glossary:",
+    `- When the user says these words (${startBookWords}), it means they want to enter writing from the current imported continuation plan and proceed toward the target chapter.`,
+    "- If the current imported continuation card, BookContract, and MainLine are sufficient, call ready, including after the user previously chose to modify a ready proposal.",
+    "- If the user just changed the continuation direction or the imported continuation state may be stale, call read_import_result first, update_import_continuation with the needed BookContract/MainLine continuation changes, then call ready.",
   ].join("\n");
 }
 

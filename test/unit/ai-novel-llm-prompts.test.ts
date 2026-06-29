@@ -152,6 +152,7 @@ test("import_book_agent prompt explains import submit tools", () => {
 test("imported-book kickoff prompt uses continuation tools and ready checkpoint", () => {
   const assembly = buildAiNovelPromptAssembly({
     profile: "kickoff_turn_imported_book",
+    locale: "zh-CN",
     messages: [{ role: "user", content: "我想改成朝堂线续写" }],
     context: {
       meta: {
@@ -182,6 +183,17 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
   assert.match(systemPrompt, /search_imported_book/);
   assert.match(systemPrompt, /update_import_continuation/);
   assert.match(systemPrompt, /ready continuation card/);
+  assert.match(systemPrompt, /Localized authoring glossary:/);
+  assert.match(systemPrompt, /开书、开始写、正式开始/);
+  assert.match(systemPrompt, /current imported continuation plan/);
+  assert.match(systemPrompt, /target chapter/);
+  assert.match(systemPrompt, /call read_import_result first/);
+  assert.doesNotMatch(systemPrompt, /Chapter 1 drafting/);
+  assert.doesNotMatch(systemPrompt, /Do not ask what these words mean/);
+  assert.doesNotMatch(
+    systemPrompt,
+    /Do not treat this as opening an existing book file/,
+  );
   assert.match(userPrompt, /latestImportedChapterIndex/);
   assert.match(userPrompt, /我想改成朝堂线续写/);
 });

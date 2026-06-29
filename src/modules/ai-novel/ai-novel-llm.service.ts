@@ -190,6 +190,7 @@ export class AiNovelLlmService {
           profile: scene.profile,
           messages,
           context: body.context,
+          locale: options.locale,
         })
       : { messages, tools: [] };
     const temperature =
@@ -352,6 +353,7 @@ export class AiNovelLlmService {
           profile: scene.profile,
           messages,
           context: body.context,
+          locale: options.locale,
         });
         const providerOptions = this.buildPromptedSceneProviderOptions(
           scene.profile,
@@ -394,6 +396,7 @@ export class AiNovelLlmService {
           profile: scene.profile,
           messages,
           context: body.context,
+          locale: options.locale,
         });
         const providerOptions = this.buildPromptedSceneProviderOptions(
           scene.profile,
