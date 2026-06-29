@@ -119,7 +119,8 @@ export async function handleAdminGetLlmMetrics(this: BackendRouteContext,
 ): Promise<HttpResponse<unknown>> {
   const adminUser = this.authenticateAdmin(request);
   const range = parseLlmMetricsRange.call(this, request.query?.range);
-  const result = await this.adminConsoleService.getLlmMetrics(range);
+  const provider = parseLlmMetricsProvider(request.query?.provider);
+  const result = await this.adminConsoleService.getLlmMetrics(range, provider);
 
   await this.auditInterceptor.record({
     appId: "common",
@@ -129,6 +130,7 @@ export async function handleAdminGetLlmMetrics(this: BackendRouteContext,
     payload: {
       adminUser,
       range,
+      provider,
     },
   });
 
@@ -141,9 +143,11 @@ export async function handleAdminGetLlmModelMetrics(this: BackendRouteContext,
 ): Promise<HttpResponse<unknown>> {
   const adminUser = this.authenticateAdmin(request);
   const range = parseLlmMetricsRange.call(this, request.query?.range);
+  const provider = parseLlmMetricsProvider(request.query?.provider);
   const result = await this.adminConsoleService.getLlmModelMetrics(
     modelKey,
     range,
+    provider,
   );
 
   await this.auditInterceptor.record({
@@ -155,6 +159,7 @@ export async function handleAdminGetLlmModelMetrics(this: BackendRouteContext,
       adminUser,
       modelKey,
       range,
+      provider,
     },
   });
 
@@ -195,4 +200,9 @@ function parseLlmMetricsRange(this: BackendRouteContext, value: string | undefin
     "REQ_INVALID_QUERY",
     `Unsupported range: ${value}.`,
   );
+}
+
+function parseLlmMetricsProvider(value: string | undefined): string | undefined {
+  const provider = value?.trim();
+  return provider || undefined;
 }

@@ -312,7 +312,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.ready,
     description:
-      "Declare the kickoff sufficient to start writing and provide the user-facing ready card summary plus the first MainLine plan.",
+      "Declare the current kickoff proposal sufficient to start writing and provide the user-facing ready card summary plus the first MainLine plan. Call this again after a previous ready result says the user chose to modify the ready proposal.",
     inputSchema: {
       type: "object",
       additionalProperties: false,

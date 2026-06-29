@@ -6,6 +6,7 @@ import { formatNumber } from "../lib/format";
 import type {
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
+  LlmProviderMetricsOption,
   LlmMetricsRange,
 } from "../lib/types";
 
@@ -15,9 +16,12 @@ interface LlmMonitorTabProps {
   loadingMetrics: boolean;
   metrics: AdminLlmMetricsDocument | null;
   modelMetrics: AdminLlmModelMetricsDocument | null;
+  onProviderChange: (provider: string) => void;
   onRangeChange: (range: LlmMetricsRange) => void;
   onSelectModel: (modelKey: string) => void;
+  providerOptions: LlmProviderMetricsOption[];
   range: LlmMetricsRange;
+  selectedProvider: string;
   selectedModelKey: string;
 }
 
@@ -25,9 +29,12 @@ export function LlmMonitorTab({
   loadingMetrics,
   metrics,
   modelMetrics,
+  onProviderChange,
   onRangeChange,
   onSelectModel,
+  providerOptions,
   range,
+  selectedProvider,
   selectedModelKey,
 }: LlmMonitorTabProps) {
   const summary = metrics?.summary ?? createEmptyLlmSummary();
@@ -40,12 +47,26 @@ export function LlmMonitorTab({
             <h2>整体指标</h2>
             <p>按小时聚合的全局监控，用来快速判断当前路由稳定性。</p>
           </div>
-          <Segmented
-            className="range-segmented"
-            onChange={(value) => onRangeChange(value as LlmMetricsRange)}
-            options={RANGE_OPTIONS}
-            value={range}
-          />
+          <div className="monitor-filter-row">
+            <Select
+              className="inline-input metrics-provider-select"
+              onChange={onProviderChange}
+              options={[
+                { label: "全部 Provider", value: "" },
+                ...providerOptions.map((item) => ({
+                  label: item.label === item.provider ? item.label : `${item.label} (${item.provider})`,
+                  value: item.provider,
+                })),
+              ]}
+              value={selectedProvider}
+            />
+            <Segmented
+              className="range-segmented"
+              onChange={(value) => onRangeChange(value as LlmMetricsRange)}
+              options={RANGE_OPTIONS}
+              value={range}
+            />
+          </div>
         </div>
 
         {loadingMetrics ? <p className="meta-text">正在加载监控指标...</p> : null}
@@ -63,7 +84,7 @@ export function LlmMonitorTab({
           <div className="card-header">
             <div>
               <h2>模型对比</h2>
-              <p>选择一个模型，查看它在当前时间范围内的路由表现。</p>
+              <p>选择一个模型，查看它在当前时间范围和 Provider 下的路由表现。</p>
             </div>
             <Select
               className="inline-input"
@@ -114,7 +135,7 @@ export function LlmMonitorTab({
             <div className="card-header">
               <div>
                 <h2>所选模型明细</h2>
-                <p>按 provider / providerModel 展示 route 聚合结果。</p>
+                <p>按 provider / providerModel 展示 route 聚合结果，可随上方 Provider 筛选切换。</p>
               </div>
             </div>
             {modelMetrics ? (

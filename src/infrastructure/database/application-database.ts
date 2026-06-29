@@ -10,6 +10,9 @@ import type {
   ClientLogUploadTaskRecord,
   ContentSafetyCheckRecord,
   DatabaseSeed,
+  EmailDeliveryEventRecord,
+  FeedbackAttachmentRecord,
+  FeedbackRecord,
   FailedEventRecord,
   FileRecord,
   NotificationJobRecord,
@@ -108,6 +111,13 @@ export abstract class ApplicationDatabase {
 
   abstract deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
 
+  abstract insertEmailDeliveryEvent(record: EmailDeliveryEventRecord): MaybePromise<void>;
+  abstract listEmailDeliveryEvents(filter?: {
+    event?: EmailDeliveryEventRecord["event"];
+    email?: string;
+    limit?: number;
+  }): MaybePromise<EmailDeliveryEventRecord[]>;
+
   abstract insertNotificationJob(record: NotificationJobRecord): MaybePromise<void>;
   abstract findNotificationJob(jobId: string): MaybePromise<NotificationJobRecord | undefined>;
   abstract updateNotificationJob(
@@ -150,6 +160,30 @@ export abstract class ApplicationDatabase {
     limit?: number;
   }): MaybePromise<ContentSafetyCheckRecord[]>;
   abstract deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
+
+  abstract insertFeedback(
+    record: FeedbackRecord,
+    attachments: FeedbackAttachmentRecord[],
+  ): MaybePromise<void>;
+  abstract listFeedbackRecords(filter: {
+    appId: string;
+    userId?: string;
+    ipHash?: string;
+    status?: FeedbackRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): MaybePromise<FeedbackRecord[]>;
+  abstract updateFeedbackStatus(
+    appId: string,
+    feedbackId: string,
+    status: FeedbackRecord["status"],
+  ): MaybePromise<FeedbackRecord | undefined>;
+  abstract listFeedbackAttachments(feedbackIds: string[]): MaybePromise<FeedbackAttachmentRecord[]>;
+  abstract findFeedbackAttachment(
+    appId: string,
+    feedbackId: string,
+    attachmentId: string,
+  ): MaybePromise<FeedbackAttachmentRecord | undefined>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {

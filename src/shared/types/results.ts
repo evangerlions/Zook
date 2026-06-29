@@ -67,7 +67,7 @@ export interface QueueJob<T = Record<string, unknown>> {
 
 export interface LogRecord {
   timestamp: string;
-  level: "info" | "warn" | "error";
+  level: "debug" | "info" | "warn" | "error";
   service: string;
   message: string;
   requestId?: string;

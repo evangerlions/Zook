@@ -257,6 +257,41 @@ export interface ContentSafetyCheckRecord {
   createdAt: string;
 }
 
+export const FEEDBACK_STATUSES = ["new", "doing", "done"] as const;
+export type FeedbackStatus = typeof FEEDBACK_STATUSES[number];
+
+export interface FeedbackRecord {
+  id: string;
+  appId: string;
+  userId: string;
+  message: string;
+  messageHash: string;
+  status: FeedbackStatus;
+  platform?: string;
+  appVersion?: string;
+  locale?: string;
+  ipHash?: string;
+  userAgent?: string;
+  metadata: Record<string, unknown>;
+  attachmentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeedbackAttachmentRecord {
+  id: string;
+  feedbackId: string;
+  appId: string;
+  userId: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+  storagePath: string;
+  createdAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -277,4 +312,6 @@ export interface DatabaseSeed {
   clientLogUploads?: ClientLogUploadRecord[];
   clientLogLines?: ClientLogLineRecord[];
   contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
+  feedbackRecords?: FeedbackRecord[];
+  feedbackAttachments?: FeedbackAttachmentRecord[];
 }

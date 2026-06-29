@@ -132,9 +132,13 @@ export class LlmRequestResolver {
       );
     }
 
-    const selection = await this.resolveConfiguredModel(commonConfig, modelKey);
-    const healthRouteRef = {
+    const selection = await this.resolveConfiguredModel(
+      commonConfig,
       modelKey,
+      request.modelKeyKind,
+    );
+    const healthRouteRef = {
+      modelKey: selection.routeModelKey,
       provider: selection.provider.key,
       providerModel: selection.route.providerModel,
     };
@@ -145,6 +149,8 @@ export class LlmRequestResolver {
         model: {
           provider: selection.provider.key,
           modelKey,
+          modelKeyKind: request.modelKeyKind,
+          resolvedModelKey: selection.routeModelKey,
           providerModel: selection.route.providerModel,
           providerConfig: {
             baseUrl: selection.provider.baseUrl,
@@ -178,6 +184,8 @@ export class LlmRequestResolver {
         model: {
           provider: resolvedModel.provider,
           modelKey,
+          modelKeyKind: request.modelKeyKind,
+          resolvedModelKey: modelKey,
           providerModel: resolvedModel.providerModel,
         },
       },
@@ -196,28 +204,16 @@ export class LlmRequestResolver {
   private async resolveConfiguredModel(
     config: LlmServiceConfig,
     modelKey: string,
+    modelKeyKind?: "model" | "scene_route",
   ): Promise<{
     provider: LlmProviderConfig;
     route: LlmModelConfig["routes"][number];
+    routeModelKey: string;
   }> {
-    let model = config.models.find((item) => item.key === modelKey);
-    if (!model) {
-      const alias = resolveAiNovelSceneRouteAlias(modelKey);
-      if (alias?.kind === "chat") {
-        const provider = config.providers.find((item) => item.key === alias.provider);
-        if (provider?.enabled && this.options.providers[provider.key]) {
-          return {
-            provider,
-            route: {
-              provider: alias.provider,
-              providerModel: alias.providerModel,
-              enabled: true,
-              weight: 100,
-            },
-          };
-        }
-      }
-    }
+    const alias =
+      modelKeyKind === "scene_route" ? resolveAiNovelSceneRouteAlias(modelKey) : undefined;
+    const routeModelKey = alias?.kind === "chat" ? alias.modelKey : modelKey;
+    const model = config.models.find((item) => item.key === routeModelKey);
 
     if (!model) {
       badRequest("LLM_MODEL_NOT_FOUND", `Unknown LLM modelKey: ${modelKey}.`);
@@ -226,7 +222,7 @@ export class LlmRequestResolver {
     if (model.kind !== "chat") {
       badRequest(
         "LLM_MODEL_NOT_FOUND",
-        `LLM modelKey ${modelKey} is not configured as a chat model.`,
+        `LLM modelKey ${routeModelKey} is not configured as a chat model.`,
       );
     }
 
@@ -248,6 +244,7 @@ export class LlmRequestResolver {
     return {
       provider,
       route: chosenRoute,
+      routeModelKey: model.key,
     };
   }
 

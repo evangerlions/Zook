@@ -12,6 +12,9 @@ import type {
   ClientLogUploadTaskRecord,
   ContentSafetyCheckRecord,
   DatabaseSeed,
+  EmailDeliveryEventRecord,
+  FeedbackAttachmentRecord,
+  FeedbackRecord,
   FailedEventRecord,
   FileRecord,
   NotificationJobRecord,
@@ -24,6 +27,10 @@ import type {
 } from "../../../shared/types.ts";
 import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-database.ts";
 import { runPostgresMigrations } from "./migrate.ts";
+import { deletePostgresApp } from "./postgres-app-delete.ts";
+import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
+import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
+import { PostgresFeedbackStore } from "./postgres-feedback.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -39,6 +46,8 @@ import {
 
 export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
+  private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
+  private readonly feedback: PostgresFeedbackStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
 
@@ -47,6 +56,8 @@ export class PostgresDatabase extends ApplicationDatabase {
     private readonly seed: DatabaseSeed,
   ) {
     super();
+    this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
+    this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(
       async (sql, values = []) => await this.query(sql, values),
     );
@@ -156,26 +167,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
 
   override async deleteApp(appId: string): Promise<void> {
-    const roleRows = await this.query("SELECT id FROM zook_roles WHERE app_id = $1", [appId]);
-    const roleIds = roleRows.rows.map((row) => String(row.id));
-    if (roleIds.length > 0) {
-      await this.query("DELETE FROM zook_role_permissions WHERE role_id = ANY($1::text[])", [roleIds]);
-    }
-
-    await this.query("DELETE FROM zook_user_roles WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_app_users WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_roles WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_audit_logs WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_notification_jobs WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_failed_events WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_analytics_events WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_content_safety_checks WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_files WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_client_log_lines WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_client_log_uploads WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_client_log_upload_tasks WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_app_configs WHERE app_id = $1", [appId]);
-    await this.query("DELETE FROM zook_apps WHERE id = $1", [appId]);
+    await deletePostgresApp(async (sql, values) => await this.query(sql, values), appId);
   }
 
   override async listAppUsers(appId?: string): Promise<AppUserRecord[]> {
@@ -218,14 +210,11 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
 
   override async deleteAppUserRuntimeData(appId: string, userId: string): Promise<void> {
-    await this.query("DELETE FROM zook_user_roles WHERE app_id = $1 AND user_id = $2", [appId, userId]);
-    await this.query("DELETE FROM zook_notification_jobs WHERE app_id = $1 AND recipient_user_id = $2", [appId, userId]);
-    await this.query("DELETE FROM zook_analytics_events WHERE app_id = $1 AND user_id = $2", [appId, userId]);
-    await this.query("DELETE FROM zook_content_safety_checks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
-    await this.query("DELETE FROM zook_files WHERE app_id = $1 AND owner_user_id = $2", [appId, userId]);
-    await this.query("DELETE FROM zook_client_log_lines WHERE app_id = $1 AND user_id = $2", [appId, userId]);
-    await this.query("DELETE FROM zook_client_log_uploads WHERE app_id = $1 AND user_id = $2", [appId, userId]);
-    await this.query("DELETE FROM zook_client_log_upload_tasks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+    await deletePostgresAppUserRuntimeData(
+      async (sql, values = []) => await this.query(sql, values),
+      appId,
+      userId,
+    );
   }
 
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
@@ -427,7 +416,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertFile(record: FileRecord): Promise<void> {
     await this.operationalRecords.insertFile(record);
   }
-
   override async findFileByOwnerAndStorageKey(appId: string, ownerUserId: string, storageKey: string): Promise<FileRecord | undefined> {
     return await this.operationalRecords.findFileByOwnerAndStorageKey(
       appId,
@@ -435,30 +423,24 @@ export class PostgresDatabase extends ApplicationDatabase {
       storageKey,
     );
   }
-
   override async findFileByAppAndStorageKey(appId: string, storageKey: string): Promise<FileRecord | undefined> {
     return await this.operationalRecords.findFileByAppAndStorageKey(
       appId,
       storageKey,
     );
   }
-
   override async confirmFile(fileId: string, mimeType: string, sizeBytes: number): Promise<FileRecord | undefined> {
     return await this.operationalRecords.confirmFile(fileId, mimeType, sizeBytes);
   }
-
   override async listSmsVerificationRecords(appId?: string): Promise<SmsVerificationRecord[]> {
     return await this.operationalRecords.listSmsVerificationRecords(appId);
   }
-
   override async findSmsVerificationRecord(recordId: string): Promise<SmsVerificationRecord | undefined> {
     return await this.operationalRecords.findSmsVerificationRecord(recordId);
   }
-
   override async insertSmsVerificationRecord(record: SmsVerificationRecord): Promise<void> {
     await this.operationalRecords.insertSmsVerificationRecord(record);
   }
-
   override async updateSmsVerificationRecord(
     recordId: string,
     patch: Partial<
@@ -470,57 +452,77 @@ export class PostgresDatabase extends ApplicationDatabase {
   ): Promise<void> {
     await this.operationalRecords.updateSmsVerificationRecord(recordId, patch);
   }
-
   override async deleteSmsVerificationRecordsCreatedBefore(cutoffIso: string): Promise<number> {
     return await this.operationalRecords.deleteSmsVerificationRecordsCreatedBefore(cutoffIso);
   }
-
+  override async insertEmailDeliveryEvent(record: EmailDeliveryEventRecord): Promise<void> {
+    await this.emailDeliveryEvents.insert(record);
+  }
+  override async listEmailDeliveryEvents(filter: {
+    event?: EmailDeliveryEventRecord["event"];
+    email?: string;
+    limit?: number;
+  } = {}): Promise<EmailDeliveryEventRecord[]> {
+    return await this.emailDeliveryEvents.list(filter);
+  }
+  override async insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): Promise<void> {
+    await this.feedback.insert(record, attachments);
+  }
+  override async listFeedbackRecords(filter: {
+    appId: string;
+    userId?: string;
+    ipHash?: string;
+    status?: FeedbackRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): Promise<FeedbackRecord[]> {
+    return await this.feedback.list(filter);
+  }
+  override async updateFeedbackStatus(appId: string, feedbackId: string, status: FeedbackRecord["status"]): Promise<FeedbackRecord | undefined> {
+    return await this.feedback.updateStatus(appId, feedbackId, status);
+  }
+  override async listFeedbackAttachments(feedbackIds: string[]): Promise<FeedbackAttachmentRecord[]> {
+    return await this.feedback.listAttachments(feedbackIds);
+  }
+  override async findFeedbackAttachment(appId: string, feedbackId: string, attachmentId: string): Promise<FeedbackAttachmentRecord | undefined> {
+    return await this.feedback.findAttachment(appId, feedbackId, attachmentId);
+  }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);
   }
-
   override async findNotificationJob(jobId: string): Promise<NotificationJobRecord | undefined> {
     return await this.operationalRecords.findNotificationJob(jobId);
   }
-
   override async updateNotificationJob(
     jobId: string,
     patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
   ): Promise<NotificationJobRecord | undefined> {
     return await this.operationalRecords.updateNotificationJob(jobId, patch);
   }
-
   override async insertFailedEvent(record: FailedEventRecord): Promise<void> {
     await this.operationalRecords.insertFailedEvent(record);
   }
-
   override async listFailedEvents(appId?: string): Promise<FailedEventRecord[]> {
     return await this.operationalRecords.listFailedEvents(appId);
   }
-
   override async deleteFailedEvent(eventId: string): Promise<void> {
     await this.operationalRecords.deleteFailedEvent(eventId);
   }
-
   override async updateFailedEvent(
     eventId: string,
     patch: Pick<FailedEventRecord, "retryCount" | "errorMessage" | "nextRetryAt">,
   ): Promise<void> {
     await this.operationalRecords.updateFailedEvent(eventId, patch);
   }
-
   override async listClientLogUploadTasks(appId?: string): Promise<ClientLogUploadTaskRecord[]> {
     return await this.operationalRecords.listClientLogUploadTasks(appId);
   }
-
   override async findClientLogUploadTask(taskId: string): Promise<ClientLogUploadTaskRecord | undefined> {
     return await this.operationalRecords.findClientLogUploadTask(taskId);
   }
-
   override async insertClientLogUploadTask(record: ClientLogUploadTaskRecord): Promise<void> {
     await this.operationalRecords.insertClientLogUploadTask(record);
   }
-
   override async updateClientLogUploadTask(
     taskId: string,
     patch: Partial<
@@ -532,15 +534,12 @@ export class PostgresDatabase extends ApplicationDatabase {
   ): Promise<void> {
     await this.operationalRecords.updateClientLogUploadTask(taskId, patch);
   }
-
   override async insertClientLogUpload(record: ClientLogUploadRecord): Promise<void> {
     await this.operationalRecords.insertClientLogUpload(record);
   }
-
   override async insertClientLogLines(records: ClientLogLineRecord[]): Promise<void> {
     await this.operationalRecords.insertClientLogLines(records);
   }
-
   override async insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): Promise<void> {
     await this.operationalRecords.insertContentSafetyCheckRecord(record);
   }

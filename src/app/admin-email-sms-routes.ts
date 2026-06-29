@@ -3,6 +3,7 @@ import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
 import { PublicContractValidator } from "../generated/openapi/public-contract-validator.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
+import { commonAppSummary } from "../modules/admin/admin-console-config-utils.ts";
 
 
 export async function tryHandleAdminEmailSmsRoutes(
@@ -12,6 +13,7 @@ export async function tryHandleAdminEmailSmsRoutes(
   if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/email-service") return await handleAdminGetEmailService.call(this, request);
   if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/email-service") return await handleAdminUpdateEmailService.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/email-service/test-send") return await handleAdminSendTestEmail.call(this, request);
+  if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/email-service/events") return await handleAdminListEmailDeliveryEvents.call(this, request);
   const adminEmailRevisionMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)$/);
   if (request.method === "GET" && adminEmailRevisionMatch) return await handleAdminGetEmailServiceRevision.call(this, request, Number(adminEmailRevisionMatch[1]));
   const adminEmailRestoreMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)\/restore$/);
@@ -23,6 +25,34 @@ export async function tryHandleAdminEmailSmsRoutes(
   const adminSmsServiceRestoreMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/sms-service\/revisions\/(\d+)\/restore$/);
   if (request.method === "POST" && adminSmsServiceRestoreMatch) return await handleAdminRestoreSmsServiceRevision.call(this, request, Number(adminSmsServiceRestoreMatch[1]));
   return undefined;
+}
+
+export async function handleAdminListEmailDeliveryEvents(this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  const adminUser = this.authenticateAdmin(request);
+  const event = typeof request.query?.event === "string" ? request.query.event : undefined;
+  const email = typeof request.query?.email === "string" ? request.query.email : undefined;
+  const limit = typeof request.query?.limit === "string" ? Number(request.query.limit) : undefined;
+  const result = await this.tencentSesEmailCallbackService.listForAdmin(
+    commonAppSummary(),
+    { event, email, limit },
+  );
+
+  await this.auditInterceptor.record({
+    appId: "common",
+    action: "admin.email_event.read",
+    resourceType: "email_delivery_event",
+    resourceId: event || email || "latest",
+    payload: {
+      adminUser,
+      event,
+      email,
+      limit,
+    },
+  });
+
+  return this.ok(result, request.requestId as string);
 }
 
 export async function handleAdminGetEmailService(this: BackendRouteContext, 

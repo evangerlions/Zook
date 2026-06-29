@@ -55,6 +55,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
             shouldExposeLocalAiRequestDebugFields.call(this, request),
           requestId: request.requestId as string,
           routingTier,
+          locale: this.resolveRequestLocale(request),
         }),
       );
     }
@@ -63,6 +64,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
       exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(this, request),
       requestId: request.requestId as string,
       routingTier,
+      locale: this.resolveRequestLocale(request),
     });
     const localDebugResponseText =
       extractLocalAiDebugResponseText.call(this, result);

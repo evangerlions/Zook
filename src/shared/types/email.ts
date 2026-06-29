@@ -2,6 +2,16 @@ import type { TencentSesRegion } from "./enums.ts";
 import type { ConfigRevisionMeta } from "./records.ts";
 import type { AdminAppSummary } from "./admin-core.ts";
 
+export type TencentSesEmailEvent =
+  | "delivered"
+  | "dropped"
+  | "bounce"
+  | "open"
+  | "click"
+  | "spamreport"
+  | "unsubscribe"
+  | "deferred";
+
 export interface EmailServiceTemplateConfig {
   locale: string;
   templateId: number;
@@ -94,4 +104,62 @@ export interface AdminEmailTestSendDocument {
       errorMessage?: string;
     };
   };
+}
+
+export interface EmailDeliveryEventRecord {
+  id: string;
+  provider: "tencent_ses";
+  event: TencentSesEmailEvent;
+  eventId?: number;
+  email: string;
+  link?: string;
+  bulkId?: string;
+  timestamp?: number;
+  reason?: string;
+  bounceType?: "soft_bounce" | "hard_bounce" | string;
+  username?: string;
+  from?: string;
+  fromDomain?: string;
+  templateId?: number;
+  subject?: string;
+  messageId?: string;
+  userAgent?: string;
+  sentTimestamp?: number;
+  rawPayload: Record<string, unknown>;
+  occurredAt: string;
+  receivedAt: string;
+}
+
+export interface TencentSesEmailCallbackAcceptedDocument {
+  accepted: true;
+  id: string;
+  event: TencentSesEmailEvent;
+}
+
+export interface AdminEmailDeliveryEventItem {
+  id: string;
+  provider: "tencent_ses";
+  event: TencentSesEmailEvent;
+  eventId?: number;
+  email: string;
+  link?: string;
+  bulkId?: string;
+  timestamp?: number;
+  reason?: string;
+  bounceType?: string;
+  username?: string;
+  from?: string;
+  fromDomain?: string;
+  templateId?: number;
+  subject?: string;
+  messageId?: string;
+  userAgent?: string;
+  sentTimestamp?: number;
+  occurredAt: string;
+  receivedAt: string;
+}
+
+export interface AdminEmailDeliveryEventListDocument {
+  app: AdminAppSummary;
+  items: AdminEmailDeliveryEventItem[];
 }

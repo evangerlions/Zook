@@ -10,6 +10,7 @@ import {
   AesGcmPayloadCryptoError,
   type AesGcmJsonEnvelope,
 } from "../services/aes-gcm-payload-crypto.service.ts";
+import { describeUnknownError } from "../shared/error-diagnostics.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 
 export async function handleEncryptedAiRequest(this: BackendRouteContext, 
@@ -196,6 +197,9 @@ async function *createEncryptedAiSseStream(
           "SYS_INTERNAL_ERROR",
           "An unexpected internal error occurred.",
         );
+    if (!isApplicationError(error)) {
+      logEncryptedAiUnexpectedStreamError.call(this, request, error);
+    }
     logEncryptedAiBusinessError.call(this, request, applicationError, "stream");
     const encrypted = await this.aiPayloadCryptoService.encryptJsonEnvelope(
       Buffer.from(
@@ -212,6 +216,21 @@ async function *createEncryptedAiSseStream(
     );
     yield `data: ${JSON.stringify(encrypted)}\n\n`;
   }
+}
+
+function logEncryptedAiUnexpectedStreamError(
+  this: BackendRouteContext,
+  request: HttpRequest,
+  error: unknown,
+): void {
+  this.logger.error("encrypted ai stream unexpected error", {
+    requestId: request.requestId,
+    appId: request.auth?.appId,
+    userId: request.auth?.userId,
+    path: request.path,
+    transport: "stream",
+    ...describeUnknownError(error, "error"),
+  });
 }
 
 export function logEncryptedAiBusinessError(this: BackendRouteContext, 

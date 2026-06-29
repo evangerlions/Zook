@@ -21,6 +21,7 @@ const SERVER_WORKSPACES = [
 const APP_WORKSPACES = [
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Routing", code: "AIR", description: "只读查看 ai_novel 的硬编码 scene 路由" },
+  { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
 ];
 
@@ -51,6 +52,7 @@ function formatAdminVersion(rawVersion: string): string {
 function isAppProjectSpace(pathname: string) {
   return pathname === "/config"
     || pathname === "/ai-routing"
+    || pathname === "/feedback"
     || pathname === "/remote-log-pull"
     || pathname.startsWith("/remote-log-pull/");
 }
@@ -99,6 +101,7 @@ export function AppShell() {
   const currentProjectSpace = describeProjectSpace(selectedApp, location.pathname);
   const workspaceItems = appProjectSpace
     ? APP_WORKSPACES.filter((item) => item.to !== "/ai-routing" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
     : SERVER_WORKSPACES;
   const currentProjectSpaceValue = appProjectSpace && selectedApp ? `app:${selectedApp.appId}` : "server";
   const projectSpaceOptions = useMemo(
