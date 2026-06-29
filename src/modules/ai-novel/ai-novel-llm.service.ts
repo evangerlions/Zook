@@ -64,6 +64,8 @@ export interface AiNovelChatResponse {
     provider: string;
     providerModel: string;
     content: string;
+    toolCalls?: LLMToolCall[];
+    reasoningText?: string;
     finishReason?: string;
     providerRequestId?: string;
   };
@@ -83,6 +85,7 @@ interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
   requestId?: string;
   routingTier?: AiNovelModelRoutingTier;
+  locale?: string;
 }
 
 export type AiNovelChatStreamChunk =
@@ -99,16 +102,11 @@ export type AiNovelChatStreamChunk =
       };
     }
   | {
-      type: "action.workflow_progress";
-      payload: {
-        workflowKey: string;
-        stepKey: string;
-        subStepKey?: string;
-        status: "pending" | "running" | "completed" | "failed";
-        deltaText?: string;
-        snapshotText?: string;
-        processedTokens?: number;
-      };
+      type: "tool_call_delta";
+      text: string;
+      toolCallId?: string;
+      toolCallName?: string;
+      toolArgumentPath?: string;
     }
   | {
       type: "error";
@@ -153,6 +151,8 @@ export interface AiNovelEmbeddingsResponse {
 
 export class AiNovelLlmService {
   private static readonly STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
+  private static readonly IMPORT_BOOK_STREAM_FIRST_EVENT_TIMEOUT_MS = 120_000;
+  private static readonly IMPORT_BOOK_STREAM_IDLE_TIMEOUT_MS = 90_000;
 
   constructor(
     private readonly llmManager: LLMManager,
@@ -190,6 +190,7 @@ export class AiNovelLlmService {
           profile: scene.profile,
           messages,
           context: body.context,
+          locale: options.locale,
         })
       : { messages, tools: [] };
     const temperature =
@@ -199,18 +200,11 @@ export class AiNovelLlmService {
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
     const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
-    const providerOptions =
-      shouldUseStreamedCompletion || promptAssembly.tools.length > 0
-        ? {
-            ...(shouldUseStreamedCompletion ? { enable_thinking: true } : {}),
-            ...(promptAssembly.tools.length > 0
-              ? {
-                  tools: toOpenAiToolDefinitions(promptAssembly.tools),
-                  tool_choice: "auto",
-                }
-              : {}),
-          }
-        : undefined;
+    const providerOptions = this.buildPromptedSceneProviderOptions(
+      scene.profile,
+      promptAssembly.tools,
+      shouldUseStreamedCompletion || scene.profile === "import_book_agent",
+    );
     try {
       const llmRequest = {
         modelKey: sceneRouteKey,
@@ -248,6 +242,7 @@ export class AiNovelLlmService {
           provider: result.provider,
           providerModel: result.providerModel,
           content: completionContent,
+          ...(result.toolCalls?.length ? { toolCalls: result.toolCalls } : {}),
           ...(result.reasoningText
             ? { reasoningText: result.reasoningText }
             : {}),
@@ -315,6 +310,7 @@ export class AiNovelLlmService {
         const kickoffMessages = buildKickoffMessages(
           messages,
           normalizeKickoffMetaContext(body.context),
+          options.locale,
         );
         const providerOptions = {
           enable_thinking: true,
@@ -352,17 +348,61 @@ export class AiNovelLlmService {
         return;
       }
 
+      if (scene.profile === "kickoff_turn_imported_book") {
+        const promptAssembly = buildAiNovelPromptAssembly({
+          profile: scene.profile,
+          messages,
+          context: body.context,
+          locale: options.locale,
+        });
+        const providerOptions = this.buildPromptedSceneProviderOptions(
+          scene.profile,
+          promptAssembly.tools,
+          true,
+        );
+        if (options.exposeLocalDebug === true) {
+          yield buildLocalDebugLlmRequestChunk({
+            sceneKey: scene.sceneKey,
+            sceneRouteKey,
+            messages: promptAssembly.messages,
+            temperature,
+            maxTokens,
+            providerOptions,
+            profile: scene.profile,
+          });
+        }
+        yield* adaptKickoffAiNovelStream({
+          sceneRouteKey,
+          events: this.llmManager.stream({
+            modelKey: sceneRouteKey,
+            modelKeyKind: "scene_route",
+            messages: promptAssembly.messages,
+            temperature,
+            maxTokens,
+            providerOptions,
+          }),
+          normalizeToolCall: (toolCall, fallbackIndex) =>
+            this.normalizePromptedSceneToolCall(
+              toolCall,
+              sceneRouteKey,
+              fallbackIndex,
+            ),
+        });
+        return;
+      }
+
       if (scene.profile) {
         const promptAssembly = buildAiNovelPromptAssembly({
           profile: scene.profile,
           messages,
           context: body.context,
+          locale: options.locale,
         });
-        const providerOptions = {
-          enable_thinking: true,
-          tools: toOpenAiToolDefinitions(promptAssembly.tools),
-          tool_choice: "auto",
-        };
+        const providerOptions = this.buildPromptedSceneProviderOptions(
+          scene.profile,
+          promptAssembly.tools,
+          true,
+        );
         if (options.exposeLocalDebug === true) {
           yield buildLocalDebugLlmRequestChunk({
             sceneKey: scene.sceneKey,
@@ -448,6 +488,35 @@ export class AiNovelLlmService {
       id,
       name,
       input: isRecord(toolCall.input) ? toolCall.input : {},
+    };
+  }
+
+  private buildPromptedSceneProviderOptions(
+    profile: AiNovelPromptProfile | undefined,
+    tools: ReturnType<typeof buildAiNovelPromptAssembly>["tools"],
+    enableThinking: boolean,
+  ): Record<string, unknown> | undefined {
+    if (!enableThinking && tools.length === 0) {
+      return undefined;
+    }
+    return {
+      ...(enableThinking ? { enable_thinking: true } : {}),
+      ...(tools.length > 0
+        ? {
+            tools: toOpenAiToolDefinitions(tools),
+            tool_choice: "auto",
+          }
+        : {}),
+      ...(profile === "import_book_agent"
+        ? {
+            stream_options: {
+              first_event_timeout_ms:
+                AiNovelLlmService.IMPORT_BOOK_STREAM_FIRST_EVENT_TIMEOUT_MS,
+              idle_timeout_ms:
+                AiNovelLlmService.IMPORT_BOOK_STREAM_IDLE_TIMEOUT_MS,
+            },
+          }
+        : {}),
     };
   }
 

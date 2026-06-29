@@ -24,6 +24,7 @@ import { ClientLogUploadService } from "../services/client-log-upload.service.ts
 import { ContentSafetyService } from "../services/content-safety.service.ts";
 import { EmbeddingManager } from "../services/embedding-manager.ts";
 import { FailedEventRetryService } from "../services/failed-event-retry.service.ts";
+import { FeedbackService } from "../services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "../services/getui-gy-one-click-login.service.ts";
 import { LlmSmokeTestService } from "../services/llm-smoke-test.service.ts";
 import { LLMManager } from "../services/llm-manager.ts";
@@ -44,6 +45,7 @@ import { BackendRouteContext, type ResolvedAdminBasicAuth } from "./backend-rout
 import { tryHandleAdminRoutes } from "./admin-routes.ts";
 import { tryHandleAiNovelRoutes } from "./ai-novel-routes.ts";
 import { tryHandleFileNotificationRoutes } from "./file-notification-routes.ts";
+import { tryHandleFeedbackRoutes } from "./feedback-routes.ts";
 import { tryHandleLogRoutes } from "./log-routes.ts";
 import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
 import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
@@ -89,6 +91,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly requestLocaleService: RequestLocaleService,
     private readonly publicApiMessageService: PublicApiMessageService,
     private readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
+    private readonly feedbackService: FeedbackService,
     private readonly logger: StructuredLogger,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
@@ -109,6 +112,7 @@ export class BackendApplication extends BackendRouteContext {
       adminSessionStore,
       publicApiMessageService,
       tencentSesEmailCallbackService,
+      feedbackService,
       appContextResolver,
       authGuard,
       appAccessGuard,
@@ -177,6 +181,7 @@ export class BackendApplication extends BackendRouteContext {
       notificationService: this.notificationService,
       failedEventRetryService: this.failedEventRetryService,
       tencentSesEmailCallbackService: this.tencentSesEmailCallbackService,
+      feedbackService: this.feedbackService,
     };
   }
 
@@ -206,6 +211,11 @@ export class BackendApplication extends BackendRouteContext {
     const fileNotificationResponse = await tryHandleFileNotificationRoutes.call(this, request);
     if (fileNotificationResponse) {
       return fileNotificationResponse;
+    }
+
+    const feedbackResponse = await tryHandleFeedbackRoutes.call(this, request);
+    if (feedbackResponse) {
+      return feedbackResponse;
     }
 
     const aiNovelResponse = await tryHandleAiNovelRoutes.call(this, request);

@@ -241,6 +241,10 @@ ensure_command lsof
 load_env_file "$ROOT_DIR/deploy_configs/local.env"
 load_env_file "$ROOT_DIR/.env.local"
 
+export ZOOK_LOCAL_FILE_LOGS="${ZOOK_LOCAL_FILE_LOGS:-1}"
+export ZOOK_LOG_DIR="${ZOOK_LOG_DIR:-$ROOT_DIR/.zook/logs}"
+log "本地文件日志已启用: $ZOOK_LOG_DIR"
+
 APP_RUN_DATA_DIR="/var/lib/zook/appRunData"
 if [[ ! -d "$APP_RUN_DATA_DIR" || ! -w "$APP_RUN_DATA_DIR" ]]; then
   log "持久化目录不可用: $APP_RUN_DATA_DIR"
@@ -305,6 +309,12 @@ start_service api env \
 start_service admin env PORT="$ADMIN_PORT" ADMIN_API_PROXY_TARGET="http://127.0.0.1:$API_PORT" npm run admin
 
 wait_for_http "http://127.0.0.1:$API_PORT/api/health" "API"
+if [[ -f "$ZOOK_LOG_DIR/api/latest.json" ]]; then
+  API_LOG_FILE="$(node -e "console.log(JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')).path)" "$ZOOK_LOG_DIR/api/latest.json" 2>/dev/null || true)"
+  if [[ -n "${API_LOG_FILE:-}" ]]; then
+    log "API 本次日志文件: $API_LOG_FILE"
+  fi
+fi
 wait_for_http "http://127.0.0.1:$ADMIN_PORT/_admin/health" "Admin Web"
 
 printf '\n'

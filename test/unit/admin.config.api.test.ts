@@ -3543,6 +3543,26 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(metricsResponse.body.data.summary.requestCount, 2);
   assert.equal(metricsResponse.body.data.summary.successRate, 50);
   assert.equal(metricsResponse.body.data.models[0]?.modelKey, "kimi2.5");
+  assert.deepEqual(
+    metricsResponse.body.data.providers.map((item: { provider: string }) => item.provider),
+    ["bailian", "volcengine"],
+  );
+
+  const providerMetricsResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/llm-service/metrics",
+    headers,
+    query: {
+      range: "24h",
+      provider: "volcengine",
+    },
+  });
+
+  assert.equal(providerMetricsResponse.statusCode, 200);
+  assert.equal(providerMetricsResponse.body.data.provider, "volcengine");
+  assert.equal(providerMetricsResponse.body.data.summary.requestCount, 1);
+  assert.equal(providerMetricsResponse.body.data.summary.successRate, 0);
+  assert.equal(providerMetricsResponse.body.data.models[0]?.summary.requestCount, 1);
 
   const detailResponse = await runtime.app.handle({
     method: "GET",
@@ -3556,6 +3576,22 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(detailResponse.statusCode, 200);
   assert.equal(detailResponse.body.data.routes.length, 2);
   assert.equal(detailResponse.body.data.routes[0]?.provider, "bailian");
+
+  const providerDetailResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/llm-service/metrics/models/kimi2.5",
+    headers,
+    query: {
+      range: "24h",
+      provider: "volcengine",
+    },
+  });
+
+  assert.equal(providerDetailResponse.statusCode, 200);
+  assert.equal(providerDetailResponse.body.data.provider, "volcengine");
+  assert.equal(providerDetailResponse.body.data.summary.requestCount, 1);
+  assert.equal(providerDetailResponse.body.data.routes.length, 1);
+  assert.equal(providerDetailResponse.body.data.routes[0]?.provider, "volcengine");
 
   const revisionResponse = await runtime.app.handle({
     method: "GET",

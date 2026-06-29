@@ -103,7 +103,39 @@ appId = ai_novel
 configKey = ai_novel.model_routing
 ```
 
-### 3.6 App 级 i18n 设置
+### 3.6 AINovel Feedback
+
+AINovel App 内反馈由用户登录态提交，附件写入 Zook 的私有 `appRunData` 文件存储；Admin Web 只通过后台会话代理读取附件，不暴露公开静态 URL。
+
+用户提交接口：
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v1/ai_novel/feedback` | 提交 AINovel 用户反馈，要求用户登录；`message` trim 后至少 30 字、最多 10,000 字；`attachments` 可选，最多 5 张压缩图片 |
+
+提交限制：
+
+1. 只允许 `image/jpeg`、`image/png`、`image/webp` 附件。
+2. 单张附件最大 3 MB，总 payload 最大 10 MB。
+3. 图片-only 反馈按空正文处理；少于 30 字的反馈返回 `REQ_INVALID_BODY`。
+4. 防滥用限制包括：用户 5 次 / 小时、20 次 / 天，IP fallback 20 次 / 小时，用户每日图片字节上限，以及短时间重复正文检测。
+5. 成功提交会记录 audit action `feedback.submit`。
+
+Admin 查看接口：
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/ai_novel/feedback?limit={limit}&status={status}` | 查看 AINovel 反馈列表，默认 100 条，最大 500 条；`status` 可选为 `new`、`doing`、`done` |
+| `PATCH` | `/api/v1/admin/apps/ai_novel/feedback/{feedbackId}/status` | 调整反馈处理状态，body 为 `{ "status": "new" \| "doing" \| "done" }` |
+| `GET` | `/api/v1/admin/apps/ai_novel/feedback/{feedbackId}/attachments/{attachmentId}` | 通过 Admin 会话读取反馈附件内容，返回 base64 内容和元数据 |
+
+说明：
+
+1. 反馈记录按 `createdAt DESC` 返回。
+2. 列表返回用户邮箱、消息原文、附件数量、平台、App 版本与状态；状态含义为 `new` 新反馈、`doing` 处理中、`done` 已完成。
+3. 附件文件路径形如 `feedback/ai_novel/{yyyy-mm-dd}/{feedbackId}/{attachmentId}.{ext}`，实际落在 `/app/appRunData` 根下。
+
+### 3.7 App 级 i18n 设置
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |

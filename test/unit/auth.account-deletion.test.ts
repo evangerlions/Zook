@@ -108,6 +108,41 @@ test("users/me/delete marks membership deleted, clears app-scoped runtime data, 
     payload: {},
     createdAt: "2026-04-01T00:00:00.000Z",
   });
+  runtime.database.feedbackRecords.push({
+    id: "feedback_alice_a",
+    appId: "app_a",
+    userId: "user_alice",
+    message: "Feedback should be removed with app account deletion.",
+    messageHash: "hash_alice_a",
+    status: "new",
+    attachmentCount: 1,
+    metadata: {},
+    createdAt: "2026-04-01T00:00:00.000Z",
+    updatedAt: "2026-04-01T00:00:00.000Z",
+  });
+  runtime.database.feedbackRecords.push({
+    id: "feedback_alice_b",
+    appId: "app_b",
+    userId: "user_alice",
+    message: "Feedback in another app should be retained.",
+    messageHash: "hash_alice_b",
+    status: "new",
+    attachmentCount: 0,
+    metadata: {},
+    createdAt: "2026-04-01T00:00:00.000Z",
+    updatedAt: "2026-04-01T00:00:00.000Z",
+  });
+  runtime.database.feedbackAttachments.push({
+    id: "feedback_attachment_alice_a",
+    feedbackId: "feedback_alice_a",
+    appId: "app_a",
+    userId: "user_alice",
+    fileName: "screen.png",
+    mimeType: "image/png",
+    sizeBytes: 42,
+    storagePath: "feedback/app_a/feedback_alice_a/screen.png",
+    createdAt: "2026-04-01T00:00:00.000Z",
+  });
 
   const response = await runtime.app.handle({
     method: "POST",
@@ -137,6 +172,9 @@ test("users/me/delete marks membership deleted, clears app-scoped runtime data, 
   assert.equal(runtime.database.clientLogUploadTasks.some((item) => item.id === "task_alice_a"), false);
   assert.equal(runtime.database.clientLogUploads.some((item) => item.id === "upload_alice_a"), false);
   assert.equal(runtime.database.clientLogLines.some((item) => item.id === "line_alice_a"), false);
+  assert.equal(runtime.database.feedbackRecords.some((item) => item.id === "feedback_alice_a"), false);
+  assert.equal(runtime.database.feedbackAttachments.some((item) => item.id === "feedback_attachment_alice_a"), false);
+  assert.equal(runtime.database.feedbackRecords.some((item) => item.id === "feedback_alice_b"), true);
   assert.equal(runtime.database.auditLogs.some((item) => item.id === "audit_keep"), true);
 
   const meResponse = await runtime.app.handle({

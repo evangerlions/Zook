@@ -9,7 +9,7 @@ import type {
   AdminContentSafetyDocument,
   AdminContentSafetyStatsDocument,
   AdminContentSafetyTestDocument,
-  AdminEmailDeliveryEventListDocument,
+  AdminEmailDeliveryEventListDocument, AdminFeedbackAttachmentContentDocument, AdminFeedbackListDocument, AdminFeedbackStatusUpdateDocument,
   AdminDeleteAppResult,
   AdminEmailServiceDocument,
   AdminEmailTestSendCommand,
@@ -33,6 +33,7 @@ import type {
   AdminSmsVerificationRevealDocument,
   AdminSensitiveOperationGrantDocument,
   LlmMetricsRange,
+  FeedbackStatus,
 } from "./types";
 
 const ADMIN_API_PREFIX = "/api/v1/admin";
@@ -59,7 +60,7 @@ export class ApiError extends Error {
   }
 }
 
-function adminPath(pathname: string): string {
+export function adminPath(pathname: string): string {
   return `${ADMIN_API_PREFIX}${pathname}`;
 }
 
@@ -102,16 +103,10 @@ function dispatchAuthRequired(message: string) {
     return;
   }
 
-  window.dispatchEvent(
-    new CustomEvent(ADMIN_AUTH_REQUIRED_EVENT, {
-      detail: {
-        message,
-      },
-    }),
-  );
+  window.dispatchEvent(new CustomEvent(ADMIN_AUTH_REQUIRED_EVENT, { detail: { message } }));
 }
 
-async function requestJson<T>(
+export async function requestJson<T>(
   path: string,
   options: {
     method?: string;
@@ -447,6 +442,20 @@ export const adminApi = {
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminEmailDeliveryEventListDocument>(adminPath(`/apps/common/email-service/events${suffix}`));
   },
+  getAiNovelFeedback(input: { limit?: number; status?: FeedbackStatus | "all" } = {}) {
+    const status = input.status && input.status !== "all" ? input.status : undefined;
+    const query = new URLSearchParams(cleanQuery({ limit: input.limit ? String(input.limit) : undefined, status }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
+  },
+  updateAiNovelFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
+    const path = `/apps/ai_novel/feedback/${encodeURIComponent(feedbackId)}/status`;
+    return requestJson<AdminFeedbackStatusUpdateDocument>(adminPath(path), { method: "PATCH", body: { status } });
+  },
+  getAiNovelFeedbackAttachment(feedbackId: string, attachmentId: string) {
+    const path = `/apps/ai_novel/feedback/${encodeURIComponent(feedbackId)}/attachments/${encodeURIComponent(attachmentId)}`;
+    return requestJson<AdminFeedbackAttachmentContentDocument>(adminPath(path));
+  },
   getSmsService() {
     return requestJson<AdminSmsServiceDocument>(adminPath("/apps/common/sms-service"));
   },
@@ -570,16 +579,14 @@ export const adminApi = {
       },
     );
   },
-  getLlmMetrics(range: LlmMetricsRange) {
-    return requestJson<AdminLlmMetricsDocument>(
-      adminPath(`/apps/common/llm-service/metrics?range=${encodeURIComponent(range)}`),
-    );
+  getLlmMetrics(range: LlmMetricsRange, provider?: string) {
+    const query = new URLSearchParams(cleanQuery({ range, provider }));
+    return requestJson<AdminLlmMetricsDocument>(adminPath(`/apps/common/llm-service/metrics?${query.toString()}`));
   },
-  getLlmModelMetrics(modelKey: string, range: LlmMetricsRange) {
+  getLlmModelMetrics(modelKey: string, range: LlmMetricsRange, provider?: string) {
+    const query = new URLSearchParams(cleanQuery({ range, provider }));
     return requestJson<AdminLlmModelMetricsDocument>(
-      adminPath(
-        `/apps/common/llm-service/metrics/models/${encodeURIComponent(modelKey)}?range=${encodeURIComponent(range)}`,
-      ),
+      adminPath(`/apps/common/llm-service/metrics/models/${encodeURIComponent(modelKey)}?${query.toString()}`),
     );
   },
   runLlmSmokeTest() {

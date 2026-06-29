@@ -16,6 +16,7 @@
 本期还新增一个产品专属配置页：
 
 3. AINovel AI Routing `ai_novel.model_routing`
+4. AINovel Feedback 用户反馈观测
 
 ---
 
@@ -27,6 +28,7 @@ Admin Web
 │   ├── 应用
 │   ├── 配置
 │   ├── AI Routing（仅 ai_novel）
+│   ├── Feedback（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
 ├── Topbar
@@ -38,6 +40,7 @@ Admin Web
     ├── /apps   -> App 总控页
     ├── /config -> App JSON 配置页
     ├── /ai-routing -> AINovel AI Routing 硬编码路由只读页
+    ├── /feedback -> AINovel App 内反馈与截图观测页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
 ```
@@ -65,6 +68,7 @@ Admin Web
 3. `/mail` 和 `/llm` 固定属于 `common`
 4. `/config` 只服务于普通 App
 5. `/ai-routing` 目前只在 `appId = ai_novel` 时显示
+6. `/feedback` 目前只在 `appId = ai_novel` 时显示
 
 ---
 
@@ -124,7 +128,20 @@ AI Routing 页挂在 `ai_novel` 工作区下，当前只展示 Zook 代码硬编
 3. 不再支持保存、版本历史、恢复
 4. 不在这页编辑 `provider / providerModel`，那部分仍归 `common.llm_service`
 
-### 4.5 LLM 页
+### 4.5 AINovel Feedback 页
+
+Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 内提交的反馈与截图。
+
+交互原则：
+
+1. 只在当前选中的 App 是 `ai_novel` 时展示
+2. 列表展示提交时间、用户 / 邮箱、反馈预览、附件数量、平台 / App 版本、状态
+3. 支持按 `new` / `doing` / `done` 状态筛选，并在列表中直接调整反馈处理状态
+4. 点击记录后打开详情抽屉，展示完整反馈、附件缩略图、附件元数据和当前状态
+5. 附件只能通过 Admin 登录会话代理读取，不生成公开 URL
+6. 该页不提供客服回复或用户端反馈历史
+
+### 4.6 LLM 页
 
 LLM 页挂在 `common` 工作区下，分成两个标签：
 
@@ -297,6 +314,13 @@ common.llm_service
 5. `GET /api/v1/admin/apps/common/llm-service/metrics?range=24h|7d|30d`
 6. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}?range=24h|7d|30d`
 
+### 7.5 AINovel Feedback 接口
+
+1. `POST /api/v1/ai_novel/feedback`
+2. `GET /api/v1/admin/apps/ai_novel/feedback?limit={limit}&status={new|doing|done}`
+3. `PATCH /api/v1/admin/apps/ai_novel/feedback/{feedbackId}/status`
+4. `GET /api/v1/admin/apps/ai_novel/feedback/{feedbackId}/attachments/{attachmentId}`
+
 ---
 
 ## 8. 持久化
@@ -312,6 +336,8 @@ common.llm_service
 5. 配置版本记录
 6. LLM 健康窗口
 7. LLM 小时级监控桶
+8. AINovel 用户反馈记录、处理状态与附件元数据
+9. 反馈附件文件，存储在 `appRunData/feedback/{appId}/{yyyy-mm-dd}/{feedbackId}/{attachmentId}.{ext}`
 
 其中：
 

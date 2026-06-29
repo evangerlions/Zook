@@ -47,6 +47,7 @@ export default function LlmRoute() {
   const [modelMetrics, setModelMetrics] = useState<AdminLlmModelMetricsDocument | null>(null);
   const [smokeDocument, setSmokeDocument] = useState<AdminLlmSmokeTestDocument | null>(null);
   const [range, setRange] = useState<LlmMetricsRange>("24h");
+  const [selectedProvider, setSelectedProvider] = useState("");
   const [selectedModelKey, setSelectedModelKey] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
@@ -109,6 +110,7 @@ export default function LlmRoute() {
 
   function applyConfigDocument(payload: AdminLlmServiceDocument | null, preserveSelectedModel = true) {
     const nextDraft = cloneLlmConfig(payload?.config);
+    const availableProviderKeys = payload?.config.providers.map((item) => item.key) ?? [];
     const availableModelKeys = payload?.config.models.map((item) => item.key) ?? [];
     const fallbackModelKey = payload?.config.defaultModelKey || payload?.config.models[0]?.key || "";
 
@@ -117,6 +119,7 @@ export default function LlmRoute() {
     setOriginalDraft(nextDraft);
     setRawValue(formatLlmConfigJson(payload?.config ?? nextDraft));
     setDesc("");
+    setSelectedProvider((current) => (current && availableProviderKeys.includes(current) ? current : ""));
     setSelectedModelKey((current) => (
       preserveSelectedModel && current && availableModelKeys.includes(current) ? current : fallbackModelKey
     ));
@@ -131,17 +134,17 @@ export default function LlmRoute() {
     }
   }
 
-  async function loadMetrics(nextRange: LlmMetricsRange) {
+  async function loadMetrics(nextRange: LlmMetricsRange, provider: string) {
     setLoadingMetrics(true);
     try {
-      const payload = await adminApi.getLlmMetrics(nextRange);
+      const payload = await adminApi.getLlmMetrics(nextRange, provider || undefined);
       setMetrics(payload);
       const nextModelKey = payload.models.some((item) => item.modelKey === selectedModelKey)
         ? selectedModelKey
         : payload.models[0]?.modelKey || "";
       setSelectedModelKey(nextModelKey);
       if (nextModelKey) {
-        const detail = await adminApi.getLlmModelMetrics(nextModelKey, nextRange);
+        const detail = await adminApi.getLlmModelMetrics(nextModelKey, nextRange, provider || undefined);
         setModelMetrics(detail);
       } else {
         setModelMetrics(null);
@@ -152,12 +155,12 @@ export default function LlmRoute() {
   }
 
   useEffect(() => {
-    void Promise.all([loadConfig(), loadMetrics(range)]);
+    void loadConfig();
   }, []);
 
   useEffect(() => {
-    void loadMetrics(range);
-  }, [range]);
+    void loadMetrics(range, selectedProvider);
+  }, [range, selectedProvider]);
 
   useEffect(() => {
     if (configMode !== "raw" || rawValidation.error || !rawValidation.draft || rawDraftSnapshot === draftSnapshot) {
@@ -200,7 +203,7 @@ export default function LlmRoute() {
       applyConfigDocument(payload);
       setSaveModalOpen(false);
       setNotice(makeNotice("success", "LLM 配置已保存。"));
-      await loadMetrics(range);
+      await loadMetrics(range, selectedProvider);
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
@@ -252,7 +255,7 @@ export default function LlmRoute() {
       setRestoreModalOpen(false);
       setRestoreRevision(null);
       setRestoreDesc("");
-      await loadMetrics(range);
+      await loadMetrics(range, selectedProvider);
       setNotice(makeNotice("success", `已恢复到版本 R${restoreRevision}。`));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
@@ -288,7 +291,7 @@ export default function LlmRoute() {
     }
 
     try {
-      setModelMetrics(await adminApi.getLlmModelMetrics(nextModelKey, range));
+      setModelMetrics(await adminApi.getLlmModelMetrics(nextModelKey, range, selectedProvider || undefined));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     }
@@ -330,9 +333,12 @@ export default function LlmRoute() {
           loadingMetrics={loadingMetrics}
           metrics={metrics}
           modelMetrics={modelMetrics}
+          onProviderChange={setSelectedProvider}
           onRangeChange={setRange}
           onSelectModel={(modelKey) => void handleSelectModel(modelKey)}
+          providerOptions={metrics?.providers ?? []}
           range={range}
+          selectedProvider={selectedProvider}
           selectedModelKey={selectedModelKey}
         />
       ) : tab === "smoke" ? (

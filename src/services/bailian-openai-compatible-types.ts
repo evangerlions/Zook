@@ -3,7 +3,7 @@ import type { StructuredLogger } from "../infrastructure/logging/pino-logger.mod
 export const DEFAULT_BAILIAN_BASE_URL =
   "https://dashscope.aliyuncs.com/compatible-mode/v1";
 export const DEFAULT_BAILIAN_API_KEY = "mock-bailian-api-key";
-export const DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS = 20_000;
+export const DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS = 30_000;
 export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 20_000;
 export const ZOOK_LOG_BODY_MODE_OPTION = "zookLogBodyMode";
 

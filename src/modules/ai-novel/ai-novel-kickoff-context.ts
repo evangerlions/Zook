@@ -1,4 +1,8 @@
 import type { LLMMessage } from "../../services/llm-manager.ts";
+import {
+  DEFAULT_APP_I18N_SETTINGS,
+  pickI18nText,
+} from "../../shared/i18n.ts";
 import type {
   KickoffChapterLength,
   KickoffDrive,
@@ -8,6 +12,12 @@ import type {
   KickoffStakes,
   StoryAnchor,
 } from "./ai-novel-kickoff-types.ts";
+
+const KICKOFF_AUTHORING_START_BOOK_WORDS = {
+  "en-US": "start the book, begin the novel, start writing",
+  "zh-CN": "开书、开始写、正式开始",
+  "zh-TW": "開書、開始寫、正式開始",
+};
 
 const KICKOFF_SYSTEM_PROMPT = [
   "You are the kickoff-mode novel setup assistant.",
@@ -79,6 +89,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "- Do not call ready until the protagonist anchor has a concrete non-placeholder `name`.",
   "- When calling ready, include summary: one polished natural-language paragraph describing what this book is like for the ready card.",
   "- When calling ready, include mainLine: a user-facing rolling plan for the first 6-10 chapters. This is the opening arc the user will confirm on the ready card before drafting starts.",
+  "- If a previous ready tool result says the user chose to modify the ready proposal, continue kickoff refinement and call ready again when the updated setup is ready.",
   "- mainLine must describe what this stage roughly does, like a human writer's first-volume direction. It must be concrete enough to prevent per-chapter improvisation, but not so rigid that every chapter needs a forced hook.",
   "- mainLine.arcPromise must state the opening/current arc's reading promise. mainLine.arcRules must turn user anti-trope or genre constraints into concrete stage rules.",
   "- mainLine.beats must be written in the user's writing language. Each beat must include goal, mustCover array, forbidden array, change, and endBoundary.",
@@ -97,14 +108,49 @@ const KICKOFF_SYSTEM_PROMPT = [
 export function buildKickoffMessages(
   messages: LLMMessage[],
   meta: KickoffMeta,
+  locale = DEFAULT_APP_I18N_SETTINGS.defaultLocale,
 ): LLMMessage[] {
   return [
     {
       role: "system",
-      content: `${KICKOFF_SYSTEM_PROMPT}\n\n${renderKickoffSummary(meta)}`,
+      content: [
+        KICKOFF_SYSTEM_PROMPT,
+        renderKickoffSummary(meta),
+        buildKickoffAuthoringGlossaryHint(locale),
+      ].join("\n\n"),
     },
     ...messages,
   ];
+}
+
+function resolveAuthoringStartBookWords(locale: string): string {
+  return pickI18nText(
+    KICKOFF_AUTHORING_START_BOOK_WORDS,
+    locale,
+    DEFAULT_APP_I18N_SETTINGS,
+  );
+}
+
+function buildKickoffAuthoringGlossaryHint(locale: string): string {
+  const startBookWords = resolveAuthoringStartBookWords(locale);
+  return [
+    "Localized authoring glossary:",
+    `- When the user says these words (${startBookWords}), it means they want to start this book project from the current kickoff plan and proceed toward Chapter 1 drafting.`,
+    "- If the current canonical kickoff fields are sufficient, call ready, including after the user previously chose to modify a ready proposal.",
+    "- If any required field is still missing, first infer sensible defaults from the conversation, call update_meta with the missing canonical fields, then call ready.",
+  ].join("\n");
+}
+
+export function buildImportedKickoffAuthoringGlossaryHint(
+  locale = DEFAULT_APP_I18N_SETTINGS.defaultLocale,
+): string {
+  const startBookWords = resolveAuthoringStartBookWords(locale);
+  return [
+    "Localized authoring glossary:",
+    `- When the user says these words (${startBookWords}), it means they want to enter writing from the current imported continuation plan and proceed toward the target chapter.`,
+    "- If the current imported continuation card, BookContract, and MainLine are sufficient, call ready, including after the user previously chose to modify a ready proposal.",
+    "- If the user just changed the continuation direction or the imported continuation state may be stale, call read_import_result first, update_import_continuation with the needed BookContract/MainLine continuation changes, then call ready.",
+  ].join("\n");
 }
 
 export function normalizeKickoffMetaContext(value: unknown): KickoffMeta {

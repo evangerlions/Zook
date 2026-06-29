@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   AnalyticsEventRecord,
   AppConfigRecord,
@@ -11,6 +12,8 @@ import type {
   ContentSafetyCheckRecord,
   DatabaseSeed,
   EmailDeliveryEventRecord,
+  FeedbackAttachmentRecord,
+  FeedbackRecord,
   FailedEventRecord,
   FileRecord,
   NotificationJobRecord,
@@ -35,6 +38,9 @@ function normalizeListLimit(limit?: number): number {
  * InMemoryDatabase is a test-only database double.
  */
 export class InMemoryDatabase extends ApplicationDatabase {
+  private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
+  private exclusiveTail: Promise<void> = Promise.resolve();
+
   apps: AppRecord[];
   users: UserRecord[];
   appUsers: AppUserRecord[];
@@ -54,6 +60,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   clientLogUploads: ClientLogUploadRecord[];
   clientLogLines: ClientLogLineRecord[];
   contentSafetyCheckRecords: ContentSafetyCheckRecord[];
+  feedbackRecords: FeedbackRecord[];
+  feedbackAttachments: FeedbackAttachmentRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -76,10 +84,28 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.clientLogUploads = structuredClone(seed.clientLogUploads ?? []);
     this.clientLogLines = structuredClone(seed.clientLogLines ?? []);
     this.contentSafetyCheckRecords = structuredClone(seed.contentSafetyCheckRecords ?? []);
+    this.feedbackRecords = structuredClone(seed.feedbackRecords ?? []);
+    this.feedbackAttachments = structuredClone(seed.feedbackAttachments ?? []);
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
-    return await fn();
+    if (this.exclusiveContext.getStore()) {
+      return await fn();
+    }
+
+    let release = () => undefined;
+    const previous = this.exclusiveTail;
+    this.exclusiveTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    return await this.exclusiveContext.run(true, async () => {
+      try {
+        return await fn();
+      } finally {
+        release();
+      }
+    });
   }
 
   async close(): Promise<void> {
@@ -144,6 +170,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.clientLogUploads = this.clientLogUploads.filter((item) => item.appId !== appId);
     this.clientLogLines = this.clientLogLines.filter((item) => item.appId !== appId);
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.appId !== appId);
+    this.feedbackRecords = this.feedbackRecords.filter((item) => item.appId !== appId);
+    this.feedbackAttachments = this.feedbackAttachments.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -205,6 +233,15 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter(
       (item) => item.appId !== appId || item.userId !== userId,
+    );
+    const feedbackIds = this.feedbackRecords
+      .filter((item) => item.appId === appId && item.userId === userId)
+      .map((item) => item.id);
+    this.feedbackRecords = this.feedbackRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.feedbackAttachments = this.feedbackAttachments.filter(
+      (item) => !feedbackIds.includes(item.feedbackId),
     );
   }
 
@@ -552,6 +589,67 @@ export class InMemoryDatabase extends ApplicationDatabase {
     const before = this.contentSafetyCheckRecords.length;
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.createdAt >= cutoffIso);
     return before - this.contentSafetyCheckRecords.length;
+  }
+
+  insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): void {
+    this.feedbackRecords.push(structuredClone(record));
+    this.feedbackAttachments.push(...structuredClone(attachments));
+  }
+
+  listFeedbackRecords(filter: {
+    appId: string;
+    userId?: string;
+    ipHash?: string;
+    status?: FeedbackRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): FeedbackRecord[] {
+    const records = structuredClone(this.feedbackRecords)
+      .filter((item) => item.appId === filter.appId)
+      .filter((item) => filter.userId ? item.userId === filter.userId : true)
+      .filter((item) => filter.ipHash ? item.ipHash === filter.ipHash : true)
+      .filter((item) => filter.status ? item.status === filter.status : true)
+      .filter((item) => filter.createdAtFromIso ? item.createdAt >= filter.createdAtFromIso : true)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return typeof filter.limit === "number" && filter.limit > 0
+      ? records.slice(0, Math.min(Math.floor(filter.limit), 500))
+      : records;
+  }
+
+  updateFeedbackStatus(
+    appId: string,
+    feedbackId: string,
+    status: FeedbackRecord["status"],
+  ): FeedbackRecord | undefined {
+    const record = this.feedbackRecords.find((item) => item.appId === appId && item.id === feedbackId);
+    if (!record) {
+      return undefined;
+    }
+    record.status = status;
+    record.updatedAt = new Date().toISOString();
+    return structuredClone(record);
+  }
+
+  listFeedbackAttachments(feedbackIds: string[]): FeedbackAttachmentRecord[] {
+    const ids = new Set(feedbackIds);
+    return structuredClone(this.feedbackAttachments)
+      .filter((item) => ids.has(item.feedbackId))
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  findFeedbackAttachment(
+    appId: string,
+    feedbackId: string,
+    attachmentId: string,
+  ): FeedbackAttachmentRecord | undefined {
+    return structuredClone(
+      this.feedbackAttachments.find(
+        (item) =>
+          item.appId === appId &&
+          item.feedbackId === feedbackId &&
+          item.id === attachmentId,
+      ),
+    );
   }
 
   get seedManagedState(): ManagedStateSnapshot {

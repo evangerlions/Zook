@@ -15,6 +15,7 @@ import { StorageService } from "./infrastructure/files/storage.service.ts";
 import { InMemoryKVBackend, KVManager } from "./infrastructure/kv/kv-manager.ts";
 import { ManagedStateStore, applyManagedState } from "./infrastructure/kv/managed-state.store.ts";
 import { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
+import { createLocalRunFileLogSink } from "./infrastructure/logging/local-run-file-log-sink.ts";
 import { InMemoryJobQueue } from "./infrastructure/queue/bullmq/in-memory-queue.ts";
 import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
@@ -50,6 +51,7 @@ import { ContentSafetyService } from "./services/content-safety.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { EmbeddingManager } from "./services/embedding-manager.ts";
 import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
+import { FeedbackService } from "./services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
@@ -139,9 +141,20 @@ export async function createApplication(
             })(),
         )
       : new InMemoryJobQueue());
+  const localRunFileLogSink = createLocalRunFileLogSink({
+    service: options.serviceName ?? "api",
+  });
   const logger = new StructuredLogger(options.serviceName ?? "api", {
     emitToConsole: options.emitLogs ?? false,
+    sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
+  if (localRunFileLogSink) {
+    logger.info("local run file logging enabled", {
+      runId: localRunFileLogSink.runId,
+      logDirectory: localRunFileLogSink.directory,
+      logFile: localRunFileLogSink.currentPath,
+    });
+  }
 
   const appConfigService = new VersionedAppConfigService(
     database,
@@ -414,6 +427,7 @@ export async function createApplication(
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
+  const feedbackService = new FeedbackService(database, persistentFileStore);
   const clientLogUploadService = new ClientLogUploadService(
     database,
     logEncryptionKeyResolver,
@@ -475,6 +489,7 @@ export async function createApplication(
     requestLocaleService,
     publicApiMessageService,
     tencentSesEmailCallbackService,
+    feedbackService,
     logger,
     auditInterceptor,
     requestLoggingInterceptor,
@@ -536,6 +551,7 @@ export async function createApplication(
       notificationService,
       failedEventRetryService,
       tencentSesEmailCallbackService,
+      feedbackService,
       smsVerificationSender,
       smsVerificationCleanupService,
       captchaVerificationService,

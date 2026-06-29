@@ -1,6 +1,7 @@
 import type { LogRecord } from "../../shared/types.ts";
 
 type LoggerFormat = "json" | "pretty";
+export type LogSink = (entry: LogRecord) => void;
 
 /**
  * StructuredLogger keeps the JSON logging contract close to nestjs-pino while staying dependency free.
@@ -14,18 +15,35 @@ export class StructuredLogger {
       emitToConsole?: boolean;
       format?: LoggerFormat;
       color?: boolean;
+      sinks?: LogSink[];
     } = {},
   ) {}
 
-  info(message: string, context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {}): void {
+  debug(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
+    this.write("debug", message, context);
+  }
+
+  info(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
     this.write("info", message, context);
   }
 
-  warn(message: string, context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {}): void {
+  warn(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
     this.write("warn", message, context);
   }
 
-  error(message: string, context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {}): void {
+  error(
+    message: string,
+    context: Omit<LogRecord, "timestamp" | "level" | "service" | "message"> = {},
+  ): void {
     this.write("error", message, context);
   }
 
@@ -43,6 +61,13 @@ export class StructuredLogger {
     };
 
     this.records.push(entry);
+    for (const sink of this.options.sinks ?? []) {
+      try {
+        sink(entry);
+      } catch {
+        // Logging sinks must never affect request handling.
+      }
+    }
 
     if (this.options.emitToConsole !== false) {
       const format = this.options.format ?? resolveLoggerFormat();
@@ -123,6 +148,9 @@ function colorForLevel(level: LogRecord["level"]): AnsiColor {
   }
   if (level === "warn") {
     return "yellow";
+  }
+  if (level === "debug") {
+    return "dim";
   }
   return "green";
 }

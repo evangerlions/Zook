@@ -64,11 +64,15 @@ export class PersistentFileStore {
   }
 
   async readText(filePath: string): Promise<string> {
-    return await readFile(filePath, "utf8");
+    return await readFile(this.resolvePath(filePath), "utf8");
+  }
+
+  async readBuffer(filePath: string): Promise<Buffer> {
+    return await readFile(this.resolvePath(filePath));
   }
 
   async stat(filePath: string) {
-    return await stat(filePath);
+    return await stat(this.resolvePath(filePath));
   }
 }
 

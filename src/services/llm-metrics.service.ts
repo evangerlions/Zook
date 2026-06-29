@@ -4,8 +4,10 @@ import type {
   AdminLlmModelMetricsDocument,
   LlmHourlySeriesItem,
   LlmModelMetricsGroup,
+  LlmModelRouteConfig,
   LlmMetricsRange,
   LlmMetricsSummary,
+  LlmProviderMetricsOption,
   LlmRouteMetricsGroup,
   LlmServiceConfig,
   LlmModelConfig,
@@ -17,26 +19,17 @@ import {
   isAiNovelSceneRouteKey,
 } from "./ai-novel-llm-model-aliases.ts";
 import type { LLMUsage } from "./llm-manager.ts";
+import {
+  createEmptyMetricBucket as createEmptyBucket,
+  mergeMetricBuckets as mergeBuckets,
+  toHourlySeriesItem,
+  toMetricSummary as toSummary,
+  type LlmMetricBucket,
+} from "./llm-metrics-buckets.ts";
 
 const METRICS_RETENTION_HOURS = 24 * 365;
 const DEFAULT_TIMEZONE = "Asia/Shanghai";
 const METRICS_INDEX_KEY = "index";
-
-interface LlmMetricBucket {
-  hour: string;
-  requestCount: number;
-  successCount: number;
-  failureCount: number;
-  firstByteLatencySumMs: number;
-  totalLatencySumMs: number;
-  firstByteLatencyMaxMs: number;
-  totalLatencyMaxMs: number;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  firstByteLatencyDigest: number[];
-  totalLatencyDigest: number[];
-}
 
 interface LlmMetricScopeIndex {
   version: 1;
@@ -69,23 +62,28 @@ export class LlmMetricsService {
     await Promise.all(scopes.map((scope) => this.upsertBucket(scope, hour, event, occurredAt)));
   }
 
-  async getOverview(config: LlmServiceConfig, range: LlmMetricsRange, now = new Date()): Promise<AdminLlmMetricsDocument> {
+  async getOverview(
+    config: LlmServiceConfig,
+    range: LlmMetricsRange,
+    now = new Date(),
+    provider?: string,
+  ): Promise<AdminLlmMetricsDocument> {
+    this.assertKnownProvider(config, provider);
     const hours = buildHourKeys(range, now);
-    const summary = this.summarizeBuckets(await this.readBuckets(this.globalScope(), hours), hours);
     const metricModels = this.getMetricModels(config);
     const models = await Promise.all(
-      metricModels.map(async (model) => ({
-        modelKey: model.key,
-        label: model.label,
-        summary: this.summarizeBuckets(await this.readBuckets(this.modelScope(model.key), hours), hours),
-        items: await this.readSeries(this.modelScope(model.key), hours),
-      })),
+      metricModels.map((model) => this.buildModelMetricsGroup(model, hours, provider)),
     );
+    const summary = provider
+      ? this.summarizeBuckets(await this.readAggregatedProviderBuckets(metricModels, provider, hours), hours)
+      : this.summarizeBuckets(await this.readBuckets(this.globalScope(), hours), hours);
 
     return {
       timezone: DEFAULT_TIMEZONE,
       range,
+      provider,
       summary,
+      providers: this.getMetricProviderOptions(config, metricModels),
       models: this.sortModelGroups(models),
     };
   }
@@ -95,16 +93,21 @@ export class LlmMetricsService {
     modelKey: string,
     range: LlmMetricsRange,
     now = new Date(),
+    provider?: string,
   ): Promise<AdminLlmModelMetricsDocument> {
+    this.assertKnownProvider(config, provider);
     const model = this.getMetricModels(config).find((item) => item.key === modelKey);
     if (!model) {
       badRequest("REQ_INVALID_QUERY", `Unknown modelKey: ${modelKey}.`);
     }
 
     const hours = buildHourKeys(range, now);
-    const summary = this.summarizeBuckets(await this.readBuckets(this.modelScope(model.key), hours), hours);
+    const routeConfigs = this.filterRoutesByProvider(model.routes, provider);
+    const summary = provider
+      ? this.summarizeBuckets(await this.readAggregatedRouteBuckets(model.key, routeConfigs, hours), hours)
+      : this.summarizeBuckets(await this.readBuckets(this.modelScope(model.key), hours), hours);
     const routes = await Promise.all(
-      model.routes.map(async (route) => ({
+      routeConfigs.map(async (route) => ({
         modelKey: model.key,
         provider: route.provider,
         providerModel: route.providerModel,
@@ -119,6 +122,7 @@ export class LlmMetricsService {
     return {
       timezone: DEFAULT_TIMEZONE,
       range,
+      provider,
       modelKey: model.key,
       label: model.label,
       summary,
@@ -152,7 +156,7 @@ export class LlmMetricsService {
 
   private async readSeries(scope: string, hours: string[]): Promise<LlmHourlySeriesItem[]> {
     const buckets = await this.readBuckets(scope, hours);
-    return hours.map((hour) => toHourlySeriesItem(buckets.get(hour) ?? createEmptyBucket(hour)));
+    return this.toSeries(buckets, hours);
   }
 
   private async readBuckets(scope: string, hours: string[]): Promise<Map<string, LlmMetricBucket>> {
@@ -186,6 +190,73 @@ export class LlmMetricsService {
       );
 
     return toSummary(merged);
+  }
+
+  private async buildModelMetricsGroup(
+    model: LlmModelConfig,
+    hours: string[],
+    provider?: string,
+  ): Promise<LlmModelMetricsGroup> {
+    const routeConfigs = this.filterRoutesByProvider(model.routes, provider);
+    if (provider) {
+      const buckets = await this.readAggregatedRouteBuckets(model.key, routeConfigs, hours);
+      return {
+        modelKey: model.key,
+        label: model.label,
+        summary: this.summarizeBuckets(buckets, hours),
+        items: this.toSeries(buckets, hours),
+      };
+    }
+
+    return {
+      modelKey: model.key,
+      label: model.label,
+      summary: this.summarizeBuckets(await this.readBuckets(this.modelScope(model.key), hours), hours),
+      items: await this.readSeries(this.modelScope(model.key), hours),
+    };
+  }
+
+  private async readAggregatedRouteBuckets(
+    modelKey: string,
+    routes: LlmModelRouteConfig[],
+    hours: string[],
+  ): Promise<Map<string, LlmMetricBucket>> {
+    const routeBuckets = await Promise.all(
+      routes.map((route) => this.readBuckets(this.routeScope(modelKey, route.provider, route.providerModel), hours)),
+    );
+    return this.mergeBucketMaps(routeBuckets, hours);
+  }
+
+  private async readAggregatedProviderBuckets(
+    models: LlmModelConfig[],
+    provider: string,
+    hours: string[],
+  ): Promise<Map<string, LlmMetricBucket>> {
+    const routeBuckets = await Promise.all(
+      models.flatMap((model) =>
+        this.filterRoutesByProvider(model.routes, provider)
+          .map((route) => this.readBuckets(this.routeScope(model.key, route.provider, route.providerModel), hours)),
+      ),
+    );
+    return this.mergeBucketMaps(routeBuckets, hours);
+  }
+
+  private mergeBucketMaps(bucketMaps: Array<Map<string, LlmMetricBucket>>, hours: string[]): Map<string, LlmMetricBucket> {
+    const merged = new Map<string, LlmMetricBucket>();
+    for (const buckets of bucketMaps) {
+      for (const hour of hours) {
+        const bucket = buckets.get(hour);
+        if (!bucket) {
+          continue;
+        }
+        merged.set(hour, mergeBuckets(merged.get(hour) ?? createEmptyBucket(hour), bucket));
+      }
+    }
+    return merged;
+  }
+
+  private toSeries(buckets: Map<string, LlmMetricBucket>, hours: string[]): LlmHourlySeriesItem[] {
+    return hours.map((hour) => toHourlySeriesItem(buckets.get(hour) ?? createEmptyBucket(hour)));
   }
 
   private async updateIndex(scope: string, hour: string, now: Date): Promise<void> {
@@ -226,6 +297,39 @@ export class LlmMetricsService {
       }
       return left.label.localeCompare(right.label);
     });
+  }
+
+  private getMetricProviderOptions(
+    config: LlmServiceConfig,
+    metricModels: LlmModelConfig[],
+  ): LlmProviderMetricsOption[] {
+    const providerKeys = new Set(metricModels.flatMap((model) => model.routes.map((route) => route.provider)));
+    return config.providers
+      .filter((provider) => providerKeys.has(provider.key))
+      .map((provider) => ({
+        provider: provider.key,
+        label: provider.label || provider.key,
+      }));
+  }
+
+  private filterRoutesByProvider(
+    routes: LlmModelRouteConfig[],
+    provider?: string,
+  ): LlmModelRouteConfig[] {
+    if (!provider) {
+      return routes;
+    }
+    return routes.filter((route) => route.provider === provider);
+  }
+
+  private assertKnownProvider(config: LlmServiceConfig, provider?: string): void {
+    if (!provider) {
+      return;
+    }
+    if (config.providers.some((item) => item.key === provider)) {
+      return;
+    }
+    badRequest("REQ_INVALID_QUERY", `Unknown provider: ${provider}.`);
   }
 
   private getMetricModels(config: LlmServiceConfig): LlmServiceConfig["models"] {
@@ -293,47 +397,6 @@ export class LlmMetricsService {
   }
 }
 
-function createEmptyBucket(hour: string): LlmMetricBucket {
-  return {
-    hour,
-    requestCount: 0,
-    successCount: 0,
-    failureCount: 0,
-    firstByteLatencySumMs: 0,
-    totalLatencySumMs: 0,
-    firstByteLatencyMaxMs: 0,
-    totalLatencyMaxMs: 0,
-    promptTokens: 0,
-    completionTokens: 0,
-    totalTokens: 0,
-    firstByteLatencyDigest: [],
-    totalLatencyDigest: [],
-  };
-}
-
-function toHourlySeriesItem(bucket: LlmMetricBucket): LlmHourlySeriesItem {
-  return {
-    hour: bucket.hour,
-    ...toSummary(bucket),
-  };
-}
-
-function toSummary(bucket: LlmMetricBucket): LlmMetricsSummary {
-  return {
-    requestCount: bucket.requestCount,
-    successCount: bucket.successCount,
-    failureCount: bucket.failureCount,
-    successRate: bucket.requestCount ? roundTwo((bucket.successCount / bucket.requestCount) * 100) : 100,
-    avgFirstByteLatencyMs: bucket.requestCount ? Math.round(bucket.firstByteLatencySumMs / bucket.requestCount) : 0,
-    avgTotalLatencyMs: bucket.requestCount ? Math.round(bucket.totalLatencySumMs / bucket.requestCount) : 0,
-    p95FirstByteLatencyMs: percentile(bucket.firstByteLatencyDigest, 95),
-    p95TotalLatencyMs: percentile(bucket.totalLatencyDigest, 95),
-    promptTokens: bucket.promptTokens,
-    completionTokens: bucket.completionTokens,
-    totalTokens: bucket.totalTokens,
-  };
-}
-
 function buildHourKeys(range: LlmMetricsRange, now: Date): string[] {
   const count = rangeToHours(range);
   const keys = new Set<string>();
@@ -354,18 +417,4 @@ function rangeToHours(range: LlmMetricsRange): number {
     return 24 * 30;
   }
   badRequest("REQ_INVALID_QUERY", `Unsupported LLM metrics range: ${range}`);
-}
-
-function percentile(values: number[], targetPercentile: number): number {
-  if (!values.length) {
-    return 0;
-  }
-
-  const sorted = [...values].sort((left, right) => left - right);
-  const index = Math.max(0, Math.ceil((targetPercentile / 100) * sorted.length) - 1);
-  return Math.round(sorted[index] ?? 0);
-}
-
-function roundTwo(value: number): number {
-  return Math.round(value * 100) / 100;
 }

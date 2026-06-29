@@ -558,12 +558,16 @@ export class AdminConsoleService {
     return this.commonConfig.restoreLlmServiceConfig(revision, desc);
   }
 
-  async getLlmMetrics(range: LlmMetricsRange): Promise<AdminLlmMetricsDocument> {
-    return this.commonConfig.getLlmMetrics(range);
+  async getLlmMetrics(range: LlmMetricsRange, provider?: string): Promise<AdminLlmMetricsDocument> {
+    return this.commonConfig.getLlmMetrics(range, provider);
   }
 
-  async getLlmModelMetrics(modelKey: string, range: LlmMetricsRange): Promise<AdminLlmModelMetricsDocument> {
-    return this.commonConfig.getLlmModelMetrics(modelKey, range);
+  async getLlmModelMetrics(
+    modelKey: string,
+    range: LlmMetricsRange,
+    provider?: string,
+  ): Promise<AdminLlmModelMetricsDocument> {
+    return this.commonConfig.getLlmModelMetrics(modelKey, range, provider);
   }
 
   async runLlmSmokeTest(): Promise<AdminLlmSmokeTestDocument> {

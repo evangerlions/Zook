@@ -11,6 +11,7 @@ import { AdminSessionStore } from "../services/admin-session-store.ts";
 import { CommonTestAccountService } from "../services/common-test-account.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
+import { FeedbackService } from "../services/feedback.service.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -64,6 +65,7 @@ export class BackendRouteContext {
     protected readonly adminSessionStore: AdminSessionStore,
     protected readonly publicApiMessageService: PublicApiMessageService,
     protected readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
+    protected readonly feedbackService: FeedbackService,
     protected readonly appContextResolver: AppContextResolver,
     protected readonly authGuard: AuthGuard,
     protected readonly appAccessGuard: AppAccessGuard,
@@ -105,6 +107,10 @@ export class BackendRouteContext {
     this.appAccessGuard.assertScope(appId, auth.appId);
     await this.authService.assertAccessTokenActive(auth);
     return auth;
+  }
+
+  public resolveRequestLocale(request: HttpRequest): string {
+    return this.publicApiMessageService.resolveLocale(request);
   }
 
   public authenticateAdmin(request: HttpRequest): string {

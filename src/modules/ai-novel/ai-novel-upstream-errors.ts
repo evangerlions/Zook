@@ -1,4 +1,8 @@
 import { ApplicationError } from "../../shared/errors.ts";
+import {
+  describeUnknownError,
+  previewLogValue,
+} from "../../shared/error-diagnostics.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { ErrorCode } from "../../shared/types.ts";
 import { AI_NOVEL_APP_ID } from "../../services/app-ai-routing-config.service.ts";
@@ -34,6 +38,8 @@ export function mapAndLogAiNovelUpstreamError(
     mappedMessage: mappedError?.message,
     ...extractUpstreamErrorDetails(original?.details),
     originalDetailsPreview: previewLogValue(original?.details),
+    ...describeUnknownError(error, "original"),
+    ...describeUnknownError(mapped, "mapped"),
   });
 
   return mapped;
@@ -182,20 +188,4 @@ function getDetailNumber(details: unknown, key: string): number | undefined {
 
 function includesAny(value: string, needles: string[]): boolean {
   return needles.some((needle) => value.includes(needle));
-}
-
-function previewLogValue(value: unknown, limit = 1200): string | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-  const text = typeof value === "string" ? value : safeJsonStringify(value);
-  return text.length <= limit ? text : `${text.slice(0, limit)}...`;
-}
-
-function safeJsonStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
 }
