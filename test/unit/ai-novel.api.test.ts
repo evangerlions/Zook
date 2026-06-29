@@ -893,6 +893,83 @@ test("ai_novel import_book_agent streams thinking tool calls with import progres
   });
 });
 
+test("ai_novel imported kickoff streams with imported authoring glossary and tools", async () => {
+  let capturedRequest:
+    | {
+        providerOptions?: Record<string, unknown>;
+        messages: LLMMessage[];
+      }
+    | undefined;
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("imported kickoff should stream");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedRequest = {
+        providerOptions: request.providerOptions,
+        messages: request.messages,
+      };
+      yield { type: "content_delta", text: "可以继续从第 11 章推进。" };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  const payload = {
+    scene_key: "kickoff_turn_imported_book",
+    stream: true,
+    context: {
+      meta: {
+        extras: {
+          kickoffMode: "imported_book",
+          bookId: "book_1",
+          latestImportedChapterIndex: 10,
+          targetChapterIndex: 11,
+        },
+      },
+    },
+    messages: [{ role: "user", content: "开书" }],
+  };
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+      "X-App-Locale": "zh-CN",
+      host: "127.0.0.1:3110",
+    },
+    body: encryptAiPayload(payload, aiKey),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  assert.ok(events.length > 0);
+  assert.ok(capturedRequest);
+  const systemPrompt = String(capturedRequest!.messages[0]?.content ?? "");
+  assert.match(systemPrompt, /imported-book kickoff agent/);
+  assert.match(systemPrompt, /Localized authoring glossary:/);
+  assert.match(systemPrompt, /开书、开始写、正式开始/);
+  assert.match(systemPrompt, /current imported continuation plan/);
+  assert.match(systemPrompt, /target chapter/);
+  assert.doesNotMatch(systemPrompt, /Chapter 1 drafting/);
+  assert.deepEqual(
+    toolNamesFromProviderOptions(capturedRequest!.providerOptions ?? {}),
+    [
+      "read_import_result",
+      "search_imported_book",
+      "read_imported_chapter",
+      "update_import_continuation",
+      "ask_question",
+      "ready",
+    ],
+  );
+});
+
 test("ai_novel scene routing config validates all novel-engine chat scene keys", async () => {
   const { runtime } = await createAiNovelRuntime();
   const config =
