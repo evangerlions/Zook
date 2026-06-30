@@ -518,7 +518,7 @@ test("bailian provider emits sanitized import object progress for known tools wi
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async () =>
       createSseResponse([
-        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_import_plan_update","arguments":"{\\"contract\\":{\\"storyPromise\\":\\"source only\\"}"}}]}}]}\n\n',
+        'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"submit_import_plan_update","arguments":"{\\"bookContract\\":{\\"storyPromise\\":\\"source only\\"}"}}]}}]}\n\n',
         'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":",\\"mainLine\\":{\\"summary\\":\\"continue\\"}}"}}]},"finish_reason":"tool_calls"}]}\n\n',
         "data: [DONE]\n\n",
       ]),
@@ -536,7 +536,7 @@ test("bailian provider emits sanitized import object progress for known tools wi
       })),
     [
       {
-        text: "contract storyPromise source only",
+        text: "bookContract storyPromise source only",
         toolCallName: "submit_import_plan_update",
         toolArgumentPath: undefined,
       },
@@ -554,7 +554,7 @@ test("bailian provider emits sanitized import object progress for known tools wi
       id: "kimi2.5_tool_0",
       name: "submit_import_plan_update",
       input: {
-        contract: { storyPromise: "source only" },
+        bookContract: { storyPromise: "source only" },
         mainLine: { summary: "continue" },
       },
     },

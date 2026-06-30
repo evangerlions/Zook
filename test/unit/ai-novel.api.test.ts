@@ -759,15 +759,75 @@ test("ai_novel import_book_agent streams thinking tool calls with import progres
           id: "call_import_plan",
           name: "submit_import_plan_update",
           input: {
-            contract: {
+            bookContract: {
               revisionId: "contract-1",
               storyPromise: "Imported source facts only.",
+              storyAnchors: [],
+              focalization: "source-grounded",
+              startState: "chapter 1 imported",
+              trigger: "continue after import",
+              drive: { mode: "continue", object: "continue imported story" },
+              pressureSources: ["imported conflict"],
+              stakes: {
+                external: "external pressure continues",
+                relational: "relationships must not reset",
+                internal: "motivation carries forward",
+              },
+              worldConstraints: ["do not rewrite imported facts"],
+              changeHorizon: "continue from imported chapter",
+              scale: {
+                length: { preset: "long", note: "" },
+                chapterLength: {
+                  preset: "standard",
+                  minChars: 2500,
+                  maxChars: 4500,
+                  note: "",
+                },
+                pov: { preset: "source", note: "" },
+                threadDensity: { preset: "main_with_subthreads", note: "" },
+                pace: { preset: "moderate", note: "" },
+              },
+              language: "zh-Hans",
+              toneRegister: "source voice",
+              extras: {},
+              readiness: 1,
             },
             mainLine: {
               revisionId: "mainline-1",
               title: "Imported continuation",
+              summary: "Continue after the imported chapter.",
+              startChapterIndex: 2,
+              endChapterIndex: 11,
+              beats: Array.from({ length: 10 }, (_, index) => {
+                const chapterIndex = index + 2;
+                return {
+                  id: `import-${chapterIndex}`,
+                  chapterIndex,
+                  goal: `Continue imported pressure ${chapterIndex}.`,
+                  change: "Imported pressure changes.",
+                  endBoundary: "Stop at the next continuation question.",
+                };
+              }),
             },
-            evidence: ["chapter 1"],
+            importEvidence: {
+              latestImportedChapterIndex: 1,
+              targetChapterIndex: 2,
+              sourceCoverage: { importedRanges: ["1..1"] },
+              refsByArtifactPath: {
+                "/bookContract/storyPromise": [
+                  {
+                    id: "chapter-1-story",
+                    chapterIndex: 1,
+                    snippet: "Chapter 1 establishes the imported conflict.",
+                  },
+                ],
+              },
+              uncertainClaims: [],
+              forbiddenRetcons: [],
+              resolvedThreads: [],
+              activeThreads: ["imported conflict"],
+              styleSignals: ["source voice"],
+            },
           },
         },
       };
@@ -954,7 +1014,7 @@ test("ai_novel imported kickoff streams with imported authoring glossary and too
   assert.match(systemPrompt, /imported-book kickoff agent/);
   assert.match(systemPrompt, /Localized authoring glossary:/);
   assert.match(systemPrompt, /开书、开始写、正式开始/);
-  assert.match(systemPrompt, /current imported continuation plan/);
+  assert.match(systemPrompt, /current imported writing artifacts/);
   assert.match(systemPrompt, /target chapter/);
   assert.doesNotMatch(systemPrompt, /Chapter 1 drafting/);
   assert.deepEqual(
@@ -963,7 +1023,7 @@ test("ai_novel imported kickoff streams with imported authoring glossary and too
       "read_import_result",
       "search_imported_book",
       "read_imported_chapter",
-      "update_import_continuation",
+      "update_import_writing_artifacts",
       "ask_question",
       "ready",
     ],

@@ -172,7 +172,7 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
     "read_import_result",
     "search_imported_book",
     "read_imported_chapter",
-    "update_import_continuation",
+    "update_import_writing_artifacts",
     "ask_question",
     "ready",
   ]);
@@ -181,11 +181,11 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
   assert.match(systemPrompt, /This is not a blank new-book kickoff/);
   assert.match(systemPrompt, /read_import_result/);
   assert.match(systemPrompt, /search_imported_book/);
-  assert.match(systemPrompt, /update_import_continuation/);
+  assert.match(systemPrompt, /update_import_writing_artifacts/);
   assert.match(systemPrompt, /ready continuation card/);
   assert.match(systemPrompt, /Localized authoring glossary:/);
   assert.match(systemPrompt, /开书、开始写、正式开始/);
-  assert.match(systemPrompt, /current imported continuation plan/);
+  assert.match(systemPrompt, /current imported writing artifacts/);
   assert.match(systemPrompt, /target chapter/);
   assert.match(systemPrompt, /call read_import_result first/);
   assert.doesNotMatch(systemPrompt, /Chapter 1 drafting/);

@@ -147,9 +147,9 @@ export function buildImportedKickoffAuthoringGlossaryHint(
   const startBookWords = resolveAuthoringStartBookWords(locale);
   return [
     "Localized authoring glossary:",
-    `- When the user says these words (${startBookWords}), it means they want to enter writing from the current imported continuation plan and proceed toward the target chapter.`,
+    `- When the user says these words (${startBookWords}), it means they want to enter writing from the current imported writing artifacts and proceed toward the target chapter.`,
     "- If the current imported continuation card, BookContract, and MainLine are sufficient, call ready, including after the user previously chose to modify a ready proposal.",
-    "- If the user just changed the continuation direction or the imported continuation state may be stale, call read_import_result first, update_import_continuation with the needed BookContract/MainLine continuation changes, then call ready.",
+    "- If the user just changed the continuation direction or the imported ready state may be stale, call read_import_result first, update_import_writing_artifacts with the needed full BookContract/MainLine/ImportEvidence replacements, then call ready.",
   ].join("\n");
 }
 
