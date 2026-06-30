@@ -73,6 +73,178 @@ const bookScaleSchema: Record<string, unknown> = {
   },
 };
 
+const storyAnchorSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: ["label", "role", "rules"],
+  properties: {
+    label: { type: "string" },
+    name: { type: "string" },
+    role: { type: "string" },
+    rules: { type: "array", items: { type: "string" } },
+  },
+};
+
+const bookContractSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "revisionId",
+    "storyPromise",
+    "storyAnchors",
+    "focalization",
+    "startState",
+    "trigger",
+    "drive",
+    "pressureSources",
+    "stakes",
+    "worldConstraints",
+    "changeHorizon",
+    "scale",
+    "language",
+    "toneRegister",
+    "extras",
+    "readiness",
+  ],
+  properties: {
+    revisionId: { type: "string" },
+    storyPromise: { type: "string" },
+    storyAnchors: { type: "array", items: storyAnchorSchema },
+    focalization: { type: "string" },
+    startState: { type: "string" },
+    trigger: { type: "string" },
+    drive: {
+      type: "object",
+      additionalProperties: false,
+      required: ["mode", "object"],
+      properties: {
+        mode: { type: "string" },
+        object: { type: "string" },
+      },
+    },
+    pressureSources: { type: "array", items: { type: "string" } },
+    stakes: {
+      type: "object",
+      additionalProperties: false,
+      required: ["external", "relational", "internal"],
+      properties: {
+        external: { type: "string" },
+        relational: { type: "string" },
+        internal: { type: "string" },
+      },
+    },
+    worldConstraints: { type: "array", items: { type: "string" } },
+    changeHorizon: { type: "string" },
+    scale: bookScaleSchema,
+    language: { type: "string" },
+    toneRegister: { type: "string" },
+    extras: { type: "object", additionalProperties: true },
+    readiness: { type: "number" },
+  },
+};
+
+const mainLineBeatSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "id",
+    "chapterIndex",
+    "goal",
+    "mustCover",
+    "forbidden",
+    "change",
+    "endBoundary",
+    "endingOpenQuestion",
+  ],
+  properties: {
+    id: { type: "string" },
+    chapterIndex: { type: "integer", minimum: 1 },
+    goal: { type: "string" },
+    mustCover: { type: "array", items: { type: "string" } },
+    forbidden: { type: "array", items: { type: "string" } },
+    change: { type: "string" },
+    endBoundary: { type: "string" },
+    endingOpenQuestion: { type: "string" },
+  },
+};
+
+const mainLineSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "revisionId",
+    "title",
+    "summary",
+    "arcPromise",
+    "arcRules",
+    "startChapterIndex",
+    "endChapterIndex",
+    "beats",
+  ],
+  properties: {
+    revisionId: { type: "string" },
+    title: { type: "string" },
+    summary: { type: "string" },
+    arcPromise: { type: "string" },
+    arcRules: { type: "array", items: { type: "string" } },
+    startChapterIndex: { type: "integer", minimum: 1 },
+    endChapterIndex: { type: "integer", minimum: 1 },
+    beats: {
+      type: "array",
+      minItems: 10,
+      maxItems: 10,
+      items: mainLineBeatSchema,
+    },
+  },
+};
+
+const importEvidenceRefSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "chapterIndex", "snippet", "sourceHash"],
+  properties: {
+    id: { type: "string" },
+    chapterIndex: { type: "integer", minimum: 1 },
+    title: { type: "string" },
+    range: { type: "string" },
+    snippet: { type: "string", maxLength: 240 },
+    sourceHash: { type: "string" },
+  },
+};
+
+const importEvidenceSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "latestImportedChapterIndex",
+    "targetChapterIndex",
+    "sourceCoverage",
+    "refsByArtifactPath",
+    "uncertainClaims",
+    "forbiddenRetcons",
+    "resolvedThreads",
+    "activeThreads",
+    "styleSignals",
+  ],
+  properties: {
+    latestImportedChapterIndex: { type: "integer", minimum: 1 },
+    targetChapterIndex: { type: "integer", minimum: 1 },
+    sourceCoverage: { type: "object", additionalProperties: true },
+    refsByArtifactPath: {
+      type: "object",
+      additionalProperties: {
+        type: "array",
+        items: importEvidenceRefSchema,
+      },
+    },
+    uncertainClaims: { type: "array", items: { type: "string" } },
+    forbiddenRetcons: { type: "array", items: { type: "string" } },
+    resolvedThreads: { type: "array", items: { type: "string" } },
+    activeThreads: { type: "array", items: { type: "string" } },
+    styleSignals: { type: "array", items: { type: "string" } },
+  },
+};
+
 const contextReadTools: LLMToolDefinition[] = [
   createTool(
     "read_book_contract",
@@ -402,28 +574,28 @@ export const SUBMIT_NEXT_CHAPTER_BRIEF_TOOL = createTool(
 
 export const SUBMIT_IMPORT_PLAN_UPDATE_TOOL = createTool(
   "submit_import_plan_update",
-  "Submit updated imported-book Contract and MainLine artifacts from the supplied source text. Use this when the import step asks for plan/canon updates.",
+  "Submit the current source-grounded imported-book BookContract, executable continuation MainLine, and ImportEvidence. Use this when the import step asks for plan/canon updates. These are full canonical artifact replacements, not patches.",
   {
-    contract: {
-      type: "object",
+    bookContract: {
+      ...bookContractSchema,
       description:
-        "Canonical BookContract-compatible imported canon. Include only source-grounded facts and continuity rules.",
-      additionalProperties: true,
+        "Strict BookContract reconstructed from the imported manuscript. Include source-grounded durable canon, no-rewrite boundaries, style/language, and continuation constraints.",
     },
     mainLine: {
-      type: "object",
+      ...mainLineSchema,
       description:
-        "Canonical MainLine-compatible continuation plan. It should explain current state, next-entry pressure, beats, and forbidden rewrites.",
-      additionalProperties: true,
+        "Strict executable MainLine for the next 10 chapters after the latest imported chapter. Do not retell imported chapters as future beats.",
     },
-    evidence: {
-      type: "array",
+    importEvidence: {
+      ...importEvidenceSchema,
       description:
-        "Short source evidence refs, chapter indexes, titles, snippets, or hashes that support the update.",
-      items: { type: "string" },
+        "Sidecar evidence refs for source-sensitive BookContract/MainLine claims. This is not a replacement planning model.",
     },
+    changedFields: { type: "array", items: { type: "string" } },
+    conflictNotes: { type: "array", items: { type: "string" } },
+    uncertaintyNotes: { type: "array", items: { type: "string" } },
   },
-  ["contract", "mainLine"],
+  ["bookContract", "mainLine", "importEvidence"],
 );
 
 export const SUBMIT_ROLLING_SNAPSHOT_TOOL = createTool(
@@ -535,7 +707,7 @@ export const CHAPTER_DRAFT_TOOLS: LLMToolDefinition[] = [
 export const IMPORTED_BOOK_KICKOFF_TOOLS: LLMToolDefinition[] = [
   createTool(
     "read_import_result",
-    "Read the imported-book ready projection: continuation plan, canonical writing artifacts, evidence index, latest imported chapter, and target chapter preview.",
+    "Read the imported-book ready projection: canonical writing artifacts, evidence index, latest imported chapter, and target chapter preview.",
     {},
   ),
   createTool(
@@ -558,35 +730,33 @@ export const IMPORTED_BOOK_KICKOFF_TOOLS: LLMToolDefinition[] = [
     ["chapterIndex"],
   ),
   createTool(
-    "update_import_continuation",
-    "Update the imported continuation plan and canonical writing-ready artifacts. Use this after the author changes future direction, canon boundaries, next chapter entry, or 6-10 chapter pressure.",
+    "update_import_writing_artifacts",
+    "Update the imported-book ready result after the author changes future direction, canon boundaries, next chapter entry, or near-term pressure. Submit strict full BookContract, MainLine, and ImportEvidence replacements. Only the listed canonical fields are accepted.",
     {
-      continuationPlan: {
-        type: "object",
+      bookContract: {
+        ...bookContractSchema,
         description:
-          "Imported continuation plan focused on how to continue the book: overall next-volume direction, next chapter index/cut-in, suggested direction, 6-10 chapter pressure, forbidden boundaries, and optional overview.",
-        additionalProperties: true,
+          "Strict full replacement BookContract for the revised imported ready result.",
       },
-      contractPatch: {
-        type: "object",
+      mainLine: {
+        ...mainLineSchema,
         description:
-          "Optional canonical BookContract patch when canon, no-rewrite rules, language, tone, or long-horizon promise changes.",
-        additionalProperties: true,
+          "Strict full replacement MainLine for the revised imported ready result.",
       },
-      mainLinePatch: {
-        type: "object",
+      importEvidence: {
+        ...importEvidenceSchema,
         description:
-          "Optional canonical MainLine patch when future writing direction, chapter range, arcPromise, arcRules, or beats change.",
-        additionalProperties: true,
+          "Evidence supporting revised source-sensitive claims.",
       },
       evidenceRefs: {
         type: "array",
         description: "Evidence refs from read_import_result/search/read chapter supporting the update.",
         items: { type: "string" },
       },
+      changedFields: { type: "array", items: { type: "string" } },
       reason: { type: "string" },
     },
-    ["continuationPlan", "reason"],
+    ["bookContract", "mainLine", "importEvidence", "reason"],
   ),
   ...interactionTools,
   readyCheckpointTool,
