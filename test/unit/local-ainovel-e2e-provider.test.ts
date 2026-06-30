@@ -179,6 +179,61 @@ test("local AINovel E2E provider returns a pass decision for content safety", as
   });
 });
 
+test("local AINovel E2E provider submits every required import tool in one turn", async () => {
+  const provider = new LocalAiNovelE2eProvider();
+  const events = await collectStream(
+    provider.stream({
+      model: {
+        provider: "bailian",
+        modelKey: "ainovel-plus-reasoning",
+        modelKeyKind: "scene_route",
+        resolvedModelKey: "qwen3.6-plus",
+        providerModel: "qwen3.6-plus",
+      },
+      messages: [
+        {
+          role: "user",
+          content:
+            "Step: read_aligned_recent_batch\nReading chapters 10..12 for import.",
+        },
+      ],
+      providerOptions: {
+        tools: [
+          "submit_import_plan_update",
+          "submit_chapter_summaries",
+          "submit_snapshot",
+        ].map((name) => ({ type: "function", function: { name } })),
+      },
+    } satisfies ResolvedLLMCompletionRequest),
+  );
+
+  const toolCalls = events.filter((event) => event.type === "tool_call");
+  assert.deepEqual(
+    toolCalls.map((event) => event.toolCall.name),
+    [
+      "submit_import_plan_update",
+      "submit_chapter_summaries",
+      "submit_snapshot",
+    ],
+  );
+  const planUpdate = toolCalls[0].toolCall.input as Record<string, unknown>;
+  assert.equal(
+    (planUpdate.importEvidence as Record<string, unknown>)
+      .latestImportedChapterIndex,
+    12,
+  );
+  assert.equal(
+    (planUpdate.mainLine as Record<string, unknown>).startChapterIndex,
+    13,
+  );
+  const summaries = (toolCalls[1].toolCall.input as Record<string, unknown>)
+    .summaries as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    summaries.map((item) => item.chapterIndex),
+    [10, 11, 12],
+  );
+});
+
 test("local AINovel E2E provider exercises chapter draft reasoning replay", async () => {
   const provider = new LocalAiNovelE2eProvider();
   const firstEvents = await collectStream(
