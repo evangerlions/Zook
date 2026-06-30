@@ -27,9 +27,11 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
   async complete(
     request: ResolvedLLMCompletionRequest,
   ): Promise<LLMCompletionResult> {
-    const toolName = firstSubmitToolName(request.providerOptions);
-    if (toolName) {
-      return this.completionWithToolCall(request, toolName);
+    const submitToolNames = submitToolNamesFromProviderOptions(
+      request.providerOptions,
+    );
+    if (submitToolNames.length > 0) {
+      return this.completionWithToolCalls(request, submitToolNames);
     }
 
     return {
@@ -86,22 +88,21 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
       return;
     }
 
-    const toolName = firstSubmitToolName(request.providerOptions);
-    if (toolName) {
+    const submitToolNames = submitToolNamesFromProviderOptions(
+      request.providerOptions,
+    );
+    if (submitToolNames.length > 0) {
       yield this.reasoningDelta(
-        `本地 E2E 推理：读取上下文后提交 ${toolName} 结构化结果。`,
+        `本地 E2E 推理：读取上下文后提交 ${submitToolNames.join(", ")} 结构化结果。`,
       );
-      yield* this.toolArgumentDeltas(
-        toolName,
-        forcedStructuredToolPayload(toolName),
-      );
-      yield {
-        type: "tool_call",
-        toolCall: this.toolCall(
-          toolName,
-          forcedStructuredToolPayload(toolName),
-        ),
-      };
+      for (const toolName of submitToolNames) {
+        const payload = forcedStructuredToolPayload(toolName, request);
+        yield* this.toolArgumentDeltas(toolName, payload);
+        yield {
+          type: "tool_call",
+          toolCall: this.toolCall(toolName, payload),
+        };
+      }
       yield this.usage();
       yield { type: "done", finishReason: "tool_calls" };
       return;
@@ -166,18 +167,18 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
     };
   }
 
-  private completionWithToolCall(
+  private completionWithToolCalls(
     request: ResolvedLLMCompletionRequest,
-    toolName: string,
+    toolNames: string[],
   ): LLMCompletionResult {
     return {
       provider: request.model.provider,
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       text: "",
-      toolCalls: [
-        this.toolCall(toolName, forcedStructuredToolPayload(toolName)),
-      ],
+      toolCalls: toolNames.map((toolName) =>
+        this.toolCall(toolName, forcedStructuredToolPayload(toolName, request)),
+      ),
       finishReason: "tool_calls",
       providerRequestId: "local-e2e-tool",
     };
@@ -321,10 +322,10 @@ function isKickoffToolSet(toolNames: string[]): boolean {
   );
 }
 
-function firstSubmitToolName(
+function submitToolNamesFromProviderOptions(
   providerOptions: Record<string, unknown> | undefined,
-): string | undefined {
-  return toolNamesFromProviderOptions(providerOptions).find((name) =>
+): string[] {
+  return toolNamesFromProviderOptions(providerOptions).filter((name) =>
     name.startsWith("submit_"),
   );
 }
@@ -453,6 +454,7 @@ function kickoffAskQuestionPayload(): Record<string, unknown> {
 
 function forcedStructuredToolPayload(
   toolName: string,
+  request?: ResolvedLLMCompletionRequest,
 ): Record<string, unknown> {
   if (toolName === "submit_content_safety_decision") {
     return {
@@ -470,8 +472,10 @@ function forcedStructuredToolPayload(
     };
   }
   if (toolName === "submit_import_plan_update") {
+    const importRange = importChapterRangeFromRequest(request);
+    const targetChapterIndex = importRange.latestImportedChapterIndex + 1;
     return {
-      contract: {
+      bookContract: {
         revisionId: "local-import-contract",
         storyPromise: "仅依据导入正文延续忠奸对抗与群像命运。",
         storyAnchors: [
@@ -481,8 +485,39 @@ function forcedStructuredToolPayload(
             rules: ["后续续写不得重写已经导入的关键结局。"],
           },
         ],
+        focalization: "沿用导入正文的群像视角。",
+        startState: `已导入第 ${importRange.latestImportedChapterIndex} 章，续写从第 ${targetChapterIndex} 章开始。`,
+        trigger: "最新导入章节后的新压力出现。",
+        drive: {
+          mode: "continue_imported_story",
+          object: "承接导入正文继续推进下一卷压力。",
+        },
+        pressureSources: ["导入章节留下的未解压力"],
+        stakes: {
+          external: "外部冲突继续扩大。",
+          relational: "人物关系不能被重置。",
+          internal: "人物动机承接导入章节。",
+        },
+        worldConstraints: ["不得凭空推翻已导入事实。"],
+        changeHorizon: "规划接下来十章的续写推进。",
+        scale: {
+          length: { preset: "long", note: "导入长篇续写" },
+          chapterLength: {
+            preset: "standard",
+            minChars: 2500,
+            maxChars: 4500,
+            note: "本地验证章节长度",
+          },
+          pov: { preset: "ensemble_pov", note: "沿用群像" },
+          threadDensity: {
+            preset: "main_with_subthreads",
+            note: "主线带支线",
+          },
+          pace: { preset: "moderate", note: "平稳推进" },
+        },
         language: "zh-Hans",
         toneRegister: "原书气口",
+        extras: {},
         readiness: 0.82,
       },
       mainLine: {
@@ -491,46 +526,89 @@ function forcedStructuredToolPayload(
         summary: "本地导入流程已整理已读正文，并准备从最新章节之后继续。",
         arcPromise: "后续只推进导入正文之后的新压力。",
         arcRules: ["不得凭空推翻已导入事实。"],
-        startChapterIndex: 2,
-        endChapterIndex: 7,
-        beats: [
-          {
-            id: "local-import-next",
-            chapterIndex: 2,
-            goal: "承接最新导入章节后的余波。",
+        startChapterIndex: targetChapterIndex,
+        endChapterIndex: targetChapterIndex + 9,
+        beats: Array.from({ length: 10 }, (_, index) => {
+          const chapterIndex = targetChapterIndex + index;
+          return {
+            id: `local-import-chapter-${chapterIndex}`,
+            chapterIndex,
+            goal:
+              chapterIndex === targetChapterIndex
+                ? "承接最新导入章节后的余波。"
+                : `推进第 ${chapterIndex} 章续写压力。`,
             mustCover: ["交代当前人物状态"],
             forbidden: ["重写已导入结局"],
-            change: "建立新的续写压力。",
-            endBoundary: "停在新压力出现。",
+            change: "建立并推进新的续写压力。",
+            endBoundary: "停在新压力继续扩大的节点。",
             endingOpenQuestion: "新压力会把人物推向何处？",
-          },
-        ],
+          };
+        }),
       },
-      evidence: ["local imported chapter 1"],
+      importEvidence: {
+        latestImportedChapterIndex: importRange.latestImportedChapterIndex,
+        targetChapterIndex,
+        sourceCoverage: {
+          importedRanges: [`1..${importRange.latestImportedChapterIndex}`],
+          currentRange: `${importRange.startChapterIndex}..${importRange.endChapterIndex}`,
+          finalHotRange: `${Math.max(1, importRange.latestImportedChapterIndex - 2)}..${importRange.latestImportedChapterIndex}`,
+        },
+        refsByArtifactPath: {
+          "/bookContract/storyPromise": [
+            {
+              id: "local-import-evidence-1",
+              chapterIndex: importRange.latestImportedChapterIndex,
+              title: `第 ${importRange.latestImportedChapterIndex} 章`,
+              snippet: `第 ${importRange.latestImportedChapterIndex} 章以前的导入正文提供续写边界。`,
+              sourceHash: `local-import-chapter-${importRange.latestImportedChapterIndex}`,
+            },
+          ],
+          "/mainLine/summary": [
+            {
+              id: "local-import-evidence-2",
+              chapterIndex: importRange.latestImportedChapterIndex,
+              title: `第 ${importRange.latestImportedChapterIndex} 章`,
+              snippet: "续写从最新章节之后继续。",
+              sourceHash: `local-import-chapter-${importRange.latestImportedChapterIndex}`,
+            },
+          ],
+        },
+        uncertainClaims: [],
+        forbiddenRetcons: ["不得重写已导入结局"],
+        resolvedThreads: [],
+        activeThreads: ["新续写压力尚未展开"],
+        styleSignals: ["延续原书气口"],
+      },
+      changedFields: ["/bookContract/storyPromise", "/mainLine/summary"],
+      conflictNotes: [],
+      uncertaintyNotes: [],
     };
   }
   if (toolName === "submit_rolling_snapshot") {
+    const importRange = importChapterRangeFromRequest(request);
     return {
       snapshot:
         "本地导入正文已建立核心冲突、人物状态和续写边界；后续只能在最新已导入章节之后推进。",
-      evidence: ["local imported chapter 1"],
-      sourceRange: { startChapterIndex: 1, endChapterIndex: 1 },
+      evidence: [`local imported chapters ${importRange.startChapterIndex}..${importRange.endChapterIndex}`],
+      sourceRange: {
+        startChapterIndex: importRange.startChapterIndex,
+        endChapterIndex: importRange.endChapterIndex,
+      },
     };
   }
   if (toolName === "submit_chapter_summaries") {
+    const importRange = importChapterRangeFromRequest(request);
     return {
-      summaries: [
-        {
-          chapterIndex: 1,
-          title: "第一章",
-          summary: "第一章建立导入故事的起点、冲突和人物关系。",
-          facts: {
-            characters: ["导入主角群"],
-            stakes: ["续写不能改写已导入事实"],
-          },
-          evidence: ["local imported chapter 1"],
+      summaries: chapterIndexes(importRange).map((chapterIndex) => ({
+        chapterIndex,
+        title: `第 ${chapterIndex} 章`,
+        summary: `第 ${chapterIndex} 章延续导入正文的人物关系、冲突压力和续写边界。`,
+        facts: {
+          characters: ["导入主角群"],
+          stakes: ["续写不能改写已导入事实"],
         },
-      ],
+        evidence: [`local imported chapter ${chapterIndex}`],
+      })),
     };
   }
   if (toolName === "submit_chapter_review") {
@@ -559,16 +637,94 @@ function forcedStructuredToolPayload(
     };
   }
   if (toolName === "submit_hot_handoff") {
+    const importRange = importChapterRangeFromRequest(request);
+    const targetChapterIndex = importRange.latestImportedChapterIndex + 1;
     return {
-      targetChapterIndex: 2,
+      targetChapterIndex,
       handoff: "从最新导入章节之后继续，保留已导入人物状态和未解决压力。",
       unresolvedThreads: ["新续写压力尚未展开"],
       characterStates: ["导入主角群：保持最新导入章节后的状态"],
       styleSignals: ["延续原书气口"],
-      evidence: ["local imported chapter 1"],
+      evidence: [`local imported chapter ${importRange.latestImportedChapterIndex}`],
     };
   }
   return { ok: true };
+}
+
+interface ImportChapterRange {
+  startChapterIndex: number;
+  endChapterIndex: number;
+  latestImportedChapterIndex: number;
+}
+
+function importChapterRangeFromRequest(
+  request: ResolvedLLMCompletionRequest | undefined,
+): ImportChapterRange {
+  const text = latestUserContent(request);
+  const explicitRange = lastExplicitChapterRange(text);
+  if (explicitRange) {
+    return explicitRange;
+  }
+
+  const indexes = Array.from(
+    text.matchAll(/"(?:chapterIndex|index|originalIndex)"\s*:\s*(\d+)/g),
+    (match) => Number.parseInt(match[1] ?? "", 10),
+  ).filter((value) => Number.isInteger(value) && value > 0);
+  if (indexes.length > 0) {
+    const start = Math.min(...indexes);
+    const end = Math.max(...indexes);
+    return {
+      startChapterIndex: start,
+      endChapterIndex: end,
+      latestImportedChapterIndex: end,
+    };
+  }
+
+  return {
+    startChapterIndex: 1,
+    endChapterIndex: 1,
+    latestImportedChapterIndex: 1,
+  };
+}
+
+function latestUserContent(
+  request: ResolvedLLMCompletionRequest | undefined,
+): string {
+  const latestUser = [...(request?.messages ?? [])]
+    .reverse()
+    .find((message) => message.role === "user");
+  return latestUser?.content ?? "";
+}
+
+function lastExplicitChapterRange(text: string): ImportChapterRange | undefined {
+  const ranges = Array.from(
+    text.matchAll(/chapters?\s+(\d+)\s*(?:\.\.|-|to|至|到)\s*(\d+)/gi),
+  );
+  const last = ranges.at(-1);
+  if (!last) {
+    return undefined;
+  }
+  const left = Number.parseInt(last[1] ?? "", 10);
+  const right = Number.parseInt(last[2] ?? "", 10);
+  if (!Number.isInteger(left) || !Number.isInteger(right) || left <= 0 || right <= 0) {
+    return undefined;
+  }
+  const start = Math.min(left, right);
+  const end = Math.max(left, right);
+  return {
+    startChapterIndex: start,
+    endChapterIndex: end,
+    latestImportedChapterIndex: end,
+  };
+}
+
+function chapterIndexes(range: ImportChapterRange): number[] {
+  return Array.from(
+    {
+      length: range.endChapterIndex - range.startChapterIndex + 1,
+    },
+    (_, index) => range.startChapterIndex + index,
+  );
 }
 
 function toolProgressSpec(
