@@ -308,9 +308,16 @@ function summarizeNonSystemChatContext(
   body: Record<string, unknown>,
 ): string[] {
   const messages = Array.isArray(body.messages) ? body.messages : [];
+  const toolNamesById = new Map<string, string>();
   return messages.flatMap((message, index) => {
     if (!isChatMessageRecord(message) || message.role === "system") {
       return [];
+    }
+    if (message.role === "assistant") {
+      return summarizeAssistantChatMessage(message, index, toolNamesById);
+    }
+    if (message.role === "tool") {
+      return [summarizeToolChatMessage(message, index, toolNamesById)];
     }
     const content = stringifyChatMessageContent(message.content);
     const preview = previewLongContent(content);
@@ -320,6 +327,75 @@ function summarizeNonSystemChatContext(
 
 function isChatMessageRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function summarizeAssistantChatMessage(
+  message: Record<string, unknown>,
+  index: number,
+  toolNamesById: Map<string, string>,
+): string[] {
+  const content = stringifyChatMessageContent(message.content);
+  const toolCalls = readToolCallRecords(message.tool_calls);
+  const summaries: string[] = [];
+  if (content.trim() || toolCalls.length === 0) {
+    summaries.push(`[${index}][assistant] ${previewLongContent(content)}`);
+  }
+  for (const toolCall of toolCalls) {
+    const toolName = readToolCallName(toolCall) ?? "unknown";
+    rememberToolCallName(toolCall, toolName, toolNamesById);
+    summaries.push(
+      `[${index}][assistant][${toolName}] ${previewLongContent(readToolCallArguments(toolCall))}`,
+    );
+  }
+  return summaries;
+}
+
+function summarizeToolChatMessage(
+  message: Record<string, unknown>,
+  index: number,
+  toolNamesById: Map<string, string>,
+): string {
+  const toolCallId =
+    typeof message.tool_call_id === "string" ? message.tool_call_id : "";
+  const toolName = toolNamesById.get(toolCallId);
+  const label = toolName ? `[${index}][tool][${toolName}]` : `[${index}][tool]`;
+  const content = stringifyChatMessageContent(message.content);
+  return `${label} ${previewLongContent(content)}`;
+}
+
+function readToolCallRecords(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter(isChatMessageRecord);
+}
+
+function readToolCallName(toolCall: Record<string, unknown>): string | undefined {
+  const functionRecord = toolCall.function;
+  if (!isChatMessageRecord(functionRecord)) {
+    return undefined;
+  }
+  const name = functionRecord.name;
+  return typeof name === "string" && name.trim() ? name : undefined;
+}
+
+function readToolCallArguments(toolCall: Record<string, unknown>): string {
+  const functionRecord = toolCall.function;
+  if (!isChatMessageRecord(functionRecord)) {
+    return "";
+  }
+  return stringifyChatMessageContent(functionRecord.arguments);
+}
+
+function rememberToolCallName(
+  toolCall: Record<string, unknown>,
+  toolName: string,
+  toolNamesById: Map<string, string>,
+): void {
+  const toolCallId = toolCall.id;
+  if (typeof toolCallId === "string" && toolCallId.trim()) {
+    toolNamesById.set(toolCallId, toolName);
+  }
 }
 
 function stringifyChatMessageContent(content: unknown): string {

@@ -741,6 +741,16 @@ test("bailian provider logs local provider request summary and tiny stream delta
               content: longUserMessage,
             },
             {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: "tool_question_1",
+                  name: "ask_question",
+                  input: { question: "你想从哪里开始？" },
+                },
+              ],
+            },
+            {
               role: "tool",
               toolCallId: "tool_question_1",
               content: '{"selectedOption":"故乡/故土"}',
@@ -775,11 +785,12 @@ test("bailian provider logs local provider request summary and tiny stream delta
     assert.deepEqual(systemPromptLog.systemPrompts, ["You are helpful."]);
     assert.equal(
       (systemPromptLog.bodySummary as Record<string, unknown>).messageCount,
-      3,
+      4,
     );
     assert.deepEqual(systemPromptLog.chatContext, [
       `[1][user] [${longUserMessage.length}]${"a".repeat(200)}<<<=======>>>${"z".repeat(200)}`,
-      '[2][tool] {"selectedOption":"故乡/故土"}',
+      '[2][assistant][ask_question] {"question":"你想从哪里开始？"}',
+      '[3][tool][ask_question] {"selectedOption":"故乡/故土"}',
     ]);
 
     const toolsContextLog = logger.records.find(
