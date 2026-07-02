@@ -45,10 +45,10 @@ export function buildDefaultSeed(
       {
         id: "ai_novel",
         code: "ai_novel",
-        name: "AI Novel",
+        name: "OrangeWrite",
         nameI18n: {
-          "zh-CN": "AI 小说",
-          "en-US": "AI Novel",
+          "zh-CN": "橘子写作",
+          "en-US": "OrangeWrite",
         },
         status: "ACTIVE",
         apiDomain: "ai-novel.example.com",

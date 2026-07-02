@@ -1,5 +1,4 @@
 import type {
-  AppRecord,
   AppUserRecord,
   DatabaseSeed,
   SmsVerificationRecord,
@@ -12,14 +11,18 @@ export async function seedPostgresDefaults(
   seed: DatabaseSeed,
   operations: {
     query: PostgresQuery;
-    insertApp(record: AppRecord): Promise<void>;
     insertUser(record: UserRecord): Promise<void>;
     insertAppUser(record: AppUserRecord): Promise<void>;
     insertSmsVerificationRecord(record: SmsVerificationRecord): Promise<void>;
   },
 ): Promise<void> {
   for (const record of seed.apps ?? []) {
-    await operations.insertApp(record);
+    await operations.query(
+      `INSERT INTO zook_apps (id, code, name, name_i18n, status, api_domain, join_mode, created_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8::timestamptz)
+       ON CONFLICT (id) DO NOTHING`,
+      [record.id, record.code, record.name, JSON.stringify(record.nameI18n), record.status, record.apiDomain ?? null, record.joinMode, record.createdAt],
+    );
   }
   for (const record of seed.users ?? []) {
     await operations.insertUser(record);
