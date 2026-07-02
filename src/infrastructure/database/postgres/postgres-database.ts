@@ -546,7 +546,6 @@ export class PostgresDatabase extends ApplicationDatabase {
     await this.withExclusiveSession(async () => {
       await seedPostgresDefaults(this.seed, {
         query: async (sql, values = []) => await this.query(sql, values),
-        insertApp: async (record) => await this.insertApp(record),
         insertUser: async (record) => await this.insertUser(record),
         insertAppUser: async (record) => await this.insertAppUser(record),
         insertSmsVerificationRecord: async (record) =>
