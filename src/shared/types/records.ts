@@ -292,6 +292,26 @@ export interface FeedbackAttachmentRecord {
   createdAt: string;
 }
 
+export interface AiNovelStatisticsSnapshotRecord {
+  appId: string;
+  userId: string;
+  totalWorks: number;
+  totalWords: number;
+  totalChapters: number;
+  activeWritingDays: number;
+  updatedAt: string;
+}
+
+export interface AiNovelDailyStatisticsRecord {
+  appId: string;
+  userId: string;
+  date: string;
+  words: number;
+  tokens: number;
+  active: boolean;
+  updatedAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -314,4 +334,6 @@ export interface DatabaseSeed {
   contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
   feedbackRecords?: FeedbackRecord[];
   feedbackAttachments?: FeedbackAttachmentRecord[];
+  aiNovelStatisticsSnapshots?: AiNovelStatisticsSnapshotRecord[];
+  aiNovelDailyStatistics?: AiNovelDailyStatisticsRecord[];
 }

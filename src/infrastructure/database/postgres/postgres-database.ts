@@ -2,6 +2,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { Pool, type PoolClient } from "pg";
 import type {
   AnalyticsEventRecord,
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -29,6 +31,7 @@ import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-d
 import { runPostgresMigrations } from "./migrate.ts";
 import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
+import { PostgresAiNovelStatisticsStore } from "./postgres-ai-novel-statistics.ts";
 import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
 import { PostgresFeedbackStore } from "./postgres-feedback.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
@@ -48,6 +51,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly feedback: PostgresFeedbackStore;
+  private readonly aiNovelStatistics: PostgresAiNovelStatisticsStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
 
@@ -58,6 +62,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     super();
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
+    this.aiNovelStatistics = new PostgresAiNovelStatisticsStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(
       async (sql, values = []) => await this.query(sql, values),
     );
@@ -465,17 +470,8 @@ export class PostgresDatabase extends ApplicationDatabase {
   } = {}): Promise<EmailDeliveryEventRecord[]> {
     return await this.emailDeliveryEvents.list(filter);
   }
-  override async insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): Promise<void> {
-    await this.feedback.insert(record, attachments);
-  }
-  override async listFeedbackRecords(filter: {
-    appId: string;
-    userId?: string;
-    ipHash?: string;
-    status?: FeedbackRecord["status"];
-    createdAtFromIso?: string;
-    limit?: number;
-  }): Promise<FeedbackRecord[]> {
+  override async insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): Promise<void> { await this.feedback.insert(record, attachments); }
+  override async listFeedbackRecords(filter: { appId: string; userId?: string; ipHash?: string; status?: FeedbackRecord["status"]; createdAtFromIso?: string; limit?: number }): Promise<FeedbackRecord[]> {
     return await this.feedback.list(filter);
   }
   override async updateFeedbackStatus(appId: string, feedbackId: string, status: FeedbackRecord["status"]): Promise<FeedbackRecord | undefined> {
@@ -486,6 +482,13 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async findFeedbackAttachment(appId: string, feedbackId: string, attachmentId: string): Promise<FeedbackAttachmentRecord | undefined> {
     return await this.feedback.findAttachment(appId, feedbackId, attachmentId);
+  }
+  override async upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): Promise<void> { await this.aiNovelStatistics.upsertSnapshot(record); }
+  override async findAiNovelStatisticsSnapshot(appId: string, userId: string): Promise<AiNovelStatisticsSnapshotRecord | undefined> { return await this.aiNovelStatistics.findSnapshot(appId, userId); }
+  override async upsertAiNovelDailyWritingStats(records: AiNovelDailyStatisticsRecord[]): Promise<void> { await this.aiNovelStatistics.upsertDailyWritingStats(records); }
+  override async incrementAiNovelDailyTokenUsage(appId: string, userId: string, date: string, tokens: number, updatedAt: string): Promise<void> { await this.aiNovelStatistics.incrementDailyTokenUsage(appId, userId, date, tokens, updatedAt); }
+  override async listAiNovelDailyStatistics(filter: { appId: string; userId: string; dateFrom?: string; dateTo?: string }): Promise<AiNovelDailyStatisticsRecord[]> {
+    return await this.aiNovelStatistics.listDailyStatistics(filter);
   }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);
