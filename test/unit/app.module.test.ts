@@ -86,6 +86,34 @@ test("api health exposes the current runtime version", async () => {
   }
 });
 
+test("default seed keeps unlaunched FrogSleep out of existing app surfaces", async () => {
+  const runtime = await createApplication({
+    queueBackend: "memory",
+    databaseFactory: (seed) => new InMemoryDatabase(seed),
+  });
+
+  const apps = await runtime.database.listApps();
+  const appIds = apps.map((app) => app.id).sort();
+
+  assert.deepEqual(appIds, ["ai_novel", "app_a", "app_b"]);
+  assert.equal(await runtime.database.findApp("frogsleep"), undefined);
+  assert.equal((await runtime.database.findApp("app_a"))?.name, "App A");
+});
+
+test("FrogSleep can be explicitly enabled as an isolated app", async () => {
+  const runtime = await createApplication({
+    frogsleepEnabled: true,
+    queueBackend: "memory",
+    databaseFactory: (seed) => new InMemoryDatabase(seed),
+  });
+
+  const apps = await runtime.database.listApps();
+  const appIds = apps.map((app) => app.id).sort();
+
+  assert.deepEqual(appIds, ["ai_novel", "app_a", "app_b", "frogsleep"]);
+  assert.equal((await runtime.database.findApp("frogsleep"))?.joinMode, "AUTO");
+});
+
 test("unknown API routes keep the route-not-found contract", async () => {
   const runtime = await createApplication({
     queueBackend: "memory",
@@ -102,6 +130,39 @@ test("unknown API routes keep the route-not-found contract", async () => {
   assert.equal(response.statusCode, 404);
   assert.equal(response.body.code, "REQ_INVALID_BODY");
   assert.match(response.body.message, /Request content is invalid|Route not found/);
+});
+
+test("FrogSleep v1 skeleton does not intercept unknown or existing Zook routes", async () => {
+  const runtime = await createApplication({
+    queueBackend: "memory",
+    databaseFactory: (seed) => new InMemoryDatabase(seed),
+  });
+
+  const unknownFrogSleepResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/v1/unknown-frogsleep-route",
+    headers: {},
+    requestId: "req_unknown_frogsleep_route",
+  } as never);
+  assert.equal(unknownFrogSleepResponse.statusCode, 404);
+  assert.equal(unknownFrogSleepResponse.body.code, "REQ_INVALID_BODY");
+
+  const healthResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/health",
+    headers: {},
+    requestId: "req_health_after_frogsleep_route",
+  } as never);
+  assert.equal(healthResponse.statusCode, 200);
+
+  const unknownApiResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/nope-after-frogsleep-route",
+    headers: {},
+    requestId: "req_unknown_api_after_frogsleep_route",
+  } as never);
+  assert.equal(unknownApiResponse.statusCode, 404);
+  assert.equal(unknownApiResponse.body.code, "REQ_INVALID_BODY");
 });
 
 test("generic encrypted AI route is not exposed outside documented AINovel endpoints", async () => {

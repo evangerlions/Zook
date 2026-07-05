@@ -3,6 +3,33 @@ import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.t
 import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
 import type { NotificationQueueResult } from "../shared/types.ts";
 import { randomId } from "../shared/utils.ts";
+import { FROGSLEEP_APP_ID } from "../modules/frogsleep/frogsleep-app.ts";
+import type { FrogSleepNotificationPayload } from "../modules/frogsleep/frogsleep-notifications.ts";
+
+export interface PushDispatchRequest {
+  appId: string;
+  userId: string;
+  platform: string;
+  pushToken: string;
+  payload: FrogSleepNotificationPayload;
+}
+
+export interface PushDispatcher {
+  dispatch(request: PushDispatchRequest): Promise<void>;
+}
+
+class LoggingPushDispatcher implements PushDispatcher {
+  constructor(private readonly logger: StructuredLogger) {}
+
+  async dispatch(request: PushDispatchRequest): Promise<void> {
+    this.logger.info("push notification dispatched", {
+      appId: request.appId,
+      userId: request.userId,
+      platform: request.platform,
+      notificationType: request.payload.type,
+    });
+  }
+}
 
 /**
  * NotificationService sends work to the queue and falls back to failed_events when enqueueing fails.
@@ -12,6 +39,7 @@ export class NotificationService {
     private readonly database: ApplicationDatabase,
     private readonly queue: JobQueue,
     private readonly logger: StructuredLogger,
+    private readonly pushDispatcher: PushDispatcher = new LoggingPushDispatcher(logger),
   ) {}
 
   async queueNotification(command: {
@@ -93,6 +121,11 @@ export class NotificationService {
       return;
     }
 
+    if (record.appId === FROGSLEEP_APP_ID && record.channel === "push") {
+      await this.processFrogSleepPushJob(job, record);
+      return;
+    }
+
     await this.database.updateNotificationJob(notificationJobId, {
       status: "SENT",
       retryCount: record.retryCount + 1,
@@ -103,5 +136,71 @@ export class NotificationService {
       jobName: job.name,
       userId: record.recipientUserId,
     });
+  }
+
+  private async processFrogSleepPushJob(
+    job: { id: string; name: string; payload: Record<string, unknown> },
+    record: {
+      id: string;
+      appId: string;
+      recipientUserId: string;
+      payload: Record<string, unknown>;
+      retryCount: number;
+    },
+  ): Promise<void> {
+    const payload = record.payload as unknown as FrogSleepNotificationPayload;
+    const devices = await this.database.listFrogSleepDevices({
+      appId: record.appId,
+      userId: record.recipientUserId,
+      pushEnabled: true,
+    });
+
+    if (devices.length === 0) {
+      await this.database.updateNotificationJob(record.id, {
+        status: "SENT",
+        retryCount: record.retryCount + 1,
+      });
+      this.logger.info("frogsleep push skipped without active devices", {
+        appId: record.appId,
+        jobId: job.id,
+        jobName: job.name,
+        userId: record.recipientUserId,
+      });
+      return;
+    }
+
+    try {
+      for (const device of devices) {
+        await this.pushDispatcher.dispatch({
+          appId: record.appId,
+          userId: record.recipientUserId,
+          platform: device.platform,
+          pushToken: device.pushToken,
+          payload,
+        });
+      }
+      await this.database.updateNotificationJob(record.id, {
+        status: "SENT",
+        retryCount: record.retryCount + 1,
+      });
+    } catch (error) {
+      await this.database.updateNotificationJob(record.id, {
+        status: "FAILED",
+        retryCount: record.retryCount + 1,
+      });
+      await this.database.insertFailedEvent({
+        id: randomId("failed_event"),
+        appId: record.appId,
+        eventType: "notification.send",
+        payload: {
+          notificationJobId: record.id,
+          jobPayload: job.payload,
+        },
+        errorMessage: error instanceof Error ? error.message : "Push dispatch failed",
+        retryCount: 0,
+        nextRetryAt: new Date(Date.now() + 60 * 1000).toISOString(),
+        createdAt: new Date().toISOString(),
+      });
+    }
   }
 }

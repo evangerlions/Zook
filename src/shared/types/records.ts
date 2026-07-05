@@ -117,6 +117,74 @@ export interface NotificationJobRecord {
   retryCount: number;
 }
 
+export interface FrogSleepDeviceRecord {
+  id: string;
+  appId: string;
+  userId: string;
+  platform: "ios" | "android" | "web";
+  pushToken: string;
+  appVersion?: string;
+  timezone?: string;
+  pushEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export type FrogSleepEntityKind =
+  | "sleep_invite"
+  | "sleep_relationship"
+  | "guardianship_preference"
+  | "sleep_session"
+  | "sleep_event"
+  | "sleep_summary"
+  | "night_recap"
+  | "focus_profile"
+  | "focus_relationship"
+  | "focus_invite"
+  | "focus_session"
+  | "focus_shared_moment"
+  | "focus_message"
+  | "focus_milestone";
+
+export interface FrogSleepEntityRecord {
+  id: string;
+  appId: string;
+  kind: FrogSleepEntityKind;
+  ownerUserId?: string;
+  partnerUserId?: string;
+  relationshipId?: string;
+  sessionId?: string;
+  status?: string;
+  code?: string;
+  token?: string;
+  startsAt?: string;
+  endsAt?: string;
+  occurredAt?: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface FrogSleepEntityFilter {
+  appId: string;
+  kind?: FrogSleepEntityKind;
+  ownerUserId?: string;
+  partnerUserId?: string;
+  relationshipId?: string;
+  sessionId?: string;
+  status?: string;
+  code?: string;
+  token?: string;
+  startsAtFromIso?: string;
+  startsAtToIso?: string;
+  occurredAtFromIso?: string;
+  occurredAtToIso?: string;
+  includeDeleted?: boolean;
+  limit?: number;
+}
+
 export interface FailedEventRecord {
   id: string;
   appId: string;

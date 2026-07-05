@@ -237,6 +237,10 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
       [AI_TEST_KEY_ID]: aiKey.base64,
     },
   });
+  await runtime.services.appRegistryService.ensureMembership(
+    "ai_novel",
+    "user_alice",
+  );
 
   await runtime.services.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -1124,6 +1128,10 @@ test("ai_novel audit-file endpoint requires ai_novel bearer auth", async () => {
 test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session path", async () => {
   const root = await mkdtemp(join(tmpdir(), "zook-audit-file-"));
   const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+  await runtime.services.appRegistryService.ensureMembership(
+    "ai_novel",
+    "user_alice",
+  );
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "ai_novel",
@@ -4131,6 +4139,62 @@ test("ai_novel routes enforce app scope when bearer auth is present", async () =
 
   assert.equal(response.statusCode, 403);
   assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
+});
+
+test("ai_novel routes require active app membership", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  runtime.database.updateAppUserStatus("ai_novel", "user_alice", "DELETED");
+  const deletedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "chapter_summary",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+  assert.equal(deletedResponse.statusCode, 403);
+  assert.equal(deletedResponse.body.code, "APP_MEMBER_DELETED");
+
+  runtime.database.updateAppUserStatus("ai_novel", "user_alice", "BLOCKED");
+  const blockedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "chapter_summary",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+  assert.equal(blockedResponse.statusCode, 403);
+  assert.equal(blockedResponse.body.code, "APP_MEMBER_BLOCKED");
 });
 
 test("ai_novel routes reject unknown encryption keys before entering AI flow", async () => {

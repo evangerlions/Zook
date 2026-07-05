@@ -181,6 +181,13 @@ export class AuthService {
     return await this.emailFlow.loginEmailCode(command, now);
   }
 
+  async emailChangeCode(
+    command: EmailLoginCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    return await this.emailFlow.emailChangeCode(command, now);
+  }
+
   async register(
     command: RegisterCommand,
     now = new Date(),
@@ -193,6 +200,20 @@ export class AuthService {
     now = new Date(),
   ): Promise<{ session: AuthSession; autoCreatedUser: boolean }> {
     return await this.emailFlow.loginWithEmailCode(command, now);
+  }
+
+  async verifyEmailLoginCode(
+    command: EmailLoginCommand,
+    now = new Date(),
+  ): Promise<void> {
+    await this.emailFlow.verifyEmailLoginCode(command, now);
+  }
+
+  async verifyEmailChangeCode(
+    command: EmailLoginCommand,
+    now = new Date(),
+  ): Promise<void> {
+    await this.emailFlow.verifyEmailChangeCode(command, now);
   }
 
   async registerSmsCode(

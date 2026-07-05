@@ -14,7 +14,20 @@ export type NotificationStatus =
   | "FAILED"
   | "ENQUEUE_FAILED";
 export type ClientType = "web" | "app";
-export type EventName = "page_view" | "page_leave" | "page_heartbeat";
+export type EventName =
+  | "page_view"
+  | "page_leave"
+  | "page_heartbeat"
+  | "frogsleep_sleep_invite_created"
+  | "frogsleep_sleep_invite_accepted"
+  | "frogsleep_sleep_invite_declined"
+  | "frogsleep_session_started"
+  | "frogsleep_session_interrupted"
+  | "frogsleep_session_returned"
+  | "frogsleep_morning_completed"
+  | "frogsleep_focus_session_reported"
+  | "frogsleep_focus_relationship_created"
+  | "frogsleep_focus_achievement_unlocked";
 export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
 export type LlmRoutingStrategy = "auto" | "fixed";
