@@ -40,6 +40,13 @@
 平台能力平台化，产品能力产品化。
 ```
 
+路径决策规则：
+
+1. 如果接口是可复用平台能力，使用 `/api/v1/{commonScope}/...`，例如 `/api/v1/auth/...`、`/api/v1/users/...`、`/api/v1/logs/...`。
+2. 如果接口是某个产品独有的业务能力，必须使用 `/api/v1/{productKey}/...`，例如 `/api/v1/ai_novel/...`、`/api/v1/frogsleep/...`。
+3. 非标准历史路径只能作为临时兼容 alias，不能作为新客户端 canonical path；文档中必须同时写出 canonical `/api/v1/{productKey}/...` 路径。
+4. `productKey` 是 URL namespace；`appId` 是 token、membership、配置与数据隔离使用的运行时作用域键。通常二者相同，但文档模板中路径写 `productKey`，鉴权/数据作用域写 `appId`。
+
 ## 3. 路径分层
 
 | 层级         | Path 模板                   | 说明                           | 示例                   |
@@ -76,6 +83,26 @@ POST   /api/v1/my-todo/todos
 GET    /api/v1/my-todo/todos/{todoId}
 PATCH  /api/v1/my-todo/todos/{todoId}
 DELETE /api/v1/my-todo/todos/{todoId}
+```
+
+如果新增产品 key 为 `frogsleep`，canonical 路径应类似：
+
+```text
+POST   /api/v1/frogsleep/auth/password/login
+GET    /api/v1/frogsleep/me
+POST   /api/v1/frogsleep/devices
+POST   /api/v1/frogsleep/sleep-buddy/invites
+POST   /api/v1/frogsleep/sleep-buddy/shared-sessions
+POST   /api/v1/frogsleep/focus-buddy/sessions
+POST   /api/v1/frogsleep/focus-buddy/match-profile
+```
+
+不要把产品业务 canonical 路径设计成：
+
+```text
+/v1/...
+/api/v1/sleep-buddy/...
+/api/v1/focus-buddy/...
 ```
 
 ### 4.2 产品公开接口

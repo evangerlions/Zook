@@ -9,6 +9,14 @@
 - 如果改动的是某个复杂公共协议专题，例如扫码登录这类单独流程，除总入口文档外，还应同步更新对应的 `docs/public-*` 专题文档。
 - 不允许出现“代码已改，但文档后补”的收尾方式；接口改动必须在同一轮任务里完成文档同步。
 
+## API Path Shape
+
+- 新增产品业务 API 必须使用 `/api/v1/{productKey}/...`，例如 `/api/v1/ai_novel/...` 或 `/api/v1/frogsleep/...`。
+- 根路径 `/api/v1/{commonScope}/...` 只用于可复用的平台公共能力，例如 `auth`、`users`、`files`、`logs`、`notifications`、`analytics`。
+- 不要把某个产品独有的业务接口加到 `/v1/*` 或根层 `/api/v1/{capability}/...`。
+- 如果为了兼容旧客户端必须保留非标准路径，它只能作为临时 alias；必须在 `README_API.md` 中明确标注为兼容路径、非 canonical 路径，并同时提供 canonical `/api/v1/{productKey}/...` 路径。
+- URL 中的 `{productKey}` 是产品 API namespace；运行时鉴权仍以 token/app membership 中的 `appId` 为准。不要把“appId 是鉴权真值”误读成“产品业务路径可以省略 productKey”。
+
 ## Backend service lifetime
 
 - 后端 provider / manager / service 可以在 application factory 中创建一次并复用，前提是实例字段只保存稳定依赖或配置，例如 logger、database handle、fetch implementation、base URL、API key、静态 parser / mapper。

@@ -188,12 +188,13 @@ flowchart LR
 
 ### 8.3 单域名部署规则
 
-1. 当所有 app 共用一个 API 域名时，不通过 URL 路径区分 app。
+1. 当所有 app 共用一个 API 域名时，不通过 URL 路径决定鉴权真值；产品业务 API 仍应使用 `/api/v1/{productKey}/...` 作为稳定 namespace。
 2. 登录前接口（如 `POST /api/v1/auth/login`）由请求体中的 `appId` 识别目标 app；若存在可信代理注入的 `X-App-Id`，仅用于校验或透传。
 3. 登录成功后，服务端必须将 `app_id` 写入 access token 与 refresh token。
 4. 登录后接口统一以 token 中的 `app_id` 为真值，不以请求体、查询参数或普通客户端自带 header 为真值。
 5. 若请求中同时出现 `X-App-Id` 与 token `app_id`，且两者不一致，则返回 `403`。
 6. 单域名 `MVP` 默认规则：登录前看 `body.appId`，登录后看 `token.app_id`，`X-App-Id` 为可选校验字段。
+7. 换句话说，URL 中的 `{productKey}` 用于 API 组织和产品边界表达，不能替代 token/app membership 中的 `appId` 鉴权检查。
 
 ## 9. IAM 作用域与权限规则
 
