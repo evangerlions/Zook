@@ -230,6 +230,34 @@
 4. `src/modules/ai-novel/ai-novel-llm.service.ts`
 5. `src/app.module.ts`
 
+### 2.15 FrogSleep 多 App 兼容后端
+
+当前 `frogsleep` 已作为 Zook app-scoped 产品接入，固定 app id 为 `frogsleep`。Zook 是当前多 app 注册、登录、session、refresh、app membership 与 FrogSleep 兼容层的后端所有者；FlutterDemo/AINovel 风格客户端继续走 `/api/v1/auth/*` 平台契约。所有 product-scoped 路由统一要求 token app scope 匹配、access token active、app 存在且当前用户 app membership active，避免已删除/封禁 membership 继续访问 ai_novel 或 FrogSleep 业务接口。FrogSleep 尚未默认线上开放，runtime 默认不 seed `frogsleep` app，也不分发 `/v1/*` FrogSleep 路由；需要 `FROGSLEEP_ENABLED=true` 或测试选项 `frogsleepEnabled: true` 显式启用。
+
+FrogSleep `/v1/*` 成功响应采用迁移期双兼容格式：保留 Zook 标准 `code + message + data + requestId` 响应包，同时把对象型 `data` 字段复制到响应根部，让旧 Sleep 客户端可以继续读取 Go 后端风格的 raw JSON 字段。对象型业务详情还会同时提供根对象和嵌套对象，例如根部 `session_id`、`relationship_id` 与 `summary` / `relationship` 容器并存；列表接口保持容器字段，例如 `sessions`、`moments`、`pending_invites`。该兼容行为只作用于 FrogSleep `/v1/*`；通用 `/api/v1/auth/*` 仍保持 Zook 平台响应契约。当前 iOS 项目使用的额外兼容字段也已纳入后端能力，包括 shared session 的 `shared_session_id`、`initiator_user_id`、`date_anchor`、`initiator_state`、`partner_state`，preferences 更新后的 `relationship` 容器，以及 focus invite/message/achievement 的 iOS 读取别名。
+
+已实现能力：
+
+1. 显式启用时在 seed/bootstrap 中注册 `frogsleep` app、默认角色和 `admin.delivery_config.inviteLinks`；默认关闭时 admin app 列表不出现 FrogSleep。
+2. `/v1/auth/*` 兼容邮箱验证码、无验证码注册发码、密码注册、密码登录、密码重置、密码修改、token refresh、logout，并支持 `identifier`、`email_code`、`verification_id` 等旧客户端字段别名；邮箱 bind/change 使用独立 `email-change` 验证码 purpose，由 `/v1/auth/email/change-code` 发码，email-login 验证码不能修改共享账号 email。
+3. `/v1/me`、`DELETE /v1/me/account`、邮箱 bind/change、`/v1/me/devices` app-scoped 设备注册与删除；账号删除要求请求体 `confirmation: "DELETE"`，只清理 FrogSleep membership、FrogSleep runtime data 和 FrogSleep sessions，保留共享用户、ai_novel membership/session/data 及其他 app membership。`/v1/auth/password/change` 修改共享 Zook 账号密码，会影响同一账号在其他 app 的密码登录；FrogSleep 专注匹配 `display_name` 等 profile 字段保存在 FrogSleep app-scoped entity payload，不写入共享 user。
+4. 睡眠搭子邀请、pending 查询、code/token/id 接受、拒绝、取消、当前关系、暂停、恢复、解除、守护偏好、共同守护 session、事件、暂停今晚、最新 summary/recap；守护偏好响应带回 `relationship`，共同守护 session 响应带 iOS 可解的发起人、双方状态和日期锚点 alias。
+5. 专注搭子 session 上报、历史查询、周统计、成就、匹配资料、匹配搜索、候选邀请、直接邀请、code/token 接受、关系动作、消息、presence、对比、共同专注时刻；专注关系动作仅允许 `accept`、`decline`、`revoke`，未知 action 不会落成解除关系；专注邀请、消息和成就响应同时提供 iOS 当前客户端读取的 alias。
+6. FrogSleep push payload 类型、通知入队、worker 设备分发、无设备成功收敛、provider 失败写入 failed event。
+7. 睡眠搭子和专注搭子邀请 HTTP 中转端点，302 跳转到 deep link。
+8. PostgreSQL migration `006_frogsleep_app.sql` 新增 `zook_frogsleep_*` 表；内存数据库同步实现对应测试存储。
+
+对应核心文件：
+
+1. `src/app/frogsleep-v1-routes.ts`
+2. `src/modules/frogsleep/frogsleep-app.ts`
+3. `src/modules/frogsleep/sleep-buddy/sleep-buddy.service.ts`
+4. `src/modules/frogsleep/focus-buddy/focus-buddy.service.ts`
+5. `src/modules/frogsleep/frogsleep-notifications.ts`
+6. `src/infrastructure/database/postgres/postgres-frogsleep.ts`
+7. `src/infrastructure/database/postgres/migrations/006_frogsleep_app.sql`
+8. `docs/public-frogsleep-invites.md`
+
 ## 3. 当前可用接口
 
 当前已经接入到应用入口中的接口包括：
@@ -289,6 +317,44 @@
 52. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
 
 账号删除当前按 app-scoped 语义实现：`users/me/delete` 会将当前 app membership 标记为 `DELETED`，撤销该 app 下用户 session，清理 app 侧 analytics、files metadata、client logs、notification jobs、user roles，并保留全局 `zook_users` 与 audit logs。
+
+FrogSleep 兼容接口已经接入应用入口，代表性接口包括：
+
+1. `POST /api/v1/frogsleep/auth/email/send-code`
+2. `POST /api/v1/frogsleep/auth/email/change-code`
+3. `POST /api/v1/frogsleep/auth/email/login`
+4. `POST /api/v1/frogsleep/auth/password/register`
+5. `POST /api/v1/frogsleep/auth/password/login`
+6. `POST /api/v1/frogsleep/auth/password/reset/request`
+7. `POST /api/v1/frogsleep/auth/password/reset/confirm`
+8. `POST /api/v1/frogsleep/auth/password/change`
+9. `POST /api/v1/frogsleep/auth/token/refresh`
+10. `POST /api/v1/frogsleep/auth/logout`
+11. `GET /api/v1/frogsleep/me`
+12. `DELETE /api/v1/frogsleep/me/account`
+13. `POST /api/v1/frogsleep/devices`
+14. `DELETE /api/v1/frogsleep/devices/{deviceId}`
+15. `POST /api/v1/frogsleep/sleep-buddy/invites`
+16. `GET /api/v1/frogsleep/sleep-buddy/invites/pending`
+17. `POST /api/v1/frogsleep/sleep-buddy/invites/accept-code`
+18. `POST /api/v1/frogsleep/sleep-buddy/invites/accept-token`
+19. `GET /api/v1/frogsleep/sleep-buddy/relationships/current`
+20. `GET /api/v1/frogsleep/sleep-buddy/guardianship/status`
+21. `POST /api/v1/frogsleep/sleep-buddy/shared-sessions`
+22. `GET /api/v1/frogsleep/sleep-buddy/shared-sessions/active`
+23. `GET /api/v1/frogsleep/sleep-buddy/shared-summaries/latest`
+24. `GET /api/v1/frogsleep/sleep-buddy/shared-recaps/latest`
+25. `POST /api/v1/frogsleep/focus-buddy/sessions`
+26. `GET /api/v1/frogsleep/focus-buddy/stats/week`
+27. `POST /api/v1/frogsleep/focus-buddy/match-profile`
+28. `POST /api/v1/frogsleep/focus-buddy/matches/search`
+29. `POST /api/v1/frogsleep/focus-buddy/matches/{userId}/invite`
+30. `POST /api/v1/frogsleep/focus-buddy/invites/accept-code`
+31. `GET /api/v1/frogsleep/focus-buddy/relationships/current`
+32. `POST /api/v1/frogsleep/focus-buddy/messages`
+33. `GET /api/v1/frogsleep/focus-buddy/shared`
+34. `GET /frogsleep/sleep-buddy-invite`
+35. `GET /frogsleep/focus-invite`
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。
@@ -356,6 +422,7 @@ src/
 │   ├── analytics/
 │   ├── app-registry/
 │   ├── auth/
+│   ├── frogsleep/
 │   ├── iam/
 │   └── user/
 ├── services/

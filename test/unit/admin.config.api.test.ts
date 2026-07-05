@@ -6,6 +6,7 @@ import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
 import { InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
+import { toDateKey } from "../../src/shared/utils.ts";
 import {
   TENCENT_SES_SECRET_ID_PASSWORD_KEY,
   TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
@@ -1927,6 +1928,12 @@ test("admin content safety config requires sensitive verification and stores pas
   assert.equal(unboundedStatsResponse.statusCode, 200);
   assert.equal(unboundedStatsResponse.body.data.summary.total, 1005);
 
+  const shanghaiDateKey = toDateKey(new Date());
+  const [shanghaiYear, shanghaiMonth, shanghaiDay] = shanghaiDateKey.split("-").map(Number);
+  const shanghai0030Iso = new Date(
+    Date.UTC(shanghaiYear, shanghaiMonth - 1, shanghaiDay, 0, 30) - 8 * 60 * 60 * 1000,
+  ).toISOString();
+
   runtime.database.insertContentSafetyCheckRecord({
     id: "csf_timezone_shanghai",
     appId: "admin",
@@ -1937,15 +1944,15 @@ test("admin content safety config requires sensitive verification and stores pas
     textLength: 2,
     textHash: "timezone_hash",
     metadata: {},
-    createdAt: "2026-05-20T16:30:00.000Z",
+    createdAt: shanghai0030Iso,
   });
 
   const shanghaiDateStatsResponse = await runtime.app.handle({
     method: "GET",
     path: "/api/v1/admin/apps/common/content-safety/stats",
     query: {
-      dateFrom: "2026-05-21",
-      dateTo: "2026-05-21",
+      dateFrom: shanghaiDateKey,
+      dateTo: shanghaiDateKey,
       source: "admin_test",
       taskType: "timezone_stats_test",
     },
@@ -1956,7 +1963,7 @@ test("admin content safety config requires sensitive verification and stores pas
 
   assert.equal(shanghaiDateStatsResponse.statusCode, 200);
   assert.equal(shanghaiDateStatsResponse.body.data.summary.total, 1);
-  assert.equal(shanghaiDateStatsResponse.body.data.daily[0].date, "2026-05-21");
+  assert.equal(shanghaiDateStatsResponse.body.data.daily[0].date, shanghaiDateKey);
   assert.equal(shanghaiDateStatsResponse.body.data.daily[0].total, 1);
 });
 

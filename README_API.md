@@ -236,10 +236,22 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片                                             |
+| `POST` | `/v1/auth/password/login`                  | FrogSleep 兼容密码登录，内部固定使用 `appId=frogsleep`                                                                               |
+| `POST` | `/v1/auth/token/refresh`                   | FrogSleep 兼容刷新 token                                                                                                             |
+| `GET`  | `/v1/me`                                   | FrogSleep 当前用户信息                                                                                                               |
+| `POST` | `/v1/me/devices`                           | FrogSleep 设备 / push token 注册                                                                                                     |
+| `POST` | `/v1/relationships/invites`                | FrogSleep 睡眠搭子邀请                                                                                                               |
+| `GET`  | `/v1/shared-guardianship/status`           | FrogSleep 共同守护状态快照                                                                                                           |
+| `POST` | `/v1/shared-sessions`                      | FrogSleep 创建共同守护 session                                                                                                       |
+| `POST` | `/v1/focus/sessions`                       | FrogSleep 专注 session 上报                                                                                                          |
+| `POST` | `/v1/focus/match-profile`                  | FrogSleep 专注搭子匹配资料保存                                                                                                       |
+| `POST` | `/v1/focus/matches/{userId}/invite`        | FrogSleep 邀请专注搭子候选人                                                                                                         |
+| `GET`  | `/frogsleep/sleep-buddy-invite`            | FrogSleep 睡眠搭子邀请浏览器中转，302 跳转到 deep link                                                                                |
+| `GET`  | `/frogsleep/focus-invite`                  | FrogSleep 专注搭子邀请浏览器中转，302 跳转到 deep link                                                                                |
 
 说明：
 
-1. 当前仓库已经挂出一个产品级薄代理示例：`ai_novel`，其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
+1. 当前仓库已经挂出产品级能力：`ai_novel` AI 接口，以及 FrogSleep `/v1/*` 兼容业务接口。其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
 3. 扫码登录的对外接入说明见 [docs/public-api-spec.md](docs/public-api-spec.md)。
 4. 邮箱验证码登录接口：
@@ -317,7 +329,259 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 29. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
 30. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点“查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
 
-## 8. 统一响应格式
+## 8. FrogSleep 兼容 API
+
+FrogSleep 是 Zook 的 app-scoped 产品，固定 app id 为：
+
+```text
+frogsleep
+```
+
+为兼容现有 FrogSleep 客户端，当前保留根路径 `/v1/*`。这些接口内部仍使用 Zook 共享账号、共享 Bearer token、app membership、通知队列和 worker。客户端不需要在 `/v1/auth/*` 公共接口里传 `appId`；服务端会自动按 `frogsleep` 处理。受保护接口必须使用 FrogSleep token，并要求当前用户仍是 active FrogSleep member；其他 app token 会返回 `403 AUTH_APP_SCOPE_MISMATCH`，已删除或封禁的 FrogSleep membership 会返回对应 app member 错误。
+
+FrogSleep 尚未作为线上产品默认开放。生产 / 默认 runtime 不会 seed `frogsleep` app，也不会分发 `/v1/*` FrogSleep 路由；需要通过 `FROGSLEEP_ENABLED=true` 或测试选项 `frogsleepEnabled: true` 显式启用。本地 iOS 联调启动 Zook 时应使用：
+
+```bash
+FROGSLEEP_ENABLED=true npm run dev
+```
+
+FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响应包 `code + message + data + requestId`，同时把对象型 `data` 字段复制到响应根部，方便仍按 Go 后端 raw JSON 解码的 Sleep 客户端读取 `access_token`、`refresh_token`、`user_id`、`device`、`status`、`relationship_id`、`session_id`、`summary`、`recap`、`moments` 等字段。错误响应仍使用 Zook 统一错误码；常见错误包括：请求体缺字段返回 `400 REQ_INVALID_BODY`；未带 Bearer token 返回 `401 AUTH_BEARER_REQUIRED`；token 非法或过期返回 `401 AUTH_INVALID_TOKEN`；非 FrogSleep app token 访问 `/v1/*` 保护接口返回 `403 AUTH_APP_SCOPE_MISMATCH`；重复关系、重复邮箱等业务冲突返回 `409`。
+
+对象型详情接口会同时返回根对象和嵌套对象。例如 `/v1/shared-summaries/latest` 同时包含根部 `session_id` 和 `summary.session_id`，并在 `data.summary.session_id` 下保留 Zook envelope 读法。列表接口使用根部容器字段，例如 `invites` / `pending_invites`、`sessions`、`achievements`、`candidates`、`messages`、`moments`；客户端不应假设这些列表接口返回裸数组。
+
+### 8.1 FrogSleep Auth / Me / Device
+
+| 方法 | Path | 说明 |
+| ---- | ---- | ---- |
+| `POST` | `/v1/auth/email/send-code` | 发送邮箱验证码 |
+| `POST` | `/v1/auth/email/auth-code` | 发送邮箱验证码，兼容旧命名 |
+| `POST` | `/v1/auth/email/change-code` | 已登录用户发送共享账号 email 变更验证码 |
+| `POST` | `/v1/auth/email/login` | 邮箱验证码登录 |
+| `POST` | `/v1/auth/email/complete` | 邮箱验证码登录，兼容旧命名 |
+| `POST` | `/v1/auth/email/verify` | 邮箱验证码登录，兼容旧命名 |
+| `POST` | `/v1/auth/email/register` | 无验证码时发送注册验证码；带验证码时邮箱 + 密码注册 |
+| `POST` | `/v1/auth/password/register` | 无验证码时发送注册验证码；带验证码时邮箱 + 密码注册 |
+| `POST` | `/v1/auth/password/login` | 密码登录 |
+| `POST` | `/v1/auth/password/reset/request` | 发送重置密码验证码 |
+| `POST` | `/v1/auth/password/reset/confirm` | 使用验证码重置密码 |
+| `POST` | `/v1/auth/password/change` | 已登录用户修改密码 |
+| `POST` | `/v1/auth/token/refresh` | 刷新 token |
+| `POST` | `/v1/auth/logout` | 登出 |
+| `GET` | `/v1/me` | 当前用户 |
+| `DELETE` | `/v1/me/account` | 删除当前 FrogSleep app membership 及 app-scoped 运行数据 |
+| `POST` | `/v1/auth/email/bind` | 使用新邮箱验证码修改当前共享账号 email |
+| `POST` | `/v1/auth/email/change` | 使用新邮箱验证码修改当前共享账号 email |
+| `POST` | `/v1/me/devices` | 注册 / 更新设备 push token |
+| `DELETE` | `/v1/me/devices/{deviceId}` | 删除当前用户设备 |
+
+密码登录请求示例：
+
+```json
+{
+  "identifier": "alice@example.com",
+  "password": "Password1234"
+}
+```
+
+兼容 alias：
+
+1. 密码登录账号字段支持 `identifier`、`account`、`email`。
+2. 邮箱验证码字段支持 `code`、`email_code`、`emailCode`。
+3. 邮箱验证 / 密码重置确认支持 `verification_id`、`verificationId` 作为旧客户端别名。
+4. 密码重置确认的新密码字段支持 `new_password`、`newPassword`、`password`。
+
+`/v1/auth/email/register` 和 `/v1/auth/password/register` 如果未传验证码，会发送注册验证码并返回 `accepted`、`verification_id`、`expires_at` 等字段；如果同时传 `email`、`password` 和验证码字段，会完成注册并签发 FrogSleep session。`/v1/auth/password/reset/confirm` 成功后同样返回兼容 token 响应，客户端应保存新的 `access_token` / `refresh_token` 会话。`/v1/auth/password/change` 修改的是共享 Zook 账号密码，同一账号在 ai_novel 或其他 app 的密码登录也会使用新密码。
+
+`/v1/auth/email/bind` 和 `/v1/auth/email/change` 会修改共享 Zook 用户的 email；请求前必须在已登录状态下先对目标新邮箱调用 `/v1/auth/email/change-code`，然后提交 `{ "email": "new@example.com", "code": "123456" }`，验证码字段同样支持 `code`、`email_code`、`emailCode`。登录验证码 `/v1/auth/email/send-code` / `/v1/auth/email/auth-code` 不能用于修改共享账号 email；未验证的新邮箱不会写入共享账号。`DELETE /v1/me/account` 只删除当前 FrogSleep app membership、FrogSleep session 和 app-scoped 运行数据，请求体必须包含 `{ "confirmation": "DELETE" }`，不会删除共享用户、ai_novel membership、ai_novel session 或其他 app 数据。
+
+兼容 token 响应示例。客户端既可以读根部字段，也可以读 `data`：
+
+```json
+{
+  "code": "SUCCESS",
+  "message": "OK",
+  "requestId": "req_xxx",
+  "access_token": "...",
+  "access_token_expires_at": "2026-06-24T10:00:00.000Z",
+  "expires_in": 900,
+  "refresh_token": "...",
+  "refresh_token_expires_at": "2026-08-23T10:00:00.000Z",
+  "user_id": "user_alice",
+  "app_id": "frogsleep",
+  "user": {
+    "id": "user_alice",
+    "name": "alice",
+    "email": "alice@example.com",
+    "phone": null,
+    "avatarUrl": null,
+    "hasPassword": true
+  },
+  "data": {
+    "access_token": "...",
+    "access_token_expires_at": "2026-06-24T10:00:00.000Z",
+    "expires_in": 900,
+    "refresh_token": "...",
+    "refresh_token_expires_at": "2026-08-23T10:00:00.000Z",
+    "user_id": "user_alice",
+    "app_id": "frogsleep",
+    "user": {
+      "id": "user_alice",
+      "name": "alice",
+      "email": "alice@example.com",
+      "phone": null,
+      "avatarUrl": null,
+      "hasPassword": true
+    }
+  }
+}
+```
+
+`GET /v1/me` 会返回根部和 `data` 下的 `app_id`、`user_id`、`verified_email`、`display_name`、`email_verified`、`user`。`display_name` 是响应兼容字段；专注搭子匹配资料里的 `display_name` 存在 FrogSleep app-scoped profile 中，不会写入共享用户资料。`POST /v1/auth/logout` 返回 `{ "status": "ok", "revoked": true }` 兼容字段。`DELETE /v1/me/account` 只删除当前用户的 FrogSleep app membership 和 FrogSleep app-scoped 运行数据，保留共享用户与其他 app membership；响应根部会带 `status` 和删除结果。设备注册返回根部和 `data.device`；设备删除返回根部 `status: "deleted"`、`deleted`、`device`。
+
+设备注册请求示例：
+
+```json
+{
+  "platform": "ios",
+  "push_token": "apns-or-fcm-token",
+  "app_version": "1.0.0",
+  "timezone": "Asia/Shanghai"
+}
+```
+
+### 8.2 FrogSleep 睡眠搭子
+
+| 方法 | Path | 说明 |
+| ---- | ---- | ---- |
+| `POST` | `/v1/relationships/invites` | 创建睡眠搭子邀请 |
+| `GET` | `/v1/relationships/invites/pending` | 待处理邀请 |
+| `POST` | `/v1/relationships/invites/accept-code` | 用 code 接受邀请 |
+| `POST` | `/v1/relationships/invites/accept-token` | 用 token 接受邀请 |
+| `POST` | `/v1/relationships/invites/{inviteId}/accept` | 用 invite id 接受邀请 |
+| `POST` | `/v1/relationships/invites/{inviteId}/decline` | 拒绝邀请 |
+| `POST` | `/v1/relationships/invites/{inviteId}/cancel` | 取消邀请 |
+| `GET` | `/v1/relationships/current` | 当前睡眠搭子关系 |
+| `POST` | `/v1/relationships/{relationshipId}/pause` | 暂停关系 |
+| `POST` | `/v1/relationships/{relationshipId}/resume` | 恢复关系 |
+| `POST` | `/v1/relationships/{relationshipId}/revoke` | 解除关系 |
+| `PATCH` | `/v1/relationships/{relationshipId}/preferences` | 更新当前用户守护偏好 |
+| `GET` | `/v1/shared-guardianship/status` | 共同守护状态快照 |
+| `POST` | `/v1/shared-sessions` | 创建共同守护 session |
+| `GET` | `/v1/shared-sessions/active` | 当前活跃共同守护 session |
+| `POST` | `/v1/shared-sessions/{sessionId}/accept` | 接受共同守护 session |
+| `POST` | `/v1/shared-sessions/{sessionId}/events` | 上报共同守护事件 |
+| `POST` | `/v1/shared-sessions/{sessionId}/pause-tonight` | 今晚暂停 |
+| `GET` | `/v1/shared-summaries/latest` | 最新个人总结 |
+| `GET` | `/v1/shared-recaps/latest` | 最新共同 recap |
+
+邀请请求示例：
+
+```json
+{
+  "invitee": "bob@example.com",
+  "role": "guardian",
+  "custom_label": "今晚互相监督"
+}
+```
+
+邀请响应包含 canonical 字段和 rollout alias。客户端应优先读取 `invite_id`、`invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`、`status`、`expires_at`；迁移期仍保留 `id`、`code`、`token`、`share_link` 等旧字段。用 code、token 或 invite id 接受睡眠搭子邀请时，Zook 会校验当前 FrogSleep Bearer token 对应用户的已验证邮箱与 `invitee_email_snapshot` 一致；不一致返回 `403 AUTH_APP_SCOPE_MISMATCH` 且不会创建关系。
+
+`PATCH /v1/relationships/{relationshipId}/preferences` 成功响应包含 `preferences` 和当前 `relationship`，用于 iOS 在保存守护偏好后直接刷新关系状态。共同守护 session 响应包含 Zook canonical 字段 `session_id`、`relationship_id`、`status`、`participant_states`、`starts_at`、`ends_at`，并额外保留 iOS 兼容字段 `shared_session_id`、`initiator_user_id`、`invite_status`、`date_anchor`、`initiator_state`、`partner_state`、`started_at`、`ended_at`；其中 `initiator_state` / `partner_state` 会把后端内部 `pending` 映射为 iOS 已有枚举 `invited`。
+
+共同守护事件请求示例：
+
+```json
+{
+  "event_type": "morning_completed",
+  "occurred_at": "2026-06-24T07:30:00.000Z",
+  "metadata": {
+    "score": 88
+  }
+}
+```
+
+### 8.3 FrogSleep 专注搭子
+
+| 方法 | Path | 说明 |
+| ---- | ---- | ---- |
+| `POST` | `/v1/focus/sessions` | 上报专注 session |
+| `GET` | `/v1/focus/sessions` | 查询专注 session |
+| `GET` | `/v1/focus/stats/week` | 最近 7 天专注统计 |
+| `GET` | `/v1/focus/achievements` | 专注成就 |
+| `POST` | `/v1/focus/achievements/notify` | 标记成就通知 |
+| `POST` | `/v1/focus/match-profile` | 保存匹配资料 |
+| `GET` | `/v1/focus/match-profile/me` | 当前匹配资料 |
+| `DELETE` | `/v1/focus/match-profile` | 删除匹配资料 |
+| `POST` | `/v1/focus/matches/search` | 搜索匹配候选人 |
+| `POST` | `/v1/focus/matches/{userId}/invite` | 邀请候选人 |
+| `POST` | `/v1/focus/buddy/invites` | 直接邀请专注搭子 |
+| `POST` | `/v1/focus/buddy/invites/accept-code` | 用 code 接受专注搭子邀请 |
+| `POST` | `/v1/focus/buddy/invites/accept-token` | 用 token 接受专注搭子邀请 |
+| `GET` | `/v1/focus/relationships/current` | 当前专注搭子关系 |
+| `POST` | `/v1/focus/relationships/{relationshipId}/{action}` | 关系动作，仅支持 `accept`、`decline`、`revoke` |
+| `POST` | `/v1/focus/buddy/messages` | 发送搭子消息 |
+| `GET` | `/v1/focus/buddy/messages` | 查询搭子消息 |
+| `GET` | `/v1/focus/buddy/presence` | 查询搭子 presence |
+| `GET` | `/v1/focus/buddy/comparison` | 查询搭子对比 |
+| `GET` | `/v1/focus/buddy/shared` | 查询共同专注时刻 |
+
+匹配资料请求示例：
+
+```json
+{
+  "display_name": "Alice",
+  "study_types": ["deep_work"],
+  "scene_tags": ["morning", "reading"],
+  "active_period": "morning"
+}
+```
+
+专注 session 请求示例：
+
+```json
+{
+  "started_at": "2026-06-24T10:00:00.000Z",
+  "ended_at": "2026-06-24T10:30:00.000Z",
+  "room": "reading",
+  "goal": "30m"
+}
+```
+
+专注搭子邀请响应同时包含 `share_link` / `expires_at` 与 iOS 读取的 `invite_link` / `invite_expires_at`。搭子消息响应保留 snake_case 字段 `sender_user_id`、`receiver_user_id`、`template_key`、`custom_text`、`sent_at`，并提供 `senderUserId`、`receiverUserId`、`templateKey`、`customText`、`context`、`sentAt`、`readAt` camelCase alias。`GET /v1/focus/achievements` 返回的每个成就包含 `id`、`milestone_id`、`type`、`title`、`description`、`earned_at`、`notified`、`unlocked`、`metadata`。
+
+### 8.4 FrogSleep 邀请链接与推送
+
+FrogSleep 邀请响应会包含 canonical 分享字段和兼容旧客户端的 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
+
+```json
+{
+  "inviteLinks": {
+    "sleepBuddyBaseUrl": "frogsleep://sleep-buddy-invite",
+    "focusBuddyBaseUrl": "frogsleep://focus-invite"
+  }
+}
+```
+
+浏览器中转接口：
+
+| 方法 | Path | 说明 |
+| ---- | ---- | ---- |
+| `GET` | `/frogsleep/sleep-buddy-invite?token=...&code=...` | 302 到 `frogsleep://sleep-buddy-invite?...` |
+| `GET` | `/frogsleep/focus-invite?token=...&code=...` | 302 到 `frogsleep://focus-invite?...` |
+
+完整邀请 handoff 行为见 [docs/public-frogsleep-invites.md](docs/public-frogsleep-invites.md)。
+
+FrogSleep push 使用 Zook 通知队列，设备来源是 `/v1/me/devices` 注册的 app-scoped 设备。当前支持的 payload 类型包括：
+
+- `sleep_buddy_invite`
+- `shared_session_invite`
+- `shared_session_interrupted`
+- `shared_session_returned`
+- `morning_summary`
+- `focus_buddy_invite`
+- `focus_achievement`
+
+## 9. 统一响应格式
 
 成功响应：
 
@@ -343,7 +607,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
 客户端应优先根据 `HTTP Status + code` 做分支处理。
 
-## 9. 常用错误码
+## 10. 常用错误码
 
 | HTTP Status | code                                | 说明                                 |
 | ----------- | ----------------------------------- | ------------------------------------ |

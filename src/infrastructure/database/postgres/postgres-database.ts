@@ -17,6 +17,10 @@ import type {
   FeedbackRecord,
   FailedEventRecord,
   FileRecord,
+  FrogSleepDeviceRecord,
+  FrogSleepEntityFilter,
+  FrogSleepEntityKind,
+  FrogSleepEntityRecord,
   NotificationJobRecord,
   PermissionRecord,
   RolePermissionRecord,
@@ -31,6 +35,7 @@ import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
 import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
 import { PostgresFeedbackStore } from "./postgres-feedback.ts";
+import { PostgresFrogSleepStore } from "./postgres-frogsleep.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -48,6 +53,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly feedback: PostgresFeedbackStore;
+  private readonly frogSleep: PostgresFrogSleepStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
 
@@ -58,6 +64,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     super();
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
+    this.frogSleep = new PostgresFrogSleepStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(
       async (sql, values = []) => await this.query(sql, values),
     );
@@ -345,6 +352,13 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
   }
 
+  override async updateUserEmail(userId: string, email: string): Promise<void> {
+    await this.query(
+      "UPDATE zook_users SET email = $2, updated_at = NOW() WHERE id = $1",
+      [userId, email],
+    );
+  }
+
   override async updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): Promise<void> {
     await this.query(
       "UPDATE zook_users SET password_hash = $2, password_algo = $3, updated_at = NOW() WHERE id = $1",
@@ -499,67 +513,30 @@ export class PostgresDatabase extends ApplicationDatabase {
   ): Promise<NotificationJobRecord | undefined> {
     return await this.operationalRecords.updateNotificationJob(jobId, patch);
   }
-  override async insertFailedEvent(record: FailedEventRecord): Promise<void> {
-    await this.operationalRecords.insertFailedEvent(record);
-  }
-  override async listFailedEvents(appId?: string): Promise<FailedEventRecord[]> {
-    return await this.operationalRecords.listFailedEvents(appId);
-  }
-  override async deleteFailedEvent(eventId: string): Promise<void> {
-    await this.operationalRecords.deleteFailedEvent(eventId);
-  }
-  override async updateFailedEvent(
-    eventId: string,
-    patch: Pick<FailedEventRecord, "retryCount" | "errorMessage" | "nextRetryAt">,
-  ): Promise<void> {
-    await this.operationalRecords.updateFailedEvent(eventId, patch);
-  }
-  override async listClientLogUploadTasks(appId?: string): Promise<ClientLogUploadTaskRecord[]> {
-    return await this.operationalRecords.listClientLogUploadTasks(appId);
-  }
-  override async findClientLogUploadTask(taskId: string): Promise<ClientLogUploadTaskRecord | undefined> {
-    return await this.operationalRecords.findClientLogUploadTask(taskId);
-  }
-  override async insertClientLogUploadTask(record: ClientLogUploadTaskRecord): Promise<void> {
-    await this.operationalRecords.insertClientLogUploadTask(record);
-  }
-  override async updateClientLogUploadTask(
-    taskId: string,
-    patch: Partial<
-      Pick<
-        ClientLogUploadTaskRecord,
-        "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt" | "uploadedFileName" | "uploadedFilePath" | "uploadedFileSizeBytes" | "uploadedLineCount" | "failedAt" | "failureReason"
-      >
-    >,
-  ): Promise<void> {
-    await this.operationalRecords.updateClientLogUploadTask(taskId, patch);
-  }
-  override async insertClientLogUpload(record: ClientLogUploadRecord): Promise<void> {
-    await this.operationalRecords.insertClientLogUpload(record);
-  }
-  override async insertClientLogLines(records: ClientLogLineRecord[]): Promise<void> {
-    await this.operationalRecords.insertClientLogLines(records);
-  }
-  override async insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): Promise<void> {
-    await this.operationalRecords.insertContentSafetyCheckRecord(record);
-  }
 
-  override async listContentSafetyCheckRecords(filter: {
-    createdAtFromIso?: string;
-    createdAtToIso?: string;
-    appId?: string;
-    source?: ContentSafetyCheckRecord["source"];
-    method?: ContentSafetyCheckRecord["method"];
-    taskType?: string;
-    decision?: ContentSafetyCheckRecord["decision"];
-    limit?: number;
-  } = {}): Promise<ContentSafetyCheckRecord[]> {
-    return await this.operationalRecords.listContentSafetyCheckRecords(filter);
-  }
+  override async upsertFrogSleepDevice(record: FrogSleepDeviceRecord): Promise<FrogSleepDeviceRecord> { return await this.frogSleep.upsertDevice(record); }
+  override async deleteFrogSleepDevice(appId: string, userId: string, deviceId: string): Promise<FrogSleepDeviceRecord | undefined> { return await this.frogSleep.deleteDevice(appId, userId, deviceId); }
+  override async listFrogSleepDevices(filter: { appId: string; userId?: string; pushEnabled?: boolean; includeDeleted?: boolean }): Promise<FrogSleepDeviceRecord[]> { return await this.frogSleep.listDevices(filter); }
+  override async insertFrogSleepEntity(record: FrogSleepEntityRecord): Promise<void> { await this.frogSleep.insertEntity(record); }
+  override async findFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntity(kind, appId, id); }
+  override async findFrogSleepEntityByCode(kind: FrogSleepEntityKind, appId: string, code: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntityByCode(kind, appId, code); }
+  override async findFrogSleepEntityByToken(kind: FrogSleepEntityKind, appId: string, token: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntityByToken(kind, appId, token); }
+  override async listFrogSleepEntities(filter: FrogSleepEntityFilter): Promise<FrogSleepEntityRecord[]> { return await this.frogSleep.listEntities(filter); }
+  override async updateFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string, patch: Partial<Omit<FrogSleepEntityRecord, "id" | "kind" | "appId" | "createdAt">>): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.updateEntity(kind, appId, id, patch); }
 
-  override async deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): Promise<number> {
-    return await this.operationalRecords.deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso);
-  }
+  override async insertFailedEvent(record: FailedEventRecord): Promise<void> { await this.operationalRecords.insertFailedEvent(record); }
+  override async listFailedEvents(appId?: string): Promise<FailedEventRecord[]> { return await this.operationalRecords.listFailedEvents(appId); }
+  override async deleteFailedEvent(eventId: string): Promise<void> { await this.operationalRecords.deleteFailedEvent(eventId); }
+  override async updateFailedEvent(eventId: string, patch: Pick<FailedEventRecord, "retryCount" | "errorMessage" | "nextRetryAt">): Promise<void> { await this.operationalRecords.updateFailedEvent(eventId, patch); }
+  override async listClientLogUploadTasks(appId?: string): Promise<ClientLogUploadTaskRecord[]> { return await this.operationalRecords.listClientLogUploadTasks(appId); }
+  override async findClientLogUploadTask(taskId: string): Promise<ClientLogUploadTaskRecord | undefined> { return await this.operationalRecords.findClientLogUploadTask(taskId); }
+  override async insertClientLogUploadTask(record: ClientLogUploadTaskRecord): Promise<void> { await this.operationalRecords.insertClientLogUploadTask(record); }
+  override async updateClientLogUploadTask(taskId: string, patch: Partial<Pick<ClientLogUploadTaskRecord, "status" | "did" | "claimToken" | "claimExpireAt" | "uploadedAt" | "uploadedFileName" | "uploadedFilePath" | "uploadedFileSizeBytes" | "uploadedLineCount" | "failedAt" | "failureReason">>): Promise<void> { await this.operationalRecords.updateClientLogUploadTask(taskId, patch); }
+  override async insertClientLogUpload(record: ClientLogUploadRecord): Promise<void> { await this.operationalRecords.insertClientLogUpload(record); }
+  override async insertClientLogLines(records: ClientLogLineRecord[]): Promise<void> { await this.operationalRecords.insertClientLogLines(records); }
+  override async insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): Promise<void> { await this.operationalRecords.insertContentSafetyCheckRecord(record); }
+  override async listContentSafetyCheckRecords(filter: { createdAtFromIso?: string; createdAtToIso?: string; appId?: string; source?: ContentSafetyCheckRecord["source"]; method?: ContentSafetyCheckRecord["method"]; taskType?: string; decision?: ContentSafetyCheckRecord["decision"]; limit?: number } = {}): Promise<ContentSafetyCheckRecord[]> { return await this.operationalRecords.listContentSafetyCheckRecords(filter); }
+  override async deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): Promise<number> { return await this.operationalRecords.deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso); }
 
   private async initialize(): Promise<void> {
     if (this.initialized) {

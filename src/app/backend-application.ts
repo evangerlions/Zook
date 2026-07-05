@@ -46,6 +46,7 @@ import { tryHandleAdminRoutes } from "./admin-routes.ts";
 import { tryHandleAiNovelRoutes } from "./ai-novel-routes.ts";
 import { tryHandleFileNotificationRoutes } from "./file-notification-routes.ts";
 import { tryHandleFeedbackRoutes } from "./feedback-routes.ts";
+import { tryHandleFrogSleepV1Routes } from "./frogsleep-v1-routes.ts";
 import { tryHandleLogRoutes } from "./log-routes.ts";
 import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
 import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
@@ -102,6 +103,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly rbacGuard: RbacGuard,
     private readonly validationPipe: ValidationPipe,
     private readonly commonTestAccountService: CommonTestAccountService,
+    private readonly frogsleepEnabled = false,
   ) {
     super(
       database,
@@ -113,6 +115,7 @@ export class BackendApplication extends BackendRouteContext {
       publicApiMessageService,
       tencentSesEmailCallbackService,
       feedbackService,
+      notificationService,
       appContextResolver,
       authGuard,
       appAccessGuard,
@@ -226,6 +229,13 @@ export class BackendApplication extends BackendRouteContext {
     const logResponse = await tryHandleLogRoutes.call(this, request);
     if (logResponse) {
       return logResponse;
+    }
+
+    if (this.frogsleepEnabled) {
+      const frogSleepResponse = await tryHandleFrogSleepV1Routes.call(this, request);
+      if (frogSleepResponse) {
+        return frogSleepResponse;
+      }
     }
 
     throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");

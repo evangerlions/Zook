@@ -16,6 +16,10 @@ import type {
   FeedbackRecord,
   FailedEventRecord,
   FileRecord,
+  FrogSleepDeviceRecord,
+  FrogSleepEntityFilter,
+  FrogSleepEntityKind,
+  FrogSleepEntityRecord,
   NotificationJobRecord,
   PermissionRecord,
   RolePermissionRecord,
@@ -29,6 +33,7 @@ import {
   buildManagedStateSnapshot,
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
+import { conflict } from "../shared/errors.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -62,6 +67,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   contentSafetyCheckRecords: ContentSafetyCheckRecord[];
   feedbackRecords: FeedbackRecord[];
   feedbackAttachments: FeedbackAttachmentRecord[];
+  frogSleepDevices: FrogSleepDeviceRecord[];
+  frogSleepEntities: FrogSleepEntityRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -86,6 +93,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.contentSafetyCheckRecords = structuredClone(seed.contentSafetyCheckRecords ?? []);
     this.feedbackRecords = structuredClone(seed.feedbackRecords ?? []);
     this.feedbackAttachments = structuredClone(seed.feedbackAttachments ?? []);
+    this.frogSleepDevices = [];
+    this.frogSleepEntities = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -172,6 +181,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.appId !== appId);
     this.feedbackRecords = this.feedbackRecords.filter((item) => item.appId !== appId);
     this.feedbackAttachments = this.feedbackAttachments.filter((item) => item.appId !== appId);
+    this.frogSleepDevices = this.frogSleepDevices.filter((item) => item.appId !== appId);
+    this.frogSleepEntities = this.frogSleepEntities.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -243,6 +254,14 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.feedbackAttachments = this.feedbackAttachments.filter(
       (item) => !feedbackIds.includes(item.feedbackId),
     );
+    this.frogSleepDevices = this.frogSleepDevices.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.frogSleepEntities = this.frogSleepEntities.filter(
+      (item) =>
+        item.appId !== appId ||
+        (item.ownerUserId !== userId && item.partnerUserId !== userId),
+    );
   }
 
   listRoles(appId?: string): RoleRecord[] {
@@ -305,6 +324,15 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   insertUser(record: UserRecord): void {
     this.users.push(structuredClone(record));
+  }
+
+  updateUserEmail(userId: string, email: string): void {
+    const user = this.findUserById(userId);
+    if (!user) {
+      return;
+    }
+
+    user.email = email;
   }
 
   updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): void {
@@ -462,6 +490,186 @@ export class InMemoryDatabase extends ApplicationDatabase {
       job.retryCount = patch.retryCount;
     }
     return job;
+  }
+
+  upsertFrogSleepDevice(record: FrogSleepDeviceRecord): FrogSleepDeviceRecord {
+    const existing = this.frogSleepDevices.find(
+      (item) =>
+        item.appId === record.appId &&
+        item.userId === record.userId &&
+        item.pushToken === record.pushToken,
+    );
+    if (existing) {
+      existing.platform = record.platform;
+      existing.appVersion = record.appVersion;
+      existing.timezone = record.timezone;
+      existing.pushEnabled = record.pushEnabled;
+      existing.updatedAt = record.updatedAt;
+      existing.deletedAt = undefined;
+      return structuredClone(existing);
+    }
+
+    this.frogSleepDevices.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  deleteFrogSleepDevice(
+    appId: string,
+    userId: string,
+    deviceId: string,
+  ): FrogSleepDeviceRecord | undefined {
+    const device = this.frogSleepDevices.find(
+      (item) => item.appId === appId && item.userId === userId && item.id === deviceId,
+    );
+    if (!device) {
+      return undefined;
+    }
+
+    device.pushEnabled = false;
+    device.updatedAt = new Date().toISOString();
+    device.deletedAt = device.updatedAt;
+    return structuredClone(device);
+  }
+
+  listFrogSleepDevices(filter: {
+    appId: string;
+    userId?: string;
+    pushEnabled?: boolean;
+    includeDeleted?: boolean;
+  }): FrogSleepDeviceRecord[] {
+    return structuredClone(this.frogSleepDevices)
+      .filter((item) => item.appId === filter.appId)
+      .filter((item) => filter.userId ? item.userId === filter.userId : true)
+      .filter((item) => typeof filter.pushEnabled === "boolean" ? item.pushEnabled === filter.pushEnabled : true)
+      .filter((item) => filter.includeDeleted ? true : !item.deletedAt)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
+  insertFrogSleepEntity(record: FrogSleepEntityRecord): void {
+    this.assertFrogSleepLiveRelationshipUnique(record);
+    this.frogSleepEntities.push(structuredClone(record));
+  }
+
+  findFrogSleepEntity(
+    kind: FrogSleepEntityKind,
+    appId: string,
+    id: string,
+  ): FrogSleepEntityRecord | undefined {
+    return structuredClone(
+      this.frogSleepEntities.find(
+        (item) => item.kind === kind && item.appId === appId && item.id === id,
+      ),
+    );
+  }
+
+  findFrogSleepEntityByCode(
+    kind: FrogSleepEntityKind,
+    appId: string,
+    code: string,
+  ): FrogSleepEntityRecord | undefined {
+    return structuredClone(
+      this.frogSleepEntities.find(
+        (item) =>
+          item.kind === kind &&
+          item.appId === appId &&
+          item.code === code &&
+          !item.deletedAt,
+      ),
+    );
+  }
+
+  findFrogSleepEntityByToken(
+    kind: FrogSleepEntityKind,
+    appId: string,
+    token: string,
+  ): FrogSleepEntityRecord | undefined {
+    return structuredClone(
+      this.frogSleepEntities.find(
+        (item) =>
+          item.kind === kind &&
+          item.appId === appId &&
+          item.token === token &&
+          !item.deletedAt,
+      ),
+    );
+  }
+
+  listFrogSleepEntities(filter: FrogSleepEntityFilter): FrogSleepEntityRecord[] {
+    const records = structuredClone(this.frogSleepEntities)
+      .filter((item) => item.appId === filter.appId)
+      .filter((item) => filter.kind ? item.kind === filter.kind : true)
+      .filter((item) => filter.ownerUserId ? item.ownerUserId === filter.ownerUserId : true)
+      .filter((item) => filter.partnerUserId ? item.partnerUserId === filter.partnerUserId : true)
+      .filter((item) => filter.relationshipId ? item.relationshipId === filter.relationshipId : true)
+      .filter((item) => filter.sessionId ? item.sessionId === filter.sessionId : true)
+      .filter((item) => filter.status ? item.status === filter.status : true)
+      .filter((item) => filter.code ? item.code === filter.code : true)
+      .filter((item) => filter.token ? item.token === filter.token : true)
+      .filter((item) => filter.startsAtFromIso ? (item.startsAt ?? "") >= filter.startsAtFromIso : true)
+      .filter((item) => filter.startsAtToIso ? (item.startsAt ?? "") < filter.startsAtToIso : true)
+      .filter((item) => filter.occurredAtFromIso ? (item.occurredAt ?? "") >= filter.occurredAtFromIso : true)
+      .filter((item) => filter.occurredAtToIso ? (item.occurredAt ?? "") < filter.occurredAtToIso : true)
+      .filter((item) => filter.includeDeleted ? true : !item.deletedAt)
+      .sort((left, right) => {
+        const leftTime = left.occurredAt ?? left.startsAt ?? left.createdAt;
+        const rightTime = right.occurredAt ?? right.startsAt ?? right.createdAt;
+        return rightTime.localeCompare(leftTime);
+      });
+    return records.slice(0, normalizeListLimit(filter.limit));
+  }
+
+  updateFrogSleepEntity(
+    kind: FrogSleepEntityKind,
+    appId: string,
+    id: string,
+    patch: Partial<Omit<FrogSleepEntityRecord, "id" | "kind" | "appId" | "createdAt">>,
+  ): FrogSleepEntityRecord | undefined {
+    const record = this.frogSleepEntities.find(
+      (item) => item.kind === kind && item.appId === appId && item.id === id,
+    );
+    if (!record) {
+      return undefined;
+    }
+
+    Object.assign(record, {
+      ...patch,
+      payload: patch.payload ?? record.payload,
+      updatedAt: patch.updatedAt ?? new Date().toISOString(),
+    });
+    return structuredClone(record);
+  }
+
+  private assertFrogSleepLiveRelationshipUnique(record: FrogSleepEntityRecord): void {
+    if (!record.ownerUserId || !record.partnerUserId) {
+      return;
+    }
+    const liveStatusesByKind: Partial<Record<FrogSleepEntityKind, Set<string>>> = {
+      sleep_relationship: new Set(["active", "paused"]),
+      focus_relationship: new Set(["pending", "accepted"]),
+    };
+    const liveStatuses = liveStatusesByKind[record.kind];
+    if (!liveStatuses || !record.status || !liveStatuses.has(record.status)) {
+      return;
+    }
+    const pair = [record.ownerUserId, record.partnerUserId].sort().join(":");
+    const duplicate = this.frogSleepEntities.some((item) => {
+      if (
+        item.id === record.id ||
+        item.appId !== record.appId ||
+        item.kind !== record.kind ||
+        !item.ownerUserId ||
+        !item.partnerUserId ||
+        !item.status ||
+        !liveStatuses.has(item.status) ||
+        item.deletedAt
+      ) {
+        return false;
+      }
+      return [item.ownerUserId, item.partnerUserId].sort().join(":") === pair;
+    });
+    if (duplicate) {
+      conflict("REQ_INVALID_BODY", "A FrogSleep relationship already exists for this user pair.");
+    }
   }
 
   insertFailedEvent(record: FailedEventRecord): void {

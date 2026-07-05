@@ -15,6 +15,10 @@ import type {
   FeedbackRecord,
   FailedEventRecord,
   FileRecord,
+  FrogSleepDeviceRecord,
+  FrogSleepEntityFilter,
+  FrogSleepEntityKind,
+  FrogSleepEntityRecord,
   NotificationJobRecord,
   PermissionRecord,
   RolePermissionRecord,
@@ -75,6 +79,7 @@ export abstract class ApplicationDatabase {
   abstract findUserByAccount(account: string): MaybePromise<UserRecord | undefined>;
   abstract findUserByPhone(phone: string): MaybePromise<UserRecord | undefined>;
   abstract insertUser(record: UserRecord): MaybePromise<void>;
+  abstract updateUserEmail(userId: string, email: string): MaybePromise<void>;
   abstract updateUserPassword(userId: string, passwordHash: string, passwordAlgo: string): MaybePromise<void>;
 
   abstract insertAuditLog(record: AuditLogRecord): MaybePromise<void>;
@@ -124,6 +129,27 @@ export abstract class ApplicationDatabase {
     jobId: string,
     patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
   ): MaybePromise<NotificationJobRecord | undefined>;
+
+  abstract upsertFrogSleepDevice(record: FrogSleepDeviceRecord): MaybePromise<FrogSleepDeviceRecord>;
+  abstract deleteFrogSleepDevice(appId: string, userId: string, deviceId: string): MaybePromise<FrogSleepDeviceRecord | undefined>;
+  abstract listFrogSleepDevices(filter: {
+    appId: string;
+    userId?: string;
+    pushEnabled?: boolean;
+    includeDeleted?: boolean;
+  }): MaybePromise<FrogSleepDeviceRecord[]>;
+
+  abstract insertFrogSleepEntity(record: FrogSleepEntityRecord): MaybePromise<void>;
+  abstract findFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string): MaybePromise<FrogSleepEntityRecord | undefined>;
+  abstract findFrogSleepEntityByCode(kind: FrogSleepEntityKind, appId: string, code: string): MaybePromise<FrogSleepEntityRecord | undefined>;
+  abstract findFrogSleepEntityByToken(kind: FrogSleepEntityKind, appId: string, token: string): MaybePromise<FrogSleepEntityRecord | undefined>;
+  abstract listFrogSleepEntities(filter: FrogSleepEntityFilter): MaybePromise<FrogSleepEntityRecord[]>;
+  abstract updateFrogSleepEntity(
+    kind: FrogSleepEntityKind,
+    appId: string,
+    id: string,
+    patch: Partial<Omit<FrogSleepEntityRecord, "id" | "kind" | "appId" | "createdAt">>,
+  ): MaybePromise<FrogSleepEntityRecord | undefined>;
 
   abstract insertFailedEvent(record: FailedEventRecord): MaybePromise<void>;
   abstract listFailedEvents(appId?: string): MaybePromise<FailedEventRecord[]>;

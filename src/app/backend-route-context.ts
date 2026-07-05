@@ -9,6 +9,7 @@ import { AuthService } from "../modules/auth/auth.service.ts";
 import { UserService } from "../modules/user/user.service.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
 import { CommonTestAccountService } from "../services/common-test-account.service.ts";
+import { NotificationService } from "../services/notification.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
@@ -56,6 +57,9 @@ function parseBasicAuthorization(
 }
 
 export class BackendRouteContext {
+  /** Optional analytics service for emitting business events. Set after construction. */
+  analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
+
   constructor(
     protected readonly database: ApplicationDatabase,
     protected readonly authService: AuthService,
@@ -66,6 +70,7 @@ export class BackendRouteContext {
     protected readonly publicApiMessageService: PublicApiMessageService,
     protected readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     protected readonly feedbackService: FeedbackService,
+    protected readonly notificationService: NotificationService,
     protected readonly appContextResolver: AppContextResolver,
     protected readonly authGuard: AuthGuard,
     protected readonly appAccessGuard: AppAccessGuard,
@@ -106,6 +111,9 @@ export class BackendRouteContext {
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     this.appAccessGuard.assertScope(appId, auth.appId);
     await this.authService.assertAccessTokenActive(auth);
+    await this.userService.getById(auth.userId);
+    await this.appRegistryService.getAppOrThrow(appId);
+    await this.appRegistryService.ensureExistingMembership(appId, auth.userId);
     return auth;
   }
 

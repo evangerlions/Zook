@@ -100,6 +100,31 @@ export class AuthEmailFlow {
     });
   }
 
+  async emailChangeCode(
+    command: EmailLoginCodeCommand,
+    now = new Date(),
+  ): Promise<RegisterEmailCodeResult> {
+    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const email = this.normalizeEmail(command.email);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+    await this.verificationLimiter.consumeEmailChangeCodeLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
+    return await this.issueEmailCode({
+      app,
+      email,
+      cacheKey: this.verificationLimiter.buildEmailChangeCodeKey(app.id, email),
+      command,
+      rateLimit,
+      now,
+    });
+  }
+
   async register(command: RegisterCommand, now = new Date()): Promise<AuthSession> {
     const rateLimit = await this.verificationLimiter.getRuntimeConfig();
     const app = await this.assertSelfRegistrationAllowed(command.appId);
@@ -202,6 +227,54 @@ export class AuthEmailFlow {
       session: await this.sessionManager.issueSession(user.id, app.id, now),
       autoCreatedUser,
     };
+  }
+
+  async verifyEmailLoginCode(
+    command: EmailLoginCommand,
+    now = new Date(),
+  ): Promise<void> {
+    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const email = this.normalizeEmail(command.email);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+    await this.verificationLimiter.consumeEmailLoginLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
+    await this.assertEmailCodeValid({
+      cacheKey: this.verificationLimiter.buildEmailLoginCodeKey(app.id, email),
+      code: command.emailCode,
+      maxFailedCodeAttempts: rateLimit.maxFailedCodeAttempts,
+      now,
+      label: "Email",
+    });
+  }
+
+  async verifyEmailChangeCode(
+    command: EmailLoginCommand,
+    now = new Date(),
+  ): Promise<void> {
+    const rateLimit = await this.verificationLimiter.getRuntimeConfig();
+    const app = await this.appRegistryService.getAppOrThrow(command.appId);
+    const email = this.normalizeEmail(command.email);
+    const ipAddress = this.normalizeIpAddress(command.ipAddress);
+    await this.verificationLimiter.consumeEmailChangeLimits(
+      app.id,
+      email,
+      ipAddress,
+      rateLimit,
+      now,
+    );
+    await this.assertEmailCodeValid({
+      cacheKey: this.verificationLimiter.buildEmailChangeCodeKey(app.id, email),
+      code: command.emailCode,
+      maxFailedCodeAttempts: rateLimit.maxFailedCodeAttempts,
+      now,
+      label: "Email",
+    });
   }
 
   async sendPasswordCode(

@@ -126,6 +126,48 @@ export class AuthVerificationLimiter {
     );
   }
 
+  async consumeEmailChangeCodeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+  ): Promise<void> {
+    await this.consumeRollingWindow(
+      this.buildEmailChangeComboRateKey("email-code", appId, accountKey, ipAddress),
+      rateLimit.sendCodeWindowMs,
+      rateLimit.sendCodeWindowLimit,
+      now,
+    );
+    await this.consumeBucketCount(
+      this.buildEmailChangeDayRateKey(accountKey, now),
+      48 * 60 * 60,
+      rateLimit.accountDailyLimit,
+      now,
+    );
+    await this.consumeBucketCount(
+      this.buildEmailChangeIpHourRateKey(ipAddress, now),
+      2 * 60 * 60,
+      rateLimit.ipHourlyLimit,
+      now,
+    );
+  }
+
+  async consumeEmailChangeLimits(
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+    rateLimit: AuthRateLimitRuntimeConfig,
+    now = new Date(),
+  ): Promise<void> {
+    await this.consumeRollingWindow(
+      this.buildEmailChangeComboRateKey("complete", appId, accountKey, ipAddress),
+      rateLimit.verifyWindowMs,
+      rateLimit.verifyWindowLimit,
+      now,
+    );
+  }
+
   async consumePasswordCodeLimits(
     appId: string,
     accountKey: string,
@@ -192,6 +234,13 @@ export class AuthVerificationLimiter {
     channel: "email" | "sms" = "email",
   ): string {
     return `auth:${channel}:password-reset:code:${appId}:${accountKey}`;
+  }
+
+  buildEmailChangeCodeKey(
+    appId: string,
+    accountKey: string,
+  ): string {
+    return `auth:email:email-change:code:${appId}:${accountKey}`;
   }
 
   async getVerificationCodeEntry(
@@ -373,6 +422,29 @@ export class AuthVerificationLimiter {
     now = new Date(),
   ): string {
     return `auth:email-login:ip-hour:${toHourKey(now)}:${ipAddress}`;
+  }
+
+  private buildEmailChangeComboRateKey(
+    kind: "email-code" | "complete",
+    appId: string,
+    accountKey: string,
+    ipAddress: string,
+  ): string {
+    return `auth:email:email-change:rate:${kind}:${appId}:${accountKey}:${ipAddress}`;
+  }
+
+  private buildEmailChangeDayRateKey(
+    accountKey: string,
+    now = new Date(),
+  ): string {
+    return `auth:email:email-change:day:${toDateKey(now)}:${accountKey}`;
+  }
+
+  private buildEmailChangeIpHourRateKey(
+    ipAddress: string,
+    now = new Date(),
+  ): string {
+    return `auth:email-change:ip-hour:${toHourKey(now)}:${ipAddress}`;
   }
 
   private buildPasswordResetComboRateKey(

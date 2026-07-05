@@ -42,9 +42,33 @@ test("persistent file store smoke test tolerates concurrent startup checks", asy
 });
 
 test("persistent storage root resolves to host path outside containers and container path inside containers", () => {
-  assert.equal(resolvePersistentFileStorageRoot(false), HOST_APP_RUN_DATA_ROOT);
-  assert.equal(
-    resolvePersistentFileStorageRoot(true),
-    CONTAINER_APP_RUN_DATA_ROOT,
-  );
+  const previous = process.env.ZOOK_APP_RUN_DATA_ROOT;
+  delete process.env.ZOOK_APP_RUN_DATA_ROOT;
+  try {
+    assert.equal(resolvePersistentFileStorageRoot(false), HOST_APP_RUN_DATA_ROOT);
+    assert.equal(
+      resolvePersistentFileStorageRoot(true),
+      CONTAINER_APP_RUN_DATA_ROOT,
+    );
+  } finally {
+    if (previous !== undefined) {
+      process.env.ZOOK_APP_RUN_DATA_ROOT = previous;
+    }
+  }
+});
+
+test("persistent storage root can be overridden for local integration runs", () => {
+  const previous = process.env.ZOOK_APP_RUN_DATA_ROOT;
+  const root = mkdtempSync(join(tmpdir(), "zook-file-root-override-"));
+  process.env.ZOOK_APP_RUN_DATA_ROOT = root;
+  try {
+    assert.equal(resolvePersistentFileStorageRoot(false), root);
+    assert.equal(resolvePersistentFileStorageRoot(true), root);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.ZOOK_APP_RUN_DATA_ROOT;
+    } else {
+      process.env.ZOOK_APP_RUN_DATA_ROOT = previous;
+    }
+  }
 });

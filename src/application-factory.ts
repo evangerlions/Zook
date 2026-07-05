@@ -7,7 +7,6 @@ import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
 import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
-import { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
@@ -60,6 +59,7 @@ import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
+import { createPushDispatcher } from "./services/push-dispatcher-factory.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";
@@ -86,7 +86,8 @@ export async function createApplication(
   options: CreateApplicationOptions = {},
 ) {
   const passwordHasher = new DevelopmentPasswordHasher();
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher);
+  const frogsleepEnabled = resolveFrogSleepEnabled(options);
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled });
   const kvManager =
     options.kvManager ??
     (options.kvBackend
@@ -436,7 +437,8 @@ export async function createApplication(
       fileStore: persistentFileStore,
     },
   );
-  const notificationService = new NotificationService(database, queue, logger);
+  const pushDispatcher = createPushDispatcher({ database, logger });
+  const notificationService = new NotificationService(database, queue, logger, pushDispatcher);
   const failedEventRetryService = new FailedEventRetryService(
     database,
     queue,
@@ -500,7 +502,10 @@ export async function createApplication(
     rbacGuard,
     validationPipe,
     commonTestAccountService,
+    frogsleepEnabled,
   );
+
+  app.analyticsService = analyticsService;
 
   return {
     app,
@@ -571,6 +576,12 @@ export async function createApplication(
   };
 }
 
+function resolveFrogSleepEnabled(options: CreateApplicationOptions): boolean {
+  if (typeof options.frogsleepEnabled === "boolean") {
+    return options.frogsleepEnabled;
+  }
+  return process.env.FROGSLEEP_ENABLED?.trim().toLowerCase() === "true";
+}
 function resolvePublicSmsTestBypass(options: CreateApplicationOptions): boolean {
   if (typeof options.publicSmsTestBypassEnabled === "boolean") {
     return options.publicSmsTestBypassEnabled;

@@ -9,6 +9,10 @@ export const CONTAINER_APP_RUN_DATA_ROOT = "/app/appRunData";
 export function resolvePersistentFileStorageRoot(
   insideContainer = isContainerRuntime(),
 ): string {
+  const override = process.env.ZOOK_APP_RUN_DATA_ROOT?.trim();
+  if (override) {
+    return resolve(override);
+  }
   return insideContainer ? CONTAINER_APP_RUN_DATA_ROOT : HOST_APP_RUN_DATA_ROOT;
 }
 
