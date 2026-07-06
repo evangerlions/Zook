@@ -6,10 +6,10 @@
 
 当前包含两类邀请：
 
-1. 睡眠搭子邀请：由 `/v1/relationships/invites` 创建。
-2. 专注搭子邀请：由 `/v1/focus/matches/{userId}/invite` 或 `/v1/focus/buddy/invites` 创建。
+1. 睡眠搭子邀请：由 `/api/v1/frogsleep/sleep-buddy/invites` 创建。
+2. 专注搭子邀请：由 `/api/v1/frogsleep/focus-buddy/matches/{userId}/invite` 或 `/api/v1/frogsleep/focus-buddy/invites` 创建。
 
-两类邀请都属于 Zook app `frogsleep`，但为了兼容旧客户端，公开业务路径仍保留在 `/v1/*`。
+两类邀请都属于 Zook app `frogsleep`，公开业务路径统一使用 `/api/v1/frogsleep/*`；为了兼容旧客户端，服务端临时保留 `/v1/*` legacy alias。
 
 ## 2. API 响应字段
 
@@ -72,20 +72,92 @@ frogsleep://focus-invite?token={shareToken}&code={shareCode}
 中转接口不消费邀请，也不要求登录；真正的接受动作必须由已登录 FrogSleep 用户调用：
 
 ```text
-POST /v1/relationships/invites/accept-code
-POST /v1/relationships/invites/accept-token
-POST /v1/focus/buddy/invites/accept-code
-POST /v1/focus/buddy/invites/accept-token
+POST /api/v1/frogsleep/sleep-buddy/invites/accept-code
+POST /api/v1/frogsleep/sleep-buddy/invites/accept-token
+POST /api/v1/frogsleep/focus-buddy/invites/accept-code
+POST /api/v1/frogsleep/focus-buddy/invites/accept-token
 ```
 
-## 5. 客户端处理建议
+服务端会尽力把中转打开行为记录到邀请 payload：
+
+```json
+{
+  "first_opened_at": "2026-07-05T12:00:00.000Z",
+  "last_opened_at": "2026-07-05T12:10:00.000Z",
+  "open_count": 2,
+  "last_open_source": "redirect",
+  "last_open_user_agent": "..."
+}
+```
+
+该记录仅用于转化分析；即使写入失败，中转端点仍返回 302。
+
+## 5. 登录后预览与恢复
+
+如果用户打开邀请时尚未登录，客户端应先在本地暂存 deep link 中的 `token` 或 `code`。登录成功后先调用对应 preview 接口恢复上下文：
+
+```text
+GET /api/v1/frogsleep/sleep-buddy/invites/preview?token={shareToken}
+GET /api/v1/frogsleep/sleep-buddy/invites/preview?code={shareCode}
+GET /api/v1/frogsleep/focus-buddy/invites/preview?token={shareToken}
+GET /api/v1/frogsleep/focus-buddy/invites/preview?code={shareCode}
+```
+
+preview 接口需要 FrogSleep Bearer token，但不会接受邀请、不会创建关系、不会消耗邀请。典型响应：
+
+```json
+{
+  "invite": {
+    "domain": "focus",
+    "invite_id": "focus_relationship_xxx",
+    "raw_invite_id": "focus_invite_xxx",
+    "status": "pending",
+    "inviter_user_id": "user_alice",
+    "invitee_user_id": "user_bob",
+    "viewer_can_accept": true,
+    "accept_method": "token",
+    "expires_at": "2026-07-12T12:00:00.000Z",
+    "share_title": "专注搭子邀请",
+    "share_subtitle": "一起完成下一次专注"
+  }
+}
+```
+
+客户端应根据 `domain` 选择睡眠或专注确认页，根据 `viewer_can_accept` 决定是否展示接受按钮。用户确认后再调用对应 accept 接口。
+
+接受成功后，关系响应会带回邀请转化字段：
+
+```json
+{
+  "relationship": {
+    "source_invite_id": "focus_invite_xxx",
+    "accept_source": "token",
+    "accepted_at": "2026-07-05T12:12:00.000Z"
+  }
+}
+```
+
+服务端同时会在邀请内部记录 `accepted_by_user_id`、`accepted_at`、`accept_source`，供后续邀请转化统计使用。
+
+## 6. 拒绝与取消
+
+睡眠搭子邀请支持登录后的 decline / cancel：
+
+```text
+POST /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/decline
+POST /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/cancel
+```
+
+`cancel` 仅邀请发起人可调用。`decline` 仅指定 `invitee_user_id` 或邮箱快照匹配当前登录账号的用户可调用；无指定目标的公开/纸条邀请不能被任意登录用户 decline，应由发起人 cancel。未授权操作返回 `403 AUTH_APP_SCOPE_MISMATCH`，不会改变邀请状态。
+
+## 7. 客户端处理建议
 
 1. App 已安装：直接打开 deep link，并把 `token` 或 `code` 带入接受邀请流程。
 2. App 未安装：H5 可以展示下载页；当前 Zook 仅提供 302 中转，不托管下载落地页。
-3. 用户未登录：客户端应先完成 FrogSleep 登录，再调用对应接受邀请接口。
+3. 用户未登录：客户端应暂存 `token` 或 `code`，完成 FrogSleep 登录后先调用 preview 恢复邀请，再调用对应接受邀请接口。
 4. 接受失败：根据统一错误码处理，例如邀请过期、已取消、关系冲突或 token 不合法。
 
-## 6. 安全边界
+## 8. 安全边界
 
 1. `shareCode` 和 `shareToken` 只用于定位邀请，不代表登录凭证。
 2. 接受邀请必须使用 active FrogSleep Bearer token，且当前用户必须仍是 active FrogSleep member；其他 app token 返回 `403 AUTH_APP_SCOPE_MISMATCH`，已删除或封禁的 FrogSleep membership 会被拒绝。

@@ -55,6 +55,10 @@ CREATE TABLE IF NOT EXISTS zook_frogsleep_focus_sessions (LIKE zook_frogsleep_sl
 CREATE TABLE IF NOT EXISTS zook_frogsleep_focus_shared_moments (LIKE zook_frogsleep_sleep_invites INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES);
 CREATE TABLE IF NOT EXISTS zook_frogsleep_focus_messages (LIKE zook_frogsleep_sleep_invites INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES);
 CREATE TABLE IF NOT EXISTS zook_frogsleep_focus_milestones (LIKE zook_frogsleep_sleep_invites INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES);
+CREATE TABLE IF NOT EXISTS zook_frogsleep_focus_match_feedback (LIKE zook_frogsleep_sleep_invites INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES);
+CREATE TABLE IF NOT EXISTS zook_frogsleep_sleep_report_snapshots (LIKE zook_frogsleep_sleep_invites INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES);
+CREATE TABLE IF NOT EXISTS zook_frogsleep_progress_snapshots (LIKE zook_frogsleep_sleep_invites INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES);
+CREATE TABLE IF NOT EXISTS zook_frogsleep_entitlement_records (LIKE zook_frogsleep_sleep_invites INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES);
 
 CREATE INDEX IF NOT EXISTS idx_frogsleep_sleep_invites_owner ON zook_frogsleep_sleep_invites (app_id, owner_user_id, status) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_frogsleep_sleep_relationships_owner ON zook_frogsleep_sleep_relationships (app_id, owner_user_id, status) WHERE deleted_at IS NULL;
@@ -70,6 +74,15 @@ CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_sessions_owner ON zook_frogsleep_
 CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_shared_moments_relationship ON zook_frogsleep_focus_shared_moments (app_id, relationship_id, starts_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_messages_relationship ON zook_frogsleep_focus_messages (app_id, relationship_id, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_milestones_owner ON zook_frogsleep_focus_milestones (app_id, owner_user_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_sleep_report_snapshots_owner ON zook_frogsleep_sleep_report_snapshots (app_id, owner_user_id, occurred_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_progress_snapshots_owner ON zook_frogsleep_progress_snapshots (app_id, owner_user_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_entitlement_records_owner ON zook_frogsleep_entitlement_records (app_id, owner_user_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_sleep_invites_token ON zook_frogsleep_sleep_invites (app_id, token) WHERE deleted_at IS NULL AND token IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_sleep_invites_code ON zook_frogsleep_sleep_invites (app_id, code) WHERE deleted_at IS NULL AND code IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_invites_token ON zook_frogsleep_focus_invites (app_id, token) WHERE deleted_at IS NULL AND token IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_invites_code ON zook_frogsleep_focus_invites (app_id, code) WHERE deleted_at IS NULL AND code IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_invites_relationship ON zook_frogsleep_focus_invites (app_id, relationship_id) WHERE deleted_at IS NULL AND relationship_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_frogsleep_focus_match_feedback_owner_partner ON zook_frogsleep_focus_match_feedback (app_id, owner_user_id, partner_user_id, status) WHERE deleted_at IS NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_frogsleep_sleep_relationships_live_pair_uidx
   ON zook_frogsleep_sleep_relationships (

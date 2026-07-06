@@ -5,34 +5,40 @@ import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import { buildFrogSleepNotificationPayload } from "../frogsleep-notifications.ts";
+import { optionalIsoTimestamp } from "../frogsleep-validation.ts";
 import {
-  toSleepInviteResponse,
+  acceptSleepInviteByCode,
+  acceptSleepInviteById,
+  acceptSleepInviteByToken,
+  createSleepInvite,
+  pendingSleepInvites,
+  previewSleepInvite,
+  sleepInviteAction,
+  trackSleepInviteOpenByToken,
+} from "./sleep-buddy-invites.ts";
+import {
+  buildSleepRecapArtifact,
+  buildSleepSummaryArtifact,
+} from "./sleep-buddy-artifacts.ts";
+import {
   toSleepRelationshipResponse,
   toSleepSessionResponse,
 } from "./sleep-buddy-mappers.ts";
-
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function nowIso(): string {
   return new Date().toISOString();
 }
 
-function defaultInviteExpiresAt(createdAt: string): string {
-  return new Date(new Date(createdAt).getTime() + INVITE_TTL_MS).toISOString();
-}
-
-function randomCode(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
-}
-
-function asPayload(record?: FrogSleepEntityRecord): Record<string, unknown> {
-  return record?.payload ?? {};
-}
-
-function normalizeEmail(value?: string): string | undefined {
-  const normalized = value?.trim().toLowerCase();
-  return normalized?.includes("@") ? normalized : undefined;
-}
+const SLEEP_EVENT_TYPES = new Set(["interrupted", "returned", "paused_tonight", "morning_completed"]);
+const GUARD_LEVELS = new Set(["relaxed", "standard", "strict"]);
+const VISIBILITY_SCOPES = new Set(["summary", "detailed", "private"]);
+const PREFERENCE_KEYS = new Set([
+  "guard_level",
+  "visibility_scope",
+  "mute_for_tonight",
+  "allow_morning_summary_push",
+  "allow_recovery_nudges",
+]);
 
 export class FrogSleepSleepBuddyService {
   constructor(
@@ -47,106 +53,27 @@ export class FrogSleepSleepBuddyService {
     customLabel?: string;
     sleepInviteBaseUrl?: string;
   }) {
-    const invitee = command.invitee.trim();
-    if (!invitee) {
-      badRequest("REQ_INVALID_BODY", "invitee is required.");
-    }
-
-    const inviteeEmailSnapshot = normalizeEmail(invitee);
-    const target = await this.resolveUser(invitee);
-    if (target?.id === command.userId) {
-      badRequest("REQ_INVALID_BODY", "Cannot invite yourself.");
-    }
-    if (target) {
-      await this.assertNoConflict(command.userId, target.id);
-    }
-
-    const createdAt = nowIso();
-    const code = randomCode();
-    const token = randomId("sleep_invite_token");
-    const link = `${command.sleepInviteBaseUrl ?? "frogsleep://sleep-buddy-invite"}?token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`;
-    const expiresAt = defaultInviteExpiresAt(createdAt);
-    const invite: FrogSleepEntityRecord = {
-      id: randomId("sleep_invite"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_invite",
-      ownerUserId: command.userId,
-      partnerUserId: target?.id,
-      status: "pending",
-      code,
-      token,
-      payload: {
-        invitee,
-        inviteeEmailSnapshot: inviteeEmailSnapshot ?? normalizeEmail(target?.email),
-        role: command.role ?? "guardian",
-        customLabel: command.customLabel,
-        shareLink: link,
-        shareTitle: "睡眠搭子邀请",
-        shareSubtitle: "一起守住今晚的睡眠节奏",
-        expires_at: expiresAt,
-      },
-      createdAt,
-      updatedAt: createdAt,
-    };
-    await this.database.insertFrogSleepEntity(invite);
-    if (target?.id) {
-      await this.queuePush(target.id, buildFrogSleepNotificationPayload({
-        type: "sleep_buddy_invite",
-        entityId: invite.id,
-      }));
-    }
-    return toSleepInviteResponse(invite);
+    return await createSleepInvite(this.deps(), command);
   }
 
   async pendingInvites(userId: string) {
-    const owned = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_invite",
-      ownerUserId: userId,
-      status: "pending",
-    });
-    const received = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_invite",
-      partnerUserId: userId,
-      status: "pending",
-    });
-    const invites = await Promise.all([...owned, ...received].map((invite) => this.refreshInviteStatus(invite)));
-    return invites
-      .filter((invite) => invite.status === "pending")
-      .map((invite) => toSleepInviteResponse(invite));
+    return await pendingSleepInvites(this.deps(), userId);
   }
 
   async acceptInviteByCode(userId: string, code: string) {
-    const invite = await this.database.findFrogSleepEntityByCode("sleep_invite", FROGSLEEP_APP_ID, code.trim());
-    return await this.acceptInvite(userId, invite);
+    return await acceptSleepInviteByCode(this.deps(), userId, code);
   }
 
   async acceptInviteByToken(userId: string, token: string) {
-    const invite = await this.database.findFrogSleepEntityByToken("sleep_invite", FROGSLEEP_APP_ID, token.trim());
-    return await this.acceptInvite(userId, invite);
+    return await acceptSleepInviteByToken(this.deps(), userId, token);
   }
 
   async acceptInviteById(userId: string, inviteId: string) {
-    const invite = await this.database.findFrogSleepEntity("sleep_invite", FROGSLEEP_APP_ID, inviteId);
-    return await this.acceptInvite(userId, invite);
+    return await acceptSleepInviteById(this.deps(), userId, inviteId);
   }
 
   async inviteAction(userId: string, inviteId: string, action: "decline" | "cancel") {
-    const invite = await this.database.findFrogSleepEntity("sleep_invite", FROGSLEEP_APP_ID, inviteId);
-    if (!invite || invite.status !== "pending") {
-      badRequest("REQ_INVALID_BODY", "Pending invite not found.");
-    }
-    if (action === "cancel" && invite.ownerUserId !== userId) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Only the inviter can cancel this invite.");
-    }
-    if (action === "decline" && invite.partnerUserId && invite.partnerUserId !== userId) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Only the invitee can decline this invite.");
-    }
-    const updated = await this.database.updateFrogSleepEntity("sleep_invite", FROGSLEEP_APP_ID, inviteId, {
-      status: action === "cancel" ? "cancelled" : "declined",
-    });
-    return toSleepInviteResponse(updated as FrogSleepEntityRecord);
+    return await sleepInviteAction(this.deps(), userId, inviteId, action);
   }
 
   async currentRelationship(userId: string) {
@@ -161,7 +88,7 @@ export class FrogSleepSleepBuddyService {
 
   async relationshipAction(userId: string, relationshipId: string, action: "pause" | "resume" | "revoke") {
     const relationship = await this.requireRelationship(userId, relationshipId);
-    const status = action === "pause" ? "paused" : action === "resume" ? "active" : "revoked";
+    const status = this.nextRelationshipStatus(relationship.status, action);
     const updated = await this.database.updateFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, relationship.id, {
       status,
     });
@@ -170,6 +97,7 @@ export class FrogSleepSleepBuddyService {
 
   async updatePreferences(userId: string, relationshipId: string, preferences: Record<string, unknown>) {
     await this.requireRelationship(userId, relationshipId);
+    const validated = this.validatePreferences(preferences);
     const existing = (await this.database.listFrogSleepEntities({
       appId: FROGSLEEP_APP_ID,
       kind: "guardianship_preference",
@@ -181,10 +109,10 @@ export class FrogSleepSleepBuddyService {
       const updated = await this.database.updateFrogSleepEntity("guardianship_preference", FROGSLEEP_APP_ID, existing.id, {
         payload: {
           ...existing.payload,
-          ...preferences,
+          ...validated,
         },
       });
-      return updated?.payload ?? preferences;
+      return updated?.payload ?? validated;
     }
 
     const createdAt = nowIso();
@@ -194,7 +122,7 @@ export class FrogSleepSleepBuddyService {
       kind: "guardianship_preference",
       ownerUserId: userId,
       relationshipId,
-      payload: this.defaultPreferences(preferences),
+      payload: this.defaultPreferences(validated),
       createdAt,
       updatedAt: createdAt,
     };
@@ -217,39 +145,47 @@ export class FrogSleepSleepBuddyService {
   }
 
   async beginSession(userId: string, relationshipId: string, dateAnchor?: string) {
-    const relationship = await this.requireRelationship(userId, relationshipId);
-    if (relationship.status !== "active") {
-      conflict("REQ_INVALID_BODY", "Shared sleep session requires an active relationship.");
-    }
-    const createdAt = nowIso();
-    const partnerUserId = this.otherUserId(relationship, userId);
-    const session: FrogSleepEntityRecord = {
-      id: randomId("sleep_session"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_session",
-      ownerUserId: userId,
-      partnerUserId,
-      relationshipId,
-      status: "pending",
-      startsAt: createdAt,
-      payload: {
-        dateAnchor,
-        participantStates: {
-          [userId]: "started",
-          [partnerUserId]: "pending",
+    return await this.database.withExclusiveSession(async () => {
+      const relationship = await this.requireRelationship(userId, relationshipId);
+      if (relationship.status !== "active") {
+        conflict("REQ_INVALID_BODY", "Shared sleep session requires an active relationship.");
+      }
+      const createdAt = nowIso();
+      const normalizedDateAnchor = dateAnchor || createdAt.slice(0, 10);
+      const existing = await this.findOpenSessionForDate(relationshipId, normalizedDateAnchor);
+      if (existing) {
+        return toSleepSessionResponse(existing, userId);
+      }
+      const partnerUserId = this.otherUserId(relationship, userId);
+      const session: FrogSleepEntityRecord = {
+        id: randomId("sleep_session"),
+        appId: FROGSLEEP_APP_ID,
+        kind: "sleep_session",
+        ownerUserId: userId,
+        partnerUserId,
+        relationshipId,
+        status: "pending",
+        startsAt: createdAt,
+        payload: {
+          dateAnchor: normalizedDateAnchor,
+          date_anchor: normalizedDateAnchor,
+          participantStates: {
+            [userId]: "started",
+            [partnerUserId]: "pending",
+          },
         },
-      },
-      createdAt,
-      updatedAt: createdAt,
-    };
-    await this.database.insertFrogSleepEntity(session);
-    await this.queuePush(partnerUserId, buildFrogSleepNotificationPayload({
-      type: "shared_session_invite",
-      entityId: session.id,
-      relationshipId,
-      sessionId: session.id,
-    }));
-    return toSleepSessionResponse(session, userId);
+        createdAt,
+        updatedAt: createdAt,
+      };
+      await this.database.insertFrogSleepEntity(session);
+      await this.queuePush(partnerUserId, buildFrogSleepNotificationPayload({
+        type: "shared_session_invite",
+        entityId: session.id,
+        relationshipId,
+        sessionId: session.id,
+      }));
+      return toSleepSessionResponse(session, userId);
+    });
   }
 
   async activeSession(userId: string) {
@@ -296,7 +232,17 @@ export class FrogSleepSleepBuddyService {
   }
 
   async recordEvent(userId: string, sessionId: string, eventType: string, metadata: Record<string, unknown> = {}, occurredAt = nowIso()) {
+    if (!SLEEP_EVENT_TYPES.has(eventType)) {
+      badRequest("REQ_INVALID_BODY", "Unsupported sleep event type.");
+    }
+    const normalizedOccurredAt = optionalIsoTimestamp(occurredAt, "occurred_at") ?? nowIso();
     const session = await this.requireSession(userId, sessionId);
+    const relationship = session.relationshipId
+      ? await this.requireRelationship(userId, session.relationshipId)
+      : undefined;
+    if (!relationship || relationship.status === "revoked") {
+      forbidden("AUTH_APP_SCOPE_MISMATCH", "Session relationship is not visible to the current user.");
+    }
     const createdAt = nowIso();
     await this.database.insertFrogSleepEntity({
       id: randomId("sleep_event"),
@@ -307,7 +253,7 @@ export class FrogSleepSleepBuddyService {
       relationshipId: session.relationshipId,
       sessionId,
       status: eventType,
-      occurredAt,
+      occurredAt: normalizedOccurredAt,
       payload: metadata,
       createdAt,
       updatedAt: createdAt,
@@ -320,7 +266,7 @@ export class FrogSleepSleepBuddyService {
     };
     const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
       status: nextStatus,
-      occurredAt,
+      occurredAt: normalizedOccurredAt,
       payload: {
         ...session.payload,
         participantStates,
@@ -328,8 +274,10 @@ export class FrogSleepSleepBuddyService {
       },
     });
 
-    if (eventType === "morning_completed") {
+    if (eventType === "morning_completed" || eventType === "paused_tonight") {
       await this.generateMorningArtifacts(updated as FrogSleepEntityRecord);
+    }
+    if (eventType === "morning_completed") {
       await this.queuePush(this.otherUserId(session, userId), buildFrogSleepNotificationPayload({
         type: "morning_summary",
         entityId: session.id,
@@ -354,13 +302,20 @@ export class FrogSleepSleepBuddyService {
   }
 
   async latestSummary(userId: string) {
-    const summaries = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_summary",
-      ownerUserId: userId,
-      limit: 1,
-    });
-    return summaries[0]?.payload ?? null;
+    const relationships = await this.relationshipsForUser(userId, ["active", "paused", "revoked"]);
+    for (const relationship of relationships) {
+      const summaries = await this.database.listFrogSleepEntities({
+        appId: FROGSLEEP_APP_ID,
+        kind: "sleep_summary",
+        ownerUserId: userId,
+        relationshipId: relationship.id,
+        limit: 1,
+      });
+      if (summaries[0]) {
+        return summaries[0].payload;
+      }
+    }
+    return null;
   }
 
   async latestRecap(userId: string) {
@@ -379,92 +334,12 @@ export class FrogSleepSleepBuddyService {
     return null;
   }
 
-  private async acceptInvite(userId: string, invite?: FrogSleepEntityRecord) {
-    const currentInvite = invite ? await this.refreshInviteStatus(invite) : undefined;
-    if (currentInvite?.status === "expired") {
-      badRequest("REQ_INVALID_BODY", "Invite has expired.");
-    }
-    if (!currentInvite || currentInvite.status !== "pending") {
-      badRequest("REQ_INVALID_BODY", "Pending invite not found.");
-    }
-    if (currentInvite.ownerUserId === userId) {
-      badRequest("REQ_INVALID_BODY", "Cannot accept your own invite.");
-    }
-    if (currentInvite.partnerUserId && currentInvite.partnerUserId !== userId) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "This invite is not for the current user.");
-    }
-    await this.assertInviteEmailOwner(currentInvite, userId);
-
-    await this.assertNoConflict(currentInvite.ownerUserId as string, userId);
-    const createdAt = nowIso();
-    const relationship: FrogSleepEntityRecord = {
-      id: randomId("sleep_relationship"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_relationship",
-      ownerUserId: currentInvite.ownerUserId,
-      partnerUserId: userId,
-      status: "active",
-      payload: {
-        inviteId: currentInvite.id,
-      },
-      createdAt,
-      updatedAt: createdAt,
-    };
-    await this.database.insertFrogSleepEntity(relationship);
-    await this.database.updateFrogSleepEntity("sleep_invite", FROGSLEEP_APP_ID, currentInvite.id, {
-      status: "accepted",
-      partnerUserId: userId,
-      relationshipId: relationship.id,
-    });
-    await this.createDefaultPreference(relationship.id, relationship.ownerUserId as string);
-    await this.createDefaultPreference(relationship.id, userId);
-    return toSleepRelationshipResponse(relationship, userId);
+  async trackInviteOpenByToken(token: string, userAgent?: string) {
+    await trackSleepInviteOpenByToken(this.deps(), token, userAgent);
   }
 
-  private async refreshInviteStatus(invite: FrogSleepEntityRecord) {
-    if (invite.status !== "pending" || !this.isInviteExpired(invite)) {
-      return invite;
-    }
-    return await this.database.updateFrogSleepEntity("sleep_invite", FROGSLEEP_APP_ID, invite.id, {
-      status: "expired",
-    }) as FrogSleepEntityRecord;
-  }
-
-  private isInviteExpired(invite: FrogSleepEntityRecord): boolean {
-    const expiresAt = asPayload(invite).expires_at ?? asPayload(invite).expiresAt;
-    return typeof expiresAt === "string" && new Date(expiresAt).getTime() <= Date.now();
-  }
-
-  private async assertNoConflict(userA: string, userB: string) {
-    const relationships = await this.relationshipsForUser(userA, ["active", "paused"]);
-    if (relationships.some((item) => this.otherUserId(item, userA) === userB)) {
-      conflict("REQ_INVALID_BODY", "A sleep buddy relationship already exists.");
-    }
-  }
-
-  private async resolveUser(value: string) {
-    if (value.includes("@")) {
-      return await this.database.findUserByAccount(value);
-    }
-    return await this.database.findUserById(value);
-  }
-
-  private async assertInviteEmailOwner(invite: FrogSleepEntityRecord, userId: string) {
-    const payload = asPayload(invite);
-    const inviteeEmailSnapshot = normalizeEmail(
-      typeof payload.inviteeEmailSnapshot === "string"
-        ? payload.inviteeEmailSnapshot
-        : typeof payload.invitee_email_snapshot === "string"
-          ? payload.invitee_email_snapshot
-          : undefined,
-    );
-    if (!inviteeEmailSnapshot) {
-      return;
-    }
-    const user = await this.database.findUserById(userId);
-    if (normalizeEmail(user?.email) !== inviteeEmailSnapshot) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "This invite is not for the current verified email.");
-    }
+  async previewInvite(userId: string, input: { token?: string; code?: string }) {
+    return await previewSleepInvite(this.deps(), userId, input);
   }
 
   private async queuePush(userId: string, payload: Record<string, unknown>) {
@@ -515,6 +390,72 @@ export class FrogSleepSleepBuddyService {
     return record.ownerUserId === userId ? (record.partnerUserId as string) : (record.ownerUserId as string);
   }
 
+  private nextRelationshipStatus(currentStatus: string | undefined, action: "pause" | "resume" | "revoke"): string {
+    if (currentStatus === "revoked") {
+      conflict("REQ_INVALID_BODY", "Revoked relationship cannot be changed.");
+    }
+    if (action === "pause" && currentStatus === "active") {
+      return "paused";
+    }
+    if (action === "resume" && currentStatus === "paused") {
+      return "active";
+    }
+    if (action === "revoke" && (currentStatus === "active" || currentStatus === "paused")) {
+      return "revoked";
+    }
+    conflict("REQ_INVALID_BODY", "Relationship action is not valid for the current status.");
+  }
+
+  private async findOpenSessionForDate(relationshipId: string, dateAnchor: string) {
+    const sessions: FrogSleepEntityRecord[] = [];
+    for (const status of ["active", "pending"]) {
+      sessions.push(...await this.database.listFrogSleepEntities({
+        appId: FROGSLEEP_APP_ID,
+        kind: "sleep_session",
+        relationshipId,
+        status,
+        limit: 100,
+      }));
+    }
+    return sessions.find((session) => this.sessionDateAnchor(session) === dateAnchor);
+  }
+
+  private sessionDateAnchor(session: FrogSleepEntityRecord): string {
+    return typeof session.payload.dateAnchor === "string"
+      ? session.payload.dateAnchor
+      : typeof session.payload.date_anchor === "string"
+        ? session.payload.date_anchor
+        : (session.startsAt ?? session.createdAt).slice(0, 10);
+  }
+
+  private validatePreferences(input: Record<string, unknown>) {
+    const next: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(input)) {
+      if (!PREFERENCE_KEYS.has(key)) {
+        badRequest("REQ_INVALID_BODY", `Unsupported preference field: ${key}.`);
+      }
+      if (key === "guard_level") {
+        if (typeof value !== "string" || !GUARD_LEVELS.has(value)) {
+          badRequest("REQ_INVALID_BODY", "guard_level is invalid.");
+        }
+        next[key] = value;
+        continue;
+      }
+      if (key === "visibility_scope") {
+        if (typeof value !== "string" || !VISIBILITY_SCOPES.has(value)) {
+          badRequest("REQ_INVALID_BODY", "visibility_scope is invalid.");
+        }
+        next[key] = value;
+        continue;
+      }
+      if (typeof value !== "boolean") {
+        badRequest("REQ_INVALID_BODY", `${key} must be a boolean.`);
+      }
+      next[key] = value;
+    }
+    return next;
+  }
+
   private defaultPreferences(overrides: Record<string, unknown> = {}) {
     return {
       guard_level: "standard",
@@ -540,28 +481,78 @@ export class FrogSleepSleepBuddyService {
     });
   }
 
+  private deps() {
+    return {
+      database: this.database,
+      notificationService: this.notificationService,
+    };
+  }
+
   private async generateMorningArtifacts(session: FrogSleepEntityRecord) {
     const createdAt = nowIso();
     const users = [session.ownerUserId, session.partnerUserId].filter(Boolean) as string[];
+    const events = await this.database.listFrogSleepEntities({
+      appId: FROGSLEEP_APP_ID,
+      kind: "sleep_event",
+      sessionId: session.id,
+      limit: 100,
+    });
+    const participantStates = (session.payload.participantStates as Record<string, unknown> | undefined) ?? {};
+    const eventTypes = events.map((event) => event.status).filter(Boolean) as string[];
+    const interruptedCount = eventTypes.filter((type) => type === "interrupted").length;
+    const returnedCount = eventTypes.filter((type) => type === "returned").length;
+    const pausedTonight = eventTypes.includes("paused_tonight");
+    const completed = eventTypes.includes("morning_completed") || session.status === "completed";
     for (const userId of users) {
+      const partnerUserId = users.find((item) => item !== userId);
+      const summary = buildSleepSummaryArtifact({
+        session,
+        userId,
+        partnerUserId,
+        participantStates,
+        interruptedCount,
+        returnedCount,
+        pausedTonight,
+        completed,
+      });
       await this.database.insertFrogSleepEntity({
         id: randomId("sleep_summary"),
         appId: FROGSLEEP_APP_ID,
         kind: "sleep_summary",
         ownerUserId: userId,
-        partnerUserId: users.find((item) => item !== userId),
+        partnerUserId,
         relationshipId: session.relationshipId,
         sessionId: session.id,
         status: "generated",
         payload: {
           session_id: session.id,
-          title: "昨晚结果已更新",
-          completed: true,
+          title: summary.headline,
+          completed,
+          relationship_id: session.relationshipId,
+          date_anchor: this.sessionDateAnchor(session),
+          started_at: session.startsAt,
+          ended_at: session.endsAt,
+          participant_state: participantStates[userId] ?? null,
+          partner_state: partnerUserId ? participantStates[partnerUserId] ?? null : null,
+          interrupted_count: interruptedCount,
+          returned_count: returnedCount,
+          paused_tonight: pausedTonight,
+          telemetry_level: "shared_session_events",
+          ...summary,
         },
         createdAt,
         updatedAt: createdAt,
       });
     }
+    const recap = buildSleepRecapArtifact({
+      requesterUserId: session.ownerUserId as string,
+      partnerUserId: session.partnerUserId,
+      participantStates,
+      interruptedCount,
+      returnedCount,
+      pausedTonight,
+      completed,
+    });
     await this.database.insertFrogSleepEntity({
       id: randomId("night_recap"),
       appId: FROGSLEEP_APP_ID,
@@ -573,8 +564,19 @@ export class FrogSleepSleepBuddyService {
       status: "generated",
       payload: {
         session_id: session.id,
-        title: "共同守护完成",
-        participant_states: session.payload.participantStates,
+        title: recap.headline,
+        relationship_id: session.relationshipId,
+        date_anchor: this.sessionDateAnchor(session),
+        completed,
+        started_at: session.startsAt,
+        ended_at: session.endsAt,
+        participant_states: participantStates,
+        event_types: eventTypes,
+        interrupted_count: interruptedCount,
+        returned_count: returnedCount,
+        paused_tonight: pausedTonight,
+        telemetry_level: "shared_session_events",
+        ...recap,
       },
       createdAt,
       updatedAt: createdAt,

@@ -24,6 +24,10 @@ const FROGSLEEP_ENTITY_TABLES: Record<FrogSleepEntityKind, string> = {
   focus_shared_moment: "zook_frogsleep_focus_shared_moments",
   focus_message: "zook_frogsleep_focus_messages",
   focus_milestone: "zook_frogsleep_focus_milestones",
+  focus_match_feedback: "zook_frogsleep_focus_match_feedback",
+  sleep_report_snapshot: "zook_frogsleep_sleep_report_snapshots",
+  progress_snapshot: "zook_frogsleep_progress_snapshots",
+  entitlement_record: "zook_frogsleep_entitlement_records",
 };
 
 function tableFor(kind: FrogSleepEntityKind): string {

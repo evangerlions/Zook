@@ -15,6 +15,7 @@ const FROGSLEEP_USER_RUNTIME_TABLES = [
   "zook_frogsleep_focus_shared_moments",
   "zook_frogsleep_focus_messages",
   "zook_frogsleep_focus_milestones",
+  "zook_frogsleep_focus_match_feedback",
 ] as const;
 
 export async function deletePostgresAppUserRuntimeData(

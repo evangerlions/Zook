@@ -62,6 +62,9 @@ export function toFocusRelationshipResponse(
     share_subtitle: invite?.payload.shareSubtitle,
     expires_at: expiresAt,
     invite_expires_at: expiresAt,
+    source_invite_id: invite?.id ?? relationship.payload.source_invite_id,
+    accept_source: invite?.payload.accept_source ?? relationship.payload.accept_source,
+    accepted_at: invite?.payload.accepted_at ?? relationship.payload.accepted_at,
     created_at: relationship.createdAt,
     updated_at: relationship.updatedAt,
   };
