@@ -30,7 +30,7 @@ export function createPushDispatcher(options: {
           privateKeyPem,
           production: !apnsSandbox,
         },
-        { logger },
+        { logger, database },
       );
       logger.info("APNs push dispatcher configured", {
         teamId: apnsTeamId,

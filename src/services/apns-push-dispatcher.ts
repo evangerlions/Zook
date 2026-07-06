@@ -1,4 +1,5 @@
 import { createSign, createPrivateKey, type KeyObject } from "node:crypto";
+import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { PushDispatchRequest, PushDispatcher } from "./notification.service.ts";
 
@@ -26,6 +27,7 @@ const SANDBOX_ENDPOINT = "https://api.sandbox.push.apple.com";
 
 /** APNs JWT tokens are valid for 1 hour; refresh proactively at 50 minutes */
 const TOKEN_REFRESH_SECONDS = 50 * 60;
+const APNS_ALERT_EXPIRATION_SECONDS = 24 * 60 * 60;
 
 /**
  * APNs (Apple Push Notification service) push dispatcher.
@@ -42,18 +44,21 @@ export class ApnsPushDispatcher implements PushDispatcher {
   private cachedToken: ApnsTokenCache | null = null;
   private readonly fetchImpl: typeof fetch;
   private readonly logger: StructuredLogger | null;
+  private readonly database: ApplicationDatabase | null;
 
   constructor(
     private readonly config: ApnsConfig,
     options: {
       fetchImplementation?: typeof fetch;
       logger?: StructuredLogger;
+      database?: ApplicationDatabase;
     } = {},
   ) {
     this.endpoint = config.production ? PRODUCTION_ENDPOINT : SANDBOX_ENDPOINT;
     this.privateKey = createPrivateKey(config.privateKeyPem);
     this.fetchImpl = options.fetchImplementation ?? globalThis.fetch;
     this.logger = options.logger ?? null;
+    this.database = options.database ?? null;
   }
 
   async dispatch(request: PushDispatchRequest): Promise<void> {
@@ -65,6 +70,7 @@ export class ApnsPushDispatcher implements PushDispatcher {
     const url = `${this.endpoint}/3/device/${request.pushToken}`;
 
     const apnsPayload = this.buildApnsPayload(request);
+    const apnsExpiration = Math.floor(Date.now() / 1000) + APNS_ALERT_EXPIRATION_SECONDS;
 
     const response = await this.fetchImpl(url, {
       method: "POST",
@@ -73,7 +79,7 @@ export class ApnsPushDispatcher implements PushDispatcher {
         "apns-topic": this.config.bundleId,
         "apns-push-type": "alert",
         "apns-priority": "10",
-        "apns-expiration": "86400",
+        "apns-expiration": String(apnsExpiration),
         "content-type": "application/json",
       },
       body: JSON.stringify(apnsPayload),
@@ -98,12 +104,13 @@ export class ApnsPushDispatcher implements PushDispatcher {
       }
 
       if (this.isUnrecoverableError(reason)) {
-        this.logger?.warn("APNs device token unrecoverable, consider removing device", {
+        this.logger?.warn("APNs device token unrecoverable, removing device", {
           appId: request.appId,
           userId: request.userId,
           pushToken: request.pushToken,
           reason,
         });
+        await this.removeInvalidDevice(request, reason);
         return;
       }
 
@@ -209,6 +216,39 @@ export class ApnsPushDispatcher implements PushDispatcher {
       "DeviceTokenNotForTopic",
     ];
     return unrecoverableReasons.includes(reason);
+  }
+
+  private async removeInvalidDevice(request: PushDispatchRequest, reason: string): Promise<void> {
+    if (!this.database) return;
+
+    try {
+      const devices = await this.database.listFrogSleepDevices({
+        appId: request.appId,
+        userId: request.userId,
+        pushEnabled: true,
+      });
+
+      for (const device of devices) {
+        if (device.pushToken === request.pushToken) {
+          await this.database.deleteFrogSleepDevice(device.appId, device.userId, device.id);
+          this.logger?.info("APNs invalid device removed", {
+            appId: request.appId,
+            userId: request.userId,
+            deviceId: device.id,
+            reason,
+          });
+          break;
+        }
+      }
+    } catch (error) {
+      this.logger?.error("failed to remove invalid APNs device", {
+        appId: request.appId,
+        userId: request.userId,
+        pushToken: request.pushToken,
+        reason,
+        error: error instanceof Error ? error.message : "unknown",
+      });
+    }
   }
 }
 

@@ -236,13 +236,19 @@ export async function handleFrogSleepDeleteAccount(
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const auth = await authenticateFrogSleepRequest(context, request);
-  const body = asBody(request);
   const result = await context.authService.deleteCurrentAppAccount({
     appId: FROGSLEEP_APP_ID,
     userId: auth.userId,
-    confirmation: requireStringField(body, "confirmation"),
+    confirmation: "DELETE",
   });
-  return frogSleepOk(context, { status: "deleted", ...result }, request.requestId as string);
+  return frogSleepOk(context, {
+    status: "ok",
+    deleted: result.deleted,
+    revoked: result.revokedSessions,
+    revokedSessions: result.revokedSessions,
+  }, request.requestId as string, {
+    "Set-Cookie": context.authService.buildClearRefreshCookie(),
+  });
 }
 
 export async function handleFrogSleepRegisterDevice(

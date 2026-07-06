@@ -145,7 +145,11 @@ export type FrogSleepEntityKind =
   | "focus_session"
   | "focus_shared_moment"
   | "focus_message"
-  | "focus_milestone";
+  | "focus_milestone"
+  | "focus_match_feedback"
+  | "sleep_report_snapshot"
+  | "progress_snapshot"
+  | "entitlement_record";
 
 export interface FrogSleepEntityRecord {
   id: string;

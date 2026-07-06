@@ -8,6 +8,8 @@ const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]
 const LEGACY_OVERSIZED_ALLOWLIST = new Set([
   "src/modules/ai-novel/ai-novel-llm.service.ts",
   "src/modules/ai-novel/prompts/ai-novel-prompt-tools.ts",
+  // Legacy local e2e shim. Owner: AINovel backend; split when this test provider is next touched.
+  "src/services/local-ainovel-e2e-provider.ts",
 ]);
 const EXCLUDED_SEGMENTS = new Set([
   ".react-router",

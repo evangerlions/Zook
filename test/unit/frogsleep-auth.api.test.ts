@@ -576,7 +576,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
   assert.equal(conflictResponse.body.code, "AUTH_ACCOUNT_ALREADY_EXISTS");
 });
 
-test("FrogSleep account deletion cleans FrogSleep runtime data only", async () => {
+test("FrogSleep account deletion cleans FrogSleep app data and preserves other apps", async () => {
   const runtime = await createTestRuntime();
 
   const login = await runtime.app.handle({
@@ -640,37 +640,23 @@ test("FrogSleep account deletion cleans FrogSleep runtime data only", async () =
     updatedAt: "2026-04-01T00:00:00.000Z",
   });
 
-  const rejected = await runtime.app.handle({
-    method: "DELETE",
-    path: "/v1/me/account",
-    headers: {
-      authorization: `Bearer ${token}`,
-    },
-    body: {
-      confirmation: "delete",
-    },
-    requestId: "req_frogsleep_delete_account_bad_confirmation",
-  } as never);
-  assert.equal(rejected.statusCode, 400);
-  assert.equal(rejected.body.code, "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID");
-  assert.equal(runtime.database.findAppUser("frogsleep", "user_alice")?.status, "ACTIVE");
-
   const response = await runtime.app.handle({
     method: "DELETE",
-    path: "/v1/me/account",
+    path: "/api/v1/frogsleep/me/account",
     headers: {
       authorization: `Bearer ${token}`,
-    },
-    body: {
-      confirmation: "DELETE",
     },
     requestId: "req_frogsleep_delete_account",
   } as never);
 
   assert.equal(response.statusCode, 200);
-  assert.equal(response.body.status, "deleted");
+  assert.equal(response.body.status, "ok");
   assert.equal(response.body.deleted, true);
+  assert.equal(response.body.revoked, 1);
+  assert.equal(response.body.revokedSessions, 1);
   assert.equal(response.body.data.deleted, true);
+  assert.equal(response.body.data.revoked, 1);
+  assert.equal(response.body.data.revokedSessions, 1);
   assert.equal(runtime.database.findAppUser("frogsleep", "user_alice")?.status, "DELETED");
   assert.equal(runtime.database.findAppUser("ai_novel", "user_alice")?.status, "ACTIVE");
   assert.equal(runtime.database.findAppUser("app_a", "user_alice")?.status, "ACTIVE");
@@ -685,6 +671,16 @@ test("FrogSleep account deletion cleans FrogSleep runtime data only", async () =
   const aiNovelRefreshRecord = await runtime.services.refreshTokenStore.getByRawToken(aiNovelSession.refreshToken);
   assert.ok(aiNovelRefreshRecord);
   assert.equal(aiNovelRefreshRecord.revokedAt, undefined);
+
+  const meAfterDeleteResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/frogsleep/me",
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+    requestId: "req_frogsleep_me_after_delete_account",
+  } as never);
+  assert.equal(meAfterDeleteResponse.statusCode, 401);
 });
 
 test("FrogSleep refresh and logout use shared session storage", async () => {
@@ -752,4 +748,47 @@ test("existing Zook auth route remains available after FrogSleep auth compatibil
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.user.id, "user_alice");
   assert.equal(typeof response.body.data.accessToken, "string");
+});
+
+test("FrogSleep canonical auth, me, and device paths work", async () => {
+  const runtime = await createTestRuntime();
+
+  const loginResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/frogsleep/auth/password/login",
+    headers: {},
+    body: {
+      account: "alice@example.com",
+      password: "Password1234",
+    },
+    requestId: "req_frogsleep_canonical_login",
+  } as never);
+  assert.equal(loginResponse.statusCode, 200);
+
+  const token = String(loginResponse.body.data.access_token);
+  const meResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/frogsleep/me",
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+    requestId: "req_frogsleep_canonical_me",
+  } as never);
+  assert.equal(meResponse.statusCode, 200);
+  assert.equal(meResponse.body.data.app_id, "frogsleep");
+
+  const deviceResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/frogsleep/devices",
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+    body: {
+      platform: "ios",
+      push_token: "apns_canonical_token",
+    },
+    requestId: "req_frogsleep_canonical_device",
+  } as never);
+  assert.equal(deviceResponse.statusCode, 200);
+  assert.equal(deviceResponse.body.data.device.pushToken, "apns_canonical_token");
 });
