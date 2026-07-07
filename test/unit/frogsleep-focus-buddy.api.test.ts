@@ -15,7 +15,7 @@ async function createTestRuntime() {
 async function login(runtime: Awaited<ReturnType<typeof createTestRuntime>>, account: string) {
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account,
@@ -37,7 +37,7 @@ async function saveFocusMatchProfile(
 ) {
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: { authorization: `Bearer ${token}` },
     body: {
       display_name: displayName,
@@ -59,7 +59,7 @@ async function createFocusRelationship(runtime: Awaited<ReturnType<typeof create
   await saveFocusMatchProfile(runtime, bobToken, "Bob", ["study"], "evening", true);
   const invite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_bob/invite",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_bob/invite",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: {},
     requestId: "req_focus_helper_invite",
@@ -67,7 +67,7 @@ async function createFocusRelationship(runtime: Awaited<ReturnType<typeof create
   assert.equal(invite.statusCode, 200);
   const accept = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites/accept-code",
+    path: "/api/v1/frogsleep/focus-buddy/invites/accept-code",
     headers: { authorization: `Bearer ${bobToken}` },
     body: { code: invite.body.data.invite_code },
     requestId: "req_focus_helper_accept",
@@ -92,7 +92,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const aliceProfile = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -109,7 +109,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const bobProfile = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -126,7 +126,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const searchResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -141,7 +141,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const inviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_bob/invite",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_bob/invite",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -156,7 +156,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const acceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites/accept-code",
+    path: "/api/v1/frogsleep/focus-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -181,7 +181,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const currentResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/relationships/current",
+    path: "/api/v1/frogsleep/focus-buddy/relationships/current",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -194,7 +194,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const unknownActionResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/focus/relationships/${relationshipId}/archive`,
+    path: `/api/v1/frogsleep/focus-buddy/relationships/${relationshipId}/archive`,
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -204,7 +204,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const currentAfterUnknownAction = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/relationships/current",
+    path: "/api/v1/frogsleep/focus-buddy/relationships/current",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -215,7 +215,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const aliceSession = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/sessions",
+    path: "/api/v1/frogsleep/focus-buddy/sessions",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -232,7 +232,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const bobSession = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/sessions",
+    path: "/api/v1/frogsleep/focus-buddy/sessions",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -248,7 +248,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const statsResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/stats/week",
+    path: "/api/v1/frogsleep/focus-buddy/stats/week",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -259,7 +259,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const messageResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/messages",
+    path: "/api/v1/frogsleep/focus-buddy/messages",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -280,7 +280,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const rateLimitedMessageResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/messages",
+    path: "/api/v1/frogsleep/focus-buddy/messages",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -295,7 +295,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const presenceResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -309,7 +309,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const partnerPresenceResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -323,7 +323,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const comparisonResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/comparison",
+    path: "/api/v1/frogsleep/focus-buddy/comparison",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -336,7 +336,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const sharedResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/shared",
+    path: "/api/v1/frogsleep/focus-buddy/shared",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -348,7 +348,7 @@ test("FrogSleep focus buddy profile, invite, sessions, and interactions work", a
 
   const achievementsResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/achievements",
+    path: "/api/v1/frogsleep/focus-buddy/achievements",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -370,7 +370,7 @@ test("FrogSleep controlled matching excludes dismissed and reported candidates",
 
   const firstSearch = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_match_control_first_search",
@@ -379,7 +379,7 @@ test("FrogSleep controlled matching excludes dismissed and reported candidates",
 
   const dismiss = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_bob/dismiss",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_bob/dismiss",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { reason: "not_now" },
     requestId: "req_match_control_dismiss",
@@ -389,7 +389,7 @@ test("FrogSleep controlled matching excludes dismissed and reported candidates",
 
   const afterDismiss = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_match_control_after_dismiss",
@@ -398,7 +398,7 @@ test("FrogSleep controlled matching excludes dismissed and reported candidates",
 
   const report = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_bob/report",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_bob/report",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { reason: "unsafe_profile", note: "test" },
     requestId: "req_match_control_report",
@@ -408,7 +408,7 @@ test("FrogSleep controlled matching excludes dismissed and reported candidates",
 
   const selfDismiss = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_alice/dismiss",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_alice/dismiss",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { reason: "self" },
     requestId: "req_match_control_self_dismiss",
@@ -417,7 +417,7 @@ test("FrogSleep controlled matching excludes dismissed and reported candidates",
 
   const selfReport = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_alice/report",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_alice/report",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { reason: "self" },
     requestId: "req_match_control_self_report",
@@ -433,7 +433,7 @@ test("FrogSleep focus session report validates timestamps and durations", async 
 
   const invalidTimestamp = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/sessions",
+    path: "/api/v1/frogsleep/focus-buddy/sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { started_at: "not-a-date", ended_at: validEnd },
     requestId: "req_focus_invalid_timestamp",
@@ -442,7 +442,7 @@ test("FrogSleep focus session report validates timestamps and durations", async 
 
   const reversed = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/sessions",
+    path: "/api/v1/frogsleep/focus-buddy/sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { started_at: validEnd, ended_at: validStart },
     requestId: "req_focus_reversed_time",
@@ -451,7 +451,7 @@ test("FrogSleep focus session report validates timestamps and durations", async 
 
   const negative = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/sessions",
+    path: "/api/v1/frogsleep/focus-buddy/sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { started_at: validStart, ended_at: validEnd, actual_minutes: -1 },
     requestId: "req_focus_negative_duration",
@@ -460,7 +460,7 @@ test("FrogSleep focus session report validates timestamps and durations", async 
 
   const nonFinite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/sessions",
+    path: "/api/v1/frogsleep/focus-buddy/sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { started_at: validStart, ended_at: validEnd, planned_minutes: "Infinity" },
     requestId: "req_focus_nonfinite_duration",
@@ -476,7 +476,7 @@ test("FrogSleep focus invite accept does not partially accept invalid relationsh
   await saveFocusMatchProfile(runtime, bobToken, "Bob", ["study"], "evening", true);
   const invite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_bob/invite",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_bob/invite",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: {},
     requestId: "req_focus_atomic_invite",
@@ -488,7 +488,7 @@ test("FrogSleep focus invite accept does not partially accept invalid relationsh
 
   const accept = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites/accept-code",
+    path: "/api/v1/frogsleep/focus-buddy/invites/accept-code",
     headers: { authorization: `Bearer ${bobToken}` },
     body: { code: invite.body.data.invite_code },
     requestId: "req_focus_atomic_accept",
@@ -509,7 +509,7 @@ test("FrogSleep revoked focus relationships cannot be reused for buddy interacti
 
   const revoke = await runtime.app.handle({
     method: "POST",
-    path: `/v1/focus/relationships/${relationshipId}/revoke`,
+    path: `/api/v1/frogsleep/focus-buddy/relationships/${relationshipId}/revoke`,
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_focus_revoke_terminal",
   } as never);
@@ -517,7 +517,7 @@ test("FrogSleep revoked focus relationships cannot be reused for buddy interacti
 
   const secondRevoke = await runtime.app.handle({
     method: "POST",
-    path: `/v1/focus/relationships/${relationshipId}/revoke`,
+    path: `/api/v1/frogsleep/focus-buddy/relationships/${relationshipId}/revoke`,
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_focus_revoke_again",
   } as never);
@@ -525,7 +525,7 @@ test("FrogSleep revoked focus relationships cannot be reused for buddy interacti
 
   const message = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/messages",
+    path: "/api/v1/frogsleep/focus-buddy/messages",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { receiver_user_id: "user_bob", custom_text: "after revoke" },
     requestId: "req_focus_message_after_revoke",
@@ -534,7 +534,7 @@ test("FrogSleep revoked focus relationships cannot be reused for buddy interacti
 
   const presence = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { buddy_user_id: "user_bob" },
     requestId: "req_focus_presence_after_revoke",
@@ -549,7 +549,7 @@ test("FrogSleep focus presence derives focusing, recent, idle, and stale states"
 
   const focusing = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/sessions",
+    path: "/api/v1/frogsleep/focus-buddy/sessions",
     headers: { authorization: `Bearer ${bobToken}` },
     body: {
       started_at: new Date(now - 5 * 60 * 1000).toISOString(),
@@ -562,7 +562,7 @@ test("FrogSleep focus presence derives focusing, recent, idle, and stale states"
   assert.equal(focusing.statusCode, 200);
   const focusingPresence = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { buddy_user_id: "user_bob" },
     requestId: "req_focus_presence_focusing",
@@ -579,7 +579,7 @@ test("FrogSleep focus presence derives focusing, recent, idle, and stale states"
   });
   const recentPresence = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { buddy_user_id: "user_bob" },
     requestId: "req_focus_presence_recent",
@@ -592,7 +592,7 @@ test("FrogSleep focus presence derives focusing, recent, idle, and stale states"
   });
   const idlePresence = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { buddy_user_id: "user_bob" },
     requestId: "req_focus_presence_idle",
@@ -605,7 +605,7 @@ test("FrogSleep focus presence derives focusing, recent, idle, and stale states"
   });
   const stalePresence = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { buddy_user_id: "user_bob" },
     requestId: "req_focus_presence_stale",
@@ -617,7 +617,7 @@ test("FrogSleep focus presence derives focusing, recent, idle, and stale states"
   });
   const revokedPresence = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/presence",
+    path: "/api/v1/frogsleep/focus-buddy/presence",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { buddy_user_id: "user_bob" },
     requestId: "req_focus_presence_revoked",
@@ -639,7 +639,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
   ] as const) {
     const response = await runtime.app.handle({
       method: "POST",
-      path: "/v1/focus/sessions",
+      path: "/api/v1/frogsleep/focus-buddy/sessions",
       headers: { authorization: `Bearer ${token}` },
       body: {
         started_at: start,
@@ -654,7 +654,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
 
   const comparison = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/comparison",
+    path: "/api/v1/frogsleep/focus-buddy/comparison",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { week_start: weekStart },
     requestId: "req_focus_query_comparison_week",
@@ -665,7 +665,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
 
   const otherComparison = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/comparison",
+    path: "/api/v1/frogsleep/focus-buddy/comparison",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { week_start: otherWeekStart },
     requestId: "req_focus_query_comparison_other_week",
@@ -675,7 +675,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
 
   const invalidComparison = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/comparison",
+    path: "/api/v1/frogsleep/focus-buddy/comparison",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { week_start: "soon" },
     requestId: "req_focus_query_comparison_invalid",
@@ -684,7 +684,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
 
   const roomShared = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/shared",
+    path: "/api/v1/frogsleep/focus-buddy/shared",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: {
       room_id: "room-a",
@@ -699,7 +699,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
 
   const invalidShared = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/shared",
+    path: "/api/v1/frogsleep/focus-buddy/shared",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { from: "2026-06-03T00:00:00.000Z", to: "2026-06-02T00:00:00.000Z" },
     requestId: "req_focus_query_shared_invalid",
@@ -732,7 +732,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
   });
   const messages = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/messages",
+    path: "/api/v1/frogsleep/focus-buddy/messages",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { receiver_user_id: "user_bob", since: "2026-06-01T12:00:00.000Z", limit: "1" },
     requestId: "req_focus_query_messages",
@@ -744,7 +744,7 @@ test("FrogSleep focus comparison, shared moments, and messages honor query filte
 
   const invalidMessages = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/messages",
+    path: "/api/v1/frogsleep/focus-buddy/messages",
     headers: { authorization: `Bearer ${aliceToken}` },
     query: { receiver_user_id: "user_bob", since: "yesterday" },
     requestId: "req_focus_query_messages_invalid",
@@ -762,7 +762,7 @@ test("FrogSleep controlled matching hides candidates with pending outgoing invit
 
   const invite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/user_bob/invite",
+    path: "/api/v1/frogsleep/focus-buddy/matches/user_bob/invite",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: {},
     requestId: "req_match_cooldown_invite",
@@ -771,7 +771,7 @@ test("FrogSleep controlled matching hides candidates with pending outgoing invit
 
   const search = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_match_cooldown_search",
@@ -798,7 +798,7 @@ test("FrogSleep controlled matching hides candidates with pending outgoing invit
 
   const afterExpiry = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_match_cooldown_after_expiry",
@@ -819,7 +819,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const aliceProfile = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: {
       display_name: "Alice",
@@ -836,7 +836,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const missingConsentProfile = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: { authorization: `Bearer ${bobToken}` },
     body: {
       display_name: "Bob",
@@ -852,7 +852,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const bobSearchWithoutConsent = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${bobToken}` },
     body: { limit: 10 },
     requestId: "req_focus_match_bob_search_without_consent",
@@ -861,7 +861,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const searchWithoutCandidateConsent = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_focus_match_search_no_candidate_consent",
@@ -872,7 +872,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const bobProfile = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: { authorization: `Bearer ${bobToken}` },
     body: {
       display_name: "Bob",
@@ -894,7 +894,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const staleSearch = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_focus_match_search_stale",
@@ -905,7 +905,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const refreshedBobProfile = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: { authorization: `Bearer ${bobToken}` },
     body: {
       display_name: "Bob",
@@ -922,7 +922,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const samePeriodSearch = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_focus_match_search_same_period",
@@ -939,7 +939,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/match-profile",
+    path: "/api/v1/frogsleep/focus-buddy/match-profile",
     headers: { authorization: `Bearer ${bobToken}` },
     body: {
       display_name: "Bob",
@@ -955,7 +955,7 @@ test("FrogSleep focus matching ranks active-period matches and filters unsafe ca
 
   const incompatibleSearch = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/matches/search",
+    path: "/api/v1/frogsleep/focus-buddy/matches/search",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { limit: 10 },
     requestId: "req_focus_match_search_incompatible",

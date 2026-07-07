@@ -229,7 +229,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
 说明：
 
-1. 当前仓库已经挂出产品级能力：`ai_novel` AI 接口，以及 FrogSleep `/api/v1/frogsleep/*` 业务接口（临时保留 `/v1/*` legacy alias）。其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
+1. 当前仓库已经挂出产品级能力：`ai_novel` AI 接口，以及 FrogSleep `/api/v1/frogsleep/*` 业务接口。其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
 3. 扫码登录的对外接入说明见 [docs/public-api-spec.md](docs/public-api-spec.md)。
 4. 邮箱验证码登录接口：
@@ -315,9 +315,7 @@ FrogSleep 是 Zook 的 app-scoped 产品，固定 app id 为：
 frogsleep
 ```
 
-FrogSleep canonical API 统一使用产品作用域前缀 `/api/v1/frogsleep/*`。这些接口内部仍使用 Zook 共享账号、共享 Bearer token、app membership、通知队列和 worker。客户端不需要在 `/api/v1/frogsleep/auth/*` 公共接口里传 `appId`；服务端会自动按 `frogsleep` 处理。受保护接口必须使用 FrogSleep token，并要求当前用户仍是 active FrogSleep member；其他 app token 会返回 `403 AUTH_APP_SCOPE_MISMATCH`，已删除或封禁的 FrogSleep membership 会返回对应 app member 错误。
-
-兼容策略：为现有 FrogSleep 客户端临时保留根路径 `/v1/*` legacy alias，但新客户端和本文档 canonical contract 必须使用 `/api/v1/frogsleep/*`。
+FrogSleep API 统一使用产品作用域前缀 `/api/v1/frogsleep/*`，对应 OpenAPI 合同位于 `third_party/zook-api-contracts/openapi/frogsleep/api.yaml`，并同步生成到 `src/generated/openapi/public-contracts.generated.ts`。这些接口内部仍使用 Zook 共享账号、共享 Bearer token、app membership、通知队列和 worker。客户端不需要在 `/api/v1/frogsleep/auth/*` 公共接口里传 `appId`；服务端会自动按 `frogsleep` 处理。受保护接口必须使用 FrogSleep token，并要求当前用户仍是 active FrogSleep member；其他 app token 会返回 `403 AUTH_APP_SCOPE_MISMATCH`，已删除或封禁的 FrogSleep membership 会返回对应 app member 错误。`/v1/*` 不属于 FrogSleep 外部 API；客户端必须使用本文档和 OpenAPI 中的 canonical path。
 
 FrogSleep 尚未作为线上产品默认开放。生产 / 默认 runtime 不会 seed `frogsleep` app，也不会分发 FrogSleep 路由；需要通过 `FROGSLEEP_ENABLED=true` 或测试选项 `frogsleepEnabled: true` 显式启用。本地 iOS 联调启动 Zook 时应使用：
 
@@ -367,7 +365,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 1. 密码登录账号字段支持 `identifier`、`account`、`email`。
 2. 邮箱验证码字段支持 `code`、`email_code`、`emailCode`。
-3. 邮箱验证 / 密码重置确认支持 `verification_id`、`verificationId` 作为旧客户端别名。
+3. 邮箱验证 / 密码重置确认支持 `verification_id`、`verificationId` 作为兼容字段别名。
 4. 密码重置确认的新密码字段支持 `new_password`、`newPassword`、`password`。
 
 `/api/v1/frogsleep/auth/email/register` 和 `/api/v1/frogsleep/auth/password/register` 如果未传验证码，会发送注册验证码并返回 `accepted`、`verification_id`、`expires_at` 等字段；如果同时传 `email`、`password` 和验证码字段，会完成注册并签发 FrogSleep session。`/api/v1/frogsleep/auth/password/reset/confirm` 成功后同样返回兼容 token 响应，客户端应保存新的 `access_token` / `refresh_token` 会话。`/api/v1/frogsleep/auth/password/change` 修改的是共享 Zook 账号密码，同一账号在 ai_novel 或其他 app 的密码登录也会使用新密码。
@@ -563,7 +561,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 ### 8.5 FrogSleep 邀请链接与推送
 
-FrogSleep 邀请响应会包含 canonical 分享字段和兼容旧客户端的 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
+FrogSleep 邀请响应会包含 canonical 分享字段和兼容字段 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
 
 ```json
 {

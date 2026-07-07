@@ -18,7 +18,7 @@ test("FrogSleep helper injects the app id into request bodies", () => {
 
   const request = {
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: { account: "a@example.com" },
   } as HttpRequest;

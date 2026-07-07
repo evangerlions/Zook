@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
+import { PublicContractValidator } from "../../src/generated/openapi/public-contract-validator.ts";
 import { FROGSLEEP_APP_ID } from "../../src/modules/frogsleep/frogsleep-app.ts";
 import { FrogSleepProductDataService } from "../../src/modules/frogsleep/product-data/frogsleep-product-data.service.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
@@ -16,7 +17,7 @@ async function createTestRuntime() {
 async function login(runtime: Awaited<ReturnType<typeof createTestRuntime>>, account: string) {
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account,
@@ -34,18 +35,20 @@ async function login(runtime: Awaited<ReturnType<typeof createTestRuntime>>, acc
 test("FrogSleep product data stores reports, progress, and entitlement state", async () => {
   const runtime = await createTestRuntime();
   const { accessToken, refreshToken } = await login(runtime, "alice@example.com");
+  const reportBody = {
+    snapshot_id: "report_2026_06_01",
+    schema_version: "1",
+    recorded_at: "2026-06-01T08:00:00.000Z",
+    date_anchor: "2026-06-01",
+    data: { sleep_minutes: 430 },
+  };
+  assert.equal(PublicContractValidator.validateFrogSleepSleepReport(reportBody).ok, true);
 
   const report = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/frogsleep/product-data/sleep-reports",
     headers: { authorization: `Bearer ${accessToken}` },
-    body: {
-      snapshot_id: "report_2026_06_01",
-      schema_version: "1",
-      recorded_at: "2026-06-01T08:00:00.000Z",
-      date_anchor: "2026-06-01",
-      data: { sleep_minutes: 430 },
-    },
+    body: reportBody,
     requestId: "req_product_data_report_create",
   } as never);
   assert.equal(report.statusCode, 200);
@@ -84,6 +87,23 @@ test("FrogSleep product data stores reports, progress, and entitlement state", a
   } as never);
   assert.equal(progress.statusCode, 200);
   assert.equal(progress.body.data.namespace, "companion_state");
+  assert.equal(PublicContractValidator.validateFrogSleepProgressSnapshot({
+    version: "2",
+    data: { cat_name: "Momo", level: 4 },
+  }).ok, true);
+
+  const patchedProgress = await runtime.app.handle({
+    method: "PATCH",
+    path: "/api/v1/frogsleep/product-data/progress/companion_state",
+    headers: { authorization: `Bearer ${accessToken}` },
+    body: {
+      version: "2",
+      data: { cat_name: "Momo", level: 4 },
+    },
+    requestId: "req_product_data_progress_patch",
+  } as never);
+  assert.equal(patchedProgress.statusCode, 200);
+  assert.equal(patchedProgress.body.data.state.level, 4);
 
   const invalidProgress = await runtime.app.handle({
     method: "PUT",
