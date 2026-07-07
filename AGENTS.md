@@ -18,6 +18,15 @@
 - 可以放进单例的逻辑：纯函数式转换、协议解析器、配置读取、无状态 adapter、稳定依赖包装、只依赖方法参数的 request builder。
 - 不能放进单例的逻辑：任何会随单次调用变化、需要在 finally/catch 中回读、或可能被并发请求同时更新的数据。遇到这种需求，优先定义局部变量、闭包内状态、或专门的 `*Session` / `*Context` 对象。
 
+## Source file size
+
+- Zook has a source-wide line-count gate enforced by `npm run check:line-count`.
+- The current gate is implemented in `scripts/check-source-line-count.mjs` and limits scanned source files to `599` lines.
+- This limit applies to backend and frontend source files covered by that script, not only to UI widget files. Tests, generated output, build output, and other explicitly excluded paths follow the script's exclusions.
+- When a production source file is already over the limit and the task touches it, prefer splitting the touched responsibility into a focused module instead of growing the oversized file.
+- Do not add a touched file to a line-count allowlist to make CI pass. A temporary exception is allowed only for legacy untouched files, and the exception must include an owner, reason, and cleanup trigger in the same change.
+- Treat a passing line-count check that depends on expanding an allowlist as unresolved maintainability debt, not as a clean pass.
+
 ## Admin Frontend
 
 - `apps/admin-web` 的前端界面默认使用 Ant Design (`antd`) 作为组件与交互基础。
