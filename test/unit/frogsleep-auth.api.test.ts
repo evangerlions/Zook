@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
+import { PublicContractValidator } from "../../src/generated/openapi/public-contract-validator.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 
 async function createTestRuntime(options: Parameters<typeof createApplication>[0] = {}) {
@@ -17,7 +18,7 @@ test("FrogSleep password login reuses shared account auth and creates FrogSleep 
 
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account: "alice@example.com",
@@ -44,7 +45,7 @@ test("FrogSleep password login accepts the Go identifier field alias", async () 
 
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       identifier: "alice@example.com",
@@ -58,12 +59,28 @@ test("FrogSleep password login accepts the Go identifier field alias", async () 
   assert.equal(response.body.data.user_id, "user_alice");
 });
 
+test("FrogSleep rejects non-canonical /v1 auth paths", async () => {
+  const runtime = await createTestRuntime();
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/v1/auth/password/login",
+    headers: {},
+    body: {
+      account: "alice@example.com",
+      password: "Password1234",
+    },
+    requestId: "req_frogsleep_non_canonical_login",
+  } as never);
+
+  assert.equal(response.statusCode, 404);
+});
+
 test("FrogSleep email and password reset code requests resolve to the FrogSleep app", async () => {
   const runtime = await createTestRuntime();
 
   const emailCodeResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/send-code",
+    path: "/api/v1/frogsleep/auth/email/send-code",
     headers: {},
     body: {
       email: "alice@example.com",
@@ -78,7 +95,7 @@ test("FrogSleep email and password reset code requests resolve to the FrogSleep 
 
   const passwordResetCodeResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/reset/request",
+    path: "/api/v1/frogsleep/auth/password/reset/request",
     headers: {},
     body: {
       email: "alice@example.com",
@@ -99,7 +116,7 @@ test("FrogSleep email register without code sends a registration code", async ()
 
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/register",
+    path: "/api/v1/frogsleep/auth/email/register",
     headers: {},
     body: {
       email: "frog-register@example.com",
@@ -120,7 +137,7 @@ test("FrogSleep password register without code sends a registration code", async
 
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/register",
+    path: "/api/v1/frogsleep/auth/password/register",
     headers: {},
     body: {
       email: "frog-password-start@example.com",
@@ -142,7 +159,7 @@ test("FrogSleep email verify and password reset accept verification_id alias", a
 
   await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/auth-code",
+    path: "/api/v1/frogsleep/auth/email/auth-code",
     headers: {},
     body: {
       email: "frog-code@example.com",
@@ -152,7 +169,7 @@ test("FrogSleep email verify and password reset accept verification_id alias", a
 
   const verifyResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/verify",
+    path: "/api/v1/frogsleep/auth/email/verify",
     headers: {},
     body: {
       verification_id: "frog-code@example.com",
@@ -167,7 +184,7 @@ test("FrogSleep email verify and password reset accept verification_id alias", a
 
   await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/reset/request",
+    path: "/api/v1/frogsleep/auth/password/reset/request",
     headers: {},
     body: {
       email: "frog-code@example.com",
@@ -177,7 +194,7 @@ test("FrogSleep email verify and password reset accept verification_id alias", a
 
   const resetResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/reset/confirm",
+    path: "/api/v1/frogsleep/auth/password/reset/confirm",
     headers: {},
     body: {
       verification_id: "frog-code@example.com",
@@ -199,7 +216,7 @@ test("FrogSleep password register and change password issue scoped sessions", as
 
   await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/register",
+    path: "/api/v1/frogsleep/auth/email/register",
     headers: {},
     body: {
       email: "frog-password@example.com",
@@ -209,7 +226,7 @@ test("FrogSleep password register and change password issue scoped sessions", as
 
   const registerResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/register",
+    path: "/api/v1/frogsleep/auth/password/register",
     headers: {},
     body: {
       email: "frog-password@example.com",
@@ -225,7 +242,7 @@ test("FrogSleep password register and change password issue scoped sessions", as
 
   const changeResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/change",
+    path: "/api/v1/frogsleep/auth/password/change",
     headers: {
       authorization: `Bearer ${registerResponse.body.access_token}`,
     },
@@ -242,7 +259,7 @@ test("FrogSleep password register and change password issue scoped sessions", as
 
   const oldPasswordLogin = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       identifier: "frog-password@example.com",
@@ -254,7 +271,7 @@ test("FrogSleep password register and change password issue scoped sessions", as
 
   const newPasswordLogin = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       identifier: "frog-password@example.com",
@@ -300,7 +317,7 @@ test("FrogSleep me and devices require FrogSleep-scoped tokens", async () => {
 
   const frogSleepLogin = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account: "alice@example.com",
@@ -312,7 +329,7 @@ test("FrogSleep me and devices require FrogSleep-scoped tokens", async () => {
 
   const meResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/me",
+    path: "/api/v1/frogsleep/me",
     headers: {
       authorization: `Bearer ${frogSleepToken}`,
     },
@@ -327,7 +344,7 @@ test("FrogSleep me and devices require FrogSleep-scoped tokens", async () => {
 
   const deviceResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/me/devices",
+    path: "/api/v1/frogsleep/devices",
     headers: {
       authorization: `Bearer ${frogSleepToken}`,
     },
@@ -345,7 +362,7 @@ test("FrogSleep me and devices require FrogSleep-scoped tokens", async () => {
 
   const updatedDeviceResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/me/devices",
+    path: "/api/v1/frogsleep/devices",
     headers: {
       authorization: `Bearer ${frogSleepToken}`,
     },
@@ -363,7 +380,7 @@ test("FrogSleep me and devices require FrogSleep-scoped tokens", async () => {
 
   const deleteResponse = await runtime.app.handle({
     method: "DELETE",
-    path: `/v1/me/devices/${deviceResponse.body.data.device.id}`,
+    path: `/api/v1/frogsleep/devices/${deviceResponse.body.data.device.id}`,
     headers: {
       authorization: `Bearer ${frogSleepToken}`,
     },
@@ -390,7 +407,7 @@ test("FrogSleep me and devices require FrogSleep-scoped tokens", async () => {
   const appAToken = String(appALogin.body.data.accessToken);
   const rejected = await runtime.app.handle({
     method: "GET",
-    path: "/v1/me",
+    path: "/api/v1/frogsleep/me",
     headers: {
       authorization: `Bearer ${appAToken}`,
     },
@@ -405,7 +422,7 @@ test("FrogSleep protected routes require active FrogSleep membership", async () 
 
   const login = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account: "alice@example.com",
@@ -418,7 +435,7 @@ test("FrogSleep protected routes require active FrogSleep membership", async () 
   runtime.database.updateAppUserStatus("frogsleep", "user_alice", "DELETED");
   const deletedResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/me",
+    path: "/api/v1/frogsleep/me",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -430,7 +447,7 @@ test("FrogSleep protected routes require active FrogSleep membership", async () 
   runtime.database.updateAppUserStatus("frogsleep", "user_alice", "BLOCKED");
   const blockedResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/me",
+    path: "/api/v1/frogsleep/me",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -447,7 +464,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   const login = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account: "alice@example.com",
@@ -459,7 +476,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   const unverifiedBindResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/bind",
+    path: "/api/v1/frogsleep/auth/email/bind",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -474,7 +491,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/send-code",
+    path: "/api/v1/frogsleep/auth/email/send-code",
     headers: {},
     body: {
       email: "alice-frogsleep@example.com",
@@ -483,7 +500,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
   } as never);
   const loginCodeBindResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/bind",
+    path: "/api/v1/frogsleep/auth/email/bind",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -499,7 +516,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   const changeCodeResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/change-code",
+    path: "/api/v1/frogsleep/auth/email/change-code",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -514,7 +531,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   const invalidBindResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/bind",
+    path: "/api/v1/frogsleep/auth/email/bind",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -530,7 +547,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   const bindResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/bind",
+    path: "/api/v1/frogsleep/auth/email/bind",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -547,7 +564,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   const replayResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/change",
+    path: "/api/v1/frogsleep/auth/email/change",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -562,7 +579,7 @@ test("FrogSleep email bind verifies the new email before updating the shared Zoo
 
   const conflictResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/change",
+    path: "/api/v1/frogsleep/auth/email/change",
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -581,7 +598,7 @@ test("FrogSleep account deletion cleans FrogSleep app data and preserves other a
 
   const login = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account: "alice@example.com",
@@ -688,7 +705,7 @@ test("FrogSleep refresh and logout use shared session storage", async () => {
 
   const login = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account: "alice@example.com",
@@ -699,7 +716,7 @@ test("FrogSleep refresh and logout use shared session storage", async () => {
 
   const refreshResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/token/refresh",
+    path: "/api/v1/frogsleep/auth/token/refresh",
     headers: {},
     body: {
       refresh_token: login.body.data.refresh_token,
@@ -714,7 +731,7 @@ test("FrogSleep refresh and logout use shared session storage", async () => {
 
   const logoutResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/logout",
+    path: "/api/v1/frogsleep/auth/logout",
     headers: {
       authorization: `Bearer ${refreshResponse.body.data.access_token}`,
     },
@@ -729,7 +746,7 @@ test("FrogSleep refresh and logout use shared session storage", async () => {
   assert.equal(logoutResponse.body.data.revoked, 1);
 });
 
-test("existing Zook auth route remains available after FrogSleep auth compatibility", async () => {
+test("existing Zook auth route remains available with FrogSleep routes enabled", async () => {
   const runtime = await createTestRuntime();
 
   const response = await runtime.app.handle({
@@ -785,10 +802,14 @@ test("FrogSleep canonical auth, me, and device paths work", async () => {
     },
     body: {
       platform: "ios",
-      push_token: "apns_canonical_token",
+      token: "apns_canonical_token",
     },
     requestId: "req_frogsleep_canonical_device",
   } as never);
+  assert.equal(PublicContractValidator.validateFrogSleepDeviceRegister({
+    platform: "ios",
+    token: "apns_canonical_token",
+  }).ok, true);
   assert.equal(deviceResponse.statusCode, 200);
   assert.equal(deviceResponse.body.data.device.pushToken, "apns_canonical_token");
 });

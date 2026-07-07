@@ -51,13 +51,10 @@ import {
   handleSleepSessionEvent,
 } from "./frogsleep-v1-sleep-routes.ts";
 
-const FROGSLEEP_V1_PREFIX = "/v1/";
 const FROGSLEEP_CANONICAL_PREFIX = "/api/v1/frogsleep";
 
 export function isFrogSleepV1Path(path: string): boolean {
   return (
-    path === "/v1" ||
-    path.startsWith(FROGSLEEP_V1_PREFIX) ||
     path === FROGSLEEP_CANONICAL_PREFIX ||
     path.startsWith(`${FROGSLEEP_CANONICAL_PREFIX}/`)
   );

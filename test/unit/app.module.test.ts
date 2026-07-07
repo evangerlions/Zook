@@ -132,7 +132,7 @@ test("unknown API routes keep the route-not-found contract", async () => {
   assert.match(response.body.message, /Request content is invalid|Route not found/);
 });
 
-test("FrogSleep v1 skeleton does not intercept unknown or existing Zook routes", async () => {
+test("disabled FrogSleep routes do not intercept unknown or existing Zook routes", async () => {
   const runtime = await createApplication({
     queueBackend: "memory",
     databaseFactory: (seed) => new InMemoryDatabase(seed),
@@ -140,7 +140,7 @@ test("FrogSleep v1 skeleton does not intercept unknown or existing Zook routes",
 
   const unknownFrogSleepResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/unknown-frogsleep-route",
+    path: "/api/v1/frogsleep/unknown-route",
     headers: {},
     requestId: "req_unknown_frogsleep_route",
   } as never);

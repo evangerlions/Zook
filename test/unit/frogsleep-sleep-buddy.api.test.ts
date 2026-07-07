@@ -15,7 +15,7 @@ async function createTestRuntime() {
 async function login(runtime: Awaited<ReturnType<typeof createTestRuntime>>, account: string) {
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account,
@@ -32,7 +32,7 @@ async function createSleepRelationship(runtime: Awaited<ReturnType<typeof create
   const bobToken = await login(runtime, "bob@example.com");
   const inviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { invitee: "user_bob" },
     requestId: "req_sleep_helper_invite",
@@ -40,7 +40,7 @@ async function createSleepRelationship(runtime: Awaited<ReturnType<typeof create
   assert.equal(inviteResponse.statusCode, 200);
   const acceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-code",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-code",
     headers: { authorization: `Bearer ${bobToken}` },
     body: { code: inviteResponse.body.data.code },
     requestId: "req_sleep_helper_accept",
@@ -60,7 +60,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const inviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -78,7 +78,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const acceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-code",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -93,7 +93,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const currentResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/relationships/current",
+    path: "/api/v1/frogsleep/sleep-buddy/relationships/current",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -106,7 +106,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const preferenceResponse = await runtime.app.handle({
     method: "PATCH",
-    path: `/v1/relationships/${relationshipId}/preferences`,
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/preferences`,
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -122,7 +122,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const sessionResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -143,7 +143,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const sessionAcceptResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/shared-sessions/${sessionId}/accept`,
+    path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/accept`,
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -154,7 +154,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const eventResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/shared-sessions/${sessionId}/events`,
+    path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/events`,
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -171,7 +171,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const summaryResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/shared-summaries/latest",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-summaries/latest",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -188,7 +188,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
 
   const recapResponse = await runtime.app.handle({
     method: "GET",
-    path: "/v1/shared-recaps/latest",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-recaps/latest",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -213,7 +213,7 @@ test("FrogSleep sleep buddy prevents duplicate active relationships and supports
 
   const inviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -224,7 +224,7 @@ test("FrogSleep sleep buddy prevents duplicate active relationships and supports
   } as never);
   const acceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-code",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -237,7 +237,7 @@ test("FrogSleep sleep buddy prevents duplicate active relationships and supports
 
   const duplicateInviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -250,7 +250,7 @@ test("FrogSleep sleep buddy prevents duplicate active relationships and supports
 
   const pauseResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/${relationshipId}/pause`,
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/pause`,
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -261,7 +261,7 @@ test("FrogSleep sleep buddy prevents duplicate active relationships and supports
 
   const resumeResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/${relationshipId}/resume`,
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/resume`,
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -272,7 +272,7 @@ test("FrogSleep sleep buddy prevents duplicate active relationships and supports
 
   const revokeResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/${relationshipId}/revoke`,
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/revoke`,
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -288,7 +288,7 @@ test("FrogSleep sleep buddy treats revoked relationships as terminal", async () 
 
   const revokeResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/${relationshipId}/revoke`,
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/revoke`,
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_terminal_revoke",
   } as never);
@@ -296,7 +296,7 @@ test("FrogSleep sleep buddy treats revoked relationships as terminal", async () 
 
   const resumeResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/${relationshipId}/resume`,
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/resume`,
     headers: { authorization: `Bearer ${bobToken}` },
     requestId: "req_sleep_terminal_resume",
   } as never);
@@ -304,7 +304,7 @@ test("FrogSleep sleep buddy treats revoked relationships as terminal", async () 
 
   const pauseResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/${relationshipId}/pause`,
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/pause`,
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_terminal_pause",
   } as never);
@@ -312,7 +312,7 @@ test("FrogSleep sleep buddy treats revoked relationships as terminal", async () 
 
   const beginResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { relationship_id: relationshipId, date_anchor: "2026-04-02" },
     requestId: "req_sleep_terminal_begin",
@@ -326,7 +326,7 @@ test("FrogSleep shared sleep begin is idempotent for relationship and date ancho
 
   const first = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { relationship_id: relationshipId, date_anchor: "2026-04-03" },
     requestId: "req_sleep_idempotent_begin_first",
@@ -335,7 +335,7 @@ test("FrogSleep shared sleep begin is idempotent for relationship and date ancho
 
   const second = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { relationship_id: relationshipId, date_anchor: "2026-04-03" },
     requestId: "req_sleep_idempotent_begin_second",
@@ -357,7 +357,7 @@ test("FrogSleep sleep events reject unknown event types and invalid relationship
   const { aliceToken, relationshipId } = await createSleepRelationship(runtime);
   const sessionResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { relationship_id: relationshipId, date_anchor: "2026-04-04" },
     requestId: "req_sleep_event_validation_begin",
@@ -367,7 +367,7 @@ test("FrogSleep sleep events reject unknown event types and invalid relationship
 
   const unknownEvent = await runtime.app.handle({
     method: "POST",
-    path: `/v1/shared-sessions/${sessionId}/events`,
+    path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/events`,
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { event_type: "teleport" },
     requestId: "req_sleep_event_validation_unknown",
@@ -389,7 +389,7 @@ test("FrogSleep sleep events reject unknown event types and invalid relationship
   });
   const orphanEvent = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions/sleep_session_orphan/events",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions/sleep_session_orphan/events",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { event_type: "returned" },
     requestId: "req_sleep_event_validation_orphan",
@@ -403,7 +403,7 @@ test("FrogSleep sleep artifacts derive recovery, pause, and visibility semantics
 
   const begin = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { relationship_id: relationshipId, date_anchor: "2026-04-05" },
     requestId: "req_sleep_artifacts_begin",
@@ -412,14 +412,14 @@ test("FrogSleep sleep artifacts derive recovery, pause, and visibility semantics
   const sessionId = String(begin.body.data.session_id);
   await runtime.app.handle({
     method: "POST",
-    path: `/v1/shared-sessions/${sessionId}/accept`,
+    path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/accept`,
     headers: { authorization: `Bearer ${bobToken}` },
     requestId: "req_sleep_artifacts_accept",
   } as never);
   for (const eventType of ["interrupted", "returned", "morning_completed"]) {
     const response = await runtime.app.handle({
       method: "POST",
-      path: `/v1/shared-sessions/${sessionId}/events`,
+      path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/events`,
       headers: { authorization: `Bearer ${aliceToken}` },
       body: { event_type: eventType },
       requestId: `req_sleep_artifacts_${eventType}`,
@@ -429,7 +429,7 @@ test("FrogSleep sleep artifacts derive recovery, pause, and visibility semantics
 
   const summary = await runtime.app.handle({
     method: "GET",
-    path: "/v1/shared-summaries/latest",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-summaries/latest",
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_artifacts_summary",
   } as never);
@@ -438,21 +438,21 @@ test("FrogSleep sleep artifacts derive recovery, pause, and visibility semantics
 
   const pauseBegin = await runtime.app.handle({
     method: "POST",
-    path: "/v1/shared-sessions",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { relationship_id: relationshipId, date_anchor: "2026-04-06" },
     requestId: "req_sleep_artifacts_pause_begin",
   } as never);
   const pauseResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/shared-sessions/${pauseBegin.body.data.session_id}/pause-tonight`,
+    path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${pauseBegin.body.data.session_id}/pause-tonight`,
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_artifacts_pause",
   } as never);
   assert.equal(pauseResponse.statusCode, 200);
   const pausedSummary = await runtime.app.handle({
     method: "GET",
-    path: "/v1/shared-summaries/latest",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-summaries/latest",
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_artifacts_paused_summary",
   } as never);
@@ -471,7 +471,7 @@ test("FrogSleep sleep artifacts derive recovery, pause, and visibility semantics
   const charlieSession = await runtime.services.authService.issueSession("user_charlie", FROGSLEEP_APP_ID);
   const charlieSummary = await runtime.app.handle({
     method: "GET",
-    path: "/v1/shared-summaries/latest",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-summaries/latest",
     headers: { authorization: `Bearer ${charlieSession.accessToken}` },
     requestId: "req_sleep_artifacts_charlie_summary",
   } as never);
@@ -479,7 +479,7 @@ test("FrogSleep sleep artifacts derive recovery, pause, and visibility semantics
   assert.equal(charlieSummary.body.data.summary, null);
   const charlieRecap = await runtime.app.handle({
     method: "GET",
-    path: "/v1/shared-recaps/latest",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-recaps/latest",
     headers: { authorization: `Bearer ${charlieSession.accessToken}` },
     requestId: "req_sleep_artifacts_charlie_recap",
   } as never);
@@ -493,7 +493,7 @@ test("FrogSleep sleep invite decline requires an authorized invitee", async () =
   const bobToken = await login(runtime, "bob@example.com");
   const inviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { invitee: "paper-note" },
     requestId: "req_sleep_decline_auth_invite",
@@ -502,7 +502,7 @@ test("FrogSleep sleep invite decline requires an authorized invitee", async () =
 
   const declineResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/invites/${inviteResponse.body.data.invite_id}/decline`,
+    path: `/api/v1/frogsleep/sleep-buddy/invites/${inviteResponse.body.data.invite_id}/decline`,
     headers: { authorization: `Bearer ${bobToken}` },
     requestId: "req_sleep_decline_auth_forbidden",
   } as never);
@@ -510,7 +510,7 @@ test("FrogSleep sleep invite decline requires an authorized invitee", async () =
 
   const cancelResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/invites/${inviteResponse.body.data.invite_id}/cancel`,
+    path: `/api/v1/frogsleep/sleep-buddy/invites/${inviteResponse.body.data.invite_id}/cancel`,
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_decline_auth_cancel",
   } as never);

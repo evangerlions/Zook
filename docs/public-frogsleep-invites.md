@@ -9,7 +9,7 @@
 1. 睡眠搭子邀请：由 `/api/v1/frogsleep/sleep-buddy/invites` 创建。
 2. 专注搭子邀请：由 `/api/v1/frogsleep/focus-buddy/matches/{userId}/invite` 或 `/api/v1/frogsleep/focus-buddy/invites` 创建。
 
-两类邀请都属于 Zook app `frogsleep`，公开业务路径统一使用 `/api/v1/frogsleep/*`；为了兼容旧客户端，服务端临时保留 `/v1/*` legacy alias。
+两类邀请都属于 Zook app `frogsleep`，公开业务路径统一使用 `/api/v1/frogsleep/*`。`/v1/*` 不属于 FrogSleep 外部 API，客户端必须使用本文档中的 canonical path。
 
 ## 2. API 响应字段
 

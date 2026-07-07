@@ -16,7 +16,7 @@ async function createTestRuntime(options: Parameters<typeof createApplication>[0
 async function login(runtime: Awaited<ReturnType<typeof createTestRuntime>>, account: string) {
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/password/login",
+    path: "/api/v1/frogsleep/auth/password/login",
     headers: {},
     body: {
       account,
@@ -31,7 +31,7 @@ async function login(runtime: Awaited<ReturnType<typeof createTestRuntime>>, acc
 async function loginWithEmailCode(runtime: Awaited<ReturnType<typeof createTestRuntime>>, email: string) {
   const codeResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/auth-code",
+    path: "/api/v1/frogsleep/auth/email/auth-code",
     headers: {},
     body: { email },
     requestId: `req_invite_email_code_${email}`,
@@ -40,7 +40,7 @@ async function loginWithEmailCode(runtime: Awaited<ReturnType<typeof createTestR
 
   const loginResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/auth/email/complete",
+    path: "/api/v1/frogsleep/auth/email/complete",
     headers: {},
     body: {
       email,
@@ -59,7 +59,7 @@ test("FrogSleep invite responses use app config link bases", async () => {
 
   const sleepInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -73,7 +73,7 @@ test("FrogSleep invite responses use app config link bases", async () => {
 
   const focusInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites",
+    path: "/api/v1/frogsleep/focus-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -93,7 +93,7 @@ test("FrogSleep focus invite code accept stores conversion metadata", async () =
 
   const inviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites",
+    path: "/api/v1/frogsleep/focus-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -106,7 +106,7 @@ test("FrogSleep focus invite code accept stores conversion metadata", async () =
 
   const acceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites/accept-code",
+    path: "/api/v1/frogsleep/focus-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -137,7 +137,7 @@ test("FrogSleep sleep buddy email invites require verified invitee ownership", a
 
   const inviteResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -162,7 +162,7 @@ test("FrogSleep sleep buddy email invites require verified invitee ownership", a
   const intruderToken = await loginWithEmailCode(runtime, "intruder@example.com");
   const intruderAcceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-token",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-token",
     headers: {
       authorization: `Bearer ${intruderToken}`,
     },
@@ -184,7 +184,7 @@ test("FrogSleep sleep buddy email invites require verified invitee ownership", a
   const inviteeToken = await loginWithEmailCode(runtime, "new-buddy@example.com");
   const inviteeAcceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-token",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-token",
     headers: {
       authorization: `Bearer ${inviteeToken}`,
     },
@@ -208,7 +208,7 @@ test("FrogSleep sleep buddy email invites require verified invitee ownership", a
 
   const reusedAcceptResponse = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-code",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${inviteeToken}`,
     },
@@ -227,7 +227,7 @@ test("FrogSleep sleep buddy rejects cancelled and self-accepted invites", async 
 
   const cancelledInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -240,7 +240,7 @@ test("FrogSleep sleep buddy rejects cancelled and self-accepted invites", async 
 
   const cancelResponse = await runtime.app.handle({
     method: "POST",
-    path: `/v1/relationships/invites/${cancelledInvite.body.data.invite_id}/cancel`,
+    path: `/api/v1/frogsleep/sleep-buddy/invites/${cancelledInvite.body.data.invite_id}/cancel`,
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -250,7 +250,7 @@ test("FrogSleep sleep buddy rejects cancelled and self-accepted invites", async 
 
   const cancelledAccept = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-code",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -263,7 +263,7 @@ test("FrogSleep sleep buddy rejects cancelled and self-accepted invites", async 
 
   const selfInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -276,7 +276,7 @@ test("FrogSleep sleep buddy rejects cancelled and self-accepted invites", async 
 
   const selfAccept = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-token",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-token",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -295,7 +295,7 @@ test("FrogSleep invite responses expose expiration and reject expired accepts", 
 
   const sleepInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -316,7 +316,7 @@ test("FrogSleep invite responses expose expiration and reject expired accepts", 
 
   const sleepAccept = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites/accept-code",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -329,7 +329,7 @@ test("FrogSleep invite responses expose expiration and reject expired accepts", 
 
   const pendingSleepInvites = await runtime.app.handle({
     method: "GET",
-    path: "/v1/relationships/invites/pending",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/pending",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -340,7 +340,7 @@ test("FrogSleep invite responses expose expiration and reject expired accepts", 
 
   const focusInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites",
+    path: "/api/v1/frogsleep/focus-buddy/invites",
     headers: {
       authorization: `Bearer ${aliceToken}`,
     },
@@ -367,7 +367,7 @@ test("FrogSleep invite responses expose expiration and reject expired accepts", 
 
   const focusAccept = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites/accept-code",
+    path: "/api/v1/frogsleep/focus-buddy/invites/accept-code",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -380,7 +380,7 @@ test("FrogSleep invite responses expose expiration and reject expired accepts", 
 
   const currentFocus = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/relationships/current",
+    path: "/api/v1/frogsleep/focus-buddy/relationships/current",
     headers: {
       authorization: `Bearer ${bobToken}`,
     },
@@ -459,7 +459,7 @@ test("FrogSleep invite redirects track open conversion metadata", async () => {
 
   const sleepInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { invitee: "user_bob", role: "friend" },
     requestId: "req_sleep_invite_open_create",
@@ -491,7 +491,7 @@ test("FrogSleep invite redirects track open conversion metadata", async () => {
 
   const focusInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites",
+    path: "/api/v1/frogsleep/focus-buddy/invites",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { user_id: "user_bob" },
     requestId: "req_focus_invite_open_create",
@@ -529,7 +529,7 @@ test("FrogSleep invite preview supports post-login recovery without accepting", 
 
   const focusInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/focus/buddy/invites",
+    path: "/api/v1/frogsleep/focus-buddy/invites",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { user_id: "user_bob" },
     requestId: "req_focus_preview_invite_create",
@@ -537,7 +537,7 @@ test("FrogSleep invite preview supports post-login recovery without accepting", 
 
   const preview = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/buddy/invites/preview",
+    path: "/api/v1/frogsleep/focus-buddy/invites/preview",
     query: { token: focusInvite.body.data.invite_token },
     headers: { authorization: `Bearer ${bobToken}` },
     requestId: "req_focus_preview_token",
@@ -551,7 +551,7 @@ test("FrogSleep invite preview supports post-login recovery without accepting", 
 
   const current = await runtime.app.handle({
     method: "GET",
-    path: "/v1/focus/relationships/current",
+    path: "/api/v1/frogsleep/focus-buddy/relationships/current",
     headers: { authorization: `Bearer ${bobToken}` },
     requestId: "req_focus_preview_current",
   } as never);
@@ -565,7 +565,7 @@ test("FrogSleep sleep invite preview ignores stale relationship ids", async () =
 
   const sleepInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { invitee: "user_bob" },
     requestId: "req_sleep_preview_stale_relation_create",
@@ -578,7 +578,7 @@ test("FrogSleep sleep invite preview ignores stale relationship ids", async () =
 
   const preview = await runtime.app.handle({
     method: "GET",
-    path: "/v1/relationships/invites/preview",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/preview",
     query: { token: sleepInvite.body.data.invite_token },
     headers: { authorization: `Bearer ${bobToken}` },
     requestId: "req_sleep_preview_stale_relation_token",
@@ -595,7 +595,7 @@ test("FrogSleep sleep invite preview does not mark inviter as able to accept unt
 
   const sleepInvite = await runtime.app.handle({
     method: "POST",
-    path: "/v1/relationships/invites",
+    path: "/api/v1/frogsleep/sleep-buddy/invites",
     headers: { authorization: `Bearer ${aliceToken}` },
     body: { invitee: "paper-note-invitee" },
     requestId: "req_sleep_preview_self_open_invite_create",
@@ -604,7 +604,7 @@ test("FrogSleep sleep invite preview does not mark inviter as able to accept unt
 
   const preview = await runtime.app.handle({
     method: "GET",
-    path: "/v1/relationships/invites/preview",
+    path: "/api/v1/frogsleep/sleep-buddy/invites/preview",
     query: { token: sleepInvite.body.data.invite_token },
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_preview_self_open_invite_token",
@@ -614,7 +614,7 @@ test("FrogSleep sleep invite preview does not mark inviter as able to accept unt
 
   const current = await runtime.app.handle({
     method: "GET",
-    path: "/v1/relationships/current",
+    path: "/api/v1/frogsleep/sleep-buddy/relationships/current",
     headers: { authorization: `Bearer ${aliceToken}` },
     requestId: "req_sleep_preview_self_open_invite_current",
   } as never);

@@ -66,6 +66,24 @@ test("Postgres app-user runtime deletion removes FrogSleep app-scoped runtime re
         "DELETE FROM zook_frogsleep_focus_match_feedback WHERE app_id = $1 AND (owner_user_id = $2 OR partner_user_id = $2)"
     ),
   );
+  assert.ok(
+    queries.some((query) =>
+      query.sql ===
+        "DELETE FROM zook_frogsleep_sleep_report_snapshots WHERE app_id = $1 AND (owner_user_id = $2 OR partner_user_id = $2)"
+    ),
+  );
+  assert.ok(
+    queries.some((query) =>
+      query.sql ===
+        "DELETE FROM zook_frogsleep_progress_snapshots WHERE app_id = $1 AND (owner_user_id = $2 OR partner_user_id = $2)"
+    ),
+  );
+  assert.ok(
+    queries.some((query) =>
+      query.sql ===
+        "DELETE FROM zook_frogsleep_entitlement_records WHERE app_id = $1 AND (owner_user_id = $2 OR partner_user_id = $2)"
+    ),
+  );
   assert.deepEqual(
     queries.find((query) => query.sql.startsWith("DELETE FROM zook_frogsleep_devices"))?.values,
     ["frogsleep", "user_alice"],
