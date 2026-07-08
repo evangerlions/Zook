@@ -185,10 +185,11 @@
 
 当前已经提供一条通用产品公开配置接口：
 
-1. `GET /api/v1/{appId}/public/config`
+1. `GET /api/v1/{productKey}/public/config`
 2. 数据来源是后台维护的 `admin.delivery_config`
 3. 返回值为当前 app 配置的 JSON 对象
-4. 如果请求同时携带 `X-App-Id` 或 Bearer Token，则必须与 path 中的 `appId` 一致
+4. 如果请求同时携带 `X-App-Id` 或 Bearer Token，则必须与 path 中的 `productKey` 对应 app 一致
+5. 这里的 `productKey` 是 URL namespace；运行时数据与鉴权仍使用 `appId`
 
 ### 2.13 AINovel 加密 AI 能力接口
 
@@ -260,7 +261,34 @@
 25. `PUT /api/v1/admin/apps/common/llm-service`
 26. `GET /api/v1/admin/apps/common/llm-service/metrics`
 
-账号删除当前按 app-scoped 语义实现：`users/me/delete` 会将当前 app membership 标记为 `DELETED`，撤销该 app 下用户 session，清理 app 侧 analytics、files metadata、client logs、notification jobs、user roles，并保留全局 `zook_users` 与 audit logs。24. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` 25. `GET /api/v1/admin/apps/{appId}/i18n-settings` 26. `PUT /api/v1/admin/apps/{appId}/i18n-settings` 27. `GET /api/v1/admin/apps/{appId}/remote-log-pull` 28. `PUT /api/v1/admin/apps/{appId}/remote-log-pull` 29. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks` 30. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks` 31. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel` 32. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}` 33. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file` 34. `GET /api/v1/admin/apps/{appId}/ai-routing` 35. `PUT /api/v1/admin/apps/{appId}/ai-routing` 36. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}` 37. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore` 38. `POST /api/v1/admin/sensitive-operations/request-code` 39. `POST /api/v1/admin/sensitive-operations/verify` 40. `POST /api/v1/admin/apps/{appId}/log-secret/reveal` 41. `GET /api/v1/logs/policy` 42. `GET /api/v1/logs/pull-task` 43. `POST /api/v1/logs/tasks/{taskId}/ack` 44. `POST /api/v1/logs/tasks/{taskId}/fail` 45. `POST /api/v1/logs/upload` 46. `GET /api/v1/{appId}/public/config` 47. `POST /api/v1/ai_novel/ai/chat-completions` 48. `POST /api/v1/ai_novel/ai/embeddings` 49. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
+27. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}`
+28. `GET /api/v1/admin/apps/{appId}/i18n-settings`
+29. `PUT /api/v1/admin/apps/{appId}/i18n-settings`
+30. `GET /api/v1/admin/apps/{appId}/remote-log-pull`
+31. `PUT /api/v1/admin/apps/{appId}/remote-log-pull`
+32. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+33. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks`
+34. `POST /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/cancel`
+35. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}`
+36. `GET /api/v1/admin/apps/{appId}/remote-log-pull/tasks/{taskId}/file`
+37. `GET /api/v1/admin/apps/{appId}/ai-routing`
+38. `PUT /api/v1/admin/apps/{appId}/ai-routing`
+39. `GET /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}`
+40. `POST /api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore`
+41. `POST /api/v1/admin/sensitive-operations/request-code`
+42. `POST /api/v1/admin/sensitive-operations/verify`
+43. `POST /api/v1/admin/apps/{appId}/log-secret/reveal`
+44. `GET /api/v1/logs/policy`
+45. `GET /api/v1/logs/pull-task`
+46. `POST /api/v1/logs/tasks/{taskId}/ack`
+47. `POST /api/v1/logs/tasks/{taskId}/fail`
+48. `POST /api/v1/logs/upload`
+49. `GET /api/v1/{productKey}/public/config`
+50. `POST /api/v1/ai_novel/ai/chat-completions`
+51. `POST /api/v1/ai_novel/ai/embeddings`
+52. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
+
+账号删除当前按 app-scoped 语义实现：`users/me/delete` 会将当前 app membership 标记为 `DELETED`，撤销该 app 下用户 session，清理 app 侧 analytics、files metadata、client logs、notification jobs、user roles，并保留全局 `zook_users` 与 audit logs。
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。
