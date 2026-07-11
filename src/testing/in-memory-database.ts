@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   AnalyticsEventRecord,
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -62,6 +64,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   contentSafetyCheckRecords: ContentSafetyCheckRecord[];
   feedbackRecords: FeedbackRecord[];
   feedbackAttachments: FeedbackAttachmentRecord[];
+  aiNovelStatisticsSnapshots: AiNovelStatisticsSnapshotRecord[];
+  aiNovelDailyStatistics: AiNovelDailyStatisticsRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -86,6 +90,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.contentSafetyCheckRecords = structuredClone(seed.contentSafetyCheckRecords ?? []);
     this.feedbackRecords = structuredClone(seed.feedbackRecords ?? []);
     this.feedbackAttachments = structuredClone(seed.feedbackAttachments ?? []);
+    this.aiNovelStatisticsSnapshots = structuredClone(seed.aiNovelStatisticsSnapshots ?? []);
+    this.aiNovelDailyStatistics = structuredClone(seed.aiNovelDailyStatistics ?? []);
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -172,6 +178,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.appId !== appId);
     this.feedbackRecords = this.feedbackRecords.filter((item) => item.appId !== appId);
     this.feedbackAttachments = this.feedbackAttachments.filter((item) => item.appId !== appId);
+    this.aiNovelStatisticsSnapshots = this.aiNovelStatisticsSnapshots.filter((item) => item.appId !== appId);
+    this.aiNovelDailyStatistics = this.aiNovelDailyStatistics.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -242,6 +250,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
     this.feedbackAttachments = this.feedbackAttachments.filter(
       (item) => !feedbackIds.includes(item.feedbackId),
+    );
+    this.aiNovelStatisticsSnapshots = this.aiNovelStatisticsSnapshots.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.aiNovelDailyStatistics = this.aiNovelDailyStatistics.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
     );
   }
 
@@ -650,6 +664,85 @@ export class InMemoryDatabase extends ApplicationDatabase {
           item.id === attachmentId,
       ),
     );
+  }
+
+  upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): void {
+    const index = this.aiNovelStatisticsSnapshots.findIndex(
+      (item) => item.appId === record.appId && item.userId === record.userId,
+    );
+    if (index >= 0) {
+      this.aiNovelStatisticsSnapshots[index] = structuredClone(record);
+      return;
+    }
+    this.aiNovelStatisticsSnapshots.push(structuredClone(record));
+  }
+
+  findAiNovelStatisticsSnapshot(
+    appId: string,
+    userId: string,
+  ): AiNovelStatisticsSnapshotRecord | undefined {
+    return structuredClone(
+      this.aiNovelStatisticsSnapshots.find(
+        (item) => item.appId === appId && item.userId === userId,
+      ),
+    );
+  }
+
+  upsertAiNovelDailyWritingStats(records: AiNovelDailyStatisticsRecord[]): void {
+    for (const record of records) {
+      const existing = this.aiNovelDailyStatistics.find(
+        (item) =>
+          item.appId === record.appId &&
+          item.userId === record.userId &&
+          item.date === record.date,
+      );
+      if (existing) {
+        existing.words = record.words;
+        existing.active = record.active;
+        existing.updatedAt = record.updatedAt;
+      } else {
+        this.aiNovelDailyStatistics.push(structuredClone(record));
+      }
+    }
+  }
+
+  incrementAiNovelDailyTokenUsage(
+    appId: string,
+    userId: string,
+    date: string,
+    tokens: number,
+    updatedAt: string,
+  ): void {
+    const existing = this.aiNovelDailyStatistics.find(
+      (item) => item.appId === appId && item.userId === userId && item.date === date,
+    );
+    if (existing) {
+      existing.tokens += Math.max(0, Math.floor(tokens));
+      existing.updatedAt = updatedAt;
+      return;
+    }
+    this.aiNovelDailyStatistics.push({
+      appId,
+      userId,
+      date,
+      words: 0,
+      tokens: Math.max(0, Math.floor(tokens)),
+      active: false,
+      updatedAt,
+    });
+  }
+
+  listAiNovelDailyStatistics(filter: {
+    appId: string;
+    userId: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): AiNovelDailyStatisticsRecord[] {
+    return structuredClone(this.aiNovelDailyStatistics)
+      .filter((item) => item.appId === filter.appId && item.userId === filter.userId)
+      .filter((item) => filter.dateFrom ? item.date >= filter.dateFrom : true)
+      .filter((item) => filter.dateTo ? item.date <= filter.dateTo : true)
+      .sort((left, right) => left.date.localeCompare(right.date));
   }
 
   get seedManagedState(): ManagedStateSnapshot {

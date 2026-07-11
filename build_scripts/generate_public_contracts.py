@@ -65,6 +65,11 @@ SPECS: dict[str, list[str]] = {
         "AINovelPublicConfig",
         "PublicConfigData",
     ],
+    "ainovel/statistics.yaml": [
+        "AiNovelStatisticsData",
+        "AiNovelStatisticsSnapshotRequest",
+        "AiNovelStatisticsSnapshotResponse",
+    ],
 }
 
 ALIASES: dict[str, str] = {
@@ -165,6 +170,9 @@ def resolve_workspace_root(value: str | None) -> Path:
         marker = parent / 'PROJECT_PATHS.local.toml'
         if marker.exists():
             return parent.resolve()
+        sibling_workspace = parent / 'zook-workspace'
+        if (sibling_workspace / 'api' / 'openapi').exists():
+            return sibling_workspace.resolve()
     raise SystemExit('workspace root not found; pass --workspace-root explicitly')
 
 

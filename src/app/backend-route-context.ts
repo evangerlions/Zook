@@ -12,6 +12,7 @@ import { CommonTestAccountService } from "../services/common-test-account.servic
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
+import { AiNovelStatisticsService } from "../services/ai-novel-statistics.service.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type { AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -66,6 +67,7 @@ export class BackendRouteContext {
     protected readonly publicApiMessageService: PublicApiMessageService,
     protected readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     protected readonly feedbackService: FeedbackService,
+    protected readonly aiNovelStatisticsService: AiNovelStatisticsService,
     protected readonly appContextResolver: AppContextResolver,
     protected readonly authGuard: AuthGuard,
     protected readonly appAccessGuard: AppAccessGuard,

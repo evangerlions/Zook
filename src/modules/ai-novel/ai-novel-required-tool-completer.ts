@@ -17,6 +17,7 @@ export async function completeRequiredToolViaStream(
     temperature: number;
     maxTokens: number;
     providerOptions?: Record<string, unknown>;
+    usageOwner?: { appId: string; userId: string };
     forcedToolName: string;
   },
 ): Promise<LLMCompletionResult> {
@@ -32,6 +33,7 @@ export async function completeRequiredToolViaStream(
         temperature: input.temperature,
         maxTokens: input.maxTokens,
         ...(input.providerOptions ? { providerOptions: input.providerOptions } : {}),
+        ...(input.usageOwner ? { usageOwner: input.usageOwner } : {}),
       },
       { firstContentTimeoutMs: STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS },
     );
