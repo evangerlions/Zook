@@ -73,6 +73,29 @@ DEPLOY_KEEP_RELEASES=5
 DEPLOY_BUILDER_PRUNE_UNTIL=168h
 ```
 
+## FrogSleep 发布前置条件
+
+`release-dev` 和 `release-online` 对应的 `DEPLOY_SLOT=dev|online` 会默认启用 FrogSleep；如果需要显式覆盖，可以在槽位 env 中设置 `FROGSLEEP_ENABLED=true` 或 `FROGSLEEP_ENABLED=false`。FrogSleep 外部 App / H5 / Web 客户端必须使用 canonical `/api/v1/frogsleep/*` 路径，根 `/v1/*` 只作为服务端内部归一化路径，不作为线上联调合同。
+
+发布 FrogSleep 前确认：
+
+1. `DATABASE_URL` / `DIRECT_URL` 指向目标槽位 PostgreSQL，且迁移脚本会执行到 `src/infrastructure/database/postgres/migrations/006_frogsleep_app.sql`。
+2. `REDIS_URL` 指向目标槽位 Redis；API、Worker 和通知队列必须连接同一槽位的 Redis。
+3. API 和 Worker 都使用同一个槽位 env 文件启动，避免 API 接受请求但 Worker 不能分发 FrogSleep push。
+4. iOS push 需要补齐 APNs 变量：`APNS_KEY_ID`、`APNS_TEAM_ID`、`APNS_BUNDLE_ID` 或 `APNS_TOPIC`、`APNS_PRIVATE_KEY_PATH`；online 槽应设置 `APNS_SANDBOX=false`。
+5. 发布前跑后端门禁：`npm run check:line-count`、FrogSleep focused tests、`openspec validate --changes --strict`。
+6. 发布后记录目标 URL 的 `/api/health` 响应版本，并运行 canonical smoke：
+
+```bash
+ZOOK_BASE_URL=https://app.youwoai.net \
+SMOKE_A_EMAIL=alice@example.com SMOKE_A_PASSWORD=Password1234 \
+SMOKE_B_EMAIL=bob@example.com SMOKE_B_PASSWORD=Password1234 \
+SMOKE_C_EMAIL=charlie@example.com SMOKE_C_PASSWORD=Password1234 \
+npm run smoke:frogsleep-zook
+```
+
+如果线上 QA 账号不同，用真实保留账号替换 `SMOKE_*`。需要验证过期邀请时，再额外设置 `SMOKE_EXPIRED_INVITE_DB_MUTATION=1` 和目标库的 `SMOKE_DATABASE_URL` / `DATABASE_URL`。
+
 ## 服务器准备
 
 建议在服务器上只保留一个仓库目录，例如：

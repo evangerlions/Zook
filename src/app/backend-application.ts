@@ -238,7 +238,7 @@ export class BackendApplication extends BackendRouteContext {
       }
     }
 
-    throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
+    throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");
   }
 
 

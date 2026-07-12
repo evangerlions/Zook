@@ -6,6 +6,7 @@ const baseUrl = normalizeBaseUrl(process.env.ZOOK_BASE_URL ?? "http://127.0.0.1:
 const cleanupExisting = process.env.SMOKE_CLEANUP_EXISTING !== "0";
 const enableExpiredInviteDbMutation = process.env.SMOKE_EXPIRED_INVITE_DB_MUTATION === "1";
 const databaseUrl = normalizeDatabaseUrl(process.env.SMOKE_DATABASE_URL ?? process.env.DATABASE_URL ?? "");
+const frogSleepApi = "/api/v1/frogsleep";
 
 const accounts = {
   A: readAccount("A"),
@@ -87,7 +88,7 @@ async function healthCheck() {
 async function login(account) {
   let response;
   if (account.password) {
-    response = await request("POST", "/v1/auth/password/login", {
+    response = await request("POST", `${frogSleepApi}/auth/password/login`, {
       body: {
         account: account.email,
         password: account.password,
@@ -95,12 +96,12 @@ async function login(account) {
     });
   } else {
     assert(account.code, `SMOKE_${account.label}_PASSWORD or SMOKE_${account.label}_CODE is required`);
-    await request("POST", "/v1/auth/email/auth-code", {
+    await request("POST", `${frogSleepApi}/auth/email/auth-code`, {
       body: {
         email: account.email,
       },
     });
-    response = await request("POST", "/v1/auth/email/complete", {
+    response = await request("POST", `${frogSleepApi}/auth/email/complete`, {
       body: {
         email: account.email,
         code: account.code,
@@ -134,8 +135,18 @@ async function cleanupExistingRelationships() {
     return;
   }
   for (const account of Object.values(accounts)) {
-    await cleanupCurrentRelationship(account, "/v1/relationships/current", "/v1/relationships", "sleep");
-    await cleanupCurrentRelationship(account, "/v1/focus/relationships/current", "/v1/focus/relationships", "focus");
+    await cleanupCurrentRelationship(
+      account,
+      `${frogSleepApi}/sleep-buddy/relationships/current`,
+      `${frogSleepApi}/sleep-buddy/relationships`,
+      "sleep",
+    );
+    await cleanupCurrentRelationship(
+      account,
+      `${frogSleepApi}/focus-buddy/relationships/current`,
+      `${frogSleepApi}/focus-buddy/relationships`,
+      "focus",
+    );
   }
 }
 
@@ -156,7 +167,7 @@ async function cleanupCurrentRelationship(account, currentPath, actionBasePath, 
 }
 
 async function createSleepInvite(inviter, inviteeEmail, label) {
-  const response = await request("POST", "/v1/relationships/invites", {
+  const response = await request("POST", `${frogSleepApi}/sleep-buddy/invites`, {
     token: inviter.token,
     body: {
       invitee: inviteeEmail,
@@ -181,7 +192,7 @@ async function createSleepInvite(inviter, inviteeEmail, label) {
 async function sleepBuddyFlow() {
   const invite = await createSleepInvite(accounts.A, accounts.B.email, "sleep_invite_created_for_B");
 
-  const mismatched = await request("POST", "/v1/relationships/invites/accept-token", {
+  const mismatched = await request("POST", `${frogSleepApi}/sleep-buddy/invites/accept-token`, {
     token: accounts.C.token,
     body: {
       token: invite.invite_token,
@@ -190,7 +201,7 @@ async function sleepBuddyFlow() {
   });
   record("sleep_mismatched_email_rejected", { status: mismatched.status, code: mismatched.body.code });
 
-  const accepted = await request("POST", "/v1/relationships/invites/accept-token", {
+  const accepted = await request("POST", `${frogSleepApi}/sleep-buddy/invites/accept-token`, {
     token: accounts.B.token,
     body: {
       token: invite.invite_token,
@@ -203,7 +214,7 @@ async function sleepBuddyFlow() {
     status: relationship.status,
   });
 
-  const reused = await request("POST", "/v1/relationships/invites/accept-code", {
+  const reused = await request("POST", `${frogSleepApi}/sleep-buddy/invites/accept-code`, {
     token: accounts.B.token,
     body: {
       code: invite.invite_code,
@@ -212,10 +223,10 @@ async function sleepBuddyFlow() {
   });
   record("sleep_reused_invite_rejected", { status: reused.status, code: reused.body.code });
 
-  const aCurrent = relationshipPayload(await request("GET", "/v1/relationships/current", {
+  const aCurrent = relationshipPayload(await request("GET", `${frogSleepApi}/sleep-buddy/relationships/current`, {
     token: accounts.A.token,
   }));
-  const bCurrent = relationshipPayload(await request("GET", "/v1/relationships/current", {
+  const bCurrent = relationshipPayload(await request("GET", `${frogSleepApi}/sleep-buddy/relationships/current`, {
     token: accounts.B.token,
   }));
   assert(aCurrent.status === "active", "A current sleep relationship is not active");
@@ -230,10 +241,10 @@ async function invalidSleepInviteFlow() {
   await expiredSleepInviteFlow();
 
   const cancelledInvite = await createSleepInvite(accounts.A, accounts.C.email, "sleep_invite_created_for_cancel");
-  await request("POST", `/v1/relationships/invites/${cancelledInvite.invite_id}/cancel`, {
+  await request("POST", `${frogSleepApi}/sleep-buddy/invites/${cancelledInvite.invite_id}/cancel`, {
     token: accounts.A.token,
   });
-  const cancelledAccept = await request("POST", "/v1/relationships/invites/accept-code", {
+  const cancelledAccept = await request("POST", `${frogSleepApi}/sleep-buddy/invites/accept-code`, {
     token: accounts.C.token,
     body: {
       code: cancelledInvite.invite_code,
@@ -243,7 +254,7 @@ async function invalidSleepInviteFlow() {
   record("sleep_cancelled_invite_rejected", { status: cancelledAccept.status, code: cancelledAccept.body.code });
 
   const selfInvite = await createSleepInvite(accounts.A, accounts.C.email, "sleep_invite_created_for_self_accept");
-  const selfAccept = await request("POST", "/v1/relationships/invites/accept-token", {
+  const selfAccept = await request("POST", `${frogSleepApi}/sleep-buddy/invites/accept-token`, {
     token: accounts.A.token,
     body: {
       token: selfInvite.invite_token,
@@ -264,7 +275,7 @@ async function expiredSleepInviteFlow() {
 
   const expiredInvite = await createSleepInvite(accounts.A, accounts.C.email, "sleep_invite_created_for_expire");
   await mutateSleepInviteExpiresAt(expiredInvite.invite_id, "2020-01-01T00:00:00.000Z");
-  const expiredAccept = await request("POST", "/v1/relationships/invites/accept-code", {
+  const expiredAccept = await request("POST", `${frogSleepApi}/sleep-buddy/invites/accept-code`, {
     token: accounts.C.token,
     body: {
       code: expiredInvite.invite_code,
@@ -295,7 +306,7 @@ async function mutateSleepInviteExpiresAt(inviteId, expiresAt) {
 }
 
 async function saveFocusProfile(account, displayName) {
-  await request("POST", "/v1/focus/match-profile", {
+  await request("POST", `${frogSleepApi}/focus-buddy/match-profile`, {
     token: account.token,
     body: {
       display_name: displayName,
@@ -312,7 +323,7 @@ async function focusBuddyFlow() {
   await saveFocusProfile(accounts.A, "Smoke A");
   await saveFocusProfile(accounts.B, "Smoke B");
 
-  const inviteResponse = await request("POST", `/v1/focus/matches/${encodeURIComponent(accounts.B.userId)}/invite`, {
+  const inviteResponse = await request("POST", `${frogSleepApi}/focus-buddy/matches/${encodeURIComponent(accounts.B.userId)}/invite`, {
     token: accounts.A.token,
   });
   const invite = invitePayload(inviteResponse);
@@ -323,7 +334,7 @@ async function focusBuddyFlow() {
     code: invite.invite_code,
   });
 
-  const acceptedResponse = await request("POST", "/v1/focus/buddy/invites/accept-code", {
+  const acceptedResponse = await request("POST", `${frogSleepApi}/focus-buddy/invites/accept-code`, {
     token: accounts.B.token,
     body: {
       code: invite.invite_code,
@@ -336,7 +347,7 @@ async function focusBuddyFlow() {
     status: accepted.status,
   });
 
-  const current = relationshipPayload(await request("GET", "/v1/focus/relationships/current", {
+  const current = relationshipPayload(await request("GET", `${frogSleepApi}/focus-buddy/relationships/current`, {
     token: accounts.A.token,
   }));
   assert(current.status === "accepted", "Focus current relationship is not accepted");

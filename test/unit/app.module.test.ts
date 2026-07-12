@@ -100,6 +100,43 @@ test("default seed keeps unlaunched FrogSleep out of existing app surfaces", asy
   assert.equal((await runtime.database.findApp("app_a"))?.name, "App A");
 });
 
+test("dev and online deploy slots enable FrogSleep unless explicitly disabled", async () => {
+  const originalDeploySlot = process.env.DEPLOY_SLOT;
+  const originalFrogSleepEnabled = process.env.FROGSLEEP_ENABLED;
+
+  try {
+    process.env.DEPLOY_SLOT = "online";
+    delete process.env.FROGSLEEP_ENABLED;
+
+    const enabledRuntime = await createApplication({
+      queueBackend: "memory",
+      databaseFactory: (seed) => new InMemoryDatabase(seed),
+    });
+
+    assert.equal((await enabledRuntime.database.findApp("frogsleep"))?.joinMode, "AUTO");
+
+    process.env.FROGSLEEP_ENABLED = "false";
+    const disabledRuntime = await createApplication({
+      queueBackend: "memory",
+      databaseFactory: (seed) => new InMemoryDatabase(seed),
+    });
+
+    assert.equal(await disabledRuntime.database.findApp("frogsleep"), undefined);
+  } finally {
+    if (originalDeploySlot === undefined) {
+      delete process.env.DEPLOY_SLOT;
+    } else {
+      process.env.DEPLOY_SLOT = originalDeploySlot;
+    }
+
+    if (originalFrogSleepEnabled === undefined) {
+      delete process.env.FROGSLEEP_ENABLED;
+    } else {
+      process.env.FROGSLEEP_ENABLED = originalFrogSleepEnabled;
+    }
+  }
+});
+
 test("FrogSleep can be explicitly enabled as an isolated app", async () => {
   const runtime = await createApplication({
     frogsleepEnabled: true,
@@ -128,7 +165,7 @@ test("unknown API routes keep the route-not-found contract", async () => {
   } as never);
 
   assert.equal(response.statusCode, 404);
-  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.equal(response.body.code, "REQ_ROUTE_NOT_FOUND");
   assert.match(response.body.message, /Request content is invalid|Route not found/);
 });
 
@@ -145,7 +182,7 @@ test("disabled FrogSleep routes do not intercept unknown or existing Zook routes
     requestId: "req_unknown_frogsleep_route",
   } as never);
   assert.equal(unknownFrogSleepResponse.statusCode, 404);
-  assert.equal(unknownFrogSleepResponse.body.code, "REQ_INVALID_BODY");
+  assert.equal(unknownFrogSleepResponse.body.code, "REQ_ROUTE_NOT_FOUND");
 
   const healthResponse = await runtime.app.handle({
     method: "GET",
@@ -162,7 +199,7 @@ test("disabled FrogSleep routes do not intercept unknown or existing Zook routes
     requestId: "req_unknown_api_after_frogsleep_route",
   } as never);
   assert.equal(unknownApiResponse.statusCode, 404);
-  assert.equal(unknownApiResponse.body.code, "REQ_INVALID_BODY");
+  assert.equal(unknownApiResponse.body.code, "REQ_ROUTE_NOT_FOUND");
 });
 
 test("generic encrypted AI route is not exposed outside documented AINovel endpoints", async () => {
@@ -180,7 +217,7 @@ test("generic encrypted AI route is not exposed outside documented AINovel endpo
   } as never);
 
   assert.equal(response.statusCode, 404);
-  assert.equal(response.body.code, "REQ_INVALID_BODY");
+  assert.equal(response.body.code, "REQ_ROUTE_NOT_FOUND");
   assert.match(response.body.message, /Request content is invalid|Route not found/);
 });
 

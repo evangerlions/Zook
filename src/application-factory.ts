@@ -76,6 +76,7 @@ import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./servi
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
+import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 
@@ -576,12 +577,6 @@ export async function createApplication(
   };
 }
 
-function resolveFrogSleepEnabled(options: CreateApplicationOptions): boolean {
-  if (typeof options.frogsleepEnabled === "boolean") {
-    return options.frogsleepEnabled;
-  }
-  return process.env.FROGSLEEP_ENABLED?.trim().toLowerCase() === "true";
-}
 function resolvePublicSmsTestBypass(options: CreateApplicationOptions): boolean {
   if (typeof options.publicSmsTestBypassEnabled === "boolean") {
     return options.publicSmsTestBypassEnabled;
