@@ -1691,12 +1691,18 @@ export type AiNovelStatisticsData = {
 export const AiNovelStatisticsSnapshotRequestSchema = {
   "type": "object",
   "required": [
+    "accountId",
     "totalWorks",
     "totalWords",
     "totalChapters",
     "activeWritingDays"
   ],
   "properties": {
+    "accountId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Expected authenticated account. Zook rejects a mismatch."
+    },
     "totalWorks": {
       "type": "integer",
       "minimum": 0
@@ -1716,6 +1722,7 @@ export const AiNovelStatisticsSnapshotRequestSchema = {
     "daily": {
       "type": "array",
       "maxItems": 400,
+      "uniqueItems": true,
       "items": {
         "type": "object",
         "required": [
@@ -1741,6 +1748,7 @@ export const AiNovelStatisticsSnapshotRequestSchema = {
 } as const;
 
 export type AiNovelStatisticsSnapshotRequest = {
+  "accountId": string;
   "totalWorks": number;
   "totalWords": number;
   "totalChapters": number;

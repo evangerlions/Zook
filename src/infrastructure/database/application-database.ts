@@ -199,8 +199,11 @@ export abstract class ApplicationDatabase {
     appId: string,
     userId: string,
   ): MaybePromise<AiNovelStatisticsSnapshotRecord | undefined>;
-  abstract upsertAiNovelDailyWritingStats(
+  abstract replaceAiNovelDailyWritingStats(
+    appId: string,
+    userId: string,
     records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
   ): MaybePromise<void>;
   abstract incrementAiNovelDailyTokenUsage(
     appId: string,

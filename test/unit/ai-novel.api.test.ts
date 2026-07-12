@@ -4159,6 +4159,13 @@ test("ai_novel upstream auth failures return refined code with local debug detai
 
 test("ai_novel embeddings route resolves scene_key to embedding scene route selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
+  runtime.database.insertAppUser({
+    id: "app_user_embedding_usage",
+    appId: "ai_novel",
+    userId: "user_alice",
+    status: "ACTIVE",
+    joinedAt: "2026-07-01T00:00:00.000Z",
+  });
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "ai_novel",
@@ -4193,6 +4200,11 @@ test("ai_novel embeddings route resolves scene_key to embedding scene route sele
   assert.equal(data.providerModel, "text-embedding-v4");
   assert.equal(data.providerRequestId, "emb-req-001");
   assert.equal(((data.vectors ?? []) as unknown[]).length, 2);
+  const usageRecords = runtime.database.aiNovelDailyStatistics.filter(
+    (item) => item.appId === "ai_novel" && item.userId === "user_alice",
+  );
+  assert.equal(usageRecords.length, 1);
+  assert.ok((usageRecords[0]?.tokens ?? 0) > 0);
 });
 
 test("ai_novel routes return encrypted business errors after request decryption", async () => {

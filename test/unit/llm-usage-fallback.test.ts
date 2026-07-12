@@ -54,7 +54,7 @@ test("LLM stream estimates usage from reasoning, content, and tool deltas when p
   const usageEvent = events.find((event) => event.type === "usage");
   assert.ok(usageEvent);
   assert.equal(usageEvent.usage.estimated, true);
-  assert.equal(usageEvent.usage.promptTokens, 0);
+  assert.ok(usageEvent.usage.promptTokens > 0);
   assert.ok(usageEvent.usage.reasoningTokens);
   assert.ok(usageEvent.usage.completionTokens > usageEvent.usage.reasoningTokens);
   assert.equal(recordedUsages.length, 1);
@@ -101,6 +101,7 @@ test("LLM complete estimates usage from final text and tool calls when provider 
   });
 
   assert.equal(result.usage?.estimated, true);
+  assert.ok((result.usage?.promptTokens ?? 0) > 0);
   assert.ok(result.usage?.reasoningTokens);
   assert.ok((result.usage?.totalTokens ?? 0) > 0);
 });

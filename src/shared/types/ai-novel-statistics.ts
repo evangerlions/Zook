@@ -43,6 +43,7 @@ export interface AiNovelStatisticsSnapshotDailyInput {
 }
 
 export interface AiNovelStatisticsSnapshotRequest {
+  accountId: string;
   totalWorks: number;
   totalWords: number;
   totalChapters: number;

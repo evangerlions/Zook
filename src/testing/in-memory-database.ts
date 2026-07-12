@@ -701,7 +701,19 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
   }
 
-  upsertAiNovelDailyWritingStats(records: AiNovelDailyStatisticsRecord[]): void {
+  replaceAiNovelDailyWritingStats(
+    appId: string,
+    userId: string,
+    records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
+  ): void {
+    for (const existing of this.aiNovelDailyStatistics) {
+      if (existing.appId === appId && existing.userId === userId) {
+        existing.words = 0;
+        existing.active = false;
+        existing.updatedAt = updatedAt;
+      }
+    }
     for (const record of records) {
       const existing = this.aiNovelDailyStatistics.find(
         (item) =>

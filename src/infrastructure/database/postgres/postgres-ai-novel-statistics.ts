@@ -73,7 +73,18 @@ export class PostgresAiNovelStatisticsStore {
     return result.rows[0] ? parseSnapshot(result.rows[0]) : undefined;
   }
 
-  async upsertDailyWritingStats(records: AiNovelDailyStatisticsRecord[]): Promise<void> {
+  async replaceDailyWritingStats(
+    appId: string,
+    userId: string,
+    records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
+  ): Promise<void> {
+    await this.query(
+      `UPDATE zook_ai_novel_daily_statistics
+       SET words = 0, active = FALSE, updated_at = $3::timestamptz
+       WHERE app_id = $1 AND user_id = $2`,
+      [appId, userId, updatedAt],
+    );
     for (const record of records) {
       await this.query(
         `INSERT INTO zook_ai_novel_daily_statistics (

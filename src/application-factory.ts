@@ -33,6 +33,7 @@ import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { AiNovelStatisticsService } from "./services/ai-novel-statistics.service.ts";
+import { createAiNovelStatisticsUsageOptions } from "./services/ai-novel-statistics-usage-recorder.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
@@ -368,10 +369,15 @@ export async function createApplication(
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
   };
+  const statisticsUsageOptions = createAiNovelStatisticsUsageOptions(
+    aiNovelStatisticsService,
+    logger,
+  );
   const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
     commonLlmConfigService,
     llmHealthService,
     llmMetricsService,
+    ...statisticsUsageOptions,
   });
   const llmSmokeTestService = new LlmSmokeTestService(
     commonLlmConfigService,
@@ -409,16 +415,7 @@ export async function createApplication(
     commonLlmConfigService,
     llmHealthService,
     llmMetricsService,
-    usageRecorder: async ({ appId, userId, usage, occurredAt }) => {
-      await aiNovelStatisticsService.recordTokenUsage({
-        appId, userId, totalTokens: usage.totalTokens, occurredAt,
-      });
-    },
-    usageRecorderErrorHandler: ({ appId, userId, occurredAt, error }) => {
-      logger.warn("failed to record LLM usage for app statistics", {
-        appId, userId, occurredAt: occurredAt.toISOString(), error,
-      });
-    },
+    ...statisticsUsageOptions,
   });
   const contentSafetyService = new ContentSafetyService(
     commonContentSafetyConfigService,

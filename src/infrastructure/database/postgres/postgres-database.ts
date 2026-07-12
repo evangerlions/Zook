@@ -482,7 +482,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): Promise<void> { await this.aiNovelStatistics.upsertSnapshot(record); }
   override async findAiNovelStatisticsSnapshot(appId: string, userId: string): Promise<AiNovelStatisticsSnapshotRecord | undefined> { return await this.aiNovelStatistics.findSnapshot(appId, userId); }
-  override async upsertAiNovelDailyWritingStats(records: AiNovelDailyStatisticsRecord[]): Promise<void> { await this.aiNovelStatistics.upsertDailyWritingStats(records); }
+  override async replaceAiNovelDailyWritingStats(appId: string, userId: string, records: AiNovelDailyStatisticsRecord[], updatedAt: string): Promise<void> { await this.aiNovelStatistics.replaceDailyWritingStats(appId, userId, records, updatedAt); }
   override async incrementAiNovelDailyTokenUsage(appId: string, userId: string, date: string, tokens: number, updatedAt: string): Promise<void> { await this.aiNovelStatistics.incrementDailyTokenUsage(appId, userId, date, tokens, updatedAt); }
   override async listAiNovelDailyStatistics(filter: { appId: string; userId: string; dateFrom?: string; dateTo?: string }): Promise<AiNovelDailyStatisticsRecord[]> {
     return await this.aiNovelStatistics.listDailyStatistics(filter);

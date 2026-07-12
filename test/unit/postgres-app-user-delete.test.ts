@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { deletePostgresAppUserRuntimeData } from "../../src/infrastructure/database/postgres/postgres-app-user-delete.ts";
 
-test("Postgres app-user runtime deletion removes feedback records and attachments", async () => {
+test("Postgres app-user runtime deletion removes account-owned records", async () => {
   const queries: Array<{ sql: string; values?: unknown[] }> = [];
 
   await deletePostgresAppUserRuntimeData(
@@ -14,6 +14,16 @@ test("Postgres app-user runtime deletion removes feedback records and attachment
     "user_alice",
   );
 
+  assert.ok(
+    queries.some((query) =>
+      query.sql === "DELETE FROM zook_ai_novel_daily_statistics WHERE app_id = $1 AND user_id = $2"
+    ),
+  );
+  assert.ok(
+    queries.some((query) =>
+      query.sql === "DELETE FROM zook_ai_novel_statistics_snapshots WHERE app_id = $1 AND user_id = $2"
+    ),
+  );
   assert.ok(
     queries.some((query) =>
       query.sql === "DELETE FROM zook_feedback_attachments WHERE app_id = $1 AND user_id = $2"

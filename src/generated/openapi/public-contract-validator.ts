@@ -2,6 +2,7 @@ import Ajv, { type ErrorObject, type ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
 import type {
   AnalyticsBatchRequest,
+  AiNovelStatisticsSnapshotRequest,
   ChangePasswordRequest,
   EmailCodeRequest,
   EmailLoginRequest,
@@ -24,6 +25,7 @@ import type {
 } from "./public-contracts.generated.ts";
 import {
   AnalyticsBatchRequestSchema,
+  AiNovelStatisticsSnapshotRequestSchema,
   ChangePasswordRequestSchema,
   EmailCodeRequestSchema,
   EmailLoginRequestSchema,
@@ -83,6 +85,7 @@ const validators = {
   refresh: ajv.compile(RefreshRequestSchema),
   logout: ajv.compile(LogoutRequestSchema),
   analyticsBatch: ajv.compile(AnalyticsBatchRequestSchema),
+  aiNovelStatisticsSnapshot: ajv.compile(AiNovelStatisticsSnapshotRequestSchema),
   filePresign: ajv.compile(FilePresignRequestSchema),
   fileConfirm: ajv.compile(FileConfirmRequestSchema),
   logAck: ajv.compile(LogAckRequestSchema),
@@ -133,6 +136,12 @@ export const PublicContractValidator = {
   },
   validateAnalyticsBatch(input: unknown) {
     return validateWithSchema<AnalyticsBatchRequest>(validators.analyticsBatch, input);
+  },
+  validateAiNovelStatisticsSnapshot(input: unknown) {
+    return validateWithSchema<AiNovelStatisticsSnapshotRequest>(
+      validators.aiNovelStatisticsSnapshot,
+      input,
+    );
   },
   validateFilePresign(input: unknown) {
     return validateWithSchema<FilePresignRequest>(validators.filePresign, input);

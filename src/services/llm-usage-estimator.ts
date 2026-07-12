@@ -1,4 +1,8 @@
-import type { LLMToolCall, LLMUsage } from "./llm-manager-types.ts";
+import type {
+  LLMCompletionRequest,
+  LLMToolCall,
+  LLMUsage,
+} from "./llm-manager-types.ts";
 
 const CHARS_PER_TOKEN = 3;
 
@@ -21,6 +25,8 @@ export class LLMUsageEstimateAccumulator {
   private contentText = "";
   private toolDeltaText = "";
   private finalToolCallText = "";
+
+  constructor(private readonly promptTokens = 0) {}
 
   addReasoningDelta(text: string): void {
     this.reasoningText += text;
@@ -45,13 +51,13 @@ export class LLMUsageEstimateAccumulator {
       this.toolDeltaText || this.finalToolCallText,
     );
     const completionTokens = reasoningTokens + contentTokens + toolTokens;
-    if (completionTokens <= 0) {
+    if (this.promptTokens <= 0 && completionTokens <= 0) {
       return undefined;
     }
     return {
-      promptTokens: 0,
+      promptTokens: this.promptTokens,
       completionTokens,
-      totalTokens: completionTokens,
+      totalTokens: this.promptTokens + completionTokens,
       ...(reasoningTokens > 0 ? { reasoningTokens } : {}),
       estimated: true,
     };
@@ -62,12 +68,31 @@ export function estimateCompletionUsage(result: {
   text?: string;
   reasoningText?: string;
   toolCalls?: LLMToolCall[];
-}): LLMUsage | undefined {
-  const accumulator = new LLMUsageEstimateAccumulator();
+}, request: Pick<LLMCompletionRequest, "messages" | "providerOptions">): LLMUsage | undefined {
+  const accumulator = createUsageEstimateAccumulator(request);
   accumulator.addContentDelta(result.text ?? "");
   accumulator.addReasoningDelta(result.reasoningText ?? "");
   for (const toolCall of result.toolCalls ?? []) {
     accumulator.addFinalToolCall(toolCall);
   }
   return accumulator.toUsageFallback();
+}
+
+export function createUsageEstimateAccumulator(
+  request: Pick<LLMCompletionRequest, "messages" | "providerOptions">,
+): LLMUsageEstimateAccumulator {
+  return new LLMUsageEstimateAccumulator(estimateTokens(JSON.stringify({
+    messages: request.messages,
+    providerOptions: request.providerOptions,
+  })));
+}
+
+export function estimateEmbeddingUsage(input: string[]): LLMUsage {
+  const promptTokens = input.reduce((sum, item) => sum + estimateTokens(item), 0);
+  return {
+    promptTokens,
+    completionTokens: 0,
+    totalTokens: promptTokens,
+    estimated: true,
+  };
 }

@@ -44,8 +44,12 @@ export async function handleAiNovelStatisticsSnapshot(this: BackendRouteContext,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticateProductRequest(request, "ai_novel");
   const body = this.validationPipe.asObject(request.body);
+  const validated = this.requireValidPublicContract(
+    PublicContractValidator.validateAiNovelStatisticsSnapshot(body),
+    request,
+  );
   return this.ok(
-    await this.aiNovelStatisticsService.recordSnapshot(auth, body),
+    await this.aiNovelStatisticsService.recordSnapshot(auth, validated),
     request.requestId as string,
   );
 }
@@ -137,6 +141,7 @@ export async function handleAiNovelEmbeddings(this: BackendRouteContext,
     return await this.aiNovelLlmService.createEmbeddings(body, {
       requestId: request.requestId as string,
       routingTier: resolveAiNovelModelRoutingTier.call(this, auth),
+      userId: auth.userId,
     });
   });
 }

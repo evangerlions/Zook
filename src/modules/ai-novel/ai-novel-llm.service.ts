@@ -528,6 +528,7 @@ export class AiNovelLlmService {
         modelKey: sceneRouteKey,
         modelKeyKind: "scene_route",
         input,
+        ...aiNovelUsageOwner(options),
       });
 
       return {

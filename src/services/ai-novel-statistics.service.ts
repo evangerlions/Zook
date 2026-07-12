@@ -1,5 +1,5 @@
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
-import { badRequest } from "../shared/errors.ts";
+import { badRequest, forbidden } from "../shared/errors.ts";
 import type {
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsDailyItem,
@@ -38,6 +38,10 @@ function assertDateKey(value: unknown, field: string): string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     badRequest("REQ_INVALID_BODY", `${field} must use YYYY-MM-DD.`);
   }
+  const parsed = new Date(`${value}T00:00:00+08:00`);
+  if (Number.isNaN(parsed.getTime()) || toDateKey(parsed, DEFAULT_TIMEZONE) !== value) {
+    badRequest("REQ_INVALID_BODY", `${field} must be a valid calendar date.`);
+  }
   return value;
 }
 
@@ -72,18 +76,14 @@ export class AiNovelStatisticsService {
     }
 
     const parsed = this.parseSnapshotRequest(body);
+    if (parsed.accountId !== auth.userId) {
+      forbidden(
+        "AUTH_APP_SCOPE_MISMATCH",
+        "Snapshot account does not match the authenticated account.",
+      );
+    }
     const updatedAt = now.toISOString();
-    await this.database.upsertAiNovelStatisticsSnapshot({
-      appId: auth.appId,
-      userId: auth.userId,
-      totalWorks: parsed.totalWorks,
-      totalWords: parsed.totalWords,
-      totalChapters: parsed.totalChapters,
-      activeWritingDays: parsed.activeWritingDays,
-      updatedAt,
-    });
-    await this.database.upsertAiNovelDailyWritingStats(
-      (parsed.daily ?? []).map((item) => ({
+    const dailyRecords = (parsed.daily ?? []).map((item) => ({
         appId: auth.appId,
         userId: auth.userId,
         date: item.date,
@@ -91,8 +91,25 @@ export class AiNovelStatisticsService {
         tokens: 0,
         active: item.active ?? item.words > 0,
         updatedAt,
-      })),
-    );
+      }));
+    await this.database.withExclusiveSession(async () => {
+      await this.requireActiveMembership(auth.appId, auth.userId);
+      await this.database.upsertAiNovelStatisticsSnapshot({
+        appId: auth.appId,
+        userId: auth.userId,
+        totalWorks: parsed.totalWorks,
+        totalWords: parsed.totalWords,
+        totalChapters: parsed.totalChapters,
+        activeWritingDays: parsed.activeWritingDays,
+        updatedAt,
+      });
+      await this.database.replaceAiNovelDailyWritingStats(
+        auth.appId,
+        auth.userId,
+        dailyRecords,
+        updatedAt,
+      );
+    });
 
     return { accepted: true, updatedAt };
   }
@@ -106,13 +123,22 @@ export class AiNovelStatisticsService {
       return;
     }
     const occurredAt = command.occurredAt ?? new Date();
-    await this.database.incrementAiNovelDailyTokenUsage(
-      command.appId,
-      command.userId,
-      toDateKey(occurredAt, DEFAULT_TIMEZONE),
-      totalTokens,
-      occurredAt.toISOString(),
-    );
+    await this.database.withExclusiveSession(async () => {
+      const membership = await this.database.findAppUser(
+        command.appId,
+        command.userId,
+      );
+      if (membership?.status !== "ACTIVE") {
+        return;
+      }
+      await this.database.incrementAiNovelDailyTokenUsage(
+        command.appId,
+        command.userId,
+        toDateKey(occurredAt, DEFAULT_TIMEZONE),
+        totalTokens,
+        occurredAt.toISOString(),
+      );
+    });
   }
 
   async getStatistics(
@@ -130,21 +156,22 @@ export class AiNovelStatisticsService {
       ALL_TIME_DATE_FROM,
       currentMonthStart < last30Start ? currentMonthStart : last30Start,
     );
-    const [snapshot, allDaily, recentDaily] = await Promise.all([
-      this.database.findAiNovelStatisticsSnapshot(auth.appId, auth.userId),
-      this.database.listAiNovelDailyStatistics({
-        appId: auth.appId,
-        userId: auth.userId,
-        dateFrom: ALL_TIME_DATE_FROM,
-        dateTo: today,
-      }),
-      this.database.listAiNovelDailyStatistics({
-        appId: auth.appId,
-        userId: auth.userId,
-        dateFrom: rangeStart,
-        dateTo: today,
-      }),
-    ]);
+    const [snapshot, allDaily, recentDaily] =
+      await this.database.withExclusiveSession(async () => await Promise.all([
+        this.database.findAiNovelStatisticsSnapshot(auth.appId, auth.userId),
+        this.database.listAiNovelDailyStatistics({
+          appId: auth.appId,
+          userId: auth.userId,
+          dateFrom: ALL_TIME_DATE_FROM,
+          dateTo: today,
+        }),
+        this.database.listAiNovelDailyStatistics({
+          appId: auth.appId,
+          userId: auth.userId,
+          dateFrom: rangeStart,
+          dateTo: today,
+        }),
+      ]));
 
     const recentMap = toDailyMap(recentDaily);
     const trendDays = enumerateDateKeys(last30Start, today).map<AiNovelStatisticsDailyItem>((date) => {
@@ -159,7 +186,6 @@ export class AiNovelStatisticsService {
     const todayRecord = recentMap.get(today);
     const monthRecords = recentDaily.filter((item) => item.date >= currentMonthStart);
     const totalTokens = allDaily.reduce((sum, item) => sum + item.tokens, 0);
-    const activeWritingDaysFromDaily = allDaily.filter((item) => item.active || item.words > 0).length;
 
     return {
       timezone: DEFAULT_TIMEZONE,
@@ -168,7 +194,7 @@ export class AiNovelStatisticsService {
         totalWorks: snapshot?.totalWorks ?? 0,
         totalWords: snapshot?.totalWords ?? 0,
         totalChapters: snapshot?.totalChapters ?? 0,
-        activeWritingDays: Math.max(snapshot?.activeWritingDays ?? 0, activeWritingDaysFromDaily),
+        activeWritingDays: snapshot?.activeWritingDays ?? 0,
       },
       recentActivity: {
         wordsToday: todayRecord?.words ?? 0,
@@ -188,6 +214,10 @@ export class AiNovelStatisticsService {
   }
 
   private parseSnapshotRequest(body: Record<string, unknown>): AiNovelStatisticsSnapshotRequest {
+    const accountId = body.accountId;
+    if (typeof accountId !== "string" || !accountId.trim()) {
+      badRequest("REQ_INVALID_BODY", "accountId must be a non-empty string.");
+    }
     const totalWorks = requireNonNegativeInteger(body.totalWorks, "totalWorks");
     const totalWords = requireNonNegativeInteger(body.totalWords, "totalWords");
     const totalChapters = requireNonNegativeInteger(body.totalChapters, "totalChapters");
@@ -199,22 +229,46 @@ export class AiNovelStatisticsService {
     if (daily.length > MAX_DAILY_SNAPSHOT_ITEMS) {
       badRequest("REQ_INVALID_BODY", "daily supports at most 400 items.");
     }
+    const seenDates = new Set<string>();
+    const parsedDaily = daily.map((raw, index) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        badRequest("REQ_INVALID_BODY", `daily[${index}] must be an object.`);
+      }
+      const item = raw as Record<string, unknown>;
+      const date = assertDateKey(item.date, `daily[${index}].date`);
+      if (seenDates.has(date)) {
+        badRequest("REQ_INVALID_BODY", `daily contains duplicate date ${date}.`);
+      }
+      seenDates.add(date);
+      if (item.active !== undefined && typeof item.active !== "boolean") {
+        badRequest("REQ_INVALID_BODY", `daily[${index}].active must be a boolean.`);
+      }
+      return {
+        date,
+        words: requireNonNegativeInteger(item.words, `daily[${index}].words`),
+        active: typeof item.active === "boolean" ? item.active : undefined,
+      };
+    });
     return {
+      accountId: accountId.trim(),
       totalWorks,
       totalWords,
       totalChapters,
       activeWritingDays,
-      daily: daily.map((raw, index) => {
-        if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-          badRequest("REQ_INVALID_BODY", `daily[${index}] must be an object.`);
-        }
-        const item = raw as Record<string, unknown>;
-        return {
-          date: assertDateKey(item.date, `daily[${index}].date`),
-          words: requireNonNegativeInteger(item.words, `daily[${index}].words`),
-          active: typeof item.active === "boolean" ? item.active : undefined,
-        };
-      }),
+      daily: parsedDaily,
     };
+  }
+
+  private async requireActiveMembership(
+    appId: string,
+    userId: string,
+  ): Promise<void> {
+    const membership = await this.database.findAppUser(appId, userId);
+    if (membership?.status !== "ACTIVE") {
+      forbidden(
+        "AUTH_APP_SCOPE_MISMATCH",
+        "The authenticated account is no longer active for this app.",
+      );
+    }
   }
 }

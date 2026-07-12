@@ -18,8 +18,9 @@ import {
   ApplicationError,
 } from "../shared/errors.ts";
 import {
+  createUsageEstimateAccumulator,
   estimateCompletionUsage,
-  LLMUsageEstimateAccumulator,
+  type LLMUsageEstimateAccumulator,
 } from "./llm-usage-estimator.ts";
 
 export { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
@@ -65,7 +66,7 @@ export class LLMManager {
         resolution.request.model.provider
       ].complete(resolution.request);
       const usage = withContextUsage(
-        result.usage ?? estimateCompletionUsage(result),
+        result.usage ?? estimateCompletionUsage(result, resolution.request),
         resolution.request.model,
       );
       const completedAt = this.getNow();
@@ -111,7 +112,7 @@ export class LLMManager {
     let reasoningText = "";
     let sawDone = false;
     const toolCalls: LLMToolCall[] = [];
-    const usageEstimate = new LLMUsageEstimateAccumulator();
+    const usageEstimate = createUsageEstimateAccumulator(resolution.request);
     const iterator = this.providers[resolution.request.model.provider]
       .stream(resolution.request)
       [Symbol.asyncIterator]();
@@ -212,7 +213,7 @@ export class LLMManager {
     let firstByteLatencyMs: number | undefined;
     let usage: LLMUsage | undefined;
     let sawDone = false;
-    const usageEstimate = new LLMUsageEstimateAccumulator();
+    const usageEstimate = createUsageEstimateAccumulator(resolution.request);
 
     try {
       for await (const event of this.providers[
