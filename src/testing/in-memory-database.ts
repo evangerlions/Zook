@@ -207,6 +207,19 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return structuredClone(membership);
   }
 
+  finalizeAppUserAccountRegion(
+    appId: string,
+    userId: string,
+    accountRegion: "CN" | "GLOBAL",
+  ): AppUserRecord | undefined {
+    const membership = this.findAppUser(appId, userId);
+    if (!membership || membership.accountRegion !== "UNKNOWN") {
+      return undefined;
+    }
+    membership.accountRegion = accountRegion;
+    return structuredClone(membership);
+  }
+
   deleteAppUserRuntimeData(appId: string, userId: string): void {
     const uploadIds = this.clientLogUploads
       .filter((item) => item.appId === appId && item.userId === userId)

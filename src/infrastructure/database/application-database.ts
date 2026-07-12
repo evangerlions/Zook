@@ -61,6 +61,11 @@ export abstract class ApplicationDatabase {
     userId: string,
     status: AppUserRecord["status"],
   ): MaybePromise<AppUserRecord | undefined>;
+  abstract finalizeAppUserAccountRegion(
+    appId: string,
+    userId: string,
+    accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
+  ): MaybePromise<AppUserRecord | undefined>;
   abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;

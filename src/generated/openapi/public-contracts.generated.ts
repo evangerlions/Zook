@@ -502,6 +502,7 @@ export const AuthSessionDataSchema = {
   "type": "object",
   "required": [
     "accessToken",
+    "accountRegion",
     "user"
   ],
   "properties": {
@@ -513,6 +514,14 @@ export const AuthSessionDataSchema = {
     },
     "expiresIn": {
       "type": "integer"
+    },
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
     },
     "user": {
       "type": "object",
@@ -556,6 +565,7 @@ export type AuthSessionData = {
   "accessToken": string;
   "refreshToken"?: string;
   "expiresIn"?: number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -605,17 +615,27 @@ export type QrLoginCreateData = {
 export const QrLoginConfirmDataSchema = {
   "type": "object",
   "required": [
-    "confirmed"
+    "confirmed",
+    "accountRegion"
   ],
   "properties": {
     "confirmed": {
       "type": "boolean"
+    },
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
     }
   }
 } as const;
 
 export type QrLoginConfirmData = {
   "confirmed": boolean;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
 };
 
 export const QrLoginPollDataSchema = {
@@ -651,6 +671,7 @@ export const QrLoginPollDataSchema = {
         "status",
         "accessToken",
         "expiresIn",
+        "accountRegion",
         "user"
       ],
       "properties": {
@@ -665,6 +686,14 @@ export const QrLoginPollDataSchema = {
         },
         "expiresIn": {
           "type": "integer"
+        },
+        "accountRegion": {
+          "type": "string",
+          "enum": [
+            "CN",
+            "GLOBAL",
+            "UNKNOWN"
+          ]
         },
         "user": {
           "type": "object",
@@ -714,6 +743,7 @@ export type QrLoginPollData = {
   "status": "CONFIRMED";
   "accessToken": string;
   "expiresIn": number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -775,11 +805,20 @@ export const CurrentUserDataSchema = {
   "type": "object",
   "required": [
     "appId",
+    "accountRegion",
     "user"
   ],
   "properties": {
     "appId": {
       "type": "string"
+    },
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
     },
     "user": {
       "type": "object",
@@ -821,6 +860,7 @@ export const CurrentUserDataSchema = {
 
 export type CurrentUserData = {
   "appId": string;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;

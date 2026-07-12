@@ -238,6 +238,15 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
     },
   });
 
+  runtime.database.insertAppUser({
+    id: "app_user_alice_ai_novel_test",
+    appId: "ai_novel",
+    userId: "user_alice",
+    status: "ACTIVE",
+    accountRegion: "UNKNOWN",
+    joinedAt: "2026-07-11T00:00:00.000Z",
+  });
+
   await runtime.services.commonLlmConfigService.updateConfig({
     enabled: true,
     defaultModelKey: "ainovel-free-creative",
@@ -1262,6 +1271,14 @@ test("ai_novel audit-file endpoint requires ai_novel bearer auth", async () => {
 test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session path", async () => {
   const root = await mkdtemp(join(tmpdir(), "zook-audit-file-"));
   const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+  runtime.database.insertAppUser({
+    id: "app_user_alice_ai_novel_audit_test",
+    appId: "ai_novel",
+    userId: "user_alice",
+    status: "ACTIVE",
+    accountRegion: "UNKNOWN",
+    joinedAt: "2026-07-11T00:00:00.000Z",
+  });
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "ai_novel",

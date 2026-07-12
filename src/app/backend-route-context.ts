@@ -4,6 +4,8 @@ import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
 import { AuthGuard } from "../core/guards/auth.guard.ts";
 import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
+import { AuditInterceptor } from "../core/interceptors/audit.interceptor.ts";
+import { parseClientAccountRegion } from "../modules/app-registry/account-region.ts";
 import { AppRegistryService } from "../modules/app-registry/app-registry.service.ts";
 import { AuthService } from "../modules/auth/auth.service.ts";
 import { UserService } from "../modules/user/user.service.ts";
@@ -73,6 +75,7 @@ export class BackendRouteContext {
     protected readonly appAccessGuard: AppAccessGuard,
     protected readonly validationPipe: ValidationPipe,
     protected readonly commonTestAccountService: CommonTestAccountService,
+    protected readonly routeAuditInterceptor: AuditInterceptor,
   ) {}
 
   public async authenticate(
@@ -95,6 +98,7 @@ export class BackendRouteContext {
         auth.appId,
         auth.userId,
       );
+      await this.resolveAccountRegion(request, auth.appId, auth.userId);
     }
 
     return auth;
@@ -104,10 +108,8 @@ export class BackendRouteContext {
     request: HttpRequest,
     appId: string,
   ) {
-    const auth = this.authGuard.canActivate(request);
-    this.appContextResolver.resolvePostAuth(request, auth.appId);
+    const auth = await this.authenticate(request);
     this.appAccessGuard.assertScope(appId, auth.appId);
-    await this.authService.assertAccessTokenActive(auth);
     return auth;
   }
 
@@ -273,25 +275,79 @@ export class BackendRouteContext {
   public async toAuthPayload(
     session: {
       userId: string;
+      appId?: string;
       accessToken: string;
       refreshToken: string;
       expiresIn: number;
     },
     clientType: ClientType,
+    request: HttpRequest,
+    appIdOverride?: string,
   ): Promise<AuthSuccessPayload> {
     const user = await this.userService.getProfile(session.userId);
+    const appId = session.appId ?? appIdOverride;
+    if (!appId) {
+      throw new Error('Authenticated session is missing app scope.');
+    }
+    const accountRegion = await this.resolveAccountRegion(
+      request,
+      appId,
+      session.userId,
+    );
     return clientType === "app"
       ? {
           accessToken: session.accessToken,
+          accountRegion,
           expiresIn: session.expiresIn,
           refreshToken: session.refreshToken,
           user,
         }
       : {
           accessToken: session.accessToken,
+          accountRegion,
           expiresIn: session.expiresIn,
           user,
         };
+  }
+
+  public async resolveAccountRegion(
+    request: HttpRequest,
+    appId: string,
+    userId: string,
+  ) {
+    const clientRegion = parseClientAccountRegion(
+      getHeader(request.headers, "x-app-region"),
+    );
+    if (!clientRegion) {
+      return (
+        await this.appRegistryService.ensureExistingMembership(appId, userId)
+      ).accountRegion;
+    }
+
+    const result = await this.appRegistryService.finalizeAccountRegion(
+      appId,
+      userId,
+      clientRegion,
+    );
+    if (result.didFinalize) {
+      await this.routeAuditInterceptor.record({
+        appId,
+        actorUserId: userId,
+        action: "app_user.account_region.finalize",
+        resourceType: "app_user",
+        resourceId: result.membership.id,
+        resourceOwnerUserId: userId,
+        payload: {
+          from: "UNKNOWN",
+          to: result.membership.accountRegion,
+          source: "x-app-region",
+          platform: getHeader(request.headers, "x-platform"),
+          appVersion: getHeader(request.headers, "x-app-version"),
+          requestId: request.requestId,
+        },
+      });
+    }
+    return result.membership.accountRegion;
   }
 
   public buildAuthHeaders(

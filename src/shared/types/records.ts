@@ -1,4 +1,5 @@
 import type {
+  AccountRegion,
   AppStatus,
   AppUserStatus,
   ContentSafetyCheckMethod,
@@ -47,6 +48,7 @@ export interface AppUserRecord {
   appId: string;
   userId: string;
   status: AppUserStatus;
+  accountRegion: AccountRegion;
   joinedAt: string;
 }
 

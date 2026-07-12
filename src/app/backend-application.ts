@@ -121,6 +121,7 @@ export class BackendApplication extends BackendRouteContext {
       appAccessGuard,
       validationPipe,
       commonTestAccountService,
+      auditInterceptor,
     );
   }
 
