@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { enableFrogSleepBuddyCapabilities } from "../helpers/enable-frogsleep-buddy-capabilities.ts";
+
+enableFrogSleepBuddyCapabilities();
 import { createApplication } from "../../src/app.module.ts";
 import { FROGSLEEP_APP_ID } from "../../src/modules/frogsleep/frogsleep-app.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
@@ -204,6 +207,34 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
   assert.equal(typeof recapResponse.body.data.recap.headline, "string");
   assert.equal(typeof recapResponse.body.data.recap.supporting_line, "string");
   assert.equal(typeof recapResponse.body.data.recap.recommended_next_step, "string");
+});
+
+test("revoked daily-summary consent redacts previously generated sleep artifacts", async () => {
+  const runtime = await createTestRuntime();
+  const { aliceToken, bobToken, relationshipId } = await createSleepRelationship(runtime);
+  const aliceHeaders = { authorization: `Bearer ${aliceToken}` };
+  const started = await runtime.app.handle({ method: "POST", path: "/api/v1/frogsleep/sleep-buddy/shared-sessions",
+    headers: aliceHeaders, body: { relationship_id: relationshipId }, requestId: "redact_begin" } as never);
+  const sessionId = String(started.body.data.session_id);
+  await runtime.app.handle({ method: "POST", path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/accept`,
+    headers: { authorization: `Bearer ${bobToken}` }, requestId: "redact_accept" } as never);
+  await runtime.app.handle({ method: "POST", path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/events`,
+    headers: aliceHeaders, body: { event_type: "morning_completed" }, requestId: "redact_complete" } as never);
+  const grants = await runtime.app.handle({ method: "GET",
+    path: `/api/v1/frogsleep/buddy/relationships/${relationshipId}/grants`, headers: aliceHeaders,
+    requestId: "redact_grants" } as never);
+  const grant = grants.body.data.grants.find((item: any) => item.grantor_user_id === "user_bob" &&
+    item.grantee_user_id === "user_alice" && item.category === "daily_summary");
+  await runtime.app.handle({ method: "PATCH",
+    path: `/api/v1/frogsleep/buddy/relationships/${relationshipId}/grants/${grant.id}`,
+    headers: { authorization: `Bearer ${bobToken}` }, body: { state: "revoked", expected_version: 1 },
+    requestId: "redact_revoke" } as never);
+  const summary = await runtime.app.handle({ method: "GET",
+    path: "/api/v1/frogsleep/sleep-buddy/shared-summaries/latest", headers: aliceHeaders,
+    requestId: "redact_summary" } as never);
+  assert.deepEqual(summary.body.data.summary, {
+    artifact_type: "sleep_summary", redacted: true, unavailable_reason: "sharing_disabled",
+  });
 });
 
 test("FrogSleep sleep buddy prevents duplicate active relationships and supports actions", async () => {

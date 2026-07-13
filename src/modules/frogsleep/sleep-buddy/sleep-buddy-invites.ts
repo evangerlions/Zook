@@ -5,6 +5,9 @@ import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import { buildFrogSleepNotificationPayload } from "../frogsleep-notifications.ts";
+import { assertBuddyPairNotBlocked } from "../buddy-growth/buddy-safety.ts";
+import { enqueueBuddyInvitationEvent } from "../buddy-growth/buddy-invitation-events.ts";
+import { limitBuddyInviteCreation } from "../buddy-growth/buddy-rate-limit.ts";
 import {
   toSleepInviteResponse,
   toSleepRelationshipResponse,
@@ -57,8 +60,10 @@ export async function createSleepInvite(
     role?: string;
     customLabel?: string;
     sleepInviteBaseUrl?: string;
+    bundleId?: string;
   },
 ) {
+  limitBuddyInviteCreation(command.userId);
   return await deps.database.withExclusiveSession(async () => {
     const invitee = command.invitee.trim();
     if (!invitee) {
@@ -77,7 +82,7 @@ export async function createSleepInvite(
     const createdAt = nowIso();
     const code = await generateUniqueCode(deps.database);
     const token = randomId("sleep_invite_token");
-    const link = `${command.sleepInviteBaseUrl ?? "frogsleep://sleep-buddy-invite"}?token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`;
+    const link = `${command.sleepInviteBaseUrl ?? "frogsleep://sleep-buddy-invite"}?mode=preview&token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`;
     const expiresAt = defaultInviteExpiresAt(createdAt);
     const invite: FrogSleepEntityRecord = {
       id: randomId("sleep_invite"),
@@ -97,11 +102,15 @@ export async function createSleepInvite(
         shareTitle: "睡眠搭子邀请",
         shareSubtitle: "一起守住今晚的睡眠节奏",
         expires_at: expiresAt,
+        bundle_id: command.bundleId,
       },
       createdAt,
       updatedAt: createdAt,
     };
     await deps.database.insertFrogSleepEntity(invite);
+    if (!command.bundleId) await enqueueBuddyInvitationEvent(deps.database, {
+      recipientUserId: target?.id, invitationId: invite.id, domain: "sleep", eventType: "invitation_created",
+    });
     if (target?.id) {
       await queuePush(deps, target.id, buildFrogSleepNotificationPayload({
         type: "sleep_buddy_invite",
@@ -162,6 +171,9 @@ export async function sleepInviteAction(
     }
     if (action === "decline") {
       await assertCanDeclineInvite(deps.database, invite, userId);
+    }
+    if (invite.ownerUserId && invite.partnerUserId) {
+      await assertBuddyPairNotBlocked(deps.database, invite.ownerUserId, invite.partnerUserId);
     }
     const updated = await deps.database.updateFrogSleepEntity("sleep_invite", FROGSLEEP_APP_ID, inviteId, {
       status: action === "cancel" ? "cancelled" : "declined",
@@ -250,6 +262,7 @@ async function acceptInvite(
       forbidden("AUTH_APP_SCOPE_MISMATCH", "This invite is not for the current user.");
     }
     await assertInviteEmailOwner(database, currentInvite, userId);
+    await assertBuddyPairNotBlocked(database, currentInvite.ownerUserId as string, userId);
 
     await assertNoConflict(database, currentInvite.ownerUserId as string, userId);
     const createdAt = nowIso();

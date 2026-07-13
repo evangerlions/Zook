@@ -404,7 +404,7 @@ test("FrogSleep invite redirect endpoints return deep links", async () => {
     requestId: "req_sleep_invite_redirect",
   } as never);
   assert.equal(sleepRedirect.statusCode, 302);
-  assert.equal(sleepRedirect.headers?.Location, "frogsleep://sleep-buddy-invite?token=token_1&code=ABC123");
+  assert.equal(sleepRedirect.headers?.Location, "frogsleep://sleep-buddy-invite?mode=preview&token=token_1&code=ABC123");
 
   const focusRedirect = await runtime.app.handle({
     method: "GET",
@@ -417,7 +417,7 @@ test("FrogSleep invite redirect endpoints return deep links", async () => {
     requestId: "req_focus_invite_redirect",
   } as never);
   assert.equal(focusRedirect.statusCode, 302);
-  assert.equal(focusRedirect.headers?.Location, "frogsleep://focus-invite?token=token_2&code=XYZ789");
+  assert.equal(focusRedirect.headers?.Location, "frogsleep://focus-invite?mode=preview&token=token_2&code=XYZ789");
 });
 
 test("FrogSleep invite redirects keep deep links when open tracking fails", async () => {
@@ -437,7 +437,7 @@ test("FrogSleep invite redirects keep deep links when open tracking fails", asyn
     requestId: "req_sleep_invite_redirect_tracking_failure",
   } as never);
   assert.equal(sleepRedirect.statusCode, 302);
-  assert.equal(sleepRedirect.headers?.Location, "frogsleep://sleep-buddy-invite?token=token_1&code=ABC123");
+  assert.equal(sleepRedirect.headers?.Location, "frogsleep://sleep-buddy-invite?mode=preview&token=token_1&code=ABC123");
 
   const focusRedirect = await runtime.app.handle({
     method: "GET",
@@ -450,7 +450,7 @@ test("FrogSleep invite redirects keep deep links when open tracking fails", asyn
     requestId: "req_focus_invite_redirect_tracking_failure",
   } as never);
   assert.equal(focusRedirect.statusCode, 302);
-  assert.equal(focusRedirect.headers?.Location, "frogsleep://focus-invite?token=token_2&code=XYZ789");
+  assert.equal(focusRedirect.headers?.Location, "frogsleep://focus-invite?mode=preview&token=token_2&code=XYZ789");
 });
 
 test("FrogSleep invite redirects track open conversion metadata", async () => {

@@ -17,6 +17,11 @@ import type {
   FailedEventRecord,
   FileRecord,
   FrogSleepDeviceRecord,
+  FrogSleepBuddySharingGrantRecord,
+  FrogSleepBuddyInvitationBundleRecord,
+  FrogSleepBuddyNotificationOutboxRecord,
+  FrogSleepBuddyNotificationRecord,
+  FrogSleepBuddyNotificationDeliveryRecord,
   FrogSleepEntityFilter,
   FrogSleepEntityKind,
   FrogSleepEntityRecord,
@@ -69,6 +74,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
   feedbackAttachments: FeedbackAttachmentRecord[];
   frogSleepDevices: FrogSleepDeviceRecord[];
   frogSleepEntities: FrogSleepEntityRecord[];
+  frogSleepBuddySharingGrants: FrogSleepBuddySharingGrantRecord[];
+  frogSleepBuddyInvitationBundles: FrogSleepBuddyInvitationBundleRecord[];
+  frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
+  frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
+  frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -95,6 +105,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.feedbackAttachments = structuredClone(seed.feedbackAttachments ?? []);
     this.frogSleepDevices = [];
     this.frogSleepEntities = [];
+    this.frogSleepBuddySharingGrants = [];
+    this.frogSleepBuddyInvitationBundles = [];
+    this.frogSleepBuddyNotificationOutbox = [];
+    this.frogSleepBuddyNotifications = [];
+    this.frogSleepBuddyNotificationDeliveries = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -183,6 +198,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.feedbackAttachments = this.feedbackAttachments.filter((item) => item.appId !== appId);
     this.frogSleepDevices = this.frogSleepDevices.filter((item) => item.appId !== appId);
     this.frogSleepEntities = this.frogSleepEntities.filter((item) => item.appId !== appId);
+    this.frogSleepBuddySharingGrants = this.frogSleepBuddySharingGrants.filter((item) => item.appId !== appId);
+    this.frogSleepBuddyInvitationBundles = this.frogSleepBuddyInvitationBundles.filter((item) => item.appId !== appId);
+    this.frogSleepBuddyNotificationOutbox = this.frogSleepBuddyNotificationOutbox.filter((item) => item.appId !== appId);
+    this.frogSleepBuddyNotifications = this.frogSleepBuddyNotifications.filter((item) => item.appId !== appId);
+    this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -261,6 +281,23 @@ export class InMemoryDatabase extends ApplicationDatabase {
       (item) =>
         item.appId !== appId ||
         (item.ownerUserId !== userId && item.partnerUserId !== userId),
+    );
+    this.frogSleepBuddySharingGrants = this.frogSleepBuddySharingGrants.filter(
+      (item) => item.appId !== appId || (item.grantorUserId !== userId && item.granteeUserId !== userId),
+    );
+    this.frogSleepBuddyInvitationBundles = this.frogSleepBuddyInvitationBundles.filter(
+      (item) => item.appId !== appId || (item.inviterUserId !== userId && item.inviteeUserId !== userId),
+    );
+    this.frogSleepBuddyNotificationOutbox = this.frogSleepBuddyNotificationOutbox.filter(
+      (item) => item.appId !== appId || item.recipientUserId !== userId,
+    );
+    const removedNotificationIds = this.frogSleepBuddyNotifications.filter((item) =>
+      item.appId === appId && item.recipientUserId === userId).map((item) => item.id);
+    this.frogSleepBuddyNotifications = this.frogSleepBuddyNotifications.filter(
+      (item) => item.appId !== appId || item.recipientUserId !== userId,
+    );
+    this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter(
+      (item) => !removedNotificationIds.includes(item.notificationId),
     );
   }
 
@@ -636,6 +673,137 @@ export class InMemoryDatabase extends ApplicationDatabase {
       payload: patch.payload ?? record.payload,
       updatedAt: patch.updatedAt ?? new Date().toISOString(),
     });
+    return structuredClone(record);
+  }
+
+  upsertFrogSleepBuddySharingGrant(record: FrogSleepBuddySharingGrantRecord): FrogSleepBuddySharingGrantRecord {
+    const existing = this.frogSleepBuddySharingGrants.find((item) =>
+      item.appId === record.appId && item.relationshipId === record.relationshipId &&
+      item.grantorUserId === record.grantorUserId && item.granteeUserId === record.granteeUserId &&
+      item.domain === record.domain && item.category === record.category
+    );
+    if (existing) Object.assign(existing, record, { id: existing.id });
+    else this.frogSleepBuddySharingGrants.push(structuredClone(record));
+    return structuredClone(existing ?? record);
+  }
+
+  listFrogSleepBuddySharingGrants(appId: string, relationshipId: string): FrogSleepBuddySharingGrantRecord[] {
+    return structuredClone(this.frogSleepBuddySharingGrants)
+      .filter((item) => item.appId === appId && item.relationshipId === relationshipId)
+      .sort((left, right) => left.grantorUserId.localeCompare(right.grantorUserId) || left.category.localeCompare(right.category));
+  }
+
+  findFrogSleepBuddySharingGrant(appId: string, grantId: string): FrogSleepBuddySharingGrantRecord | undefined {
+    return structuredClone(this.frogSleepBuddySharingGrants.find((item) => item.appId === appId && item.id === grantId));
+  }
+
+  updateFrogSleepBuddySharingGrant(
+    appId: string,
+    grantId: string,
+    expectedVersion: number,
+    state: FrogSleepBuddySharingGrantRecord["state"],
+  ): FrogSleepBuddySharingGrantRecord | undefined {
+    const grant = this.frogSleepBuddySharingGrants.find((item) => item.appId === appId && item.id === grantId);
+    if (!grant || grant.version !== expectedVersion) return undefined;
+    const now = new Date().toISOString();
+    Object.assign(grant, { state, version: grant.version + 1, updatedAt: now,
+      grantedAt: state === "granted" ? now : grant.grantedAt,
+      revokedAt: state === "revoked" ? now : undefined });
+    return structuredClone(grant);
+  }
+
+  upsertFrogSleepBuddyInvitationBundle(record: FrogSleepBuddyInvitationBundleRecord): FrogSleepBuddyInvitationBundleRecord {
+    const index = this.frogSleepBuddyInvitationBundles.findIndex((item) =>
+      item.appId === record.appId && item.id === record.id
+    );
+    if (index >= 0) this.frogSleepBuddyInvitationBundles[index] = structuredClone(record);
+    else this.frogSleepBuddyInvitationBundles.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findFrogSleepBuddyInvitationBundle(appId: string, bundleId: string): FrogSleepBuddyInvitationBundleRecord | undefined {
+    return structuredClone(this.frogSleepBuddyInvitationBundles.find((item) =>
+      item.appId === appId && item.id === bundleId
+    ));
+  }
+
+  listFrogSleepBuddyInvitationBundles(input: {
+    appId: string; userId: string; direction: "incoming" | "outgoing";
+  }): FrogSleepBuddyInvitationBundleRecord[] {
+    return structuredClone(this.frogSleepBuddyInvitationBundles).filter((item) => item.appId === input.appId &&
+      (input.direction === "incoming" ? item.inviteeUserId === input.userId : item.inviterUserId === input.userId))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  enqueueFrogSleepBuddyNotificationOutbox(record: FrogSleepBuddyNotificationOutboxRecord): FrogSleepBuddyNotificationOutboxRecord {
+    const existing = this.frogSleepBuddyNotificationOutbox.find((item) =>
+      item.appId === record.appId && item.deduplicationKey === record.deduplicationKey
+    );
+    if (existing) return structuredClone(existing);
+    this.frogSleepBuddyNotificationOutbox.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listReadyFrogSleepBuddyNotificationOutbox(nowIso: string, limit: number): FrogSleepBuddyNotificationOutboxRecord[] {
+    return structuredClone(this.frogSleepBuddyNotificationOutbox)
+      .filter((item) => ["pending", "failed"].includes(item.status) && item.availableAt <= nowIso)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt)).slice(0, limit);
+  }
+
+  updateFrogSleepBuddyNotificationOutbox(id: string, patch: Partial<FrogSleepBuddyNotificationOutboxRecord>) {
+    const item = this.frogSleepBuddyNotificationOutbox.find((value) => value.id === id);
+    if (!item) return undefined;
+    Object.assign(item, patch);
+    return structuredClone(item);
+  }
+
+  upsertFrogSleepBuddyNotification(record: FrogSleepBuddyNotificationRecord) {
+    const existing = this.frogSleepBuddyNotifications.find((item) => item.appId === record.appId &&
+      item.recipientUserId === record.recipientUserId && item.outboxId === record.outboxId);
+    if (existing) return structuredClone(existing);
+    this.frogSleepBuddyNotifications.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findFrogSleepBuddyNotification(appId: string, recipientUserId: string, notificationId: string) {
+    return structuredClone(this.frogSleepBuddyNotifications.find((item) => item.appId === appId &&
+      item.recipientUserId === recipientUserId && item.id === notificationId));
+  }
+
+  listFrogSleepBuddyNotifications(input: { appId: string; recipientUserId: string; limit: number; cursor?: string }) {
+    const items = structuredClone(this.frogSleepBuddyNotifications).filter((item) => item.appId === input.appId &&
+      item.recipientUserId === input.recipientUserId)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id))
+      .filter((item) => !input.cursor || `${item.createdAt}|${item.id}` < input.cursor).slice(0, input.limit);
+    const last = items.at(-1);
+    return { items, nextCursor: items.length === input.limit && last ? `${last.createdAt}|${last.id}` : undefined };
+  }
+
+  countUnreadFrogSleepBuddyNotifications(appId: string, recipientUserId: string) {
+    return this.frogSleepBuddyNotifications.filter((item) => item.appId === appId && item.recipientUserId === recipientUserId && !item.readAt).length;
+  }
+
+  markFrogSleepBuddyNotificationRead(appId: string, recipientUserId: string, notificationId: string, readAt: string) {
+    const item = this.frogSleepBuddyNotifications.find((value) => value.appId === appId &&
+      value.recipientUserId === recipientUserId && value.id === notificationId);
+    if (!item) return undefined;
+    item.readAt ??= readAt; item.updatedAt = readAt;
+    return structuredClone(item);
+  }
+
+  markAllFrogSleepBuddyNotificationsRead(appId: string, recipientUserId: string, readAt: string) {
+    let count = 0;
+    for (const item of this.frogSleepBuddyNotifications) if (item.appId === appId && item.recipientUserId === recipientUserId && !item.readAt) {
+      item.readAt = readAt; item.updatedAt = readAt; count += 1;
+    }
+    return count;
+  }
+
+  insertFrogSleepBuddyNotificationDelivery(record: FrogSleepBuddyNotificationDeliveryRecord) {
+    const existing = this.frogSleepBuddyNotificationDeliveries.find((item) => item.notificationId === record.notificationId &&
+      item.channel === record.channel && item.attempt === record.attempt);
+    if (existing) return structuredClone(existing);
+    this.frogSleepBuddyNotificationDeliveries.push(structuredClone(record));
     return structuredClone(record);
   }
 

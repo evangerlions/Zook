@@ -6,6 +6,9 @@ import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import { buildFrogSleepNotificationPayload } from "../frogsleep-notifications.ts";
 import { toFocusRelationshipResponse } from "./focus-buddy-mappers.ts";
+import { assertBuddyPairNotBlocked } from "../buddy-growth/buddy-safety.ts";
+import { enqueueBuddyInvitationEvent } from "../buddy-growth/buddy-invitation-events.ts";
+import { limitBuddyInviteCreation } from "../buddy-growth/buddy-rate-limit.ts";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -42,7 +45,9 @@ export async function createFocusInvite(
   userId: string,
   target: string,
   focusInviteBaseUrl = "frogsleep://focus-invite",
+  bundleId?: string,
 ) {
+  limitBuddyInviteCreation(userId);
   return await deps.database.withExclusiveSession(async () => {
     const targetUser = await resolveUser(deps.database, target);
     if (!targetUser || targetUser.id === userId) {
@@ -76,15 +81,19 @@ export async function createFocusInvite(
       code,
       token,
       payload: {
-        shareLink: `${focusInviteBaseUrl}?token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`,
+        shareLink: `${focusInviteBaseUrl}?mode=preview&token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`,
         shareTitle: "专注搭子邀请",
         shareSubtitle: "一起完成下一次专注",
         expires_at: expiresAt,
+        bundle_id: bundleId,
       },
       createdAt,
       updatedAt: createdAt,
     };
     await deps.database.insertFrogSleepEntity(invite);
+    if (!bundleId) await enqueueBuddyInvitationEvent(deps.database, {
+      recipientUserId: targetUser.id, invitationId: invite.id, domain: "focus", eventType: "invitation_created",
+    });
     await queuePush(deps, targetUser.id, buildFrogSleepNotificationPayload({
       type: "focus_buddy_invite",
       entityId: invite.id,
@@ -102,6 +111,48 @@ export async function acceptFocusInviteByCode(deps: FocusBuddyDeps, userId: stri
 export async function acceptFocusInviteByToken(deps: FocusBuddyDeps, userId: string, token: string) {
   const invite = await deps.database.findFrogSleepEntityByToken("focus_invite", FROGSLEEP_APP_ID, token);
   return await acceptInvite(deps.database, userId, invite, "token");
+}
+
+export async function acceptFocusInviteById(deps: FocusBuddyDeps, userId: string, inviteId: string) {
+  const invite = await deps.database.findFrogSleepEntity("focus_invite", FROGSLEEP_APP_ID, inviteId);
+  return await acceptInvite(deps.database, userId, invite, "id");
+}
+
+export async function pendingFocusInvites(deps: FocusBuddyDeps, userId: string) {
+  const [owned, received] = await Promise.all([
+    deps.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "focus_invite", ownerUserId: userId, status: "pending" }),
+    deps.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "focus_invite", partnerUserId: userId, status: "pending" }),
+  ]);
+  const refreshed = await Promise.all([...owned, ...received].map((invite) => refreshInviteStatus(deps.database, invite)));
+  return { invites: refreshed.filter((invite) => invite.status === "pending").map((invite) => ({
+    raw_invite_id: invite.id,
+    relationship_id: invite.relationshipId,
+    inviter_user_id: invite.ownerUserId,
+    invitee_user_id: invite.partnerUserId,
+    status: invite.status,
+    invite_code: invite.code,
+    invite_token: invite.token,
+    expires_at: invite.payload.expires_at,
+  })) };
+}
+
+export async function focusInviteAction(
+  deps: FocusBuddyDeps,
+  userId: string,
+  inviteId: string,
+  action: "decline" | "cancel",
+) {
+  return deps.database.withExclusiveSession(async () => {
+    const invite = await deps.database.findFrogSleepEntity("focus_invite", FROGSLEEP_APP_ID, inviteId);
+    if (!invite || invite.status !== "pending" || !invite.relationshipId) badRequest("REQ_INVALID_BODY", "Pending invite not found.");
+    if (action === "cancel" && invite.ownerUserId !== userId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Only the inviter can cancel this invite.");
+    if (action === "decline" && invite.partnerUserId !== userId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Only the invitee can decline this invite.");
+    if (invite.ownerUserId && invite.partnerUserId) await assertBuddyPairNotBlocked(deps.database, invite.ownerUserId, invite.partnerUserId);
+    const status = action === "cancel" ? "cancelled" : "declined";
+    const updated = await deps.database.updateFrogSleepEntity("focus_invite", FROGSLEEP_APP_ID, invite.id, { status });
+    await deps.database.updateFrogSleepEntity("focus_relationship", FROGSLEEP_APP_ID, invite.relationshipId, { status });
+    return { raw_invite_id: updated?.id, relationship_id: invite.relationshipId, status };
+  });
 }
 
 export async function trackFocusInviteOpenByToken(deps: FocusBuddyDeps, token: string, userAgent?: string) {
@@ -259,6 +310,7 @@ async function acceptInvite(
     if (currentInvite.partnerUserId !== userId) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "This invite is not for the current user.");
     }
+    await assertBuddyPairNotBlocked(database, currentInvite.ownerUserId as string, userId);
     const acceptedAt = nowIso();
     const currentRelationship = await database.findFrogSleepEntity(
       "focus_relationship",

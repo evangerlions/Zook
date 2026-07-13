@@ -59,6 +59,8 @@ import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
+import { BuddyNotificationWorkerService } from "./modules/frogsleep/buddy-growth/buddy-notification-worker.service.ts";
+import { BuddyMilestoneReportService } from "./modules/frogsleep/buddy-growth/buddy-milestone-report.service.ts";
 import { createPushDispatcher } from "./services/push-dispatcher-factory.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
@@ -440,6 +442,8 @@ export async function createApplication(
   );
   const pushDispatcher = createPushDispatcher({ database, logger });
   const notificationService = new NotificationService(database, queue, logger, pushDispatcher);
+  const buddyNotificationWorkerService = new BuddyNotificationWorkerService(database, notificationService);
+  const buddyMilestoneReportService = new BuddyMilestoneReportService(database);
   const failedEventRetryService = new FailedEventRetryService(
     database,
     queue,
@@ -507,7 +511,6 @@ export async function createApplication(
   );
 
   app.analyticsService = analyticsService;
-
   return {
     app,
     database,
@@ -555,6 +558,8 @@ export async function createApplication(
       storageService,
       clientLogUploadService,
       notificationService,
+      buddyNotificationWorkerService,
+      buddyMilestoneReportService,
       failedEventRetryService,
       tencentSesEmailCallbackService,
       feedbackService,

@@ -5,6 +5,7 @@
 本文档用于说明当前仓库中已经完成的后端工作，方便后续继续开发、接手维护和对照设计文档推进。
 
 当前实现是一个基于 TypeScript 的 MVP 骨架，重点是把核心业务规则先落地并通过单元测试验证。
+FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、共同目标、里程碑与隐私周报；P3 通过 `012_frogsleep_buddy_governance.sql`、`buddy-governance.ts`、运营 runbook 和专项安全审查补齐数据保留、漏斗、护栏熔断与事故响应。
 需要注意的是，当前仓库仍然使用轻量运行时骨架，HTTP、数据库和队列还没有切到正式框架；不过后台状态持久化已经统一收敛到 Redis-backed `KVManager`。
 
 ## 2. 当前已完成的主要功能
@@ -247,6 +248,8 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 7. FrogSleep push payload 类型、通知入队、worker 设备分发、无设备成功收敛、provider 失败写入 failed event；APNs/FCM 对不可恢复无效 token 会仅清理当前 app/user/token 对应的 FrogSleep device，可重试 provider 错误继续走 failed event / retry 行为。
 8. 睡眠搭子和专注搭子邀请 HTTP 中转端点，302 跳转到 deep link；中转会尽力记录 `first_opened_at`、`last_opened_at`、`open_count` 等打开统计，统计失败不影响 302。
 9. PostgreSQL migration `006_frogsleep_app.sql` 新增 `zook_frogsleep_*` 表；内存数据库同步实现对应测试存储。
+10. 搭子成长 P2 已增加共同目标持久化与 API 基础：支持四类中性模板、双边同意、IANA timezone 周窗口、版本/幂等动作、暂停/完成状态和可验证来源事件进度；`011_frogsleep_buddy_goals_reports.sql` 同时预备了里程碑与按查看者过滤的周报表及去重索引。
+11. P2 worker 已接入首次有意义互动、首次共同行动和每周两次成长行为里程碑，以及按设备时区/查看者生成的周报。里程碑、周报和对应 notification outbox 在同一事务中写入；重复 worker tick 不重复物化，晚到验证事件只在内容变化时增加周报版本，撤权后读时再次删除对方统计。
 
 对应核心文件：
 
@@ -392,6 +395,14 @@ FrogSleep 产品接口已经接入应用入口，代表性接口包括：
 65. `GET /api/v1/frogsleep/product-data/entitlements/current`
 66. `GET /frogsleep/sleep-buddy-invite`
 67. `GET /frogsleep/focus-invite`
+
+搭子增长 P0 另提供统一邀请与定向授权资源：`GET /api/v1/frogsleep/buddy/invitations`、邀请预览及显式 accept/decline/cancel，以及 `GET /api/v1/frogsleep/buddy/relationships/{relationshipId}/grants` 和 `PATCH /api/v1/frogsleep/buddy/relationships/{relationshipId}/grants/{grantId}`。接受邀请时按睡眠/专注领域分别创建双方的方向性分享授权；后续只有授权人本人能按版本修改自己的授权。方向授权已接入 Focus presence/周趋势对比/共享时刻/结构化互动，以及 Sleep 每日总结/联合回顾/共同睡眠活动。Migration 009 为旧关系幂等回填双向授权，应用层也在首次访问时补全未迁移数据；暂停、撤销、拉黑或单项授权撤销会立即终止对应读取与互动。
+
+搭子通知支持 `GET/PATCH /api/v1/frogsleep/buddy/notifications/preferences`。Worker 将分类禁用和五分钟内同目标同事件合并为整体抑制；安静时段、同类冷却和每日预算仅抑制 Push，仍保留站内 feed。每次抑制都在 outbox 或 delivery 中记录稳定原因码，重试投递不会重复生成站内通知。
+
+搭子增长 P1 通过 `/api/v1/frogsleep/buddy/hub`、`activity`、`shares`、`interactions` 和 `joint-activities` 提供。Hub 按对方身份合并同一人的睡眠/专注领域，不同对方保持分离；状态、每日总结、活动和夜间共同活动均在读取时重新校验方向授权。结构化分享仅保留白名单数值并最长 30 天过期；受限互动不接受自由文本；分享、互动和共同活动创建/响应使用幂等 key 并与通知 outbox 在同一排他会话中写入。
+
+worker 会消费搭子 notification outbox，幂等生成站内 feed，并把只含 opaque notification ID 与安全路由的 Push 放入现有通知队列。站内 feed 支持分页、未读数、单条/全部已读和鉴权目标解析；物化与 APNs 入队分别记录 delivery attempt。
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。
 客户端日志回捞的后端实现说明已经单独整理到 [client-log-remote-pull-backend.md](client-log-remote-pull-backend.md)，这里仅保留目录级摘要。最新实现已经改成“日志文件直接落本地 `.ndjson`，admin 前端本地解析浏览”，不再把日志逐行写入数据库。

@@ -6,15 +6,9 @@ import { FrogSleepProductDataService } from "../modules/frogsleep/product-data/f
 import { emitFrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-analytics.ts";
 import { parsePaginationParams } from "../modules/frogsleep/frogsleep-validation.ts";
 import { FrogSleepSleepBuddyService } from "../modules/frogsleep/sleep-buddy/sleep-buddy.service.ts";
-import {
-  asBody,
-  authenticateFrogSleepRequest,
-  dualResourcePayload,
-  frogSleepOk,
-  getFrogSleepInviteLinks,
-  redirectTo,
-  requireStringField,
-} from "./frogsleep-v1-common.ts";
+import { tryHandleBuddyGrowthRoutes } from "./frogsleep-v1-buddy-routes.ts";
+import { asBody, authenticateFrogSleepRequest, dualResourcePayload, frogSleepOk,
+  getFrogSleepInviteLinks, redirectTo, requireStringField } from "./frogsleep-v1-common.ts";
 import {
   handleFrogSleepChangePassword,
   handleFrogSleepDeleteAccount,
@@ -129,7 +123,7 @@ export async function tryHandleFrogSleepV1Routes(
           .trackInviteOpenByToken(String(token), request.headers?.["user-agent"]);
       });
       return redirectTo(
-        `frogsleep://sleep-buddy-invite?token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`,
+        `frogsleep://sleep-buddy-invite?mode=preview&token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`,
         request.requestId as string,
       );
     }
@@ -141,7 +135,7 @@ export async function tryHandleFrogSleepV1Routes(
           .trackInviteOpenByToken(String(token), request.headers?.["user-agent"]);
       });
       return redirectTo(
-        `frogsleep://focus-invite?token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`,
+        `frogsleep://focus-invite?mode=preview&token=${encodeURIComponent(token)}&code=${encodeURIComponent(code)}`,
         request.requestId as string,
       );
     }
@@ -211,6 +205,8 @@ export async function tryHandleFrogSleepV1Routes(
   if (routeRequest.method === "DELETE" && deleteDeviceMatch) {
     return await handleFrogSleepDeleteDevice(this, routeRequest, decodeURIComponent(deleteDeviceMatch[1] as string));
   }
+  const buddyGrowthResponse = await tryHandleBuddyGrowthRoutes(this, routeRequest);
+  if (buddyGrowthResponse) return buddyGrowthResponse;
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/relationships/invites") {
     return await handleSleepInviteCreate(this, routeRequest);
   }
@@ -380,6 +376,19 @@ export async function tryHandleFrogSleepV1Routes(
       token: routeRequest.query?.token,
       code: routeRequest.query?.code,
     }), routeRequest.requestId as string);
+  }
+  if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/buddy/invites/pending") {
+    const auth = await authenticateFrogSleepRequest(this, routeRequest);
+    return frogSleepOk(this, await focusBuddyService(this).pendingInvites(auth.userId), routeRequest.requestId as string);
+  }
+  const focusInviteActionMatch = routeRequest.path.match(/^\/v1\/focus\/buddy\/invites\/([^/]+)\/(decline|cancel)$/);
+  if (routeRequest.method === "POST" && focusInviteActionMatch) {
+    const auth = await authenticateFrogSleepRequest(this, routeRequest);
+    return frogSleepOk(this, await focusBuddyService(this).inviteAction(
+      auth.userId,
+      decodeURIComponent(focusInviteActionMatch[1] as string),
+      focusInviteActionMatch[2] as "decline" | "cancel",
+    ), routeRequest.requestId as string);
   }
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/focus/buddy/invites/accept-code") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);

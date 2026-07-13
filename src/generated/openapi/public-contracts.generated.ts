@@ -2175,6 +2175,300 @@ export type FrogSleepInviteAcceptRequest = (
 }
 );
 
+export const BuddyInvitationCreateRequestSchema = {
+  "type": "object",
+  "required": [
+    "target",
+    "domains"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "sleep",
+          "focus"
+        ]
+      }
+    }
+  }
+} as const;
+
+export type BuddyInvitationCreateRequest = {
+  "target": string;
+  "domains": "sleep" | "focus"[];
+};
+
+export const BuddyInvitationResponseRequestSchema = {
+  "type": "object",
+  "required": [
+    "expected_version",
+    "idempotency_key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "expected_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "sharing_categories": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "presence",
+          "daily_summary",
+          "weekly_trend",
+          "shared_activity"
+        ]
+      }
+    }
+  }
+} as const;
+
+export type BuddyInvitationResponseRequest = {
+  "expected_version": number;
+  "idempotency_key": string;
+  "sharing_categories"?: "presence" | "daily_summary" | "weekly_trend" | "shared_activity"[];
+};
+
+export const BuddySharingGrantUpdateRequestSchema = {
+  "type": "object",
+  "required": [
+    "state",
+    "expected_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "granted",
+        "revoked"
+      ]
+    },
+    "expected_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type BuddySharingGrantUpdateRequest = {
+  "state": "granted" | "revoked";
+  "expected_version": number;
+};
+
+export const BuddyNotificationPreferencesRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "disabled_categories": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "invitations",
+          "interactions",
+          "activities",
+          "goals",
+          "reports"
+        ]
+      }
+    },
+    "quiet_start_minute": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1439
+    },
+    "quiet_end_minute": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1439
+    },
+    "timezone_offset_minutes": {
+      "type": "integer",
+      "minimum": -720,
+      "maximum": 840
+    },
+    "cooldown_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1440
+    },
+    "daily_budget": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    }
+  }
+} as const;
+
+export type BuddyNotificationPreferencesRequest = {
+  "enabled"?: boolean;
+  "disabled_categories"?: "invitations" | "interactions" | "activities" | "goals" | "reports"[];
+  "quiet_start_minute"?: number;
+  "quiet_end_minute"?: number;
+  "timezone_offset_minutes"?: number;
+  "cooldown_minutes"?: number;
+  "daily_budget"?: number;
+};
+
+export const BuddyStructuredShareRequestSchema = {
+  "type": "object",
+  "required": [
+    "relationship_id",
+    "type",
+    "idempotency_key",
+    "snapshot"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "focus_completion",
+        "daily_focus_summary",
+        "sleep_summary",
+        "weekly_progress",
+        "joint_goal_update"
+      ]
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BuddyStructuredShareRequest = {
+  "relationship_id": string;
+  "type": "focus_completion" | "daily_focus_summary" | "sleep_summary" | "weekly_progress" | "joint_goal_update";
+  "idempotency_key": string;
+  "snapshot": {
+  [key: string]: unknown;
+};
+  "expires_at"?: string;
+};
+
+export const BuddyInteractionRequestSchema = {
+  "type": "object",
+  "required": [
+    "relationship_id",
+    "type",
+    "idempotency_key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "encouragement",
+        "praise",
+        "support",
+        "join_next_time",
+        "tonight_together"
+      ]
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "context_id": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type BuddyInteractionRequest = {
+  "relationship_id": string;
+  "type": "encouragement" | "praise" | "support" | "join_next_time" | "tonight_together";
+  "idempotency_key": string;
+  "context_id"?: string;
+};
+
+export const BuddyJointActivityRequestSchema = {
+  "type": "object",
+  "required": [
+    "relationship_id",
+    "type",
+    "idempotency_key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "relationship_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "joint_focus",
+        "tonight_together"
+      ]
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "planned_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    }
+  }
+} as const;
+
+export type BuddyJointActivityRequest = {
+  "relationship_id": string;
+  "type": "joint_focus" | "tonight_together";
+  "idempotency_key": string;
+  "starts_at"?: string;
+  "planned_minutes"?: number;
+};
+
 export const FrogSleepSleepPreferencesRequestSchema = {
   "type": "object",
   "additionalProperties": true,
@@ -3352,6 +3646,13 @@ export const GeneratedPublicContractNames = [
   "AnalyticsEventInput",
   "AuthAcceptedData",
   "AuthSessionData",
+  "BuddyInteractionRequest",
+  "BuddyInvitationCreateRequest",
+  "BuddyInvitationResponseRequest",
+  "BuddyJointActivityRequest",
+  "BuddyNotificationPreferencesRequest",
+  "BuddySharingGrantUpdateRequest",
+  "BuddyStructuredShareRequest",
   "ChangePasswordRequest",
   "CurrentUserData",
   "EmailCodeRequest",

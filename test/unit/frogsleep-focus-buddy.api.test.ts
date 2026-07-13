@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { enableFrogSleepBuddyCapabilities } from "../helpers/enable-frogsleep-buddy-capabilities.ts";
+
+enableFrogSleepBuddyCapabilities();
 import { createApplication } from "../../src/app.module.ts";
 import { FROGSLEEP_APP_ID } from "../../src/modules/frogsleep/frogsleep-app.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
@@ -540,6 +543,28 @@ test("FrogSleep revoked focus relationships cannot be reused for buddy interacti
     requestId: "req_focus_presence_after_revoke",
   } as never);
   assert.equal(presence.statusCode, 403);
+});
+
+test("directional grant revocation immediately stops protected focus reads", async () => {
+  const runtime = await createTestRuntime();
+  const { aliceToken, bobToken, relationshipId } = await createFocusRelationship(runtime);
+  const headers = { authorization: `Bearer ${aliceToken}` };
+  const initial = await runtime.app.handle({ method: "GET", path: "/api/v1/frogsleep/focus-buddy/presence",
+    headers, query: { buddy_user_id: "user_bob" }, requestId: "grant_presence_initial" } as never);
+  assert.equal(initial.statusCode, 200);
+  const grants = await runtime.app.handle({ method: "GET",
+    path: `/api/v1/frogsleep/buddy/relationships/${relationshipId}/grants`, headers,
+    requestId: "grant_presence_list" } as never);
+  const presenceGrant = grants.body.data.grants.find((grant: any) =>
+    grant.grantor_user_id === "user_bob" && grant.grantee_user_id === "user_alice" && grant.category === "presence");
+  const revoked = await runtime.app.handle({ method: "PATCH",
+    path: `/api/v1/frogsleep/buddy/relationships/${relationshipId}/grants/${presenceGrant.id}`,
+    headers: { authorization: `Bearer ${bobToken}` }, body: { state: "revoked", expected_version: 1 },
+    requestId: "grant_presence_revoke" } as never);
+  assert.equal(revoked.statusCode, 200);
+  const denied = await runtime.app.handle({ method: "GET", path: "/api/v1/frogsleep/focus-buddy/presence",
+    headers, query: { buddy_user_id: "user_bob" }, requestId: "grant_presence_denied" } as never);
+  assert.equal(denied.statusCode, 403);
 });
 
 test("FrogSleep focus presence derives focusing, recent, idle, and stale states", async () => {

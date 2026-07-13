@@ -1,0 +1,239 @@
+import type {
+  BuddyInvitationStatus,
+  BuddySharingCategory,
+  BuddyInvitationDomain,
+} from "./buddy-growth-contract.ts";
+import type { FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyNotificationDeliveryRecord,
+  FrogSleepBuddyNotificationOutboxRecord, FrogSleepBuddyNotificationRecord } from "../../../shared/types.ts";
+
+export interface BuddySharingGrantRecord {
+  id: string;
+  appId: string;
+  relationshipId: string;
+  grantorUserId: string;
+  granteeUserId: string;
+  domain: Exclude<BuddyInvitationDomain, "bundle">;
+  category: BuddySharingCategory;
+  state: "granted" | "revoked";
+  version: number;
+  grantedAt?: string;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BuddyInvitationReceiptRecord {
+  id: string;
+  appId: string;
+  invitationKind: "sleep_invite" | "focus_invite" | "bundle";
+  invitationId: string;
+  bundleId?: string;
+  inviterUserId: string;
+  inviteeUserId?: string;
+  status: BuddyInvitationStatus;
+  version: number;
+  recipientReadAt?: string;
+  senderReadAt?: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type BuddyInvitationBundleRecord = FrogSleepBuddyInvitationBundleRecord;
+
+export type BuddyNotificationOutboxRecord = FrogSleepBuddyNotificationOutboxRecord;
+
+export interface BuddyInvitationPage {
+  items: BuddyInvitationReceiptRecord[];
+  nextCursor?: string;
+}
+
+export interface BuddyGrowthRepositoryProtocol {
+  upsertGrant(record: BuddySharingGrantRecord): Promise<BuddySharingGrantRecord>;
+  listGrantsForViewer(appId: string, granteeUserId: string, relationshipId: string): Promise<BuddySharingGrantRecord[]>;
+  listGrants(appId: string, relationshipId: string): Promise<BuddySharingGrantRecord[]>;
+  findGrant(appId: string, grantId: string): Promise<BuddySharingGrantRecord | undefined>;
+  updateGrant(appId: string, grantId: string, expectedVersion: number, state: BuddySharingGrantRecord["state"]): Promise<BuddySharingGrantRecord | undefined>;
+  upsertInvitationReceipt(record: BuddyInvitationReceiptRecord): Promise<BuddyInvitationReceiptRecord>;
+  upsertBundle(record: BuddyInvitationBundleRecord): Promise<BuddyInvitationBundleRecord>;
+  findBundle(appId: string, bundleId: string): Promise<BuddyInvitationBundleRecord | undefined>;
+  listBundles(input: { appId: string; userId: string; direction: "incoming" | "outgoing" }): Promise<BuddyInvitationBundleRecord[]>;
+  listInvitationInbox(input: { appId: string; userId: string; limit: number; cursor?: string }): Promise<BuddyInvitationPage>;
+  listInvitationOutbox(input: { appId: string; userId: string; limit: number; cursor?: string }): Promise<BuddyInvitationPage>;
+  enqueueNotification(record: BuddyNotificationOutboxRecord): Promise<BuddyNotificationOutboxRecord>;
+  listReadyNotifications(nowIso: string, limit: number): Promise<BuddyNotificationOutboxRecord[]>;
+  updateNotificationOutbox(id: string, patch: Partial<Pick<BuddyNotificationOutboxRecord,
+    "status" | "attemptCount" | "processedAt" | "lastErrorCode" | "updatedAt">>): Promise<BuddyNotificationOutboxRecord | undefined>;
+  upsertNotification(record: FrogSleepBuddyNotificationRecord): Promise<FrogSleepBuddyNotificationRecord>;
+  findNotification(appId: string, recipientUserId: string, notificationId: string): Promise<FrogSleepBuddyNotificationRecord | undefined>;
+  listNotifications(input: { appId: string; recipientUserId: string; limit: number; cursor?: string }): Promise<{ items: FrogSleepBuddyNotificationRecord[]; nextCursor?: string }>;
+  countUnreadNotifications(appId: string, recipientUserId: string): Promise<number>;
+  markNotificationRead(appId: string, recipientUserId: string, notificationId: string, readAt: string): Promise<FrogSleepBuddyNotificationRecord | undefined>;
+  markAllNotificationsRead(appId: string, recipientUserId: string, readAt: string): Promise<number>;
+  insertNotificationDelivery(record: FrogSleepBuddyNotificationDeliveryRecord): Promise<FrogSleepBuddyNotificationDeliveryRecord>;
+}
+
+export class BuddyGrowthRepository {
+  static inMemory(): BuddyGrowthRepositoryProtocol {
+    return new InMemoryBuddyGrowthRepository();
+  }
+}
+
+class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
+  private grants = new Map<string, BuddySharingGrantRecord>();
+  private receipts = new Map<string, BuddyInvitationReceiptRecord>();
+  private bundles = new Map<string, BuddyInvitationBundleRecord>();
+  private notifications = new Map<string, BuddyNotificationOutboxRecord>();
+  private feed = new Map<string, FrogSleepBuddyNotificationRecord>();
+  private deliveries = new Map<string, FrogSleepBuddyNotificationDeliveryRecord>();
+
+  async upsertGrant(record: BuddySharingGrantRecord): Promise<BuddySharingGrantRecord> {
+    const key = [record.appId, record.relationshipId, record.grantorUserId, record.granteeUserId, record.domain, record.category].join(":");
+    const existing = this.grants.get(key);
+    const stored = { ...record, id: existing?.id ?? record.id };
+    this.grants.set(key, stored);
+    return stored;
+  }
+
+  async listGrantsForViewer(appId: string, granteeUserId: string, relationshipId: string) {
+    return [...this.grants.values()].filter((item) =>
+      item.appId === appId && item.granteeUserId === granteeUserId && item.relationshipId === relationshipId
+    );
+  }
+
+  async listGrants(appId: string, relationshipId: string) {
+    return [...this.grants.values()]
+      .filter((item) => item.appId === appId && item.relationshipId === relationshipId)
+      .sort((left, right) => left.grantorUserId.localeCompare(right.grantorUserId) || left.category.localeCompare(right.category));
+  }
+
+  async findGrant(appId: string, grantId: string) {
+    return [...this.grants.values()].find((item) => item.appId === appId && item.id === grantId);
+  }
+
+  async updateGrant(appId: string, grantId: string, expectedVersion: number, state: BuddySharingGrantRecord["state"]) {
+    const grant = await this.findGrant(appId, grantId);
+    if (!grant || grant.version !== expectedVersion) return undefined;
+    const now = new Date().toISOString();
+    return this.upsertGrant({ ...grant, state, version: grant.version + 1, updatedAt: now,
+      grantedAt: state === "granted" ? now : grant.grantedAt, revokedAt: state === "revoked" ? now : undefined });
+  }
+
+  async upsertInvitationReceipt(record: BuddyInvitationReceiptRecord) {
+    const key = `${record.appId}:${record.invitationKind}:${record.invitationId}`;
+    const existing = this.receipts.get(key);
+    const stored = { ...record, id: existing?.id ?? record.id };
+    this.receipts.set(key, stored);
+    return stored;
+  }
+
+  async upsertBundle(record: BuddyInvitationBundleRecord) {
+    const key = `${record.appId}:${record.id}`;
+    const stored = structuredClone(record);
+    this.bundles.set(key, stored);
+    return structuredClone(stored);
+  }
+
+  async findBundle(appId: string, bundleId: string) {
+    const record = this.bundles.get(`${appId}:${bundleId}`);
+    return record ? structuredClone(record) : undefined;
+  }
+
+  async listBundles(input: { appId: string; userId: string; direction: "incoming" | "outgoing" }) {
+    return [...this.bundles.values()].filter((item) => item.appId === input.appId &&
+      (input.direction === "incoming" ? item.inviteeUserId === input.userId : item.inviterUserId === input.userId))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  async listInvitationInbox(input: { appId: string; userId: string; limit: number; cursor?: string }) {
+    return this.pageReceipts(input, (item) => item.inviteeUserId === input.userId);
+  }
+
+  async listInvitationOutbox(input: { appId: string; userId: string; limit: number; cursor?: string }) {
+    return this.pageReceipts(input, (item) => item.inviterUserId === input.userId);
+  }
+
+  async enqueueNotification(record: BuddyNotificationOutboxRecord) {
+    const key = `${record.appId}:${record.deduplicationKey}`;
+    const existing = this.notifications.get(key);
+    if (existing) return existing;
+    this.notifications.set(key, record);
+    return record;
+  }
+
+  async listReadyNotifications(nowIso: string, limit: number) {
+    return [...this.notifications.values()]
+      .filter((item) => ["pending", "failed"].includes(item.status) && item.availableAt <= nowIso)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
+      .slice(0, limit);
+  }
+
+  async updateNotificationOutbox(id: string, patch: Partial<BuddyNotificationOutboxRecord>) {
+    const entry = [...this.notifications.values()].find((item) => item.id === id);
+    if (!entry) return undefined;
+    Object.assign(entry, patch);
+    return structuredClone(entry);
+  }
+
+  async upsertNotification(record: FrogSleepBuddyNotificationRecord) {
+    const key = `${record.appId}:${record.recipientUserId}:${record.outboxId}`;
+    const existing = this.feed.get(key);
+    if (existing) return structuredClone(existing);
+    this.feed.set(key, structuredClone(record));
+    return structuredClone(record);
+  }
+
+  async findNotification(appId: string, recipientUserId: string, notificationId: string) {
+    const item = [...this.feed.values()].find((value) => value.appId === appId &&
+      value.recipientUserId === recipientUserId && value.id === notificationId);
+    return item ? structuredClone(item) : undefined;
+  }
+
+  async listNotifications(input: { appId: string; recipientUserId: string; limit: number; cursor?: string }) {
+    const items = [...this.feed.values()].filter((item) => item.appId === input.appId && item.recipientUserId === input.recipientUserId)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id))
+      .filter((item) => !input.cursor || `${item.createdAt}|${item.id}` < input.cursor).slice(0, input.limit);
+    const last = items.at(-1);
+    return { items: structuredClone(items), nextCursor: items.length === input.limit && last ? `${last.createdAt}|${last.id}` : undefined };
+  }
+
+  async countUnreadNotifications(appId: string, recipientUserId: string) {
+    return [...this.feed.values()].filter((item) => item.appId === appId && item.recipientUserId === recipientUserId && !item.readAt).length;
+  }
+
+  async markNotificationRead(appId: string, recipientUserId: string, notificationId: string, readAt: string) {
+    const item = [...this.feed.values()].find((value) => value.appId === appId && value.recipientUserId === recipientUserId && value.id === notificationId);
+    if (!item) return undefined;
+    item.readAt ??= readAt; item.updatedAt = readAt;
+    return structuredClone(item);
+  }
+
+  async markAllNotificationsRead(appId: string, recipientUserId: string, readAt: string) {
+    let count = 0;
+    for (const item of this.feed.values()) if (item.appId === appId && item.recipientUserId === recipientUserId && !item.readAt) {
+      item.readAt = readAt; item.updatedAt = readAt; count += 1;
+    }
+    return count;
+  }
+
+  async insertNotificationDelivery(record: FrogSleepBuddyNotificationDeliveryRecord) {
+    const key = `${record.notificationId}:${record.channel}:${record.attempt}`;
+    const existing = this.deliveries.get(key);
+    if (existing) return structuredClone(existing);
+    this.deliveries.set(key, structuredClone(record));
+    return structuredClone(record);
+  }
+
+  private pageReceipts(
+    input: { appId: string; limit: number; cursor?: string },
+    belongsToUser: (record: BuddyInvitationReceiptRecord) => boolean,
+  ): BuddyInvitationPage {
+    const items = [...this.receipts.values()]
+      .filter((item) => item.appId === input.appId && belongsToUser(item))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id))
+      .filter((item) => !input.cursor || `${item.createdAt}|${item.id}` < input.cursor)
+      .slice(0, input.limit);
+    const last = items.at(-1);
+    return { items, nextCursor: items.length === input.limit && last ? `${last.createdAt}|${last.id}` : undefined };
+  }
+}

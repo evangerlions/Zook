@@ -21,7 +21,7 @@
     "invite_id": "sleep_invite_xxx",
     "invite_code": "ABCD12",
     "invite_token": "sleep_invite_token_xxx",
-    "invite_link": "frogsleep://sleep-buddy-invite?token=sleep_invite_token_xxx&code=ABCD12",
+    "invite_link": "frogsleep://sleep-buddy-invite?mode=preview&token=sleep_invite_token_xxx&code=ABCD12",
     "invitee_email_snapshot": "partner@example.com",
     "status": "pending",
     "expires_at": "2026-07-12T12:00:00.000Z",
@@ -65,8 +65,8 @@ GET /frogsleep/focus-invite?token={shareToken}&code={shareCode}
 响应为 `302`，`Location` 分别指向：
 
 ```text
-frogsleep://sleep-buddy-invite?token={shareToken}&code={shareCode}
-frogsleep://focus-invite?token={shareToken}&code={shareCode}
+frogsleep://sleep-buddy-invite?mode=preview&token={shareToken}&code={shareCode}
+frogsleep://focus-invite?mode=preview&token={shareToken}&code={shareCode}
 ```
 
 中转接口不消费邀请，也不要求登录；真正的接受动作必须由已登录 FrogSleep 用户调用：
@@ -103,7 +103,7 @@ GET /api/v1/frogsleep/focus-buddy/invites/preview?token={shareToken}
 GET /api/v1/frogsleep/focus-buddy/invites/preview?code={shareCode}
 ```
 
-preview 接口需要 FrogSleep Bearer token，但不会接受邀请、不会创建关系、不会消耗邀请。典型响应：
+`mode=preview` 是显式安全契约：链接只定位预览，不代表用户同意。preview 接口需要 FrogSleep Bearer token，但不会接受邀请、不会创建关系、不会消耗邀请。典型响应：
 
 ```json
 {

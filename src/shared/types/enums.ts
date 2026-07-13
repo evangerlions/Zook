@@ -27,7 +27,23 @@ export type EventName =
   | "frogsleep_morning_completed"
   | "frogsleep_focus_session_reported"
   | "frogsleep_focus_relationship_created"
-  | "frogsleep_focus_achievement_unlocked";
+  | "frogsleep_focus_achievement_unlocked"
+  | "frogsleep_buddy_invitation_created"
+  | "frogsleep_buddy_invitation_delivered"
+  | "frogsleep_buddy_invitation_previewed"
+  | "frogsleep_buddy_invitation_accepted"
+  | "frogsleep_buddy_invitation_declined"
+  | "frogsleep_buddy_first_interaction"
+  | "frogsleep_buddy_first_joint_action"
+  | "frogsleep_buddy_weekly_active_growth"
+  | "frogsleep_buddy_notification_delivered"
+  | "frogsleep_buddy_notification_failed"
+  | "frogsleep_buddy_push_opt_out"
+  | "frogsleep_buddy_relationship_paused"
+  | "frogsleep_buddy_relationship_revoked"
+  | "frogsleep_buddy_user_blocked"
+  | "frogsleep_buddy_user_reported"
+  | "frogsleep_buddy_complaint_recorded";
 export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
 export type LlmRoutingStrategy = "auto" | "fixed";

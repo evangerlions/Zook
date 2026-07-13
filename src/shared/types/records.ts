@@ -147,6 +147,13 @@ export type FrogSleepEntityKind =
   | "focus_message"
   | "focus_milestone"
   | "focus_match_feedback"
+  | "buddy_share"
+  | "buddy_interaction"
+  | "buddy_joint_activity"
+  | "buddy_joint_goal"
+  | "buddy_goal_contribution"
+  | "buddy_milestone"
+  | "buddy_weekly_report"
   | "sleep_report_snapshot"
   | "progress_snapshot"
   | "entitlement_record";
@@ -187,6 +194,87 @@ export interface FrogSleepEntityFilter {
   occurredAtToIso?: string;
   includeDeleted?: boolean;
   limit?: number;
+}
+
+export interface FrogSleepBuddySharingGrantRecord {
+  id: string;
+  appId: string;
+  relationshipId: string;
+  grantorUserId: string;
+  granteeUserId: string;
+  domain: "sleep" | "focus";
+  category: "presence" | "daily_summary" | "weekly_trend" | "shared_activity";
+  state: "granted" | "revoked";
+  version: number;
+  grantedAt?: string;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationBundleRecord {
+  id: string;
+  appId: string;
+  inviterUserId: string;
+  inviteeUserId?: string;
+  status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
+  domains: Array<"sleep" | "focus">;
+  version: number;
+  domainInvitationIds: Partial<Record<"sleep" | "focus", string>>;
+  domainErrorCodes: Partial<Record<"sleep" | "focus", string>>;
+  lastIdempotencyKey?: string;
+  lastResponseAction?: "accept" | "decline" | "cancel";
+  responsePayload?: Record<string, unknown>;
+  expiresAt: string;
+  respondedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationOutboxRecord {
+  id: string;
+  appId: string;
+  recipientUserId: string;
+  eventType: string;
+  targetType: string;
+  targetId: string;
+  deduplicationKey: string;
+  safeRoute: Record<string, string>;
+  status: "pending" | "processing" | "delivered" | "failed" | "dead_letter";
+  attemptCount: number;
+  availableAt: string;
+  processedAt?: string;
+  lastErrorCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationRecord {
+  id: string;
+  appId: string;
+  recipientUserId: string;
+  outboxId: string;
+  notificationType: string;
+  targetType: string;
+  targetId: string;
+  safeRoute: Record<string, string>;
+  readAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationDeliveryRecord {
+  id: string;
+  appId: string;
+  notificationId: string;
+  channel: "in_app" | "apns";
+  status: "pending" | "delivered" | "failed" | "suppressed";
+  attempt: number;
+  providerMessageId?: string;
+  errorCode?: string;
+  deliveredAt?: string;
+  createdAt: string;
 }
 
 export interface FailedEventRecord {

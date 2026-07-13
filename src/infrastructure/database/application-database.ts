@@ -16,6 +16,11 @@ import type {
   FailedEventRecord,
   FileRecord,
   FrogSleepDeviceRecord,
+  FrogSleepBuddySharingGrantRecord,
+  FrogSleepBuddyInvitationBundleRecord,
+  FrogSleepBuddyNotificationOutboxRecord,
+  FrogSleepBuddyNotificationRecord,
+  FrogSleepBuddyNotificationDeliveryRecord,
   FrogSleepEntityFilter,
   FrogSleepEntityKind,
   FrogSleepEntityRecord,
@@ -150,6 +155,31 @@ export abstract class ApplicationDatabase {
     id: string,
     patch: Partial<Omit<FrogSleepEntityRecord, "id" | "kind" | "appId" | "createdAt">>,
   ): MaybePromise<FrogSleepEntityRecord | undefined>;
+  abstract upsertFrogSleepBuddySharingGrant(record: FrogSleepBuddySharingGrantRecord): MaybePromise<FrogSleepBuddySharingGrantRecord>;
+  abstract listFrogSleepBuddySharingGrants(appId: string, relationshipId: string): MaybePromise<FrogSleepBuddySharingGrantRecord[]>;
+  abstract findFrogSleepBuddySharingGrant(appId: string, grantId: string): MaybePromise<FrogSleepBuddySharingGrantRecord | undefined>;
+  abstract updateFrogSleepBuddySharingGrant(
+    appId: string,
+    grantId: string,
+    expectedVersion: number,
+    state: FrogSleepBuddySharingGrantRecord["state"],
+  ): MaybePromise<FrogSleepBuddySharingGrantRecord | undefined>;
+  abstract upsertFrogSleepBuddyInvitationBundle(record: FrogSleepBuddyInvitationBundleRecord): MaybePromise<FrogSleepBuddyInvitationBundleRecord>;
+  abstract findFrogSleepBuddyInvitationBundle(appId: string, bundleId: string): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
+  abstract listFrogSleepBuddyInvitationBundles(input: {
+    appId: string; userId: string; direction: "incoming" | "outgoing";
+  }): MaybePromise<FrogSleepBuddyInvitationBundleRecord[]>;
+  abstract enqueueFrogSleepBuddyNotificationOutbox(record: FrogSleepBuddyNotificationOutboxRecord): MaybePromise<FrogSleepBuddyNotificationOutboxRecord>;
+  abstract listReadyFrogSleepBuddyNotificationOutbox(nowIso: string, limit: number): MaybePromise<FrogSleepBuddyNotificationOutboxRecord[]>;
+  abstract updateFrogSleepBuddyNotificationOutbox(id: string, patch: Partial<Pick<FrogSleepBuddyNotificationOutboxRecord,
+    "status" | "attemptCount" | "processedAt" | "lastErrorCode" | "updatedAt">>): MaybePromise<FrogSleepBuddyNotificationOutboxRecord | undefined>;
+  abstract upsertFrogSleepBuddyNotification(record: FrogSleepBuddyNotificationRecord): MaybePromise<FrogSleepBuddyNotificationRecord>;
+  abstract findFrogSleepBuddyNotification(appId: string, recipientUserId: string, notificationId: string): MaybePromise<FrogSleepBuddyNotificationRecord | undefined>;
+  abstract listFrogSleepBuddyNotifications(input: { appId: string; recipientUserId: string; limit: number; cursor?: string }): MaybePromise<{ items: FrogSleepBuddyNotificationRecord[]; nextCursor?: string }>;
+  abstract countUnreadFrogSleepBuddyNotifications(appId: string, recipientUserId: string): MaybePromise<number>;
+  abstract markFrogSleepBuddyNotificationRead(appId: string, recipientUserId: string, notificationId: string, readAt: string): MaybePromise<FrogSleepBuddyNotificationRecord | undefined>;
+  abstract markAllFrogSleepBuddyNotificationsRead(appId: string, recipientUserId: string, readAt: string): MaybePromise<number>;
+  abstract insertFrogSleepBuddyNotificationDelivery(record: FrogSleepBuddyNotificationDeliveryRecord): MaybePromise<FrogSleepBuddyNotificationDeliveryRecord>;
 
   abstract insertFailedEvent(record: FailedEventRecord): MaybePromise<void>;
   abstract listFailedEvents(appId?: string): MaybePromise<FailedEventRecord[]>;

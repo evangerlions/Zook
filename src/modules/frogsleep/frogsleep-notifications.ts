@@ -5,7 +5,8 @@ export type FrogSleepNotificationType =
   | "shared_session_returned"
   | "morning_summary"
   | "focus_buddy_invite"
-  | "focus_achievement";
+  | "focus_achievement"
+  | "buddy_notification";
 
 export interface FrogSleepNotificationPayload {
   app: "frogsleep";
@@ -62,5 +63,7 @@ function defaultCopy(type: FrogSleepNotificationType): { title: string; body: st
       return { title: "新的专注搭子邀请", body: "有人邀请你成为专注搭子。" };
     case "focus_achievement":
       return { title: "专注成就已达成", body: "你刚刚解锁了新的专注里程碑。" };
+    case "buddy_notification":
+      return { title: "搭子动态已更新", body: "打开 FrogSleep 查看最新搭子动态。" };
   }
 }

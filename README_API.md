@@ -19,6 +19,8 @@
 内部运营与后台接口请看：
 
 - [docs/admin-api-spec.md](docs/admin-api-spec.md)
+- [docs/frogsleep-buddy-operations-runbook.md](docs/frogsleep-buddy-operations-runbook.md)
+- [docs/frogsleep-buddy-security-review.md](docs/frogsleep-buddy-security-review.md)
 
 ## 2. 核心原则
 
@@ -350,6 +352,19 @@ FrogSleep 已作为 dev / online 部署槽的线上联调产品开放。`DEPLOY_
 FROGSLEEP_ENABLED=true npm run dev
 ```
 
+搭子成长能力按阶段独立灰度，默认均关闭：
+
+```bash
+FROGSLEEP_BUDDY_INBOX_ENABLED=true
+FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED=true
+FROGSLEEP_BUDDY_GROWTH_HUB_ENABLED=true
+FROGSLEEP_BUDDY_INTERACTIONS_ENABLED=true
+FROGSLEEP_BUDDY_GOALS_REPORTS_ENABLED=true
+FROGSLEEP_BUDDY_PUSH_ENABLED=true
+```
+
+这些开关分别控制邀请收件箱、邀请显式同意、搭子成长主页、结构化互动、共同目标/周报和 Push 投递。客户端可逐项灰度；服务端关闭某项能力时不得通过旧链接绕过鉴权或显式接受规则。
+
 FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响应包 `code + message + data + requestId`，同时把对象型 `data` 字段复制到响应根部，方便仍按 Go 后端 raw JSON 解码的 Sleep 客户端读取 `access_token`、`refresh_token`、`user_id`、`device`、`status`、`relationship_id`、`session_id`、`summary`、`recap`、`moments` 等字段。错误响应仍使用 Zook 统一错误码；常见错误包括：请求体缺字段返回 `400 REQ_INVALID_BODY`；未带 Bearer token 返回 `401 AUTH_BEARER_REQUIRED`；token 非法或过期返回 `401 AUTH_INVALID_TOKEN`；非 FrogSleep app token 访问 `/api/v1/frogsleep/*` 保护接口返回 `403 AUTH_APP_SCOPE_MISMATCH`；重复关系、重复邮箱等业务冲突返回 `409`。
 
 对象型详情接口会同时返回根对象和嵌套对象。例如 `/api/v1/frogsleep/sleep-buddy/shared-summaries/latest` 同时包含根部 `session_id` 和 `summary.session_id`，并在 `data.summary.session_id` 下保留 Zook envelope 读法。列表接口使用根部容器字段，例如 `invites` / `pending_invites`、`sessions`、`achievements`、`candidates`、`messages`、`moments`、`sleep_reports`；客户端不应假设这些列表接口返回裸数组。业务 payload 避免使用顶层 `data` 字段，以免覆盖 Zook envelope。
@@ -530,8 +545,51 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 | `POST` | `/api/v1/frogsleep/focus-buddy/matches/{userId}/report` | 举报该匹配候选人 |
 | `POST` | `/api/v1/frogsleep/focus-buddy/invites` | 直接邀请专注搭子 |
 | `GET` | `/api/v1/frogsleep/focus-buddy/invites/preview` | 按 `token` 或 `code` 预览邀请，不接受邀请 |
+| `GET` | `/api/v1/frogsleep/focus-buddy/invites/pending` | 查询当前用户发出和收到的待处理专注搭子邀请 |
+| `POST` | `/api/v1/frogsleep/focus-buddy/invites/{inviteId}/decline` | 被邀请人拒绝专注搭子邀请 |
+| `POST` | `/api/v1/frogsleep/focus-buddy/invites/{inviteId}/cancel` | 邀请人取消专注搭子邀请 |
 | `POST` | `/api/v1/frogsleep/focus-buddy/invites/accept-code` | 用 code 接受专注搭子邀请 |
 | `POST` | `/api/v1/frogsleep/focus-buddy/invites/accept-token` | 用 token 接受专注搭子邀请 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations?direction=incoming\|outgoing` | 统一查询睡眠与专注搭子收件箱/发件箱 |
+| `POST` | `/api/v1/frogsleep/buddy/invitations` | 创建睡眠、专注或两者组合邀请；`domains` 为 `sleep`/`focus` 数组 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations/{inviteId}` | 按 ID 预览统一搭子邀请，不消费邀请 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations/preview` | 按 `invitation_id`、`token`、`code` 或 `notification_id` 预览邀请，不消费邀请 |
+| `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/accept` | 按 `expected_version` 显式接受邀请，要求 `idempotency_key` |
+| `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/decline` | 按版本拒绝邀请，重复 idempotency key 返回同一结果 |
+| `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/cancel` | 邀请人按版本取消邀请 |
+| `GET` | `/api/v1/frogsleep/buddy/relationships/{relationshipId}/grants` | 关系参与者查询双方按方向、领域和类别拆分的分享授权 |
+| `PATCH` | `/api/v1/frogsleep/buddy/relationships/{relationshipId}/grants/{grantId}` | 授权人用 `expected_version` 暂停或恢复自己的单项授权 |
+
+受保护的搭子数据按方向授权分类校验：`presence` 用于在线/专注状态，`daily_summary` 用于睡眠总结与联合回顾，`weekly_trend` 用于专注对比，`shared_activity` 用于共享时刻、结构化消息和共同睡眠活动。关系暂停、撤销、拉黑或对应方向授权撤销后，新读取和新互动立即拒绝。在方向授权上线前已接受的旧关系会幂等回填双向默认授权，以保持原有共享行为；新关系只使用接受预览中明示的分类。
+已生成的共享总结或联合回顾在授权移除后只返回 `redacted=true` 的稳定占位对象。运营元数据与 Push 路由仅允许不透明资源 ID 和路由枚举；邀请 token/code、私密总结、备注、自定义文本和原始记录会被丢弃，不进入日志、分析、Push 或错误轨迹。
+邀请创建、code/token 预览、终态响应和重复未授权访问均按用户与操作域限流。超限返回 `429 AUTH_RATE_LIMITED`，`details.retry_after_seconds` 指示可重试时间；不同用户和操作域互不影响。
+通知 worker 在投递前重新校验目标。邀请已过期、目标已删除/撤销或双方已拉黑时，outbox 直接转为 `dead_letter`，`last_error_code` 分别为 `TARGET_EXPIRED`、`TARGET_REVOKED` 或 `TARGET_BLOCKED`，不生成站内通知也不发 Push。短暂投递失败最多重试 5 次，之后以 `DELIVERY_FAILED` 进入 dead-letter 供运维查询。
+
+统一邀请创建和终态响应会各写入一条去重 notification outbox 事件。组合邀请只产生 bundle 级事件，不为内部睡眠/专注子邀请重复投递；安全路由只包含邀请 ID、领域和目标类型，不包含 token、code 或数据摘要。
+
+| `GET` | `/api/v1/frogsleep/buddy/notifications` | 游标分页查询当前用户的搭子站内通知 |
+| `GET` / `PATCH` | `/api/v1/frogsleep/buddy/notifications/preferences` | 查询/更新分类开关、安静时段、时区偏移、同类冷却和每日 Push 预算 |
+| `GET` | `/api/v1/frogsleep/buddy/hub` | 查询按当前查看者授权过滤的搭子成长快照 |
+| `GET` | `/api/v1/frogsleep/buddy/activity` | 游标分页查询结构化分享、受限互动和共同活动 |
+| `POST` | `/api/v1/frogsleep/buddy/shares` | 创建带过期时间的最小结构化进度快照 |
+| `POST` | `/api/v1/frogsleep/buddy/interactions` | 发送鼓励、赞美、支持、下次一起或今晚一起等受限回应 |
+| `POST` | `/api/v1/frogsleep/buddy/joint-activities` | 发起联合专注或今晚一起睡的共同活动 |
+| `POST` | `/api/v1/frogsleep/buddy/joint-activities/{activityId}/{action}` | 接受、拒绝、取消或完成共同活动 |
+| `GET` | `/api/v1/frogsleep/buddy/goals` | 查询当前用户可见的共同目标、双方同意与已验证进度；可按 `relationship_id` 过滤 |
+| `POST` | `/api/v1/frogsleep/buddy/goals` | 提议共同目标，要求 `relationship_id`、支持的 `type`、`target`、IANA `timezone` 和 `idempotency_key` |
+| `POST` | `/api/v1/frogsleep/buddy/goals/{goalId}/{action}` | 使用 `expected_version` 和 `idempotency_key` 接受、调整、暂停或完成目标 |
+| `GET` | `/api/v1/frogsleep/buddy/milestones` | 查询当前关系可见的去重里程碑；可按 `relationship_id` 过滤 |
+| `GET` | `/api/v1/frogsleep/buddy/weekly-reports` | 查询按当前查看者和方向授权生成的共同周报版本 |
+| `GET` | `/api/v1/frogsleep/buddy/weekly-reports/{reportId}` | 读取单份周报，读时再次校验关系与当前 `weekly_trend` 授权 |
+| `GET` | `/api/v1/frogsleep/buddy/notifications/unread-count` | 查询搭子通知未读数 |
+| `POST` | `/api/v1/frogsleep/buddy/notifications/{notificationId}/read` | 标记当前用户的一条通知已读 |
+| `POST` | `/api/v1/frogsleep/buddy/notifications/mark-all-read` | 标记当前用户全部搭子通知已读 |
+| `GET` | `/api/v1/frogsleep/buddy/notifications/{notificationId}/route` | 鉴权后解析仍有效的安全目标路由 |
+
+notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` 去重，并分别记录 `in_app` 与 `apns` delivery attempt。APNs payload 只携带 opaque `notification_id` 和安全路由元数据，受保护内容必须登录后从通知 feed 获取。
+
+共同目标首批模板为 `focus_days`、`focus_minutes`、`sleep_schedule_days`、`daily_encouragement`。服务端根据提议者 IANA timezone 计算周一至下周一 UTC 窗口；提议者默认同意，对方必须显式接受才进入 `active`。任意一方调整目标后重新进入双边确认；暂停和完成使用中性状态。进度只由服务端可验证的专注 session、睡眠摘要、结构化互动或共同活动来源事件累计，同一 source event 幂等去重。
+周报 worker 按每个查看者最新设备时区生成上一个已结束周窗口，只保存验证进度数、互动数、共同活动数和中性下一步。对方数据需要对方→查看者的 `weekly_trend` 授权；授权撤销后旧报告读取立即返回 `redacted` 并移除 partner 字段。晚到事件只在过滤后内容变化时生成新 version。里程碑覆盖首次有意义互动、首次共同行动和已结束周内两次有意义成长行为，按规则与窗口去重。
 | `GET` | `/api/v1/frogsleep/focus-buddy/relationships/current` | 当前专注搭子关系 |
 | `POST` | `/api/v1/frogsleep/focus-buddy/relationships/{relationshipId}/{action}` | 关系动作，仅支持 `accept`、`decline`、`revoke` |
 | `POST` | `/api/v1/frogsleep/focus-buddy/messages` | 发送搭子消息 |
@@ -603,8 +661,8 @@ FrogSleep 邀请响应会包含 canonical 分享字段和兼容字段 alias。�
 
 | 方法 | Path | 说明 |
 | ---- | ---- | ---- |
-| `GET` | `/frogsleep/sleep-buddy-invite?token=...&code=...` | 302 到 `frogsleep://sleep-buddy-invite?...` |
-| `GET` | `/frogsleep/focus-invite?token=...&code=...` | 302 到 `frogsleep://focus-invite?...` |
+| `GET` | `/frogsleep/sleep-buddy-invite?token=...&code=...` | 302 到带 `mode=preview` 的 App 预览路由；该链接只定位邀请，不表达接受同意 |
+| `GET` | `/frogsleep/focus-invite?token=...&code=...` | 302 到带 `mode=preview` 的 App 预览路由；该链接只定位邀请，不表达接受同意 |
 
 中转接口不要求登录、不消费邀请；服务端会尽力记录打开行为到邀请 payload，包括 `first_opened_at`、`last_opened_at`、`open_count`、`last_open_source = "redirect"`、`last_open_user_agent`。即使打开记录写入失败，中转仍返回 302，避免分享链路被统计失败阻断。
 

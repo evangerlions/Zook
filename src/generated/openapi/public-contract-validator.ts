@@ -17,6 +17,9 @@ import type {
   FrogSleepFocusProfileRequest,
   FrogSleepFocusSessionRequest,
   FrogSleepInviteAcceptRequest,
+  BuddyInvitationCreateRequest,
+  BuddyInvitationResponseRequest,
+  BuddySharingGrantUpdateRequest,
   FrogSleepInviteCreateRequest,
   FrogSleepPasswordChangeRequest,
   FrogSleepPasswordLoginRequest,
@@ -60,6 +63,9 @@ import {
   FrogSleepFocusProfileRequestSchema,
   FrogSleepFocusSessionRequestSchema,
   FrogSleepInviteAcceptRequestSchema,
+  BuddyInvitationCreateRequestSchema,
+  BuddyInvitationResponseRequestSchema,
+  BuddySharingGrantUpdateRequestSchema,
   FrogSleepInviteCreateRequestSchema,
   FrogSleepPasswordChangeRequestSchema,
   FrogSleepPasswordLoginRequestSchema,
@@ -138,6 +144,9 @@ const validators = {
   frogSleepDeviceRegister: ajv.compile(FrogSleepDeviceRegisterRequestSchema),
   frogSleepInviteCreate: ajv.compile(FrogSleepInviteCreateRequestSchema),
   frogSleepInviteAccept: ajv.compile(FrogSleepInviteAcceptRequestSchema),
+  buddyInvitationCreate: ajv.compile(BuddyInvitationCreateRequestSchema),
+  buddyInvitationResponse: ajv.compile(BuddyInvitationResponseRequestSchema),
+  buddySharingGrantUpdate: ajv.compile(BuddySharingGrantUpdateRequestSchema),
   frogSleepSleepPreferences: ajv.compile(FrogSleepSleepPreferencesRequestSchema),
   frogSleepSharedSleepSession: ajv.compile(FrogSleepSharedSleepSessionRequestSchema),
   frogSleepSharedSleepEvent: ajv.compile(FrogSleepSharedSleepEventRequestSchema),
@@ -235,6 +244,15 @@ export const PublicContractValidator = {
   },
   validateFrogSleepInviteAccept(input: unknown) {
     return validateWithSchema<FrogSleepInviteAcceptRequest>(validators.frogSleepInviteAccept, input);
+  },
+  validateBuddyInvitationCreate(input: unknown) {
+    return validateWithSchema<BuddyInvitationCreateRequest>(validators.buddyInvitationCreate, input);
+  },
+  validateBuddyInvitationResponse(input: unknown) {
+    return validateWithSchema<BuddyInvitationResponseRequest>(validators.buddyInvitationResponse, input);
+  },
+  validateBuddySharingGrantUpdate(input: unknown) {
+    return validateWithSchema<BuddySharingGrantUpdateRequest>(validators.buddySharingGrantUpdate, input);
   },
   validateFrogSleepSleepPreferences(input: unknown) {
     return validateWithSchema<FrogSleepSleepPreferencesRequest>(validators.frogSleepSleepPreferences, input);

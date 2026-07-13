@@ -5,6 +5,7 @@ import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import { buildFrogSleepNotificationPayload } from "../frogsleep-notifications.ts";
+import { assertBuddyDataAuthorized, authorizedFocusMessageRelationshipIds } from "../buddy-growth/buddy-protected-access.ts";
 import {
   currentUtcWeekStart,
   optionalIsoTimestamp,
@@ -24,6 +25,8 @@ import {
   acceptFocusInviteByToken,
   createFocusInvite,
   excludedFocusMatchUserIds,
+  focusInviteAction,
+  pendingFocusInvites,
   previewFocusInvite,
   recordFocusMatchFeedback,
   refreshFocusInviteRelationships,
@@ -56,7 +59,6 @@ import {
 import { buildFocusWeekStats } from "./focus-buddy-stats.ts";
 
 const MESSAGE_RATE_LIMIT_MS = 30 * 60 * 1000;
-
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -69,10 +71,7 @@ const FOCUS_SESSION_STATUSES = new Set(["completed", "abandoned", "interrupted",
 const MAX_FOCUS_SESSION_MINUTES = 24 * 60;
 
 export class FrogSleepFocusBuddyService {
-  constructor(
-    private readonly database: ApplicationDatabase,
-    private readonly notificationService?: NotificationService,
-  ) {}
+  constructor(private readonly database: ApplicationDatabase, private readonly notificationService?: NotificationService) {}
 
   async reportSession(userId: string, input: Record<string, unknown>) {
     const startedAt = parseIsoTimestamp(input.started_at ?? input.startedAt ?? input.start_time ?? input.startTime ?? nowIso(), "started_at");
@@ -295,8 +294,8 @@ export class FrogSleepFocusBuddyService {
     };
   }
 
-  async invite(userId: string, target: string, focusInviteBaseUrl = "frogsleep://focus-invite") {
-    return await createFocusInvite(this.deps(), userId, target, focusInviteBaseUrl);
+  async invite(userId: string, target: string, focusInviteBaseUrl = "frogsleep://focus-invite", bundleId?: string) {
+    return await createFocusInvite(this.deps(), userId, target, focusInviteBaseUrl, bundleId);
   }
 
   async acceptInviteByCode(userId: string, code: string) {
@@ -313,6 +312,14 @@ export class FrogSleepFocusBuddyService {
 
   async previewInvite(userId: string, input: { token?: string; code?: string }) {
     return await previewFocusInvite(this.deps(), userId, input);
+  }
+
+  async pendingInvites(userId: string) {
+    return pendingFocusInvites(this.deps(), userId);
+  }
+
+  async inviteAction(userId: string, inviteId: string, action: "decline" | "cancel") {
+    return focusInviteAction(this.deps(), userId, inviteId, action);
   }
 
   async recordMatchFeedback(
@@ -348,6 +355,7 @@ export class FrogSleepFocusBuddyService {
     if (!relationship) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Accepted focus buddy relationship is required.");
     }
+    await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
     await this.assertMessageRateLimit(userId, receiverUserId);
     const createdAt = nowIso();
     const message: FrogSleepEntityRecord = {
@@ -372,9 +380,7 @@ export class FrogSleepFocusBuddyService {
   }
 
   async messages(userId: string, pagination?: PaginationParams, filters: { buddyUserId?: string; since?: string } = {}) {
-    if (filters.buddyUserId && !await this.acceptedRelationshipBetween(userId, filters.buddyUserId)) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Accepted focus buddy relationship is required.");
-    }
+    const authorizedRelationshipIds = await authorizedFocusMessageRelationshipIds(this.database, userId, filters.buddyUserId);
     const owned = await this.database.listFrogSleepEntities({
       appId: FROGSLEEP_APP_ID,
       kind: "focus_message",
@@ -390,7 +396,8 @@ export class FrogSleepFocusBuddyService {
       limit: 500,
     });
     const since = optionalIsoTimestamp(filters.since, "since");
-    const records = [...owned, ...received].filter((item) => since ? item.createdAt > since : true);
+    const records = [...owned, ...received].filter((item) => item.relationshipId && authorizedRelationshipIds.has(item.relationshipId))
+      .filter((item) => since ? item.createdAt > since : true);
     const page = paginateRecords(records, pagination ?? { limit: 50 });
     return {
       messages: page.items.map((item) => toFocusMessageResponse(item)),
@@ -403,6 +410,7 @@ export class FrogSleepFocusBuddyService {
     if (!relationship) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Accepted focus buddy relationship is required.");
     }
+    await assertBuddyDataAuthorized(this.database, userId, relationship.id, "presence");
     return await deriveFocusPresence(this.database, buddyUserId, relationship.id, this.clock());
   }
 
@@ -411,6 +419,7 @@ export class FrogSleepFocusBuddyService {
     if (!relationship) {
       return null;
     }
+    await assertBuddyDataAuthorized(this.database, userId, relationship.id, "weekly_trend");
     const parsedWeekStart = parseWeekStart(weekStart);
     const buddyUserId = otherFocusUserId(relationship, userId);
     const mine = await this.weekStats(userId, parsedWeekStart);
@@ -444,6 +453,7 @@ export class FrogSleepFocusBuddyService {
     const relationships = await relationshipsForFocusUser(this.database, userId, ["accepted"]);
     const records: FrogSleepEntityRecord[] = [];
     for (const relationship of relationships) {
+      await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
       records.push(...await this.database.listFrogSleepEntities({
         appId: FROGSLEEP_APP_ID,
         kind: "focus_shared_moment",
