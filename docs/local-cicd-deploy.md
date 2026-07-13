@@ -116,6 +116,10 @@ sudo mkdir -p /var/lib/zook/appRunData
 sudo chmod -R 777 /var/lib/zook/appRunData
 ```
 
+Docker Desktop 或其他无法写入 `/var/lib` 的开发机，可在槽位环境中设置
+`ZOOK_APP_RUN_DATA_HOST_PATH` 为宿主机可写目录；容器内路径仍固定为
+`/app/appRunData`。
+
 然后分别把 `deploy_configs/online.env` 和 `deploy_configs/dev.env` 中的业务配置补齐。
 
 持久化运行目录固定为：

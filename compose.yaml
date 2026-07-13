@@ -20,7 +20,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - /var/lib/zook/appRunData:/app/appRunData
+      - "${ZOOK_APP_RUN_DATA_HOST_PATH:-/var/lib/zook/appRunData}:/app/appRunData"
     ports:
       - "${HOST_BIND_IP:-127.0.0.1}:${HOST_PORT:-3100}:${CONTAINER_PORT:-3100}"
     command: ["node", "--experimental-transform-types", "src/main.ts"]
@@ -56,7 +56,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - /var/lib/zook/appRunData:/app/appRunData
+      - "${ZOOK_APP_RUN_DATA_HOST_PATH:-/var/lib/zook/appRunData}:/app/appRunData"
     command: ["node", "--experimental-transform-types", "src/worker.ts"]
     healthcheck:
       test:
