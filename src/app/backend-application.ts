@@ -47,6 +47,7 @@ import { tryHandleAiNovelRoutes } from "./ai-novel-routes.ts";
 import { tryHandleFileNotificationRoutes } from "./file-notification-routes.ts";
 import { tryHandleFeedbackRoutes } from "./feedback-routes.ts";
 import { tryHandleFrogSleepV1Routes } from "./frogsleep-v1-routes.ts";
+import { tryHandleFrogSleepV2Routes } from "./frogsleep-v2-routes.ts";
 import { tryHandleLogRoutes } from "./log-routes.ts";
 import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
 import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
@@ -232,6 +233,10 @@ export class BackendApplication extends BackendRouteContext {
     }
 
     if (this.frogsleepEnabled) {
+      const frogSleepV2Response = await tryHandleFrogSleepV2Routes.call(this, request);
+      if (frogSleepV2Response) {
+        return frogSleepV2Response;
+      }
       const frogSleepResponse = await tryHandleFrogSleepV1Routes.call(this, request);
       if (frogSleepResponse) {
         return frogSleepResponse;
