@@ -36,9 +36,30 @@ export class BuddyInvitationBundleService {
       domainErrorCodes: outcomes.errors, expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
       createdAt: now, updatedAt: now,
     });
+    await this.ensurePendingDomainDecisions(bundle);
     await enqueueBuddyInvitationEvent(this.database, { recipientUserId: invitee.id,
       invitationId: bundle.id, domain: "bundle", eventType: "invitation_created" });
     return this.payload(bundle, input.inviterUserId);
+  }
+
+  async ensurePendingDomainDecisions(bundle: FrogSleepBuddyInvitationBundleRecord) {
+    for (const domain of bundle.domains) {
+      const existing = await this.database.findFrogSleepBuddyInvitationDomainDecision(
+        bundle.appId,
+        bundle.id,
+        domain,
+      );
+      if (existing) continue;
+      await this.database.upsertFrogSleepBuddyInvitationDomainDecision({
+        appId: bundle.appId,
+        invitationId: bundle.id,
+        domain,
+        status: "pending",
+        version: 1,
+        createdAt: bundle.createdAt,
+        updatedAt: bundle.createdAt,
+      });
+    }
   }
 
   async list(userId: string, direction: "incoming" | "outgoing") {

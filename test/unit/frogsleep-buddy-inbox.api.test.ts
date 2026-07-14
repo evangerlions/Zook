@@ -7,6 +7,7 @@ import { createApplication } from "../../src/app.module.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import { PublicContractValidator } from "../../src/generated/openapi/public-contract-validator.ts";
 import { BuddyNotificationWorkerService } from "../../src/modules/frogsleep/buddy-growth/buddy-notification-worker.service.ts";
+import { BuddyInvitationBundleService } from "../../src/modules/frogsleep/buddy-growth/buddy-invitation-bundle.service.ts";
 
 async function runtime() {
   return createApplication({ frogsleepEnabled: true, queueBackend: "memory", databaseFactory: (seed) => new InMemoryDatabase(seed) });
@@ -228,6 +229,41 @@ test("bundled invitation accepts both domain relationships idempotently", async 
   const replay = await app.app.handle({ method: "POST", path: `/api/v1/frogsleep/buddy/invitations/${bundleId}/accept`, headers: auth(bob), body: request, requestId: "bundle_replay" } as never);
   assert.deepEqual(replay.body.data, accepted.body.data);
   assert.equal(app.database.frogSleepBuddyNotificationOutbox.filter((item) => item.targetId === bundleId && item.eventType === "invitation_accepted").length, 1);
+});
+
+test("bundle creation seeds one pending domain decision per requested domain without resetting terminal facts", async () => {
+  const app = await runtime();
+  const alice = await login(app, "alice@example.com");
+  await login(app, "bob@example.com");
+
+  const twoDomain = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/invitations", headers: auth(alice),
+    body: { target: "user_bob", domains: ["sleep", "focus"] }, requestId: "decision_bundle_two_domains" } as never);
+  assert.equal(twoDomain.statusCode, 200);
+  const twoDomainId = String(twoDomain.body.data.invitation_id);
+  const twoDomainDecisions = await app.database.listFrogSleepBuddyInvitationDomainDecisions("frogsleep", twoDomainId);
+  assert.deepEqual(twoDomainDecisions.map((item) => [item.domain, item.status, item.version]), [
+    ["focus", "pending", 1],
+    ["sleep", "pending", 1],
+  ]);
+  const twoDomainBundle = await app.database.findFrogSleepBuddyInvitationBundle("frogsleep", twoDomainId);
+  assert.equal(twoDomainDecisions.every((item) => item.createdAt === twoDomainBundle?.createdAt && item.updatedAt === twoDomainBundle?.createdAt), true);
+
+  const singleDomain = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/invitations", headers: auth(alice),
+    body: { target: "user_bob", domains: ["sleep"] }, requestId: "decision_bundle_single_domain" } as never);
+  assert.equal(singleDomain.statusCode, 200);
+  const singleDomainId = String(singleDomain.body.data.invitation_id);
+  const [pendingSleep] = await app.database.listFrogSleepBuddyInvitationDomainDecisions("frogsleep", singleDomainId);
+  assert.deepEqual([pendingSleep?.domain, pendingSleep?.status, pendingSleep?.version], ["sleep", "pending", 1]);
+
+  await app.database.upsertFrogSleepBuddyInvitationDomainDecision({
+    ...pendingSleep!, status: "accepted", version: 2, decidedByUserId: "user_bob",
+    decidedAt: "2026-07-15T00:00:01.000Z", updatedAt: "2026-07-15T00:00:01.000Z",
+  });
+  const bundle = await app.database.findFrogSleepBuddyInvitationBundle("frogsleep", singleDomainId);
+  assert.ok(bundle);
+  await new BuddyInvitationBundleService(app.database).ensurePendingDomainDecisions(bundle!);
+  const [preserved] = await app.database.listFrogSleepBuddyInvitationDomainDecisions("frogsleep", singleDomainId);
+  assert.deepEqual([preserved?.status, preserved?.version, preserved?.decidedByUserId], ["accepted", 2, "user_bob"]);
 });
 
 test("bundled invitation exposes one-domain conflict and accepts eligible domain", async () => {
