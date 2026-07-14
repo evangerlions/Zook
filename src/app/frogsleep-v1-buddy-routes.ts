@@ -41,7 +41,7 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
   const growthResponse = await tryHandleBuddyHubRoutes(context, request, capabilities);
   if (growthResponse) return growthResponse;
   if (!capabilities.invitationInbox) return undefined;
-  if (request.method === "POST" && request.path === "/v1/buddy/invitations") {
+  if (capabilities.explicitInviteConsent && request.method === "POST" && request.path === "/v1/buddy/invitations") {
     return await handleBuddyInvitationCreate(context, request);
   }
   if (request.method === "GET" && request.path === "/v1/buddy/invitations") {
