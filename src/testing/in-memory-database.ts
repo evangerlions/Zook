@@ -19,6 +19,7 @@ import type {
   FrogSleepDeviceRecord,
   FrogSleepBuddySharingGrantRecord,
   FrogSleepBuddyInvitationBundleRecord,
+  FrogSleepBuddyInvitationDomainDecisionRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -76,6 +77,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepEntities: FrogSleepEntityRecord[];
   frogSleepBuddySharingGrants: FrogSleepBuddySharingGrantRecord[];
   frogSleepBuddyInvitationBundles: FrogSleepBuddyInvitationBundleRecord[];
+  frogSleepBuddyInvitationDomainDecisions: FrogSleepBuddyInvitationDomainDecisionRecord[];
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
   frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
@@ -107,6 +109,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepEntities = [];
     this.frogSleepBuddySharingGrants = [];
     this.frogSleepBuddyInvitationBundles = [];
+    this.frogSleepBuddyInvitationDomainDecisions = structuredClone(seed.frogSleepBuddyInvitationDomainDecisions ?? []);
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
     this.frogSleepBuddyNotificationDeliveries = [];
@@ -733,6 +736,40 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return structuredClone(this.frogSleepBuddyInvitationBundles).filter((item) => item.appId === input.appId &&
       (input.direction === "incoming" ? item.inviteeUserId === input.userId : item.inviterUserId === input.userId))
       .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  upsertFrogSleepBuddyInvitationDomainDecision(
+    record: FrogSleepBuddyInvitationDomainDecisionRecord,
+  ): FrogSleepBuddyInvitationDomainDecisionRecord {
+    const existing = this.frogSleepBuddyInvitationDomainDecisions.find((item) =>
+      item.appId === record.appId && item.invitationId === record.invitationId && item.domain === record.domain
+    );
+    const stored = {
+      ...record,
+      createdAt: existing?.createdAt ?? record.createdAt,
+    };
+    if (existing) Object.assign(existing, stored);
+    else this.frogSleepBuddyInvitationDomainDecisions.push(structuredClone(stored));
+    return structuredClone(existing ?? stored);
+  }
+
+  findFrogSleepBuddyInvitationDomainDecision(
+    appId: string,
+    invitationId: string,
+    domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"],
+  ): FrogSleepBuddyInvitationDomainDecisionRecord | undefined {
+    return structuredClone(this.frogSleepBuddyInvitationDomainDecisions.find((item) =>
+      item.appId === appId && item.invitationId === invitationId && item.domain === domain
+    ));
+  }
+
+  listFrogSleepBuddyInvitationDomainDecisions(
+    appId: string,
+    invitationId: string,
+  ): FrogSleepBuddyInvitationDomainDecisionRecord[] {
+    return structuredClone(this.frogSleepBuddyInvitationDomainDecisions)
+      .filter((item) => item.appId === appId && item.invitationId === invitationId)
+      .sort((left, right) => left.domain.localeCompare(right.domain));
   }
 
   enqueueFrogSleepBuddyNotificationOutbox(record: FrogSleepBuddyNotificationOutboxRecord): FrogSleepBuddyNotificationOutboxRecord {

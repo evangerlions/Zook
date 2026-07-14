@@ -231,6 +231,20 @@ export interface FrogSleepBuddyInvitationBundleRecord {
   updatedAt: string;
 }
 
+export interface FrogSleepBuddyInvitationDomainDecisionRecord {
+  appId: string;
+  invitationId: string;
+  domain: "sleep" | "focus";
+  status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
+  version: number;
+  decidedByUserId?: string;
+  decidedAt?: string;
+  idempotencyKeyHash?: string;
+  terminalReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FrogSleepBuddyNotificationOutboxRecord {
   id: string;
   appId: string;
@@ -474,4 +488,5 @@ export interface DatabaseSeed {
   contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
   feedbackRecords?: FeedbackRecord[];
   feedbackAttachments?: FeedbackAttachmentRecord[];
+  frogSleepBuddyInvitationDomainDecisions?: FrogSleepBuddyInvitationDomainDecisionRecord[];
 }

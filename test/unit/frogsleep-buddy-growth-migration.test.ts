@@ -54,6 +54,16 @@ test("bundle coordination migration stores child outcomes and idempotent respons
   }
 });
 
+test("domain decision migration creates a constrained per-invitation fact table", async () => {
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/013_frogsleep_buddy_invitation_domain_decisions.sql", import.meta.url), "utf8");
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS zook_frogsleep_buddy_invitation_domain_decisions/);
+  assert.match(sql, /UNIQUE \(app_id, invitation_id, domain\)/);
+  assert.match(sql, /CHECK \(domain IN \('sleep', 'focus'\)\)/);
+  assert.match(sql, /CHECK \(status IN \('pending', 'accepted', 'declined', 'cancelled', 'expired'\)\)/);
+  assert.match(sql, /CHECK \(version >= 1\)/);
+  assert.match(sql, /idx_frogsleep_buddy_invitation_domain_decisions_invitation/);
+});
+
 test("P2 migration stores goals, verified contributions, milestones, and viewer reports", async () => {
   const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/011_frogsleep_buddy_goals_reports.sql", import.meta.url), "utf8");
   for (const table of ["zook_frogsleep_buddy_joint_goals", "zook_frogsleep_buddy_goal_contributions",
