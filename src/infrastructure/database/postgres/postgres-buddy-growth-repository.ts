@@ -7,7 +7,7 @@ import type {
   BuddySharingGrantRecord,
 } from "../../../modules/frogsleep/buddy-growth/buddy-growth-repository.ts";
 import type { FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyNotificationDeliveryRecord,
-  FrogSleepBuddyNotificationRecord } from "../../../shared/types.ts";
+  FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord } from "../../../shared/types.ts";
 
 /** PostgreSQL persistence adapter for buddy growth projections and outbox. */
 export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
@@ -152,6 +152,38 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
     return result.rows.map(mapDomainDecision);
   }
 
+  async upsertInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord) {
+    const result = await this.pool.query(
+      `INSERT INTO zook_frogsleep_buddy_invitation_receipt_attempts
+       (id, app_id, inviter_user_id, invitee_user_id, recipient_identity_hash, domains, domains_fingerprint,
+        status, expires_at, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (app_id, inviter_user_id, recipient_identity_hash, domains_fingerprint) DO UPDATE SET
+         updated_at=EXCLUDED.updated_at
+       RETURNING *`,
+      [record.id, record.appId, record.inviterUserId, record.inviteeUserId, record.recipientIdentityHash,
+        record.domains, record.domainsFingerprint, record.status, record.expiresAt, record.createdAt, record.updatedAt],
+    );
+    return mapReceiptAttempt(result.rows[0]);
+  }
+
+  async findInvitationReceiptAttempt(appId: string, inviterUserId: string, recipientIdentityHash: string, domainsFingerprint: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_receipt_attempts
+       WHERE app_id=$1 AND inviter_user_id=$2 AND recipient_identity_hash=$3 AND domains_fingerprint=$4`,
+      [appId, inviterUserId, recipientIdentityHash, domainsFingerprint],
+    );
+    return result.rows[0] ? mapReceiptAttempt(result.rows[0]) : undefined;
+  }
+
+  async findInvitationReceiptAttemptById(appId: string, inviterUserId: string, receiptId: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_receipt_attempts
+       WHERE app_id=$1 AND inviter_user_id=$2 AND id=$3`, [appId, inviterUserId, receiptId],
+    );
+    return result.rows[0] ? mapReceiptAttempt(result.rows[0]) : undefined;
+  }
+
   async listInvitationInbox(input: { appId: string; userId: string; limit: number; cursor?: string }) {
     return this.listReceipts("invitee_user_id", input);
   }
@@ -278,5 +310,6 @@ const mapReceipt = (row: any): BuddyInvitationReceiptRecord => ({ id: row.id, ap
 const mapOutbox = (row: any): BuddyNotificationOutboxRecord => ({ id: row.id, appId: row.app_id, recipientUserId: row.recipient_user_id, eventType: row.event_type, targetType: row.target_type, targetId: row.target_id, deduplicationKey: row.deduplication_key, safeRoute: row.safe_route, status: row.status, attemptCount: row.attempt_count, availableAt: iso(row.available_at)!, processedAt: iso(row.processed_at), lastErrorCode: row.last_error_code ?? undefined, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapBundle = (row: any): BuddyInvitationBundleRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, status: row.status, domains: row.domains, version: row.version, domainInvitationIds: row.domain_invitation_ids ?? {}, domainErrorCodes: row.domain_error_codes ?? {}, lastIdempotencyKey: row.last_idempotency_key ?? undefined, lastResponseAction: row.last_response_action ?? undefined, responsePayload: row.response_payload ?? undefined, expiresAt: iso(row.expires_at)!, respondedAt: iso(row.responded_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDomainDecision = (row: any): FrogSleepBuddyInvitationDomainDecisionRecord => ({ appId: row.app_id, invitationId: row.invitation_id, domain: row.domain, status: row.status, version: row.version, decidedByUserId: row.decided_by_user_id ?? undefined, decidedAt: iso(row.decided_at), idempotencyKeyHash: row.idempotency_key_hash ?? undefined, terminalReason: row.terminal_reason ?? undefined, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
+const mapReceiptAttempt = (row: any): FrogSleepBuddyInvitationReceiptAttemptRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, recipientIdentityHash: row.recipient_identity_hash, domains: row.domains, domainsFingerprint: row.domains_fingerprint, status: row.status, expiresAt: iso(row.expires_at)!, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapNotification = (row: any): FrogSleepBuddyNotificationRecord => ({ id: row.id, appId: row.app_id, recipientUserId: row.recipient_user_id, outboxId: row.outbox_id, notificationType: row.notification_type, targetType: row.target_type, targetId: row.target_id, safeRoute: row.safe_route ?? {}, readAt: iso(row.read_at), expiresAt: iso(row.expires_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDelivery = (row: any): FrogSleepBuddyNotificationDeliveryRecord => ({ id: row.id, appId: row.app_id, notificationId: row.notification_id, channel: row.channel, status: row.status, attempt: row.attempt, providerMessageId: row.provider_message_id ?? undefined, errorCode: row.error_code ?? undefined, deliveredAt: iso(row.delivered_at), createdAt: iso(row.created_at)! });

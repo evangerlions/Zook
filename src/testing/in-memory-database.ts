@@ -20,6 +20,7 @@ import type {
   FrogSleepBuddySharingGrantRecord,
   FrogSleepBuddyInvitationBundleRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord,
+  FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -78,6 +79,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddySharingGrants: FrogSleepBuddySharingGrantRecord[];
   frogSleepBuddyInvitationBundles: FrogSleepBuddyInvitationBundleRecord[];
   frogSleepBuddyInvitationDomainDecisions: FrogSleepBuddyInvitationDomainDecisionRecord[];
+  frogSleepBuddyInvitationReceiptAttempts: FrogSleepBuddyInvitationReceiptAttemptRecord[];
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
   frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
@@ -110,6 +112,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddySharingGrants = [];
     this.frogSleepBuddyInvitationBundles = [];
     this.frogSleepBuddyInvitationDomainDecisions = structuredClone(seed.frogSleepBuddyInvitationDomainDecisions ?? []);
+    this.frogSleepBuddyInvitationReceiptAttempts = structuredClone(seed.frogSleepBuddyInvitationReceiptAttempts ?? []);
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
     this.frogSleepBuddyNotificationDeliveries = [];
@@ -770,6 +773,38 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return structuredClone(this.frogSleepBuddyInvitationDomainDecisions)
       .filter((item) => item.appId === appId && item.invitationId === invitationId)
       .sort((left, right) => left.domain.localeCompare(right.domain));
+  }
+
+  upsertFrogSleepBuddyInvitationReceiptAttempt(
+    record: FrogSleepBuddyInvitationReceiptAttemptRecord,
+  ): FrogSleepBuddyInvitationReceiptAttemptRecord {
+    const existing = this.frogSleepBuddyInvitationReceiptAttempts.find((item) =>
+      item.appId === record.appId && item.inviterUserId === record.inviterUserId &&
+      item.recipientIdentityHash === record.recipientIdentityHash && item.domainsFingerprint === record.domainsFingerprint
+    );
+    if (!existing) {
+      this.frogSleepBuddyInvitationReceiptAttempts.push(structuredClone(record));
+      return structuredClone(record);
+    }
+    existing.updatedAt = record.updatedAt;
+    return structuredClone(existing);
+  }
+
+  findFrogSleepBuddyInvitationReceiptAttempt(
+    appId: string, inviterUserId: string, recipientIdentityHash: string, domainsFingerprint: string,
+  ): FrogSleepBuddyInvitationReceiptAttemptRecord | undefined {
+    return structuredClone(this.frogSleepBuddyInvitationReceiptAttempts.find((item) =>
+      item.appId === appId && item.inviterUserId === inviterUserId &&
+      item.recipientIdentityHash === recipientIdentityHash && item.domainsFingerprint === domainsFingerprint
+    ));
+  }
+
+  findFrogSleepBuddyInvitationReceiptAttemptById(
+    appId: string, inviterUserId: string, receiptId: string,
+  ): FrogSleepBuddyInvitationReceiptAttemptRecord | undefined {
+    return structuredClone(this.frogSleepBuddyInvitationReceiptAttempts.find((item) =>
+      item.appId === appId && item.inviterUserId === inviterUserId && item.id === receiptId
+    ));
   }
 
   enqueueFrogSleepBuddyNotificationOutbox(record: FrogSleepBuddyNotificationOutboxRecord): FrogSleepBuddyNotificationOutboxRecord {

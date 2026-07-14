@@ -19,6 +19,7 @@ import type {
   FrogSleepBuddySharingGrantRecord,
   FrogSleepBuddyInvitationBundleRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord,
+  FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -182,6 +183,15 @@ export abstract class ApplicationDatabase {
     appId: string,
     invitationId: string,
   ): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord[]>;
+  abstract upsertFrogSleepBuddyInvitationReceiptAttempt(
+    record: FrogSleepBuddyInvitationReceiptAttemptRecord,
+  ): MaybePromise<FrogSleepBuddyInvitationReceiptAttemptRecord>;
+  abstract findFrogSleepBuddyInvitationReceiptAttempt(
+    appId: string, inviterUserId: string, recipientIdentityHash: string, domainsFingerprint: string,
+  ): MaybePromise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined>;
+  abstract findFrogSleepBuddyInvitationReceiptAttemptById(
+    appId: string, inviterUserId: string, receiptId: string,
+  ): MaybePromise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined>;
   abstract enqueueFrogSleepBuddyNotificationOutbox(record: FrogSleepBuddyNotificationOutboxRecord): MaybePromise<FrogSleepBuddyNotificationOutboxRecord>;
   abstract listReadyFrogSleepBuddyNotificationOutbox(nowIso: string, limit: number): MaybePromise<FrogSleepBuddyNotificationOutboxRecord[]>;
   abstract updateFrogSleepBuddyNotificationOutbox(id: string, patch: Partial<Pick<FrogSleepBuddyNotificationOutboxRecord,

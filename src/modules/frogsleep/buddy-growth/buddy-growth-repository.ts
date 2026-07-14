@@ -5,7 +5,7 @@ import type {
 } from "./buddy-growth-contract.ts";
 import type { FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyNotificationDeliveryRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyNotificationOutboxRecord,
-  FrogSleepBuddyNotificationRecord } from "../../../shared/types.ts";
+  FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord } from "../../../shared/types.ts";
 
 export interface BuddySharingGrantRecord {
   id: string;
@@ -62,6 +62,9 @@ export interface BuddyGrowthRepositoryProtocol {
   upsertInvitationDomainDecision(record: FrogSleepBuddyInvitationDomainDecisionRecord): Promise<FrogSleepBuddyInvitationDomainDecisionRecord>;
   findInvitationDomainDecision(appId: string, invitationId: string, domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"]): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined>;
   listInvitationDomainDecisions(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationDomainDecisionRecord[]>;
+  upsertInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord>;
+  findInvitationReceiptAttempt(appId: string, inviterUserId: string, recipientIdentityHash: string, domainsFingerprint: string): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined>;
+  findInvitationReceiptAttemptById(appId: string, inviterUserId: string, receiptId: string): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined>;
   listInvitationInbox(input: { appId: string; userId: string; limit: number; cursor?: string }): Promise<BuddyInvitationPage>;
   listInvitationOutbox(input: { appId: string; userId: string; limit: number; cursor?: string }): Promise<BuddyInvitationPage>;
   enqueueNotification(record: BuddyNotificationOutboxRecord): Promise<BuddyNotificationOutboxRecord>;
@@ -91,6 +94,7 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
     string,
     Map<string, Map<FrogSleepBuddyInvitationDomainDecisionRecord["domain"], FrogSleepBuddyInvitationDomainDecisionRecord>>
   >();
+  private receiptAttempts = new Map<string, FrogSleepBuddyInvitationReceiptAttemptRecord>();
   private notifications = new Map<string, BuddyNotificationOutboxRecord>();
   private feed = new Map<string, FrogSleepBuddyNotificationRecord>();
   private deliveries = new Map<string, FrogSleepBuddyNotificationDeliveryRecord>();
@@ -177,6 +181,27 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
     return [...(this.domainDecisions.get(appId)?.get(invitationId)?.values() ?? [])]
       .sort((left, right) => left.domain.localeCompare(right.domain))
       .map((item) => structuredClone(item));
+  }
+
+  async upsertInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord) {
+    const key = JSON.stringify([record.appId, record.inviterUserId, record.recipientIdentityHash, record.domainsFingerprint]);
+    const existing = this.receiptAttempts.get(key);
+    const stored = existing ? { ...existing, updatedAt: record.updatedAt } : structuredClone(record);
+    this.receiptAttempts.set(key, stored);
+    return structuredClone(stored);
+  }
+
+  async findInvitationReceiptAttempt(appId: string, inviterUserId: string, recipientIdentityHash: string, domainsFingerprint: string) {
+    const key = JSON.stringify([appId, inviterUserId, recipientIdentityHash, domainsFingerprint]);
+    const record = this.receiptAttempts.get(key);
+    return record ? structuredClone(record) : undefined;
+  }
+
+  async findInvitationReceiptAttemptById(appId: string, inviterUserId: string, receiptId: string) {
+    const record = [...this.receiptAttempts.values()].find((item) =>
+      item.appId === appId && item.inviterUserId === inviterUserId && item.id === receiptId
+    );
+    return record ? structuredClone(record) : undefined;
   }
 
   async listInvitationInbox(input: { appId: string; userId: string; limit: number; cursor?: string }) {

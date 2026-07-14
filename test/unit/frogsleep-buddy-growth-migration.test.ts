@@ -64,6 +64,16 @@ test("domain decision migration creates a constrained per-invitation fact table"
   assert.match(sql, /idx_frogsleep_buddy_invitation_domain_decisions_invitation/);
 });
 
+test("receipt attempt migration stores only recipient-bound opaque facts", async () => {
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/014_frogsleep_buddy_invitation_receipt_attempts.sql", import.meta.url), "utf8");
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS zook_frogsleep_buddy_invitation_receipt_attempts/);
+  assert.match(sql, /recipient_identity_hash TEXT NOT NULL CHECK \(recipient_identity_hash ~ '\^\[0-9a-f\]\{64\}\$'\)/);
+  assert.match(sql, /UNIQUE \(app_id, inviter_user_id, recipient_identity_hash, domains_fingerprint\)/);
+  assert.match(sql, /CHECK \(status IN \('recorded', 'decoy'\)\)/);
+  assert.match(sql, /idx_frogsleep_buddy_invitation_receipt_attempts_outbox/);
+  assert.doesNotMatch(sql, /\bemail\b|locator|idempotency|token|body/i);
+});
+
 test("P2 migration stores goals, verified contributions, milestones, and viewer reports", async () => {
   const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/011_frogsleep_buddy_goals_reports.sql", import.meta.url), "utf8");
   for (const table of ["zook_frogsleep_buddy_joint_goals", "zook_frogsleep_buddy_goal_contributions",
