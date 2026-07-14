@@ -23,7 +23,7 @@ async function login(app: Awaited<ReturnType<typeof runtime>>) {
   return String(response.body.data.access_token);
 }
 
-test("v2 buddy safety baseline is authenticated, cacheable, and independent of buddy growth flags", async () => {
+test("v1 buddy safety baseline is authenticated, cacheable, and independent of buddy growth flags", async () => {
   const savedCapabilities = {
     inbox: process.env.FROGSLEEP_BUDDY_INBOX_ENABLED,
     consent: process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED,
@@ -44,7 +44,7 @@ test("v2 buddy safety baseline is authenticated, cacheable, and independent of b
     const token = await login(app);
     const response = await app.app.handle({
       method: "GET",
-      path: "/api/v2/frogsleep/buddy/safety-baseline",
+      path: "/api/v1/frogsleep/buddy/safety-baseline",
       headers: { authorization: `Bearer ${token}` },
       requestId: "safety_baseline_success",
     } as never);
@@ -67,12 +67,12 @@ test("v2 buddy safety baseline is authenticated, cacheable, and independent of b
 
     const unauthenticated = await app.app.handle({
       method: "GET",
-      path: "/api/v2/frogsleep/buddy/safety-baseline",
+      path: "/api/v1/frogsleep/buddy/safety-baseline",
       headers: {},
       requestId: "safety_baseline_unauthenticated",
     } as never);
     assert.equal(unauthenticated.statusCode, 401);
-    assert.notEqual(unauthenticated.body.code, "OK");
+    assert.equal(unauthenticated.body.code, "AUTH_BEARER_REQUIRED");
   } finally {
     process.env.FROGSLEEP_BUDDY_INBOX_ENABLED = savedCapabilities.inbox;
     process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED = savedCapabilities.consent;

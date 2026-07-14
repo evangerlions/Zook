@@ -7,6 +7,7 @@ import { emitFrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-anal
 import { parsePaginationParams } from "../modules/frogsleep/frogsleep-validation.ts";
 import { FrogSleepSleepBuddyService } from "../modules/frogsleep/sleep-buddy/sleep-buddy.service.ts";
 import { tryHandleBuddyGrowthRoutes } from "./frogsleep-v1-buddy-routes.ts";
+import { tryHandleBuddySafetyRoutes } from "./frogsleep-v1-buddy-safety-routes.ts";
 import { asBody, authenticateFrogSleepRequest, dualResourcePayload, frogSleepOk,
   getFrogSleepInviteLinks, redirectTo, requireStringField } from "./frogsleep-v1-common.ts";
 import {
@@ -205,6 +206,8 @@ export async function tryHandleFrogSleepV1Routes(
   if (routeRequest.method === "DELETE" && deleteDeviceMatch) {
     return await handleFrogSleepDeleteDevice(this, routeRequest, decodeURIComponent(deleteDeviceMatch[1] as string));
   }
+  const buddySafetyResponse = await tryHandleBuddySafetyRoutes(this, routeRequest);
+  if (buddySafetyResponse) return buddySafetyResponse;
   const buddyGrowthResponse = await tryHandleBuddyGrowthRoutes(this, routeRequest);
   if (buddyGrowthResponse) return buddyGrowthResponse;
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/relationships/invites") {

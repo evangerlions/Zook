@@ -554,6 +554,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 | `POST` | `/api/v1/frogsleep/buddy/invitations` | 创建睡眠、专注或两者组合邀请；`domains` 为 `sleep`/`focus` 数组 |
 | `GET` | `/api/v1/frogsleep/buddy/invitations/{inviteId}` | 按 ID 预览统一搭子邀请，不消费邀请 |
 | `GET` | `/api/v1/frogsleep/buddy/invitations/preview` | 按 `invitation_id`、`token`、`code` 或 `notification_id` 预览邀请，不消费邀请 |
+| `GET` | `/api/v1/frogsleep/buddy/safety-baseline` | 获取版本化安全基线；要求 FrogSleep Bearer 鉴权，独立于普通搭子增长能力开关 |
 | `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/accept` | 按 `expected_version` 显式接受邀请，要求 `idempotency_key` |
 | `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/decline` | 按版本拒绝邀请，重复 idempotency key 返回同一结果 |
 | `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/cancel` | 邀请人按版本取消邀请 |
@@ -561,6 +562,8 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 | `PATCH` | `/api/v1/frogsleep/buddy/relationships/{relationshipId}/grants/{grantId}` | 授权人用 `expected_version` 暂停或恢复自己的单项授权 |
 
 受保护的搭子数据按方向授权分类校验：`presence` 用于在线/专注状态，`daily_summary` 用于睡眠总结与联合回顾，`weekly_trend` 用于专注对比，`shared_activity` 用于共享时刻、结构化消息和共同睡眠活动。关系暂停、撤销、拉黑或对应方向授权撤销后，新读取和新互动立即拒绝。在方向授权上线前已接受的旧关系会幂等回填双向默认授权，以保持原有共享行为；新关系只使用接受预览中明示的分类。
+
+`GET /api/v1/frogsleep/buddy/safety-baseline` 返回标准 Zook envelope，并提供 `schema_version: "1"`、`minimum_client_version: "1.0.0"`、ISO-8601 `server_time` 以及始终为 `true` 的 `safety_commands.decline`、`cancel`、`pause`、`revoke`、`block`。响应头固定为 `Cache-Control: private, max-age=300`。该接口不返回邀请、关系、授权或能力开关，且不受普通搭子增长能力开关影响；未携带 FrogSleep Bearer token 时返回现有 `401 AUTH_BEARER_REQUIRED` 错误 envelope。
 已生成的共享总结或联合回顾在授权移除后只返回 `redacted=true` 的稳定占位对象。运营元数据与 Push 路由仅允许不透明资源 ID 和路由枚举；邀请 token/code、私密总结、备注、自定义文本和原始记录会被丢弃，不进入日志、分析、Push 或错误轨迹。
 邀请创建、code/token 预览、终态响应和重复未授权访问均按用户与操作域限流。超限返回 `429 AUTH_RATE_LIMITED`，`details.retry_after_seconds` 指示可重试时间；不同用户和操作域互不影响。
 通知 worker 在投递前重新校验目标。邀请已过期、目标已删除/撤销或双方已拉黑时，outbox 直接转为 `dead_letter`，`last_error_code` 分别为 `TARGET_EXPIRED`、`TARGET_REVOKED` 或 `TARGET_BLOCKED`，不生成站内通知也不发 Push。短暂投递失败最多重试 5 次，之后以 `DELIVERY_FAILED` 进入 dead-letter 供运维查询。
