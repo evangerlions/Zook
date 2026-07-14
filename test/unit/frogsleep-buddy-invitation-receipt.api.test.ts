@@ -86,6 +86,32 @@ test("unregistered and self email receipts use indistinguishable decoy facts", a
   } finally { restore(); }
 });
 
+test("bilaterally blocked active recipients receive an indistinguishable decoy receipt", async () => {
+  const restore = preserveCapabilities();
+  enableCreate();
+  try {
+    const app = await runtime();
+    const alice = await login(app);
+    const now = new Date().toISOString();
+    await app.database.insertFrogSleepEntity({ id: "receipt_block_bob_alice", appId: "frogsleep",
+      kind: "focus_match_feedback", ownerUserId: "user_bob", partnerUserId: "user_alice", status: "blocked",
+      payload: {}, createdAt: now, updatedAt: now });
+    const blocked = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/invitation-receipts",
+      headers: auth(alice), body: { email: "bob@example.com", domains: ["sleep"] }, requestId: "receipt_blocked" } as never);
+    const unregistered = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/invitation-receipts",
+      headers: auth(alice), body: { email: "nobody@example.com", domains: ["sleep"] }, requestId: "receipt_blocked_parity" } as never);
+
+    assert.equal(blocked.statusCode, 200);
+    assert.equal(unregistered.statusCode, 200);
+    assert.deepEqual(Object.keys(blocked.body.data).sort(), Object.keys(unregistered.body.data).sort());
+    assert.equal(blocked.body.data.status, "recorded");
+    const stored = app.database.frogSleepBuddyInvitationReceiptAttempts.find((item) => item.inviteeUserId === "user_bob");
+    assert.equal(stored, undefined);
+    assert.equal(app.database.frogSleepBuddyInvitationReceiptAttempts[0]?.status, "decoy");
+    assert.equal(app.database.frogSleepBuddyInvitationReceiptAttempts[0]?.inviteeUserId, undefined);
+  } finally { restore(); }
+});
+
 test("email receipts are idempotent across email case and domain order", async () => {
   const restore = preserveCapabilities();
   enableCreate();

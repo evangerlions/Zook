@@ -8,11 +8,20 @@ export async function assertBuddyPairNotBlocked(
   userA: string,
   userB: string,
 ): Promise<void> {
+  if (await isBuddyPairBlocked(database, userA, userB)) {
+    forbidden("AUTH_APP_SCOPE_MISMATCH", "Buddy interaction is unavailable.");
+  }
+}
+
+/** Returns whether either participant has blocked the other in the buddy safety domain. */
+export async function isBuddyPairBlocked(
+  database: ApplicationDatabase,
+  userA: string,
+  userB: string,
+): Promise<boolean> {
   const [fromA, fromB] = await Promise.all([
     database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "focus_match_feedback", ownerUserId: userA, partnerUserId: userB, status: "blocked", limit: 1 }),
     database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "focus_match_feedback", ownerUserId: userB, partnerUserId: userA, status: "blocked", limit: 1 }),
   ]);
-  if (fromA.length > 0 || fromB.length > 0) {
-    forbidden("AUTH_APP_SCOPE_MISMATCH", "Buddy interaction is unavailable.");
-  }
+  return fromA.length > 0 || fromB.length > 0;
 }

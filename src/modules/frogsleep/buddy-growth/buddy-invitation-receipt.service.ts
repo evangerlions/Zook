@@ -3,6 +3,7 @@ import type { FrogSleepBuddyInvitationReceiptAttemptRecord } from "../../../shar
 import { badRequest } from "../../../shared/errors.ts";
 import { randomId, sha256 } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
+import { isBuddyPairBlocked } from "./buddy-safety.ts";
 
 const RECEIPT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const receiptDomains = ["focus", "sleep"] as const;
@@ -67,6 +68,7 @@ export class BuddyInvitationReceiptService {
   private async eligibleInvitee(email: string, inviterUserId: string): Promise<string | undefined> {
     const user = await this.database.findUserByAccount(email);
     if (!user || user.id === inviterUserId || user.status !== "ACTIVE") return undefined;
+    if (await isBuddyPairBlocked(this.database, inviterUserId, user.id)) return undefined;
     return user.id;
   }
 
