@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PostgresBuddyGrowthRepository } from "../../src/infrastructure/database/postgres/postgres-buddy-growth-repository.ts";
+import { BuddyGrowthRepository } from "../../src/modules/frogsleep/buddy-growth/buddy-growth-repository.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import type { FrogSleepBuddyInvitationDomainDecisionRecord } from "../../src/shared/types.ts";
 
@@ -77,4 +78,21 @@ test("PostgreSQL domain decisions keep creation time on upsert and list by stabl
   assert.doesNotMatch(queries[0]!.sql, /created_at=EXCLUDED\.created_at/);
   assert.match(queries[1]!.sql, /WHERE app_id=\$1 AND invitation_id=\$2 AND domain=\$3/);
   assert.match(queries[2]!.sql, /WHERE app_id=\$1 AND invitation_id=\$2 ORDER BY domain ASC/);
+});
+
+test("in-memory domain decisions keep colon-containing app and invitation identifiers independent", async () => {
+  const repository = BuddyGrowthRepository.inMemory();
+  const first = { ...decision("sleep"), appId: "frogsleep:alpha", invitationId: "invite" };
+  const second = {
+    ...decision("sleep"), appId: "frogsleep", invitationId: "alpha:invite", status: "accepted" as const,
+    version: 2, decidedByUserId: "user_bob",
+  };
+
+  await repository.upsertInvitationDomainDecision(first);
+  await repository.upsertInvitationDomainDecision(second);
+
+  assert.equal((await repository.findInvitationDomainDecision(first.appId, first.invitationId, "sleep"))?.status, "pending");
+  assert.equal((await repository.findInvitationDomainDecision(second.appId, second.invitationId, "sleep"))?.status, "accepted");
+  assert.deepEqual((await repository.listInvitationDomainDecisions(first.appId, first.invitationId)).map((item) => item.status), ["pending"]);
+  assert.deepEqual((await repository.listInvitationDomainDecisions(second.appId, second.invitationId)).map((item) => item.status), ["accepted"]);
 });

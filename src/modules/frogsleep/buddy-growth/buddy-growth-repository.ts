@@ -87,7 +87,10 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
   private grants = new Map<string, BuddySharingGrantRecord>();
   private receipts = new Map<string, BuddyInvitationReceiptRecord>();
   private bundles = new Map<string, BuddyInvitationBundleRecord>();
-  private domainDecisions = new Map<string, FrogSleepBuddyInvitationDomainDecisionRecord>();
+  private domainDecisions = new Map<
+    string,
+    Map<string, Map<FrogSleepBuddyInvitationDomainDecisionRecord["domain"], FrogSleepBuddyInvitationDomainDecisionRecord>>
+  >();
   private notifications = new Map<string, BuddyNotificationOutboxRecord>();
   private feed = new Map<string, FrogSleepBuddyNotificationRecord>();
   private deliveries = new Map<string, FrogSleepBuddyNotificationDeliveryRecord>();
@@ -151,10 +154,13 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
   }
 
   async upsertInvitationDomainDecision(record: FrogSleepBuddyInvitationDomainDecisionRecord) {
-    const key = this.domainDecisionKey(record.appId, record.invitationId, record.domain);
-    const existing = this.domainDecisions.get(key);
+    const invitations = this.domainDecisions.get(record.appId) ?? new Map();
+    const decisions = invitations.get(record.invitationId) ?? new Map();
+    const existing = decisions.get(record.domain);
     const stored = { ...record, createdAt: existing?.createdAt ?? record.createdAt };
-    this.domainDecisions.set(key, structuredClone(stored));
+    decisions.set(record.domain, structuredClone(stored));
+    invitations.set(record.invitationId, decisions);
+    this.domainDecisions.set(record.appId, invitations);
     return structuredClone(stored);
   }
 
@@ -163,13 +169,12 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
     invitationId: string,
     domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"],
   ) {
-    const record = this.domainDecisions.get(this.domainDecisionKey(appId, invitationId, domain));
+    const record = this.domainDecisions.get(appId)?.get(invitationId)?.get(domain);
     return record ? structuredClone(record) : undefined;
   }
 
   async listInvitationDomainDecisions(appId: string, invitationId: string) {
-    return [...this.domainDecisions.values()]
-      .filter((item) => item.appId === appId && item.invitationId === invitationId)
+    return [...(this.domainDecisions.get(appId)?.get(invitationId)?.values() ?? [])]
       .sort((left, right) => left.domain.localeCompare(right.domain))
       .map((item) => structuredClone(item));
   }
@@ -264,13 +269,5 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
       .slice(0, input.limit);
     const last = items.at(-1);
     return { items, nextCursor: items.length === input.limit && last ? `${last.createdAt}|${last.id}` : undefined };
-  }
-
-  private domainDecisionKey(
-    appId: string,
-    invitationId: string,
-    domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"],
-  ) {
-    return `${appId}:${invitationId}:${domain}`;
   }
 }
