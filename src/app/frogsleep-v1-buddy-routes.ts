@@ -1,6 +1,7 @@
 import type { HttpRequest } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { BuddyInvitationBundleService } from "../modules/frogsleep/buddy-growth/buddy-invitation-bundle.service.ts";
+import { BuddyInvitationReceiptService } from "../modules/frogsleep/buddy-growth/buddy-invitation-receipt.service.ts";
 import { BuddyInvitationService } from "../modules/frogsleep/buddy-growth/buddy-invitation.service.ts";
 import { BuddyConsentService } from "../modules/frogsleep/buddy-growth/buddy-consent.service.ts";
 import { BuddyNotificationService } from "../modules/frogsleep/buddy-growth/buddy-notification.service.ts";
@@ -32,6 +33,13 @@ export async function handleBuddyInvitationCreate(context: BackendRouteContext, 
   return frogSleepOk(context, invitation, request.requestId as string);
 }
 
+/** Records an opaque email invitation receipt without creating a legacy invitation. */
+async function handleBuddyInvitationReceiptCreate(context: BackendRouteContext, request: HttpRequest) {
+  const auth = await authenticateFrogSleepRequest(context, request);
+  const receipt = await new BuddyInvitationReceiptService(context.database).create(auth.userId, asBody(request));
+  return frogSleepOk(context, receipt, request.requestId as string);
+}
+
 /** Handles canonical unified buddy invitation and consent routes. */
 export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, request: HttpRequest) {
   const capabilities = resolveBuddyGrowthCapabilities();
@@ -41,6 +49,9 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
   const growthResponse = await tryHandleBuddyHubRoutes(context, request, capabilities);
   if (growthResponse) return growthResponse;
   if (!capabilities.invitationInbox) return undefined;
+  if (capabilities.explicitInviteConsent && request.method === "POST" && request.path === "/v1/buddy/invitation-receipts") {
+    return await handleBuddyInvitationReceiptCreate(context, request);
+  }
   if (capabilities.explicitInviteConsent && request.method === "POST" && request.path === "/v1/buddy/invitations") {
     return await handleBuddyInvitationCreate(context, request);
   }
