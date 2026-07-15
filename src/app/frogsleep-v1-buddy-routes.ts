@@ -2,6 +2,7 @@ import type { HttpRequest } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { BuddyInvitationBundleService } from "../modules/frogsleep/buddy-growth/buddy-invitation-bundle.service.ts";
 import { BuddyInvitationReceiptService } from "../modules/frogsleep/buddy-growth/buddy-invitation-receipt.service.ts";
+import { BuddyDomainInvitationCommandService } from "../modules/frogsleep/buddy-growth/buddy-domain-invitation-command.service.ts";
 import { BuddyInvitationService } from "../modules/frogsleep/buddy-growth/buddy-invitation.service.ts";
 import { BuddyConsentService } from "../modules/frogsleep/buddy-growth/buddy-consent.service.ts";
 import { BuddyNotificationService } from "../modules/frogsleep/buddy-growth/buddy-notification.service.ts";
@@ -55,6 +56,10 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
   if (capabilities.explicitInviteConsent && request.method === "POST" && request.path === "/v1/buddy/invitations") {
     return await handleBuddyInvitationCreate(context, request);
   }
+  const domainAcceptMatch = request.path.match(/^\/v1\/buddy\/invitations\/([^/]+)\/domains\/([^/]+)\/accept$/);
+  if (capabilities.explicitInviteConsent && request.method === "POST" && domainAcceptMatch) {
+    return await acceptInvitationDomain(context, request, domainAcceptMatch);
+  }
   if (request.method === "GET" && request.path === "/v1/buddy/invitations") {
     return await listInvitations(context, request);
   }
@@ -85,6 +90,21 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
     return await updateGrant(context, request, grantMatch);
   }
   return undefined;
+}
+
+async function acceptInvitationDomain(context: BackendRouteContext, request: HttpRequest, match: RegExpMatchArray) {
+  const auth = await authenticateFrogSleepRequest(context, request);
+  const domain = decodeURIComponent(match[2] as string);
+  if (domain !== "sleep" && domain !== "focus") badRequest("REQ_INVALID_BODY", "Invalid buddy invitation domain.");
+  const body = asBody(request);
+  const expectedVersion = Number(body.expected_version);
+  const idempotencyKey = typeof body.idempotency_key === "string" ? body.idempotency_key : "";
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1 || !idempotencyKey.trim()) {
+    badRequest("REQ_INVALID_BODY", "Invalid buddy invitation decision version or idempotency key.");
+  }
+  const data = await new BuddyDomainInvitationCommandService(context.database).accept(auth.userId,
+    decodeURIComponent(match[1] as string), domain, { expectedVersion, idempotencyKey });
+  return frogSleepOk(context, data, request.requestId as string);
 }
 
 async function tryHandleBuddyHubRoutes(

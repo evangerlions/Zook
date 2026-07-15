@@ -14,7 +14,7 @@ export async function enqueueBuddyInvitationEvent(
   await database.enqueueFrogSleepBuddyNotificationOutbox({
     id: randomId("buddy_outbox"), appId: FROGSLEEP_APP_ID, recipientUserId: input.recipientUserId,
     eventType: input.eventType, targetType: "buddy_invitation", targetId: input.invitationId,
-    deduplicationKey: `${input.eventType}:${input.invitationId}:${input.recipientUserId}`,
+    deduplicationKey: `${input.eventType}:${input.invitationId}:${input.domain}:${input.recipientUserId}`,
     safeRoute: sanitizeBuddySafeRoute({
       type: "buddy_invitation", invitation_id: input.invitationId, domain: input.domain,
     }),

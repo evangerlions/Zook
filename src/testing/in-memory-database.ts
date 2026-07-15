@@ -852,6 +852,21 @@ export class InMemoryDatabase extends ApplicationDatabase {
       .sort((left, right) => left.domain.localeCompare(right.domain));
   }
 
+  compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: {
+    appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
+    expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; updatedAt: string;
+  }): FrogSleepBuddyInvitationDomainDecisionRecord | undefined {
+    const decision = this.frogSleepBuddyInvitationDomainDecisions.find((item) =>
+      item.appId === input.appId && item.invitationId === input.invitationId && item.domain === input.domain
+    );
+    if (!decision || decision.status !== "pending" || decision.version !== input.expectedVersion) return undefined;
+    Object.assign(decision, { status: input.status, version: decision.version + 1,
+      decidedByUserId: input.decidedByUserId, decidedAt: input.decidedAt,
+      idempotencyKeyHash: input.idempotencyKeyHash, terminalReason: undefined, updatedAt: input.updatedAt });
+    return structuredClone(decision);
+  }
+
   ensureFrogSleepBuddyDomainSlot(input: {
     appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
   }): FrogSleepBuddyDomainSlotRecord {

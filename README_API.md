@@ -558,6 +558,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 | `GET` | `/api/v1/frogsleep/buddy/safety-baseline` | 获取版本化安全基线；要求 FrogSleep Bearer 鉴权，独立于普通搭子增长能力开关 |
 | `GET` | `/api/v1/frogsleep/buddy/capabilities` | 获取版本化普通搭子命令能力；要求 FrogSleep Bearer 鉴权，不包含邀请或关系数据 |
 | `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/accept` | 按 `expected_version` 显式接受邀请，要求 `idempotency_key` |
+| `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` | 被邀请人按 `sleep` 或 `focus` 单独接受组合邀请中的一个领域 |
 | `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/decline` | 按版本拒绝邀请，重复 idempotency key 返回同一结果 |
 | `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/cancel` | 邀请人按版本取消邀请 |
 | `GET` | `/api/v1/frogsleep/buddy/relationships/{relationshipId}/grants` | 关系参与者查询双方按方向、领域和类别拆分的分享授权 |
@@ -570,11 +571,15 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 `GET /api/v1/frogsleep/buddy/capabilities` 返回标准 Zook envelope，并提供 `schema_version: "1"`、`buddy_api_version: "1"`、`minimum_client_version: "1.0.0"`、最多五分钟后过期的 ISO-8601 `expires_at`，以及 `commands.create`、`accept`、`activity`、`share` 四个显式布尔值。`create` 与 `accept` 仅在普通邀请收件箱和显式邀请同意能力均启用时为 `true`；`activity` 与 `share` 仅在结构化互动能力启用时为 `true`。响应头固定为 `Cache-Control: private, max-age=300`，未携带 FrogSleep Bearer token 时返回现有 `401 AUTH_BEARER_REQUIRED` 错误 envelope。此普通能力文档不返回安全命令、邀请、关系、授权、账户或功能开关元数据；它可以全部为 `false`，而独立的 safety baseline 仍保持可用。
 
 `POST /api/v1/frogsleep/buddy/invitation-receipts` 要求 FrogSleep Bearer 鉴权和普通 `create` 能力。请求体只接受邮箱语法合法的 `email` 与非空、不重复的 `domains`（`sleep`、`focus`）；邮箱会先 `trim().toLowerCase()`，服务端仅保存其 SHA-256 小写十六进制哈希。响应为标准 envelope，`data` 只含不透明 `receipt_id`、固定 `status: "recorded"` 和七天后过期的 ISO-8601 `expires_at`。同一邀请人、规范化邮箱和领域集合重复提交会返回原回执。已注册且合格的账户会在内部绑定不可变用户 ID；未注册、本人或不合格目标会记录同形 decoy 回执。该命令不泄露账户、投递或领域信息，当前只记录邀请回执，不代表已经投递、接受、创建邀请、关系、通知、定位器或分享链接。
+
+`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含正整数 `expected_version` 和非空 `idempotency_key`。调用者必须是邀请创建时绑定的被邀请用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；不修改组合邀请、另一领域、旧子邀请或旧关系，也不会隐式开启任何分享授权。
+
+成功响应的 `data` 仅包含 `invitation_id`、`domain`、`decision_status`、`decision_version`、`relationship_id`、`relationship_status`。相同 idempotency key 重放返回已有权威结果，不增加版本或 outbox；不同 key 的终态重放或 `expected_version` 过期返回 `409 REQ_INVALID_BODY`。任一参与者的领域 slot 已占用时返回 `409 BUDDY_DOMAIN_SLOT_OCCUPIED`，且 decision、slot、关系和 outbox 均不产生部分写入。
 已生成的共享总结或联合回顾在授权移除后只返回 `redacted=true` 的稳定占位对象。运营元数据与 Push 路由仅允许不透明资源 ID 和路由枚举；邀请 token/code、私密总结、备注、自定义文本和原始记录会被丢弃，不进入日志、分析、Push 或错误轨迹。
 邀请创建、code/token 预览、终态响应和重复未授权访问均按用户与操作域限流。超限返回 `429 AUTH_RATE_LIMITED`，`details.retry_after_seconds` 指示可重试时间；不同用户和操作域互不影响。
 通知 worker 在投递前重新校验目标。邀请已过期、目标已删除/撤销或双方已拉黑时，outbox 直接转为 `dead_letter`，`last_error_code` 分别为 `TARGET_EXPIRED`、`TARGET_REVOKED` 或 `TARGET_BLOCKED`，不生成站内通知也不发 Push。短暂投递失败最多重试 5 次，之后以 `DELIVERY_FAILED` 进入 dead-letter 供运维查询。
 
-统一邀请创建和终态响应会各写入一条去重 notification outbox 事件。组合邀请只产生 bundle 级事件，不为内部睡眠/专注子邀请重复投递；安全路由只包含邀请 ID、领域和目标类型，不包含 token、code 或数据摘要。
+统一邀请创建和终态响应会各写入一条去重 notification outbox 事件。旧组合邀请终态响应仍产生 bundle 级事件；新的单领域接受命令按领域各产生一条事件。安全路由只包含邀请 ID、领域和目标类型，不包含 token、code 或数据摘要。
 
 | `GET` | `/api/v1/frogsleep/buddy/notifications` | 游标分页查询当前用户的搭子站内通知 |
 | `GET` / `PATCH` | `/api/v1/frogsleep/buddy/notifications/preferences` | 查询/更新分类开关、安静时段、时区偏移、同类冷却和每日 Push 预算 |

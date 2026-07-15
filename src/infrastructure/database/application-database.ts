@@ -190,6 +190,11 @@ export abstract class ApplicationDatabase {
     appId: string,
     invitationId: string,
   ): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: {
+    appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
+    expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; updatedAt: string;
+  }): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined>;
   abstract ensureFrogSleepBuddyDomainSlot(input: {
     appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
   }): MaybePromise<FrogSleepBuddyDomainSlotRecord>;

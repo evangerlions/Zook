@@ -70,6 +70,11 @@ export interface BuddyGrowthRepositoryProtocol {
   upsertInvitationDomainDecision(record: FrogSleepBuddyInvitationDomainDecisionRecord): Promise<FrogSleepBuddyInvitationDomainDecisionRecord>;
   findInvitationDomainDecision(appId: string, invitationId: string, domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"]): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined>;
   listInvitationDomainDecisions(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationDomainDecisionRecord[]>;
+  compareAndUpdateInvitationDomainDecision(input: {
+    appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
+    expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; updatedAt: string;
+  }): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined>;
   ensureDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string }): Promise<FrogSleepBuddyDomainSlotRecord>;
   findDomainSlot(appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"]): Promise<FrogSleepBuddyDomainSlotRecord | undefined>;
   listDomainSlots(appId: string, userId: string): Promise<FrogSleepBuddyDomainSlotRecord[]>;
@@ -199,6 +204,18 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
     return [...(this.domainDecisions.get(appId)?.get(invitationId)?.values() ?? [])]
       .sort((left, right) => left.domain.localeCompare(right.domain))
       .map((item) => structuredClone(item));
+  }
+
+  async compareAndUpdateInvitationDomainDecision(input: {
+    appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
+    expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; updatedAt: string;
+  }) {
+    const existing = await this.findInvitationDomainDecision(input.appId, input.invitationId, input.domain);
+    if (!existing || existing.status !== "pending" || existing.version !== input.expectedVersion) return undefined;
+    return await this.upsertInvitationDomainDecision({ ...existing, status: input.status,
+      version: existing.version + 1, decidedByUserId: input.decidedByUserId, decidedAt: input.decidedAt,
+      idempotencyKeyHash: input.idempotencyKeyHash, terminalReason: undefined, updatedAt: input.updatedAt });
   }
 
   async ensureDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string }) {

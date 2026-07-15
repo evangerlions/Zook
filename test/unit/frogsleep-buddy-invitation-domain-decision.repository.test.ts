@@ -80,6 +80,33 @@ test("PostgreSQL domain decisions keep creation time on upsert and list by stabl
   assert.match(queries[2]!.sql, /WHERE app_id=\$1 AND invitation_id=\$2 ORDER BY domain ASC/);
 });
 
+test("domain decision compare-and-update accepts only a pending expected version", async () => {
+  const database = new InMemoryDatabase();
+  await database.upsertFrogSleepBuddyInvitationDomainDecision(decision("sleep"));
+  const input = { appId: "frogsleep", invitationId: "invitation_1", domain: "sleep" as const,
+    expectedVersion: 1, status: "accepted" as const, decidedByUserId: "user_bob",
+    decidedAt: "2026-07-14T01:00:00.000Z", idempotencyKeyHash: "hash_only",
+    updatedAt: "2026-07-14T01:00:00.000Z" };
+  const accepted = await database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input);
+  const stale = await database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input);
+  assert.deepEqual([accepted?.status, accepted?.version, accepted?.terminalReason], ["accepted", 2, undefined]);
+  assert.equal(stale, undefined);
+});
+
+test("PostgreSQL domain decision CAS scopes the pending tuple and clears terminal reason", async () => {
+  const queries: Array<{ sql: string; values?: unknown[] }> = [];
+  const repository = new PostgresBuddyGrowthRepository({ query: async (sql, values) => {
+    queries.push({ sql, values }); return { rows: [] };
+  } });
+  await repository.compareAndUpdateInvitationDomainDecision({ appId: "frogsleep", invitationId: "invitation_1",
+    domain: "sleep", expectedVersion: 1, status: "accepted", decidedByUserId: "user_bob",
+    decidedAt: "2026-07-14T01:00:00.000Z", idempotencyKeyHash: "hash_only",
+    updatedAt: "2026-07-14T01:00:00.000Z" });
+  assert.match(queries[0]!.sql, /WHERE app_id=\$1 AND invitation_id=\$2 AND domain=\$3 AND version=\$4 AND status='pending'/);
+  assert.match(queries[0]!.sql, /version=version\+1/);
+  assert.match(queries[0]!.sql, /terminal_reason=NULL/);
+});
+
 test("in-memory domain decisions keep colon-containing app and invitation identifiers independent", async () => {
   const repository = BuddyGrowthRepository.inMemory();
   const first = { ...decision("sleep"), appId: "frogsleep:alpha", invitationId: "invite" };
