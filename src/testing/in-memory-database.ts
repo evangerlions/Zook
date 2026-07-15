@@ -22,6 +22,7 @@ import type {
   FrogSleepBuddyInvitationDomainDecisionRecord,
   FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyDomainSlotRecord,
+  FrogSleepBuddyDomainRelationshipRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -37,6 +38,10 @@ import type {
   SmsVerificationRecord,
 } from "../shared/types.ts";
 import { assertValidFrogSleepBuddyDomainSlot } from "../modules/frogsleep/buddy-growth/buddy-domain-slot-validation.ts";
+import {
+  normalizeFrogSleepBuddyDomainRelationship,
+  normalizeFrogSleepBuddyDomainRelationshipUpdate,
+} from "../modules/frogsleep/buddy-growth/buddy-domain-relationship-validation.ts";
 import {
   normalizeFrogSleepBuddyCommandSlotKeys,
   serializeFrogSleepBuddyCommandSlotKey,
@@ -89,6 +94,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyInvitationBundles: FrogSleepBuddyInvitationBundleRecord[];
   frogSleepBuddyInvitationDomainDecisions: FrogSleepBuddyInvitationDomainDecisionRecord[];
   frogSleepBuddyDomainSlots: FrogSleepBuddyDomainSlotRecord[];
+  frogSleepBuddyDomainRelationships: FrogSleepBuddyDomainRelationshipRecord[];
   frogSleepBuddyInvitationReceiptAttempts: FrogSleepBuddyInvitationReceiptAttemptRecord[];
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
@@ -123,6 +129,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyInvitationBundles = [];
     this.frogSleepBuddyInvitationDomainDecisions = structuredClone(seed.frogSleepBuddyInvitationDomainDecisions ?? []);
     this.frogSleepBuddyDomainSlots = structuredClone(seed.frogSleepBuddyDomainSlots ?? []);
+    this.frogSleepBuddyDomainRelationships = structuredClone(seed.frogSleepBuddyDomainRelationships ?? []);
     this.frogSleepBuddyInvitationReceiptAttempts = structuredClone(seed.frogSleepBuddyInvitationReceiptAttempts ?? []);
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
@@ -886,6 +893,61 @@ export class InMemoryDatabase extends ApplicationDatabase {
       state: input.state, relationshipId: input.relationshipId, version: slot.version + 1, updatedAt: input.updatedAt,
     });
     return structuredClone(slot);
+  }
+
+  insertFrogSleepBuddyDomainRelationship(
+    record: FrogSleepBuddyDomainRelationshipRecord,
+  ): FrogSleepBuddyDomainRelationshipRecord {
+    const normalized = normalizeFrogSleepBuddyDomainRelationship(record);
+    const existing = this.frogSleepBuddyDomainRelationships.find((item) => item.id === normalized.id);
+    if (existing) {
+      if (existing.appId !== normalized.appId) throw new Error("FrogSleep buddy domain relationship ID collision.");
+      return structuredClone(existing);
+    }
+    if (normalized.status !== "revoked" && this.frogSleepBuddyDomainRelationships.some((item) =>
+      item.appId === normalized.appId && item.domain === normalized.domain && item.status !== "revoked" &&
+      item.userIdLow === normalized.userIdLow && item.userIdHigh === normalized.userIdHigh
+    )) throw new Error("FrogSleep buddy domain relationship current pair already exists.");
+    this.frogSleepBuddyDomainRelationships.push(normalized);
+    return structuredClone(normalized);
+  }
+
+  findFrogSleepBuddyDomainRelationship(
+    appId: string, relationshipId: string,
+  ): FrogSleepBuddyDomainRelationshipRecord | undefined {
+    return structuredClone(this.frogSleepBuddyDomainRelationships.find((item) =>
+      item.appId === appId && item.id === relationshipId,
+    ));
+  }
+
+  listCurrentFrogSleepBuddyDomainRelationships(
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+  ): FrogSleepBuddyDomainRelationshipRecord[] {
+    return structuredClone(this.frogSleepBuddyDomainRelationships.filter((item) =>
+      item.appId === appId && item.domain === domain && item.status !== "revoked" &&
+      (item.userIdLow === userId || item.userIdHigh === userId),
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)));
+  }
+
+  compareAndUpdateFrogSleepBuddyDomainRelationship(input: {
+    appId: string; id: string; expectedVersion: number; status: FrogSleepBuddyDomainRelationshipRecord["status"];
+    pausedByUserIds: string[]; revokedAt?: string; updatedAt: string;
+  }): FrogSleepBuddyDomainRelationshipRecord | undefined {
+    const normalizedInput = normalizeFrogSleepBuddyDomainRelationshipUpdate(input);
+    const existing = this.frogSleepBuddyDomainRelationships.find((item) =>
+      item.appId === normalizedInput.appId && item.id === normalizedInput.id,
+    );
+    if (!existing || existing.version !== normalizedInput.expectedVersion) return undefined;
+    const updated = normalizeFrogSleepBuddyDomainRelationship({
+      ...existing, status: normalizedInput.status, pausedByUserIds: normalizedInput.pausedByUserIds,
+      revokedAt: normalizedInput.revokedAt, version: existing.version + 1, updatedAt: normalizedInput.updatedAt,
+    });
+    if (updated.status !== "revoked" && this.frogSleepBuddyDomainRelationships.some((item) =>
+      item.id !== updated.id && item.appId === updated.appId && item.domain === updated.domain &&
+      item.status !== "revoked" && item.userIdLow === updated.userIdLow && item.userIdHigh === updated.userIdHigh
+    )) throw new Error("FrogSleep buddy domain relationship current pair already exists.");
+    Object.assign(existing, updated);
+    return structuredClone(existing);
   }
 
   upsertFrogSleepBuddyInvitationReceiptAttempt(

@@ -20,6 +20,7 @@ import type {
   FrogSleepBuddyInvitationBundleRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord,
   FrogSleepBuddyDomainSlotRecord,
+  FrogSleepBuddyDomainRelationshipRecord,
   FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
@@ -202,6 +203,20 @@ export abstract class ApplicationDatabase {
     appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number;
     state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string;
   }): MaybePromise<FrogSleepBuddyDomainSlotRecord | undefined>;
+  abstract insertFrogSleepBuddyDomainRelationship(
+    record: FrogSleepBuddyDomainRelationshipRecord,
+  ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord>;
+  abstract findFrogSleepBuddyDomainRelationship(
+    appId: string, relationshipId: string,
+  ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord | undefined>;
+  abstract listCurrentFrogSleepBuddyDomainRelationships(
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+  ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyDomainRelationship(input: {
+    appId: string; id: string; expectedVersion: number;
+    status: FrogSleepBuddyDomainRelationshipRecord["status"];
+    pausedByUserIds: string[]; revokedAt?: string; updatedAt: string;
+  }): MaybePromise<FrogSleepBuddyDomainRelationshipRecord | undefined>;
   abstract upsertFrogSleepBuddyInvitationReceiptAttempt(
     record: FrogSleepBuddyInvitationReceiptAttemptRecord,
   ): MaybePromise<FrogSleepBuddyInvitationReceiptAttemptRecord>;

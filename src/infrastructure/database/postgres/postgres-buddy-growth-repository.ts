@@ -9,6 +9,12 @@ import type {
 import type { FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyNotificationDeliveryRecord,
   FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyDomainSlotRecord } from "../../../shared/types.ts";
+import type { FrogSleepBuddyDomainRelationshipRecord } from "../../../shared/types.ts";
+import {
+  normalizeFrogSleepBuddyDomainRelationship,
+  normalizeFrogSleepBuddyDomainRelationshipUpdate,
+  type FrogSleepBuddyDomainRelationshipUpdate,
+} from "../../../modules/frogsleep/buddy-growth/buddy-domain-relationship-validation.ts";
 
 /** PostgreSQL persistence adapter for buddy growth projections and outbox. */
 export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
@@ -200,6 +206,57 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
     return result.rows[0] ? mapDomainSlot(result.rows[0]) : undefined;
   }
 
+  async insertDomainRelationship(record: FrogSleepBuddyDomainRelationshipRecord) {
+    const normalized = normalizeFrogSleepBuddyDomainRelationship(record);
+    const result = await this.pool.query(
+      `INSERT INTO zook_frogsleep_buddy_domain_relationships
+       (id, app_id, domain, user_id_low, user_id_high, status, paused_by_user_ids,
+        version, revoked_at, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (id) DO NOTHING RETURNING *`,
+      [normalized.id, normalized.appId, normalized.domain, normalized.userIdLow, normalized.userIdHigh,
+        normalized.status, normalized.pausedByUserIds, normalized.version, normalized.revokedAt,
+        normalized.createdAt, normalized.updatedAt],
+    );
+    if (result.rows[0]) return mapDomainRelationship(result.rows[0]);
+    const existing = await this.findDomainRelationship(normalized.appId, normalized.id);
+    if (!existing) throw new Error("FrogSleep buddy domain relationship ID collision.");
+    return existing;
+  }
+
+  async findDomainRelationship(appId: string, relationshipId: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_domain_relationships WHERE app_id=$1 AND id=$2`,
+      [appId, relationshipId],
+    );
+    return result.rows[0] ? mapDomainRelationship(result.rows[0]) : undefined;
+  }
+
+  async listCurrentDomainRelationships(
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+  ) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_domain_relationships
+       WHERE app_id=$1 AND (user_id_low=$2 OR user_id_high=$2) AND domain=$3
+         AND status IN ('active','paused')
+       ORDER BY updated_at DESC, id DESC`,
+      [appId, userId, domain],
+    );
+    return result.rows.map(mapDomainRelationship);
+  }
+
+  async compareAndUpdateDomainRelationship(input: FrogSleepBuddyDomainRelationshipUpdate) {
+    const normalized = normalizeFrogSleepBuddyDomainRelationshipUpdate(input);
+    const result = await this.pool.query(
+      `UPDATE zook_frogsleep_buddy_domain_relationships
+       SET status=$4, paused_by_user_ids=$5, revoked_at=$6, version=version+1, updated_at=$7
+       WHERE app_id=$1 AND id=$2 AND version=$3 RETURNING *`,
+      [normalized.appId, normalized.id, normalized.expectedVersion, normalized.status,
+        normalized.pausedByUserIds, normalized.revokedAt, normalized.updatedAt],
+    );
+    return result.rows[0] ? mapDomainRelationship(result.rows[0]) : undefined;
+  }
+
   async upsertInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord) {
     const result = await this.pool.query(
       `INSERT INTO zook_frogsleep_buddy_invitation_receipt_attempts
@@ -359,6 +416,7 @@ const mapOutbox = (row: any): BuddyNotificationOutboxRecord => ({ id: row.id, ap
 const mapBundle = (row: any): BuddyInvitationBundleRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, status: row.status, domains: row.domains, version: row.version, domainInvitationIds: row.domain_invitation_ids ?? {}, domainErrorCodes: row.domain_error_codes ?? {}, lastIdempotencyKey: row.last_idempotency_key ?? undefined, lastResponseAction: row.last_response_action ?? undefined, responsePayload: row.response_payload ?? undefined, expiresAt: iso(row.expires_at)!, respondedAt: iso(row.responded_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDomainDecision = (row: any): FrogSleepBuddyInvitationDomainDecisionRecord => ({ appId: row.app_id, invitationId: row.invitation_id, domain: row.domain, status: row.status, version: row.version, decidedByUserId: row.decided_by_user_id ?? undefined, decidedAt: iso(row.decided_at), idempotencyKeyHash: row.idempotency_key_hash ?? undefined, terminalReason: row.terminal_reason ?? undefined, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDomainSlot = (row: any): FrogSleepBuddyDomainSlotRecord => ({ appId: row.app_id, userId: row.user_id, domain: row.domain, state: row.state, relationshipId: row.relationship_id ?? undefined, version: row.version, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
+const mapDomainRelationship = (row: any): FrogSleepBuddyDomainRelationshipRecord => ({ id: row.id, appId: row.app_id, domain: row.domain, userIdLow: row.user_id_low, userIdHigh: row.user_id_high, status: row.status, pausedByUserIds: row.paused_by_user_ids, version: row.version, revokedAt: iso(row.revoked_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapReceiptAttempt = (row: any): FrogSleepBuddyInvitationReceiptAttemptRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, recipientIdentityHash: row.recipient_identity_hash, domains: row.domains, domainsFingerprint: row.domains_fingerprint, status: row.status, expiresAt: iso(row.expires_at)!, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapNotification = (row: any): FrogSleepBuddyNotificationRecord => ({ id: row.id, appId: row.app_id, recipientUserId: row.recipient_user_id, outboxId: row.outbox_id, notificationType: row.notification_type, targetType: row.target_type, targetId: row.target_id, safeRoute: row.safe_route ?? {}, readAt: iso(row.read_at), expiresAt: iso(row.expires_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDelivery = (row: any): FrogSleepBuddyNotificationDeliveryRecord => ({ id: row.id, appId: row.app_id, notificationId: row.notification_id, channel: row.channel, status: row.status, attempt: row.attempt, providerMessageId: row.provider_message_id ?? undefined, errorCode: row.error_code ?? undefined, deliveredAt: iso(row.delivered_at), createdAt: iso(row.created_at)! });
