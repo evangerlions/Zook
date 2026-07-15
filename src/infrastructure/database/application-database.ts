@@ -35,6 +35,7 @@ import type {
   UserRoleRecord,
   SmsVerificationRecord,
 } from "../../shared/types.ts";
+import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -52,6 +53,10 @@ export interface ManagedStateSnapshot {
  */
 export abstract class ApplicationDatabase {
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
+  abstract withFrogSleepBuddyCommandTransaction<T>(
+    slotKeys: FrogSleepBuddyCommandSlotKey[],
+    fn: () => Promise<T> | T,
+  ): Promise<T>;
   abstract close(): Promise<void>;
   abstract exportManagedState(): MaybePromise<ManagedStateSnapshot>;
 

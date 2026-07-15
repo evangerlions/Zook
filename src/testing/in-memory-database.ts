@@ -38,6 +38,11 @@ import type {
 } from "../shared/types.ts";
 import { assertValidFrogSleepBuddyDomainSlot } from "../modules/frogsleep/buddy-growth/buddy-domain-slot-validation.ts";
 import {
+  normalizeFrogSleepBuddyCommandSlotKeys,
+  serializeFrogSleepBuddyCommandSlotKey,
+  type FrogSleepBuddyCommandSlotKey,
+} from "../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
+import {
   ApplicationDatabase,
   buildManagedStateSnapshot,
   type ManagedStateSnapshot,
@@ -54,6 +59,8 @@ function normalizeListLimit(limit?: number): number {
 export class InMemoryDatabase extends ApplicationDatabase {
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();
+  private readonly buddyCommandContext = new AsyncLocalStorage<Set<string>>();
+  private buddyCommandTail: Promise<void> = Promise.resolve();
 
   apps: AppRecord[];
   users: UserRecord[];
@@ -140,6 +147,65 @@ export class InMemoryDatabase extends ApplicationDatabase {
         release();
       }
     });
+  }
+
+  async withFrogSleepBuddyCommandTransaction<T>(
+    slotKeys: FrogSleepBuddyCommandSlotKey[],
+    fn: () => Promise<T> | T,
+  ): Promise<T> {
+    const normalized = normalizeFrogSleepBuddyCommandSlotKeys(slotKeys);
+    const serialized = new Set(normalized.map(serializeFrogSleepBuddyCommandSlotKey));
+    const outerKeys = this.buddyCommandContext.getStore();
+    if (outerKeys) {
+      if (normalized.some((key) => !outerKeys.has(serializeFrogSleepBuddyCommandSlotKey(key)))) {
+        throw new Error("Nested transaction requested an additional buddy command transaction slot.");
+      }
+      return await fn();
+    }
+    return await this.runRootBuddyCommandTransaction(normalized, serialized, fn);
+  }
+
+  private async runRootBuddyCommandTransaction<T>(
+    keys: FrogSleepBuddyCommandSlotKey[],
+    serialized: Set<string>,
+    fn: () => Promise<T> | T,
+  ): Promise<T> {
+    const release = this.reserveBuddyCommandTurn();
+    await release.previous;
+    const snapshot = this.snapshotCollections();
+    try {
+      return await this.buddyCommandContext.run(serialized, async () => {
+        const now = new Date().toISOString();
+        for (const key of keys) this.ensureFrogSleepBuddyDomainSlot({ ...key, now });
+        return await fn();
+      });
+    } catch (error) {
+      this.restoreCollections(snapshot);
+      throw error;
+    } finally {
+      release.current();
+    }
+  }
+
+  private reserveBuddyCommandTurn(): { previous: Promise<void>; current: () => void } {
+    const previous = this.buddyCommandTail;
+    let current = () => undefined;
+    this.buddyCommandTail = new Promise<void>((resolve) => { current = resolve; });
+    return { previous, current };
+  }
+
+  private snapshotCollections(): Map<string, unknown[]> {
+    const snapshot = new Map<string, unknown[]>();
+    for (const [key, value] of Object.entries(this)) {
+      if (Array.isArray(value)) snapshot.set(key, structuredClone(value));
+    }
+    return snapshot;
+  }
+
+  private restoreCollections(snapshot: Map<string, unknown[]>): void {
+    for (const [key, value] of snapshot) {
+      (this as unknown as Record<string, unknown>)[key] = value;
+    }
   }
 
   async close(): Promise<void> {
