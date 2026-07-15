@@ -19,6 +19,7 @@ import type {
   FrogSleepBuddySharingGrantRecord,
   FrogSleepBuddyInvitationBundleRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord,
+  FrogSleepBuddyDomainSlotRecord,
   FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
@@ -183,6 +184,19 @@ export abstract class ApplicationDatabase {
     appId: string,
     invitationId: string,
   ): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord[]>;
+  abstract ensureFrogSleepBuddyDomainSlot(input: {
+    appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
+  }): MaybePromise<FrogSleepBuddyDomainSlotRecord>;
+  abstract findFrogSleepBuddyDomainSlot(
+    appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"],
+  ): MaybePromise<FrogSleepBuddyDomainSlotRecord | undefined>;
+  abstract listFrogSleepBuddyDomainSlots(
+    appId: string, userId: string,
+  ): MaybePromise<FrogSleepBuddyDomainSlotRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyDomainSlot(input: {
+    appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number;
+    state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string;
+  }): MaybePromise<FrogSleepBuddyDomainSlotRecord | undefined>;
   abstract upsertFrogSleepBuddyInvitationReceiptAttempt(
     record: FrogSleepBuddyInvitationReceiptAttemptRecord,
   ): MaybePromise<FrogSleepBuddyInvitationReceiptAttemptRecord>;

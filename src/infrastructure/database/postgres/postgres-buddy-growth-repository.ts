@@ -7,7 +7,8 @@ import type {
   BuddySharingGrantRecord,
 } from "../../../modules/frogsleep/buddy-growth/buddy-growth-repository.ts";
 import type { FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyNotificationDeliveryRecord,
-  FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord } from "../../../shared/types.ts";
+  FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord,
+  FrogSleepBuddyDomainSlotRecord } from "../../../shared/types.ts";
 
 /** PostgreSQL persistence adapter for buddy growth projections and outbox. */
 export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
@@ -150,6 +151,53 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
        WHERE app_id=$1 AND invitation_id=$2 ORDER BY domain ASC`, [appId, invitationId],
     );
     return result.rows.map(mapDomainDecision);
+  }
+
+  async ensureDomainSlot(input: {
+    appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
+  }) {
+    const result = await this.pool.query(
+      `INSERT INTO zook_frogsleep_buddy_domain_slots
+       (app_id, user_id, domain, state, relationship_id, version, created_at, updated_at)
+       VALUES ($1,$2,$3,'available',NULL,1,$4,$4)
+       ON CONFLICT (app_id, user_id, domain) DO NOTHING
+       RETURNING *`,
+      [input.appId, input.userId, input.domain, input.now],
+    );
+    if (result.rows[0]) return mapDomainSlot(result.rows[0]);
+    const existing = await this.findDomainSlot(input.appId, input.userId, input.domain);
+    if (!existing) throw new Error("FrogSleep buddy domain slot was not found after ensure.");
+    return existing;
+  }
+
+  async findDomainSlot(appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"]) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_domain_slots WHERE app_id=$1 AND user_id=$2 AND domain=$3`,
+      [appId, userId, domain],
+    );
+    return result.rows[0] ? mapDomainSlot(result.rows[0]) : undefined;
+  }
+
+  async listDomainSlots(appId: string, userId: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_domain_slots WHERE app_id=$1 AND user_id=$2 ORDER BY domain ASC`,
+      [appId, userId],
+    );
+    return result.rows.map(mapDomainSlot);
+  }
+
+  async compareAndUpdateDomainSlot(input: {
+    appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number;
+    state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string;
+  }) {
+    const result = await this.pool.query(
+      `UPDATE zook_frogsleep_buddy_domain_slots
+       SET state=$5, relationship_id=$6, version=version+1, updated_at=$7
+       WHERE app_id=$1 AND user_id=$2 AND domain=$3 AND version=$4
+       RETURNING *`,
+      [input.appId, input.userId, input.domain, input.expectedVersion, input.state, input.relationshipId, input.updatedAt],
+    );
+    return result.rows[0] ? mapDomainSlot(result.rows[0]) : undefined;
   }
 
   async upsertInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord) {
@@ -310,6 +358,7 @@ const mapReceipt = (row: any): BuddyInvitationReceiptRecord => ({ id: row.id, ap
 const mapOutbox = (row: any): BuddyNotificationOutboxRecord => ({ id: row.id, appId: row.app_id, recipientUserId: row.recipient_user_id, eventType: row.event_type, targetType: row.target_type, targetId: row.target_id, deduplicationKey: row.deduplication_key, safeRoute: row.safe_route, status: row.status, attemptCount: row.attempt_count, availableAt: iso(row.available_at)!, processedAt: iso(row.processed_at), lastErrorCode: row.last_error_code ?? undefined, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapBundle = (row: any): BuddyInvitationBundleRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, status: row.status, domains: row.domains, version: row.version, domainInvitationIds: row.domain_invitation_ids ?? {}, domainErrorCodes: row.domain_error_codes ?? {}, lastIdempotencyKey: row.last_idempotency_key ?? undefined, lastResponseAction: row.last_response_action ?? undefined, responsePayload: row.response_payload ?? undefined, expiresAt: iso(row.expires_at)!, respondedAt: iso(row.responded_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDomainDecision = (row: any): FrogSleepBuddyInvitationDomainDecisionRecord => ({ appId: row.app_id, invitationId: row.invitation_id, domain: row.domain, status: row.status, version: row.version, decidedByUserId: row.decided_by_user_id ?? undefined, decidedAt: iso(row.decided_at), idempotencyKeyHash: row.idempotency_key_hash ?? undefined, terminalReason: row.terminal_reason ?? undefined, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
+const mapDomainSlot = (row: any): FrogSleepBuddyDomainSlotRecord => ({ appId: row.app_id, userId: row.user_id, domain: row.domain, state: row.state, relationshipId: row.relationship_id ?? undefined, version: row.version, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapReceiptAttempt = (row: any): FrogSleepBuddyInvitationReceiptAttemptRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, recipientIdentityHash: row.recipient_identity_hash, domains: row.domains, domainsFingerprint: row.domains_fingerprint, status: row.status, expiresAt: iso(row.expires_at)!, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapNotification = (row: any): FrogSleepBuddyNotificationRecord => ({ id: row.id, appId: row.app_id, recipientUserId: row.recipient_user_id, outboxId: row.outbox_id, notificationType: row.notification_type, targetType: row.target_type, targetId: row.target_id, safeRoute: row.safe_route ?? {}, readAt: iso(row.read_at), expiresAt: iso(row.expires_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDelivery = (row: any): FrogSleepBuddyNotificationDeliveryRecord => ({ id: row.id, appId: row.app_id, notificationId: row.notification_id, channel: row.channel, status: row.status, attempt: row.attempt, providerMessageId: row.provider_message_id ?? undefined, errorCode: row.error_code ?? undefined, deliveredAt: iso(row.delivered_at), createdAt: iso(row.created_at)! });

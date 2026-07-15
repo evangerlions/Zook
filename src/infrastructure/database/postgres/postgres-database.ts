@@ -19,7 +19,7 @@ import type {
   FileRecord,
   FrogSleepDeviceRecord,
   FrogSleepBuddySharingGrantRecord,
-  FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyInvitationReceiptAttemptRecord,
+  FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyInvitationReceiptAttemptRecord, FrogSleepBuddyDomainSlotRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -521,7 +521,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   ): Promise<NotificationJobRecord | undefined> {
     return await this.operationalRecords.updateNotificationJob(jobId, patch);
   }
-
   override async upsertFrogSleepDevice(record: FrogSleepDeviceRecord): Promise<FrogSleepDeviceRecord> { return await this.frogSleep.upsertDevice(record); }
   override async deleteFrogSleepDevice(appId: string, userId: string, deviceId: string): Promise<FrogSleepDeviceRecord | undefined> { return await this.frogSleep.deleteDevice(appId, userId, deviceId); }
   override async listFrogSleepDevices(filter: { appId: string; userId?: string; pushEnabled?: boolean; includeDeleted?: boolean }): Promise<FrogSleepDeviceRecord[]> { return await this.frogSleep.listDevices(filter); }
@@ -541,6 +540,8 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async upsertFrogSleepBuddyInvitationDomainDecision(record: FrogSleepBuddyInvitationDomainDecisionRecord): Promise<FrogSleepBuddyInvitationDomainDecisionRecord> { return await this.buddyGrowth.upsertInvitationDomainDecision(record); }
   override async findFrogSleepBuddyInvitationDomainDecision(appId: string, invitationId: string, domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"]): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined> { return await this.buddyGrowth.findInvitationDomainDecision(appId, invitationId, domain); }
   override async listFrogSleepBuddyInvitationDomainDecisions(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationDomainDecisionRecord[]> { return await this.buddyGrowth.listInvitationDomainDecisions(appId, invitationId); }
+  override async ensureFrogSleepBuddyDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string }): Promise<FrogSleepBuddyDomainSlotRecord> { return await this.buddyGrowth.ensureDomainSlot(input); } override async findFrogSleepBuddyDomainSlot(appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"]): Promise<FrogSleepBuddyDomainSlotRecord | undefined> { return await this.buddyGrowth.findDomainSlot(appId, userId, domain); }
+  override async listFrogSleepBuddyDomainSlots(appId: string, userId: string): Promise<FrogSleepBuddyDomainSlotRecord[]> { return await this.buddyGrowth.listDomainSlots(appId, userId); } override async compareAndUpdateFrogSleepBuddyDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number; state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string }): Promise<FrogSleepBuddyDomainSlotRecord | undefined> { return await this.buddyGrowth.compareAndUpdateDomainSlot(input); }
   override async upsertFrogSleepBuddyInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord> { return await this.buddyGrowth.upsertInvitationReceiptAttempt(record); } override async findFrogSleepBuddyInvitationReceiptAttempt(appId: string, inviterUserId: string, recipientIdentityHash: string, domainsFingerprint: string): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined> { return await this.buddyGrowth.findInvitationReceiptAttempt(appId, inviterUserId, recipientIdentityHash, domainsFingerprint); } override async findFrogSleepBuddyInvitationReceiptAttemptById(appId: string, inviterUserId: string, receiptId: string): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined> { return await this.buddyGrowth.findInvitationReceiptAttemptById(appId, inviterUserId, receiptId); }
   override async enqueueFrogSleepBuddyNotificationOutbox(record: FrogSleepBuddyNotificationOutboxRecord): Promise<FrogSleepBuddyNotificationOutboxRecord> { return await this.buddyGrowth.enqueueNotification(record); }
   override async listReadyFrogSleepBuddyNotificationOutbox(nowIso: string, limit: number): Promise<FrogSleepBuddyNotificationOutboxRecord[]> { return await this.buddyGrowth.listReadyNotifications(nowIso, limit); }
@@ -552,7 +553,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async markFrogSleepBuddyNotificationRead(appId: string, recipientUserId: string, notificationId: string, readAt: string): Promise<FrogSleepBuddyNotificationRecord | undefined> { return await this.buddyGrowth.markNotificationRead(appId, recipientUserId, notificationId, readAt); }
   override async markAllFrogSleepBuddyNotificationsRead(appId: string, recipientUserId: string, readAt: string): Promise<number> { return await this.buddyGrowth.markAllNotificationsRead(appId, recipientUserId, readAt); }
   override async insertFrogSleepBuddyNotificationDelivery(record: FrogSleepBuddyNotificationDeliveryRecord): Promise<FrogSleepBuddyNotificationDeliveryRecord> { return await this.buddyGrowth.insertNotificationDelivery(record); }
-
   override async insertFailedEvent(record: FailedEventRecord): Promise<void> { await this.operationalRecords.insertFailedEvent(record); }
   override async listFailedEvents(appId?: string): Promise<FailedEventRecord[]> { return await this.operationalRecords.listFailedEvents(appId); }
   override async deleteFailedEvent(eventId: string): Promise<void> { await this.operationalRecords.deleteFailedEvent(eventId); }

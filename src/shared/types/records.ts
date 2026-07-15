@@ -245,6 +245,17 @@ export interface FrogSleepBuddyInvitationDomainDecisionRecord {
   updatedAt: string;
 }
 
+export interface FrogSleepBuddyDomainSlotRecord {
+  appId: string;
+  userId: string;
+  domain: "sleep" | "focus";
+  state: "available" | "occupied";
+  relationshipId?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FrogSleepBuddyInvitationReceiptAttemptRecord {
   id: string;
   appId: string;
@@ -503,5 +514,6 @@ export interface DatabaseSeed {
   feedbackRecords?: FeedbackRecord[];
   feedbackAttachments?: FeedbackAttachmentRecord[];
   frogSleepBuddyInvitationDomainDecisions?: FrogSleepBuddyInvitationDomainDecisionRecord[];
+  frogSleepBuddyDomainSlots?: FrogSleepBuddyDomainSlotRecord[];
   frogSleepBuddyInvitationReceiptAttempts?: FrogSleepBuddyInvitationReceiptAttemptRecord[];
 }

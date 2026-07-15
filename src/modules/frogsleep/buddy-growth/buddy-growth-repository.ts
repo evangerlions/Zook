@@ -5,7 +5,8 @@ import type {
 } from "./buddy-growth-contract.ts";
 import type { FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyNotificationDeliveryRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyNotificationOutboxRecord,
-  FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord } from "../../../shared/types.ts";
+  FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord,
+  FrogSleepBuddyDomainSlotRecord } from "../../../shared/types.ts";
 
 export interface BuddySharingGrantRecord {
   id: string;
@@ -62,6 +63,10 @@ export interface BuddyGrowthRepositoryProtocol {
   upsertInvitationDomainDecision(record: FrogSleepBuddyInvitationDomainDecisionRecord): Promise<FrogSleepBuddyInvitationDomainDecisionRecord>;
   findInvitationDomainDecision(appId: string, invitationId: string, domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"]): Promise<FrogSleepBuddyInvitationDomainDecisionRecord | undefined>;
   listInvitationDomainDecisions(appId: string, invitationId: string): Promise<FrogSleepBuddyInvitationDomainDecisionRecord[]>;
+  ensureDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string }): Promise<FrogSleepBuddyDomainSlotRecord>;
+  findDomainSlot(appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"]): Promise<FrogSleepBuddyDomainSlotRecord | undefined>;
+  listDomainSlots(appId: string, userId: string): Promise<FrogSleepBuddyDomainSlotRecord[]>;
+  compareAndUpdateDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number; state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string }): Promise<FrogSleepBuddyDomainSlotRecord | undefined>;
   upsertInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord>;
   findInvitationReceiptAttempt(appId: string, inviterUserId: string, recipientIdentityHash: string, domainsFingerprint: string): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined>;
   findInvitationReceiptAttemptById(appId: string, inviterUserId: string, receiptId: string): Promise<FrogSleepBuddyInvitationReceiptAttemptRecord | undefined>;
@@ -94,6 +99,7 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
     string,
     Map<string, Map<FrogSleepBuddyInvitationDomainDecisionRecord["domain"], FrogSleepBuddyInvitationDomainDecisionRecord>>
   >();
+  private domainSlots = new Map<string, FrogSleepBuddyDomainSlotRecord>();
   private receiptAttempts = new Map<string, FrogSleepBuddyInvitationReceiptAttemptRecord>();
   private notifications = new Map<string, BuddyNotificationOutboxRecord>();
   private feed = new Map<string, FrogSleepBuddyNotificationRecord>();
@@ -181,6 +187,40 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
     return [...(this.domainDecisions.get(appId)?.get(invitationId)?.values() ?? [])]
       .sort((left, right) => left.domain.localeCompare(right.domain))
       .map((item) => structuredClone(item));
+  }
+
+  async ensureDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string }) {
+    const key = JSON.stringify([input.appId, input.userId, input.domain]);
+    const existing = this.domainSlots.get(key);
+    if (existing) return structuredClone(existing);
+    const slot: FrogSleepBuddyDomainSlotRecord = {
+      appId: input.appId, userId: input.userId, domain: input.domain, state: "available", version: 1,
+      createdAt: input.now, updatedAt: input.now,
+    };
+    this.domainSlots.set(key, slot);
+    return structuredClone(slot);
+  }
+
+  async findDomainSlot(appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"]) {
+    const slot = this.domainSlots.get(JSON.stringify([appId, userId, domain]));
+    return slot ? structuredClone(slot) : undefined;
+  }
+
+  async listDomainSlots(appId: string, userId: string) {
+    return [...this.domainSlots.values()].filter((slot) => slot.appId === appId && slot.userId === userId)
+      .sort((left, right) => left.domain.localeCompare(right.domain)).map((slot) => structuredClone(slot));
+  }
+
+  async compareAndUpdateDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number; state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string }) {
+    if (input.state === "available" ? input.relationshipId !== undefined : !input.relationshipId?.trim()) {
+      throw new Error("Invalid FrogSleep buddy domain slot state.");
+    }
+    const key = JSON.stringify([input.appId, input.userId, input.domain]);
+    const existing = this.domainSlots.get(key);
+    if (!existing || existing.version !== input.expectedVersion) return undefined;
+    const updated = { ...existing, state: input.state, relationshipId: input.relationshipId, version: existing.version + 1, updatedAt: input.updatedAt };
+    this.domainSlots.set(key, updated);
+    return structuredClone(updated);
   }
 
   async upsertInvitationReceiptAttempt(record: FrogSleepBuddyInvitationReceiptAttemptRecord) {

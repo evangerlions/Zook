@@ -21,6 +21,7 @@ import type {
   FrogSleepBuddyInvitationBundleRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord,
   FrogSleepBuddyInvitationReceiptAttemptRecord,
+  FrogSleepBuddyDomainSlotRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -79,6 +80,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddySharingGrants: FrogSleepBuddySharingGrantRecord[];
   frogSleepBuddyInvitationBundles: FrogSleepBuddyInvitationBundleRecord[];
   frogSleepBuddyInvitationDomainDecisions: FrogSleepBuddyInvitationDomainDecisionRecord[];
+  frogSleepBuddyDomainSlots: FrogSleepBuddyDomainSlotRecord[];
   frogSleepBuddyInvitationReceiptAttempts: FrogSleepBuddyInvitationReceiptAttemptRecord[];
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
@@ -112,6 +114,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddySharingGrants = [];
     this.frogSleepBuddyInvitationBundles = [];
     this.frogSleepBuddyInvitationDomainDecisions = structuredClone(seed.frogSleepBuddyInvitationDomainDecisions ?? []);
+    this.frogSleepBuddyDomainSlots = structuredClone(seed.frogSleepBuddyDomainSlots ?? []);
     this.frogSleepBuddyInvitationReceiptAttempts = structuredClone(seed.frogSleepBuddyInvitationReceiptAttempts ?? []);
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
@@ -775,6 +778,48 @@ export class InMemoryDatabase extends ApplicationDatabase {
       .sort((left, right) => left.domain.localeCompare(right.domain));
   }
 
+  ensureFrogSleepBuddyDomainSlot(input: {
+    appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
+  }): FrogSleepBuddyDomainSlotRecord {
+    const existing = this.findFrogSleepBuddyDomainSlot(input.appId, input.userId, input.domain);
+    if (existing) return existing;
+    const slot: FrogSleepBuddyDomainSlotRecord = {
+      appId: input.appId, userId: input.userId, domain: input.domain, state: "available", version: 1,
+      createdAt: input.now, updatedAt: input.now,
+    };
+    this.frogSleepBuddyDomainSlots.push(slot);
+    return structuredClone(slot);
+  }
+
+  findFrogSleepBuddyDomainSlot(
+    appId: string, userId: string, domain: FrogSleepBuddyDomainSlotRecord["domain"],
+  ): FrogSleepBuddyDomainSlotRecord | undefined {
+    return structuredClone(this.frogSleepBuddyDomainSlots.find((slot) =>
+      slot.appId === appId && slot.userId === userId && slot.domain === domain,
+    ));
+  }
+
+  listFrogSleepBuddyDomainSlots(appId: string, userId: string): FrogSleepBuddyDomainSlotRecord[] {
+    return structuredClone(this.frogSleepBuddyDomainSlots.filter((slot) =>
+      slot.appId === appId && slot.userId === userId,
+    ).sort((left, right) => left.domain.localeCompare(right.domain)));
+  }
+
+  compareAndUpdateFrogSleepBuddyDomainSlot(input: {
+    appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number;
+    state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string;
+  }): FrogSleepBuddyDomainSlotRecord | undefined {
+    if (!isValidDomainSlotState(input.state, input.relationshipId)) throw new Error("Invalid FrogSleep buddy domain slot state.");
+    const slot = this.frogSleepBuddyDomainSlots.find((item) =>
+      item.appId === input.appId && item.userId === input.userId && item.domain === input.domain,
+    );
+    if (!slot || slot.version !== input.expectedVersion) return undefined;
+    Object.assign(slot, {
+      state: input.state, relationshipId: input.relationshipId, version: slot.version + 1, updatedAt: input.updatedAt,
+    });
+    return structuredClone(slot);
+  }
+
   upsertFrogSleepBuddyInvitationReceiptAttempt(
     record: FrogSleepBuddyInvitationReceiptAttemptRecord,
   ): FrogSleepBuddyInvitationReceiptAttemptRecord {
@@ -1108,4 +1153,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
       appConfigs: this.appConfigs,
     });
   }
+}
+
+function isValidDomainSlotState(
+  state: FrogSleepBuddyDomainSlotRecord["state"], relationshipId: string | undefined,
+): boolean {
+  return state === "available" ? relationshipId === undefined : Boolean(relationshipId?.trim());
 }
