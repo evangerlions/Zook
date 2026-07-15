@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 import { PostgresBuddyGrowthRepository } from "../../src/infrastructure/database/postgres/postgres-buddy-growth-repository.ts";
+import { BuddyGrowthRepository } from "../../src/modules/frogsleep/buddy-growth/buddy-growth-repository.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import type { FrogSleepBuddyDomainSlotRecord } from "../../src/shared/types.ts";
 
@@ -73,16 +74,50 @@ test("domain slots reject unavailable relationship identities before writing", a
       appId: "frogsleep", userId: "user_alice", domain: "sleep", expectedVersion: 1,
       state: "occupied", relationshipId: "   ", updatedAt: "2026-07-15T01:00:00.000Z",
     }),
-    /Invalid FrogSleep buddy domain slot state/,
+    /Invalid FrogSleep buddy domain slot relationship/,
   );
   await assert.rejects(
     async () => await database.compareAndUpdateFrogSleepBuddyDomainSlot({
       appId: "frogsleep", userId: "user_alice", domain: "sleep", expectedVersion: 1,
       state: "available", relationshipId: "relationship_1", updatedAt: "2026-07-15T01:00:00.000Z",
     }),
-    /Invalid FrogSleep buddy domain slot state/,
+    /Invalid FrogSleep buddy domain slot relationship/,
   );
   assert.equal((await database.findFrogSleepBuddyDomainSlot("frogsleep", "user_alice", "sleep"))?.state, "available");
+});
+
+test("in-memory application slots reject an unknown domain without creating a slot", async () => {
+  const database = new InMemoryDatabase();
+
+  await assert.rejects(
+    async () => await database.ensureFrogSleepBuddyDomainSlot({ ...ensureInput("sleep"), domain: "bundle" as never }),
+    /Invalid FrogSleep buddy domain/,
+  );
+  assert.deepEqual(await database.listFrogSleepBuddyDomainSlots("frogsleep", "user_alice"), []);
+});
+
+test("shared in-memory slots reject unknown state and invalid relationship combinations without mutation", async () => {
+  const repository = BuddyGrowthRepository.inMemory();
+  await repository.ensureDomainSlot(ensureInput("sleep"));
+
+  await assert.rejects(
+    async () => await repository.compareAndUpdateDomainSlot({
+      appId: "frogsleep", userId: "user_alice", domain: "sleep", expectedVersion: 1,
+      state: "paused" as never, relationshipId: "relationship_1", updatedAt: "2026-07-15T01:00:00.000Z",
+    }),
+    /Invalid FrogSleep buddy domain slot state/,
+  );
+  await assert.rejects(
+    async () => await repository.compareAndUpdateDomainSlot({
+      appId: "frogsleep", userId: "user_alice", domain: "sleep", expectedVersion: 1,
+      state: "available", relationshipId: "relationship_1", updatedAt: "2026-07-15T01:00:00.000Z",
+    }),
+    /Invalid FrogSleep buddy domain slot relationship/,
+  );
+  assert.deepEqual(await repository.findDomainSlot("frogsleep", "user_alice", "sleep"), {
+    appId: "frogsleep", userId: "user_alice", domain: "sleep", state: "available", version: 1,
+    createdAt, updatedAt: createdAt,
+  });
 });
 
 test("domain slot migration enforces tuple, state, version, and relationship invariants", async () => {

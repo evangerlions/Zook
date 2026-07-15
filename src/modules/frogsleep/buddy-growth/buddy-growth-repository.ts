@@ -7,6 +7,7 @@ import type { FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyNotificationDe
   FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyDomainSlotRecord } from "../../../shared/types.ts";
+import { assertValidFrogSleepBuddyDomainSlot } from "./buddy-domain-slot-validation.ts";
 
 export interface BuddySharingGrantRecord {
   id: string;
@@ -190,6 +191,7 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
   }
 
   async ensureDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string }) {
+    assertValidFrogSleepBuddyDomainSlot({ domain: input.domain, state: "available" });
     const key = JSON.stringify([input.appId, input.userId, input.domain]);
     const existing = this.domainSlots.get(key);
     if (existing) return structuredClone(existing);
@@ -212,9 +214,7 @@ class InMemoryBuddyGrowthRepository implements BuddyGrowthRepositoryProtocol {
   }
 
   async compareAndUpdateDomainSlot(input: { appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number; state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string }) {
-    if (input.state === "available" ? input.relationshipId !== undefined : !input.relationshipId?.trim()) {
-      throw new Error("Invalid FrogSleep buddy domain slot state.");
-    }
+    assertValidFrogSleepBuddyDomainSlot(input);
     const key = JSON.stringify([input.appId, input.userId, input.domain]);
     const existing = this.domainSlots.get(key);
     if (!existing || existing.version !== input.expectedVersion) return undefined;

@@ -36,6 +36,7 @@ import type {
   UserRoleRecord,
   SmsVerificationRecord,
 } from "../shared/types.ts";
+import { assertValidFrogSleepBuddyDomainSlot } from "../modules/frogsleep/buddy-growth/buddy-domain-slot-validation.ts";
 import {
   ApplicationDatabase,
   buildManagedStateSnapshot,
@@ -781,6 +782,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   ensureFrogSleepBuddyDomainSlot(input: {
     appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; now: string;
   }): FrogSleepBuddyDomainSlotRecord {
+    assertValidFrogSleepBuddyDomainSlot({ domain: input.domain, state: "available" });
     const existing = this.findFrogSleepBuddyDomainSlot(input.appId, input.userId, input.domain);
     if (existing) return existing;
     const slot: FrogSleepBuddyDomainSlotRecord = {
@@ -809,7 +811,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     appId: string; userId: string; domain: FrogSleepBuddyDomainSlotRecord["domain"]; expectedVersion: number;
     state: FrogSleepBuddyDomainSlotRecord["state"]; relationshipId?: string; updatedAt: string;
   }): FrogSleepBuddyDomainSlotRecord | undefined {
-    if (!isValidDomainSlotState(input.state, input.relationshipId)) throw new Error("Invalid FrogSleep buddy domain slot state.");
+    assertValidFrogSleepBuddyDomainSlot(input);
     const slot = this.frogSleepBuddyDomainSlots.find((item) =>
       item.appId === input.appId && item.userId === input.userId && item.domain === input.domain,
     );
@@ -1153,10 +1155,4 @@ export class InMemoryDatabase extends ApplicationDatabase {
       appConfigs: this.appConfigs,
     });
   }
-}
-
-function isValidDomainSlotState(
-  state: FrogSleepBuddyDomainSlotRecord["state"], relationshipId: string | undefined,
-): boolean {
-  return state === "available" ? relationshipId === undefined : Boolean(relationshipId?.trim());
 }
