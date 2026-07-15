@@ -97,9 +97,10 @@ async function acceptInvitationDomain(context: BackendRouteContext, request: Htt
   const domain = decodeURIComponent(match[2] as string);
   if (domain !== "sleep" && domain !== "focus") badRequest("REQ_INVALID_BODY", "Invalid buddy invitation domain.");
   const body = asBody(request);
-  const expectedVersion = Number(body.expected_version);
+  const expectedVersion = body.expected_version;
   const idempotencyKey = typeof body.idempotency_key === "string" ? body.idempotency_key : "";
-  if (!Number.isInteger(expectedVersion) || expectedVersion < 1 || !idempotencyKey.trim()) {
+  if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion)
+    || expectedVersion < 1 || !idempotencyKey.trim()) {
     badRequest("REQ_INVALID_BODY", "Invalid buddy invitation decision version or idempotency key.");
   }
   const data = await new BuddyDomainInvitationCommandService(context.database).accept(auth.userId,

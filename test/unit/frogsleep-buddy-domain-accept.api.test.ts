@@ -95,6 +95,60 @@ test("same accept key replays authoritatively while another key or stale version
   } finally { restore(); }
 });
 
+for (const terminalization of ["expired", "legacy-terminal"] as const) {
+  test(`same-key accepted decision replays after bundle ${terminalization} without writes`, async () => {
+    const restore = preserveCapabilities();
+    process.env.FROGSLEEP_BUDDY_INBOX_ENABLED = "true";
+    process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED = "true";
+    try {
+      const app = await runtime(); const bob = await login(app, "bob@example.com");
+      const alice = await login(app, "alice@example.com"); await seedBundle(app, ["sleep"]);
+      const first = await accept(app, bob, "sleep", "replay-after-terminal");
+      const bundle = await app.database.findFrogSleepBuddyInvitationBundle("frogsleep", "bundle_accept");
+      await app.database.upsertFrogSleepBuddyInvitationBundle({ ...bundle!,
+        status: terminalization === "expired" ? "expired" : "accepted",
+        expiresAt: terminalization === "expired" ? "2020-01-01T00:00:00.000Z" : bundle!.expiresAt,
+        version: bundle!.version + 1, updatedAt: new Date().toISOString() });
+      const before = {
+        relationships: app.database.frogSleepBuddyDomainRelationships.length,
+        outbox: app.database.frogSleepBuddyNotificationOutbox.length,
+        decision: await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "bundle_accept", "sleep"),
+        inviterSlot: await app.database.findFrogSleepBuddyDomainSlot("frogsleep", "user_alice", "sleep"),
+        inviteeSlot: await app.database.findFrogSleepBuddyDomainSlot("frogsleep", "user_bob", "sleep"),
+      };
+      const replay = await accept(app, bob, "sleep", "replay-after-terminal");
+      const wrongActor = await accept(app, alice, "sleep", "replay-after-terminal");
+      assert.equal(first.statusCode, 200);
+      assert.deepEqual(replay.body.data, first.body.data);
+      assert.equal(wrongActor.statusCode, 404);
+      assert.equal(app.database.frogSleepBuddyDomainRelationships.length, before.relationships);
+      assert.equal(app.database.frogSleepBuddyNotificationOutbox.length, before.outbox);
+      assert.deepEqual(await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "bundle_accept", "sleep"), before.decision);
+      assert.deepEqual(await app.database.findFrogSleepBuddyDomainSlot("frogsleep", "user_alice", "sleep"), before.inviterSlot);
+      assert.deepEqual(await app.database.findFrogSleepBuddyDomainSlot("frogsleep", "user_bob", "sleep"), before.inviteeSlot);
+    } finally { restore(); }
+  });
+}
+
+test("domain accept requires expected_version to be a positive JSON integer number", async () => {
+  const restore = preserveCapabilities();
+  process.env.FROGSLEEP_BUDDY_INBOX_ENABLED = "true";
+  process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED = "true";
+  try {
+    for (const expectedVersion of ["1", true]) {
+      const app = await runtime(); const bob = await login(app, "bob@example.com"); await seedBundle(app, ["sleep"]);
+      const response = await app.app.handle({ method: "POST",
+        path: "/api/v1/frogsleep/buddy/invitations/bundle_accept/domains/sleep/accept", headers: auth(bob),
+        body: { expected_version: expectedVersion, idempotency_key: "typed-version" },
+        requestId: `typed_version_${String(expectedVersion)}` } as never);
+      assert.equal(response.statusCode, 400);
+      assert.equal(response.body.code, "REQ_INVALID_BODY");
+      assert.equal(app.database.frogSleepBuddyDomainRelationships.length, 0);
+      assert.equal(app.database.frogSleepBuddyNotificationOutbox.length, 0);
+    }
+  } finally { restore(); }
+});
+
 test("domain accept rejects wrong actors neutrally and rolls back an occupied slot", async () => {
   const restore = preserveCapabilities();
   process.env.FROGSLEEP_BUDDY_INBOX_ENABLED = "true";

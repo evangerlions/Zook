@@ -17,8 +17,11 @@ export class BuddyDomainInvitationCommandService {
   async accept(actorUserId: string, invitationId: string, domain: Domain, input: {
     expectedVersion: number; idempotencyKey: string;
   }) {
-    const bundle = await this.requireBundle(invitationId, actorUserId, domain);
-    await this.requireDecision(invitationId, domain);
+    const bundle = await this.requireBundleIdentity(invitationId, actorUserId, domain);
+    const decision = await this.requireDecision(invitationId, domain);
+    if (this.isReplay(decision, input.idempotencyKey)) return await this.replay(bundle, decision);
+    this.assertBundleActionable(bundle);
+    this.assertDecisionNotExpired(decision);
     await assertBuddyPairNotBlocked(this.database, bundle.inviterUserId, actorUserId);
     return await this.database.withFrogSleepBuddyCommandTransaction([
       { appId: FROGSLEEP_APP_ID, userId: bundle.inviterUserId, domain },
@@ -29,13 +32,12 @@ export class BuddyDomainInvitationCommandService {
   private async acceptLocked(actorUserId: string, invitationId: string, domain: Domain, input: {
     expectedVersion: number; idempotencyKey: string;
   }) {
-    const bundle = await this.requireBundle(invitationId, actorUserId, domain);
-    await assertBuddyPairNotBlocked(this.database, bundle.inviterUserId, actorUserId);
+    const bundle = await this.requireBundleIdentity(invitationId, actorUserId, domain);
     const decision = await this.requireDecision(invitationId, domain);
-    const keyHash = sha256(input.idempotencyKey);
-    if (decision.status === "accepted" && decision.idempotencyKeyHash === keyHash) {
-      return await this.replay(bundle, decision);
-    }
+    if (this.isReplay(decision, input.idempotencyKey)) return await this.replay(bundle, decision);
+    this.assertBundleActionable(bundle);
+    this.assertDecisionNotExpired(decision);
+    await assertBuddyPairNotBlocked(this.database, bundle.inviterUserId, actorUserId);
     if (decision.status !== "pending" || decision.version !== input.expectedVersion) {
       conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
     }
@@ -45,7 +47,8 @@ export class BuddyDomainInvitationCommandService {
     await this.occupySlots(slots, relationship.id);
     const accepted = await this.database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({
       appId: FROGSLEEP_APP_ID, invitationId, domain, expectedVersion: decision.version, status: "accepted",
-      decidedByUserId: actorUserId, decidedAt: relationship.createdAt, idempotencyKeyHash: keyHash,
+      decidedByUserId: actorUserId, decidedAt: relationship.createdAt,
+      idempotencyKeyHash: sha256(input.idempotencyKey),
       updatedAt: relationship.createdAt,
     });
     if (!accepted) conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
@@ -54,21 +57,31 @@ export class BuddyDomainInvitationCommandService {
     return this.payload(accepted, relationship);
   }
 
-  private async requireBundle(invitationId: string, actorUserId: string, domain: Domain) {
+  private async requireBundleIdentity(invitationId: string, actorUserId: string, domain: Domain) {
     const bundle = await this.database.findFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, invitationId);
     if (!bundle || bundle.inviteeUserId !== actorUserId) throw unavailable();
     if (!bundle.domains.includes(domain)) throw unavailable();
+    return bundle;
+  }
+
+  private assertBundleActionable(bundle: FrogSleepBuddyInvitationBundleRecord) {
     if (bundle.status !== "pending" || Date.parse(bundle.expiresAt) <= Date.now()) {
       conflict("REQ_INVALID_BODY", "Buddy invitation is expired or terminal.");
     }
-    return bundle;
   }
 
   private async requireDecision(invitationId: string, domain: Domain) {
     const decision = await this.database.findFrogSleepBuddyInvitationDomainDecision(FROGSLEEP_APP_ID, invitationId, domain);
     if (!decision) throw unavailable();
-    if (decision.status === "expired") conflict("REQ_INVALID_BODY", "Buddy invitation decision is expired.");
     return decision;
+  }
+
+  private assertDecisionNotExpired(decision: FrogSleepBuddyInvitationDomainDecisionRecord) {
+    if (decision.status === "expired") conflict("REQ_INVALID_BODY", "Buddy invitation decision is expired.");
+  }
+
+  private isReplay(decision: FrogSleepBuddyInvitationDomainDecisionRecord, idempotencyKey: string) {
+    return decision.status === "accepted" && decision.idempotencyKeyHash === sha256(idempotencyKey);
   }
 
   private async availableSlots(bundle: FrogSleepBuddyInvitationBundleRecord, domain: Domain) {
