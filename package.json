@@ -18,6 +18,7 @@
     "observe:frogsleep-buddy-rollout": "node --experimental-transform-types scripts/frogsleep-buddy-rollout-observation.ts",
     "worker": "node --experimental-transform-types src/worker.ts",
     "test": "node --experimental-transform-types --test test/unit/*.test.ts",
+    "test:postgres:buddy": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-concurrency.test.ts",
     "sync:api": "bash ./scripts/sync-zook-api-contracts.sh"
   },
   "devDependencies": {

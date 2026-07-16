@@ -1,5 +1,12 @@
 # 当前后端实现概览
 
+## FrogSleep 搭子 PostgreSQL 并发门禁
+
+搭子领域 slot、relationship 与原子接受的真实并发验证使用独立命令：
+`FROGSLEEP_TEST_DATABASE_URL=postgresql://... npm run test:postgres:buddy`。该 URL 必须指向可丢弃的
+PostgreSQL 数据库；测试会执行仓库真实 migrations，并使用两个独立连接池。普通 `npm test` 不读取此变量，
+也不会连接数据库。
+
 ## 1. 文档目的
 
 本文档用于说明当前仓库中已经完成的后端工作，方便后续继续开发、接手维护和对照设计文档推进。
