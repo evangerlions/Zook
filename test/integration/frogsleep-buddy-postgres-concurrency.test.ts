@@ -144,13 +144,15 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
       const decisions = await sql.query(`SELECT invitation_id,status FROM zook_frogsleep_buddy_invitation_domain_decisions
         WHERE invitation_id LIKE 'task18_invite_%' ORDER BY invitation_id`);
       assert.deepEqual(decisions.rows.map((row) => row.status).sort(), ["accepted", "pending"]);
+      const pendingInvitation = decisions.rows.find((row) => row.status === "pending")?.invitation_id;
+      const losingInviter = pendingInvitation === "task18_invite_charlie" ? "task18_charlie" : "user_alice";
       const relationships = await sql.query(`SELECT id FROM zook_frogsleep_buddy_domain_relationships
         WHERE user_id_low IN ('task18_charlie','user_alice','user_bob') AND user_id_high IN ('task18_charlie','user_alice','user_bob')`);
       assert.equal(relationships.rowCount, 1);
       const slots = await sql.query(`SELECT user_id,state,relationship_id FROM zook_frogsleep_buddy_domain_slots
         WHERE domain='sleep' AND user_id IN ('task18_charlie','user_alice','user_bob') ORDER BY user_id`);
       assert.equal(slots.rows.filter((row) => row.state === "occupied").length, 2);
-      assert.equal(slots.rows.some((row) => row.user_id === "task18_charlie" && row.state === "occupied"), false);
+      assert.equal(slots.rows.some((row) => row.user_id === losingInviter && row.state === "occupied"), false);
       assert.equal(new Set(slots.rows.filter((row) => row.state === "occupied")
         .map((row) => row.relationship_id)).size, 1);
       const outbox = await sql.query(`SELECT id FROM zook_frogsleep_buddy_notification_outbox WHERE target_id LIKE 'task18_invite_%'`);
