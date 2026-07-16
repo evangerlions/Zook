@@ -39,6 +39,23 @@ async function within<T>(promise: Promise<T>, label: string, milliseconds = 5_00
   }
 }
 
+async function waitForLockWaiters(client: Client, minimum: number): Promise<void> {
+  const deadline = Date.now() + 3_000;
+  while (Date.now() < deadline) {
+    const result = await client.query(`SELECT COUNT(*)::int AS count FROM pg_stat_activity
+      WHERE datname=current_database() AND wait_event_type='Lock'
+      AND query LIKE '%zook_frogsleep_buddy_domain_slots%'`);
+    if (result.rows[0].count >= minimum) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error(`Expected at least ${minimum} PostgreSQL slot-lock waiters.`);
+}
+
+async function lockSlot(client: Client, userId: string, nowait = false) {
+  return await client.query(`SELECT app_id,user_id,domain FROM zook_frogsleep_buddy_domain_slots
+    WHERE app_id=$1 AND user_id=$2 AND domain='sleep' FOR UPDATE${nowait ? " NOWAIT" : ""}`, [appId, userId]);
+}
+
 async function seedInvitation(
   database: PostgresDatabase,
   invitationId: string,
@@ -75,7 +92,7 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
   try {
     await clean(sql);
     for (const id of ["task18_charlie", "task18_left_a", "task18_left_b", "task18_right_a",
-      "task18_right_b", "task18_order_a", "task18_order_b"]) {
+      "task18_right_b", "task18_order_a", "task18_order_b", "task18_rollback_a", "task18_rollback_b"]) {
       await first.insertUser({ id, email: `${id}@example.com`, passwordHash: "irrelevant",
         passwordAlgo: "test", status: "ACTIVE", createdAt: now() });
     }
@@ -111,19 +128,39 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
     });
 
     await suite.test("reversed and duplicate keys use a deadlock-free stable order", async () => {
-      const start = deferred(); const entered = deferred(); const release = deferred();
-      let callbackCount = 0;
-      const run = (database: PostgresDatabase, slotKeys: ReturnType<typeof keys>) =>
-        database.withFrogSleepBuddyCommandTransaction(slotKeys, async () => {
-          callbackCount += 1; entered.resolve(); await release.promise;
-        });
+      await first.withFrogSleepBuddyCommandTransaction(keys("task18_order_a", "task18_order_b"), async () => undefined);
+      const blocker = new Client({ connectionString: databaseUrl });
+      const observer = new Client({ connectionString: databaseUrl });
+      const raw = new Client({ connectionString: databaseUrl });
+      await Promise.all([blocker.connect(), observer.connect(), raw.connect()]);
       const leftKeys = [...keys("task18_order_a", "task18_order_b"), keys("task18_order_a", "task18_order_b")[0]!];
       const rightKeys = [...keys("task18_order_b", "task18_order_a"), keys("task18_order_b", "task18_order_a")[1]!];
-      const left = start.promise.then(async () => await run(first, leftKeys));
-      const right = start.promise.then(async () => await run(second, rightKeys));
-      start.resolve(); await within(entered.promise, "first ordered callback"); release.resolve();
-      await within(Promise.all([left, right]), "ordered transactions");
-      assert.equal(callbackCount, 2);
+      try {
+        await blocker.query("BEGIN"); await lockSlot(blocker, "task18_order_a");
+
+        await raw.query("BEGIN"); await lockSlot(raw, "task18_order_b");
+        const rawWait = lockSlot(raw, "task18_order_a");
+        await waitForLockWaiters(observer, 1);
+        await observer.query("BEGIN");
+        await assert.rejects(lockSlot(observer, "task18_order_b", true), (error: any) => error?.code === "55P03");
+        await observer.query("ROLLBACK");
+        await blocker.query("COMMIT"); await within(rawWait, "raw reversed lock control"); await raw.query("ROLLBACK");
+
+        await blocker.query("BEGIN"); await lockSlot(blocker, "task18_order_a");
+        let callbackCount = 0;
+        const left = first.withFrogSleepBuddyCommandTransaction(leftKeys, async () => { callbackCount += 1; });
+        const right = second.withFrogSleepBuddyCommandTransaction(rightKeys, async () => { callbackCount += 1; });
+        await waitForLockWaiters(observer, 2);
+        await observer.query("BEGIN"); await lockSlot(observer, "task18_order_b", true); await observer.query("ROLLBACK");
+        await blocker.query("COMMIT");
+        await within(Promise.all([left, right]), "normalized ordered transactions");
+        assert.equal(callbackCount, 2);
+      } finally {
+        await blocker.query("ROLLBACK").catch(() => undefined);
+        await observer.query("ROLLBACK").catch(() => undefined);
+        await raw.query("ROLLBACK").catch(() => undefined);
+        await Promise.all([blocker.end(), observer.end(), raw.end()]);
+      }
     });
 
     await suite.test("competing accepts produce one relationship and one occupied conflict", async () => {
@@ -160,14 +197,17 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
     });
 
     await suite.test("callback failure rolls back real writes and releases locks", async () => {
-      await seedInvitation(first, "task18_rollback_invite", "user_alice", "task18_charlie");
-      const slotKeys = keys("user_alice", "task18_charlie");
+      await seedInvitation(first, "task18_rollback_invite", "task18_rollback_a", "task18_rollback_b");
+      const slotKeys = keys("task18_rollback_a", "task18_rollback_b");
+      for (const userId of ["task18_rollback_a", "task18_rollback_b"]) {
+        await first.ensureFrogSleepBuddyDomainSlot({ appId, userId, domain: "sleep", now: now() });
+      }
       await assert.rejects(first.withFrogSleepBuddyCommandTransaction(slotKeys, async () => {
         const createdAt = now();
         await first.insertFrogSleepBuddyDomainRelationship({ id: "task18_rollback_rel", appId, domain: "sleep",
-          userIdLow: "task18_charlie", userIdHigh: "user_alice", status: "active", pausedByUserIds: [],
+          userIdLow: "task18_rollback_a", userIdHigh: "task18_rollback_b", status: "active", pausedByUserIds: [],
           version: 1, createdAt, updatedAt: createdAt });
-        for (const userId of ["user_alice", "task18_charlie"]) {
+        for (const userId of ["task18_rollback_a", "task18_rollback_b"]) {
           const slot = await first.findFrogSleepBuddyDomainSlot(appId, userId, "sleep");
           assert.ok(slot);
           await first.compareAndUpdateFrogSleepBuddyDomainSlot({ appId, userId, domain: "sleep",
@@ -175,10 +215,10 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
         }
         await first.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({ appId,
           invitationId: "task18_rollback_invite", domain: "sleep", expectedVersion: 1, status: "accepted",
-          decidedByUserId: "task18_charlie", decidedAt: createdAt,
+          decidedByUserId: "task18_rollback_b", decidedAt: createdAt,
           idempotencyKeyHash: createHash("sha256").update("task18-rollback").digest("hex"), updatedAt: createdAt });
         await first.enqueueFrogSleepBuddyNotificationOutbox({ id: "task18_rollback_outbox", appId,
-          recipientUserId: "user_alice", eventType: "invitation_accepted", targetType: "buddy_invitation",
+          recipientUserId: "task18_rollback_a", eventType: "invitation_accepted", targetType: "buddy_invitation",
           targetId: "task18_rollback_invite", deduplicationKey: "task18_rollback_outbox", safeRoute: {},
           status: "pending", attemptCount: 0, availableAt: createdAt, createdAt, updatedAt: createdAt });
         throw new Error("task18 forced rollback");
@@ -189,6 +229,14 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
       const remaining = await sql.query(`SELECT COUNT(*)::int AS count FROM zook_frogsleep_buddy_notification_outbox
         WHERE id='task18_rollback_outbox'`);
       assert.equal(remaining.rows[0].count, 0);
+      const rolledBackSlots = await sql.query(`SELECT user_id,state,relationship_id,version
+        FROM zook_frogsleep_buddy_domain_slots
+        WHERE app_id=$1 AND domain='sleep' AND user_id IN ('task18_rollback_a','task18_rollback_b')
+        ORDER BY user_id`, [appId]);
+      assert.deepEqual(rolledBackSlots.rows, [
+        { user_id: "task18_rollback_a", state: "available", relationship_id: null, version: 1 },
+        { user_id: "task18_rollback_b", state: "available", relationship_id: null, version: 1 },
+      ]);
       await within(second.withFrogSleepBuddyCommandTransaction(slotKeys, async () => undefined), "post-rollback lock");
     });
   } finally {
