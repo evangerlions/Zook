@@ -3067,6 +3067,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
           input: {
             title: "雨夜线索",
             content: "第一段正文。",
+            disableMdClean: true,
           },
         },
       };
@@ -3133,6 +3134,15 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
     decryptedEvents.map((event) => event.type),
     ["tool_call", "content_delta", "usage", "done"],
   );
+  assert.deepEqual(decryptedEvents[0].toolCall, {
+    id: "tool_write_1",
+    name: "write_draft",
+    input: {
+      title: "雨夜线索",
+      content: "第一段正文。",
+      disableMdClean: true,
+    },
+  });
   assert.equal(capturedEnableThinking, true);
   assert.ok(capturedMessages);
   assert.equal(
@@ -3331,6 +3341,7 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
           input: {
             title: "第一章 夜航",
             content: "夜航开始。",
+            disableMdClean: false,
           },
         },
       };
@@ -3386,6 +3397,15 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
     decryptedEvents.map((event) => event.type),
     ["tool_call", "usage", "done"],
   );
+  assert.deepEqual(decryptedEvents[0].toolCall, {
+    id: "tool_draft_1",
+    name: "write_draft",
+    input: {
+      title: "第一章 夜航",
+      content: "夜航开始。",
+      disableMdClean: false,
+    },
+  });
   assert.equal(capturedEnableThinking, true);
   assert.deepEqual(capturedToolNames.sort(), [
     "read_draft",
