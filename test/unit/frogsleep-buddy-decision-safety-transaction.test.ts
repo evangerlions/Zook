@@ -92,3 +92,45 @@ test("a failed in-memory decision transaction cannot erase a different committed
   assert.deepEqual([(await database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "invite_2", "focus"))?.status,
     database.frogSleepBuddyNotificationOutbox.length], ["declined", 1]);
 });
+
+test("a failed safety transaction cannot erase a committed slot command transaction", async () => {
+  const database = new InMemoryDatabase();
+  const now = "2026-07-19T00:00:00.000Z";
+  const acceptKey = { appId: "frogsleep", invitationId: "invite_3", domain: "focus" } as const;
+  for (const item of [key, acceptKey]) await database.upsertFrogSleepBuddyInvitationDomainDecision({ ...item,
+    status: "pending", version: 1, createdAt: now, updatedAt: now });
+  let fail = () => undefined;
+  const canFail = new Promise<void>((resolve) => { fail = resolve; });
+  let started = () => undefined;
+  const didStart = new Promise<void>((resolve) => { started = resolve; });
+
+  const failed = database.withFrogSleepBuddyInvitationDecisionSafetyTransaction(key, async () => {
+    started();
+    await canFail;
+    throw new Error("safety failed");
+  });
+  await didStart;
+  const committed = database.withFrogSleepBuddyCommandTransaction([
+    { appId: "frogsleep", userId: "user_alice", domain: "focus" },
+    { appId: "frogsleep", userId: "user_bob", domain: "focus" },
+  ], async () => {
+    const relationshipId = "relationship_3";
+    await database.insertFrogSleepBuddyDomainRelationship({ id: relationshipId, appId: "frogsleep", domain: "focus",
+      userIdLow: "user_alice", userIdHigh: "user_bob", status: "active", pausedByUserIds: [], version: 1,
+      createdAt: now, updatedAt: now });
+    await database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({ ...acceptKey, expectedVersion: 1,
+      status: "accepted", decidedByUserId: "user_bob", decidedAt: now, idempotencyKeyHash: "accept", updatedAt: now });
+    for (const userId of ["user_alice", "user_bob"]) await database.compareAndUpdateFrogSleepBuddyDomainSlot({
+      appId: "frogsleep", userId, domain: "focus", expectedVersion: 1, state: "occupied", relationshipId, updatedAt: now,
+    });
+    await enqueueBuddyInvitationEvent(database, { recipientUserId: "user_alice", invitationId: acceptKey.invitationId,
+      domain: acceptKey.domain, eventType: "invitation_accepted" });
+  });
+  fail();
+
+  await assert.rejects(failed, /safety failed/);
+  await committed;
+  assert.deepEqual([(await database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "invite_3", "focus"))?.status,
+    database.frogSleepBuddyNotificationOutbox.length, database.frogSleepBuddyDomainRelationships.length,
+    database.frogSleepBuddyDomainSlots.map((slot) => slot.state)], ["accepted", 1, 1, ["occupied", "occupied"]]);
+});
