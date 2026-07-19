@@ -30,7 +30,7 @@ export async function handleLogin(this: BackendRouteContext,
   });
 
   return this.ok(
-    await this.toAuthPayload(session, clientType, request),
+    await this.toAuthPayload(session, clientType),
     request.requestId as string,
     this.buildAuthHeaders(session.refreshToken, clientType),
   );
@@ -260,7 +260,7 @@ export async function handleLoginWithEmailCode(this: BackendRouteContext,
     });
 
     return this.ok(
-      await this.toAuthPayload(result.session, clientType, request),
+      await this.toAuthPayload(result.session, clientType),
       request.requestId as string,
       this.buildAuthHeaders(result.session.refreshToken, clientType),
     );
@@ -325,7 +325,7 @@ export async function handleLoginWithSmsCode(this: BackendRouteContext,
     });
 
     return this.ok(
-      await this.toAuthPayload(result.session, clientType, request),
+      await this.toAuthPayload(result.session, clientType),
       request.requestId as string,
       this.buildAuthHeaders(result.session.refreshToken, clientType),
     );
@@ -412,7 +412,7 @@ export async function handleLoginWithOneClick(this: BackendRouteContext,
     });
 
     return this.ok(
-      await this.toAuthPayload(result.session, clientType, request),
+      await this.toAuthPayload(result.session, clientType),
       request.requestId as string,
       this.buildAuthHeaders(result.session.refreshToken, clientType),
     );

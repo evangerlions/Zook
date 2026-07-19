@@ -4,7 +4,6 @@ export type AppStatus = "ACTIVE" | "BLOCKED";
 export type JoinMode = "AUTO" | "INVITE_ONLY";
 export type UserStatus = "ACTIVE" | "BLOCKED";
 export type AppUserStatus = "ACTIVE" | "BLOCKED" | "DELETED";
-export type AccountRegion = "CN" | "GLOBAL" | "UNKNOWN";
 export type RoleStatus = "ACTIVE" | "BLOCKED";
 export type PermissionStatus = "ACTIVE" | "BLOCKED";
 export type FileStatus = "PENDING" | "CONFIRMED" | "EXPIRED";

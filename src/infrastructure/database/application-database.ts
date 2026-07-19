@@ -1,7 +1,5 @@
 import type {
   AnalyticsEventRecord,
-  AiNovelDailyStatisticsRecord,
-  AiNovelStatisticsSnapshotRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -83,11 +81,6 @@ export abstract class ApplicationDatabase {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
-  ): MaybePromise<AppUserRecord | undefined>;
-  abstract finalizeAppUserAccountRegion(
-    appId: string,
-    userId: string,
-    accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
   ): MaybePromise<AppUserRecord | undefined>;
   abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
 
@@ -314,33 +307,6 @@ export abstract class ApplicationDatabase {
     feedbackId: string,
     attachmentId: string,
   ): MaybePromise<FeedbackAttachmentRecord | undefined>;
-
-  abstract upsertAiNovelStatisticsSnapshot(
-    record: AiNovelStatisticsSnapshotRecord,
-  ): MaybePromise<void>;
-  abstract findAiNovelStatisticsSnapshot(
-    appId: string,
-    userId: string,
-  ): MaybePromise<AiNovelStatisticsSnapshotRecord | undefined>;
-  abstract replaceAiNovelDailyWritingStats(
-    appId: string,
-    userId: string,
-    records: AiNovelDailyStatisticsRecord[],
-    updatedAt: string,
-  ): MaybePromise<void>;
-  abstract incrementAiNovelDailyTokenUsage(
-    appId: string,
-    userId: string,
-    date: string,
-    tokens: number,
-    updatedAt: string,
-  ): MaybePromise<void>;
-  abstract listAiNovelDailyStatistics(filter: {
-    appId: string;
-    userId: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }): MaybePromise<AiNovelDailyStatisticsRecord[]>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {

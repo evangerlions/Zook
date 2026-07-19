@@ -48,7 +48,6 @@ export function parseAppUser(row: QueryResultRow): AppUserRecord {
     appId: String(row.app_id),
     userId: String(row.user_id),
     status: row.status as AppUserRecord["status"],
-    accountRegion: row.account_region as AppUserRecord["accountRegion"],
     joinedAt: toIsoString(row.joined_at) as string,
   };
 }

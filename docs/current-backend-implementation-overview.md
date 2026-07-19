@@ -199,7 +199,7 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 4. 如果请求同时携带 `X-App-Id` 或 Bearer Token，则必须与 path 中的 `productKey` 对应 app 一致
 5. 这里的 `productKey` 是 URL namespace；运行时数据与鉴权仍使用 `appId`
 
-### 2.13 AINovel AI 与创作统计能力
+### 2.13 AINovel 加密 AI 能力接口
 
 当前 `ai_novel` 已经补齐一版正式 AI 能力接口：
 
@@ -212,8 +212,6 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
 9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
-10. `GET /api/v1/ai_novel/statistics` 返回当前登录用户的创作统计报告；`POST /api/v1/ai_novel/statistics/snapshot` 接收客户端本地写作总量和每日字数快照，同时保留服务端记录的 Token 用量
-11. 已认证请求可通过 `X-App-Region: CN | GLOBAL` 首次固化 app membership 的 `accountRegion`；既有账号初始为 `UNKNOWN`，一旦确定后不再被其他设备的冲突值覆盖，登录、刷新、当前用户和扫码确认响应返回相同区域值
 
 对应核心文件：
 
@@ -332,8 +330,6 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 50. `POST /api/v1/ai_novel/ai/chat-completions`
 51. `POST /api/v1/ai_novel/ai/embeddings`
 52. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
-53. `GET /api/v1/ai_novel/statistics`
-54. `POST /api/v1/ai_novel/statistics/snapshot`
 
 账号删除当前按 app-scoped 语义实现：`users/me/delete` 会将当前 app membership 标记为 `DELETED`，撤销该 app 下用户 session，清理 app 侧 analytics、files metadata、client logs、notification jobs、user roles，并保留全局 `zook_users` 与 audit logs。
 

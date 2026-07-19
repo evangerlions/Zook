@@ -67,7 +67,6 @@ export class AppRegistryService {
       appId: app.id,
       userId,
       status: "ACTIVE" as const,
-      accountRegion: "UNKNOWN" as const,
       joinedAt: now.toISOString(),
     };
 
@@ -90,30 +89,6 @@ export class AppRegistryService {
     }
 
     return membership;
-  }
-
-  async finalizeAccountRegion(
-    appId: string,
-    userId: string,
-    accountRegion: "CN" | "GLOBAL",
-  ) {
-    const membership = await this.ensureExistingMembership(appId, userId);
-    if (membership.accountRegion !== "UNKNOWN") {
-      return { membership, didFinalize: false };
-    }
-
-    const resolvedMembership =
-      await this.database.finalizeAppUserAccountRegion(
-        appId,
-        userId,
-        accountRegion,
-      );
-    return {
-      membership:
-        resolvedMembership ??
-        (await this.ensureExistingMembership(appId, userId)),
-      didFinalize: resolvedMembership !== undefined,
-    };
   }
 
   private async assignDefaultRole(appId: string, userId: string): Promise<void> {

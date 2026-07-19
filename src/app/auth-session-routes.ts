@@ -74,17 +74,7 @@ export async function handleConfirmQrLogin(this: BackendRouteContext,
       },
     });
 
-    return this.ok(
-      {
-        ...result,
-        accountRegion: await this.resolveAccountRegion(
-          request,
-          auth.appId,
-          auth.userId,
-        ),
-      },
-      request.requestId as string,
-    );
+    return this.ok(result, request.requestId as string);
   } catch (error) {
     await this.auditInterceptor.record({
       appId: auth.appId,
@@ -136,7 +126,7 @@ export async function handlePollQrLogin(this: BackendRouteContext,
       return this.ok(
         {
           status: "CONFIRMED" as const,
-          ...(await this.toAuthPayload(result, "web", request, appId)),
+          ...(await this.toAuthPayload(result, "web")),
         },
         request.requestId as string,
         this.buildAuthHeaders(result.refreshToken, "web"),
@@ -177,7 +167,7 @@ export async function handleRefresh(this: BackendRouteContext,
   });
 
   return this.ok(
-    await this.toAuthPayload(session, clientType, request),
+    await this.toAuthPayload(session, clientType),
     request.requestId as string,
     this.buildAuthHeaders(session.refreshToken, clientType),
   );
@@ -190,11 +180,6 @@ export async function handleGetCurrentUser(this: BackendRouteContext,
   const appId = this.appContextResolver.resolvePostAuth(request, auth.appId);
   const result: CurrentUserDocument = {
     appId,
-    accountRegion: await this.resolveAccountRegion(
-      request,
-      appId,
-      auth.userId,
-    ),
     user: await this.userService.getProfile(auth.userId),
   };
 

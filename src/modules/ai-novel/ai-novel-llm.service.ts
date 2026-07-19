@@ -38,18 +38,14 @@ import { kickoffToolDefinitions } from "./ai-novel-kickoff-tools.ts";
 import type { KickoffMeta } from "./ai-novel-kickoff-types.ts";
 import {
   assertNoClientModelSelection,
+  isRecord,
   normalizeEmbeddingInput,
   normalizeMessages,
   optionalNumber,
   optionalPositiveInteger,
+  readOptionalString,
   requireSceneKey,
 } from "./ai-novel-llm-request-validation.ts";
-import {
-  aiNovelUsageOwner,
-  buildAiNovelFallbackToolCallId,
-  normalizeAiNovelPromptedToolCall,
-  normalizeAiNovelToolCallId,
-} from "./ai-novel-llm-tool-call-utils.ts";
 import { mapAndLogAiNovelUpstreamError } from "./ai-novel-upstream-errors.ts";
 import {
   completeRequiredToolViaStream,
@@ -83,14 +79,12 @@ export interface AiNovelUsagePayload {
   reasoningTokens?: number;
   contextWindowTokens?: number;
   contextUsedRatio?: number;
-  estimated?: boolean;
 }
 
 interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
   requestId?: string;
   routingTier?: AiNovelModelRoutingTier;
-  userId?: string;
   locale?: string;
 }
 
@@ -219,7 +213,6 @@ export class AiNovelLlmService {
         temperature,
         maxTokens,
         ...(providerOptions ? { providerOptions } : {}),
-        ...aiNovelUsageOwner(options),
       };
       const result: LLMCompletionResult =
         shouldUseStreamedCompletion && promptAssembly.forcedToolName
@@ -229,7 +222,6 @@ export class AiNovelLlmService {
               temperature,
               maxTokens,
               ...(providerOptions ? { providerOptions } : {}),
-              ...aiNovelUsageOwner(options),
               forcedToolName: promptAssembly.forcedToolName,
             })
           : shouldUseStreamedCompletion
@@ -344,14 +336,13 @@ export class AiNovelLlmService {
             temperature,
             maxTokens,
             providerOptions,
-            ...aiNovelUsageOwner(options),
           }),
           normalizeToolCall: (toolCall, fallbackIndex) => ({
             ...toolCall,
-              id: normalizeAiNovelToolCallId(
-                toolCall.id,
-                buildAiNovelFallbackToolCallId(sceneRouteKey, "kickoff", fallbackIndex),
-              ),
+            id: this.normalizeToolCallId(
+              toolCall.id,
+              this.buildFallbackToolCallId(sceneRouteKey, "kickoff", fallbackIndex),
+            ),
           }),
         });
         return;
@@ -389,10 +380,9 @@ export class AiNovelLlmService {
             temperature,
             maxTokens,
             providerOptions,
-            ...aiNovelUsageOwner(options),
           }),
           normalizeToolCall: (toolCall, fallbackIndex) =>
-            normalizeAiNovelPromptedToolCall(
+            this.normalizePromptedSceneToolCall(
               toolCall,
               sceneRouteKey,
               fallbackIndex,
@@ -434,10 +424,9 @@ export class AiNovelLlmService {
             temperature,
             maxTokens,
             providerOptions,
-            ...aiNovelUsageOwner(options),
           }),
           normalizeToolCall: (toolCall, fallbackIndex) =>
-            normalizeAiNovelPromptedToolCall(
+            this.normalizePromptedSceneToolCall(
               toolCall,
               sceneRouteKey,
               fallbackIndex,
@@ -463,7 +452,6 @@ export class AiNovelLlmService {
           messages,
           temperature,
           maxTokens,
-          ...aiNovelUsageOwner(options),
         }),
       });
     } catch (error) {
@@ -475,6 +463,32 @@ export class AiNovelLlmService {
         profile: scene.profile,
       });
     }
+  }
+
+  private normalizePromptedSceneToolCall(
+    toolCall: LLMToolCall,
+    sceneRouteKey: string,
+    fallbackIndex: number,
+  ): LLMToolCall {
+    const id = this.normalizeToolCallId(
+      toolCall.id,
+      this.buildFallbackToolCallId(sceneRouteKey, "prompted", fallbackIndex),
+    );
+    const name = readOptionalString(toolCall.name);
+    if (!name) {
+      throw new ApplicationError(
+        502,
+        "LLM_PROVIDER_RESPONSE_INVALID",
+        "Provider emitted a prompted-scene tool call without a name.",
+        { sceneRouteKey, toolCallId: id },
+      );
+    }
+
+    return {
+      id,
+      name,
+      input: isRecord(toolCall.input) ? toolCall.input : {},
+    };
   }
 
   private buildPromptedSceneProviderOptions(
@@ -506,6 +520,18 @@ export class AiNovelLlmService {
     };
   }
 
+  private normalizeToolCallId(value: unknown, fallbackId: string): string {
+    return readOptionalString(value) ?? fallbackId;
+  }
+
+  private buildFallbackToolCallId(
+    sceneRouteKey: string,
+    phase: "kickoff" | "prompted",
+    index: number,
+  ): string {
+    return `${sceneRouteKey}_${phase}_tool_${index}`;
+  }
+
   async createEmbeddings(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
@@ -528,7 +554,6 @@ export class AiNovelLlmService {
         modelKey: sceneRouteKey,
         modelKeyKind: "scene_route",
         input,
-        ...aiNovelUsageOwner(options),
       });
 
       return {

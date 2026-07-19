@@ -2,8 +2,6 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { Pool, type PoolClient } from "pg";
 import type {
   AnalyticsEventRecord,
-  AiNovelDailyStatisticsRecord,
-  AiNovelStatisticsSnapshotRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -40,8 +38,6 @@ import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-d
 import { runPostgresMigrations } from "./migrate.ts";
 import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
-import { PostgresAiNovelStatisticsStore } from "./postgres-ai-novel-statistics.ts";
-import { PostgresAppUserStore } from "./postgres-app-users.ts";
 import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
 import { PostgresFeedbackStore } from "./postgres-feedback.ts";
 import { PostgresFrogSleepStore } from "./postgres-frogsleep.ts";
@@ -54,6 +50,7 @@ import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
   parseAppConfig,
+  parseAppUser,
   parsePermission,
   parseRole,
   parseRolePermission,
@@ -63,31 +60,23 @@ import {
 export class PostgresDatabase extends ApplicationDatabase {
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
-  private readonly appUsers: PostgresAppUserStore;
   private readonly feedback: PostgresFeedbackStore;
   private readonly frogSleep: PostgresFrogSleepStore;
   private readonly buddyGrowth: PostgresBuddyGrowthRepository;
   private readonly buddyCommandTransaction: PostgresBuddyCommandTransaction<PoolClient>;
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
-  private readonly aiNovelStatistics: PostgresAiNovelStatisticsStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
 
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
-    this.appUsers = new PostgresAppUserStore(
-      async (sql, values = []) => await this.query(sql, values),
-    );
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
     this.frogSleep = new PostgresFrogSleepStore(async (sql, values = []) => await this.query(sql, values));
     this.buddyGrowth = new PostgresBuddyGrowthRepository({ query: async (sql, values = []) => await this.query(sql, values) });
     this.buddyCommandTransaction = new PostgresBuddyCommandTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
-    this.aiNovelStatistics = new PostgresAiNovelStatisticsStore(async (sql, values = []) => await this.query(sql, values));
-    this.operationalRecords = new PostgresOperationalRecordsStore(
-      async (sql, values = []) => await this.query(sql, values),
-    );
+    this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
   }
 
   static async create(
@@ -125,6 +114,7 @@ export class PostgresDatabase extends ApplicationDatabase {
       client.release();
     }
   }
+
   override async withFrogSleepBuddyCommandTransaction<T>(slotKeys: FrogSleepBuddyCommandSlotKey[], fn: () => Promise<T> | T): Promise<T> { return await this.buddyCommandTransaction.run(slotKeys, fn); }
   override async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(key: FrogSleepBuddyInvitationDecisionSafetyKey, fn: () => Promise<T> | T): Promise<T> { return await this.buddyDecisionSafetyTransaction.run(key, fn); }
   override async close(): Promise<void> {
@@ -195,15 +185,27 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
 
   override async listAppUsers(appId?: string): Promise<AppUserRecord[]> {
-    return this.appUsers.list(appId);
+    const result = appId
+      ? await this.query("SELECT id, app_id, user_id, status, joined_at FROM zook_app_users WHERE app_id = $1 ORDER BY joined_at ASC", [appId])
+      : await this.query("SELECT id, app_id, user_id, status, joined_at FROM zook_app_users ORDER BY joined_at ASC");
+    return result.rows.map(parseAppUser);
   }
 
   override async findAppUser(appId: string, userId: string): Promise<AppUserRecord | undefined> {
-    return this.appUsers.find(appId, userId);
+    const result = await this.query(
+      "SELECT id, app_id, user_id, status, joined_at FROM zook_app_users WHERE app_id = $1 AND user_id = $2 LIMIT 1",
+      [appId, userId],
+    );
+    return result.rows[0] ? parseAppUser(result.rows[0]) : undefined;
   }
 
   override async insertAppUser(record: AppUserRecord): Promise<void> {
-    await this.appUsers.insert(record);
+    await this.query(
+      `INSERT INTO zook_app_users (id, app_id, user_id, status, joined_at)
+       VALUES ($1, $2, $3, $4, $5::timestamptz)
+       ON CONFLICT (id) DO NOTHING`,
+      [record.id, record.appId, record.userId, record.status, record.joinedAt],
+    );
   }
 
   override async updateAppUserStatus(
@@ -211,19 +213,14 @@ export class PostgresDatabase extends ApplicationDatabase {
     userId: string,
     status: AppUserRecord["status"],
   ): Promise<AppUserRecord | undefined> {
-    return this.appUsers.updateStatus(appId, userId, status);
-  }
-
-  override async finalizeAppUserAccountRegion(
-    appId: string,
-    userId: string,
-    accountRegion: "CN" | "GLOBAL",
-  ): Promise<AppUserRecord | undefined> {
-    return this.appUsers.finalizeAccountRegion(
-      appId,
-      userId,
-      accountRegion,
+    const result = await this.query(
+      `UPDATE zook_app_users
+       SET status = $3, updated_at = NOW()
+       WHERE app_id = $1 AND user_id = $2
+       RETURNING id, app_id, user_id, status, joined_at`,
+      [appId, userId, status],
     );
+    return result.rows[0] ? parseAppUser(result.rows[0]) : undefined;
   }
 
   override async deleteAppUserRuntimeData(appId: string, userId: string): Promise<void> {
@@ -489,8 +486,17 @@ export class PostgresDatabase extends ApplicationDatabase {
   } = {}): Promise<EmailDeliveryEventRecord[]> {
     return await this.emailDeliveryEvents.list(filter);
   }
-  override async insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): Promise<void> { await this.feedback.insert(record, attachments); }
-  override async listFeedbackRecords(filter: { appId: string; userId?: string; ipHash?: string; status?: FeedbackRecord["status"]; createdAtFromIso?: string; limit?: number }): Promise<FeedbackRecord[]> {
+  override async insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): Promise<void> {
+    await this.feedback.insert(record, attachments);
+  }
+  override async listFeedbackRecords(filter: {
+    appId: string;
+    userId?: string;
+    ipHash?: string;
+    status?: FeedbackRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): Promise<FeedbackRecord[]> {
     return await this.feedback.list(filter);
   }
   override async updateFeedbackStatus(appId: string, feedbackId: string, status: FeedbackRecord["status"]): Promise<FeedbackRecord | undefined> {
@@ -501,13 +507,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async findFeedbackAttachment(appId: string, feedbackId: string, attachmentId: string): Promise<FeedbackAttachmentRecord | undefined> {
     return await this.feedback.findAttachment(appId, feedbackId, attachmentId);
-  }
-  override async upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): Promise<void> { await this.aiNovelStatistics.upsertSnapshot(record); }
-  override async findAiNovelStatisticsSnapshot(appId: string, userId: string): Promise<AiNovelStatisticsSnapshotRecord | undefined> { return await this.aiNovelStatistics.findSnapshot(appId, userId); }
-  override async replaceAiNovelDailyWritingStats(appId: string, userId: string, records: AiNovelDailyStatisticsRecord[], updatedAt: string): Promise<void> { await this.aiNovelStatistics.replaceDailyWritingStats(appId, userId, records, updatedAt); }
-  override async incrementAiNovelDailyTokenUsage(appId: string, userId: string, date: string, tokens: number, updatedAt: string): Promise<void> { await this.aiNovelStatistics.incrementDailyTokenUsage(appId, userId, date, tokens, updatedAt); }
-  override async listAiNovelDailyStatistics(filter: { appId: string; userId: string; dateFrom?: string; dateTo?: string }): Promise<AiNovelDailyStatisticsRecord[]> {
-    return await this.aiNovelStatistics.listDailyStatistics(filter);
   }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);
@@ -589,6 +588,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     const result = await this.query("SELECT id, role_id, permission_id FROM zook_role_permissions ORDER BY id ASC");
     return result.rows.map(parseRolePermission);
   }
+
   private async query(sql: string, values: unknown[] = []) {
     const client = this.sessionContext.getStore();
     if (client) {

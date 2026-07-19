@@ -77,8 +77,7 @@ export const SmsCodeRequestSchema = {
     },
     "test": {
       "type": "boolean",
-      "default": false,
-      "description": "Dev/debug-only provider bypass hint. Production App Review should use admin-configured Test Accounts instead."
+      "default": false
     }
   }
 } as const;
@@ -502,7 +501,6 @@ export const AuthSessionDataSchema = {
   "type": "object",
   "required": [
     "accessToken",
-    "accountRegion",
     "user"
   ],
   "properties": {
@@ -514,14 +512,6 @@ export const AuthSessionDataSchema = {
     },
     "expiresIn": {
       "type": "integer"
-    },
-    "accountRegion": {
-      "type": "string",
-      "enum": [
-        "CN",
-        "GLOBAL",
-        "UNKNOWN"
-      ]
     },
     "user": {
       "type": "object",
@@ -565,7 +555,6 @@ export type AuthSessionData = {
   "accessToken": string;
   "refreshToken"?: string;
   "expiresIn"?: number;
-  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -615,27 +604,17 @@ export type QrLoginCreateData = {
 export const QrLoginConfirmDataSchema = {
   "type": "object",
   "required": [
-    "confirmed",
-    "accountRegion"
+    "confirmed"
   ],
   "properties": {
     "confirmed": {
       "type": "boolean"
-    },
-    "accountRegion": {
-      "type": "string",
-      "enum": [
-        "CN",
-        "GLOBAL",
-        "UNKNOWN"
-      ]
     }
   }
 } as const;
 
 export type QrLoginConfirmData = {
   "confirmed": boolean;
-  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
 };
 
 export const QrLoginPollDataSchema = {
@@ -671,7 +650,6 @@ export const QrLoginPollDataSchema = {
         "status",
         "accessToken",
         "expiresIn",
-        "accountRegion",
         "user"
       ],
       "properties": {
@@ -686,14 +664,6 @@ export const QrLoginPollDataSchema = {
         },
         "expiresIn": {
           "type": "integer"
-        },
-        "accountRegion": {
-          "type": "string",
-          "enum": [
-            "CN",
-            "GLOBAL",
-            "UNKNOWN"
-          ]
         },
         "user": {
           "type": "object",
@@ -743,7 +713,6 @@ export type QrLoginPollData = {
   "status": "CONFIRMED";
   "accessToken": string;
   "expiresIn": number;
-  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -805,20 +774,11 @@ export const CurrentUserDataSchema = {
   "type": "object",
   "required": [
     "appId",
-    "accountRegion",
     "user"
   ],
   "properties": {
     "appId": {
       "type": "string"
-    },
-    "accountRegion": {
-      "type": "string",
-      "enum": [
-        "CN",
-        "GLOBAL",
-        "UNKNOWN"
-      ]
     },
     "user": {
       "type": "object",
@@ -860,7 +820,6 @@ export const CurrentUserDataSchema = {
 
 export type CurrentUserData = {
   "appId": string;
-  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -1521,292 +1480,6 @@ export type PublicConfigData = {
   [key: string]: unknown;
 };
   "updatedAt"?: string;
-};
-
-export const AiNovelStatisticsDataSchema = {
-  "type": "object",
-  "required": [
-    "timezone",
-    "generatedAt",
-    "overview",
-    "recentActivity",
-    "writingTrend",
-    "summaryCard"
-  ],
-  "properties": {
-    "timezone": {
-      "type": "string",
-      "example": "Asia/Shanghai"
-    },
-    "generatedAt": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "overview": {
-      "type": "object",
-      "required": [
-        "totalWorks",
-        "totalWords",
-        "totalChapters",
-        "activeWritingDays"
-      ],
-      "properties": {
-        "totalWorks": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "totalWords": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "totalChapters": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "activeWritingDays": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    },
-    "recentActivity": {
-      "type": "object",
-      "required": [
-        "wordsToday",
-        "wordsThisMonth",
-        "tokensToday",
-        "tokensThisMonth",
-        "activeWritingDaysLast30Days"
-      ],
-      "properties": {
-        "wordsToday": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "wordsThisMonth": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "tokensToday": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "tokensThisMonth": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "activeWritingDaysLast30Days": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    },
-    "writingTrend": {
-      "type": "object",
-      "required": [
-        "days"
-      ],
-      "properties": {
-        "days": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "date",
-              "words",
-              "tokens",
-              "active"
-            ],
-            "properties": {
-              "date": {
-                "type": "string",
-                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
-              },
-              "words": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "tokens": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "active": {
-                "type": "boolean"
-              }
-            }
-          }
-        }
-      }
-    },
-    "summaryCard": {
-      "type": "object",
-      "required": [
-        "totalWords",
-        "totalTokens"
-      ],
-      "properties": {
-        "totalWords": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "totalTokens": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
-    }
-  }
-} as const;
-
-export type AiNovelStatisticsData = {
-  "timezone": string;
-  "generatedAt": string;
-  "overview": {
-  "totalWorks": number;
-  "totalWords": number;
-  "totalChapters": number;
-  "activeWritingDays": number;
-};
-  "recentActivity": {
-  "wordsToday": number;
-  "wordsThisMonth": number;
-  "tokensToday": number;
-  "tokensThisMonth": number;
-  "activeWritingDaysLast30Days": number;
-};
-  "writingTrend": {
-  "days": {
-  "date": string;
-  "words": number;
-  "tokens": number;
-  "active": boolean;
-}[];
-};
-  "summaryCard": {
-  "totalWords": number;
-  "totalTokens": number;
-};
-};
-
-export const AiNovelStatisticsSnapshotRequestSchema = {
-  "type": "object",
-  "required": [
-    "accountId",
-    "totalWorks",
-    "totalWords",
-    "totalChapters",
-    "activeWritingDays"
-  ],
-  "properties": {
-    "accountId": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Expected authenticated account. Zook rejects a mismatch."
-    },
-    "totalWorks": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "totalWords": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "totalChapters": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "activeWritingDays": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "daily": {
-      "type": "array",
-      "maxItems": 400,
-      "uniqueItems": true,
-      "items": {
-        "type": "object",
-        "required": [
-          "date",
-          "words"
-        ],
-        "properties": {
-          "date": {
-            "type": "string",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
-          },
-          "words": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "active": {
-            "type": "boolean"
-          }
-        }
-      }
-    }
-  }
-} as const;
-
-export type AiNovelStatisticsSnapshotRequest = {
-  "accountId": string;
-  "totalWorks": number;
-  "totalWords": number;
-  "totalChapters": number;
-  "activeWritingDays": number;
-  "daily"?: {
-  "date": string;
-  "words": number;
-  "active"?: boolean;
-}[];
-};
-
-export const AiNovelStatisticsSnapshotResponseSchema = {
-  "type": "object",
-  "required": [
-    "code",
-    "message",
-    "data"
-  ],
-  "properties": {
-    "code": {
-      "type": "string",
-      "example": "OK"
-    },
-    "message": {
-      "type": "string",
-      "example": "success"
-    },
-    "data": {
-      "type": "object",
-      "required": [
-        "accepted",
-        "updatedAt"
-      ],
-      "properties": {
-        "accepted": {
-          "type": "boolean",
-          "const": true
-        },
-        "updatedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      }
-    },
-    "requestId": {
-      "type": "string"
-    }
-  }
-} as const;
-
-export type AiNovelStatisticsSnapshotResponse = {
-  "code": string;
-  "message": string;
-  "data": {
-  "accepted": boolean;
-  "updatedAt": string;
-};
-  "requestId"?: string;
 };
 
 export type AuthSuccessPayload = AuthSessionData;
@@ -3968,9 +3641,6 @@ export const GeneratedPublicContractNames = [
   "AINovelPublicConfig",
   "AccountDeletionData",
   "AccountDeletionRequest",
-  "AiNovelStatisticsData",
-  "AiNovelStatisticsSnapshotRequest",
-  "AiNovelStatisticsSnapshotResponse",
   "AnalyticsAcceptedData",
   "AnalyticsBatchRequest",
   "AnalyticsEventInput",

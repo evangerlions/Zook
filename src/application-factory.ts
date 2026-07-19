@@ -31,8 +31,6 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
-import { AiNovelStatisticsService } from "./services/ai-novel-statistics.service.ts";
-import { createAiNovelStatisticsUsageOptions } from "./services/ai-novel-statistics-usage-recorder.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
@@ -84,7 +82,12 @@ import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 
-export async function createApplication(options: CreateApplicationOptions = {}) {
+/**
+ * createApplication produces a full runtime context that tests can reuse without real infra.
+ */
+export async function createApplication(
+  options: CreateApplicationOptions = {},
+) {
   const passwordHasher = new DevelopmentPasswordHasher();
   const frogsleepEnabled = resolveFrogSleepEnabled(options);
   const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled });
@@ -156,6 +159,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       logFile: localRunFileLogSink.currentPath,
     });
   }
+
   const appConfigService = new VersionedAppConfigService(
     database,
     cache,
@@ -351,7 +355,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonGetuiGyConfigService,
   );
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const aiNovelStatisticsService = new AiNovelStatisticsService(database);
   const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
@@ -370,12 +373,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
   };
-  const statisticsUsageOptions = createAiNovelStatisticsUsageOptions(aiNovelStatisticsService, logger);
   const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
     commonLlmConfigService,
     llmHealthService,
     llmMetricsService,
-    ...statisticsUsageOptions,
   });
   const llmSmokeTestService = new LlmSmokeTestService(
     commonLlmConfigService,
@@ -413,7 +414,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonLlmConfigService,
     llmHealthService,
     llmMetricsService,
-    ...statisticsUsageOptions,
   });
   const contentSafetyService = new ContentSafetyService(
     commonContentSafetyConfigService,
@@ -465,6 +465,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
   const httpExceptionFilter = new HttpExceptionFilter(publicApiMessageService);
   const adminBasicAuth = resolveAdminBasicAuth(options);
+
   const app = new BackendApplication(
     database,
     authService,
@@ -496,7 +497,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     publicApiMessageService,
     tencentSesEmailCallbackService,
     feedbackService,
-    aiNovelStatisticsService,
     logger,
     auditInterceptor,
     requestLoggingInterceptor,
@@ -509,6 +509,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonTestAccountService,
     frogsleepEnabled,
   );
+
   app.analyticsService = analyticsService;
   return {
     app,
@@ -562,7 +563,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       failedEventRetryService,
       tencentSesEmailCallbackService,
       feedbackService,
-      aiNovelStatisticsService,
       smsVerificationSender,
       smsVerificationCleanupService,
       captchaVerificationService,
