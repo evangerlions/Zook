@@ -20,6 +20,10 @@ export interface LLMCompletionRequest {
   temperature?: number;
   maxTokens?: number;
   providerOptions?: Record<string, unknown>;
+  usageOwner?: {
+    appId: string;
+    userId: string;
+  };
 }
 
 export interface LLMCompleteViaStreamOptions {
@@ -45,6 +49,7 @@ export interface LLMUsage {
   reasoningTokens?: number;
   contextWindowTokens?: number;
   contextUsedRatio?: number;
+  estimated?: boolean;
 }
 
 export interface LLMCompletionResult {
@@ -113,6 +118,19 @@ export interface LLMManagerOptions {
   commonLlmConfigService?: CommonLlmConfigService;
   llmHealthService?: LlmHealthService;
   llmMetricsService?: LlmMetricsService;
+  usageRecorder?: (event: {
+    appId: string;
+    userId: string;
+    usage: LLMUsage;
+    occurredAt: Date;
+  }) => Promise<void> | void;
+  usageRecorderErrorHandler?: (event: {
+    appId: string;
+    userId: string;
+    usage: LLMUsage;
+    occurredAt: Date;
+    error: unknown;
+  }) => void;
   random?: () => number;
   now?: () => Date;
 }

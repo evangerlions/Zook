@@ -1,4 +1,5 @@
 import type {
+  AccountRegion,
   AppStatus,
   AppUserStatus,
   ContentSafetyCheckMethod,
@@ -47,6 +48,7 @@ export interface AppUserRecord {
   appId: string;
   userId: string;
   status: AppUserStatus;
+  accountRegion: AccountRegion;
   joinedAt: string;
 }
 
@@ -505,6 +507,26 @@ export interface FeedbackAttachmentRecord {
   createdAt: string;
 }
 
+export interface AiNovelStatisticsSnapshotRecord {
+  appId: string;
+  userId: string;
+  totalWorks: number;
+  totalWords: number;
+  totalChapters: number;
+  activeWritingDays: number;
+  updatedAt: string;
+}
+
+export interface AiNovelDailyStatisticsRecord {
+  appId: string;
+  userId: string;
+  date: string;
+  words: number;
+  tokens: number;
+  active: boolean;
+  updatedAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -531,4 +553,6 @@ export interface DatabaseSeed {
   frogSleepBuddyDomainSlots?: FrogSleepBuddyDomainSlotRecord[];
   frogSleepBuddyDomainRelationships?: FrogSleepBuddyDomainRelationshipRecord[];
   frogSleepBuddyInvitationReceiptAttempts?: FrogSleepBuddyInvitationReceiptAttemptRecord[];
+  aiNovelStatisticsSnapshots?: AiNovelStatisticsSnapshotRecord[];
+  aiNovelDailyStatistics?: AiNovelDailyStatisticsRecord[];
 }

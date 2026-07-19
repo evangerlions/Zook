@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   AnalyticsEventRecord,
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -105,6 +107,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
   frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
+  aiNovelStatisticsSnapshots: AiNovelStatisticsSnapshotRecord[];
+  aiNovelDailyStatistics: AiNovelDailyStatisticsRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -140,6 +144,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
     this.frogSleepBuddyNotificationDeliveries = [];
+    this.aiNovelStatisticsSnapshots = structuredClone(seed.aiNovelStatisticsSnapshots ?? []);
+    this.aiNovelDailyStatistics = structuredClone(seed.aiNovelDailyStatistics ?? []);
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -321,6 +327,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationOutbox = this.frogSleepBuddyNotificationOutbox.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotifications = this.frogSleepBuddyNotifications.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter((item) => item.appId !== appId);
+    this.aiNovelStatisticsSnapshots = this.aiNovelStatisticsSnapshots.filter((item) => item.appId !== appId);
+    this.aiNovelDailyStatistics = this.aiNovelDailyStatistics.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -345,6 +353,19 @@ export class InMemoryDatabase extends ApplicationDatabase {
       return undefined;
     }
     membership.status = status;
+    return structuredClone(membership);
+  }
+
+  finalizeAppUserAccountRegion(
+    appId: string,
+    userId: string,
+    accountRegion: "CN" | "GLOBAL",
+  ): AppUserRecord | undefined {
+    const membership = this.findAppUser(appId, userId);
+    if (!membership || membership.accountRegion !== "UNKNOWN") {
+      return undefined;
+    }
+    membership.accountRegion = accountRegion;
     return structuredClone(membership);
   }
 
@@ -416,6 +437,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter(
       (item) => !removedNotificationIds.includes(item.notificationId),
+    );
+    this.aiNovelStatisticsSnapshots = this.aiNovelStatisticsSnapshots.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.aiNovelDailyStatistics = this.aiNovelDailyStatistics.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
     );
   }
 
@@ -1323,6 +1350,97 @@ export class InMemoryDatabase extends ApplicationDatabase {
           item.id === attachmentId,
       ),
     );
+  }
+
+  upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): void {
+    const index = this.aiNovelStatisticsSnapshots.findIndex(
+      (item) => item.appId === record.appId && item.userId === record.userId,
+    );
+    if (index >= 0) {
+      this.aiNovelStatisticsSnapshots[index] = structuredClone(record);
+      return;
+    }
+    this.aiNovelStatisticsSnapshots.push(structuredClone(record));
+  }
+
+  findAiNovelStatisticsSnapshot(
+    appId: string,
+    userId: string,
+  ): AiNovelStatisticsSnapshotRecord | undefined {
+    return structuredClone(
+      this.aiNovelStatisticsSnapshots.find(
+        (item) => item.appId === appId && item.userId === userId,
+      ),
+    );
+  }
+
+  replaceAiNovelDailyWritingStats(
+    appId: string,
+    userId: string,
+    records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
+  ): void {
+    for (const existing of this.aiNovelDailyStatistics) {
+      if (existing.appId === appId && existing.userId === userId) {
+        existing.words = 0;
+        existing.active = false;
+        existing.updatedAt = updatedAt;
+      }
+    }
+    for (const record of records) {
+      const existing = this.aiNovelDailyStatistics.find(
+        (item) =>
+          item.appId === record.appId &&
+          item.userId === record.userId &&
+          item.date === record.date,
+      );
+      if (existing) {
+        existing.words = record.words;
+        existing.active = record.active;
+        existing.updatedAt = record.updatedAt;
+      } else {
+        this.aiNovelDailyStatistics.push(structuredClone(record));
+      }
+    }
+  }
+
+  incrementAiNovelDailyTokenUsage(
+    appId: string,
+    userId: string,
+    date: string,
+    tokens: number,
+    updatedAt: string,
+  ): void {
+    const existing = this.aiNovelDailyStatistics.find(
+      (item) => item.appId === appId && item.userId === userId && item.date === date,
+    );
+    if (existing) {
+      existing.tokens += Math.max(0, Math.floor(tokens));
+      existing.updatedAt = updatedAt;
+      return;
+    }
+    this.aiNovelDailyStatistics.push({
+      appId,
+      userId,
+      date,
+      words: 0,
+      tokens: Math.max(0, Math.floor(tokens)),
+      active: false,
+      updatedAt,
+    });
+  }
+
+  listAiNovelDailyStatistics(filter: {
+    appId: string;
+    userId: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): AiNovelDailyStatisticsRecord[] {
+    return structuredClone(this.aiNovelDailyStatistics)
+      .filter((item) => item.appId === filter.appId && item.userId === filter.userId)
+      .filter((item) => filter.dateFrom ? item.date >= filter.dateFrom : true)
+      .filter((item) => filter.dateTo ? item.date <= filter.dateTo : true)
+      .sort((left, right) => left.date.localeCompare(right.date));
   }
 
   get seedManagedState(): ManagedStateSnapshot {
