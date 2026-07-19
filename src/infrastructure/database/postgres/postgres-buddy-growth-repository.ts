@@ -162,16 +162,16 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
   async compareAndUpdateInvitationDomainDecision(input: {
     appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
     expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
-    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; updatedAt: string;
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; terminalReason?: string; updatedAt: string;
   }) {
     const result = await this.pool.query(
       `UPDATE zook_frogsleep_buddy_invitation_domain_decisions
        SET status=$5, version=version+1, decided_by_user_id=$6, decided_at=$7,
-           idempotency_key_hash=$8, terminal_reason=NULL, updated_at=$9
+           idempotency_key_hash=$8, terminal_reason=$9, updated_at=$10
        WHERE app_id=$1 AND invitation_id=$2 AND domain=$3 AND version=$4 AND status='pending'
        RETURNING *`,
       [input.appId, input.invitationId, input.domain, input.expectedVersion, input.status,
-        input.decidedByUserId, input.decidedAt, input.idempotencyKeyHash, input.updatedAt],
+        input.decidedByUserId, input.decidedAt, input.idempotencyKeyHash, input.terminalReason ?? null, input.updatedAt],
     );
     return result.rows[0] ? mapDomainDecision(result.rows[0]) : undefined;
   }

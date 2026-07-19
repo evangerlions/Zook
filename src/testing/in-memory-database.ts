@@ -855,7 +855,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: {
     appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
     expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
-    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; updatedAt: string;
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; terminalReason?: string; updatedAt: string;
   }): FrogSleepBuddyInvitationDomainDecisionRecord | undefined {
     const decision = this.frogSleepBuddyInvitationDomainDecisions.find((item) =>
       item.appId === input.appId && item.invitationId === input.invitationId && item.domain === input.domain
@@ -863,7 +863,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     if (!decision || decision.status !== "pending" || decision.version !== input.expectedVersion) return undefined;
     Object.assign(decision, { status: input.status, version: decision.version + 1,
       decidedByUserId: input.decidedByUserId, decidedAt: input.decidedAt,
-      idempotencyKeyHash: input.idempotencyKeyHash, terminalReason: undefined, updatedAt: input.updatedAt });
+      idempotencyKeyHash: input.idempotencyKeyHash, terminalReason: input.terminalReason, updatedAt: input.updatedAt });
     return structuredClone(decision);
   }
 
