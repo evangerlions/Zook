@@ -26,7 +26,7 @@ function restoreCapabilities() {
     ? delete process.env[name] : process.env[name] = saved[name]);
 }
 
-async function seedBundle(app: Awaited<ReturnType<typeof runtime>>) {
+async function seedBundle(app: Awaited<ReturnType<typeof runtime>>, options: { withSlots?: boolean } = {}) {
   const createdAt = new Date().toISOString();
   await app.database.upsertFrogSleepBuddyInvitationBundle({ id: "bundle_safety", appId: "frogsleep",
     inviterUserId: "user_alice", inviteeUserId: "user_bob", status: "pending", domains: ["sleep", "focus"],
@@ -35,8 +35,10 @@ async function seedBundle(app: Awaited<ReturnType<typeof runtime>>) {
   for (const domain of ["sleep", "focus"] as const) {
     await app.database.upsertFrogSleepBuddyInvitationDomainDecision({ appId: "frogsleep", invitationId: "bundle_safety",
       domain, status: "pending", version: 1, createdAt, updatedAt: createdAt });
-    await app.database.ensureFrogSleepBuddyDomainSlot({ appId: "frogsleep", userId: "user_alice", domain, now: createdAt });
-    await app.database.ensureFrogSleepBuddyDomainSlot({ appId: "frogsleep", userId: "user_bob", domain, now: createdAt });
+    if (options.withSlots !== false) {
+      await app.database.ensureFrogSleepBuddyDomainSlot({ appId: "frogsleep", userId: "user_alice", domain, now: createdAt });
+      await app.database.ensureFrogSleepBuddyDomainSlot({ appId: "frogsleep", userId: "user_bob", domain, now: createdAt });
+    }
   }
 }
 
@@ -82,6 +84,22 @@ test("domain decline bypasses disabled ordinary capabilities and writes only its
     assert.equal(app.database.frogSleepBuddyNotificationOutbox.length, 1);
     assert.deepEqual([app.database.frogSleepBuddyNotificationOutbox[0]?.eventType,
       app.database.frogSleepBuddyNotificationOutbox[0]?.recipientUserId], ["invitation_declined", "user_alice"]);
+  } finally { restore(); }
+});
+
+test("domain decline leaves a fresh invitation with no slots completely slot-free", async () => {
+  const restore = restoreCapabilities();
+  delete process.env.FROGSLEEP_BUDDY_INBOX_ENABLED;
+  delete process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED;
+  try {
+    const app = await runtime(); const bob = await login(app, "bob@example.com");
+    await seedBundle(app, { withSlots: false });
+    const response = await command(app, bob, "decline");
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(app.database.frogSleepBuddyDomainSlots, []);
+    assert.deepEqual([(await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "bundle_safety", "sleep"))?.status,
+      app.database.frogSleepBuddyNotificationOutbox.length], ["declined", 1]);
   } finally { restore(); }
 });
 

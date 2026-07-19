@@ -43,6 +43,8 @@ import { PostgresFeedbackStore } from "./postgres-feedback.ts";
 import { PostgresFrogSleepStore } from "./postgres-frogsleep.ts";
 import { PostgresBuddyGrowthRepository } from "./postgres-buddy-growth-repository.ts";
 import { PostgresBuddyCommandTransaction, type FrogSleepBuddyCommandSlotKey } from "./postgres-buddy-command-transaction.ts";
+import { PostgresBuddyDecisionSafetyTransaction } from "./postgres-buddy-decision-safety-transaction.ts";
+import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -62,22 +64,19 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly frogSleep: PostgresFrogSleepStore;
   private readonly buddyGrowth: PostgresBuddyGrowthRepository;
   private readonly buddyCommandTransaction: PostgresBuddyCommandTransaction<PoolClient>;
+  private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
 
-  private constructor(
-    private readonly pool: Pool,
-    private readonly seed: DatabaseSeed,
-  ) {
+  private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
     this.frogSleep = new PostgresFrogSleepStore(async (sql, values = []) => await this.query(sql, values));
     this.buddyGrowth = new PostgresBuddyGrowthRepository({ query: async (sql, values = []) => await this.query(sql, values) });
     this.buddyCommandTransaction = new PostgresBuddyCommandTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
-    this.operationalRecords = new PostgresOperationalRecordsStore(
-      async (sql, values = []) => await this.query(sql, values),
-    );
+    this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
+    this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
   }
 
   static async create(
@@ -117,6 +116,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
 
   override async withFrogSleepBuddyCommandTransaction<T>(slotKeys: FrogSleepBuddyCommandSlotKey[], fn: () => Promise<T> | T): Promise<T> { return await this.buddyCommandTransaction.run(slotKeys, fn); }
+  override async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(key: FrogSleepBuddyInvitationDecisionSafetyKey, fn: () => Promise<T> | T): Promise<T> { return await this.buddyDecisionSafetyTransaction.run(key, fn); }
   override async close(): Promise<void> {
     await this.pool.end();
   }

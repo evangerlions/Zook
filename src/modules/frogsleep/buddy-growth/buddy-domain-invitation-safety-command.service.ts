@@ -22,7 +22,9 @@ export class BuddyDomainInvitationSafetyCommandService {
       return this.payload(decision);
     }
     this.assertActionable(bundle, decision, input.expectedVersion);
-    return await this.database.withFrogSleepBuddyCommandTransaction(this.slotKeys(bundle, domain), async () =>
+    return await this.database.withFrogSleepBuddyInvitationDecisionSafetyTransaction({
+      appId: FROGSLEEP_APP_ID, invitationId, domain,
+    }, async () =>
       await this.executeLocked(actorUserId, invitationId, domain, action, input));
   }
 
@@ -79,11 +81,6 @@ export class BuddyDomainInvitationSafetyCommandService {
     if (expectedVersion !== decision.version - 1) {
       conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
     }
-  }
-
-  private slotKeys(bundle: FrogSleepBuddyInvitationBundleRecord, domain: Domain) {
-    return [{ appId: FROGSLEEP_APP_ID, userId: bundle.inviterUserId, domain },
-      { appId: FROGSLEEP_APP_ID, userId: bundle.inviteeUserId!, domain }];
   }
 
   private payload(decision: FrogSleepBuddyInvitationDomainDecisionRecord) {

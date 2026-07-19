@@ -37,6 +37,7 @@ import type {
   SmsVerificationRecord,
 } from "../../shared/types.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
+import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -56,6 +57,10 @@ export abstract class ApplicationDatabase {
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],
+    fn: () => Promise<T> | T,
+  ): Promise<T>;
+  abstract withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(
+    key: FrogSleepBuddyInvitationDecisionSafetyKey,
     fn: () => Promise<T> | T,
   ): Promise<T>;
   abstract close(): Promise<void>;

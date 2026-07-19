@@ -48,6 +48,11 @@ import {
   type FrogSleepBuddyCommandSlotKey,
 } from "../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import {
+  normalizeFrogSleepBuddyInvitationDecisionSafetyKey,
+  serializeFrogSleepBuddyInvitationDecisionSafetyKey,
+  type FrogSleepBuddyInvitationDecisionSafetyKey,
+} from "../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
+import {
   ApplicationDatabase,
   buildManagedStateSnapshot,
   type ManagedStateSnapshot,
@@ -66,6 +71,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private exclusiveTail: Promise<void> = Promise.resolve();
   private readonly buddyCommandContext = new AsyncLocalStorage<Set<string>>();
   private buddyCommandTail: Promise<void> = Promise.resolve();
+  private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
+  private readonly buddyDecisionSafetyTails = new Map<string, Promise<void>>();
 
   apps: AppRecord[];
   users: UserRecord[];
@@ -172,6 +179,21 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return await this.runRootBuddyCommandTransaction(normalized, serialized, fn);
   }
 
+  async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(
+    key: FrogSleepBuddyInvitationDecisionSafetyKey,
+    fn: () => Promise<T> | T,
+  ): Promise<T> {
+    const serialized = serializeFrogSleepBuddyInvitationDecisionSafetyKey(
+      normalizeFrogSleepBuddyInvitationDecisionSafetyKey(key),
+    );
+    const existing = this.buddyDecisionSafetyContext.getStore();
+    if (existing) {
+      if (existing !== serialized) throw new Error("Nested transaction requested an additional buddy decision safety key.");
+      return await fn();
+    }
+    return await this.runRootBuddyDecisionSafetyTransaction(serialized, fn);
+  }
+
   private async runRootBuddyCommandTransaction<T>(
     keys: FrogSleepBuddyCommandSlotKey[],
     serialized: Set<string>,
@@ -191,6 +213,24 @@ export class InMemoryDatabase extends ApplicationDatabase {
       throw error;
     } finally {
       release.current();
+    }
+  }
+
+  private async runRootBuddyDecisionSafetyTransaction<T>(serialized: string, fn: () => Promise<T> | T): Promise<T> {
+    const previous = this.buddyDecisionSafetyTails.get(serialized) ?? Promise.resolve();
+    let release = () => undefined;
+    const current = new Promise<void>((resolve) => { release = resolve; });
+    this.buddyDecisionSafetyTails.set(serialized, current);
+    await previous;
+    const snapshot = this.snapshotCollections();
+    try {
+      return await this.buddyDecisionSafetyContext.run(serialized, async () => await fn());
+    } catch (error) {
+      this.restoreCollections(snapshot);
+      throw error;
+    } finally {
+      release();
+      if (this.buddyDecisionSafetyTails.get(serialized) === current) this.buddyDecisionSafetyTails.delete(serialized);
     }
   }
 
