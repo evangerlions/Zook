@@ -118,10 +118,12 @@ test("same-key safety replay remains read-only after a legacy terminal bundle wh
       outbox: structuredClone(app.database.frogSleepBuddyNotificationOutbox),
       slots: await app.database.listFrogSleepBuddyDomainSlots("frogsleep", "user_bob") };
     const replay = await command(app, bob, "decline", { key: "replay-key" });
+    const conflictingReplay = await command(app, bob, "decline", { key: "replay-key", version: 2 });
     const different = await command(app, bob, "decline", { key: "different-key", version: 2 });
 
     assert.equal(first.statusCode, 200);
     assert.deepEqual(replay.body.data, first.body.data);
+    assert.equal(conflictingReplay.statusCode, 409);
     assert.equal(different.statusCode, 409);
     assert.deepEqual(await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "bundle_safety", "sleep"), before.decision);
     assert.deepEqual(app.database.frogSleepBuddyNotificationOutbox, before.outbox);

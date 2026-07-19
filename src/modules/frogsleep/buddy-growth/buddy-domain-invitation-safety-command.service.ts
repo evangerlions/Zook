@@ -17,7 +17,10 @@ export class BuddyDomainInvitationSafetyCommandService {
   }) {
     const bundle = await this.requireBundleIdentity(invitationId, actorUserId, domain, action);
     const decision = await this.requireDecision(invitationId, domain);
-    if (this.isReplay(decision, action, input.idempotencyKey)) return this.payload(decision);
+    if (this.isReplay(decision, action, input.idempotencyKey)) {
+      this.assertReplayVersion(decision, input.expectedVersion);
+      return this.payload(decision);
+    }
     this.assertActionable(bundle, decision, input.expectedVersion);
     return await this.database.withFrogSleepBuddyCommandTransaction(this.slotKeys(bundle, domain), async () =>
       await this.executeLocked(actorUserId, invitationId, domain, action, input));
@@ -28,7 +31,10 @@ export class BuddyDomainInvitationSafetyCommandService {
   }) {
     const bundle = await this.requireBundleIdentity(invitationId, actorUserId, domain, action);
     const decision = await this.requireDecision(invitationId, domain);
-    if (this.isReplay(decision, action, input.idempotencyKey)) return this.payload(decision);
+    if (this.isReplay(decision, action, input.idempotencyKey)) {
+      this.assertReplayVersion(decision, input.expectedVersion);
+      return this.payload(decision);
+    }
     this.assertActionable(bundle, decision, input.expectedVersion);
     const now = new Date().toISOString();
     const updated = await this.database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({
@@ -67,6 +73,12 @@ export class BuddyDomainInvitationSafetyCommandService {
   private isReplay(decision: FrogSleepBuddyInvitationDomainDecisionRecord, action: SafetyAction, idempotencyKey: string) {
     const status = action === "decline" ? "declined" : "cancelled";
     return decision.status === status && decision.idempotencyKeyHash === sha256(idempotencyKey);
+  }
+
+  private assertReplayVersion(decision: FrogSleepBuddyInvitationDomainDecisionRecord, expectedVersion: number) {
+    if (expectedVersion !== decision.version - 1) {
+      conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
+    }
   }
 
   private slotKeys(bundle: FrogSleepBuddyInvitationBundleRecord, domain: Domain) {
