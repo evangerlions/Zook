@@ -72,7 +72,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private readonly buddyCommandContext = new AsyncLocalStorage<Set<string>>();
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
-  private readonly buddyDecisionSafetyTails = new Map<string, Promise<void>>();
+  private buddyDecisionSafetyTail: Promise<void> = Promise.resolve();
 
   apps: AppRecord[];
   users: UserRecord[];
@@ -217,10 +217,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   private async runRootBuddyDecisionSafetyTransaction<T>(serialized: string, fn: () => Promise<T> | T): Promise<T> {
-    const previous = this.buddyDecisionSafetyTails.get(serialized) ?? Promise.resolve();
+    const previous = this.buddyDecisionSafetyTail;
     let release = () => undefined;
-    const current = new Promise<void>((resolve) => { release = resolve; });
-    this.buddyDecisionSafetyTails.set(serialized, current);
+    this.buddyDecisionSafetyTail = new Promise<void>((resolve) => { release = resolve; });
     await previous;
     const snapshot = this.snapshotCollections();
     try {
@@ -230,7 +229,6 @@ export class InMemoryDatabase extends ApplicationDatabase {
       throw error;
     } finally {
       release();
-      if (this.buddyDecisionSafetyTails.get(serialized) === current) this.buddyDecisionSafetyTails.delete(serialized);
     }
   }
 
