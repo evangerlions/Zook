@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
 import { PostgresDatabase } from "../../src/infrastructure/database/postgres/postgres-database.ts";
@@ -135,6 +136,16 @@ test("dev and online deploy slots enable FrogSleep unless explicitly disabled", 
       process.env.FROGSLEEP_ENABLED = originalFrogSleepEnabled;
     }
   }
+});
+
+test("deployment config preserves slot-based FrogSleep routing", async () => {
+  const compose = await readFile(new URL("../../compose.yaml", import.meta.url), "utf8");
+  const devEnvironment = await readFile(new URL("../../deploy_configs/dev.env.example", import.meta.url), "utf8");
+  const onlineEnvironment = await readFile(new URL("../../deploy_configs/online.env.example", import.meta.url), "utf8");
+
+  assert.doesNotMatch(compose, /FROGSLEEP_ENABLED:\s*"\$\{FROGSLEEP_ENABLED:-false\}"/);
+  assert.match(devEnvironment, /^FROGSLEEP_ENABLED=true$/m);
+  assert.match(onlineEnvironment, /^FROGSLEEP_ENABLED=true$/m);
 });
 
 test("FrogSleep can be explicitly enabled as an isolated app", async () => {
