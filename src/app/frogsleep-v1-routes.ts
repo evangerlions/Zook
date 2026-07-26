@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { FROGSLEEP_APP_ID } from "../modules/frogsleep/frogsleep-app.ts";
 import { FrogSleepFocusBuddyService } from "../modules/frogsleep/focus-buddy/focus-buddy.service.ts";
+import { LegacyBuddyInvitationAdapter } from "../modules/frogsleep/buddy-growth/legacy-buddy-invitation-adapter.ts";
 import { FrogSleepProductDataService } from "../modules/frogsleep/product-data/frogsleep-product-data.service.ts";
 import { emitFrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-analytics.ts";
 import { parsePaginationParams } from "../modules/frogsleep/frogsleep-validation.ts";
@@ -9,6 +11,8 @@ import { FrogSleepSleepBuddyService } from "../modules/frogsleep/sleep-buddy/sle
 import { tryHandleBuddyGrowthRoutes } from "./frogsleep-v1-buddy-routes.ts";
 import { tryHandleBuddyCapabilitiesRoutes } from "./frogsleep-v1-buddy-capabilities-routes.ts";
 import { tryHandleBuddySafetyRoutes } from "./frogsleep-v1-buddy-safety-routes.ts";
+import { resolveBuddyGrowthCapabilities } from "../modules/frogsleep/buddy-growth/buddy-growth-capabilities.ts";
+import { ApplicationError } from "../shared/errors.ts";
 import { asBody, authenticateFrogSleepRequest, dualResourcePayload, frogSleepOk,
   getFrogSleepInviteLinks, redirectTo, requireStringField } from "./frogsleep-v1-common.ts";
 import {
@@ -48,6 +52,10 @@ import {
 } from "./frogsleep-v1-sleep-routes.ts";
 
 const FROGSLEEP_CANONICAL_PREFIX = "/api/v1/frogsleep";
+const LEGACY_INVITATION_HEADERS = {
+  Deprecation: "true",
+  Link: '</api/v1/frogsleep/buddy/invitations>; rel="successor-version"',
+};
 
 export function isFrogSleepV1Path(path: string): boolean {
   return (
@@ -117,6 +125,45 @@ export async function tryHandleFrogSleepV1Routes(
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
   if (!isFrogSleepV1Path(request.path)) {
+    if (request.method === "GET" && request.path === "/frogsleep/buddy-invitation") {
+      const token = String(request.query?.token ?? "").trim();
+      const bundle = token
+        ? await this.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, token)
+        : undefined;
+      if (bundle) {
+        await trackInviteOpenBestEffort(async () => {
+          await this.database.insertAuditLog({
+            id: randomUUID(), appId: FROGSLEEP_APP_ID,
+            action: "frogsleep_buddy_invitation_handoff_opened",
+            resourceType: "buddy_invitation", resourceId: bundle.id,
+            resourceOwnerUserId: bundle.inviterUserId,
+            payload: { channel: "https_handoff" },
+            createdAt: new Date().toISOString(),
+          });
+        });
+      }
+      const deepLink = `frogsleep://buddy-invitation?mode=preview&token=${encodeURIComponent(token)}`;
+      const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">`
+        + `<meta name="viewport" content="width=device-width,initial-scale=1">`
+        + `<meta http-equiv="refresh" content="0;url=${deepLink}"><title>FrogSleep 搭子邀请</title></head>`
+        + `<body><main><h1>FrogSleep 搭子邀请</h1>`
+        + `<p>正在打开 FrogSleep。若未自动打开，可点击下方按钮；也可在 App 的搭子中心手动输入邀请码。</p>`
+        + `<p><a href="${deepLink}">打开 FrogSleep</a></p></main></body></html>`;
+      return {
+        statusCode: 200,
+        contentType: "text/html; charset=utf-8",
+        headers: {
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+          "X-Content-Type-Options": "nosniff",
+        },
+        body: {
+          code: "OK", message: "success", data: null,
+          requestId: request.requestId as string,
+        },
+        streamBody: (async function* () { yield html; })(),
+      };
+    }
     if (request.method === "GET" && request.path === "/frogsleep/sleep-buddy-invite") {
       const token = request.query?.token ?? "";
       const code = request.query?.code ?? "";
@@ -326,10 +373,16 @@ export async function tryHandleFrogSleepV1Routes(
     ), routeRequest.requestId as string);
   }
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/focus/match-profile") {
+    if (!resolveBuddyGrowthCapabilities().focusMatching) {
+      throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Focus buddy matching is not available.");
+    }
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
     return frogSleepOk(this, await focusBuddyService(this).saveProfile(auth.userId, asBody(routeRequest)), routeRequest.requestId as string);
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/match-profile/me") {
+    if (!resolveBuddyGrowthCapabilities().focusMatching) {
+      throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Focus buddy matching is not available.");
+    }
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
     return frogSleepOk(
       this,
@@ -338,16 +391,25 @@ export async function tryHandleFrogSleepV1Routes(
     );
   }
   if (routeRequest.method === "DELETE" && routeRequest.path === "/v1/focus/match-profile") {
+    if (!resolveBuddyGrowthCapabilities().focusMatching) {
+      throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Focus buddy matching is not available.");
+    }
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
     return frogSleepOk(this, await focusBuddyService(this).deleteProfile(auth.userId), routeRequest.requestId as string);
   }
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/focus/matches/search") {
+    if (!resolveBuddyGrowthCapabilities().focusMatching) {
+      throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Focus buddy matching is not available.");
+    }
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
     const limit = parsePaginationParams(asBody(routeRequest)).limit;
     return frogSleepOk(this, await focusBuddyService(this).searchMatches(auth.userId, limit), routeRequest.requestId as string);
   }
   const focusInviteMatch = routeRequest.path.match(/^\/v1\/focus\/matches\/([^/]+)\/invite$/);
   if (routeRequest.method === "POST" && focusInviteMatch) {
+    if (!resolveBuddyGrowthCapabilities().focusMatching) {
+      throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Focus buddy matching is not available.");
+    }
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
     const inviteLinks = await getFrogSleepInviteLinks(this);
     return frogSleepOk(this, await focusBuddyService(this).invite(
@@ -358,6 +420,9 @@ export async function tryHandleFrogSleepV1Routes(
   }
   const focusMatchFeedbackMatch = routeRequest.path.match(/^\/v1\/focus\/matches\/([^/]+)\/(dismiss|report)$/);
   if (routeRequest.method === "POST" && focusMatchFeedbackMatch) {
+    if (!resolveBuddyGrowthCapabilities().focusMatching) {
+      throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Focus buddy matching is not available.");
+    }
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
     return frogSleepOk(this, await focusBuddyService(this).recordMatchFeedback(
       auth.userId,
@@ -370,11 +435,16 @@ export async function tryHandleFrogSleepV1Routes(
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
     const body = asBody(routeRequest);
     const inviteLinks = await getFrogSleepInviteLinks(this);
-    return frogSleepOk(this, await focusBuddyService(this).invite(
+    const invite = await focusBuddyService(this).invite(
       auth.userId,
       requireStringField(body, "target", "email", "user_id", "userId"),
       inviteLinks.focusBuddyBaseUrl,
-    ), routeRequest.requestId as string);
+    );
+    await new LegacyBuddyInvitationAdapter(this.database).project(
+      "focus", String(invite.source_invite_id ?? invite.invite_id ?? invite.id),
+      inviteLinks.buddyHandoffBaseUrl, this.resolveRequestLocale(routeRequest),
+    );
+    return frogSleepOk(this, invite, routeRequest.requestId as string, LEGACY_INVITATION_HEADERS);
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/buddy/invites/preview") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
@@ -390,19 +460,37 @@ export async function tryHandleFrogSleepV1Routes(
   const focusInviteActionMatch = routeRequest.path.match(/^\/v1\/focus\/buddy\/invites\/([^/]+)\/(decline|cancel)$/);
   if (routeRequest.method === "POST" && focusInviteActionMatch) {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(this, await focusBuddyService(this).inviteAction(
+    const invitationId = decodeURIComponent(focusInviteActionMatch[1] as string);
+    const action = focusInviteActionMatch[2] as "decline" | "cancel";
+    const result = await focusBuddyService(this).inviteAction(
       auth.userId,
-      decodeURIComponent(focusInviteActionMatch[1] as string),
-      focusInviteActionMatch[2] as "decline" | "cancel",
-    ), routeRequest.requestId as string);
+      invitationId,
+      action,
+    );
+    await new LegacyBuddyInvitationAdapter(this.database).syncTerminal(
+      "focus", invitationId, action, auth.userId,
+    );
+    return frogSleepOk(this, result, routeRequest.requestId as string, LEGACY_INVITATION_HEADERS);
   }
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/focus/buddy/invites/accept-code") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(this, await focusBuddyService(this).acceptInviteByCode(auth.userId, requireStringField(asBody(routeRequest), "code")), routeRequest.requestId as string);
+    const relationship = await focusBuddyService(this).acceptInviteByCode(
+      auth.userId, requireStringField(asBody(routeRequest), "code"),
+    );
+    await new LegacyBuddyInvitationAdapter(this.database).syncTerminal(
+      "focus", String(relationship.source_invite_id ?? ""), "accepted", auth.userId,
+    );
+    return frogSleepOk(this, relationship, routeRequest.requestId as string, LEGACY_INVITATION_HEADERS);
   }
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/focus/buddy/invites/accept-token") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(this, await focusBuddyService(this).acceptInviteByToken(auth.userId, requireStringField(asBody(routeRequest), "token")), routeRequest.requestId as string);
+    const relationship = await focusBuddyService(this).acceptInviteByToken(
+      auth.userId, requireStringField(asBody(routeRequest), "token"),
+    );
+    await new LegacyBuddyInvitationAdapter(this.database).syncTerminal(
+      "focus", String(relationship.source_invite_id ?? ""), "accepted", auth.userId,
+    );
+    return frogSleepOk(this, relationship, routeRequest.requestId as string, LEGACY_INVITATION_HEADERS);
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/relationships/current") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);

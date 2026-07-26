@@ -27,8 +27,11 @@ export async function tryHandleBuddyCapabilitiesRoutes(
     commands: {
       create: invitationCommandsEnabled,
       accept: invitationCommandsEnabled,
+      preview: invitationCommandsEnabled,
+      email_delivery: invitationCommandsEnabled && capabilities.emailDelivery,
       activity: interactionsEnabled,
       share: interactionsEnabled,
+      focus_matching: capabilities.focusMatching,
     },
   }, request.requestId as string, { "Cache-Control": "private, max-age=300" });
 }

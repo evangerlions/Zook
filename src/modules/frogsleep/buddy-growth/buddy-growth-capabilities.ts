@@ -6,6 +6,9 @@ export interface BuddyGrowthCapabilities {
   structuredInteractions: boolean;
   goalsAndReports: boolean;
   pushDelivery: boolean;
+  emailDelivery: boolean;
+  /** Stranger-matching for focus buddy (search/dismiss/report). Off by default for v1 launch (invite-only). */
+  focusMatching: boolean;
 }
 
 export function resolveBuddyGrowthCapabilities(env: NodeJS.ProcessEnv = process.env): BuddyGrowthCapabilities {
@@ -16,6 +19,8 @@ export function resolveBuddyGrowthCapabilities(env: NodeJS.ProcessEnv = process.
     structuredInteractions: enabled(env.FROGSLEEP_BUDDY_INTERACTIONS_ENABLED),
     goalsAndReports: enabled(env.FROGSLEEP_BUDDY_GOALS_REPORTS_ENABLED),
     pushDelivery: enabled(env.FROGSLEEP_BUDDY_PUSH_ENABLED),
+    emailDelivery: enabled(env.FROGSLEEP_BUDDY_EMAIL_ENABLED),
+    focusMatching: enabled(env.FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED),
   };
 }
 

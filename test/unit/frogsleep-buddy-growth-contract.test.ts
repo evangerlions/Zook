@@ -24,6 +24,7 @@ const capabilityFlags = [
   "FROGSLEEP_BUDDY_INTERACTIONS_ENABLED",
   "FROGSLEEP_BUDDY_GOALS_REPORTS_ENABLED",
   "FROGSLEEP_BUDDY_PUSH_ENABLED",
+  "FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED",
 ] as const;
 
 test("buddy growth canonical vocabulary remains stable", () => {
@@ -48,9 +49,13 @@ test("buddy growth capabilities default off and enable independently", () => {
     structuredInteractions: false,
     goalsAndReports: false,
     pushDelivery: false,
+    emailDelivery: false,
+    focusMatching: false,
   });
   assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_INBOX_ENABLED: "true" }).invitationInbox, true);
   assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_PUSH_ENABLED: "TRUE" }).pushDelivery, true);
+  assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_EMAIL_ENABLED: "TRUE" }).emailDelivery, true);
+  assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED: "true" }).focusMatching, true);
 });
 
 test("buddy growth routes are unreachable until their capability is enabled", async () => {
