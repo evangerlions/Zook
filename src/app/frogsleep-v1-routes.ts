@@ -104,7 +104,7 @@ function normalizeFrogSleepPath(path: string): string {
 }
 
 function focusBuddyService(context: BackendRouteContext): FrogSleepFocusBuddyService {
-  return new FrogSleepFocusBuddyService(context.database, context.notificationService);
+  return new FrogSleepFocusBuddyService(context.database, context.notificationService, context.contentSafetyService);
 }
 
 function productDataService(context: BackendRouteContext): FrogSleepProductDataService {

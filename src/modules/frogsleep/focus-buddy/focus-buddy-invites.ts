@@ -1,4 +1,5 @@
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
+import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
 import { badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -15,6 +16,7 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 type FocusBuddyDeps = {
   database: ApplicationDatabase;
   notificationService?: NotificationService;
+  kvManager?: KVManager;
 };
 
 function nowIso(): string {
@@ -47,7 +49,9 @@ export async function createFocusInvite(
   focusInviteBaseUrl = "frogsleep://focus-invite",
   bundleId?: string,
 ) {
-  limitBuddyInviteCreation(userId);
+  if (deps.kvManager) {
+    await limitBuddyInviteCreation(deps.kvManager, userId);
+  }
   return await deps.database.withExclusiveSession(async () => {
     const targetUser = await resolveUser(deps.database, target);
     if (!targetUser || targetUser.id === userId) {

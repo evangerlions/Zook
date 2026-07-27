@@ -1,5 +1,7 @@
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
+import { ContentSafetyService } from "../../../services/content-safety.service.ts";
+import type { ContentSafetyCheckCommand } from "../../../services/content-safety-types.ts";
 import { badRequest, forbidden, tooManyRequests } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
@@ -71,7 +73,24 @@ const FOCUS_SESSION_STATUSES = new Set(["completed", "abandoned", "interrupted",
 const MAX_FOCUS_SESSION_MINUTES = 24 * 60;
 
 export class FrogSleepFocusBuddyService {
-  constructor(private readonly database: ApplicationDatabase, private readonly notificationService?: NotificationService) {}
+  constructor(
+    private readonly database: ApplicationDatabase,
+    private readonly notificationService?: NotificationService,
+    private readonly contentSafetyService?: ContentSafetyService,
+  ) {}
+
+  private async assertTextAllowed(userId: string, text: string, taskType: string): Promise<void> {
+    const trimmed = text.trim();
+    if (!trimmed || !this.contentSafetyService) return;
+    const command: ContentSafetyCheckCommand = {
+      appId: FROGSLEEP_APP_ID,
+      userId,
+      taskType,
+      text: trimmed,
+    };
+    // Throws ApplicationError(422, "AI_INPUT_CONTENT_SENSITIVE", ...) on block.
+    await this.contentSafetyService.assertUserInputAllowed(command);
+  }
 
   async reportSession(userId: string, input: Record<string, unknown>) {
     const startedAt = parseIsoTimestamp(input.started_at ?? input.startedAt ?? input.start_time ?? input.startTime ?? nowIso(), "started_at");
@@ -196,6 +215,11 @@ export class FrogSleepFocusBuddyService {
     const displayName = String(input.display_name ?? input.displayName ?? "").trim();
     if (!displayName) {
       badRequest("REQ_INVALID_BODY", "display_name is required.");
+    }
+    await this.assertTextAllowed(userId, displayName, "focus_match_profile.display_name");
+    const bio = String(input.bio ?? "").trim();
+    if (bio) {
+      await this.assertTextAllowed(userId, bio, "focus_match_profile.bio");
     }
     const existing = await this.getProfileRecord(userId);
     const payload = buildFocusMatchProfilePayload(displayName, input);
@@ -351,6 +375,10 @@ export class FrogSleepFocusBuddyService {
   async sendMessage(userId: string, input: Record<string, unknown>) {
     const receiverUserId = String(input.receiver_user_id ?? input.receiverUserId ?? "");
     validateFocusMessagePayload(input);
+    const customText = String(input.custom_text ?? input.customText ?? "").trim();
+    if (customText) {
+      await this.assertTextAllowed(userId, customText, "focus_message.custom_text");
+    }
     const relationship = await this.acceptedRelationshipBetween(userId, receiverUserId);
     if (!relationship) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Accepted focus buddy relationship is required.");

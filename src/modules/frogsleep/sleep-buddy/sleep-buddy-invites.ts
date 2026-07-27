@@ -1,4 +1,5 @@
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
+import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
 import { badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -18,6 +19,7 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 type SleepBuddyDeps = {
   database: ApplicationDatabase;
   notificationService?: NotificationService;
+  kvManager?: KVManager;
 };
 
 function nowIso(): string {
@@ -63,7 +65,9 @@ export async function createSleepInvite(
     bundleId?: string;
   },
 ) {
-  limitBuddyInviteCreation(command.userId);
+  if (deps.kvManager) {
+    await limitBuddyInviteCreation(deps.kvManager, command.userId);
+  }
   return await deps.database.withExclusiveSession(async () => {
     const invitee = command.invitee.trim();
     if (!invitee) {

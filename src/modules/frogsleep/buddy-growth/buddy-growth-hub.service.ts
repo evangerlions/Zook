@@ -1,4 +1,5 @@
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
+import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { badRequest, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityKind, FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
@@ -6,7 +7,7 @@ import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import { assertBuddyDataAuthorized } from "./buddy-protected-access.ts";
 import { isBuddyAuthorizationDenied, redactBuddyArtifact } from "./buddy-artifact-redaction.ts";
 import { buddyInteractionTypes } from "./buddy-growth-contract.ts";
-import { buddyRateLimiter } from "./buddy-rate-limit.ts";
+import { BuddyRateLimiter } from "./buddy-rate-limit.ts";
 import { enqueueBuddyGrowthEvent } from "./buddy-growth-events.ts";
 import { deriveFocusPresence } from "../focus-buddy/focus-buddy-presence.ts";
 import { latestAuthorizedSleepArtifact } from "./buddy-artifact-redaction.ts";
@@ -17,7 +18,10 @@ type PartnerAccumulator = { user_id: string; domains: string[]; relationships: u
 
 /** Coordinates viewer-filtered buddy hub snapshots, shares, reactions, and joint activities. */
 export class BuddyGrowthHubService {
-  constructor(private readonly database: ApplicationDatabase) {}
+  constructor(
+    private readonly database: ApplicationDatabase,
+    private readonly kvManager?: KVManager,
+  ) {}
 
   async snapshot(userId: string) {
     const relationships = await this.relationships(userId);
@@ -83,7 +87,9 @@ export class BuddyGrowthHubService {
     if (!buddyInteractionTypes.includes(type as typeof buddyInteractionTypes[number])) {
       badRequest("REQ_INVALID_BODY", "Unsupported buddy interaction type.");
     }
-    buddyRateLimiter.assert("interaction", userId, 20, 60 * 60_000);
+    if (this.kvManager) {
+      await new BuddyRateLimiter(this.kvManager).assert("interaction", userId, 20, 60 * 60_000);
+    }
     const relationship = await this.authorizedRelationship(userId, String(input.relationship_id ?? ""), "shared_activity");
     const idempotencyKey = requiredIdempotencyKey(input.idempotency_key);
     return await this.database.withExclusiveSession(async () => {

@@ -1,40 +1,33 @@
+import { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { tooManyRequests } from "../../../shared/errors.ts";
 
 type Bucket = { startedAt: number; count: number };
 
+const KV_SCOPE = "frogsleep.buddy-rate-limits";
+
 /**
  * Applies bounded per-actor limits to invitation and protected-access operations.
  *
- * ## Limitations (MVP scaffold — replace before general availability)
- *
- * This implementation stores buckets in an in-process `Map`. That means:
- *
- * - **Buckets reset on every server restart** — a user who trips the limit, then
- *   waits for a deploy or crash-recovery, gets a fresh allowance.
- * - **Buckets are per-process** — if the API runs behind multiple worker
- *   processes (e.g. Node cluster mode), each process tracks its own counters,
- *   multiplying the effective limit by the worker count.
- * - **Buckets are per-deployment** — horizontally-scaled replicas do not share
- *   state, so the limit becomes `limit * replica_count` in the worst case.
- *
- * For production-grade protection, replace the `Map` with a persisted counter
- * store (Redis `INCR … EXPIRE`, Postgres row per bucket, or similar) so state
- * survives restarts and is shared across replicas.
+ * Backed by `KVManager` so state survives restarts and is shared across replicas.
+ * Each bucket is stored as JSON with TTL = `windowMs` so unused buckets auto-expire.
  */
 export class BuddyRateLimiter {
-  private readonly buckets = new Map<string, Bucket>();
+  constructor(
+    private readonly kvManager: KVManager,
+    private readonly now: () => number = () => Date.now(),
+  ) {}
 
-  constructor(private readonly now: () => number = () => Date.now()) {}
-
-  assert(scope: string, actorKey: string, limit: number, windowMs: number): void {
+  async assert(scope: string, actorKey: string, limit: number, windowMs: number): Promise<void> {
+    if (!this.kvManager || typeof this.kvManager.getJson !== "function") return;
     const key = `${scope}:${actorKey}`;
     const now = this.now();
-    const current = this.buckets.get(key);
-    const bucket = !current || now - current.startedAt >= windowMs
+    const current = await this.kvManager.getJson<Bucket>(KV_SCOPE, key);
+    const bucket: Bucket = !current || now - current.startedAt >= windowMs
       ? { startedAt: now, count: 0 }
       : current;
     bucket.count += 1;
-    this.buckets.set(key, bucket);
+    const ttlSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+    await this.kvManager.setJson(KV_SCOPE, key, bucket, ttlSeconds);
     if (bucket.count <= limit) return;
     tooManyRequests("AUTH_RATE_LIMITED", "Buddy request rate limit reached.", {
       retry_after_seconds: Math.max(1, Math.ceil((windowMs - (now - bucket.startedAt)) / 1000)),
@@ -42,20 +35,18 @@ export class BuddyRateLimiter {
   }
 }
 
-export const buddyRateLimiter = new BuddyRateLimiter();
-
-export function limitBuddyInviteCreation(userId: string): void {
-  buddyRateLimiter.assert("invite-create", userId, 30, 60 * 60 * 1000);
+export async function limitBuddyInviteCreation(kvManager: KVManager, userId: string): Promise<void> {
+  await new BuddyRateLimiter(kvManager).assert("invite-create", userId, 30, 60 * 60 * 1000);
 }
 
-export function limitBuddyPreview(userId: string): void {
-  buddyRateLimiter.assert("invite-preview", userId, 60, 60 * 1000);
+export async function limitBuddyPreview(kvManager: KVManager, userId: string): Promise<void> {
+  await new BuddyRateLimiter(kvManager).assert("invite-preview", userId, 60, 60 * 1000);
 }
 
-export function limitBuddyResponse(userId: string): void {
-  buddyRateLimiter.assert("invite-response", userId, 60, 60 * 1000);
+export async function limitBuddyResponse(kvManager: KVManager, userId: string): Promise<void> {
+  await new BuddyRateLimiter(kvManager).assert("invite-response", userId, 60, 60 * 1000);
 }
 
-export function limitBuddyUnauthorizedAccess(userId: string): void {
-  buddyRateLimiter.assert("unauthorized-access", userId, 20, 60 * 1000);
+export async function limitBuddyUnauthorizedAccess(kvManager: KVManager, userId: string): Promise<void> {
+  await new BuddyRateLimiter(kvManager).assert("unauthorized-access", userId, 20, 60 * 1000);
 }

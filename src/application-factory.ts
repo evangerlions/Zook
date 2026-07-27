@@ -60,6 +60,7 @@ import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./ser
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { BuddyNotificationWorkerService } from "./modules/frogsleep/buddy-growth/buddy-notification-worker.service.ts";
+import { createBuddyInvitationEmailWorker } from "./modules/frogsleep/buddy-growth/buddy-invitation-email-worker.factory.ts";
 import { BuddyMilestoneReportService } from "./modules/frogsleep/buddy-growth/buddy-milestone-report.service.ts";
 import { createPushDispatcher } from "./services/push-dispatcher-factory.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
@@ -268,7 +269,7 @@ export async function createApplication(
   );
   const registrationEmailSender =
     options.registrationEmailSender ??
-    (options.serviceName === "api"
+    (options.serviceName === "api" || options.serviceName === "worker"
       ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
       : new NoopRegistrationEmailSender());
   const smsVerificationSender =
@@ -443,12 +444,10 @@ export async function createApplication(
   const pushDispatcher = createPushDispatcher({ database, logger });
   const notificationService = new NotificationService(database, queue, logger, pushDispatcher);
   const buddyNotificationWorkerService = new BuddyNotificationWorkerService(database, notificationService);
+  const buddyInvitationEmailWorkerService = createBuddyInvitationEmailWorker(
+    database, commonEmailConfigService, registrationEmailSender);
   const buddyMilestoneReportService = new BuddyMilestoneReportService(database);
-  const failedEventRetryService = new FailedEventRetryService(
-    database,
-    queue,
-    logger,
-  );
+  const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(
     new Map(
@@ -507,6 +506,7 @@ export async function createApplication(
     rbacGuard,
     validationPipe,
     commonTestAccountService,
+    kvManager,
     frogsleepEnabled,
   );
 
@@ -559,6 +559,7 @@ export async function createApplication(
       clientLogUploadService,
       notificationService,
       buddyNotificationWorkerService,
+      buddyInvitationEmailWorkerService,
       buddyMilestoneReportService,
       failedEventRetryService,
       tencentSesEmailCallbackService,
