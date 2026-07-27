@@ -18,5 +18,6 @@ openspec/
 .omx/
 .omc/
 .zook/
+.worktrees/
 
 .storage/
