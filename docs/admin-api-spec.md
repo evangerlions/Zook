@@ -12,7 +12,7 @@
 
 不面向外部 App 接入方。对外接入请看：
 
-- [README_API.md](/Users/zhoukai/.codex/worktrees/b0da/Zook/README_API.md)
+- [README_API.md](../README_API.md)
 
 ## 2. 路径约定
 
@@ -241,5 +241,5 @@ Admin 查看接口：
 
 ## 4. 关联文档
 
-- [admin-web-design.md](/Users/zhoukai/.codex/worktrees/b0da/Zook/docs/admin-web-design.md)
-- [current-backend-implementation-overview.md](/Users/zhoukai/.codex/worktrees/b0da/Zook/docs/current-backend-implementation-overview.md)
+- [admin-web-design.md](admin-web-design.md)
+- [current-backend-implementation-overview.md](current-backend-implementation-overview.md)

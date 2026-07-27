@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS zook_app_users (
   app_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
   status TEXT NOT NULL,
+  account_region TEXT NOT NULL DEFAULT 'UNKNOWN'
+    CHECK (account_region IN ('CN', 'GLOBAL', 'UNKNOWN')),
   joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -88,6 +88,7 @@ export function buildDefaultSeed(
         appId: "app_a",
         userId: "user_alice",
         status: "ACTIVE",
+        accountRegion: "UNKNOWN",
         joinedAt: "2026-03-01T09:00:00+08:00",
       },
       {
@@ -95,6 +96,7 @@ export function buildDefaultSeed(
         appId: "app_b",
         userId: "user_alice",
         status: "ACTIVE",
+        accountRegion: "UNKNOWN",
         joinedAt: "2026-03-02T09:00:00+08:00",
       },
     ],

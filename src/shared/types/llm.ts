@@ -173,6 +173,7 @@ export interface AdminLlmSmokeTestResponsePayload {
     completionTokens: number;
     totalTokens: number;
     reasoningTokens?: number;
+    estimated?: boolean;
   };
 }
 

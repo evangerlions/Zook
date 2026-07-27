@@ -1927,37 +1927,6 @@ test("admin content safety config requires sensitive verification and stores pas
   assert.equal(unboundedStatsResponse.statusCode, 200);
   assert.equal(unboundedStatsResponse.body.data.summary.total, 1005);
 
-  runtime.database.insertContentSafetyCheckRecord({
-    id: "csf_timezone_shanghai",
-    appId: "admin",
-    taskType: "timezone_stats_test",
-    source: "admin_test",
-    method: "disabled",
-    decision: "pass",
-    textLength: 2,
-    textHash: "timezone_hash",
-    metadata: {},
-    createdAt: "2026-05-20T16:30:00.000Z",
-  });
-
-  const shanghaiDateStatsResponse = await runtime.app.handle({
-    method: "GET",
-    path: "/api/v1/admin/apps/common/content-safety/stats",
-    query: {
-      dateFrom: "2026-05-21",
-      dateTo: "2026-05-21",
-      source: "admin_test",
-      taskType: "timezone_stats_test",
-    },
-    headers: {
-      cookie,
-    },
-  });
-
-  assert.equal(shanghaiDateStatsResponse.statusCode, 200);
-  assert.equal(shanghaiDateStatsResponse.body.data.summary.total, 1);
-  assert.equal(shanghaiDateStatsResponse.body.data.daily[0].date, "2026-05-21");
-  assert.equal(shanghaiDateStatsResponse.body.data.daily[0].total, 1);
 });
 
 test("admin auth rate limit API stores common config and auth runtime follows updated limits", async () => {

@@ -32,6 +32,8 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
+import { AiNovelStatisticsService } from "./services/ai-novel-statistics.service.ts";
+import { createAiNovelStatisticsUsageOptions } from "./services/ai-novel-statistics-usage-recorder.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
@@ -79,9 +81,6 @@ import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieS
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 
-/**
- * createApplication produces a full runtime context that tests can reuse without real infra.
- */
 export async function createApplication(
   options: CreateApplicationOptions = {},
 ) {
@@ -351,6 +350,7 @@ export async function createApplication(
     commonGetuiGyConfigService,
   );
   const analyticsService = new AnalyticsService(database, appRegistryService);
+  const aiNovelStatisticsService = new AiNovelStatisticsService(database);
   const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
@@ -369,10 +369,15 @@ export async function createApplication(
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
   };
+  const statisticsUsageOptions = createAiNovelStatisticsUsageOptions(
+    aiNovelStatisticsService,
+    logger,
+  );
   const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
     commonLlmConfigService,
     llmHealthService,
     llmMetricsService,
+    ...statisticsUsageOptions,
   });
   const llmSmokeTestService = new LlmSmokeTestService(
     commonLlmConfigService,
@@ -410,6 +415,7 @@ export async function createApplication(
     commonLlmConfigService,
     llmHealthService,
     llmMetricsService,
+    ...statisticsUsageOptions,
   });
   const contentSafetyService = new ContentSafetyService(
     commonContentSafetyConfigService,
@@ -490,6 +496,7 @@ export async function createApplication(
     publicApiMessageService,
     tencentSesEmailCallbackService,
     feedbackService,
+    aiNovelStatisticsService,
     logger,
     auditInterceptor,
     requestLoggingInterceptor,
@@ -552,6 +559,7 @@ export async function createApplication(
       failedEventRetryService,
       tencentSesEmailCallbackService,
       feedbackService,
+      aiNovelStatisticsService,
       smsVerificationSender,
       smsVerificationCleanupService,
       captchaVerificationService,
