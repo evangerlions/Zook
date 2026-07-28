@@ -49,9 +49,11 @@ import { findPostgresBodyLogProfile, upsertPostgresBodyLogProfile, type BodyLogP
 import { PostgresBodyLogSocialStore } from "./postgres-bodylog-social.ts";
 import { PostgresBodyLogLeaderboardStore } from "./postgres-bodylog-leaderboard.ts";
 import { PostgresBodyLogInvitationStore } from "./postgres-bodylog-invitations.ts";
+import { PostgresBodyLogChallengeStore } from "./postgres-bodylog-challenges.ts";
 import type { BodyLogBlockRecord, BodyLogFriendRequestRecord, BodyLogFriendshipRecord, BodyLogReportRecord } from "../../../modules/bodylog/bodylog-social.types.ts";
 import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeeklyGoalSnapshot } from "../../../modules/bodylog/bodylog-scoring.types.ts";
 import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from "../../../modules/bodylog/bodylog-invitation.types.ts";
+import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../../../modules/bodylog/bodylog-challenge.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -76,6 +78,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly bodyLogSocial: PostgresBodyLogSocialStore;
   private readonly bodyLogLeaderboard: PostgresBodyLogLeaderboardStore;
   private readonly bodyLogInvitations: PostgresBodyLogInvitationStore;
+  private readonly bodyLogChallenges: PostgresBodyLogChallengeStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -89,6 +92,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogSocial = new PostgresBodyLogSocialStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogLeaderboard = new PostgresBodyLogLeaderboardStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogInvitations = new PostgresBodyLogInvitationStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogChallenges = new PostgresBodyLogChallengeStore(async (sql, values = []) => await this.query(sql, values));
   }
   static async create(
     connectionString: string,
@@ -266,6 +270,12 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.insertAttribution(record); }
   override async updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.updateAttribution(record); }
   override async listBodyLogInvitationAttributions(appId: string): Promise<BodyLogInvitationAttributionRecord[]> { return await this.bodyLogInvitations.listAttributions(appId); }
+  override async insertBodyLogChallenge(record: BodyLogChallengeRecord): Promise<void> { await this.bodyLogChallenges.insertChallenge(record); }
+  override async updateBodyLogChallenge(record: BodyLogChallengeRecord): Promise<void> { await this.bodyLogChallenges.updateChallenge(record); }
+  override async listBodyLogChallenges(appId: string): Promise<BodyLogChallengeRecord[]> { return await this.bodyLogChallenges.listChallenges(appId); }
+  override async insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): Promise<void> { await this.bodyLogChallenges.insertMembers(records); }
+  override async updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): Promise<void> { await this.bodyLogChallenges.updateMember(record); }
+  override async listBodyLogChallengeMembers(appId: string): Promise<BodyLogChallengeMemberRecord[]> { return await this.bodyLogChallenges.listMembers(appId); }
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
     const result = appId
       ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])

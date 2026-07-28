@@ -74,6 +74,10 @@ import type {
   BodyLogInvitationAttributionRecord,
   BodyLogInvitationRecord,
 } from "../modules/bodylog/bodylog-invitation.types.ts";
+import type {
+  BodyLogChallengeMemberRecord,
+  BodyLogChallengeRecord,
+} from "../modules/bodylog/bodylog-challenge.types.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -131,6 +135,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   bodyLogLeaderboardEntries: BodyLogLeaderboardEntryRecord[];
   bodyLogInvitations: BodyLogInvitationRecord[];
   bodyLogInvitationAttributions: BodyLogInvitationAttributionRecord[];
+  bodyLogChallenges: BodyLogChallengeRecord[];
+  bodyLogChallengeMembers: BodyLogChallengeMemberRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -176,6 +182,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogLeaderboardEntries = [];
     this.bodyLogInvitations = [];
     this.bodyLogInvitationAttributions = [];
+    this.bodyLogChallenges = [];
+    this.bodyLogChallengeMembers = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -367,6 +375,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter((item) => item.appId !== appId);
     this.bodyLogInvitations = this.bodyLogInvitations.filter((item) => item.appId !== appId);
     this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter((item) => item.appId !== appId);
+    this.bodyLogChallenges = this.bodyLogChallenges.filter((item) => item.appId !== appId);
+    this.bodyLogChallengeMembers = this.bodyLogChallengeMembers.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -439,6 +449,16 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter(
       (item) => item.appId !== appId ||
         (item.inviterUserId !== userId && item.inviteeUserId !== userId),
+    );
+    const removedChallengeIds = this.bodyLogChallengeMembers.filter(
+      (item) => item.appId === appId && item.userId === userId,
+    ).map((item) => item.challengeId);
+    this.bodyLogChallenges = this.bodyLogChallenges.filter(
+      (item) => item.appId !== appId ||
+        (item.creatorUserId !== userId && !removedChallengeIds.includes(item.id)),
+    );
+    this.bodyLogChallengeMembers = this.bodyLogChallengeMembers.filter(
+      (item) => item.appId !== appId || !removedChallengeIds.includes(item.challengeId),
     );
     this.notificationJobs = this.notificationJobs.filter(
       (item) => item.appId !== appId || item.recipientUserId !== userId,
@@ -650,6 +670,33 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   listBodyLogInvitationAttributions(appId: string) {
     return structuredClone(this.bodyLogInvitationAttributions.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogChallenge(record: BodyLogChallengeRecord): void {
+    this.bodyLogChallenges.push(structuredClone(record));
+  }
+
+  updateBodyLogChallenge(record: BodyLogChallengeRecord): void {
+    const index = this.bodyLogChallenges.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogChallenges[index] = structuredClone(record);
+  }
+
+  listBodyLogChallenges(appId: string) {
+    return structuredClone(this.bodyLogChallenges.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): void {
+    this.bodyLogChallengeMembers.push(...structuredClone(records));
+  }
+
+  updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): void {
+    const index = this.bodyLogChallengeMembers.findIndex((item) =>
+      item.challengeId === record.challengeId && item.userId === record.userId);
+    if (index >= 0) this.bodyLogChallengeMembers[index] = structuredClone(record);
+  }
+
+  listBodyLogChallengeMembers(appId: string) {
+    return structuredClone(this.bodyLogChallengeMembers.filter((item) => item.appId === appId));
   }
 
   listRoles(appId?: string): RoleRecord[] {

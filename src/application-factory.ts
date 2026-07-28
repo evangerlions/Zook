@@ -34,6 +34,7 @@ import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service
 import { BodyLogSocialService } from "./modules/bodylog/bodylog-social.service.ts";
 import { BodyLogLeaderboardService } from "./modules/bodylog/bodylog-leaderboard.service.ts";
 import { BodyLogInvitationService } from "./modules/bodylog/bodylog-invitation.service.ts";
+import { BodyLogChallengeService } from "./modules/bodylog/bodylog-challenge.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
@@ -431,6 +432,7 @@ export async function createApplication(
   const bodyLogSocialService = new BodyLogSocialService(database, bodyLogProfileService);
   const bodyLogLeaderboardService = new BodyLogLeaderboardService(database, bodyLogProfileService);
   const bodyLogInvitationService = new BodyLogInvitationService(database);
+  const bodyLogChallengeService = new BodyLogChallengeService(database, bodyLogProfileService);
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
@@ -494,6 +496,7 @@ export async function createApplication(
     bodyLogSocialService,
     bodyLogLeaderboardService,
     bodyLogInvitationService,
+    bodyLogChallengeService,
     llmSmokeTestService,
     aiNovelAuditFileService,
     aiNovelLlmService,

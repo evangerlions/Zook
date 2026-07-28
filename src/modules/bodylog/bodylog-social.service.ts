@@ -134,6 +134,22 @@ export class BodyLogSocialService {
       createdAt: new Date().toISOString(),
     });
     await this.database.deleteBodyLogFriendship(BODYLOG_APP_ID, userId, target);
+    const challengeMembers = await this.database.listBodyLogChallengeMembers(BODYLOG_APP_ID);
+    const sharedChallengeIds = new Set(
+      challengeMembers.filter((item) => item.userId === userId)
+        .map((item) => item.challengeId)
+        .filter((challengeId) => challengeMembers.some((item) =>
+          item.challengeId === challengeId && item.userId === target)),
+    );
+    const challenges = await this.database.listBodyLogChallenges(BODYLOG_APP_ID);
+    for (const challenge of challenges) {
+      if (sharedChallengeIds.has(challenge.id) &&
+          (challenge.status === "pending" || challenge.status === "active")) {
+        await this.database.updateBodyLogChallenge({
+          ...challenge, status: "cancelled", updatedAt: new Date().toISOString(),
+        });
+      }
+    }
     const requests = await this.database.listBodyLogFriendRequests(BODYLOG_APP_ID);
     for (const request of requests) {
       if (request.status === "pending" &&

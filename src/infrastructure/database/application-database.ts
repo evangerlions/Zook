@@ -54,6 +54,10 @@ import type {
   BodyLogInvitationAttributionRecord,
   BodyLogInvitationRecord,
 } from "../../modules/bodylog/bodylog-invitation.types.ts";
+import type {
+  BodyLogChallengeMemberRecord,
+  BodyLogChallengeRecord,
+} from "../../modules/bodylog/bodylog-challenge.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -130,6 +134,12 @@ export abstract class ApplicationDatabase {
   abstract insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
   abstract updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
   abstract listBodyLogInvitationAttributions(appId: string): MaybePromise<BodyLogInvitationAttributionRecord[]>;
+  abstract insertBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
+  abstract updateBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
+  abstract listBodyLogChallenges(appId: string): MaybePromise<BodyLogChallengeRecord[]>;
+  abstract insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): MaybePromise<void>;
+  abstract updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): MaybePromise<void>;
+  abstract listBodyLogChallengeMembers(appId: string): MaybePromise<BodyLogChallengeMemberRecord[]>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;

@@ -2,6 +2,7 @@ import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.s
 import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.service.ts";
 import type { BodyLogLeaderboardService } from "../modules/bodylog/bodylog-leaderboard.service.ts";
 import type { BodyLogInvitationService } from "../modules/bodylog/bodylog-invitation.service.ts";
+import type { BodyLogChallengeService } from "../modules/bodylog/bodylog-challenge.service.ts";
 import { BODYLOG_APP_ID } from "../modules/bodylog/bodylog-profile.types.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -20,6 +21,7 @@ export async function tryHandleBodyLogV1Routes(
   socialService: BodyLogSocialService,
   leaderboardService: BodyLogLeaderboardService,
   invitationService: BodyLogInvitationService,
+  challengeService: BodyLogChallengeService,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
   if (!request.path.startsWith("/api/v1/bodylog/")) {
@@ -144,6 +146,50 @@ export async function tryHandleBodyLogV1Routes(
       await invitationService.recordProgress(auth.userId, {
         date: body.date, timezone: body.timezone,
       }),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/challenges" && request.method === "POST") {
+    const body = requestBody(request);
+    return context.ok(
+      await challengeService.create(auth.userId, {
+        themeKey: body.themeKey, inviteeUserIds: body.inviteeUserIds,
+        timezone: body.timezone,
+      }),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/challenges" && request.method === "GET") {
+    return context.ok(
+      await challengeService.list(auth.userId),
+      request.requestId as string,
+    );
+  }
+  const challengeMatch = request.path.match(/^\/api\/v1\/bodylog\/challenges\/([^/]+)$/);
+  if (challengeMatch && request.method === "GET") {
+    return context.ok(
+      await challengeService.get(auth.userId, challengeMatch[1] as string),
+      request.requestId as string,
+    );
+  }
+  const challengeResponseMatch = request.path.match(/^\/api\/v1\/bodylog\/challenges\/([^/]+)\/respond$/);
+  if (challengeResponseMatch && request.method === "POST") {
+    return context.ok(
+      await challengeService.respond(
+        auth.userId, challengeResponseMatch[1] as string,
+        requestBody(request).action,
+      ),
+      request.requestId as string,
+    );
+  }
+  const challengeProgressMatch = request.path.match(/^\/api\/v1\/bodylog\/challenges\/([^/]+)\/progress$/);
+  if (challengeProgressMatch && request.method === "POST") {
+    const body = requestBody(request);
+    return context.ok(
+      await challengeService.recordProgress(
+        auth.userId, challengeProgressMatch[1] as string,
+        { date: body.date, completed: body.completed, timezone: body.timezone },
+      ),
       request.requestId as string,
     );
   }
