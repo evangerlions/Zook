@@ -18,6 +18,8 @@ import type {
   FrogSleepDeviceRecord,
   FrogSleepBuddySharingGrantRecord,
   FrogSleepBuddyInvitationBundleRecord,
+  FrogSleepBuddyInvitationEmailAttemptRecord,
+  FrogSleepBuddyInvitationEmailDeliveryRecord,
   FrogSleepBuddyInvitationDomainDecisionRecord,
   FrogSleepBuddyDomainSlotRecord,
   FrogSleepBuddyDomainRelationshipRecord,
@@ -182,7 +184,46 @@ export abstract class ApplicationDatabase {
   abstract findFrogSleepBuddyInvitationBundle(appId: string, bundleId: string): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
   abstract listFrogSleepBuddyInvitationBundles(input: {
     appId: string; userId: string; direction: "incoming" | "outgoing";
+    recipientEmailHash?: string; recipientEmail?: string;
   }): MaybePromise<FrogSleepBuddyInvitationBundleRecord[]>;
+  abstract findFrogSleepBuddyInvitationBundleByCode(
+    appId: string,
+    code: string,
+  ): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
+  abstract findFrogSleepBuddyInvitationBundleByToken(
+    appId: string,
+    token: string,
+  ): MaybePromise<FrogSleepBuddyInvitationBundleRecord | undefined>;
+  abstract enqueueFrogSleepBuddyInvitationEmailDelivery(
+    record: FrogSleepBuddyInvitationEmailDeliveryRecord,
+  ): MaybePromise<FrogSleepBuddyInvitationEmailDeliveryRecord>;
+  abstract findFrogSleepBuddyInvitationEmailDelivery(
+    appId: string,
+    invitationId: string,
+  ): MaybePromise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined>;
+  abstract findFrogSleepBuddyInvitationEmailDeliveryByProviderMessageId(
+    providerMessageId: string,
+  ): MaybePromise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined>;
+  abstract listFrogSleepBuddyInvitationEmailDeliveries(filter?: {
+    invitationId?: string;
+    status?: FrogSleepBuddyInvitationEmailDeliveryRecord["status"];
+    limit?: number;
+  }): MaybePromise<FrogSleepBuddyInvitationEmailDeliveryRecord[]>;
+  abstract claimReadyFrogSleepBuddyInvitationEmailDeliveries(
+    nowIso: string,
+    limit: number,
+  ): MaybePromise<FrogSleepBuddyInvitationEmailDeliveryRecord[]>;
+  abstract updateFrogSleepBuddyInvitationEmailDelivery(
+    id: string,
+    patch: Partial<Omit<FrogSleepBuddyInvitationEmailDeliveryRecord, "id" | "appId" | "invitationId" | "createdAt">>,
+  ): MaybePromise<FrogSleepBuddyInvitationEmailDeliveryRecord | undefined>;
+  abstract insertFrogSleepBuddyInvitationEmailAttempt(
+    record: FrogSleepBuddyInvitationEmailAttemptRecord,
+  ): MaybePromise<FrogSleepBuddyInvitationEmailAttemptRecord>;
+  abstract listFrogSleepBuddyInvitationEmailAttempts(
+    appId: string,
+    deliveryId: string,
+  ): MaybePromise<FrogSleepBuddyInvitationEmailAttemptRecord[]>;
   abstract upsertFrogSleepBuddyInvitationDomainDecision(
     record: FrogSleepBuddyInvitationDomainDecisionRecord,
   ): MaybePromise<FrogSleepBuddyInvitationDomainDecisionRecord>;

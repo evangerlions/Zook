@@ -2184,8 +2184,28 @@ export const BuddyInvitationCreateRequestSchema = {
   "additionalProperties": false,
   "properties": {
     "target": {
-      "type": "string",
-      "minLength": 1
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "maxProperties": 1,
+          "properties": {
+            "email": {
+              "type": "string",
+              "format": "email"
+            },
+            "user_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
     },
     "domains": {
       "type": "array",
@@ -2204,8 +2224,149 @@ export const BuddyInvitationCreateRequestSchema = {
 } as const;
 
 export type BuddyInvitationCreateRequest = {
-  "target": string;
+  "target": string | {
+  "email"?: string;
+  "user_id"?: string;
+};
   "domains": "sleep" | "focus"[];
+};
+
+export const BuddyInvitationTargetSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "minProperties": 1,
+  "maxProperties": 1,
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+} as const;
+
+export type BuddyInvitationTarget = {
+  "email"?: string;
+  "user_id"?: string;
+};
+
+export const BuddyInvitationDeliveryStatusSchema = {
+  "type": "string",
+  "enum": [
+    "queued",
+    "processing",
+    "provider_accepted",
+    "delivered",
+    "bounced",
+    "suppressed",
+    "retryable_failed",
+    "dead_letter"
+  ]
+} as const;
+
+export type BuddyInvitationDeliveryStatus = "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
+
+export const BuddyInvitationDomainResultSchema = {
+  "type": "object",
+  "required": [
+    "domain",
+    "status"
+  ],
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "relationship_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined",
+        "cancelled",
+        "expired"
+      ]
+    },
+    "error_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+} as const;
+
+export type BuddyInvitationDomainResult = {
+  "domain": "sleep" | "focus";
+  "relationship_id"?: string | null;
+  "status": "pending" | "accepted" | "declined" | "cancelled" | "expired";
+  "error_code"?: string | null;
+};
+
+export const BuddyInvitationDeliverySchema = {
+  "type": "object",
+  "required": [
+    "channel",
+    "status",
+    "attempt_count"
+  ],
+  "properties": {
+    "channel": {
+      "type": "string",
+      "enum": [
+        "email"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "processing",
+        "provider_accepted",
+        "delivered",
+        "bounced",
+        "suppressed",
+        "retryable_failed",
+        "dead_letter"
+      ]
+    },
+    "attempt_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "provider_accepted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_error_code": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type BuddyInvitationDelivery = {
+  "channel": "email";
+  "status": "queued" | "processing" | "provider_accepted" | "delivered" | "bounced" | "suppressed" | "retryable_failed" | "dead_letter";
+  "attempt_count": number;
+  "provider_accepted_at"?: string;
+  "delivered_at"?: string;
+  "last_error_code"?: string;
 };
 
 export const BuddyInvitationResponseRequestSchema = {
@@ -3648,7 +3809,11 @@ export const GeneratedPublicContractNames = [
   "AuthSessionData",
   "BuddyInteractionRequest",
   "BuddyInvitationCreateRequest",
+  "BuddyInvitationDelivery",
+  "BuddyInvitationDeliveryStatus",
+  "BuddyInvitationDomainResult",
   "BuddyInvitationResponseRequest",
+  "BuddyInvitationTarget",
   "BuddyJointActivityRequest",
   "BuddyNotificationPreferencesRequest",
   "BuddySharingGrantUpdateRequest",

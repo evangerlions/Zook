@@ -42,6 +42,10 @@ test("unified buddy inbox and outbox project sleep and focus invitations", async
   const focus = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/focus-buddy/invites", headers: auth(alice), body: { target: "user_bob" }, requestId: "focus_create" } as never);
   assert.equal(sleep.statusCode, 200);
   assert.equal(focus.statusCode, 200);
+  assert.equal(sleep.headers?.Deprecation, "true");
+  assert.equal(focus.headers?.Deprecation, "true");
+  assert.equal(app.database.auditLogs.filter((item) =>
+    item.action === "frogsleep_buddy_legacy_invitation_projected").length, 2);
 
   const inbox = await app.app.handle({ method: "GET", path: "/api/v1/frogsleep/buddy/invitations", query: { direction: "incoming" }, headers: auth(bob), requestId: "bob_inbox" } as never);
   assert.equal(inbox.statusCode, 200);
@@ -211,7 +215,7 @@ test("bundled invitation accepts both domain relationships idempotently", async 
   assert.equal(created.statusCode, 200);
   assert.equal(created.body.data.domain, "bundle");
   assert.deepEqual(created.body.data.domains, ["sleep", "focus"]);
-  assert.equal(String(created.body.data.share_link).startsWith("frogsleep://buddy-invitation?mode=preview"), true);
+  assert.equal(String(created.body.data.share_link).startsWith("https://"), true);
   const bundleId = String(created.body.data.invitation_id);
   assert.equal(app.database.frogSleepBuddyNotificationOutbox.filter((item) => item.eventType === "invitation_created").length, 1);
 

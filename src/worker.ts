@@ -19,6 +19,9 @@ async function runTick(): Promise<void> {
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     await runtime.queue.processDueJobs((job) => runtime.services.notificationService.processQueueJob(job));
     const buddyNotifications = await runtime.services.buddyNotificationWorkerService.processBatch();
+    const buddyInvitationEmails = buddyCapabilities.explicitInviteConsent && buddyCapabilities.emailDelivery
+      ? await runtime.services.buddyInvitationEmailWorkerService.processBatch()
+      : { processed: 0, failed: 0 };
     const buddyGrowth = buddyCapabilities.goalsAndReports
       ? await runtime.services.buddyMilestoneReportService.processBatch()
       : { relationships: 0, milestones: 0, reports: 0 };
@@ -33,6 +36,8 @@ async function runTick(): Promise<void> {
       smsCleanupDeleted: smsCleanup.deletedCount,
       buddyNotificationsProcessed: buddyNotifications.processed,
       buddyNotificationsFailed: buddyNotifications.failed,
+      buddyInvitationEmailsProcessed: buddyInvitationEmails.processed,
+      buddyInvitationEmailsFailed: buddyInvitationEmails.failed,
       buddyGrowthRelationships: buddyGrowth.relationships,
       buddyMilestonesGenerated: buddyGrowth.milestones,
       buddyReportsGenerated: buddyGrowth.reports,

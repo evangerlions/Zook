@@ -557,3 +557,11 @@ Admin Web 默认端口当前为 `3110`。
 3. 用 NestJS + Fastify 重构 HTTP 入口。
 4. 补 integration / e2e 测试。
 5. 增加 `compose.yaml`、环境变量模板和部署脚本。
+
+## 8. FrogSleep 统一搭子邀请能力（2026-07）
+
+当前实现已具备 canonical `/api/v1/frogsleep/buddy/invitations` 创建、收发箱、ID/code/token/notification locator 预览、accept/decline/cancel、按领域结果、邮件投递状态和 HTTPS handoff。目标支持 user ID 与未注册邮箱；邮箱注册后通过 verified email 原子认领，不向调用方暴露账号是否存在。
+
+PostgreSQL migration 017 增加 app-scoped code/token 唯一约束、recipient binding、邮件 delivery/attempt outbox，并非破坏性投影仍存活的 sleep/focus 旧邀请。邮件 worker 使用公共腾讯云 SES 配置，支持 provider correlation、指数退避、最多五次、永久配置错误直接死信及 callback 状态回写。Admin 只读诊断接口只返回掩码邮箱和投递元数据。
+
+能力开关依赖 `FROGSLEEP_BUDDY_INBOX_ENABLED`、`FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED` 和 `FROGSLEEP_BUDDY_EMAIL_ENABLED`；handoff base URL 使用 `FROGSLEEP_BUDDY_HANDOFF_BASE_URL` 或 app delivery config。生产可用仍以 migration、API/worker 同版本、SES sender/template/callback、真实邮箱与两账号验收全部通过为前提。

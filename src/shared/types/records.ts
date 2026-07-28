@@ -217,6 +217,12 @@ export interface FrogSleepBuddyInvitationBundleRecord {
   appId: string;
   inviterUserId: string;
   inviteeUserId?: string;
+  recipientEmail?: string;
+  recipientEmailHash?: string;
+  shareCode: string;
+  handoffToken: string;
+  shareLink: string;
+  locale: string;
   status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
   domains: Array<"sleep" | "focus">;
   version: number;
@@ -229,6 +235,52 @@ export interface FrogSleepBuddyInvitationBundleRecord {
   respondedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export type FrogSleepBuddyInvitationEmailDeliveryStatus =
+  | "queued"
+  | "processing"
+  | "provider_accepted"
+  | "delivered"
+  | "bounced"
+  | "suppressed"
+  | "retryable_failed"
+  | "dead_letter";
+
+export interface FrogSleepBuddyInvitationEmailDeliveryRecord {
+  id: string;
+  appId: string;
+  invitationId: string;
+  recipientEmail: string;
+  recipientEmailHash: string;
+  locale: string;
+  status: FrogSleepBuddyInvitationEmailDeliveryStatus;
+  attemptCount: number;
+  availableAt: string;
+  providerRequestId?: string;
+  providerMessageId?: string;
+  lastErrorCode?: string;
+  providerAcceptedAt?: string;
+  deliveredAt?: string;
+  bouncedAt?: string;
+  suppressedAt?: string;
+  deadLetteredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationEmailAttemptRecord {
+  id: string;
+  appId: string;
+  deliveryId: string;
+  invitationId: string;
+  attempt: number;
+  status: "processing" | "provider_accepted" | "retryable_failed" | "permanent_failed";
+  providerRequestId?: string;
+  providerMessageId?: string;
+  errorCode?: string;
+  createdAt: string;
+  completedAt?: string;
 }
 
 export interface FrogSleepBuddyInvitationDomainDecisionRecord {

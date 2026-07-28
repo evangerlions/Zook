@@ -751,3 +751,46 @@ APNs / FCM 返回不可恢复的无效 token 错误时，服务端会仅将当�
 | `503`       | `ONE_CLICK_SERVICE_NOT_CONFIGURED`  | 一键登录服务未配置                   |
 | `502`       | `ONE_CLICK_PROVIDER_REQUEST_FAILED` | 个验服务端校验失败或不可用           |
 | `500`       | `SYS_INTERNAL_ERROR`                | 服务端内部异常                       |
+
+## 11. FrogSleep 统一搭子邀请（canonical）
+
+统一入口覆盖睡眠、专注及组合邀请。所有请求均使用 FrogSleep Bearer Token：
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/v1/frogsleep/buddy/invitations` | 通过邮箱或 FrogSleep user ID 创建邀请 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations?direction=incoming\|outgoing` | 当前账号收件箱/发件箱 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations/preview?code=...` | 按手工码预览 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations/preview?token=...` | 按链接 token 预览 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations/{invitationId}` | 按 ID 预览 |
+| `POST` | `/api/v1/frogsleep/buddy/invitations/{invitationId}/accept` | 显式同意并建立所选领域关系 |
+| `POST` | `/api/v1/frogsleep/buddy/invitations/{invitationId}/decline` | 拒绝 |
+| `POST` | `/api/v1/frogsleep/buddy/invitations/{invitationId}/cancel` | 发起人取消 |
+| `GET` | `/api/v1/frogsleep/buddy/invitations/{invitationId}/delivery` | 发起人查看邮件投递状态 |
+
+创建请求：
+
+```json
+{
+  "target": { "email": "buddy@example.com" },
+  "domains": ["sleep", "focus"]
+}
+```
+
+`target` 也可为 `{"user_id":"..."}` 或兼容字符串。邮箱统一去空格并转小写；响应不会披露该邮箱是否已注册。成功响应的 `data` 包含 `invitation_id`、`domains`、`version`、`share_code`、HTTPS `share_link`、`expires_at`、`domain_results` 和可选 `delivery`。邮件状态为 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed` 或 `dead_letter`；邮件失败不使 code/link 失效。
+
+接受请求必须携带创建/预览响应中的版本和调用方生成的稳定幂等键：
+
+```json
+{
+  "expected_version": 1,
+  "idempotency_key": "client-generated-stable-key",
+  "sharing_categories": ["presence", "daily_summary"]
+}
+```
+
+响应 `results` 按 `sleep`/`focus` 返回 `relationship_id`、`status` 和可选 `error_code`。只有已绑定用户或已验证邮箱与邀请邮箱一致的账号可以预览/接受；未授权和不存在统一使用隐私安全的 `404 REQ_ROUTE_NOT_FOUND`。版本或终态冲突返回 `409 REQ_INVALID_BODY`，限流返回 `429 AUTH_RATE_LIMITED`。
+
+公开 handoff `GET /frogsleep/buddy-invitation?token=...` 返回 `no-store` 的安全页面，尝试打开 `frogsleep://buddy-invitation` 并提供手工码路径，不展示邮箱或用户资料。
+
+以下路径仅为兼容旧客户端的非 canonical 路径，新接入不得使用：`/api/v1/frogsleep/sleep-buddy/invites*`、`/api/v1/frogsleep/focus-buddy/invites*`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。

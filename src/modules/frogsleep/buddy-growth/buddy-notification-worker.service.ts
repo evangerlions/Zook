@@ -69,7 +69,9 @@ export class BuddyNotificationWorkerService {
         appId: FROGSLEEP_APP_ID, notificationId: notification.id, channel: "in_app", status: "delivered",
         attempt: 1, deliveredAt: now, createdAt: now });
     }
-    const pushSuppression = decision.suppressPush ?? (this.pushDeliveryEnabled ? undefined : "CAPABILITY_DISABLED");
+    const pushSuppression = this.pushDeliveryEnabled
+      ? decision.suppressPush
+      : "CAPABILITY_DISABLED";
     if (pushSuppression) {
       await this.database.insertFrogSleepBuddyNotificationDelivery({ id: randomId("buddy_delivery"),
         appId: FROGSLEEP_APP_ID, notificationId: notification.id, channel: "apns", status: "suppressed",

@@ -34,3 +34,19 @@ Run `SELECT * FROM frogsleep_purge_expired_buddy_data(now());` daily and alert o
 ## Incident response
 
 For suspected enumeration, replay, IDOR, notification leakage, or rate-limit evasion: disable the affected capability, preserve opaque audit IDs, revoke active sessions where required, validate bilateral block enforcement, and never copy protected payloads into tickets or logs.
+
+## Invitation email operations
+
+Development and production must separately provision the common Tencent SES sender and template named `frogsleep_buddy_invitation`. Required template variables are `invitationLink`, `invitationCode`, `domains`, `expiresAt`, and `productName`; do not add recipient email, token, inviter notes, or profile data. Configure and authenticate `/api/v1/email/tencent/callback`, then enable `FROGSLEEP_BUDDY_EMAIL_ENABLED` only after API and worker run the same release.
+
+Preflight:
+
+1. Apply migration 017 and confirm delivery/attempt tables and ready/provider indexes.
+2. Confirm sender domain approval, template approval, region, quotas, callback token and clock synchronization.
+3. Run API and worker, create one invitation to a controlled mailbox, and observe `queued → provider_accepted → delivered`.
+4. Run `npm run smoke:frogsleep-buddy-invitation` with `BUDDY_SMOKE_A_EMAIL/PASSWORD` and `BUDDY_SMOKE_B_EMAIL/PASSWORD`; never commit these values.
+5. Query the admin delivery endpoint and verify logs contain no raw email, code, token, template data or provider secret.
+
+Recovery: restart the worker for queued/retryable rows; exponential retries are bounded at five. Fix configuration and explicitly requeue reviewed dead-letter rows through an audited operational procedure—never mutate an accepted/cancelled/expired invitation back to pending. Bounce, complaint and unsubscribe callbacks suppress future delivery while code/link acceptance remains available.
+
+Rollback order: disable `FROGSLEEP_BUDDY_EMAIL_ENABLED`, keep preview/accept/decline/cancel available, stop the worker, and retain outbox/audit evidence. Roll back the whole invitation surface only for relationship-integrity or privacy failures; do not down-migrate tables while any release can still write them.

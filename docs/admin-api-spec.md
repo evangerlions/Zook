@@ -239,6 +239,14 @@ Admin 查看接口：
 | `GET` | `/api/v1/admin/metrics/overview` | 概览指标 |
 | `GET` | `/api/v1/admin/metrics/pages` | 页面指标 |
 
+### 3.13 FrogSleep 搭子邀请投递诊断
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/frogsleep/buddy-invitation-deliveries` | 只读查询统一搭子邀请邮件投递 |
+
+需要 Admin 会话。可选 query：`invitation_id`、`status`、`limit`；`status` 仅接受 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed`、`dead_letter`。响应只包含 `invitation_id`、`recipient_masked`、投递/尝试状态、provider correlation ID、稳定错误码和时间戳，不返回完整邮箱、邀请码、token 或模板参数。每次读取都会写入 admin audit。
+
 ## 4. 关联文档
 
 - [admin-web-design.md](admin-web-design.md)

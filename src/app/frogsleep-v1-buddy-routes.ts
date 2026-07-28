@@ -105,11 +105,15 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
   if (request.method === "GET" && deliveryMatch) {
     const auth = await authenticateFrogSleepRequest(context, request);
     const invitationId = decodeURIComponent(deliveryMatch[1] as string);
-    const bundle = await new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager)
-      .preview(auth.userId, invitationId);
+    const delivery = await new BuddyInvitationBundleService(
+      context.database,
+      context.notificationService,
+      context.contentSafetyService,
+      context.kvManager,
+    ).deliveryForInviter(auth.userId, invitationId);
     return frogSleepOk(context, {
       invitation_id: invitationId,
-      delivery: bundle.delivery,
+      delivery,
     }, request.requestId as string);
   }
   const responseMatch = request.path.match(/^\/v1\/buddy\/invitations\/([^/]+)\/(accept|decline|cancel)$/);

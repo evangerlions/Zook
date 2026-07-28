@@ -14,6 +14,8 @@ export async function getFrogSleepInviteLinks(context: BackendRouteContext) {
     return {
       sleepBuddyBaseUrl: "frogsleep://sleep-buddy-invite",
       focusBuddyBaseUrl: "frogsleep://focus-invite",
+      buddyHandoffBaseUrl: process.env.FROGSLEEP_BUDDY_HANDOFF_BASE_URL
+        ?? "https://app.youwoai.net/frogsleep/buddy-invitation",
     };
   }
   try {
@@ -21,16 +23,22 @@ export async function getFrogSleepInviteLinks(context: BackendRouteContext) {
       inviteLinks?: {
         sleepBuddyBaseUrl?: string;
         focusBuddyBaseUrl?: string;
+        buddyHandoffBaseUrl?: string;
       };
     };
     return {
       sleepBuddyBaseUrl: parsed.inviteLinks?.sleepBuddyBaseUrl || "frogsleep://sleep-buddy-invite",
       focusBuddyBaseUrl: parsed.inviteLinks?.focusBuddyBaseUrl || "frogsleep://focus-invite",
+      buddyHandoffBaseUrl: parsed.inviteLinks?.buddyHandoffBaseUrl
+        || process.env.FROGSLEEP_BUDDY_HANDOFF_BASE_URL
+        || "https://app.youwoai.net/frogsleep/buddy-invitation",
     };
   } catch {
     return {
       sleepBuddyBaseUrl: "frogsleep://sleep-buddy-invite",
       focusBuddyBaseUrl: "frogsleep://focus-invite",
+      buddyHandoffBaseUrl: process.env.FROGSLEEP_BUDDY_HANDOFF_BASE_URL
+        ?? "https://app.youwoai.net/frogsleep/buddy-invitation",
     };
   }
 }

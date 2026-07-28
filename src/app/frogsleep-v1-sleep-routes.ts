@@ -3,6 +3,7 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 import { FROGSLEEP_APP_ID } from "../modules/frogsleep/frogsleep-app.ts";
 import { FrogSleepSleepBuddyService } from "../modules/frogsleep/sleep-buddy/sleep-buddy.service.ts";
 import { emitFrogSleepAnalyticsEvent, type FrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-analytics.ts";
+import { LegacyBuddyInvitationAdapter } from "../modules/frogsleep/buddy-growth/legacy-buddy-invitation-adapter.ts";
 import {
   asBody,
   authenticateFrogSleepRequest,
@@ -16,6 +17,11 @@ import {
 function sleepBuddyService(context: BackendRouteContext): FrogSleepSleepBuddyService {
   return new FrogSleepSleepBuddyService(context.database, context.notificationService);
 }
+
+const legacyInvitationHeaders = {
+  Deprecation: "true",
+  Link: '</api/v1/frogsleep/buddy/invitations>; rel="successor-version"',
+};
 
 export async function handleSleepInviteCreate(
   context: BackendRouteContext,
@@ -31,37 +37,47 @@ export async function handleSleepInviteCreate(
     customLabel: stringField(body, "custom_label", "customLabel"),
     sleepInviteBaseUrl: inviteLinks.sleepBuddyBaseUrl,
   });
+  await new LegacyBuddyInvitationAdapter(context.database).project(
+    "sleep", String(invite.invite_id ?? invite.id), inviteLinks.buddyHandoffBaseUrl,
+    context.resolveRequestLocale(request),
+  );
   emitSleepAnalytics(context, {
     name: "frogsleep_sleep_invite_created",
     appId: FROGSLEEP_APP_ID,
     userId: auth.userId,
     metadata: { invite_id: invite.id },
   });
-  return frogSleepOk(context, invite, request.requestId as string);
+  return frogSleepOk(context, invite, request.requestId as string, legacyInvitationHeaders);
 }
 
 export async function handleSleepInviteAcceptCode(context: BackendRouteContext, request: HttpRequest) {
   const auth = await authenticateFrogSleepRequest(context, request);
   const relationship = await sleepBuddyService(context).acceptInviteByCode(auth.userId, requireStringField(asBody(request), "code"));
+  await new LegacyBuddyInvitationAdapter(context.database).syncTerminal(
+    "sleep", String(relationship.source_invite_id ?? ""), "accepted", auth.userId,
+  );
   emitSleepAnalytics(context, {
     name: "frogsleep_sleep_invite_accepted",
     appId: FROGSLEEP_APP_ID,
     userId: auth.userId,
     metadata: { relationship_id: relationship.relationship_id },
   });
-  return frogSleepOk(context, relationship, request.requestId as string);
+  return frogSleepOk(context, relationship, request.requestId as string, legacyInvitationHeaders);
 }
 
 export async function handleSleepInviteAcceptToken(context: BackendRouteContext, request: HttpRequest) {
   const auth = await authenticateFrogSleepRequest(context, request);
   const relationship = await sleepBuddyService(context).acceptInviteByToken(auth.userId, requireStringField(asBody(request), "token"));
+  await new LegacyBuddyInvitationAdapter(context.database).syncTerminal(
+    "sleep", String(relationship.source_invite_id ?? ""), "accepted", auth.userId,
+  );
   emitSleepAnalytics(context, {
     name: "frogsleep_sleep_invite_accepted",
     appId: FROGSLEEP_APP_ID,
     userId: auth.userId,
     metadata: { relationship_id: relationship.relationship_id },
   });
-  return frogSleepOk(context, relationship, request.requestId as string);
+  return frogSleepOk(context, relationship, request.requestId as string, legacyInvitationHeaders);
 }
 
 export async function handleSleepRelationshipStatus(context: BackendRouteContext, request: HttpRequest) {
@@ -194,9 +210,13 @@ export async function handleSleepPendingInvites(context: BackendRouteContext, re
 export async function handleSleepInviteAction(context: BackendRouteContext, request: HttpRequest, inviteId: string, action: "accept" | "decline" | "cancel") {
   const auth = await authenticateFrogSleepRequest(context, request);
   if (action === "accept") {
-    return frogSleepOk(context, await sleepBuddyService(context).acceptInviteById(auth.userId, inviteId), request.requestId as string);
+    const relationship = await sleepBuddyService(context).acceptInviteById(auth.userId, inviteId);
+    await new LegacyBuddyInvitationAdapter(context.database).syncTerminal("sleep", inviteId, "accepted", auth.userId);
+    return frogSleepOk(context, relationship, request.requestId as string, legacyInvitationHeaders);
   }
-  return frogSleepOk(context, await sleepBuddyService(context).inviteAction(auth.userId, inviteId, action), request.requestId as string);
+  const result = await sleepBuddyService(context).inviteAction(auth.userId, inviteId, action);
+  await new LegacyBuddyInvitationAdapter(context.database).syncTerminal("sleep", inviteId, action, auth.userId);
+  return frogSleepOk(context, result, request.requestId as string, legacyInvitationHeaders);
 }
 
 function emitSleepAnalytics(context: BackendRouteContext, event: FrogSleepAnalyticsEvent): void {

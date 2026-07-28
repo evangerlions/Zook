@@ -129,6 +129,14 @@ export class BuddyInvitationBundleService {
     return await this.preview(userId, bundle.id);
   }
 
+  async deliveryForInviter(userId: string, bundleId: string) {
+    const bundle = await this.database.findFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, bundleId);
+    if (!bundle || bundle.inviterUserId !== userId) {
+      throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Buddy invitation is not available.");
+    }
+    return await this.deliveryPayload(bundle);
+  }
+
   async respond(
     userId: string,
     bundleId: string,
@@ -291,7 +299,9 @@ export class BuddyInvitationBundleService {
       share_link: bundle.inviterUserId === viewerUserId
         ? bundle.shareLink : undefined,
       share_code: bundle.inviterUserId === viewerUserId ? bundle.shareCode : undefined,
-      delivery: await this.deliveryPayload(bundle),
+      delivery: bundle.inviterUserId === viewerUserId
+        ? await this.deliveryPayload(bundle)
+        : undefined,
       domain_results: bundle.domains.map((domain) => ({ domain, relationship_id: null, status: bundle.status,
         error_code: bundle.domainErrorCodes[domain] ?? null })) };
   }
@@ -337,7 +347,9 @@ export class BuddyInvitationBundleService {
 
   private actions(bundle: FrogSleepBuddyInvitationBundleRecord, userId: string) {
     if (bundle.status !== "pending") return ["preview"];
-    return bundle.inviteeUserId === userId ? ["preview", "accept", "decline"] : ["preview", "cancel", "share"];
+    return bundle.inviterUserId === userId
+      ? ["preview", "cancel", "share"]
+      : ["preview", "accept", "decline"];
   }
 
   private async assertActor(bundle: FrogSleepBuddyInvitationBundleRecord, userId: string, action: BundleAction) {
