@@ -45,6 +45,11 @@ import type {
   BodyLogFriendshipRecord,
   BodyLogReportRecord,
 } from "../../modules/bodylog/bodylog-social.types.ts";
+import type {
+  BodyLogDailyAggregate,
+  BodyLogLeaderboardEntryRecord,
+  BodyLogWeeklyGoalSnapshot,
+} from "../../modules/bodylog/bodylog-scoring.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -108,6 +113,13 @@ export abstract class ApplicationDatabase {
   abstract deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
   abstract insertBodyLogReport(record: BodyLogReportRecord): MaybePromise<void>;
   abstract listBodyLogReports(appId: string, reporterUserId: string): MaybePromise<BodyLogReportRecord[]>;
+  abstract findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogWeeklyGoalSnapshot | undefined>;
+  abstract upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot): MaybePromise<BodyLogWeeklyGoalSnapshot>;
+  abstract listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogDailyAggregate[]>;
+  abstract upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate): MaybePromise<BodyLogDailyAggregate>;
+  abstract findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord | undefined>;
+  abstract upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): MaybePromise<BodyLogLeaderboardEntryRecord>;
+  abstract listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord[]>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;

@@ -1,5 +1,6 @@
 import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.service.ts";
 import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.service.ts";
+import type { BodyLogLeaderboardService } from "../modules/bodylog/bodylog-leaderboard.service.ts";
 import { BODYLOG_APP_ID } from "../modules/bodylog/bodylog-profile.types.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -16,6 +17,7 @@ export async function tryHandleBodyLogV1Routes(
   context: BackendRouteContext,
   profileService: BodyLogProfileService,
   socialService: BodyLogSocialService,
+  leaderboardService: BodyLogLeaderboardService,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
   if (!request.path.startsWith("/api/v1/bodylog/")) {
@@ -79,6 +81,37 @@ export async function tryHandleBodyLogV1Routes(
     const body = requestBody(request);
     return context.ok(
       await socialService.report(auth.userId, body.targetUserId, body.reason),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/leaderboards/current/join" && request.method === "POST") {
+    const body = requestBody(request);
+    return context.ok(await leaderboardService.join(auth.userId, {
+      seasonLabel: body.seasonLabel, timezone: body.timezone, habits: body.habits,
+    }), request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/leaderboards/current/aggregate" && request.method === "POST") {
+    const body = requestBody(request);
+    return context.ok(await leaderboardService.submitAggregate(auth.userId, {
+      seasonLabel: body.seasonLabel, date: body.date,
+      completedHabitIds: body.completedHabitIds,
+    }), request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/leaderboards/current/membership" && request.method === "DELETE") {
+    return context.ok(
+      await leaderboardService.leave(auth.userId, requestBody(request).timezone),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/leaderboards/current/public" && request.method === "GET") {
+    return context.ok(
+      await leaderboardService.publicBoard(auth.userId, request.headers["x-time-zone"] ?? "UTC"),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/leaderboards/current/friends" && request.method === "GET") {
+    return context.ok(
+      await leaderboardService.friendBoard(auth.userId, request.headers["x-time-zone"] ?? "UTC"),
       request.requestId as string,
     );
   }

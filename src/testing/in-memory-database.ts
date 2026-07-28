@@ -65,6 +65,11 @@ import type {
   BodyLogFriendshipRecord,
   BodyLogReportRecord,
 } from "../modules/bodylog/bodylog-social.types.ts";
+import type {
+  BodyLogDailyAggregate,
+  BodyLogLeaderboardEntryRecord,
+  BodyLogWeeklyGoalSnapshot,
+} from "../modules/bodylog/bodylog-scoring.types.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -117,6 +122,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
   bodyLogFriendships: BodyLogFriendshipRecord[];
   bodyLogBlocks: BodyLogBlockRecord[];
   bodyLogReports: BodyLogReportRecord[];
+  bodyLogWeeklyGoalSnapshots: BodyLogWeeklyGoalSnapshot[];
+  bodyLogDailyAggregates: BodyLogDailyAggregate[];
+  bodyLogLeaderboardEntries: BodyLogLeaderboardEntryRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -157,6 +165,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogFriendships = [];
     this.bodyLogBlocks = [];
     this.bodyLogReports = [];
+    this.bodyLogWeeklyGoalSnapshots = [];
+    this.bodyLogDailyAggregates = [];
+    this.bodyLogLeaderboardEntries = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -343,6 +354,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogFriendships = this.bodyLogFriendships.filter((item) => item.appId !== appId);
     this.bodyLogBlocks = this.bodyLogBlocks.filter((item) => item.appId !== appId);
     this.bodyLogReports = this.bodyLogReports.filter((item) => item.appId !== appId);
+    this.bodyLogWeeklyGoalSnapshots = this.bodyLogWeeklyGoalSnapshots.filter((item) => item.appId !== appId);
+    this.bodyLogDailyAggregates = this.bodyLogDailyAggregates.filter((item) => item.appId !== appId);
+    this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -399,6 +413,15 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogReports = this.bodyLogReports.filter(
       (item) => item.appId !== appId ||
         (item.reporterUserId !== userId && item.reportedUserId !== userId),
+    );
+    this.bodyLogWeeklyGoalSnapshots = this.bodyLogWeeklyGoalSnapshots.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogDailyAggregates = this.bodyLogDailyAggregates.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
     );
     this.notificationJobs = this.notificationJobs.filter(
       (item) => item.appId !== appId || item.recipientUserId !== userId,
@@ -536,6 +559,53 @@ export class InMemoryDatabase extends ApplicationDatabase {
   listBodyLogReports(appId: string, reporterUserId: string): BodyLogReportRecord[] {
     return structuredClone(this.bodyLogReports.filter((item) =>
       item.appId === appId && item.reporterUserId === reporterUserId));
+  }
+
+  findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogWeeklyGoalSnapshots.find((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot) {
+    const index = this.bodyLogWeeklyGoalSnapshots.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel);
+    if (index >= 0) this.bodyLogWeeklyGoalSnapshots[index] = structuredClone(record);
+    else this.bodyLogWeeklyGoalSnapshots.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogDailyAggregates.filter((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate) {
+    const index = this.bodyLogDailyAggregates.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel && item.date === record.date);
+    if (index >= 0) this.bodyLogDailyAggregates[index] = structuredClone(record);
+    else this.bodyLogDailyAggregates.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogLeaderboardEntries.find((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord) {
+    const index = this.bodyLogLeaderboardEntries.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel);
+    if (index >= 0) this.bodyLogLeaderboardEntries[index] = structuredClone(record);
+    else this.bodyLogLeaderboardEntries.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogLeaderboardEntries(appId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogLeaderboardEntries.filter((item) =>
+      item.appId === appId && item.seasonLabel === seasonLabel));
   }
 
   listRoles(appId?: string): RoleRecord[] {

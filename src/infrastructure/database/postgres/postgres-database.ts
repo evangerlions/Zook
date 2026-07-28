@@ -47,7 +47,9 @@ import { PostgresBuddyDecisionSafetyTransaction } from "./postgres-buddy-decisio
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 import { findPostgresBodyLogProfile, upsertPostgresBodyLogProfile, type BodyLogProfileRecord } from "./postgres-bodylog-profile.ts";
 import { PostgresBodyLogSocialStore } from "./postgres-bodylog-social.ts";
+import { PostgresBodyLogLeaderboardStore } from "./postgres-bodylog-leaderboard.ts";
 import type { BodyLogBlockRecord, BodyLogFriendRequestRecord, BodyLogFriendshipRecord, BodyLogReportRecord } from "../../../modules/bodylog/bodylog-social.types.ts";
+import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeeklyGoalSnapshot } from "../../../modules/bodylog/bodylog-scoring.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -70,6 +72,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private readonly bodyLogSocial: PostgresBodyLogSocialStore;
+  private readonly bodyLogLeaderboard: PostgresBodyLogLeaderboardStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -81,6 +84,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogSocial = new PostgresBodyLogSocialStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogLeaderboard = new PostgresBodyLogLeaderboardStore(async (sql, values = []) => await this.query(sql, values));
   }
   static async create(
     connectionString: string,
@@ -245,6 +249,13 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): Promise<void> { await this.bodyLogSocial.deleteBlock(appId, blockerUserId, blockedUserId); }
   override async insertBodyLogReport(record: BodyLogReportRecord): Promise<void> { await this.bodyLogSocial.insertReport(record); }
   override async listBodyLogReports(appId: string, reporterUserId: string): Promise<BodyLogReportRecord[]> { return await this.bodyLogSocial.listReports(appId, reporterUserId); }
+  override async findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string): Promise<BodyLogWeeklyGoalSnapshot | undefined> { return await this.bodyLogLeaderboard.findSnapshot(appId, userId, seasonLabel); }
+  override async upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot): Promise<BodyLogWeeklyGoalSnapshot> { return await this.bodyLogLeaderboard.upsertSnapshot(record); }
+  override async listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string): Promise<BodyLogDailyAggregate[]> { return await this.bodyLogLeaderboard.listAggregates(appId, userId, seasonLabel); }
+  override async upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate): Promise<BodyLogDailyAggregate> { return await this.bodyLogLeaderboard.upsertAggregate(record); }
+  override async findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord | undefined> { return await this.bodyLogLeaderboard.findEntry(appId, userId, seasonLabel); }
+  override async upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): Promise<BodyLogLeaderboardEntryRecord> { return await this.bodyLogLeaderboard.upsertEntry(record); }
+  override async listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord[]> { return await this.bodyLogLeaderboard.listEntries(appId, seasonLabel); }
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
     const result = appId
       ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])
