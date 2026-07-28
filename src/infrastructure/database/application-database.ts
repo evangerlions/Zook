@@ -39,6 +39,12 @@ import type {
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
+import type {
+  BodyLogBlockRecord,
+  BodyLogFriendRequestRecord,
+  BodyLogFriendshipRecord,
+  BodyLogReportRecord,
+} from "../../modules/bodylog/bodylog-social.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -92,6 +98,16 @@ export abstract class ApplicationDatabase {
   abstract upsertBodyLogProfile(
     record: BodyLogProfileRecord,
   ): MaybePromise<BodyLogProfileRecord>;
+  abstract listBodyLogFriendRequests(appId: string): MaybePromise<BodyLogFriendRequestRecord[]>;
+  abstract upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): MaybePromise<BodyLogFriendRequestRecord>;
+  abstract listBodyLogFriendships(appId: string): MaybePromise<BodyLogFriendshipRecord[]>;
+  abstract insertBodyLogFriendship(record: BodyLogFriendshipRecord): MaybePromise<void>;
+  abstract deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): MaybePromise<void>;
+  abstract listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
+  abstract insertBodyLogBlock(record: BodyLogBlockRecord): MaybePromise<void>;
+  abstract deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
+  abstract insertBodyLogReport(record: BodyLogReportRecord): MaybePromise<void>;
+  abstract listBodyLogReports(appId: string, reporterUserId: string): MaybePromise<BodyLogReportRecord[]>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;

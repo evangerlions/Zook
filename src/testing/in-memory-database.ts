@@ -59,6 +59,12 @@ import {
 } from "../infrastructure/database/application-database.ts";
 import { conflict } from "../shared/errors.ts";
 import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
+import type {
+  BodyLogBlockRecord,
+  BodyLogFriendRequestRecord,
+  BodyLogFriendshipRecord,
+  BodyLogReportRecord,
+} from "../modules/bodylog/bodylog-social.types.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -107,6 +113,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
   frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
   bodyLogProfiles: BodyLogProfileRecord[];
+  bodyLogFriendRequests: BodyLogFriendRequestRecord[];
+  bodyLogFriendships: BodyLogFriendshipRecord[];
+  bodyLogBlocks: BodyLogBlockRecord[];
+  bodyLogReports: BodyLogReportRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -143,6 +153,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotifications = [];
     this.frogSleepBuddyNotificationDeliveries = [];
     this.bodyLogProfiles = [];
+    this.bodyLogFriendRequests = [];
+    this.bodyLogFriendships = [];
+    this.bodyLogBlocks = [];
+    this.bodyLogReports = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -324,6 +338,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationOutbox = this.frogSleepBuddyNotificationOutbox.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotifications = this.frogSleepBuddyNotifications.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter((item) => item.appId !== appId);
+    this.bodyLogProfiles = this.bodyLogProfiles.filter((item) => item.appId !== appId);
+    this.bodyLogFriendRequests = this.bodyLogFriendRequests.filter((item) => item.appId !== appId);
+    this.bodyLogFriendships = this.bodyLogFriendships.filter((item) => item.appId !== appId);
+    this.bodyLogBlocks = this.bodyLogBlocks.filter((item) => item.appId !== appId);
+    this.bodyLogReports = this.bodyLogReports.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -364,6 +383,22 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
     this.bodyLogProfiles = this.bodyLogProfiles.filter(
       (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogFriendRequests = this.bodyLogFriendRequests.filter(
+      (item) => item.appId !== appId ||
+        (item.senderUserId !== userId && item.recipientUserId !== userId),
+    );
+    this.bodyLogFriendships = this.bodyLogFriendships.filter(
+      (item) => item.appId !== appId ||
+        (item.userId !== userId && item.friendUserId !== userId),
+    );
+    this.bodyLogBlocks = this.bodyLogBlocks.filter(
+      (item) => item.appId !== appId ||
+        (item.blockerUserId !== userId && item.blockedUserId !== userId),
+    );
+    this.bodyLogReports = this.bodyLogReports.filter(
+      (item) => item.appId !== appId ||
+        (item.reporterUserId !== userId && item.reportedUserId !== userId),
     );
     this.notificationJobs = this.notificationJobs.filter(
       (item) => item.appId !== appId || item.recipientUserId !== userId,
@@ -446,6 +481,61 @@ export class InMemoryDatabase extends ApplicationDatabase {
       this.bodyLogProfiles.push(structuredClone(record));
     }
     return structuredClone(record);
+  }
+
+  listBodyLogFriendRequests(appId: string): BodyLogFriendRequestRecord[] {
+    return structuredClone(this.bodyLogFriendRequests.filter((item) => item.appId === appId));
+  }
+
+  upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): BodyLogFriendRequestRecord {
+    const index = this.bodyLogFriendRequests.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogFriendRequests[index] = structuredClone(record);
+    else this.bodyLogFriendRequests.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogFriendships(appId: string): BodyLogFriendshipRecord[] {
+    return structuredClone(this.bodyLogFriendships.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogFriendship(record: BodyLogFriendshipRecord): void {
+    const exists = this.bodyLogFriendships.some((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.friendUserId === record.friendUserId);
+    if (!exists) this.bodyLogFriendships.push(structuredClone(record));
+  }
+
+  deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): void {
+    this.bodyLogFriendships = this.bodyLogFriendships.filter((item) =>
+      item.appId !== appId ||
+      !((item.userId === userId && item.friendUserId === friendUserId) ||
+        (item.userId === friendUserId && item.friendUserId === userId)));
+  }
+
+  listBodyLogBlocks(appId: string): BodyLogBlockRecord[] {
+    return structuredClone(this.bodyLogBlocks.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogBlock(record: BodyLogBlockRecord): void {
+    const exists = this.bodyLogBlocks.some((item) =>
+      item.appId === record.appId && item.blockerUserId === record.blockerUserId &&
+      item.blockedUserId === record.blockedUserId);
+    if (!exists) this.bodyLogBlocks.push(structuredClone(record));
+  }
+
+  deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): void {
+    this.bodyLogBlocks = this.bodyLogBlocks.filter((item) =>
+      item.appId !== appId || item.blockerUserId !== blockerUserId ||
+      item.blockedUserId !== blockedUserId);
+  }
+
+  insertBodyLogReport(record: BodyLogReportRecord): void {
+    this.bodyLogReports.push(structuredClone(record));
+  }
+
+  listBodyLogReports(appId: string, reporterUserId: string): BodyLogReportRecord[] {
+    return structuredClone(this.bodyLogReports.filter((item) =>
+      item.appId === appId && item.reporterUserId === reporterUserId));
   }
 
   listRoles(appId?: string): RoleRecord[] {

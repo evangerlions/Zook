@@ -33,6 +33,10 @@ export async function deletePostgresAppUserRuntimeData(
   appId: string,
   userId: string,
 ): Promise<void> {
+  await query("DELETE FROM zook_bodylog_reports WHERE app_id = $1 AND (reporter_user_id = $2 OR reported_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_blocks WHERE app_id = $1 AND (blocker_user_id = $2 OR blocked_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_friendships WHERE app_id = $1 AND (user_id = $2 OR friend_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_friend_requests WHERE app_id = $1 AND (sender_user_id = $2 OR recipient_user_id = $2)", [appId, userId]);
   await query("DELETE FROM zook_bodylog_profiles WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_user_roles WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_notification_jobs WHERE app_id = $1 AND recipient_user_id = $2", [appId, userId]);

@@ -8,6 +8,10 @@ export async function deletePostgresApp(query: QueryFn, appId: string): Promise<
   }
 
   const tables = [
+    "zook_bodylog_reports",
+    "zook_bodylog_blocks",
+    "zook_bodylog_friendships",
+    "zook_bodylog_friend_requests",
     "zook_bodylog_profiles",
     "zook_user_roles",
     "zook_app_users",

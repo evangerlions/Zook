@@ -53,6 +53,7 @@ import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
 import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
 import { tryHandleBodyLogV1Routes } from "./bodylog-v1-routes.ts";
 import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.service.ts";
+import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.service.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -84,6 +85,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly embeddingManager: EmbeddingManager,
     private readonly contentSafetyService: ContentSafetyService,
     private readonly bodyLogProfileService: BodyLogProfileService,
+    private readonly bodyLogSocialService: BodyLogSocialService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelAuditFileService: AiNovelAuditFileService,
     private readonly aiNovelLlmService: AiNovelLlmService,
@@ -215,6 +217,7 @@ export class BackendApplication extends BackendRouteContext {
     const bodyLogResponse = await tryHandleBodyLogV1Routes(
       this,
       this.bodyLogProfileService,
+      this.bodyLogSocialService,
       request,
     );
     if (bodyLogResponse) {

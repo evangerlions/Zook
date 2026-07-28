@@ -1,4 +1,5 @@
 import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.service.ts";
+import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.service.ts";
 import { BODYLOG_APP_ID } from "../modules/bodylog/bodylog-profile.types.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -14,18 +15,19 @@ function requestBody(request: HttpRequest): Record<string, unknown> {
 export async function tryHandleBodyLogV1Routes(
   context: BackendRouteContext,
   profileService: BodyLogProfileService,
+  socialService: BodyLogSocialService,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
-  if (request.path !== BODYLOG_PROFILE_PATH) {
+  if (!request.path.startsWith("/api/v1/bodylog/")) {
     return undefined;
   }
 
   const auth = await context.authenticateProductRequest(request, BODYLOG_APP_ID);
-  if (request.method === "GET") {
+  if (request.path === BODYLOG_PROFILE_PATH && request.method === "GET") {
     const profile = await profileService.getOrCreate(auth.userId);
     return context.ok(profile, request.requestId as string);
   }
-  if (request.method === "PUT") {
+  if (request.path === BODYLOG_PROFILE_PATH && request.method === "PUT") {
     const body = requestBody(request);
     const profile = await profileService.update(
       auth.userId,
@@ -36,6 +38,49 @@ export async function tryHandleBodyLogV1Routes(
       request.requestId,
     );
     return context.ok(profile, request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/friends" && request.method === "GET") {
+    return context.ok(await socialService.listFriends(auth.userId), request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/friend-requests" && request.method === "GET") {
+    return context.ok(await socialService.listRequests(auth.userId), request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/friend-requests" && request.method === "POST") {
+    return context.ok(
+      await socialService.createRequest(auth.userId, requestBody(request).targetUserId),
+      request.requestId as string,
+    );
+  }
+  const responseMatch = request.path.match(/^\/api\/v1\/bodylog\/friend-requests\/([^/]+)\/(accept|reject)$/);
+  if (responseMatch && request.method === "POST") {
+    return context.ok(
+      await socialService.respond(auth.userId, responseMatch[1] as string, responseMatch[2] as "accept" | "reject"),
+      request.requestId as string,
+    );
+  }
+  const friendMatch = request.path.match(/^\/api\/v1\/bodylog\/friends\/([^/]+)$/);
+  if (friendMatch && request.method === "DELETE") {
+    await socialService.removeFriend(auth.userId, friendMatch[1] as string);
+    return context.ok({ removed: true }, request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/blocks" && request.method === "GET") {
+    return context.ok(await socialService.listBlocks(auth.userId), request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/blocks" && request.method === "POST") {
+    await socialService.block(auth.userId, requestBody(request).targetUserId);
+    return context.ok({ blocked: true }, request.requestId as string);
+  }
+  const blockMatch = request.path.match(/^\/api\/v1\/bodylog\/blocks\/([^/]+)$/);
+  if (blockMatch && request.method === "DELETE") {
+    await socialService.unblock(auth.userId, blockMatch[1] as string);
+    return context.ok({ blocked: false }, request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/reports" && request.method === "POST") {
+    const body = requestBody(request);
+    return context.ok(
+      await socialService.report(auth.userId, body.targetUserId, body.reason),
+      request.requestId as string,
+    );
   }
   return undefined;
 }

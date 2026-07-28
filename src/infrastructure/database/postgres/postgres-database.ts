@@ -46,6 +46,8 @@ import { PostgresBuddyCommandTransaction, type FrogSleepBuddyCommandSlotKey } fr
 import { PostgresBuddyDecisionSafetyTransaction } from "./postgres-buddy-decision-safety-transaction.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 import { findPostgresBodyLogProfile, upsertPostgresBodyLogProfile, type BodyLogProfileRecord } from "./postgres-bodylog-profile.ts";
+import { PostgresBodyLogSocialStore } from "./postgres-bodylog-social.ts";
+import type { BodyLogBlockRecord, BodyLogFriendRequestRecord, BodyLogFriendshipRecord, BodyLogReportRecord } from "../../../modules/bodylog/bodylog-social.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -67,6 +69,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyCommandTransaction: PostgresBuddyCommandTransaction<PoolClient>;
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
+  private readonly bodyLogSocial: PostgresBodyLogSocialStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -77,6 +80,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyCommandTransaction = new PostgresBuddyCommandTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogSocial = new PostgresBodyLogSocialStore(async (sql, values = []) => await this.query(sql, values));
   }
   static async create(
     connectionString: string,
@@ -231,6 +235,16 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async findBodyLogProfile(appId: string, userId: string): Promise<BodyLogProfileRecord | undefined> { return await findPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), appId, userId); }
   override async upsertBodyLogProfile(record: BodyLogProfileRecord): Promise<BodyLogProfileRecord> { return await upsertPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), record); }
+  override async listBodyLogFriendRequests(appId: string): Promise<BodyLogFriendRequestRecord[]> { return await this.bodyLogSocial.listFriendRequests(appId); }
+  override async upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): Promise<BodyLogFriendRequestRecord> { return await this.bodyLogSocial.upsertFriendRequest(record); }
+  override async listBodyLogFriendships(appId: string): Promise<BodyLogFriendshipRecord[]> { return await this.bodyLogSocial.listFriendships(appId); }
+  override async insertBodyLogFriendship(record: BodyLogFriendshipRecord): Promise<void> { await this.bodyLogSocial.insertFriendship(record); }
+  override async deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): Promise<void> { await this.bodyLogSocial.deleteFriendship(appId, userId, friendUserId); }
+  override async listBodyLogBlocks(appId: string): Promise<BodyLogBlockRecord[]> { return await this.bodyLogSocial.listBlocks(appId); }
+  override async insertBodyLogBlock(record: BodyLogBlockRecord): Promise<void> { await this.bodyLogSocial.insertBlock(record); }
+  override async deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): Promise<void> { await this.bodyLogSocial.deleteBlock(appId, blockerUserId, blockedUserId); }
+  override async insertBodyLogReport(record: BodyLogReportRecord): Promise<void> { await this.bodyLogSocial.insertReport(record); }
+  override async listBodyLogReports(appId: string, reporterUserId: string): Promise<BodyLogReportRecord[]> { return await this.bodyLogSocial.listReports(appId, reporterUserId); }
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
     const result = appId
       ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])
