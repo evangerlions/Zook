@@ -51,6 +51,8 @@ import { tryHandleFrogSleepV1Routes } from "./frogsleep-v1-routes.ts";
 import { tryHandleLogRoutes } from "./log-routes.ts";
 import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
 import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
+import { tryHandleBodyLogV1Routes } from "./bodylog-v1-routes.ts";
+import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.service.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -81,6 +83,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly contentSafetyService: ContentSafetyService,
+    private readonly bodyLogProfileService: BodyLogProfileService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelAuditFileService: AiNovelAuditFileService,
     private readonly aiNovelLlmService: AiNovelLlmService,
@@ -207,6 +210,15 @@ export class BackendApplication extends BackendRouteContext {
     const publicAuthResponse = await tryHandlePublicAuthRoutes.call(this, request);
     if (publicAuthResponse) {
       return publicAuthResponse;
+    }
+
+    const bodyLogResponse = await tryHandleBodyLogV1Routes(
+      this,
+      this.bodyLogProfileService,
+      request,
+    );
+    if (bodyLogResponse) {
+      return bodyLogResponse;
     }
 
     const tencentSesEmailCallbackResponse = await tryHandleTencentSesEmailCallbackRoutes.call(this, request);

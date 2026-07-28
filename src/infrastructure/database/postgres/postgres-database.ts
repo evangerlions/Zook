@@ -45,6 +45,7 @@ import { PostgresBuddyGrowthRepository } from "./postgres-buddy-growth-repositor
 import { PostgresBuddyCommandTransaction, type FrogSleepBuddyCommandSlotKey } from "./postgres-buddy-command-transaction.ts";
 import { PostgresBuddyDecisionSafetyTransaction } from "./postgres-buddy-decision-safety-transaction.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
+import { findPostgresBodyLogProfile, upsertPostgresBodyLogProfile, type BodyLogProfileRecord } from "./postgres-bodylog-profile.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -67,7 +68,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
-
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
@@ -78,7 +78,6 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
   }
-
   static async create(
     connectionString: string,
     seed: DatabaseSeed = {},
@@ -230,7 +229,8 @@ export class PostgresDatabase extends ApplicationDatabase {
       userId,
     );
   }
-
+  override async findBodyLogProfile(appId: string, userId: string): Promise<BodyLogProfileRecord | undefined> { return await findPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), appId, userId); }
+  override async upsertBodyLogProfile(record: BodyLogProfileRecord): Promise<BodyLogProfileRecord> { return await upsertPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), record); }
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
     const result = appId
       ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])

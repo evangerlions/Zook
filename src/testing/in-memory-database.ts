@@ -58,6 +58,7 @@ import {
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
 import { conflict } from "../shared/errors.ts";
+import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -105,6 +106,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
   frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
+  bodyLogProfiles: BodyLogProfileRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -140,6 +142,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
     this.frogSleepBuddyNotificationDeliveries = [];
+    this.bodyLogProfiles = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -359,6 +362,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.userRoles = this.userRoles.filter(
       (item) => item.appId !== appId || item.userId !== userId,
     );
+    this.bodyLogProfiles = this.bodyLogProfiles.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
     this.notificationJobs = this.notificationJobs.filter(
       (item) => item.appId !== appId || item.recipientUserId !== userId,
     );
@@ -417,6 +423,29 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter(
       (item) => !removedNotificationIds.includes(item.notificationId),
     );
+  }
+
+  findBodyLogProfile(
+    appId: string,
+    userId: string,
+  ): BodyLogProfileRecord | undefined {
+    return structuredClone(
+      this.bodyLogProfiles.find(
+        (item) => item.appId === appId && item.userId === userId,
+      ),
+    );
+  }
+
+  upsertBodyLogProfile(record: BodyLogProfileRecord): BodyLogProfileRecord {
+    const index = this.bodyLogProfiles.findIndex(
+      (item) => item.appId === record.appId && item.userId === record.userId,
+    );
+    if (index >= 0) {
+      this.bodyLogProfiles[index] = structuredClone(record);
+    } else {
+      this.bodyLogProfiles.push(structuredClone(record));
+    }
+    return structuredClone(record);
   }
 
   listRoles(appId?: string): RoleRecord[] {

@@ -38,6 +38,7 @@ import type {
 } from "../../shared/types.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
+import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -83,6 +84,14 @@ export abstract class ApplicationDatabase {
     status: AppUserRecord["status"],
   ): MaybePromise<AppUserRecord | undefined>;
   abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
+
+  abstract findBodyLogProfile(
+    appId: string,
+    userId: string,
+  ): MaybePromise<BodyLogProfileRecord | undefined>;
+  abstract upsertBodyLogProfile(
+    record: BodyLogProfileRecord,
+  ): MaybePromise<BodyLogProfileRecord>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;

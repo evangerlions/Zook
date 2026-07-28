@@ -30,6 +30,7 @@ import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
+import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
@@ -423,6 +424,7 @@ export async function createApplication(
     database,
     logger,
   );
+  const bodyLogProfileService = new BodyLogProfileService(database, contentSafetyService);
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
@@ -464,7 +466,6 @@ export async function createApplication(
   const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
   const httpExceptionFilter = new HttpExceptionFilter(publicApiMessageService);
   const adminBasicAuth = resolveAdminBasicAuth(options);
-
   const app = new BackendApplication(
     database,
     authService,
@@ -483,6 +484,7 @@ export async function createApplication(
     llmManager,
     embeddingManager,
     contentSafetyService,
+    bodyLogProfileService,
     llmSmokeTestService,
     aiNovelAuditFileService,
     aiNovelLlmService,
@@ -509,7 +511,6 @@ export async function createApplication(
     kvManager,
     frogsleepEnabled,
   );
-
   app.analyticsService = analyticsService;
   return {
     app,
@@ -582,7 +583,6 @@ export async function createApplication(
     },
   };
 }
-
 function resolvePublicSmsTestBypass(options: CreateApplicationOptions): boolean {
   if (typeof options.publicSmsTestBypassEnabled === "boolean") {
     return options.publicSmsTestBypassEnabled;

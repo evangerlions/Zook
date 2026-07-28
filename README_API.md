@@ -235,6 +235,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
 | `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
 | `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`                                                                  |
+| `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
+| `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片                                             |
@@ -258,7 +260,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
 说明：
 
-1. 当前仓库已经挂出产品级能力：`ai_novel` AI 接口，以及 FrogSleep `/api/v1/frogsleep/*` 业务接口。其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
+1. 当前仓库已经挂出产品级能力：BodyLog 资料、`ai_novel` AI 接口，以及 FrogSleep `/api/v1/frogsleep/*` 业务接口。其余 `novel`、`pomodoro`、`ppt`、`my-todo` 等完整业务路由仍未接入。
 2. 新增产品时，应按本规范直接落到 `/api/v1/{productKey}/...`。
 3. 扫码登录的对外接入说明见 [docs/public-api-spec.md](docs/public-api-spec.md)。
 4. 邮箱验证码登录接口：
@@ -336,7 +338,43 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 29. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
 30. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点“查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
 
-## 8. FrogSleep API
+## 8. BodyLog API
+
+BodyLog 固定使用 `appId = "bodylog"`。登录和注册复用平台邮箱验证码接口：
+
+```text
+POST /api/v1/auth/login/email-code
+POST /api/v1/auth/login/email
+```
+
+请求体中的 `appId` 必须为 `bodylog`。资料接口必须同时携带 BodyLog Bearer token；如传
+`X-App-Id`，其值也必须为 `bodylog`。
+
+| 方法 | Path | 请求体 | 说明 |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/bodylog/profile` | 无 | 首次读取会创建未完成资料 |
+| `PUT` | `/api/v1/bodylog/profile` | `{ "nickname": "薄荷同行者", "avatarKey": "mint_runner" }` | 完成或更新资料 |
+
+成功响应的 `data`：
+
+```json
+{
+  "userId": "user_123",
+  "nickname": "薄荷同行者",
+  "avatarKey": "mint_runner",
+  "profileCompleted": true,
+  "createdAt": "2026-07-28T00:00:00.000Z",
+  "updatedAt": "2026-07-28T00:00:00.000Z"
+}
+```
+
+昵称去除首尾空白后必须为 2–20 个 Unicode 字符。头像仅支持 `mint_runner`、`blue_drop`、
+`orange_sun`、`purple_moon`。校验失败分别返回 `BODYLOG_NICKNAME_INVALID` 或
+`BODYLOG_AVATAR_INVALID`；内容安全拦截返回 `422 BODYLOG_PROFILE_UNSAFE`。调用
+`POST /api/v1/users/me/delete` 删除 BodyLog app 账号时会删除这份服务端资料，但不会删除共享
+Zook 用户或其他 app 数据。
+
+## 9. FrogSleep API
 
 FrogSleep 是 Zook 的 app-scoped 产品，固定 app id 为：
 
@@ -369,7 +407,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 对象型详情接口会同时返回根对象和嵌套对象。例如 `/api/v1/frogsleep/sleep-buddy/shared-summaries/latest` 同时包含根部 `session_id` 和 `summary.session_id`，并在 `data.summary.session_id` 下保留 Zook envelope 读法。列表接口使用根部容器字段，例如 `invites` / `pending_invites`、`sessions`、`achievements`、`candidates`、`messages`、`moments`、`sleep_reports`；客户端不应假设这些列表接口返回裸数组。业务 payload 避免使用顶层 `data` 字段，以免覆盖 Zook envelope。
 
-### 8.1 FrogSleep Auth / Me / Device
+### 9.1 FrogSleep Auth / Me / Device
 
 | 方法 | Path | 说明 |
 | ---- | ---- | ---- |
@@ -469,7 +507,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 }
 ```
 
-### 8.2 FrogSleep 睡眠搭子
+### 9.2 FrogSleep 睡眠搭子
 
 | 方法 | Path | 说明 |
 | ---- | ---- | ---- |
@@ -527,7 +565,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 共同守护事件 `event_type` 仅支持 `interrupted`、`returned`、`paused_tonight`、`morning_completed`。未知事件、非法 `occurred_at` 或不可见 session 返回 `400/403`，不会写入事件。`morning_completed` 与 `paused_tonight` 会生成基于共同守护事件的 summary/recap。summary 保留 `completed`、`date_anchor`、`started_at`、`ended_at`、`interrupted_count`、`returned_count`、`paused_tonight`、`telemetry_level = "shared_session_events"`，并补充 iOS 可见字段 `artifact_version`、`visible_state`、`started_on_time`、`had_recovery`、`returned_after_recovery`、`completed_morning`、`headline`。recap 保留 `participant_states`、`event_types` 等字段，并补充 `artifact_version`、`combined_result_type`、`my_result_state`、`partner_result_state`、`headline`、`supporting_line`、`recommended_next_step`。这些字段来自共同守护 session 和事件，不是睡眠阶段或医疗级睡眠评分。
 
-### 8.3 FrogSleep 专注搭子
+### 9.3 FrogSleep 专注搭子
 
 | 方法 | Path | 说明 |
 | ---- | ---- | ---- |
@@ -646,7 +684,7 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 
 专注关系 `revoked` 是终态，不能再次 accept/decline/revoke，也不能用于消息、presence、共同专注时刻等搭子互动。搭子消息请求必须包含 `receiver_user_id` 以及 `template_key` 或 `custom_text`，`custom_text` 最大 280 字符；响应保留 snake_case 字段 `sender_user_id`、`receiver_user_id`、`template_key`、`custom_text`、`sent_at`，并提供 `senderUserId`、`receiverUserId`、`templateKey`、`customText`、`context`、`sentAt`、`readAt` camelCase alias。查询消息支持 `receiver_user_id` / `receiverUserId` 和 `since`，后端会先按指定搭子与时间过滤，再分页；非法 `since` 返回 `400 REQ_INVALID_BODY`。presence 需要 `buddy_user_id` / `buddyUserId`，仅接受已建立的专注搭子关系，状态由最近 session、消息和共同专注时刻推导，可能返回 `focusing`、`recently_active`、`idle`、`stale`，并保留 `buddy_user_id`、`status`、`updated_at`，可选返回 `active_session_id`、`goal_tag`、`started_at`、`ends_at`。comparison 支持 `week_start=YYYY-MM-DD` 或 ISO 时间，缺省使用服务端当前 UTC 周；shared moments 支持 `room_id` / `roomId`、`from`、`to`，非法时间或 `from > to` 返回 `400 REQ_INVALID_BODY`。`GET /api/v1/frogsleep/focus-buddy/achievements` 返回的每个成就包含 `id`、`milestone_id`、`type`、`title`、`description`、`earned_at`、`notified`、`unlocked`、`metadata`。
 
-### 8.4 FrogSleep 云端产品数据
+### 9.4 FrogSleep 云端产品数据
 
 这些接口只保存需要跨设备同步、重装恢复或服务端校验的派生数据；实时音频/噪声采集、Screen Time shield、Widget、Watch、Live Activity 运行态仍由本地系统能力负责。
 
@@ -662,7 +700,7 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 
 进度快照 `namespace` 当前支持 `habit_progress`、`companion_state`、`cat_state`、`onboarding`、`report_preferences`。请求必须包含 `schema_version`（或 `version`）和对象型 `state`（或 `data`）；未知 namespace 返回 `400 REQ_INVALID_BODY`。权益查询返回当前 app-scoped entitlement；无记录时返回 `{ state: "unknown", plan: "free", source: "none" }`。FrogSleep logout 只注销 App 登录态，不删除报告、进度、权益记录，也不删除 Zook 全局账号。
 
-### 8.5 FrogSleep 邀请链接与推送
+### 9.5 FrogSleep 邀请链接与推送
 
 FrogSleep 邀请响应会包含 canonical 分享字段和兼容字段 alias。睡眠搭子邀请优先使用 `invite_code`、`invite_token`、`invite_link`、`invitee_email_snapshot`，同时保留 `code`、`token`、`share_link`、`share_title`、`share_subtitle`。链接 base URL 来自 `frogsleep` app 的 `admin.delivery_config.inviteLinks`：
 
