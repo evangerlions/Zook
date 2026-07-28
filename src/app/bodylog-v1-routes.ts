@@ -1,6 +1,7 @@
 import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.service.ts";
 import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.service.ts";
 import type { BodyLogLeaderboardService } from "../modules/bodylog/bodylog-leaderboard.service.ts";
+import type { BodyLogInvitationService } from "../modules/bodylog/bodylog-invitation.service.ts";
 import { BODYLOG_APP_ID } from "../modules/bodylog/bodylog-profile.types.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -18,6 +19,7 @@ export async function tryHandleBodyLogV1Routes(
   profileService: BodyLogProfileService,
   socialService: BodyLogSocialService,
   leaderboardService: BodyLogLeaderboardService,
+  invitationService: BodyLogInvitationService,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
   if (!request.path.startsWith("/api/v1/bodylog/")) {
@@ -112,6 +114,36 @@ export async function tryHandleBodyLogV1Routes(
   if (request.path === "/api/v1/bodylog/leaderboards/current/friends" && request.method === "GET") {
     return context.ok(
       await leaderboardService.friendBoard(auth.userId, request.headers["x-time-zone"] ?? "UTC"),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/invitations" && request.method === "POST") {
+    return context.ok(
+      await invitationService.create(auth.userId, requestBody(request).installId),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/invitations" && request.method === "GET") {
+    return context.ok(
+      await invitationService.list(auth.userId),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/invitations/attribute" && request.method === "POST") {
+    const body = requestBody(request);
+    return context.ok(
+      await invitationService.attribute(auth.userId, {
+        token: body.token, installId: body.installId,
+      }),
+      request.requestId as string,
+    );
+  }
+  if (request.path === "/api/v1/bodylog/invitations/progress" && request.method === "POST") {
+    const body = requestBody(request);
+    return context.ok(
+      await invitationService.recordProgress(auth.userId, {
+        date: body.date, timezone: body.timezone,
+      }),
       request.requestId as string,
     );
   }

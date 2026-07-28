@@ -55,6 +55,7 @@ import { tryHandleBodyLogV1Routes } from "./bodylog-v1-routes.ts";
 import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.service.ts";
 import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.service.ts";
 import type { BodyLogLeaderboardService } from "../modules/bodylog/bodylog-leaderboard.service.ts";
+import type { BodyLogInvitationService } from "../modules/bodylog/bodylog-invitation.service.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -88,6 +89,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly bodyLogProfileService: BodyLogProfileService,
     private readonly bodyLogSocialService: BodyLogSocialService,
     private readonly bodyLogLeaderboardService: BodyLogLeaderboardService,
+    private readonly bodyLogInvitationService: BodyLogInvitationService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelAuditFileService: AiNovelAuditFileService,
     private readonly aiNovelLlmService: AiNovelLlmService,
@@ -221,6 +223,7 @@ export class BackendApplication extends BackendRouteContext {
       this.bodyLogProfileService,
       this.bodyLogSocialService,
       this.bodyLogLeaderboardService,
+      this.bodyLogInvitationService,
       request,
     );
     if (bodyLogResponse) {

@@ -70,6 +70,10 @@ import type {
   BodyLogLeaderboardEntryRecord,
   BodyLogWeeklyGoalSnapshot,
 } from "../modules/bodylog/bodylog-scoring.types.ts";
+import type {
+  BodyLogInvitationAttributionRecord,
+  BodyLogInvitationRecord,
+} from "../modules/bodylog/bodylog-invitation.types.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -125,6 +129,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   bodyLogWeeklyGoalSnapshots: BodyLogWeeklyGoalSnapshot[];
   bodyLogDailyAggregates: BodyLogDailyAggregate[];
   bodyLogLeaderboardEntries: BodyLogLeaderboardEntryRecord[];
+  bodyLogInvitations: BodyLogInvitationRecord[];
+  bodyLogInvitationAttributions: BodyLogInvitationAttributionRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -168,6 +174,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogWeeklyGoalSnapshots = [];
     this.bodyLogDailyAggregates = [];
     this.bodyLogLeaderboardEntries = [];
+    this.bodyLogInvitations = [];
+    this.bodyLogInvitationAttributions = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -357,6 +365,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogWeeklyGoalSnapshots = this.bodyLogWeeklyGoalSnapshots.filter((item) => item.appId !== appId);
     this.bodyLogDailyAggregates = this.bodyLogDailyAggregates.filter((item) => item.appId !== appId);
     this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter((item) => item.appId !== appId);
+    this.bodyLogInvitations = this.bodyLogInvitations.filter((item) => item.appId !== appId);
+    this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -422,6 +432,13 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
     this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter(
       (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogInvitations = this.bodyLogInvitations.filter(
+      (item) => item.appId !== appId || item.inviterUserId !== userId,
+    );
+    this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter(
+      (item) => item.appId !== appId ||
+        (item.inviterUserId !== userId && item.inviteeUserId !== userId),
     );
     this.notificationJobs = this.notificationJobs.filter(
       (item) => item.appId !== appId || item.recipientUserId !== userId,
@@ -606,6 +623,33 @@ export class InMemoryDatabase extends ApplicationDatabase {
   listBodyLogLeaderboardEntries(appId: string, seasonLabel: string) {
     return structuredClone(this.bodyLogLeaderboardEntries.filter((item) =>
       item.appId === appId && item.seasonLabel === seasonLabel));
+  }
+
+  findBodyLogInvitationByTokenHash(appId: string, tokenHash: string) {
+    return structuredClone(this.bodyLogInvitations.find((item) =>
+      item.appId === appId && item.tokenHash === tokenHash));
+  }
+
+  insertBodyLogInvitation(record: BodyLogInvitationRecord): void {
+    this.bodyLogInvitations.push(structuredClone(record));
+  }
+
+  listBodyLogInvitations(appId: string, inviterUserId: string) {
+    return structuredClone(this.bodyLogInvitations.filter((item) =>
+      item.appId === appId && item.inviterUserId === inviterUserId));
+  }
+
+  insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): void {
+    this.bodyLogInvitationAttributions.push(structuredClone(record));
+  }
+
+  updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): void {
+    const index = this.bodyLogInvitationAttributions.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogInvitationAttributions[index] = structuredClone(record);
+  }
+
+  listBodyLogInvitationAttributions(appId: string) {
+    return structuredClone(this.bodyLogInvitationAttributions.filter((item) => item.appId === appId));
   }
 
   listRoles(appId?: string): RoleRecord[] {

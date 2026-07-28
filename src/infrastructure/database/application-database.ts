@@ -50,6 +50,10 @@ import type {
   BodyLogLeaderboardEntryRecord,
   BodyLogWeeklyGoalSnapshot,
 } from "../../modules/bodylog/bodylog-scoring.types.ts";
+import type {
+  BodyLogInvitationAttributionRecord,
+  BodyLogInvitationRecord,
+} from "../../modules/bodylog/bodylog-invitation.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -120,6 +124,12 @@ export abstract class ApplicationDatabase {
   abstract findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord | undefined>;
   abstract upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): MaybePromise<BodyLogLeaderboardEntryRecord>;
   abstract listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord[]>;
+  abstract findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): MaybePromise<BodyLogInvitationRecord | undefined>;
+  abstract insertBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
+  abstract listBodyLogInvitations(appId: string, inviterUserId: string): MaybePromise<BodyLogInvitationRecord[]>;
+  abstract insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
+  abstract updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
+  abstract listBodyLogInvitationAttributions(appId: string): MaybePromise<BodyLogInvitationAttributionRecord[]>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;

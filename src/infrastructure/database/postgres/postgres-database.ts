@@ -48,8 +48,10 @@ import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../../modules
 import { findPostgresBodyLogProfile, upsertPostgresBodyLogProfile, type BodyLogProfileRecord } from "./postgres-bodylog-profile.ts";
 import { PostgresBodyLogSocialStore } from "./postgres-bodylog-social.ts";
 import { PostgresBodyLogLeaderboardStore } from "./postgres-bodylog-leaderboard.ts";
+import { PostgresBodyLogInvitationStore } from "./postgres-bodylog-invitations.ts";
 import type { BodyLogBlockRecord, BodyLogFriendRequestRecord, BodyLogFriendshipRecord, BodyLogReportRecord } from "../../../modules/bodylog/bodylog-social.types.ts";
 import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeeklyGoalSnapshot } from "../../../modules/bodylog/bodylog-scoring.types.ts";
+import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from "../../../modules/bodylog/bodylog-invitation.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -73,6 +75,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private readonly bodyLogSocial: PostgresBodyLogSocialStore;
   private readonly bodyLogLeaderboard: PostgresBodyLogLeaderboardStore;
+  private readonly bodyLogInvitations: PostgresBodyLogInvitationStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -85,6 +88,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogSocial = new PostgresBodyLogSocialStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogLeaderboard = new PostgresBodyLogLeaderboardStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogInvitations = new PostgresBodyLogInvitationStore(async (sql, values = []) => await this.query(sql, values));
   }
   static async create(
     connectionString: string,
@@ -256,6 +260,12 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord | undefined> { return await this.bodyLogLeaderboard.findEntry(appId, userId, seasonLabel); }
   override async upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): Promise<BodyLogLeaderboardEntryRecord> { return await this.bodyLogLeaderboard.upsertEntry(record); }
   override async listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord[]> { return await this.bodyLogLeaderboard.listEntries(appId, seasonLabel); }
+  override async findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByTokenHash(appId, tokenHash); }
+  override async insertBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.insertInvitation(record); }
+  override async listBodyLogInvitations(appId: string, inviterUserId: string): Promise<BodyLogInvitationRecord[]> { return await this.bodyLogInvitations.listInvitations(appId, inviterUserId); }
+  override async insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.insertAttribution(record); }
+  override async updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.updateAttribution(record); }
+  override async listBodyLogInvitationAttributions(appId: string): Promise<BodyLogInvitationAttributionRecord[]> { return await this.bodyLogInvitations.listAttributions(appId); }
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
     const result = appId
       ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])
