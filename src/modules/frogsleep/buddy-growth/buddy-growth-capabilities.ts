@@ -9,6 +9,8 @@ export interface BuddyGrowthCapabilities {
   emailDelivery: boolean;
   /** Stranger-matching for focus buddy (search/dismiss/report). Off by default for v1 launch (invite-only). */
   focusMatching: boolean;
+  /** Group (multi-person) buddy support (2-5 people). Off by default for v1 launch (1-on-1 only). */
+  groupBuddies: boolean;
 }
 
 export function resolveBuddyGrowthCapabilities(env: NodeJS.ProcessEnv = process.env): BuddyGrowthCapabilities {
@@ -22,6 +24,7 @@ export function resolveBuddyGrowthCapabilities(env: NodeJS.ProcessEnv = process.
     pushDelivery: enabled(env.FROGSLEEP_BUDDY_PUSH_ENABLED, inviteOnlyDefaultsEnabled),
     emailDelivery: enabled(env.FROGSLEEP_BUDDY_EMAIL_ENABLED, inviteOnlyDefaultsEnabled),
     focusMatching: enabled(env.FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED),
+    groupBuddies: enabled(env.FROGSLEEP_BUDDY_GROUP_ENABLED),
   };
 }
 

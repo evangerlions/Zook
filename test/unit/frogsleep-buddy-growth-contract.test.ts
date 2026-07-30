@@ -24,7 +24,9 @@ const capabilityFlags = [
   "FROGSLEEP_BUDDY_INTERACTIONS_ENABLED",
   "FROGSLEEP_BUDDY_GOALS_REPORTS_ENABLED",
   "FROGSLEEP_BUDDY_PUSH_ENABLED",
+  "FROGSLEEP_BUDDY_EMAIL_ENABLED",
   "FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED",
+  "FROGSLEEP_BUDDY_GROUP_ENABLED",
 ] as const;
 
 test("buddy growth canonical vocabulary remains stable", () => {
@@ -51,11 +53,13 @@ test("buddy growth capabilities default off and enable independently", () => {
     pushDelivery: false,
     emailDelivery: false,
     focusMatching: false,
+    groupBuddies: false,
   });
   assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_INBOX_ENABLED: "true" }).invitationInbox, true);
   assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_PUSH_ENABLED: "TRUE" }).pushDelivery, true);
   assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_EMAIL_ENABLED: "TRUE" }).emailDelivery, true);
   assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED: "true" }).focusMatching, true);
+  assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_GROUP_ENABLED: "true" }).groupBuddies, true);
 });
 
 test("dev slot defaults to invite-only capabilities and preserves explicit rollback flags", () => {
@@ -68,6 +72,7 @@ test("dev slot defaults to invite-only capabilities and preserves explicit rollb
     pushDelivery: true,
     emailDelivery: true,
     focusMatching: false,
+    groupBuddies: false,
   });
   assert.equal(resolveBuddyGrowthCapabilities({
     DEPLOY_SLOT: "dev",
