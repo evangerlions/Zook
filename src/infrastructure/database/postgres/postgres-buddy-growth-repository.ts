@@ -8,7 +8,8 @@ import type {
 } from "../../../modules/frogsleep/buddy-growth/buddy-growth-repository.ts";
 import type { FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyNotificationDeliveryRecord,
   FrogSleepBuddyNotificationRecord, FrogSleepBuddyInvitationReceiptAttemptRecord,
-  FrogSleepBuddyDomainSlotRecord } from "../../../shared/types.ts";
+  FrogSleepBuddyDomainSlotRecord, FrogSleepBuddyInvitationEmailAttemptRecord,
+  FrogSleepBuddyInvitationEmailDeliveryRecord } from "../../../shared/types.ts";
 import type { FrogSleepBuddyDomainRelationshipRecord } from "../../../shared/types.ts";
 import {
   normalizeFrogSleepBuddyDomainRelationship,
@@ -88,19 +89,23 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
   async upsertBundle(record: BuddyInvitationBundleRecord) {
     const result = await this.pool.query(
       `INSERT INTO zook_frogsleep_buddy_invitation_bundles
-       (id, app_id, inviter_user_id, invitee_user_id, status, domains, version, domain_invitation_ids,
+       (id, app_id, inviter_user_id, invitee_user_id, recipient_email, recipient_email_hash,
+        share_code, handoff_token, share_link, locale, status, domains, version, domain_invitation_ids,
         domain_error_codes, last_idempotency_key, last_response_action, response_payload,
         expires_at, responded_at, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
        ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status, version=EXCLUDED.version,
+        invitee_user_id=EXCLUDED.invitee_user_id, recipient_email=EXCLUDED.recipient_email,
+        recipient_email_hash=EXCLUDED.recipient_email_hash, share_link=EXCLUDED.share_link,
         domain_invitation_ids=EXCLUDED.domain_invitation_ids, domain_error_codes=EXCLUDED.domain_error_codes,
         last_idempotency_key=EXCLUDED.last_idempotency_key, last_response_action=EXCLUDED.last_response_action,
         response_payload=EXCLUDED.response_payload, responded_at=EXCLUDED.responded_at,
         updated_at=EXCLUDED.updated_at RETURNING *`,
-      [record.id, record.appId, record.inviterUserId, record.inviteeUserId, record.status, record.domains,
-        record.version, record.domainInvitationIds, record.domainErrorCodes, record.lastIdempotencyKey,
-        record.lastResponseAction, record.responsePayload, record.expiresAt, record.respondedAt,
-        record.createdAt, record.updatedAt],
+      [record.id, record.appId, record.inviterUserId, record.inviteeUserId, record.recipientEmail,
+        record.recipientEmailHash, record.shareCode, record.handoffToken, record.shareLink, record.locale,
+        record.status, record.domains, record.version, record.domainInvitationIds, record.domainErrorCodes,
+        record.lastIdempotencyKey, record.lastResponseAction, record.responsePayload, record.expiresAt,
+        record.respondedAt, record.createdAt, record.updatedAt],
     );
     return mapBundle(result.rows[0]);
   }
@@ -112,13 +117,166 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
     return result.rows[0] ? mapBundle(result.rows[0]) : undefined;
   }
 
-  async listBundles(input: { appId: string; userId: string; direction: "incoming" | "outgoing" }) {
-    const column = input.direction === "incoming" ? "invitee_user_id" : "inviter_user_id";
+  async listBundles(input: {
+    appId: string; userId: string; direction: "incoming" | "outgoing";
+    recipientEmailHash?: string; recipientEmail?: string;
+  }) {
+    if (input.direction === "incoming") {
+      const result = await this.pool.query(
+        `SELECT * FROM zook_frogsleep_buddy_invitation_bundles
+         WHERE app_id=$1 AND (invitee_user_id=$2
+           OR (invitee_user_id IS NULL AND
+             (recipient_email_hash=$3 OR LOWER(recipient_email)=LOWER($4))))
+         ORDER BY created_at DESC, id DESC`,
+        [input.appId, input.userId, input.recipientEmailHash ?? null, input.recipientEmail ?? null],
+      );
+      return result.rows.map(mapBundle);
+    }
     const result = await this.pool.query(
-      `SELECT * FROM zook_frogsleep_buddy_invitation_bundles WHERE app_id=$1 AND ${column}=$2
+      `SELECT * FROM zook_frogsleep_buddy_invitation_bundles WHERE app_id=$1 AND inviter_user_id=$2
        ORDER BY created_at DESC, id DESC`, [input.appId, input.userId],
     );
     return result.rows.map(mapBundle);
+  }
+
+  async findBundleByCode(appId: string, code: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_bundles
+       WHERE app_id=$1 AND UPPER(share_code)=UPPER($2)`,
+      [appId, code.trim()],
+    );
+    return result.rows[0] ? mapBundle(result.rows[0]) : undefined;
+  }
+
+  async findBundleByToken(appId: string, token: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_bundles WHERE app_id=$1 AND handoff_token=$2`,
+      [appId, token.trim()],
+    );
+    return result.rows[0] ? mapBundle(result.rows[0]) : undefined;
+  }
+
+  async enqueueInvitationEmailDelivery(record: FrogSleepBuddyInvitationEmailDeliveryRecord) {
+    const result = await this.pool.query(
+      `INSERT INTO zook_frogsleep_buddy_invitation_email_deliveries
+       (id,app_id,invitation_id,recipient_email,recipient_email_hash,locale,status,attempt_count,
+        available_at,provider_request_id,provider_message_id,last_error_code,provider_accepted_at,
+        delivered_at,bounced_at,suppressed_at,dead_lettered_at,created_at,updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+       ON CONFLICT (app_id,invitation_id) DO UPDATE SET invitation_id=EXCLUDED.invitation_id
+       RETURNING *`,
+      [record.id, record.appId, record.invitationId, record.recipientEmail, record.recipientEmailHash,
+        record.locale, record.status, record.attemptCount, record.availableAt, record.providerRequestId,
+        record.providerMessageId, record.lastErrorCode, record.providerAcceptedAt, record.deliveredAt,
+        record.bouncedAt, record.suppressedAt, record.deadLetteredAt, record.createdAt, record.updatedAt],
+    );
+    return mapInvitationEmailDelivery(result.rows[0]);
+  }
+  async findInvitationEmailDelivery(appId: string, invitationId: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_email_deliveries
+       WHERE app_id=$1 AND invitation_id=$2`,
+      [appId, invitationId],
+    );
+    return result.rows[0] ? mapInvitationEmailDelivery(result.rows[0]) : undefined;
+  }
+
+  async findInvitationEmailDeliveryByProviderMessageId(providerMessageId: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_email_deliveries
+       WHERE provider_message_id=$1`,
+      [providerMessageId],
+    );
+    return result.rows[0] ? mapInvitationEmailDelivery(result.rows[0]) : undefined;
+  }
+
+  async listInvitationEmailDeliveries(filter: {
+    invitationId?: string;
+    status?: FrogSleepBuddyInvitationEmailDeliveryRecord["status"];
+    limit?: number;
+  } = {}) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_email_deliveries
+       WHERE ($1::text IS NULL OR invitation_id=$1)
+         AND ($2::text IS NULL OR status=$2)
+       ORDER BY created_at DESC,id DESC LIMIT $3`,
+      [filter.invitationId ?? null, filter.status ?? null, Math.max(1, Math.min(filter.limit ?? 100, 500))],
+    );
+    return result.rows.map(mapInvitationEmailDelivery);
+  }
+
+  async claimReadyInvitationEmailDeliveries(nowIso: string, limit: number) {
+    const result = await this.pool.query(
+      `WITH ready AS (
+         SELECT id
+         FROM zook_frogsleep_buddy_invitation_email_deliveries
+         WHERE (status IN ('queued','retryable_failed') AND available_at <= $1)
+            OR (status='processing' AND updated_at <= $1::timestamptz - INTERVAL '15 minutes')
+         ORDER BY created_at,id
+         FOR UPDATE SKIP LOCKED
+         LIMIT $2
+       )
+       UPDATE zook_frogsleep_buddy_invitation_email_deliveries AS delivery
+       SET status='processing',
+           attempt_count=delivery.attempt_count + 1,
+           last_error_code=NULL,
+           updated_at=$1
+       FROM ready
+       WHERE delivery.id=ready.id
+       RETURNING delivery.*`,
+      [nowIso, limit],
+    );
+    return result.rows.map(mapInvitationEmailDelivery);
+  }
+
+  async updateInvitationEmailDelivery(
+    id: string,
+    patch: Partial<FrogSleepBuddyInvitationEmailDeliveryRecord>,
+  ) {
+    const result = await this.pool.query(
+      `UPDATE zook_frogsleep_buddy_invitation_email_deliveries SET
+       recipient_email=COALESCE($2,recipient_email), recipient_email_hash=COALESCE($3,recipient_email_hash),
+       locale=COALESCE($4,locale), status=COALESCE($5,status),
+       attempt_count=COALESCE($6,attempt_count), available_at=COALESCE($7,available_at),
+       provider_request_id=COALESCE($8,provider_request_id),
+       provider_message_id=COALESCE($9,provider_message_id), last_error_code=$10,
+       provider_accepted_at=COALESCE($11,provider_accepted_at),
+       delivered_at=COALESCE($12,delivered_at), bounced_at=COALESCE($13,bounced_at),
+       suppressed_at=COALESCE($14,suppressed_at), dead_lettered_at=COALESCE($15,dead_lettered_at),
+       updated_at=COALESCE($16,updated_at)
+       WHERE id=$1 RETURNING *`,
+      [id, patch.recipientEmail, patch.recipientEmailHash, patch.locale, patch.status, patch.attemptCount,
+        patch.availableAt, patch.providerRequestId, patch.providerMessageId, patch.lastErrorCode ?? null,
+        patch.providerAcceptedAt, patch.deliveredAt, patch.bouncedAt, patch.suppressedAt,
+        patch.deadLetteredAt, patch.updatedAt],
+    );
+    return result.rows[0] ? mapInvitationEmailDelivery(result.rows[0]) : undefined;
+  }
+
+  async insertInvitationEmailAttempt(record: FrogSleepBuddyInvitationEmailAttemptRecord) {
+    const result = await this.pool.query(
+      `INSERT INTO zook_frogsleep_buddy_invitation_email_attempts
+       (id,app_id,delivery_id,invitation_id,attempt,status,provider_request_id,
+        provider_message_id,error_code,created_at,completed_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (delivery_id,attempt) DO UPDATE SET
+         status=EXCLUDED.status,provider_request_id=EXCLUDED.provider_request_id,
+         provider_message_id=EXCLUDED.provider_message_id,error_code=EXCLUDED.error_code,
+         completed_at=EXCLUDED.completed_at RETURNING *`,
+      [record.id, record.appId, record.deliveryId, record.invitationId, record.attempt, record.status,
+        record.providerRequestId, record.providerMessageId, record.errorCode, record.createdAt,
+        record.completedAt],
+    );
+    return mapInvitationEmailAttempt(result.rows[0]);
+  }
+
+  async listInvitationEmailAttempts(appId: string, deliveryId: string) {
+    const result = await this.pool.query(
+      `SELECT * FROM zook_frogsleep_buddy_invitation_email_attempts
+       WHERE app_id=$1 AND delivery_id=$2 ORDER BY attempt`,
+      [appId, deliveryId],
+    );
+    return result.rows.map(mapInvitationEmailAttempt);
   }
 
   async upsertInvitationDomainDecision(record: FrogSleepBuddyInvitationDomainDecisionRecord) {
@@ -430,7 +588,9 @@ const iso = (value: unknown): string | undefined => value ? new Date(value as st
 const mapGrant = (row: any): BuddySharingGrantRecord => ({ id: row.id, appId: row.app_id, relationshipId: row.relationship_id, grantorUserId: row.grantor_user_id, granteeUserId: row.grantee_user_id, domain: row.domain, category: row.category, state: row.state, version: row.version, grantedAt: iso(row.granted_at), revokedAt: iso(row.revoked_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapReceipt = (row: any): BuddyInvitationReceiptRecord => ({ id: row.id, appId: row.app_id, invitationKind: row.invitation_kind, invitationId: row.invitation_id, bundleId: row.bundle_id ?? undefined, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, status: row.status, version: row.version, recipientReadAt: iso(row.recipient_read_at), senderReadAt: iso(row.sender_read_at), expiresAt: iso(row.expires_at)!, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapOutbox = (row: any): BuddyNotificationOutboxRecord => ({ id: row.id, appId: row.app_id, recipientUserId: row.recipient_user_id, eventType: row.event_type, targetType: row.target_type, targetId: row.target_id, deduplicationKey: row.deduplication_key, safeRoute: row.safe_route, status: row.status, attemptCount: row.attempt_count, availableAt: iso(row.available_at)!, processedAt: iso(row.processed_at), lastErrorCode: row.last_error_code ?? undefined, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
-const mapBundle = (row: any): BuddyInvitationBundleRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, status: row.status, domains: row.domains, version: row.version, domainInvitationIds: row.domain_invitation_ids ?? {}, domainErrorCodes: row.domain_error_codes ?? {}, lastIdempotencyKey: row.last_idempotency_key ?? undefined, lastResponseAction: row.last_response_action ?? undefined, responsePayload: row.response_payload ?? undefined, expiresAt: iso(row.expires_at)!, respondedAt: iso(row.responded_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
+const mapBundle = (row: any): BuddyInvitationBundleRecord => ({ id: row.id, appId: row.app_id, inviterUserId: row.inviter_user_id, inviteeUserId: row.invitee_user_id ?? undefined, recipientEmail: row.recipient_email ?? undefined, recipientEmailHash: row.recipient_email_hash ?? undefined, shareCode: row.share_code, handoffToken: row.handoff_token, shareLink: row.share_link, locale: row.locale ?? "zh-CN", status: row.status, domains: row.domains, version: row.version, domainInvitationIds: row.domain_invitation_ids ?? {}, domainErrorCodes: row.domain_error_codes ?? {}, lastIdempotencyKey: row.last_idempotency_key ?? undefined, lastResponseAction: row.last_response_action ?? undefined, responsePayload: row.response_payload ?? undefined, expiresAt: iso(row.expires_at)!, respondedAt: iso(row.responded_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
+const mapInvitationEmailDelivery = (row: any): FrogSleepBuddyInvitationEmailDeliveryRecord => ({ id: row.id, appId: row.app_id, invitationId: row.invitation_id, recipientEmail: row.recipient_email, recipientEmailHash: row.recipient_email_hash, locale: row.locale, status: row.status, attemptCount: row.attempt_count, availableAt: iso(row.available_at)!, providerRequestId: row.provider_request_id ?? undefined, providerMessageId: row.provider_message_id ?? undefined, lastErrorCode: row.last_error_code ?? undefined, providerAcceptedAt: iso(row.provider_accepted_at), deliveredAt: iso(row.delivered_at), bouncedAt: iso(row.bounced_at), suppressedAt: iso(row.suppressed_at), deadLetteredAt: iso(row.dead_lettered_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
+const mapInvitationEmailAttempt = (row: any): FrogSleepBuddyInvitationEmailAttemptRecord => ({ id: row.id, appId: row.app_id, deliveryId: row.delivery_id, invitationId: row.invitation_id, attempt: row.attempt, status: row.status, providerRequestId: row.provider_request_id ?? undefined, providerMessageId: row.provider_message_id ?? undefined, errorCode: row.error_code ?? undefined, createdAt: iso(row.created_at)!, completedAt: iso(row.completed_at) });
 const mapDomainDecision = (row: any): FrogSleepBuddyInvitationDomainDecisionRecord => ({ appId: row.app_id, invitationId: row.invitation_id, domain: row.domain, status: row.status, version: row.version, decidedByUserId: row.decided_by_user_id ?? undefined, decidedAt: iso(row.decided_at), idempotencyKeyHash: row.idempotency_key_hash ?? undefined, terminalReason: row.terminal_reason ?? undefined, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDomainSlot = (row: any): FrogSleepBuddyDomainSlotRecord => ({ appId: row.app_id, userId: row.user_id, domain: row.domain, state: row.state, relationshipId: row.relationship_id ?? undefined, version: row.version, createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });
 const mapDomainRelationship = (row: any): FrogSleepBuddyDomainRelationshipRecord => ({ id: row.id, appId: row.app_id, domain: row.domain, userIdLow: row.user_id_low, userIdHigh: row.user_id_high, status: row.status, pausedByUserIds: row.paused_by_user_ids, version: row.version, revokedAt: iso(row.revoked_at), createdAt: iso(row.created_at)!, updatedAt: iso(row.updated_at)! });

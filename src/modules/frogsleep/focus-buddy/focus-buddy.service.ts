@@ -1,5 +1,7 @@
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
+import { ContentSafetyService } from "../../../services/content-safety.service.ts";
+import type { ContentSafetyCheckCommand } from "../../../services/content-safety-types.ts";
 import { badRequest, forbidden, tooManyRequests } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
@@ -24,19 +26,13 @@ import {
   acceptFocusInviteByCode,
   acceptFocusInviteByToken,
   createFocusInvite,
-  excludedFocusMatchUserIds,
   focusInviteAction,
   pendingFocusInvites,
   previewFocusInvite,
   recordFocusMatchFeedback,
-  refreshFocusInviteRelationships,
   trackFocusInviteOpenByToken,
 } from "./focus-buddy-invites.ts";
-import {
-  buildFocusMatchProfilePayload,
-  buildFocusMatchSearchResult,
-  hasMatchingConsent,
-} from "./focus-match-ranking.ts";
+import { buildFocusMatchProfilePayload } from "./focus-match-ranking.ts";
 import { validateFocusMessagePayload } from "./focus-buddy-message-validation.ts";
 import {
   focusSessionsOverlap,
@@ -57,6 +53,7 @@ import {
   toFocusSessionResponse,
 } from "./focus-buddy-mappers.ts";
 import { buildFocusWeekStats } from "./focus-buddy-stats.ts";
+import { searchFocusMatches } from "./focus-buddy-matching.ts";
 
 const MESSAGE_RATE_LIMIT_MS = 30 * 60 * 1000;
 function nowIso(): string {
@@ -71,7 +68,24 @@ const FOCUS_SESSION_STATUSES = new Set(["completed", "abandoned", "interrupted",
 const MAX_FOCUS_SESSION_MINUTES = 24 * 60;
 
 export class FrogSleepFocusBuddyService {
-  constructor(private readonly database: ApplicationDatabase, private readonly notificationService?: NotificationService) {}
+  constructor(
+    private readonly database: ApplicationDatabase,
+    private readonly notificationService?: NotificationService,
+    private readonly contentSafetyService?: ContentSafetyService,
+  ) {}
+
+  private async assertTextAllowed(userId: string, text: string, taskType: string): Promise<void> {
+    const trimmed = text.trim();
+    if (!trimmed || !this.contentSafetyService) return;
+    const command: ContentSafetyCheckCommand = {
+      appId: FROGSLEEP_APP_ID,
+      userId,
+      taskType,
+      text: trimmed,
+    };
+    // Throws ApplicationError(422, "AI_INPUT_CONTENT_SENSITIVE", ...) on block.
+    await this.contentSafetyService.assertUserInputAllowed(command);
+  }
 
   async reportSession(userId: string, input: Record<string, unknown>) {
     const startedAt = parseIsoTimestamp(input.started_at ?? input.startedAt ?? input.start_time ?? input.startTime ?? nowIso(), "started_at");
@@ -197,6 +211,11 @@ export class FrogSleepFocusBuddyService {
     if (!displayName) {
       badRequest("REQ_INVALID_BODY", "display_name is required.");
     }
+    await this.assertTextAllowed(userId, displayName, "focus_match_profile.display_name");
+    const bio = String(input.bio ?? "").trim();
+    if (bio) {
+      await this.assertTextAllowed(userId, bio, "focus_match_profile.bio");
+    }
     const existing = await this.getProfileRecord(userId);
     const payload = buildFocusMatchProfilePayload(displayName, input);
     if (existing) {
@@ -240,58 +259,7 @@ export class FrogSleepFocusBuddyService {
 
   async searchMatches(userId: string, limit = 20) {
     const myProfile = await this.getProfileRecord(userId);
-    if (!myProfile) {
-      badRequest("REQ_INVALID_BODY", "Match profile is required before searching.");
-    }
-    if (!hasMatchingConsent(myProfile)) {
-      badRequest("REQ_INVALID_BODY", "Matching consent is required before searching.");
-    }
-    const relationships = (await refreshFocusInviteRelationships(
-      this.database,
-      await relationshipsForFocusUser(this.database, userId, ["pending", "accepted"]),
-    )).filter((item) => item.status === "pending" || item.status === "accepted");
-    const pendingOutgoing = relationships.find((item) => item.status === "pending" && item.ownerUserId === userId);
-    if (pendingOutgoing) {
-      return {
-        candidates: [],
-        empty_state: {
-          reason: "pending_invites",
-          title_key: "buddy_match.empty.pending_invites.title",
-          subtitle_key: "buddy_match.empty.pending_invites.subtitle",
-          pending_relationship_id: pendingOutgoing.id,
-          pending_user_id: otherFocusUserId(pendingOutgoing, userId),
-        },
-        pagination: {
-          limit,
-          next_cursor: null,
-          has_more: false,
-        },
-      };
-    }
-    const candidates = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_profile",
-      status: "active",
-      limit: 200,
-    });
-    const excluded = new Set(relationships.map((item) => otherFocusUserId(item, userId)));
-    const feedbackExcluded = await excludedFocusMatchUserIds(
-      this.database,
-      userId,
-      candidates.map((item) => item.ownerUserId).filter(Boolean) as string[],
-    );
-    for (const excludedUserId of feedbackExcluded) {
-      excluded.add(excludedUserId);
-    }
-    const result = buildFocusMatchSearchResult(myProfile, candidates, excluded, limit);
-    return {
-      ...result,
-      pagination: {
-        limit,
-        next_cursor: null,
-        has_more: false,
-      },
-    };
+    return searchFocusMatches(this.database, userId, myProfile, limit);
   }
 
   async invite(userId: string, target: string, focusInviteBaseUrl = "frogsleep://focus-invite", bundleId?: string) {
@@ -351,6 +319,10 @@ export class FrogSleepFocusBuddyService {
   async sendMessage(userId: string, input: Record<string, unknown>) {
     const receiverUserId = String(input.receiver_user_id ?? input.receiverUserId ?? "");
     validateFocusMessagePayload(input);
+    const customText = String(input.custom_text ?? input.customText ?? "").trim();
+    if (customText) {
+      await this.assertTextAllowed(userId, customText, "focus_message.custom_text");
+    }
     const relationship = await this.acceptedRelationshipBetween(userId, receiverUserId);
     if (!relationship) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Accepted focus buddy relationship is required.");

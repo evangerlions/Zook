@@ -7,6 +7,7 @@ const capabilityVariables = [
   "FROGSLEEP_BUDDY_INBOX_ENABLED",
   "FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED",
   "FROGSLEEP_BUDDY_INTERACTIONS_ENABLED",
+  "FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED",
 ] as const;
 
 async function runtime() {
@@ -67,7 +68,10 @@ test("v1 buddy capabilities are authenticated, cacheable, and expose only ordina
     const expiresAt = Date.parse(String(response.body.data.expires_at));
     assert.ok(expiresAt >= requestedAt);
     assert.ok(expiresAt <= respondedAt + (5 * 60 * 1000));
-    assert.deepEqual(response.body.data.commands, { create: true, accept: true, activity: true, share: true });
+    assert.deepEqual(response.body.data.commands, {
+      create: true, accept: true, preview: true, email_delivery: false, activity: true, share: true,
+      focus_matching: false,
+    });
     assert.equal(response.body.data.safety_commands, undefined);
     assert.equal(response.body.data.invitation, undefined);
     assert.equal(response.body.data.relationship, undefined);
@@ -104,7 +108,10 @@ test("v1 buddy capabilities fail closed when ordinary growth flags are disabled"
     } as never);
 
     assert.equal(response.statusCode, 200);
-    assert.deepEqual(response.body.data.commands, { create: false, accept: false, activity: false, share: false });
+    assert.deepEqual(response.body.data.commands, {
+      create: false, accept: false, preview: false, email_delivery: false, activity: false, share: false,
+      focus_matching: false,
+    });
   } finally {
     restore();
   }

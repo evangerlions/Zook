@@ -74,6 +74,21 @@ test("receipt attempt migration stores only recipient-bound opaque facts", async
   assert.doesNotMatch(sql, /\bemail\b|locator|idempotency|token|body/i);
 });
 
+test("canonical invitation migration projects live sleep and focus invites and installs email outbox", async () => {
+  const sql = await readFile(new URL(
+    "../../src/infrastructure/database/postgres/migrations/017_frogsleep_buddy_canonical_invitation_email.sql",
+    import.meta.url,
+  ), "utf8");
+  assert.match(sql, /zook_frogsleep_buddy_invitation_email_deliveries/);
+  assert.match(sql, /zook_frogsleep_buddy_invitation_email_attempts/);
+  assert.match(sql, /FROM zook_frogsleep_sleep_invites/);
+  assert.match(sql, /FROM zook_frogsleep_focus_invites/);
+  assert.match(sql, /'legacy_' \|\| domain \|\| '_' \|\| id/);
+  assert.match(sql, /ON CONFLICT DO NOTHING/);
+  assert.match(sql, /JSONB_BUILD_OBJECT\('bundle_id', bundle.id\)/);
+  assert.match(sql, /zook_frogsleep_buddy_invitation_domain_decisions/);
+});
+
 test("P2 migration stores goals, verified contributions, milestones, and viewer reports", async () => {
   const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/011_frogsleep_buddy_goals_reports.sql", import.meta.url), "utf8");
   for (const table of ["zook_frogsleep_buddy_joint_goals", "zook_frogsleep_buddy_goal_contributions",

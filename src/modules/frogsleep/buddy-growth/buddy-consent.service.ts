@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
+import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { ApplicationError, badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepBuddySharingGrantRecord, FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
@@ -9,7 +10,10 @@ import { limitBuddyUnauthorizedAccess } from "./buddy-rate-limit.ts";
 
 /** Owns directional buddy sharing grants and participant authorization. */
 export class BuddyConsentService {
-  constructor(private readonly database: ApplicationDatabase) {}
+  constructor(
+    private readonly database: ApplicationDatabase,
+    private readonly kvManager?: KVManager,
+  ) {}
 
   async createAcceptanceGrants(input: {
     relationshipId: string; domain: "sleep" | "focus"; inviterUserId: string; inviteeUserId: string;
@@ -62,7 +66,9 @@ export class BuddyConsentService {
     const allowed = grants.some((grant) => grant.grantorUserId === otherUserId && grant.granteeUserId === userId &&
       grant.category === category && grant.state === "granted");
     if (!allowed) {
-      limitBuddyUnauthorizedAccess(userId);
+      if (this.kvManager) {
+        await limitBuddyUnauthorizedAccess(this.kvManager, userId);
+      }
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Buddy data is not shared with this viewer.");
     }
   }

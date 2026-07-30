@@ -7,6 +7,7 @@ import { AuditInterceptor } from "../core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "../core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
+import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import { AdminConsoleService } from "../modules/admin/admin-console.service.ts";
 import { AiNovelAuditFileService } from "../modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "../modules/ai-novel/ai-novel-llm.service.ts";
@@ -103,6 +104,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly rbacGuard: RbacGuard,
     private readonly validationPipe: ValidationPipe,
     private readonly commonTestAccountService: CommonTestAccountService,
+    private readonly kvManager: KVManager,
     private readonly frogsleepEnabled = false,
   ) {
     super(
@@ -121,6 +123,7 @@ export class BackendApplication extends BackendRouteContext {
       appAccessGuard,
       validationPipe,
       commonTestAccountService,
+      kvManager,
     );
   }
 

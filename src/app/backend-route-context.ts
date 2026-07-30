@@ -4,6 +4,7 @@ import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
 import { AuthGuard } from "../core/guards/auth.guard.ts";
 import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
+import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import { AppRegistryService } from "../modules/app-registry/app-registry.service.ts";
 import { AuthService } from "../modules/auth/auth.service.ts";
 import { UserService } from "../modules/user/user.service.ts";
@@ -76,6 +77,7 @@ export class BackendRouteContext {
     protected readonly appAccessGuard: AppAccessGuard,
     protected readonly validationPipe: ValidationPipe,
     protected readonly commonTestAccountService: CommonTestAccountService,
+    protected readonly kvManager: KVManager,
   ) {}
 
   public async authenticate(

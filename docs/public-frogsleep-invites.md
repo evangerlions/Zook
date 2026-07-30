@@ -163,3 +163,29 @@ POST /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/cancel
 2. 接受邀请必须使用 active FrogSleep Bearer token，且当前用户必须仍是 active FrogSleep member；其他 app token 返回 `403 AUTH_APP_SCOPE_MISMATCH`，已删除或封禁的 FrogSleep membership 会被拒绝。
 3. 睡眠搭子邮箱邀请接受时，服务端会校验当前登录用户的已验证邮箱与 `invitee_email_snapshot` 一致；不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`，且不会创建关系。
 4. 服务端所有邀请、关系、session 查询都带 `appId=frogsleep` 作用域。
+
+## 9. 统一搭子邀请闭环（当前推荐）
+
+新版本只使用 `/api/v1/frogsleep/buddy/invitations`。发起方选择 `sleep`、`focus` 或两者并填写邮箱；服务端在一个写入边界内生成邀请、8 位通用码、不可猜 token、HTTPS handoff、站内事件与邮件 outbox。邮箱尚未注册时邀请保持未绑定，之后仅允许验证了同一邮箱的账号认领。
+
+接收方有四种等价入口：
+
+1. 邮件中的 HTTPS link；
+2. `frogsleep://buddy-invitation` 自定义 Scheme；
+3. 搭子中心手工输入 `share_code`；
+4. 站内/APNs 通知携带的邀请 ID。
+
+所有入口都只调用 preview。未登录时 iOS 持久化 locator；登录、注册验证完成或 App 重启后恢复同一个预览，不自动接受。用户查看拟共享类别并明确接受后，服务端原子绑定收件账号，并分别创建 sleep/focus 关系；组合邀请允许每个领域返回独立结果。
+
+邮件投递状态与邀请状态彼此独立：`bounced`、`suppressed`、`retryable_failed`、`dead_letter` 时仍可用 code/link。发起方可调用 `GET /api/v1/frogsleep/buddy/invitations/{id}/delivery` 刷新真实状态。
+
+双账号验收顺序：
+
+1. A 登录并邀请 B 邮箱，选择 sleep + focus；
+2. 验证 A 能看到 code、HTTPS link 和邮件状态；
+3. B 用 code 或 link 预览，错误邮箱账号必须得到隐私安全的不可用响应；
+4. B 明确同意，确认两个 domain result 均为 `accepted`；
+5. A、B 的邀请列表及睡眠/专注当前关系均指向同一对账号；
+6. 重放同一幂等键不得重复创建关系。
+
+旧 sleep/focus invite 路径仅用于兼容已发布客户端；新客户端不得继续生成旧领域邀请。

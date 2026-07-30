@@ -14,6 +14,9 @@ export async function tryHandleAdminEmailSmsRoutes(
   if (request.method === "PUT" && request.path === "/api/v1/admin/apps/common/email-service") return await handleAdminUpdateEmailService.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/email-service/test-send") return await handleAdminSendTestEmail.call(this, request);
   if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/email-service/events") return await handleAdminListEmailDeliveryEvents.call(this, request);
+  if (request.method === "GET" && request.path === "/api/v1/admin/apps/frogsleep/buddy-invitation-deliveries") {
+    return await handleAdminListBuddyInvitationDeliveries.call(this, request);
+  }
   const adminEmailRevisionMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)$/);
   if (request.method === "GET" && adminEmailRevisionMatch) return await handleAdminGetEmailServiceRevision.call(this, request, Number(adminEmailRevisionMatch[1]));
   const adminEmailRestoreMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/email-service\/revisions\/(\d+)\/restore$/);
@@ -25,6 +28,54 @@ export async function tryHandleAdminEmailSmsRoutes(
   const adminSmsServiceRestoreMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/sms-service\/revisions\/(\d+)\/restore$/);
   if (request.method === "POST" && adminSmsServiceRestoreMatch) return await handleAdminRestoreSmsServiceRevision.call(this, request, Number(adminSmsServiceRestoreMatch[1]));
   return undefined;
+}
+
+async function handleAdminListBuddyInvitationDeliveries(
+  this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  const adminUser = this.authenticateAdmin(request);
+  const invitationId = request.query?.invitation_id?.trim() || undefined;
+  const status = request.query?.status?.trim() as
+    | import("../shared/types.ts").FrogSleepBuddyInvitationEmailDeliveryRecord["status"]
+    | undefined;
+  const allowed = new Set([
+    "queued", "processing", "provider_accepted", "delivered", "bounced",
+    "suppressed", "retryable_failed", "dead_letter",
+  ]);
+  if (status && !allowed.has(status)) {
+    throw new ApplicationError(400, "REQ_INVALID_QUERY", "Invalid buddy invitation delivery status.");
+  }
+  const requestedLimit = request.query?.limit === undefined ? 100 : Number(request.query.limit);
+  if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 500) {
+    throw new ApplicationError(400, "REQ_INVALID_QUERY", "Invalid buddy invitation delivery limit.");
+  }
+  const items = await this.database.listFrogSleepBuddyInvitationEmailDeliveries({
+    invitationId,
+    status,
+    limit: requestedLimit,
+  });
+  await this.auditInterceptor.record({
+    appId: "frogsleep",
+    action: "admin.buddy_invitation_delivery.read",
+    resourceType: "buddy_invitation_delivery",
+    resourceId: invitationId ?? status ?? "latest",
+    payload: { adminUser, invitationId, status },
+  });
+  return this.ok({
+    items: items.map((item) => ({
+      invitation_id: item.invitationId,
+      recipient_masked: `${item.recipientEmail.slice(0, 2)}***@${item.recipientEmail.split("@")[1] ?? "***"}`,
+      status: item.status,
+      attempt_count: item.attemptCount,
+      provider_request_id: item.providerRequestId,
+      provider_message_id: item.providerMessageId,
+      last_error_code: item.lastErrorCode,
+      provider_accepted_at: item.providerAcceptedAt,
+      delivered_at: item.deliveredAt,
+      updated_at: item.updatedAt,
+    })),
+  }, request.requestId as string);
 }
 
 export async function handleAdminListEmailDeliveryEvents(this: BackendRouteContext,

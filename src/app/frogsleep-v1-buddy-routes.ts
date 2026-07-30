@@ -10,6 +10,7 @@ import { BuddyGrowthHubService } from "../modules/frogsleep/buddy-growth/buddy-g
 import { BuddyJointGoalService } from "../modules/frogsleep/buddy-growth/buddy-joint-goal.service.ts";
 import { BuddyMilestoneReportService } from "../modules/frogsleep/buddy-growth/buddy-milestone-report.service.ts";
 import { resolveBuddyGrowthCapabilities } from "../modules/frogsleep/buddy-growth/buddy-growth-capabilities.ts";
+import { emitFrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-analytics.ts";
 import {
   BuddyNotificationPreferenceService,
   buddyNotificationPreferencesPayload,
@@ -24,12 +25,21 @@ export async function handleBuddyInvitationCreate(context: BackendRouteContext, 
   const auth = await authenticateFrogSleepRequest(context, request);
   const body = asBody(request);
   const links = await getFrogSleepInviteLinks(context);
-  const invitation = await new BuddyInvitationBundleService(context.database, context.notificationService).create({
+  const targetValue = typeof body.target === "object" && body.target
+    ? requireStringField(body.target as Record<string, unknown>, "email", "user_id", "userId")
+    : requireStringField(body, "target", "invitee", "email", "user_id", "userId");
+  const invitation = await new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager).create({
     inviterUserId: auth.userId,
-    target: requireStringField(body, "target", "invitee", "email", "user_id", "userId"),
+    target: targetValue,
     domains: Array.isArray(body.domains) ? body.domains.map(String) : [],
     sleepInviteBaseUrl: links.sleepBuddyBaseUrl,
     focusInviteBaseUrl: links.focusBuddyBaseUrl,
+    handoffBaseUrl: links.buddyHandoffBaseUrl,
+    locale: context.resolveRequestLocale(request),
+  });
+  void emitFrogSleepAnalyticsEvent({ analyticsService: context.analyticsService }, {
+    name: "frogsleep_buddy_invitation_created", appId: FROGSLEEP_APP_ID, userId: auth.userId,
+    metadata: { invitation_id: invitation.invitation_id, domains: invitation.domains },
   });
   return frogSleepOk(context, invitation, request.requestId as string);
 }
@@ -65,14 +75,47 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
   }
   if (request.method === "GET" && request.path === "/v1/buddy/invitations/preview") {
     const auth = await authenticateFrogSleepRequest(context, request);
-    return frogSleepOk(context, await new BuddyInvitationService(context.database).preview(auth.userId, {
-      invitationId: request.query?.invitation_id ?? request.query?.invitationId,
-      token: request.query?.token, code: request.query?.code,
-      notificationId: request.query?.notification_id ?? request.query?.notificationId,
-    }), request.requestId as string);
+    const bundleService = new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager);
+    const bundle = request.query?.token
+      ? await context.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, request.query.token)
+      : request.query?.code
+        ? await context.database.findFrogSleepBuddyInvitationBundleByCode(FROGSLEEP_APP_ID, request.query.code)
+        : request.query?.invitation_id || request.query?.invitationId
+          ? await context.database.findFrogSleepBuddyInvitationBundle(
+            FROGSLEEP_APP_ID,
+            request.query.invitation_id ?? request.query.invitationId ?? "",
+          )
+          : undefined;
+    const data = bundle
+      ? request.query?.invitation_id || request.query?.invitationId
+        ? await bundleService.preview(auth.userId, bundle.id)
+        : await bundleService.previewByLocator(auth.userId, {
+          token: request.query?.token, code: request.query?.code,
+        })
+      : await new BuddyInvitationService(context.database, context.kvManager).preview(auth.userId, {
+        invitationId: request.query?.invitation_id ?? request.query?.invitationId,
+        token: request.query?.token, code: request.query?.code,
+        notificationId: request.query?.notification_id ?? request.query?.notificationId,
+      });
+    return frogSleepOk(context, data, request.requestId as string);
   }
   const previewMatch = request.path.match(/^\/v1\/buddy\/invitations\/([^/]+)$/);
   if (request.method === "GET" && previewMatch) return await previewInvitation(context, request, previewMatch[1] as string);
+  const deliveryMatch = request.path.match(/^\/v1\/buddy\/invitations\/([^/]+)\/delivery$/);
+  if (request.method === "GET" && deliveryMatch) {
+    const auth = await authenticateFrogSleepRequest(context, request);
+    const invitationId = decodeURIComponent(deliveryMatch[1] as string);
+    const delivery = await new BuddyInvitationBundleService(
+      context.database,
+      context.notificationService,
+      context.contentSafetyService,
+      context.kvManager,
+    ).deliveryForInviter(auth.userId, invitationId);
+    return frogSleepOk(context, {
+      invitation_id: invitationId,
+      delivery,
+    }, request.requestId as string);
+  }
   const responseMatch = request.path.match(/^\/v1\/buddy\/invitations\/([^/]+)\/(accept|decline|cancel)$/);
   if (request.method === "POST" && responseMatch) {
     const action = responseMatch[2] as "accept" | "decline" | "cancel";
@@ -82,7 +125,7 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
   const grantsMatch = request.path.match(/^\/v1\/buddy\/relationships\/([^/]+)\/grants$/);
   if (capabilities.explicitInviteConsent && request.method === "GET" && grantsMatch) {
     const auth = await authenticateFrogSleepRequest(context, request);
-    return frogSleepOk(context, await new BuddyConsentService(context.database).list(auth.userId,
+    return frogSleepOk(context, await new BuddyConsentService(context.database, context.kvManager).list(auth.userId,
       decodeURIComponent(grantsMatch[1] as string)), request.requestId as string);
   }
   const grantMatch = request.path.match(/^\/v1\/buddy\/relationships\/([^/]+)\/grants\/([^/]+)$/);
@@ -124,7 +167,7 @@ async function tryHandleBuddyHubRoutes(
     || (isGoalReportRoute && !capabilities.goalsAndReports)) return undefined;
   if (!isGrowthHubRoute && !isInteractionRoute && !isGoalReportRoute) return undefined;
   const auth = await authenticateFrogSleepRequest(context, request);
-  const service = new BuddyGrowthHubService(context.database);
+  const service = new BuddyGrowthHubService(context.database, context.kvManager);
   const goalService = new BuddyJointGoalService(context.database);
   const reportService = new BuddyMilestoneReportService(context.database);
   if (request.method === "GET" && request.path === "/v1/buddy/hub") {
@@ -214,9 +257,15 @@ async function listInvitations(context: BackendRouteContext, request: HttpReques
   const auth = await authenticateFrogSleepRequest(context, request);
   const direction = request.query?.direction === "outgoing" ? "outgoing" : "incoming";
   const limit = parsePaginationParams(request.query).limit;
-  const page = await new BuddyInvitationService(context.database).list(auth.userId, direction, limit, request.query?.cursor);
-  const bundles = await new BuddyInvitationBundleService(context.database, context.notificationService).list(auth.userId, direction);
-  const invitations = [...page.invitations, ...bundles]
+  const page = await new BuddyInvitationService(context.database, context.kvManager).list(auth.userId, direction, limit, request.query?.cursor);
+  const bundles = await new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager).list(auth.userId, direction);
+  const projectedChildIds = new Set(bundles.flatMap((bundle) =>
+    Object.values(bundle.domain_invitation_ids ?? {}).map(String)));
+  const invitations = [
+    ...page.invitations.filter((invitation) =>
+      !projectedChildIds.has(String(invitation.raw_invite_id ?? invitation.invitation_id))),
+    ...bundles,
+  ]
     .sort((left, right) => String(right.created_at).localeCompare(String(left.created_at)))
     .filter((item) => !request.query?.cursor || `${String(item.created_at)}|${String(item.invitation_id)}` < request.query.cursor)
     .slice(0, limit);
@@ -230,8 +279,12 @@ async function previewInvitation(context: BackendRouteContext, request: HttpRequ
   const invitationId = decodeURIComponent(rawId);
   const bundle = await context.database.findFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, invitationId);
   const data = bundle
-    ? await new BuddyInvitationBundleService(context.database, context.notificationService).preview(auth.userId, invitationId)
-    : await new BuddyInvitationService(context.database).previewById(auth.userId, invitationId);
+    ? await new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager).preview(auth.userId, invitationId)
+    : await new BuddyInvitationService(context.database, context.kvManager).previewById(auth.userId, invitationId);
+  void emitFrogSleepAnalyticsEvent({ analyticsService: context.analyticsService }, {
+    name: "frogsleep_buddy_invitation_previewed", appId: FROGSLEEP_APP_ID, userId: auth.userId,
+    metadata: { invitation_id: invitationId },
+  });
   return frogSleepOk(context, data, request.requestId as string);
 }
 
@@ -251,15 +304,24 @@ async function respondInvitation(
     sharingCategories: Array.isArray(body.sharing_categories) ? body.sharing_categories.map(String) : undefined };
   const bundle = await context.database.findFrogSleepBuddyInvitationBundle(FROGSLEEP_APP_ID, invitationId);
   const data = bundle
-    ? await new BuddyInvitationBundleService(context.database, context.notificationService).respond(auth.userId, invitationId, action, input)
-    : await new BuddyInvitationService(context.database).respond(auth.userId, invitationId, action, input);
+    ? await new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager).respond(auth.userId, invitationId, action, input)
+    : await new BuddyInvitationService(context.database, context.kvManager).respond(auth.userId, invitationId, action, input);
+  if (action === "accept" || action === "decline") {
+    void emitFrogSleepAnalyticsEvent({ analyticsService: context.analyticsService }, {
+      name: action === "accept"
+        ? "frogsleep_buddy_invitation_accepted"
+        : "frogsleep_buddy_invitation_declined",
+      appId: FROGSLEEP_APP_ID, userId: auth.userId,
+      metadata: { invitation_id: invitationId },
+    });
+  }
   return frogSleepOk(context, data, request.requestId as string);
 }
 
 async function updateGrant(context: BackendRouteContext, request: HttpRequest, match: RegExpMatchArray) {
   const auth = await authenticateFrogSleepRequest(context, request);
   const body = asBody(request);
-  const data = await new BuddyConsentService(context.database).update(auth.userId,
+  const data = await new BuddyConsentService(context.database, context.kvManager).update(auth.userId,
     decodeURIComponent(match[1] as string), decodeURIComponent(match[2] as string),
     Number(body.expected_version ?? body.expectedVersion), String(body.state ?? ""));
   return frogSleepOk(context, data, request.requestId as string);

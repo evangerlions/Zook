@@ -1,5 +1,6 @@
 import { ApplicationError, badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
+import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import type { FrogSleepEntityRecord, UserRecord } from "../../../shared/types.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import { acceptSleepInviteById, sleepInviteAction } from "../sleep-buddy/sleep-buddy-invites.ts";
@@ -26,7 +27,10 @@ interface InvitationView {
 
 /** Unified read model over existing sleep and focus invitation sources. */
 export class BuddyInvitationService {
-  constructor(private readonly database: ApplicationDatabase) {}
+  constructor(
+    private readonly database: ApplicationDatabase,
+    private readonly kvManager?: KVManager,
+  ) {}
 
   async list(userId: string, direction: BuddyInvitationDirection, limit = 50, cursor?: string) {
     const records = await this.invitesFor(userId, direction);
@@ -60,7 +64,9 @@ export class BuddyInvitationService {
   }
 
   async preview(userId: string, locator: { invitationId?: string; token?: string; code?: string; notificationId?: string }) {
-    limitBuddyPreview(userId);
+    if (this.kvManager) {
+      await limitBuddyPreview(this.kvManager, userId);
+    }
     const invite = await this.resolveLocator(userId, locator);
     if (!invite || !this.canView(invite, userId)) {
       throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Buddy invitation is not available.");
@@ -74,7 +80,9 @@ export class BuddyInvitationService {
     action: "accept" | "decline" | "cancel",
     input: { expectedVersion: number; idempotencyKey: string; sharingCategories?: string[]; suppressOutbox?: boolean },
   ) {
-    limitBuddyResponse(userId);
+    if (this.kvManager) {
+      await limitBuddyResponse(this.kvManager, userId);
+    }
     return this.database.withExclusiveSession(async () => {
       const invite = await this.findInvite(invitationId);
       if (!invite || !this.canView(invite, userId)) throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Buddy invitation is not available.");
