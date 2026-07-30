@@ -26,19 +26,13 @@ import {
   acceptFocusInviteByCode,
   acceptFocusInviteByToken,
   createFocusInvite,
-  excludedFocusMatchUserIds,
   focusInviteAction,
   pendingFocusInvites,
   previewFocusInvite,
   recordFocusMatchFeedback,
-  refreshFocusInviteRelationships,
   trackFocusInviteOpenByToken,
 } from "./focus-buddy-invites.ts";
-import {
-  buildFocusMatchProfilePayload,
-  buildFocusMatchSearchResult,
-  hasMatchingConsent,
-} from "./focus-match-ranking.ts";
+import { buildFocusMatchProfilePayload } from "./focus-match-ranking.ts";
 import { validateFocusMessagePayload } from "./focus-buddy-message-validation.ts";
 import {
   focusSessionsOverlap,
@@ -59,6 +53,7 @@ import {
   toFocusSessionResponse,
 } from "./focus-buddy-mappers.ts";
 import { buildFocusWeekStats } from "./focus-buddy-stats.ts";
+import { searchFocusMatches } from "./focus-buddy-matching.ts";
 
 const MESSAGE_RATE_LIMIT_MS = 30 * 60 * 1000;
 function nowIso(): string {
@@ -264,58 +259,7 @@ export class FrogSleepFocusBuddyService {
 
   async searchMatches(userId: string, limit = 20) {
     const myProfile = await this.getProfileRecord(userId);
-    if (!myProfile) {
-      badRequest("REQ_INVALID_BODY", "Match profile is required before searching.");
-    }
-    if (!hasMatchingConsent(myProfile)) {
-      badRequest("REQ_INVALID_BODY", "Matching consent is required before searching.");
-    }
-    const relationships = (await refreshFocusInviteRelationships(
-      this.database,
-      await relationshipsForFocusUser(this.database, userId, ["pending", "accepted"]),
-    )).filter((item) => item.status === "pending" || item.status === "accepted");
-    const pendingOutgoing = relationships.find((item) => item.status === "pending" && item.ownerUserId === userId);
-    if (pendingOutgoing) {
-      return {
-        candidates: [],
-        empty_state: {
-          reason: "pending_invites",
-          title_key: "buddy_match.empty.pending_invites.title",
-          subtitle_key: "buddy_match.empty.pending_invites.subtitle",
-          pending_relationship_id: pendingOutgoing.id,
-          pending_user_id: otherFocusUserId(pendingOutgoing, userId),
-        },
-        pagination: {
-          limit,
-          next_cursor: null,
-          has_more: false,
-        },
-      };
-    }
-    const candidates = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_profile",
-      status: "active",
-      limit: 200,
-    });
-    const excluded = new Set(relationships.map((item) => otherFocusUserId(item, userId)));
-    const feedbackExcluded = await excludedFocusMatchUserIds(
-      this.database,
-      userId,
-      candidates.map((item) => item.ownerUserId).filter(Boolean) as string[],
-    );
-    for (const excludedUserId of feedbackExcluded) {
-      excluded.add(excludedUserId);
-    }
-    const result = buildFocusMatchSearchResult(myProfile, candidates, excluded, limit);
-    return {
-      ...result,
-      pagination: {
-        limit,
-        next_cursor: null,
-        has_more: false,
-      },
-    };
+    return searchFocusMatches(this.database, userId, myProfile, limit);
   }
 
   async invite(userId: string, target: string, focusInviteBaseUrl = "frogsleep://focus-invite", bundleId?: string) {

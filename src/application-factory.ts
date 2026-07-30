@@ -49,7 +49,6 @@ import { CommonTestAccountService } from "./services/common-test-account.service
 import { ContentSafetyService } from "./services/content-safety.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { EmbeddingManager } from "./services/embedding-manager.ts";
-import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { FeedbackService } from "./services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
@@ -58,11 +57,6 @@ import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager } from "./services/llm-manager.ts";
-import { NotificationService } from "./services/notification.service.ts";
-import { BuddyNotificationWorkerService } from "./modules/frogsleep/buddy-growth/buddy-notification-worker.service.ts";
-import { createBuddyInvitationEmailWorker } from "./modules/frogsleep/buddy-growth/buddy-invitation-email-worker.factory.ts";
-import { BuddyMilestoneReportService } from "./modules/frogsleep/buddy-growth/buddy-milestone-report.service.ts";
-import { createPushDispatcher } from "./services/push-dispatcher-factory.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";
@@ -80,7 +74,9 @@ import { VersionedAppConfigService } from "./services/versioned-app-config.servi
 import { BackendApplication } from "./app/backend-application.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
+import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
+import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 
 /**
@@ -441,13 +437,19 @@ export async function createApplication(
       fileStore: persistentFileStore,
     },
   );
-  const pushDispatcher = createPushDispatcher({ database, logger });
-  const notificationService = new NotificationService(database, queue, logger, pushDispatcher);
-  const buddyNotificationWorkerService = new BuddyNotificationWorkerService(database, notificationService);
-  const buddyInvitationEmailWorkerService = createBuddyInvitationEmailWorker(
-    database, commonEmailConfigService, registrationEmailSender);
-  const buddyMilestoneReportService = new BuddyMilestoneReportService(database);
-  const failedEventRetryService = new FailedEventRetryService(database, queue, logger);
+  const {
+    notificationService,
+    buddyNotificationWorkerService,
+    buddyInvitationEmailWorkerService,
+    buddyMilestoneReportService,
+    failedEventRetryService,
+  } = createFrogSleepWorkerServices({
+    database,
+    queue,
+    logger,
+    commonEmailConfigService,
+    registrationEmailSender,
+  });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(
     new Map(
@@ -581,20 +583,4 @@ export async function createApplication(
       await database.close();
     },
   };
-}
-
-function resolvePublicSmsTestBypass(options: CreateApplicationOptions): boolean {
-  if (typeof options.publicSmsTestBypassEnabled === "boolean") {
-    return options.publicSmsTestBypassEnabled;
-  }
-  const explicit = process.env.ZOOK_PUBLIC_SMS_TEST_BYPASS?.trim().toLowerCase();
-  if (explicit === "true" || explicit === "1") {
-    return true;
-  }
-  if (explicit === "false" || explicit === "0") {
-    return false;
-  }
-  const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
-  const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
-  return appEnv === "local" || appEnv === "development" || nodeEnv === "development";
 }
