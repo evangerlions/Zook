@@ -58,6 +58,23 @@ test("buddy growth capabilities default off and enable independently", () => {
   assert.equal(resolveBuddyGrowthCapabilities({ FROGSLEEP_BUDDY_FOCUS_MATCHING_ENABLED: "true" }).focusMatching, true);
 });
 
+test("dev slot defaults to invite-only capabilities and preserves explicit rollback flags", () => {
+  assert.deepEqual(resolveBuddyGrowthCapabilities({ DEPLOY_SLOT: "dev" }), {
+    invitationInbox: true,
+    explicitInviteConsent: true,
+    growthHub: true,
+    structuredInteractions: true,
+    goalsAndReports: true,
+    pushDelivery: true,
+    emailDelivery: true,
+    focusMatching: false,
+  });
+  assert.equal(resolveBuddyGrowthCapabilities({
+    DEPLOY_SLOT: "dev",
+    FROGSLEEP_BUDDY_INBOX_ENABLED: "false",
+  }).invitationInbox, false);
+});
+
 test("buddy growth routes are unreachable until their capability is enabled", async () => {
   const previous = Object.fromEntries(capabilityFlags.map((flag) => [flag, process.env[flag]]));
   try {
