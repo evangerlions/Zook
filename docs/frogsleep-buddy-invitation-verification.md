@@ -32,7 +32,22 @@ the archived App has `aps-environment=production` and
 
 ## Environment acceptance
 
-Development acceptance must record the deployed commit and version, then prove:
+Development version `20260730_003` was deployed from candidate commit
+`3cddcac` through release commit `8e595ba`.
+
+| Development gate | Result |
+| --- | --- |
+| Health and route mounting | Pass; health 200, unauthenticated `me` and capabilities 401 |
+| Capability document | Pass; create, accept, preview, email, activity, and share true; focus matching false |
+| Capability route probe | Pass; 16 routes mounted, zero 404 |
+| Two-account canonical invitation | Pass; sleep/focus accepted, replay idempotent, bilaterally visible, revoked and cleaned |
+| Account session lifecycle | Pass; me, refresh, device add/remove, logout, revoked refresh rejection, and re-login |
+| Handoff page | Pass; development invitation landing route returned HTML 200 |
+| SES provider lifecycle | Blocked; delivery remained `queued`, not `provider_accepted → delivered` |
+| APNs physical-device acceptance | Blocked; development APNs key is not configured |
+| Third/disposable account acceptance | Blocked; no third or disposable development QA account is provisioned |
+
+The remaining full acceptance sequence is:
 
 1. Health is 200; unauthenticated `me` and buddy capability requests are 401,
    never 404.
