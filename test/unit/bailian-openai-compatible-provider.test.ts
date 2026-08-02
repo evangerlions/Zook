@@ -3,6 +3,7 @@ import test from "node:test";
 import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { BailianOpenAICompatibleProvider } from "../../src/services/bailian-openai-compatible-provider.ts";
 import type { ResolvedEmbeddingRequest } from "../../src/services/embedding-manager.ts";
+import { LlmCallerCancelledError } from "../../src/services/llm-caller-cancellation.ts";
 import type {
   LLMStreamEvent,
   ResolvedLLMCompletionRequest,
@@ -33,6 +34,40 @@ function createResolvedRequest(
     providerOptions,
   };
 }
+
+test("bailian provider aborts upstream streaming when the caller cancels", async () => {
+  const caller = new AbortController();
+  let upstreamSignal: AbortSignal | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      upstreamSignal = init?.signal ?? undefined;
+      const signal = upstreamSignal;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            signal?.addEventListener("abort", () => {
+              controller.error(signal.reason ?? new Error("aborted"));
+            });
+          },
+        }),
+        { status: 200 },
+      );
+    },
+  });
+  const iterator = provider
+    .stream({ ...createResolvedRequest(), signal: caller.signal })
+    [Symbol.asyncIterator]();
+
+  const pending = iterator.next();
+  await new Promise((resolve) => setImmediate(resolve));
+  caller.abort(new DOMException("Client disconnected.", "AbortError"));
+
+  await assert.rejects(
+    pending,
+    (error: unknown) => error instanceof LlmCallerCancelledError,
+  );
+  assert.equal(upstreamSignal?.aborted, true);
+});
 
 function createResolvedEmbeddingRequest(
   providerOptions?: Record<string, unknown>,

@@ -29,6 +29,11 @@ const runtime = await init({
 });
 
 const server = createServer(async (request, response) => {
+  const requestCancellation = new AbortController();
+  request.once("aborted", () => requestCancellation.abort());
+  response.once("close", () => {
+    if (!response.writableEnded) requestCancellation.abort();
+  });
   const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
   const originHeader = Array.isArray(request.headers.origin) ? request.headers.origin[0] : request.headers.origin;
   const corsDecision = resolveCorsDecision(originHeader);
@@ -75,6 +80,7 @@ const server = createServer(async (request, response) => {
       hostname: request.headers.host?.split(":")[0],
       ipAddress: getClientIp(request.headers, request.socket.remoteAddress),
       trustedProxy: Boolean(request.headers["x-forwarded-for"]),
+      signal: requestCancellation.signal,
     });
 
     response.statusCode = handled.statusCode;
@@ -87,10 +93,15 @@ const server = createServer(async (request, response) => {
     });
     if (handled.streamBody) {
       response.flushHeaders();
-      for await (const chunk of handled.streamBody) {
-        response.write(chunk);
+      try {
+        for await (const chunk of handled.streamBody) {
+          if (requestCancellation.signal.aborted) break;
+          response.write(chunk);
+        }
+      } finally {
+        if (!requestCancellation.signal.aborted) requestCancellation.abort();
       }
-      response.end();
+      if (!response.writableEnded) response.end();
       return;
     }
 

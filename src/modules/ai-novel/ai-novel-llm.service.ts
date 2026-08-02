@@ -92,6 +92,7 @@ interface AiNovelRequestOptions {
   routingTier?: AiNovelModelRoutingTier;
   userId?: string;
   locale?: string;
+  signal?: AbortSignal;
 }
 
 export type AiNovelChatStreamChunk =
@@ -312,7 +313,7 @@ export class AiNovelLlmService {
     const maxTokens =
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-
+    const llmRequestContext = { ...aiNovelUsageOwner(options), signal: options.signal };
     try {
       if (scene.sceneKey === "kickoff_turn") {
         const kickoffMessages = buildKickoffMessages(
@@ -344,7 +345,7 @@ export class AiNovelLlmService {
             temperature,
             maxTokens,
             providerOptions,
-            ...aiNovelUsageOwner(options),
+            ...llmRequestContext,
           }),
           normalizeToolCall: (toolCall, fallbackIndex) => ({
             ...toolCall,
@@ -389,7 +390,7 @@ export class AiNovelLlmService {
             temperature,
             maxTokens,
             providerOptions,
-            ...aiNovelUsageOwner(options),
+            ...llmRequestContext,
           }),
           normalizeToolCall: (toolCall, fallbackIndex) =>
             normalizeAiNovelPromptedToolCall(
@@ -434,7 +435,7 @@ export class AiNovelLlmService {
             temperature,
             maxTokens,
             providerOptions,
-            ...aiNovelUsageOwner(options),
+            ...llmRequestContext,
           }),
           normalizeToolCall: (toolCall, fallbackIndex) =>
             normalizeAiNovelPromptedToolCall(
@@ -463,7 +464,7 @@ export class AiNovelLlmService {
           messages,
           temperature,
           maxTokens,
-          ...aiNovelUsageOwner(options),
+          ...llmRequestContext,
         }),
       });
     } catch (error) {

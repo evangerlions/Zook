@@ -24,6 +24,7 @@ export interface LLMCompletionRequest {
     appId: string;
     userId: string;
   };
+  signal?: AbortSignal;
 }
 
 export interface LLMCompleteViaStreamOptions {

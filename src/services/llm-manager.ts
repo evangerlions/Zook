@@ -2,6 +2,7 @@ import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import { withContextUsage } from "./llm-context-window.ts";
 import { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
 import { LlmRequestResolver } from "./llm-request-resolver.ts";
+import { isLlmCallerCancelledError } from "./llm-caller-cancellation.ts";
 import type {
   LLMCompleteViaStreamOptions,
   LLMCompletionRequest,
@@ -208,7 +209,9 @@ export class LLMManager {
   }
 
   async *stream(request: LLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
+    if (request.signal?.aborted) return;
     const resolution = await this.requestResolver.resolve(request);
+    if (request.signal?.aborted) return;
     const startedAt = this.getNow();
     let firstByteLatencyMs: number | undefined;
     let usage: LLMUsage | undefined;
@@ -219,6 +222,7 @@ export class LLMManager {
       for await (const event of this.providers[
         resolution.request.model.provider
       ].stream(resolution.request)) {
+        if (resolution.request.signal?.aborted) return;
         switch (event.type) {
           case "reasoning_delta":
           case "content_delta":
@@ -276,6 +280,12 @@ export class LLMManager {
         );
       }
     } catch (error) {
+      if (
+        resolution.request.signal?.aborted ||
+        isLlmCallerCancelledError(error)
+      ) {
+        return;
+      }
       const completedAt = this.getNow();
       await this.recordRouteResult(resolution.routeRefs, {
         ok: false,

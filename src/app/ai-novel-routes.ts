@@ -84,6 +84,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
           routingTier,
           userId: auth.userId,
           locale: this.resolveRequestLocale(request),
+          signal: request.signal,
         }),
       );
     }

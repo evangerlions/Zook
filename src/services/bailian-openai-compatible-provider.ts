@@ -34,6 +34,7 @@ import {
   throwProviderRequestFailed,
   throwProviderResponseInvalid,
 } from "./bailian-openai-compatible-utils.ts";
+import { LlmCallerCancellationScope } from "./llm-caller-cancellation.ts";
 
 export type { BailianOpenAICompatibleProviderOptions } from "./bailian-openai-compatible-types.ts";
 
@@ -219,59 +220,74 @@ export class BailianOpenAICompatibleProvider
       request.providerOptions,
     );
     const streamTimeouts = resolveStreamTimeouts(streamOptions);
-    const controller = new AbortController();
+    const cancellation = new LlmCallerCancellationScope(request.signal);
     const firstEventTimeout = setTimeout(() => {
-      controller.abort(
+      cancellation.abort(
         new DOMException(
           "Bailian stream did not return response headers before the first-event timeout.",
           "TimeoutError",
         ),
       );
     }, streamTimeouts.firstEventTimeoutMs);
-    let response: Response;
+    let completedNormally = false;
     try {
-      response = await this.execute(
-        this.buildChatUrl(
-          request.model.providerConfig?.baseUrl ?? this.baseUrl,
-        ),
-        this.buildRequestInit(
-          request.model.providerConfig?.apiKey ?? this.apiKey,
-          requestBody,
-          controller.signal,
-        ),
-      );
+      let response: Response;
+      try {
+        response = await this.execute(
+          this.buildChatUrl(
+            request.model.providerConfig?.baseUrl ?? this.baseUrl,
+          ),
+          this.buildRequestInit(
+            request.model.providerConfig?.apiKey ?? this.apiKey,
+            requestBody,
+            cancellation.signal,
+          ),
+        );
+      } catch (error) {
+        cancellation.rethrow(error);
+      }
+      clearTimeout(firstEventTimeout);
+
+      if (!response.ok) {
+        const payload = await this.readJsonPayload(response, true);
+        throwProviderRequestFailed(response.status, payload);
+      }
+
+      if (!response.body) {
+        throwProviderResponseInvalid("Streaming response body is missing.");
+      }
+
+      const streamLog = this.localLogger.beginStream({
+        ...localLogModel,
+        providerModel: request.model.providerModel,
+      });
+
+      try {
+        for await (const event of parseBailianOpenAICompatibleStream({
+          body: response.body,
+          responseStatus: response.status,
+          modelKey: request.model.modelKey,
+          parseChatUsage: (usage) => this.parseChatUsage(usage),
+          logRawChunk: (chunk) => streamLog.rawStreamChunk({ chunk }),
+          streamOptions,
+        })) {
+          yield event;
+        }
+        completedNormally = true;
+      } catch (error) {
+        if (request.signal?.aborted) {
+          cancellation.rethrow(error);
+        }
+        streamLog.streamFailure({ error });
+        throw error;
+      }
     } finally {
       clearTimeout(firstEventTimeout);
-    }
-
-    if (!response.ok) {
-      const payload = await this.readJsonPayload(response, true);
-      throwProviderRequestFailed(response.status, payload);
-    }
-
-    if (!response.body) {
-      throwProviderResponseInvalid("Streaming response body is missing.");
-    }
-
-    const streamLog = this.localLogger.beginStream({
-      ...localLogModel,
-      providerModel: request.model.providerModel,
-    });
-
-    try {
-      for await (const event of parseBailianOpenAICompatibleStream({
-        body: response.body,
-        responseStatus: response.status,
-        modelKey: request.model.modelKey,
-        parseChatUsage: (usage) => this.parseChatUsage(usage),
-        logRawChunk: (chunk) => streamLog.rawStreamChunk({ chunk }),
-        streamOptions,
-      })) {
-        yield event;
-      }
-    } catch (error) {
-      streamLog.streamFailure({ error });
-      throw error;
+      cancellation.dispose(
+        completedNormally
+          ? undefined
+          : new DOMException("LLM stream consumer closed.", "AbortError"),
+      );
     }
   }
 
@@ -580,5 +596,4 @@ export class BailianOpenAICompatibleProvider
       };
     });
   }
-
 }
