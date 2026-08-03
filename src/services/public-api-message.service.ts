@@ -1,5 +1,6 @@
 import { PublicApiMessages } from "../generated/i18n/public-api-messages.generated.ts";
 import { RequestLocaleService } from "./request-locale.service.ts";
+import { DEFAULT_APP_I18N_SETTINGS } from "../shared/i18n.ts";
 import type { ErrorCode, HttpRequest } from "../shared/types.ts";
 
 type PublicApiMessageKey = keyof (typeof PublicApiMessages)["en-US"];
@@ -99,11 +100,14 @@ export class PublicApiMessageService {
         headers: {},
       },
       {
-        supportedLocales: ["en-US", "zh-CN"],
+        supportedLocales: Object.keys(PublicApiMessages),
         appDefaultLocale: "en-US",
+        fallbackLocales: DEFAULT_APP_I18N_SETTINGS.fallbackLocales,
       },
     ).locale;
-    return resolved.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
+    return resolved in PublicApiMessages
+      ? resolved as keyof typeof PublicApiMessages
+      : "en-US";
   }
 
   format(

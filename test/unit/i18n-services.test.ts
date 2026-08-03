@@ -179,7 +179,7 @@ test("public API message service localizes representative frontend-visible error
       "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
     },
   });
-  const unsupportedLocaleRequest = createRequest({
+  const frenchLocaleRequest = createRequest({
     headers: {
       "x-app-locale": "fr-FR",
     },
@@ -187,7 +187,11 @@ test("public API message service localizes representative frontend-visible error
 
   assert.equal(service.resolveLocale(zhHeaderRequest), "zh-CN");
   assert.equal(service.resolveLocale(zhAcceptLanguageRequest), "zh-CN");
-  assert.equal(service.resolveLocale(unsupportedLocaleRequest), "en-US");
+  assert.equal(
+    service.resolveLocale(createRequest({ headers: { "x-app-locale": "zh-HK" } })),
+    "zh-TW",
+  );
+  assert.equal(service.resolveLocale(frenchLocaleRequest), "fr-FR");
   assert.equal(
     service.fromErrorCode("AUTH_INVALID_TOKEN", zhHeaderRequest),
     "当前登录态无效，请重新登录。",
@@ -221,9 +225,24 @@ test("public API message service localizes representative frontend-visible error
     "埋点事件不合法，请检查后重试。",
   );
   assert.equal(
-    service.fromErrorCode("REQ_INVALID_HEADER", unsupportedLocaleRequest),
+    service.fromErrorCode("REQ_INVALID_HEADER", frenchLocaleRequest),
     "Request headers are invalid. Please review them and try again.",
   );
+});
+
+test("public API message service resolves every supported product locale", () => {
+  const service = new PublicApiMessageService();
+  const locales = [
+    "en-US", "zh-CN", "zh-TW", "ja-JP", "es-ES", "pt-BR", "ko-KR",
+    "de-DE", "fr-FR", "hi-IN", "id-ID", "it-IT", "tr-TR", "vi-VN",
+    "th-TH", "pl-PL", "nl-NL", "sv-SE", "bn-BD", "sw-KE",
+  ];
+
+  for (const locale of locales) {
+    const request = createRequest({ headers: { "x-app-locale": locale } });
+    assert.equal(service.resolveLocale(request), locale);
+    assert.ok(service.fromErrorCode("AUTH_INVALID_TOKEN", request));
+  }
 });
 
 test("app i18n config service stores normalized settings and revisions", async () => {

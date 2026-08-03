@@ -17,6 +17,23 @@ const KICKOFF_AUTHORING_START_BOOK_WORDS = {
   "en-US": "start the book, begin the novel, start writing",
   "zh-CN": "开书、开始写、正式开始",
   "zh-TW": "開書、開始寫、正式開始",
+  "ja-JP": "執筆を始める、小説を書き始める、執筆開始",
+  "es-ES": "empezar el libro, empezar a escribir, comenzar la novela",
+  "pt-BR": "começar o livro, começar a escrever, iniciar o romance",
+  "ko-KR": "집필 시작, 소설 쓰기 시작, 책 시작",
+  "de-DE": "Buch beginnen, mit dem Schreiben beginnen, Roman starten",
+  "fr-FR": "commencer le livre, commencer à écrire, commencer le roman",
+  "hi-IN": "किताब शुरू करें, लिखना शुरू करें, उपन्यास शुरू करें",
+  "id-ID": "mulai buku, mulai menulis, mulai novel",
+  "it-IT": "inizia il libro, inizia a scrivere, inizia il romanzo",
+  "tr-TR": "kitaba başla, yazmaya başla, romana başla",
+  "vi-VN": "bắt đầu sách, bắt đầu viết, bắt đầu tiểu thuyết",
+  "th-TH": "เริ่มเขียนหนังสือ, เริ่มเขียน, เริ่มนิยาย",
+  "pl-PL": "zacznij książkę, zacznij pisać, zacznij powieść",
+  "nl-NL": "begin het boek, begin met schrijven, begin de roman",
+  "sv-SE": "börja boken, börja skriva, börja romanen",
+  "bn-BD": "বই শুরু করুন, লেখা শুরু করুন, উপন্যাস শুরু করুন",
+  "sw-KE": "anza kitabu, anza kuandika, anza riwaya",
 };
 
 const KICKOFF_SYSTEM_PROMPT = [

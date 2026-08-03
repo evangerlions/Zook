@@ -430,8 +430,30 @@ function defaultTemplateSubject(locale: string, name: string): string {
     return name;
   }
 
-  return locale.toLowerCase().startsWith("zh") ? "验证码" : "Verification Code";
+  return DEFAULT_VERIFICATION_SUBJECTS[locale] ?? "Verification Code";
 }
+
+const DEFAULT_VERIFICATION_SUBJECTS: Record<string, string> = {
+  "zh-CN": "验证码",
+  "zh-TW": "驗證碼",
+  "ja-JP": "認証コード",
+  "es-ES": "Código de verificación",
+  "pt-BR": "Código de verificação",
+  "ko-KR": "인증 코드",
+  "de-DE": "Bestätigungscode",
+  "fr-FR": "Code de vérification",
+  "hi-IN": "सत्यापन कोड",
+  "id-ID": "Kode verifikasi",
+  "it-IT": "Codice di verifica",
+  "tr-TR": "Doğrulama kodu",
+  "vi-VN": "Mã xác minh",
+  "th-TH": "รหัสยืนยัน",
+  "pl-PL": "Kod weryfikacyjny",
+  "nl-NL": "Verificatiecode",
+  "sv-SE": "Verifieringskod",
+  "bn-BD": "যাচাইকরণ কোড",
+  "sw-KE": "Msimbo wa uthibitishaji",
+};
 
 function isValidSenderAddress(value: string): boolean {
   return (
