@@ -186,7 +186,10 @@ test("password reset upgrades email-code-only accounts into password accounts", 
   const resetResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/auth/password/reset",
-    headers: {},
+    headers: {
+      "x-platform": "android",
+      "x-app-region": "CN",
+    },
     body: {
       appId: "app_a",
       email: "setup-password@example.com",
@@ -198,6 +201,7 @@ test("password reset upgrades email-code-only accounts into password accounts", 
   });
 
   assert.equal(resetResponse.statusCode, 200);
+  assert.equal(resetResponse.body.data.accountRegion, "CN");
   assert.ok(typeof resetResponse.body.data.accessToken === "string");
   assert.ok(typeof resetResponse.body.data.refreshToken === "string");
   assert.equal(
@@ -320,6 +324,8 @@ test("logged-in email-code-only users can set a password directly", async () => 
     headers: {
       authorization: `Bearer ${emailLoginResponse.body.data.accessToken}`,
       "x-app-id": "app_a",
+      "x-platform": "android",
+      "x-app-region": "CN",
     },
     body: {
       appId: "app_a",
@@ -330,6 +336,7 @@ test("logged-in email-code-only users can set a password directly", async () => 
   });
 
   assert.equal(setPasswordResponse.statusCode, 200);
+  assert.equal(setPasswordResponse.body.data.accountRegion, "CN");
   assert.ok(typeof setPasswordResponse.body.data.accessToken === "string");
   assert.ok(typeof setPasswordResponse.body.data.refreshToken === "string");
   assert.equal(
@@ -426,6 +433,8 @@ test("password change returns a new session and revokes the previous access toke
     headers: {
       authorization: `Bearer ${loginResponse.body.data.accessToken}`,
       "x-app-id": "app_a",
+      "x-platform": "android",
+      "x-app-region": "CN",
     },
     body: {
       appId: "app_a",
@@ -437,6 +446,7 @@ test("password change returns a new session and revokes the previous access toke
   });
 
   assert.equal(changeResponse.statusCode, 200);
+  assert.equal(changeResponse.body.data.accountRegion, "CN");
   assert.ok(typeof changeResponse.body.data.accessToken === "string");
   assert.ok(typeof changeResponse.body.data.refreshToken === "string");
 

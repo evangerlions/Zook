@@ -135,6 +135,20 @@ Admin 查看接口：
 2. 列表返回用户邮箱、消息原文、附件数量、平台、App 版本与状态；状态含义为 `new` 新反馈、`doing` 处理中、`done` 已完成。
 3. 附件文件路径形如 `feedback/ai_novel/{yyyy-mm-dd}/{feedbackId}/{attachmentId}.{ext}`，实际落在 `/app/appRunData` 根下。
 
+### 3.6.1 AINovel AI 输出举报
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/ai_novel/ai-output-reports?limit={limit}&status={status}&category={category}` | 举报列表；不返回举报原文 |
+| `GET` | `/api/v1/admin/apps/ai_novel/ai-output-reports/{reportId}` | 受限读取举报详情并解密举报原文 |
+| `PATCH` | `/api/v1/admin/apps/ai_novel/ai-output-reports/{reportId}/status` | 更新 `received/reviewing/resolved/rejected`，可附 resolution 字段 |
+
+说明：
+
+1. 列表、普通日志和 audit payload 不包含举报原文。
+2. 详情读取与状态更新都会写入 audit log。
+3. 举报原文使用 AINovel app secret 对应的 AES-256-GCM envelope 加密存储。
+
 ### 3.7 App 级 i18n 设置
 
 | 方法 | Path | 说明 |

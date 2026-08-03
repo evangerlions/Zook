@@ -204,6 +204,7 @@
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
 9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
+10. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
 
 对应核心文件：
 

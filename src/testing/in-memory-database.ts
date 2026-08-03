@@ -3,6 +3,8 @@ import type {
   AnalyticsEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
+  AiOutputReactionRecord,
+  AiOutputReportRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -64,6 +66,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   contentSafetyCheckRecords: ContentSafetyCheckRecord[];
   feedbackRecords: FeedbackRecord[];
   feedbackAttachments: FeedbackAttachmentRecord[];
+  aiOutputReportRecords: AiOutputReportRecord[];
+  aiOutputReactionRecords: AiOutputReactionRecord[];
   aiNovelStatisticsSnapshots: AiNovelStatisticsSnapshotRecord[];
   aiNovelDailyStatistics: AiNovelDailyStatisticsRecord[];
 
@@ -90,6 +94,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.contentSafetyCheckRecords = structuredClone(seed.contentSafetyCheckRecords ?? []);
     this.feedbackRecords = structuredClone(seed.feedbackRecords ?? []);
     this.feedbackAttachments = structuredClone(seed.feedbackAttachments ?? []);
+    this.aiOutputReportRecords = structuredClone(
+      seed.aiOutputReportRecords ?? [],
+    );
+    this.aiOutputReactionRecords = structuredClone(
+      seed.aiOutputReactionRecords ?? [],
+    );
     this.aiNovelStatisticsSnapshots = structuredClone(seed.aiNovelStatisticsSnapshots ?? []);
     this.aiNovelDailyStatistics = structuredClone(seed.aiNovelDailyStatistics ?? []);
   }
@@ -178,6 +188,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.appId !== appId);
     this.feedbackRecords = this.feedbackRecords.filter((item) => item.appId !== appId);
     this.feedbackAttachments = this.feedbackAttachments.filter((item) => item.appId !== appId);
+    this.aiOutputReportRecords = this.aiOutputReportRecords.filter(
+      (item) => item.appId !== appId,
+    );
+    this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
+      (item) => item.appId !== appId,
+    );
     this.aiNovelStatisticsSnapshots = this.aiNovelStatisticsSnapshots.filter((item) => item.appId !== appId);
     this.aiNovelDailyStatistics = this.aiNovelDailyStatistics.filter((item) => item.appId !== appId);
   }
@@ -263,6 +279,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
     this.feedbackAttachments = this.feedbackAttachments.filter(
       (item) => !feedbackIds.includes(item.feedbackId),
+    );
+    this.aiOutputReportRecords = this.aiOutputReportRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
     );
     this.aiNovelStatisticsSnapshots = this.aiNovelStatisticsSnapshots.filter(
       (item) => item.appId !== appId || item.userId !== userId,
@@ -675,6 +697,104 @@ export class InMemoryDatabase extends ApplicationDatabase {
           item.appId === appId &&
           item.feedbackId === feedbackId &&
           item.id === attachmentId,
+      ),
+    );
+  }
+
+  insertAiOutputReport(record: AiOutputReportRecord): void {
+    this.aiOutputReportRecords.push(structuredClone(record));
+  }
+
+  findAiOutputReportBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): AiOutputReportRecord | undefined {
+    return structuredClone(
+      this.aiOutputReportRecords.find(
+        (item) =>
+          item.appId === appId &&
+          item.userId === userId &&
+          item.submissionId === submissionId,
+      ),
+    );
+  }
+
+  findAiOutputReportById(
+    appId: string,
+    reportId: string,
+  ): AiOutputReportRecord | undefined {
+    return structuredClone(
+      this.aiOutputReportRecords.find(
+        (item) => item.appId === appId && item.id === reportId,
+      ),
+    );
+  }
+
+  listAiOutputReports(filter: {
+    appId: string;
+    userId?: string;
+    category?: AiOutputReportRecord["category"];
+    status?: AiOutputReportRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): AiOutputReportRecord[] {
+    const records = structuredClone(this.aiOutputReportRecords)
+      .filter((item) => item.appId === filter.appId)
+      .filter((item) => (filter.userId ? item.userId === filter.userId : true))
+      .filter((item) =>
+        filter.category ? item.category === filter.category : true
+      )
+      .filter((item) => (filter.status ? item.status === filter.status : true))
+      .filter((item) =>
+        filter.createdAtFromIso
+          ? item.createdAt >= filter.createdAtFromIso
+          : true
+      )
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return typeof filter.limit === "number" && filter.limit > 0
+      ? records.slice(0, Math.min(Math.floor(filter.limit), 500))
+      : records;
+  }
+
+  updateAiOutputReportStatus(
+    appId: string,
+    reportId: string,
+    status: AiOutputReportRecord["status"],
+    resolutionCode?: string,
+    resolutionNote?: string,
+  ): AiOutputReportRecord | undefined {
+    const record = this.aiOutputReportRecords.find(
+      (item) => item.appId === appId && item.id === reportId,
+    );
+    if (!record) {
+      return undefined;
+    }
+    const now = new Date().toISOString();
+    record.status = status;
+    record.resolutionCode = resolutionCode;
+    record.resolutionNote = resolutionNote;
+    record.updatedAt = now;
+    record.resolvedAt =
+      status === "resolved" || status === "rejected" ? now : undefined;
+    return structuredClone(record);
+  }
+
+  insertAiOutputReaction(record: AiOutputReactionRecord): void {
+    this.aiOutputReactionRecords.push(structuredClone(record));
+  }
+
+  findAiOutputReactionBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): AiOutputReactionRecord | undefined {
+    return structuredClone(
+      this.aiOutputReactionRecords.find(
+        (item) =>
+          item.appId === appId &&
+          item.userId === userId &&
+          item.submissionId === submissionId,
       ),
     );
   }

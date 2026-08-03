@@ -33,6 +33,7 @@ import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { AiNovelStatisticsService } from "./services/ai-novel-statistics.service.ts";
+import { AiOutputReportingService } from "./services/ai-output-reporting.service.ts";
 import { createAiNovelStatisticsUsageOptions } from "./services/ai-novel-statistics-usage-recorder.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
@@ -434,6 +435,7 @@ export async function createApplication(
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
   const feedbackService = new FeedbackService(database, persistentFileStore);
+  const aiOutputReportingService = new AiOutputReportingService(database, aiPayloadCryptoService, appLogSecretService);
   const clientLogUploadService = new ClientLogUploadService(
     database,
     logEncryptionKeyResolver,
@@ -497,6 +499,7 @@ export async function createApplication(
     tencentSesEmailCallbackService,
     feedbackService,
     aiNovelStatisticsService,
+    aiOutputReportingService,
     logger,
     auditInterceptor,
     requestLoggingInterceptor,

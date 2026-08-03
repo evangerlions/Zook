@@ -4,6 +4,8 @@ import type {
   AnalyticsEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
+  AiOutputReactionRecord,
+  AiOutputReportRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -32,6 +34,7 @@ import { runPostgresMigrations } from "./migrate.ts";
 import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
 import { PostgresAiNovelStatisticsStore } from "./postgres-ai-novel-statistics.ts";
+import { PostgresAiOutputReportingStore } from "./postgres-ai-output-reporting.ts";
 import { PostgresAppUserStore } from "./postgres-app-users.ts";
 import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
 import { PostgresFeedbackStore } from "./postgres-feedback.ts";
@@ -52,6 +55,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly appUsers: PostgresAppUserStore;
   private readonly feedback: PostgresFeedbackStore;
+  private readonly aiOutputReporting: PostgresAiOutputReportingStore;
   private readonly aiNovelStatistics: PostgresAiNovelStatisticsStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
@@ -66,6 +70,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));
+    this.aiOutputReporting = new PostgresAiOutputReportingStore(async (sql, values = []) => await this.query(sql, values));
     this.aiNovelStatistics = new PostgresAiNovelStatisticsStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(
       async (sql, values = []) => await this.query(sql, values),
@@ -468,18 +473,17 @@ export class PostgresDatabase extends ApplicationDatabase {
     return await this.emailDeliveryEvents.list(filter);
   }
   override async insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): Promise<void> { await this.feedback.insert(record, attachments); }
-  override async listFeedbackRecords(filter: { appId: string; userId?: string; ipHash?: string; status?: FeedbackRecord["status"]; createdAtFromIso?: string; limit?: number }): Promise<FeedbackRecord[]> {
-    return await this.feedback.list(filter);
-  }
-  override async updateFeedbackStatus(appId: string, feedbackId: string, status: FeedbackRecord["status"]): Promise<FeedbackRecord | undefined> {
-    return await this.feedback.updateStatus(appId, feedbackId, status);
-  }
-  override async listFeedbackAttachments(feedbackIds: string[]): Promise<FeedbackAttachmentRecord[]> {
-    return await this.feedback.listAttachments(feedbackIds);
-  }
-  override async findFeedbackAttachment(appId: string, feedbackId: string, attachmentId: string): Promise<FeedbackAttachmentRecord | undefined> {
-    return await this.feedback.findAttachment(appId, feedbackId, attachmentId);
-  }
+  override async listFeedbackRecords(filter: { appId: string; userId?: string; ipHash?: string; status?: FeedbackRecord["status"]; createdAtFromIso?: string; limit?: number }): Promise<FeedbackRecord[]> { return await this.feedback.list(filter); }
+  override async updateFeedbackStatus(appId: string, feedbackId: string, status: FeedbackRecord["status"]): Promise<FeedbackRecord | undefined> { return await this.feedback.updateStatus(appId, feedbackId, status); }
+  override async listFeedbackAttachments(feedbackIds: string[]): Promise<FeedbackAttachmentRecord[]> { return await this.feedback.listAttachments(feedbackIds); }
+  override async findFeedbackAttachment(appId: string, feedbackId: string, attachmentId: string): Promise<FeedbackAttachmentRecord | undefined> { return await this.feedback.findAttachment(appId, feedbackId, attachmentId); }
+  override async insertAiOutputReport(record: AiOutputReportRecord): Promise<void> { await this.aiOutputReporting.insertReport(record); }
+  override async findAiOutputReportBySubmission(appId: string, userId: string, submissionId: string): Promise<AiOutputReportRecord | undefined> { return await this.aiOutputReporting.findReportBySubmission(appId, userId, submissionId); }
+  override async findAiOutputReportById(appId: string, reportId: string): Promise<AiOutputReportRecord | undefined> { return await this.aiOutputReporting.findReportById(appId, reportId); }
+  override async listAiOutputReports(filter: { appId: string; userId?: string; category?: AiOutputReportRecord["category"]; status?: AiOutputReportRecord["status"]; createdAtFromIso?: string; limit?: number }): Promise<AiOutputReportRecord[]> { return await this.aiOutputReporting.listReports(filter); }
+  override async updateAiOutputReportStatus(appId: string, reportId: string, status: AiOutputReportRecord["status"], resolutionCode?: string, resolutionNote?: string): Promise<AiOutputReportRecord | undefined> { return await this.aiOutputReporting.updateReportStatus(appId, reportId, status, resolutionCode, resolutionNote); }
+  override async insertAiOutputReaction(record: AiOutputReactionRecord): Promise<void> { await this.aiOutputReporting.insertReaction(record); }
+  override async findAiOutputReactionBySubmission(appId: string, userId: string, submissionId: string): Promise<AiOutputReactionRecord | undefined> { return await this.aiOutputReporting.findReactionBySubmission(appId, userId, submissionId); }
   override async upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): Promise<void> { await this.aiNovelStatistics.upsertSnapshot(record); }
   override async findAiNovelStatisticsSnapshot(appId: string, userId: string): Promise<AiNovelStatisticsSnapshotRecord | undefined> { return await this.aiNovelStatistics.findSnapshot(appId, userId); }
   override async replaceAiNovelDailyWritingStats(appId: string, userId: string, records: AiNovelDailyStatisticsRecord[], updatedAt: string): Promise<void> { await this.aiNovelStatistics.replaceDailyWritingStats(appId, userId, records, updatedAt); }

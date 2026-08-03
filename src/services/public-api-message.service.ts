@@ -34,6 +34,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   AUTH_BEARER_REQUIRED: "error.auth.bearer_required",
   AUTH_INVALID_CREDENTIAL: "error.auth.invalid_credential",
   AUTH_INVALID_TOKEN: "error.auth.invalid_token",
+  AUTH_LOGIN_FORBIDDEN: "error.auth.login_forbidden",
   AUTH_LOGIN_TEMPORARILY_LOCKED: "error.auth.login_temporarily_locked",
   AUTH_PASSWORD_ALREADY_SET: "error.auth.password_already_set",
   AUTH_PASSWORD_NOT_SET: "error.auth.password_not_set",

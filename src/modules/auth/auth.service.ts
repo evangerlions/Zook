@@ -267,6 +267,10 @@ export class AuthService {
     return this.sessionManager.buildClearRefreshCookie();
   }
 
+  async revokeIssuedSession(refreshToken: string): Promise<boolean> {
+    return this.sessionManager.revokeIssuedSession(refreshToken);
+  }
+
   async issueSession(
     userId: string,
     appId: string,

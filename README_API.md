@@ -240,6 +240,8 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片                                             |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
 | `POST` | `/api/v1/ai_novel/statistics/snapshot`     | 上报当前账号本地写作总量与权威每日字数快照，需要 Bearer 鉴权；服务端校验账号并保留自己的 Token 用量                                  |
+| `POST` | `/api/v1/ai_novel/ai-output-reports`      | 提交 AI 消息或章节 revision 举报；按客户端 `submissionId` 幂等，举报原文在服务端加密存储                                              |
+| `POST` | `/api/v1/ai_novel/ai-output-reactions`    | 提交最新生成章节的轻量 reaction；当前支持 `chapter_revision + like`                                                                |
 
 说明：
 
@@ -317,10 +319,11 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 27. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时会返回 `text/event-stream`；每个 SSE `data:` 事件仍然是一个加密 outer envelope。解密后的正常事件类型通常为 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`；其中 `content_delta` 是 assistant 正文增量事件，`tool_call_delta` 是通用 provider/tool 参数进度事件，只携带可读 `text` 和可选 `toolCallId`、`toolCallName`、`toolArgumentPath`，不是产品工作流状态。步骤 chrome、本地化文案、loading detail 映射和 retry UI 都由 AINovel 负责。客户端回放 assistant 历史时可以携带 `reasoningContent`，Zook 会在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，用于保持多轮上下文与 LLM cache 连贯；该字段不应作为普通用户可见内容展示。`usage` 与 `done.usage` 包含 `promptTokens`、`completionTokens`、`totalTokens`，并在 provider 返回时额外携带 `reasoningTokens`，在服务端能识别模型窗口时额外携带 `contextWindowTokens`、`contextUsedRatio`，客户端应以这些字段判断 hard compact 阈值。`done.completion` 当前保证包含 `sceneRouteKey`、`content`，并按需携带 `reasoningText`、`finishReason`；这里的 `sceneRouteKey` 仍是 AINovel 业务 route key，不是 common LLM `modelKey`。对于 `kickoff_turn`，Zook 只负责单轮 assistant content / tool_call 输出，不在服务端内部继续 kickoff tool loop；后续 tool 执行与下一轮请求由 AINovel engine 负责。服务端会在 relay `ask_question` 时再次规范化 payload：`options` 只保留 2 到 4 个非空、去重后的字符串；`optionSubtitles` 只有在与 `options` 一一对应时才会继续下发；如果规范化后仍不合法，则改为发出流式错误事件而不是把非法 `tool_call` 直接交给客户端。如果在请求解密成功后发生 mid-stream 业务失败，服务端会发出一个加密后的非 `OK` 业务错误 envelope，客户端应把该事件视为流式失败，且后续不应再期待 `done` 事件。
 28. **仅 local 联调环境**允许在 AI 加密 envelope 外层额外挂一个明文字段用于第 8 人员排查：客户端请求体可带 `localDebugRequestPlaintext`，服务端 chat-completion 成功响应可带 `localDebugResponseText`。这两个字段都只是调试镜像，前后端业务逻辑都不得依赖它们。
 29. **仅 local 联调环境**开放 `POST /api/v1/ai_novel/debug/audit-file`，用于 Flutter Web 把完整自包含的 generation audit HTML 上传给本机 Zook。该接口仍要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；生产环境或非 localhost/127.0.0.1 host 返回 `404`。请求体为 `{ "sessionId": "...", "html": "..." }`；服务端只 sanitize `sessionId` 并覆盖写入 AINovel 仓库 `.zook/quality-generation/app/{safeSessionId}/generation-audit.html`，响应 `filePath`、`fileUrl`、`viewUrl`、`updatedAt`。其中 `viewUrl` 是 local-only HTTP 查看地址，用于 Flutter Web 在新标签页打开报告；Zook 不解析 HTML 或 audit JSON。
-30. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Did` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
-31. 服务端不再把上传日志逐行落库；上传成功后会把解密解压后的 `.ndjson` 文件直接存到本地，并在 admin 的 `Remote Log Pull` 页面里提供“查看日志 / 下载原始文件”。日志浏览解析发生在前端，不做服务端分页。
-32. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
-33. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点“查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
+30. `POST /api/v1/ai_novel/ai-output-reports` 支持 `chat_message` 与 `chapter_revision`，校验 target 字段、分类、scene、内容 hash 和长度；同一账号每小时最多 20 次。服务端只在受限 Admin detail 接口解密举报原文，普通列表、日志和 audit payload 不包含原文。`POST /api/v1/ai_novel/ai-output-reactions` 当前只接受章节 revision 的 `like`。
+31. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Did` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
+32. 服务端不再把上传日志逐行落库；上传成功后会把解密解压后的 `.ndjson` 文件直接存到本地，并在 admin 的 `Remote Log Pull` 页面里提供“查看日志 / 下载原始文件”。日志浏览解析发生在前端，不做服务端分页。
+33. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
+34. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点“查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
 
 ## 8. 统一响应格式
 
@@ -371,6 +374,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `409`       | `AUTH_ACCOUNT_ALREADY_EXISTS`       | 邮箱已注册                           |
 | `409`       | `AUTH_QR_LOGIN_ALREADY_USED`        | 扫码登录会话已确认或已消费           |
 | `429`       | `AUTH_RATE_LIMITED`                 | 提交频率过高                         |
+| `429`       | `AI_OUTPUT_REPORT_RATE_LIMITED`     | AI 输出举报提交频率过高              |
 | `503`       | `ONE_CLICK_SERVICE_NOT_CONFIGURED`  | 一键登录服务未配置                   |
 | `502`       | `ONE_CLICK_PROVIDER_REQUEST_FAILED` | 个验服务端校验失败或不可用           |
 | `500`       | `SYS_INTERNAL_ERROR`                | 服务端内部异常                       |

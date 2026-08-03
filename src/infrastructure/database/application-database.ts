@@ -2,6 +2,8 @@ import type {
   AnalyticsEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
+  AiOutputReactionRecord,
+  AiOutputReportRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -191,6 +193,42 @@ export abstract class ApplicationDatabase {
     feedbackId: string,
     attachmentId: string,
   ): MaybePromise<FeedbackAttachmentRecord | undefined>;
+
+  abstract insertAiOutputReport(
+    record: AiOutputReportRecord,
+  ): MaybePromise<void>;
+  abstract findAiOutputReportBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): MaybePromise<AiOutputReportRecord | undefined>;
+  abstract findAiOutputReportById(
+    appId: string,
+    reportId: string,
+  ): MaybePromise<AiOutputReportRecord | undefined>;
+  abstract listAiOutputReports(filter: {
+    appId: string;
+    userId?: string;
+    category?: AiOutputReportRecord["category"];
+    status?: AiOutputReportRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): MaybePromise<AiOutputReportRecord[]>;
+  abstract updateAiOutputReportStatus(
+    appId: string,
+    reportId: string,
+    status: AiOutputReportRecord["status"],
+    resolutionCode?: string,
+    resolutionNote?: string,
+  ): MaybePromise<AiOutputReportRecord | undefined>;
+  abstract insertAiOutputReaction(
+    record: AiOutputReactionRecord,
+  ): MaybePromise<void>;
+  abstract findAiOutputReactionBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): MaybePromise<AiOutputReactionRecord | undefined>;
 
   abstract upsertAiNovelStatisticsSnapshot(
     record: AiNovelStatisticsSnapshotRecord,

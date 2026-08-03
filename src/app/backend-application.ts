@@ -20,6 +20,7 @@ import { AppLogSecretService } from "../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../services/app-remote-log-pull.service.ts";
 import { AdminSensitiveOperationService } from "../services/admin-sensitive-operation.service.ts";
 import { AiNovelStatisticsService } from "../services/ai-novel-statistics.service.ts";
+import { AiOutputReportingService } from "../services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService } from "../services/aes-gcm-payload-crypto.service.ts";
 import { ClientLogUploadService } from "../services/client-log-upload.service.ts";
 import { ContentSafetyService } from "../services/content-safety.service.ts";
@@ -47,6 +48,7 @@ import { tryHandleAdminRoutes } from "./admin-routes.ts";
 import { tryHandleAiNovelRoutes } from "./ai-novel-routes.ts";
 import { tryHandleFileNotificationRoutes } from "./file-notification-routes.ts";
 import { tryHandleFeedbackRoutes } from "./feedback-routes.ts";
+import { tryHandleAiOutputReportingRoutes } from "./ai-output-reporting-routes.ts";
 import { tryHandleLogRoutes } from "./log-routes.ts";
 import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
 import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
@@ -94,6 +96,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     private readonly feedbackService: FeedbackService,
     private readonly aiNovelStatisticsService: AiNovelStatisticsService,
+    private readonly aiOutputReportingService: AiOutputReportingService,
     private readonly logger: StructuredLogger,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
@@ -116,6 +119,7 @@ export class BackendApplication extends BackendRouteContext {
       tencentSesEmailCallbackService,
       feedbackService,
       aiNovelStatisticsService,
+      aiOutputReportingService,
       appContextResolver,
       authGuard,
       appAccessGuard,
@@ -187,6 +191,7 @@ export class BackendApplication extends BackendRouteContext {
       tencentSesEmailCallbackService: this.tencentSesEmailCallbackService,
       feedbackService: this.feedbackService,
       aiNovelStatisticsService: this.aiNovelStatisticsService,
+      aiOutputReportingService: this.aiOutputReportingService,
     };
   }
 
@@ -221,6 +226,12 @@ export class BackendApplication extends BackendRouteContext {
     const feedbackResponse = await tryHandleFeedbackRoutes.call(this, request);
     if (feedbackResponse) {
       return feedbackResponse;
+    }
+
+    const aiOutputReportingResponse =
+      await tryHandleAiOutputReportingRoutes.call(this, request);
+    if (aiOutputReportingResponse) {
+      return aiOutputReportingResponse;
     }
 
     const aiNovelResponse = await tryHandleAiNovelRoutes.call(this, request);
