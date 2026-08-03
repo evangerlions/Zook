@@ -57,6 +57,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   FILE_ACCESS_DENIED: "error.file.access_denied",
   IAM_PERMISSION_DENIED: "error.iam.permission_denied",
   LLM_MODEL_NOT_FOUND: "error.ai.upstream_bad_gateway",
+  LLM_PROVIDER_CONTENT_SENSITIVE: "error.ai.input_content_sensitive",
   LLM_PROVIDER_REQUEST_FAILED: "error.ai.upstream_bad_gateway",
   LLM_PROVIDER_RESPONSE_INVALID: "error.ai.upstream_bad_gateway",
   LLM_ROUTE_NOT_AVAILABLE: "error.ai.upstream_bad_gateway",

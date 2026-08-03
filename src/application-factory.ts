@@ -78,6 +78,7 @@ import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-cal
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
+import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
@@ -240,11 +241,14 @@ export async function createApplication(
       );
     const initializedGetuiGyConfig =
       await commonGetuiGyConfigService.initializeDefaultConfig();
+    const migratedAiNovelKickoffPrompts =
+      await migrateAiNovelKickoffPromptConfig(appConfigService);
     if (
       initializedCommonLlmConfig ||
       initializedAppLogSecrets ||
       initializedRemoteLogPullConfigs ||
-      initializedGetuiGyConfig
+      initializedGetuiGyConfig ||
+      migratedAiNovelKickoffPrompts
     ) {
       await managedStateStore.save(database);
     }

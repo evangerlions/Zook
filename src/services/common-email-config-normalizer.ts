@@ -1,4 +1,5 @@
 import { ApplicationError, badRequest } from "../shared/errors.ts";
+import { DEFAULT_APP_I18N_SETTINGS, resolveSupportedLocale } from "../shared/i18n.ts";
 import type {
   EmailSenderConfig,
   EmailServiceConfig,
@@ -143,7 +144,7 @@ export function resolveEmailTemplate(
     );
   }
 
-  const normalizedLocale = normalizeEmailLocale(locale || DEFAULT_TEMPLATE_LOCALE);
+  const normalizedLocale = resolveEmailLocale(locale);
   const preferredName = optionalString(templateName);
   const candidateTemplates = preferredName
     ? templates.filter((item) => item.name === preferredName)
@@ -170,6 +171,12 @@ export function resolveEmailTemplate(
 
   const englishFallback = scopedTemplates.find((item) => item.locale === "en-US");
   return englishFallback ?? scopedTemplates[0];
+}
+
+function resolveEmailLocale(locale: string): string {
+  const normalized = normalizeEmailLocale(locale || DEFAULT_TEMPLATE_LOCALE);
+  return resolveSupportedLocale(normalized, DEFAULT_APP_I18N_SETTINGS).locale
+    ?? DEFAULT_TEMPLATE_LOCALE;
 }
 
 export function resolveEmailTemplateById(

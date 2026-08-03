@@ -1423,9 +1423,177 @@ export const KickoffPublicConfigSchema = {
   "properties": {
     "recommendedPrompts": {
       "type": "array",
-      "description": "Shared kickoff recommendation prompt list managed by backend admin config and consumed by the AINovel client.",
+      "deprecated": true,
+      "description": "Legacy flat kickoff prompt list. New clients use this only for zh-CN compatibility and otherwise select recommendedPromptsI18n by their effective UI locale.",
       "items": {
         "type": "string"
+      }
+    },
+    "recommendedPromptsI18n": {
+      "type": "object",
+      "description": "Locale-indexed kickoff prompt lists managed by backend admin config. Entries use the 20 supported canonical BCP-47 locale tags. The client selects only its matching locale entry and falls back to packaged locale copy when that entry is absent or invalid.",
+      "additionalProperties": false,
+      "properties": {
+        "en-US": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "zh-CN": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "zh-TW": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ja-JP": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "es-ES": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "pt-BR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ko-KR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "de-DE": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "fr-FR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "hi-IN": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "id-ID": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "it-IT": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "tr-TR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "vi-VN": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "th-TH": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "pl-PL": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "nl-NL": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sv-SE": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "bn-BD": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sw-KE": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     }
   }
@@ -1433,6 +1601,28 @@ export const KickoffPublicConfigSchema = {
 
 export type KickoffPublicConfig = {
   "recommendedPrompts"?: string[];
+  "recommendedPromptsI18n"?: {
+  "en-US"?: string[];
+  "zh-CN"?: string[];
+  "zh-TW"?: string[];
+  "ja-JP"?: string[];
+  "es-ES"?: string[];
+  "pt-BR"?: string[];
+  "ko-KR"?: string[];
+  "de-DE"?: string[];
+  "fr-FR"?: string[];
+  "hi-IN"?: string[];
+  "id-ID"?: string[];
+  "it-IT"?: string[];
+  "tr-TR"?: string[];
+  "vi-VN"?: string[];
+  "th-TH"?: string[];
+  "pl-PL"?: string[];
+  "nl-NL"?: string[];
+  "sv-SE"?: string[];
+  "bn-BD"?: string[];
+  "sw-KE"?: string[];
+};
   [key: string]: unknown;
 };
 
@@ -1450,9 +1640,177 @@ export const AINovelPublicConfigSchema = {
       "properties": {
         "recommendedPrompts": {
           "type": "array",
-          "description": "Shared kickoff recommendation prompt list managed by backend admin config and consumed by the AINovel client.",
+          "deprecated": true,
+          "description": "Legacy flat kickoff prompt list. New clients use this only for zh-CN compatibility and otherwise select recommendedPromptsI18n by their effective UI locale.",
           "items": {
             "type": "string"
+          }
+        },
+        "recommendedPromptsI18n": {
+          "type": "object",
+          "description": "Locale-indexed kickoff prompt lists managed by backend admin config. Entries use the 20 supported canonical BCP-47 locale tags. The client selects only its matching locale entry and falls back to packaged locale copy when that entry is absent or invalid.",
+          "additionalProperties": false,
+          "properties": {
+            "en-US": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "zh-CN": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "zh-TW": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "ja-JP": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "es-ES": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "pt-BR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "ko-KR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "de-DE": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "fr-FR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "hi-IN": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "id-ID": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "it-IT": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "tr-TR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "vi-VN": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "th-TH": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "pl-PL": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "nl-NL": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sv-SE": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "bn-BD": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sw-KE": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
           }
         }
       }
@@ -1464,6 +1822,28 @@ export type AINovelPublicConfig = {
   "app"?: string;
   "kickoff"?: {
   "recommendedPrompts"?: string[];
+  "recommendedPromptsI18n"?: {
+  "en-US"?: string[];
+  "zh-CN"?: string[];
+  "zh-TW"?: string[];
+  "ja-JP"?: string[];
+  "es-ES"?: string[];
+  "pt-BR"?: string[];
+  "ko-KR"?: string[];
+  "de-DE"?: string[];
+  "fr-FR"?: string[];
+  "hi-IN"?: string[];
+  "id-ID"?: string[];
+  "it-IT"?: string[];
+  "tr-TR"?: string[];
+  "vi-VN"?: string[];
+  "th-TH"?: string[];
+  "pl-PL"?: string[];
+  "nl-NL"?: string[];
+  "sv-SE"?: string[];
+  "bn-BD"?: string[];
+  "sw-KE"?: string[];
+};
   [key: string]: unknown;
 };
   [key: string]: unknown;
@@ -1494,9 +1874,177 @@ export const PublicConfigDataSchema = {
           "properties": {
             "recommendedPrompts": {
               "type": "array",
-              "description": "Shared kickoff recommendation prompt list managed by backend admin config and consumed by the AINovel client.",
+              "deprecated": true,
+              "description": "Legacy flat kickoff prompt list. New clients use this only for zh-CN compatibility and otherwise select recommendedPromptsI18n by their effective UI locale.",
               "items": {
                 "type": "string"
+              }
+            },
+            "recommendedPromptsI18n": {
+              "type": "object",
+              "description": "Locale-indexed kickoff prompt lists managed by backend admin config. Entries use the 20 supported canonical BCP-47 locale tags. The client selects only its matching locale entry and falls back to packaged locale copy when that entry is absent or invalid.",
+              "additionalProperties": false,
+              "properties": {
+                "en-US": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "zh-CN": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "zh-TW": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "ja-JP": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "es-ES": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "pt-BR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "ko-KR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "de-DE": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "fr-FR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "hi-IN": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "id-ID": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "it-IT": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "tr-TR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "vi-VN": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "th-TH": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "pl-PL": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "nl-NL": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "sv-SE": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "bn-BD": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "sw-KE": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
               }
             }
           }
@@ -1516,6 +2064,28 @@ export type PublicConfigData = {
   "app"?: string;
   "kickoff"?: {
   "recommendedPrompts"?: string[];
+  "recommendedPromptsI18n"?: {
+  "en-US"?: string[];
+  "zh-CN"?: string[];
+  "zh-TW"?: string[];
+  "ja-JP"?: string[];
+  "es-ES"?: string[];
+  "pt-BR"?: string[];
+  "ko-KR"?: string[];
+  "de-DE"?: string[];
+  "fr-FR"?: string[];
+  "hi-IN"?: string[];
+  "id-ID"?: string[];
+  "it-IT"?: string[];
+  "tr-TR"?: string[];
+  "vi-VN"?: string[];
+  "th-TH"?: string[];
+  "pl-PL"?: string[];
+  "nl-NL"?: string[];
+  "sv-SE"?: string[];
+  "bn-BD"?: string[];
+  "sw-KE"?: string[];
+};
   [key: string]: unknown;
 };
   [key: string]: unknown;

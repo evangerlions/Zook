@@ -15,6 +15,10 @@ def resolve_workspace_root(value: str | None) -> Path:
         marker = parent / 'PROJECT_PATHS.local.toml'
         if marker.exists():
             return parent.resolve()
+        sibling_workspace = parent / 'zook-workspace'
+        source_dir = sibling_workspace / 'projects' / 'zook' / 'product' / 'common' / 'backend-i18n'
+        if source_dir.exists():
+            return sibling_workspace.resolve()
     raise SystemExit('workspace root not found; pass --workspace-root explicitly')
 
 
@@ -46,8 +50,8 @@ def main() -> None:
       if set(messages) != reference_keys:
         raise SystemExit(f"{locale} keys must exactly match en-US")
       for key, message in messages.items():
-        placeholders = set(re.findall(r"\\{(\\w+)\\}", message))
-        reference_placeholders = set(re.findall(r"\\{(\\w+)\\}", reference[key]))
+        placeholders = set(re.findall(r"\{(\w+)\}", message))
+        reference_placeholders = set(re.findall(r"\{(\w+)\}", reference[key]))
         if placeholders != reference_placeholders:
           raise SystemExit(f"{locale} placeholders for {key} must match en-US")
 

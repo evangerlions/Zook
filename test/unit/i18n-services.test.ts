@@ -184,6 +184,16 @@ test("public API message service localizes representative frontend-visible error
       "x-app-locale": "fr-FR",
     },
   });
+  const spanishLocaleRequest = createRequest({
+    headers: {
+      "x-app-locale": "es-ES",
+    },
+  });
+  const japaneseLocaleRequest = createRequest({
+    headers: {
+      "x-app-locale": "ja-JP",
+    },
+  });
 
   assert.equal(service.resolveLocale(zhHeaderRequest), "zh-CN");
   assert.equal(service.resolveLocale(zhAcceptLanguageRequest), "zh-CN");
@@ -226,7 +236,34 @@ test("public API message service localizes representative frontend-visible error
   );
   assert.equal(
     service.fromErrorCode("REQ_INVALID_HEADER", frenchLocaleRequest),
-    "Request headers are invalid. Please review them and try again.",
+    "Les en-têtes de la requête sont invalides. Vérifiez-les, puis réessayez.",
+  );
+  assert.equal(
+    service.fromErrorCode(
+      "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID",
+      spanishLocaleRequest,
+    ),
+    "Escriba DELETE para confirmar la eliminación de la cuenta.",
+  );
+  assert.equal(
+    service.fromErrorCode("SMS_SERVICE_NOT_CONFIGURED", japaneseLocaleRequest),
+    "SMS 認証は現在一時的に利用できません。",
+  );
+  assert.equal(
+    service.fromErrorCode("ONE_CLICK_SERVICE_NOT_CONFIGURED", japaneseLocaleRequest),
+    "ワンクリックログインは現在一時的に利用できません。",
+  );
+  assert.equal(
+    service.fromErrorCode("AI_UPSTREAM_BAD_GATEWAY", japaneseLocaleRequest),
+    "AI サービスは現在一時的に利用できません。後でもう一度試してください。",
+  );
+  assert.equal(
+    service.fromErrorCode("AI_SCENE_NOT_SUPPORTED", japaneseLocaleRequest),
+    "このAI執筆モードは利用できません。対応するモードを選んで、もう一度試してください。",
+  );
+  assert.equal(
+    service.fromErrorCode("LLM_PROVIDER_CONTENT_SENSITIVE", frenchLocaleRequest),
+    "Ce contenu ne peut pas être envoyé pour le moment. Veuillez le réviser et réessayer.",
   );
 });
 
