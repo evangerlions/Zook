@@ -22,6 +22,7 @@ export type LlmRoutingStrategy = "auto" | "fixed";
 export type LlmModelKind = "chat" | "embedding";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
+export type LlmSmokeTestMode = "matrix" | "route";
 export type ContentSafetyCheckSource = "business" | "admin_test";
 export type ContentSafetyCheckMethod =
   | "disabled"

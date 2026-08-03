@@ -3685,7 +3685,7 @@ test("admin llm service keeps password references visible in config and resolves
   assert.equal(runtimeConfig?.providers[0]?.apiKey, "resolved-bailian-key");
 });
 
-test("admin llm smoke test API requires admin auth and enforces global cooldown", async () => {
+test("admin llm smoke test API defaults an omitted body to the full matrix", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
@@ -3731,6 +3731,71 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
     },
   });
 
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/smoke-test",
+    headers,
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.body.data.target, { mode: "matrix" });
+  assert.equal(response.body.data.summary.totalCount, 1);
+});
+
+test("admin llm smoke test API runs a selected route and enforces its cooldown", async () => {
+  const runtime = await createApplication({
+    adminBasicAuth: {
+      username: "admin",
+      password: "AdminPass123!",
+    },
+  });
+  const headers = {
+    authorization: createAdminAuthHeader(),
+  };
+
+  await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/llm-service",
+    headers,
+    body: {
+      enabled: true,
+      defaultModelKey: "kimi2.5",
+      providers: [
+        {
+          key: "volcengine",
+          label: "火山引擎",
+          enabled: true,
+          baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+          apiKey: "mock-volcengine-api-key",
+          timeoutMs: 30000,
+        },
+        {
+          key: "unconfigured",
+          label: "未配置路由供应商",
+          enabled: true,
+          baseUrl: "https://example.com/v1",
+          apiKey: "mock-unconfigured-api-key",
+          timeoutMs: 30000,
+        },
+      ],
+      models: [
+        {
+          key: "kimi2.5",
+          label: "Kimi 2.5",
+          strategy: "fixed",
+          routes: [
+            {
+              provider: "volcengine",
+              providerModel: "kimi-2.5",
+              enabled: true,
+              weight: 100,
+            },
+          ],
+        },
+      ],
+    },
+  });
+
   const unauthorizedResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/admin/apps/common/llm-service/smoke-test",
@@ -3744,9 +3809,19 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
     method: "POST",
     path: "/api/v1/admin/apps/common/llm-service/smoke-test",
     headers,
+    body: {
+      mode: "route",
+      modelKey: "kimi2.5",
+      provider: "volcengine",
+    },
   });
 
   assert.equal(firstResponse.statusCode, 200);
+  assert.deepEqual(firstResponse.body.data.target, {
+    mode: "route",
+    modelKey: "kimi2.5",
+    provider: "volcengine",
+  });
   assert.equal(firstResponse.body.data.summary.totalCount, 1);
   assert.equal(firstResponse.body.data.summary.failureCount, 1);
   assert.equal(firstResponse.body.data.items[0]?.status, "failed");
@@ -3763,10 +3838,25 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
     "LLM_ROUTE_NOT_AVAILABLE",
   );
 
+  const invalidTargetResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/smoke-test",
+    headers,
+    body: {
+      mode: "route",
+      modelKey: "kimi2.5",
+      provider: "unconfigured",
+    },
+  });
+
+  assert.equal(invalidTargetResponse.statusCode, 400);
+  assert.equal(invalidTargetResponse.body.code, "ADMIN_LLM_SERVICE_INVALID");
+
   const rateLimitedResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/admin/apps/common/llm-service/smoke-test",
     headers,
+    body: { mode: "matrix" },
   });
 
   assert.equal(rateLimitedResponse.statusCode, 429);
@@ -3779,6 +3869,16 @@ test("admin llm smoke test API requires admin auth and enforces global cooldown"
         item.appId === "common",
     ),
   );
+
+  const invalidModeResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/smoke-test",
+    headers,
+    body: { mode: "unknown" },
+  });
+
+  assert.equal(invalidModeResponse.statusCode, 400);
+  assert.equal(invalidModeResponse.body.code, "REQ_INVALID_BODY");
 });
 
 test("common workspace does not expose app config API", async () => {

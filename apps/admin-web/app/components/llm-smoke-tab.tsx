@@ -1,7 +1,8 @@
-import { Button, Collapse, Table, Tag } from "antd";
+import { Collapse, Table, Tag } from "antd";
 import { useMemo } from "react";
 
 import { JsonPreview } from "./json-preview";
+import { LlmSmokeRunner } from "./llm-smoke-runner";
 import { MetricCard } from "./metric-card";
 import {
   createEmptyLlmSmokeSummary,
@@ -11,20 +12,27 @@ import { formatTimestamp } from "../lib/format";
 import type {
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestItem,
+  AdminLlmSmokeTestRunRequest,
+  LlmServiceConfig,
 } from "../lib/types";
 
 interface LlmSmokeTabProps {
-  onRunSmokeTest: () => void;
+  config: LlmServiceConfig | null;
+  onRunSmokeTest: (input: AdminLlmSmokeTestRunRequest) => void;
   runningSmokeTest: boolean;
   smokeDocument: AdminLlmSmokeTestDocument | null;
 }
 
 export function LlmSmokeTab({
+  config,
   onRunSmokeTest,
   runningSmokeTest,
   smokeDocument,
 }: LlmSmokeTabProps) {
   const smokeSummary = smokeDocument?.summary ?? createEmptyLlmSmokeSummary();
+  const smokeTargetLabel = smokeDocument?.target.mode === "route"
+    ? `指定路由 · ${smokeDocument.target.modelKey} / ${smokeDocument.target.provider}`
+    : "全量矩阵";
   const smokeColumns = useMemo(
     () => [
       {
@@ -98,19 +106,22 @@ export function LlmSmokeTab({
         <div className="card-header">
           <div>
             <h2>冒烟测试</h2>
-            <p>按当前生效配置遍历厂商 × 模型矩阵，验证 provider 连通性、响应耗时和基本返回结果。</p>
+            <p>按当前生效配置遍历厂商 × 模型矩阵，或指定一个模型与供应商 route，验证连通性、响应耗时和基本返回结果。</p>
           </div>
           <div className="button-row">
             <span className="meta-chip">冷却 {smokeDocument?.cooldownSeconds ?? 10}s</span>
-            <span className="meta-chip">{smokeDocument ? formatTimestamp(smokeDocument.executedAt) : "尚未执行"}</span>
-            <Button disabled={runningSmokeTest} loading={runningSmokeTest} onClick={onRunSmokeTest} type="primary">
-              {runningSmokeTest ? "执行中..." : "运行冒烟测试"}
-            </Button>
+            <span className="meta-chip">{smokeDocument ? smokeTargetLabel : "尚未执行"}</span>
+            {smokeDocument ? <span className="meta-chip">{formatTimestamp(smokeDocument.executedAt)}</span> : null}
           </div>
         </div>
+        <LlmSmokeRunner
+          config={config}
+          onRun={onRunSmokeTest}
+          running={runningSmokeTest}
+        />
 
         <div className="metric-grid">
-          <MetricCard label="总矩阵" value={String(smokeSummary.totalCount)} />
+          <MetricCard label="总项目" value={String(smokeSummary.totalCount)} />
           <MetricCard label="成功" value={String(smokeSummary.successCount)} />
           <MetricCard label="失败" value={String(smokeSummary.failureCount)} />
           <MetricCard label="跳过" value={String(smokeSummary.skippedCount)} />
@@ -121,7 +132,7 @@ export function LlmSmokeTab({
         <div className="card-header">
           <div>
             <h2>执行结果</h2>
-            <p>主表格展示每个厂商 × 模型的状态、耗时和结果摘要，原始返回放在下面折叠区里。</p>
+            <p>主表格展示本次执行范围内的厂商、模型、状态、耗时和结果摘要，原始返回放在下面折叠区里。</p>
           </div>
         </div>
 
@@ -136,7 +147,7 @@ export function LlmSmokeTab({
             scroll={{ x: 1080 }}
           />
         ) : (
-          <div className="empty-state">运行一次冒烟测试后，这里会展示完整矩阵结果。</div>
+          <div className="empty-state">运行一次冒烟测试后，这里会展示本次执行结果。</div>
         )}
       </section>
 

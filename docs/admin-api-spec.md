@@ -239,12 +239,16 @@ Admin 查看接口：
 | `POST` | `/api/v1/admin/apps/common/llm-service/revisions/{revision}/restore` | 恢复指定历史版本 |
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics` | 获取 LLM 聚合指标 |
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` | 获取单模型指标 |
-| `POST` | `/api/v1/admin/apps/common/llm-service/smoke-test` | 运行冒烟测试 |
+| `POST` | `/api/v1/admin/apps/common/llm-service/smoke-test` | 运行全量或指定路由的冒烟测试 |
 
 说明：
 
 - `GET /api/v1/admin/apps/common/llm-service/metrics` 的 `models` 只统计 common LLM model key，并按当前时间范围内的请求量降序返回，便于优先查看真实流量模型。
 - AINovel 的 `ainovel-free-creative`、`ainovel-plus-reasoning`、`ainovel-embedding-default` 等值是业务 scene route key，不是 model key；LLM metrics 会过滤这些业务 key，并把 AINovel 调用归入实际 provider model key（如 `qwen3.6-plus`、`text-embedding-v4`）。
+- `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）会执行当前生效配置的完整模型 × 供应商矩阵；响应的 `target` 为 `{ "mode": "matrix" }`。
+- 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。
+- 指定 route 若供应商或 route 已禁用，会返回该 route 的 `skipped` 结果；可用 route 会实际调用上游。聊天冒烟请求使用 64 个输出 token，以便推理模型能在回复前完成必要推理。
+- 无论全量还是指定路由，冒烟测试共用 10 秒全局冷却；响应中始终包含本次 `target`、`summary` 与 `items`。
 
 ### 3.12 Admin 指标
 

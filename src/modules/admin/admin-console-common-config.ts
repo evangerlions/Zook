@@ -23,6 +23,7 @@ import type {
   AdminLlmModelMetricsDocument,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
+  AdminLlmSmokeTestRunRequest,
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
   AdminSmsServiceDocument,
@@ -196,8 +197,10 @@ export class AdminConsoleCommonConfig {
     );
   }
 
-  async runLlmSmokeTest(): Promise<AdminLlmSmokeTestDocument> {
-    return this.llmSmokeTestService.run();
+  async runLlmSmokeTest(
+    input?: AdminLlmSmokeTestRunRequest,
+  ): Promise<AdminLlmSmokeTestDocument> {
+    return this.llmSmokeTestService.run(input);
   }
 
   async getContentSafetyConfig(revision?: number): Promise<AdminContentSafetyDocument> {
