@@ -43,12 +43,15 @@ const QWEN_FLASH_MODEL_KEY = "qwen3.5-flash";
 const QWEN_PLUS_MODEL_KEY = "qwen3.6-plus";
 const TEXT_EMBEDDING_MODEL_KEY = "text-embedding-v4";
 const DEFAULT_AINOVEL_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const OPENROUTER_FREE_MODEL_KEY = "openrouter-free";
 
 function createDefaultModels(): LlmModelConfig[] {
   return [
     createQwenPlusModel(),
     createTextEmbeddingModel(),
     createQwenFlashModel(),
+    createOpenRouterFreeModel(),
   ];
 }
 
@@ -67,6 +70,23 @@ function createTextEmbeddingModel(): LlmModelConfig {
 
 function createQwenFlashModel(): LlmModelConfig {
   return createDefaultModel(QWEN_FLASH_MODEL_KEY, "Qwen 3.5 Flash 通用低成本审核", "chat", QWEN_FLASH_MODEL_KEY);
+}
+
+function createOpenRouterFreeModel(): LlmModelConfig {
+  return {
+    key: OPENROUTER_FREE_MODEL_KEY,
+    label: "OpenRouter Free 测试模型",
+    kind: "chat",
+    strategy: "fixed",
+    routes: [
+      {
+        provider: "openrouter",
+        providerModel: "openrouter/free",
+        enabled: true,
+        weight: 100,
+      },
+    ],
+  };
 }
 
 function createDefaultModel(
@@ -273,6 +293,14 @@ export class CommonLlmConfigService {
           label: "阿里云百炼",
           enabled: false,
           baseUrl: DEFAULT_AINOVEL_BAILIAN_BASE_URL,
+          apiKey: "",
+          timeoutMs: DEFAULT_PROVIDER_TIMEOUT_MS,
+        },
+        {
+          key: "openrouter",
+          label: "OpenRouter",
+          enabled: false,
+          baseUrl: DEFAULT_OPENROUTER_BASE_URL,
           apiKey: "",
           timeoutMs: DEFAULT_PROVIDER_TIMEOUT_MS,
         },
