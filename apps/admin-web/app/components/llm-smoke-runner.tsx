@@ -73,42 +73,63 @@ export function LlmSmokeRunner({ config, onRun, running }: LlmSmokeRunnerProps) 
   }
 
   return (
-    <div className="stack">
+    <section className="llm-smoke-runner" aria-label="冒烟测试执行设置">
+      <div className="llm-smoke-runner-heading">
+        <div>
+          <span className="llm-smoke-eyebrow">测试范围</span>
+          <h3>选择要验证的路由</h3>
+        </div>
+        <span className="llm-smoke-live-note">将调用真实上游</span>
+      </div>
+
       <Segmented
         aria-label="冒烟测试模式"
-        className="range-segmented"
+        className="llm-smoke-mode-toggle"
         onChange={(value) => handleModeChange(value as LlmSmokeTestMode)}
         options={SMOKE_MODE_OPTIONS}
         value={mode}
       />
 
       {mode === "route" ? (
-        <div className="inline-row">
-          <Select
-            aria-label="选择冒烟测试模型"
-            onChange={handleModelChange}
-            options={modelOptions}
-            value={selectedModel?.key}
-          />
-          <Select
-            aria-label="选择冒烟测试供应商"
-            onChange={setSelectedProvider}
-            options={providerOptions}
-            value={selectedRoute?.provider}
-          />
+        <div className="llm-smoke-route-grid">
+          <label>
+            <span>模型</span>
+            <Select
+              aria-label="选择冒烟测试模型"
+              onChange={handleModelChange}
+              options={modelOptions}
+              value={selectedModel?.key}
+            />
+          </label>
+          <label>
+            <span>供应商 route</span>
+            <Select
+              aria-label="选择冒烟测试供应商"
+              onChange={setSelectedProvider}
+              options={providerOptions}
+              value={selectedRoute?.provider}
+            />
+          </label>
         </div>
       ) : (
-        <p className="meta-text">全量矩阵会遍历每个模型与供应商的配置组合。</p>
+        <div className="llm-smoke-mode-note">
+          <strong>覆盖全部配置组合</strong>
+          <span>逐项检查每个模型与供应商，未配置或已停用的组合会明确标记为跳过。</span>
+        </div>
       )}
 
-      <Button
-        disabled={running || (mode === "route" && !canRunRoute)}
-        loading={running}
-        onClick={handleRun}
-        type="primary"
-      >
-        {running ? "执行中..." : mode === "route" ? "运行指定路由冒烟测试" : "运行全量冒烟测试"}
-      </Button>
-    </div>
+      <div className="llm-smoke-runner-footer">
+        <span>同一时间窗口内仅允许执行一次，冷却时间为 10 秒。</span>
+        <Button
+          className="llm-smoke-run-button"
+          disabled={running || (mode === "route" && !canRunRoute)}
+          loading={running}
+          onClick={handleRun}
+          type="primary"
+        >
+          {running ? "执行中..." : mode === "route" ? "运行指定路由" : "运行全量测试"}
+        </Button>
+      </div>
+    </section>
   );
 }
