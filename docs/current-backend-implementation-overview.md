@@ -409,6 +409,8 @@ FrogSleep 产品接口已经接入应用入口，代表性接口包括：
 
 搭子增长 P1 通过 `/api/v1/frogsleep/buddy/hub`、`activity`、`shares`、`interactions` 和 `joint-activities` 提供。Hub 按对方身份合并同一人的睡眠/专注领域，不同对方保持分离；状态、每日总结、活动和夜间共同活动均在读取时重新校验方向授权。结构化分享仅保留白名单数值并最长 30 天过期；受限互动不接受自由文本；分享、互动和共同活动创建/响应使用幂等 key 并与通知 outbox 在同一排他会话中写入。
 
+搭子增长 P2 已挂出 `FROGSLEEP_BUDDY_GROUP_ENABLED` 灰度后的 2-5 人群组搭子接口：`/api/v1/frogsleep/buddy/groups` 支持创建/列表/详情/更新，子资源支持群组主页、邀请、邀请 accept/decline/cancel、成员移除、角色调整、leave/pause/resume/dissolve 和共享基线授权视图。PostgreSQL 通过 `019_frogsleep_buddy_group_lifecycle.sql` 增加 canonical group aggregate、成员版本、邀请版本和 abandoned forming group 过期函数；应用层以 group 表为 source of truth，成员和邀请操作使用版本比较更新。
+
 worker 会消费搭子 notification outbox，幂等生成站内 feed，并把只含 opaque notification ID 与安全路由的 Push 放入现有通知队列。站内 feed 支持分页、未读数、单条/全部已读和鉴权目标解析；物化与 APNs 入队分别记录 delivery attempt。
 
 这些接口统一在 `src/app.module.ts` 中完成装配和分发。

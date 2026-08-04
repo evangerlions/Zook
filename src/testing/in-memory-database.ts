@@ -25,6 +25,9 @@ import type {
   FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyDomainSlotRecord,
   FrogSleepBuddyDomainRelationshipRecord,
+  FrogSleepBuddyGroupRecord,
+  FrogSleepBuddyGroupMemberRecord,
+  FrogSleepBuddyGroupInvitationRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -109,6 +112,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
   frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
+  frogSleepBuddyGroups: FrogSleepBuddyGroupRecord[];
+  frogSleepBuddyGroupMembers: FrogSleepBuddyGroupMemberRecord[];
+  frogSleepBuddyGroupInvitations: FrogSleepBuddyGroupInvitationRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -145,6 +151,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyInvitationReceiptAttempts = structuredClone(seed.frogSleepBuddyInvitationReceiptAttempts ?? []);
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
+    this.frogSleepBuddyGroups = structuredClone(seed.frogSleepBuddyGroups ?? []);
+    this.frogSleepBuddyGroupMembers = structuredClone(seed.frogSleepBuddyGroupMembers ?? []);
+    this.frogSleepBuddyGroupInvitations = structuredClone(seed.frogSleepBuddyGroupInvitations ?? []);
     this.frogSleepBuddyNotificationDeliveries = [];
   }
 
@@ -1121,6 +1130,127 @@ export class InMemoryDatabase extends ApplicationDatabase {
       item.id !== updated.id && item.appId === updated.appId && item.domain === updated.domain &&
       item.status !== "revoked" && item.userIdLow === updated.userIdLow && item.userIdHigh === updated.userIdHigh
     )) throw new Error("FrogSleep buddy domain relationship current pair already exists.");
+    Object.assign(existing, updated);
+    return structuredClone(existing);
+  }
+
+  insertFrogSleepBuddyGroup(record: FrogSleepBuddyGroupRecord): FrogSleepBuddyGroupRecord {
+    const existing = this.frogSleepBuddyGroups.find((item) => item.id === record.id);
+    if (existing) {
+      if (existing.appId !== record.appId) throw new Error("FrogSleep buddy group ID collision.");
+      return structuredClone(existing);
+    }
+    this.frogSleepBuddyGroups.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findFrogSleepBuddyGroup(appId: string, groupId: string): FrogSleepBuddyGroupRecord | undefined {
+    return structuredClone(this.frogSleepBuddyGroups.find((item) =>
+      item.appId === appId && item.id === groupId));
+  }
+
+  listFrogSleepBuddyGroupsForUser(appId: string, userId: string): FrogSleepBuddyGroupRecord[] {
+    const groupIds = new Set(this.frogSleepBuddyGroupMembers
+      .filter((member) => member.appId === appId && member.userId === userId && member.status === "active")
+      .map((member) => member.groupId));
+    return structuredClone(this.frogSleepBuddyGroups.filter((group) =>
+      group.appId === appId && groupIds.has(group.id) && group.status !== "dissolved"
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)));
+  }
+
+  listFrogSleepBuddyGroupsForOwner(appId: string, ownerUserId: string): FrogSleepBuddyGroupRecord[] {
+    return structuredClone(this.frogSleepBuddyGroups.filter((group) =>
+      group.appId === appId && group.ownerUserId === ownerUserId && group.status !== "dissolved"
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)));
+  }
+
+  compareAndUpdateFrogSleepBuddyGroup(input: {
+    appId: string; id: string; expectedVersion: number; status: FrogSleepBuddyGroupRecord["status"];
+    memberCount: number; sharingBaseline: string[]; dissolvedAt?: string; updatedAt: string;
+    groupName?: string; groupDescription?: string; groupDescriptionSpecified?: boolean;
+  }): FrogSleepBuddyGroupRecord | undefined {
+    const existing = this.frogSleepBuddyGroups.find((item) => item.appId === input.appId && item.id === input.id);
+    if (!existing || existing.version !== input.expectedVersion) return undefined;
+    const updated: FrogSleepBuddyGroupRecord = { ...existing, status: input.status, memberCount: input.memberCount,
+      sharingBaseline: input.sharingBaseline, dissolvedAt: input.dissolvedAt,
+      groupName: input.groupName ?? existing.groupName,
+      groupDescription: input.groupDescriptionSpecified ? input.groupDescription : existing.groupDescription,
+      version: existing.version + 1, updatedAt: input.updatedAt };
+    Object.assign(existing, updated);
+    return structuredClone(existing);
+  }
+
+  insertFrogSleepBuddyGroupMember(record: FrogSleepBuddyGroupMemberRecord): FrogSleepBuddyGroupMemberRecord {
+    const existing = this.frogSleepBuddyGroupMembers.find((item) =>
+      item.appId === record.appId && item.groupId === record.groupId && item.userId === record.userId);
+    if (!existing) {
+      this.frogSleepBuddyGroupMembers.push(structuredClone(record));
+      return structuredClone(record);
+    }
+    Object.assign(existing, record);
+    return structuredClone(existing);
+  }
+
+  findFrogSleepBuddyGroupMember(
+    appId: string, groupId: string, userId: string,
+  ): FrogSleepBuddyGroupMemberRecord | undefined {
+    return structuredClone(this.frogSleepBuddyGroupMembers.find((item) =>
+      item.appId === appId && item.groupId === groupId && item.userId === userId));
+  }
+
+  listFrogSleepBuddyGroupMembers(appId: string, groupId: string): FrogSleepBuddyGroupMemberRecord[] {
+    return structuredClone(this.frogSleepBuddyGroupMembers.filter((item) =>
+      item.appId === appId && item.groupId === groupId
+    ).sort((left, right) => String(left.joinedAt ?? "").localeCompare(String(right.joinedAt ?? ""))
+      || left.id.localeCompare(right.id)));
+  }
+
+  compareAndUpdateFrogSleepBuddyGroupMember(input: {
+    appId: string; groupId: string; userId: string; expectedVersion: number;
+    role: FrogSleepBuddyGroupMemberRecord["role"]; status: FrogSleepBuddyGroupMemberRecord["status"];
+    leftAt?: string; updatedAt: string;
+  }): FrogSleepBuddyGroupMemberRecord | undefined {
+    const existing = this.frogSleepBuddyGroupMembers.find((item) =>
+      item.appId === input.appId && item.groupId === input.groupId && item.userId === input.userId);
+    if (!existing || existing.version !== input.expectedVersion) return undefined;
+    const updated: FrogSleepBuddyGroupMemberRecord = { ...existing, role: input.role, status: input.status,
+      leftAt: input.leftAt, version: existing.version + 1, updatedAt: input.updatedAt };
+    Object.assign(existing, updated);
+    return structuredClone(existing);
+  }
+
+  insertFrogSleepBuddyGroupInvitation(record: FrogSleepBuddyGroupInvitationRecord): FrogSleepBuddyGroupInvitationRecord {
+    const existing = this.frogSleepBuddyGroupInvitations.find((item) => item.id === record.id);
+    if (existing) {
+      if (existing.appId !== record.appId) throw new Error("FrogSleep buddy group invitation ID collision.");
+      return structuredClone(existing);
+    }
+    this.frogSleepBuddyGroupInvitations.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findFrogSleepBuddyGroupInvitation(
+    appId: string, invitationId: string,
+  ): FrogSleepBuddyGroupInvitationRecord | undefined {
+    return structuredClone(this.frogSleepBuddyGroupInvitations.find((item) =>
+      item.appId === appId && item.id === invitationId));
+  }
+
+  listFrogSleepBuddyGroupInvitations(appId: string, groupId: string): FrogSleepBuddyGroupInvitationRecord[] {
+    return structuredClone(this.frogSleepBuddyGroupInvitations.filter((item) =>
+      item.appId === appId && item.groupId === groupId
+    ).sort((left, right) => right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id)));
+  }
+
+  compareAndUpdateFrogSleepBuddyGroupInvitation(input: {
+    appId: string; invitationId: string; expectedVersion: number;
+    status: FrogSleepBuddyGroupInvitationRecord["status"]; respondedAt?: string; updatedAt: string;
+  }): FrogSleepBuddyGroupInvitationRecord | undefined {
+    const existing = this.frogSleepBuddyGroupInvitations.find((item) =>
+      item.appId === input.appId && item.id === input.invitationId);
+    if (!existing || existing.version !== input.expectedVersion) return undefined;
+    const updated: FrogSleepBuddyGroupInvitationRecord = { ...existing, status: input.status,
+      respondedAt: input.respondedAt, version: existing.version + 1, updatedAt: input.updatedAt };
     Object.assign(existing, updated);
     return structuredClone(existing);
   }

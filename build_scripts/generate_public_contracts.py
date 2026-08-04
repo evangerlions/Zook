@@ -87,6 +87,10 @@ FROGSLEEP_SPECS: dict[str, list[str]] = {
         "BuddyInvitationDelivery",
         "BuddyInvitationResponseRequest",
         "BuddySharingGrantUpdateRequest",
+        "BuddyGroupCreateRequest",
+        "BuddyGroupUpdateRequest",
+        "BuddyGroupInviteRequest",
+        "BuddyGroupRoleUpdateRequest",
         "BuddyNotificationPreferencesRequest",
         "BuddyStructuredShareRequest",
         "BuddyInteractionRequest",
@@ -241,7 +245,7 @@ def ts_type(schema: Any, name_hint: str = "") -> str:
     if schema_type == "boolean":
         return "boolean"
     if schema_type == "array":
-        return f"{ts_type(schema.get('items', {}), name_hint)}[]"
+        return f"{parenthesize_type(ts_type(schema.get('items', {}), name_hint))}[]"
     if schema_type == "object" or "properties" in schema or "additionalProperties" in schema:
         return ts_object_type(schema)
     return "unknown"

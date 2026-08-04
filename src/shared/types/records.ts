@@ -1,4 +1,9 @@
 import type {
+  FrogSleepBuddyGroupInvitationRecord,
+  FrogSleepBuddyGroupMemberRecord,
+  FrogSleepBuddyGroupRecord,
+} from "./frogsleep-buddy-group.ts";
+import type {
   AppStatus,
   AppUserStatus,
   ContentSafetyCheckMethod,
@@ -583,4 +588,7 @@ export interface DatabaseSeed {
   frogSleepBuddyDomainSlots?: FrogSleepBuddyDomainSlotRecord[];
   frogSleepBuddyDomainRelationships?: FrogSleepBuddyDomainRelationshipRecord[];
   frogSleepBuddyInvitationReceiptAttempts?: FrogSleepBuddyInvitationReceiptAttemptRecord[];
+  frogSleepBuddyGroups?: FrogSleepBuddyGroupRecord[];
+  frogSleepBuddyGroupMembers?: FrogSleepBuddyGroupMemberRecord[];
+  frogSleepBuddyGroupInvitations?: FrogSleepBuddyGroupInvitationRecord[];
 }

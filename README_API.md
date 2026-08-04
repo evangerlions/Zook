@@ -253,6 +253,9 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/frogsleep/focus-buddy/matches/{userId}/report` | FrogSleep 当前用户举报该专注匹配候选人，并从后续搜索中排除                                                               |
 | `POST` | `/api/v1/frogsleep/focus-buddy/invites`    | FrogSleep 直接邀请专注搭子                                                                                                           |
 | `GET`  | `/api/v1/frogsleep/focus-buddy/invites/preview` | FrogSleep 专注搭子邀请预览 / 登录后恢复，不消费邀请                                                                         |
+| `GET` / `POST` | `/api/v1/frogsleep/buddy/groups`   | FrogSleep 群组搭子列表 / 创建                                                                                                        |
+| `GET` / `PATCH` | `/api/v1/frogsleep/buddy/groups/{groupId}` | FrogSleep 群组搭子详情 / 更新                                                                                              |
+| `GET` / `POST` | `/api/v1/frogsleep/buddy/groups/{groupId}/invitations` | FrogSleep 群组邀请查询 / 创建                                                                                    |
 | `GET`  | `/frogsleep/sleep-buddy-invite`            | FrogSleep 睡眠搭子邀请浏览器中转，302 跳转到 deep link                                                                                |
 | `GET`  | `/frogsleep/focus-invite`                  | FrogSleep 专注搭子邀请浏览器中转，302 跳转到 deep link                                                                                |
 
@@ -361,9 +364,10 @@ FROGSLEEP_BUDDY_GROWTH_HUB_ENABLED=true
 FROGSLEEP_BUDDY_INTERACTIONS_ENABLED=true
 FROGSLEEP_BUDDY_GOALS_REPORTS_ENABLED=true
 FROGSLEEP_BUDDY_PUSH_ENABLED=true
+FROGSLEEP_BUDDY_GROUP_ENABLED=true
 ```
 
-这些开关分别控制邀请收件箱、邀请显式同意、搭子成长主页、结构化互动、共同目标/周报和 Push 投递。客户端可逐项灰度；服务端关闭某项能力时不得通过旧链接绕过鉴权或显式接受规则。
+这些开关分别控制邀请收件箱、邀请显式同意、搭子成长主页、结构化互动、共同目标/周报、Push 投递和 2-5 人群组搭子。客户端可逐项灰度；服务端关闭某项能力时不得通过旧链接绕过鉴权或显式接受规则。
 
 FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响应包 `code + message + data + requestId`，同时把对象型 `data` 字段复制到响应根部，方便仍按 Go 后端 raw JSON 解码的 Sleep 客户端读取 `access_token`、`refresh_token`、`user_id`、`device`、`status`、`relationship_id`、`session_id`、`summary`、`recap`、`moments` 等字段。错误响应仍使用 Zook 统一错误码；常见错误包括：请求体缺字段返回 `400 REQ_INVALID_BODY`；未带 Bearer token 返回 `401 AUTH_BEARER_REQUIRED`；token 非法或过期返回 `401 AUTH_INVALID_TOKEN`；非 FrogSleep app token 访问 `/api/v1/frogsleep/*` 保护接口返回 `403 AUTH_APP_SCOPE_MISMATCH`；重复关系、重复邮箱等业务冲突返回 `409`。
 
@@ -565,12 +569,25 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 | `POST` | `/api/v1/frogsleep/buddy/invitations/{inviteId}/cancel` | 邀请人按版本取消邀请 |
 | `GET` | `/api/v1/frogsleep/buddy/relationships/{relationshipId}/grants` | 关系参与者查询双方按方向、领域和类别拆分的分享授权 |
 | `PATCH` | `/api/v1/frogsleep/buddy/relationships/{relationshipId}/grants/{grantId}` | 授权人用 `expected_version` 暂停或恢复自己的单项授权 |
+| `GET` | `/api/v1/frogsleep/buddy/groups` | 查询当前用户参与或拥有的群组搭子 |
+| `POST` | `/api/v1/frogsleep/buddy/groups` | 创建睡眠或专注群组搭子，创建者为 owner |
+| `GET` | `/api/v1/frogsleep/buddy/groups/{groupId}` | 查询群组详情、成员和邀请 |
+| `PATCH` | `/api/v1/frogsleep/buddy/groups/{groupId}` | owner 更新群组名称、描述和分享基线 |
+| `GET` | `/api/v1/frogsleep/buddy/groups/{groupId}/hub` | 查询群组主页、成员 presence、近期活动和当前用户可执行动作 |
+| `GET` / `POST` | `/api/v1/frogsleep/buddy/groups/{groupId}/invitations` | 查询或创建群组邀请 |
+| `POST` | `/api/v1/frogsleep/buddy/groups/invitations/{invitationId}/{action}` | 群组邀请 `accept`、`decline` 或 `cancel` |
+| `POST` | `/api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}` | owner/moderator 移除非 owner 成员 |
+| `PATCH` | `/api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}/role` | owner 调整非 owner 成员角色 |
+| `POST` | `/api/v1/frogsleep/buddy/groups/{groupId}/{action}` | 群组 `leave`、`pause`、`resume` 或 `dissolve` |
+| `GET` | `/api/v1/frogsleep/buddy/groups/{groupId}/grants` | 查询群组成员共享基线授权视图 |
 
 受保护的搭子数据按方向授权分类校验：`presence` 用于在线/专注状态，`daily_summary` 用于睡眠总结与联合回顾，`weekly_trend` 用于专注对比，`shared_activity` 用于共享时刻、结构化消息和共同睡眠活动。关系暂停、撤销、拉黑或对应方向授权撤销后，新读取和新互动立即拒绝。在方向授权上线前已接受的旧关系会幂等回填双向默认授权，以保持原有共享行为；新关系只使用接受预览中明示的分类。
 
 `GET /api/v1/frogsleep/buddy/safety-baseline` 返回标准 Zook envelope，并提供 `schema_version: "1"`、`minimum_client_version: "1.0.0"`、ISO-8601 `server_time` 以及始终为 `true` 的 `safety_commands.decline`、`cancel`、`pause`、`revoke`、`block`。响应头固定为 `Cache-Control: private, max-age=300`。该接口不返回邀请、关系、授权或能力开关，且不受普通搭子增长能力开关影响；未携带 FrogSleep Bearer token 时返回现有 `401 AUTH_BEARER_REQUIRED` 错误 envelope。
 
-`GET /api/v1/frogsleep/buddy/capabilities` 返回标准 Zook envelope，并提供 `schema_version: "1"`、`buddy_api_version: "1"`、`minimum_client_version: "1.0.0"`、最多五分钟后过期的 ISO-8601 `expires_at`，以及 `commands.create`、`accept`、`activity`、`share` 四个显式布尔值。`create` 与 `accept` 仅在普通邀请收件箱和显式邀请同意能力均启用时为 `true`；`activity` 与 `share` 仅在结构化互动能力启用时为 `true`。响应头固定为 `Cache-Control: private, max-age=300`，未携带 FrogSleep Bearer token 时返回现有 `401 AUTH_BEARER_REQUIRED` 错误 envelope。此普通能力文档不返回安全命令、邀请、关系、授权、账户或功能开关元数据；它可以全部为 `false`，而独立的 safety baseline 仍保持可用。
+`GET /api/v1/frogsleep/buddy/capabilities` 返回标准 Zook envelope，并提供 `schema_version: "1"`、`buddy_api_version: "1"`、`minimum_client_version: "1.0.0"`、最多五分钟后过期的 ISO-8601 `expires_at`，以及 `commands.create`、`accept`、`activity`、`share`、`focus_matching`、`group_buddies` 等显式布尔值。`create` 与 `accept` 仅在普通邀请收件箱和显式邀请同意能力均启用时为 `true`；`activity` 与 `share` 仅在结构化互动能力启用时为 `true`；`group_buddies` 仅在 `FROGSLEEP_BUDDY_GROUP_ENABLED=true` 时为 `true`。响应头固定为 `Cache-Control: private, max-age=300`，未携带 FrogSleep Bearer token 时返回现有 `401 AUTH_BEARER_REQUIRED` 错误 envelope。此普通能力文档不返回安全命令、邀请、关系、授权、账户或功能开关元数据；它可以全部为 `false`，而独立的 safety baseline 仍保持可用。
+
+群组搭子接口要求 FrogSleep Bearer 鉴权并受 `group_buddies` 能力开关控制，关闭时返回未命中路由。群组 `domain` 只允许 `sleep` 或 `focus`，`group_name` 为 1-40 字符，`group_description` 最长 160 字符，`sharing_baseline` 只允许 `presence`、`daily_summary`、`weekly_trend`、`shared_activity`。每组最多 5 名 active 成员；每个 owner 最多 5 个未解散群组。群组状态为 `forming`、`active`、`paused`、`dissolved`；首个成员创建后为 `forming`，第二名成员接受邀请后进入 `active`。owner 可更新、暂停、恢复、解散和改角色；owner/moderator 可邀请或移除普通成员；owner 不能直接离开最后一个 owner 身份。常见业务错误包括 `400 BUDDY_GROUP_LIMIT`、`400 BUDDY_GROUP_FULL`、`400 BUDDY_GROUP_INVITATION_NOT_FOUND`、`400 BUDDY_GROUP_INVITATION_EXPIRED`、`403 BUDDY_GROUP_FORBIDDEN`、`403 BUDDY_GROUP_NOT_MEMBER`、`403 BUDDY_GROUP_PAUSED` 和 `409 BUDDY_GROUP_CONFLICT`。
 
 `POST /api/v1/frogsleep/buddy/invitation-receipts` 要求 FrogSleep Bearer 鉴权和普通 `create` 能力。请求体只接受邮箱语法合法的 `email` 与非空、不重复的 `domains`（`sleep`、`focus`）；邮箱会先 `trim().toLowerCase()`，服务端仅保存其 SHA-256 小写十六进制哈希。响应为标准 envelope，`data` 只含不透明 `receipt_id`、固定 `status: "recorded"` 和七天后过期的 ISO-8601 `expires_at`。同一邀请人、规范化邮箱和领域集合重复提交会返回原回执。已注册且合格的账户会在内部绑定不可变用户 ID；未注册、本人或不合格目标会记录同形 decoy 回执。该命令不泄露账户、投递或领域信息，当前只记录邀请回执，不代表已经投递、接受、创建邀请、关系、通知、定位器或分享链接。
 
@@ -599,6 +616,16 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 | `GET` | `/api/v1/frogsleep/buddy/milestones` | 查询当前关系可见的去重里程碑；可按 `relationship_id` 过滤 |
 | `GET` | `/api/v1/frogsleep/buddy/weekly-reports` | 查询按当前查看者和方向授权生成的共同周报版本 |
 | `GET` | `/api/v1/frogsleep/buddy/weekly-reports/{reportId}` | 读取单份周报，读时再次校验关系与当前 `weekly_trend` 授权 |
+| `GET` | `/api/v1/frogsleep/buddy/groups` | 查询当前用户参与或拥有的群组搭子 |
+| `POST` | `/api/v1/frogsleep/buddy/groups` | 创建睡眠或专注群组搭子，创建者为 owner |
+| `GET` / `PATCH` | `/api/v1/frogsleep/buddy/groups/{groupId}` | 查询或更新群组详情 |
+| `GET` | `/api/v1/frogsleep/buddy/groups/{groupId}/hub` | 查询群组主页 |
+| `GET` / `POST` | `/api/v1/frogsleep/buddy/groups/{groupId}/invitations` | 查询或创建群组邀请 |
+| `POST` | `/api/v1/frogsleep/buddy/groups/invitations/{invitationId}/{action}` | 群组邀请 `accept`、`decline` 或 `cancel` |
+| `POST` | `/api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}` | 移除群组成员 |
+| `PATCH` | `/api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}/role` | 调整成员角色 |
+| `POST` | `/api/v1/frogsleep/buddy/groups/{groupId}/{action}` | 群组 `leave`、`pause`、`resume` 或 `dissolve` |
+| `GET` | `/api/v1/frogsleep/buddy/groups/{groupId}/grants` | 查询群组共享基线授权 |
 | `GET` | `/api/v1/frogsleep/buddy/notifications/unread-count` | 查询搭子通知未读数 |
 | `POST` | `/api/v1/frogsleep/buddy/notifications/{notificationId}/read` | 标记当前用户的一条通知已读 |
 | `POST` | `/api/v1/frogsleep/buddy/notifications/mark-all-read` | 标记当前用户全部搭子通知已读 |

@@ -32,6 +32,7 @@ export async function tryHandleBuddyCapabilitiesRoutes(
       activity: interactionsEnabled,
       share: interactionsEnabled,
       focus_matching: capabilities.focusMatching,
+      group_buddies: capabilities.groupBuddies,
     },
   }, request.requestId as string, { "Cache-Control": "private, max-age=300" });
 }

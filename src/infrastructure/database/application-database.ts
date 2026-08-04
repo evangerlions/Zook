@@ -27,6 +27,9 @@ import type {
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
+  FrogSleepBuddyGroupRecord,
+  FrogSleepBuddyGroupMemberRecord,
+  FrogSleepBuddyGroupInvitationRecord,
   FrogSleepEntityFilter,
   FrogSleepEntityKind,
   FrogSleepEntityRecord,
@@ -268,6 +271,53 @@ export abstract class ApplicationDatabase {
     status: FrogSleepBuddyDomainRelationshipRecord["status"];
     pausedByUserIds: string[]; revokedAt?: string; updatedAt: string;
   }): MaybePromise<FrogSleepBuddyDomainRelationshipRecord | undefined>;
+  abstract insertFrogSleepBuddyGroup(
+    record: FrogSleepBuddyGroupRecord,
+  ): MaybePromise<FrogSleepBuddyGroupRecord>;
+  abstract findFrogSleepBuddyGroup(
+    appId: string, groupId: string,
+  ): MaybePromise<FrogSleepBuddyGroupRecord | undefined>;
+  abstract listFrogSleepBuddyGroupsForUser(
+    appId: string, userId: string,
+  ): MaybePromise<FrogSleepBuddyGroupRecord[]>;
+  abstract listFrogSleepBuddyGroupsForOwner(
+    appId: string, ownerUserId: string,
+  ): MaybePromise<FrogSleepBuddyGroupRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyGroup(input: {
+    appId: string; id: string; expectedVersion: number;
+    status: FrogSleepBuddyGroupRecord["status"]; memberCount: number;
+    sharingBaseline: string[]; dissolvedAt?: string; updatedAt: string;
+    groupName?: string; groupDescription?: string; groupDescriptionSpecified?: boolean;
+  }): MaybePromise<FrogSleepBuddyGroupRecord | undefined>;
+  abstract insertFrogSleepBuddyGroupMember(
+    record: FrogSleepBuddyGroupMemberRecord,
+  ): MaybePromise<FrogSleepBuddyGroupMemberRecord>;
+  abstract findFrogSleepBuddyGroupMember(
+    appId: string, groupId: string, userId: string,
+  ): MaybePromise<FrogSleepBuddyGroupMemberRecord | undefined>;
+  abstract listFrogSleepBuddyGroupMembers(
+    appId: string, groupId: string,
+  ): MaybePromise<FrogSleepBuddyGroupMemberRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyGroupMember(input: {
+    appId: string; groupId: string; userId: string; expectedVersion: number;
+    role: FrogSleepBuddyGroupMemberRecord["role"];
+    status: FrogSleepBuddyGroupMemberRecord["status"];
+    leftAt?: string; updatedAt: string;
+  }): MaybePromise<FrogSleepBuddyGroupMemberRecord | undefined>;
+  abstract insertFrogSleepBuddyGroupInvitation(
+    record: FrogSleepBuddyGroupInvitationRecord,
+  ): MaybePromise<FrogSleepBuddyGroupInvitationRecord>;
+  abstract findFrogSleepBuddyGroupInvitation(
+    appId: string, invitationId: string,
+  ): MaybePromise<FrogSleepBuddyGroupInvitationRecord | undefined>;
+  abstract listFrogSleepBuddyGroupInvitations(
+    appId: string, groupId: string,
+  ): MaybePromise<FrogSleepBuddyGroupInvitationRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyGroupInvitation(input: {
+    appId: string; invitationId: string; expectedVersion: number;
+    status: FrogSleepBuddyGroupInvitationRecord["status"];
+    respondedAt?: string; updatedAt: string;
+  }): MaybePromise<FrogSleepBuddyGroupInvitationRecord | undefined>;
   abstract upsertFrogSleepBuddyInvitationReceiptAttempt(
     record: FrogSleepBuddyInvitationReceiptAttemptRecord,
   ): MaybePromise<FrogSleepBuddyInvitationReceiptAttemptRecord>;

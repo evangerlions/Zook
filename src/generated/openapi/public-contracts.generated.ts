@@ -947,7 +947,8 @@ export const AnalyticsBatchRequestSchema = {
 } as const;
 
 export type AnalyticsBatchRequest = {
-  "events": {
+  "events": (
+{
   "platform": "web" | "ios" | "android";
   "sessionId": string;
   "pageKey": string;
@@ -957,7 +958,8 @@ export type AnalyticsBatchRequest = {
   "metadata"?: {
   [key: string]: unknown;
 };
-}[];
+}
+)[];
 };
 
 export const AnalyticsAcceptedDataSchema = {
@@ -2228,7 +2230,9 @@ export type BuddyInvitationCreateRequest = {
   "email"?: string;
   "user_id"?: string;
 };
-  "domains": "sleep" | "focus"[];
+  "domains": (
+"sleep" | "focus"
+)[];
 };
 
 export const BuddyInvitationTargetSchema = {
@@ -2405,7 +2409,9 @@ export const BuddyInvitationResponseRequestSchema = {
 export type BuddyInvitationResponseRequest = {
   "expected_version": number;
   "idempotency_key": string;
-  "sharing_categories"?: "presence" | "daily_summary" | "weekly_trend" | "shared_activity"[];
+  "sharing_categories"?: (
+"presence" | "daily_summary" | "weekly_trend" | "shared_activity"
+)[];
 };
 
 export const BuddySharingGrantUpdateRequestSchema = {
@@ -2433,6 +2439,279 @@ export const BuddySharingGrantUpdateRequestSchema = {
 export type BuddySharingGrantUpdateRequest = {
   "state": "granted" | "revoked";
   "expected_version": number;
+};
+
+export const BuddyGroupCreateRequestSchema = {
+  "type": "object",
+  "required": [
+    "domain",
+    "group_name"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "group_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "group_description": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "sharing_baseline": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "presence",
+          "daily_summary",
+          "weekly_trend",
+          "shared_activity"
+        ]
+      }
+    },
+    "invitees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "user_id"
+            ]
+          },
+          {
+            "required": [
+              "email"
+            ]
+          }
+        ]
+      }
+    }
+  }
+} as const;
+
+export type BuddyGroupCreateRequest = {
+  "domain": "sleep" | "focus";
+  "group_name": string;
+  "group_description"?: string;
+  "sharing_baseline"?: (
+"presence" | "daily_summary" | "weekly_trend" | "shared_activity"
+)[];
+  "invitees"?: (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+};
+
+export const BuddyGroupUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "group_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "group_description": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "sharing_baseline": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "presence",
+          "daily_summary",
+          "weekly_trend",
+          "shared_activity"
+        ]
+      }
+    }
+  }
+} as const;
+
+export type BuddyGroupUpdateRequest = {
+  "group_name"?: string;
+  "group_description"?: string;
+  "sharing_baseline"?: (
+"presence" | "daily_summary" | "weekly_trend" | "shared_activity"
+)[];
+  [key: string]: unknown;
+};
+
+export const BuddyGroupInviteRequestSchema = {
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "invitees": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "user_id"
+            ]
+          },
+          {
+            "required": [
+              "email"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "user_id"
+      ]
+    },
+    {
+      "required": [
+        "email"
+      ]
+    },
+    {
+      "required": [
+        "invitees"
+      ]
+    }
+  ]
+} as const;
+
+export type BuddyGroupInviteRequest = (
+{
+  "user_id": string;
+  "email"?: string;
+  "invitees"?: (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+  "invitees"?: (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+}
+) | (
+{
+  "user_id"?: string;
+  "email"?: string;
+  "invitees": (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+}
+);
+
+export const BuddyGroupRoleUpdateRequestSchema = {
+  "type": "object",
+  "required": [
+    "role"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "moderator",
+        "member"
+      ]
+    }
+  }
+} as const;
+
+export type BuddyGroupRoleUpdateRequest = {
+  "role": "moderator" | "member";
+  [key: string]: unknown;
 };
 
 export const BuddyNotificationPreferencesRequestSchema = {
@@ -2486,7 +2765,9 @@ export const BuddyNotificationPreferencesRequestSchema = {
 
 export type BuddyNotificationPreferencesRequest = {
   "enabled"?: boolean;
-  "disabled_categories"?: "invitations" | "interactions" | "activities" | "goals" | "reports"[];
+  "disabled_categories"?: (
+"invitations" | "interactions" | "activities" | "goals" | "reports"
+)[];
   "quiet_start_minute"?: number;
   "quiet_end_minute"?: number;
   "timezone_offset_minutes"?: number;
@@ -2564,7 +2845,9 @@ export const BuddyInteractionRequestSchema = {
         "praise",
         "support",
         "join_next_time",
-        "tonight_together"
+        "tonight_together",
+        "group_cheer",
+        "group_goodnight"
       ]
     },
     "idempotency_key": {
@@ -2580,7 +2863,7 @@ export const BuddyInteractionRequestSchema = {
 
 export type BuddyInteractionRequest = {
   "relationship_id": string;
-  "type": "encouragement" | "praise" | "support" | "join_next_time" | "tonight_together";
+  "type": "encouragement" | "praise" | "support" | "join_next_time" | "tonight_together" | "group_cheer" | "group_goodnight";
   "idempotency_key": string;
   "context_id"?: string;
 };
@@ -3807,6 +4090,10 @@ export const GeneratedPublicContractNames = [
   "AnalyticsEventInput",
   "AuthAcceptedData",
   "AuthSessionData",
+  "BuddyGroupCreateRequest",
+  "BuddyGroupInviteRequest",
+  "BuddyGroupRoleUpdateRequest",
+  "BuddyGroupUpdateRequest",
   "BuddyInteractionRequest",
   "BuddyInvitationCreateRequest",
   "BuddyInvitationDelivery",
