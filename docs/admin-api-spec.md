@@ -231,6 +231,8 @@ Admin 查看接口：
 
 - `GET /api/v1/admin/apps/common/llm-service/metrics` 的 `models` 只统计 common LLM model key，并按当前时间范围内的请求量降序返回，便于优先查看真实流量模型。
 - AINovel 的 `ainovel-free-creative`、`ainovel-plus-reasoning`、`ainovel-embedding-default` 等值是业务 scene route key，不是 model key；LLM metrics 会过滤这些业务 key，并把 AINovel 调用归入实际 provider model key（如 `qwen3.6-plus`、`text-embedding-v4`）。
+- `config.openRouter.useTransparentProxy=true` 时，发往 `openrouter.ai` 的请求会在发送前动态读取 `common.passwords` 中由 `transparentProxyHmacSecretKey` 指定的 HMAC secret。只有 Key ID 和 secret 都存在时才改走 `transparentProxyBaseUrl`；Secret 缺失时保持直连，错误格式的非空 Secret 会拒绝请求而不会静默降级。
+- OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。
 
 ### 3.12 Admin 指标
 

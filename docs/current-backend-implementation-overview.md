@@ -132,7 +132,7 @@
 当前已经补齐两类 Common 级能力：
 
 1. `common.email_service_regions` 的强类型配置、版本记录与恢复
-2. `common.llm_service` 的强类型配置、版本记录与恢复
+2. `common.llm_service` 的强类型配置、版本记录与恢复，以及可选的 OpenRouter `oa-hmac-v1` 透明代理路由；代理开关和 Key ID 存配置，HMAC secret 从 `common.passwords` 动态读取
 3. LLM 按 `auto / fixed` 两种策略路由
 4. LLM 健康窗口记录
 5. LLM 小时级监控聚合，并在模型对比中优先展示当前时间范围内有请求量的模型

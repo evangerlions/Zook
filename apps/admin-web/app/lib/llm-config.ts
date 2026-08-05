@@ -9,6 +9,10 @@ import type {
   LlmRouteDraft,
   LlmRoutingStrategy,
 } from "./types";
+import {
+  createDefaultOpenRouterConfig,
+  normalizeOpenRouterConfigInput,
+} from "./openrouter-config.ts";
 
 const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -22,6 +26,7 @@ export function createDefaultLlmConfig(): LlmConfigDraft {
   return {
     enabled: false,
     defaultModelKey: "",
+    openRouter: createDefaultOpenRouterConfig(),
     providers: [],
     models: [],
   };
@@ -61,6 +66,7 @@ export function cloneLlmConfig(config: LlmConfigDraft | LlmServiceConfig = creat
   return {
     enabled: Boolean(config?.enabled),
     defaultModelKey: String(config?.defaultModelKey ?? ""),
+    openRouter: normalizeOpenRouterConfigInput(config?.openRouter),
     providers: Array.isArray(config?.providers)
       ? config.providers.map((item) => ({
           key: String(item?.key ?? ""),
@@ -125,6 +131,7 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
   return normalizeLlmConfigInput({
     enabled: Boolean(draft.enabled),
     defaultModelKey: String(draft.defaultModelKey ?? "").trim(),
+    openRouter: draft.openRouter,
     providers: draft.providers.map((item) => ({
       key: String(item?.key ?? "").trim(),
       label: String(item?.label ?? "").trim(),
@@ -155,6 +162,7 @@ export function serializeLlmDraftForPreview(draft: LlmConfigDraft) {
     return {
       enabled: Boolean(draft.enabled),
       defaultModelKey: String(draft.defaultModelKey ?? ""),
+      openRouter: draft.openRouter,
       providers: draft.providers,
       models: draft.models,
     };
@@ -192,6 +200,7 @@ export function safeSerializeLlmDraft(draft: LlmConfigDraft) {
     return {
       enabled: Boolean(draft.enabled),
       defaultModelKey: String(draft.defaultModelKey ?? ""),
+      openRouter: draft.openRouter,
       providers: draft.providers,
       models: draft.models,
     };
@@ -235,6 +244,7 @@ function normalizeLlmConfigInput(input: unknown): LlmServiceConfig {
   const config: LlmServiceConfig = {
     enabled: Boolean(source.enabled),
     defaultModelKey,
+    openRouter: normalizeOpenRouterConfigInput(source.openRouter),
     providers,
     models,
   };

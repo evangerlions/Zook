@@ -26,9 +26,17 @@ export interface LlmModelConfig {
   routes: LlmModelRouteConfig[];
 }
 
+export interface OpenRouterConfig {
+  useTransparentProxy: boolean;
+  transparentProxyBaseUrl: string;
+  transparentProxyKeyId: string;
+  transparentProxyHmacSecretKey: string;
+}
+
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
+  openRouter: OpenRouterConfig;
   providers: LlmProviderConfig[];
   models: LlmModelConfig[];
 }

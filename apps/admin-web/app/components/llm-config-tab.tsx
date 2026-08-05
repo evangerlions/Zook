@@ -1,5 +1,5 @@
 import { CopyOutlined } from "@ant-design/icons";
-import { Button, Collapse, Select, Segmented } from "antd";
+import { Button, Collapse, Input, Select, Segmented } from "antd";
 
 import { Field, ToggleField } from "./field";
 import { JsonEditor } from "./json-editor";
@@ -264,6 +264,63 @@ function LlmFormConfigEditor({
           value={draft.defaultModelKey}
         />
       </Field>
+
+      <section className="config-item">
+        <div className="config-item-header">
+          <div className="config-item-title">
+            <h3>OpenRouter 透明代理</h3>
+          </div>
+        </div>
+        <ToggleField
+          checked={draft.openRouter.useTransparentProxy}
+          hint="仅拦截发往 openrouter.ai 的请求；Secret 缺失时继续直连。"
+          label="默认走透明代理"
+          onChange={(value) => onDraftChange((current) => ({
+            ...current,
+            openRouter: { ...current.openRouter, useTransparentProxy: value },
+          }))}
+        />
+        <div className="config-form-grid">
+          <Field className="field--full" hint="默认 https://oa.zimozone.com" label="代理 Base URL">
+            <Input
+              onChange={(event) => onDraftChange((current) => ({
+                ...current,
+                openRouter: {
+                  ...current.openRouter,
+                  transparentProxyBaseUrl: event.target.value,
+                },
+              }))}
+              value={draft.openRouter.transparentProxyBaseUrl}
+            />
+          </Field>
+          <Field hint="对应代理服务端 PROXY_HMAC_KEY_ID" label="HMAC Key ID">
+            <Input
+              onChange={(event) => onDraftChange((current) => ({
+                ...current,
+                openRouter: {
+                  ...current.openRouter,
+                  transparentProxyKeyId: event.target.value,
+                },
+              }))}
+              placeholder="server-a"
+              value={draft.openRouter.transparentProxyKeyId}
+            />
+          </Field>
+          <Field hint="PASSWORDS 中保存 32-byte Base64URL HMAC secret 的 key" label="HMAC Secret key">
+            <Input
+              onChange={(event) => onDraftChange((current) => ({
+                ...current,
+                openRouter: {
+                  ...current.openRouter,
+                  transparentProxyHmacSecretKey: event.target.value,
+                },
+              }))}
+              placeholder="openrouter.proxy.hmac_secret"
+              value={draft.openRouter.transparentProxyHmacSecretKey}
+            />
+          </Field>
+        </div>
+      </section>
 
       <div className="config-sub-tabs">
         {CONFIG_SUB_TABS.map((item) => (
