@@ -52,6 +52,7 @@ test("qr login APIs create a session, confirm it on mobile, and let PC poll once
     path: `/api/v1/auth/qr-logins/${loginId}/confirm`,
     headers: {
       authorization: `Bearer ${mobileAccessToken}`,
+      "x-app-region": "CN",
     },
     body: {
       appId: "app_a",
@@ -62,6 +63,7 @@ test("qr login APIs create a session, confirm it on mobile, and let PC poll once
   assert.equal(confirmResponse.statusCode, 200);
   assert.deepEqual(confirmResponse.body.data, {
     confirmed: true,
+    accountRegion: "CN",
   });
 
   const completedResponse = await runtime.app.handle({
@@ -76,6 +78,7 @@ test("qr login APIs create a session, confirm it on mobile, and let PC poll once
 
   assert.equal(completedResponse.statusCode, 200);
   assert.equal(completedResponse.body.data.status, "CONFIRMED");
+  assert.equal(completedResponse.body.data.accountRegion, "CN");
   assert.ok(typeof completedResponse.body.data.accessToken === "string");
   assert.equal(completedResponse.body.data.user.id, "user_alice");
   assert.equal(completedResponse.body.data.user.name, "alice");

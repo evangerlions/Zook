@@ -218,14 +218,14 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async listAppUsers(appId?: string): Promise<AppUserRecord[]> {
     const result = appId
-      ? await this.query("SELECT id, app_id, user_id, status, joined_at FROM zook_app_users WHERE app_id = $1 ORDER BY joined_at ASC", [appId])
-      : await this.query("SELECT id, app_id, user_id, status, joined_at FROM zook_app_users ORDER BY joined_at ASC");
+      ? await this.query("SELECT id, app_id, user_id, status, account_region, joined_at FROM zook_app_users WHERE app_id = $1 ORDER BY joined_at ASC", [appId])
+      : await this.query("SELECT id, app_id, user_id, status, account_region, joined_at FROM zook_app_users ORDER BY joined_at ASC");
     return result.rows.map(parseAppUser);
   }
 
   override async findAppUser(appId: string, userId: string): Promise<AppUserRecord | undefined> {
     const result = await this.query(
-      "SELECT id, app_id, user_id, status, joined_at FROM zook_app_users WHERE app_id = $1 AND user_id = $2 LIMIT 1",
+      "SELECT id, app_id, user_id, status, account_region, joined_at FROM zook_app_users WHERE app_id = $1 AND user_id = $2 LIMIT 1",
       [appId, userId],
     );
     return result.rows[0] ? parseAppUser(result.rows[0]) : undefined;
@@ -233,10 +233,10 @@ export class PostgresDatabase extends ApplicationDatabase {
 
   override async insertAppUser(record: AppUserRecord): Promise<void> {
     await this.query(
-      `INSERT INTO zook_app_users (id, app_id, user_id, status, joined_at)
-       VALUES ($1, $2, $3, $4, $5::timestamptz)
+      `INSERT INTO zook_app_users (id, app_id, user_id, status, account_region, joined_at)
+       VALUES ($1, $2, $3, $4, $5, $6::timestamptz)
        ON CONFLICT (id) DO NOTHING`,
-      [record.id, record.appId, record.userId, record.status, record.joinedAt],
+      [record.id, record.appId, record.userId, record.status, record.accountRegion, record.joinedAt],
     );
   }
 
@@ -249,8 +249,23 @@ export class PostgresDatabase extends ApplicationDatabase {
       `UPDATE zook_app_users
        SET status = $3, updated_at = NOW()
        WHERE app_id = $1 AND user_id = $2
-       RETURNING id, app_id, user_id, status, joined_at`,
+       RETURNING id, app_id, user_id, status, account_region, joined_at`,
       [appId, userId, status],
+    );
+    return result.rows[0] ? parseAppUser(result.rows[0]) : undefined;
+  }
+
+  override async finalizeAppUserAccountRegion(
+    appId: string,
+    userId: string,
+    accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
+  ): Promise<AppUserRecord | undefined> {
+    const result = await this.query(
+      `UPDATE zook_app_users
+       SET account_region = $3, updated_at = NOW()
+       WHERE app_id = $1 AND user_id = $2 AND account_region = 'UNKNOWN'
+       RETURNING id, app_id, user_id, status, account_region, joined_at`,
+      [appId, userId, accountRegion],
     );
     return result.rows[0] ? parseAppUser(result.rows[0]) : undefined;
   }

@@ -106,6 +106,7 @@ export class BackendRouteContext {
         auth.appId,
         auth.userId,
       );
+      await this.resolveAccountRegion(request, auth.appId, auth.userId);
     }
 
     return auth;
@@ -317,12 +318,14 @@ export class BackendRouteContext {
     return clientType === "app"
       ? {
           accessToken: session.accessToken,
+          accountRegion,
           expiresIn: session.expiresIn,
           refreshToken: session.refreshToken,
           user,
         }
       : {
           accessToken: session.accessToken,
+          accountRegion,
           expiresIn: session.expiresIn,
           user,
         };

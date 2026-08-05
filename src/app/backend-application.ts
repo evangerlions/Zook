@@ -140,6 +140,7 @@ export class BackendApplication extends BackendRouteContext {
       validationPipe,
       commonTestAccountService,
       kvManager,
+      auditInterceptor,
     );
   }
 
