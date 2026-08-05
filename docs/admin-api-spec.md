@@ -249,6 +249,8 @@ Admin 查看接口：
 - 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。
 - 指定 route 若供应商或 route 已禁用，会返回该 route 的 `skipped` 结果；可用 route 会实际调用上游。聊天冒烟请求使用 64 个输出 token，以便推理模型能在回复前完成必要推理。
 - 无论全量还是指定路由，冒烟测试共用 10 秒全局冷却；响应中始终包含本次 `target`、`summary` 与 `items`。
+- `config.openRouter.useTransparentProxy=true` 时，发往 `openrouter.ai` 的请求会在发送前动态读取 `common.passwords` 中由 `transparentProxyHmacSecretKey` 指定的 HMAC secret。只有 Key ID 和 secret 都存在时才改走 `transparentProxyBaseUrl`；Secret 缺失时保持直连，错误格式的非空 Secret 会拒绝请求而不会静默降级。
+- OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。
 
 ### 3.12 Admin 指标
 

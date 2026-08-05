@@ -13,6 +13,10 @@ import type {
   LlmRuntimeSnapshot,
   LlmServiceConfig,
 } from "../shared/types.ts";
+import {
+  createDefaultOpenRouterConfig,
+  normalizeOpenRouterConfig,
+} from "./openrouter-config.ts";
 
 const COMMON_APP_ID = "common";
 const LLM_SERVICE_CONFIG_KEY = "common.llm_service";
@@ -248,6 +252,7 @@ export class CommonLlmConfigService {
     const config: LlmServiceConfig = {
       enabled: Boolean(source.enabled),
       defaultModelKey,
+      openRouter: normalizeOpenRouterConfig(source.openRouter),
       providers,
       models,
     };
@@ -287,6 +292,7 @@ export class CommonLlmConfigService {
     return {
       enabled: false,
       defaultModelKey: QWEN_PLUS_MODEL_KEY,
+      openRouter: createDefaultOpenRouterConfig(),
       providers: [
         {
           key: "bailian",

@@ -3424,6 +3424,12 @@ test("admin llm service API stores versioned common config and exposes metrics",
     body: {
       enabled: true,
       defaultModelKey: "kimi2.5",
+      openRouter: {
+        useTransparentProxy: true,
+        transparentProxyBaseUrl: "https://oa.zimozone.com",
+        transparentProxyKeyId: "server-a",
+        transparentProxyHmacSecretKey: "openrouter.proxy.hmac_secret",
+      },
       desc: "初始化 LLM 服务",
       providers: [
         {
@@ -3469,6 +3475,11 @@ test("admin llm service API stores versioned common config and exposes metrics",
 
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.revision, 2);
+  assert.equal(updateResponse.body.data.config.openRouter.useTransparentProxy, true);
+  assert.equal(
+    updateResponse.body.data.config.openRouter.transparentProxyHmacSecretKey,
+    "openrouter.proxy.hmac_secret",
+  );
   assert.equal(
     updateResponse.body.data.config.providers[0]?.apiKey,
     maskSensitiveString("mock-bailian-api-key"),

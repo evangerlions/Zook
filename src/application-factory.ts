@@ -41,7 +41,6 @@ import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import { AppLogSecretService } from "./services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
-import { OpenRouterOpenAICompatibleProvider } from "./services/openrouter-openai-compatible-provider.ts";
 import { ClientLogUploadService } from "./services/client-log-upload.service.ts";
 import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
 import { CommonContentSafetyConfigService } from "./services/common-content-safety-config.service.ts";
@@ -64,6 +63,7 @@ import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
+import { createOpenRouterAwareProvider } from "./services/openrouter-aware-provider.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";
@@ -358,7 +358,7 @@ export async function createApplication(
   const analyticsService = new AnalyticsService(database, appRegistryService);
   const aiNovelStatisticsService = new AiNovelStatisticsService(database);
   const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
-  const openRouterProvider = new OpenRouterOpenAICompatibleProvider({ logger });
+  const openRouterProvider = createOpenRouterAwareProvider(commonLlmConfigService, commonPasswordConfigService, logger);
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
     : undefined;
@@ -376,6 +376,7 @@ export async function createApplication(
   const embeddingProviders = options.embeddingProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
+    openrouter: localAiNovelE2eProvider ?? openRouterProvider,
   };
   const statisticsUsageOptions = createAiNovelStatisticsUsageOptions(
     aiNovelStatisticsService,
