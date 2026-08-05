@@ -577,7 +577,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async updateAiOutputReportStatus(appId: string, reportId: string, status: AiOutputReportRecord["status"], resolutionCode?: string, resolutionNote?: string): Promise<AiOutputReportRecord | undefined> { return await this.aiOutputReporting.updateReportStatus(appId, reportId, status, resolutionCode, resolutionNote); }
   override async insertAiOutputReaction(record: AiOutputReactionRecord): Promise<void> { await this.aiOutputReporting.insertReaction(record); }
   override async findAiOutputReactionBySubmission(appId: string, userId: string, submissionId: string): Promise<AiOutputReactionRecord | undefined> { return await this.aiOutputReporting.findReactionBySubmission(appId, userId, submissionId); }
-  }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);
   }

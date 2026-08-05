@@ -31,7 +31,7 @@ test("buddy growth migration defines grants, invite projections, and notificatio
 });
 
 test("legacy relationship migration backfills bilateral category grants idempotently", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/009_frogsleep_buddy_legacy_grant_backfill.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/010_frogsleep_buddy_legacy_grant_backfill.sql", import.meta.url), "utf8");
   assert.match(sql, /zook_frogsleep_sleep_relationships/);
   assert.match(sql, /zook_frogsleep_focus_relationships/);
   assert.match(sql, /'presence'.*'daily_summary'.*'weekly_trend'.*'shared_activity'/s);
@@ -40,7 +40,7 @@ test("legacy relationship migration backfills bilateral category grants idempote
 });
 
 test("P1 growth activity migration creates isolated share, interaction, and joint activity tables", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/010_frogsleep_buddy_growth_activity.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/011_frogsleep_buddy_growth_activity.sql", import.meta.url), "utf8");
   for (const table of ["zook_frogsleep_buddy_shares", "zook_frogsleep_buddy_interactions",
     "zook_frogsleep_buddy_joint_activities"]) assert.match(sql, new RegExp(table));
   assert.match(sql, /relationship_id, created_at DESC/);
@@ -48,14 +48,14 @@ test("P1 growth activity migration creates isolated share, interaction, and join
 });
 
 test("bundle coordination migration stores child outcomes and idempotent response state", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/008_frogsleep_buddy_invitation_bundle_coordination.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/009_frogsleep_buddy_invitation_bundle_coordination.sql", import.meta.url), "utf8");
   for (const column of ["domain_invitation_ids", "domain_error_codes", "last_idempotency_key", "response_payload"]) {
     assert.match(sql, new RegExp(column));
   }
 });
 
 test("domain decision migration creates a constrained per-invitation fact table", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/013_frogsleep_buddy_invitation_domain_decisions.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/014_frogsleep_buddy_invitation_domain_decisions.sql", import.meta.url), "utf8");
   assert.match(sql, /CREATE TABLE IF NOT EXISTS zook_frogsleep_buddy_invitation_domain_decisions/);
   assert.match(sql, /UNIQUE \(app_id, invitation_id, domain\)/);
   assert.match(sql, /CHECK \(domain IN \('sleep', 'focus'\)\)/);
@@ -65,7 +65,7 @@ test("domain decision migration creates a constrained per-invitation fact table"
 });
 
 test("receipt attempt migration stores only recipient-bound opaque facts", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/014_frogsleep_buddy_invitation_receipt_attempts.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/015_frogsleep_buddy_invitation_receipt_attempts.sql", import.meta.url), "utf8");
   assert.match(sql, /CREATE TABLE IF NOT EXISTS zook_frogsleep_buddy_invitation_receipt_attempts/);
   assert.match(sql, /recipient_identity_hash TEXT NOT NULL CHECK \(recipient_identity_hash ~ '\^\[0-9a-f\]\{64\}\$'\)/);
   assert.match(sql, /UNIQUE \(app_id, inviter_user_id, recipient_identity_hash, domains_fingerprint\)/);
@@ -76,7 +76,7 @@ test("receipt attempt migration stores only recipient-bound opaque facts", async
 
 test("canonical invitation migration projects live sleep and focus invites and installs email outbox", async () => {
   const sql = await readFile(new URL(
-    "../../src/infrastructure/database/postgres/migrations/017_frogsleep_buddy_canonical_invitation_email.sql",
+    "../../src/infrastructure/database/postgres/migrations/018_frogsleep_buddy_canonical_invitation_email.sql",
     import.meta.url,
   ), "utf8");
   assert.match(sql, /zook_frogsleep_buddy_invitation_email_deliveries/);
@@ -90,7 +90,7 @@ test("canonical invitation migration projects live sleep and focus invites and i
 });
 
 test("P2 migration stores goals, verified contributions, milestones, and viewer reports", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/011_frogsleep_buddy_goals_reports.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/012_frogsleep_buddy_goals_reports.sql", import.meta.url), "utf8");
   for (const table of ["zook_frogsleep_buddy_joint_goals", "zook_frogsleep_buddy_goal_contributions",
     "zook_frogsleep_buddy_milestones", "zook_frogsleep_buddy_weekly_reports"]) {
     assert.match(sql, new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`));
@@ -104,7 +104,7 @@ test("P2 migration stores goals, verified contributions, milestones, and viewer 
 });
 
 test("P3 governance migration defines bounded purge and retention indexes", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/012_frogsleep_buddy_governance.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/013_frogsleep_buddy_governance.sql", import.meta.url), "utf8");
   assert.match(sql, /frogsleep_purge_expired_buddy_data/);
   assert.match(sql, /interval '30 days'/);
   assert.match(sql, /interval '90 days'/);
