@@ -57,6 +57,7 @@ export function resolveStreamTimeouts(
 export function throwProviderRequestFailed(
   statusCode: number,
   payload: OpenAICompatibleResponsePayload,
+  provider = "bailian",
 ): never {
   if (isDataInspectionFailure(payload)) {
     throw new ApplicationError(
@@ -64,9 +65,9 @@ export function throwProviderRequestFailed(
       "LLM_PROVIDER_CONTENT_SENSITIVE",
       payload.error?.message ??
         payload.message ??
-        "Bailian content inspection rejected the request.",
+        `${provider} content inspection rejected the request.`,
       {
-        provider: "bailian",
+        provider,
         statusCode,
         errorCode: payload.error?.code,
         errorType: payload.error?.type,
@@ -78,14 +79,14 @@ export function throwProviderRequestFailed(
   const errorMessage =
     payload.error?.message ??
     payload.message ??
-    `Bailian request failed with status ${statusCode}.`;
+    `${provider} request failed with status ${statusCode}.`;
 
   throw new ApplicationError(
     502,
     "LLM_PROVIDER_REQUEST_FAILED",
     errorMessage,
     {
-      provider: "bailian",
+      provider,
       statusCode,
       errorCode: payload.error?.code,
       errorType: payload.error?.type,
@@ -97,18 +98,19 @@ export function throwProviderRequestFailed(
 export function throwEmbeddingRequestFailed(
   statusCode: number,
   payload: OpenAICompatibleEmbeddingPayload,
+  provider = "bailian",
 ): never {
   const errorMessage =
     payload.error?.message ??
     payload.message ??
-    `Bailian embedding request failed with status ${statusCode}.`;
+    `${provider} embedding request failed with status ${statusCode}.`;
 
   throw new ApplicationError(
     502,
     "LLM_PROVIDER_REQUEST_FAILED",
     errorMessage,
     {
-      provider: "bailian",
+      provider,
       statusCode,
       errorCode: payload.error?.code,
       errorType: payload.error?.type,
@@ -120,9 +122,10 @@ export function throwEmbeddingRequestFailed(
 export function throwProviderResponseInvalid(
   message: string,
   details?: unknown,
+  provider = "bailian",
 ): never {
   throw new ApplicationError(502, "LLM_PROVIDER_RESPONSE_INVALID", message, {
-    provider: "bailian",
+    provider,
     ...toRecord(details),
   });
 }

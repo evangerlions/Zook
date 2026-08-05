@@ -391,6 +391,11 @@ const writeDraftTool = createTool(
   {
     title: { type: "string" },
     content: { type: "string" },
+    disableMdClean: {
+      type: "boolean",
+      description:
+        "Markdown cleanup is enabled by default. Set literal true only when the author explicitly requests preserving literal Markdown syntax.",
+    },
   },
   ["content"],
 );

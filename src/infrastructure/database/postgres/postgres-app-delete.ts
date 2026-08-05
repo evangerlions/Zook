@@ -18,6 +18,8 @@ export async function deletePostgresApp(query: QueryFn, appId: string): Promise<
     "zook_content_safety_checks",
     "zook_feedback_attachments",
     "zook_feedback",
+    "zook_ai_output_reports",
+    "zook_ai_output_reactions",
     "zook_files",
     "zook_client_log_lines",
     "zook_client_log_uploads",

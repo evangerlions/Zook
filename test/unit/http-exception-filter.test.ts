@@ -106,6 +106,24 @@ test("HttpExceptionFilter passes through 403 errors", () => {
   assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
 });
 
+test("HttpExceptionFilter preserves safe response headers", () => {
+  const response = filter.catch(
+    new ApplicationError(
+      403,
+      "AUTH_LOGIN_FORBIDDEN",
+      "Forbidden",
+      undefined,
+      { "Set-Cookie": "refreshToken=; Max-Age=0" },
+    ),
+    publicRequest,
+    "req_forbidden",
+  );
+
+  assert.deepEqual(response.headers, {
+    "Set-Cookie": "refreshToken=; Max-Age=0",
+  });
+});
+
 test("HttpExceptionFilter includes details in ApplicationError", () => {
   const response = filter.catch(
     new ApplicationError(400, "REQ_INVALID_BODY", "Invalid", { extra: true }),

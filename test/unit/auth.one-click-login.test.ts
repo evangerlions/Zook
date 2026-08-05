@@ -57,7 +57,10 @@ test("one-click login verifies provider token and persists session", async () =>
     const response = await runtime.app.handle({
       method: "POST",
       path: "/api/v1/auth/login/one-click",
-      headers: {},
+      headers: {
+        "x-platform": "android",
+        "x-app-region": "CN",
+      },
       body: {
         appId: "app_a",
         token: "native-token",
@@ -70,6 +73,7 @@ test("one-click login verifies provider token and persists session", async () =>
     });
 
     assert.equal(response.statusCode, 200);
+    assert.equal(response.body.data.accountRegion, "CN");
     assert.ok(typeof response.body.data.accessToken === "string");
     assert.ok(typeof response.body.data.refreshToken === "string");
     assert.equal(response.body.data.user.phone, "+8618710100985");

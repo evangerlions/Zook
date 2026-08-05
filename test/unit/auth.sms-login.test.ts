@@ -58,7 +58,10 @@ test("sms-code login sends sms, auto-creates account, and blocks password login 
   const loginResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/auth/login/sms",
-    headers: {},
+    headers: {
+      "x-platform": "android",
+      "x-app-region": "CN",
+    },
     body: {
       appId: "app_a",
       phone: "18710100985",
@@ -70,6 +73,7 @@ test("sms-code login sends sms, auto-creates account, and blocks password login 
   });
 
   assert.equal(loginResponse.statusCode, 200);
+  assert.equal(loginResponse.body.data.accountRegion, "CN");
   assert.ok(typeof loginResponse.body.data.accessToken === "string");
   assert.ok(typeof loginResponse.body.data.refreshToken === "string");
 
@@ -167,7 +171,10 @@ test("sms registration creates a new account and rejects existing phone conflict
   const registerResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/auth/register/sms",
-    headers: {},
+    headers: {
+      "x-platform": "android",
+      "x-app-region": "CN",
+    },
     body: {
       appId: "app_a",
       phone: "18710100987",
@@ -179,6 +186,7 @@ test("sms registration creates a new account and rejects existing phone conflict
   });
 
   assert.equal(registerResponse.statusCode, 200);
+  assert.equal(registerResponse.body.data.accountRegion, "CN");
   assert.equal(registerResponse.body.data.user.phone, "+8618710100987");
   assert.equal(registerResponse.body.data.user.hasPassword, false);
 
@@ -288,7 +296,10 @@ test("sms password code hides account existence and sms password reset upgrades 
   const resetResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/auth/password/reset-by-sms",
-    headers: {},
+    headers: {
+      "x-platform": "android",
+      "x-app-region": "CN",
+    },
     body: {
       appId: "app_a",
       phone: "18710100988",
@@ -301,6 +312,7 @@ test("sms password code hides account existence and sms password reset upgrades 
   });
 
   assert.equal(resetResponse.statusCode, 200);
+  assert.equal(resetResponse.body.data.accountRegion, "CN");
   assert.equal(runtime.database.findUserByPhone("+8618710100988")?.passwordAlgo, "scrypt");
 
   const passwordLoginResponse = await runtime.app.handle({

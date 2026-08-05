@@ -97,6 +97,8 @@ test("email-code login sends localized email, auto-creates account, and blocks p
     headers: {
       "x-app-locale": "en-US",
       "x-app-country-code": "US",
+      "x-platform": "android",
+      "x-app-region": "CN",
     },
     body: {
       appId: "app_a",
@@ -108,6 +110,7 @@ test("email-code login sends localized email, auto-creates account, and blocks p
   });
 
   assert.equal(loginResponse.statusCode, 200);
+  assert.equal(loginResponse.body.data.accountRegion, "CN");
   assert.ok(typeof loginResponse.body.data.accessToken === "string");
   assert.ok(typeof loginResponse.body.data.refreshToken === "string");
 

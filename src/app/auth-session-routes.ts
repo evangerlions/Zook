@@ -126,7 +126,7 @@ export async function handlePollQrLogin(this: BackendRouteContext,
       return this.ok(
         {
           status: "CONFIRMED" as const,
-          ...(await this.toAuthPayload(result, "web")),
+          ...(await this.toAuthPayload(result, "web", request)),
         },
         request.requestId as string,
         this.buildAuthHeaders(result.refreshToken, "web"),
@@ -167,7 +167,7 @@ export async function handleRefresh(this: BackendRouteContext,
   });
 
   return this.ok(
-    await this.toAuthPayload(session, clientType),
+    await this.toAuthPayload(session, clientType, request),
     request.requestId as string,
     this.buildAuthHeaders(session.refreshToken, clientType),
   );

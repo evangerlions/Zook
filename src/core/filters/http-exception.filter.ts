@@ -18,6 +18,7 @@ export class HttpExceptionFilter {
         : this.resolvePublicMessage(error, request);
       return {
         statusCode: error.statusCode,
+        headers: error.headers,
         body: {
           code: error.code,
           message: localized,

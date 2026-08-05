@@ -1,5 +1,9 @@
 import { ApplicationError } from "../shared/errors.ts";
-import type { HttpRequest, HttpResponse } from "../shared/types.ts";
+import type {
+  AdminLlmSmokeTestRunRequest,
+  HttpRequest,
+  HttpResponse,
+} from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
 import { PublicContractValidator } from "../generated/openapi/public-contract-validator.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -170,7 +174,8 @@ export async function handleAdminRunLlmSmokeTest(this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const adminUser = this.authenticateAdmin(request);
-  const result = await this.adminConsoleService.runLlmSmokeTest();
+  const smokeTestRequest = parseLlmSmokeTestRunRequest.call(this, request.body);
+  const result = await this.adminConsoleService.runLlmSmokeTest(smokeTestRequest);
 
   await this.auditInterceptor.record({
     appId: "common",
@@ -179,6 +184,7 @@ export async function handleAdminRunLlmSmokeTest(this: BackendRouteContext,
     resourceId: "common.llm_service:smoke-test",
     payload: {
       adminUser,
+      target: result.target,
       summary: result.summary,
     },
   });
@@ -205,4 +211,29 @@ function parseLlmMetricsRange(this: BackendRouteContext, value: string | undefin
 function parseLlmMetricsProvider(value: string | undefined): string | undefined {
   const provider = value?.trim();
   return provider || undefined;
+}
+
+function parseLlmSmokeTestRunRequest(
+  this: BackendRouteContext,
+  body: unknown,
+): AdminLlmSmokeTestRunRequest {
+  const input = this.validationPipe.asObject(body ?? {});
+  const mode = this.validationPipe.optionalString(input, "mode");
+  if (!mode || mode === "matrix") {
+    return { mode: "matrix" };
+  }
+
+  if (mode === "route") {
+    return {
+      mode,
+      modelKey: this.validationPipe.requireString(input, "modelKey"),
+      provider: this.validationPipe.requireString(input, "provider"),
+    };
+  }
+
+  throw new ApplicationError(
+    400,
+    "REQ_INVALID_BODY",
+    `Unsupported smoke test mode: ${mode}.`,
+  );
 }

@@ -11,6 +11,7 @@ export interface OpenAICompatibleChoice {
   message?: {
     content?: string | null;
     reasoning_content?: string | null;
+    reasoning?: string | null;
     tool_calls?: Array<{
       id?: string;
       type?: string;
@@ -23,6 +24,7 @@ export interface OpenAICompatibleChoice {
   delta?: {
     content?: string | null;
     reasoning_content?: string | null;
+    reasoning?: string | null;
     tool_calls?: Array<{
       index?: number;
       id?: string;
@@ -79,6 +81,7 @@ export interface OpenAICompatibleEmbeddingPayload {
 export interface BailianOpenAICompatibleProviderOptions {
   baseUrl?: string;
   apiKey?: string;
+  providerName?: string;
   fetchImplementation?: typeof fetch;
   logger?: StructuredLogger;
 }

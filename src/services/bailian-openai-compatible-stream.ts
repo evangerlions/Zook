@@ -20,6 +20,7 @@ export interface BailianStreamContext {
   body: ReadableStream<Uint8Array>;
   responseStatus: number;
   modelKey: string;
+  providerName?: string;
   parseChatUsage(usage: OpenAICompatibleResponsePayload["usage"]): LLMUsage | undefined;
   logRawChunk(chunk: string): void;
   streamOptions?: Record<string, unknown>;
@@ -35,7 +36,7 @@ export async function* parseBailianOpenAICompatibleStream(
     { id?: string; name?: string; args: string; progressText?: string }
   >();
 
-  for await (const eventData of readServerSentEvents(context.body, streamTimeouts)) {
+  for await (const eventData of readServerSentEvents(context.body, streamTimeouts, context.providerName)) {
     context.logRawChunk(eventData);
     if (eventData === "[DONE]") {
       yield {
@@ -45,9 +46,9 @@ export async function* parseBailianOpenAICompatibleStream(
       return;
     }
 
-    const payload = parseStreamPayload(eventData);
+    const payload = parseStreamPayload(eventData, context.providerName);
     if (payload.error) {
-      throwProviderRequestFailed(context.responseStatus, payload);
+      throwProviderRequestFailed(context.responseStatus, payload, context.providerName);
     }
 
     const usage = context.parseChatUsage(payload.usage);
@@ -64,6 +65,8 @@ export async function* parseBailianOpenAICompatibleStream(
       if (!usage) {
         throwProviderResponseInvalid(
           "Streaming chunk does not contain choices or usage.",
+          undefined,
+          context.providerName,
         );
       }
       continue;
@@ -83,10 +86,10 @@ export async function* parseBailianOpenAICompatibleStream(
     });
   }
 
-  throwProviderResponseInvalid("Streaming response ended before [DONE].");
+  throwProviderResponseInvalid("Streaming response ended before [DONE].", undefined, context.providerName);
 }
 
-function parseStreamPayload(eventData: string): OpenAICompatibleResponsePayload {
+function parseStreamPayload(eventData: string, providerName?: string): OpenAICompatibleResponsePayload {
   try {
     return JSON.parse(eventData) as OpenAICompatibleResponsePayload;
   } catch (error) {
@@ -96,6 +99,7 @@ function parseStreamPayload(eventData: string): OpenAICompatibleResponsePayload 
         cause: error instanceof Error ? error.message : String(error),
         chunk: eventData,
       },
+      providerName,
     );
   }
 }
@@ -119,7 +123,8 @@ async function* readStreamDeltaEvents(input: {
     }
   }
 
-  const reasoningDelta = readOptionalString(choice.delta?.reasoning_content);
+  const reasoningDelta = readOptionalString(choice.delta?.reasoning) ??
+    readOptionalString(choice.delta?.reasoning_content);
   if (reasoningDelta) {
     yield {
       type: "reasoning_delta",
@@ -211,6 +216,7 @@ function parseToolArguments(args: string): Record<string, unknown> {
 async function* readServerSentEvents(
   body: ReadableStream<Uint8Array>,
   options: StreamTimeoutOptions = {},
+  providerName?: string,
 ): AsyncIterable<string> {
   const firstEventTimeoutMs = options.firstEventTimeoutMs ?? 0;
   const idleTimeoutMs = options.idleTimeoutMs ?? 0;
@@ -223,7 +229,7 @@ async function* readServerSentEvents(
   try {
     while (true) {
       const timeoutMs = hasEvent ? idleTimeoutMs : firstEventTimeoutMs;
-      const result = await readStreamChunkWithTimeout(reader, timeoutMs, hasEvent);
+      const result = await readStreamChunkWithTimeout(reader, timeoutMs, hasEvent, providerName);
       if (result.done) {
         break;
       }
@@ -294,6 +300,7 @@ async function readStreamChunkWithTimeout(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   timeoutMs: number,
   hasEvent: boolean,
+  providerName?: string,
 ): Promise<ReadableStreamReadResult<Uint8Array>> {
   if (timeoutMs <= 0) {
     return reader.read();
@@ -303,7 +310,7 @@ async function readStreamChunkWithTimeout(
     return await Promise.race([
       reader.read(),
       new Promise<ReadableStreamReadResult<Uint8Array>>((_, reject) => {
-        timeout = setTimeout(() => reject(streamTimeoutError(hasEvent, timeoutMs)), timeoutMs);
+        timeout = setTimeout(() => reject(streamTimeoutError(hasEvent, timeoutMs, providerName)), timeoutMs);
       }),
     ]);
   } finally {
@@ -313,15 +320,19 @@ async function readStreamChunkWithTimeout(
   }
 }
 
-function streamTimeoutError(hasEvent: boolean, timeoutMs: number): ApplicationError {
+function streamTimeoutError(
+  hasEvent: boolean,
+  timeoutMs: number,
+  providerName = "bailian",
+): ApplicationError {
   return new ApplicationError(
     504,
     "LLM_PROVIDER_REQUEST_FAILED",
     hasEvent
-      ? "Bailian stream stalled before completion."
-      : "Bailian stream did not produce an initial event in time.",
+      ? `${providerName} stream stalled before completion.`
+      : `${providerName} stream did not produce an initial event in time.`,
     {
-      provider: "bailian",
+      provider: providerName,
       reason: hasEvent ? "stream_idle_timeout" : "stream_first_event_timeout",
       timeoutMs,
     },

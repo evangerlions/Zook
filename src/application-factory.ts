@@ -31,6 +31,7 @@ import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
+import { AiOutputReportingService } from "./services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
@@ -57,6 +58,8 @@ import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager } from "./services/llm-manager.ts";
+import { NotificationService } from "./services/notification.service.ts";
+import { createOpenRouterAwareProvider } from "./services/openrouter-aware-provider.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";
@@ -71,6 +74,7 @@ import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-cal
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
+import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
@@ -240,11 +244,14 @@ export async function createApplication(
       );
     const initializedGetuiGyConfig =
       await commonGetuiGyConfigService.initializeDefaultConfig();
+    const migratedAiNovelKickoffPrompts =
+      await migrateAiNovelKickoffPromptConfig(appConfigService);
     if (
       initializedCommonLlmConfig ||
       initializedAppLogSecrets ||
       initializedRemoteLogPullConfigs ||
-      initializedGetuiGyConfig
+      initializedGetuiGyConfig ||
+      migratedAiNovelKickoffPrompts
     ) {
       await managedStateStore.save(database);
     }
@@ -353,6 +360,7 @@ export async function createApplication(
   );
   const analyticsService = new AnalyticsService(database, appRegistryService);
   const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
+  const openRouterProvider = createOpenRouterAwareProvider(commonLlmConfigService, commonPasswordConfigService, logger);
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
     : undefined;
@@ -365,10 +373,12 @@ export async function createApplication(
   const llmProviders = options.llmProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
+    openrouter: localAiNovelE2eProvider ?? openRouterProvider,
   };
   const embeddingProviders = options.embeddingProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
+    openrouter: localAiNovelE2eProvider ?? openRouterProvider,
   };
   const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
     commonLlmConfigService,
@@ -429,6 +439,7 @@ export async function createApplication(
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
   const feedbackService = new FeedbackService(database, persistentFileStore);
+  const aiOutputReportingService = new AiOutputReportingService(database, aiPayloadCryptoService, appLogSecretService);
   const clientLogUploadService = new ClientLogUploadService(
     database,
     logEncryptionKeyResolver,
@@ -498,6 +509,7 @@ export async function createApplication(
     publicApiMessageService,
     tencentSesEmailCallbackService,
     feedbackService,
+    aiOutputReportingService,
     logger,
     auditInterceptor,
     requestLoggingInterceptor,

@@ -25,6 +25,7 @@ import type {
   AdminLlmModelMetricsDocument,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
+  AdminLlmSmokeTestRunRequest,
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
   AdminSensitiveOperationCodeRequestDocument,
@@ -589,9 +590,10 @@ export const adminApi = {
       adminPath(`/apps/common/llm-service/metrics/models/${encodeURIComponent(modelKey)}?${query.toString()}`),
     );
   },
-  runLlmSmokeTest() {
+  runLlmSmokeTest(input: AdminLlmSmokeTestRunRequest) {
     return requestJson<AdminLlmSmokeTestDocument>(adminPath("/apps/common/llm-service/smoke-test"), {
       method: "POST",
+      body: input,
     });
   },
 };

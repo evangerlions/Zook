@@ -41,6 +41,27 @@ test("admin web llm raw parser normalizes valid json config", () => {
   assert.equal(result.config.models[0]?.kind, "chat");
   assert.equal(result.config.models[0]?.routes[0]?.weight, 100);
   assert.equal(result.draft.providers[0]?.timeoutMs, "30000");
+  assert.equal(result.config.openRouter.useTransparentProxy, false);
+  assert.equal(result.config.openRouter.transparentProxyBaseUrl, "https://oa.zimozone.com");
+});
+
+test("admin web llm parser accepts the OpenRouter transparent proxy config", () => {
+  const result = parseLlmConfigText(`{
+    "enabled": false,
+    "defaultModelKey": "",
+    "openRouter": {
+      "useTransparentProxy": true,
+      "transparentProxyBaseUrl": "https://oa.zimozone.com/",
+      "transparentProxyKeyId": "server-a",
+      "transparentProxyHmacSecretKey": "openrouter.proxy.hmac_secret"
+    },
+    "providers": [],
+    "models": []
+  }`);
+
+  assert.equal(result.config.openRouter.useTransparentProxy, true);
+  assert.equal(result.config.openRouter.transparentProxyBaseUrl, "https://oa.zimozone.com");
+  assert.equal(result.config.openRouter.transparentProxyKeyId, "server-a");
 });
 
 test("admin web llm raw parser rejects invalid numeric fields and route sums", () => {

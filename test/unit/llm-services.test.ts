@@ -1207,6 +1207,121 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
   assert.equal(secondRun.summary.totalCount, 3);
 });
 
+test("llm smoke test service runs only the selected model/provider route with a reasoning-safe token limit", async () => {
+  const fixture = await createLlmFixture();
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "deepseek-flash",
+    providers: [
+      {
+        key: "openrouter",
+        label: "OpenRouter",
+        enabled: true,
+        baseUrl: "https://openrouter.ai/api/v1",
+        apiKey: "mock-openrouter-api-key",
+        timeoutMs: 30000,
+      },
+      {
+        key: "bailian",
+        label: "百炼",
+        enabled: true,
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "mock-bailian-api-key",
+        timeoutMs: 30000,
+      },
+      {
+        key: "unconfigured",
+        label: "Unconfigured",
+        enabled: true,
+        baseUrl: "https://example.com/v1",
+        apiKey: "mock-unconfigured-api-key",
+        timeoutMs: 30000,
+      },
+    ],
+    models: [
+      {
+        key: "deepseek-flash",
+        label: "DeepSeek Flash",
+        kind: "chat",
+        strategy: "auto",
+        routes: [
+          {
+            provider: "openrouter",
+            providerModel: "~deepseek/deepseek-v4-flash-latest",
+            enabled: true,
+            weight: 50,
+          },
+          {
+            provider: "bailian",
+            providerModel: "deepseek-v4-flash",
+            enabled: true,
+            weight: 50,
+          },
+        ],
+      },
+    ],
+  });
+
+  const requests: Array<{ provider: string; maxTokens?: number }> = [];
+  const smokeTestService = new LlmSmokeTestService(
+    fixture.commonLlmConfigService,
+    fixture.kvManager,
+    {
+      openrouter: {
+        async complete(request) {
+          requests.push({
+            provider: request.model.provider,
+            maxTokens: request.maxTokens,
+          });
+          return {
+            provider: request.model.provider,
+            modelKey: request.model.modelKey,
+            providerModel: request.model.providerModel,
+            text: "OK",
+          };
+        },
+        async *stream() {
+          yield { type: "done" as const };
+        },
+      },
+    },
+    {},
+    {
+      now: () => new Date("2026-08-03T23:30:00+08:00"),
+    },
+  );
+
+  const run = await smokeTestService.run({
+    mode: "route",
+    modelKey: "deepseek-flash",
+    provider: "openrouter",
+  });
+
+  assert.deepEqual(run.target, {
+    mode: "route",
+    modelKey: "deepseek-flash",
+    provider: "openrouter",
+  });
+  assert.equal(run.summary.totalCount, 1);
+  assert.equal(run.summary.successCount, 1);
+  assert.equal(run.items[0]?.providerModel, "~deepseek/deepseek-v4-flash-latest");
+  assert.equal(run.items[0]?.details.request?.maxTokens, 64);
+  assert.deepEqual(requests, [{ provider: "openrouter", maxTokens: 64 }]);
+
+  await assert.rejects(
+    () => smokeTestService.run({
+      mode: "route",
+      modelKey: "deepseek-flash",
+      provider: "unconfigured",
+    }),
+    (error: Error & { code?: string }) => error.code === "ADMIN_LLM_SERVICE_INVALID",
+  );
+  await assert.rejects(
+    () => smokeTestService.run({ mode: "matrix" }),
+    (error: Error & { code?: string }) => error.code === "ADMIN_RATE_LIMITED",
+  );
+});
+
 test("llm smoke test service can exercise qwen3.5-flash through Bailian Coding Plan", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({

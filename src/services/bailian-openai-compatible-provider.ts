@@ -8,11 +8,14 @@ import type {
   LLMCompletionResult,
   LLMProvider,
   LLMStreamEvent,
-  LLMUsage,
   ResolvedLLMCompletionRequest,
 } from "./llm-manager.ts";
 import { parseBailianOpenAICompatibleStream } from "./bailian-openai-compatible-stream.ts";
 import { BailianOpenAICompatibleLocalLogger } from "./bailian-openai-compatible-logging.ts";
+import {
+  parseOpenAICompatibleChatUsage,
+  parseOpenAICompatibleEmbeddingUsage,
+} from "./openai-compatible-usage.ts";
 import {
   DEFAULT_BAILIAN_API_KEY,
   DEFAULT_BAILIAN_BASE_URL,
@@ -42,10 +45,12 @@ export class BailianOpenAICompatibleProvider
 {
   private readonly baseUrl: string;
   private readonly apiKey: string;
+  private readonly providerName: string;
   private readonly fetchImplementation: typeof fetch;
   private readonly localLogger: BailianOpenAICompatibleLocalLogger;
 
   constructor(options: BailianOpenAICompatibleProviderOptions = {}) {
+    this.providerName = options.providerName ?? "bailian";
     this.baseUrl = normalizeBaseUrl(
       options.baseUrl ??
         process.env.BAILIAN_BASE_URL ??
@@ -54,7 +59,10 @@ export class BailianOpenAICompatibleProvider
     this.apiKey =
       options.apiKey ?? process.env.BAILIAN_API_KEY ?? DEFAULT_BAILIAN_API_KEY;
     this.fetchImplementation = options.fetchImplementation ?? globalThis.fetch;
-    this.localLogger = new BailianOpenAICompatibleLocalLogger(options.logger);
+    this.localLogger = new BailianOpenAICompatibleLocalLogger(
+      options.logger,
+      this.providerName,
+    );
 
     if (!this.fetchImplementation) {
       throw new Error("fetch is not available in the current runtime.");
@@ -94,7 +102,7 @@ export class BailianOpenAICompatibleProvider
         statusCode: response.status,
         payload,
       });
-      throwProviderRequestFailed(response.status, payload);
+      throwProviderRequestFailed(response.status, payload, this.providerName);
     }
     this.localLogger.chatResponse({
       mode: "complete",
@@ -107,6 +115,8 @@ export class BailianOpenAICompatibleProvider
     if (!choice?.message) {
       throwProviderResponseInvalid(
         "Completion response does not contain a message choice.",
+        undefined,
+        this.providerName,
       );
     }
 
@@ -118,6 +128,8 @@ export class BailianOpenAICompatibleProvider
     if (text === undefined && toolCalls.length === 0) {
       throwProviderResponseInvalid(
         "Completion response message content or tool calls are missing.",
+        undefined,
+        this.providerName,
       );
     }
 
@@ -127,10 +139,14 @@ export class BailianOpenAICompatibleProvider
       providerModel: request.model.providerModel,
       text: text ?? "",
       ...(toolCalls.length > 0 ? { toolCalls } : {}),
-      reasoningText: readOptionalString(choice.message.reasoning_content),
+      reasoningText:
+        readOptionalString(choice.message.reasoning) ??
+        readOptionalString(choice.message.reasoning_content),
       finishReason: readOptionalString(choice.finish_reason),
-      usage: this.parseChatUsage(payload.usage),
-      providerRequestId: readOptionalString(payload.id),
+      usage: parseOpenAICompatibleChatUsage(payload.usage, this.providerName),
+      providerRequestId:
+        readOptionalString(payload.id) ??
+        readOptionalNonBlankString(response.headers.get("x-generation-id")),
     };
   }
 
@@ -152,12 +168,14 @@ export class BailianOpenAICompatibleProvider
     const payload = await this.readEmbeddingPayload(response, !response.ok);
 
     if (!response.ok || payload.error) {
-      throwEmbeddingRequestFailed(response.status, payload);
+      throwEmbeddingRequestFailed(response.status, payload, this.providerName);
     }
 
     if (!Array.isArray(payload.data) || payload.data.length === 0) {
       throwProviderResponseInvalid(
         "Embedding response does not contain any vectors.",
+        undefined,
+        this.providerName,
       );
     }
 
@@ -174,6 +192,7 @@ export class BailianOpenAICompatibleProvider
           {
             index,
           },
+          this.providerName,
         );
       }
 
@@ -188,7 +207,7 @@ export class BailianOpenAICompatibleProvider
       modelKey: request.model.modelKey,
       providerModel: request.model.providerModel,
       vectors,
-      usage: this.parseEmbeddingUsage(payload.usage),
+      usage: parseOpenAICompatibleEmbeddingUsage(payload.usage, this.providerName),
       providerRequestId: readOptionalString(payload.id),
     };
   }
@@ -223,7 +242,7 @@ export class BailianOpenAICompatibleProvider
     const firstEventTimeout = setTimeout(() => {
       controller.abort(
         new DOMException(
-          "Bailian stream did not return response headers before the first-event timeout.",
+          `${this.providerName} stream did not return response headers before the first-event timeout.`,
           "TimeoutError",
         ),
       );
@@ -246,11 +265,11 @@ export class BailianOpenAICompatibleProvider
 
     if (!response.ok) {
       const payload = await this.readJsonPayload(response, true);
-      throwProviderRequestFailed(response.status, payload);
+      throwProviderRequestFailed(response.status, payload, this.providerName);
     }
 
     if (!response.body) {
-      throwProviderResponseInvalid("Streaming response body is missing.");
+      throwProviderResponseInvalid("Streaming response body is missing.", undefined, this.providerName);
     }
 
     const streamLog = this.localLogger.beginStream({
@@ -263,7 +282,8 @@ export class BailianOpenAICompatibleProvider
         body: response.body,
         responseStatus: response.status,
         modelKey: request.model.modelKey,
-        parseChatUsage: (usage) => this.parseChatUsage(usage),
+        providerName: this.providerName,
+        parseChatUsage: (usage) => parseOpenAICompatibleChatUsage(usage, this.providerName),
         logRawChunk: (chunk) => streamLog.rawStreamChunk({ chunk }),
         streamOptions,
       })) {
@@ -374,9 +394,9 @@ export class BailianOpenAICompatibleProvider
         throw new ApplicationError(
           504,
           "LLM_PROVIDER_REQUEST_FAILED",
-          "Bailian request timed out.",
+          `${this.providerName} request timed out.`,
           {
-            provider: "bailian",
+            provider: this.providerName,
             reason: "timeout",
             cause: error instanceof Error ? error.message : String(error),
           },
@@ -386,9 +406,9 @@ export class BailianOpenAICompatibleProvider
       throw new ApplicationError(
         502,
         "LLM_PROVIDER_REQUEST_FAILED",
-        "Bailian request failed before a response was received.",
+        `${this.providerName} request failed before a response was received.`,
         {
-          provider: "bailian",
+          provider: this.providerName,
           reason: "network_error",
           cause: error instanceof Error ? error.message : String(error),
         },
@@ -402,7 +422,7 @@ export class BailianOpenAICompatibleProvider
   ): Promise<OpenAICompatibleResponsePayload> {
     const rawBody = await response.text();
     if (!rawBody) {
-      throwProviderResponseInvalid("Provider response body is empty.");
+      throwProviderResponseInvalid("Provider response body is empty.", undefined, this.providerName);
     }
 
     try {
@@ -411,7 +431,7 @@ export class BailianOpenAICompatibleProvider
       if (allowInvalidJsonDetails) {
         throwProviderRequestFailed(response.status, {
           message: `Provider returned non-JSON error payload: ${rawBody}`,
-        });
+        }, this.providerName);
       }
 
       throwProviderResponseInvalid(
@@ -420,6 +440,7 @@ export class BailianOpenAICompatibleProvider
           cause: error instanceof Error ? error.message : String(error),
           body: rawBody,
         },
+        this.providerName,
       );
     }
   }
@@ -430,7 +451,7 @@ export class BailianOpenAICompatibleProvider
   ): Promise<OpenAICompatibleEmbeddingPayload> {
     const rawBody = await response.text();
     if (!rawBody) {
-      throwProviderResponseInvalid("Provider response body is empty.");
+      throwProviderResponseInvalid("Provider response body is empty.", undefined, this.providerName);
     }
 
     try {
@@ -439,7 +460,7 @@ export class BailianOpenAICompatibleProvider
       if (allowInvalidJsonDetails) {
         throwProviderRequestFailed(response.status, {
           message: `Provider returned non-JSON error payload: ${rawBody}`,
-        });
+        }, this.providerName);
       }
 
       throwProviderResponseInvalid(
@@ -448,61 +469,9 @@ export class BailianOpenAICompatibleProvider
           cause: error instanceof Error ? error.message : String(error),
           body: rawBody,
         },
+        this.providerName,
       );
     }
-  }
-
-  private parseChatUsage(
-    usage: OpenAICompatibleResponsePayload["usage"],
-  ): LLMUsage | undefined {
-    if (!usage) {
-      return undefined;
-    }
-
-    const promptTokens = usage.prompt_tokens;
-    const completionTokens = usage.completion_tokens;
-    const totalTokens = usage.total_tokens;
-    const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens;
-    if (
-      typeof promptTokens !== "number" ||
-      typeof completionTokens !== "number" ||
-      typeof totalTokens !== "number" ||
-      (reasoningTokens !== undefined && typeof reasoningTokens !== "number")
-    ) {
-      throwProviderResponseInvalid("Provider usage payload is invalid.");
-    }
-
-    return {
-      promptTokens,
-      completionTokens,
-      totalTokens,
-      ...(reasoningTokens !== undefined ? { reasoningTokens } : {}),
-    };
-  }
-
-  private parseEmbeddingUsage(
-    usage: OpenAICompatibleEmbeddingPayload["usage"],
-  ): LLMUsage | undefined {
-    if (!usage) {
-      return undefined;
-    }
-
-    const promptTokens = usage.prompt_tokens;
-    const totalTokens = usage.total_tokens;
-    if (typeof promptTokens !== "number" || typeof totalTokens !== "number") {
-      throwProviderResponseInvalid(
-        "Provider embedding usage payload is invalid.",
-      );
-    }
-
-    return {
-      promptTokens,
-      completionTokens:
-        typeof usage.completion_tokens === "number"
-          ? usage.completion_tokens
-          : 0,
-      totalTokens,
-    };
   }
 
   private getProviderStreamOptions(
@@ -546,6 +515,8 @@ export class BailianOpenAICompatibleProvider
       if (!name) {
         throwProviderResponseInvalid(
           "Completion response tool call is missing a function name.",
+          undefined,
+          this.providerName,
         );
       }
 
@@ -555,6 +526,8 @@ export class BailianOpenAICompatibleProvider
         if (!isRecord(parsed)) {
           throwProviderResponseInvalid(
             "Completion response tool call arguments must be a JSON object.",
+            undefined,
+            this.providerName,
           );
         }
         input = parsed;
@@ -568,6 +541,7 @@ export class BailianOpenAICompatibleProvider
             cause: error instanceof Error ? error.message : String(error),
             toolName: name,
           },
+          this.providerName,
         );
       }
 

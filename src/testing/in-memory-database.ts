@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   AnalyticsEventRecord,
+  AiOutputReactionRecord,
+  AiOutputReportRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -115,6 +117,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyGroups: FrogSleepBuddyGroupRecord[];
   frogSleepBuddyGroupMembers: FrogSleepBuddyGroupMemberRecord[];
   frogSleepBuddyGroupInvitations: FrogSleepBuddyGroupInvitationRecord[];
+  aiOutputReportRecords: AiOutputReportRecord[];
+  aiOutputReactionRecords: AiOutputReactionRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -155,6 +159,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyGroupMembers = structuredClone(seed.frogSleepBuddyGroupMembers ?? []);
     this.frogSleepBuddyGroupInvitations = structuredClone(seed.frogSleepBuddyGroupInvitations ?? []);
     this.frogSleepBuddyNotificationDeliveries = [];
+    this.aiOutputReportRecords = structuredClone(seed.aiOutputReportRecords ?? []);
+    this.aiOutputReactionRecords = structuredClone(seed.aiOutputReactionRecords ?? []);
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -336,6 +342,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationOutbox = this.frogSleepBuddyNotificationOutbox.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotifications = this.frogSleepBuddyNotifications.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter((item) => item.appId !== appId);
+    this.aiOutputReportRecords = this.aiOutputReportRecords.filter(
+      (item) => item.appId !== appId,
+    );
+    this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
+      (item) => item.appId !== appId,
+    );
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -406,6 +418,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
     this.feedbackAttachments = this.feedbackAttachments.filter(
       (item) => !feedbackIds.includes(item.feedbackId),
+    );
+    this.aiOutputReportRecords = this.aiOutputReportRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
     );
     this.frogSleepDevices = this.frogSleepDevices.filter(
       (item) => item.appId !== appId || item.userId !== userId,
@@ -1576,6 +1594,104 @@ export class InMemoryDatabase extends ApplicationDatabase {
           item.appId === appId &&
           item.feedbackId === feedbackId &&
           item.id === attachmentId,
+      ),
+    );
+  }
+
+  insertAiOutputReport(record: AiOutputReportRecord): void {
+    this.aiOutputReportRecords.push(structuredClone(record));
+  }
+
+  findAiOutputReportBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): AiOutputReportRecord | undefined {
+    return structuredClone(
+      this.aiOutputReportRecords.find(
+        (item) =>
+          item.appId === appId &&
+          item.userId === userId &&
+          item.submissionId === submissionId,
+      ),
+    );
+  }
+
+  findAiOutputReportById(
+    appId: string,
+    reportId: string,
+  ): AiOutputReportRecord | undefined {
+    return structuredClone(
+      this.aiOutputReportRecords.find(
+        (item) => item.appId === appId && item.id === reportId,
+      ),
+    );
+  }
+
+  listAiOutputReports(filter: {
+    appId: string;
+    userId?: string;
+    category?: AiOutputReportRecord["category"];
+    status?: AiOutputReportRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): AiOutputReportRecord[] {
+    const records = structuredClone(this.aiOutputReportRecords)
+      .filter((item) => item.appId === filter.appId)
+      .filter((item) => (filter.userId ? item.userId === filter.userId : true))
+      .filter((item) =>
+        filter.category ? item.category === filter.category : true
+      )
+      .filter((item) => (filter.status ? item.status === filter.status : true))
+      .filter((item) =>
+        filter.createdAtFromIso
+          ? item.createdAt >= filter.createdAtFromIso
+          : true
+      )
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return typeof filter.limit === "number" && filter.limit > 0
+      ? records.slice(0, Math.min(Math.floor(filter.limit), 500))
+      : records;
+  }
+
+  updateAiOutputReportStatus(
+    appId: string,
+    reportId: string,
+    status: AiOutputReportRecord["status"],
+    resolutionCode?: string,
+    resolutionNote?: string,
+  ): AiOutputReportRecord | undefined {
+    const record = this.aiOutputReportRecords.find(
+      (item) => item.appId === appId && item.id === reportId,
+    );
+    if (!record) {
+      return undefined;
+    }
+    const now = new Date().toISOString();
+    record.status = status;
+    record.resolutionCode = resolutionCode;
+    record.resolutionNote = resolutionNote;
+    record.updatedAt = now;
+    record.resolvedAt =
+      status === "resolved" || status === "rejected" ? now : undefined;
+    return structuredClone(record);
+  }
+
+  insertAiOutputReaction(record: AiOutputReactionRecord): void {
+    this.aiOutputReactionRecords.push(structuredClone(record));
+  }
+
+  findAiOutputReactionBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): AiOutputReactionRecord | undefined {
+    return structuredClone(
+      this.aiOutputReactionRecords.find(
+        (item) =>
+          item.appId === appId &&
+          item.userId === userId &&
+          item.submissionId === submissionId,
       ),
     );
   }

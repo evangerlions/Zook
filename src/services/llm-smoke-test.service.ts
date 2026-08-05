@@ -7,15 +7,19 @@ import type {
   AdminLlmSmokeTestItem,
   AdminLlmSmokeTestRequestPayload,
   AdminLlmSmokeTestResponsePayload,
+  AdminLlmSmokeTestRunRequest,
   AdminLlmSmokeTestSkipPayload,
   AdminLlmSmokeTestSummary,
-  LlmModelConfig,
-  LlmProviderConfig,
-  LlmServiceConfig,
+  AdminLlmSmokeTestTarget,
 } from "../shared/types.ts";
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { EmbeddingProvider, EmbeddingResult, ResolvedEmbeddingRequest } from "./embedding-manager.ts";
 import type { LLMProvider, ResolvedLLMCompletionRequest } from "./llm-manager.ts";
+import {
+  buildLlmSmokeTestMatrix,
+  resolveLlmSmokeTestTarget,
+  type LlmSmokeMatrixItem,
+} from "./llm-smoke-test-target.ts";
 
 const SMOKE_TEST_SCOPE = "admin-llm-smoke-test";
 const SMOKE_TEST_COOLDOWN_KEY = "cooldown";
@@ -23,6 +27,7 @@ const DEFAULT_COOLDOWN_MS = 10_000;
 const RESPONSE_PREVIEW_LIMIT = 120;
 const ERROR_STACK_PREVIEW_LIMIT = 6;
 const VECTOR_PREVIEW_LIMIT = 8;
+const SMOKE_CHAT_MAX_TOKENS = 64;
 const SMOKE_MESSAGES = [
   {
     role: "system" as const,
@@ -42,12 +47,6 @@ export interface LlmSmokeTestServiceOptions {
   cooldownMs?: number;
 }
 
-interface SmokeMatrixItem {
-  model: LlmModelConfig;
-  provider: LlmProviderConfig;
-  route?: LlmServiceConfig["models"][number]["routes"][number];
-}
-
 export class LlmSmokeTestService {
   constructor(
     private readonly commonLlmConfigService: CommonLlmConfigService,
@@ -57,22 +56,26 @@ export class LlmSmokeTestService {
     private readonly options: LlmSmokeTestServiceOptions = {},
   ) {}
 
-  async run(): Promise<AdminLlmSmokeTestDocument> {
-    await this.assertCooldown();
-
+  async run(
+    input?: AdminLlmSmokeTestRunRequest,
+  ): Promise<AdminLlmSmokeTestDocument> {
+    const target = resolveLlmSmokeTestTarget(input);
     const config = await this.commonLlmConfigService.getRuntimeConfig();
     if (!config?.enabled) {
       throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM 服务未启用，无法执行冒烟测试。");
     }
 
+    const matrix = buildLlmSmokeTestMatrix(config, target);
+    await this.assertCooldown();
     const items = await Promise.all(
-      this.buildMatrix(config).map((item) => this.runItem(item)),
+      matrix.map((item) => this.runItem(item)),
     );
     const executedAt = this.getNow().toISOString();
 
     return {
       executedAt,
       cooldownSeconds: Math.ceil(this.getCooldownMs() / 1000),
+      target,
       summary: this.buildSummary(items),
       items,
     };
@@ -98,17 +101,7 @@ export class LlmSmokeTestService {
     await this.kvManager.setString(SMOKE_TEST_SCOPE, SMOKE_TEST_COOLDOWN_KEY, String(now));
   }
 
-  private buildMatrix(config: LlmServiceConfig): SmokeMatrixItem[] {
-    return config.models.flatMap((model) =>
-      config.providers.map((provider) => ({
-        model,
-        provider,
-        route: model.routes.find((route) => route.provider === provider.key),
-      })),
-    );
-  }
-
-  private async runItem(item: SmokeMatrixItem): Promise<AdminLlmSmokeTestItem> {
+  private async runItem(item: LlmSmokeMatrixItem): Promise<AdminLlmSmokeTestItem> {
     const base: Omit<AdminLlmSmokeTestItem, "status" | "message"> = {
       modelKind: item.model.kind,
       modelKey: item.model.key,
@@ -257,7 +250,7 @@ export class LlmSmokeTestService {
     }
   }
 
-  private buildChatRequest(item: SmokeMatrixItem): ResolvedLLMCompletionRequest {
+  private buildChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMCompletionRequest {
     const route = item.route;
     if (!route) {
       throw new Error("Smoke test route is missing.");
@@ -265,7 +258,7 @@ export class LlmSmokeTestService {
 
     return {
       temperature: 0,
-      maxTokens: 24,
+      maxTokens: SMOKE_CHAT_MAX_TOKENS,
       messages: SMOKE_MESSAGES,
       providerOptions: {},
       model: {
@@ -282,7 +275,7 @@ export class LlmSmokeTestService {
     };
   }
 
-  private buildEmbeddingRequest(item: SmokeMatrixItem): ResolvedEmbeddingRequest {
+  private buildEmbeddingRequest(item: LlmSmokeMatrixItem): ResolvedEmbeddingRequest {
     const route = item.route;
     if (!route) {
       throw new Error("Smoke test route is missing.");
@@ -345,7 +338,7 @@ export class LlmSmokeTestService {
     return this.options.now?.() ?? new Date();
   }
 
-  private buildRequestDetails(item: SmokeMatrixItem): AdminLlmSmokeTestRequestPayload | undefined {
+  private buildRequestDetails(item: LlmSmokeMatrixItem): AdminLlmSmokeTestRequestPayload | undefined {
     if (!item.route) {
       return undefined;
     }
@@ -373,7 +366,7 @@ export class LlmSmokeTestService {
             content: message.content,
           })),
           temperature: 0,
-          maxTokens: 24,
+          maxTokens: SMOKE_CHAT_MAX_TOKENS,
           providerOptions: {},
         };
   }
@@ -442,7 +435,7 @@ export class LlmSmokeTestService {
     };
   }
 
-  private buildSkipDetails(reason: string, item: SmokeMatrixItem, configured: boolean): AdminLlmSmokeTestSkipPayload {
+  private buildSkipDetails(reason: string, item: LlmSmokeMatrixItem, configured: boolean): AdminLlmSmokeTestSkipPayload {
     return {
       reason,
       configured,

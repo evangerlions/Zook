@@ -4,7 +4,10 @@ import type { OpenAICompatibleResponsePayload } from "./bailian-openai-compatibl
 import { redactProviderRequestBody } from "./bailian-openai-compatible-utils.ts";
 
 export class BailianOpenAICompatibleLocalLogger {
-  constructor(private readonly logger?: StructuredLogger) {}
+  constructor(
+    private readonly logger?: StructuredLogger,
+    private readonly providerName = "bailian",
+  ) {}
 
   beginStream(input: {
     modelKey: string;
@@ -16,6 +19,7 @@ export class BailianOpenAICompatibleLocalLogger {
       modelKey: input.modelKey,
       sceneRouteKey: input.sceneRouteKey,
       providerModel: input.providerModel,
+      providerName: this.providerName,
       enabled: shouldLogLocalProviderTraffic(),
       startedAtMs: Date.now(),
     });
@@ -40,6 +44,7 @@ export class BailianOpenAICompatibleLocalLogger {
       modelKey: input.modelKey,
       ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
+      provider: this.providerName,
       bodySummary,
       ...(shouldLogFullProviderBody()
         ? {
@@ -74,6 +79,7 @@ export class BailianOpenAICompatibleLocalLogger {
       modelKey: input.modelKey,
       ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
+      provider: this.providerName,
       systemPromptCount: systemPrompts.length,
       systemPrompts,
       chatContext: summarizeNonSystemChatContext(input.body),
@@ -87,6 +93,7 @@ export class BailianOpenAICompatibleLocalLogger {
       return;
     }
     this.logger.debug("ai_novel local provider tools context", {
+      provider: this.providerName,
       toolsContext,
     });
   }
@@ -107,6 +114,7 @@ export class BailianOpenAICompatibleLocalLogger {
       modelKey: input.modelKey,
       ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
+      provider: this.providerName,
       id: input.payload.id,
       finishReason: choice?.finish_reason,
       contentPreview:
@@ -138,6 +146,7 @@ export class BailianOpenAICompatibleLocalLogger {
       modelKey: input.modelKey,
       ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
+      provider: this.providerName,
       statusCode: input.statusCode,
       error: input.payload.error,
       message: input.payload.message,
@@ -164,6 +173,7 @@ export class BailianOpenAICompatibleStreamLogSession {
       modelKey: string;
       sceneRouteKey?: string;
       providerModel: string;
+      providerName: string;
       enabled: boolean;
       startedAtMs: number;
     },
@@ -183,6 +193,7 @@ export class BailianOpenAICompatibleStreamLogSession {
         ? { sceneRouteKey: this.input.sceneRouteKey }
         : {}),
       providerModel: this.input.providerModel,
+      provider: this.input.providerName,
       chunkIndex: this.streamChunkCount,
       elapsedMs,
       ...event,
@@ -191,6 +202,7 @@ export class BailianOpenAICompatibleStreamLogSession {
 
     if (isHighFrequencyDeltaEvent(event)) {
       this.input.logger.info("ai_novel local provider stream delta", {
+        provider: this.input.providerName,
         preview: event.preview,
       });
       return;
@@ -212,6 +224,7 @@ export class BailianOpenAICompatibleStreamLogSession {
         ? { sceneRouteKey: this.input.sceneRouteKey }
         : {}),
       providerModel: this.input.providerModel,
+      provider: this.input.providerName,
       elapsedMs,
       chunkCount: this.streamChunkCount,
       firstEventElapsedMs: this.firstEventElapsedMs,

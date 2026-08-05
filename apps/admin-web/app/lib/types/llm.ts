@@ -3,6 +3,7 @@ import type { AdminAppSummary, ConfigRevisionMeta } from "./core";
 export type LlmMetricsRange = "24h" | "7d" | "30d";
 export type LlmRoutingStrategy = "auto" | "fixed";
 export type LlmModelKind = "chat" | "embedding";
+export type LlmSmokeTestMode = "matrix" | "route";
 
 export interface LlmProviderConfig {
   key: string;
@@ -28,9 +29,17 @@ export interface LlmModelConfig {
   routes: LlmModelRouteConfig[];
 }
 
+export interface OpenRouterConfig {
+  useTransparentProxy: boolean;
+  transparentProxyBaseUrl: string;
+  transparentProxyKeyId: string;
+  transparentProxyHmacSecretKey: string;
+}
+
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
+  openRouter: OpenRouterConfig;
   providers: LlmProviderConfig[];
   models: LlmModelConfig[];
 }
@@ -138,6 +147,18 @@ export interface AdminLlmSmokeTestSummary {
   successRate: number;
 }
 
+export interface AdminLlmSmokeTestRunRequest {
+  mode?: LlmSmokeTestMode;
+  modelKey?: string;
+  provider?: string;
+}
+
+export interface AdminLlmSmokeTestTarget {
+  mode: LlmSmokeTestMode;
+  modelKey?: string;
+  provider?: string;
+}
+
 export interface AdminLlmSmokeTestItem {
   modelKey: string;
   modelLabel: string;
@@ -161,6 +182,7 @@ export interface AdminLlmSmokeTestItem {
 export interface AdminLlmSmokeTestDocument {
   executedAt: string;
   cooldownSeconds: number;
+  target: AdminLlmSmokeTestTarget;
   summary: AdminLlmSmokeTestSummary;
   items: AdminLlmSmokeTestItem[];
 }
@@ -192,6 +214,7 @@ export interface LlmModelDraft {
 export interface LlmConfigDraft {
   enabled: boolean;
   defaultModelKey: string;
+  openRouter: OpenRouterConfig;
   providers: LlmProviderDraft[];
   models: LlmModelDraft[];
 }

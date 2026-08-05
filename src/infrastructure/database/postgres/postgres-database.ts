@@ -1,20 +1,55 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Pool, type PoolClient } from "pg";
 import type {
-  AnalyticsEventRecord, AppConfigRecord, AppNameI18n, AppRecord, AppUserRecord, AuditLogRecord,
-  ClientLogLineRecord, ClientLogUploadRecord, ClientLogUploadTaskRecord, ContentSafetyCheckRecord,
-  DatabaseSeed, EmailDeliveryEventRecord, FeedbackAttachmentRecord, FeedbackRecord, FailedEventRecord,
-  FileRecord, FrogSleepDeviceRecord, FrogSleepBuddySharingGrantRecord,
-  FrogSleepBuddyInvitationBundleRecord, FrogSleepBuddyInvitationDomainDecisionRecord, FrogSleepBuddyInvitationReceiptAttemptRecord, FrogSleepBuddyDomainSlotRecord, FrogSleepBuddyDomainRelationshipRecord, FrogSleepBuddyInvitationEmailAttemptRecord, FrogSleepBuddyInvitationEmailDeliveryRecord,
-  FrogSleepBuddyNotificationOutboxRecord, FrogSleepBuddyNotificationRecord, FrogSleepBuddyNotificationDeliveryRecord,
-  FrogSleepBuddyGroupRecord, FrogSleepBuddyGroupMemberRecord, FrogSleepBuddyGroupInvitationRecord,
-  FrogSleepEntityFilter, FrogSleepEntityKind, FrogSleepEntityRecord, NotificationJobRecord, PermissionRecord,
-  RolePermissionRecord, RoleRecord, UserRecord, UserRoleRecord, SmsVerificationRecord,
+  AnalyticsEventRecord,
+  AiOutputReactionRecord,
+  AiOutputReportRecord,
+  AppConfigRecord,
+  AppNameI18n,
+  AppRecord,
+  AppUserRecord,
+  AuditLogRecord,
+  ClientLogLineRecord,
+  ClientLogUploadRecord,
+  ClientLogUploadTaskRecord,
+  ContentSafetyCheckRecord,
+  DatabaseSeed,
+  EmailDeliveryEventRecord,
+  FailedEventRecord,
+  FeedbackAttachmentRecord,
+  FeedbackRecord,
+  FileRecord,
+  FrogSleepBuddyDomainRelationshipRecord,
+  FrogSleepBuddyDomainSlotRecord,
+  FrogSleepBuddyInvitationBundleRecord,
+  FrogSleepBuddyInvitationDomainDecisionRecord,
+  FrogSleepBuddyInvitationEmailAttemptRecord,
+  FrogSleepBuddyInvitationEmailDeliveryRecord,
+  FrogSleepBuddyInvitationReceiptAttemptRecord,
+  FrogSleepBuddyGroupInvitationRecord,
+  FrogSleepBuddyGroupMemberRecord,
+  FrogSleepBuddyGroupRecord,
+  FrogSleepBuddyNotificationDeliveryRecord,
+  FrogSleepBuddyNotificationOutboxRecord,
+  FrogSleepBuddyNotificationRecord,
+  FrogSleepBuddySharingGrantRecord,
+  FrogSleepDeviceRecord,
+  FrogSleepEntityFilter,
+  FrogSleepEntityKind,
+  FrogSleepEntityRecord,
+  NotificationJobRecord,
+  PermissionRecord,
+  RolePermissionRecord,
+  RoleRecord,
+  SmsVerificationRecord,
+  UserRecord,
+  UserRoleRecord,
 } from "../../../shared/types.ts";
 import { ApplicationDatabase, type ManagedStateSnapshot } from "../application-database.ts";
 import { runPostgresMigrations } from "./migrate.ts";
 import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
+import { PostgresAiOutputReportingStore } from "./postgres-ai-output-reporting.ts";
 import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
 import { PostgresFeedbackStore } from "./postgres-feedback.ts";
 import { PostgresFrogSleepStore } from "./postgres-frogsleep.ts";
@@ -44,6 +79,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyGrowth: PostgresBuddyGrowthRepository;
   private readonly buddyCommandTransaction: PostgresBuddyCommandTransaction<PoolClient>;
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
+  private readonly aiOutputReporting: PostgresAiOutputReportingStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private initialized = false;
 
@@ -56,6 +92,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyGrowth = new PostgresBuddyGrowthRepository({ query: async (sql, values = []) => await this.query(sql, values) });
     this.buddyCommandTransaction = new PostgresBuddyCommandTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
+    this.aiOutputReporting = new PostgresAiOutputReportingStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
   }
 
@@ -487,6 +524,14 @@ export class PostgresDatabase extends ApplicationDatabase {
   }
   override async findFeedbackAttachment(appId: string, feedbackId: string, attachmentId: string): Promise<FeedbackAttachmentRecord | undefined> {
     return await this.feedback.findAttachment(appId, feedbackId, attachmentId);
+  }
+  override async insertAiOutputReport(record: AiOutputReportRecord): Promise<void> { await this.aiOutputReporting.insertReport(record); }
+  override async findAiOutputReportBySubmission(appId: string, userId: string, submissionId: string): Promise<AiOutputReportRecord | undefined> { return await this.aiOutputReporting.findReportBySubmission(appId, userId, submissionId); }
+  override async findAiOutputReportById(appId: string, reportId: string): Promise<AiOutputReportRecord | undefined> { return await this.aiOutputReporting.findReportById(appId, reportId); }
+  override async listAiOutputReports(filter: { appId: string; userId?: string; category?: AiOutputReportRecord["category"]; status?: AiOutputReportRecord["status"]; createdAtFromIso?: string; limit?: number }): Promise<AiOutputReportRecord[]> { return await this.aiOutputReporting.listReports(filter); }
+  override async updateAiOutputReportStatus(appId: string, reportId: string, status: AiOutputReportRecord["status"], resolutionCode?: string, resolutionNote?: string): Promise<AiOutputReportRecord | undefined> { return await this.aiOutputReporting.updateReportStatus(appId, reportId, status, resolutionCode, resolutionNote); }
+  override async insertAiOutputReaction(record: AiOutputReactionRecord): Promise<void> { await this.aiOutputReporting.insertReaction(record); }
+  override async findAiOutputReactionBySubmission(appId: string, userId: string, submissionId: string): Promise<AiOutputReactionRecord | undefined> { return await this.aiOutputReporting.findReactionBySubmission(appId, userId, submissionId); }
   }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);

@@ -43,7 +43,7 @@ export async function handleRegister(this: BackendRouteContext,
     });
 
     return this.ok(
-      await this.toAuthPayload(session, clientType),
+      await this.toAuthPayload(session, clientType, request),
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
@@ -156,7 +156,7 @@ export async function handleRegisterBySms(this: BackendRouteContext,
     });
 
     return this.ok(
-      await this.toAuthPayload(session, clientType),
+      await this.toAuthPayload(session, clientType, request),
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );

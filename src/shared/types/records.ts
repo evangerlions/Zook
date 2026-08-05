@@ -562,6 +562,82 @@ export interface FeedbackAttachmentRecord {
   createdAt: string;
 }
 
+export const AI_OUTPUT_REPORT_STATUSES = [
+  "received",
+  "reviewing",
+  "resolved",
+  "rejected",
+] as const;
+export type AiOutputReportStatus = typeof AI_OUTPUT_REPORT_STATUSES[number];
+
+export const AI_OUTPUT_REPORT_CATEGORIES = [
+  "harmful_unsafe",
+  "sexual_vulgar",
+  "abuse_harassment",
+  "illegal_crime",
+  "privacy_personal_info",
+  "misinformation",
+  "rights_infringement",
+  "other",
+] as const;
+export type AiOutputReportCategory =
+  typeof AI_OUTPUT_REPORT_CATEGORIES[number];
+
+export interface AiOutputReportRecord {
+  id: string;
+  submissionId: string;
+  appId: string;
+  userId: string;
+  targetType: "chat_message" | "chapter_revision";
+  targetId: string;
+  messageId?: string;
+  sessionId?: string;
+  chapterId?: number;
+  chapterRevisionId?: string;
+  scene: "kickoff" | "write" | "history_qa";
+  category: AiOutputReportCategory;
+  description?: string;
+  encryptedContentKeyId: string;
+  encryptedContentAlgorithm: string;
+  encryptedContentNonceBase64: string;
+  encryptedContentCiphertextBase64: string;
+  contentHash: string;
+  turnId?: string;
+  providerRequestId?: string;
+  modelKey?: string;
+  clientRegion?: string;
+  accountRegion: string;
+  effectiveRegion?: string;
+  platform?: string;
+  appVersion?: string;
+  locale?: string;
+  status: AiOutputReportStatus;
+  resolutionCode?: string;
+  resolutionNote?: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+}
+
+export interface AiOutputReactionRecord {
+  id: string;
+  submissionId: string;
+  appId: string;
+  userId: string;
+  targetType: "chapter_revision";
+  targetId: string;
+  reaction: "like";
+  chapterId: number;
+  chapterRevisionId: string;
+  contentHash: string;
+  turnId?: string;
+  providerRequestId?: string;
+  platform?: string;
+  appVersion?: string;
+  effectiveRegion?: string;
+  createdAt: string;
+}
+
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -591,4 +667,6 @@ export interface DatabaseSeed {
   frogSleepBuddyGroups?: FrogSleepBuddyGroupRecord[];
   frogSleepBuddyGroupMembers?: FrogSleepBuddyGroupMemberRecord[];
   frogSleepBuddyGroupInvitations?: FrogSleepBuddyGroupInvitationRecord[];
+  aiOutputReportRecords?: AiOutputReportRecord[];
+  aiOutputReactionRecords?: AiOutputReactionRecord[];
 }

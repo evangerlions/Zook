@@ -160,7 +160,7 @@ export async function handleResetPassword(this: BackendRouteContext,
     });
 
     return this.ok(
-      await this.toAuthPayload(session, clientType),
+      await this.toAuthPayload(session, clientType, request),
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
@@ -221,7 +221,7 @@ export async function handleResetPasswordBySms(this: BackendRouteContext,
     });
 
     return this.ok(
-      await this.toAuthPayload(session, clientType),
+      await this.toAuthPayload(session, clientType, request),
       request.requestId as string,
       this.buildAuthHeaders(session.refreshToken, clientType),
     );
@@ -279,7 +279,7 @@ export async function handleChangePassword(this: BackendRouteContext,
   });
 
   return this.ok(
-    await this.toAuthPayload(session, clientType),
+    await this.toAuthPayload(session, clientType, request),
     request.requestId as string,
     this.buildAuthHeaders(session.refreshToken, clientType),
   );
@@ -317,7 +317,7 @@ export async function handleSetPassword(this: BackendRouteContext,
   });
 
   return this.ok(
-    await this.toAuthPayload(session, clientType),
+    await this.toAuthPayload(session, clientType, request),
     request.requestId as string,
     this.buildAuthHeaders(session.refreshToken, clientType),
   );
