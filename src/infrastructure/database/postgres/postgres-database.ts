@@ -58,6 +58,15 @@ import { PostgresBuddyGrowthRepository } from "./postgres-buddy-growth-repositor
 import { PostgresBuddyCommandTransaction, type FrogSleepBuddyCommandSlotKey } from "./postgres-buddy-command-transaction.ts";
 import { PostgresBuddyDecisionSafetyTransaction } from "./postgres-buddy-decision-safety-transaction.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
+import { findPostgresBodyLogProfile, upsertPostgresBodyLogProfile, type BodyLogProfileRecord } from "./postgres-bodylog-profile.ts";
+import { PostgresBodyLogSocialStore } from "./postgres-bodylog-social.ts";
+import { PostgresBodyLogLeaderboardStore } from "./postgres-bodylog-leaderboard.ts";
+import { PostgresBodyLogInvitationStore } from "./postgres-bodylog-invitations.ts";
+import { PostgresBodyLogChallengeStore } from "./postgres-bodylog-challenges.ts";
+import type { BodyLogBlockRecord, BodyLogFriendRequestRecord, BodyLogFriendshipRecord, BodyLogReportRecord } from "../../../modules/bodylog/bodylog-social.types.ts";
+import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeeklyGoalSnapshot } from "../../../modules/bodylog/bodylog-scoring.types.ts";
+import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from "../../../modules/bodylog/bodylog-invitation.types.ts";
+import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../../../modules/bodylog/bodylog-challenge.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -81,8 +90,11 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly aiOutputReporting: PostgresAiOutputReportingStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
+  private readonly bodyLogSocial: PostgresBodyLogSocialStore;
+  private readonly bodyLogLeaderboard: PostgresBodyLogLeaderboardStore;
+  private readonly bodyLogInvitations: PostgresBodyLogInvitationStore;
+  private readonly bodyLogChallenges: PostgresBodyLogChallengeStore;
   private initialized = false;
-
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
@@ -94,8 +106,11 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.aiOutputReporting = new PostgresAiOutputReportingStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogSocial = new PostgresBodyLogSocialStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogLeaderboard = new PostgresBodyLogLeaderboardStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogInvitations = new PostgresBodyLogInvitationStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogChallenges = new PostgresBodyLogChallengeStore(async (sql, values = []) => await this.query(sql, values));
   }
-
   static async create(
     connectionString: string,
     seed: DatabaseSeed = {},
@@ -247,7 +262,37 @@ export class PostgresDatabase extends ApplicationDatabase {
       userId,
     );
   }
-
+  override async findBodyLogProfile(appId: string, userId: string): Promise<BodyLogProfileRecord | undefined> { return await findPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), appId, userId); }
+  override async upsertBodyLogProfile(record: BodyLogProfileRecord): Promise<BodyLogProfileRecord> { return await upsertPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), record); }
+  override async listBodyLogFriendRequests(appId: string): Promise<BodyLogFriendRequestRecord[]> { return await this.bodyLogSocial.listFriendRequests(appId); }
+  override async upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): Promise<BodyLogFriendRequestRecord> { return await this.bodyLogSocial.upsertFriendRequest(record); }
+  override async listBodyLogFriendships(appId: string): Promise<BodyLogFriendshipRecord[]> { return await this.bodyLogSocial.listFriendships(appId); }
+  override async insertBodyLogFriendship(record: BodyLogFriendshipRecord): Promise<void> { await this.bodyLogSocial.insertFriendship(record); }
+  override async deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): Promise<void> { await this.bodyLogSocial.deleteFriendship(appId, userId, friendUserId); }
+  override async listBodyLogBlocks(appId: string): Promise<BodyLogBlockRecord[]> { return await this.bodyLogSocial.listBlocks(appId); }
+  override async insertBodyLogBlock(record: BodyLogBlockRecord): Promise<void> { await this.bodyLogSocial.insertBlock(record); }
+  override async deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): Promise<void> { await this.bodyLogSocial.deleteBlock(appId, blockerUserId, blockedUserId); }
+  override async insertBodyLogReport(record: BodyLogReportRecord): Promise<void> { await this.bodyLogSocial.insertReport(record); }
+  override async listBodyLogReports(appId: string, reporterUserId: string): Promise<BodyLogReportRecord[]> { return await this.bodyLogSocial.listReports(appId, reporterUserId); }
+  override async findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string): Promise<BodyLogWeeklyGoalSnapshot | undefined> { return await this.bodyLogLeaderboard.findSnapshot(appId, userId, seasonLabel); }
+  override async upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot): Promise<BodyLogWeeklyGoalSnapshot> { return await this.bodyLogLeaderboard.upsertSnapshot(record); }
+  override async listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string): Promise<BodyLogDailyAggregate[]> { return await this.bodyLogLeaderboard.listAggregates(appId, userId, seasonLabel); }
+  override async upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate): Promise<BodyLogDailyAggregate> { return await this.bodyLogLeaderboard.upsertAggregate(record); }
+  override async findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord | undefined> { return await this.bodyLogLeaderboard.findEntry(appId, userId, seasonLabel); }
+  override async upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): Promise<BodyLogLeaderboardEntryRecord> { return await this.bodyLogLeaderboard.upsertEntry(record); }
+  override async listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord[]> { return await this.bodyLogLeaderboard.listEntries(appId, seasonLabel); }
+  override async findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByTokenHash(appId, tokenHash); }
+  override async insertBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.insertInvitation(record); }
+  override async listBodyLogInvitations(appId: string, inviterUserId: string): Promise<BodyLogInvitationRecord[]> { return await this.bodyLogInvitations.listInvitations(appId, inviterUserId); }
+  override async insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.insertAttribution(record); }
+  override async updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.updateAttribution(record); }
+  override async listBodyLogInvitationAttributions(appId: string): Promise<BodyLogInvitationAttributionRecord[]> { return await this.bodyLogInvitations.listAttributions(appId); }
+  override async insertBodyLogChallenge(record: BodyLogChallengeRecord): Promise<void> { await this.bodyLogChallenges.insertChallenge(record); }
+  override async updateBodyLogChallenge(record: BodyLogChallengeRecord): Promise<void> { await this.bodyLogChallenges.updateChallenge(record); }
+  override async listBodyLogChallenges(appId: string): Promise<BodyLogChallengeRecord[]> { return await this.bodyLogChallenges.listChallenges(appId); }
+  override async insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): Promise<void> { await this.bodyLogChallenges.insertMembers(records); }
+  override async updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): Promise<void> { await this.bodyLogChallenges.updateMember(record); }
+  override async listBodyLogChallengeMembers(appId: string): Promise<BodyLogChallengeMemberRecord[]> { return await this.bodyLogChallenges.listMembers(appId); }
   override async listRoles(appId?: string): Promise<RoleRecord[]> {
     const result = appId
       ? await this.query("SELECT id, app_id, code, name, status FROM zook_roles WHERE app_id = $1 ORDER BY id ASC", [appId])

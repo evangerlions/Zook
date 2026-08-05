@@ -30,6 +30,11 @@ import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
+import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service.ts";
+import { BodyLogSocialService } from "./modules/bodylog/bodylog-social.service.ts";
+import { BodyLogLeaderboardService } from "./modules/bodylog/bodylog-leaderboard.service.ts";
+import { BodyLogInvitationService } from "./modules/bodylog/bodylog-invitation.service.ts";
+import { BodyLogChallengeService } from "./modules/bodylog/bodylog-challenge.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { AiOutputReportingService } from "./services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
@@ -429,6 +434,11 @@ export async function createApplication(
     database,
     logger,
   );
+  const bodyLogProfileService = new BodyLogProfileService(database, contentSafetyService);
+  const bodyLogSocialService = new BodyLogSocialService(database, bodyLogProfileService);
+  const bodyLogLeaderboardService = new BodyLogLeaderboardService(database, bodyLogProfileService);
+  const bodyLogInvitationService = new BodyLogInvitationService(database);
+  const bodyLogChallengeService = new BodyLogChallengeService(database, bodyLogProfileService);
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
@@ -477,7 +487,6 @@ export async function createApplication(
   const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
   const httpExceptionFilter = new HttpExceptionFilter(publicApiMessageService);
   const adminBasicAuth = resolveAdminBasicAuth(options);
-
   const app = new BackendApplication(
     database,
     authService,
@@ -496,6 +505,11 @@ export async function createApplication(
     llmManager,
     embeddingManager,
     contentSafetyService,
+    bodyLogProfileService,
+    bodyLogSocialService,
+    bodyLogLeaderboardService,
+    bodyLogInvitationService,
+    bodyLogChallengeService,
     llmSmokeTestService,
     aiNovelAuditFileService,
     aiNovelLlmService,
@@ -523,7 +537,6 @@ export async function createApplication(
     kvManager,
     frogsleepEnabled,
   );
-
   app.analyticsService = analyticsService;
   return {
     app,

@@ -65,6 +65,26 @@ import {
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
 import { conflict } from "../shared/errors.ts";
+import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
+import type {
+  BodyLogBlockRecord,
+  BodyLogFriendRequestRecord,
+  BodyLogFriendshipRecord,
+  BodyLogReportRecord,
+} from "../modules/bodylog/bodylog-social.types.ts";
+import type {
+  BodyLogDailyAggregate,
+  BodyLogLeaderboardEntryRecord,
+  BodyLogWeeklyGoalSnapshot,
+} from "../modules/bodylog/bodylog-scoring.types.ts";
+import type {
+  BodyLogInvitationAttributionRecord,
+  BodyLogInvitationRecord,
+} from "../modules/bodylog/bodylog-invitation.types.ts";
+import type {
+  BodyLogChallengeMemberRecord,
+  BodyLogChallengeRecord,
+} from "../modules/bodylog/bodylog-challenge.types.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -119,6 +139,18 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyGroupInvitations: FrogSleepBuddyGroupInvitationRecord[];
   aiOutputReportRecords: AiOutputReportRecord[];
   aiOutputReactionRecords: AiOutputReactionRecord[];
+  bodyLogProfiles: BodyLogProfileRecord[];
+  bodyLogFriendRequests: BodyLogFriendRequestRecord[];
+  bodyLogFriendships: BodyLogFriendshipRecord[];
+  bodyLogBlocks: BodyLogBlockRecord[];
+  bodyLogReports: BodyLogReportRecord[];
+  bodyLogWeeklyGoalSnapshots: BodyLogWeeklyGoalSnapshot[];
+  bodyLogDailyAggregates: BodyLogDailyAggregate[];
+  bodyLogLeaderboardEntries: BodyLogLeaderboardEntryRecord[];
+  bodyLogInvitations: BodyLogInvitationRecord[];
+  bodyLogInvitationAttributions: BodyLogInvitationAttributionRecord[];
+  bodyLogChallenges: BodyLogChallengeRecord[];
+  bodyLogChallengeMembers: BodyLogChallengeMemberRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
@@ -161,6 +193,18 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationDeliveries = [];
     this.aiOutputReportRecords = structuredClone(seed.aiOutputReportRecords ?? []);
     this.aiOutputReactionRecords = structuredClone(seed.aiOutputReactionRecords ?? []);
+    this.bodyLogProfiles = [];
+    this.bodyLogFriendRequests = [];
+    this.bodyLogFriendships = [];
+    this.bodyLogBlocks = [];
+    this.bodyLogReports = [];
+    this.bodyLogWeeklyGoalSnapshots = [];
+    this.bodyLogDailyAggregates = [];
+    this.bodyLogLeaderboardEntries = [];
+    this.bodyLogInvitations = [];
+    this.bodyLogInvitationAttributions = [];
+    this.bodyLogChallenges = [];
+    this.bodyLogChallengeMembers = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -348,6 +392,18 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
       (item) => item.appId !== appId,
     );
+    this.bodyLogProfiles = this.bodyLogProfiles.filter((item) => item.appId !== appId);
+    this.bodyLogFriendRequests = this.bodyLogFriendRequests.filter((item) => item.appId !== appId);
+    this.bodyLogFriendships = this.bodyLogFriendships.filter((item) => item.appId !== appId);
+    this.bodyLogBlocks = this.bodyLogBlocks.filter((item) => item.appId !== appId);
+    this.bodyLogReports = this.bodyLogReports.filter((item) => item.appId !== appId);
+    this.bodyLogWeeklyGoalSnapshots = this.bodyLogWeeklyGoalSnapshots.filter((item) => item.appId !== appId);
+    this.bodyLogDailyAggregates = this.bodyLogDailyAggregates.filter((item) => item.appId !== appId);
+    this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter((item) => item.appId !== appId);
+    this.bodyLogInvitations = this.bodyLogInvitations.filter((item) => item.appId !== appId);
+    this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter((item) => item.appId !== appId);
+    this.bodyLogChallenges = this.bodyLogChallenges.filter((item) => item.appId !== appId);
+    this.bodyLogChallengeMembers = this.bodyLogChallengeMembers.filter((item) => item.appId !== appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -385,6 +441,51 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
     this.userRoles = this.userRoles.filter(
       (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogProfiles = this.bodyLogProfiles.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogFriendRequests = this.bodyLogFriendRequests.filter(
+      (item) => item.appId !== appId ||
+        (item.senderUserId !== userId && item.recipientUserId !== userId),
+    );
+    this.bodyLogFriendships = this.bodyLogFriendships.filter(
+      (item) => item.appId !== appId ||
+        (item.userId !== userId && item.friendUserId !== userId),
+    );
+    this.bodyLogBlocks = this.bodyLogBlocks.filter(
+      (item) => item.appId !== appId ||
+        (item.blockerUserId !== userId && item.blockedUserId !== userId),
+    );
+    this.bodyLogReports = this.bodyLogReports.filter(
+      (item) => item.appId !== appId ||
+        (item.reporterUserId !== userId && item.reportedUserId !== userId),
+    );
+    this.bodyLogWeeklyGoalSnapshots = this.bodyLogWeeklyGoalSnapshots.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogDailyAggregates = this.bodyLogDailyAggregates.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogInvitations = this.bodyLogInvitations.filter(
+      (item) => item.appId !== appId || item.inviterUserId !== userId,
+    );
+    this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter(
+      (item) => item.appId !== appId ||
+        (item.inviterUserId !== userId && item.inviteeUserId !== userId),
+    );
+    const removedChallengeIds = this.bodyLogChallengeMembers.filter(
+      (item) => item.appId === appId && item.userId === userId,
+    ).map((item) => item.challengeId);
+    this.bodyLogChallenges = this.bodyLogChallenges.filter(
+      (item) => item.appId !== appId ||
+        (item.creatorUserId !== userId && !removedChallengeIds.includes(item.id)),
+    );
+    this.bodyLogChallengeMembers = this.bodyLogChallengeMembers.filter(
+      (item) => item.appId !== appId || !removedChallengeIds.includes(item.challengeId),
     );
     this.notificationJobs = this.notificationJobs.filter(
       (item) => item.appId !== appId || item.recipientUserId !== userId,
@@ -450,6 +551,185 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter(
       (item) => !removedNotificationIds.includes(item.notificationId),
     );
+  }
+
+  findBodyLogProfile(
+    appId: string,
+    userId: string,
+  ): BodyLogProfileRecord | undefined {
+    return structuredClone(
+      this.bodyLogProfiles.find(
+        (item) => item.appId === appId && item.userId === userId,
+      ),
+    );
+  }
+
+  upsertBodyLogProfile(record: BodyLogProfileRecord): BodyLogProfileRecord {
+    const index = this.bodyLogProfiles.findIndex(
+      (item) => item.appId === record.appId && item.userId === record.userId,
+    );
+    if (index >= 0) {
+      this.bodyLogProfiles[index] = structuredClone(record);
+    } else {
+      this.bodyLogProfiles.push(structuredClone(record));
+    }
+    return structuredClone(record);
+  }
+
+  listBodyLogFriendRequests(appId: string): BodyLogFriendRequestRecord[] {
+    return structuredClone(this.bodyLogFriendRequests.filter((item) => item.appId === appId));
+  }
+
+  upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): BodyLogFriendRequestRecord {
+    const index = this.bodyLogFriendRequests.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogFriendRequests[index] = structuredClone(record);
+    else this.bodyLogFriendRequests.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogFriendships(appId: string): BodyLogFriendshipRecord[] {
+    return structuredClone(this.bodyLogFriendships.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogFriendship(record: BodyLogFriendshipRecord): void {
+    const exists = this.bodyLogFriendships.some((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.friendUserId === record.friendUserId);
+    if (!exists) this.bodyLogFriendships.push(structuredClone(record));
+  }
+
+  deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): void {
+    this.bodyLogFriendships = this.bodyLogFriendships.filter((item) =>
+      item.appId !== appId ||
+      !((item.userId === userId && item.friendUserId === friendUserId) ||
+        (item.userId === friendUserId && item.friendUserId === userId)));
+  }
+
+  listBodyLogBlocks(appId: string): BodyLogBlockRecord[] {
+    return structuredClone(this.bodyLogBlocks.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogBlock(record: BodyLogBlockRecord): void {
+    const exists = this.bodyLogBlocks.some((item) =>
+      item.appId === record.appId && item.blockerUserId === record.blockerUserId &&
+      item.blockedUserId === record.blockedUserId);
+    if (!exists) this.bodyLogBlocks.push(structuredClone(record));
+  }
+
+  deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): void {
+    this.bodyLogBlocks = this.bodyLogBlocks.filter((item) =>
+      item.appId !== appId || item.blockerUserId !== blockerUserId ||
+      item.blockedUserId !== blockedUserId);
+  }
+
+  insertBodyLogReport(record: BodyLogReportRecord): void {
+    this.bodyLogReports.push(structuredClone(record));
+  }
+
+  listBodyLogReports(appId: string, reporterUserId: string): BodyLogReportRecord[] {
+    return structuredClone(this.bodyLogReports.filter((item) =>
+      item.appId === appId && item.reporterUserId === reporterUserId));
+  }
+
+  findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogWeeklyGoalSnapshots.find((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot) {
+    const index = this.bodyLogWeeklyGoalSnapshots.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel);
+    if (index >= 0) this.bodyLogWeeklyGoalSnapshots[index] = structuredClone(record);
+    else this.bodyLogWeeklyGoalSnapshots.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogDailyAggregates.filter((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate) {
+    const index = this.bodyLogDailyAggregates.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel && item.date === record.date);
+    if (index >= 0) this.bodyLogDailyAggregates[index] = structuredClone(record);
+    else this.bodyLogDailyAggregates.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogLeaderboardEntries.find((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord) {
+    const index = this.bodyLogLeaderboardEntries.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel);
+    if (index >= 0) this.bodyLogLeaderboardEntries[index] = structuredClone(record);
+    else this.bodyLogLeaderboardEntries.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogLeaderboardEntries(appId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogLeaderboardEntries.filter((item) =>
+      item.appId === appId && item.seasonLabel === seasonLabel));
+  }
+
+  findBodyLogInvitationByTokenHash(appId: string, tokenHash: string) {
+    return structuredClone(this.bodyLogInvitations.find((item) =>
+      item.appId === appId && item.tokenHash === tokenHash));
+  }
+
+  insertBodyLogInvitation(record: BodyLogInvitationRecord): void {
+    this.bodyLogInvitations.push(structuredClone(record));
+  }
+
+  listBodyLogInvitations(appId: string, inviterUserId: string) {
+    return structuredClone(this.bodyLogInvitations.filter((item) =>
+      item.appId === appId && item.inviterUserId === inviterUserId));
+  }
+
+  insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): void {
+    this.bodyLogInvitationAttributions.push(structuredClone(record));
+  }
+
+  updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): void {
+    const index = this.bodyLogInvitationAttributions.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogInvitationAttributions[index] = structuredClone(record);
+  }
+
+  listBodyLogInvitationAttributions(appId: string) {
+    return structuredClone(this.bodyLogInvitationAttributions.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogChallenge(record: BodyLogChallengeRecord): void {
+    this.bodyLogChallenges.push(structuredClone(record));
+  }
+
+  updateBodyLogChallenge(record: BodyLogChallengeRecord): void {
+    const index = this.bodyLogChallenges.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogChallenges[index] = structuredClone(record);
+  }
+
+  listBodyLogChallenges(appId: string) {
+    return structuredClone(this.bodyLogChallenges.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): void {
+    this.bodyLogChallengeMembers.push(...structuredClone(records));
+  }
+
+  updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): void {
+    const index = this.bodyLogChallengeMembers.findIndex((item) =>
+      item.challengeId === record.challengeId && item.userId === record.userId);
+    if (index >= 0) this.bodyLogChallengeMembers[index] = structuredClone(record);
+  }
+
+  listBodyLogChallengeMembers(appId: string) {
+    return structuredClone(this.bodyLogChallengeMembers.filter((item) => item.appId === appId));
   }
 
   listRoles(appId?: string): RoleRecord[] {

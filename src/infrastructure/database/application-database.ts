@@ -45,6 +45,26 @@ import type {
 } from "../../shared/types.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
+import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
+import type {
+  BodyLogBlockRecord,
+  BodyLogFriendRequestRecord,
+  BodyLogFriendshipRecord,
+  BodyLogReportRecord,
+} from "../../modules/bodylog/bodylog-social.types.ts";
+import type {
+  BodyLogDailyAggregate,
+  BodyLogLeaderboardEntryRecord,
+  BodyLogWeeklyGoalSnapshot,
+} from "../../modules/bodylog/bodylog-scoring.types.ts";
+import type {
+  BodyLogInvitationAttributionRecord,
+  BodyLogInvitationRecord,
+} from "../../modules/bodylog/bodylog-invitation.types.ts";
+import type {
+  BodyLogChallengeMemberRecord,
+  BodyLogChallengeRecord,
+} from "../../modules/bodylog/bodylog-challenge.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -90,6 +110,43 @@ export abstract class ApplicationDatabase {
     status: AppUserRecord["status"],
   ): MaybePromise<AppUserRecord | undefined>;
   abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
+
+  abstract findBodyLogProfile(
+    appId: string,
+    userId: string,
+  ): MaybePromise<BodyLogProfileRecord | undefined>;
+  abstract upsertBodyLogProfile(
+    record: BodyLogProfileRecord,
+  ): MaybePromise<BodyLogProfileRecord>;
+  abstract listBodyLogFriendRequests(appId: string): MaybePromise<BodyLogFriendRequestRecord[]>;
+  abstract upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): MaybePromise<BodyLogFriendRequestRecord>;
+  abstract listBodyLogFriendships(appId: string): MaybePromise<BodyLogFriendshipRecord[]>;
+  abstract insertBodyLogFriendship(record: BodyLogFriendshipRecord): MaybePromise<void>;
+  abstract deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): MaybePromise<void>;
+  abstract listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
+  abstract insertBodyLogBlock(record: BodyLogBlockRecord): MaybePromise<void>;
+  abstract deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
+  abstract insertBodyLogReport(record: BodyLogReportRecord): MaybePromise<void>;
+  abstract listBodyLogReports(appId: string, reporterUserId: string): MaybePromise<BodyLogReportRecord[]>;
+  abstract findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogWeeklyGoalSnapshot | undefined>;
+  abstract upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot): MaybePromise<BodyLogWeeklyGoalSnapshot>;
+  abstract listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogDailyAggregate[]>;
+  abstract upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate): MaybePromise<BodyLogDailyAggregate>;
+  abstract findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord | undefined>;
+  abstract upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): MaybePromise<BodyLogLeaderboardEntryRecord>;
+  abstract listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord[]>;
+  abstract findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): MaybePromise<BodyLogInvitationRecord | undefined>;
+  abstract insertBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
+  abstract listBodyLogInvitations(appId: string, inviterUserId: string): MaybePromise<BodyLogInvitationRecord[]>;
+  abstract insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
+  abstract updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
+  abstract listBodyLogInvitationAttributions(appId: string): MaybePromise<BodyLogInvitationAttributionRecord[]>;
+  abstract insertBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
+  abstract updateBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
+  abstract listBodyLogChallenges(appId: string): MaybePromise<BodyLogChallengeRecord[]>;
+  abstract insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): MaybePromise<void>;
+  abstract updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): MaybePromise<void>;
+  abstract listBodyLogChallengeMembers(appId: string): MaybePromise<BodyLogChallengeMemberRecord[]>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;
