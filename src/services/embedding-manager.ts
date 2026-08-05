@@ -2,7 +2,6 @@ import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
 import type { LLMManagerOptions, LLMProviderName, LLMUsage, ResolvedLLMModel } from "./llm-manager.ts";
-import { estimateEmbeddingUsage } from "./llm-usage-estimator.ts";
 import {
   isAiNovelSceneRouteKey,
   resolveAiNovelSceneRouteAlias,
@@ -15,10 +14,6 @@ export interface EmbeddingRequest {
   modelKeyKind?: "model" | "scene_route";
   input: string[];
   providerOptions?: Record<string, unknown>;
-  usageOwner?: {
-    appId: string;
-    userId: string;
-  };
 }
 
 export interface EmbeddingVector {
@@ -71,19 +66,16 @@ export class EmbeddingManager {
 
     try {
       const result = await this.providers[resolution.request.model.provider].embed(resolution.request);
-      const usage = result.usage ?? estimateEmbeddingUsage(resolution.request.input);
       const completedAt = this.getNow();
       const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
       await this.recordRouteResult(resolution.routeRefs, {
         ok: true,
         totalLatencyMs,
-        usage,
+        usage: result.usage,
         occurredAt: completedAt,
       });
-      await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
       return {
         ...result,
-        usage,
         provider: resolution.request.model.provider,
         modelKey: resolution.request.model.modelKey,
         providerModel: resolution.request.model.providerModel,
@@ -367,35 +359,5 @@ export class EmbeddingManager {
 
   private getNow(): Date {
     return this.options.now?.() ?? new Date();
-  }
-
-  private async recordOwnedUsage(
-    owner: EmbeddingRequest["usageOwner"],
-    usage: LLMUsage,
-    occurredAt: Date,
-  ): Promise<void> {
-    if (!owner) {
-      return;
-    }
-    try {
-      await this.options.usageRecorder?.({
-        appId: owner.appId,
-        userId: owner.userId,
-        usage,
-        occurredAt,
-      });
-    } catch (error) {
-      try {
-        this.options.usageRecorderErrorHandler?.({
-          appId: owner.appId,
-          userId: owner.userId,
-          usage,
-          occurredAt,
-          error,
-        });
-      } catch {
-        // Usage accounting must never break an otherwise successful embedding.
-      }
-    }
   }
 }

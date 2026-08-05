@@ -1,4 +1,9 @@
 import type {
+  FrogSleepBuddyGroupInvitationRecord,
+  FrogSleepBuddyGroupMemberRecord,
+  FrogSleepBuddyGroupRecord,
+} from "./frogsleep-buddy-group.ts";
+import type {
   AccountRegion,
   AppStatus,
   AppUserStatus,
@@ -117,6 +122,271 @@ export interface NotificationJobRecord {
   payload: Record<string, unknown>;
   status: NotificationStatus;
   retryCount: number;
+}
+
+export interface FrogSleepDeviceRecord {
+  id: string;
+  appId: string;
+  userId: string;
+  platform: "ios" | "android" | "web";
+  pushToken: string;
+  appVersion?: string;
+  timezone?: string;
+  pushEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export type FrogSleepEntityKind =
+  | "sleep_invite"
+  | "sleep_relationship"
+  | "guardianship_preference"
+  | "sleep_session"
+  | "sleep_event"
+  | "sleep_summary"
+  | "night_recap"
+  | "focus_profile"
+  | "focus_relationship"
+  | "focus_invite"
+  | "focus_session"
+  | "focus_shared_moment"
+  | "focus_message"
+  | "focus_milestone"
+  | "focus_match_feedback"
+  | "buddy_share"
+  | "buddy_interaction"
+  | "buddy_joint_activity"
+  | "buddy_joint_goal"
+  | "buddy_goal_contribution"
+  | "buddy_milestone"
+  | "buddy_weekly_report"
+  | "sleep_report_snapshot"
+  | "progress_snapshot"
+  | "entitlement_record";
+
+export interface FrogSleepEntityRecord {
+  id: string;
+  appId: string;
+  kind: FrogSleepEntityKind;
+  ownerUserId?: string;
+  partnerUserId?: string;
+  relationshipId?: string;
+  sessionId?: string;
+  status?: string;
+  code?: string;
+  token?: string;
+  startsAt?: string;
+  endsAt?: string;
+  occurredAt?: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface FrogSleepEntityFilter {
+  appId: string;
+  kind?: FrogSleepEntityKind;
+  ownerUserId?: string;
+  partnerUserId?: string;
+  relationshipId?: string;
+  sessionId?: string;
+  status?: string;
+  code?: string;
+  token?: string;
+  startsAtFromIso?: string;
+  startsAtToIso?: string;
+  occurredAtFromIso?: string;
+  occurredAtToIso?: string;
+  includeDeleted?: boolean;
+  limit?: number;
+}
+
+export interface FrogSleepBuddySharingGrantRecord {
+  id: string;
+  appId: string;
+  relationshipId: string;
+  grantorUserId: string;
+  granteeUserId: string;
+  domain: "sleep" | "focus";
+  category: "presence" | "daily_summary" | "weekly_trend" | "shared_activity";
+  state: "granted" | "revoked";
+  version: number;
+  grantedAt?: string;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationBundleRecord {
+  id: string;
+  appId: string;
+  inviterUserId: string;
+  inviteeUserId?: string;
+  recipientEmail?: string;
+  recipientEmailHash?: string;
+  shareCode: string;
+  handoffToken: string;
+  shareLink: string;
+  locale: string;
+  status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
+  domains: Array<"sleep" | "focus">;
+  version: number;
+  domainInvitationIds: Partial<Record<"sleep" | "focus", string>>;
+  domainErrorCodes: Partial<Record<"sleep" | "focus", string>>;
+  lastIdempotencyKey?: string;
+  lastResponseAction?: "accept" | "decline" | "cancel";
+  responsePayload?: Record<string, unknown>;
+  expiresAt: string;
+  respondedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FrogSleepBuddyInvitationEmailDeliveryStatus =
+  | "queued"
+  | "processing"
+  | "provider_accepted"
+  | "delivered"
+  | "bounced"
+  | "suppressed"
+  | "retryable_failed"
+  | "dead_letter";
+
+export interface FrogSleepBuddyInvitationEmailDeliveryRecord {
+  id: string;
+  appId: string;
+  invitationId: string;
+  recipientEmail: string;
+  recipientEmailHash: string;
+  locale: string;
+  status: FrogSleepBuddyInvitationEmailDeliveryStatus;
+  attemptCount: number;
+  availableAt: string;
+  providerRequestId?: string;
+  providerMessageId?: string;
+  lastErrorCode?: string;
+  providerAcceptedAt?: string;
+  deliveredAt?: string;
+  bouncedAt?: string;
+  suppressedAt?: string;
+  deadLetteredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationEmailAttemptRecord {
+  id: string;
+  appId: string;
+  deliveryId: string;
+  invitationId: string;
+  attempt: number;
+  status: "processing" | "provider_accepted" | "retryable_failed" | "permanent_failed";
+  providerRequestId?: string;
+  providerMessageId?: string;
+  errorCode?: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface FrogSleepBuddyInvitationDomainDecisionRecord {
+  appId: string;
+  invitationId: string;
+  domain: "sleep" | "focus";
+  status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
+  version: number;
+  decidedByUserId?: string;
+  decidedAt?: string;
+  idempotencyKeyHash?: string;
+  terminalReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyDomainSlotRecord {
+  appId: string;
+  userId: string;
+  domain: "sleep" | "focus";
+  state: "available" | "occupied";
+  relationshipId?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyDomainRelationshipRecord {
+  id: string;
+  appId: string;
+  domain: "sleep" | "focus";
+  userIdLow: string;
+  userIdHigh: string;
+  status: "active" | "paused" | "revoked";
+  pausedByUserIds: string[];
+  version: number;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationReceiptAttemptRecord {
+  id: string;
+  appId: string;
+  inviterUserId: string;
+  inviteeUserId?: string;
+  recipientIdentityHash: string;
+  domains: Array<"sleep" | "focus">;
+  domainsFingerprint: string;
+  status: "recorded" | "decoy";
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationOutboxRecord {
+  id: string;
+  appId: string;
+  recipientUserId: string;
+  eventType: string;
+  targetType: string;
+  targetId: string;
+  deduplicationKey: string;
+  safeRoute: Record<string, string>;
+  status: "pending" | "processing" | "delivered" | "failed" | "dead_letter";
+  attemptCount: number;
+  availableAt: string;
+  processedAt?: string;
+  lastErrorCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationRecord {
+  id: string;
+  appId: string;
+  recipientUserId: string;
+  outboxId: string;
+  notificationType: string;
+  targetType: string;
+  targetId: string;
+  safeRoute: Record<string, string>;
+  readAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationDeliveryRecord {
+  id: string;
+  appId: string;
+  notificationId: string;
+  channel: "in_app" | "apns";
+  status: "pending" | "delivered" | "failed" | "suppressed";
+  attempt: number;
+  providerMessageId?: string;
+  errorCode?: string;
+  deliveredAt?: string;
+  createdAt: string;
 }
 
 export interface FailedEventRecord {
@@ -370,26 +640,6 @@ export interface AiOutputReactionRecord {
   createdAt: string;
 }
 
-export interface AiNovelStatisticsSnapshotRecord {
-  appId: string;
-  userId: string;
-  totalWorks: number;
-  totalWords: number;
-  totalChapters: number;
-  activeWritingDays: number;
-  updatedAt: string;
-}
-
-export interface AiNovelDailyStatisticsRecord {
-  appId: string;
-  userId: string;
-  date: string;
-  words: number;
-  tokens: number;
-  active: boolean;
-  updatedAt: string;
-}
-
 export interface DatabaseSeed {
   apps?: AppRecord[];
   users?: UserRecord[];
@@ -412,8 +662,13 @@ export interface DatabaseSeed {
   contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
   feedbackRecords?: FeedbackRecord[];
   feedbackAttachments?: FeedbackAttachmentRecord[];
+  frogSleepBuddyInvitationDomainDecisions?: FrogSleepBuddyInvitationDomainDecisionRecord[];
+  frogSleepBuddyDomainSlots?: FrogSleepBuddyDomainSlotRecord[];
+  frogSleepBuddyDomainRelationships?: FrogSleepBuddyDomainRelationshipRecord[];
+  frogSleepBuddyInvitationReceiptAttempts?: FrogSleepBuddyInvitationReceiptAttemptRecord[];
+  frogSleepBuddyGroups?: FrogSleepBuddyGroupRecord[];
+  frogSleepBuddyGroupMembers?: FrogSleepBuddyGroupMemberRecord[];
+  frogSleepBuddyGroupInvitations?: FrogSleepBuddyGroupInvitationRecord[];
   aiOutputReportRecords?: AiOutputReportRecord[];
   aiOutputReactionRecords?: AiOutputReactionRecord[];
-  aiNovelStatisticsSnapshots?: AiNovelStatisticsSnapshotRecord[];
-  aiNovelDailyStatistics?: AiNovelDailyStatisticsRecord[];
 }

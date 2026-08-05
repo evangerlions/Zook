@@ -114,3 +114,10 @@ test("password strength rejects passwords without both letters and numbers", () 
   assert.equal(hasher.validateStrength("abcdefgh"), false);
   assert.equal(hasher.validateStrength("12345678"), false);
 });
+
+test("password hasher rejects unsupported legacy hash formats", () => {
+  const hasher = new DevelopmentPasswordHasher();
+  const bcryptHashForPassword1234 = "$2b$10$lfxpoB6H9zlKzilLBvP1BeauoZfYksBmVCZGgusJ1oelqq2XIXdi2";
+
+  assert.equal(hasher.verify("Password1234", bcryptHashForPassword1234), false);
+});

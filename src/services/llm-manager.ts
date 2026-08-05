@@ -17,11 +17,6 @@ import type {
 import {
   ApplicationError,
 } from "../shared/errors.ts";
-import {
-  createUsageEstimateAccumulator,
-  estimateCompletionUsage,
-  type LLMUsageEstimateAccumulator,
-} from "./llm-usage-estimator.ts";
 
 export { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
 export type {
@@ -66,7 +61,7 @@ export class LLMManager {
         resolution.request.model.provider
       ].complete(resolution.request);
       const usage = withContextUsage(
-        result.usage ?? estimateCompletionUsage(result, resolution.request),
+        result.usage,
         resolution.request.model,
       );
       const completedAt = this.getNow();
@@ -78,7 +73,6 @@ export class LLMManager {
         usage,
         occurredAt: completedAt,
       });
-      await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
       return {
         ...result,
         usage,
@@ -112,7 +106,6 @@ export class LLMManager {
     let reasoningText = "";
     let sawDone = false;
     const toolCalls: LLMToolCall[] = [];
-    const usageEstimate = createUsageEstimateAccumulator(resolution.request);
     const iterator = this.providers[resolution.request.model.provider]
       .stream(resolution.request)
       [Symbol.asyncIterator]();
@@ -137,21 +130,17 @@ export class LLMManager {
           case "content_delta":
             firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
             text += event.text;
-            usageEstimate.addContentDelta(event.text);
             break;
           case "reasoning_delta":
             firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
             reasoningText += event.text;
-            usageEstimate.addReasoningDelta(event.text);
             break;
           case "tool_call_delta":
             firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
-            usageEstimate.addToolCallDelta(event.text);
             break;
           case "tool_call":
             firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
             toolCalls.push(event.toolCall);
-            usageEstimate.addFinalToolCall(event.toolCall);
             break;
           case "usage":
             usage = withContextUsage(event.usage, resolution.request.model);
@@ -170,10 +159,6 @@ export class LLMManager {
       }
 
       const completedAt = this.getNow();
-      usage ??= withContextUsage(
-        usageEstimate.toUsageFallback(),
-        resolution.request.model,
-      );
       await this.recordRouteResult(resolution.routeRefs, {
         ok: true,
         firstByteLatencyMs:
@@ -182,7 +167,6 @@ export class LLMManager {
         usage,
         occurredAt: completedAt,
       });
-      await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
       return {
         provider: resolution.request.model.provider,
         modelKey: resolution.request.model.modelKey,
@@ -213,7 +197,6 @@ export class LLMManager {
     let firstByteLatencyMs: number | undefined;
     let usage: LLMUsage | undefined;
     let sawDone = false;
-    const usageEstimate = createUsageEstimateAccumulator(resolution.request);
 
     try {
       for await (const event of this.providers[
@@ -225,7 +208,6 @@ export class LLMManager {
           case "tool_call_delta":
           case "tool_call":
             firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
-            this.addUsageEstimateEvent(usageEstimate, event);
             yield event;
             break;
           case "usage":
@@ -237,18 +219,6 @@ export class LLMManager {
             break;
           case "done": {
             const completedAt = this.getNow();
-            if (!usage) {
-              usage = withContextUsage(
-                usageEstimate.toUsageFallback(),
-                resolution.request.model,
-              );
-              if (usage) {
-                yield {
-                  type: "usage",
-                  usage,
-                };
-              }
-            }
             await this.recordRouteResult(resolution.routeRefs, {
               ok: true,
               firstByteLatencyMs:
@@ -257,7 +227,6 @@ export class LLMManager {
               usage,
               occurredAt: completedAt,
             });
-            await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
             sawDone = true;
             yield event;
             break;
@@ -360,61 +329,6 @@ export class LLMManager {
         occurredAt: result.occurredAt,
       }),
     ]);
-  }
-
-  private addUsageEstimateEvent(
-    accumulator: LLMUsageEstimateAccumulator,
-    event: LLMStreamEvent,
-  ): void {
-    switch (event.type) {
-      case "content_delta":
-        accumulator.addContentDelta(event.text);
-        return;
-      case "reasoning_delta":
-        accumulator.addReasoningDelta(event.text);
-        return;
-      case "tool_call_delta":
-        accumulator.addToolCallDelta(event.text);
-        return;
-      case "tool_call":
-        accumulator.addFinalToolCall(event.toolCall);
-        return;
-      case "usage":
-      case "done":
-        return;
-      default:
-        throw this.invalidStreamEventError(event);
-    }
-  }
-
-  private async recordOwnedUsage(
-    owner: LLMCompletionRequest["usageOwner"],
-    usage: LLMUsage | undefined,
-    occurredAt: Date,
-  ): Promise<void> {
-    if (!owner || !usage) {
-      return;
-    }
-    try {
-      await this.options.usageRecorder?.({
-        appId: owner.appId,
-        userId: owner.userId,
-        usage,
-        occurredAt,
-      });
-    } catch (error) {
-      try {
-        this.options.usageRecorderErrorHandler?.({
-          appId: owner.appId,
-          userId: owner.userId,
-          usage,
-          occurredAt,
-          error,
-        });
-      } catch {
-        // Usage accounting must never break an otherwise successful LLM response.
-      }
-    }
   }
 
   private getNow(): Date {

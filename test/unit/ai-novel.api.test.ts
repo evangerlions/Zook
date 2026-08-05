@@ -237,15 +237,10 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
       [AI_TEST_KEY_ID]: aiKey.base64,
     },
   });
-
-  runtime.database.insertAppUser({
-    id: "app_user_alice_ai_novel_test",
-    appId: "ai_novel",
-    userId: "user_alice",
-    status: "ACTIVE",
-    accountRegion: "UNKNOWN",
-    joinedAt: "2026-07-11T00:00:00.000Z",
-  });
+  await runtime.services.appRegistryService.ensureMembership(
+    "ai_novel",
+    "user_alice",
+  );
 
   await runtime.services.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -933,7 +928,6 @@ test("ai_novel import_book_agent streams thinking tool calls with import progres
       "tool_call_delta",
       "tool_call",
       "tool_call",
-      "usage",
       "done",
     ],
   );
@@ -1271,14 +1265,10 @@ test("ai_novel audit-file endpoint requires ai_novel bearer auth", async () => {
 test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session path", async () => {
   const root = await mkdtemp(join(tmpdir(), "zook-audit-file-"));
   const runtime = await createApplication({ aiNovelAuditFileRoot: root });
-  runtime.database.insertAppUser({
-    id: "app_user_alice_ai_novel_audit_test",
-    appId: "ai_novel",
-    userId: "user_alice",
-    status: "ACTIVE",
-    accountRegion: "UNKNOWN",
-    joinedAt: "2026-07-11T00:00:00.000Z",
-  });
+  await runtime.services.appRegistryService.ensureMembership(
+    "ai_novel",
+    "user_alice",
+  );
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "ai_novel",
@@ -2000,7 +1990,7 @@ test("ai_novel kickoff_turn relays kickoff tool name casing to the client agent"
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "Ask_Question");
@@ -2182,7 +2172,7 @@ test("ai_novel kickoff_turn relays repeated invalid ask_question payloads as a s
   assert.equal(streamCalls, 1);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.id, "tool_question_still_invalid_1");
@@ -2349,7 +2339,7 @@ test("ai_novel kickoff_turn relays malformed ask_question string options", async
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "ask_question");
@@ -2430,7 +2420,7 @@ test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits 
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "read_meta");
@@ -2529,20 +2519,13 @@ test("ai_novel kickoff_turn relays generic tool argument deltas before final too
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    [
-      "content_delta",
-      "tool_call_delta",
-      "tool_call_delta",
-      "tool_call",
-      "usage",
-      "done",
-    ],
+    ["content_delta", "tool_call_delta", "tool_call_delta", "tool_call", "done"],
   );
   assert.equal(decryptedEvents[1].toolCallName, "ask_question");
   assert.equal(decryptedEvents[2].toolCallName, "ask_question");
   const toolCall = decryptedEvents[3].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "ask_question");
-  const doneCompletion = (decryptedEvents[5]?.completion ?? {}) as Record<
+  const doneCompletion = (decryptedEvents[4]?.completion ?? {}) as Record<
     string,
     unknown
   >;
@@ -2882,7 +2865,7 @@ test("ai_novel kickoff_turn streams a single round and relays read_meta tool cal
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   assert.equal(
     (
@@ -2953,9 +2936,9 @@ test("ai_novel kickoff_turn stream allows assistant-only freeform turns", async 
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["content_delta", "usage", "done"],
+    ["content_delta", "done"],
   );
-  const doneCompletion = (decryptedEvents[2]?.completion ?? {}) as Record<
+  const doneCompletion = (decryptedEvents[1]?.completion ?? {}) as Record<
     string,
     unknown
   >;
@@ -3030,7 +3013,7 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
   assert.equal(capturedEnableThinking, true);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["reasoning_delta", "content_delta", "usage", "done"],
+    ["reasoning_delta", "content_delta", "done"],
   );
   assert.equal(decryptedEvents[0].text, "先确认故事驱动力");
 });
@@ -3132,7 +3115,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "content_delta", "usage", "done"],
+    ["tool_call", "content_delta", "done"],
   );
   assert.deepEqual(decryptedEvents[0].toolCall, {
     id: "tool_write_1",
@@ -3304,7 +3287,7 @@ test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", a
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "read_draft");
@@ -3395,7 +3378,7 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   assert.deepEqual(decryptedEvents[0].toolCall, {
     id: "tool_draft_1",
@@ -3696,7 +3679,7 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
     .map(normalizeAiEvent);
   assert.deepEqual(
     decryptedStreamEvents.map((event) => event.type),
-    ["reasoning_delta", "tool_call_delta", "tool_call", "usage", "done"],
+    ["reasoning_delta", "tool_call_delta", "tool_call", "done"],
   );
   assert.equal(decryptedStreamEvents[1].toolCallName, "submit_chapter_summary");
   assert.equal(decryptedStreamEvents[1].toolArgumentPath, "summary");
@@ -3774,7 +3757,7 @@ test("ai_novel kickoff_turn relays unknown kickoff tool to the client agent", as
   assert.equal(streamCalls, 1);
   assert.deepEqual(
     decryptedEvents.map((event) => event.type),
-    ["tool_call", "usage", "done"],
+    ["tool_call", "done"],
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.id, "tool_unknown_1");
@@ -4179,13 +4162,6 @@ test("ai_novel upstream auth failures return refined code with local debug detai
 
 test("ai_novel embeddings route resolves scene_key to embedding scene route selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
-  runtime.database.insertAppUser({
-    id: "app_user_embedding_usage",
-    appId: "ai_novel",
-    userId: "user_alice",
-    status: "ACTIVE",
-    joinedAt: "2026-07-01T00:00:00.000Z",
-  });
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "ai_novel",
@@ -4220,11 +4196,6 @@ test("ai_novel embeddings route resolves scene_key to embedding scene route sele
   assert.equal(data.providerModel, "text-embedding-v4");
   assert.equal(data.providerRequestId, "emb-req-001");
   assert.equal(((data.vectors ?? []) as unknown[]).length, 2);
-  const usageRecords = runtime.database.aiNovelDailyStatistics.filter(
-    (item) => item.appId === "ai_novel" && item.userId === "user_alice",
-  );
-  assert.equal(usageRecords.length, 1);
-  assert.ok((usageRecords[0]?.tokens ?? 0) > 0);
 });
 
 test("ai_novel routes return encrypted business errors after request decryption", async () => {
@@ -4361,6 +4332,62 @@ test("ai_novel routes enforce app scope when bearer auth is present", async () =
 
   assert.equal(response.statusCode, 403);
   assert.equal(response.body.code, "AUTH_APP_SCOPE_MISMATCH");
+});
+
+test("ai_novel routes require active app membership", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  runtime.database.updateAppUserStatus("ai_novel", "user_alice", "DELETED");
+  const deletedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "chapter_summary",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+  assert.equal(deletedResponse.statusCode, 403);
+  assert.equal(deletedResponse.body.code, "APP_MEMBER_DELETED");
+
+  runtime.database.updateAppUserStatus("ai_novel", "user_alice", "BLOCKED");
+  const blockedResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "chapter_summary",
+        messages: [
+          {
+            role: "user",
+            content: "hello",
+          },
+        ],
+      },
+      aiKey,
+    ),
+  });
+  assert.equal(blockedResponse.statusCode, 403);
+  assert.equal(blockedResponse.body.code, "APP_MEMBER_BLOCKED");
 });
 
 test("ai_novel routes reject unknown encryption keys before entering AI flow", async () => {

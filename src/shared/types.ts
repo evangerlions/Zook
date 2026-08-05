@@ -1,4 +1,5 @@
 export type * from "./types/enums.ts";
+export type * from "./types/frogsleep-buddy-group.ts";
 export type * from "./types/records.ts";
 export {
   AI_OUTPUT_REPORT_CATEGORIES,
@@ -11,7 +12,6 @@ export type * from "./types/sms-verification.ts";
 export type * from "./types/ai-config.ts";
 export type * from "./types/email.ts";
 export type * from "./types/feedback.ts";
-export type * from "./types/ai-novel-statistics.ts";
 export type * from "./types/auth-rate-limit.ts";
 export type * from "./types/content-safety.ts";
 export type * from "./types/getui-password.ts";

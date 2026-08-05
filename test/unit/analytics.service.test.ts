@@ -10,7 +10,6 @@ test("analytics service calculates DAU, new users and page duration metrics per 
     appId: "app_a",
     userId: "user_bob",
     status: "ACTIVE",
-    accountRegion: "UNKNOWN",
     joinedAt: "2026-03-06T11:00:00+08:00",
   });
 

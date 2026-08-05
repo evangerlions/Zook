@@ -45,39 +45,3 @@ test("createApplication exposes embeddingManager and aiNovelLlmService through r
   assert.equal(typeof runtime.services.aiNovelLlmService.createChatCompletion, "function");
   assert.equal(typeof runtime.services.aiNovelLlmService.createEmbeddings, "function");
 });
-
-test("embedding manager estimates and records owned usage", async () => {
-  const usages: Array<{ userId: string; totalTokens: number }> = [];
-  const manager = new EmbeddingManager(
-    {
-      bailian: {
-        async embed(request): Promise<EmbeddingResult> {
-          return {
-            provider: request.model.provider,
-            modelKey: request.model.modelKey,
-            providerModel: request.model.providerModel,
-            vectors: [{ index: 0, embedding: [0.1] }],
-          };
-        },
-      },
-    },
-    undefined,
-    {
-      usageRecorder: ({ userId, usage }) => {
-        usages.push({ userId, totalTokens: usage.totalTokens });
-      },
-    },
-  );
-
-  const result = await manager.embed({
-    modelKey: "novel-embedding",
-    input: ["hello embedding"],
-    usageOwner: { appId: "ai_novel", userId: "user_1" },
-  });
-
-  assert.equal(result.usage?.estimated, true);
-  assert.ok((result.usage?.totalTokens ?? 0) > 0);
-  assert.deepEqual(usages, [
-    { userId: "user_1", totalTokens: result.usage?.totalTokens ?? 0 },
-  ]);
-});

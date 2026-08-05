@@ -61,4 +61,9 @@ export interface CreateApplicationOptions {
   queueRedisUrl?: string;
   fileStorageRoot?: string;
   aiNovelAuditFileRoot?: string;
+  /**
+   * FrogSleep is not a launched product by default. Keep it behind an explicit
+   * switch so existing apps and admin surfaces stay unchanged in production.
+   */
+  frogsleepEnabled?: boolean;
 }

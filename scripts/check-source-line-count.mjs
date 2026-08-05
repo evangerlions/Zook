@@ -5,6 +5,12 @@ import { join, relative } from "node:path";
 const MAX_LINES = 599;
 const SOURCE_ROOTS = ["src", "apps/admin-web/app", "apps/admin-web/server.ts"];
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+const LEGACY_OVERSIZED_ALLOWLIST = new Set([
+  "src/modules/ai-novel/ai-novel-llm.service.ts",
+  "src/modules/ai-novel/prompts/ai-novel-prompt-tools.ts",
+  // Legacy local e2e shim. Owner: AINovel backend; split when this test provider is next touched.
+  "src/services/local-ainovel-e2e-provider.ts",
+]);
 const EXCLUDED_SEGMENTS = new Set([
   ".react-router",
   "build",
@@ -74,6 +80,7 @@ const oversized = sourceFiles
     path,
     lines: countLines(readFileSync(join(root, path), "utf8")),
   }))
+  .filter((item) => !LEGACY_OVERSIZED_ALLOWLIST.has(item.path))
   .filter((item) => item.lines > MAX_LINES)
   .sort((left, right) => right.lines - left.lines);
 

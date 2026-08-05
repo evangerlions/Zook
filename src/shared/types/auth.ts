@@ -2,7 +2,9 @@ import type {
   AccountDeletionData as GeneratedAccountDeletionData,
   AuthSessionData as GeneratedAuthSessionData,
   CurrentUserData as GeneratedCurrentUserData,
+  QrLoginConfirmData as GeneratedQrLoginConfirmData,
   QrLoginCreateData as GeneratedQrLoginCreateData,
+  QrLoginPollData as GeneratedQrLoginPollData,
   UserSummary as GeneratedUserSummary,
 } from "../../generated/openapi/public-contracts.generated.ts";
 import type { TencentSesRegion } from "./enums.ts";
@@ -183,20 +185,6 @@ export interface PollQrLoginCommand {
 
 export type QrLoginCreateResult = GeneratedQrLoginCreateData;
 
-export interface QrLoginConfirmResult {
-  confirmed: true;
-}
+export type QrLoginConfirmResult = GeneratedQrLoginConfirmData;
 
-export type QrLoginPollResult =
-  | {
-      status: "PENDING";
-      expiresInSeconds: number;
-      pollIntervalMs: number;
-    }
-  | {
-      status: "CONFIRMED";
-      accessToken: string;
-      refreshToken: string;
-      expiresIn: number;
-      userId: string;
-    };
+export type QrLoginPollResult = GeneratedQrLoginPollData;

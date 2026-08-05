@@ -11,6 +11,7 @@ import {
  */
 export function buildDefaultSeed(
   passwordHasher = new DevelopmentPasswordHasher(),
+  options: { includeFrogSleep?: boolean } = {},
 ): DatabaseSeed {
   const defaultI18nSettings = JSON.stringify(
     DEFAULT_APP_I18N_SETTINGS,
@@ -18,7 +19,9 @@ export function buildDefaultSeed(
     2,
   );
 
-  return {
+  const includeFrogSleep = Boolean(options.includeFrogSleep);
+
+  const seed: DatabaseSeed = {
     apps: [
       {
         id: "app_a",
@@ -257,4 +260,59 @@ export function buildDefaultSeed(
     analyticsEvents: [],
     files: [],
   };
+
+  if (includeFrogSleep) {
+    seed.apps.push({
+      id: "frogsleep",
+      code: "frogsleep",
+      name: "FrogSleep",
+      nameI18n: {
+        "zh-CN": "FrogSleep",
+        "en-US": "FrogSleep",
+      },
+      status: "ACTIVE",
+      apiDomain: "frogsleep.example.com",
+      joinMode: "AUTO",
+      createdAt: "2026-03-01T09:00:00+08:00",
+    });
+    seed.roles.push(
+      { id: "role_frogsleep_member", appId: "frogsleep", code: "member", name: "Member", status: "ACTIVE" },
+      { id: "role_frogsleep_admin", appId: "frogsleep", code: "admin", name: "Admin", status: "ACTIVE" },
+    );
+    seed.appConfigs.push(
+      {
+        id: "cfg_frogsleep_default_role",
+        appId: "frogsleep",
+        configKey: "auth.default_role_code",
+        configValue: "member",
+        updatedAt: "2026-03-01T09:00:00+08:00",
+      },
+      {
+        id: "cfg_frogsleep_delivery_config",
+        appId: "frogsleep",
+        configKey: "admin.delivery_config",
+        configValue: JSON.stringify(
+          {
+            app: "frogsleep",
+            inviteLinks: {
+              sleepBuddyBaseUrl: "frogsleep://sleep-buddy-invite",
+              focusBuddyBaseUrl: "frogsleep://focus-invite",
+            },
+          },
+          null,
+          2,
+        ),
+        updatedAt: "2026-03-20T09:30:00+08:00",
+      },
+      {
+        id: "cfg_frogsleep_i18n_settings",
+        appId: "frogsleep",
+        configKey: "i18n.settings",
+        configValue: defaultI18nSettings,
+        updatedAt: "2026-03-20T09:35:00+08:00",
+      },
+    );
+  }
+
+  return seed;
 }

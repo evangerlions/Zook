@@ -13,8 +13,14 @@ db_doc/generated/*
 !db_doc/generated/.gitkeep
 .gstack/
 .claude/
+.codex/
+openspec/
 .omx/
 .omc/
 .zook/
+.worktrees/
 
 .storage/
+
+# Local assistant memory / workspace metadata (never commit)
+.workbuddy-ai/

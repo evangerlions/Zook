@@ -73,6 +73,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   LOG_UNSUPPORTED_ENCRYPTION: "error.log.unsupported_encryption",
   REQ_DATE_RANGE_INVALID: "error.req.invalid_date_range",
   REQ_INVALID_BODY: "error.req.invalid_body",
+  REQ_ROUTE_NOT_FOUND: "error.req.invalid_body",
   REQ_INVALID_EVENT: "error.req.invalid_event",
   REQ_INVALID_HEADER: "error.req.invalid_header",
   REQ_INVALID_QUERY: "error.req.invalid_query",
