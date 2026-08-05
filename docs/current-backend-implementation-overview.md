@@ -23,7 +23,7 @@ BodyLog 复用共享邮箱验证码认证，并新增固定产品作用域 `body
 
 1. `GET /api/v1/bodylog/profile` 获取或初始化昵称、预设头像和完成状态。
 2. `PUT /api/v1/bodylog/profile` 校验 2–20 字符昵称、头像白名单，并复用 Common 内容安全能力。
-3. PostgreSQL 通过 `018_bodylog_profiles.sql` 保存资料；内存数据库提供一致的测试实现。
+3. PostgreSQL 通过 `021_bodylog_profiles.sql` 保存资料；内存数据库提供一致的测试实现。
 4. 删除 BodyLog app 账号会清理 BodyLog 服务端资料，保留共享 Zook 用户与其他 app 数据。
 5. 当前不接收习惯名称、打卡明细，也不提供云同步或设备迁移。
 
@@ -31,7 +31,7 @@ BodyLog 复用共享邮箱验证码认证，并新增固定产品作用域 `body
 
 1. `src/modules/bodylog/bodylog-profile.service.ts`
 2. `src/app/bodylog-v1-routes.ts`
-3. `src/infrastructure/database/postgres/migrations/018_bodylog_profiles.sql`
+3. `src/infrastructure/database/postgres/migrations/021_bodylog_profiles.sql`
 4. `test/unit/bodylog-profile.api.test.ts`
 
 ### 2.1 API / Worker / Admin Web 三入口

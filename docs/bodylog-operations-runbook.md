@@ -12,7 +12,7 @@
    `auth.default_role_code = member`。
 3. 确认 Common 邮件配置已启用 Tencent SES，发件域名、模板、Secret 引用和中国内地/海外
    region 均有效。
-4. 在部署数据库执行 migrations，确认 `018_bodylog_profiles.sql` 已记录在
+4. 在部署数据库执行 migrations，确认 `021_bodylog_profiles.sql` 已记录在
    `zook_schema_migrations`。
 5. 保持 iOS 账号功能开关关闭，先完成服务端验证。
 
