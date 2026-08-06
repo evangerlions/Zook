@@ -6,7 +6,7 @@ import {
   resolveCorsDecision,
 } from "../../src/infrastructure/http/cors.ts";
 
-test("cors allowlist accepts localhost, 127.0.0.1 and configured domains", () => {
+test("cors allowlist accepts local and deployed web origins", () => {
   assert.deepEqual(resolveCorsDecision("http://localhost:59986"), {
     allowed: true,
     origin: "http://localhost:59986",
@@ -19,6 +19,16 @@ test("cors allowlist accepts localhost, 127.0.0.1 and configured domains", () =>
     allowed: true,
     origin: "https://app-dev.youwoai.net",
   });
+  for (const origin of [
+    "https://orangewrite.cn",
+    "https://orangewrite.com",
+    "https://www.orangewrite.com",
+  ]) {
+    assert.deepEqual(resolveCorsDecision(origin), {
+      allowed: true,
+      origin,
+    });
+  }
 });
 
 test("cors allowlist rejects unknown origins and allows missing origin", () => {

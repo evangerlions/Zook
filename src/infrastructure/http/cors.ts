@@ -3,6 +3,9 @@ const CORS_ALLOWLIST: Array<string | RegExp> = [
   /^http:\/\/127\.0\.0\.1:\d+$/,
   "https://app-dev.youwoai.net",
   "https://app.youwoai.net",
+  "https://orangewrite.cn",
+  "https://orangewrite.com",
+  "https://www.orangewrite.com",
 ];
 
 const CORS_ALLOWED_METHODS = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"];
