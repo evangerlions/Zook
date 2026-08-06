@@ -1,0 +1,257 @@
+openapi: 3.1.1
+info:
+  title: AINovel Admin Feedback API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Admin-only feedback review and status workflow API for AINovel.
+servers:
+  - url: https://api.zook.dev
+security:
+  - adminSession: []
+paths:
+  /api/v1/admin/apps/ai_novel/feedback:
+    get:
+      operationId: listAiNovelAdminFeedback
+      summary: List AINovel feedback records
+      tags: [admin, ainovel, feedback]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AiNovelFeedbackStatus"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Feedback records ordered by received time descending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelAdminFeedbackListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/admin/apps/ai_novel/feedback/{feedbackId}/status:
+    patch:
+      operationId: updateAiNovelAdminFeedbackStatus
+      summary: Update AINovel feedback status
+      tags: [admin, ainovel, feedback]
+      parameters:
+        - name: feedbackId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiNovelFeedbackStatusUpdateRequest"
+      responses:
+        "200":
+          description: Feedback status updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelFeedbackStatusUpdateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/admin/apps/ai_novel/feedback/{feedbackId}/attachments/{attachmentId}:
+    get:
+      operationId: getAiNovelAdminFeedbackAttachment
+      summary: Get a private feedback attachment through the admin proxy
+      tags: [admin, ainovel, feedback]
+      parameters:
+        - name: feedbackId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: attachmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Base64-encoded attachment bytes and metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelFeedbackAttachmentContentResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: zook_admin_session
+  schemas:
+    AiNovelFeedbackStatus:
+      type: string
+      enum: [new, doing, done]
+    AiNovelFeedbackAttachment:
+      type: object
+      required: [id, fileName, mimeType, sizeBytes, createdAt]
+      properties:
+        id: { type: string }
+        fileName: { type: string }
+        mimeType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        sizeBytes:
+          type: integer
+          minimum: 1
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+    AiNovelAdminFeedbackItem:
+      type: object
+      required:
+        - id
+        - appId
+        - userId
+        - message
+        - status
+        - attachmentCount
+        - attachments
+        - createdAt
+        - updatedAt
+      properties:
+        id: { type: string }
+        appId: { type: string, const: ai_novel }
+        userId: { type: string }
+        userEmail: { type: string, format: email }
+        message: { type: string }
+        status:
+          $ref: "#/components/schemas/AiNovelFeedbackStatus"
+        platform: { type: string }
+        appVersion: { type: string }
+        locale: { type: string }
+        attachmentCount:
+          type: integer
+          minimum: 0
+          maximum: 5
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiNovelFeedbackAttachment"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AiNovelAdminFeedbackListData:
+      type: object
+      required: [app, items]
+      properties:
+        app: { type: string, const: ai_novel }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiNovelAdminFeedbackItem"
+    AiNovelAdminFeedbackListResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          $ref: "#/components/schemas/AiNovelAdminFeedbackListData"
+        requestId: { type: string }
+    AiNovelFeedbackStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/AiNovelFeedbackStatus"
+    AiNovelFeedbackStatusUpdateData:
+      type: object
+      required: [app, id, status, updatedAt]
+      properties:
+        app: { type: string, const: ai_novel }
+        id: { type: string }
+        status:
+          $ref: "#/components/schemas/AiNovelFeedbackStatus"
+        updatedAt:
+          type: string
+          format: date-time
+    AiNovelFeedbackStatusUpdateResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          $ref: "#/components/schemas/AiNovelFeedbackStatusUpdateData"
+        requestId: { type: string }
+    AiNovelFeedbackAttachmentContentData:
+      allOf:
+        - $ref: "#/components/schemas/AiNovelFeedbackAttachment"
+        - type: object
+          required: [feedbackId, contentBase64]
+          properties:
+            feedbackId: { type: string }
+            contentBase64:
+              type: string
+              description: Base64-encoded private attachment bytes.
+    AiNovelFeedbackAttachmentContentResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          $ref: "#/components/schemas/AiNovelFeedbackAttachmentContentData"
+        requestId: { type: string }
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+  responses:
+    BadRequest:
+      description: Invalid request body or query.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Admin session is required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Feedback or attachment was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

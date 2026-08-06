@@ -293,40 +293,34 @@ def ts_type(schema: Any, name_hint: str = "") -> str:
     return "unknown"
 
 
-def resolve_workspace_root(value: str | None) -> Path:
-    if value:
-        return Path(value).resolve()
-    cwd = Path.cwd().resolve()
-    if (cwd / 'package.json').exists():
-        return cwd
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        marker = parent / 'PROJECT_PATHS.local.toml'
-        if marker.exists():
-            return parent.resolve()
-        sibling_workspace = parent / 'zook-workspace'
-        if (sibling_workspace / 'api' / 'openapi').exists():
-            return sibling_workspace.resolve()
-    raise SystemExit('workspace root not found; pass --workspace-root explicitly')
+def resolve_repository_root(value: str | None) -> Path:
+    repository_root = (
+        Path(value).resolve()
+        if value
+        else Path(__file__).resolve().parents[1]
+    )
+    if not (repository_root / "package.json").is_file():
+        raise SystemExit(
+            f"Zook repository root not found at {repository_root}; "
+            "pass --repo-root explicitly"
+        )
+    return repository_root
 
 
 def missing_spec_paths(openapi_root: Path, specs: dict[str, list[str]]) -> list[str]:
     return [rel_spec for rel_spec in specs if not (openapi_root / rel_spec).exists()]
 
 
-def resolve_openapi_root(workspace_root: Path) -> Path:
-    candidates = [
-        workspace_root / "third_party" / "zook-api-contracts" / "openapi",
-        workspace_root / "api" / "openapi",
-    ]
-    for candidate in candidates:
-        if candidate.exists() and not missing_spec_paths(candidate, ALL_SPECS):
-            return candidate
-    details = "; ".join(
-        f"{candidate}: missing {', '.join(missing_spec_paths(candidate, ALL_SPECS)[:3]) or 'none'}"
-        for candidate in candidates
+def resolve_openapi_root(repository_root: Path) -> Path:
+    openapi_root = repository_root / "api-contracts" / "openapi"
+    missing_paths = missing_spec_paths(openapi_root, ALL_SPECS)
+    if openapi_root.is_dir() and not missing_paths:
+        return openapi_root
+    missing_summary = ", ".join(missing_paths[:3]) or "contract directory"
+    raise SystemExit(
+        f"complete in-repository OpenAPI contracts not found at {openapi_root} "
+        f"(missing {missing_summary})"
     )
-    raise SystemExit(f"complete OpenAPI contract root not found ({details})")
 
 
 def generate_contract_blocks(
@@ -376,20 +370,10 @@ def append_contract_names(blocks: list[str], names: list[str]) -> None:
     blocks.append("")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--workspace-root")
-    parser.add_argument("--out", required=True)
-    args = parser.parse_args()
-
-    workspace_root = resolve_workspace_root(args.workspace_root)
-    openapi_root = resolve_openapi_root(workspace_root)
-    out_path = Path(args.out).resolve()
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
+def render_contracts(openapi_root: Path) -> str:
     blocks: list[str] = [
         "// AUTO-GENERATED FILE. DO NOT EDIT.",
-        "// Generated from workspace OpenAPI contracts for Zook public API boundaries.",
+        "// Generated from api-contracts/openapi for Zook public API boundaries.",
         "",
     ]
     generated_blocks, generated_names = generate_contract_blocks(openapi_root, SPECS)
@@ -403,8 +387,32 @@ def main() -> None:
         "",
     ])
     append_contract_names(blocks, generated_names + frogsleep_names)
+    return "\n".join(blocks)
 
-    out_path.write_text("\n".join(blocks))
+
+def write_or_check_output(out_path: Path, content: str, check: bool) -> None:
+    if check:
+        if not out_path.is_file() or out_path.read_text() != content:
+            raise SystemExit(
+                f"generated contracts are stale: {out_path}; "
+                "run npm run generate:public-contracts"
+            )
+        return
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(content)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo-root")
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+
+    repository_root = resolve_repository_root(args.repo_root)
+    openapi_root = resolve_openapi_root(repository_root)
+    out_path = Path(args.out).resolve()
+    write_or_check_output(out_path, render_contracts(openapi_root), args.check)
 
 
 if __name__ == "__main__":

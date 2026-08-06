@@ -1,5 +1,14 @@
 # AGENTS
 
+## API Contract Ownership
+
+- 对外 OpenAPI 合同的唯一来源是本仓库的 `api-contracts/openapi/**`；不要再从旧的 API 仓库、submodule 或 workspace fallback 读取，也不要恢复双向同步脚本。
+- `api-contracts/` 是维护期资产，必须与 Zook 运行时代码和根 Node 构建隔离。`src/`、`apps/` 和运行时容器不得直接 import、读取或依赖该目录。
+- Zook 运行时使用提交到仓库的 `src/generated/openapi/**`。修改 OpenAPI 后，同一提交内必须运行 `npm run generate:public-contracts` 并提交生成结果。
+- `api-contracts/package.json` 仅用于独立 lint；不要把它加入根 npm workspace、根依赖树或生产镜像。
+- 合同改动完成前至少运行 `npm run check:api-contracts`。需要验证 OpenAPI 规则时，先运行 `npm ci --prefix api-contracts --ignore-scripts` 在隔离目录安装锁定依赖，再运行 `npm run lint:api-contracts`。
+- 外部消费者需要合同快照时，应固定 Zook commit 并导出 `api-contracts/`，不要把整个 Zook 运行时仓库作为应用依赖。
+
 ## API Documentation
 
 - 任何 API 的新增、删除、重命名，或 request / response / header / auth / app scope / error code 行为变更，都必须同步更新文档后才算完成。

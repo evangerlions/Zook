@@ -1,0 +1,86 @@
+openapi: 3.1.1
+info:
+  title: AINovel External Client API Bundle
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: |
+    Consumer-facing OpenAPI bundle used for code generation in Flutter and
+    TypeScript/Node consumers. Internal/admin interfaces are excluded.
+servers:
+  - url: https://api.zook.dev
+security: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /api/v1/auth/login:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1login
+  /api/v1/auth/login/email-code:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1login~1email-code
+  /api/v1/auth/login/email:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1login~1email
+  /api/v1/auth/login/sms-code:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1login~1sms-code
+  /api/v1/auth/login/sms:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1login~1sms
+  /api/v1/auth/login/one-click:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1login~1one-click
+  /api/v1/auth/login/one-click/status:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1login~1one-click~1status
+  /api/v1/auth/password/email-code:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1password~1email-code
+  /api/v1/auth/password/sms-code:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1password~1sms-code
+  /api/v1/auth/password/set:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1password~1set
+  /api/v1/auth/password/reset:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1password~1reset
+  /api/v1/auth/password/reset-by-sms:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1password~1reset-by-sms
+  /api/v1/auth/password/change:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1password~1change
+  /api/v1/auth/register/email-code:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1register~1email-code
+  /api/v1/auth/register:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1register
+  /api/v1/auth/register/sms-code:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1register~1sms-code
+  /api/v1/auth/register/sms:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1register~1sms
+  /api/v1/auth/refresh:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1refresh
+  /api/v1/auth/logout:
+    $ref: ../common/auth.yaml#/paths/~1api~1v1~1auth~1logout
+  /api/v1/users/me:
+    $ref: ../common/users.yaml#/paths/~1api~1v1~1users~1me
+  /api/v1/logs/policy:
+    $ref: ../common/logs.yaml#/paths/~1api~1v1~1logs~1policy
+  /api/v1/logs/pull-task:
+    $ref: ../common/logs.yaml#/paths/~1api~1v1~1logs~1pull-task
+  /api/v1/logs/upload:
+    $ref: ../common/logs.yaml#/paths/~1api~1v1~1logs~1upload
+  /api/v1/logs/tasks/{taskId}/ack:
+    $ref: ../common/logs.yaml#/paths/~1api~1v1~1logs~1tasks~1%7BtaskId%7D~1ack
+  /api/v1/logs/tasks/{taskId}/fail:
+    $ref: ../common/logs.yaml#/paths/~1api~1v1~1logs~1tasks~1%7BtaskId%7D~1fail
+  /api/v1/ai_novel/public/config:
+    $ref: ./public-config.yaml#/paths/~1api~1v1~1ai_novel~1public~1config
+  /api/v1/ai_novel/ai/chat-completions:
+    $ref: ./ai.yaml#/paths/~1api~1v1~1ai_novel~1ai~1chat-completions
+  /api/v1/ai_novel/ai/embeddings:
+    $ref: ./ai.yaml#/paths/~1api~1v1~1ai_novel~1ai~1embeddings
+  /api/v1/ai_novel/feedback:
+    $ref: ./feedback.yaml#/paths/~1api~1v1~1ai_novel~1feedback
+  /api/v1/ai_novel/statistics:
+    $ref: ./statistics.yaml#/paths/~1api~1v1~1ai_novel~1statistics
+  /api/v1/ai_novel/statistics/snapshot:
+    $ref: ./statistics.yaml#/paths/~1api~1v1~1ai_novel~1statistics~1snapshot
+  /api/v1/ai_novel/ai-output-reports:
+    $ref: ./ai-output-reports.yaml#/paths/~1api~1v1~1ai_novel~1ai-output-reports
+  /api/v1/ai_novel/ai-output-reactions:
+    $ref: ./ai-output-reactions.yaml#/paths/~1api~1v1~1ai_novel~1ai-output-reactions

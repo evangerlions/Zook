@@ -25,12 +25,16 @@
    [buid_readme.md](/Users/zhoukai/Projects/AI/codex/Zook/buid_readme.md)
 4. 同机构建 + 同机发布的本地 CI/CD 方案：
    [docs/local-cicd-deploy.md](/Users/zhoukai/Projects/AI/codex/Zook/docs/local-cicd-deploy.md)
+5. API 合同维护与生成边界：
+   [docs/api-contracts.md](/Users/zhoukai/Projects/AI/codex/Zook/docs/api-contracts.md)
 
 ## 目录概览
 
 ```text
 .
+├── api-contracts/       # 维护期 OpenAPI 来源；不进入运行时构建
 ├── apps/
+├── build_scripts/
 ├── docs/
 ├── src/
 ├── test/
@@ -99,6 +103,19 @@ npm run worker
 
 ```bash
 npm test
+```
+
+更新公共 API 合同生成文件：
+
+```bash
+npm run generate:public-contracts
+npm run check:api-contracts
+```
+
+`api-contracts/` 有独立的 OpenAPI lint 工具依赖，不属于根 Node 工程。首次 lint 前按 [API 合同维护说明](/Users/zhoukai/Projects/AI/codex/Zook/docs/api-contracts.md)准备隔离依赖，然后执行：
+
+```bash
+npm run lint:api-contracts
 ```
 
 手动执行数据库迁移：

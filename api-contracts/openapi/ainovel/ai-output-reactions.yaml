@@ -1,0 +1,133 @@
+openapi: 3.1.1
+info:
+  title: AINovel AI Output Reactions API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Authenticated lightweight positive reaction API for generated chapter revisions.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/ai_novel/ai-output-reactions:
+    post:
+      security:
+        - bearerAuth: []
+      operationId: submitAiNovelAiOutputReaction
+      summary: Like one generated chapter revision
+      tags: [ainovel, ai-output-reporting]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiOutputReactionSubmitRequest"
+      responses:
+        "200":
+          description: Reaction accepted or an idempotent prior result returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiOutputReactionSubmitResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AiOutputReactionSubmitRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - submissionId
+        - targetType
+        - targetId
+        - reaction
+        - chapterId
+        - chapterRevisionId
+        - contentHash
+      properties:
+        submissionId:
+          type: string
+          minLength: 8
+          maxLength: 120
+        targetType:
+          type: string
+          const: chapter_revision
+        targetId:
+          type: string
+          minLength: 1
+          maxLength: 160
+        reaction:
+          type: string
+          const: like
+        chapterId:
+          type: integer
+          minimum: 1
+        chapterRevisionId:
+          type: string
+          minLength: 1
+          maxLength: 160
+        contentHash:
+          type: string
+          pattern: "^sha256:[a-f0-9]{64}$"
+        turnId:
+          type: [string, "null"]
+          maxLength: 160
+        providerRequestId:
+          type: [string, "null"]
+          maxLength: 200
+        platform:
+          type: string
+          maxLength: 40
+        appVersion:
+          type: string
+          maxLength: 40
+        effectiveRegion:
+          type: string
+          enum: [CN, GLOBAL, UNKNOWN]
+    AiOutputReactionSubmitData:
+      type: object
+      required: [reactionId, accepted]
+      properties:
+        reactionId:
+          type: string
+        accepted:
+          type: boolean
+          const: true
+    AiOutputReactionSubmitResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          $ref: "#/components/schemas/AiOutputReactionSubmitData"
+        requestId: { type: string }
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+  responses:
+    BadRequest:
+      description: The reaction target or metadata is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: User authentication is required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

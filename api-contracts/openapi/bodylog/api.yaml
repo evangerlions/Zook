@@ -1,0 +1,983 @@
+openapi: 3.1.1
+info:
+  title: BodyLog Public API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Canonical app-scoped profile, social, leaderboard, invitation, and challenge API for BodyLog.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+tags:
+  - name: bodylog-profile
+    description: BodyLog profile creation, retrieval, and updates.
+  - name: bodylog-social
+    description: Friend, block, and report workflows.
+  - name: bodylog-leaderboard
+    description: Weekly leaderboard membership and rankings.
+  - name: bodylog-invitation
+    description: Invitation attribution and reward progress.
+  - name: bodylog-challenge
+    description: Friend challenge creation, responses, and progress.
+paths:
+  /api/v1/bodylog/profile:
+    get:
+      operationId: getBodyLogProfile
+      tags: [bodylog-profile]
+      summary: Get or initialize the signed-in user's BodyLog profile
+      responses:
+        "200": { $ref: "#/components/responses/Profile" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+    put:
+      operationId: updateBodyLogProfile
+      tags: [bodylog-profile]
+      summary: Update the signed-in user's nickname and preset avatar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogProfileUpdateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Profile" }
+        "400": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/friends:
+    get:
+      operationId: listBodyLogFriends
+      tags: [bodylog-social]
+      summary: List accepted friends
+      responses:
+        "200": { $ref: "#/components/responses/FriendList" }
+        "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/friend-requests:
+    get:
+      operationId: listBodyLogFriendRequests
+      tags: [bodylog-social]
+      summary: List incoming and outgoing pending friend requests
+      responses:
+        "200": { $ref: "#/components/responses/FriendRequestList" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      operationId: createBodyLogFriendRequest
+      tags: [bodylog-social]
+      summary: Send a friend request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogTargetUserRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/FriendRequest" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/friend-requests/{requestId}/{action}:
+    parameters:
+      - $ref: "#/components/parameters/FriendRequestId"
+      - $ref: "#/components/parameters/FriendRequestAction"
+    post:
+      operationId: respondToBodyLogFriendRequest
+      tags: [bodylog-social]
+      summary: Accept or reject an incoming friend request
+      responses:
+        "200": { $ref: "#/components/responses/FriendRequestStatus" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/friends/{friendUserId}:
+    parameters:
+      - $ref: "#/components/parameters/FriendUserId"
+    delete:
+      operationId: removeBodyLogFriend
+      tags: [bodylog-social]
+      summary: Remove an accepted friend
+      responses:
+        "200": { $ref: "#/components/responses/Removed" }
+        "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/blocks:
+    get:
+      operationId: listBodyLogBlocks
+      tags: [bodylog-social]
+      summary: List users blocked by the signed-in user
+      responses:
+        "200": { $ref: "#/components/responses/BlockList" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      operationId: blockBodyLogUser
+      tags: [bodylog-social]
+      summary: Block a user and remove shared social state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogTargetUserRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Blocked" }
+        "401": { $ref: "#/components/responses/Error" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/blocks/{targetUserId}:
+    parameters:
+      - $ref: "#/components/parameters/TargetUserId"
+    delete:
+      operationId: unblockBodyLogUser
+      tags: [bodylog-social]
+      summary: Unblock a user
+      responses:
+        "200": { $ref: "#/components/responses/Blocked" }
+        "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/reports:
+    post:
+      operationId: reportBodyLogUser
+      tags: [bodylog-social]
+      summary: Report another BodyLog user with a fixed reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogReportRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Report" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/leaderboards/current/join:
+    post:
+      operationId: joinBodyLogLeaderboard
+      tags: [bodylog-leaderboard]
+      summary: Join the current weekly leaderboard with a frozen goal snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogLeaderboardJoinRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LeaderboardJoin" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/leaderboards/current/aggregate:
+    post:
+      operationId: submitBodyLogLeaderboardAggregate
+      tags: [bodylog-leaderboard]
+      summary: Submit a server-scored daily completion aggregate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              {
+                $ref: "#/components/schemas/BodyLogLeaderboardAggregateRequest",
+              }
+      responses:
+        "200": { $ref: "#/components/responses/LeaderboardMembership" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/leaderboards/current/membership:
+    delete:
+      operationId: leaveBodyLogLeaderboard
+      tags: [bodylog-leaderboard]
+      summary: Leave the current weekly leaderboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogLeaderboardLeaveRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LeaderboardLeave" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/leaderboards/current/public:
+    get:
+      operationId: getBodyLogPublicLeaderboard
+      tags: [bodylog-leaderboard]
+      summary: Get the current public leaderboard
+      parameters:
+        - $ref: "#/components/parameters/TimeZone"
+      responses:
+        "200": { $ref: "#/components/responses/Leaderboard" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/leaderboards/current/friends:
+    get:
+      operationId: getBodyLogFriendsLeaderboard
+      tags: [bodylog-leaderboard]
+      summary: Get the current friends-only leaderboard
+      parameters:
+        - $ref: "#/components/parameters/TimeZone"
+      responses:
+        "200": { $ref: "#/components/responses/Leaderboard" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/invitations:
+    get:
+      operationId: getBodyLogInvitationStatus
+      tags: [bodylog-invitation]
+      summary: Get invitation and reward progress
+      responses:
+        "200": { $ref: "#/components/responses/InvitationStatus" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      operationId: createBodyLogInvitation
+      tags: [bodylog-invitation]
+      summary: Create a fourteen-day invitation token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogInvitationCreateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/InvitationCreate" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/invitations/attribute:
+    post:
+      operationId: attributeBodyLogInvitation
+      tags: [bodylog-invitation]
+      summary: Attribute an invitation to the signed-in user and installation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogInvitationAttributeRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/InvitationAttribution" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "410": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/invitations/progress:
+    post:
+      operationId: recordBodyLogInvitationProgress
+      tags: [bodylog-invitation]
+      summary: Record today's completed plan day for invitation qualification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogInvitationProgressRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/InvitationProgress" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/challenges:
+    get:
+      operationId: listBodyLogChallenges
+      tags: [bodylog-challenge]
+      summary: List challenges visible to the signed-in user
+      responses:
+        "200": { $ref: "#/components/responses/ChallengeList" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      operationId: createBodyLogChallenge
+      tags: [bodylog-challenge]
+      summary: Create a challenge for one to seven unblocked friends
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogChallengeCreateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Challenge" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/challenges/{challengeId}:
+    parameters:
+      - $ref: "#/components/parameters/ChallengeId"
+    get:
+      operationId: getBodyLogChallenge
+      tags: [bodylog-challenge]
+      summary: Get a visible challenge
+      responses:
+        "200": { $ref: "#/components/responses/Challenge" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/challenges/{challengeId}/respond:
+    parameters:
+      - $ref: "#/components/parameters/ChallengeId"
+    post:
+      operationId: respondToBodyLogChallenge
+      tags: [bodylog-challenge]
+      summary: Accept or decline a pending challenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogChallengeResponseRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Challenge" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/challenges/{challengeId}/progress:
+    parameters:
+      - $ref: "#/components/parameters/ChallengeId"
+    post:
+      operationId: recordBodyLogChallengeProgress
+      tags: [bodylog-challenge]
+      summary: Record today's completion state for an active challenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogChallengeProgressRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Challenge" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    FriendRequestId:
+      name: requestId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    FriendRequestAction:
+      name: action
+      in: path
+      required: true
+      schema: { type: string, enum: [accept, reject] }
+    FriendUserId:
+      name: friendUserId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    TargetUserId:
+      name: targetUserId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    ChallengeId:
+      name: challengeId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    TimeZone:
+      name: X-Time-Zone
+      in: header
+      required: false
+      schema: { type: string, default: UTC }
+  responses:
+    Error:
+      description: Request failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogErrorResponse" }
+    Profile:
+      description: BodyLog profile
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogProfileResponse" }
+    FriendList:
+      description: Friends
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogFriendListResponse" }
+    FriendRequest:
+      description: Friend request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogFriendRequestResponse" }
+    FriendRequestList:
+      description: Pending friend requests
+      content:
+        application/json:
+          schema:
+            { $ref: "#/components/schemas/BodyLogFriendRequestListResponse" }
+    FriendRequestStatus:
+      description: Friend request status
+      content:
+        application/json:
+          schema:
+            { $ref: "#/components/schemas/BodyLogFriendRequestStatusResponse" }
+    Removed:
+      description: Friendship removal state
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogRemovedResponse" }
+    Blocked:
+      description: Block state
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogBlockedResponse" }
+    BlockList:
+      description: Blocked users
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogBlockListResponse" }
+    Report:
+      description: Accepted report
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogReportResponse" }
+    LeaderboardJoin:
+      description: Current leaderboard membership
+      content:
+        application/json:
+          schema:
+            { $ref: "#/components/schemas/BodyLogLeaderboardJoinResponse" }
+    LeaderboardMembership:
+      description: Updated leaderboard membership
+      content:
+        application/json:
+          schema:
+            {
+              $ref: "#/components/schemas/BodyLogLeaderboardMembershipResponse",
+            }
+    LeaderboardLeave:
+      description: Left leaderboard
+      content:
+        application/json:
+          schema:
+            { $ref: "#/components/schemas/BodyLogLeaderboardLeaveResponse" }
+    Leaderboard:
+      description: Leaderboard
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogLeaderboardResponse" }
+    InvitationCreate:
+      description: Invitation token and URL
+      content:
+        application/json:
+          schema:
+            { $ref: "#/components/schemas/BodyLogInvitationCreateResponse" }
+    InvitationStatus:
+      description: Invitation and reward status
+      content:
+        application/json:
+          schema:
+            { $ref: "#/components/schemas/BodyLogInvitationStatusResponse" }
+    InvitationAttribution:
+      description: Invitation attribution state
+      content:
+        application/json:
+          schema:
+            {
+              $ref: "#/components/schemas/BodyLogInvitationAttributionResponse",
+            }
+    InvitationProgress:
+      description: Invitation qualification progress
+      content:
+        application/json:
+          schema:
+            { $ref: "#/components/schemas/BodyLogInvitationProgressResponse" }
+    Challenge:
+      description: Challenge
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogChallengeResponse" }
+    ChallengeList:
+      description: Challenges
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogChallengeListResponse" }
+  schemas:
+    BodyLogProfileUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [nickname, avatarKey]
+      properties:
+        nickname: { type: string, minLength: 2, maxLength: 20 }
+        avatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+    BodyLogTargetUserRequest:
+      type: object
+      additionalProperties: false
+      required: [targetUserId]
+      properties:
+        targetUserId: { type: string, minLength: 1 }
+    BodyLogReportRequest:
+      type: object
+      additionalProperties: false
+      required: [targetUserId, reason]
+      properties:
+        targetUserId: { type: string, minLength: 1 }
+        reason: { $ref: "#/components/schemas/BodyLogReportReason" }
+    BodyLogLeaderboardJoinRequest:
+      type: object
+      additionalProperties: false
+      required: [seasonLabel, timezone, habits]
+      properties:
+        seasonLabel: { type: string, pattern: "^\\d{4}-W\\d{2}$" }
+        timezone: { type: string, minLength: 1 }
+        habits:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { $ref: "#/components/schemas/BodyLogScoringHabit" }
+    BodyLogLeaderboardAggregateRequest:
+      type: object
+      additionalProperties: false
+      required: [seasonLabel, date, completedHabitIds]
+      properties:
+        seasonLabel: { type: string, pattern: "^\\d{4}-W\\d{2}$" }
+        date: { $ref: "#/components/schemas/BodyLogDate" }
+        completedHabitIds:
+          type: array
+          items: { type: string, minLength: 1 }
+    BodyLogLeaderboardLeaveRequest:
+      type: object
+      additionalProperties: false
+      required: [timezone]
+      properties:
+        timezone: { type: string, minLength: 1 }
+    BodyLogInvitationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [installId]
+      properties:
+        installId: { type: string, minLength: 8 }
+    BodyLogInvitationAttributeRequest:
+      type: object
+      additionalProperties: false
+      required: [token, installId]
+      properties:
+        token: { type: string, minLength: 1 }
+        installId: { type: string, minLength: 8 }
+    BodyLogInvitationProgressRequest:
+      type: object
+      additionalProperties: false
+      required: [date, timezone]
+      properties:
+        date: { $ref: "#/components/schemas/BodyLogDate" }
+        timezone: { type: string, minLength: 1 }
+    BodyLogChallengeCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [themeKey, inviteeUserIds, timezone]
+      properties:
+        themeKey: { $ref: "#/components/schemas/BodyLogChallengeTheme" }
+        inviteeUserIds:
+          type: array
+          minItems: 1
+          maxItems: 7
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        timezone: { type: string, minLength: 1 }
+    BodyLogChallengeResponseRequest:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action: { type: string, enum: [accept, decline] }
+    BodyLogChallengeProgressRequest:
+      type: object
+      additionalProperties: false
+      required: [date, completed, timezone]
+      properties:
+        date: { $ref: "#/components/schemas/BodyLogDate" }
+        completed: { type: boolean }
+        timezone: { type: string, minLength: 1 }
+    BodyLogAvatarKey:
+      type: string
+      enum: [mint_runner, blue_drop, orange_sun, purple_moon]
+    BodyLogReportReason:
+      type: string
+      enum: [cheating, offensive_profile, harassment, other]
+    BodyLogChallengeTheme:
+      type: string
+      enum: [steady_week, morning_rhythm, movement_breaks, mindful_week]
+    BodyLogDate:
+      type: string
+      pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+    BodyLogProfileData:
+      type: object
+      required:
+        [userId, nickname, avatarKey, profileCompleted, createdAt, updatedAt]
+      properties:
+        userId: { type: string }
+        nickname: { type: string }
+        avatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        profileCompleted: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BodyLogFriendData:
+      allOf:
+        - $ref: "#/components/schemas/BodyLogProfileData"
+        - type: object
+          required: [friendsSince]
+          properties:
+            friendsSince: { type: string, format: date-time }
+    BodyLogFriendRequestRecordData:
+      type: object
+      required:
+        [id, appId, senderUserId, recipientUserId, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        appId: { type: string, const: bodylog }
+        senderUserId: { type: string }
+        recipientUserId: { type: string }
+        status: { type: string, enum: [pending, accepted, rejected] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BodyLogFriendRequestListItem:
+      type: object
+      required: [id, direction, profile, createdAt]
+      properties:
+        id: { type: string }
+        direction: { type: string, enum: [incoming, outgoing] }
+        profile: { $ref: "#/components/schemas/BodyLogProfileData" }
+        createdAt: { type: string, format: date-time }
+    BodyLogFriendRequestStatusData:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [accepted, rejected] }
+    BodyLogBlockListItem:
+      type: object
+      required: [profile, createdAt]
+      properties:
+        profile: { $ref: "#/components/schemas/BodyLogProfileData" }
+        createdAt: { type: string, format: date-time }
+    BodyLogScoringHabit:
+      type: object
+      additionalProperties: false
+      required: [habitId, scheduledDates]
+      properties:
+        habitId: { type: string, minLength: 1 }
+        scheduledDates:
+          type: array
+          items: { $ref: "#/components/schemas/BodyLogDate" }
+    BodyLogLeaderboardMembership:
+      type: object
+      required: [joined, eligible, effectiveDays, score]
+      properties:
+        joined: { type: boolean }
+        eligible: { type: boolean }
+        effectiveDays: { type: integer, minimum: 0 }
+        score: { type: number, minimum: 0 }
+    BodyLogLeaderboardJoinData:
+      type: object
+      required: [seasonLabel, timezone, membership]
+      properties:
+        seasonLabel: { type: string }
+        timezone: { type: string }
+        membership:
+          { $ref: "#/components/schemas/BodyLogLeaderboardMembership" }
+    BodyLogLeaderboardEntry:
+      type: object
+      required:
+        [
+          rank,
+          userId,
+          nickname,
+          avatarKey,
+          score,
+          effectiveDays,
+          completedInstances,
+        ]
+      properties:
+        rank: { type: integer, minimum: 1 }
+        userId: { type: string }
+        nickname: { type: string }
+        avatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        score: { type: number, minimum: 0 }
+        effectiveDays: { type: integer, minimum: 0 }
+        completedInstances: { type: integer, minimum: 0 }
+    BodyLogLeaderboardData:
+      type: object
+      required: [seasonLabel, status, scope, entries, membership, updatedAt]
+      properties:
+        seasonLabel: { type: string }
+        status: { type: string, const: live }
+        scope: { type: string, enum: [public, friends] }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/BodyLogLeaderboardEntry" }
+        membership:
+          { $ref: "#/components/schemas/BodyLogLeaderboardMembership" }
+        updatedAt: { type: string, format: date-time }
+    BodyLogInvitationCreateData:
+      type: object
+      required: [token, url, expiresAt]
+      properties:
+        token: { type: string }
+        url: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+    BodyLogInvitationListItem:
+      type: object
+      required: [id, status, progressDays, attributedAt]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [pending, qualified, rewarded] }
+        progressDays: { type: integer, minimum: 0 }
+        attributedAt: { type: string, format: date-time }
+    BodyLogInvitationStatusData:
+      type: object
+      required:
+        [
+          pendingCount,
+          qualifiedCount,
+          rewardedCount,
+          inviteeProgressDays,
+          attributed,
+          premiumUntil,
+          invitations,
+        ]
+      properties:
+        pendingCount: { type: integer, minimum: 0 }
+        qualifiedCount: { type: integer, minimum: 0 }
+        rewardedCount: { type: integer, minimum: 0 }
+        inviteeProgressDays: { type: integer, minimum: 0 }
+        attributed: { type: boolean }
+        premiumUntil: { type: [string, "null"], format: date-time }
+        invitations:
+          type: array
+          items: { $ref: "#/components/schemas/BodyLogInvitationListItem" }
+    BodyLogInvitationAttributionData:
+      type: object
+      required: [attributed, progressDays]
+      properties:
+        attributed: { type: boolean, const: true }
+        progressDays: { type: integer, minimum: 0 }
+    BodyLogInvitationProgressData:
+      type: object
+      required: [progressDays, qualified]
+      properties:
+        progressDays: { type: integer, minimum: 0 }
+        qualified: { type: boolean }
+        premiumUntil: { type: [string, "null"], format: date-time }
+    BodyLogChallengeMemberData:
+      type: object
+      required:
+        [userId, nickname, avatarKey, memberStatus, score, effectiveDays, rank]
+      properties:
+        userId: { type: string }
+        nickname: { type: string }
+        avatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        memberStatus: { type: string, enum: [pending, accepted, declined] }
+        score: { type: number, minimum: 0 }
+        effectiveDays: { type: integer, minimum: 0 }
+        rank: { type: integer, minimum: 1 }
+    BodyLogChallengeData:
+      type: object
+      required:
+        [
+          id,
+          themeKey,
+          status,
+          timezone,
+          startDate,
+          endDate,
+          currentUserStatus,
+          members,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        id: { type: string }
+        themeKey: { $ref: "#/components/schemas/BodyLogChallengeTheme" }
+        status: { type: string, enum: [pending, active, cancelled, settled] }
+        timezone: { type: string }
+        startDate:
+          {
+            oneOf:
+              [{ $ref: "#/components/schemas/BodyLogDate" }, { type: "null" }],
+          }
+        endDate:
+          {
+            oneOf:
+              [{ $ref: "#/components/schemas/BodyLogDate" }, { type: "null" }],
+          }
+        currentUserStatus: { type: string, enum: [pending, accepted, declined] }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/BodyLogChallengeMemberData" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BodyLogErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+    BodyLogProfileResponse:
+      $ref: "#/components/schemas/BodyLogProfileEnvelope"
+    BodyLogProfileEnvelope:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogProfileData" }
+        requestId: { type: string }
+    BodyLogFriendListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/BodyLogFriendData" },
+          }
+        requestId: { type: string }
+    BodyLogFriendRequestResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogFriendRequestRecordData" }
+        requestId: { type: string }
+    BodyLogFriendRequestListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          {
+            type: array,
+            items:
+              { $ref: "#/components/schemas/BodyLogFriendRequestListItem" },
+          }
+        requestId: { type: string }
+    BodyLogFriendRequestStatusResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogFriendRequestStatusData" }
+        requestId: { type: string }
+    BodyLogRemovedResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [removed]
+          properties: { removed: { type: boolean, const: true } }
+        requestId: { type: string }
+    BodyLogBlockedResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [blocked]
+          properties: { blocked: { type: boolean } }
+        requestId: { type: string }
+    BodyLogBlockListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/BodyLogBlockListItem" },
+          }
+        requestId: { type: string }
+    BodyLogReportResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [id]
+          properties: { id: { type: string } }
+        requestId: { type: string }
+    BodyLogLeaderboardJoinResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogLeaderboardJoinData" }
+        requestId: { type: string }
+    BodyLogLeaderboardMembershipResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogLeaderboardMembership" }
+        requestId: { type: string }
+    BodyLogLeaderboardLeaveResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [joined, seasonLabel]
+          properties:
+            joined: { type: boolean, const: false }
+            seasonLabel: { type: string }
+        requestId: { type: string }
+    BodyLogLeaderboardResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogLeaderboardData" }
+        requestId: { type: string }
+    BodyLogInvitationCreateResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogInvitationCreateData" }
+        requestId: { type: string }
+    BodyLogInvitationStatusResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogInvitationStatusData" }
+        requestId: { type: string }
+    BodyLogInvitationAttributionResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogInvitationAttributionData" }
+        requestId: { type: string }
+    BodyLogInvitationProgressResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogInvitationProgressData" }
+        requestId: { type: string }
+    BodyLogChallengeResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogChallengeData" }
+        requestId: { type: string }
+    BodyLogChallengeListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          {
+            type: array,
+            items: { $ref: "#/components/schemas/BodyLogChallengeData" },
+          }
+        requestId: { type: string }

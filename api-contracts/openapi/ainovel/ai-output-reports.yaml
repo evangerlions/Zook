@@ -1,0 +1,182 @@
+openapi: 3.1.1
+info:
+  title: AINovel AI Output Reports API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Authenticated reporting API for AINovel AI chat messages and generated chapter revisions.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/ai_novel/ai-output-reports:
+    post:
+      security:
+        - bearerAuth: []
+      operationId: submitAiNovelAiOutputReport
+      summary: Report one AI-generated output
+      tags: [ainovel, ai-output-reporting]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiOutputReportSubmitRequest"
+      responses:
+        "200":
+          description: Report accepted or an idempotent prior result returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiOutputReportSubmitResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AiOutputReportTargetType:
+      type: string
+      enum: [chat_message, chapter_revision]
+    AiOutputReportScene:
+      type: string
+      enum: [kickoff, write, history_qa]
+    AiOutputReportCategory:
+      type: string
+      enum:
+        - harmful_unsafe
+        - sexual_vulgar
+        - abuse_harassment
+        - illegal_crime
+        - privacy_personal_info
+        - misinformation
+        - rights_infringement
+        - other
+    AiOutputReportSubmitRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - submissionId
+        - targetType
+        - targetId
+        - scene
+        - category
+        - reportedContent
+        - contentHash
+      properties:
+        submissionId:
+          type: string
+          minLength: 8
+          maxLength: 120
+        targetType:
+          $ref: "#/components/schemas/AiOutputReportTargetType"
+        targetId:
+          type: string
+          minLength: 1
+          maxLength: 160
+        messageId:
+          type: [string, "null"]
+          maxLength: 160
+        sessionId:
+          type: [string, "null"]
+          maxLength: 160
+        chapterId:
+          type: [integer, "null"]
+          minimum: 1
+        chapterRevisionId:
+          type: [string, "null"]
+          maxLength: 160
+        scene:
+          $ref: "#/components/schemas/AiOutputReportScene"
+        category:
+          $ref: "#/components/schemas/AiOutputReportCategory"
+        description:
+          type: string
+          maxLength: 500
+        reportedContent:
+          type: string
+          minLength: 1
+          maxLength: 100000
+        contentHash:
+          type: string
+          pattern: "^sha256:[a-f0-9]{64}$"
+        turnId:
+          type: [string, "null"]
+          maxLength: 160
+        providerRequestId:
+          type: [string, "null"]
+          maxLength: 200
+        modelKey:
+          type: [string, "null"]
+          maxLength: 120
+        platform:
+          type: string
+          maxLength: 40
+        appVersion:
+          type: string
+          maxLength: 40
+        locale:
+          type: string
+          maxLength: 40
+        clientRegion:
+          type: string
+          enum: [CN, GLOBAL, UNKNOWN]
+        effectiveRegion:
+          type: string
+          enum: [CN, GLOBAL, UNKNOWN]
+    AiOutputReportSubmitData:
+      type: object
+      required: [reportId, accepted, status]
+      properties:
+        reportId:
+          type: string
+        accepted:
+          type: boolean
+          const: true
+        status:
+          type: string
+          enum: [received]
+    AiOutputReportSubmitResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          $ref: "#/components/schemas/AiOutputReportSubmitData"
+        requestId: { type: string }
+    ErrorResponse:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+  responses:
+    BadRequest:
+      description: The report target, category, content, or metadata is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: User authentication is required.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: The report submission rate limit was exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

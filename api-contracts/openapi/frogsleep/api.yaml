@@ -1,0 +1,1985 @@
+openapi: 3.1.1
+info:
+  title: FrogSleep Public API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Canonical external API contract for FrogSleep app-scoped clients.
+servers:
+  - url: https://api.zook.dev
+security: []
+tags:
+  - name: frogsleep
+  - name: frogsleep-auth
+  - name: frogsleep-sleep-buddy
+  - name: frogsleep-focus-buddy
+  - name: frogsleep-product-data
+paths:
+  /api/v1/frogsleep/auth/email/send-code:
+    post:
+      operationId: frogSleepSendEmailCode
+      tags: [frogsleep, frogsleep-auth]
+      summary: Send a FrogSleep email verification code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailCodeRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/auth-code:
+    post:
+      operationId: frogSleepSendEmailCodeAlias
+      tags: [frogsleep, frogsleep-auth]
+      summary: Send a FrogSleep email verification code using the legacy operation name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailCodeRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/change-code:
+    post:
+      operationId: frogSleepSendEmailChangeCode
+      tags: [frogsleep, frogsleep-auth]
+      summary: Send a code for changing the current account email
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailCodeRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/login:
+    post:
+      operationId: frogSleepEmailLogin
+      tags: [frogsleep, frogsleep-auth]
+      summary: Login with email code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/complete:
+    post:
+      operationId: frogSleepEmailLoginCompleteAlias
+      tags: [frogsleep, frogsleep-auth]
+      summary: Login with email code using the legacy operation name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/verify:
+    post:
+      operationId: frogSleepEmailLoginVerifyAlias
+      tags: [frogsleep, frogsleep-auth]
+      summary: Login with email code using the legacy operation name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/register:
+    post:
+      operationId: frogSleepEmailRegister
+      tags: [frogsleep, frogsleep-auth]
+      summary: Send a registration code or register with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailRegisterRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/password/register:
+    post:
+      operationId: frogSleepPasswordRegister
+      tags: [frogsleep, frogsleep-auth]
+      summary: Send a registration code or register with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailRegisterRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/password/login:
+    post:
+      operationId: frogSleepPasswordLogin
+      tags: [frogsleep, frogsleep-auth]
+      summary: Login with password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepPasswordLoginRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/password/reset/request:
+    post:
+      operationId: frogSleepRequestPasswordReset
+      tags: [frogsleep, frogsleep-auth]
+      summary: Send a password reset email code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepPasswordResetRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/password/reset/confirm:
+    post:
+      operationId: frogSleepConfirmPasswordReset
+      tags: [frogsleep, frogsleep-auth]
+      summary: Reset password using a verification code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepPasswordResetConfirmRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/password/change:
+    post:
+      operationId: frogSleepChangePassword
+      tags: [frogsleep, frogsleep-auth]
+      summary: Change password for the current FrogSleep user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepPasswordChangeRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/token/refresh:
+    post:
+      operationId: frogSleepRefreshToken
+      tags: [frogsleep, frogsleep-auth]
+      summary: Refresh a FrogSleep token pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepTokenRefreshRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/logout:
+    post:
+      operationId: frogSleepLogout
+      tags: [frogsleep, frogsleep-auth]
+      summary: Logout current FrogSleep session
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/me:
+    get:
+      operationId: frogSleepCurrentUser
+      tags: [frogsleep, frogsleep-auth]
+      summary: Get current FrogSleep user
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/me/account:
+    delete:
+      operationId: frogSleepDeleteAccount
+      tags: [frogsleep, frogsleep-auth]
+      summary: Delete the current FrogSleep app account and app-scoped runtime data
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/bind:
+    post:
+      operationId: frogSleepBindEmail
+      tags: [frogsleep, frogsleep-auth]
+      summary: Bind or change the current shared account email
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/auth/email/change:
+    post:
+      operationId: frogSleepChangeEmail
+      tags: [frogsleep, frogsleep-auth]
+      summary: Change the current shared account email
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepEmailLoginRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/devices:
+    post:
+      operationId: frogSleepRegisterDevice
+      tags: [frogsleep]
+      summary: Register or update a FrogSleep push device
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepDeviceRegisterRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/devices/{deviceId}:
+    delete:
+      operationId: frogSleepDeleteDevice
+      tags: [frogsleep]
+      summary: Delete a FrogSleep push device
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/DeviceId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites:
+    post:
+      operationId: frogSleepCreateSleepInvite
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Create a sleep buddy invite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepInviteCreateRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites/preview:
+    get:
+      operationId: frogSleepPreviewSleepInvite
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Preview a sleep buddy invite by token or code
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/InviteToken"
+        - $ref: "#/components/parameters/InviteCode"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites/pending:
+    get:
+      operationId: frogSleepListPendingSleepInvites
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: List pending sleep buddy invites
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites/accept-code:
+    post:
+      operationId: frogSleepAcceptSleepInviteByCode
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Accept a sleep buddy invite by code
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites/accept-token:
+    post:
+      operationId: frogSleepAcceptSleepInviteByToken
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Accept a sleep buddy invite by token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/accept:
+    post:
+      operationId: frogSleepAcceptSleepInviteById
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Accept a sleep buddy invite by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/decline:
+    post:
+      operationId: frogSleepDeclineSleepInvite
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Decline a sleep buddy invite
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/invites/{inviteId}/cancel:
+    post:
+      operationId: frogSleepCancelSleepInvite
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Cancel a sleep buddy invite
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/relationships/current:
+    get:
+      operationId: frogSleepCurrentSleepRelationship
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Get current sleep buddy relationship
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/pause:
+    post:
+      operationId: frogSleepPauseSleepRelationship
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Pause a sleep buddy relationship
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RelationshipId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/resume:
+    post:
+      operationId: frogSleepResumeSleepRelationship
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Resume a sleep buddy relationship
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RelationshipId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/revoke:
+    post:
+      operationId: frogSleepRevokeSleepRelationship
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Revoke a sleep buddy relationship
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RelationshipId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/relationships/{relationshipId}/preferences:
+    patch:
+      operationId: frogSleepUpdateGuardianshipPreferences
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Update sleep buddy guardianship preferences
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RelationshipId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepSleepPreferencesRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/guardianship/status:
+    get:
+      operationId: frogSleepGuardianshipStatus
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Get guardianship status snapshot
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/shared-sessions:
+    post:
+      operationId: frogSleepCreateSharedSleepSession
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Create a shared sleep session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepSharedSleepSessionRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/shared-sessions/active:
+    get:
+      operationId: frogSleepActiveSharedSleepSession
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Get current active shared sleep session
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/accept:
+    post:
+      operationId: frogSleepAcceptSharedSleepSession
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Accept a shared sleep session
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/events:
+    post:
+      operationId: frogSleepRecordSharedSleepSessionEvent
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Record an event on a shared sleep session
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepSharedSleepEventRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/pause-tonight:
+    post:
+      operationId: frogSleepPauseSharedSleepSessionTonight
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Pause a shared sleep session for tonight
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/shared-summaries/latest:
+    get:
+      operationId: frogSleepLatestSharedSleepSummary
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Get latest shared sleep summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/sleep-buddy/shared-recaps/latest:
+    get:
+      operationId: frogSleepLatestSharedSleepRecap
+      tags: [frogsleep, frogsleep-sleep-buddy]
+      summary: Get latest shared sleep recap
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/sessions:
+    get:
+      operationId: frogSleepListFocusSessions
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: List focus sessions
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+    post:
+      operationId: frogSleepReportFocusSession
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Report a focus session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepFocusSessionRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/stats/week:
+    get:
+      operationId: frogSleepFocusWeekStats
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Get weekly focus stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/achievements:
+    get:
+      operationId: frogSleepFocusAchievements
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Get focus achievements
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/achievements/notify:
+    post:
+      operationId: frogSleepNotifyFocusAchievement
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Mark focus achievement notification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepFocusAchievementNotifyRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/match-profile:
+    delete:
+      operationId: frogSleepDeleteFocusProfile
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Delete current focus match profile
+      deprecated: true
+      description: Gated behind `focus_matching` capability (disabled by default for v1 invite-only launch). Returns 404 when the capability is off.
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+    post:
+      operationId: frogSleepSaveFocusProfile
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Save focus match profile
+      deprecated: true
+      description: Gated behind `focus_matching` capability (disabled by default for v1 invite-only launch). Returns 404 when the capability is off.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepFocusProfileRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/match-profile/me:
+    get:
+      operationId: frogSleepGetFocusProfile
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Get current focus match profile
+      deprecated: true
+      description: Gated behind `focus_matching` capability (disabled by default for v1 invite-only launch). Returns 404 when the capability is off.
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/matches/search:
+    post:
+      operationId: frogSleepSearchFocusMatches
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Search focus match candidates
+      deprecated: true
+      description: Gated behind `focus_matching` capability (disabled by default for v1 invite-only launch). Returns 404 when the capability is off.
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/matches/{userId}/invite:
+    post:
+      operationId: frogSleepInviteFocusMatch
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Invite a focus match candidate
+      deprecated: true
+      description: Gated behind `focus_matching` capability (disabled by default for v1 invite-only launch). Returns 404 when the capability is off.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/matches/{userId}/dismiss:
+    post:
+      operationId: frogSleepDismissFocusMatch
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Dismiss a focus match candidate
+      deprecated: true
+      description: Gated behind `focus_matching` capability (disabled by default for v1 invite-only launch). Returns 404 when the capability is off.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/matches/{userId}/report:
+    post:
+      operationId: frogSleepReportFocusMatch
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Report a focus match candidate
+      deprecated: true
+      description: Gated behind `focus_matching` capability (disabled by default for v1 invite-only launch). Returns 404 when the capability is off.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/invites:
+    post:
+      operationId: frogSleepCreateFocusInvite
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Create a focus buddy invite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepInviteCreateRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/invites/preview:
+    get:
+      operationId: frogSleepPreviewFocusInvite
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Preview a focus invite by token or code
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/InviteToken"
+        - $ref: "#/components/parameters/InviteCode"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/invites/pending:
+    get:
+      operationId: frogSleepListPendingFocusInvites
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: List pending focus buddy invitations for the authenticated user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/invites/{inviteId}/decline:
+    post:
+      operationId: frogSleepDeclineFocusInvite
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Decline a pending focus buddy invitation
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/InviteId" }]
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/invites/{inviteId}/cancel:
+    post:
+      operationId: frogSleepCancelFocusInvite
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Cancel a pending focus buddy invitation
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/InviteId" }]
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/invites/accept-code:
+    post:
+      operationId: frogSleepAcceptFocusInviteByCode
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Accept a focus buddy invite by code
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/invites/accept-token:
+    post:
+      operationId: frogSleepAcceptFocusInviteByToken
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Accept a focus buddy invite by token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepInviteAcceptRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/relationships/current:
+    get:
+      operationId: frogSleepCurrentFocusRelationship
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Get current focus buddy relationship
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/relationships/{relationshipId}/accept:
+    post:
+      operationId: frogSleepAcceptFocusRelationship
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Accept a focus buddy relationship
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RelationshipId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/relationships/{relationshipId}/decline:
+    post:
+      operationId: frogSleepDeclineFocusRelationship
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Decline a focus buddy relationship
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RelationshipId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/relationships/{relationshipId}/revoke:
+    post:
+      operationId: frogSleepRevokeFocusRelationship
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Revoke a focus buddy relationship
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RelationshipId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/messages:
+    get:
+      operationId: frogSleepListFocusMessages
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: List focus buddy messages
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+    post:
+      operationId: frogSleepSendFocusMessage
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Send a focus buddy message
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepFocusMessageRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/presence:
+    get:
+      operationId: frogSleepFocusPresence
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Get focus buddy presence
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/comparison:
+    get:
+      operationId: frogSleepFocusComparison
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Get focus buddy comparison
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/focus-buddy/shared:
+    get:
+      operationId: frogSleepFocusSharedMoments
+      tags: [frogsleep, frogsleep-focus-buddy]
+      summary: Get shared focus moments
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/buddy/invitations:
+    post:
+      operationId: frogSleepCreateBuddyInvitation
+      tags: [frogsleep]
+      summary: Create one user-facing invitation coordinating sleep, focus, or both child domains
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationCreateRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+    get:
+      operationId: frogSleepListBuddyInvitations
+      tags: [frogsleep]
+      summary: List the authenticated viewer's unified buddy inbox or outbox
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: direction
+          in: query
+          required: true
+          schema: { $ref: "#/components/schemas/BuddyInvitationDirection" }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}:
+    get:
+      operationId: frogSleepPreviewBuddyInvitationById
+      tags: [frogsleep]
+      summary: Preview a unified buddy invitation without consuming it
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/delivery:
+    get:
+      operationId: frogSleepGetBuddyInvitationDelivery
+      tags: [frogsleep]
+      summary: Get truthful asynchronous invitation delivery state
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/buddy/invitations/preview:
+    get:
+      operationId: frogSleepPreviewBuddyInvitation
+      tags: [frogsleep]
+      summary: Preview a buddy invitation by one locator without consuming it
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: invitation_id, in: query, required: false, schema: { type: string } }
+        - { name: token, in: query, required: false, schema: { type: string } }
+        - { name: code, in: query, required: false, schema: { type: string } }
+        - { name: notification_id, in: query, required: false, schema: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/accept:
+    post:
+      operationId: frogSleepAcceptBuddyInvitation
+      tags: [frogsleep]
+      summary: Explicitly accept a versioned buddy invitation
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/InviteId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/decline:
+    post:
+      operationId: frogSleepDeclineBuddyInvitation
+      tags: [frogsleep]
+      summary: Decline a versioned buddy invitation
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/InviteId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/cancel:
+    post:
+      operationId: frogSleepCancelBuddyInvitation
+      tags: [frogsleep]
+      summary: Cancel a versioned buddy invitation
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/InviteId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}/grants:
+    get:
+      operationId: frogSleepListBuddySharingGrants
+      tags: [frogsleep]
+      summary: List directional sharing grants for an authenticated relationship participant
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/relationships/{relationshipId}/grants/{grantId}:
+    patch:
+      operationId: frogSleepUpdateBuddySharingGrant
+      tags: [frogsleep]
+      summary: Update one directional sharing grant as its grantor
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationshipId, in: path, required: true, schema: { type: string } }
+        - { name: grantId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddySharingGrantUpdateRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups:
+    get:
+      operationId: frogSleepListBuddyGroups
+      tags: [frogsleep]
+      summary: List the authenticated viewer's active buddy groups
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+    post:
+      operationId: frogSleepCreateBuddyGroup
+      tags: [frogsleep]
+      summary: Create a 2-5 person sleep or focus buddy group
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupCreateRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/{groupId}:
+    get:
+      operationId: frogSleepGetBuddyGroup
+      tags: [frogsleep]
+      summary: Get a buddy group detail visible to an active member
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+    patch:
+      operationId: frogSleepUpdateBuddyGroup
+      tags: [frogsleep]
+      summary: Update buddy group metadata and sharing baseline as owner
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupUpdateRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/{groupId}/hub:
+    get:
+      operationId: frogSleepGetBuddyGroupHub
+      tags: [frogsleep]
+      summary: Get member presence, recent activity, and viewer actions for one buddy group
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/{groupId}/invitations:
+    get:
+      operationId: frogSleepListBuddyGroupInvitations
+      tags: [frogsleep]
+      summary: List invitations for a buddy group visible to an active member
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+    post:
+      operationId: frogSleepCreateBuddyGroupInvitation
+      tags: [frogsleep]
+      summary: Invite one or more users or email addresses to a buddy group
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupInviteRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/invitations/{invitationId}/{action}:
+    post:
+      operationId: frogSleepRespondBuddyGroupInvitation
+      tags: [frogsleep]
+      summary: Accept, decline, or cancel a buddy group invitation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: invitationId, in: path, required: true, schema: { type: string } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel] } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}:
+    post:
+      operationId: frogSleepRemoveBuddyGroupMember
+      tags: [frogsleep]
+      summary: Remove one non-owner member from a buddy group
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+        - { name: userId, in: path, required: true, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/{groupId}/members/{userId}/role:
+    patch:
+      operationId: frogSleepUpdateBuddyGroupMemberRole
+      tags: [frogsleep]
+      summary: Change a non-owner group member role as owner
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+        - { name: userId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyGroupRoleUpdateRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/{groupId}/{action}:
+    post:
+      operationId: frogSleepActOnBuddyGroup
+      tags: [frogsleep]
+      summary: Leave, pause, resume, or dissolve a buddy group
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [leave, pause, resume, dissolve] } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/groups/{groupId}/grants:
+    get:
+      operationId: frogSleepListBuddyGroupGrants
+      tags: [frogsleep]
+      summary: List the group sharing baseline grants for active members
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/notifications:
+    get:
+      operationId: frogSleepListBuddyNotifications
+      tags: [frogsleep]
+      summary: List the authenticated viewer's buddy notification feed
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/notifications/preferences:
+    get:
+      operationId: frogSleepGetBuddyNotificationPreferences
+      tags: [frogsleep]
+      summary: Get buddy notification categories, quiet hours, cooldown, and daily budget
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+    patch:
+      operationId: frogSleepUpdateBuddyNotificationPreferences
+      tags: [frogsleep]
+      summary: Update buddy notification interruption preferences
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyNotificationPreferencesRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/hub:
+    get:
+      operationId: frogSleepGetBuddyGrowthHub
+      tags: [frogsleep]
+      summary: Get a viewer-filtered buddy growth snapshot
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/activity:
+    get:
+      operationId: frogSleepListBuddyGrowthActivity
+      tags: [frogsleep]
+      summary: List privacy-filtered recent buddy activity
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/shares:
+    post:
+      operationId: frogSleepCreateBuddyStructuredShare
+      tags: [frogsleep]
+      summary: Share an expiring minimal progress snapshot
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyStructuredShareRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/interactions:
+    post:
+      operationId: frogSleepCreateBuddyInteraction
+      tags: [frogsleep]
+      summary: Send one bounded buddy reaction
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInteractionRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/joint-activities:
+    post:
+      operationId: frogSleepCreateBuddyJointActivity
+      tags: [frogsleep]
+      summary: Invite a buddy to joint focus or tonight together
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyJointActivityRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/joint-activities/{activityId}/{action}:
+    post:
+      operationId: frogSleepRespondBuddyJointActivity
+      tags: [frogsleep]
+      summary: Accept, decline, cancel, or complete a joint activity
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: activityId, in: path, required: true, schema: { type: string } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel, complete] } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/goals:
+    get:
+      operationId: frogSleepListBuddyJointGoals
+      tags: [frogsleep]
+      summary: List viewer-authorized joint goals and verified progress
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationship_id, in: query, required: false, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+    post:
+      operationId: frogSleepCreateBuddyJointGoal
+      tags: [frogsleep]
+      summary: Propose a supported timezone-aware joint goal
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyJointGoalCreateRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/goals/{goalId}/{action}:
+    post:
+      operationId: frogSleepActOnBuddyJointGoal
+      tags: [frogsleep]
+      summary: Accept, adjust, pause, or complete a joint goal idempotently
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: goalId, in: path, required: true, schema: { type: string } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, adjust, pause, complete] } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyJointGoalActionRequest" } } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/milestones:
+    get:
+      operationId: frogSleepListBuddyMilestones
+      tags: [frogsleep]
+      summary: List deduplicated viewer-authorized growth milestones
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationship_id, in: query, required: false, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/weekly-reports:
+    get:
+      operationId: frogSleepListBuddyWeeklyReports
+      tags: [frogsleep]
+      summary: List viewer-specific privacy-filtered weekly reports
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: relationship_id, in: query, required: false, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/weekly-reports/{reportId}:
+    get:
+      operationId: frogSleepGetBuddyWeeklyReport
+      tags: [frogsleep]
+      summary: Read one weekly report with current directional consent filtering
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: reportId, in: path, required: true, schema: { type: string } }
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/notifications/unread-count:
+    get:
+      operationId: frogSleepBuddyNotificationUnreadCount
+      tags: [frogsleep]
+      summary: Get the authenticated viewer's buddy notification unread count
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/notifications/mark-all-read:
+    post:
+      operationId: frogSleepMarkAllBuddyNotificationsRead
+      tags: [frogsleep]
+      summary: Mark all viewer-owned buddy notifications read
+      security: [{ bearerAuth: [] }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/notifications/{notificationId}/read:
+    post:
+      operationId: frogSleepMarkBuddyNotificationRead
+      tags: [frogsleep]
+      summary: Mark one viewer-owned buddy notification read
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: notificationId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/notifications/{notificationId}/route:
+    get:
+      operationId: frogSleepResolveBuddyNotificationRoute
+      tags: [frogsleep]
+      summary: Resolve a viewer-owned buddy notification to a still-valid safe route
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: notificationId, in: path, required: true, schema: { type: string } }]
+      responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/product-data/sleep-reports:
+    get:
+      operationId: frogSleepListSleepReports
+      tags: [frogsleep, frogsleep-product-data]
+      summary: List sleep report snapshots
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+    post:
+      operationId: frogSleepCreateSleepReport
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Create a sleep report snapshot
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepSleepReportRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/product-data/progress/{namespace}:
+    get:
+      operationId: frogSleepGetProgressSnapshot
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Get progress snapshot by namespace
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProductDataNamespace"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+    put:
+      operationId: frogSleepPutProgressSnapshot
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Upsert progress snapshot by namespace
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProductDataNamespace"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepProgressSnapshotRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+    patch:
+      operationId: frogSleepPatchProgressSnapshot
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Upsert progress snapshot by namespace
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProductDataNamespace"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrogSleepProgressSnapshotRequest"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/product-data/entitlements/current:
+    get:
+      operationId: frogSleepCurrentEntitlement
+      tags: [frogsleep, frogsleep-product-data]
+      summary: Get current entitlement
+      security:
+        - bearerAuth: []
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/buddy/users/{targetUserId}/block:
+    post:
+      operationId: frogSleepBlockBuddyUser
+      tags: [frogsleep, frogsleep-buddy-safety]
+      summary: Block a buddy user (bilateral). Activates assertBuddyPairNotBlocked across invite/accept/consent/notification paths.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TargetUserId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, maxLength: 280 }
+                note: { type: string, maxLength: 1000 }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /api/v1/frogsleep/buddy/users/{targetUserId}/unblock:
+    post:
+      operationId: frogSleepUnblockBuddyUser
+      tags: [frogsleep, frogsleep-buddy-safety]
+      summary: Remove an active block on a buddy user. Idempotent.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TargetUserId"
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+  /frogsleep/sleep-buddy-invite:
+    get:
+      operationId: frogSleepSleepInviteRedirect
+      tags: [frogsleep]
+      summary: Browser redirect bridge for sleep buddy invites
+      parameters:
+        - $ref: "#/components/parameters/InviteToken"
+        - $ref: "#/components/parameters/InviteCode"
+      responses:
+        "302":
+          description: Redirects to a FrogSleep deep link with mode=preview; never encodes consent
+  /frogsleep/focus-invite:
+    get:
+      operationId: frogSleepFocusInviteRedirect
+      tags: [frogsleep]
+      summary: Browser redirect bridge for focus buddy invites
+      parameters:
+        - $ref: "#/components/parameters/InviteToken"
+        - $ref: "#/components/parameters/InviteCode"
+      responses:
+        "302":
+          description: Redirects to a FrogSleep deep link with mode=preview; never encodes consent
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema: { type: string }
+    InviteId:
+      name: inviteId
+      in: path
+      required: true
+      schema: { type: string }
+    RelationshipId:
+      name: relationshipId
+      in: path
+      required: true
+      schema: { type: string }
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: { type: string }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string }
+    TargetUserId:
+      name: targetUserId
+      in: path
+      required: true
+      schema: { type: string }
+    ProductDataNamespace:
+      name: namespace
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [habit_progress, companion_state, cat_state, onboarding, report_preferences]
+    InviteToken:
+      name: token
+      in: query
+      required: false
+      schema: { type: string }
+    InviteCode:
+      name: code
+      in: query
+      required: false
+      schema: { type: string }
+  responses:
+    FrogSleepOk:
+      description: FrogSleep dual-compatible response envelope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/FrogSleepEnvelope"
+  schemas:
+    BuddyInvitationDomain:
+      type: string
+      enum: [sleep, focus, bundle]
+    BuddyInvitationDirection:
+      type: string
+      enum: [incoming, outgoing]
+    BuddyInvitationStatus:
+      type: string
+      enum: [pending, accepted, declined, cancelled, expired]
+    BuddyInvitationDeliveryStatus:
+      type: string
+      enum: [queued, processing, provider_accepted, delivered, bounced, suppressed, retryable_failed, dead_letter]
+    BuddyInvitationAction:
+      type: string
+      enum: [preview, accept, decline, cancel, share]
+    BuddySharingCategory:
+      type: string
+      enum: [presence, daily_summary, weekly_trend, shared_activity]
+    BuddyInteractionType:
+      type: string
+      enum: [encouragement, praise, support, join_next_time, tonight_together, group_cheer, group_goodnight]
+    BuddyGrowthNotificationType:
+      type: string
+      enum: [invitation_received, invitation_accepted, invitation_ended, interaction_received, joint_activity_invited, goal_updated, milestone_reached, weekly_report_ready, group_invitation_received, group_invitation_accepted, group_member_joined, group_member_left, group_goal_updated, group_weekly_report_ready, group_dissolved]
+    BuddyGoalType:
+      type: string
+      enum: [focus_days, focus_minutes, sleep_schedule_days, daily_encouragement, group_focus_days, group_sleep_days, group_tonight_together]
+    BuddyReportState:
+      type: string
+      enum: [pending, ready, redacted, expired]
+    BuddyInvitationResponseRequest:
+      type: object
+      required: [expected_version, idempotency_key]
+      additionalProperties: false
+      properties:
+        expected_version: { type: integer, minimum: 1 }
+        idempotency_key: { type: string, minLength: 1, maxLength: 128 }
+        sharing_categories:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/BuddySharingCategory" }
+    BuddyInvitationCreateRequest:
+      type: object
+      required: [target, domains]
+      additionalProperties: false
+      properties:
+        target:
+          oneOf:
+            - { type: string, minLength: 1 }
+            - $ref: "#/components/schemas/BuddyInvitationTarget"
+        domains:
+          type: array
+          minItems: 1
+          maxItems: 2
+          uniqueItems: true
+          items: { type: string, enum: [sleep, focus] }
+    BuddyInvitationTarget:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      maxProperties: 1
+      properties:
+        email: { type: string, format: email }
+        user_id: { type: string, minLength: 1 }
+    BuddyInvitationDomainResult:
+      type: object
+      required: [domain, status]
+      properties:
+        domain: { type: string, enum: [sleep, focus] }
+        relationship_id: { type: [string, "null"] }
+        status: { type: string, enum: [pending, accepted, declined, cancelled, expired] }
+        error_code: { type: [string, "null"] }
+    BuddyInvitationDelivery:
+      type: object
+      required: [channel, status, attempt_count]
+      properties:
+        channel: { type: string, enum: [email] }
+        status: { $ref: "#/components/schemas/BuddyInvitationDeliveryStatus" }
+        attempt_count: { type: integer, minimum: 0 }
+        provider_accepted_at: { type: string, format: date-time }
+        delivered_at: { type: string, format: date-time }
+        last_error_code: { type: string }
+    BuddySharingGrantUpdateRequest:
+      type: object
+      required: [state, expected_version]
+      additionalProperties: false
+      properties:
+        state: { type: string, enum: [granted, revoked] }
+        expected_version: { type: integer, minimum: 1 }
+    BuddyGroupInvitee:
+      type: object
+      additionalProperties: false
+      properties:
+        user_id: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+      anyOf:
+        - required: [user_id]
+        - required: [email]
+    BuddyGroupCreateRequest:
+      type: object
+      required: [domain, group_name]
+      additionalProperties: true
+      properties:
+        domain: { type: string, enum: [sleep, focus] }
+        group_name: { type: string, minLength: 1, maxLength: 40 }
+        group_description: { type: string, maxLength: 160 }
+        sharing_baseline:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/BuddySharingCategory" }
+        invitees:
+          type: array
+          items: { $ref: "#/components/schemas/BuddyGroupInvitee" }
+    BuddyGroupUpdateRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        group_name: { type: string, minLength: 1, maxLength: 40 }
+        group_description: { type: string, maxLength: 160 }
+        sharing_baseline:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/BuddySharingCategory" }
+    BuddyGroupInviteRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        user_id: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        invitees:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/BuddyGroupInvitee" }
+      anyOf:
+        - required: [user_id]
+        - required: [email]
+        - required: [invitees]
+    BuddyGroupRoleUpdateRequest:
+      type: object
+      required: [role]
+      additionalProperties: true
+      properties:
+        role: { type: string, enum: [moderator, member] }
+    BuddyNotificationPreferencesRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled: { type: boolean }
+        disabled_categories:
+          type: array
+          uniqueItems: true
+          items: { type: string, enum: [invitations, interactions, activities, goals, reports] }
+        quiet_start_minute: { type: integer, minimum: 0, maximum: 1439 }
+        quiet_end_minute: { type: integer, minimum: 0, maximum: 1439 }
+        timezone_offset_minutes: { type: integer, minimum: -720, maximum: 840 }
+        cooldown_minutes: { type: integer, minimum: 0, maximum: 1440 }
+        daily_budget: { type: integer, minimum: 0, maximum: 100 }
+    BuddyStructuredShareRequest:
+      type: object
+      required: [relationship_id, type, idempotency_key, snapshot]
+      additionalProperties: false
+      properties:
+        relationship_id: { type: string, minLength: 1 }
+        type: { type: string, enum: [focus_completion, daily_focus_summary, sleep_summary, weekly_progress, joint_goal_update] }
+        idempotency_key: { type: string, minLength: 1, maxLength: 128 }
+        snapshot: { type: object, additionalProperties: true }
+        expires_at: { type: string, format: date-time }
+    BuddyInteractionRequest:
+      type: object
+      required: [relationship_id, type, idempotency_key]
+      additionalProperties: false
+      properties:
+        relationship_id: { type: string, minLength: 1 }
+        type: { $ref: "#/components/schemas/BuddyInteractionType" }
+        idempotency_key: { type: string, minLength: 1, maxLength: 128 }
+        context_id: { type: string }
+    BuddyJointActivityRequest:
+      type: object
+      required: [relationship_id, type, idempotency_key]
+      additionalProperties: false
+      properties:
+        relationship_id: { type: string, minLength: 1 }
+        type: { type: string, enum: [joint_focus, tonight_together] }
+        idempotency_key: { type: string, minLength: 1, maxLength: 128 }
+        starts_at: { type: string, format: date-time }
+        planned_minutes: { type: integer, minimum: 1, maximum: 1440 }
+    BuddyJointGoalCreateRequest:
+      type: object
+      required: [relationship_id, type, target, timezone, idempotency_key]
+      additionalProperties: false
+      properties:
+        relationship_id: { type: string, minLength: 1 }
+        type: { type: string, enum: [focus_days, focus_minutes, sleep_schedule_days, daily_encouragement] }
+        target: { type: integer, minimum: 1, maximum: 10080 }
+        timezone: { type: string, minLength: 1, maxLength: 128 }
+        idempotency_key: { type: string, minLength: 1, maxLength: 128 }
+    BuddyJointGoalActionRequest:
+      type: object
+      required: [expected_version, idempotency_key]
+      additionalProperties: false
+      properties:
+        expected_version: { type: integer, minimum: 1 }
+        idempotency_key: { type: string, minLength: 1, maxLength: 128 }
+        type: { type: string, enum: [focus_days, focus_minutes, sleep_schedule_days, daily_encouragement] }
+        target: { type: integer, minimum: 1, maximum: 10080 }
+    FrogSleepEnvelope:
+      type: object
+      required: [code, message, data]
+      additionalProperties: true
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: true
+    FrogSleepPasswordLoginRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        account: { type: string }
+        identifier: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+      anyOf:
+        - required: [account, password]
+        - required: [identifier, password]
+        - required: [email, password]
+    FrogSleepEmailCodeRequest:
+      type: object
+      required: [email]
+      additionalProperties: true
+      properties:
+        email: { type: string, format: email }
+    FrogSleepEmailLoginRequest:
+      type: object
+      required: [email]
+      additionalProperties: true
+      properties:
+        email: { type: string, format: email }
+        code: { type: string }
+        email_code: { type: string }
+        emailCode: { type: string }
+        verification_id: { type: string }
+        verificationId: { type: string }
+    FrogSleepEmailRegisterRequest:
+      type: object
+      required: [email]
+      additionalProperties: true
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+        code: { type: string }
+        email_code: { type: string }
+        emailCode: { type: string }
+        verification_id: { type: string }
+        verificationId: { type: string }
+    FrogSleepPasswordResetRequest:
+      type: object
+      required: [email]
+      additionalProperties: true
+      properties:
+        email: { type: string, format: email }
+    FrogSleepPasswordResetConfirmRequest:
+      type: object
+      required: [email]
+      additionalProperties: true
+      properties:
+        email: { type: string, format: email }
+        code: { type: string }
+        email_code: { type: string }
+        emailCode: { type: string }
+        verification_id: { type: string }
+        verificationId: { type: string }
+        password: { type: string }
+        new_password: { type: string }
+        newPassword: { type: string }
+    FrogSleepPasswordChangeRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        current_password: { type: string }
+        currentPassword: { type: string }
+        new_password: { type: string }
+        newPassword: { type: string }
+        password: { type: string }
+      allOf:
+        - anyOf:
+            - required: [current_password]
+            - required: [currentPassword]
+        - anyOf:
+            - required: [new_password]
+            - required: [newPassword]
+            - required: [password]
+    FrogSleepTokenRefreshRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        refresh_token: { type: string }
+        refreshToken: { type: string }
+    FrogSleepDeviceRegisterRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        device_id: { type: string }
+        deviceId: { type: string }
+        platform:
+          type: string
+          enum: [ios, android, web]
+        push_token: { type: string }
+        pushToken: { type: string }
+        token: { type: string }
+        app_version: { type: string }
+        appVersion: { type: string }
+        timezone: { type: string }
+        push_enabled: { type: boolean }
+        pushEnabled: { type: boolean }
+      anyOf:
+        - required: [push_token]
+        - required: [pushToken]
+        - required: [token]
+    FrogSleepInviteCreateRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        invitee: { type: string }
+        target: { type: string }
+        email: { type: string, format: email }
+        user_id: { type: string }
+        userId: { type: string }
+        role: { type: string }
+        custom_label: { type: string }
+        customLabel: { type: string }
+      anyOf:
+        - required: [invitee]
+        - required: [target]
+        - required: [email]
+        - required: [user_id]
+        - required: [userId]
+    FrogSleepInviteAcceptRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        code: { type: string }
+        token: { type: string }
+        invite_id: { type: string }
+        inviteId: { type: string }
+      anyOf:
+        - required: [code]
+        - required: [token]
+        - required: [invite_id]
+        - required: [inviteId]
+    FrogSleepSleepPreferencesRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        guard_level:
+          type: string
+          enum: [relaxed, standard, strict]
+        guardLevel:
+          type: string
+          enum: [relaxed, standard, strict]
+        visibility_scope:
+          type: string
+          enum: [summary, detailed, private]
+        visibilityScope:
+          type: string
+          enum: [summary, detailed, private]
+        mute_for_tonight: { type: boolean }
+        muteForTonight: { type: boolean }
+        allow_morning_summary_push: { type: boolean }
+        allowMorningSummaryPush: { type: boolean }
+        allow_recovery_nudges: { type: boolean }
+        allowRecoveryNudges: { type: boolean }
+    FrogSleepSharedSleepSessionRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        relationship_id: { type: string }
+        relationshipId: { type: string }
+        date_anchor: { type: string, format: date }
+        dateAnchor: { type: string, format: date }
+      anyOf:
+        - required: [relationship_id]
+        - required: [relationshipId]
+    FrogSleepSharedSleepEventRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        event_type:
+          type: string
+          enum: [interrupted, returned, paused_tonight, morning_completed]
+        eventType:
+          type: string
+          enum: [interrupted, returned, paused_tonight, morning_completed]
+        occurred_at: { type: string, format: date-time }
+        occurredAt: { type: string, format: date-time }
+        metadata:
+          type: object
+          additionalProperties: true
+      anyOf:
+        - required: [event_type]
+        - required: [eventType]
+    FrogSleepFocusProfileRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        display_name: { type: string }
+        displayName: { type: string }
+        study_types:
+          type: array
+          items: { type: string }
+        scene_tags:
+          type: array
+          items: { type: string }
+        active_period: { type: string }
+        activePeriod: { type: string }
+        strictness: { type: string }
+        gender_identity: { type: string }
+        genderIdentity: { type: string }
+        gender_preference: { type: string }
+        genderPreference: { type: string }
+        bio: { type: string }
+        matching_consent: { type: boolean }
+        matchingConsent: { type: boolean }
+      anyOf:
+        - required: [display_name]
+        - required: [displayName]
+    FrogSleepFocusSessionRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        started_at: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time }
+        start_time: { type: string, format: date-time }
+        startTime: { type: string, format: date-time }
+        ended_at: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time }
+        end_time: { type: string, format: date-time }
+        endTime: { type: string, format: date-time }
+        planned_minutes: { type: number }
+        plannedMinutes: { type: number }
+        actual_minutes: { type: number }
+        actualMinutes: { type: number }
+        minutes: { type: number }
+        interrupt_count: { type: number }
+        interruptCount: { type: number }
+        relationship_id: { type: string }
+        relationshipId: { type: string }
+        room_id: { type: string }
+        roomId: { type: string }
+        goal_tag: { type: string }
+        goalTag: { type: string }
+        status:
+          type: string
+          enum: [completed, abandoned, interrupted, cancelled, focusing, recent, idle, stale]
+    FrogSleepFocusAchievementNotifyRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        milestone_id: { type: string }
+        milestoneId: { type: string }
+      anyOf:
+        - required: [milestone_id]
+        - required: [milestoneId]
+    FrogSleepFocusMessageRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        receiver_user_id: { type: string }
+        receiverUserId: { type: string }
+        template_key: { type: string }
+        templateKey: { type: string }
+        custom_text: { type: string, maxLength: 280 }
+        customText: { type: string, maxLength: 280 }
+        context_session_type: { type: string }
+        contextSessionType: { type: string }
+        context_session_id: { type: string }
+        contextSessionId: { type: string }
+      allOf:
+        - anyOf:
+            - required: [receiver_user_id]
+            - required: [receiverUserId]
+        - anyOf:
+            - required: [template_key]
+            - required: [templateKey]
+            - required: [custom_text]
+            - required: [customText]
+    FrogSleepSleepReportRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        snapshot_id: { type: string }
+        report_id: { type: string }
+        id: { type: string }
+        schema_version: { type: string }
+        version: { type: string }
+        recorded_at: { type: string, format: date-time }
+        recordedAt: { type: string, format: date-time }
+        date_anchor: { type: string, format: date }
+        dateAnchor: { type: string, format: date }
+        report_type: { type: string }
+        reportType: { type: string }
+        data:
+          type: object
+          additionalProperties: true
+        report:
+          type: object
+          additionalProperties: true
+      allOf:
+        - anyOf:
+            - required: [snapshot_id]
+            - required: [report_id]
+            - required: [id]
+        - anyOf:
+            - required: [schema_version]
+            - required: [version]
+        - anyOf:
+            - required: [recorded_at]
+            - required: [recordedAt]
+        - anyOf:
+            - required: [data]
+            - required: [report]
+    FrogSleepProgressSnapshotRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        schema_version: { type: string }
+        version: { type: string }
+        state:
+          type: object
+          additionalProperties: true
+        data:
+          type: object
+          additionalProperties: true
+      allOf:
+        - anyOf:
+            - required: [schema_version]
+            - required: [version]
+        - anyOf:
+            - required: [state]
+            - required: [data]
+    FrogSleepEntitlementData:
+      type: object
+      additionalProperties: true
+      properties:
+        state:
+          type: string
+          enum: [active, expired, revoked, unknown, free]
+        plan: { type: string }
+        source: { type: string }
+        verified_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
