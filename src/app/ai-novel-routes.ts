@@ -19,12 +19,39 @@ export async function tryHandleAiNovelRoutes(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
+  if (request.method === "GET" && request.path === "/api/v1/ai_novel/statistics") return await handleAiNovelStatistics.call(this, request);
+  if (request.method === "POST" && request.path === "/api/v1/ai_novel/statistics/snapshot") return await handleAiNovelStatisticsSnapshot.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/chat-completions") return await handleAiNovelChatCompletions.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") return await handleAiNovelEmbeddings.call(this, request);
   const aiNovelAuditFileViewMatch = request.path.match(/^\/api\/v1\/ai_novel\/debug\/audit-file\/([^/]+)$/);
   if (request.method === "GET" && aiNovelAuditFileViewMatch) return await handleAiNovelAuditFileView.call(this, request, aiNovelAuditFileViewMatch[1] ?? "");
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/debug/audit-file") return await handleAiNovelAuditFile.call(this, request);
   return undefined;
+}
+
+export async function handleAiNovelStatistics(this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  const auth = await this.authenticateProductRequest(request, "ai_novel");
+  return this.ok(
+    await this.aiNovelStatisticsService.getStatistics(auth),
+    request.requestId as string,
+  );
+}
+
+export async function handleAiNovelStatisticsSnapshot(this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  const auth = await this.authenticateProductRequest(request, "ai_novel");
+  const body = this.validationPipe.asObject(request.body);
+  const validated = this.requireValidPublicContract(
+    PublicContractValidator.validateAiNovelStatisticsSnapshot(body),
+    request,
+  );
+  return this.ok(
+    await this.aiNovelStatisticsService.recordSnapshot(auth, validated),
+    request.requestId as string,
+  );
 }
 
 export async function handleAiNovelChatCompletions(this: BackendRouteContext, 
@@ -55,6 +82,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
             shouldExposeLocalAiRequestDebugFields.call(this, request),
           requestId: request.requestId as string,
           routingTier,
+          userId: auth.userId,
           locale: this.resolveRequestLocale(request),
         }),
       );
@@ -64,6 +92,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
       exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(this, request),
       requestId: request.requestId as string,
       routingTier,
+      userId: auth.userId,
       locale: this.resolveRequestLocale(request),
     });
     const localDebugResponseText =
@@ -112,6 +141,7 @@ export async function handleAiNovelEmbeddings(this: BackendRouteContext,
     return await this.aiNovelLlmService.createEmbeddings(body, {
       requestId: request.requestId as string,
       routingTier: resolveAiNovelModelRoutingTier.call(this, auth),
+      userId: auth.userId,
     });
   });
 }

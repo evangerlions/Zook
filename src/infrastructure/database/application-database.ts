@@ -1,5 +1,7 @@
 import type {
   AnalyticsEventRecord,
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
   AiOutputReactionRecord,
   AiOutputReportRecord,
   AppConfigRecord,
@@ -498,6 +500,33 @@ export abstract class ApplicationDatabase {
     userId: string,
     submissionId: string,
   ): MaybePromise<AiOutputReactionRecord | undefined>;
+
+  abstract upsertAiNovelStatisticsSnapshot(
+    record: AiNovelStatisticsSnapshotRecord,
+  ): MaybePromise<void>;
+  abstract findAiNovelStatisticsSnapshot(
+    appId: string,
+    userId: string,
+  ): MaybePromise<AiNovelStatisticsSnapshotRecord | undefined>;
+  abstract replaceAiNovelDailyWritingStats(
+    appId: string,
+    userId: string,
+    records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
+  ): MaybePromise<void>;
+  abstract incrementAiNovelDailyTokenUsage(
+    appId: string,
+    userId: string,
+    date: string,
+    tokens: number,
+    updatedAt: string,
+  ): MaybePromise<void>;
+  abstract listAiNovelDailyStatistics(filter: {
+    appId: string;
+    userId: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): MaybePromise<AiNovelDailyStatisticsRecord[]>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {

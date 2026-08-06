@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   AnalyticsEventRecord,
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
   AiOutputReactionRecord,
   AiOutputReportRecord,
   AppConfigRecord,
@@ -64,6 +66,7 @@ import {
   buildManagedStateSnapshot,
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
+import { InMemoryAiNovelStatisticsStore } from "./in-memory-ai-novel-statistics-store.ts";
 import { conflict } from "../shared/errors.ts";
 import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
 import type {
@@ -96,6 +99,7 @@ function normalizeListLimit(limit?: number): number {
 export class InMemoryDatabase extends ApplicationDatabase {
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();
+  private readonly aiNovelStatistics: InMemoryAiNovelStatisticsStore;
   private readonly buddyCommandContext = new AsyncLocalStorage<Set<string>>();
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
@@ -154,6 +158,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   constructor(seed: DatabaseSeed = {}) {
     super();
+    this.aiNovelStatistics = new InMemoryAiNovelStatisticsStore({
+      snapshots: seed.aiNovelStatisticsSnapshots,
+      dailyStatistics: seed.aiNovelDailyStatistics,
+    });
     this.apps = structuredClone(seed.apps ?? []);
     this.users = structuredClone(seed.users ?? []);
     this.appUsers = structuredClone(seed.appUsers ?? []);
@@ -404,6 +412,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter((item) => item.appId !== appId);
     this.bodyLogChallenges = this.bodyLogChallenges.filter((item) => item.appId !== appId);
     this.bodyLogChallengeMembers = this.bodyLogChallengeMembers.filter((item) => item.appId !== appId);
+    this.aiNovelStatistics.deleteApp(appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -539,6 +548,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
       (item) => item.appId !== appId || item.userId !== userId,
     );
+    this.aiNovelStatistics.deleteUser(appId, userId);
     this.frogSleepDevices = this.frogSleepDevices.filter(
       (item) => item.appId !== appId || item.userId !== userId,
     );
@@ -1987,6 +1997,53 @@ export class InMemoryDatabase extends ApplicationDatabase {
           item.submissionId === submissionId,
       ),
     );
+  }
+
+  get aiNovelStatisticsSnapshots(): AiNovelStatisticsSnapshotRecord[] {
+    return this.aiNovelStatistics.snapshots;
+  }
+
+  get aiNovelDailyStatistics(): AiNovelDailyStatisticsRecord[] {
+    return this.aiNovelStatistics.dailyStatistics;
+  }
+
+  upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): void {
+    this.aiNovelStatistics.upsertSnapshot(record);
+  }
+
+  findAiNovelStatisticsSnapshot(
+    appId: string,
+    userId: string,
+  ): AiNovelStatisticsSnapshotRecord | undefined {
+    return this.aiNovelStatistics.findSnapshot(appId, userId);
+  }
+
+  replaceAiNovelDailyWritingStats(
+    appId: string,
+    userId: string,
+    records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
+  ): void {
+    this.aiNovelStatistics.replaceDailyWritingStats(appId, userId, records, updatedAt);
+  }
+
+  incrementAiNovelDailyTokenUsage(
+    appId: string,
+    userId: string,
+    date: string,
+    tokens: number,
+    updatedAt: string,
+  ): void {
+    this.aiNovelStatistics.incrementTokenUsage(appId, userId, date, tokens, updatedAt);
+  }
+
+  listAiNovelDailyStatistics(filter: {
+    appId: string;
+    userId: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): AiNovelDailyStatisticsRecord[] {
+    return this.aiNovelStatistics.listDailyStatistics(filter);
   }
 
   get seedManagedState(): ManagedStateSnapshot {

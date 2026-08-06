@@ -20,6 +20,7 @@ import { AppAiRoutingConfigService } from "../services/app-ai-routing-config.ser
 import { AppLogSecretService } from "../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../services/app-remote-log-pull.service.ts";
 import { AdminSensitiveOperationService } from "../services/admin-sensitive-operation.service.ts";
+import { AiNovelStatisticsService } from "../services/ai-novel-statistics.service.ts";
 import { AiOutputReportingService } from "../services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService } from "../services/aes-gcm-payload-crypto.service.ts";
 import { ClientLogUploadService } from "../services/client-log-upload.service.ts";
@@ -108,6 +109,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly publicApiMessageService: PublicApiMessageService,
     private readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     private readonly feedbackService: FeedbackService,
+    private readonly aiNovelStatisticsService: AiNovelStatisticsService,
     private readonly aiOutputReportingService: AiOutputReportingService,
     private readonly logger: StructuredLogger,
     private readonly auditInterceptor: AuditInterceptor,
@@ -133,6 +135,7 @@ export class BackendApplication extends BackendRouteContext {
       tencentSesEmailCallbackService,
       feedbackService,
       notificationService,
+      aiNovelStatisticsService,
       aiOutputReportingService,
       appContextResolver,
       authGuard,
@@ -205,6 +208,7 @@ export class BackendApplication extends BackendRouteContext {
       failedEventRetryService: this.failedEventRetryService,
       tencentSesEmailCallbackService: this.tencentSesEmailCallbackService,
       feedbackService: this.feedbackService,
+      aiNovelStatisticsService: this.aiNovelStatisticsService,
       aiOutputReportingService: this.aiOutputReportingService,
     };
   }

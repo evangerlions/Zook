@@ -17,15 +17,18 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 
 ## 2. 当前已完成的主要功能
 
-### 2.0 BodyLog app-scoped 账号资料
+### 2.0 BodyLog app-scoped 产品能力
 
-BodyLog 复用共享邮箱验证码认证，并新增固定产品作用域 `bodylog` 的资料 API：
+BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `bodylog` 的公开 API：
 
 1. `GET /api/v1/bodylog/profile` 获取或初始化昵称、预设头像和完成状态。
 2. `PUT /api/v1/bodylog/profile` 校验 2–20 字符昵称、头像白名单，并复用 Common 内容安全能力。
 3. PostgreSQL 通过 `021_bodylog_profiles.sql` 保存资料；内存数据库提供一致的测试实现。
 4. 删除 BodyLog app 账号会清理 BodyLog 服务端资料，保留共享 Zook 用户与其他 app 数据。
-5. 当前不接收习惯名称、打卡明细，也不提供云同步或设备迁移。
+5. 好友申请、拉黑和举报由 `022_bodylog_social.sql` 持久化，拉黑会隔离共享社交状态。
+6. 排行榜只接收冻结的目标快照和完成聚合，服务端负责计分与公开资格判定。
+7. 邀请归因包含同设备、自邀请和重复归因防护；挑战仅允许邀请未拉黑好友。
+8. 完整外部契约位于 `third_party/zook-api-contracts/openapi/bodylog/api.yaml`。
 
 对应核心文件：
 
@@ -33,6 +36,10 @@ BodyLog 复用共享邮箱验证码认证，并新增固定产品作用域 `body
 2. `src/app/bodylog-v1-routes.ts`
 3. `src/infrastructure/database/postgres/migrations/021_bodylog_profiles.sql`
 4. `test/unit/bodylog-profile.api.test.ts`
+5. `src/modules/bodylog/bodylog-social.service.ts`
+6. `src/modules/bodylog/bodylog-leaderboard.service.ts`
+7. `src/modules/bodylog/bodylog-invitation.service.ts`
+8. `src/modules/bodylog/bodylog-challenge.service.ts`
 
 ### 2.1 API / Worker / Admin Web 三入口
 

@@ -42,7 +42,6 @@ import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.serv
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import { AppLogSecretService } from "./services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
-import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { ClientLogUploadService } from "./services/client-log-upload.service.ts";
 import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
 import { CommonContentSafetyConfigService } from "./services/common-content-safety-config.service.ts";
@@ -54,17 +53,12 @@ import { CommonSmsConfigService } from "./services/common-sms-config.service.ts"
 import { CommonTestAccountService } from "./services/common-test-account.service.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
-import { EmbeddingManager } from "./services/embedding-manager.ts";
 import { FeedbackService } from "./services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
-import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
-import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
-import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
-import { createOpenRouterAwareProvider } from "./services/openrouter-aware-provider.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
 import { PublicApiMessageService } from "./services/public-api-message.service.ts";
@@ -81,6 +75,7 @@ import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./servi
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
+import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
@@ -364,38 +359,22 @@ export async function createApplication(
     commonGetuiGyConfigService,
   );
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
-  const openRouterProvider = createOpenRouterAwareProvider(commonLlmConfigService, commonPasswordConfigService, logger);
-  const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
-    ? new LocalAiNovelE2eProvider()
-    : undefined;
-  if (localAiNovelE2eProvider) {
-    logger.info("using local AINovel E2E LLM provider", {
-      appEnv: process.env.APP_ENV,
-      nodeEnv: process.env.NODE_ENV,
-    });
-  }
-  const llmProviders = options.llmProviders ?? {
-    bailian: localAiNovelE2eProvider ?? bailianProvider,
-    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
-    openrouter: localAiNovelE2eProvider ?? openRouterProvider,
-  };
-  const embeddingProviders = options.embeddingProviders ?? {
-    bailian: localAiNovelE2eProvider ?? bailianProvider,
-    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
-    openrouter: localAiNovelE2eProvider ?? openRouterProvider,
-  };
-  const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
+  const {
+    aiNovelStatisticsService,
+    embeddingManager,
+    llmManager,
+    llmSmokeTestService,
+  } = createApplicationAiRuntime({
+    database,
     commonLlmConfigService,
+    commonPasswordConfigService,
     llmHealthService,
     llmMetricsService,
-  });
-  const llmSmokeTestService = new LlmSmokeTestService(
-    commonLlmConfigService,
     kvManager,
-    llmProviders,
-    embeddingProviders,
-  );
+    logger,
+    llmProviders: options.llmProviders,
+    embeddingProviders: options.embeddingProviders,
+  });
   const aiNovelAuditFileService = new AiNovelAuditFileService(
     options.aiNovelAuditFileRoot,
   );
@@ -422,11 +401,6 @@ export async function createApplication(
     managedStateStore,
   );
   const rbacService = new RbacService(database);
-  const llmManager = new LLMManager(llmProviders, undefined, {
-    commonLlmConfigService,
-    llmHealthService,
-    llmMetricsService,
-  });
   const contentSafetyService = new ContentSafetyService(
     commonContentSafetyConfigService,
     llmManager,
@@ -523,6 +497,7 @@ export async function createApplication(
     publicApiMessageService,
     tencentSesEmailCallbackService,
     feedbackService,
+    aiNovelStatisticsService,
     aiOutputReportingService,
     logger,
     auditInterceptor,
@@ -591,6 +566,7 @@ export async function createApplication(
       failedEventRetryService,
       tencentSesEmailCallbackService,
       feedbackService,
+      aiNovelStatisticsService,
       smsVerificationSender,
       smsVerificationCleanupService,
       captchaVerificationService,

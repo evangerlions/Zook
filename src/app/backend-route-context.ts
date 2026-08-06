@@ -14,6 +14,7 @@ import { UserService } from "../modules/user/user.service.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
 import { CommonTestAccountService } from "../services/common-test-account.service.ts";
 import { NotificationService } from "../services/notification.service.ts";
+import { AiNovelStatisticsService } from "../services/ai-novel-statistics.service.ts";
 import { AiOutputReportingService } from "../services/ai-output-reporting.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
@@ -76,6 +77,7 @@ export class BackendRouteContext {
     protected readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     protected readonly feedbackService: FeedbackService,
     protected readonly notificationService: NotificationService,
+    protected readonly aiNovelStatisticsService: AiNovelStatisticsService,
     protected readonly aiOutputReportingService: AiOutputReportingService,
     protected readonly appContextResolver: AppContextResolver,
     protected readonly authGuard: AuthGuard,

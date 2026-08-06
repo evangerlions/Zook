@@ -14,13 +14,16 @@ SPECS: dict[str, list[str]] = {
         "PasswordLoginRequest",
         "EmailCodeRequest",
         "SmsCodeRequest",
+        "PasswordSmsCodeRequest",
         "EmailLoginRequest",
         "SmsLoginRequest",
         "OneClickLoginRequest",
         "SetPasswordRequest",
         "ResetPasswordRequest",
+        "ResetPasswordBySmsRequest",
         "ChangePasswordRequest",
         "RegisterRequest",
+        "RegisterBySmsRequest",
         "QrLoginCreateRequest",
         "RefreshRequest",
         "LogoutRequest",
@@ -64,6 +67,45 @@ SPECS: dict[str, list[str]] = {
         "KickoffPublicConfig",
         "AINovelPublicConfig",
         "PublicConfigData",
+    ],
+    "ainovel/statistics.yaml": [
+        "AiNovelStatisticsData",
+        "AiNovelStatisticsSnapshotRequest",
+        "AiNovelStatisticsSnapshotResponse",
+    ],
+    "bodylog/api.yaml": [
+        "BodyLogProfileUpdateRequest",
+        "BodyLogTargetUserRequest",
+        "BodyLogReportRequest",
+        "BodyLogLeaderboardJoinRequest",
+        "BodyLogLeaderboardAggregateRequest",
+        "BodyLogLeaderboardLeaveRequest",
+        "BodyLogInvitationCreateRequest",
+        "BodyLogInvitationAttributeRequest",
+        "BodyLogInvitationProgressRequest",
+        "BodyLogChallengeCreateRequest",
+        "BodyLogChallengeResponseRequest",
+        "BodyLogChallengeProgressRequest",
+        "BodyLogAvatarKey",
+        "BodyLogReportReason",
+        "BodyLogChallengeTheme",
+        "BodyLogProfileData",
+        "BodyLogFriendData",
+        "BodyLogFriendRequestRecordData",
+        "BodyLogFriendRequestListItem",
+        "BodyLogFriendRequestStatusData",
+        "BodyLogBlockListItem",
+        "BodyLogLeaderboardMembership",
+        "BodyLogLeaderboardJoinData",
+        "BodyLogLeaderboardEntry",
+        "BodyLogLeaderboardData",
+        "BodyLogInvitationCreateData",
+        "BodyLogInvitationListItem",
+        "BodyLogInvitationStatusData",
+        "BodyLogInvitationAttributionData",
+        "BodyLogInvitationProgressData",
+        "BodyLogChallengeMemberData",
+        "BodyLogChallengeData",
     ],
 }
 
@@ -262,6 +304,9 @@ def resolve_workspace_root(value: str | None) -> Path:
         marker = parent / 'PROJECT_PATHS.local.toml'
         if marker.exists():
             return parent.resolve()
+        sibling_workspace = parent / 'zook-workspace'
+        if (sibling_workspace / 'api' / 'openapi').exists():
+            return sibling_workspace.resolve()
     raise SystemExit('workspace root not found; pass --workspace-root explicitly')
 
 

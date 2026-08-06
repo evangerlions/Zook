@@ -237,6 +237,10 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`                                                                  |
 | `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
 | `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
+| `GET` / `POST` | `/api/v1/bodylog/friend-requests` | 查询或发起 BodyLog 好友申请                                                                                                        |
+| `GET`  | `/api/v1/bodylog/leaderboards/current/public` | 获取 BodyLog 当前周公开排行榜                                                                                                   |
+| `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
+| `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片                                             |
@@ -355,13 +359,29 @@ POST /api/v1/auth/login/email-code
 POST /api/v1/auth/login/email
 ```
 
-请求体中的 `appId` 必须为 `bodylog`。资料接口必须同时携带 BodyLog Bearer token；如传
+请求体中的 `appId` 必须为 `bodylog`。所有 `/api/v1/bodylog/*` 接口必须携带 BodyLog Bearer token；如传
 `X-App-Id`，其值也必须为 `bodylog`。
 
 | 方法 | Path | 请求体 | 说明 |
 | --- | --- | --- | --- |
 | `GET` | `/api/v1/bodylog/profile` | 无 | 首次读取会创建未完成资料 |
 | `PUT` | `/api/v1/bodylog/profile` | `{ "nickname": "薄荷同行者", "avatarKey": "mint_runner" }` | 完成或更新资料 |
+| `GET` / `POST` | `/api/v1/bodylog/friend-requests` | POST: `{ "targetUserId": "user_456" }` | 查询待处理申请或发起好友申请 |
+| `POST` | `/api/v1/bodylog/friend-requests/{requestId}/{accept\|reject}` | 无 | 接受或拒绝收到的好友申请 |
+| `GET` / `DELETE` | `/api/v1/bodylog/friends[/{friendUserId}]` | 无 | 查询或删除好友 |
+| `GET` / `POST` / `DELETE` | `/api/v1/bodylog/blocks[/{targetUserId}]` | POST: `{ "targetUserId": "user_456" }` | 查询、拉黑或解除拉黑 |
+| `POST` | `/api/v1/bodylog/reports` | `{ "targetUserId": "user_456", "reason": "offensive_profile" }` | 使用固定原因举报用户 |
+| `POST` | `/api/v1/bodylog/leaderboards/current/join` | 当前周、时区与 1–5 个习惯快照 | 加入当前周排行榜 |
+| `POST` | `/api/v1/bodylog/leaderboards/current/aggregate` | 周标识、日期与完成 habit id | 上报由服务端计分的每日聚合 |
+| `DELETE` | `/api/v1/bodylog/leaderboards/current/membership` | `{ "timezone": "Asia/Shanghai" }` | 退出当前周排行榜 |
+| `GET` | `/api/v1/bodylog/leaderboards/current/{public\|friends}` | Header `X-Time-Zone` | 获取公开榜或好友榜 |
+| `GET` / `POST` | `/api/v1/bodylog/invitations` | POST: `{ "installId": "..." }` | 查询邀请奖励状态或创建 14 天邀请 |
+| `POST` | `/api/v1/bodylog/invitations/attribute` | `{ "token": "...", "installId": "..." }` | 绑定邀请归因，禁止自己邀请和同设备归因 |
+| `POST` | `/api/v1/bodylog/invitations/progress` | 当天日期与时区 | 记录邀请资格进度 |
+| `GET` / `POST` | `/api/v1/bodylog/challenges` | POST: 主题、1–7 个好友和时区 | 查询或创建挑战 |
+| `GET` | `/api/v1/bodylog/challenges/{challengeId}` | 无 | 获取可见挑战详情 |
+| `POST` | `/api/v1/bodylog/challenges/{challengeId}/respond` | `{ "action": "accept" }` | 接受或拒绝挑战 |
+| `POST` | `/api/v1/bodylog/challenges/{challengeId}/progress` | 当天日期、完成状态和时区 | 更新挑战进度 |
 
 成功响应的 `data`：
 
@@ -381,6 +401,10 @@ POST /api/v1/auth/login/email
 `BODYLOG_AVATAR_INVALID`；内容安全拦截返回 `422 BODYLOG_PROFILE_UNSAFE`。调用
 `POST /api/v1/users/me/delete` 删除 BodyLog app 账号时会删除这份服务端资料，但不会删除共享
 Zook 用户或其他 app 数据。
+
+BodyLog 的完整请求、响应结构与枚举以
+`third_party/zook-api-contracts/openapi/bodylog/api.yaml` 为准。排行榜分数、邀请资格和挑战排名均由
+服务端计算；客户端不得提交或覆盖最终分数。好友、邀请和挑战接口会共同执行拉黑隔离规则。
 
 ## 9. FrogSleep API
 

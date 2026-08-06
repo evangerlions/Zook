@@ -22,6 +22,7 @@ export class ContentSafetyRecordStore {
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly logger?: StructuredLogger,
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   async recordCheck(
@@ -29,7 +30,7 @@ export class ContentSafetyRecordStore {
     config: ContentSafetyConfig,
     input: ContentSafetyRecordInput,
   ): Promise<void> {
-    const createdAt = new Date().toISOString();
+    const createdAt = this.now().toISOString();
     await this.cleanupExpiredRecords();
     try {
       await this.database.insertContentSafetyCheckRecord({
@@ -71,7 +72,7 @@ export class ContentSafetyRecordStore {
   }
 
   async listBlockRecords(filter: ContentSafetyStatsFilter): Promise<AdminContentSafetyBlockRecordsDocument> {
-    const range = normalizeStatsFilter(filter);
+    const range = normalizeStatsFilter(filter, this.now());
     const queryRange = toShanghaiIsoRange(range);
     await this.cleanupExpiredRecords();
     const records = await this.database.listContentSafetyCheckRecords({
@@ -109,7 +110,7 @@ export class ContentSafetyRecordStore {
   }
 
   async getStats(filter: ContentSafetyStatsFilter): Promise<AdminContentSafetyStatsDocument> {
-    const range = normalizeStatsFilter(filter);
+    const range = normalizeStatsFilter(filter, this.now());
     const queryRange = toShanghaiIsoRange(range);
     await this.cleanupExpiredRecords();
     const records = await this.database.listContentSafetyCheckRecords({
@@ -161,7 +162,7 @@ export class ContentSafetyRecordStore {
   private async cleanupExpiredRecords(): Promise<void> {
     try {
       await this.database.deleteContentSafetyCheckRecordsCreatedBefore(
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        new Date(this.now().getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       );
     } catch (error) {
       this.logger?.warn("content safety check record cleanup failed", {
@@ -171,9 +172,14 @@ export class ContentSafetyRecordStore {
   }
 }
 
-function normalizeStatsFilter(filter: ContentSafetyStatsFilter): { dateFrom: string; dateTo: string } {
-  const today = toDateKey(new Date().toISOString());
-  const defaultFrom = toDateKey(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString());
+function normalizeStatsFilter(
+  filter: ContentSafetyStatsFilter,
+  now: Date,
+): { dateFrom: string; dateTo: string } {
+  const today = toDateKey(now.toISOString());
+  const defaultFrom = toDateKey(
+    new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString(),
+  );
   const dateFrom = normalizeDateKey(filter.dateFrom) ?? defaultFrom;
   const dateTo = normalizeDateKey(filter.dateTo) ?? today;
   return dateFrom <= dateTo
