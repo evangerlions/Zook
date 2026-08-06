@@ -14,13 +14,16 @@ SPECS: dict[str, list[str]] = {
         "PasswordLoginRequest",
         "EmailCodeRequest",
         "SmsCodeRequest",
+        "PasswordSmsCodeRequest",
         "EmailLoginRequest",
         "SmsLoginRequest",
         "OneClickLoginRequest",
         "SetPasswordRequest",
         "ResetPasswordRequest",
+        "ResetPasswordBySmsRequest",
         "ChangePasswordRequest",
         "RegisterRequest",
+        "RegisterBySmsRequest",
         "QrLoginCreateRequest",
         "RefreshRequest",
         "LogoutRequest",
@@ -65,6 +68,45 @@ SPECS: dict[str, list[str]] = {
         "AINovelPublicConfig",
         "PublicConfigData",
     ],
+    "ainovel/statistics.yaml": [
+        "AiNovelStatisticsData",
+        "AiNovelStatisticsSnapshotRequest",
+        "AiNovelStatisticsSnapshotResponse",
+    ],
+    "bodylog/api.yaml": [
+        "BodyLogProfileUpdateRequest",
+        "BodyLogTargetUserRequest",
+        "BodyLogReportRequest",
+        "BodyLogLeaderboardJoinRequest",
+        "BodyLogLeaderboardAggregateRequest",
+        "BodyLogLeaderboardLeaveRequest",
+        "BodyLogInvitationCreateRequest",
+        "BodyLogInvitationAttributeRequest",
+        "BodyLogInvitationProgressRequest",
+        "BodyLogChallengeCreateRequest",
+        "BodyLogChallengeResponseRequest",
+        "BodyLogChallengeProgressRequest",
+        "BodyLogAvatarKey",
+        "BodyLogReportReason",
+        "BodyLogChallengeTheme",
+        "BodyLogProfileData",
+        "BodyLogFriendData",
+        "BodyLogFriendRequestRecordData",
+        "BodyLogFriendRequestListItem",
+        "BodyLogFriendRequestStatusData",
+        "BodyLogBlockListItem",
+        "BodyLogLeaderboardMembership",
+        "BodyLogLeaderboardJoinData",
+        "BodyLogLeaderboardEntry",
+        "BodyLogLeaderboardData",
+        "BodyLogInvitationCreateData",
+        "BodyLogInvitationListItem",
+        "BodyLogInvitationStatusData",
+        "BodyLogInvitationAttributionData",
+        "BodyLogInvitationProgressData",
+        "BodyLogChallengeMemberData",
+        "BodyLogChallengeData",
+    ],
 }
 
 FROGSLEEP_SPECS: dict[str, list[str]] = {
@@ -87,6 +129,10 @@ FROGSLEEP_SPECS: dict[str, list[str]] = {
         "BuddyInvitationDelivery",
         "BuddyInvitationResponseRequest",
         "BuddySharingGrantUpdateRequest",
+        "BuddyGroupCreateRequest",
+        "BuddyGroupUpdateRequest",
+        "BuddyGroupInviteRequest",
+        "BuddyGroupRoleUpdateRequest",
         "BuddyNotificationPreferencesRequest",
         "BuddyStructuredShareRequest",
         "BuddyInteractionRequest",
@@ -241,7 +287,7 @@ def ts_type(schema: Any, name_hint: str = "") -> str:
     if schema_type == "boolean":
         return "boolean"
     if schema_type == "array":
-        return f"{ts_type(schema.get('items', {}), name_hint)}[]"
+        return f"{parenthesize_type(ts_type(schema.get('items', {}), name_hint))}[]"
     if schema_type == "object" or "properties" in schema or "additionalProperties" in schema:
         return ts_object_type(schema)
     return "unknown"
@@ -258,6 +304,9 @@ def resolve_workspace_root(value: str | None) -> Path:
         marker = parent / 'PROJECT_PATHS.local.toml'
         if marker.exists():
             return parent.resolve()
+        sibling_workspace = parent / 'zook-workspace'
+        if (sibling_workspace / 'api' / 'openapi').exists():
+            return sibling_workspace.resolve()
     raise SystemExit('workspace root not found; pass --workspace-root explicitly')
 
 

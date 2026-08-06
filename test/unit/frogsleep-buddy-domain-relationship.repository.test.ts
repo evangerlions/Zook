@@ -150,7 +150,7 @@ for (const [name, create] of [
 }
 
 test("domain relationship migration enforces facts and current-pair uniqueness", async () => {
-  const sql = await readFile(resolve(import.meta.dirname, "../../src/infrastructure/database/postgres/migrations/016_frogsleep_buddy_domain_relationships.sql"), "utf8");
+  const sql = await readFile(resolve(import.meta.dirname, "../../src/infrastructure/database/postgres/migrations/017_frogsleep_buddy_domain_relationships.sql"), "utf8");
   assert.match(sql, /CHECK \(domain IN \('sleep', 'focus'\)\)/);
   assert.match(sql, /CHECK \(status IN \('active', 'paused', 'revoked'\)\)/);
   assert.match(sql, /CHECK \(version >= 1\)/);

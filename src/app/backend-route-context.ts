@@ -5,17 +5,22 @@ import { AuthGuard } from "../core/guards/auth.guard.ts";
 import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
+import { AuditInterceptor } from "../core/interceptors/audit.interceptor.ts";
+import { parseClientAccountRegion } from "../modules/app-registry/account-region.ts";
+import { resolveAccountRegionAccessPolicy } from "../modules/app-registry/account-region-access-policy.ts";
 import { AppRegistryService } from "../modules/app-registry/app-registry.service.ts";
 import { AuthService } from "../modules/auth/auth.service.ts";
 import { UserService } from "../modules/user/user.service.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
 import { CommonTestAccountService } from "../services/common-test-account.service.ts";
 import { NotificationService } from "../services/notification.service.ts";
+import { AiNovelStatisticsService } from "../services/ai-novel-statistics.service.ts";
+import { AiOutputReportingService } from "../services/ai-output-reporting.service.ts";
 import { PublicApiMessageService } from "../services/public-api-message.service.ts";
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
-import { ApplicationError } from "../shared/errors.ts";
-import type { AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
+import { ApplicationError, isApplicationError } from "../shared/errors.ts";
+import type { AccountRegion, AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
 import type { ErrorObject } from "ajv";
 
@@ -72,12 +77,15 @@ export class BackendRouteContext {
     protected readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     protected readonly feedbackService: FeedbackService,
     protected readonly notificationService: NotificationService,
+    protected readonly aiNovelStatisticsService: AiNovelStatisticsService,
+    protected readonly aiOutputReportingService: AiOutputReportingService,
     protected readonly appContextResolver: AppContextResolver,
     protected readonly authGuard: AuthGuard,
     protected readonly appAccessGuard: AppAccessGuard,
     protected readonly validationPipe: ValidationPipe,
     protected readonly commonTestAccountService: CommonTestAccountService,
     protected readonly kvManager: KVManager,
+    protected readonly routeAuditInterceptor: AuditInterceptor,
   ) {}
 
   public async authenticate(
@@ -100,6 +108,7 @@ export class BackendRouteContext {
         auth.appId,
         auth.userId,
       );
+      await this.resolveAccountRegion(request, auth.appId, auth.userId);
     }
 
     return auth;
@@ -281,25 +290,120 @@ export class BackendRouteContext {
   public async toAuthPayload(
     session: {
       userId: string;
+      appId?: string;
       accessToken: string;
       refreshToken: string;
       expiresIn: number;
     },
     clientType: ClientType,
+    request: HttpRequest,
+    appIdOverride?: string,
   ): Promise<AuthSuccessPayload> {
     const user = await this.userService.getProfile(session.userId);
+    const appId = session.appId ?? appIdOverride;
+    if (!appId) {
+      throw new Error('Authenticated session is missing app scope.');
+    }
+    let accountRegion: AccountRegion;
+    try {
+      accountRegion = await this.resolveAccountRegion(
+        request,
+        appId,
+        session.userId,
+      );
+    } catch (error) {
+      if (isApplicationError(error) && error.code === "AUTH_LOGIN_FORBIDDEN") {
+        await this.authService.revokeIssuedSession(session.refreshToken);
+      }
+      throw error;
+    }
     return clientType === "app"
       ? {
           accessToken: session.accessToken,
+          accountRegion,
           expiresIn: session.expiresIn,
           refreshToken: session.refreshToken,
           user,
         }
       : {
           accessToken: session.accessToken,
+          accountRegion,
           expiresIn: session.expiresIn,
           user,
         };
+  }
+
+  public async resolveAccountRegion(
+    request: HttpRequest,
+    appId: string,
+    userId: string,
+  ) {
+    const regionHeader = getHeader(request.headers, "x-app-region");
+    const clientRegion = parseClientAccountRegion(regionHeader);
+    if (!clientRegion) {
+      return (
+        await this.appRegistryService.ensureExistingMembership(appId, userId)
+      ).accountRegion;
+    }
+
+    const result = await this.appRegistryService.finalizeAccountRegion(
+      appId,
+      userId,
+      clientRegion,
+    );
+    if (result.didFinalize) {
+      await this.routeAuditInterceptor.record({
+        appId,
+        actorUserId: userId,
+        action: "app_user.account_region.finalize",
+        resourceType: "app_user",
+        resourceId: result.membership.id,
+        resourceOwnerUserId: userId,
+        payload: {
+          from: "UNKNOWN",
+          to: result.membership.accountRegion,
+          source: "x-app-region",
+          platform: getHeader(request.headers, "x-platform"),
+          appVersion: getHeader(request.headers, "x-app-version"),
+          requestId: request.requestId,
+        },
+      });
+    }
+    const accessPolicy = resolveAccountRegionAccessPolicy(
+      getHeader(request.headers, "x-platform"),
+      regionHeader,
+    );
+    if (
+      accessPolicy &&
+      result.membership.accountRegion !== "UNKNOWN" &&
+      result.membership.accountRegion !== accessPolicy.productRegion
+    ) {
+      await this.routeAuditInterceptor.record({
+        appId,
+        actorUserId: userId,
+        action: "auth.account_region_access.denied",
+        resourceType: "app_user",
+        resourceId: result.membership.id,
+        resourceOwnerUserId: userId,
+        payload: {
+          accountRegion: result.membership.accountRegion,
+          productRegion: accessPolicy.productRegion,
+          platform: accessPolicy.platform,
+          appVersion: getHeader(request.headers, "x-app-version"),
+          requestId: request.requestId,
+        },
+      });
+      throw new ApplicationError(
+        403,
+        "AUTH_LOGIN_FORBIDDEN",
+        "This account cannot sign in here.",
+        undefined,
+        accessPolicy.platform === "web"
+          ? { "Set-Cookie": this.authService.buildClearRefreshCookie() }
+          : undefined,
+      );
+    }
+    return result.membership.accountRegion;
   }
 
   public buildAuthHeaders(

@@ -1,6 +1,10 @@
 import type { DatabaseSeed } from "../../../shared/types.ts";
 import { DevelopmentPasswordHasher } from "../../../modules/auth/password-hasher.ts";
 import { DEFAULT_APP_I18N_SETTINGS } from "../../../shared/i18n.ts";
+import {
+  defaultAiNovelKickoffRecommendedPrompts,
+  defaultAiNovelLegacyRecommendedPrompts,
+} from "../../../modules/ai-novel/ai-novel-kickoff-prompt-defaults.ts";
 
 /**
  * buildDefaultSeed gives the scaffold a working shared-account dataset for local verification.
@@ -91,6 +95,7 @@ export function buildDefaultSeed(
         appId: "app_a",
         userId: "user_alice",
         status: "ACTIVE",
+        accountRegion: "UNKNOWN",
         joinedAt: "2026-03-01T09:00:00+08:00",
       },
       {
@@ -98,6 +103,7 @@ export function buildDefaultSeed(
         appId: "app_b",
         userId: "user_alice",
         status: "ACTIVE",
+        accountRegion: "UNKNOWN",
         joinedAt: "2026-03-02T09:00:00+08:00",
       },
     ],
@@ -232,18 +238,10 @@ export function buildDefaultSeed(
           {
             app: "ai_novel",
             kickoff: {
-              recommendedPrompts: [
-                "写一本经典玄幻升级流，主角从被逐出宗门开始。",
-                "写一个女频重生复仇故事，但情感线要克制一点。",
-                "帮我规划一个轻松都市异能长篇，节奏要爽快。",
-                "写一个规则怪谈方向的悬疑故事，气氛压迫一点。",
-                "写一个轻松日常向故事，带一点反差脑洞。",
-                "写一个群像冒险故事，每个人都有明显成长线。",
-                "写一个古风权谋复仇故事，情绪克制但刀口很准。",
-                "写一个赛博都市异能故事，节奏快一点。",
-                "写一个校园超自然故事，从一个异常事件开始。",
-                "写一个末世生存升级故事，开局就有强冲突。",
-              ],
+              recommendedPrompts:
+                defaultAiNovelLegacyRecommendedPrompts,
+              recommendedPromptsI18n:
+                defaultAiNovelKickoffRecommendedPrompts,
             },
           },
           null,

@@ -1,4 +1,10 @@
-import type { LlmMetricsRange, LlmModelKind, LlmRoutingStrategy, LlmSmokeTestStatus } from "./enums.ts";
+import type {
+  LlmMetricsRange,
+  LlmModelKind,
+  LlmRoutingStrategy,
+  LlmSmokeTestMode,
+  LlmSmokeTestStatus,
+} from "./enums.ts";
 import type { ConfigRevisionMeta } from "./records.ts";
 import type { AdminAppSummary } from "./admin-core.ts";
 
@@ -26,9 +32,17 @@ export interface LlmModelConfig {
   routes: LlmModelRouteConfig[];
 }
 
+export interface OpenRouterConfig {
+  useTransparentProxy: boolean;
+  transparentProxyBaseUrl: string;
+  transparentProxyKeyId: string;
+  transparentProxyHmacSecretKey: string;
+}
+
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
+  openRouter: OpenRouterConfig;
   providers: LlmProviderConfig[];
   models: LlmModelConfig[];
 }
@@ -136,6 +150,18 @@ export interface AdminLlmSmokeTestSummary {
   successRate: number;
 }
 
+export interface AdminLlmSmokeTestRunRequest {
+  mode?: LlmSmokeTestMode;
+  modelKey?: string;
+  provider?: string;
+}
+
+export interface AdminLlmSmokeTestTarget {
+  mode: LlmSmokeTestMode;
+  modelKey?: string;
+  provider?: string;
+}
+
 export interface AdminLlmSmokeTestRequestPayload {
   modelKind: LlmModelKind;
   provider: string;
@@ -173,6 +199,7 @@ export interface AdminLlmSmokeTestResponsePayload {
     completionTokens: number;
     totalTokens: number;
     reasoningTokens?: number;
+    estimated?: boolean;
   };
 }
 
@@ -217,6 +244,7 @@ export interface AdminLlmSmokeTestItem {
 export interface AdminLlmSmokeTestDocument {
   executedAt: string;
   cooldownSeconds: number;
+  target: AdminLlmSmokeTestTarget;
   summary: AdminLlmSmokeTestSummary;
   items: AdminLlmSmokeTestItem[];
 }

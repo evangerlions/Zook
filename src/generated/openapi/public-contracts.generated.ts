@@ -77,7 +77,8 @@ export const SmsCodeRequestSchema = {
     },
     "test": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "Dev/debug-only provider bypass hint. Production App Review should use admin-configured Test Accounts instead."
     }
   }
 } as const;
@@ -86,6 +87,37 @@ export type SmsCodeRequest = {
   "appId": string;
   "phone": string;
   "phoneNa": string;
+  "test"?: boolean;
+};
+
+export const PasswordSmsCodeRequestSchema = {
+  "type": "object",
+  "required": [
+    "appId",
+    "phone"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "phoneNa": {
+      "type": "string",
+      "example": "+86"
+    },
+    "test": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+} as const;
+
+export type PasswordSmsCodeRequest = {
+  "appId": string;
+  "phone": string;
+  "phoneNa"?: string;
   "test"?: boolean;
 };
 
@@ -290,6 +322,54 @@ export type ResetPasswordRequest = {
   "clientType": "app" | "web";
 };
 
+export const ResetPasswordBySmsRequestSchema = {
+  "type": "object",
+  "required": [
+    "appId",
+    "phone",
+    "smsCode",
+    "password",
+    "clientType"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "phoneNa": {
+      "type": "string",
+      "example": "+86"
+    },
+    "smsCode": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 64,
+      "pattern": "^(?=.*[A-Za-z])(?=.*\\d).*$"
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    }
+  }
+} as const;
+
+export type ResetPasswordBySmsRequest = {
+  "appId": string;
+  "phone": string;
+  "phoneNa"?: string;
+  "smsCode": string;
+  "password": string;
+  "clientType": "app" | "web";
+};
+
 export const ChangePasswordRequestSchema = {
   "type": "object",
   "required": [
@@ -369,6 +449,47 @@ export type RegisterRequest = {
   "email": string;
   "emailCode": string;
   "password": string;
+  "clientType": "app" | "web";
+};
+
+export const RegisterBySmsRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appId",
+    "phone",
+    "smsCode",
+    "clientType"
+  ],
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "phoneNa": {
+      "type": "string",
+      "default": "+86"
+    },
+    "smsCode": {
+      "type": "string"
+    },
+    "clientType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "web"
+      ]
+    }
+  }
+} as const;
+
+export type RegisterBySmsRequest = {
+  "appId": string;
+  "phone": string;
+  "phoneNa"?: string;
+  "smsCode": string;
   "clientType": "app" | "web";
 };
 
@@ -501,6 +622,7 @@ export const AuthSessionDataSchema = {
   "type": "object",
   "required": [
     "accessToken",
+    "accountRegion",
     "user"
   ],
   "properties": {
@@ -512,6 +634,14 @@ export const AuthSessionDataSchema = {
     },
     "expiresIn": {
       "type": "integer"
+    },
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
     },
     "user": {
       "type": "object",
@@ -555,6 +685,7 @@ export type AuthSessionData = {
   "accessToken": string;
   "refreshToken"?: string;
   "expiresIn"?: number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -604,17 +735,27 @@ export type QrLoginCreateData = {
 export const QrLoginConfirmDataSchema = {
   "type": "object",
   "required": [
-    "confirmed"
+    "confirmed",
+    "accountRegion"
   ],
   "properties": {
     "confirmed": {
       "type": "boolean"
+    },
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
     }
   }
 } as const;
 
 export type QrLoginConfirmData = {
   "confirmed": boolean;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
 };
 
 export const QrLoginPollDataSchema = {
@@ -650,6 +791,7 @@ export const QrLoginPollDataSchema = {
         "status",
         "accessToken",
         "expiresIn",
+        "accountRegion",
         "user"
       ],
       "properties": {
@@ -664,6 +806,14 @@ export const QrLoginPollDataSchema = {
         },
         "expiresIn": {
           "type": "integer"
+        },
+        "accountRegion": {
+          "type": "string",
+          "enum": [
+            "CN",
+            "GLOBAL",
+            "UNKNOWN"
+          ]
         },
         "user": {
           "type": "object",
@@ -713,6 +863,7 @@ export type QrLoginPollData = {
   "status": "CONFIRMED";
   "accessToken": string;
   "expiresIn": number;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -774,11 +925,20 @@ export const CurrentUserDataSchema = {
   "type": "object",
   "required": [
     "appId",
+    "accountRegion",
     "user"
   ],
   "properties": {
     "appId": {
       "type": "string"
+    },
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
     },
     "user": {
       "type": "object",
@@ -820,6 +980,7 @@ export const CurrentUserDataSchema = {
 
 export type CurrentUserData = {
   "appId": string;
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
   "user": {
   "id": string;
   "name": string;
@@ -947,7 +1108,8 @@ export const AnalyticsBatchRequestSchema = {
 } as const;
 
 export type AnalyticsBatchRequest = {
-  "events": {
+  "events": (
+{
   "platform": "web" | "ios" | "android";
   "sessionId": string;
   "pageKey": string;
@@ -957,7 +1119,8 @@ export type AnalyticsBatchRequest = {
   "metadata"?: {
   [key: string]: unknown;
 };
-}[];
+}
+)[];
 };
 
 export const AnalyticsAcceptedDataSchema = {
@@ -1382,9 +1545,177 @@ export const KickoffPublicConfigSchema = {
   "properties": {
     "recommendedPrompts": {
       "type": "array",
-      "description": "Shared kickoff recommendation prompt list managed by backend admin config and consumed by the AINovel client.",
+      "deprecated": true,
+      "description": "Legacy flat kickoff prompt list. New clients use this only for zh-CN compatibility and otherwise select recommendedPromptsI18n by their effective UI locale.",
       "items": {
         "type": "string"
+      }
+    },
+    "recommendedPromptsI18n": {
+      "type": "object",
+      "description": "Locale-indexed kickoff prompt lists managed by backend admin config. Entries use the 20 supported canonical BCP-47 locale tags. The client selects only its matching locale entry and falls back to packaged locale copy when that entry is absent or invalid.",
+      "additionalProperties": false,
+      "properties": {
+        "en-US": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "zh-CN": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "zh-TW": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ja-JP": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "es-ES": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "pt-BR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "ko-KR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "de-DE": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "fr-FR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "hi-IN": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "id-ID": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "it-IT": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "tr-TR": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "vi-VN": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "th-TH": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "pl-PL": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "nl-NL": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sv-SE": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "bn-BD": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sw-KE": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     }
   }
@@ -1392,6 +1723,28 @@ export const KickoffPublicConfigSchema = {
 
 export type KickoffPublicConfig = {
   "recommendedPrompts"?: string[];
+  "recommendedPromptsI18n"?: {
+  "en-US"?: string[];
+  "zh-CN"?: string[];
+  "zh-TW"?: string[];
+  "ja-JP"?: string[];
+  "es-ES"?: string[];
+  "pt-BR"?: string[];
+  "ko-KR"?: string[];
+  "de-DE"?: string[];
+  "fr-FR"?: string[];
+  "hi-IN"?: string[];
+  "id-ID"?: string[];
+  "it-IT"?: string[];
+  "tr-TR"?: string[];
+  "vi-VN"?: string[];
+  "th-TH"?: string[];
+  "pl-PL"?: string[];
+  "nl-NL"?: string[];
+  "sv-SE"?: string[];
+  "bn-BD"?: string[];
+  "sw-KE"?: string[];
+};
   [key: string]: unknown;
 };
 
@@ -1409,9 +1762,177 @@ export const AINovelPublicConfigSchema = {
       "properties": {
         "recommendedPrompts": {
           "type": "array",
-          "description": "Shared kickoff recommendation prompt list managed by backend admin config and consumed by the AINovel client.",
+          "deprecated": true,
+          "description": "Legacy flat kickoff prompt list. New clients use this only for zh-CN compatibility and otherwise select recommendedPromptsI18n by their effective UI locale.",
           "items": {
             "type": "string"
+          }
+        },
+        "recommendedPromptsI18n": {
+          "type": "object",
+          "description": "Locale-indexed kickoff prompt lists managed by backend admin config. Entries use the 20 supported canonical BCP-47 locale tags. The client selects only its matching locale entry and falls back to packaged locale copy when that entry is absent or invalid.",
+          "additionalProperties": false,
+          "properties": {
+            "en-US": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "zh-CN": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "zh-TW": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "ja-JP": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "es-ES": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "pt-BR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "ko-KR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "de-DE": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "fr-FR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "hi-IN": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "id-ID": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "it-IT": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "tr-TR": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "vi-VN": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "th-TH": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "pl-PL": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "nl-NL": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sv-SE": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "bn-BD": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "sw-KE": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
           }
         }
       }
@@ -1423,6 +1944,28 @@ export type AINovelPublicConfig = {
   "app"?: string;
   "kickoff"?: {
   "recommendedPrompts"?: string[];
+  "recommendedPromptsI18n"?: {
+  "en-US"?: string[];
+  "zh-CN"?: string[];
+  "zh-TW"?: string[];
+  "ja-JP"?: string[];
+  "es-ES"?: string[];
+  "pt-BR"?: string[];
+  "ko-KR"?: string[];
+  "de-DE"?: string[];
+  "fr-FR"?: string[];
+  "hi-IN"?: string[];
+  "id-ID"?: string[];
+  "it-IT"?: string[];
+  "tr-TR"?: string[];
+  "vi-VN"?: string[];
+  "th-TH"?: string[];
+  "pl-PL"?: string[];
+  "nl-NL"?: string[];
+  "sv-SE"?: string[];
+  "bn-BD"?: string[];
+  "sw-KE"?: string[];
+};
   [key: string]: unknown;
 };
   [key: string]: unknown;
@@ -1453,9 +1996,177 @@ export const PublicConfigDataSchema = {
           "properties": {
             "recommendedPrompts": {
               "type": "array",
-              "description": "Shared kickoff recommendation prompt list managed by backend admin config and consumed by the AINovel client.",
+              "deprecated": true,
+              "description": "Legacy flat kickoff prompt list. New clients use this only for zh-CN compatibility and otherwise select recommendedPromptsI18n by their effective UI locale.",
               "items": {
                 "type": "string"
+              }
+            },
+            "recommendedPromptsI18n": {
+              "type": "object",
+              "description": "Locale-indexed kickoff prompt lists managed by backend admin config. Entries use the 20 supported canonical BCP-47 locale tags. The client selects only its matching locale entry and falls back to packaged locale copy when that entry is absent or invalid.",
+              "additionalProperties": false,
+              "properties": {
+                "en-US": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "zh-CN": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "zh-TW": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "ja-JP": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "es-ES": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "pt-BR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "ko-KR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "de-DE": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "fr-FR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "hi-IN": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "id-ID": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "it-IT": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "tr-TR": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "vi-VN": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "th-TH": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "pl-PL": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "nl-NL": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "sv-SE": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "bn-BD": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "sw-KE": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
               }
             }
           }
@@ -1475,11 +2186,1735 @@ export type PublicConfigData = {
   "app"?: string;
   "kickoff"?: {
   "recommendedPrompts"?: string[];
+  "recommendedPromptsI18n"?: {
+  "en-US"?: string[];
+  "zh-CN"?: string[];
+  "zh-TW"?: string[];
+  "ja-JP"?: string[];
+  "es-ES"?: string[];
+  "pt-BR"?: string[];
+  "ko-KR"?: string[];
+  "de-DE"?: string[];
+  "fr-FR"?: string[];
+  "hi-IN"?: string[];
+  "id-ID"?: string[];
+  "it-IT"?: string[];
+  "tr-TR"?: string[];
+  "vi-VN"?: string[];
+  "th-TH"?: string[];
+  "pl-PL"?: string[];
+  "nl-NL"?: string[];
+  "sv-SE"?: string[];
+  "bn-BD"?: string[];
+  "sw-KE"?: string[];
+};
   [key: string]: unknown;
 };
   [key: string]: unknown;
 };
   "updatedAt"?: string;
+};
+
+export const AiNovelStatisticsDataSchema = {
+  "type": "object",
+  "required": [
+    "timezone",
+    "generatedAt",
+    "overview",
+    "recentActivity",
+    "writingTrend",
+    "summaryCard"
+  ],
+  "properties": {
+    "timezone": {
+      "type": "string",
+      "example": "Asia/Shanghai"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "overview": {
+      "type": "object",
+      "required": [
+        "totalWorks",
+        "totalWords",
+        "totalChapters",
+        "activeWritingDays"
+      ],
+      "properties": {
+        "totalWorks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalWords": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalChapters": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "activeWritingDays": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "recentActivity": {
+      "type": "object",
+      "required": [
+        "wordsToday",
+        "wordsThisMonth",
+        "tokensToday",
+        "tokensThisMonth",
+        "activeWritingDaysLast30Days"
+      ],
+      "properties": {
+        "wordsToday": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wordsThisMonth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokensToday": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokensThisMonth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "activeWritingDaysLast30Days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "writingTrend": {
+      "type": "object",
+      "required": [
+        "days"
+      ],
+      "properties": {
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "date",
+              "words",
+              "tokens",
+              "active"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "words": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokens": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "active": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "summaryCard": {
+      "type": "object",
+      "required": [
+        "totalWords",
+        "totalTokens"
+      ],
+      "properties": {
+        "totalWords": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalTokens": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type AiNovelStatisticsData = {
+  "timezone": string;
+  "generatedAt": string;
+  "overview": {
+  "totalWorks": number;
+  "totalWords": number;
+  "totalChapters": number;
+  "activeWritingDays": number;
+};
+  "recentActivity": {
+  "wordsToday": number;
+  "wordsThisMonth": number;
+  "tokensToday": number;
+  "tokensThisMonth": number;
+  "activeWritingDaysLast30Days": number;
+};
+  "writingTrend": {
+  "days": (
+{
+  "date": string;
+  "words": number;
+  "tokens": number;
+  "active": boolean;
+}
+)[];
+};
+  "summaryCard": {
+  "totalWords": number;
+  "totalTokens": number;
+};
+};
+
+export const AiNovelStatisticsSnapshotRequestSchema = {
+  "type": "object",
+  "required": [
+    "accountId",
+    "totalWorks",
+    "totalWords",
+    "totalChapters",
+    "activeWritingDays"
+  ],
+  "properties": {
+    "accountId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Expected authenticated account. Zook rejects a mismatch."
+    },
+    "totalWorks": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalWords": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalChapters": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "activeWritingDays": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "daily": {
+      "type": "array",
+      "maxItems": 400,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "words"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "words": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type AiNovelStatisticsSnapshotRequest = {
+  "accountId": string;
+  "totalWorks": number;
+  "totalWords": number;
+  "totalChapters": number;
+  "activeWritingDays": number;
+  "daily"?: (
+{
+  "date": string;
+  "words": number;
+  "active"?: boolean;
+}
+)[];
+};
+
+export const AiNovelStatisticsSnapshotResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "accepted",
+        "updatedAt"
+      ],
+      "properties": {
+        "accepted": {
+          "type": "boolean",
+          "const": true
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type AiNovelStatisticsSnapshotResponse = {
+  "code": string;
+  "message": string;
+  "data": {
+  "accepted": boolean;
+  "updatedAt": string;
+};
+  "requestId"?: string;
+};
+
+export const BodyLogProfileUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "nickname",
+    "avatarKey"
+  ],
+  "properties": {
+    "nickname": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 20
+    },
+    "avatarKey": {
+      "type": "string",
+      "enum": [
+        "mint_runner",
+        "blue_drop",
+        "orange_sun",
+        "purple_moon"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogProfileUpdateRequest = {
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+};
+
+export const BodyLogTargetUserRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "targetUserId"
+  ],
+  "properties": {
+    "targetUserId": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+} as const;
+
+export type BodyLogTargetUserRequest = {
+  "targetUserId": string;
+};
+
+export const BodyLogReportRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "targetUserId",
+    "reason"
+  ],
+  "properties": {
+    "targetUserId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "cheating",
+        "offensive_profile",
+        "harassment",
+        "other"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogReportRequest = {
+  "targetUserId": string;
+  "reason": "cheating" | "offensive_profile" | "harassment" | "other";
+};
+
+export const BodyLogLeaderboardJoinRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "seasonLabel",
+    "timezone",
+    "habits"
+  ],
+  "properties": {
+    "seasonLabel": {
+      "type": "string",
+      "pattern": "^\\d{4}-W\\d{2}$"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    },
+    "habits": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "habitId",
+          "scheduledDates"
+        ],
+        "properties": {
+          "habitId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scheduledDates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogLeaderboardJoinRequest = {
+  "seasonLabel": string;
+  "timezone": string;
+  "habits": (
+{
+  "habitId": string;
+  "scheduledDates": string[];
+}
+)[];
+};
+
+export const BodyLogLeaderboardAggregateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "seasonLabel",
+    "date",
+    "completedHabitIds"
+  ],
+  "properties": {
+    "seasonLabel": {
+      "type": "string",
+      "pattern": "^\\d{4}-W\\d{2}$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "completedHabitIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+} as const;
+
+export type BodyLogLeaderboardAggregateRequest = {
+  "seasonLabel": string;
+  "date": string;
+  "completedHabitIds": string[];
+};
+
+export const BodyLogLeaderboardLeaveRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timezone"
+  ],
+  "properties": {
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+} as const;
+
+export type BodyLogLeaderboardLeaveRequest = {
+  "timezone": string;
+};
+
+export const BodyLogInvitationCreateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "installId"
+  ],
+  "properties": {
+    "installId": {
+      "type": "string",
+      "minLength": 8
+    }
+  }
+} as const;
+
+export type BodyLogInvitationCreateRequest = {
+  "installId": string;
+};
+
+export const BodyLogInvitationAttributeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "token",
+    "installId"
+  ],
+  "properties": {
+    "token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "installId": {
+      "type": "string",
+      "minLength": 8
+    }
+  }
+} as const;
+
+export type BodyLogInvitationAttributeRequest = {
+  "token": string;
+  "installId": string;
+};
+
+export const BodyLogInvitationProgressRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "timezone"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+} as const;
+
+export type BodyLogInvitationProgressRequest = {
+  "date": string;
+  "timezone": string;
+};
+
+export const BodyLogChallengeCreateRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "themeKey",
+    "inviteeUserIds",
+    "timezone"
+  ],
+  "properties": {
+    "themeKey": {
+      "type": "string",
+      "enum": [
+        "steady_week",
+        "morning_rhythm",
+        "movement_breaks",
+        "mindful_week"
+      ]
+    },
+    "inviteeUserIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+} as const;
+
+export type BodyLogChallengeCreateRequest = {
+  "themeKey": "steady_week" | "morning_rhythm" | "movement_breaks" | "mindful_week";
+  "inviteeUserIds": string[];
+  "timezone": string;
+};
+
+export const BodyLogChallengeResponseRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "action"
+  ],
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "accept",
+        "decline"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogChallengeResponseRequest = {
+  "action": "accept" | "decline";
+};
+
+export const BodyLogChallengeProgressRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "date",
+    "completed",
+    "timezone"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "completed": {
+      "type": "boolean"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+} as const;
+
+export type BodyLogChallengeProgressRequest = {
+  "date": string;
+  "completed": boolean;
+  "timezone": string;
+};
+
+export const BodyLogAvatarKeySchema = {
+  "type": "string",
+  "enum": [
+    "mint_runner",
+    "blue_drop",
+    "orange_sun",
+    "purple_moon"
+  ]
+} as const;
+
+export type BodyLogAvatarKey = "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+
+export const BodyLogReportReasonSchema = {
+  "type": "string",
+  "enum": [
+    "cheating",
+    "offensive_profile",
+    "harassment",
+    "other"
+  ]
+} as const;
+
+export type BodyLogReportReason = "cheating" | "offensive_profile" | "harassment" | "other";
+
+export const BodyLogChallengeThemeSchema = {
+  "type": "string",
+  "enum": [
+    "steady_week",
+    "morning_rhythm",
+    "movement_breaks",
+    "mindful_week"
+  ]
+} as const;
+
+export type BodyLogChallengeTheme = "steady_week" | "morning_rhythm" | "movement_breaks" | "mindful_week";
+
+export const BodyLogProfileDataSchema = {
+  "type": "object",
+  "required": [
+    "userId",
+    "nickname",
+    "avatarKey",
+    "profileCompleted",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "nickname": {
+      "type": "string"
+    },
+    "avatarKey": {
+      "type": "string",
+      "enum": [
+        "mint_runner",
+        "blue_drop",
+        "orange_sun",
+        "purple_moon"
+      ]
+    },
+    "profileCompleted": {
+      "type": "boolean"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogProfileData = {
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "profileCompleted": boolean;
+  "createdAt": string;
+  "updatedAt": string;
+};
+
+export const BodyLogFriendDataSchema = {
+  "allOf": [
+    {
+      "type": "object",
+      "required": [
+        "userId",
+        "nickname",
+        "avatarKey",
+        "profileCompleted",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "avatarKey": {
+          "type": "string",
+          "enum": [
+            "mint_runner",
+            "blue_drop",
+            "orange_sun",
+            "purple_moon"
+          ]
+        },
+        "profileCompleted": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "friendsSince"
+      ],
+      "properties": {
+        "friendsSince": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  ]
+} as const;
+
+export type BodyLogFriendData = (
+{
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "profileCompleted": boolean;
+  "createdAt": string;
+  "updatedAt": string;
+}
+) & (
+{
+  "friendsSince": string;
+}
+);
+
+export const BodyLogFriendRequestRecordDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "appId",
+    "senderUserId",
+    "recipientUserId",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "appId": {
+      "type": "string",
+      "const": "bodylog"
+    },
+    "senderUserId": {
+      "type": "string"
+    },
+    "recipientUserId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "rejected"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogFriendRequestRecordData = {
+  "id": string;
+  "appId": string;
+  "senderUserId": string;
+  "recipientUserId": string;
+  "status": "pending" | "accepted" | "rejected";
+  "createdAt": string;
+  "updatedAt": string;
+};
+
+export const BodyLogFriendRequestListItemSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "direction",
+    "profile",
+    "createdAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "incoming",
+        "outgoing"
+      ]
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "userId",
+        "nickname",
+        "avatarKey",
+        "profileCompleted",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "avatarKey": {
+          "type": "string",
+          "enum": [
+            "mint_runner",
+            "blue_drop",
+            "orange_sun",
+            "purple_moon"
+          ]
+        },
+        "profileCompleted": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogFriendRequestListItem = {
+  "id": string;
+  "direction": "incoming" | "outgoing";
+  "profile": {
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "profileCompleted": boolean;
+  "createdAt": string;
+  "updatedAt": string;
+};
+  "createdAt": string;
+};
+
+export const BodyLogFriendRequestStatusDataSchema = {
+  "type": "object",
+  "required": [
+    "status"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "rejected"
+      ]
+    }
+  }
+} as const;
+
+export type BodyLogFriendRequestStatusData = {
+  "status": "accepted" | "rejected";
+};
+
+export const BodyLogBlockListItemSchema = {
+  "type": "object",
+  "required": [
+    "profile",
+    "createdAt"
+  ],
+  "properties": {
+    "profile": {
+      "type": "object",
+      "required": [
+        "userId",
+        "nickname",
+        "avatarKey",
+        "profileCompleted",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "avatarKey": {
+          "type": "string",
+          "enum": [
+            "mint_runner",
+            "blue_drop",
+            "orange_sun",
+            "purple_moon"
+          ]
+        },
+        "profileCompleted": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogBlockListItem = {
+  "profile": {
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "profileCompleted": boolean;
+  "createdAt": string;
+  "updatedAt": string;
+};
+  "createdAt": string;
+};
+
+export const BodyLogLeaderboardMembershipSchema = {
+  "type": "object",
+  "required": [
+    "joined",
+    "eligible",
+    "effectiveDays",
+    "score"
+  ],
+  "properties": {
+    "joined": {
+      "type": "boolean"
+    },
+    "eligible": {
+      "type": "boolean"
+    },
+    "effectiveDays": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type BodyLogLeaderboardMembership = {
+  "joined": boolean;
+  "eligible": boolean;
+  "effectiveDays": number;
+  "score": number;
+};
+
+export const BodyLogLeaderboardJoinDataSchema = {
+  "type": "object",
+  "required": [
+    "seasonLabel",
+    "timezone",
+    "membership"
+  ],
+  "properties": {
+    "seasonLabel": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "membership": {
+      "type": "object",
+      "required": [
+        "joined",
+        "eligible",
+        "effectiveDays",
+        "score"
+      ],
+      "properties": {
+        "joined": {
+          "type": "boolean"
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "effectiveDays": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogLeaderboardJoinData = {
+  "seasonLabel": string;
+  "timezone": string;
+  "membership": {
+  "joined": boolean;
+  "eligible": boolean;
+  "effectiveDays": number;
+  "score": number;
+};
+};
+
+export const BodyLogLeaderboardEntrySchema = {
+  "type": "object",
+  "required": [
+    "rank",
+    "userId",
+    "nickname",
+    "avatarKey",
+    "score",
+    "effectiveDays",
+    "completedInstances"
+  ],
+  "properties": {
+    "rank": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "userId": {
+      "type": "string"
+    },
+    "nickname": {
+      "type": "string"
+    },
+    "avatarKey": {
+      "type": "string",
+      "enum": [
+        "mint_runner",
+        "blue_drop",
+        "orange_sun",
+        "purple_moon"
+      ]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0
+    },
+    "effectiveDays": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completedInstances": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type BodyLogLeaderboardEntry = {
+  "rank": number;
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "score": number;
+  "effectiveDays": number;
+  "completedInstances": number;
+};
+
+export const BodyLogLeaderboardDataSchema = {
+  "type": "object",
+  "required": [
+    "seasonLabel",
+    "status",
+    "scope",
+    "entries",
+    "membership",
+    "updatedAt"
+  ],
+  "properties": {
+    "seasonLabel": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "const": "live"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "public",
+        "friends"
+      ]
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rank",
+          "userId",
+          "nickname",
+          "avatarKey",
+          "score",
+          "effectiveDays",
+          "completedInstances"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "userId": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "avatarKey": {
+            "type": "string",
+            "enum": [
+              "mint_runner",
+              "blue_drop",
+              "orange_sun",
+              "purple_moon"
+            ]
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0
+          },
+          "effectiveDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completedInstances": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "membership": {
+      "type": "object",
+      "required": [
+        "joined",
+        "eligible",
+        "effectiveDays",
+        "score"
+      ],
+      "properties": {
+        "joined": {
+          "type": "boolean"
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "effectiveDays": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogLeaderboardData = {
+  "seasonLabel": string;
+  "status": string;
+  "scope": "public" | "friends";
+  "entries": (
+{
+  "rank": number;
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "score": number;
+  "effectiveDays": number;
+  "completedInstances": number;
+}
+)[];
+  "membership": {
+  "joined": boolean;
+  "eligible": boolean;
+  "effectiveDays": number;
+  "score": number;
+};
+  "updatedAt": string;
+};
+
+export const BodyLogInvitationCreateDataSchema = {
+  "type": "object",
+  "required": [
+    "token",
+    "url",
+    "expiresAt"
+  ],
+  "properties": {
+    "token": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogInvitationCreateData = {
+  "token": string;
+  "url": string;
+  "expiresAt": string;
+};
+
+export const BodyLogInvitationListItemSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "status",
+    "progressDays",
+    "attributedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "qualified",
+        "rewarded"
+      ]
+    },
+    "progressDays": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "attributedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogInvitationListItem = {
+  "id": string;
+  "status": "pending" | "qualified" | "rewarded";
+  "progressDays": number;
+  "attributedAt": string;
+};
+
+export const BodyLogInvitationStatusDataSchema = {
+  "type": "object",
+  "required": [
+    "pendingCount",
+    "qualifiedCount",
+    "rewardedCount",
+    "inviteeProgressDays",
+    "attributed",
+    "premiumUntil",
+    "invitations"
+  ],
+  "properties": {
+    "pendingCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "qualifiedCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rewardedCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "inviteeProgressDays": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "attributed": {
+      "type": "boolean"
+    },
+    "premiumUntil": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "invitations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "progressDays",
+          "attributedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "qualified",
+              "rewarded"
+            ]
+          },
+          "progressDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attributedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BodyLogInvitationStatusData = {
+  "pendingCount": number;
+  "qualifiedCount": number;
+  "rewardedCount": number;
+  "inviteeProgressDays": number;
+  "attributed": boolean;
+  "premiumUntil": string | null;
+  "invitations": (
+{
+  "id": string;
+  "status": "pending" | "qualified" | "rewarded";
+  "progressDays": number;
+  "attributedAt": string;
+}
+)[];
+};
+
+export const BodyLogInvitationAttributionDataSchema = {
+  "type": "object",
+  "required": [
+    "attributed",
+    "progressDays"
+  ],
+  "properties": {
+    "attributed": {
+      "type": "boolean",
+      "const": true
+    },
+    "progressDays": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type BodyLogInvitationAttributionData = {
+  "attributed": boolean;
+  "progressDays": number;
+};
+
+export const BodyLogInvitationProgressDataSchema = {
+  "type": "object",
+  "required": [
+    "progressDays",
+    "qualified"
+  ],
+  "properties": {
+    "progressDays": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "qualified": {
+      "type": "boolean"
+    },
+    "premiumUntil": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogInvitationProgressData = {
+  "progressDays": number;
+  "qualified": boolean;
+  "premiumUntil"?: string | null;
+};
+
+export const BodyLogChallengeMemberDataSchema = {
+  "type": "object",
+  "required": [
+    "userId",
+    "nickname",
+    "avatarKey",
+    "memberStatus",
+    "score",
+    "effectiveDays",
+    "rank"
+  ],
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "nickname": {
+      "type": "string"
+    },
+    "avatarKey": {
+      "type": "string",
+      "enum": [
+        "mint_runner",
+        "blue_drop",
+        "orange_sun",
+        "purple_moon"
+      ]
+    },
+    "memberStatus": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0
+    },
+    "effectiveDays": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rank": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type BodyLogChallengeMemberData = {
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "memberStatus": "pending" | "accepted" | "declined";
+  "score": number;
+  "effectiveDays": number;
+  "rank": number;
+};
+
+export const BodyLogChallengeDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "themeKey",
+    "status",
+    "timezone",
+    "startDate",
+    "endDate",
+    "currentUserStatus",
+    "members",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "themeKey": {
+      "type": "string",
+      "enum": [
+        "steady_week",
+        "morning_rhythm",
+        "movement_breaks",
+        "mindful_week"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "cancelled",
+        "settled"
+      ]
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "startDate": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "endDate": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "currentUserStatus": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ]
+    },
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "userId",
+          "nickname",
+          "avatarKey",
+          "memberStatus",
+          "score",
+          "effectiveDays",
+          "rank"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "avatarKey": {
+            "type": "string",
+            "enum": [
+              "mint_runner",
+              "blue_drop",
+              "orange_sun",
+              "purple_moon"
+            ]
+          },
+          "memberStatus": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "declined"
+            ]
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0
+          },
+          "effectiveDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type BodyLogChallengeData = {
+  "id": string;
+  "themeKey": "steady_week" | "morning_rhythm" | "movement_breaks" | "mindful_week";
+  "status": "pending" | "active" | "cancelled" | "settled";
+  "timezone": string;
+  "startDate": string | unknown;
+  "endDate": string | unknown;
+  "currentUserStatus": "pending" | "accepted" | "declined";
+  "members": (
+{
+  "userId": string;
+  "nickname": string;
+  "avatarKey": "mint_runner" | "blue_drop" | "orange_sun" | "purple_moon";
+  "memberStatus": "pending" | "accepted" | "declined";
+  "score": number;
+  "effectiveDays": number;
+  "rank": number;
+}
+)[];
+  "createdAt": string;
+  "updatedAt": string;
 };
 
 export type AuthSuccessPayload = AuthSessionData;
@@ -2228,7 +4663,9 @@ export type BuddyInvitationCreateRequest = {
   "email"?: string;
   "user_id"?: string;
 };
-  "domains": "sleep" | "focus"[];
+  "domains": (
+"sleep" | "focus"
+)[];
 };
 
 export const BuddyInvitationTargetSchema = {
@@ -2405,7 +4842,9 @@ export const BuddyInvitationResponseRequestSchema = {
 export type BuddyInvitationResponseRequest = {
   "expected_version": number;
   "idempotency_key": string;
-  "sharing_categories"?: "presence" | "daily_summary" | "weekly_trend" | "shared_activity"[];
+  "sharing_categories"?: (
+"presence" | "daily_summary" | "weekly_trend" | "shared_activity"
+)[];
 };
 
 export const BuddySharingGrantUpdateRequestSchema = {
@@ -2433,6 +4872,279 @@ export const BuddySharingGrantUpdateRequestSchema = {
 export type BuddySharingGrantUpdateRequest = {
   "state": "granted" | "revoked";
   "expected_version": number;
+};
+
+export const BuddyGroupCreateRequestSchema = {
+  "type": "object",
+  "required": [
+    "domain",
+    "group_name"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "group_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "group_description": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "sharing_baseline": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "presence",
+          "daily_summary",
+          "weekly_trend",
+          "shared_activity"
+        ]
+      }
+    },
+    "invitees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "user_id"
+            ]
+          },
+          {
+            "required": [
+              "email"
+            ]
+          }
+        ]
+      }
+    }
+  }
+} as const;
+
+export type BuddyGroupCreateRequest = {
+  "domain": "sleep" | "focus";
+  "group_name": string;
+  "group_description"?: string;
+  "sharing_baseline"?: (
+"presence" | "daily_summary" | "weekly_trend" | "shared_activity"
+)[];
+  "invitees"?: (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+};
+
+export const BuddyGroupUpdateRequestSchema = {
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "group_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "group_description": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "sharing_baseline": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "presence",
+          "daily_summary",
+          "weekly_trend",
+          "shared_activity"
+        ]
+      }
+    }
+  }
+} as const;
+
+export type BuddyGroupUpdateRequest = {
+  "group_name"?: string;
+  "group_description"?: string;
+  "sharing_baseline"?: (
+"presence" | "daily_summary" | "weekly_trend" | "shared_activity"
+)[];
+  [key: string]: unknown;
+};
+
+export const BuddyGroupInviteRequestSchema = {
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "invitees": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "user_id"
+            ]
+          },
+          {
+            "required": [
+              "email"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "required": [
+        "user_id"
+      ]
+    },
+    {
+      "required": [
+        "email"
+      ]
+    },
+    {
+      "required": [
+        "invitees"
+      ]
+    }
+  ]
+} as const;
+
+export type BuddyGroupInviteRequest = (
+{
+  "user_id": string;
+  "email"?: string;
+  "invitees"?: (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+  "invitees"?: (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+}
+) | (
+{
+  "user_id"?: string;
+  "email"?: string;
+  "invitees": (
+(
+{
+  "user_id": string;
+  "email"?: string;
+}
+) | (
+{
+  "user_id"?: string;
+  "email": string;
+}
+)
+)[];
+  [key: string]: unknown;
+}
+);
+
+export const BuddyGroupRoleUpdateRequestSchema = {
+  "type": "object",
+  "required": [
+    "role"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "moderator",
+        "member"
+      ]
+    }
+  }
+} as const;
+
+export type BuddyGroupRoleUpdateRequest = {
+  "role": "moderator" | "member";
+  [key: string]: unknown;
 };
 
 export const BuddyNotificationPreferencesRequestSchema = {
@@ -2486,7 +5198,9 @@ export const BuddyNotificationPreferencesRequestSchema = {
 
 export type BuddyNotificationPreferencesRequest = {
   "enabled"?: boolean;
-  "disabled_categories"?: "invitations" | "interactions" | "activities" | "goals" | "reports"[];
+  "disabled_categories"?: (
+"invitations" | "interactions" | "activities" | "goals" | "reports"
+)[];
   "quiet_start_minute"?: number;
   "quiet_end_minute"?: number;
   "timezone_offset_minutes"?: number;
@@ -2564,7 +5278,9 @@ export const BuddyInteractionRequestSchema = {
         "praise",
         "support",
         "join_next_time",
-        "tonight_together"
+        "tonight_together",
+        "group_cheer",
+        "group_goodnight"
       ]
     },
     "idempotency_key": {
@@ -2580,7 +5296,7 @@ export const BuddyInteractionRequestSchema = {
 
 export type BuddyInteractionRequest = {
   "relationship_id": string;
-  "type": "encouragement" | "praise" | "support" | "join_next_time" | "tonight_together";
+  "type": "encouragement" | "praise" | "support" | "join_next_time" | "tonight_together" | "group_cheer" | "group_goodnight";
   "idempotency_key": string;
   "context_id"?: string;
 };
@@ -3802,11 +6518,50 @@ export const GeneratedPublicContractNames = [
   "AINovelPublicConfig",
   "AccountDeletionData",
   "AccountDeletionRequest",
+  "AiNovelStatisticsData",
+  "AiNovelStatisticsSnapshotRequest",
+  "AiNovelStatisticsSnapshotResponse",
   "AnalyticsAcceptedData",
   "AnalyticsBatchRequest",
   "AnalyticsEventInput",
   "AuthAcceptedData",
   "AuthSessionData",
+  "BodyLogAvatarKey",
+  "BodyLogBlockListItem",
+  "BodyLogChallengeCreateRequest",
+  "BodyLogChallengeData",
+  "BodyLogChallengeMemberData",
+  "BodyLogChallengeProgressRequest",
+  "BodyLogChallengeResponseRequest",
+  "BodyLogChallengeTheme",
+  "BodyLogFriendData",
+  "BodyLogFriendRequestListItem",
+  "BodyLogFriendRequestRecordData",
+  "BodyLogFriendRequestStatusData",
+  "BodyLogInvitationAttributeRequest",
+  "BodyLogInvitationAttributionData",
+  "BodyLogInvitationCreateData",
+  "BodyLogInvitationCreateRequest",
+  "BodyLogInvitationListItem",
+  "BodyLogInvitationProgressData",
+  "BodyLogInvitationProgressRequest",
+  "BodyLogInvitationStatusData",
+  "BodyLogLeaderboardAggregateRequest",
+  "BodyLogLeaderboardData",
+  "BodyLogLeaderboardEntry",
+  "BodyLogLeaderboardJoinData",
+  "BodyLogLeaderboardJoinRequest",
+  "BodyLogLeaderboardLeaveRequest",
+  "BodyLogLeaderboardMembership",
+  "BodyLogProfileData",
+  "BodyLogProfileUpdateRequest",
+  "BodyLogReportReason",
+  "BodyLogReportRequest",
+  "BodyLogTargetUserRequest",
+  "BuddyGroupCreateRequest",
+  "BuddyGroupInviteRequest",
+  "BuddyGroupRoleUpdateRequest",
+  "BuddyGroupUpdateRequest",
   "BuddyInteractionRequest",
   "BuddyInvitationCreateRequest",
   "BuddyInvitationDelivery",
@@ -3861,13 +6616,16 @@ export const GeneratedPublicContractNames = [
   "NotificationSendRequest",
   "OneClickLoginRequest",
   "PasswordLoginRequest",
+  "PasswordSmsCodeRequest",
   "PublicConfigData",
   "QrLoginConfirmData",
   "QrLoginCreateData",
   "QrLoginCreateRequest",
   "QrLoginPollData",
   "RefreshRequest",
+  "RegisterBySmsRequest",
   "RegisterRequest",
+  "ResetPasswordBySmsRequest",
   "ResetPasswordRequest",
   "SetPasswordRequest",
   "SmsCodeRequest",

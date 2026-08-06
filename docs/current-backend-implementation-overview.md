@@ -17,6 +17,30 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 
 ## 2. 当前已完成的主要功能
 
+### 2.0 BodyLog app-scoped 产品能力
+
+BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `bodylog` 的公开 API：
+
+1. `GET /api/v1/bodylog/profile` 获取或初始化昵称、预设头像和完成状态。
+2. `PUT /api/v1/bodylog/profile` 校验 2–20 字符昵称、头像白名单，并复用 Common 内容安全能力。
+3. PostgreSQL 通过 `021_bodylog_profiles.sql` 保存资料；内存数据库提供一致的测试实现。
+4. 删除 BodyLog app 账号会清理 BodyLog 服务端资料，保留共享 Zook 用户与其他 app 数据。
+5. 好友申请、拉黑和举报由 `022_bodylog_social.sql` 持久化，拉黑会隔离共享社交状态。
+6. 排行榜只接收冻结的目标快照和完成聚合，服务端负责计分与公开资格判定。
+7. 邀请归因包含同设备、自邀请和重复归因防护；挑战仅允许邀请未拉黑好友。
+8. 完整外部契约位于 `third_party/zook-api-contracts/openapi/bodylog/api.yaml`。
+
+对应核心文件：
+
+1. `src/modules/bodylog/bodylog-profile.service.ts`
+2. `src/app/bodylog-v1-routes.ts`
+3. `src/infrastructure/database/postgres/migrations/021_bodylog_profiles.sql`
+4. `test/unit/bodylog-profile.api.test.ts`
+5. `src/modules/bodylog/bodylog-social.service.ts`
+6. `src/modules/bodylog/bodylog-leaderboard.service.ts`
+7. `src/modules/bodylog/bodylog-invitation.service.ts`
+8. `src/modules/bodylog/bodylog-challenge.service.ts`
+
 ### 2.1 API / Worker / Admin Web 三入口
 
 当前项目已经具备三个入口：
@@ -140,7 +164,7 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 当前已经补齐两类 Common 级能力：
 
 1. `common.email_service_regions` 的强类型配置、版本记录与恢复
-2. `common.llm_service` 的强类型配置、版本记录与恢复
+2. `common.llm_service` 的强类型配置、版本记录与恢复，以及可选的 OpenRouter `oa-hmac-v1` 透明代理路由；代理开关和 Key ID 存配置，HMAC secret 从 `common.passwords` 动态读取；内置禁用的 OpenRouter `openrouter/free` 测试模型不会改变 AINovel 默认路由
 3. LLM 按 `auto / fixed` 两种策略路由
 4. LLM 健康窗口记录
 5. LLM 小时级监控聚合，并在模型对比中优先展示当前时间范围内有请求量的模型
@@ -212,6 +236,7 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
 9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
+10. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
 
 对应核心文件：
 
@@ -408,6 +433,8 @@ FrogSleep 产品接口已经接入应用入口，代表性接口包括：
 搭子通知支持 `GET/PATCH /api/v1/frogsleep/buddy/notifications/preferences`。Worker 将分类禁用和五分钟内同目标同事件合并为整体抑制；安静时段、同类冷却和每日预算仅抑制 Push，仍保留站内 feed。每次抑制都在 outbox 或 delivery 中记录稳定原因码，重试投递不会重复生成站内通知。
 
 搭子增长 P1 通过 `/api/v1/frogsleep/buddy/hub`、`activity`、`shares`、`interactions` 和 `joint-activities` 提供。Hub 按对方身份合并同一人的睡眠/专注领域，不同对方保持分离；状态、每日总结、活动和夜间共同活动均在读取时重新校验方向授权。结构化分享仅保留白名单数值并最长 30 天过期；受限互动不接受自由文本；分享、互动和共同活动创建/响应使用幂等 key 并与通知 outbox 在同一排他会话中写入。
+
+搭子增长 P2 已挂出 `FROGSLEEP_BUDDY_GROUP_ENABLED` 灰度后的 2-5 人群组搭子接口：`/api/v1/frogsleep/buddy/groups` 支持创建/列表/详情/更新，子资源支持群组主页、邀请、邀请 accept/decline/cancel、成员移除、角色调整、leave/pause/resume/dissolve 和共享基线授权视图。PostgreSQL 通过 `019_frogsleep_buddy_group_lifecycle.sql` 增加 canonical group aggregate、成员版本、邀请版本和 abandoned forming group 过期函数；应用层以 group 表为 source of truth，成员和邀请操作使用版本比较更新。
 
 worker 会消费搭子 notification outbox，幂等生成站内 feed，并把只含 opaque notification ID 与安全路由的 Push 放入现有通知队列。站内 feed 支持分页、未读数、单条/全部已读和鉴权目标解析；物化与 APNs 入队分别记录 delivery attempt。
 

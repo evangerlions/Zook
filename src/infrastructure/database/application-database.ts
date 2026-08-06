@@ -1,5 +1,9 @@
 import type {
   AnalyticsEventRecord,
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
+  AiOutputReactionRecord,
+  AiOutputReportRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -27,6 +31,9 @@ import type {
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
+  FrogSleepBuddyGroupRecord,
+  FrogSleepBuddyGroupMemberRecord,
+  FrogSleepBuddyGroupInvitationRecord,
   FrogSleepEntityFilter,
   FrogSleepEntityKind,
   FrogSleepEntityRecord,
@@ -40,6 +47,26 @@ import type {
 } from "../../shared/types.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
+import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
+import type {
+  BodyLogBlockRecord,
+  BodyLogFriendRequestRecord,
+  BodyLogFriendshipRecord,
+  BodyLogReportRecord,
+} from "../../modules/bodylog/bodylog-social.types.ts";
+import type {
+  BodyLogDailyAggregate,
+  BodyLogLeaderboardEntryRecord,
+  BodyLogWeeklyGoalSnapshot,
+} from "../../modules/bodylog/bodylog-scoring.types.ts";
+import type {
+  BodyLogInvitationAttributionRecord,
+  BodyLogInvitationRecord,
+} from "../../modules/bodylog/bodylog-invitation.types.ts";
+import type {
+  BodyLogChallengeMemberRecord,
+  BodyLogChallengeRecord,
+} from "../../modules/bodylog/bodylog-challenge.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -84,7 +111,49 @@ export abstract class ApplicationDatabase {
     userId: string,
     status: AppUserRecord["status"],
   ): MaybePromise<AppUserRecord | undefined>;
+  abstract finalizeAppUserAccountRegion(
+    appId: string,
+    userId: string,
+    accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
+  ): MaybePromise<AppUserRecord | undefined>;
   abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
+
+  abstract findBodyLogProfile(
+    appId: string,
+    userId: string,
+  ): MaybePromise<BodyLogProfileRecord | undefined>;
+  abstract upsertBodyLogProfile(
+    record: BodyLogProfileRecord,
+  ): MaybePromise<BodyLogProfileRecord>;
+  abstract listBodyLogFriendRequests(appId: string): MaybePromise<BodyLogFriendRequestRecord[]>;
+  abstract upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): MaybePromise<BodyLogFriendRequestRecord>;
+  abstract listBodyLogFriendships(appId: string): MaybePromise<BodyLogFriendshipRecord[]>;
+  abstract insertBodyLogFriendship(record: BodyLogFriendshipRecord): MaybePromise<void>;
+  abstract deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): MaybePromise<void>;
+  abstract listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
+  abstract insertBodyLogBlock(record: BodyLogBlockRecord): MaybePromise<void>;
+  abstract deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
+  abstract insertBodyLogReport(record: BodyLogReportRecord): MaybePromise<void>;
+  abstract listBodyLogReports(appId: string, reporterUserId: string): MaybePromise<BodyLogReportRecord[]>;
+  abstract findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogWeeklyGoalSnapshot | undefined>;
+  abstract upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot): MaybePromise<BodyLogWeeklyGoalSnapshot>;
+  abstract listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogDailyAggregate[]>;
+  abstract upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate): MaybePromise<BodyLogDailyAggregate>;
+  abstract findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord | undefined>;
+  abstract upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): MaybePromise<BodyLogLeaderboardEntryRecord>;
+  abstract listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord[]>;
+  abstract findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): MaybePromise<BodyLogInvitationRecord | undefined>;
+  abstract insertBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
+  abstract listBodyLogInvitations(appId: string, inviterUserId: string): MaybePromise<BodyLogInvitationRecord[]>;
+  abstract insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
+  abstract updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
+  abstract listBodyLogInvitationAttributions(appId: string): MaybePromise<BodyLogInvitationAttributionRecord[]>;
+  abstract insertBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
+  abstract updateBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
+  abstract listBodyLogChallenges(appId: string): MaybePromise<BodyLogChallengeRecord[]>;
+  abstract insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): MaybePromise<void>;
+  abstract updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): MaybePromise<void>;
+  abstract listBodyLogChallengeMembers(appId: string): MaybePromise<BodyLogChallengeMemberRecord[]>;
 
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;
@@ -268,6 +337,53 @@ export abstract class ApplicationDatabase {
     status: FrogSleepBuddyDomainRelationshipRecord["status"];
     pausedByUserIds: string[]; revokedAt?: string; updatedAt: string;
   }): MaybePromise<FrogSleepBuddyDomainRelationshipRecord | undefined>;
+  abstract insertFrogSleepBuddyGroup(
+    record: FrogSleepBuddyGroupRecord,
+  ): MaybePromise<FrogSleepBuddyGroupRecord>;
+  abstract findFrogSleepBuddyGroup(
+    appId: string, groupId: string,
+  ): MaybePromise<FrogSleepBuddyGroupRecord | undefined>;
+  abstract listFrogSleepBuddyGroupsForUser(
+    appId: string, userId: string,
+  ): MaybePromise<FrogSleepBuddyGroupRecord[]>;
+  abstract listFrogSleepBuddyGroupsForOwner(
+    appId: string, ownerUserId: string,
+  ): MaybePromise<FrogSleepBuddyGroupRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyGroup(input: {
+    appId: string; id: string; expectedVersion: number;
+    status: FrogSleepBuddyGroupRecord["status"]; memberCount: number;
+    sharingBaseline: string[]; dissolvedAt?: string; updatedAt: string;
+    groupName?: string; groupDescription?: string; groupDescriptionSpecified?: boolean;
+  }): MaybePromise<FrogSleepBuddyGroupRecord | undefined>;
+  abstract insertFrogSleepBuddyGroupMember(
+    record: FrogSleepBuddyGroupMemberRecord,
+  ): MaybePromise<FrogSleepBuddyGroupMemberRecord>;
+  abstract findFrogSleepBuddyGroupMember(
+    appId: string, groupId: string, userId: string,
+  ): MaybePromise<FrogSleepBuddyGroupMemberRecord | undefined>;
+  abstract listFrogSleepBuddyGroupMembers(
+    appId: string, groupId: string,
+  ): MaybePromise<FrogSleepBuddyGroupMemberRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyGroupMember(input: {
+    appId: string; groupId: string; userId: string; expectedVersion: number;
+    role: FrogSleepBuddyGroupMemberRecord["role"];
+    status: FrogSleepBuddyGroupMemberRecord["status"];
+    leftAt?: string; updatedAt: string;
+  }): MaybePromise<FrogSleepBuddyGroupMemberRecord | undefined>;
+  abstract insertFrogSleepBuddyGroupInvitation(
+    record: FrogSleepBuddyGroupInvitationRecord,
+  ): MaybePromise<FrogSleepBuddyGroupInvitationRecord>;
+  abstract findFrogSleepBuddyGroupInvitation(
+    appId: string, invitationId: string,
+  ): MaybePromise<FrogSleepBuddyGroupInvitationRecord | undefined>;
+  abstract listFrogSleepBuddyGroupInvitations(
+    appId: string, groupId: string,
+  ): MaybePromise<FrogSleepBuddyGroupInvitationRecord[]>;
+  abstract compareAndUpdateFrogSleepBuddyGroupInvitation(input: {
+    appId: string; invitationId: string; expectedVersion: number;
+    status: FrogSleepBuddyGroupInvitationRecord["status"];
+    respondedAt?: string; updatedAt: string;
+  }): MaybePromise<FrogSleepBuddyGroupInvitationRecord | undefined>;
   abstract upsertFrogSleepBuddyInvitationReceiptAttempt(
     record: FrogSleepBuddyInvitationReceiptAttemptRecord,
   ): MaybePromise<FrogSleepBuddyInvitationReceiptAttemptRecord>;
@@ -348,6 +464,69 @@ export abstract class ApplicationDatabase {
     feedbackId: string,
     attachmentId: string,
   ): MaybePromise<FeedbackAttachmentRecord | undefined>;
+
+  abstract insertAiOutputReport(
+    record: AiOutputReportRecord,
+  ): MaybePromise<void>;
+  abstract findAiOutputReportBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): MaybePromise<AiOutputReportRecord | undefined>;
+  abstract findAiOutputReportById(
+    appId: string,
+    reportId: string,
+  ): MaybePromise<AiOutputReportRecord | undefined>;
+  abstract listAiOutputReports(filter: {
+    appId: string;
+    userId?: string;
+    category?: AiOutputReportRecord["category"];
+    status?: AiOutputReportRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): MaybePromise<AiOutputReportRecord[]>;
+  abstract updateAiOutputReportStatus(
+    appId: string,
+    reportId: string,
+    status: AiOutputReportRecord["status"],
+    resolutionCode?: string,
+    resolutionNote?: string,
+  ): MaybePromise<AiOutputReportRecord | undefined>;
+  abstract insertAiOutputReaction(
+    record: AiOutputReactionRecord,
+  ): MaybePromise<void>;
+  abstract findAiOutputReactionBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): MaybePromise<AiOutputReactionRecord | undefined>;
+
+  abstract upsertAiNovelStatisticsSnapshot(
+    record: AiNovelStatisticsSnapshotRecord,
+  ): MaybePromise<void>;
+  abstract findAiNovelStatisticsSnapshot(
+    appId: string,
+    userId: string,
+  ): MaybePromise<AiNovelStatisticsSnapshotRecord | undefined>;
+  abstract replaceAiNovelDailyWritingStats(
+    appId: string,
+    userId: string,
+    records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
+  ): MaybePromise<void>;
+  abstract incrementAiNovelDailyTokenUsage(
+    appId: string,
+    userId: string,
+    date: string,
+    tokens: number,
+    updatedAt: string,
+  ): MaybePromise<void>;
+  abstract listAiNovelDailyStatistics(filter: {
+    appId: string;
+    userId: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): MaybePromise<AiNovelDailyStatisticsRecord[]>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {

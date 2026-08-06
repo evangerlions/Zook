@@ -200,6 +200,12 @@ common.llm_service
 {
   "enabled": true,
   "defaultModelKey": "kimi2.5",
+  "openRouter": {
+    "useTransparentProxy": false,
+    "transparentProxyBaseUrl": "https://oa.zimozone.com",
+    "transparentProxyKeyId": "",
+    "transparentProxyHmacSecretKey": "openrouter.proxy.hmac_secret"
+  },
   "providers": [
     {
       "key": "bailian",
@@ -227,6 +233,12 @@ common.llm_service
   ]
 }
 ```
+
+OpenRouter 透明代理只作用于发往 `https://openrouter.ai/**` 的请求。启用
+`openRouter.useTransparentProxy` 后，运行时会按
+`transparentProxyHmacSecretKey` 从 `common.passwords` 动态读取 HMAC secret；只有
+Key ID 与 secret 都存在时才改走代理，否则保持 OpenRouter 直连。OpenRouter API Key
+仍由 provider 的 `apiKey` 提供并作为 `Authorization` 原样透传，代理不保存该 token。
 
 ### 5.1 路由策略
 

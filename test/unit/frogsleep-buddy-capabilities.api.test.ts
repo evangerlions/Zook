@@ -70,7 +70,7 @@ test("v1 buddy capabilities are authenticated, cacheable, and expose only ordina
     assert.ok(expiresAt <= respondedAt + (5 * 60 * 1000));
     assert.deepEqual(response.body.data.commands, {
       create: true, accept: true, preview: true, email_delivery: false, activity: true, share: true,
-      focus_matching: false,
+      focus_matching: false, group_buddies: false,
     });
     assert.equal(response.body.data.safety_commands, undefined);
     assert.equal(response.body.data.invitation, undefined);
@@ -110,7 +110,7 @@ test("v1 buddy capabilities fail closed when ordinary growth flags are disabled"
     assert.equal(response.statusCode, 200);
     assert.deepEqual(response.body.data.commands, {
       create: false, accept: false, preview: false, email_delivery: false, activity: false, share: false,
-      focus_matching: false,
+      focus_matching: false, group_buddies: false,
     });
   } finally {
     restore();

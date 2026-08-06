@@ -1,6 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   AnalyticsEventRecord,
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
+  AiOutputReactionRecord,
+  AiOutputReportRecord,
   AppConfigRecord,
   AppNameI18n,
   AppRecord,
@@ -25,6 +29,9 @@ import type {
   FrogSleepBuddyInvitationReceiptAttemptRecord,
   FrogSleepBuddyDomainSlotRecord,
   FrogSleepBuddyDomainRelationshipRecord,
+  FrogSleepBuddyGroupRecord,
+  FrogSleepBuddyGroupMemberRecord,
+  FrogSleepBuddyGroupInvitationRecord,
   FrogSleepBuddyNotificationOutboxRecord,
   FrogSleepBuddyNotificationRecord,
   FrogSleepBuddyNotificationDeliveryRecord,
@@ -59,7 +66,28 @@ import {
   buildManagedStateSnapshot,
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
+import { InMemoryAiNovelStatisticsStore } from "./in-memory-ai-novel-statistics-store.ts";
 import { conflict } from "../shared/errors.ts";
+import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
+import type {
+  BodyLogBlockRecord,
+  BodyLogFriendRequestRecord,
+  BodyLogFriendshipRecord,
+  BodyLogReportRecord,
+} from "../modules/bodylog/bodylog-social.types.ts";
+import type {
+  BodyLogDailyAggregate,
+  BodyLogLeaderboardEntryRecord,
+  BodyLogWeeklyGoalSnapshot,
+} from "../modules/bodylog/bodylog-scoring.types.ts";
+import type {
+  BodyLogInvitationAttributionRecord,
+  BodyLogInvitationRecord,
+} from "../modules/bodylog/bodylog-invitation.types.ts";
+import type {
+  BodyLogChallengeMemberRecord,
+  BodyLogChallengeRecord,
+} from "../modules/bodylog/bodylog-challenge.types.ts";
 
 function normalizeListLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit as number), 500)) : 100;
@@ -71,6 +99,7 @@ function normalizeListLimit(limit?: number): number {
 export class InMemoryDatabase extends ApplicationDatabase {
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();
+  private readonly aiNovelStatistics: InMemoryAiNovelStatisticsStore;
   private readonly buddyCommandContext = new AsyncLocalStorage<Set<string>>();
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
@@ -109,9 +138,30 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyNotificationOutbox: FrogSleepBuddyNotificationOutboxRecord[];
   frogSleepBuddyNotifications: FrogSleepBuddyNotificationRecord[];
   frogSleepBuddyNotificationDeliveries: FrogSleepBuddyNotificationDeliveryRecord[];
+  frogSleepBuddyGroups: FrogSleepBuddyGroupRecord[];
+  frogSleepBuddyGroupMembers: FrogSleepBuddyGroupMemberRecord[];
+  frogSleepBuddyGroupInvitations: FrogSleepBuddyGroupInvitationRecord[];
+  aiOutputReportRecords: AiOutputReportRecord[];
+  aiOutputReactionRecords: AiOutputReactionRecord[];
+  bodyLogProfiles: BodyLogProfileRecord[];
+  bodyLogFriendRequests: BodyLogFriendRequestRecord[];
+  bodyLogFriendships: BodyLogFriendshipRecord[];
+  bodyLogBlocks: BodyLogBlockRecord[];
+  bodyLogReports: BodyLogReportRecord[];
+  bodyLogWeeklyGoalSnapshots: BodyLogWeeklyGoalSnapshot[];
+  bodyLogDailyAggregates: BodyLogDailyAggregate[];
+  bodyLogLeaderboardEntries: BodyLogLeaderboardEntryRecord[];
+  bodyLogInvitations: BodyLogInvitationRecord[];
+  bodyLogInvitationAttributions: BodyLogInvitationAttributionRecord[];
+  bodyLogChallenges: BodyLogChallengeRecord[];
+  bodyLogChallengeMembers: BodyLogChallengeMemberRecord[];
 
   constructor(seed: DatabaseSeed = {}) {
     super();
+    this.aiNovelStatistics = new InMemoryAiNovelStatisticsStore({
+      snapshots: seed.aiNovelStatisticsSnapshots,
+      dailyStatistics: seed.aiNovelDailyStatistics,
+    });
     this.apps = structuredClone(seed.apps ?? []);
     this.users = structuredClone(seed.users ?? []);
     this.appUsers = structuredClone(seed.appUsers ?? []);
@@ -145,7 +195,24 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyInvitationReceiptAttempts = structuredClone(seed.frogSleepBuddyInvitationReceiptAttempts ?? []);
     this.frogSleepBuddyNotificationOutbox = [];
     this.frogSleepBuddyNotifications = [];
+    this.frogSleepBuddyGroups = structuredClone(seed.frogSleepBuddyGroups ?? []);
+    this.frogSleepBuddyGroupMembers = structuredClone(seed.frogSleepBuddyGroupMembers ?? []);
+    this.frogSleepBuddyGroupInvitations = structuredClone(seed.frogSleepBuddyGroupInvitations ?? []);
     this.frogSleepBuddyNotificationDeliveries = [];
+    this.aiOutputReportRecords = structuredClone(seed.aiOutputReportRecords ?? []);
+    this.aiOutputReactionRecords = structuredClone(seed.aiOutputReactionRecords ?? []);
+    this.bodyLogProfiles = [];
+    this.bodyLogFriendRequests = [];
+    this.bodyLogFriendships = [];
+    this.bodyLogBlocks = [];
+    this.bodyLogReports = [];
+    this.bodyLogWeeklyGoalSnapshots = [];
+    this.bodyLogDailyAggregates = [];
+    this.bodyLogLeaderboardEntries = [];
+    this.bodyLogInvitations = [];
+    this.bodyLogInvitationAttributions = [];
+    this.bodyLogChallenges = [];
+    this.bodyLogChallengeMembers = [];
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -327,6 +394,25 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationOutbox = this.frogSleepBuddyNotificationOutbox.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotifications = this.frogSleepBuddyNotifications.filter((item) => item.appId !== appId);
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter((item) => item.appId !== appId);
+    this.aiOutputReportRecords = this.aiOutputReportRecords.filter(
+      (item) => item.appId !== appId,
+    );
+    this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
+      (item) => item.appId !== appId,
+    );
+    this.bodyLogProfiles = this.bodyLogProfiles.filter((item) => item.appId !== appId);
+    this.bodyLogFriendRequests = this.bodyLogFriendRequests.filter((item) => item.appId !== appId);
+    this.bodyLogFriendships = this.bodyLogFriendships.filter((item) => item.appId !== appId);
+    this.bodyLogBlocks = this.bodyLogBlocks.filter((item) => item.appId !== appId);
+    this.bodyLogReports = this.bodyLogReports.filter((item) => item.appId !== appId);
+    this.bodyLogWeeklyGoalSnapshots = this.bodyLogWeeklyGoalSnapshots.filter((item) => item.appId !== appId);
+    this.bodyLogDailyAggregates = this.bodyLogDailyAggregates.filter((item) => item.appId !== appId);
+    this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter((item) => item.appId !== appId);
+    this.bodyLogInvitations = this.bodyLogInvitations.filter((item) => item.appId !== appId);
+    this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter((item) => item.appId !== appId);
+    this.bodyLogChallenges = this.bodyLogChallenges.filter((item) => item.appId !== appId);
+    this.bodyLogChallengeMembers = this.bodyLogChallengeMembers.filter((item) => item.appId !== appId);
+    this.aiNovelStatistics.deleteApp(appId);
   }
 
   listAppUsers(appId?: string): AppUserRecord[] {
@@ -354,6 +440,19 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return structuredClone(membership);
   }
 
+  finalizeAppUserAccountRegion(
+    appId: string,
+    userId: string,
+    accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
+  ): AppUserRecord | undefined {
+    const membership = this.findAppUser(appId, userId);
+    if (!membership || membership.accountRegion !== "UNKNOWN") {
+      return undefined;
+    }
+    membership.accountRegion = accountRegion;
+    return structuredClone(membership);
+  }
+
   deleteAppUserRuntimeData(appId: string, userId: string): void {
     const uploadIds = this.clientLogUploads
       .filter((item) => item.appId === appId && item.userId === userId)
@@ -364,6 +463,51 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
     this.userRoles = this.userRoles.filter(
       (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogProfiles = this.bodyLogProfiles.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogFriendRequests = this.bodyLogFriendRequests.filter(
+      (item) => item.appId !== appId ||
+        (item.senderUserId !== userId && item.recipientUserId !== userId),
+    );
+    this.bodyLogFriendships = this.bodyLogFriendships.filter(
+      (item) => item.appId !== appId ||
+        (item.userId !== userId && item.friendUserId !== userId),
+    );
+    this.bodyLogBlocks = this.bodyLogBlocks.filter(
+      (item) => item.appId !== appId ||
+        (item.blockerUserId !== userId && item.blockedUserId !== userId),
+    );
+    this.bodyLogReports = this.bodyLogReports.filter(
+      (item) => item.appId !== appId ||
+        (item.reporterUserId !== userId && item.reportedUserId !== userId),
+    );
+    this.bodyLogWeeklyGoalSnapshots = this.bodyLogWeeklyGoalSnapshots.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogDailyAggregates = this.bodyLogDailyAggregates.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogLeaderboardEntries = this.bodyLogLeaderboardEntries.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.bodyLogInvitations = this.bodyLogInvitations.filter(
+      (item) => item.appId !== appId || item.inviterUserId !== userId,
+    );
+    this.bodyLogInvitationAttributions = this.bodyLogInvitationAttributions.filter(
+      (item) => item.appId !== appId ||
+        (item.inviterUserId !== userId && item.inviteeUserId !== userId),
+    );
+    const removedChallengeIds = this.bodyLogChallengeMembers.filter(
+      (item) => item.appId === appId && item.userId === userId,
+    ).map((item) => item.challengeId);
+    this.bodyLogChallenges = this.bodyLogChallenges.filter(
+      (item) => item.appId !== appId ||
+        (item.creatorUserId !== userId && !removedChallengeIds.includes(item.id)),
+    );
+    this.bodyLogChallengeMembers = this.bodyLogChallengeMembers.filter(
+      (item) => item.appId !== appId || !removedChallengeIds.includes(item.challengeId),
     );
     this.notificationJobs = this.notificationJobs.filter(
       (item) => item.appId !== appId || item.recipientUserId !== userId,
@@ -398,6 +542,13 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.feedbackAttachments = this.feedbackAttachments.filter(
       (item) => !feedbackIds.includes(item.feedbackId),
     );
+    this.aiOutputReportRecords = this.aiOutputReportRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.aiNovelStatistics.deleteUser(appId, userId);
     this.frogSleepDevices = this.frogSleepDevices.filter(
       (item) => item.appId !== appId || item.userId !== userId,
     );
@@ -423,6 +574,185 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationDeliveries = this.frogSleepBuddyNotificationDeliveries.filter(
       (item) => !removedNotificationIds.includes(item.notificationId),
     );
+  }
+
+  findBodyLogProfile(
+    appId: string,
+    userId: string,
+  ): BodyLogProfileRecord | undefined {
+    return structuredClone(
+      this.bodyLogProfiles.find(
+        (item) => item.appId === appId && item.userId === userId,
+      ),
+    );
+  }
+
+  upsertBodyLogProfile(record: BodyLogProfileRecord): BodyLogProfileRecord {
+    const index = this.bodyLogProfiles.findIndex(
+      (item) => item.appId === record.appId && item.userId === record.userId,
+    );
+    if (index >= 0) {
+      this.bodyLogProfiles[index] = structuredClone(record);
+    } else {
+      this.bodyLogProfiles.push(structuredClone(record));
+    }
+    return structuredClone(record);
+  }
+
+  listBodyLogFriendRequests(appId: string): BodyLogFriendRequestRecord[] {
+    return structuredClone(this.bodyLogFriendRequests.filter((item) => item.appId === appId));
+  }
+
+  upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): BodyLogFriendRequestRecord {
+    const index = this.bodyLogFriendRequests.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogFriendRequests[index] = structuredClone(record);
+    else this.bodyLogFriendRequests.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogFriendships(appId: string): BodyLogFriendshipRecord[] {
+    return structuredClone(this.bodyLogFriendships.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogFriendship(record: BodyLogFriendshipRecord): void {
+    const exists = this.bodyLogFriendships.some((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.friendUserId === record.friendUserId);
+    if (!exists) this.bodyLogFriendships.push(structuredClone(record));
+  }
+
+  deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): void {
+    this.bodyLogFriendships = this.bodyLogFriendships.filter((item) =>
+      item.appId !== appId ||
+      !((item.userId === userId && item.friendUserId === friendUserId) ||
+        (item.userId === friendUserId && item.friendUserId === userId)));
+  }
+
+  listBodyLogBlocks(appId: string): BodyLogBlockRecord[] {
+    return structuredClone(this.bodyLogBlocks.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogBlock(record: BodyLogBlockRecord): void {
+    const exists = this.bodyLogBlocks.some((item) =>
+      item.appId === record.appId && item.blockerUserId === record.blockerUserId &&
+      item.blockedUserId === record.blockedUserId);
+    if (!exists) this.bodyLogBlocks.push(structuredClone(record));
+  }
+
+  deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): void {
+    this.bodyLogBlocks = this.bodyLogBlocks.filter((item) =>
+      item.appId !== appId || item.blockerUserId !== blockerUserId ||
+      item.blockedUserId !== blockedUserId);
+  }
+
+  insertBodyLogReport(record: BodyLogReportRecord): void {
+    this.bodyLogReports.push(structuredClone(record));
+  }
+
+  listBodyLogReports(appId: string, reporterUserId: string): BodyLogReportRecord[] {
+    return structuredClone(this.bodyLogReports.filter((item) =>
+      item.appId === appId && item.reporterUserId === reporterUserId));
+  }
+
+  findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogWeeklyGoalSnapshots.find((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot) {
+    const index = this.bodyLogWeeklyGoalSnapshots.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel);
+    if (index >= 0) this.bodyLogWeeklyGoalSnapshots[index] = structuredClone(record);
+    else this.bodyLogWeeklyGoalSnapshots.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogDailyAggregates.filter((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate) {
+    const index = this.bodyLogDailyAggregates.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel && item.date === record.date);
+    if (index >= 0) this.bodyLogDailyAggregates[index] = structuredClone(record);
+    else this.bodyLogDailyAggregates.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogLeaderboardEntries.find((item) =>
+      item.appId === appId && item.userId === userId && item.seasonLabel === seasonLabel));
+  }
+
+  upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord) {
+    const index = this.bodyLogLeaderboardEntries.findIndex((item) =>
+      item.appId === record.appId && item.userId === record.userId &&
+      item.seasonLabel === record.seasonLabel);
+    if (index >= 0) this.bodyLogLeaderboardEntries[index] = structuredClone(record);
+    else this.bodyLogLeaderboardEntries.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  listBodyLogLeaderboardEntries(appId: string, seasonLabel: string) {
+    return structuredClone(this.bodyLogLeaderboardEntries.filter((item) =>
+      item.appId === appId && item.seasonLabel === seasonLabel));
+  }
+
+  findBodyLogInvitationByTokenHash(appId: string, tokenHash: string) {
+    return structuredClone(this.bodyLogInvitations.find((item) =>
+      item.appId === appId && item.tokenHash === tokenHash));
+  }
+
+  insertBodyLogInvitation(record: BodyLogInvitationRecord): void {
+    this.bodyLogInvitations.push(structuredClone(record));
+  }
+
+  listBodyLogInvitations(appId: string, inviterUserId: string) {
+    return structuredClone(this.bodyLogInvitations.filter((item) =>
+      item.appId === appId && item.inviterUserId === inviterUserId));
+  }
+
+  insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): void {
+    this.bodyLogInvitationAttributions.push(structuredClone(record));
+  }
+
+  updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): void {
+    const index = this.bodyLogInvitationAttributions.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogInvitationAttributions[index] = structuredClone(record);
+  }
+
+  listBodyLogInvitationAttributions(appId: string) {
+    return structuredClone(this.bodyLogInvitationAttributions.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogChallenge(record: BodyLogChallengeRecord): void {
+    this.bodyLogChallenges.push(structuredClone(record));
+  }
+
+  updateBodyLogChallenge(record: BodyLogChallengeRecord): void {
+    const index = this.bodyLogChallenges.findIndex((item) => item.id === record.id);
+    if (index >= 0) this.bodyLogChallenges[index] = structuredClone(record);
+  }
+
+  listBodyLogChallenges(appId: string) {
+    return structuredClone(this.bodyLogChallenges.filter((item) => item.appId === appId));
+  }
+
+  insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): void {
+    this.bodyLogChallengeMembers.push(...structuredClone(records));
+  }
+
+  updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): void {
+    const index = this.bodyLogChallengeMembers.findIndex((item) =>
+      item.challengeId === record.challengeId && item.userId === record.userId);
+    if (index >= 0) this.bodyLogChallengeMembers[index] = structuredClone(record);
+  }
+
+  listBodyLogChallengeMembers(appId: string) {
+    return structuredClone(this.bodyLogChallengeMembers.filter((item) => item.appId === appId));
   }
 
   listRoles(appId?: string): RoleRecord[] {
@@ -1125,6 +1455,127 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return structuredClone(existing);
   }
 
+  insertFrogSleepBuddyGroup(record: FrogSleepBuddyGroupRecord): FrogSleepBuddyGroupRecord {
+    const existing = this.frogSleepBuddyGroups.find((item) => item.id === record.id);
+    if (existing) {
+      if (existing.appId !== record.appId) throw new Error("FrogSleep buddy group ID collision.");
+      return structuredClone(existing);
+    }
+    this.frogSleepBuddyGroups.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findFrogSleepBuddyGroup(appId: string, groupId: string): FrogSleepBuddyGroupRecord | undefined {
+    return structuredClone(this.frogSleepBuddyGroups.find((item) =>
+      item.appId === appId && item.id === groupId));
+  }
+
+  listFrogSleepBuddyGroupsForUser(appId: string, userId: string): FrogSleepBuddyGroupRecord[] {
+    const groupIds = new Set(this.frogSleepBuddyGroupMembers
+      .filter((member) => member.appId === appId && member.userId === userId && member.status === "active")
+      .map((member) => member.groupId));
+    return structuredClone(this.frogSleepBuddyGroups.filter((group) =>
+      group.appId === appId && groupIds.has(group.id) && group.status !== "dissolved"
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)));
+  }
+
+  listFrogSleepBuddyGroupsForOwner(appId: string, ownerUserId: string): FrogSleepBuddyGroupRecord[] {
+    return structuredClone(this.frogSleepBuddyGroups.filter((group) =>
+      group.appId === appId && group.ownerUserId === ownerUserId && group.status !== "dissolved"
+    ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)));
+  }
+
+  compareAndUpdateFrogSleepBuddyGroup(input: {
+    appId: string; id: string; expectedVersion: number; status: FrogSleepBuddyGroupRecord["status"];
+    memberCount: number; sharingBaseline: string[]; dissolvedAt?: string; updatedAt: string;
+    groupName?: string; groupDescription?: string; groupDescriptionSpecified?: boolean;
+  }): FrogSleepBuddyGroupRecord | undefined {
+    const existing = this.frogSleepBuddyGroups.find((item) => item.appId === input.appId && item.id === input.id);
+    if (!existing || existing.version !== input.expectedVersion) return undefined;
+    const updated: FrogSleepBuddyGroupRecord = { ...existing, status: input.status, memberCount: input.memberCount,
+      sharingBaseline: input.sharingBaseline, dissolvedAt: input.dissolvedAt,
+      groupName: input.groupName ?? existing.groupName,
+      groupDescription: input.groupDescriptionSpecified ? input.groupDescription : existing.groupDescription,
+      version: existing.version + 1, updatedAt: input.updatedAt };
+    Object.assign(existing, updated);
+    return structuredClone(existing);
+  }
+
+  insertFrogSleepBuddyGroupMember(record: FrogSleepBuddyGroupMemberRecord): FrogSleepBuddyGroupMemberRecord {
+    const existing = this.frogSleepBuddyGroupMembers.find((item) =>
+      item.appId === record.appId && item.groupId === record.groupId && item.userId === record.userId);
+    if (!existing) {
+      this.frogSleepBuddyGroupMembers.push(structuredClone(record));
+      return structuredClone(record);
+    }
+    Object.assign(existing, record);
+    return structuredClone(existing);
+  }
+
+  findFrogSleepBuddyGroupMember(
+    appId: string, groupId: string, userId: string,
+  ): FrogSleepBuddyGroupMemberRecord | undefined {
+    return structuredClone(this.frogSleepBuddyGroupMembers.find((item) =>
+      item.appId === appId && item.groupId === groupId && item.userId === userId));
+  }
+
+  listFrogSleepBuddyGroupMembers(appId: string, groupId: string): FrogSleepBuddyGroupMemberRecord[] {
+    return structuredClone(this.frogSleepBuddyGroupMembers.filter((item) =>
+      item.appId === appId && item.groupId === groupId
+    ).sort((left, right) => String(left.joinedAt ?? "").localeCompare(String(right.joinedAt ?? ""))
+      || left.id.localeCompare(right.id)));
+  }
+
+  compareAndUpdateFrogSleepBuddyGroupMember(input: {
+    appId: string; groupId: string; userId: string; expectedVersion: number;
+    role: FrogSleepBuddyGroupMemberRecord["role"]; status: FrogSleepBuddyGroupMemberRecord["status"];
+    leftAt?: string; updatedAt: string;
+  }): FrogSleepBuddyGroupMemberRecord | undefined {
+    const existing = this.frogSleepBuddyGroupMembers.find((item) =>
+      item.appId === input.appId && item.groupId === input.groupId && item.userId === input.userId);
+    if (!existing || existing.version !== input.expectedVersion) return undefined;
+    const updated: FrogSleepBuddyGroupMemberRecord = { ...existing, role: input.role, status: input.status,
+      leftAt: input.leftAt, version: existing.version + 1, updatedAt: input.updatedAt };
+    Object.assign(existing, updated);
+    return structuredClone(existing);
+  }
+
+  insertFrogSleepBuddyGroupInvitation(record: FrogSleepBuddyGroupInvitationRecord): FrogSleepBuddyGroupInvitationRecord {
+    const existing = this.frogSleepBuddyGroupInvitations.find((item) => item.id === record.id);
+    if (existing) {
+      if (existing.appId !== record.appId) throw new Error("FrogSleep buddy group invitation ID collision.");
+      return structuredClone(existing);
+    }
+    this.frogSleepBuddyGroupInvitations.push(structuredClone(record));
+    return structuredClone(record);
+  }
+
+  findFrogSleepBuddyGroupInvitation(
+    appId: string, invitationId: string,
+  ): FrogSleepBuddyGroupInvitationRecord | undefined {
+    return structuredClone(this.frogSleepBuddyGroupInvitations.find((item) =>
+      item.appId === appId && item.id === invitationId));
+  }
+
+  listFrogSleepBuddyGroupInvitations(appId: string, groupId: string): FrogSleepBuddyGroupInvitationRecord[] {
+    return structuredClone(this.frogSleepBuddyGroupInvitations.filter((item) =>
+      item.appId === appId && item.groupId === groupId
+    ).sort((left, right) => right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id)));
+  }
+
+  compareAndUpdateFrogSleepBuddyGroupInvitation(input: {
+    appId: string; invitationId: string; expectedVersion: number;
+    status: FrogSleepBuddyGroupInvitationRecord["status"]; respondedAt?: string; updatedAt: string;
+  }): FrogSleepBuddyGroupInvitationRecord | undefined {
+    const existing = this.frogSleepBuddyGroupInvitations.find((item) =>
+      item.appId === input.appId && item.id === input.invitationId);
+    if (!existing || existing.version !== input.expectedVersion) return undefined;
+    const updated: FrogSleepBuddyGroupInvitationRecord = { ...existing, status: input.status,
+      respondedAt: input.respondedAt, version: existing.version + 1, updatedAt: input.updatedAt };
+    Object.assign(existing, updated);
+    return structuredClone(existing);
+  }
+
   upsertFrogSleepBuddyInvitationReceiptAttempt(
     record: FrogSleepBuddyInvitationReceiptAttemptRecord,
   ): FrogSleepBuddyInvitationReceiptAttemptRecord {
@@ -1448,6 +1899,151 @@ export class InMemoryDatabase extends ApplicationDatabase {
           item.id === attachmentId,
       ),
     );
+  }
+
+  insertAiOutputReport(record: AiOutputReportRecord): void {
+    this.aiOutputReportRecords.push(structuredClone(record));
+  }
+
+  findAiOutputReportBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): AiOutputReportRecord | undefined {
+    return structuredClone(
+      this.aiOutputReportRecords.find(
+        (item) =>
+          item.appId === appId &&
+          item.userId === userId &&
+          item.submissionId === submissionId,
+      ),
+    );
+  }
+
+  findAiOutputReportById(
+    appId: string,
+    reportId: string,
+  ): AiOutputReportRecord | undefined {
+    return structuredClone(
+      this.aiOutputReportRecords.find(
+        (item) => item.appId === appId && item.id === reportId,
+      ),
+    );
+  }
+
+  listAiOutputReports(filter: {
+    appId: string;
+    userId?: string;
+    category?: AiOutputReportRecord["category"];
+    status?: AiOutputReportRecord["status"];
+    createdAtFromIso?: string;
+    limit?: number;
+  }): AiOutputReportRecord[] {
+    const records = structuredClone(this.aiOutputReportRecords)
+      .filter((item) => item.appId === filter.appId)
+      .filter((item) => (filter.userId ? item.userId === filter.userId : true))
+      .filter((item) =>
+        filter.category ? item.category === filter.category : true
+      )
+      .filter((item) => (filter.status ? item.status === filter.status : true))
+      .filter((item) =>
+        filter.createdAtFromIso
+          ? item.createdAt >= filter.createdAtFromIso
+          : true
+      )
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    return typeof filter.limit === "number" && filter.limit > 0
+      ? records.slice(0, Math.min(Math.floor(filter.limit), 500))
+      : records;
+  }
+
+  updateAiOutputReportStatus(
+    appId: string,
+    reportId: string,
+    status: AiOutputReportRecord["status"],
+    resolutionCode?: string,
+    resolutionNote?: string,
+  ): AiOutputReportRecord | undefined {
+    const record = this.aiOutputReportRecords.find(
+      (item) => item.appId === appId && item.id === reportId,
+    );
+    if (!record) {
+      return undefined;
+    }
+    const now = new Date().toISOString();
+    record.status = status;
+    record.resolutionCode = resolutionCode;
+    record.resolutionNote = resolutionNote;
+    record.updatedAt = now;
+    record.resolvedAt =
+      status === "resolved" || status === "rejected" ? now : undefined;
+    return structuredClone(record);
+  }
+
+  insertAiOutputReaction(record: AiOutputReactionRecord): void {
+    this.aiOutputReactionRecords.push(structuredClone(record));
+  }
+
+  findAiOutputReactionBySubmission(
+    appId: string,
+    userId: string,
+    submissionId: string,
+  ): AiOutputReactionRecord | undefined {
+    return structuredClone(
+      this.aiOutputReactionRecords.find(
+        (item) =>
+          item.appId === appId &&
+          item.userId === userId &&
+          item.submissionId === submissionId,
+      ),
+    );
+  }
+
+  get aiNovelStatisticsSnapshots(): AiNovelStatisticsSnapshotRecord[] {
+    return this.aiNovelStatistics.snapshots;
+  }
+
+  get aiNovelDailyStatistics(): AiNovelDailyStatisticsRecord[] {
+    return this.aiNovelStatistics.dailyStatistics;
+  }
+
+  upsertAiNovelStatisticsSnapshot(record: AiNovelStatisticsSnapshotRecord): void {
+    this.aiNovelStatistics.upsertSnapshot(record);
+  }
+
+  findAiNovelStatisticsSnapshot(
+    appId: string,
+    userId: string,
+  ): AiNovelStatisticsSnapshotRecord | undefined {
+    return this.aiNovelStatistics.findSnapshot(appId, userId);
+  }
+
+  replaceAiNovelDailyWritingStats(
+    appId: string,
+    userId: string,
+    records: AiNovelDailyStatisticsRecord[],
+    updatedAt: string,
+  ): void {
+    this.aiNovelStatistics.replaceDailyWritingStats(appId, userId, records, updatedAt);
+  }
+
+  incrementAiNovelDailyTokenUsage(
+    appId: string,
+    userId: string,
+    date: string,
+    tokens: number,
+    updatedAt: string,
+  ): void {
+    this.aiNovelStatistics.incrementTokenUsage(appId, userId, date, tokens, updatedAt);
+  }
+
+  listAiNovelDailyStatistics(filter: {
+    appId: string;
+    userId: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): AiNovelDailyStatisticsRecord[] {
+    return this.aiNovelStatistics.listDailyStatistics(filter);
   }
 
   get seedManagedState(): ManagedStateSnapshot {

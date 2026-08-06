@@ -27,7 +27,7 @@ test("guardrail breach disables prompts and escalates safety regressions", () =>
 });
 
 test("retention migration and policy cover every derived buddy resource", async () => {
-  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/012_frogsleep_buddy_governance.sql", import.meta.url), "utf8");
+  const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/013_frogsleep_buddy_governance.sql", import.meta.url), "utf8");
   for (const resource of ["notification_deliveries", "notifications", "shares", "interactions",
     "invitation_receipts"]) assert.match(sql, new RegExp(resource));
   assert.equal(buddyRetentionDays.auditRecord, 730);

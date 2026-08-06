@@ -106,8 +106,8 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
       const migrations = await sql.query(`SELECT name FROM zook_schema_migrations
         WHERE name LIKE '015_%' OR name LIKE '016_%' OR name LIKE '017_%' ORDER BY name`);
       assert.deepEqual(migrations.rows.map((row) => row.name), [
-        "015_frogsleep_buddy_domain_slots.sql", "016_frogsleep_buddy_domain_relationships.sql",
-        "017_frogsleep_buddy_canonical_invitation_email.sql",
+        "016_frogsleep_buddy_domain_slots.sql", "017_frogsleep_buddy_domain_relationships.sql",
+        "018_frogsleep_buddy_canonical_invitation_email.sql",
       ]);
       await assert.rejects(sql.query(`INSERT INTO zook_frogsleep_buddy_domain_slots
         (app_id,user_id,domain,state,version) VALUES ($1,$2,'bundle','available',1)`, [appId, "user_alice"]), /check constraint/i);

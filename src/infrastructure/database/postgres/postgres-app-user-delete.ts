@@ -33,13 +33,29 @@ export async function deletePostgresAppUserRuntimeData(
   appId: string,
   userId: string,
 ): Promise<void> {
+  await query("DELETE FROM zook_bodylog_challenge_members WHERE app_id = $1 AND challenge_id IN (SELECT challenge_id FROM zook_bodylog_challenge_members WHERE app_id = $1 AND user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_challenges WHERE app_id = $1 AND (creator_user_id = $2 OR id NOT IN (SELECT DISTINCT challenge_id FROM zook_bodylog_challenge_members WHERE app_id = $1))", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_invitation_attributions WHERE app_id = $1 AND (inviter_user_id = $2 OR invitee_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_invitations WHERE app_id = $1 AND inviter_user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_leaderboard_entries WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_daily_aggregates WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_weekly_goal_snapshots WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_reports WHERE app_id = $1 AND (reporter_user_id = $2 OR reported_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_blocks WHERE app_id = $1 AND (blocker_user_id = $2 OR blocked_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_friendships WHERE app_id = $1 AND (user_id = $2 OR friend_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_friend_requests WHERE app_id = $1 AND (sender_user_id = $2 OR recipient_user_id = $2)", [appId, userId]);
+  await query("DELETE FROM zook_bodylog_profiles WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_user_roles WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_notification_jobs WHERE app_id = $1 AND recipient_user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_analytics_events WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_content_safety_checks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_ai_novel_daily_statistics WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_ai_novel_statistics_snapshots WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_files WHERE app_id = $1 AND owner_user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_feedback_attachments WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_feedback WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_ai_output_reports WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await query("DELETE FROM zook_ai_output_reactions WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_client_log_lines WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_client_log_uploads WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_client_log_upload_tasks WHERE app_id = $1 AND user_id = $2", [appId, userId]);

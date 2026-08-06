@@ -121,7 +121,7 @@ test("shared in-memory slots reject unknown state and invalid relationship combi
 });
 
 test("domain slot migration enforces tuple, state, version, and relationship invariants", async () => {
-  const sql = await readFile(resolve(import.meta.dirname, "../../src/infrastructure/database/postgres/migrations/015_frogsleep_buddy_domain_slots.sql"), "utf8");
+  const sql = await readFile(resolve(import.meta.dirname, "../../src/infrastructure/database/postgres/migrations/016_frogsleep_buddy_domain_slots.sql"), "utf8");
 
   assert.match(sql, /UNIQUE \(app_id, user_id, domain\)/);
   assert.match(sql, /domain IN \('sleep', 'focus'\)/);

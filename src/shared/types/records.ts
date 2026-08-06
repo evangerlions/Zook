@@ -1,4 +1,5 @@
 import type {
+  AccountRegion,
   AppStatus,
   AppUserStatus,
   ContentSafetyCheckMethod,
@@ -13,7 +14,6 @@ import type {
   RoleStatus,
   UserStatus,
 } from "./enums.ts";
-import type { SmsVerificationRecord } from "./sms-verification.ts";
 
 export interface AppRecord {
   id: string;
@@ -47,6 +47,7 @@ export interface AppUserRecord {
   appId: string;
   userId: string;
   status: AppUserStatus;
+  accountRegion: AccountRegion;
   joinedAt: string;
 }
 
@@ -557,30 +558,84 @@ export interface FeedbackAttachmentRecord {
   createdAt: string;
 }
 
-export interface DatabaseSeed {
-  apps?: AppRecord[];
-  users?: UserRecord[];
-  appUsers?: AppUserRecord[];
-  roles?: RoleRecord[];
-  permissions?: PermissionRecord[];
-  rolePermissions?: RolePermissionRecord[];
-  userRoles?: UserRoleRecord[];
-  refreshTokens?: RefreshTokenRecord[];
-  auditLogs?: AuditLogRecord[];
-  notificationJobs?: NotificationJobRecord[];
-  failedEvents?: FailedEventRecord[];
-  smsVerificationRecords?: SmsVerificationRecord[];
-  appConfigs?: AppConfigRecord[];
-  analyticsEvents?: AnalyticsEventRecord[];
-  files?: FileRecord[];
-  clientLogUploadTasks?: ClientLogUploadTaskRecord[];
-  clientLogUploads?: ClientLogUploadRecord[];
-  clientLogLines?: ClientLogLineRecord[];
-  contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
-  feedbackRecords?: FeedbackRecord[];
-  feedbackAttachments?: FeedbackAttachmentRecord[];
-  frogSleepBuddyInvitationDomainDecisions?: FrogSleepBuddyInvitationDomainDecisionRecord[];
-  frogSleepBuddyDomainSlots?: FrogSleepBuddyDomainSlotRecord[];
-  frogSleepBuddyDomainRelationships?: FrogSleepBuddyDomainRelationshipRecord[];
-  frogSleepBuddyInvitationReceiptAttempts?: FrogSleepBuddyInvitationReceiptAttemptRecord[];
+export const AI_OUTPUT_REPORT_STATUSES = [
+  "received",
+  "reviewing",
+  "resolved",
+  "rejected",
+] as const;
+export type AiOutputReportStatus = typeof AI_OUTPUT_REPORT_STATUSES[number];
+
+export const AI_OUTPUT_REPORT_CATEGORIES = [
+  "harmful_unsafe",
+  "sexual_vulgar",
+  "abuse_harassment",
+  "illegal_crime",
+  "privacy_personal_info",
+  "misinformation",
+  "rights_infringement",
+  "other",
+] as const;
+export type AiOutputReportCategory =
+  typeof AI_OUTPUT_REPORT_CATEGORIES[number];
+
+export interface AiOutputReportRecord {
+  id: string;
+  submissionId: string;
+  appId: string;
+  userId: string;
+  targetType: "chat_message" | "chapter_revision";
+  targetId: string;
+  messageId?: string;
+  sessionId?: string;
+  chapterId?: number;
+  chapterRevisionId?: string;
+  scene: "kickoff" | "write" | "history_qa";
+  category: AiOutputReportCategory;
+  description?: string;
+  encryptedContentKeyId: string;
+  encryptedContentAlgorithm: string;
+  encryptedContentNonceBase64: string;
+  encryptedContentCiphertextBase64: string;
+  contentHash: string;
+  turnId?: string;
+  providerRequestId?: string;
+  modelKey?: string;
+  clientRegion?: string;
+  accountRegion: string;
+  effectiveRegion?: string;
+  platform?: string;
+  appVersion?: string;
+  locale?: string;
+  status: AiOutputReportStatus;
+  resolutionCode?: string;
+  resolutionNote?: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
 }
+
+export interface AiOutputReactionRecord {
+  id: string;
+  submissionId: string;
+  appId: string;
+  userId: string;
+  targetType: "chapter_revision";
+  targetId: string;
+  reaction: "like";
+  chapterId: number;
+  chapterRevisionId: string;
+  contentHash: string;
+  turnId?: string;
+  providerRequestId?: string;
+  platform?: string;
+  appVersion?: string;
+  effectiveRegion?: string;
+  createdAt: string;
+}
+
+export type {
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
+} from "./ai-novel-statistics.ts";
+export type { DatabaseSeed } from "./database-seed.ts";

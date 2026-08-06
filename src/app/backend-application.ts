@@ -20,6 +20,8 @@ import { AppAiRoutingConfigService } from "../services/app-ai-routing-config.ser
 import { AppLogSecretService } from "../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../services/app-remote-log-pull.service.ts";
 import { AdminSensitiveOperationService } from "../services/admin-sensitive-operation.service.ts";
+import { AiNovelStatisticsService } from "../services/ai-novel-statistics.service.ts";
+import { AiOutputReportingService } from "../services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService } from "../services/aes-gcm-payload-crypto.service.ts";
 import { ClientLogUploadService } from "../services/client-log-upload.service.ts";
 import { ContentSafetyService } from "../services/content-safety.service.ts";
@@ -47,10 +49,18 @@ import { tryHandleAdminRoutes } from "./admin-routes.ts";
 import { tryHandleAiNovelRoutes } from "./ai-novel-routes.ts";
 import { tryHandleFileNotificationRoutes } from "./file-notification-routes.ts";
 import { tryHandleFeedbackRoutes } from "./feedback-routes.ts";
+import { tryHandleAiOutputReportingRoutes } from "./ai-output-reporting-routes.ts";
 import { tryHandleFrogSleepV1Routes } from "./frogsleep-v1-routes.ts";
 import { tryHandleLogRoutes } from "./log-routes.ts";
 import { tryHandlePublicAuthRoutes } from "./public-auth-routes.ts";
 import { tryHandleTencentSesEmailCallbackRoutes } from "./tencent-ses-email-callback-routes.ts";
+import { tryHandleBodyLogV1Routes } from "./bodylog-v1-routes.ts";
+import type { BodyLogProfileService } from "../modules/bodylog/bodylog-profile.service.ts";
+import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.service.ts";
+import type { BodyLogLeaderboardService } from "../modules/bodylog/bodylog-leaderboard.service.ts";
+import type { BodyLogInvitationService } from "../modules/bodylog/bodylog-invitation.service.ts";
+import type { BodyLogChallengeService } from "../modules/bodylog/bodylog-challenge.service.ts";
+import { tryHandleBodyLogAssociationRoutes } from "./bodylog-association-routes.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -81,6 +91,11 @@ export class BackendApplication extends BackendRouteContext {
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly contentSafetyService: ContentSafetyService,
+    private readonly bodyLogProfileService: BodyLogProfileService,
+    private readonly bodyLogSocialService: BodyLogSocialService,
+    private readonly bodyLogLeaderboardService: BodyLogLeaderboardService,
+    private readonly bodyLogInvitationService: BodyLogInvitationService,
+    private readonly bodyLogChallengeService: BodyLogChallengeService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelAuditFileService: AiNovelAuditFileService,
     private readonly aiNovelLlmService: AiNovelLlmService,
@@ -94,6 +109,8 @@ export class BackendApplication extends BackendRouteContext {
     private readonly publicApiMessageService: PublicApiMessageService,
     private readonly tencentSesEmailCallbackService: TencentSesEmailCallbackService,
     private readonly feedbackService: FeedbackService,
+    private readonly aiNovelStatisticsService: AiNovelStatisticsService,
+    private readonly aiOutputReportingService: AiOutputReportingService,
     private readonly logger: StructuredLogger,
     private readonly auditInterceptor: AuditInterceptor,
     private readonly requestLoggingInterceptor: RequestLoggingInterceptor,
@@ -118,12 +135,15 @@ export class BackendApplication extends BackendRouteContext {
       tencentSesEmailCallbackService,
       feedbackService,
       notificationService,
+      aiNovelStatisticsService,
+      aiOutputReportingService,
       appContextResolver,
       authGuard,
       appAccessGuard,
       validationPipe,
       commonTestAccountService,
       kvManager,
+      auditInterceptor,
     );
   }
 
@@ -188,10 +208,16 @@ export class BackendApplication extends BackendRouteContext {
       failedEventRetryService: this.failedEventRetryService,
       tencentSesEmailCallbackService: this.tencentSesEmailCallbackService,
       feedbackService: this.feedbackService,
+      aiNovelStatisticsService: this.aiNovelStatisticsService,
+      aiOutputReportingService: this.aiOutputReportingService,
     };
   }
 
   private async dispatch(request: HttpRequest): Promise<HttpResponse<unknown>> {
+    const associationResponse = tryHandleBodyLogAssociationRoutes(request);
+    if (associationResponse) {
+      return associationResponse;
+    }
     if (request.method === "GET" && request.path === "/api/health") {
       return this.ok(
         { status: "ok", version: resolveRuntimeVersion() },
@@ -209,6 +235,19 @@ export class BackendApplication extends BackendRouteContext {
       return publicAuthResponse;
     }
 
+    const bodyLogResponse = await tryHandleBodyLogV1Routes(
+      this,
+      this.bodyLogProfileService,
+      this.bodyLogSocialService,
+      this.bodyLogLeaderboardService,
+      this.bodyLogInvitationService,
+      this.bodyLogChallengeService,
+      request,
+    );
+    if (bodyLogResponse) {
+      return bodyLogResponse;
+    }
+
     const tencentSesEmailCallbackResponse = await tryHandleTencentSesEmailCallbackRoutes.call(this, request);
     if (tencentSesEmailCallbackResponse) {
       return tencentSesEmailCallbackResponse;
@@ -222,6 +261,12 @@ export class BackendApplication extends BackendRouteContext {
     const feedbackResponse = await tryHandleFeedbackRoutes.call(this, request);
     if (feedbackResponse) {
       return feedbackResponse;
+    }
+
+    const aiOutputReportingResponse =
+      await tryHandleAiOutputReportingRoutes.call(this, request);
+    if (aiOutputReportingResponse) {
+      return aiOutputReportingResponse;
     }
 
     const aiNovelResponse = await tryHandleAiNovelRoutes.call(this, request);

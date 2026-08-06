@@ -9,6 +9,7 @@ import { emitFrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-anal
 import { parsePaginationParams } from "../modules/frogsleep/frogsleep-validation.ts";
 import { FrogSleepSleepBuddyService } from "../modules/frogsleep/sleep-buddy/sleep-buddy.service.ts";
 import { tryHandleBuddyGrowthRoutes } from "./frogsleep-v1-buddy-routes.ts";
+import { tryHandleBuddyGroupRoutes } from "./frogsleep-v1-buddy-group-routes.ts";
 import { tryHandleBuddyCapabilitiesRoutes } from "./frogsleep-v1-buddy-capabilities-routes.ts";
 import { tryHandleBuddySafetyRoutes } from "./frogsleep-v1-buddy-safety-routes.ts";
 import { resolveBuddyGrowthCapabilities } from "../modules/frogsleep/buddy-growth/buddy-growth-capabilities.ts";
@@ -260,6 +261,8 @@ export async function tryHandleFrogSleepV1Routes(
   if (buddyCapabilitiesResponse) return buddyCapabilitiesResponse;
   const buddyGrowthResponse = await tryHandleBuddyGrowthRoutes(this, routeRequest);
   if (buddyGrowthResponse) return buddyGrowthResponse;
+  const buddyGroupResponse = await tryHandleBuddyGroupRoutes(this, routeRequest);
+  if (buddyGroupResponse) return buddyGroupResponse;
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/relationships/invites") {
     return await handleSleepInviteCreate(this, routeRequest);
   }
