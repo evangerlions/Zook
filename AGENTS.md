@@ -1,5 +1,18 @@
 # AGENTS
 
+## Mandatory Development and Release Flow
+
+- `main` 是唯一开发真值和唯一发布来源。任何业务功能、修复、配置、数据库迁移、API 合同和文档改动最终都必须先进入 `main`；严禁把 `release-dev` 或 `release-online` 当作开发分支。
+- 开始工作前必须先确认工作区干净，执行 `git fetch origin`，切换到 `main`，并以 fast-forward 方式同步 `origin/main`。不得基于落后的本地 `main` 开始新的开发。
+- 小提交是指单一目的、影响范围明确、能够在一轮内完成测试和复核的改动。小提交可以直接在最新 `main` 上开发；完成相关测试后提交并推送到 `origin/main`。
+- 大提交是指跨模块功能、较长周期开发、重构、数据库或协议迁移，或需要多个中间提交的改动。大提交必须从最新 `main` 创建 `feature/<topic>` 分支，所有开发提交先进入该 feature 分支；开发期间应持续同步最新 `main`，完成完整测试和复核后再合并回 `main`，并在合并后的 `main` 上重新运行相关测试后推送 `origin/main`。
+- feature 分支只能合并回 `main`，不得直接合并或推送到 `release-dev`、`release-online`。release 分支也不得反向合并回 `main`；需要保留的修复必须先在 `main` 实现。
+- `release-dev` 只能通过仓库根目录的 `./release_dev.sh` 从 `origin/main` 更新；`release-online` 只能通过 `./release_online.sh` 从 `origin/main` 更新。禁止手工在 release 分支提交、手工执行 `git push` 更新 release 分支，或直接调用 `release_branch.sh` 改用其他 source branch。
+- 发布前必须确认 `main` 工作区干净、目标提交已经推送到 `origin/main`，并且要求的单元测试、类型检查、构建或专项验证已通过。发布脚本负责创建版本 tag，并把 release 分支和 tag 推送到 `origin` 与 `gitee`。
+- 标准发布顺序是：代码进入 `main` → 记录待发布的 `origin/main` SHA → 运行 `./release_dev.sh` → 在 dev 环境完成稳定性验证 → 确认 `origin/main` 仍是同一个已验证 SHA → 运行 `./release_online.sh`。如果 dev 验证期间 `origin/main` 已前进，禁止直接发布 online；必须以新的 `main` SHA 重新运行 dev 发布和验证。
+- 如果发布合并出现冲突，不得在 release 分支发明一套仅供该环境使用的业务实现。必须以 `main` 为正确结果来源，检查并消除 release-only 改动；确需修复的代码先回到 `main`，通过测试后再重新运行发布脚本。
+- 紧急 hotfix 也不得直接修改 release 分支。hotfix 应先进入 `main`，完成最低必要验证后，再依次通过发布脚本同步到 dev 和 online；任何例外都必须由仓库负责人明确确认并留下原因记录。
+
 ## API Contract Ownership
 
 - 对外 OpenAPI 合同的唯一来源是本仓库的 `api-contracts/openapi/**`；不要再从旧的 API 仓库、submodule 或 workspace fallback 读取，也不要恢复双向同步脚本。
