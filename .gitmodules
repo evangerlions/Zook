@@ -1,3 +1,0 @@
-[submodule "third_party/zook-api-contracts"]
-	path = third_party/zook-api-contracts
-	url = git@github.com:evangerlions/zook-api-contracts.git

@@ -1,0 +1,105 @@
+openapi: 3.1.1
+info:
+  title: Common Files API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: External upload preparation and confirmation endpoints.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/files/presign:
+    post:
+      operationId: createFileUploadPresign
+      summary: Create upload presign
+      tags: [common, files]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FilePresignRequest"
+      responses:
+        "200":
+          description: Upload presign info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilePresignResponse"
+  /api/v1/files/confirm:
+    post:
+      operationId: confirmFileUpload
+      summary: Confirm upload completion
+      tags: [common, files]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileConfirmRequest"
+      responses:
+        "200":
+          description: Upload confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    FilePresignRequest:
+      type: object
+      required: [appId, fileName, mimeType, sizeBytes]
+      properties:
+        appId: { type: string }
+        fileName: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer, minimum: 0 }
+    FilePresignData:
+      type: object
+      required: [uploadUrl, storageKey, expireAt]
+      properties:
+        uploadUrl: { type: string }
+        storageKey: { type: string }
+        expireAt: { type: string, format: date-time }
+    FilePresignResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: true
+    FileConfirmRequest:
+      type: object
+      required: [appId, storageKey, mimeType, sizeBytes]
+      properties:
+        appId: { type: string }
+        storageKey: { type: string }
+        mimeType: { type: string }
+        sizeBytes: { type: integer, minimum: 0 }
+    FileConfirmData:
+      type: object
+      required: [storageKey, downloadUrl]
+      properties:
+        storageKey: { type: string }
+        downloadUrl: { type: string }
+    AcceptedResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          type: object
+          additionalProperties: true
+        requestId: { type: string }

@@ -403,7 +403,7 @@ POST /api/v1/auth/login/email
 Zook 用户或其他 app 数据。
 
 BodyLog 的完整请求、响应结构与枚举以
-`third_party/zook-api-contracts/openapi/bodylog/api.yaml` 为准。排行榜分数、邀请资格和挑战排名均由
+`api-contracts/openapi/bodylog/api.yaml` 为准。排行榜分数、邀请资格和挑战排名均由
 服务端计算；客户端不得提交或覆盖最终分数。好友、邀请和挑战接口会共同执行拉黑隔离规则。
 
 ## 9. FrogSleep API
@@ -414,7 +414,7 @@ FrogSleep 是 Zook 的 app-scoped 产品，固定 app id 为：
 frogsleep
 ```
 
-FrogSleep API 统一使用产品作用域前缀 `/api/v1/frogsleep/*`，对应 OpenAPI 合同位于 `third_party/zook-api-contracts/openapi/frogsleep/api.yaml`，并同步生成到 `src/generated/openapi/public-contracts.generated.ts`。这些接口内部仍使用 Zook 共享账号、共享 Bearer token、app membership、通知队列和 worker。客户端不需要在 `/api/v1/frogsleep/auth/*` 公共接口里传 `appId`；服务端会自动按 `frogsleep` 处理。受保护接口必须使用 FrogSleep token，并要求当前用户仍是 active FrogSleep member；其他 app token 会返回 `403 AUTH_APP_SCOPE_MISMATCH`，已删除或封禁的 FrogSleep membership 会返回对应 app member 错误。`/v1/*` 不属于 FrogSleep 外部 API；客户端必须使用本文档和 OpenAPI 中的 canonical path。
+FrogSleep API 统一使用产品作用域前缀 `/api/v1/frogsleep/*`，对应 OpenAPI 合同位于 `api-contracts/openapi/frogsleep/api.yaml`，并同步生成到 `src/generated/openapi/public-contracts.generated.ts`。这些接口内部仍使用 Zook 共享账号、共享 Bearer token、app membership、通知队列和 worker。客户端不需要在 `/api/v1/frogsleep/auth/*` 公共接口里传 `appId`；服务端会自动按 `frogsleep` 处理。受保护接口必须使用 FrogSleep token，并要求当前用户仍是 active FrogSleep member；其他 app token 会返回 `403 AUTH_APP_SCOPE_MISMATCH`，已删除或封禁的 FrogSleep membership 会返回对应 app member 错误。`/v1/*` 不属于 FrogSleep 外部 API；客户端必须使用本文档和 OpenAPI 中的 canonical path。
 
 FrogSleep 已作为 dev / online 部署槽的线上联调产品开放。`DEPLOY_SLOT=dev` 或 `DEPLOY_SLOT=online` 时会默认 seed `frogsleep` app 并分发 FrogSleep 路由；其他默认 runtime 仍保持关闭，避免影响未发布产品面。需要显式覆盖时可使用 `FROGSLEEP_ENABLED=true` / `FROGSLEEP_ENABLED=false`，测试仍可通过选项 `frogsleepEnabled` 控制。本地 iOS 联调启动 Zook 时可使用：
 

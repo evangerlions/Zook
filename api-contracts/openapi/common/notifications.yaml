@@ -1,0 +1,64 @@
+openapi: 3.1.1
+info:
+  title: Common Notifications API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: External notification send endpoint.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/notifications/send:
+    post:
+      operationId: sendNotification
+      summary: Enqueue notification task
+      tags: [common, notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSendRequest"
+      responses:
+        "200":
+          description: Notification accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    NotificationSendRequest:
+      type: object
+      required: [appId, recipientUserId, channel]
+      properties:
+        appId: { type: string }
+        recipientUserId: { type: string }
+        channel: { type: string, enum: [email, sms, push] }
+        payload:
+          type: object
+          additionalProperties: true
+    NotificationQueuedData:
+      type: object
+      required: [queued, notificationJobId]
+      properties:
+        queued: { type: boolean }
+        notificationJobId: { type: string }
+    AcceptedResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          type: object
+          additionalProperties: true
+        requestId: { type: string }

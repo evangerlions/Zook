@@ -15,6 +15,10 @@ PostgreSQL 数据库；测试会执行仓库真实 migrations，并使用两个�
 FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、共同目标、里程碑与隐私周报；P3 通过 `012_frogsleep_buddy_governance.sql`、`buddy-governance.ts`、运营 runbook 和专项安全审查补齐数据保留、漏斗、护栏熔断与事故响应。
 需要注意的是，当前仓库仍然使用轻量运行时骨架，HTTP、数据库和队列还没有切到正式框架；不过后台状态持久化已经统一收敛到 Redis-backed `KVManager`。
 
+### API 合同所有权与运行时边界
+
+公共 OpenAPI 的唯一来源是 `api-contracts/openapi/**`。该目录只参与维护期生成和 lint，不属于根 npm workspace，也不会复制进生产 Docker 镜像。运行时代码只依赖提交后的 `src/generated/openapi/public-contracts.generated.ts`，不得直接读取 `api-contracts/`。旧 API 仓库、submodule 和同步脚本已停用，完整流程见 `docs/api-contracts.md`。
+
 ## 2. 当前已完成的主要功能
 
 ### 2.0 BodyLog app-scoped 产品能力
@@ -28,7 +32,7 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 5. 好友申请、拉黑和举报由 `022_bodylog_social.sql` 持久化，拉黑会隔离共享社交状态。
 6. 排行榜只接收冻结的目标快照和完成聚合，服务端负责计分与公开资格判定。
 7. 邀请归因包含同设备、自邀请和重复归因防护；挑战仅允许邀请未拉黑好友。
-8. 完整外部契约位于 `third_party/zook-api-contracts/openapi/bodylog/api.yaml`。
+8. 完整外部契约位于 `api-contracts/openapi/bodylog/api.yaml`。
 
 对应核心文件：
 
@@ -265,7 +269,7 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 
 ### 2.15 FrogSleep 多 App 兼容后端
 
-当前 `frogsleep` 已作为 Zook app-scoped 产品接入，固定 app id 为 `frogsleep`。Zook 是当前多 app 注册、登录、session、refresh、app membership 与 FrogSleep 兼容层的后端所有者；FlutterDemo/AINovel 风格客户端继续走 `/api/v1/auth/*` 平台契约，FrogSleep 业务接口统一走 `/api/v1/frogsleep/*` 产品作用域契约，OpenAPI 来源为 `third_party/zook-api-contracts/openapi/frogsleep/api.yaml`。所有 product-scoped 路由统一要求 token app scope 匹配、access token active、app 存在且当前用户 app membership active，避免已删除/封禁 membership 继续访问 ai_novel 或 FrogSleep 业务接口。FrogSleep 已作为 dev / online 部署槽的线上联调产品开放：`DEPLOY_SLOT=dev` 或 `DEPLOY_SLOT=online` 时默认 seed `frogsleep` app 并分发 FrogSleep 路由；`FROGSLEEP_ENABLED=true` / `FROGSLEEP_ENABLED=false` 可显式覆盖该默认值；测试仍可通过选项 `frogsleepEnabled` 控制。
+当前 `frogsleep` 已作为 Zook app-scoped 产品接入，固定 app id 为 `frogsleep`。Zook 是当前多 app 注册、登录、session、refresh、app membership 与 FrogSleep 兼容层的后端所有者；FlutterDemo/AINovel 风格客户端继续走 `/api/v1/auth/*` 平台契约，FrogSleep 业务接口统一走 `/api/v1/frogsleep/*` 产品作用域契约，OpenAPI 来源为 `api-contracts/openapi/frogsleep/api.yaml`。所有 product-scoped 路由统一要求 token app scope 匹配、access token active、app 存在且当前用户 app membership active，避免已删除/封禁 membership 继续访问 ai_novel 或 FrogSleep 业务接口。FrogSleep 已作为 dev / online 部署槽的线上联调产品开放：`DEPLOY_SLOT=dev` 或 `DEPLOY_SLOT=online` 时默认 seed `frogsleep` app 并分发 FrogSleep 路由；`FROGSLEEP_ENABLED=true` / `FROGSLEEP_ENABLED=false` 可显式覆盖该默认值；测试仍可通过选项 `frogsleepEnabled` 控制。
 
 FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保留 Zook 标准 `code + message + data + requestId` 响应包，同时把对象型 `data` 字段复制到响应根部，让 Sleep 客户端可以读取 Go 后端风格的 raw JSON 字段。对象型业务详情还会同时提供根对象和嵌套对象，例如根部 `session_id`、`relationship_id` 与 `summary` / `relationship` 容器并存；列表接口保持容器字段，例如 `sessions`、`moments`、`pending_invites`、`sleep_reports`。业务 payload 避免占用顶层 `data` 字段，以免覆盖 Zook envelope。`/v1/*` 不属于 FrogSleep 外部 API；客户端必须使用 `/api/v1/frogsleep/*`。通用 `/api/v1/auth/*` 仍保持 Zook 平台响应契约。当前 iOS 项目使用的额外兼容字段也已纳入后端能力，包括 shared session 的 `shared_session_id`、`initiator_user_id`、`date_anchor`、`initiator_state`、`partner_state`，summary/recap 的 iOS 可见字段，preferences 更新后的 `relationship` 容器，以及 focus invite/message/achievement 的 iOS 读取别名。
 

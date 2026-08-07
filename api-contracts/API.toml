@@ -1,0 +1,2 @@
+name = "api"
+description = "Zook-owned external OpenAPI contracts and flow documentation, isolated from the runtime build"

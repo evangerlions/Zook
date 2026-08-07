@@ -1,0 +1,236 @@
+openapi: 3.1.1
+info:
+  title: Common Client Logs API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: External client-log remote-pull policy, claim, upload, ack, and fail endpoints.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/logs/policy:
+    get:
+      operationId: getLogPullPolicy
+      summary: Get client log pull policy
+      tags: [common, logs]
+      responses:
+        "200":
+          description: Log pull policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogPolicyResponse"
+  /api/v1/logs/pull-task:
+    get:
+      operationId: claimLogPullTask
+      summary: Claim client log upload task
+      tags: [common, logs]
+      parameters:
+        - name: X-Did
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Claimed task or no task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogPullTaskResponse"
+  /api/v1/logs/upload:
+    post:
+      operationId: uploadClientLogs
+      summary: Upload AES-GCM + gzip + NDJSON client logs
+      tags: [common, logs]
+      parameters:
+        - name: X-Log-Claim-Token
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Log-Enc
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Log-Nonce
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Did
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Upload accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+  /api/v1/logs/tasks/{taskId}/ack:
+    post:
+      operationId: ackLogPullTaskNoData
+      summary: Acknowledge no_data for claimed task
+      tags: [common, logs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogAckRequest"
+      responses:
+        "200":
+          description: Ack recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+  /api/v1/logs/tasks/{taskId}/fail:
+    post:
+      operationId: failLogPullTask
+      summary: Mark log pull task as failed
+      tags: [common, logs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogFailRequest"
+      responses:
+        "200":
+          description: Failure recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    LogPolicyResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: true
+    LogPullTaskResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          properties:
+            shouldUpload: { type: boolean }
+            taskId: { type: string }
+            claimToken: { type: string }
+          additionalProperties: true
+    LogAckRequest:
+      type: object
+      required: [status, claimToken]
+      properties:
+        status:
+          type: string
+          enum: [no_data]
+        claimToken: { type: string }
+    LogFailRequest:
+      type: object
+      required: [claimToken, failureReason]
+      properties:
+        claimToken: { type: string }
+        failureReason: { type: string }
+    LogPolicyData:
+      type: object
+      required: [enabled, minPullIntervalSeconds]
+      properties:
+        enabled: { type: boolean }
+        minPullIntervalSeconds: { type: integer }
+    LogPullTaskData:
+      discriminator:
+        propertyName: shouldUpload
+      oneOf:
+        - type: object
+          required: [shouldUpload]
+          properties:
+            shouldUpload: { type: boolean, enum: [false] }
+        - type: object
+          required: [shouldUpload, taskId, claimToken, claimExpireAtMs, keyId]
+          properties:
+            shouldUpload: { type: boolean, enum: [true] }
+            taskId: { type: string }
+            claimToken: { type: string }
+            claimExpireAtMs: { type: integer }
+            fromTsMs: { type: integer }
+            toTsMs: { type: integer }
+            maxLines: { type: integer }
+            maxBytes: { type: integer }
+            keyId: { type: string }
+    LogUploadData:
+      type: object
+      required: [taskId, acceptedCount, rejectedCount]
+      properties:
+        taskId: { type: string }
+        acceptedCount: { type: integer }
+        rejectedCount: { type: integer }
+    LogNoDataAckData:
+      type: object
+      required: [taskId, status]
+      properties:
+        taskId: { type: string }
+        status: { type: string, enum: [no_data] }
+    LogFailData:
+      type: object
+      required: [taskId, status, failedAt, failureReason]
+      properties:
+        taskId: { type: string }
+        status: { type: string, enum: [failed] }
+        failedAt: { type: string, format: date-time }
+        failureReason: { type: string }
+    AcceptedResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          type: object
+          additionalProperties: true
+        requestId: { type: string }

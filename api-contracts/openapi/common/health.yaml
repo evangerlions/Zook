@@ -1,0 +1,41 @@
+openapi: 3.1.1
+info:
+  title: Common Health API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: External health-check endpoint exposed by Zook.
+servers:
+  - url: https://api.zook.dev
+security: []
+paths:
+  /api/health:
+    get:
+      operationId: getHealthStatus
+      summary: Health check
+      tags: [common, health]
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: success
+        data:
+          type: object
+          additionalProperties: true
+        requestId:
+          type: string

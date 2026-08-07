@@ -1,0 +1,11 @@
+{
+  "name": "zook-embedded-api-contracts",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "openapi:lint": "redocly lint openapi/**/*.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.26.0"
+  }
+}

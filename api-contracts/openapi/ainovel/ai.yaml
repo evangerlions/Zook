@@ -1,0 +1,415 @@
+openapi: 3.2.0
+info:
+  title: AINovel AI API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Product-external AI endpoints for AINovel. Internal/admin APIs are intentionally excluded.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/ai_novel/ai/chat-completions:
+    post:
+      operationId: createAiNovelChatCompletion
+      summary: Scene-first chat completion for AINovel
+      description: |
+        The client must send an AES-256-GCM encrypted JSON envelope. After decryption,
+        the inner payload must contain `scene_key + messages` or
+        `sceneKey + messages`. Clients must not send `model`,
+        `modelKey`, `providerModel`, `tier`, `routingTier`, or `modelTier`;
+        AINovel route keys are business scene route keys rather than common LLM
+        model keys, and user tier routing is resolved by Zook. When `stream=true`
+        is present in the decrypted inner body, the same endpoint switches to
+        `text/event-stream` SSE output instead of a single JSON response.
+
+        Supported chat scene keys are:
+        - `kickoff_turn`
+        - `chat_compaction`
+        - `write_turn`
+        - `history_chapter_qa`
+        - `chapter_draft`
+        - `import_book_agent`
+        - `chapter_draft_review`
+        - `chapter_summary`
+        - `snapshot_generation`
+        - `next_chapter_brief`
+
+        `kickoff_turn`, `kickoff_turn_imported_book`, `write_turn`,
+        `history_chapter_qa`, `chapter_draft`, and `import_book_agent` are server-prompted agent
+        scenes and require `stream=true`. `kickoff_turn_imported_book` is the
+        imported-book kickoff chat scene. Its decrypted request context must
+        include `kickoffMode=imported_book`, `bookId`, `importRunId`, and
+        `readyResultId`; it uses imported-book tools only:
+        `read_import_result`, `search_imported_book`, `read_imported_chapter`,
+        `update_import_writing_artifacts`, `ask_question`, and `ready`.
+        `history_chapter_qa` is the read-only chat scene for non-latest
+        chapters. It may answer, explain, summarize, and suggest, but its
+        tool set is exactly `read_draft` and `search_story_history`; clients
+        must not expose mutating write tools in this mode.
+        `import_book_agent` is called by the client-owned import loop with
+        thinking and automatic tool choice; Zook streams provider/tool facts
+        and uses a longer provider stream first-event/idle timeout because
+        import batches can spend longer in thinking before the first useful
+        delta.
+        It emits generic `tool_call_delta` events from submit-tool argument
+        deltas, and AINovel maps those generic deltas to product loading detail.
+        `chat_compaction` is an internal no-tool summary scene for hard context
+        compaction and requires `stream=false`. `chapter_summary`,
+        `chapter_draft_review`, `snapshot_generation`, and
+        `next_chapter_brief` are fixed input/output job scenes. When
+        `stream=false`, they keep the existing final JSON `completion.content`
+        shape. When `stream=true`, they may additionally emit real stream facts
+        such as `tool_call_delta`, `tool_call`, `usage`, and `done`, while still
+        validating the required backend-owned `submit_*` tool call.
+        Assistant history messages may carry `reasoningContent`; Zook maps this
+        to provider-compatible `reasoning_content` when the provider supports
+        it, preserving multi-turn context/cache continuity without exposing raw
+        reasoning to ordinary users.
+
+        Zook runs user-input content safety before the request reaches the
+        downstream LLM. If the latest user message is rejected, clients receive
+        business code `AI_INPUT_CONTENT_SENSITIVE` with the localized message
+        "这段内容暂时无法发送，请调整后再试。". The rejected text must not be
+        reused in future context or persisted as a normal submitted message.
+      tags: [ainovel, ai]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AesEncryptedAiRequestEnvelope"
+      responses:
+        "200":
+          description: Encrypted AI response envelope, or encrypted SSE event stream when `stream=true`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AesEncryptedAiResponseEnvelope"
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Server-Sent Events stream. Each `data:` line contains one
+                  encrypted JSON envelope. After decryption, the inner payload
+                  uses:
+                  - `{ "type": "reasoning_delta", "text": "..." }`
+                  - `{ "type": "content_delta", "text": "..." }`
+                  - `{ "type": "tool_call_delta", "text": "...", "toolCallId": "...", "toolCallName": "...", "toolArgumentPath": "..." }`
+                  - `{ "type": "tool_call", "toolCall": { "id": "...", "name": "...", "input": { ... } } }`
+                  - `{ "type": "usage", "usage": { ... } }`
+                  - `{ "type": "done", "completion": { "sceneRouteKey": "...", "content": "...", "reasoningText": "...", "finishReason": "..." }, "usage": { ... } }`
+                  - `{ "type": "error", "payload": { "code": "...", "message": "...", "requestId": "..." } }`
+
+                  `usage` contains `promptTokens`, `completionTokens`, and
+                  `totalTokens`; it may also include `reasoningTokens`,
+                  `contextWindowTokens`, and `contextUsedRatio` so clients can
+                  trigger hard context compaction from provider-reported usage
+                  instead of estimating local transcript size.
+
+                  Product-level loading step choreography, localization keys,
+                  and operation labels are client-owned. Zook does not emit
+                  workflow, step, or substep identifiers. Clients may derive
+                  readable progress detail from `content_delta` /
+                  `tool_call_delta` and token activity from `usage`, but must
+                  not treat stream progress as a product workflow completion
+                  signal.
+
+                  `tool_call_delta` is a generic provider/tool argument progress
+                  event, not raw chain-of-thought and not a product workflow
+                  status model. Zook may set `toolArgumentPath` to a readable
+                  tool field such as `write_draft.content`,
+                  `submit_next_chapter_brief.brief`,
+                  `submit_chapter_summary.summary`,
+                  `submit_chapter_review.summary`, or `submit_snapshot.snapshot`.
+                  Product workflow keys, localized step chrome, retry affordances,
+                  and fullscreen loading detail mapping are owned by AINovel.
+                  The `text` field remains readable task output and may stay in
+                  the story/model language.
+
+                  If a mid-stream business failure happens after decryption succeeds,
+                  the stream still emits an encrypted business envelope whose inner
+                  payload carries a non-`OK` `code + message + requestId`, and the
+                  client must treat that event as a failed stream. After such an
+                  error envelope, the client must not expect a follow-up `done`
+                  event.
+                  `kickoff_turn`, `kickoff_turn_imported_book`, `write_turn`,
+                  `history_chapter_qa`, `chapter_draft`, and `import_book_agent` stream a single
+                  model round from Zook. Product-level tool loops and invalid
+                  tool repair are owned by the AINovel engine client.
+                  Zook knows when this single provider call stops, but it does
+                  not know whether the product-level write agent loop should
+                  stop after local `read_draft`, `search_story_history`, or
+                  `write_draft` tool execution.
+        "400":
+          description: Plain error when outer envelope is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Plain error when bearer auth is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Plain error on app scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/ai/embeddings:
+    post:
+      operationId: createAiNovelEmbeddings
+      summary: Scene-first embeddings for AINovel
+      description: |
+        The client must send an AES-256-GCM encrypted JSON envelope. After decryption,
+        the inner payload must contain `scene_key + input` or `sceneKey + input`.
+        Clients must not send `model`, `modelKey`, `providerModel`, `tier`,
+        `routingTier`, or `modelTier`; user tier routing is resolved by Zook.
+      tags: [ainovel, ai]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AesEncryptedAiRequestEnvelope"
+      responses:
+        "200":
+          description: Encrypted AI response envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AesEncryptedAiResponseEnvelope"
+        "400":
+          description: Plain error when outer envelope is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Plain error when bearer auth is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Plain error on app scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/debug/audit-file:
+    post:
+      operationId: writeAiNovelDebugAuditFile
+      summary: Local-only debug audit HTML file writer
+      description: |
+        Local/debug-only endpoint for Flutter Web QA. Production and non-local
+        hosts return 404. The server does not parse audit contents; it sanitizes
+        `sessionId` and overwrites one fixed `generation-audit.html` file under
+        the local AINovel repo debug artifact directory. The response includes
+        a localhost `viewUrl` that browsers can open from Flutter Web.
+      tags: [ainovel, debug]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiNovelDebugAuditFileRequest"
+      responses:
+        "200":
+          description: Local file location that was created or overwritten
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelDebugAuditFileResponse"
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Plain error when bearer auth is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Plain error on app scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Returned in production or non-local contexts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/debug/audit-file/{sessionId}:
+    get:
+      operationId: viewAiNovelDebugAuditFile
+      summary: Local-only debug audit HTML viewer
+      description: |
+        Local/debug-only browser view for a previously uploaded audit report.
+        Production and non-local hosts return 404.
+      tags: [ainovel, debug]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Self-contained audit HTML.
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: Returned in production or non-local contexts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    XAppId:
+      name: X-App-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        const: ai_novel
+  schemas:
+    AesEncryptedAiRequestEnvelope:
+      type: object
+      required: [encrypted, keyId, algorithm, nonceBase64, ciphertextBase64]
+      properties:
+        encrypted:
+          type: boolean
+          const: true
+        keyId:
+          type: string
+        algorithm:
+          type: string
+          const: aes-256-gcm
+        nonceBase64:
+          type: string
+        ciphertextBase64:
+          type: string
+        localDebugRequestPlaintext:
+          type: string
+          description: local-only plaintext mirror; ignored by backend business logic
+      additionalProperties: false
+    AesEncryptedAiResponseEnvelope:
+      type: object
+      required: [encrypted, keyId, algorithm, nonceBase64, ciphertextBase64]
+      properties:
+        encrypted:
+          type: boolean
+          const: true
+        keyId:
+          type: string
+        algorithm:
+          type: string
+          const: aes-256-gcm
+        nonceBase64:
+          type: string
+        ciphertextBase64:
+          type: string
+        localDebugResponseText:
+          type: string
+          description: local-only plaintext mirror for chat text; ignored by client business logic
+      additionalProperties: false
+    AiNovelChatSceneKey:
+      type: string
+      enum:
+        - kickoff_turn
+        - chat_compaction
+        - write_turn
+        - history_chapter_qa
+        - chapter_draft
+        - import_book_agent
+        - chapter_draft_review
+        - chapter_summary
+        - snapshot_generation
+        - next_chapter_brief
+      description: Decrypted inner `scene_key` / `sceneKey` values for `/api/v1/ai_novel/ai/chat-completions`.
+    AiNovelChatUsage:
+      type: object
+      required: [promptTokens, completionTokens, totalTokens]
+      properties:
+        promptTokens: { type: integer, minimum: 0 }
+        completionTokens: { type: integer, minimum: 0 }
+        totalTokens: { type: integer, minimum: 0 }
+        reasoningTokens:
+          type: integer
+          minimum: 0
+          description: Provider-reported hidden reasoning tokens when available.
+        contextWindowTokens:
+          type: integer
+          minimum: 1
+          description: Provider/model context window when known.
+        contextUsedRatio:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: "`promptTokens / contextWindowTokens` when known."
+      additionalProperties: false
+    AiNovelDebugAuditFileRequest:
+      type: object
+      required: [sessionId, html]
+      properties:
+        sessionId:
+          type: string
+          description: Debug session id; sanitized before being used as a directory name.
+        html:
+          type: string
+          description: Complete self-contained audit HTML.
+      additionalProperties: false
+    AiNovelDebugAuditFileResponse:
+      type: object
+      required: [filePath, fileUrl, viewUrl, updatedAt]
+      properties:
+        filePath:
+          type: string
+        fileUrl:
+          type: string
+          format: uri
+        viewUrl:
+          type: string
+          format: uri
+          description: Browser-safe localhost URL for opening the report from Flutter Web.
+        updatedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
+        requestId: { type: string }

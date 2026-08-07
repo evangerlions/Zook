@@ -1,5 +1,5 @@
 // AUTO-GENERATED FILE. DO NOT EDIT.
-// Generated from workspace OpenAPI contracts for Zook public API boundaries.
+// Generated from api-contracts/openapi for Zook public API boundaries.
 
 export const PasswordLoginRequestSchema = {
   "type": "object",
