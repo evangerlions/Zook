@@ -348,10 +348,14 @@ export class AiNovelLlmService {
           }),
           normalizeToolCall: (toolCall, fallbackIndex) => ({
             ...toolCall,
-              id: normalizeAiNovelToolCallId(
-                toolCall.id,
-                buildAiNovelFallbackToolCallId(sceneRouteKey, "kickoff", fallbackIndex),
+            id: normalizeAiNovelToolCallId(
+              toolCall.id,
+              buildAiNovelFallbackToolCallId(
+                sceneRouteKey,
+                "kickoff",
+                fallbackIndex,
               ),
+            ),
           }),
         });
         return;

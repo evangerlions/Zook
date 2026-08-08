@@ -68,6 +68,14 @@ test("container runtime detection recognizes container markers", () => {
 });
 
 test("persistent storage root follows runtime environment", () => {
-  assert.equal(resolvePersistentFileStorageRoot(false), "/var/lib/zook/appRunData");
-  assert.equal(resolvePersistentFileStorageRoot(true), "/app/appRunData");
+  const previous = process.env.ZOOK_APP_RUN_DATA_ROOT;
+  delete process.env.ZOOK_APP_RUN_DATA_ROOT;
+  try {
+    assert.equal(resolvePersistentFileStorageRoot(false), "/var/lib/zook/appRunData");
+    assert.equal(resolvePersistentFileStorageRoot(true), "/app/appRunData");
+  } finally {
+    if (previous !== undefined) {
+      process.env.ZOOK_APP_RUN_DATA_ROOT = previous;
+    }
+  }
 });

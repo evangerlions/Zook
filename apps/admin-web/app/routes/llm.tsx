@@ -24,6 +24,7 @@ import type {
   AdminLlmModelMetricsDocument,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
+  AdminLlmSmokeTestRunRequest,
   LlmConfigDraft,
   LlmMetricsRange,
 } from "../lib/types";
@@ -264,11 +265,11 @@ export default function LlmRoute() {
     }
   }
 
-  async function handleRunSmokeTest() {
+  async function handleRunSmokeTest(input: AdminLlmSmokeTestRunRequest) {
     setRunningSmokeTest(true);
     clearNotice();
     try {
-      const payload = await adminApi.runLlmSmokeTest();
+      const payload = await adminApi.runLlmSmokeTest(input);
       setSmokeDocument(payload);
       setNotice(
         makeNotice(
@@ -343,7 +344,8 @@ export default function LlmRoute() {
         />
       ) : tab === "smoke" ? (
         <LlmSmokeTab
-          onRunSmokeTest={() => void handleRunSmokeTest()}
+          config={document?.config ?? null}
+          onRunSmokeTest={(input) => void handleRunSmokeTest(input)}
           runningSmokeTest={runningSmokeTest}
           smokeDocument={smokeDocument}
         />

@@ -55,3 +55,23 @@ export interface AiNovelStatisticsSnapshotResponse {
   accepted: true;
   updatedAt: string;
 }
+
+export interface AiNovelStatisticsSnapshotRecord {
+  appId: string;
+  userId: string;
+  totalWorks: number;
+  totalWords: number;
+  totalChapters: number;
+  activeWritingDays: number;
+  updatedAt: string;
+}
+
+export interface AiNovelDailyStatisticsRecord {
+  appId: string;
+  userId: string;
+  date: string;
+  words: number;
+  tokens: number;
+  active: boolean;
+  updatedAt: string;
+}

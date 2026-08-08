@@ -1,0 +1,13 @@
+{
+  "sleep_only": { "domain": "sleep", "direction": "incoming", "status": "pending", "viewer_actions": ["preview", "accept", "decline"] },
+  "focus_only": { "domain": "focus", "direction": "incoming", "status": "pending", "viewer_actions": ["preview", "accept", "decline"] },
+  "bundled": { "domain": "bundle", "domains": ["sleep", "focus"], "direction": "incoming", "status": "pending" },
+  "multiple_pending": { "items": [{ "id": "invite_sleep", "domain": "sleep" }, { "id": "invite_focus", "domain": "focus" }] },
+  "expired": { "domain": "sleep", "status": "expired", "viewer_actions": [] },
+  "cancelled": { "domain": "focus", "status": "cancelled", "viewer_actions": [] },
+  "unauthorized": { "error": "BUDDY_INVITE_NOT_AVAILABLE", "private_profile": null },
+  "blocked": { "error": "BUDDY_INTERACTION_UNAVAILABLE", "viewer_actions": [] },
+  "asymmetric_consent": { "alice_to_bob": ["presence", "daily_summary"], "bob_to_alice": ["presence"] },
+  "same_person_dual_domain": { "sleep_partner_user_id": "user_bob", "focus_partner_user_id": "user_bob" },
+  "different_person_dual_domain": { "sleep_partner_user_id": "user_bob", "focus_partner_user_id": "user_charlie" }
+}

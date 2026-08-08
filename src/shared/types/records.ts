@@ -14,7 +14,6 @@ import type {
   RoleStatus,
   UserStatus,
 } from "./enums.ts";
-import type { SmsVerificationRecord } from "./sms-verification.ts";
 
 export interface AppRecord {
   id: string;
@@ -117,6 +116,271 @@ export interface NotificationJobRecord {
   payload: Record<string, unknown>;
   status: NotificationStatus;
   retryCount: number;
+}
+
+export interface FrogSleepDeviceRecord {
+  id: string;
+  appId: string;
+  userId: string;
+  platform: "ios" | "android" | "web";
+  pushToken: string;
+  appVersion?: string;
+  timezone?: string;
+  pushEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export type FrogSleepEntityKind =
+  | "sleep_invite"
+  | "sleep_relationship"
+  | "guardianship_preference"
+  | "sleep_session"
+  | "sleep_event"
+  | "sleep_summary"
+  | "night_recap"
+  | "focus_profile"
+  | "focus_relationship"
+  | "focus_invite"
+  | "focus_session"
+  | "focus_shared_moment"
+  | "focus_message"
+  | "focus_milestone"
+  | "focus_match_feedback"
+  | "buddy_share"
+  | "buddy_interaction"
+  | "buddy_joint_activity"
+  | "buddy_joint_goal"
+  | "buddy_goal_contribution"
+  | "buddy_milestone"
+  | "buddy_weekly_report"
+  | "sleep_report_snapshot"
+  | "progress_snapshot"
+  | "entitlement_record";
+
+export interface FrogSleepEntityRecord {
+  id: string;
+  appId: string;
+  kind: FrogSleepEntityKind;
+  ownerUserId?: string;
+  partnerUserId?: string;
+  relationshipId?: string;
+  sessionId?: string;
+  status?: string;
+  code?: string;
+  token?: string;
+  startsAt?: string;
+  endsAt?: string;
+  occurredAt?: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+export interface FrogSleepEntityFilter {
+  appId: string;
+  kind?: FrogSleepEntityKind;
+  ownerUserId?: string;
+  partnerUserId?: string;
+  relationshipId?: string;
+  sessionId?: string;
+  status?: string;
+  code?: string;
+  token?: string;
+  startsAtFromIso?: string;
+  startsAtToIso?: string;
+  occurredAtFromIso?: string;
+  occurredAtToIso?: string;
+  includeDeleted?: boolean;
+  limit?: number;
+}
+
+export interface FrogSleepBuddySharingGrantRecord {
+  id: string;
+  appId: string;
+  relationshipId: string;
+  grantorUserId: string;
+  granteeUserId: string;
+  domain: "sleep" | "focus";
+  category: "presence" | "daily_summary" | "weekly_trend" | "shared_activity";
+  state: "granted" | "revoked";
+  version: number;
+  grantedAt?: string;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationBundleRecord {
+  id: string;
+  appId: string;
+  inviterUserId: string;
+  inviteeUserId?: string;
+  recipientEmail?: string;
+  recipientEmailHash?: string;
+  shareCode: string;
+  handoffToken: string;
+  shareLink: string;
+  locale: string;
+  status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
+  domains: Array<"sleep" | "focus">;
+  version: number;
+  domainInvitationIds: Partial<Record<"sleep" | "focus", string>>;
+  domainErrorCodes: Partial<Record<"sleep" | "focus", string>>;
+  lastIdempotencyKey?: string;
+  lastResponseAction?: "accept" | "decline" | "cancel";
+  responsePayload?: Record<string, unknown>;
+  expiresAt: string;
+  respondedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FrogSleepBuddyInvitationEmailDeliveryStatus =
+  | "queued"
+  | "processing"
+  | "provider_accepted"
+  | "delivered"
+  | "bounced"
+  | "suppressed"
+  | "retryable_failed"
+  | "dead_letter";
+
+export interface FrogSleepBuddyInvitationEmailDeliveryRecord {
+  id: string;
+  appId: string;
+  invitationId: string;
+  recipientEmail: string;
+  recipientEmailHash: string;
+  locale: string;
+  status: FrogSleepBuddyInvitationEmailDeliveryStatus;
+  attemptCount: number;
+  availableAt: string;
+  providerRequestId?: string;
+  providerMessageId?: string;
+  lastErrorCode?: string;
+  providerAcceptedAt?: string;
+  deliveredAt?: string;
+  bouncedAt?: string;
+  suppressedAt?: string;
+  deadLetteredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationEmailAttemptRecord {
+  id: string;
+  appId: string;
+  deliveryId: string;
+  invitationId: string;
+  attempt: number;
+  status: "processing" | "provider_accepted" | "retryable_failed" | "permanent_failed";
+  providerRequestId?: string;
+  providerMessageId?: string;
+  errorCode?: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface FrogSleepBuddyInvitationDomainDecisionRecord {
+  appId: string;
+  invitationId: string;
+  domain: "sleep" | "focus";
+  status: "pending" | "accepted" | "declined" | "cancelled" | "expired";
+  version: number;
+  decidedByUserId?: string;
+  decidedAt?: string;
+  idempotencyKeyHash?: string;
+  terminalReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyDomainSlotRecord {
+  appId: string;
+  userId: string;
+  domain: "sleep" | "focus";
+  state: "available" | "occupied";
+  relationshipId?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyDomainRelationshipRecord {
+  id: string;
+  appId: string;
+  domain: "sleep" | "focus";
+  userIdLow: string;
+  userIdHigh: string;
+  status: "active" | "paused" | "revoked";
+  pausedByUserIds: string[];
+  version: number;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyInvitationReceiptAttemptRecord {
+  id: string;
+  appId: string;
+  inviterUserId: string;
+  inviteeUserId?: string;
+  recipientIdentityHash: string;
+  domains: Array<"sleep" | "focus">;
+  domainsFingerprint: string;
+  status: "recorded" | "decoy";
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationOutboxRecord {
+  id: string;
+  appId: string;
+  recipientUserId: string;
+  eventType: string;
+  targetType: string;
+  targetId: string;
+  deduplicationKey: string;
+  safeRoute: Record<string, string>;
+  status: "pending" | "processing" | "delivered" | "failed" | "dead_letter";
+  attemptCount: number;
+  availableAt: string;
+  processedAt?: string;
+  lastErrorCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationRecord {
+  id: string;
+  appId: string;
+  recipientUserId: string;
+  outboxId: string;
+  notificationType: string;
+  targetType: string;
+  targetId: string;
+  safeRoute: Record<string, string>;
+  readAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrogSleepBuddyNotificationDeliveryRecord {
+  id: string;
+  appId: string;
+  notificationId: string;
+  channel: "in_app" | "apns";
+  status: "pending" | "delivered" | "failed" | "suppressed";
+  attempt: number;
+  providerMessageId?: string;
+  errorCode?: string;
+  deliveredAt?: string;
+  createdAt: string;
 }
 
 export interface FailedEventRecord {
@@ -294,48 +558,84 @@ export interface FeedbackAttachmentRecord {
   createdAt: string;
 }
 
-export interface AiNovelStatisticsSnapshotRecord {
+export const AI_OUTPUT_REPORT_STATUSES = [
+  "received",
+  "reviewing",
+  "resolved",
+  "rejected",
+] as const;
+export type AiOutputReportStatus = typeof AI_OUTPUT_REPORT_STATUSES[number];
+
+export const AI_OUTPUT_REPORT_CATEGORIES = [
+  "harmful_unsafe",
+  "sexual_vulgar",
+  "abuse_harassment",
+  "illegal_crime",
+  "privacy_personal_info",
+  "misinformation",
+  "rights_infringement",
+  "other",
+] as const;
+export type AiOutputReportCategory =
+  typeof AI_OUTPUT_REPORT_CATEGORIES[number];
+
+export interface AiOutputReportRecord {
+  id: string;
+  submissionId: string;
   appId: string;
   userId: string;
-  totalWorks: number;
-  totalWords: number;
-  totalChapters: number;
-  activeWritingDays: number;
+  targetType: "chat_message" | "chapter_revision";
+  targetId: string;
+  messageId?: string;
+  sessionId?: string;
+  chapterId?: number;
+  chapterRevisionId?: string;
+  scene: "kickoff" | "write" | "history_qa";
+  category: AiOutputReportCategory;
+  description?: string;
+  encryptedContentKeyId: string;
+  encryptedContentAlgorithm: string;
+  encryptedContentNonceBase64: string;
+  encryptedContentCiphertextBase64: string;
+  contentHash: string;
+  turnId?: string;
+  providerRequestId?: string;
+  modelKey?: string;
+  clientRegion?: string;
+  accountRegion: string;
+  effectiveRegion?: string;
+  platform?: string;
+  appVersion?: string;
+  locale?: string;
+  status: AiOutputReportStatus;
+  resolutionCode?: string;
+  resolutionNote?: string;
+  createdAt: string;
   updatedAt: string;
+  resolvedAt?: string;
 }
 
-export interface AiNovelDailyStatisticsRecord {
+export interface AiOutputReactionRecord {
+  id: string;
+  submissionId: string;
   appId: string;
   userId: string;
-  date: string;
-  words: number;
-  tokens: number;
-  active: boolean;
-  updatedAt: string;
+  targetType: "chapter_revision";
+  targetId: string;
+  reaction: "like";
+  chapterId: number;
+  chapterRevisionId: string;
+  contentHash: string;
+  turnId?: string;
+  providerRequestId?: string;
+  platform?: string;
+  appVersion?: string;
+  effectiveRegion?: string;
+  createdAt: string;
 }
 
-export interface DatabaseSeed {
-  apps?: AppRecord[];
-  users?: UserRecord[];
-  appUsers?: AppUserRecord[];
-  roles?: RoleRecord[];
-  permissions?: PermissionRecord[];
-  rolePermissions?: RolePermissionRecord[];
-  userRoles?: UserRoleRecord[];
-  refreshTokens?: RefreshTokenRecord[];
-  auditLogs?: AuditLogRecord[];
-  notificationJobs?: NotificationJobRecord[];
-  failedEvents?: FailedEventRecord[];
-  smsVerificationRecords?: SmsVerificationRecord[];
-  appConfigs?: AppConfigRecord[];
-  analyticsEvents?: AnalyticsEventRecord[];
-  files?: FileRecord[];
-  clientLogUploadTasks?: ClientLogUploadTaskRecord[];
-  clientLogUploads?: ClientLogUploadRecord[];
-  clientLogLines?: ClientLogLineRecord[];
-  contentSafetyCheckRecords?: ContentSafetyCheckRecord[];
-  feedbackRecords?: FeedbackRecord[];
-  feedbackAttachments?: FeedbackAttachmentRecord[];
-  aiNovelStatisticsSnapshots?: AiNovelStatisticsSnapshotRecord[];
-  aiNovelDailyStatistics?: AiNovelDailyStatisticsRecord[];
-}
+export type {
+  AiNovelDailyStatisticsRecord,
+  AiNovelStatisticsSnapshotRecord,
+} from "./ai-novel-statistics.ts";
+export type { DatabaseSeed } from "./database-seed.ts";

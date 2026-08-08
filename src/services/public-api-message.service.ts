@@ -1,5 +1,6 @@
 import { PublicApiMessages } from "../generated/i18n/public-api-messages.generated.ts";
 import { RequestLocaleService } from "./request-locale.service.ts";
+import { DEFAULT_APP_I18N_SETTINGS } from "../shared/i18n.ts";
 import type { ErrorCode, HttpRequest } from "../shared/types.ts";
 
 type PublicApiMessageKey = keyof (typeof PublicApiMessages)["en-US"];
@@ -34,6 +35,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   AUTH_BEARER_REQUIRED: "error.auth.bearer_required",
   AUTH_INVALID_CREDENTIAL: "error.auth.invalid_credential",
   AUTH_INVALID_TOKEN: "error.auth.invalid_token",
+  AUTH_LOGIN_FORBIDDEN: "error.auth.login_forbidden",
   AUTH_LOGIN_TEMPORARILY_LOCKED: "error.auth.login_temporarily_locked",
   AUTH_PASSWORD_ALREADY_SET: "error.auth.password_already_set",
   AUTH_PASSWORD_NOT_SET: "error.auth.password_not_set",
@@ -55,6 +57,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   FILE_ACCESS_DENIED: "error.file.access_denied",
   IAM_PERMISSION_DENIED: "error.iam.permission_denied",
   LLM_MODEL_NOT_FOUND: "error.ai.upstream_bad_gateway",
+  LLM_PROVIDER_CONTENT_SENSITIVE: "error.ai.input_content_sensitive",
   LLM_PROVIDER_REQUEST_FAILED: "error.ai.upstream_bad_gateway",
   LLM_PROVIDER_RESPONSE_INVALID: "error.ai.upstream_bad_gateway",
   LLM_ROUTE_NOT_AVAILABLE: "error.ai.upstream_bad_gateway",
@@ -70,6 +73,7 @@ const PUBLIC_ERROR_MESSAGE_KEYS = {
   LOG_UNSUPPORTED_ENCRYPTION: "error.log.unsupported_encryption",
   REQ_DATE_RANGE_INVALID: "error.req.invalid_date_range",
   REQ_INVALID_BODY: "error.req.invalid_body",
+  REQ_ROUTE_NOT_FOUND: "error.req.invalid_body",
   REQ_INVALID_EVENT: "error.req.invalid_event",
   REQ_INVALID_HEADER: "error.req.invalid_header",
   REQ_INVALID_QUERY: "error.req.invalid_query",
@@ -98,11 +102,14 @@ export class PublicApiMessageService {
         headers: {},
       },
       {
-        supportedLocales: ["en-US", "zh-CN"],
+        supportedLocales: Object.keys(PublicApiMessages),
         appDefaultLocale: "en-US",
+        fallbackLocales: DEFAULT_APP_I18N_SETTINGS.fallbackLocales,
       },
     ).locale;
-    return resolved.toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
+    return resolved in PublicApiMessages
+      ? resolved as keyof typeof PublicApiMessages
+      : "en-US";
   }
 
   format(

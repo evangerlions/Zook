@@ -1,0 +1,7 @@
+apis:
+  ainovel-client:
+    root: ./openapi/ainovel/client.yaml
+  common-auth:
+    root: ./openapi/common/auth.yaml
+extends:
+  - recommended

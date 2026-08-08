@@ -230,6 +230,20 @@ export class AuthSessionManager {
     return revoked;
   }
 
+  async revokeIssuedSession(
+    rawRefreshToken: string,
+    now = new Date(),
+  ): Promise<boolean> {
+    const record = await this.getRefreshTokenRecord(rawRefreshToken);
+    if (!record || record.revokedAt) {
+      return false;
+    }
+
+    record.revokedAt = now.toISOString();
+    await this.refreshTokenStore.update(record);
+    return true;
+  }
+
   private async issueRefreshToken(
     userId: string,
     appId: string,

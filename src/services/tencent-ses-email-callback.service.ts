@@ -82,11 +82,49 @@ export class TencentSesEmailCallbackService {
       receivedAt: receivedAtIso,
     };
     await this.database.insertEmailDeliveryEvent(record);
+    if (record.messageId) {
+      await this.updateBuddyInvitationDelivery(record.messageId, event, record.occurredAt);
+    }
     return {
       accepted: true,
       id: record.id,
       event,
     };
+  }
+
+  private async updateBuddyInvitationDelivery(
+    providerMessageId: string,
+    event: TencentSesEmailEvent,
+    occurredAt: string,
+  ) {
+    const delivery = await this.database.findFrogSleepBuddyInvitationEmailDeliveryByProviderMessageId(
+      providerMessageId,
+    );
+    if (!delivery) return;
+    if (event === "delivered") {
+      await this.database.updateFrogSleepBuddyInvitationEmailDelivery(delivery.id, {
+        status: "delivered", deliveredAt: occurredAt, lastErrorCode: undefined, updatedAt: occurredAt,
+      });
+      return;
+    }
+    if (["bounce", "dropped", "spamreport", "unsubscribe"].includes(event)) {
+      await this.database.updateFrogSleepBuddyInvitationEmailDelivery(delivery.id, {
+        status: event === "bounce" || event === "dropped" ? "bounced" : "suppressed",
+        bouncedAt: event === "bounce" || event === "dropped" ? occurredAt : undefined,
+        suppressedAt: event === "spamreport" || event === "unsubscribe" ? occurredAt : undefined,
+        lastErrorCode: `SES_${event.toUpperCase()}`,
+        updatedAt: occurredAt,
+      });
+      return;
+    }
+    if (event === "deferred") {
+      await this.database.updateFrogSleepBuddyInvitationEmailDelivery(delivery.id, {
+        status: "retryable_failed",
+        availableAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        lastErrorCode: "SES_DEFERRED",
+        updatedAt: occurredAt,
+      });
+    }
   }
 
   async listForAdmin(

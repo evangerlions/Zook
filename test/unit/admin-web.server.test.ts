@@ -18,7 +18,12 @@ function listen(server: ReturnType<typeof createServer>): Promise<number> {
 }
 
 test('admin web proxy preserves SSE streaming instead of buffering the whole response', async (t) => {
-  const upstream = createServer((request, response) => {
+  let releaseSecondChunk: (() => void) | undefined;
+  let upstreamCompleted = false;
+  const secondChunkGate = new Promise<void>((resolve) => {
+    releaseSecondChunk = resolve;
+  });
+  const upstream = createServer(async (request, response) => {
     if (request.url !== '/api/test-stream') {
       response.statusCode = 404;
       response.end('not found');
@@ -30,10 +35,10 @@ test('admin web proxy preserves SSE streaming instead of buffering the whole res
     response.setHeader('Cache-Control', 'no-cache');
     response.flushHeaders();
     response.write('data: first\n\n');
-    setTimeout(() => {
-      response.write('data: second\n\n');
-      response.end();
-    }, 150);
+    await secondChunkGate;
+    response.write('data: second\n\n');
+    response.end();
+    upstreamCompleted = true;
   });
   const upstreamPort = await listen(upstream);
   t.after(() => new Promise((resolve) => upstream.close(() => resolve(undefined))));
@@ -42,7 +47,6 @@ test('admin web proxy preserves SSE streaming instead of buffering the whole res
   const adminPort = await listen(admin);
   t.after(() => new Promise((resolve) => admin.close(() => resolve(undefined))));
 
-  const startedAt = Date.now();
   const response = await fetch(`http://127.0.0.1:${adminPort}/api/test-stream`, {
     headers: { Accept: 'text/event-stream' },
   });
@@ -53,14 +57,11 @@ test('admin web proxy preserves SSE streaming instead of buffering the whole res
 
   const reader = response.body!.getReader();
   const firstChunk = await reader.read();
-  const firstChunkDelayMs = Date.now() - startedAt;
   assert.equal(firstChunk.done, false);
   assert.match(Buffer.from(firstChunk.value ?? new Uint8Array()).toString('utf8'), /data: first/);
-  assert.ok(
-    firstChunkDelayMs < 120,
-    `expected first SSE chunk before the upstream finished, got ${firstChunkDelayMs}ms`,
-  );
+  assert.equal(upstreamCompleted, false, 'expected first SSE chunk before the upstream finished');
 
+  releaseSecondChunk?.();
   const secondChunk = await reader.read();
   assert.equal(secondChunk.done, false);
   assert.match(Buffer.from(secondChunk.value ?? new Uint8Array()).toString('utf8'), /data: second/);

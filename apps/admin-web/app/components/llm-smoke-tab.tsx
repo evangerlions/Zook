@@ -1,30 +1,30 @@
-import { Button, Collapse, Table, Tag } from "antd";
+import { Collapse, Table, Tag } from "antd";
 import { useMemo } from "react";
 
 import { JsonPreview } from "./json-preview";
-import { MetricCard } from "./metric-card";
-import {
-  createEmptyLlmSmokeSummary,
-  toModelKindLabel,
-} from "../lib/llm-config";
-import { formatTimestamp } from "../lib/format";
+import { LlmSmokeRunner } from "./llm-smoke-runner";
+import { LlmSmokeSummary } from "./llm-smoke-summary";
+import { toModelKindLabel } from "../lib/llm-config";
 import type {
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestItem,
+  AdminLlmSmokeTestRunRequest,
+  LlmServiceConfig,
 } from "../lib/types";
 
 interface LlmSmokeTabProps {
-  onRunSmokeTest: () => void;
+  config: LlmServiceConfig | null;
+  onRunSmokeTest: (input: AdminLlmSmokeTestRunRequest) => void;
   runningSmokeTest: boolean;
   smokeDocument: AdminLlmSmokeTestDocument | null;
 }
 
 export function LlmSmokeTab({
+  config,
   onRunSmokeTest,
   runningSmokeTest,
   smokeDocument,
 }: LlmSmokeTabProps) {
-  const smokeSummary = smokeDocument?.summary ?? createEmptyLlmSmokeSummary();
   const smokeColumns = useMemo(
     () => [
       {
@@ -93,69 +93,73 @@ export function LlmSmokeTab({
   );
 
   return (
-    <div className="stack">
-      <section className="surface-card">
-        <div className="card-header">
+    <div className="stack llm-smoke-page">
+      <section className="surface-card llm-smoke-command-card">
+        <div className="llm-smoke-command-header">
           <div>
+            <span className="llm-smoke-eyebrow">Connectivity check</span>
             <h2>冒烟测试</h2>
-            <p>按当前生效配置遍历厂商 × 模型矩阵，验证 provider 连通性、响应耗时和基本返回结果。</p>
+            <p>验证当前生效配置的连通性与返回质量。可以覆盖全部组合，也可以只检查一条模型路由。</p>
           </div>
-          <div className="button-row">
-            <span className="meta-chip">冷却 {smokeDocument?.cooldownSeconds ?? 10}s</span>
-            <span className="meta-chip">{smokeDocument ? formatTimestamp(smokeDocument.executedAt) : "尚未执行"}</span>
-            <Button disabled={runningSmokeTest} loading={runningSmokeTest} onClick={onRunSmokeTest} type="primary">
-              {runningSmokeTest ? "执行中..." : "运行冒烟测试"}
-            </Button>
+          <div className="llm-smoke-command-meta">
+            <span>真实请求</span>
+            <span>{smokeDocument?.cooldownSeconds ?? 10}s 冷却</span>
           </div>
         </div>
-
-        <div className="metric-grid">
-          <MetricCard label="总矩阵" value={String(smokeSummary.totalCount)} />
-          <MetricCard label="成功" value={String(smokeSummary.successCount)} />
-          <MetricCard label="失败" value={String(smokeSummary.failureCount)} />
-          <MetricCard label="跳过" value={String(smokeSummary.skippedCount)} />
+        <div className="llm-smoke-workbench">
+          <LlmSmokeRunner
+            config={config}
+            onRun={onRunSmokeTest}
+            running={runningSmokeTest}
+          />
+          <LlmSmokeSummary document={smokeDocument} />
         </div>
       </section>
 
-      <section className="surface-card">
-        <div className="card-header">
+      <section className="surface-card llm-smoke-results-card">
+        <div className="llm-smoke-results-header">
           <div>
+            <span className="llm-smoke-eyebrow">Run output</span>
             <h2>执行结果</h2>
-            <p>主表格展示每个厂商 × 模型的状态、耗时和结果摘要，原始返回放在下面折叠区里。</p>
+            <p>按 route 查看状态、耗时与返回摘要；需要排查时再展开原始诊断数据。</p>
           </div>
+          {smokeDocument ? <span className="llm-smoke-result-count">{smokeDocument.items.length} 条结果</span> : null}
         </div>
 
         {smokeDocument?.items.length ? (
-          <Table<AdminLlmSmokeTestItem>
-            className="smoke-table"
-            columns={smokeColumns}
-            dataSource={smokeDocument.items}
-            pagination={false}
-            rowClassName={(item) => `smoke-table-row smoke-table-row--${item.status}`}
-            rowKey={(item) => `${item.provider}-${item.modelKey}-${item.providerModel || "missing"}`}
-            scroll={{ x: 1080 }}
-          />
+          <>
+            <div className="llm-smoke-table-frame">
+              <Table<AdminLlmSmokeTestItem>
+                className="smoke-table"
+                columns={smokeColumns}
+                dataSource={smokeDocument.items}
+                pagination={false}
+                rowClassName={(item) => `smoke-table-row smoke-table-row--${item.status}`}
+                rowKey={(item) => `${item.provider}-${item.modelKey}-${item.providerModel || "missing"}`}
+                scroll={{ x: 1080 }}
+              />
+            </div>
+            <Collapse
+              className="config-collapse llm-smoke-diagnostics"
+              defaultActiveKey={[]}
+              items={[
+                {
+                  key: "smoke-json",
+                  label: "查看原始诊断数据",
+                  children: <JsonPreview value={smokeDocument} />,
+                },
+              ]}
+            />
+          </>
         ) : (
-          <div className="empty-state">运行一次冒烟测试后，这里会展示完整矩阵结果。</div>
+          <div className="llm-smoke-empty-state">
+            <span className="llm-smoke-empty-index" aria-hidden="true">01</span>
+            <div>
+              <strong>还没有测试记录</strong>
+              <p>选择上方测试范围并运行后，结果会按 route 出现在这里。</p>
+            </div>
+          </div>
         )}
-      </section>
-
-      <section className="surface-card collapse-card">
-        <Collapse
-          className="config-collapse"
-          defaultActiveKey={[]}
-          items={[
-            {
-              key: "smoke-json",
-              label: "原始 JSON 结构",
-              children: smokeDocument ? (
-                <JsonPreview value={smokeDocument} />
-              ) : (
-                <div className="empty-state">运行后才会生成原始冒烟测试 JSON。</div>
-              ),
-            },
-          ]}
-        />
       </section>
     </div>
   );

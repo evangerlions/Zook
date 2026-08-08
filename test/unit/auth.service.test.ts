@@ -42,6 +42,36 @@ test("auth service rejects first-login into INVITE_ONLY apps", async () => {
   );
 });
 
+test("auth service preserves existing memberships when a shared user logs into another app", async () => {
+  const runtime = await createApplication();
+
+  const appALogin = await runtime.services.authService.login({
+    appId: "app_a",
+    account: "alice@example.com",
+    password: "Password1234",
+  });
+  const appBLogin = await runtime.services.authService.login({
+    appId: "app_b",
+    account: "alice@example.com",
+    password: "Password1234",
+  });
+
+  assert.equal(appALogin.appId, "app_a");
+  assert.equal(appBLogin.appId, "app_b");
+  assert.equal(runtime.database.findAppUser("app_a", "user_alice")?.status, "ACTIVE");
+  assert.equal(runtime.database.findAppUser("app_b", "user_alice")?.status, "ACTIVE");
+  assert.ok(
+    runtime.database.userRoles.some(
+      (item) => item.appId === "app_a" && item.userId === "user_alice",
+    ),
+  );
+  assert.ok(
+    runtime.database.userRoles.some(
+      (item) => item.appId === "app_b" && item.userId === "user_alice",
+    ),
+  );
+});
+
 test("auth service rotates refresh tokens and revokes them on logout", async () => {
   const runtime = await createApplication();
   const firstSession = await runtime.services.authService.login({
@@ -78,6 +108,52 @@ test("auth service rotates refresh tokens and revokes them on logout", async () 
       "code" in error &&
       error.code === "AUTH_REFRESH_TOKEN_REVOKED",
   );
+});
+
+test("auth service logout all only revokes sessions for the authenticated app", async () => {
+  const runtime = await createApplication();
+  const appASession = await runtime.services.authService.login({
+    appId: "app_a",
+    account: "alice@example.com",
+    password: "Password1234",
+  });
+  const appBSession = await runtime.services.authService.login({
+    appId: "app_b",
+    account: "alice@example.com",
+    password: "Password1234",
+  });
+
+  const appBAuth = runtime.services.tokenService.verifyAccessToken(appBSession.accessToken);
+  const revoked = await runtime.services.authService.logout(
+    {
+      appId: "app_b",
+      scope: "all",
+      refreshToken: appBSession.refreshToken,
+    },
+    appBAuth,
+  );
+
+  assert.equal(revoked >= 1, true);
+
+  const refreshedAppA = await runtime.services.authService.refresh({
+    appId: "app_a",
+    refreshToken: appASession.refreshToken,
+  });
+  assert.equal(refreshedAppA.appId, "app_a");
+
+  await assert.rejects(
+    () =>
+      runtime.services.authService.refresh({
+        appId: "app_b",
+        refreshToken: appBSession.refreshToken,
+      }),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "AUTH_REFRESH_TOKEN_REVOKED",
+  );
+  assert.equal(runtime.database.findAppUser("app_a", "user_alice")?.status, "ACTIVE");
+  assert.equal(runtime.database.findAppUser("app_b", "user_alice")?.status, "ACTIVE");
 });
 
 test("auth service keeps refresh tokens usable across application restarts when KV storage is shared", async () => {

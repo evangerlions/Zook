@@ -1,0 +1,194 @@
+openapi: 3.1.1
+info:
+  title: AINovel Public Config API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Public config consumed by the AINovel client.
+servers:
+  - url: https://api.zook.dev
+security: []
+paths:
+  /api/v1/ai_novel/public/config:
+    get:
+      operationId: getAiNovelPublicConfig
+      summary: Get AINovel public config
+      tags: [ainovel, public-config]
+      responses:
+        "200":
+          description: Public config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicConfigResponse"
+components:
+  schemas:
+    KickoffPublicConfig:
+      type: object
+      additionalProperties: true
+      properties:
+        recommendedPrompts:
+          type: array
+          deprecated: true
+          description: Legacy flat kickoff prompt list. New clients use this only for zh-CN compatibility and otherwise select recommendedPromptsI18n by their effective UI locale.
+          items:
+            type: string
+        recommendedPromptsI18n:
+          type: object
+          description: Locale-indexed kickoff prompt lists managed by backend admin config. Entries use the 20 supported canonical BCP-47 locale tags. The client selects only its matching locale entry and falls back to packaged locale copy when that entry is absent or invalid.
+          additionalProperties: false
+          properties:
+            en-US:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            zh-CN:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            zh-TW:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            ja-JP:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            es-ES:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            pt-BR:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            ko-KR:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            de-DE:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            fr-FR:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            hi-IN:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            id-ID:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            it-IT:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            tr-TR:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            vi-VN:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            th-TH:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            pl-PL:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            nl-NL:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            sv-SE:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            bn-BD:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+            sw-KE:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+    AINovelPublicConfig:
+      type: object
+      additionalProperties: true
+      properties:
+        app:
+          type: string
+          example: make_ai_novel_great_again
+        kickoff:
+          $ref: "#/components/schemas/KickoffPublicConfig"
+    PublicConfigData:
+      type: object
+      required: [appId, config]
+      properties:
+        appId: { type: string, example: ai_novel }
+        config:
+          $ref: "#/components/schemas/AINovelPublicConfig"
+        updatedAt: { type: string, format: date-time }
+    PublicConfigResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        requestId: { type: string }
+        data:
+          type: object
+          required: [appId, config]
+          properties:
+            appId: { type: string, example: ai_novel }
+            config:
+              type: object
+              additionalProperties: true
+            updatedAt: { type: string, format: date-time }

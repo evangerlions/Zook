@@ -117,7 +117,10 @@ export async function handleGetPublicAppConfig(this: BackendRouteContext,
 ): Promise<HttpResponse<PublicAppConfigDocument>> {
   const authorization = getHeader(request.headers, "authorization");
   if (authorization) {
-    await this.authenticateProductRequest(request, appId);
+    const auth = this.authGuard.canActivate(request);
+    this.appContextResolver.resolvePostAuth(request, auth.appId);
+    this.appAccessGuard.assertScope(appId, auth.appId);
+    await this.authService.assertAccessTokenActive(auth);
   } else {
     const requestAppId = getHeader(request.headers, "x-app-id");
     if (requestAppId && requestAppId !== appId) {

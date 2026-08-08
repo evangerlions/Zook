@@ -7,7 +7,6 @@ import { AuditInterceptor } from "./core/interceptors/audit.interceptor.ts";
 import { RequestLoggingInterceptor } from "./core/interceptors/request-logging.interceptor.ts";
 import { ValidationPipe } from "./core/pipes/validation.pipe.ts";
 import { InMemoryCache } from "./infrastructure/cache/redis/in-memory-cache.ts";
-import { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import { buildDefaultSeed } from "./infrastructure/database/prisma/default-seed.ts";
 import { PersistentFileStore } from "./infrastructure/files/persistent-file-store.ts";
@@ -31,15 +30,18 @@ import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
+import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service.ts";
+import { BodyLogSocialService } from "./modules/bodylog/bodylog-social.service.ts";
+import { BodyLogLeaderboardService } from "./modules/bodylog/bodylog-leaderboard.service.ts";
+import { BodyLogInvitationService } from "./modules/bodylog/bodylog-invitation.service.ts";
+import { BodyLogChallengeService } from "./modules/bodylog/bodylog-challenge.service.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
-import { AiNovelStatisticsService } from "./services/ai-novel-statistics.service.ts";
-import { createAiNovelStatisticsUsageOptions } from "./services/ai-novel-statistics-usage-recorder.ts";
+import { AiOutputReportingService } from "./services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
 import { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
 import { AppI18nConfigService } from "./services/app-i18n-config.service.ts";
 import { AppLogSecretService } from "./services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "./services/app-remote-log-pull.service.ts";
-import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import { ClientLogUploadService } from "./services/client-log-upload.service.ts";
 import { CommonAuthRateLimitConfigService } from "./services/common-auth-rate-limit-config.service.ts";
 import { CommonContentSafetyConfigService } from "./services/common-content-safety-config.service.ts";
@@ -51,16 +53,11 @@ import { CommonSmsConfigService } from "./services/common-sms-config.service.ts"
 import { CommonTestAccountService } from "./services/common-test-account.service.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
-import { EmbeddingManager } from "./services/embedding-manager.ts";
-import { FailedEventRetryService } from "./services/failed-event-retry.service.ts";
 import { FeedbackService } from "./services/feedback.service.ts";
 import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login.service.ts";
 import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
-import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
-import { LocalAiNovelE2eProvider, shouldUseLocalAiNovelE2eProvider } from "./services/local-ainovel-e2e-provider.ts";
-import { LLMManager } from "./services/llm-manager.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
@@ -76,16 +73,25 @@ import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-cal
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
+import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
+import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
+import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
+import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
+import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
 
+/**
+ * createApplication produces a full runtime context that tests can reuse without real infra.
+ */
 export async function createApplication(
   options: CreateApplicationOptions = {},
 ) {
   const passwordHasher = new DevelopmentPasswordHasher();
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher);
+  const frogsleepEnabled = resolveFrogSleepEnabled(options);
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled });
   const kvManager =
     options.kvManager ??
     (options.kvBackend
@@ -238,11 +244,14 @@ export async function createApplication(
       );
     const initializedGetuiGyConfig =
       await commonGetuiGyConfigService.initializeDefaultConfig();
+    const migratedAiNovelKickoffPrompts =
+      await migrateAiNovelKickoffPromptConfig(appConfigService);
     if (
       initializedCommonLlmConfig ||
       initializedAppLogSecrets ||
       initializedRemoteLogPullConfigs ||
-      initializedGetuiGyConfig
+      initializedGetuiGyConfig ||
+      migratedAiNovelKickoffPrompts
     ) {
       await managedStateStore.save(database);
     }
@@ -263,7 +272,7 @@ export async function createApplication(
   );
   const registrationEmailSender =
     options.registrationEmailSender ??
-    (options.serviceName === "api"
+    (options.serviceName === "api" || options.serviceName === "worker"
       ? new TencentSesRegistrationEmailSender(commonEmailConfigService)
       : new NoopRegistrationEmailSender());
   const smsVerificationSender =
@@ -350,41 +359,22 @@ export async function createApplication(
     commonGetuiGyConfigService,
   );
   const analyticsService = new AnalyticsService(database, appRegistryService);
-  const aiNovelStatisticsService = new AiNovelStatisticsService(database);
-  const bailianProvider = new BailianOpenAICompatibleProvider({ logger });
-  const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
-    ? new LocalAiNovelE2eProvider()
-    : undefined;
-  if (localAiNovelE2eProvider) {
-    logger.info("using local AINovel E2E LLM provider", {
-      appEnv: process.env.APP_ENV,
-      nodeEnv: process.env.NODE_ENV,
-    });
-  }
-  const llmProviders = options.llmProviders ?? {
-    bailian: localAiNovelE2eProvider ?? bailianProvider,
-    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
-  };
-  const embeddingProviders = options.embeddingProviders ?? {
-    bailian: localAiNovelE2eProvider ?? bailianProvider,
-    bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
-  };
-  const statisticsUsageOptions = createAiNovelStatisticsUsageOptions(
+  const {
     aiNovelStatisticsService,
-    logger,
-  );
-  const embeddingManager = new EmbeddingManager(embeddingProviders, undefined, {
+    embeddingManager,
+    llmManager,
+    llmSmokeTestService,
+  } = createApplicationAiRuntime({
+    database,
     commonLlmConfigService,
+    commonPasswordConfigService,
     llmHealthService,
     llmMetricsService,
-    ...statisticsUsageOptions,
-  });
-  const llmSmokeTestService = new LlmSmokeTestService(
-    commonLlmConfigService,
     kvManager,
-    llmProviders,
-    embeddingProviders,
-  );
+    logger,
+    llmProviders: options.llmProviders,
+    embeddingProviders: options.embeddingProviders,
+  });
   const aiNovelAuditFileService = new AiNovelAuditFileService(
     options.aiNovelAuditFileRoot,
   );
@@ -411,12 +401,6 @@ export async function createApplication(
     managedStateStore,
   );
   const rbacService = new RbacService(database);
-  const llmManager = new LLMManager(llmProviders, undefined, {
-    commonLlmConfigService,
-    llmHealthService,
-    llmMetricsService,
-    ...statisticsUsageOptions,
-  });
   const contentSafetyService = new ContentSafetyService(
     commonContentSafetyConfigService,
     llmManager,
@@ -424,6 +408,11 @@ export async function createApplication(
     database,
     logger,
   );
+  const bodyLogProfileService = new BodyLogProfileService(database, contentSafetyService);
+  const bodyLogSocialService = new BodyLogSocialService(database, bodyLogProfileService);
+  const bodyLogLeaderboardService = new BodyLogLeaderboardService(database, bodyLogProfileService);
+  const bodyLogInvitationService = new BodyLogInvitationService(database);
+  const bodyLogChallengeService = new BodyLogChallengeService(database, bodyLogProfileService);
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
@@ -434,6 +423,7 @@ export async function createApplication(
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
   const feedbackService = new FeedbackService(database, persistentFileStore);
+  const aiOutputReportingService = new AiOutputReportingService(database, aiPayloadCryptoService, appLogSecretService);
   const clientLogUploadService = new ClientLogUploadService(
     database,
     logEncryptionKeyResolver,
@@ -442,12 +432,19 @@ export async function createApplication(
       fileStore: persistentFileStore,
     },
   );
-  const notificationService = new NotificationService(database, queue, logger);
-  const failedEventRetryService = new FailedEventRetryService(
+  const {
+    notificationService,
+    buddyNotificationWorkerService,
+    buddyInvitationEmailWorkerService,
+    buddyMilestoneReportService,
+    failedEventRetryService,
+  } = createFrogSleepWorkerServices({
     database,
     queue,
     logger,
-  );
+    commonEmailConfigService,
+    registrationEmailSender,
+  });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(
     new Map(
@@ -464,7 +461,6 @@ export async function createApplication(
   const requestLoggingInterceptor = new RequestLoggingInterceptor(logger);
   const httpExceptionFilter = new HttpExceptionFilter(publicApiMessageService);
   const adminBasicAuth = resolveAdminBasicAuth(options);
-
   const app = new BackendApplication(
     database,
     authService,
@@ -483,6 +479,11 @@ export async function createApplication(
     llmManager,
     embeddingManager,
     contentSafetyService,
+    bodyLogProfileService,
+    bodyLogSocialService,
+    bodyLogLeaderboardService,
+    bodyLogInvitationService,
+    bodyLogChallengeService,
     llmSmokeTestService,
     aiNovelAuditFileService,
     aiNovelLlmService,
@@ -497,6 +498,7 @@ export async function createApplication(
     tencentSesEmailCallbackService,
     feedbackService,
     aiNovelStatisticsService,
+    aiOutputReportingService,
     logger,
     auditInterceptor,
     requestLoggingInterceptor,
@@ -507,8 +509,10 @@ export async function createApplication(
     rbacGuard,
     validationPipe,
     commonTestAccountService,
+    kvManager,
+    frogsleepEnabled,
   );
-
+  app.analyticsService = analyticsService;
   return {
     app,
     database,
@@ -556,6 +560,9 @@ export async function createApplication(
       storageService,
       clientLogUploadService,
       notificationService,
+      buddyNotificationWorkerService,
+      buddyInvitationEmailWorkerService,
+      buddyMilestoneReportService,
       failedEventRetryService,
       tencentSesEmailCallbackService,
       feedbackService,
@@ -577,20 +584,4 @@ export async function createApplication(
       await database.close();
     },
   };
-}
-
-function resolvePublicSmsTestBypass(options: CreateApplicationOptions): boolean {
-  if (typeof options.publicSmsTestBypassEnabled === "boolean") {
-    return options.publicSmsTestBypassEnabled;
-  }
-  const explicit = process.env.ZOOK_PUBLIC_SMS_TEST_BYPASS?.trim().toLowerCase();
-  if (explicit === "true" || explicit === "1") {
-    return true;
-  }
-  if (explicit === "false" || explicit === "0") {
-    return false;
-  }
-  const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
-  const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
-  return appEnv === "local" || appEnv === "development" || nodeEnv === "development";
 }

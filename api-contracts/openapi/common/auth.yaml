@@ -1,0 +1,789 @@
+openapi: 3.2.0
+info:
+  title: Common Auth API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: External authentication and session endpoints.
+servers:
+  - url: https://api.zook.dev
+security: []
+paths:
+  /api/v1/auth/login:
+    post:
+      operationId: loginByPassword
+      summary: Password login
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordLoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "401":
+          description: Account not found, password not set, or invalid account/password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/login/email-code:
+    post:
+      operationId: sendLoginEmailCode
+      summary: Send login email code
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailCodeRequest"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+  /api/v1/auth/login/email:
+    post:
+      operationId: loginByEmailCode
+      summary: Login by email code, auto-create account when allowed
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailLoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/login/sms-code:
+    post:
+      operationId: sendLoginSmsCode
+      summary: Send login SMS code
+      description: For admin-configured Test Account phones, Zook may accept the request without sending a provider SMS. The reviewer still uses the normal phone-code login UI. The public `test=true` flag is only honored by explicitly enabled debug runtimes.
+      tags: [common, auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsCodeRequest"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/login/sms:
+    post:
+      operationId: loginBySmsCode
+      summary: Login by SMS code, auto-create account when allowed
+      description: The same verification code can be entered incorrectly up to 10 times within its validity window before it is invalidated. Admin-configured Test Account phones may use a persistent static code for App Store Review and repeated wrong static-code attempts temporarily lock that credential.
+      tags: [common, auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsLoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "401":
+          description: Invalid or expired SMS code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/login/one-click:
+    post:
+      operationId: loginByOneClick
+      summary: Login by carrier one-click token, auto-create account when allowed
+      description: Exchanges a verified carrier one-click login token for a Zook session.
+      tags: [common, auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OneClickLoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "401":
+          description: Invalid or expired one-click login token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+        "503":
+          description: One-click login provider is not configured or unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/login/one-click/status:
+    get:
+      operationId: getOneClickLoginStatus
+      summary: Get one-click login backend readiness
+      tags: [common, auth]
+      security: []
+      responses:
+        "200":
+          description: Provider readiness status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+  /api/v1/auth/password/email-code:
+    post:
+      operationId: sendPasswordEmailCode
+      summary: Send password set/reset email code
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailCodeRequest"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+  /api/v1/auth/password/sms-code:
+    post:
+      operationId: sendPasswordSmsCode
+      summary: Send password reset SMS code
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordSmsCodeRequest"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+  /api/v1/auth/password/set:
+    post:
+      operationId: setPassword
+      summary: Set password for logged-in email-code-only account
+      tags: [common, auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPasswordRequest"
+      responses:
+        "200":
+          description: Password set and session rotated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "409":
+          description: Password already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/password/reset:
+    post:
+      operationId: resetPassword
+      summary: Reset password with email code
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset and logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/password/reset-by-sms:
+    post:
+      operationId: resetPasswordBySms
+      summary: Reset password with SMS code
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordBySmsRequest"
+      responses:
+        "200":
+          description: Password reset and logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/password/change:
+    post:
+      operationId: changePassword
+      summary: Change password for current user
+      tags: [common, auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed and session rotated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/register/email-code:
+    post:
+      operationId: sendRegisterEmailCode
+      summary: Send registration email code
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailCodeRequest"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+  /api/v1/auth/register:
+    post:
+      operationId: registerByEmail
+      summary: Register account and create session
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: Registered and logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/register/sms-code:
+    post:
+      operationId: sendRegisterSmsCode
+      summary: Send registration SMS code
+      tags: [common, auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsCodeRequest"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+        "400":
+          description: Invalid registration SMS request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/register/sms:
+    post:
+      operationId: registerBySms
+      summary: Register account by SMS code and create a session
+      tags: [common, auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBySmsRequest"
+      responses:
+        "200":
+          description: Registered and logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          description: Invalid registration request or SMS code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/qr-logins:
+    post:
+      operationId: createQrLogin
+      summary: Create QR login session
+      tags: [common, auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QrLoginCreateRequest"
+      responses:
+        "200":
+          description: QR login created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrLoginCreateResponse"
+  /api/v1/auth/qr-logins/{loginId}/confirm:
+    post:
+      operationId: confirmQrLogin
+      summary: Confirm QR login on mobile
+      tags: [common, auth]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/LoginId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QrLoginConfirmRequest"
+      responses:
+        "200":
+          description: QR login confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrLoginConfirmResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/qr-logins/{loginId}:
+    get:
+      operationId: pollQrLogin
+      summary: Poll QR login status on PC/Web
+      tags: [common, auth]
+      parameters:
+        - $ref: "#/components/parameters/LoginId"
+      responses:
+        "200":
+          description: QR login status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QrLoginPollResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/refresh:
+    post:
+      operationId: refreshSession
+      summary: Refresh access token
+      tags: [common, auth]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: Session refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "403":
+          $ref: "#/components/responses/AccountRegionLoginForbidden"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Logout current session or all sessions for current app
+      tags: [common, auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+components:
+  responses:
+    AccountRegionLoginForbidden:
+      description: The authoritative Android or Web product region conflicts with the immutable account region. The response intentionally omits all region details.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    LoginId:
+      name: loginId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    PasswordLoginRequest:
+      type: object
+      required: [appId, account, password]
+      properties:
+        appId: { type: string }
+        account: { type: string }
+        password: { type: string }
+        clientType: { type: string, enum: [app, web] }
+    EmailCodeRequest:
+      type: object
+      required: [appId, email]
+      properties:
+        appId: { type: string }
+        email: { type: string, format: email }
+    SmsCodeRequest:
+      type: object
+      required: [appId, phone, phoneNa]
+      properties:
+        appId: { type: string }
+        phone: { type: string }
+        phoneNa: { type: string, example: "+86" }
+        test:
+          type: boolean
+          default: false
+          description: Dev/debug-only provider bypass hint. Production App Review should use admin-configured Test Accounts instead.
+    PasswordSmsCodeRequest:
+      type: object
+      required: [appId, phone]
+      properties:
+        appId: { type: string }
+        phone: { type: string }
+        phoneNa: { type: string, example: "+86" }
+        test:
+          type: boolean
+          default: false
+    EmailLoginRequest:
+      type: object
+      required: [appId, email, emailCode, clientType]
+      properties:
+        appId: { type: string }
+        email: { type: string, format: email }
+        emailCode: { type: string }
+        clientType: { type: string, enum: [app, web] }
+    SmsLoginRequest:
+      type: object
+      required: [appId, phone, phoneNa, smsCode, clientType]
+      properties:
+        appId: { type: string }
+        phone: { type: string }
+        phoneNa: { type: string, example: "+86" }
+        smsCode: { type: string }
+        clientType: { type: string, enum: [app, web] }
+    OneClickLoginRequest:
+      type: object
+      required: [appId, token, gyuid, clientType]
+      properties:
+        appId: { type: string }
+        token:
+          type: string
+          description: Carrier token returned by the Getui GeYan one-click login SDK.
+        gyuid:
+          type: string
+          description: Getui GeYan SDK user identifier returned with the one-click login result.
+        clientType: { type: string, enum: [app, web] }
+        operator:
+          type: string
+          description: Optional carrier/operator code returned by the SDK.
+        sdkPlatform:
+          type: string
+          description: Optional SDK platform label such as android, ios, or ohos.
+    SetPasswordRequest:
+      type: object
+      required: [appId, password, clientType]
+      properties:
+        appId: { type: string }
+        password: { type: string, minLength: 8, maxLength: 64, pattern: '^(?=.*[A-Za-z])(?=.*\d).*$' }
+        clientType: { type: string, enum: [app, web] }
+    ResetPasswordRequest:
+      type: object
+      required: [appId, email, emailCode, password, clientType]
+      properties:
+        appId: { type: string }
+        email: { type: string, format: email }
+        emailCode: { type: string }
+        password: { type: string, minLength: 8, maxLength: 64, pattern: '^(?=.*[A-Za-z])(?=.*\d).*$' }
+        clientType: { type: string, enum: [app, web] }
+    ResetPasswordBySmsRequest:
+      type: object
+      required: [appId, phone, smsCode, password, clientType]
+      properties:
+        appId: { type: string }
+        phone: { type: string }
+        phoneNa: { type: string, example: "+86" }
+        smsCode: { type: string }
+        password: { type: string, minLength: 8, maxLength: 64, pattern: '^(?=.*[A-Za-z])(?=.*\d).*$' }
+        clientType: { type: string, enum: [app, web] }
+    ChangePasswordRequest:
+      type: object
+      required: [appId, currentPassword, newPassword, clientType]
+      properties:
+        appId: { type: string }
+        currentPassword: { type: string }
+        newPassword: { type: string, minLength: 8, maxLength: 64, pattern: '^(?=.*[A-Za-z])(?=.*\d).*$' }
+        clientType: { type: string, enum: [app, web] }
+    RegisterRequest:
+      type: object
+      required: [appId, email, emailCode, password, clientType]
+      properties:
+        appId: { type: string }
+        email: { type: string, format: email }
+        emailCode: { type: string }
+        password: { type: string, minLength: 8, maxLength: 64, pattern: '^(?=.*[A-Za-z])(?=.*\d).*$' }
+        clientType: { type: string, enum: [app, web] }
+    RegisterBySmsRequest:
+      type: object
+      additionalProperties: false
+      required: [appId, phone, smsCode, clientType]
+      properties:
+        appId: { type: string }
+        phone: { type: string }
+        phoneNa: { type: string, default: "+86" }
+        smsCode: { type: string }
+        clientType: { type: string, enum: [app, web] }
+    QrLoginCreateRequest:
+      type: object
+      required: [appId]
+      properties:
+        appId: { type: string }
+        clientType: { type: string, enum: [web, app] }
+    QrLoginConfirmRequest:
+      type: object
+      required: [scanToken]
+      properties:
+        appId: { type: string }
+        scanToken: { type: string }
+    RefreshRequest:
+      type: object
+      properties:
+        appId: { type: string }
+        refreshToken: { type: string }
+        clientType: { type: string, enum: [app, web] }
+    LogoutRequest:
+      type: object
+      properties:
+        appId: { type: string }
+        scope: { type: string, enum: [current, all], default: current }
+    AcceptedResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data:
+          $ref: "#/components/schemas/AuthAcceptedData"
+        requestId: { type: string }
+    AuthSessionResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        requestId: { type: string }
+        data:
+          $ref: "#/components/schemas/AuthSessionData"
+    QrLoginCreateResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          $ref: "#/components/schemas/QrLoginCreateData"
+    QrLoginConfirmResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          $ref: "#/components/schemas/QrLoginConfirmData"
+    QrLoginPollResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          $ref: "#/components/schemas/QrLoginPollData"
+    UserSummary:
+      type: object
+      required: [id, name, hasPassword]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone:
+          type:
+            - string
+            - "null"
+        avatarUrl:
+          type:
+            - string
+            - "null"
+        hasPassword: { type: boolean }
+    AuthAcceptedData:
+      type: object
+      additionalProperties: true
+    AuthSessionData:
+      type: object
+      required: [accessToken, accountRegion, user]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer }
+        accountRegion:
+          type: string
+          enum: [CN, GLOBAL, UNKNOWN]
+        user:
+          $ref: "#/components/schemas/UserSummary"
+    QrLoginCreateData:
+      type: object
+      required: [loginId, qrContent, pollToken, expiresInSeconds, pollIntervalMs]
+      properties:
+        loginId: { type: string }
+        qrContent: { type: string }
+        pollToken: { type: string }
+        expiresInSeconds: { type: integer }
+        pollIntervalMs: { type: integer }
+    QrLoginConfirmData:
+      type: object
+      required: [confirmed, accountRegion]
+      properties:
+        confirmed:
+          type: boolean
+        accountRegion:
+          type: string
+          enum: [CN, GLOBAL, UNKNOWN]
+    QrLoginPollData:
+      discriminator:
+        propertyName: status
+      oneOf:
+        - type: object
+          required: [status, expiresInSeconds, pollIntervalMs]
+          properties:
+            status:
+              type: string
+              enum: [PENDING]
+            expiresInSeconds: { type: integer }
+            pollIntervalMs: { type: integer }
+        - type: object
+          required: [status, accessToken, expiresIn, accountRegion, user]
+          properties:
+            status:
+              type: string
+              enum: [CONFIRMED]
+            accessToken: { type: string }
+            expiresIn: { type: integer }
+            accountRegion:
+              type: string
+              enum: [CN, GLOBAL, UNKNOWN]
+            user:
+              $ref: "#/components/schemas/UserSummary"
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
+        requestId: { type: string }

@@ -4,7 +4,22 @@ import { enumerateDateKeys, toDateKey, randomId } from "../../shared/utils.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 
-const SUPPORTED_EVENTS = new Set(["page_view", "page_leave", "page_heartbeat"]);
+const SUPPORTED_EVENTS = new Set([
+  "page_view",
+  "page_leave",
+  "page_heartbeat",
+  // FrogSleep server-initiated analytics events
+  "frogsleep_sleep_invite_created",
+  "frogsleep_sleep_invite_accepted",
+  "frogsleep_sleep_invite_declined",
+  "frogsleep_session_started",
+  "frogsleep_session_interrupted",
+  "frogsleep_session_returned",
+  "frogsleep_morning_completed",
+  "frogsleep_focus_session_reported",
+  "frogsleep_focus_relationship_created",
+  "frogsleep_focus_achievement_unlocked",
+]);
 
 /**
  * AnalyticsService owns event ingestion and the app-scoped metric definitions from the document.

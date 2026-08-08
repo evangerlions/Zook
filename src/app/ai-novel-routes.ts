@@ -150,7 +150,7 @@ export async function handleAiNovelAuditFile(this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   if (!shouldServeLocalDebugEndpoint.call(this, request)) {
-    throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
+    throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");
   }
 
   await this.authenticateProductRequest(request, "ai_novel");
@@ -186,7 +186,7 @@ export async function handleAiNovelAuditFileView(this: BackendRouteContext,
   encodedSessionId: string,
 ): Promise<HttpResponse<unknown>> {
   if (!shouldServeLocalDebugEndpoint.call(this, request)) {
-    throw new ApplicationError(404, "REQ_INVALID_BODY", "Route not found.");
+    throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");
   }
   const sessionId = decodeURIComponent(encodedSessionId);
   if (sessionId.trim().isEmpty) {

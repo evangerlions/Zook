@@ -1,0 +1,162 @@
+openapi: 3.2.0
+info:
+  title: Common Users API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: External user profile endpoints.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/users/me:
+    get:
+      operationId: getCurrentUser
+      summary: Get current user from bearer token
+      tags: [common, users]
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "401":
+          description: Missing or invalid auth
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: App scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/users/me/delete:
+    post:
+      operationId: deleteCurrentAppAccount
+      summary: Delete current app account access and app-scoped personal data
+      description: >
+        Deletes the current user's membership and app-scoped runtime data for the
+        bearer token app. This does not delete the global Zook identity record.
+      tags: [common, users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountDeletionRequest"
+      responses:
+        "200":
+          description: Current app account deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountDeletionResponse"
+        "400":
+          description: Confirmation text is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid auth
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: App scope mismatch or membership unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CurrentUserResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        requestId: { type: string }
+        data:
+          $ref: "#/components/schemas/CurrentUserData"
+    CurrentUserData:
+      type: object
+      required: [appId, accountRegion, user]
+      properties:
+        appId: { type: string }
+        accountRegion:
+          type: string
+          enum: [CN, GLOBAL, UNKNOWN]
+        user:
+          $ref: "#/components/schemas/UserSummary"
+    AccountDeletionRequest:
+      type: object
+      required: [appId, confirmation]
+      additionalProperties: false
+      properties:
+        appId:
+          type: string
+          minLength: 1
+        confirmation:
+          type: string
+          const: DELETE
+    AccountDeletionResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        requestId: { type: string }
+        data:
+          $ref: "#/components/schemas/AccountDeletionData"
+    AccountDeletionData:
+      type: object
+      required: [deleted, revokedSessions]
+      properties:
+        deleted:
+          type: boolean
+          const: true
+        revokedSessions:
+          type: integer
+          minimum: 0
+    UserSummary:
+      type: object
+      required: [id, name, hasPassword]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone:
+          type:
+            - string
+            - "null"
+        avatarUrl:
+          type:
+            - string
+            - "null"
+        hasPassword: { type: boolean }
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
+        requestId: { type: string }

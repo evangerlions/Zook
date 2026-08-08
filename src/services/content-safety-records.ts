@@ -177,7 +177,9 @@ function normalizeStatsFilter(
   now: Date,
 ): { dateFrom: string; dateTo: string } {
   const today = toDateKey(now.toISOString());
-  const defaultFrom = toDateKey(new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString());
+  const defaultFrom = toDateKey(
+    new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString(),
+  );
   const dateFrom = normalizeDateKey(filter.dateFrom) ?? defaultFrom;
   const dateTo = normalizeDateKey(filter.dateTo) ?? today;
   return dateFrom <= dateTo

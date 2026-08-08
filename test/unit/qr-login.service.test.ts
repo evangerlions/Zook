@@ -101,6 +101,45 @@ test("qr login APIs create a session, confirm it on mobile, and let PC poll once
   assert.equal(secondPollResponse.body.code, "AUTH_QR_LOGIN_ALREADY_USED");
 });
 
+test("qr login poll enforces the authoritative Web product region", async () => {
+  const runtime = await createApplication();
+  const membership = runtime.database.appUsers.find(
+    (item) => item.appId === "app_a" && item.userId === "user_alice",
+  );
+  assert.ok(membership);
+  membership.accountRegion = "CN";
+
+  const created = await runtime.services.qrLoginService.createSession({
+    appId: "app_a",
+  });
+  await runtime.services.qrLoginService.confirm({
+    appId: "app_a",
+    loginId: created.loginId,
+    scanToken: extractScanToken(created.qrContent),
+    userId: "user_alice",
+  });
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: `/api/v1/auth/qr-logins/${created.loginId}`,
+    headers: {
+      "x-platform": "web",
+      "x-app-region": "GLOBAL",
+      "x-app-locale": "en-US",
+    },
+    query: {
+      appId: "app_a",
+      pollToken: created.pollToken,
+    },
+  });
+
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.body.code, "AUTH_LOGIN_FORBIDDEN");
+  assert.equal(response.body.message, "This account cannot sign in here.");
+  assert.equal(response.body.data, null);
+  assert.match(response.headers?.["Set-Cookie"] ?? "", /Max-Age=0/);
+});
+
 test("qr login rejects repeated confirmation with the same QR code", async () => {
   const runtime = await createApplication();
   const baseTime = new Date("2026-03-20T10:00:00+08:00");

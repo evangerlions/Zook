@@ -14,13 +14,16 @@ SPECS: dict[str, list[str]] = {
         "PasswordLoginRequest",
         "EmailCodeRequest",
         "SmsCodeRequest",
+        "PasswordSmsCodeRequest",
         "EmailLoginRequest",
         "SmsLoginRequest",
         "OneClickLoginRequest",
         "SetPasswordRequest",
         "ResetPasswordRequest",
+        "ResetPasswordBySmsRequest",
         "ChangePasswordRequest",
         "RegisterRequest",
+        "RegisterBySmsRequest",
         "QrLoginCreateRequest",
         "RefreshRequest",
         "LogoutRequest",
@@ -70,7 +73,87 @@ SPECS: dict[str, list[str]] = {
         "AiNovelStatisticsSnapshotRequest",
         "AiNovelStatisticsSnapshotResponse",
     ],
+    "bodylog/api.yaml": [
+        "BodyLogProfileUpdateRequest",
+        "BodyLogTargetUserRequest",
+        "BodyLogReportRequest",
+        "BodyLogLeaderboardJoinRequest",
+        "BodyLogLeaderboardAggregateRequest",
+        "BodyLogLeaderboardLeaveRequest",
+        "BodyLogInvitationCreateRequest",
+        "BodyLogInvitationAttributeRequest",
+        "BodyLogInvitationProgressRequest",
+        "BodyLogChallengeCreateRequest",
+        "BodyLogChallengeResponseRequest",
+        "BodyLogChallengeProgressRequest",
+        "BodyLogAvatarKey",
+        "BodyLogReportReason",
+        "BodyLogChallengeTheme",
+        "BodyLogProfileData",
+        "BodyLogFriendData",
+        "BodyLogFriendRequestRecordData",
+        "BodyLogFriendRequestListItem",
+        "BodyLogFriendRequestStatusData",
+        "BodyLogBlockListItem",
+        "BodyLogLeaderboardMembership",
+        "BodyLogLeaderboardJoinData",
+        "BodyLogLeaderboardEntry",
+        "BodyLogLeaderboardData",
+        "BodyLogInvitationCreateData",
+        "BodyLogInvitationListItem",
+        "BodyLogInvitationStatusData",
+        "BodyLogInvitationAttributionData",
+        "BodyLogInvitationProgressData",
+        "BodyLogChallengeMemberData",
+        "BodyLogChallengeData",
+    ],
 }
+
+FROGSLEEP_SPECS: dict[str, list[str]] = {
+    "frogsleep/api.yaml": [
+        "FrogSleepPasswordLoginRequest",
+        "FrogSleepEmailCodeRequest",
+        "FrogSleepEmailLoginRequest",
+        "FrogSleepEmailRegisterRequest",
+        "FrogSleepPasswordResetRequest",
+        "FrogSleepPasswordResetConfirmRequest",
+        "FrogSleepPasswordChangeRequest",
+        "FrogSleepTokenRefreshRequest",
+        "FrogSleepDeviceRegisterRequest",
+        "FrogSleepInviteCreateRequest",
+        "FrogSleepInviteAcceptRequest",
+        "BuddyInvitationCreateRequest",
+        "BuddyInvitationTarget",
+        "BuddyInvitationDeliveryStatus",
+        "BuddyInvitationDomainResult",
+        "BuddyInvitationDelivery",
+        "BuddyInvitationResponseRequest",
+        "BuddySharingGrantUpdateRequest",
+        "BuddyGroupCreateRequest",
+        "BuddyGroupUpdateRequest",
+        "BuddyGroupInviteRequest",
+        "BuddyGroupRoleUpdateRequest",
+        "BuddyNotificationPreferencesRequest",
+        "BuddyStructuredShareRequest",
+        "BuddyInteractionRequest",
+        "BuddyJointActivityRequest",
+        "FrogSleepSleepPreferencesRequest",
+        "FrogSleepSharedSleepSessionRequest",
+        "FrogSleepSharedSleepEventRequest",
+        "FrogSleepFocusProfileRequest",
+        "FrogSleepFocusSessionRequest",
+        "FrogSleepFocusAchievementNotifyRequest",
+        "FrogSleepFocusMessageRequest",
+        "FrogSleepSleepReportRequest",
+        "FrogSleepProgressSnapshotRequest",
+        "FrogSleepEntitlementData",
+        "FrogSleepEnvelope",
+    ],
+}
+
+FROGSLEEP_BLOCK_BEGIN = "// BEGIN FROGSLEEP GENERATED CONTRACTS"
+FROGSLEEP_BLOCK_END = "// END FROGSLEEP GENERATED CONTRACTS"
+ALL_SPECS = {**SPECS, **FROGSLEEP_SPECS}
 
 ALIASES: dict[str, str] = {
     "AuthSuccessPayload": "AuthSessionData",
@@ -117,6 +200,51 @@ def resolve_ref(schema: Any, current_path: Path, cache: dict[Path, dict[str, Any
     return schema
 
 
+def has_type_shape(schema: dict[str, Any]) -> bool:
+    return any(key in schema for key in ("type", "properties", "additionalProperties", "enum"))
+
+
+def without_combinators(schema: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in schema.items() if key not in ("oneOf", "anyOf", "allOf")}
+
+
+def parenthesize_type(value: str) -> str:
+    if "\n" in value or " | " in value or " & " in value:
+        return f"(\n{value}\n)"
+    return value
+
+
+def ts_object_type(schema: dict[str, Any], forced_required: set[str] | None = None) -> str:
+    props = schema.get("properties", {})
+    required = set(schema.get("required", [])) | (forced_required or set())
+    lines: list[str] = ["{"]
+    for key, value in props.items():
+        optional = "" if key in required else "?"
+        lines.append(f"  {json.dumps(key)}{optional}: {ts_type(value, key)};")
+    for key in sorted(required - set(props.keys())):
+        lines.append(f"  {json.dumps(key)}: unknown;")
+    additional = schema.get("additionalProperties")
+    if additional is True:
+        lines.append('  [key: string]: unknown;')
+    elif isinstance(additional, dict):
+        lines.append(f"  [key: string]: {ts_type(additional, '')};")
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def ts_type_with_base(schema: Any, base_schema: dict[str, Any], name_hint: str = "") -> str:
+    if not isinstance(schema, dict):
+        return ts_type(schema, name_hint)
+    if "required" in schema and not has_type_shape(schema):
+        return ts_object_type(base_schema, set(schema.get("required", [])))
+    merged = {**base_schema, **schema}
+    if "properties" in base_schema or "properties" in schema:
+        merged["properties"] = {**base_schema.get("properties", {}), **schema.get("properties", {})}
+    if "required" in base_schema or "required" in schema:
+        merged["required"] = sorted(set(base_schema.get("required", [])) | set(schema.get("required", [])))
+    return ts_type(merged, name_hint)
+
+
 def ts_type(schema: Any, name_hint: str = "") -> str:
     if not isinstance(schema, dict):
         return "unknown"
@@ -126,6 +254,21 @@ def ts_type(schema: Any, name_hint: str = "") -> str:
 
     if "oneOf" in schema:
         return " | ".join(ts_type(item, name_hint) for item in schema["oneOf"])
+
+    if "anyOf" in schema:
+        base_schema = without_combinators(schema)
+        return " | ".join(
+            parenthesize_type(ts_type_with_base(item, base_schema, name_hint))
+            for item in schema["anyOf"]
+        )
+
+    if "allOf" in schema:
+        base_schema = without_combinators(schema)
+        parts: list[str] = []
+        if has_type_shape(base_schema):
+            parts.append(ts_type(base_schema, name_hint))
+        parts.extend(ts_type_with_base(item, base_schema, name_hint) for item in schema["allOf"])
+        return " & ".join(parenthesize_type(part) for part in parts)
 
     schema_type = schema.get("type")
     if isinstance(schema_type, list):
@@ -144,64 +287,56 @@ def ts_type(schema: Any, name_hint: str = "") -> str:
     if schema_type == "boolean":
         return "boolean"
     if schema_type == "array":
-        return f"{ts_type(schema.get('items', {}), name_hint)}[]"
+        return f"{parenthesize_type(ts_type(schema.get('items', {}), name_hint))}[]"
     if schema_type == "object" or "properties" in schema or "additionalProperties" in schema:
-        props = schema.get("properties", {})
-        required = set(schema.get("required", []))
-        lines: list[str] = ["{"]
-        for key, value in props.items():
-            optional = "" if key in required else "?"
-            lines.append(f"  {json.dumps(key)}{optional}: {ts_type(value, key)};")
-        additional = schema.get("additionalProperties")
-        if additional is True:
-            lines.append('  [key: string]: unknown;')
-        elif isinstance(additional, dict):
-            lines.append(f"  [key: string]: {ts_type(additional, name_hint)};")
-        lines.append("}")
-        return "\n".join(lines)
+        return ts_object_type(schema)
     return "unknown"
 
 
-def resolve_workspace_root(value: str | None) -> Path:
-    if value:
-        return Path(value).resolve()
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        marker = parent / 'PROJECT_PATHS.local.toml'
-        if marker.exists():
-            return parent.resolve()
-        sibling_workspace = parent / 'zook-workspace'
-        if (sibling_workspace / 'api' / 'openapi').exists():
-            return sibling_workspace.resolve()
-    raise SystemExit('workspace root not found; pass --workspace-root explicitly')
+def resolve_repository_root(value: str | None) -> Path:
+    repository_root = (
+        Path(value).resolve()
+        if value
+        else Path(__file__).resolve().parents[1]
+    )
+    if not (repository_root / "package.json").is_file():
+        raise SystemExit(
+            f"Zook repository root not found at {repository_root}; "
+            "pass --repo-root explicitly"
+        )
+    return repository_root
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--workspace-root")
-    parser.add_argument("--out", required=True)
-    args = parser.parse_args()
+def missing_spec_paths(openapi_root: Path, specs: dict[str, list[str]]) -> list[str]:
+    return [rel_spec for rel_spec in specs if not (openapi_root / rel_spec).exists()]
 
-    workspace_root = resolve_workspace_root(args.workspace_root)
-    openapi_root = workspace_root / "api" / "openapi"
-    out_path = Path(args.out).resolve()
-    out_path.parent.mkdir(parents=True, exist_ok=True)
 
+def resolve_openapi_root(repository_root: Path) -> Path:
+    openapi_root = repository_root / "api-contracts" / "openapi"
+    missing_paths = missing_spec_paths(openapi_root, ALL_SPECS)
+    if openapi_root.is_dir() and not missing_paths:
+        return openapi_root
+    missing_summary = ", ".join(missing_paths[:3]) or "contract directory"
+    raise SystemExit(
+        f"complete in-repository OpenAPI contracts not found at {openapi_root} "
+        f"(missing {missing_summary})"
+    )
+
+
+def generate_contract_blocks(
+    openapi_root: Path,
+    specs: dict[str, list[str]],
+) -> tuple[list[str], list[str]]:
     cache: dict[Path, dict[str, Any]] = {}
-    blocks: list[str] = [
-        "// AUTO-GENERATED FILE. DO NOT EDIT.",
-        "// Generated from workspace OpenAPI contracts for Zook public API boundaries.",
-        "",
-    ]
-
+    blocks: list[str] = []
     generated_names: list[str] = []
     used_export_names: set[str] = set()
 
-    for rel_spec, schema_names in SPECS.items():
+    for rel_spec, schema_names in specs.items():
         spec_path = (openapi_root / rel_spec).resolve()
         spec_prefix = rel_spec.replace("/", "_").replace(".yaml", "")
         if spec_path not in cache:
-          cache[spec_path] = load_yaml(spec_path)
+            cache[spec_path] = load_yaml(spec_path)
         doc = cache[spec_path]
         schemas = doc["components"]["schemas"]
         for schema_name in schema_names:
@@ -217,17 +352,67 @@ def main() -> None:
             blocks.append("")
             generated_names.append(export_name)
 
+    return blocks, generated_names
+
+
+def append_alias_blocks(blocks: list[str]) -> None:
     for alias, target in ALIASES.items():
         blocks.append(f"export type {alias} = {target};")
     blocks.append("")
+
+
+def append_contract_names(blocks: list[str], names: list[str]) -> None:
     blocks.append(
         "export const GeneratedPublicContractNames = " +
-        json.dumps(sorted(generated_names), ensure_ascii=False, indent=2) +
+        json.dumps(sorted(names), ensure_ascii=False, indent=2) +
         " as const;"
     )
     blocks.append("")
 
-    out_path.write_text("\n".join(blocks))
+
+def render_contracts(openapi_root: Path) -> str:
+    blocks: list[str] = [
+        "// AUTO-GENERATED FILE. DO NOT EDIT.",
+        "// Generated from api-contracts/openapi for Zook public API boundaries.",
+        "",
+    ]
+    generated_blocks, generated_names = generate_contract_blocks(openapi_root, SPECS)
+    frogsleep_blocks, frogsleep_names = generate_contract_blocks(openapi_root, FROGSLEEP_SPECS)
+    blocks.extend(generated_blocks)
+    append_alias_blocks(blocks)
+    blocks.extend([
+        FROGSLEEP_BLOCK_BEGIN,
+        *frogsleep_blocks,
+        FROGSLEEP_BLOCK_END,
+        "",
+    ])
+    append_contract_names(blocks, generated_names + frogsleep_names)
+    return "\n".join(blocks)
+
+
+def write_or_check_output(out_path: Path, content: str, check: bool) -> None:
+    if check:
+        if not out_path.is_file() or out_path.read_text() != content:
+            raise SystemExit(
+                f"generated contracts are stale: {out_path}; "
+                "run npm run generate:public-contracts"
+            )
+        return
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(content)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo-root")
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+
+    repository_root = resolve_repository_root(args.repo_root)
+    openapi_root = resolve_openapi_root(repository_root)
+    out_path = Path(args.out).resolve()
+    write_or_check_output(out_path, render_contracts(openapi_root), args.check)
 
 
 if __name__ == "__main__":

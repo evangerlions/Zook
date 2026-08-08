@@ -68,7 +68,10 @@ test("register email-code and register APIs create a new account and issue token
   const registerResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/auth/register",
-    headers: {},
+    headers: {
+      "x-platform": "android",
+      "x-app-region": "CN",
+    },
     body: {
       appId: "app_a",
       email: "carol@example.com",
@@ -80,6 +83,7 @@ test("register email-code and register APIs create a new account and issue token
   });
 
   assert.equal(registerResponse.statusCode, 200);
+  assert.equal(registerResponse.body.data.accountRegion, "CN");
   assert.equal(registerResponse.body.code, "OK");
   assert.ok(typeof registerResponse.body.data.accessToken === "string");
   assert.ok(typeof registerResponse.body.data.refreshToken === "string");

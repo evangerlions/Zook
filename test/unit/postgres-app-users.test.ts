@@ -50,8 +50,6 @@ test("Postgres account-region finalization lets only the first concrete region w
     ["ai_novel", "user_alice", "GLOBAL"],
   ]);
   assert.ok(
-    queries.every((query) =>
-      query.sql.includes("account_region = 'UNKNOWN'")
-    ),
+    queries.every((query) => query.sql.includes("account_region = 'UNKNOWN'")),
   );
 });

@@ -7,6 +7,8 @@
     "dev": "node --experimental-transform-types src/main.ts",
     "dev:stack": "bash ./scripts/dev-stack.sh",
     "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts",
+    "check:api-contracts": "python3 build_scripts/generate_public_contracts.py --check --out src/generated/openapi/public-contracts.generated.ts",
+    "lint:api-contracts": "npm --prefix api-contracts run openapi:lint",
     "generate:public-i18n": "python3 build_scripts/generate_public_i18n.py --out src/generated/i18n/public-api-messages.generated.ts",
     "admin": "node --experimental-transform-types apps/admin-web/server.ts",
     "admin:build": "npm --prefix apps/admin-web run build",
@@ -14,9 +16,13 @@
     "admin:install": "npm --prefix apps/admin-web install --include=optional",
     "admin:typecheck": "npm --prefix apps/admin-web run typecheck",
     "check:line-count": "node scripts/check-source-line-count.mjs",
+    "smoke:frogsleep-zook": "node scripts/frogsleep-zook-smoke.mjs",
+    "smoke:frogsleep-buddy-invitation": "node scripts/frogsleep-buddy-invitation-smoke.mjs",
+    "observe:frogsleep-buddy-rollout": "node --experimental-transform-types scripts/frogsleep-buddy-rollout-observation.ts",
     "worker": "node --experimental-transform-types src/worker.ts",
     "test": "node --experimental-transform-types --test test/unit/*.test.ts",
-    "sync:api": "bash ./scripts/sync-zook-api-contracts.sh"
+    "test:postgres:buddy": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-concurrency.test.ts",
+    "test:postgres:buddy-migration": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-migration-upgrade.test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.3.5"
