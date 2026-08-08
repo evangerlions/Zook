@@ -89,6 +89,18 @@ test("canonical invitation migration projects live sleep and focus invites and i
   assert.match(sql, /zook_frogsleep_buddy_invitation_domain_decisions/);
 });
 
+test("group pre-embedding migration preserves legacy invitation targets and enables group grants", async () => {
+  const sql = await readFile(new URL(
+    "../../src/infrastructure/database/postgres/migrations/019_frogsleep_buddy_group_pre_embedding.sql",
+    import.meta.url,
+  ), "utf8");
+  assert.match(sql, /is_group_invitation = FALSE AND target_group_id IS NULL AND max_invitees IS NULL/);
+  assert.doesNotMatch(sql, /is_group_invitation = FALSE AND invitee_user_id IS NOT NULL/);
+  assert.match(sql, /ALTER COLUMN grantee_user_id DROP NOT NULL/);
+  assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS uq_frogsleep_buddy_sharing_grants_group/);
+  assert.match(sql, /member_count BETWEEN 1 AND 5/);
+});
+
 test("P2 migration stores goals, verified contributions, milestones, and viewer reports", async () => {
   const sql = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/012_frogsleep_buddy_goals_reports.sql", import.meta.url), "utf8");
   for (const table of ["zook_frogsleep_buddy_joint_goals", "zook_frogsleep_buddy_goal_contributions",
