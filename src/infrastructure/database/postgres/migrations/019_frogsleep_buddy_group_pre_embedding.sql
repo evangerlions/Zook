@@ -25,8 +25,8 @@ ALTER TABLE zook_frogsleep_buddy_domain_relationships
       -- 1-on-1 mode: user_id_low and user_id_high are set, group fields are NULL
       (is_group = FALSE AND user_id_low IS NOT NULL AND user_id_high IS NOT NULL AND group_id IS NULL AND member_count IS NULL)
       OR
-      -- Group mode: group_id and member_count are set, user_id_low and user_id_high are NULL
-      (is_group = TRUE AND user_id_low IS NULL AND user_id_high IS NULL AND group_id IS NOT NULL AND member_count IS NOT NULL AND member_count BETWEEN 2 AND 5)
+      -- Group mode: forming groups start with one owner and grow to at most five members
+      (is_group = TRUE AND user_id_low IS NULL AND user_id_high IS NULL AND group_id IS NOT NULL AND member_count IS NOT NULL AND member_count BETWEEN 1 AND 5)
     );
 
 -- Create group members table for tracking group membership
@@ -64,8 +64,8 @@ ALTER TABLE zook_frogsleep_buddy_invitation_bundles
   DROP CONSTRAINT IF EXISTS frogsleep_buddy_invitation_bundles_check_individual_or_group,
   ADD CONSTRAINT frogsleep_buddy_invitation_bundles_check_individual_or_group
     CHECK (
-      -- Individual invitation: invitee_user_id is set, group fields are NULL
-      (is_group_invitation = FALSE AND invitee_user_id IS NOT NULL AND target_group_id IS NULL AND max_invitees IS NULL)
+      -- Individual invitations may target a user, an email address, or an open share link
+      (is_group_invitation = FALSE AND target_group_id IS NULL AND max_invitees IS NULL)
       OR
       -- Group invitation: target_group_id is set, invitee_user_id is NULL, max_invitees between 1 and 4
       (is_group_invitation = TRUE AND invitee_user_id IS NULL AND target_group_id IS NOT NULL AND max_invitees IS NOT NULL AND max_invitees BETWEEN 1 AND 4)
@@ -78,6 +78,7 @@ ALTER TABLE zook_frogsleep_buddy_sharing_grants
 
 -- Constraint to support both individual and group grants
 ALTER TABLE zook_frogsleep_buddy_sharing_grants
+  ALTER COLUMN grantee_user_id DROP NOT NULL,
   DROP CONSTRAINT IF EXISTS frogsleep_buddy_sharing_grants_check_individual_or_group,
   ADD CONSTRAINT frogsleep_buddy_sharing_grants_check_individual_or_group
     CHECK (
@@ -87,6 +88,11 @@ ALTER TABLE zook_frogsleep_buddy_sharing_grants
       -- Group grant: grantee_group_id is set, grantee_user_id is NULL
       (is_group_grant = TRUE AND grantee_user_id IS NULL AND grantee_group_id IS NOT NULL)
     );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_frogsleep_buddy_sharing_grants_group
+  ON zook_frogsleep_buddy_sharing_grants
+    (app_id, relationship_id, grantor_user_id, grantee_group_id, domain, category)
+  WHERE is_group_grant = TRUE;
 
 -- Create group invitations table for tracking group-specific invitation workflows
 CREATE TABLE IF NOT EXISTS zook_frogsleep_buddy_group_invitations (

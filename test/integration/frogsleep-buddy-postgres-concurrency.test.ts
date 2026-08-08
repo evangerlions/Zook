@@ -100,11 +100,11 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
         passwordAlgo: "test", status: "ACTIVE", createdAt: now() });
     }
     await first.insertAppUser({ id: "task18_app_user_charlie", appId, userId: "task18_charlie",
-      status: "ACTIVE", joinedAt: now() });
+      status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: now() });
 
     await suite.test("real migrations install and enforce slot and relationship constraints", async () => {
       const migrations = await sql.query(`SELECT name FROM zook_schema_migrations
-        WHERE name LIKE '015_%' OR name LIKE '016_%' OR name LIKE '017_%' ORDER BY name`);
+        WHERE name LIKE '016_%' OR name LIKE '017_%' OR name LIKE '018_%' ORDER BY name`);
       assert.deepEqual(migrations.rows.map((row) => row.name), [
         "016_frogsleep_buddy_domain_slots.sql", "017_frogsleep_buddy_domain_relationships.sql",
         "018_frogsleep_buddy_canonical_invitation_email.sql",
