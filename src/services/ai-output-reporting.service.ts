@@ -78,7 +78,7 @@ function requireEnum<T extends string>(
   return value as T;
 }
 
-function optionalPositiveInt(
+function optionalNonNegativeInt(
   body: Record<string, unknown>,
   key: string,
 ): number | undefined {
@@ -86,8 +86,8 @@ function optionalPositiveInt(
     return undefined;
   }
   const value = body[key];
-  if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
-    badRequest("REQ_INVALID_BODY", `${key} must be a positive integer.`);
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    badRequest("REQ_INVALID_BODY", `${key} must be a non-negative integer.`);
   }
   return value;
 }
@@ -107,7 +107,7 @@ function validateTargetFields(
 } {
   const messageId = optionalString(body, "messageId", 160);
   const sessionId = optionalString(body, "sessionId", 160);
-  const chapterId = optionalPositiveInt(body, "chapterId");
+  const chapterId = optionalNonNegativeInt(body, "chapterId");
   const chapterRevisionId = optionalString(body, "chapterRevisionId", 160);
   if (targetType === "chat_message" && (!messageId || !sessionId)) {
     badRequest(
@@ -117,7 +117,7 @@ function validateTargetFields(
   }
   if (
     targetType === "chapter_revision" &&
-    (!chapterId || !chapterRevisionId)
+    (chapterId == null || !chapterRevisionId)
   ) {
     badRequest(
       "REQ_INVALID_BODY",
@@ -277,8 +277,8 @@ export class AiOutputReportingService {
           "targetId must equal chapterRevisionId.",
         );
       }
-      const chapterId = optionalPositiveInt(command.body, "chapterId");
-      if (!chapterId) {
+      const chapterId = optionalNonNegativeInt(command.body, "chapterId");
+      if (chapterId == null) {
         badRequest("REQ_INVALID_BODY", "chapterId is required.");
       }
       const record: AiOutputReactionRecord = {

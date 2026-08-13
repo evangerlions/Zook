@@ -140,7 +140,7 @@ test("AI output reports are encrypted, idempotent, and auditable", async () => {
   );
 });
 
-test("AI output report validates content hash and accepts chapter likes", async () => {
+test("AI output reporting accepts zero-based chapter ids", async () => {
   const runtime = await createApplication();
   const session = await loginAiNovel(runtime);
   const headers = {
@@ -158,6 +158,26 @@ test("AI output report validates content hash and accepts chapter likes", async 
   assert.equal(invalid.statusCode, 400);
   assert.equal(runtime.database.aiOutputReportRecords.length, 0);
 
+  const chapterContent = "chapter";
+  const report = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai-output-reports",
+    headers,
+    body: {
+      submissionId: "client-chapter-report-1",
+      targetType: "chapter_revision",
+      targetId: "revision-0",
+      chapterId: 0,
+      chapterRevisionId: "revision-0",
+      scene: "write",
+      category: "misinformation",
+      reportedContent: chapterContent,
+      contentHash: `sha256:${sha256(chapterContent)}`,
+    },
+  });
+  assert.equal(report.statusCode, 200);
+  assert.equal(runtime.database.aiOutputReportRecords[0]?.chapterId, 0);
+
   const reaction = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai-output-reactions",
@@ -165,14 +185,15 @@ test("AI output report validates content hash and accepts chapter likes", async 
     body: {
       submissionId: "client-reaction-1",
       targetType: "chapter_revision",
-      targetId: "revision-1",
+      targetId: "revision-0",
       reaction: "like",
-      chapterId: 12,
-      chapterRevisionId: "revision-1",
-      contentHash: `sha256:${sha256("chapter")}`,
+      chapterId: 0,
+      chapterRevisionId: "revision-0",
+      contentHash: `sha256:${sha256(chapterContent)}`,
     },
   });
   assert.equal(reaction.statusCode, 200);
   assert.equal(reaction.body.data.accepted, true);
   assert.equal(runtime.database.aiOutputReactionRecords.length, 1);
+  assert.equal(runtime.database.aiOutputReactionRecords[0]?.chapterId, 0);
 });
