@@ -2703,6 +2703,38 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   );
   assert.match(String(systemMessages[0]?.content ?? ""), /call ready/);
   assert.match(String(systemMessages[0]?.content ?? ""), /call update_meta/);
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /ready tool is repeatable/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /semantic intent, not keyword matching/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /start-book intent does not bypass/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /must call ready in the current turn/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /does not satisfy the current request/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /natural-language confirmation cannot display the ready card/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /asked you to start the book rather than draft prose/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /never draft chapter prose in kickoff mode/i,
+  );
   assert.doesNotMatch(
     String(systemMessages[0]?.content ?? ""),
     /Do not ask what these words mean/,
@@ -2736,7 +2768,27 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   const readyFn = readyTool.function as Record<string, unknown>;
   assert.match(
     String(readyFn.description),
-    /Call this again after a previous ready result says the user chose to modify the ready proposal/,
+    /ready is repeatable/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /previous ready call does not block another ready call/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /must call ready in the current turn/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /only way to display the ready card/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /fill missing fields first/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /never drafts chapter prose/i,
   );
   const updateMetaTool = capturedTools?.find((tool) => {
     const fn = (tool as Record<string, unknown>).function as

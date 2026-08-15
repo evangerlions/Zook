@@ -312,7 +312,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   {
     name: kickoffToolWireNames.ready,
     description:
-      "Declare the current kickoff proposal sufficient to start writing and provide the user-facing ready card summary plus the first MainLine plan. Call this again after a previous ready result says the user chose to modify the ready proposal.",
+      "Publish or republish the current complete kickoff proposal for user confirmation, with the ready-card summary and first MainLine plan. When the user currently intends to enter or re-enter the ready checkpoint and the proposal is complete, you must call ready in the current turn. This tool is the only way to display the ready card; a natural-language acknowledgement cannot replace it. ready is repeatable: a previous ready call does not block another ready call and does not satisfy the current request. Do not call it merely because a start-book phrase is quoted, discussed, or explicitly negated. Do not use ready while required canonical fields are missing; fill missing fields first. This tool pauses at confirmation and never drafts chapter prose.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
