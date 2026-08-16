@@ -333,3 +333,66 @@ test("local env allows the designated email to use the fixed bypass code for ema
     }
   }
 });
+
+test("local env pins the designated CN email test account to the CN region", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+
+  try {
+    const sent: SentVerificationEmail[] = [];
+    const runtime = await createApplication({
+      registrationCodeGenerator: () => "123456",
+      registrationEmailSender: createFakeSender(sent),
+    });
+
+    const codeResponse = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/auth/login/email-code",
+      headers: {
+        "x-app-locale": "zh-CN",
+        "x-app-country-code": "CN",
+      },
+      body: {
+        appId: "app_a",
+        email: "evangerlionss@gmail.com",
+      },
+      ipAddress: "127.0.0.1",
+    });
+
+    assert.equal(codeResponse.statusCode, 200);
+    assert.equal(sent.length, 0);
+
+    const loginResponse = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/auth/login/email",
+      headers: {
+        "x-app-locale": "zh-CN",
+        "x-app-country-code": "CN",
+      },
+      body: {
+        appId: "app_a",
+        email: "evangerlionss@gmail.com",
+        emailCode: "852133",
+        clientType: "app",
+      },
+      ipAddress: "127.0.0.1",
+    });
+
+    assert.equal(loginResponse.statusCode, 200);
+    assert.equal(loginResponse.body.data.user.email, "evangerlionss@gmail.com");
+    assert.equal(loginResponse.body.data.accountRegion, "CN");
+
+    const user = runtime.database.findUserByAccount("evangerlionss@gmail.com");
+    assert.ok(user);
+    assert.equal(
+      runtime.database.findAppUser("app_a", user.id)?.accountRegion,
+      "CN",
+    );
+  } finally {
+    if (previousAppEnv === undefined) {
+      delete process.env.APP_ENV;
+    } else {
+      process.env.APP_ENV = previousAppEnv;
+    }
+  }
+});
