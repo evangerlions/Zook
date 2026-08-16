@@ -12,10 +12,7 @@ import {
   type AiOutputReportRecord,
   type AuthContext,
 } from "../shared/types.ts";
-import {
-  badRequest,
-  tooManyRequests,
-} from "../shared/errors.ts";
+import { badRequest } from "../shared/errors.ts";
 import { randomId, sha256 } from "../shared/utils.ts";
 
 const AI_NOVEL_APP_ID = "ai_novel";
@@ -23,7 +20,6 @@ const REPORT_TARGET_TYPES = ["chat_message", "chapter_revision"] as const;
 const REPORT_SCENES = ["kickoff", "write", "history_qa"] as const;
 const MAX_DESCRIPTION_CHARS = 500;
 const MAX_REPORTED_CONTENT_CHARS = 100_000;
-const REPORTS_PER_HOUR = 20;
 
 type ReportTargetType = typeof REPORT_TARGET_TYPES[number];
 type ReportScene = typeof REPORT_SCENES[number];
@@ -96,10 +92,7 @@ function expectedContentHash(content: string): string {
   return `sha256:${sha256(content)}`;
 }
 
-function validateTargetFields(
-  targetType: ReportTargetType,
-  body: Record<string, unknown>,
-): {
+function parseTargetMetadata(body: Record<string, unknown>): {
   messageId?: string;
   sessionId?: string;
   chapterId?: number;
@@ -109,21 +102,6 @@ function validateTargetFields(
   const sessionId = optionalString(body, "sessionId", 160);
   const chapterId = optionalNonNegativeInt(body, "chapterId");
   const chapterRevisionId = optionalString(body, "chapterRevisionId", 160);
-  if (targetType === "chat_message" && (!messageId || !sessionId)) {
-    badRequest(
-      "REQ_INVALID_BODY",
-      "Chat-message reports require messageId and sessionId.",
-    );
-  }
-  if (
-    targetType === "chapter_revision" &&
-    (chapterId == null || !chapterRevisionId)
-  ) {
-    badRequest(
-      "REQ_INVALID_BODY",
-      "Chapter reports require chapterId and chapterRevisionId.",
-    );
-  }
   return { messageId, sessionId, chapterId, chapterRevisionId };
 }
 
@@ -151,29 +129,13 @@ export class AiOutputReportingService {
         return this.reportAccepted(existing);
       }
 
-      await this.enforceReportLimit(command.auth);
       const targetType = requireEnum(
         command.body,
         "targetType",
         REPORT_TARGET_TYPES,
       );
       const targetId = requireString(command.body, "targetId", 160);
-      const targetFields = validateTargetFields(targetType, command.body);
-      if (
-        targetType === "chat_message" &&
-        targetFields.messageId !== targetId
-      ) {
-        badRequest("REQ_INVALID_BODY", "targetId must equal messageId.");
-      }
-      if (
-        targetType === "chapter_revision" &&
-        targetFields.chapterRevisionId !== targetId
-      ) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          "targetId must equal chapterRevisionId.",
-        );
-      }
+      const targetFields = parseTargetMetadata(command.body);
 
       const category = requireEnum(
         command.body,
@@ -191,13 +153,7 @@ export class AiOutputReportingService {
         "reportedContent",
         MAX_REPORTED_CONTENT_CHARS,
       );
-      const contentHash = requireString(command.body, "contentHash", 80);
-      if (contentHash !== expectedContentHash(reportedContent)) {
-        badRequest(
-          "REQ_INVALID_BODY",
-          "contentHash does not match reportedContent.",
-        );
-      }
+      const contentHash = expectedContentHash(reportedContent);
 
       const encrypted = await this.encryptReportedContent(reportedContent);
       const membership = await this.database.findAppUser(
@@ -376,22 +332,6 @@ export class AiOutputReportingService {
       badRequest("REQ_INVALID_BODY", "AI output report was not found.");
     }
     return this.adminSummary(record);
-  }
-
-  private async enforceReportLimit(auth: AuthContext): Promise<void> {
-    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const recent = await this.database.listAiOutputReports({
-      appId: auth.appId,
-      userId: auth.userId,
-      createdAtFromIso: cutoff,
-      limit: REPORTS_PER_HOUR,
-    });
-    if (recent.length >= REPORTS_PER_HOUR) {
-      tooManyRequests(
-        "AI_OUTPUT_REPORT_RATE_LIMITED",
-        "Too many AI output reports. Please try again later.",
-      );
-    }
   }
 
   private async encryptReportedContent(

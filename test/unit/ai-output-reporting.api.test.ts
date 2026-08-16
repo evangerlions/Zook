@@ -140,13 +140,65 @@ test("AI output reports are encrypted, idempotent, and auditable", async () => {
   );
 });
 
-test("AI output reporting accepts zero-based chapter ids", async () => {
+test("AI output reporting accepts reports without correlation metadata", async () => {
+  const runtime = await createApplication();
+  const session = await loginAiNovel(runtime);
+  const content = "Projected assistant question";
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai-output-reports",
+    headers: { authorization: `Bearer ${session.accessToken}` },
+    body: {
+      submissionId: "client-projected-report-1",
+      targetType: "chat_message",
+      targetId: "projected-question-1",
+      scene: "kickoff",
+      category: "other",
+      reportedContent: content,
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(runtime.database.aiOutputReportRecords.length, 1);
+  assert.equal(runtime.database.aiOutputReportRecords[0]?.messageId, undefined);
+  assert.equal(runtime.database.aiOutputReportRecords[0]?.sessionId, undefined);
+  assert.equal(
+    runtime.database.aiOutputReportRecords[0]?.contentHash,
+    `sha256:${sha256(content)}`,
+  );
+});
+
+test("AI output reporting does not reject valid compliance intake by volume", async () => {
+  const runtime = await createApplication();
+  const session = await loginAiNovel(runtime);
+
+  for (let index = 0; index < 25; index += 1) {
+    const response = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/ai_novel/ai-output-reports",
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      body: {
+        submissionId: `volume-report-${index}`,
+        targetType: "chat_message",
+        targetId: `message-${index}`,
+        scene: "kickoff",
+        category: "other",
+        reportedContent: `Reported content ${index}`,
+      },
+    });
+    assert.equal(response.statusCode, 200);
+  }
+
+  assert.equal(runtime.database.aiOutputReportRecords.length, 25);
+});
+
+test("AI output reporting accepts zero-based chapter ids and derives hashes", async () => {
   const runtime = await createApplication();
   const session = await loginAiNovel(runtime);
   const headers = {
     authorization: `Bearer ${session.accessToken}`,
   };
-  const invalid = await runtime.app.handle({
+  const normalizedHash = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/ai-output-reports",
     headers,
@@ -155,8 +207,12 @@ test("AI output reporting accepts zero-based chapter ids", async () => {
       contentHash: "sha256:not-the-content",
     },
   });
-  assert.equal(invalid.statusCode, 400);
-  assert.equal(runtime.database.aiOutputReportRecords.length, 0);
+  assert.equal(normalizedHash.statusCode, 200);
+  assert.equal(runtime.database.aiOutputReportRecords.length, 1);
+  assert.equal(
+    runtime.database.aiOutputReportRecords[0]?.contentHash,
+    `sha256:${sha256(chatReportBody().reportedContent)}`,
+  );
 
   const chapterContent = "chapter";
   const report = await runtime.app.handle({
@@ -176,7 +232,7 @@ test("AI output reporting accepts zero-based chapter ids", async () => {
     },
   });
   assert.equal(report.statusCode, 200);
-  assert.equal(runtime.database.aiOutputReportRecords[0]?.chapterId, 0);
+  assert.equal(runtime.database.aiOutputReportRecords[1]?.chapterId, 0);
 
   const reaction = await runtime.app.handle({
     method: "POST",
