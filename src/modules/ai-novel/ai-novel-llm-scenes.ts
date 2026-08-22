@@ -1,16 +1,9 @@
 import { badRequest } from "../../shared/errors.ts";
+import type { AiNovelPromptProfile } from "./prompts/ai-novel-prompt-types.ts";
 
 export type AiNovelSceneKind = "chat" | "embedding";
 export type AiNovelSceneResponseMode = "text" | "json" | "embedding";
-export type AiNovelChatSceneProfile =
-  | "write_turn"
-  | "chapter_draft"
-  | "kickoff_turn_imported_book"
-  | "import_book_agent"
-  | "chapter_summary"
-  | "chapter_draft_review"
-  | "snapshot_generation"
-  | "next_chapter_brief";
+export type AiNovelChatSceneProfile = AiNovelPromptProfile;
 
 export interface AiNovelChatScene {
   sceneKey: string;

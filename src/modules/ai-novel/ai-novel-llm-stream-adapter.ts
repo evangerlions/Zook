@@ -6,7 +6,7 @@ import type {
 import type {
   AiNovelChatStreamChunk,
   AiNovelUsagePayload,
-} from "./ai-novel-llm.service.ts";
+} from "./ai-novel-llm-types.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
 
 interface CompletionStreamState {
