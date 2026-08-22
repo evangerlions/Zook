@@ -32,11 +32,12 @@ import {
   type AuthRateLimitRuntimeConfig,
   type EmailVerificationCacheEntry,
 } from "./auth-verification-limiter.ts";
+import {
+  findLocalEmailLoginTestAccount,
+  matchLocalEmailLoginTestAccount,
+} from "./local-email-login-test-accounts.ts";
 
 export class AuthEmailFlow {
-  private readonly localEmailLoginBypassEmail = "evangerlions@gmail.com";
-  private readonly localEmailLoginBypassCode = "852133";
-
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly appRegistryService: AppRegistryService,
@@ -87,7 +88,7 @@ export class AuthEmailFlow {
       rateLimit,
       now,
     );
-    if (this.isLocalEmailLoginBypassAccount(email, ipAddress)) {
+    if (findLocalEmailLoginTestAccount(email, ipAddress)) {
       return this.buildAcceptedResult(rateLimit);
     }
     return await this.issueEmailCode({
@@ -182,8 +183,12 @@ export class AuthEmailFlow {
         "Email verification code is required.",
       );
     }
-    const bypassMatched = this.matchesLocalEmailLoginBypass(email, emailCode, ipAddress);
-    if (!bypassMatched) {
+    const localTestAccount = matchLocalEmailLoginTestAccount(
+      email,
+      emailCode,
+      ipAddress,
+    );
+    if (!localTestAccount) {
       await this.verificationLimiter.consumeEmailLoginLimits(
         app.id,
         email,
@@ -223,6 +228,13 @@ export class AuthEmailFlow {
       forbidden("AUTH_USER_BLOCKED", "The user is blocked across all apps.");
     }
     await this.appRegistryService.ensureMembership(app.id, user.id, now);
+    if (localTestAccount?.accountRegion) {
+      await this.appRegistryService.finalizeAccountRegion(
+        app.id,
+        user.id,
+        localTestAccount.accountRegion,
+      );
+    }
     return {
       session: await this.sessionManager.issueSession(user.id, app.id, now),
       autoCreatedUser,
@@ -537,40 +549,6 @@ export class AuthEmailFlow {
       cooldownSeconds: Math.floor(rateLimit.resendCooldownMs / 1000),
       expiresInSeconds: Math.floor(rateLimit.verificationCodeTtlMs / 1000),
     };
-  }
-
-  private isLocalEmailLoginBypassAccount(
-    email: string,
-    ipAddress: string,
-  ): boolean {
-    return (
-      this.isLocalEmailLoginBypassEnabled(ipAddress) &&
-      email === this.localEmailLoginBypassEmail
-    );
-  }
-
-  private matchesLocalEmailLoginBypass(
-    email: string,
-    emailCode: string,
-    ipAddress: string,
-  ): boolean {
-    return (
-      this.isLocalEmailLoginBypassAccount(email, ipAddress) &&
-      emailCode === this.localEmailLoginBypassCode
-    );
-  }
-
-  private isLocalEmailLoginBypassEnabled(ipAddress: string): boolean {
-    const appEnv = String(process.env.APP_ENV ?? "").trim().toLowerCase();
-    const nodeEnv = String(process.env.NODE_ENV ?? "").trim().toLowerCase();
-    const normalizedIp = ipAddress.trim();
-    return (
-      appEnv === "local" ||
-      nodeEnv === "development" ||
-      normalizedIp === "127.0.0.1" ||
-      normalizedIp === "::1" ||
-      normalizedIp === "unknown"
-    );
   }
 
   private assertPasswordStrength(password: string): void {

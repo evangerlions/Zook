@@ -8,6 +8,7 @@ import type { LLMProvider } from "./services/llm-manager.ts";
 import type { CaptchaVerificationService, TencentCaptchaVerificationConfig } from "./services/tencent-captcha-verification.service.ts";
 import type { RegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import type { SmsVerificationSender, TencentSmsVerificationConfig } from "./services/tencent-sms-verification.service.ts";
+import type { TelemetryGatewayConfig } from "./modules/telemetry/telemetry-gateway-types.ts";
 import type { DatabaseSeed } from "./shared/types.ts";
 
 export interface CreateApplicationOptions {
@@ -61,6 +62,8 @@ export interface CreateApplicationOptions {
   queueRedisUrl?: string;
   fileStorageRoot?: string;
   aiNovelAuditFileRoot?: string;
+  telemetryGatewayConfig?: TelemetryGatewayConfig;
+  telemetryFetchImplementation?: typeof fetch;
   /**
    * FrogSleep is not a launched product by default. Keep it behind an explicit
    * switch so existing apps and admin surfaces stay unchanged in production.

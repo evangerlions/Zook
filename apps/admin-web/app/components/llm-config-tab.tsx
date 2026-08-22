@@ -4,22 +4,15 @@ import { Button, Collapse, Input, Select, Segmented } from "antd";
 import { Field, ToggleField } from "./field";
 import { JsonEditor } from "./json-editor";
 import { JsonPreview } from "./json-preview";
-import { LlmModelCard, LlmProviderCard } from "./llm-config-cards";
+import { LlmModelsEditor, LlmProvidersEditor } from "./llm-config-list-editors";
+import { LlmConfigSaveDock } from "./llm-config-save-dock";
 import { RevisionHistoryDock } from "./revision-history-dock";
 import { RevisionList } from "./revision-list";
-import {
-  createEmptyLlmModel,
-  createEmptyLlmProvider,
-  createEmptyLlmRoute,
-  getModelRuntimeSnapshot,
-  toModelKindLabel,
-} from "../lib/llm-config";
+import { toModelKindLabel } from "../lib/llm-config";
 import type {
   AdminLlmServiceDocument,
   LlmConfigDraft,
   LlmModelDraft,
-  LlmProviderDraft,
-  LlmRouteDraft,
 } from "../lib/types";
 
 const LLM_CONFIG_MODE_OPTIONS: Array<{ label: string; value: "form" | "raw" }> = [
@@ -96,7 +89,7 @@ export function LlmConfigTab({
   const chatModelOptions = draft.models.filter((item) => item.key && item.kind === "chat");
 
   return (
-    <div className="stack">
+    <div className="stack llm-config-page">
       <section className="surface-card collapse-card">
         <Collapse
           className="config-collapse"
@@ -196,15 +189,6 @@ export function LlmConfigTab({
               </label>
             )}
 
-            <div className="button-row">
-              <Button
-                disabled={saving || loadingConfig || Boolean(activeConfigError)}
-                onClick={onRequestSave}
-                type="primary"
-              >
-                保存 LLM 配置
-              </Button>
-            </div>
           </div>
         </section>
 
@@ -223,6 +207,14 @@ export function LlmConfigTab({
           />
         </RevisionHistoryDock>
       </div>
+
+      <LlmConfigSaveDock
+        disabled={saving || loadingConfig || Boolean(activeConfigError)}
+        loading={saving}
+        onSave={onRequestSave}
+        revision={document?.revision}
+        validationError={activeConfigError}
+      />
     </div>
   );
 }
@@ -355,174 +347,4 @@ function LlmFormConfigEditor({
       {draftValidationError ? <p className="form-error">{draftValidationError}</p> : null}
     </>
   );
-}
-
-function LlmProvidersEditor({
-  draft,
-  onDraftChange,
-}: Pick<LlmConfigTabProps, "draft" | "onDraftChange">) {
-  return (
-    <section className="stack">
-      <div className="provider-list">
-        {draft.providers.map((provider, index) => (
-          <LlmProviderCard
-            key={`${provider.key || "provider"}-${index}`}
-            onChange={(key, value) => updateProvider(onDraftChange, index, key, value)}
-            onRemove={() => onDraftChange((current) => ({
-              ...current,
-              providers: current.providers.filter((_, itemIndex) => itemIndex !== index),
-              models: current.models.map((model) => ({
-                ...model,
-                routes: model.routes.filter((route) => route.provider !== provider.key),
-              })),
-            }))}
-            provider={provider}
-          />
-        ))}
-      </div>
-
-      <button
-        className="config-add-button"
-        onClick={() => onDraftChange((current) => ({ ...current, providers: [...current.providers, createEmptyLlmProvider()] }))}
-        type="button"
-      >
-        + 添加供应商
-      </button>
-    </section>
-  );
-}
-
-function LlmModelsEditor({
-  allCollapsed,
-  collapsedModels,
-  document,
-  draft,
-  onDraftChange,
-  onToggleAllModels,
-  onToggleModel,
-}: Pick<LlmConfigTabProps, "allCollapsed" | "collapsedModels" | "document" | "draft" | "onDraftChange" | "onToggleAllModels" | "onToggleModel">) {
-  return (
-    <section className="stack">
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
-        <Button onClick={onToggleAllModels} size="small">
-          {allCollapsed ? "全部展开" : "全部折叠"}
-        </Button>
-      </div>
-      <div className="model-list">
-        {draft.models.map((model, modelIndex) => (
-          <LlmModelCard
-            collapsed={collapsedModels.has(model.key || "")}
-            key={`${model.key || "model"}-${modelIndex}`}
-            model={model}
-            onAddRoute={() => onDraftChange((current) => ({
-              ...current,
-              models: current.models.map((item, index) => (
-                index === modelIndex
-                  ? { ...item, routes: [...item.routes, createEmptyLlmRoute(current.providers[0]?.key ?? "")] }
-                  : item
-              )),
-            }))}
-            onChange={(key, value) => updateModel(onDraftChange, modelIndex, key, value)}
-            onRemove={() => onDraftChange((current) => ({
-              ...current,
-              defaultModelKey: current.defaultModelKey === model.key ? "" : current.defaultModelKey,
-              models: current.models.filter((_, index) => index !== modelIndex),
-            }))}
-            onRouteChange={(routeIndex, key, value) => updateRoute(onDraftChange, modelIndex, routeIndex, key, value)}
-            onRouteRemove={(routeIndex) => onDraftChange((current) => ({
-              ...current,
-              models: current.models.map((item, index) => (
-                index === modelIndex
-                  ? { ...item, routes: item.routes.filter((_, currentRouteIndex) => currentRouteIndex !== routeIndex) }
-                  : item
-              )),
-            }))}
-            onToggleCollapse={() => onToggleModel(model.key || "")}
-            providers={draft.providers}
-            runtimeSnapshot={getModelRuntimeSnapshot(document?.runtime.models, model.key)}
-          />
-        ))}
-      </div>
-
-      <button
-        className="config-add-button"
-        onClick={() => onDraftChange((current) => ({ ...current, models: [...current.models, createEmptyLlmModel()] }))}
-        type="button"
-      >
-        + 添加模型
-      </button>
-    </section>
-  );
-}
-
-function updateProvider(
-  onDraftChange: LlmConfigTabProps["onDraftChange"],
-  index: number,
-  key: keyof LlmProviderDraft,
-  value: string | boolean,
-) {
-  onDraftChange((current) => {
-    const previousKey = current.providers[index]?.key ?? "";
-    const nextProviders = current.providers.map((item, itemIndex) => (
-      itemIndex === index ? { ...item, [key]: value } as LlmProviderDraft : item
-    ));
-    const nextModels = key === "key" && previousKey !== value
-      ? current.models.map((model) => ({
-          ...model,
-          routes: model.routes.map((route) => (
-            route.provider === previousKey ? { ...route, provider: String(value) } : route
-          )),
-        }))
-      : current.models;
-
-    return {
-      ...current,
-      providers: nextProviders,
-      models: nextModels,
-    };
-  });
-}
-
-function updateModel(
-  onDraftChange: LlmConfigTabProps["onDraftChange"],
-  index: number,
-  key: keyof LlmModelDraft,
-  value: string,
-) {
-  onDraftChange((current) => {
-    const previousKey = current.models[index]?.key ?? "";
-    const nextModels = current.models.map((item, itemIndex) => (
-      itemIndex === index ? { ...item, [key]: value } as LlmModelDraft : item
-    ));
-    const nextDefaultModelKey = key === "key" && current.defaultModelKey === previousKey
-      ? value
-      : current.defaultModelKey;
-    return {
-      ...current,
-      models: nextModels,
-      defaultModelKey: nextDefaultModelKey,
-    };
-  });
-}
-
-function updateRoute(
-  onDraftChange: LlmConfigTabProps["onDraftChange"],
-  modelIndex: number,
-  routeIndex: number,
-  key: keyof LlmRouteDraft,
-  value: string | boolean,
-) {
-  onDraftChange((current) => ({
-    ...current,
-    models: current.models.map((model, currentModelIndex) => (
-      currentModelIndex === modelIndex
-        ? {
-            ...model,
-            routes: model.routes.map((route, currentRouteIndex) => (
-              currentRouteIndex === routeIndex ? { ...route, [key]: value } as LlmRouteDraft : route
-            )),
-          }
-        : model
-    )),
-  }));
 }

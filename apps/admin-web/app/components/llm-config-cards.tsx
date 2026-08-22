@@ -1,7 +1,8 @@
-import { DownOutlined, RightOutlined } from "@ant-design/icons";
-import { Button, Input, Select, Switch, Tag } from "antd";
+import { DatabaseOutlined, DeleteOutlined, DownOutlined, RightOutlined, RobotOutlined } from "@ant-design/icons";
+import { Button, Input, Select, Tag } from "antd";
 
 import { Field } from "./field";
+import { LlmRouteCard } from "./llm-route-card";
 import {
   getModelRuntimeSnapshot,
   toModelKindLabel,
@@ -23,7 +24,7 @@ export function LlmProviderCard({
       <div className="config-item-header">
         <div className="config-item-title">
           <h3>{provider.label || provider.key || "新供应商"}</h3>
-          <Tag bordered={false} color={provider.enabled ? "success" : "default"}>
+          <Tag color={provider.enabled ? "success" : "default"} variant="filled">
             {provider.enabled ? "已启用" : "已禁用"}
           </Tag>
         </div>
@@ -103,24 +104,38 @@ export function LlmModelCard({
   onRouteChange: (routeIndex: number, key: keyof LlmRouteDraft, value: string | boolean) => void;
   onRouteRemove: (routeIndex: number) => void;
 }) {
+  const toneClass = getModelToneClass(model.key);
+
   return (
-    <article className="config-item">
-      <div
-        className="config-item-header"
-        onClick={onToggleCollapse}
-        style={{ cursor: "pointer", marginBottom: collapsed ? 0 : undefined, borderBottom: collapsed ? "none" : undefined }}
-      >
-        <div className="config-item-title">
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            {collapsed ? <RightOutlined style={{ fontSize: 12 }} /> : <DownOutlined style={{ fontSize: 12 }} />}
-            <h3>{model.label || model.key || "新模型"}</h3>
+    <article className={`config-item model-card ${toneClass}${collapsed ? " model-card--collapsed" : ""}`}>
+      <div className="config-item-header model-card-header">
+        <button
+          aria-expanded={!collapsed}
+          className="model-card-toggle"
+          onClick={onToggleCollapse}
+          type="button"
+        >
+          <span className="model-card-chevron" aria-hidden="true">
+            {collapsed ? <RightOutlined /> : <DownOutlined />}
           </span>
-          <span className="config-item-meta">
-            {toModelKindLabel(model.kind)} · {toRouteStrategyLabel(model.strategy)} · {model.routes.length} 路由
+          <span className="model-card-icon" aria-hidden="true">
+            {model.kind === "embedding" ? <DatabaseOutlined /> : <RobotOutlined />}
           </span>
-        </div>
+          <span className="model-card-heading">
+            <span className="model-card-eyebrow">模型</span>
+            <span className="model-card-name">{model.label || model.key || "新模型"}</span>
+            <span className="model-card-metadata">
+              <code className="model-key-badge">{model.key || "未设置 Key"}</code>
+              <Tag variant="filled">{toModelKindLabel(model.kind)}</Tag>
+              <Tag variant="filled">{toRouteStrategyLabel(model.strategy)}</Tag>
+              <Tag color={model.routes.length > 0 ? "processing" : "warning"} variant="filled">
+                {model.routes.length} 条路由
+              </Tag>
+            </span>
+          </span>
+        </button>
         <div className="config-item-actions" onClick={(event) => event.stopPropagation()}>
-          <Button danger onClick={onRemove} size="small">
+          <Button danger icon={<DeleteOutlined />} onClick={onRemove} size="small">
             删除模型
           </Button>
         </div>
@@ -165,9 +180,13 @@ export function LlmModelCard({
             </Field>
           </div>
 
-          <div className="route-list" style={{ marginTop: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-              <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600 }}>路由配置</h4>
+          <section className="route-list">
+            <div className="route-list-header">
+              <div>
+                <span className="route-list-eyebrow">ROUTING</span>
+                <h4>路由配置</h4>
+                <p>每条路由独立配置供应商、模型和流量权重。</p>
+              </div>
               <Button onClick={onAddRoute} size="small">
                 + 添加路由
               </Button>
@@ -179,62 +198,27 @@ export function LlmModelCard({
               </div>
             ) : (
               model.routes.map((route, routeIndex) => (
-                <div
-                  className={`route-item ${route.enabled ? "" : "route-item--disabled"}`}
+                <LlmRouteCard
                   key={`${route.provider}-${route.providerModel}-${routeIndex}`}
-                >
-                  <div className="route-item-header">
-                    <h4>
-                      {route.providerModel || "新路由"}
-                      {!route.enabled && <span style={{ color: "var(--text-soft)", fontWeight: 400 }}> (已禁用)</span>}
-                    </h4>
-                    <Button danger onClick={() => onRouteRemove(routeIndex)} size="small">
-                      删除
-                    </Button>
-                  </div>
-                  <div className="route-item-fields">
-                    <Field label="Provider">
-                      <Select
-                        onChange={(value) => onRouteChange(routeIndex, "provider", value)}
-                        options={[
-                          { label: "请选择", value: "" },
-                          ...providers.map((item) => ({
-                            label: item.label || item.key,
-                            value: item.key,
-                          })),
-                        ]}
-                        value={route.provider}
-                      />
-                    </Field>
-                    <Field label="Provider Model">
-                      <Input
-                        onChange={(event) => onRouteChange(routeIndex, "providerModel", event.target.value)}
-                        placeholder="qwen3.5-plus"
-                        value={route.providerModel}
-                      />
-                    </Field>
-                    <Field className="field--weight" label="Weight">
-                      <Input
-                        onChange={(event) => onRouteChange(routeIndex, "weight", event.target.value)}
-                        value={route.weight}
-                      />
-                    </Field>
-                    <div className="toggle-inline">
-                      <span className="toggle-inline-label">启用</span>
-                      <Switch
-                        checked={route.enabled}
-                        onChange={(value) => onRouteChange(routeIndex, "enabled", value)}
-                        size="small"
-                      />
-                    </div>
-                  </div>
-                </div>
+                  onChange={(key, value) => onRouteChange(routeIndex, key, value)}
+                  onRemove={() => onRouteRemove(routeIndex)}
+                  providers={providers}
+                  route={route}
+                  routeIndex={routeIndex}
+                />
               ))
             )}
-          </div>
+          </section>
           {runtimeSnapshot ? null : null}
         </>
       )}
     </article>
   );
+}
+
+const MODEL_TONE_CLASSES = ["model-card--blue", "model-card--violet", "model-card--teal", "model-card--amber"];
+
+function getModelToneClass(modelKey: string) {
+  const hash = [...modelKey].reduce((sum, character) => sum + character.charCodeAt(0), 0);
+  return MODEL_TONE_CLASSES[hash % MODEL_TONE_CLASSES.length];
 }
