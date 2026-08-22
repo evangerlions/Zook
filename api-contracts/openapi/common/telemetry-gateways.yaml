@@ -1,0 +1,127 @@
+openapi: 3.2.0
+info:
+  title: Transparent Telemetry Gateways
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: |
+    Body-transparent gateways for official GA4 Measurement Protocol JSON and
+    Sentry Envelope payloads. Zook does not decode, reshape, or own either
+    provider schema.
+servers:
+  - url: https://api.zook.dev
+security: []
+paths:
+  /telemetry/ga4:
+    post:
+      operationId: forwardGa4MeasurementProtocol
+      summary: Forward an official GA4 Measurement Protocol request body
+      tags: [common, telemetry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      responses:
+        "204":
+          description: Upstream accepted the payload
+        "408":
+          description: Request body receive deadline exceeded
+        "413":
+          description: Payload exceeds the gateway limit
+        "415":
+          description: Unsupported content type
+        "429":
+          description: Gateway or upstream rate limit
+        "502":
+          description: Upstream network failure
+        "503":
+          description: Gateway destination is not configured
+        "504":
+          description: Upstream timeout
+  /telemetry/sentry/api/{projectId}/envelope:
+    post:
+      operationId: forwardSentryEnvelope
+      summary: Forward an official Sentry Envelope body
+      tags: [common, telemetry]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sentry_key
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sentry_version
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sentry_client
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: X-Sentry-Auth
+          in: header
+          required: false
+          description: Official Sentry SDK authentication header
+          schema:
+            type: string
+        - name: Content-Encoding
+          in: header
+          required: false
+          description: Official native Sentry transports may gzip the envelope
+          schema:
+            type: string
+            enum: [gzip, identity]
+      requestBody:
+        required: true
+        content:
+          application/x-sentry-envelope:
+            schema:
+              type: string
+              format: binary
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+          text/plain:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Upstream response, including the Sentry event id body
+          headers:
+            Retry-After:
+              schema:
+                type: string
+            X-Sentry-Rate-Limits:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: {}
+        "408":
+          description: Request body receive deadline exceeded
+        "403":
+          description: Sentry public key is not allowlisted
+        "404":
+          description: Sentry project is not allowlisted
+        "413":
+          description: Envelope exceeds the gateway limit
+        "415":
+          description: Unsupported content type
+        "429":
+          description: Gateway or upstream rate limit
+        "502":
+          description: Upstream network failure
+        "503":
+          description: Gateway destination is not configured
+        "504":
+          description: Upstream timeout

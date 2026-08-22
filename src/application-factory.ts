@@ -76,6 +76,7 @@ import { VersionedAppConfigService } from "./services/versioned-app-config.servi
 import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
+import { createApplicationTelemetryGateway } from "./application-telemetry-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
@@ -153,6 +154,7 @@ export async function createApplication(
     emitToConsole: options.emitLogs ?? false,
     sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
+  const telemetryGateway = createApplicationTelemetryGateway(options, logger);
   if (localRunFileLogSink) {
     logger.info("local run file logging enabled", {
       runId: localRunFileLogSink.runId,
@@ -515,6 +517,7 @@ export async function createApplication(
   app.analyticsService = analyticsService;
   return {
     app,
+    telemetryGateway,
     database,
     cache,
     queue,

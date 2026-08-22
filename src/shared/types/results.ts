@@ -75,8 +75,11 @@ export interface LogRecord {
   userId?: string;
   path?: string;
   statusCode?: number;
+  httpStatus?: number;
   latencyMs?: number;
   jobName?: string;
   jobId?: string;
+  telemetryLane?: "ga4" | "sentry";
+  byteCount?: number;
   error?: string;
 }

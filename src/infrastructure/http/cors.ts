@@ -28,8 +28,10 @@ const CORS_ALLOWED_HEADERS = [
   "X-Log-Line-Count",
   "X-Log-Plain-Bytes",
   "X-Log-Compressed-Bytes",
+  "X-Sentry-Auth",
+  "Content-Encoding",
 ];
-const CORS_EXPOSED_HEADERS = ["X-Request-Id"];
+const CORS_EXPOSED_HEADERS = ["X-Request-Id", "Retry-After", "X-Sentry-Rate-Limits"];
 const CORS_MAX_AGE_SECONDS = 86400;
 
 export interface CorsDecision {
