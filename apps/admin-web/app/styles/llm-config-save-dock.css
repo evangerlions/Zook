@@ -1,0 +1,83 @@
+.llm-save-dock {
+  position: fixed;
+  z-index: 30;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(590px, calc(100vw - 32px));
+  min-height: 72px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid rgba(47, 102, 208, 0.24);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 48px rgba(29, 42, 58, 0.22);
+  backdrop-filter: blur(18px);
+  transform: translateX(-50%);
+}
+
+.llm-save-dock--error {
+  border-color: rgba(196, 87, 87, 0.36);
+}
+
+.llm-save-dock-status {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+}
+
+.llm-save-dock-icon {
+  display: inline-grid;
+  flex: 0 0 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  background: #edf7f0;
+  color: var(--success);
+  font-size: 1rem;
+}
+
+.llm-save-dock--error .llm-save-dock-icon {
+  background: #fff0f0;
+  color: var(--danger);
+}
+
+.llm-save-dock-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.llm-save-dock-copy strong {
+  font-size: 0.86rem;
+}
+
+.llm-save-dock-copy small {
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+.llm-save-dock .ant-btn {
+  flex: 0 0 auto;
+  min-width: 172px;
+  min-height: 44px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .llm-save-dock {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    align-items: stretch;
+    flex-direction: column;
+    width: calc(100% - 20px);
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .llm-save-dock .ant-btn {
+    width: 100%;
+  }
+}

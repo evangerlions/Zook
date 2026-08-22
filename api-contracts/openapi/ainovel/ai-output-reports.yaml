@@ -35,8 +35,6 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "429":
-          $ref: "#/components/responses/RateLimited"
 components:
   securitySchemes:
     bearerAuth:
@@ -71,7 +69,6 @@ components:
         - scene
         - category
         - reportedContent
-        - contentHash
       properties:
         submissionId:
           type: string
@@ -91,7 +88,7 @@ components:
           maxLength: 160
         chapterId:
           type: [integer, "null"]
-          minimum: 1
+          minimum: 0
         chapterRevisionId:
           type: [string, "null"]
           maxLength: 160
@@ -109,6 +106,7 @@ components:
         contentHash:
           type: string
           pattern: "^sha256:[a-f0-9]{64}$"
+          description: Optional client diagnostic; the server derives the authoritative hash from reportedContent.
         turnId:
           type: [string, "null"]
           maxLength: 160
@@ -170,12 +168,6 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
     Unauthorized:
       description: User authentication is required.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    RateLimited:
-      description: The report submission rate limit was exceeded.
       content:
         application/json:
           schema:

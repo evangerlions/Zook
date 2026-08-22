@@ -1126,7 +1126,23 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
 });
 
 test("ai_novel local debug envelopes expose upstream LLM request body", async () => {
-  const { runtime, aiKey } = await createAiNovelRuntime();
+  let providerMessages: LLMMessage[] | undefined;
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "第八十一回……",
+      };
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      providerMessages = request.messages;
+      yield { type: "content_delta", text: "第八十一回……" };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "ai_novel",
@@ -1149,6 +1165,7 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
       authorization: `Bearer ${token}`,
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
+      "X-App-Region": "CN",
     },
     body: {
       ...encryptAiPayload(payload, aiKey),
@@ -1178,6 +1195,13 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
   assert.ok(
     String(messages[0].content ?? "").includes("write-mode AINovel agent"),
   );
+  assert.ok(
+    String(messages[0].content ?? "").includes(
+      "我是 OrangeWrite AI 助手，是中国的大模型。",
+    ),
+  );
+  assert.ok(providerMessages);
+  assert.deepEqual(messages, providerMessages);
   assert.ok(Array.isArray(providerOptions.tools));
   assert.equal(decryptedEvents[1].type, "content_delta");
 });
@@ -2585,6 +2609,7 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
       "X-App-Locale": "zh-CN",
+      "X-App-Region": "CN",
     },
     body: encryptAiPayload(
       {
@@ -2632,6 +2657,14 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   );
   assert.equal(systemMessages.length, 1);
   assert.match(String(systemMessages[0]?.content ?? ""), /## Role/);
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /我是 OrangeWrite AI 助手，是中国的大模型。/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /Never claim or imply that you are an overseas model/,
+  );
   assert.match(
     String(systemMessages[0]?.content ?? ""),
     /## Workflow discipline/,
@@ -2703,6 +2736,38 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   );
   assert.match(String(systemMessages[0]?.content ?? ""), /call ready/);
   assert.match(String(systemMessages[0]?.content ?? ""), /call update_meta/);
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /ready tool is repeatable/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /semantic intent, not keyword matching/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /start-book intent does not bypass/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /must call ready in the current turn/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /does not satisfy the current request/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /natural-language confirmation cannot display the ready card/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /asked you to start the book rather than draft prose/i,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /never draft chapter prose in kickoff mode/i,
+  );
   assert.doesNotMatch(
     String(systemMessages[0]?.content ?? ""),
     /Do not ask what these words mean/,
@@ -2736,7 +2801,27 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   const readyFn = readyTool.function as Record<string, unknown>;
   assert.match(
     String(readyFn.description),
-    /Call this again after a previous ready result says the user chose to modify the ready proposal/,
+    /ready is repeatable/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /previous ready call does not block another ready call/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /must call ready in the current turn/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /only way to display the ready card/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /fill missing fields first/i,
+  );
+  assert.match(
+    String(readyFn.description),
+    /never drafts chapter prose/i,
   );
   const updateMetaTool = capturedTools?.find((tool) => {
     const fn = (tool as Record<string, unknown>).function as
@@ -2781,6 +2866,65 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
     unknown
   >;
   assert.deepEqual(chapterLength.required, ["preset", "note"]);
+});
+
+test("ai_novel GLOBAL kickoff request does not inject the CN identity policy", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> = [];
+  const llmProvider: LLMProvider = {
+    async complete(request): Promise<LLMCompletionResult> {
+      return {
+        provider: request.model.provider,
+        modelKey: request.model.modelKey,
+        providerModel: request.model.providerModel,
+        text: "{}",
+      };
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      yield { type: "content_delta", text: "I am your writing assistant." };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+      "X-App-Locale": "zh-CN",
+      "X-App-Region": "GLOBAL",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "kickoff_turn",
+        stream: true,
+        messages: [{ role: "user", content: "Which model are you?" }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  await collectSseEvents(response.streamBody);
+  const systemPrompt = capturedMessages
+    .filter((message) => message.role === "system")
+    .map((message) => message.content ?? "")
+    .join("\n");
+  assert.match(systemPrompt, /kickoff-mode novel setup assistant/);
+  assert.doesNotMatch(systemPrompt, /CN assistant identity policy/);
+  assert.doesNotMatch(
+    systemPrompt,
+    /我是 OrangeWrite AI 助手，是中国的大模型。/,
+  );
 });
 
 test("ai_novel kickoff_turn streams a single round and relays read_meta tool calls without internal loop", async () => {
@@ -4150,7 +4294,7 @@ test("ai_novel upstream auth failures return refined code with local debug detai
     aiKey,
   );
   assert.equal(decrypted.code, "AI_UPSTREAM_AUTH_FAILED");
-  assert.equal(decrypted.message, "AI 服务暂不可用，请稍后重试。");
+  assert.equal(decrypted.message, "AI 服务配置异常，请稍后重试。");
   const data = decrypted.data as Record<string, unknown>;
   assert.equal(data.provider, "bailian");
   assert.equal(data.providerStatusCode, 401);

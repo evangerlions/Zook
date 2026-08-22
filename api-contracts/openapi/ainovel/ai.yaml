@@ -74,6 +74,13 @@ paths:
         business code `AI_INPUT_CONTENT_SENSITIVE` with the localized message
         "这段内容暂时无法发送，请调整后再试。". The rejected text must not be
         reused in future context or persisted as a normal submitted message.
+
+        Provider context-window failures are normalized to
+        `AI_CONTEXT_TOO_LONG`; Chinese clients display
+        "内容过长，请缩短后重试。". Rate limits, timeouts, invalid provider
+        responses, and service configuration failures retain distinct business
+        codes. `AI_UPSTREAM_QUOTA_EXHAUSTED` intentionally keeps the generic
+        temporary-unavailable message and must not expose account quota details.
       tags: [ainovel, ai]
       parameters:
         - $ref: "#/components/parameters/XAppId"

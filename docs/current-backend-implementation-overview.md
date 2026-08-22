@@ -119,6 +119,32 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 
 1. `src/modules/analytics/analytics.service.ts`
 
+### 2.5.1 OrangeWrite GA4 / Sentry 透明网关
+
+OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路由，也不
+复用 Zook Analytics 事件模型：
+
+1. `POST /telemetry/ga4` 原样转发官方 GA4 Measurement Protocol JSON；
+   Zook 只从环境变量注入 measurement ID 与 API secret。
+2. `POST /telemetry/sentry/api/{projectId}/envelope/` 原样转发 Sentry
+   Envelope；project、public key 与 HTTPS ingest origin 必须匹配服务端白名单。
+3. 两条 lane 都限制 method、content type、body size、每 IP 速率与三秒上游
+   timeout；不重试、不持久化 payload。
+4. 网关日志只记录 request ID、lane、path、status、latency、byte count 与
+   bounded failure code，不记录 body 或 provider credentials。
+5. Sentry 成功响应的 event ID body、content type 与 rate-limit headers 会在
+   64 KiB 上限内原样返回；`X-Forwarded-For` 只信任 loopback 或
+   `ZOOK_TRUSTED_PROXY_IPS` 明确配置的反向代理。
+6. `POST /api/v1/analytics/events/batch` 保持原实现，OrangeWrite 新 telemetry
+   不调用该接口。
+
+对应核心文件：
+
+1. `src/modules/telemetry/telemetry-gateway.ts`
+2. `src/modules/telemetry/telemetry-rate-limiter.ts`
+3. `src/application-telemetry-runtime.ts`
+4. `test/unit/telemetry-gateway.test.ts`
+
 ### 2.6 文件上传流程骨架
 
 已实现以下文件流程：
@@ -359,6 +385,8 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 50. `POST /api/v1/ai_novel/ai/chat-completions`
 51. `POST /api/v1/ai_novel/ai/embeddings`
 52. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
+53. `POST /telemetry/ga4`
+54. `POST /telemetry/sentry/api/{projectId}/envelope/`
 
 账号删除当前按 app-scoped 语义实现：`users/me/delete` 会将当前 app membership 标记为 `DELETED`，撤销该 app 下用户 session，清理 app 侧 analytics、files metadata、client logs、notification jobs、user roles，并保留全局 `zook_users` 与 audit logs。
 
