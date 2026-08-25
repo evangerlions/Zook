@@ -12,7 +12,7 @@
   }
 
   .sidebar-nav {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .sidebar.is-collapsed .nav-link {
@@ -68,6 +68,22 @@
     justify-content: flex-start;
   }
 
+  .sidebar-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .nav-link,
+  .nav-copy,
+  .nav-copy strong,
+  .nav-copy small {
+    min-width: 0;
+  }
+
+  .nav-copy strong,
+  .nav-copy small {
+    overflow-wrap: anywhere;
+  }
+
   .app-item,
   .password-item,
   .revision-item {
@@ -118,6 +134,10 @@
 }
 
 @media (max-width: 520px) {
+  .sidebar-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .config-sub-tabs {
     flex-direction: column;
   }

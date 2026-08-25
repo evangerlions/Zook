@@ -1,179 +1,155 @@
-import { Segmented, Select } from "antd";
+import { Alert, Button, Empty, Segmented, Select, Skeleton, Switch, Tag } from "antd";
 
-import { MetricCard } from "./metric-card";
-import { createEmptyLlmSummary } from "../lib/llm-config";
-import { formatNumber } from "../lib/format";
-import type {
-  AdminLlmMetricsDocument,
-  AdminLlmModelMetricsDocument,
-  LlmProviderMetricsOption,
-  LlmMetricsRange,
-} from "../lib/types";
+import { useLlmOperationsDashboard } from "../hooks/use-llm-operations-dashboard";
+import { formatTimestamp } from "../lib/format";
+import type { LlmMetricsOperation, LlmMetricsRange } from "../lib/types";
+import { CrossMatrixSection } from "./llm-monitor/cross-matrix-section";
+import { DetailSection } from "./llm-monitor/detail-section";
+import { OperationsTables } from "./llm-monitor/operations-tables";
+import { OverviewSection } from "./llm-monitor/overview-section";
+import { RoutingSection } from "./llm-monitor/routing-section";
 
-const RANGE_OPTIONS: LlmMetricsRange[] = ["24h", "7d", "30d"];
+const RANGE_OPTIONS: LlmMetricsRange[] = ["24h", "48h", "7d", "30d"];
 
-interface LlmMonitorTabProps {
-  loadingMetrics: boolean;
-  metrics: AdminLlmMetricsDocument | null;
-  modelMetrics: AdminLlmModelMetricsDocument | null;
-  onProviderChange: (provider: string) => void;
-  onRangeChange: (range: LlmMetricsRange) => void;
-  onSelectModel: (modelKey: string) => void;
-  providerOptions: LlmProviderMetricsOption[];
-  range: LlmMetricsRange;
-  selectedProvider: string;
-  selectedModelKey: string;
-}
-
-export function LlmMonitorTab({
-  loadingMetrics,
-  metrics,
-  modelMetrics,
-  onProviderChange,
-  onRangeChange,
-  onSelectModel,
-  providerOptions,
-  range,
-  selectedProvider,
-  selectedModelKey,
-}: LlmMonitorTabProps) {
-  const summary = metrics?.summary ?? createEmptyLlmSummary();
+export function LlmMonitorTab() {
+  const dashboard = useLlmOperationsDashboard();
+  const metrics = dashboard.metrics;
 
   return (
-    <div className="stack">
-      <section className="surface-card">
-        <div className="card-header">
-          <div>
-            <h2>整体指标</h2>
-            <p>按小时聚合的全局监控，用来快速判断当前路由稳定性。</p>
-          </div>
-          <div className="monitor-filter-row">
-            <Select
-              className="inline-input metrics-provider-select"
-              onChange={onProviderChange}
-              options={[
-                { label: "全部 Provider", value: "" },
-                ...providerOptions.map((item) => ({
-                  label: item.label === item.provider ? item.label : `${item.label} (${item.provider})`,
-                  value: item.provider,
-                })),
-              ]}
-              value={selectedProvider}
-            />
-            <Segmented
-              className="range-segmented"
-              onChange={(value) => onRangeChange(value as LlmMetricsRange)}
-              options={RANGE_OPTIONS}
-              value={range}
-            />
-          </div>
+    <div aria-busy={dashboard.loading || dashboard.refreshing} className="stack llm-dashboard">
+      <section className="surface-card llm-filter-bar">
+        <div className="llm-filter-controls">
+          <Segmented
+            className="range-segmented"
+            onChange={(value) => dashboard.setRange(value as LlmMetricsRange)}
+            options={RANGE_OPTIONS}
+            value={dashboard.range}
+          />
+          <Select
+            aria-label="调用类型"
+            className="llm-filter-select"
+            onChange={(value) => dashboard.setOperation(value as "" | LlmMetricsOperation)}
+            options={[
+              { label: "全部类型", value: "" },
+              { label: "Chat", value: "chat" },
+              { label: "Embedding", value: "embedding" },
+            ]}
+            value={dashboard.operation}
+          />
+          <Select
+            aria-label="Provider"
+            className="llm-filter-select"
+            onChange={dashboard.setProvider}
+            options={[
+              { label: "全部 Provider", value: "" },
+              ...dashboard.providerOptions.map((item) => ({ label: item.label, value: item.provider })),
+            ]}
+            showSearch
+            value={dashboard.provider}
+          />
+          <Select
+            aria-label="Provider Model"
+            className="llm-filter-select llm-filter-select--model"
+            onChange={dashboard.setProviderModel}
+            options={[
+              { label: "全部 Provider Model", value: "" },
+              ...dashboard.providerModelOptions.map((model) => ({ label: model, value: model })),
+            ]}
+            showSearch
+            value={dashboard.providerModel}
+          />
         </div>
-
-        {loadingMetrics ? <p className="meta-text">正在加载监控指标...</p> : null}
-
-        <div className="metric-grid">
-          <MetricCard hint="最近范围内的总请求次数" label="请求量" value={formatNumber(summary.requestCount)} />
-          <MetricCard hint="成功次数 / 请求次数" label="成功率" value={`${summary.successRate}%`} />
-          <MetricCard hint="从请求发出到收到首块内容" label="平均首字节" value={`${summary.avgFirstByteLatencyMs} ms`} />
-          <MetricCard hint="从请求发出到完整结束" label="平均总耗时" value={`${summary.avgTotalLatencyMs} ms`} />
+        <div className="llm-refresh-controls">
+          <label className="llm-auto-refresh">
+            <Switch checked={dashboard.autoRefresh} onChange={dashboard.setAutoRefresh} size="small" />
+            <span>60 秒自动刷新</span>
+          </label>
+          <Button loading={dashboard.refreshing || dashboard.pendingFilters} onClick={() => void dashboard.refresh()}>刷新</Button>
         </div>
       </section>
 
-      <div className="page-grid page-grid--wide">
-        <section className="surface-card">
-          <div className="card-header">
-            <div>
-              <h2>模型对比</h2>
-              <p>选择一个模型，查看它在当前时间范围和 Provider 下的路由表现。</p>
-            </div>
-            <Select
-              className="inline-input"
-              onChange={onSelectModel}
-              options={[
-                { label: "请选择模型", value: "" },
-                ...((metrics?.models ?? []).map((item) => ({
-                  label: item.label,
-                  value: item.modelKey,
-                }))),
-              ]}
-              value={selectedModelKey}
-            />
-          </div>
+      {metrics ? (
+        <div className="llm-data-meta">
+          <span>时区 {metrics.timezone}</span>
+          <span>更新于 {formatTimestamp(metrics.generatedAt)}</span>
+          <span>当前内容：{metrics.operation ?? "全部类型"} · {metrics.provider ?? "全部 Provider"} · {metrics.providerModel ?? "全部 Model"}</span>
+          {metrics.dataAvailableSince ? <Tag>数据自 {formatTimestamp(metrics.dataAvailableSince)} 起可用</Tag> : null}
+          {metrics.models.truncated || metrics.providerMetrics.truncated || metrics.routes.truncated || metrics.crossMetrics.truncated
+            ? <Tag color="warning">高基数结果已截断</Tag>
+            : null}
+        </div>
+      ) : null}
 
-          {(metrics?.models ?? []).length ? (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>模型</th>
-                    <th>请求量</th>
-                    <th>成功率</th>
-                    <th>平均首字节</th>
-                    <th>平均总耗时</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {metrics?.models.map((item) => (
-                    <tr key={item.modelKey}>
-                      <td>{item.label}</td>
-                      <td>{formatNumber(item.summary.requestCount)}</td>
-                      <td>{item.summary.successRate}%</td>
-                      <td>{item.summary.avgFirstByteLatencyMs} ms</td>
-                      <td>{item.summary.avgTotalLatencyMs} ms</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="empty-state">当前范围内还没有模型调用数据。</div>
-          )}
-        </section>
+      {dashboard.error ? (
+        <Alert
+          action={<Button onClick={() => void dashboard.refresh()} size="small">重试</Button>}
+          description={metrics ? "保留上次成功数据，直到刷新恢复。" : undefined}
+          message={`监控数据刷新失败：${dashboard.error}`}
+          showIcon
+          type="error"
+        />
+      ) : null}
 
-        <aside className="panel-stack">
-          <section className="side-card">
-            <div className="card-header">
-              <div>
-                <h2>所选模型明细</h2>
-                <p>按 provider / providerModel 展示 route 聚合结果，可随上方 Provider 筛选切换。</p>
-              </div>
-            </div>
-            {modelMetrics ? (
-              <div className="stack">
-                <div className="metric-grid">
-                  <MetricCard label="请求量" value={formatNumber(modelMetrics.summary.requestCount)} />
-                  <MetricCard label="成功率" value={`${modelMetrics.summary.successRate}%`} />
-                </div>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Provider</th>
-                        <th>Model</th>
-                        <th>请求量</th>
-                        <th>成功率</th>
-                        <th>平均总耗时</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {modelMetrics.routes.map((item) => (
-                        <tr key={`${item.provider}-${item.providerModel}`}>
-                          <td>{item.provider}</td>
-                          <td className="mono">{item.providerModel}</td>
-                          <td>{formatNumber(item.summary.requestCount)}</td>
-                          <td>{item.summary.successRate}%</td>
-                          <td>{item.summary.avgTotalLatencyMs} ms</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <div className="empty-state">选择一个模型后，这里会显示 route 级别明细。</div>
-            )}
-          </section>
-        </aside>
+      {dashboard.filterNotice ? (
+        <Alert closable message={dashboard.filterNotice} onClose={dashboard.clearFilterNotice} showIcon type="warning" />
+      ) : null}
+
+      {dashboard.pendingFilters && metrics ? (
+        <Alert
+          message="正在应用新筛选；下方暂时保留上一次查询结果，完成后会整体切换。"
+          showIcon
+          type="info"
+        />
+      ) : null}
+
+      {dashboard.loading && !metrics ? (
+        <DashboardSkeleton />
+      ) : metrics ? (
+        <>
+          <OverviewSection metrics={metrics} />
+          <OperationsTables
+            metrics={metrics}
+            onSelectModel={(model, operation) => {
+              dashboard.setProvider("");
+              dashboard.setProviderModel(model);
+              dashboard.setOperation(operation);
+            }}
+            onSelectProvider={(provider, operation) => {
+              dashboard.setProviderModel("");
+              dashboard.setProvider(provider);
+              dashboard.setOperation(operation);
+            }}
+            selectedModel={metrics.providerModel ?? ""}
+            selectedProvider={metrics.provider ?? ""}
+          />
+          <RoutingSection metrics={metrics} />
+          <CrossMatrixSection
+            metrics={metrics}
+            onSelect={dashboard.selectIntersection}
+            selectedOperation={metrics.operation}
+            selectedProvider={metrics.provider ?? ""}
+            selectedProviderModel={metrics.providerModel ?? ""}
+          />
+          <DetailSection
+            metrics={metrics}
+            provider={metrics.provider ?? ""}
+            providerModel={metrics.providerModel ?? ""}
+          />
+        </>
+      ) : (
+        <section className="surface-card"><Empty description="暂时没有可展示的 LLM 监控数据" /></section>
+      )}
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="stack" aria-label="正在加载 LLM 运营看板">
+      <section className="surface-card"><Skeleton active paragraph={{ rows: 3 }} /></section>
+      <div className="llm-chart-grid">
+        <section className="surface-card llm-skeleton-chart"><Skeleton active /></section>
+        <section className="surface-card llm-skeleton-chart"><Skeleton active /></section>
       </div>
     </div>
   );

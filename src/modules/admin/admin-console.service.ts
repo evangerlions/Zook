@@ -559,8 +559,8 @@ export class AdminConsoleService {
     return this.commonConfig.restoreLlmServiceConfig(revision, desc);
   }
 
-  async getLlmMetrics(range: LlmMetricsRange, provider?: string): Promise<AdminLlmMetricsDocument> {
-    return this.commonConfig.getLlmMetrics(range, provider);
+  async getLlmMetrics(range: LlmMetricsRange, provider?: string, operation?: "chat" | "embedding", providerModel?: string): Promise<AdminLlmMetricsDocument> {
+    return this.commonConfig.getLlmMetrics(range, provider, operation, providerModel);
   }
 
   async getLlmModelMetrics(

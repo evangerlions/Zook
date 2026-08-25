@@ -58,6 +58,7 @@ import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login
 import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
+import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
@@ -258,8 +259,14 @@ export async function createApplication(
       await managedStateStore.save(database);
     }
   });
-  const llmHealthService = new LlmHealthService(kvManager);
-  const llmMetricsService = new LlmMetricsService(kvManager);
+  const defaultLlmProviderKeys = ["bailian", "bailian_coding", "openrouter"];
+  const runtimeLlmProviderKeys = {
+    chat: new Set(Object.keys(options.llmProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
+    embedding: new Set(Object.keys(options.embeddingProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
+  };
+  const llmHealthService = new LlmHealthService(database.llmObservabilityStore, runtimeLlmProviderKeys);
+  const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
+  const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
   const accessTokenSecrets = resolveAccessTokenSecrets(options);
@@ -556,6 +563,7 @@ export async function createApplication(
       contentSafetyService,
       llmHealthService,
       llmMetricsService,
+      llmObservabilityRetentionService,
       llmSmokeTestService,
       aiNovelAuditFileService,
       aiNovelLlmService,

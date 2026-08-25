@@ -1196,6 +1196,26 @@ test("bailian provider keeps provider request id on embedding HTTP failures", as
   );
 });
 
+test("bailian embedding data-inspection rejection is classified as content-sensitive", async () => {
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async () => createJsonResponse({
+      request_id: "embedding-inspection-id",
+      error: {
+        message: "data inspection failed",
+        code: "DataInspectionFailed",
+      },
+    }, 400),
+  });
+  await assert.rejects(
+    async () => provider.embed(createResolvedEmbeddingRequest()),
+    (error: unknown) => {
+      assert.ok(error instanceof Error && "code" in error);
+      assert.equal(error.code, "LLM_PROVIDER_CONTENT_SENSITIVE");
+      return true;
+    },
+  );
+});
+
 test("bailian provider sends the expected embedding request and parses the response", async () => {
   let capturedUrl: string | undefined;
   let capturedInit: RequestInit | undefined;

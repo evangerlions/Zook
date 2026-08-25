@@ -72,6 +72,7 @@ import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeekl
 import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from "../../../modules/bodylog/bodylog-invitation.types.ts";
 import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../../../modules/bodylog/bodylog-challenge.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
+import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
@@ -99,6 +100,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly bodyLogLeaderboard: PostgresBodyLogLeaderboardStore;
   private readonly bodyLogInvitations: PostgresBodyLogInvitationStore;
   private readonly bodyLogChallenges: PostgresBodyLogChallengeStore;
+  readonly llmObservabilityStore: PostgresLlmObservabilityStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -117,6 +119,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogLeaderboard = new PostgresBodyLogLeaderboardStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogInvitations = new PostgresBodyLogInvitationStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogChallenges = new PostgresBodyLogChallengeStore(async (sql, values = []) => await this.query(sql, values));
+    this.llmObservabilityStore = new PostgresLlmObservabilityStore(async (sql, values = []) => await this.query(sql, values), async () => await this.pool.connect());
   }
   static async create(
     connectionString: string,
@@ -132,7 +135,6 @@ export class PostgresDatabase extends ApplicationDatabase {
     await database.initialize();
     return database;
   }
-
   override async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
     const existingClient = this.sessionContext.getStore();
     if (existingClient) {
@@ -153,13 +155,11 @@ export class PostgresDatabase extends ApplicationDatabase {
       client.release();
     }
   }
-
   override async withFrogSleepBuddyCommandTransaction<T>(slotKeys: FrogSleepBuddyCommandSlotKey[], fn: () => Promise<T> | T): Promise<T> { return await this.buddyCommandTransaction.run(slotKeys, fn); }
   override async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(key: FrogSleepBuddyInvitationDecisionSafetyKey, fn: () => Promise<T> | T): Promise<T> { return await this.buddyDecisionSafetyTransaction.run(key, fn); }
   override async close(): Promise<void> {
     await this.pool.end();
   }
-
   override async exportManagedState(): Promise<ManagedStateSnapshot> {
     return {
       apps: await this.listApps(),

@@ -60,20 +60,7 @@ export function throwProviderRequestFailed(
   provider = "bailian",
 ): never {
   if (isDataInspectionFailure(payload)) {
-    throw new ApplicationError(
-      400,
-      "LLM_PROVIDER_CONTENT_SENSITIVE",
-      payload.error?.message ??
-        payload.message ??
-        `${provider} content inspection rejected the request.`,
-      {
-        provider,
-        statusCode,
-        errorCode: payload.error?.code,
-        errorType: payload.error?.type,
-        providerRequestId: payload.request_id ?? payload.id,
-      },
-    );
+    throwContentInspectionFailure(statusCode, payload, provider);
   }
 
   const errorMessage =
@@ -100,6 +87,9 @@ export function throwEmbeddingRequestFailed(
   payload: OpenAICompatibleEmbeddingPayload,
   provider = "bailian",
 ): never {
+  if (isDataInspectionFailure(payload)) {
+    throwContentInspectionFailure(statusCode, payload, provider);
+  }
   const errorMessage =
     payload.error?.message ??
     payload.message ??
@@ -146,7 +136,7 @@ export function redactProviderRequestBody(
 }
 
 function isDataInspectionFailure(
-  payload: OpenAICompatibleResponsePayload,
+  payload: OpenAICompatibleResponsePayload | OpenAICompatibleEmbeddingPayload,
 ): boolean {
   const values = [
     payload.error?.code,
@@ -163,6 +153,25 @@ function isDataInspectionFailure(
       value === "datainspectionfailed" ||
       value.includes("data inspection failed") ||
       value.includes("data_inspection_failed"),
+  );
+}
+
+function throwContentInspectionFailure(
+  statusCode: number,
+  payload: OpenAICompatibleResponsePayload | OpenAICompatibleEmbeddingPayload,
+  provider: string,
+): never {
+  throw new ApplicationError(
+    400,
+    "LLM_PROVIDER_CONTENT_SENSITIVE",
+    payload.error?.message ?? payload.message ?? `${provider} content inspection rejected the request.`,
+    {
+      provider,
+      statusCode,
+      errorCode: payload.error?.code,
+      errorType: payload.error?.type,
+      providerRequestId: payload.request_id ?? payload.id,
+    },
   );
 }
 

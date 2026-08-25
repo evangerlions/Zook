@@ -1,8 +1,5 @@
 import type { LlmRouteRef } from "./llm-health.service.ts";
-import {
-  isAiNovelSceneRouteKey,
-  resolveAiNovelSceneRouteAlias,
-} from "./ai-novel-llm-model-aliases.ts";
+import { resolveAiNovelSceneRouteAlias } from "./ai-novel-llm-model-aliases.ts";
 import type {
   LLMCompletionRequest,
   LLMManagerOptions,
@@ -23,15 +20,14 @@ import type {
   LlmProviderConfig,
   LlmServiceConfig,
 } from "../shared/types.ts";
+import { evaluateLlmRoutes, selectLlmRoute } from "./llm-routing-score.ts";
 
 const VALID_ROLES = new Set<LLMRole>(["system", "user", "assistant", "tool"]);
 
 export interface ResolvedLlmRequest {
   request: ResolvedLLMCompletionRequest;
-  routeRefs: {
-    healthRouteRef: LlmRouteRef;
-    metricRouteRef: LlmRouteRef;
-  };
+  routeRef: LlmRouteRef;
+  routingConfigRevision?: number;
 }
 
 interface LlmRequestResolverOptions {
@@ -46,11 +42,17 @@ export class LlmRequestResolver {
   async resolve(request: LLMCompletionRequest): Promise<ResolvedLlmRequest> {
     const messages = this.validateMessages(request.messages);
     const requestedModelKey = request.modelKey.trim();
-    const commonConfig =
-      await this.options.managerOptions.commonLlmConfigService?.getRuntimeConfig();
+    const runtimeSnapshot =
+      await this.options.managerOptions.commonLlmConfigService?.getRuntimeConfigSnapshot();
 
-    if (await this.options.managerOptions.commonLlmConfigService?.hasStoredConfig()) {
-      return this.resolveConfiguredRequest(request, messages, requestedModelKey, commonConfig);
+    if (runtimeSnapshot) {
+      return this.resolveConfiguredRequest(
+        request,
+        messages,
+        requestedModelKey,
+        runtimeSnapshot.config,
+        runtimeSnapshot.revision,
+      );
     }
 
     return this.resolveRegistryRequest(request, messages, requestedModelKey);
@@ -113,9 +115,10 @@ export class LlmRequestResolver {
     request: LLMCompletionRequest,
     messages: LLMMessage[],
     requestedModelKey: string,
-    commonConfig?: LlmServiceConfig,
+    commonConfig: LlmServiceConfig,
+    routingConfigRevision?: number,
   ): Promise<ResolvedLlmRequest> {
-    if (!commonConfig?.enabled) {
+    if (!commonConfig.enabled) {
       throw new ApplicationError(
         503,
         "LLM_SERVICE_NOT_CONFIGURED",
@@ -141,6 +144,7 @@ export class LlmRequestResolver {
       modelKey: selection.routeModelKey,
       provider: selection.provider.key,
       providerModel: selection.route.providerModel,
+      operation: "chat" as const,
     };
     return {
       request: {
@@ -159,7 +163,8 @@ export class LlmRequestResolver {
           },
         },
       },
-      routeRefs: buildRouteRefs(healthRouteRef, modelKey, request.modelKeyKind),
+      routeRef: healthRouteRef,
+      routingConfigRevision,
     };
   }
 
@@ -189,15 +194,12 @@ export class LlmRequestResolver {
           providerModel: resolvedModel.providerModel,
         },
       },
-      routeRefs: buildRouteRefs(
-        {
-          modelKey,
-          provider: resolvedModel.provider,
-          providerModel: resolvedModel.providerModel,
-        },
+      routeRef: {
         modelKey,
-        request.modelKeyKind,
-      ),
+        provider: resolvedModel.provider,
+        providerModel: resolvedModel.providerModel,
+        operation: "chat",
+      },
     };
   }
 
@@ -227,10 +229,34 @@ export class LlmRequestResolver {
     }
 
     const providerMap = new Map(config.providers.map((item) => [item.key, item]));
-    const chosenRoute =
-      model.strategy === "fixed"
-        ? selectFixedRoute(model, providerMap)
-        : await this.selectAutoRoute(model, providerMap);
+    const healthSnapshots = await Promise.all(model.routes.map((route) =>
+      this.options.managerOptions.llmHealthService?.getRouteSnapshot({
+        modelKey: model.key,
+        provider: route.provider,
+        providerModel: route.providerModel,
+        operation: model.kind,
+      }),
+    ));
+    const evaluation = evaluateLlmRoutes(
+      model.strategy,
+      model.routes.map((route, index) => ({
+        route,
+        providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
+        runtimeAvailable: Boolean(this.options.providers[route.provider]),
+        healthScore: healthSnapshots[index]?.healthScore ?? 100,
+      })),
+    );
+    const chosenRoute = selectLlmRoute(
+      evaluation,
+      this.options.managerOptions.random,
+    )?.route;
+    if (!chosenRoute) {
+      throw new ApplicationError(
+        503,
+        "LLM_ROUTE_NOT_AVAILABLE",
+        `Model ${model.key} does not have a routable provider.`,
+      );
+    }
 
     const provider = providerMap.get(chosenRoute.provider);
     if (!provider || !this.options.providers[provider.key]) {
@@ -248,108 +274,4 @@ export class LlmRequestResolver {
     };
   }
 
-  private async selectAutoRoute(
-    model: LlmModelConfig,
-    providerMap: Map<string, LlmProviderConfig>,
-  ): Promise<LlmModelConfig["routes"][number]> {
-    const availableRoutes = model.routes.filter(
-      (route) => route.enabled && providerMap.get(route.provider)?.enabled,
-    );
-    if (!availableRoutes.length) {
-      throw new ApplicationError(
-        503,
-        "LLM_ROUTE_NOT_AVAILABLE",
-        `Model ${model.key} does not have any enabled routes.`,
-      );
-    }
-
-    const scores = await Promise.all(
-      availableRoutes.map(async (route) => {
-        const snapshot = await this.options.managerOptions.llmHealthService?.getRouteSnapshot({
-          modelKey: model.key,
-          provider: route.provider,
-          providerModel: route.providerModel,
-        });
-
-        return {
-          route,
-          score: route.weight * ((snapshot?.healthScore ?? 100) / 100),
-        };
-      }),
-    );
-
-    const totalScore = scores.reduce((sum, item) => sum + item.score, 0);
-    const weights =
-      totalScore > 0
-        ? scores
-        : scores.map((item) => ({
-            route: item.route,
-            score: item.route.weight,
-          }));
-    const totalWeight = weights.reduce((sum, item) => sum + item.score, 0);
-
-    if (totalWeight <= 0) {
-      throw new ApplicationError(
-        503,
-        "LLM_ROUTE_NOT_AVAILABLE",
-        `Model ${model.key} does not have a routable provider.`,
-      );
-    }
-
-    const target = (this.options.managerOptions.random ?? Math.random)() * totalWeight;
-    let cursor = 0;
-    for (const item of weights) {
-      cursor += item.score;
-      if (target <= cursor) {
-        return item.route;
-      }
-    }
-
-    return weights[weights.length - 1].route;
-  }
-}
-
-function buildRouteRefs(
-  healthRouteRef: LlmRouteRef,
-  requestedModelKey: string,
-  modelKeyKind?: "model" | "scene_route",
-): {
-  healthRouteRef: LlmRouteRef;
-  metricRouteRef: LlmRouteRef;
-} {
-  const metricModelKey =
-    modelKeyKind === "scene_route" || isAiNovelSceneRouteKey(requestedModelKey)
-      ? healthRouteRef.providerModel
-      : healthRouteRef.modelKey;
-  return {
-    healthRouteRef,
-    metricRouteRef: {
-      ...healthRouteRef,
-      modelKey: metricModelKey,
-    },
-  };
-}
-
-function selectFixedRoute(
-  model: LlmModelConfig,
-  providerMap: Map<string, LlmProviderConfig>,
-): LlmModelConfig["routes"][number] {
-  const enabledRoutes = model.routes.filter(
-    (route) => route.enabled && providerMap.get(route.provider)?.enabled,
-  );
-  if (enabledRoutes.length) {
-    return enabledRoutes.reduce((best, route) =>
-      route.weight > best.weight ? route : best,
-    );
-  }
-
-  const fallback = model.routes[0];
-  if (!fallback) {
-    throw new ApplicationError(
-      503,
-      "LLM_ROUTE_NOT_AVAILABLE",
-      `Model ${model.key} does not contain any routes.`,
-    );
-  }
-  return fallback;
 }

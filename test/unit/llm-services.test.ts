@@ -8,12 +8,11 @@ import { CommonLlmConfigService } from "../../src/services/common-llm-config.ser
 import { CommonPasswordConfigService } from "../../src/services/common-password-config.service.ts";
 import { EmbeddingManager, type EmbeddingResult } from "../../src/services/embedding-manager.ts";
 import { LlmHealthService } from "../../src/services/llm-health.service.ts";
-import { LLMManager, type LLMCompletionResult, type LLMProvider, type LLMStreamEvent } from "../../src/services/llm-manager.ts";
+import { LLMManager, type LLMCompletionResult, type LLMProvider, type LLMStreamEvent, type LLMUsage } from "../../src/services/llm-manager.ts";
 import { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../src/services/llm-smoke-test.service.ts";
 import { PasswordManager } from "../../src/services/password-manager.ts";
 import { SecretReferenceResolver } from "../../src/services/secret-reference-resolver.ts";
-import { toHourKey } from "../../src/shared/utils.ts";
 
 async function createLlmFixture() {
   const kvManager = await KVManager.create({
@@ -26,8 +25,11 @@ async function createLlmFixture() {
   const commonPasswordConfigService = new CommonPasswordConfigService(passwordManager);
   const secretReferenceResolver = new SecretReferenceResolver(commonPasswordConfigService);
   const commonLlmConfigService = new CommonLlmConfigService(appConfigService, secretReferenceResolver);
-  const llmHealthService = new LlmHealthService(kvManager);
-  const llmMetricsService = new LlmMetricsService(kvManager);
+  const llmHealthService = new LlmHealthService(database.llmObservabilityStore);
+  const llmMetricsService = new LlmMetricsService(
+    database.llmObservabilityStore,
+    llmHealthService,
+  );
 
   return {
     kvManager,
@@ -38,6 +40,64 @@ async function createLlmFixture() {
     llmHealthService,
     llmMetricsService,
   };
+}
+
+let metricSeedSequence = 0;
+let healthSeedSequence = 0;
+
+async function recordMetricCall(
+  fixture: Awaited<ReturnType<typeof createLlmFixture>>,
+  event: {
+    modelKey: string;
+    provider: string;
+    providerModel: string;
+    ok: boolean;
+    firstByteLatencyMs?: number;
+    totalLatencyMs: number;
+    usage?: LLMUsage;
+    occurredAt: Date;
+  },
+) {
+  metricSeedSequence += 1;
+  await fixture.database.llmObservabilityStore.recordObservation({
+    callId: `metric_seed_${metricSeedSequence}`,
+    occurredAt: event.occurredAt.toISOString(),
+    routingModelKey: event.modelKey,
+    provider: event.provider,
+    providerModel: event.providerModel,
+    operation: "chat",
+    responseMode: event.firstByteLatencyMs === undefined ? "non_stream" : "stream",
+    outcome: event.ok ? "success" : "failure",
+    healthImpact: event.ok ? "success" : "failure",
+    firstResponseLatencyMs: event.firstByteLatencyMs,
+    totalLatencyMs: event.totalLatencyMs,
+    promptTokens: event.usage?.promptTokens,
+    completionTokens: event.usage?.completionTokens,
+    reasoningTokens: event.usage?.reasoningTokens,
+    totalTokens: event.usage?.totalTokens,
+    usageSource: event.usage ? event.usage.estimated ? "estimated" : "provider" : "missing",
+  });
+}
+
+async function recordHealthResult(
+  fixture: Awaited<ReturnType<typeof createLlmFixture>>,
+  route: { modelKey: string; provider: string; providerModel: string },
+  result: { ok: boolean; timestamp?: string; firstByteLatencyMs?: number; totalLatencyMs: number },
+) {
+  healthSeedSequence += 1;
+  await fixture.database.llmObservabilityStore.recordObservation({
+    callId: `health_seed_${healthSeedSequence}`,
+    occurredAt: result.timestamp ?? new Date().toISOString(),
+    routingModelKey: route.modelKey,
+    provider: route.provider,
+    providerModel: route.providerModel,
+    operation: "chat",
+    responseMode: "non_stream",
+    outcome: result.ok ? "success" : "failure",
+    healthImpact: result.ok ? "success" : "failure",
+    totalLatencyMs: result.totalLatencyMs,
+    usageSource: "missing",
+  });
 }
 
 function createMockProvider(name: string, calls: string[]): LLMProvider {
@@ -122,7 +182,7 @@ test("llm manager keeps routes healthy before 10 calls and then lowers traffic f
   );
 
   for (let count = 0; count < 9; count += 1) {
-    await fixture.llmHealthService.recordResult(
+    await recordHealthResult(fixture,
       {
         modelKey: "kimi2.5",
         provider: "volcengine",
@@ -143,7 +203,7 @@ test("llm manager keeps routes healthy before 10 calls and then lowers traffic f
   });
   assert.equal(calls.at(-1), "volcengine");
 
-  await fixture.llmHealthService.recordResult(
+  await recordHealthResult(fixture,
     {
       modelKey: "kimi2.5",
       provider: "volcengine",
@@ -211,7 +271,7 @@ test("llm manager fixed strategy ignores health score and always picks the highe
   });
 
   for (let count = 0; count < 25; count += 1) {
-    await fixture.llmHealthService.recordResult(
+    await recordHealthResult(fixture,
       {
         modelKey: "kimi2.5",
         provider: "volcengine",
@@ -301,6 +361,10 @@ test("common llm config service runtime follows latest revision even if direct c
   assert.equal(runtimeConfig?.enabled, true);
   assert.equal(runtimeConfig?.defaultModelKey, "kimi2.5");
   assert.equal(runtimeConfig?.providers[0]?.key, "bailian");
+  const runtimeSnapshot = await fixture.commonLlmConfigService.getRuntimeConfigSnapshot();
+  assert.equal(runtimeSnapshot?.revision, document.revision);
+  assert.equal(runtimeSnapshot?.updatedAt, document.updatedAt);
+  assert.equal(runtimeSnapshot?.config.defaultModelKey, document.config.defaultModelKey);
 });
 
 test("llm manager resolves {{zook.ps.xxx}} apiKey references from password workspace", async () => {
@@ -449,9 +513,9 @@ test("llm manager records AINovel scene route keys under concrete model keys", a
     "24h",
     new Date("2026-03-24T10:50:00+08:00"),
   );
-  assert.equal(overview.models.some((item) => item.modelKey === "ainovel-premium-creative"), false);
-  assert.equal(overview.models[0]?.modelKey, "glm-5");
-  assert.equal(overview.models[0]?.summary.requestCount, 1);
+  assert.equal(overview.models.items.some((item) => item.modelKey === "ainovel-premium-creative"), false);
+  assert.equal(overview.models.items[0]?.modelKey, "glm-5");
+  assert.equal(overview.models.items[0]?.summary.requestCount, 1);
   assert.equal(
     (
       await fixture.llmHealthService.getRouteSnapshot({
@@ -583,10 +647,7 @@ test("llm manager resolves AINovel route aliases through configured concrete mod
     detail.routes.find((item) => item.provider === "bailian_coding")?.summary.requestCount,
     1,
   );
-  assert.equal(
-    detail.routes.find((item) => item.provider === "bailian")?.summary.requestCount,
-    0,
-  );
+  assert.equal(detail.routes.some((item) => item.provider === "bailian"), false);
 });
 
 test("embedding manager records AINovel scene route keys under concrete model keys", async () => {
@@ -668,15 +729,16 @@ test("embedding manager records AINovel scene route keys under concrete model ke
     "24h",
     new Date("2026-03-24T10:50:00+08:00"),
   );
-  assert.equal(overview.models.some((item) => item.modelKey === "ainovel-embedding-default"), false);
-  assert.equal(overview.models[0]?.modelKey, "text-embedding-v4");
-  assert.equal(overview.models[0]?.summary.requestCount, 1);
+  assert.equal(overview.models.items.some((item) => item.modelKey === "ainovel-embedding-default"), false);
+  assert.equal(overview.models.items[0]?.modelKey, "text-embedding-v4");
+  assert.equal(overview.models.items[0]?.summary.requestCount, 1);
   assert.equal(
     (
       await fixture.llmHealthService.getRouteSnapshot({
         modelKey: "ainovel-embedding-default",
         provider: "bailian",
         providerModel: "text-embedding-v4",
+        operation: "embedding",
       })
     ).totalCalls,
     1,
@@ -687,6 +749,7 @@ test("embedding manager records AINovel scene route keys under concrete model ke
         modelKey: "text-embedding-v4",
         provider: "bailian",
         providerModel: "text-embedding-v4",
+        operation: "embedding",
       })
     ).totalCalls,
     0,
@@ -820,13 +883,14 @@ test("embedding manager resolves AINovel route aliases through configured concre
         modelKey: "text-embedding-v4",
         provider: "bailian_coding",
         providerModel: "text-embedding-v4",
+        operation: "embedding",
       })
     ).totalCalls,
     1,
   );
 });
 
-test("llm metrics service aggregates hourly data and prunes buckets older than one year", async () => {
+test("llm metrics service aggregates the requested window and retention removes old observations", async () => {
   const fixture = await createLlmFixture();
   const config = {
     enabled: true,
@@ -861,7 +925,7 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
   const expiredDate = new Date("2025-03-01T09:00:00+08:00");
   const currentDate = new Date("2026-03-24T10:20:00+08:00");
 
-  await fixture.llmMetricsService.recordCall({
+  await recordMetricCall(fixture, {
     modelKey: "kimi2.5",
     provider: "bailian",
     providerModel: "kimi/kimi-k2.5",
@@ -876,7 +940,7 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
     occurredAt: expiredDate,
   });
 
-  await fixture.llmMetricsService.recordCall({
+  await recordMetricCall(fixture, {
     modelKey: "kimi2.5",
     provider: "bailian",
     providerModel: "kimi/kimi-k2.5",
@@ -891,7 +955,7 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
     occurredAt: currentDate,
   });
 
-  await fixture.llmMetricsService.recordCall({
+  await recordMetricCall(fixture, {
     modelKey: "kimi2.5",
     provider: "bailian",
     providerModel: "kimi/kimi-k2.5",
@@ -906,7 +970,7 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
   assert.equal(overview.summary.successCount, 1);
   assert.equal(overview.summary.failureCount, 1);
   assert.equal(overview.summary.successRate, 50);
-  assert.equal(overview.models[0]?.summary.avgFirstByteLatencyMs, 250);
+  assert.equal(overview.models.items[0]?.summary.avgFirstByteLatencyMs, 250);
 
   const detail = await fixture.llmMetricsService.getModelDetail(
     config,
@@ -914,10 +978,13 @@ test("llm metrics service aggregates hourly data and prunes buckets older than o
     "24h",
     new Date("2026-03-24T10:50:00+08:00"),
   );
-  assert.equal(detail.routes[0]?.summary.avgTotalLatencyMs, 850);
+  assert.equal(detail.routes[0]?.summary.avgTotalLatencyMs, 800);
 
-  const expiredBucket = await fixture.kvManager.getJson("llm-metrics:global", toHourKey(expiredDate));
-  assert.equal(expiredBucket, undefined);
+  await fixture.database.llmObservabilityStore.deleteBefore("2026-03-01T00:00:00.000Z");
+  assert.equal(
+    fixture.database.llmObservabilityStore.observations.some((item) => item.occurredAt === expiredDate.toISOString()),
+    false,
+  );
 });
 
 test("llm metrics service filters overview and model detail by provider", async () => {
@@ -968,7 +1035,7 @@ test("llm metrics service filters overview and model detail by provider", async 
   };
   const now = new Date("2026-03-24T10:20:00+08:00");
 
-  await fixture.llmMetricsService.recordCall({
+  await recordMetricCall(fixture, {
     modelKey: "qwen3.6-plus",
     provider: "bailian",
     providerModel: "qwen3.6-plus",
@@ -982,7 +1049,7 @@ test("llm metrics service filters overview and model detail by provider", async 
     },
     occurredAt: now,
   });
-  await fixture.llmMetricsService.recordCall({
+  await recordMetricCall(fixture, {
     modelKey: "qwen3.6-plus",
     provider: "bailian_coding",
     providerModel: "qwen3.6-plus",
@@ -1008,9 +1075,9 @@ test("llm metrics service filters overview and model detail by provider", async 
   assert.deepEqual(overview.providers.map((item) => item.provider), ["bailian", "bailian_coding"]);
   assert.equal(overview.summary.requestCount, 1);
   assert.equal(overview.summary.totalTokens, 60);
-  assert.equal(overview.models[0]?.modelKey, "qwen3.6-plus");
-  assert.equal(overview.models[0]?.summary.requestCount, 1);
-  assert.equal(overview.models[0]?.summary.avgTotalLatencyMs, 1800);
+  assert.equal(overview.models.items[0]?.modelKey, "qwen3.6-plus");
+  assert.equal(overview.models.items[0]?.summary.requestCount, 1);
+  assert.equal(overview.models.items[0]?.summary.avgTotalLatencyMs, 1800);
 
   const detail = await fixture.llmMetricsService.getModelDetail(
     config,
@@ -1077,7 +1144,7 @@ test("common llm metrics exclude AINovel scene route keys from model statistics"
   const config = await fixture.commonLlmConfigService.getCurrentConfig();
   assert.equal(config.models.some((item) => item.key === "ainovel-free-creative"), true);
 
-  await fixture.llmMetricsService.recordCall({
+  await recordMetricCall(fixture, {
     modelKey: "qwen3.6-plus",
     provider: "bailian",
     providerModel: "qwen3.6-plus",
@@ -1093,9 +1160,9 @@ test("common llm metrics exclude AINovel scene route keys from model statistics"
     new Date("2026-03-24T10:50:00+08:00"),
   );
   assert.equal(overview.summary.requestCount, 1);
-  assert.equal(overview.models.some((item) => item.modelKey === "ainovel-free-creative"), false);
-  assert.equal(overview.models[0]?.modelKey, "qwen3.6-plus");
-  assert.equal(overview.models[0]?.summary.requestCount, 1);
+  assert.equal(overview.models.items.some((item) => item.modelKey === "ainovel-free-creative"), false);
+  assert.equal(overview.models.items[0]?.modelKey, "qwen3.6-plus");
+  assert.equal(overview.models.items[0]?.summary.requestCount, 1);
 
   const detail = await fixture.llmMetricsService.getModelDetail(
     config,

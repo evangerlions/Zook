@@ -4,11 +4,11 @@ import type { LlmMetricsService } from "./llm-metrics.service.ts";
 import type { LLMManagerOptions, LLMProviderName, LLMUsage, ResolvedLLMModel } from "./llm-manager.ts";
 import { estimateEmbeddingUsage } from "./llm-usage-estimator.ts";
 import {
-  isAiNovelSceneRouteKey,
   resolveAiNovelSceneRouteAlias,
 } from "./ai-novel-llm-model-aliases.ts";
 import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
+import { evaluateLlmRoutes, selectLlmRoute } from "./llm-routing-score.ts";
 
 export interface EmbeddingRequest {
   modelKey: string;
@@ -68,18 +68,13 @@ export class EmbeddingManager {
   async embed(request: EmbeddingRequest): Promise<EmbeddingResult> {
     const resolution = await this.resolveRequest(request);
     const startedAt = this.getNow();
+    const observation = this.startObservation(resolution, startedAt);
 
     try {
       const result = await this.providers[resolution.request.model.provider].embed(resolution.request);
       const usage = result.usage ?? estimateEmbeddingUsage(resolution.request.input);
       const completedAt = this.getNow();
-      const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
-      await this.recordRouteResult(resolution.routeRefs, {
-        ok: true,
-        totalLatencyMs,
-        usage,
-        occurredAt: completedAt,
-      });
+      await observation?.finalize({ usage, completedAt });
       await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
       return {
         ...result,
@@ -90,11 +85,7 @@ export class EmbeddingManager {
       };
     } catch (error) {
       const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRefs, {
-        ok: false,
-        totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-        occurredAt: completedAt,
-      });
+      await observation?.finalize({ error, completedAt });
       throw error;
     }
   }
@@ -103,10 +94,8 @@ export class EmbeddingManager {
     request: EmbeddingRequest,
   ): Promise<{
     request: ResolvedEmbeddingRequest;
-    routeRefs: {
-      healthRouteRef: LlmRouteRef;
-      metricRouteRef: LlmRouteRef;
-    };
+    routeRef: LlmRouteRef;
+    routingConfigRevision?: number;
   }> {
     const modelKey = request.modelKey.trim();
     if (!modelKey) {
@@ -124,9 +113,10 @@ export class EmbeddingManager {
       return item.trim();
     });
 
-    const commonConfig = await this.options.commonLlmConfigService?.getRuntimeConfig();
-    if (await this.options.commonLlmConfigService?.hasStoredConfig()) {
-      if (!commonConfig?.enabled) {
+    const runtimeSnapshot = await this.options.commonLlmConfigService?.getRuntimeConfigSnapshot();
+    if (runtimeSnapshot) {
+      const commonConfig = runtimeSnapshot.config;
+      if (!commonConfig.enabled) {
         throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", "LLM service is not enabled.");
       }
 
@@ -139,6 +129,7 @@ export class EmbeddingManager {
         modelKey: selection.routeModelKey,
         provider: selection.provider.key,
         providerModel: selection.route.providerModel,
+        operation: "embedding" as const,
       };
       return {
         request: {
@@ -157,7 +148,8 @@ export class EmbeddingManager {
             },
           },
         },
-        routeRefs: this.buildRouteRefs(healthRouteRef, modelKey, request.modelKeyKind),
+        routeRef: healthRouteRef,
+        routingConfigRevision: runtimeSnapshot.revision,
       };
     }
 
@@ -182,34 +174,11 @@ export class EmbeddingManager {
           providerModel: resolvedModel.providerModel,
         },
       },
-      routeRefs: this.buildRouteRefs(
-        {
-          modelKey,
-          provider: resolvedModel.provider,
-          providerModel: resolvedModel.providerModel,
-        },
+      routeRef: {
         modelKey,
-        request.modelKeyKind,
-      ),
-    };
-  }
-
-  private buildRouteRefs(
-    healthRouteRef: LlmRouteRef,
-    requestedModelKey: string,
-    modelKeyKind?: "model" | "scene_route",
-  ): {
-    healthRouteRef: LlmRouteRef;
-    metricRouteRef: LlmRouteRef;
-  } {
-    const metricModelKey = modelKeyKind === "scene_route" || isAiNovelSceneRouteKey(requestedModelKey)
-      ? healthRouteRef.providerModel
-      : healthRouteRef.modelKey;
-    return {
-      healthRouteRef,
-      metricRouteRef: {
-        ...healthRouteRef,
-        modelKey: metricModelKey,
+        provider: resolvedModel.provider,
+        providerModel: resolvedModel.providerModel,
+        operation: "embedding",
       },
     };
   }
@@ -237,10 +206,31 @@ export class EmbeddingManager {
     }
 
     const providerMap = new Map(config.providers.map((item) => [item.key, item]));
-    const chosenRoute =
-      model.strategy === "fixed"
-        ? this.selectFixedRoute(model, providerMap)
-        : await this.selectAutoRoute(model, providerMap);
+    const healthSnapshots = await Promise.all(model.routes.map((route) =>
+      this.options.llmHealthService?.getRouteSnapshot({
+        modelKey: model.key,
+        provider: route.provider,
+        providerModel: route.providerModel,
+        operation: "embedding",
+      }),
+    ));
+    const evaluation = evaluateLlmRoutes(
+      model.strategy,
+      model.routes.map((route, index) => ({
+        route,
+        providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
+        runtimeAvailable: Boolean(this.providers[route.provider]),
+        healthScore: healthSnapshots[index]?.healthScore ?? 100,
+      })),
+    );
+    const chosenRoute = selectLlmRoute(evaluation, this.options.random)?.route;
+    if (!chosenRoute) {
+      throw new ApplicationError(
+        503,
+        "LLM_ROUTE_NOT_AVAILABLE",
+        `Model ${model.key} does not have a routable provider.`,
+      );
+    }
 
     const provider = providerMap.get(chosenRoute.provider);
     if (!provider || !this.providers[provider.key]) {
@@ -258,112 +248,25 @@ export class EmbeddingManager {
     };
   }
 
-  private selectFixedRoute(
-    model: LlmModelConfig,
-    providerMap: Map<string, LlmProviderConfig>,
-  ): LlmModelConfig["routes"][number] {
-    const enabledRoutes = model.routes.filter((route) => route.enabled && providerMap.get(route.provider)?.enabled);
-    if (enabledRoutes.length) {
-      return enabledRoutes.reduce((best, route) => (route.weight > best.weight ? route : best));
-    }
-
-    const fallback = model.routes[0];
-    if (!fallback) {
-      throw new ApplicationError(
-        503,
-        "LLM_ROUTE_NOT_AVAILABLE",
-        `Model ${model.key} does not contain any routes.`,
-      );
-    }
-    return fallback;
+  private startObservation(
+    resolution: Awaited<ReturnType<EmbeddingManager["resolveRequest"]>>,
+    startedAt: Date,
+  ) {
+    const recorder = this.options.llmCallObservationRecorder ??
+      this.options.llmMetricsService?.observationRecorder;
+    const route = resolution.routeRef;
+    return recorder?.start({
+      routingModelKey: route.modelKey,
+      provider: route.provider,
+      providerModel: route.providerModel,
+      operation: "embedding",
+      responseMode: "non_stream",
+      routingConfigRevision: resolution.routingConfigRevision,
+      startedAt,
+      now: this.options.now,
+    });
   }
 
-  private async selectAutoRoute(
-    model: LlmModelConfig,
-    providerMap: Map<string, LlmProviderConfig>,
-  ): Promise<LlmModelConfig["routes"][number]> {
-    const availableRoutes = model.routes.filter((route) => route.enabled && providerMap.get(route.provider)?.enabled);
-    if (!availableRoutes.length) {
-      throw new ApplicationError(
-        503,
-        "LLM_ROUTE_NOT_AVAILABLE",
-        `Model ${model.key} does not have any enabled routes.`,
-      );
-    }
-
-    const scores = await Promise.all(
-      availableRoutes.map(async (route) => {
-        const snapshot = await this.options.llmHealthService?.getRouteSnapshot({
-          modelKey: model.key,
-          provider: route.provider,
-          providerModel: route.providerModel,
-        });
-
-        return {
-          route,
-          score: route.weight * ((snapshot?.healthScore ?? 100) / 100),
-        };
-      }),
-    );
-
-    const totalScore = scores.reduce((sum, item) => sum + item.score, 0);
-    const weights = totalScore > 0
-      ? scores
-      : scores.map((item) => ({
-          route: item.route,
-          score: item.route.weight,
-        }));
-    const totalWeight = weights.reduce((sum, item) => sum + item.score, 0);
-
-    if (totalWeight <= 0) {
-      throw new ApplicationError(
-        503,
-        "LLM_ROUTE_NOT_AVAILABLE",
-        `Model ${model.key} does not have a routable provider.`,
-      );
-    }
-
-    const target = (this.options.random ?? Math.random)() * totalWeight;
-    let cursor = 0;
-    for (const item of weights) {
-      cursor += item.score;
-      if (target <= cursor) {
-        return item.route;
-      }
-    }
-
-    return weights[weights.length - 1].route;
-  }
-
-  private async recordRouteResult(
-    routeRefs: {
-      healthRouteRef: LlmRouteRef;
-      metricRouteRef: LlmRouteRef;
-    },
-    result: {
-      ok: boolean;
-      totalLatencyMs: number;
-      usage?: LLMUsage;
-      occurredAt: Date;
-    },
-  ): Promise<void> {
-    await Promise.all([
-      this.options.llmHealthService?.recordResult(routeRefs.healthRouteRef, {
-        ok: result.ok,
-        timestamp: result.occurredAt.toISOString(),
-        firstByteLatencyMs: result.totalLatencyMs,
-        totalLatencyMs: result.totalLatencyMs,
-      }),
-      this.options.llmMetricsService?.recordCall({
-        ...routeRefs.metricRouteRef,
-        ok: result.ok,
-        firstByteLatencyMs: result.totalLatencyMs,
-        totalLatencyMs: result.totalLatencyMs,
-        usage: result.usage,
-        occurredAt: result.occurredAt,
-      }),
-    ]);
-  }
 
   private getNow(): Date {
     return this.options.now?.() ?? new Date();

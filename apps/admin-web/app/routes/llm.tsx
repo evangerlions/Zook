@@ -20,13 +20,10 @@ import {
   serializeLlmDraftForPreview,
 } from "../lib/llm-config";
 import type {
-  AdminLlmMetricsDocument,
-  AdminLlmModelMetricsDocument,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestRunRequest,
   LlmConfigDraft,
-  LlmMetricsRange,
 } from "../lib/types";
 
 const LLM_TAB_OPTIONS: Array<{ label: string; value: "monitor" | "config" | "smoke" }> = [
@@ -44,14 +41,8 @@ export default function LlmRoute() {
   const [draft, setDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
   const [originalDraft, setOriginalDraft] = useState<LlmConfigDraft>(createDefaultLlmConfig());
   const [rawValue, setRawValue] = useState(() => formatLlmConfigJson(createDefaultLlmConfig()));
-  const [metrics, setMetrics] = useState<AdminLlmMetricsDocument | null>(null);
-  const [modelMetrics, setModelMetrics] = useState<AdminLlmModelMetricsDocument | null>(null);
   const [smokeDocument, setSmokeDocument] = useState<AdminLlmSmokeTestDocument | null>(null);
-  const [range, setRange] = useState<LlmMetricsRange>("24h");
-  const [selectedProvider, setSelectedProvider] = useState("");
-  const [selectedModelKey, setSelectedModelKey] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(false);
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [saving, setSaving] = useState(false);
   const [restoringRevision, setRestoringRevision] = useState<number | null>(null);
   const [runningSmokeTest, setRunningSmokeTest] = useState(false);
@@ -109,21 +100,13 @@ export default function LlmRoute() {
   );
   const activeConfigError = configMode === "raw" ? rawValidation.error : draftValidationError;
 
-  function applyConfigDocument(payload: AdminLlmServiceDocument | null, preserveSelectedModel = true) {
+  function applyConfigDocument(payload: AdminLlmServiceDocument | null) {
     const nextDraft = cloneLlmConfig(payload?.config);
-    const availableProviderKeys = payload?.config.providers.map((item) => item.key) ?? [];
-    const availableModelKeys = payload?.config.models.map((item) => item.key) ?? [];
-    const fallbackModelKey = payload?.config.defaultModelKey || payload?.config.models[0]?.key || "";
-
     setDocument(payload);
     setDraft(nextDraft);
     setOriginalDraft(nextDraft);
     setRawValue(formatLlmConfigJson(payload?.config ?? nextDraft));
     setDesc("");
-    setSelectedProvider((current) => (current && availableProviderKeys.includes(current) ? current : ""));
-    setSelectedModelKey((current) => (
-      preserveSelectedModel && current && availableModelKeys.includes(current) ? current : fallbackModelKey
-    ));
   }
 
   async function loadConfig() {
@@ -135,33 +118,9 @@ export default function LlmRoute() {
     }
   }
 
-  async function loadMetrics(nextRange: LlmMetricsRange, provider: string) {
-    setLoadingMetrics(true);
-    try {
-      const payload = await adminApi.getLlmMetrics(nextRange, provider || undefined);
-      setMetrics(payload);
-      const nextModelKey = payload.models.some((item) => item.modelKey === selectedModelKey)
-        ? selectedModelKey
-        : payload.models[0]?.modelKey || "";
-      setSelectedModelKey(nextModelKey);
-      if (nextModelKey) {
-        const detail = await adminApi.getLlmModelMetrics(nextModelKey, nextRange, provider || undefined);
-        setModelMetrics(detail);
-      } else {
-        setModelMetrics(null);
-      }
-    } finally {
-      setLoadingMetrics(false);
-    }
-  }
-
   useEffect(() => {
     void loadConfig();
   }, []);
-
-  useEffect(() => {
-    void loadMetrics(range, selectedProvider);
-  }, [range, selectedProvider]);
 
   useEffect(() => {
     if (configMode !== "raw" || rawValidation.error || !rawValidation.draft || rawDraftSnapshot === draftSnapshot) {
@@ -204,7 +163,6 @@ export default function LlmRoute() {
       applyConfigDocument(payload);
       setSaveModalOpen(false);
       setNotice(makeNotice("success", "LLM 配置已保存。"));
-      await loadMetrics(range, selectedProvider);
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
@@ -215,7 +173,7 @@ export default function LlmRoute() {
   async function handleViewRevision(revision: number) {
     setLoadingConfig(true);
     try {
-      applyConfigDocument(normalizeLlmDocument(await adminApi.getLlmServiceRevision(revision)), false);
+      applyConfigDocument(normalizeLlmDocument(await adminApi.getLlmServiceRevision(revision)));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
@@ -252,11 +210,10 @@ export default function LlmRoute() {
     clearNotice();
     try {
       const payload = normalizeLlmDocument(await adminApi.restoreLlmService(restoreRevision, restoreDesc.trim() || undefined));
-      applyConfigDocument(payload, false);
+      applyConfigDocument(payload);
       setRestoreModalOpen(false);
       setRestoreRevision(null);
       setRestoreDesc("");
-      await loadMetrics(range, selectedProvider);
       setNotice(makeNotice("success", `已恢复到版本 R${restoreRevision}。`));
     } catch (error) {
       setNotice(makeNotice("error", formatApiError(error)));
@@ -281,20 +238,6 @@ export default function LlmRoute() {
       setNotice(makeNotice("error", formatApiError(error)));
     } finally {
       setRunningSmokeTest(false);
-    }
-  }
-
-  async function handleSelectModel(nextModelKey: string) {
-    setSelectedModelKey(nextModelKey);
-    if (!nextModelKey) {
-      setModelMetrics(null);
-      return;
-    }
-
-    try {
-      setModelMetrics(await adminApi.getLlmModelMetrics(nextModelKey, range, selectedProvider || undefined));
-    } catch (error) {
-      setNotice(makeNotice("error", formatApiError(error)));
     }
   }
 
@@ -330,18 +273,7 @@ export default function LlmRoute() {
       </div>
 
       {tab === "monitor" ? (
-        <LlmMonitorTab
-          loadingMetrics={loadingMetrics}
-          metrics={metrics}
-          modelMetrics={modelMetrics}
-          onProviderChange={setSelectedProvider}
-          onRangeChange={setRange}
-          onSelectModel={(modelKey) => void handleSelectModel(modelKey)}
-          providerOptions={metrics?.providers ?? []}
-          range={range}
-          selectedProvider={selectedProvider}
-          selectedModelKey={selectedModelKey}
-        />
+        <LlmMonitorTab />
       ) : tab === "smoke" ? (
         <LlmSmokeTab
           config={document?.config ?? null}

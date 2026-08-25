@@ -1,90 +1,148 @@
-import { KVManager } from "../infrastructure/kv/kv-manager.ts";
+import type {
+  LlmObservationAggregate,
+  LlmObservabilityStore,
+} from "../infrastructure/database/llm-observability-store.ts";
 import type {
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
   LlmHourlySeriesItem,
-  LlmModelMetricsGroup,
-  LlmModelRouteConfig,
+  LlmMetricsOperation,
   LlmMetricsRange,
   LlmMetricsSummary,
-  LlmProviderMetricsOption,
-  LlmRouteMetricsGroup,
   LlmServiceConfig,
-  LlmModelConfig,
 } from "../shared/types.ts";
 import { badRequest } from "../shared/errors.ts";
-import { toHourKey } from "../shared/utils.ts";
-import {
-  createAiNovelMetricModels,
-  isAiNovelSceneRouteKey,
-} from "./ai-novel-llm-model-aliases.ts";
-import type { LLMUsage } from "./llm-manager.ts";
-import {
-  createEmptyMetricBucket as createEmptyBucket,
-  mergeMetricBuckets as mergeBuckets,
-  toHourlySeriesItem,
-  toMetricSummary as toSummary,
-  type LlmMetricBucket,
-} from "./llm-metrics-buckets.ts";
+import { toDateKey, toHourKey } from "../shared/utils.ts";
+import type { LlmHealthService } from "./llm-health.service.ts";
+import { LlmCallObservationRecorder } from "./llm-call-observation.ts";
+import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 
-const METRICS_RETENTION_HOURS = 24 * 365;
 const DEFAULT_TIMEZONE = "Asia/Shanghai";
-const METRICS_INDEX_KEY = "index";
 
-interface LlmMetricScopeIndex {
-  version: 1;
-  hours: string[];
-}
-
-export interface LlmMetricEvent {
-  modelKey: string;
-  provider: string;
-  providerModel: string;
-  ok: boolean;
-  firstByteLatencyMs: number;
-  totalLatencyMs: number;
-  usage?: LLMUsage;
-  occurredAt?: Date;
+export interface LlmMetricsQuery {
+  operation?: LlmMetricsOperation;
+  provider?: string;
+  providerModel?: string;
+  routingModelKey?: string;
+  configRevision?: number;
+  configUpdatedAt?: string;
 }
 
 export class LlmMetricsService {
-  constructor(private readonly kvManager: KVManager) {}
+  readonly observationRecorder: LlmCallObservationRecorder;
 
-  async recordCall(event: LlmMetricEvent): Promise<void> {
-    const occurredAt = event.occurredAt ?? new Date();
-    const hour = toHourKey(occurredAt, DEFAULT_TIMEZONE);
-    const scopes = [
-      this.globalScope(),
-      this.modelScope(event.modelKey),
-      this.routeScope(event.modelKey, event.provider, event.providerModel),
-    ];
-
-    await Promise.all(scopes.map((scope) => this.upsertBucket(scope, hour, event, occurredAt)));
+  constructor(
+    private readonly store: LlmObservabilityStore,
+    private readonly healthService: LlmHealthService,
+    logger?: StructuredLogger,
+  ) {
+    this.observationRecorder = new LlmCallObservationRecorder(store, logger);
   }
 
   async getOverview(
     config: LlmServiceConfig,
     range: LlmMetricsRange,
     now = new Date(),
-    provider?: string,
+    queryInput: string | LlmMetricsQuery = {},
   ): Promise<AdminLlmMetricsDocument> {
-    this.assertKnownProvider(config, provider);
-    const hours = buildHourKeys(range, now);
-    const metricModels = this.getMetricModels(config);
-    const models = await Promise.all(
-      metricModels.map((model) => this.buildModelMetricsGroup(model, hours, provider)),
-    );
-    const summary = provider
-      ? this.summarizeBuckets(await this.readAggregatedProviderBuckets(metricModels, provider, hours), hours)
-      : this.summarizeBuckets(await this.readBuckets(this.globalScope(), hours), hours);
+    const query = typeof queryInput === "string" ? { provider: queryInput } : queryInput;
+    this.assertKnownProvider(config, query.provider);
+    const window = buildMetricsWindow(range, now);
+    const result = await this.store.queryMetrics({
+      occurredAtFrom: window.from.toISOString(),
+      occurredAtTo: window.to.toISOString(),
+      granularity: window.granularity,
+      operation: query.operation,
+      provider: query.provider,
+      providerModel: query.providerModel,
+      routingModelKey: query.routingModelKey,
+    });
+    const runtime = {
+      generatedAt: now.toISOString(),
+      configRevision: query.configRevision,
+      configUpdatedAt: query.configUpdatedAt,
+      models: await Promise.all(config.models.map((model) =>
+        this.healthService.buildModelRuntimeStatus(model, config.providers),
+      )),
+    };
+    const providerLabels = new Map(config.providers.map((item) => [item.key, item.label || item.key]));
 
     return {
+      generatedAt: now.toISOString(),
+      dataAvailableSince: result.dataAvailableSince,
       timezone: DEFAULT_TIMEZONE,
       range,
-      provider,
-      summary,
-      providers: this.getMetricProviderOptions(config, metricModels),
-      models: this.sortModelGroups(models),
+      granularity: window.granularity,
+      operation: query.operation,
+      provider: query.provider,
+      providerModel: query.providerModel,
+      summary: toMetricsSummary(result.summary, Boolean(query.operation)),
+      latencyByOperation: Object.fromEntries(
+        Object.entries(result.latencyByOperation).map(([operation, aggregate]) => [
+          operation,
+          toMetricsSummary(aggregate),
+        ]),
+      ),
+      items: buildTimeline(
+        window.keys,
+        result.timeline,
+        result.dataAvailableSince,
+        window.granularity,
+        Boolean(query.operation),
+      ),
+      providers: config.providers.map((provider) => ({
+        provider: provider.key,
+        label: provider.label || provider.key,
+      })),
+      providerMetrics: {
+        ...result.providers,
+        items: result.providers.items.filter((item) => query.provider ? item.provider === query.provider : true).map((item) => ({
+          provider: item.provider,
+          label: providerLabels.get(item.provider) ?? item.provider,
+          operation: item.operation,
+          summary: toMetricsSummary(item),
+          trafficShare: item.operationRequestCount
+            ? roundTwo((item.requestCount / item.operationRequestCount) * 100)
+            : 0,
+        })),
+      },
+      models: {
+        ...result.providerModels,
+        items: result.providerModels.items.map((item) => ({
+          modelKey: item.providerModel,
+          providerModel: item.providerModel,
+          label: item.providerModel,
+          operation: item.operation,
+          summary: toMetricsSummary(item),
+        })),
+      },
+      routes: {
+        ...result.routes,
+        items: result.routes.items.map((item) => ({
+          routingModelKey: item.routingModelKey,
+          provider: item.provider,
+          providerModel: item.providerModel,
+          operation: item.operation,
+          summary: toMetricsSummary(item),
+          actualTrafficShare: item.routingModelRequestCount
+            ? roundTwo((item.requestCount / item.routingModelRequestCount) * 100)
+            : 0,
+        })),
+      },
+      crossMetrics: {
+        ...result.cross,
+        items: result.cross.items.map((item) => ({
+          provider: item.provider,
+          providerModel: item.providerModel,
+          operation: item.operation,
+          summary: toMetricsSummary(item),
+        })),
+      },
+      runtime,
+      routingConfigChangedWithinRange:
+        result.routingConfigRevisions.length > 1 ||
+        Boolean(query.configRevision && result.routingConfigRevisions.some((revision) => revision !== query.configRevision)) ||
+        isWithinWindow(query.configUpdatedAt, window.from, window.to),
     };
   }
 
@@ -95,326 +153,148 @@ export class LlmMetricsService {
     now = new Date(),
     provider?: string,
   ): Promise<AdminLlmModelMetricsDocument> {
-    this.assertKnownProvider(config, provider);
-    const model = this.getMetricModels(config).find((item) => item.key === modelKey);
-    if (!model) {
-      badRequest("REQ_INVALID_QUERY", `Unknown modelKey: ${modelKey}.`);
-    }
-
-    const hours = buildHourKeys(range, now);
-    const routeConfigs = this.filterRoutesByProvider(model.routes, provider);
-    const summary = provider
-      ? this.summarizeBuckets(await this.readAggregatedRouteBuckets(model.key, routeConfigs, hours), hours)
-      : this.summarizeBuckets(await this.readBuckets(this.modelScope(model.key), hours), hours);
-    const routes = await Promise.all(
-      routeConfigs.map(async (route) => ({
-        modelKey: model.key,
-        provider: route.provider,
-        providerModel: route.providerModel,
-        summary: this.summarizeBuckets(
-          await this.readBuckets(this.routeScope(model.key, route.provider, route.providerModel), hours),
-          hours,
-        ),
-        items: await this.readSeries(this.routeScope(model.key, route.provider, route.providerModel), hours),
-      } satisfies LlmRouteMetricsGroup)),
-    );
-
-    return {
-      timezone: DEFAULT_TIMEZONE,
-      range,
+    const configuredModel = config.models.find((item) => item.key === modelKey);
+    const overview = await this.getOverview(config, range, now, {
       provider,
-      modelKey: model.key,
-      label: model.label,
-      summary,
-      routes,
-    };
-  }
-
-  private async upsertBucket(scope: string, hour: string, event: LlmMetricEvent, now: Date): Promise<void> {
-    const existing = (await this.kvManager.getJson<LlmMetricBucket>(scope, hour)) ?? createEmptyBucket(hour);
-    const firstByteLatencyMs = Math.max(0, Math.round(event.firstByteLatencyMs));
-    const totalLatencyMs = Math.max(0, Math.round(event.totalLatencyMs));
-    const next: LlmMetricBucket = {
-      hour,
-      requestCount: existing.requestCount + 1,
-      successCount: existing.successCount + (event.ok ? 1 : 0),
-      failureCount: existing.failureCount + (event.ok ? 0 : 1),
-      firstByteLatencySumMs: existing.firstByteLatencySumMs + firstByteLatencyMs,
-      totalLatencySumMs: existing.totalLatencySumMs + totalLatencyMs,
-      firstByteLatencyMaxMs: Math.max(existing.firstByteLatencyMaxMs, firstByteLatencyMs),
-      totalLatencyMaxMs: Math.max(existing.totalLatencyMaxMs, totalLatencyMs),
-      promptTokens: existing.promptTokens + (event.usage?.promptTokens ?? 0),
-      completionTokens: existing.completionTokens + (event.usage?.completionTokens ?? 0),
-      totalTokens: existing.totalTokens + (event.usage?.totalTokens ?? 0),
-      firstByteLatencyDigest: [...existing.firstByteLatencyDigest, firstByteLatencyMs],
-      totalLatencyDigest: [...existing.totalLatencyDigest, totalLatencyMs],
-    };
-
-    await this.kvManager.setJson(scope, hour, next);
-    await this.updateIndex(scope, hour, now);
-  }
-
-  private async readSeries(scope: string, hours: string[]): Promise<LlmHourlySeriesItem[]> {
-    const buckets = await this.readBuckets(scope, hours);
-    return this.toSeries(buckets, hours);
-  }
-
-  private async readBuckets(scope: string, hours: string[]): Promise<Map<string, LlmMetricBucket>> {
-    const entries = await Promise.all(
-      hours.map(async (hour) => [hour, await this.kvManager.getJson<LlmMetricBucket>(scope, hour)] as const),
-    );
-    return new Map(entries.filter((entry): entry is readonly [string, LlmMetricBucket] => Boolean(entry[1])));
-  }
-
-  private summarizeBuckets(buckets: Map<string, LlmMetricBucket>, hours: string[]): LlmMetricsSummary {
-    const merged = hours
-      .map((hour) => buckets.get(hour))
-      .filter((item): item is LlmMetricBucket => Boolean(item))
-      .reduce<LlmMetricBucket>(
-        (acc, item) => ({
-          hour: "summary",
-          requestCount: acc.requestCount + item.requestCount,
-          successCount: acc.successCount + item.successCount,
-          failureCount: acc.failureCount + item.failureCount,
-          firstByteLatencySumMs: acc.firstByteLatencySumMs + item.firstByteLatencySumMs,
-          totalLatencySumMs: acc.totalLatencySumMs + item.totalLatencySumMs,
-          firstByteLatencyMaxMs: Math.max(acc.firstByteLatencyMaxMs, item.firstByteLatencyMaxMs),
-          totalLatencyMaxMs: Math.max(acc.totalLatencyMaxMs, item.totalLatencyMaxMs),
-          promptTokens: acc.promptTokens + item.promptTokens,
-          completionTokens: acc.completionTokens + item.completionTokens,
-          totalTokens: acc.totalTokens + item.totalTokens,
-          firstByteLatencyDigest: [...acc.firstByteLatencyDigest, ...item.firstByteLatencyDigest],
-          totalLatencyDigest: [...acc.totalLatencyDigest, ...item.totalLatencyDigest],
-        }),
-        createEmptyBucket("summary"),
-      );
-
-    return toSummary(merged);
-  }
-
-  private async buildModelMetricsGroup(
-    model: LlmModelConfig,
-    hours: string[],
-    provider?: string,
-  ): Promise<LlmModelMetricsGroup> {
-    const routeConfigs = this.filterRoutesByProvider(model.routes, provider);
-    if (provider) {
-      const buckets = await this.readAggregatedRouteBuckets(model.key, routeConfigs, hours);
-      return {
-        modelKey: model.key,
-        label: model.label,
-        summary: this.summarizeBuckets(buckets, hours),
-        items: this.toSeries(buckets, hours),
-      };
-    }
-
-    return {
-      modelKey: model.key,
-      label: model.label,
-      summary: this.summarizeBuckets(await this.readBuckets(this.modelScope(model.key), hours), hours),
-      items: await this.readSeries(this.modelScope(model.key), hours),
-    };
-  }
-
-  private async readAggregatedRouteBuckets(
-    modelKey: string,
-    routes: LlmModelRouteConfig[],
-    hours: string[],
-  ): Promise<Map<string, LlmMetricBucket>> {
-    const routeBuckets = await Promise.all(
-      routes.map((route) => this.readBuckets(this.routeScope(modelKey, route.provider, route.providerModel), hours)),
-    );
-    return this.mergeBucketMaps(routeBuckets, hours);
-  }
-
-  private async readAggregatedProviderBuckets(
-    models: LlmModelConfig[],
-    provider: string,
-    hours: string[],
-  ): Promise<Map<string, LlmMetricBucket>> {
-    const routeBuckets = await Promise.all(
-      models.flatMap((model) =>
-        this.filterRoutesByProvider(model.routes, provider)
-          .map((route) => this.readBuckets(this.routeScope(model.key, route.provider, route.providerModel), hours)),
-      ),
-    );
-    return this.mergeBucketMaps(routeBuckets, hours);
-  }
-
-  private mergeBucketMaps(bucketMaps: Array<Map<string, LlmMetricBucket>>, hours: string[]): Map<string, LlmMetricBucket> {
-    const merged = new Map<string, LlmMetricBucket>();
-    for (const buckets of bucketMaps) {
-      for (const hour of hours) {
-        const bucket = buckets.get(hour);
-        if (!bucket) {
-          continue;
-        }
-        merged.set(hour, mergeBuckets(merged.get(hour) ?? createEmptyBucket(hour), bucket));
-      }
-    }
-    return merged;
-  }
-
-  private toSeries(buckets: Map<string, LlmMetricBucket>, hours: string[]): LlmHourlySeriesItem[] {
-    return hours.map((hour) => toHourlySeriesItem(buckets.get(hour) ?? createEmptyBucket(hour)));
-  }
-
-  private async updateIndex(scope: string, hour: string, now: Date): Promise<void> {
-    const current =
-      (await this.kvManager.getJson<LlmMetricScopeIndex>(scope, METRICS_INDEX_KEY)) ?? {
-        version: 1,
-        hours: [],
-      };
-    const cutoff = toHourKey(new Date(now.getTime() - METRICS_RETENTION_HOURS * 60 * 60 * 1000), DEFAULT_TIMEZONE);
-    const hours = Array.from(new Set([...current.hours, hour])).sort();
-    const keptHours = hours.filter((item) => item >= cutoff);
-    const removedHours = hours.filter((item) => item < cutoff);
-
-    await Promise.all(removedHours.map((item) => this.kvManager.delete(scope, item)));
-    await this.kvManager.setJson(scope, METRICS_INDEX_KEY, {
-      version: 1,
-      hours: keptHours,
-    } satisfies LlmMetricScopeIndex);
-  }
-
-  private globalScope(): string {
-    return "llm-metrics:global";
-  }
-
-  private modelScope(modelKey: string): string {
-    return `llm-metrics:model:${modelKey}`;
-  }
-
-  private routeScope(modelKey: string, provider: string, providerModel: string): string {
-    return `llm-metrics:route:${modelKey}:${provider}:${providerModel}`;
-  }
-
-  private sortModelGroups(models: LlmModelMetricsGroup[]): LlmModelMetricsGroup[] {
-    return [...models].sort((left, right) => {
-      const countDelta = right.summary.requestCount - left.summary.requestCount;
-      if (countDelta !== 0) {
-        return countDelta;
-      }
-      return left.label.localeCompare(right.label);
+      ...(configuredModel ? { routingModelKey: modelKey } : { providerModel: modelKey }),
     });
-  }
-
-  private getMetricProviderOptions(
-    config: LlmServiceConfig,
-    metricModels: LlmModelConfig[],
-  ): LlmProviderMetricsOption[] {
-    const providerKeys = new Set(metricModels.flatMap((model) => model.routes.map((route) => route.provider)));
-    return config.providers
-      .filter((provider) => providerKeys.has(provider.key))
-      .map((provider) => ({
-        provider: provider.key,
-        label: provider.label || provider.key,
-      }));
-  }
-
-  private filterRoutesByProvider(
-    routes: LlmModelRouteConfig[],
-    provider?: string,
-  ): LlmModelRouteConfig[] {
-    if (!provider) {
-      return routes;
-    }
-    return routes.filter((route) => route.provider === provider);
+    return {
+      generatedAt: overview.generatedAt,
+      dataAvailableSince: overview.dataAvailableSince,
+      timezone: overview.timezone,
+      range,
+      granularity: overview.granularity,
+      provider,
+      modelKey,
+      label: configuredModel?.label ?? modelKey,
+      summary: overview.summary,
+      items: overview.items,
+      routes: overview.routes.items
+        .filter((item) => configuredModel ? item.routingModelKey === modelKey : item.providerModel === modelKey)
+        .filter((item) => provider ? item.provider === provider : true),
+    };
   }
 
   private assertKnownProvider(config: LlmServiceConfig, provider?: string): void {
-    if (!provider) {
-      return;
-    }
-    if (config.providers.some((item) => item.key === provider)) {
-      return;
-    }
+    if (!provider || config.providers.some((item) => item.key === provider)) return;
     badRequest("REQ_INVALID_QUERY", `Unknown provider: ${provider}.`);
   }
-
-  private getMetricModels(config: LlmServiceConfig): LlmServiceConfig["models"] {
-    const providerKeys = new Set(config.providers.map((provider) => provider.key));
-    const concreteModels = config.models.filter((model) => !isAiNovelSceneRouteKey(model.key));
-    const existingKeys = new Set(concreteModels.map((model) => model.key));
-    const configuredAiNovelMetricModels = this.createConfiguredAiNovelMetricModels(config, existingKeys);
-    for (const model of configuredAiNovelMetricModels) {
-      existingKeys.add(model.key);
-    }
-    const aiNovelMetricModels = createAiNovelMetricModels().filter((model) => {
-      if (existingKeys.has(model.key)) {
-        return false;
-      }
-      return model.routes.every((route) => providerKeys.has(route.provider));
-    });
-    return [
-      ...concreteModels,
-      ...configuredAiNovelMetricModels,
-      ...aiNovelMetricModels,
-    ];
-  }
-
-  private createConfiguredAiNovelMetricModels(
-    config: LlmServiceConfig,
-    existingKeys: Set<string>,
-  ): LlmModelConfig[] {
-    const providerKeys = new Set(config.providers.map((provider) => provider.key));
-    const modelsByKey = new Map<string, LlmModelConfig>();
-    for (const sceneRouteModel of config.models) {
-      if (!isAiNovelSceneRouteKey(sceneRouteModel.key)) {
-        continue;
-      }
-      for (const route of sceneRouteModel.routes) {
-        if (!providerKeys.has(route.provider)) {
-          continue;
-        }
-        const metricModelKey = route.providerModel.trim();
-        if (!metricModelKey || existingKeys.has(metricModelKey)) {
-          continue;
-        }
-        const existing = modelsByKey.get(metricModelKey);
-        if (existing) {
-          if (
-            !existing.routes.some(
-              (item) =>
-                item.provider === route.provider &&
-                item.providerModel === route.providerModel,
-            )
-          ) {
-            existing.routes.push({ ...route });
-          }
-          continue;
-        }
-        modelsByKey.set(metricModelKey, {
-          key: metricModelKey,
-          label: metricModelKey,
-          kind: sceneRouteModel.kind,
-          strategy: "fixed",
-          routes: [{ ...route }],
-        });
-      }
-    }
-    return [...modelsByKey.values()];
-  }
 }
 
-function buildHourKeys(range: LlmMetricsRange, now: Date): string[] {
-  const count = rangeToHours(range);
-  const keys = new Set<string>();
-  for (let index = count - 1; index >= 0; index -= 1) {
-    keys.add(toHourKey(new Date(now.getTime() - index * 60 * 60 * 1000), DEFAULT_TIMEZONE));
-  }
-  return [...keys];
+function toMetricsSummary(
+  aggregate: LlmObservationAggregate,
+  includeLatency = true,
+): LlmMetricsSummary {
+  const reliabilityDenominator = aggregate.successCount + aggregate.failureCount + aggregate.timeoutCount;
+  return {
+    requestCount: aggregate.requestCount,
+    successCount: aggregate.successCount,
+    failureCount: aggregate.failureCount,
+    timeoutCount: aggregate.timeoutCount,
+    cancelledCount: aggregate.cancelledCount,
+    successRate: reliabilityDenominator
+      ? roundTwo((aggregate.successCount / reliabilityDenominator) * 100)
+      : 100,
+    latencySampleCount: aggregate.latencySampleCount,
+    firstResponseSampleCount: aggregate.firstResponseSampleCount,
+    avgFirstByteLatencyMs: includeLatency ? aggregate.avgFirstResponseLatencyMs : undefined,
+    avgTotalLatencyMs: includeLatency ? aggregate.avgTotalLatencyMs : undefined,
+    p50FirstByteLatencyMs: includeLatency ? aggregate.p50FirstResponseLatencyMs : undefined,
+    p95FirstByteLatencyMs: includeLatency ? aggregate.p95FirstResponseLatencyMs : undefined,
+    p50TotalLatencyMs: includeLatency ? aggregate.p50TotalLatencyMs : undefined,
+    p95TotalLatencyMs: includeLatency ? aggregate.p95TotalLatencyMs : undefined,
+    promptTokens: aggregate.promptTokens,
+    visibleOutputTokens: aggregate.visibleOutputTokens,
+    reasoningTokens: aggregate.reasoningTokens,
+    unclassifiedTokens: aggregate.unclassifiedTokens,
+    totalTokens: aggregate.totalTokens,
+    providerUsageCount: aggregate.providerUsageCount,
+    estimatedUsageCount: aggregate.estimatedUsageCount,
+    missingUsageCount: aggregate.missingUsageCount,
+  };
 }
 
-function rangeToHours(range: LlmMetricsRange): number {
-  if (range === "24h") {
-    return 24;
+function buildTimeline(
+  keys: string[],
+  timeline: Array<{ bucket: string } & LlmObservationAggregate>,
+  dataAvailableSince?: string,
+  granularity: "hour" | "day" = "hour",
+  includeLatency = true,
+): LlmHourlySeriesItem[] {
+  const byBucket = new Map(timeline.map((item) => [item.bucket, item]));
+  const availableBucket = dataAvailableSince
+    ? granularity === "hour"
+      ? toHourKey(new Date(dataAvailableSince), DEFAULT_TIMEZONE)
+      : toDateKey(new Date(dataAvailableSince), DEFAULT_TIMEZONE)
+    : undefined;
+  return keys.map((bucket) => {
+    const aggregate = byBucket.get(bucket);
+    return {
+      bucket,
+      available: Boolean(aggregate) || Boolean(availableBucket && bucket >= availableBucket),
+      ...toMetricsSummary(aggregate ?? emptyAggregate(), includeLatency),
+    };
+  });
+}
+
+function buildMetricsWindow(range: LlmMetricsRange, now: Date): {
+  from: Date;
+  to: Date;
+  granularity: "hour" | "day";
+  keys: string[];
+} {
+  if (range === "24h" || range === "48h") {
+    const count = range === "24h" ? 24 : 48;
+    const start = new Date(now);
+    start.setUTCMinutes(0, 0, 0);
+    start.setTime(start.getTime() - (count - 1) * 60 * 60 * 1000);
+    return {
+      from: start,
+      to: new Date(now.getTime() + 1),
+      granularity: "hour",
+      keys: Array.from({ length: count }, (_, index) =>
+        toHourKey(new Date(start.getTime() + index * 60 * 60 * 1000), DEFAULT_TIMEZONE),
+      ),
+    };
   }
-  if (range === "7d") {
-    return 24 * 7;
-  }
-  if (range === "30d") {
-    return 24 * 30;
-  }
-  badRequest("REQ_INVALID_QUERY", `Unsupported LLM metrics range: ${range}`);
+  const count = range === "7d" ? 7 : range === "30d" ? 30 : 0;
+  if (!count) badRequest("REQ_INVALID_QUERY", `Unsupported LLM metrics range: ${range}`);
+  const today = toDateKey(now, DEFAULT_TIMEZONE);
+  const start = new Date(`${today}T00:00:00+08:00`);
+  start.setUTCDate(start.getUTCDate() - (count - 1));
+  return {
+    from: start,
+    to: new Date(now.getTime() + 1),
+    granularity: "day",
+    keys: Array.from({ length: count }, (_, index) => {
+      const date = new Date(start);
+      date.setUTCDate(date.getUTCDate() + index);
+      return toDateKey(date, DEFAULT_TIMEZONE);
+    }),
+  };
+}
+
+function emptyAggregate(): LlmObservationAggregate {
+  return {
+    requestCount: 0,
+    successCount: 0,
+    failureCount: 0,
+    timeoutCount: 0,
+    cancelledCount: 0,
+    latencySampleCount: 0,
+    firstResponseSampleCount: 0,
+    providerUsageCount: 0,
+    estimatedUsageCount: 0,
+    missingUsageCount: 0,
+  };
+}
+
+function roundTwo(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function isWithinWindow(value: string | undefined, from: Date, to: Date): boolean {
+  if (!value) return false;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) && timestamp >= from.getTime() && timestamp < to.getTime();
 }
