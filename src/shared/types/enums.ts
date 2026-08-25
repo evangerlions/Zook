@@ -49,7 +49,9 @@ export type Platform = "web" | "ios" | "android";
 export type TencentSesRegion = "ap-guangzhou" | "ap-hongkong";
 export type LlmRoutingStrategy = "auto" | "fixed";
 export type LlmModelKind = "chat" | "embedding";
-export type LlmMetricsRange = "24h" | "7d" | "30d";
+export type LlmMetricsRange = "24h" | "48h" | "7d" | "30d";
+export type LlmMetricsOperation = "chat" | "embedding";
+export type LlmMetricsGranularity = "hour" | "day";
 export type LlmSmokeTestStatus = "success" | "failed" | "skipped";
 export type LlmSmokeTestMode = "matrix" | "route";
 export type ContentSafetyCheckSource = "business" | "admin_test";
@@ -64,6 +66,7 @@ export type ErrorCode =
   | "AI_DECRYPT_FAILED"
   | "AI_EMBEDDING_INPUT_INVALID"
   | "AI_ENCRYPT_FAILED"
+  | "AI_CONTEXT_TOO_LONG"
   | "AI_INPUT_CONTENT_SENSITIVE"
   | "AI_RESPONSE_FORMAT_INVALID"
   | "AI_SCENE_NOT_SUPPORTED"

@@ -1,4 +1,6 @@
 import type {
+  LlmMetricsGranularity,
+  LlmMetricsOperation,
   LlmMetricsRange,
   LlmModelKind,
   LlmRoutingStrategy,
@@ -51,12 +53,25 @@ export interface LlmRouteRuntimeStatus {
   provider: string;
   providerModel: string;
   enabled: boolean;
+  providerEnabled: boolean;
+  selectionEligible: boolean;
+  runtimeAvailable: boolean;
+  ineligibleReason?: "route_disabled" | "provider_disabled";
   weight: number;
-  totalCalls: number;
+  configuredWeight: number;
   sampleSize: number;
   successRate: number;
   healthScore: number;
-  effectiveProbability?: number;
+  dynamicScore: number;
+  effectiveProbability: number;
+  selectionReason:
+    | "health_weighted"
+    | "static_weight_fallback"
+    | "fixed_highest_weight"
+    | "compatibility_fallback"
+    | "not_selected"
+    | "ineligible";
+  selected: boolean;
   lastErrorAt?: string;
 }
 
@@ -69,6 +84,8 @@ export interface LlmModelRuntimeStatus {
 
 export interface LlmRuntimeSnapshot {
   generatedAt: string;
+  configRevision?: number;
+  configUpdatedAt?: string;
   models: LlmModelRuntimeStatus[];
 }
 
@@ -88,33 +105,62 @@ export interface LlmMetricsSummary {
   requestCount: number;
   successCount: number;
   failureCount: number;
+  timeoutCount: number;
+  cancelledCount: number;
   successRate: number;
-  avgFirstByteLatencyMs: number;
-  avgTotalLatencyMs: number;
-  p95FirstByteLatencyMs: number;
-  p95TotalLatencyMs: number;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
+  latencySampleCount: number;
+  firstResponseSampleCount: number;
+  avgFirstByteLatencyMs?: number;
+  avgTotalLatencyMs?: number;
+  p50FirstByteLatencyMs?: number;
+  p95FirstByteLatencyMs?: number;
+  p50TotalLatencyMs?: number;
+  p95TotalLatencyMs?: number;
+  promptTokens?: number;
+  visibleOutputTokens?: number;
+  reasoningTokens?: number;
+  unclassifiedTokens?: number;
+  totalTokens?: number;
+  providerUsageCount: number;
+  estimatedUsageCount: number;
+  missingUsageCount: number;
 }
 
 export interface LlmHourlySeriesItem extends LlmMetricsSummary {
-  hour: string;
+  bucket: string;
+  available: boolean;
 }
 
 export interface LlmModelMetricsGroup {
   modelKey: string;
+  providerModel: string;
   label: string;
+  operation: LlmMetricsOperation;
   summary: LlmMetricsSummary;
-  items: LlmHourlySeriesItem[];
 }
 
 export interface LlmRouteMetricsGroup {
-  modelKey: string;
+  routingModelKey: string;
   provider: string;
   providerModel: string;
+  operation: LlmMetricsOperation;
   summary: LlmMetricsSummary;
-  items: LlmHourlySeriesItem[];
+  actualTrafficShare: number;
+}
+
+export interface LlmCrossMetricsGroup {
+  provider: string;
+  providerModel: string;
+  operation: LlmMetricsOperation;
+  summary: LlmMetricsSummary;
+}
+
+export interface LlmProviderMetricsGroup {
+  provider: string;
+  label: string;
+  operation: LlmMetricsOperation;
+  summary: LlmMetricsSummary;
+  trafficShare: number;
 }
 
 export interface LlmProviderMetricsOption {
@@ -122,22 +168,44 @@ export interface LlmProviderMetricsOption {
   label: string;
 }
 
+export interface LlmBoundedMetricsGroup<T> {
+  items: T[];
+  totalCount: number;
+  truncated: boolean;
+}
+
 export interface AdminLlmMetricsDocument {
+  generatedAt: string;
+  dataAvailableSince?: string;
   timezone: string;
   range: LlmMetricsRange;
+  granularity: LlmMetricsGranularity;
+  operation?: LlmMetricsOperation;
   provider?: string;
+  providerModel?: string;
   summary: LlmMetricsSummary;
+  latencyByOperation: Partial<Record<LlmMetricsOperation, LlmMetricsSummary>>;
+  items: LlmHourlySeriesItem[];
   providers: LlmProviderMetricsOption[];
-  models: LlmModelMetricsGroup[];
+  providerMetrics: LlmBoundedMetricsGroup<LlmProviderMetricsGroup>;
+  models: LlmBoundedMetricsGroup<LlmModelMetricsGroup>;
+  routes: LlmBoundedMetricsGroup<LlmRouteMetricsGroup>;
+  crossMetrics: LlmBoundedMetricsGroup<LlmCrossMetricsGroup>;
+  runtime: LlmRuntimeSnapshot;
+  routingConfigChangedWithinRange: boolean;
 }
 
 export interface AdminLlmModelMetricsDocument {
+  generatedAt: string;
+  dataAvailableSince?: string;
   timezone: string;
   range: LlmMetricsRange;
+  granularity: LlmMetricsGranularity;
   provider?: string;
   modelKey: string;
   label: string;
   summary: LlmMetricsSummary;
+  items: LlmHourlySeriesItem[];
   routes: LlmRouteMetricsGroup[];
 }
 

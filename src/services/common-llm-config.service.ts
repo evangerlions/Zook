@@ -180,19 +180,31 @@ export class CommonLlmConfigService {
   }
 
   async getRuntimeConfig(): Promise<LlmServiceConfig | undefined> {
-    const stored = await this.appConfigService.getValue(COMMON_APP_ID, LLM_SERVICE_CONFIG_KEY);
-    if (!stored) {
-      return undefined;
-    }
+    return (await this.getRuntimeConfigSnapshot())?.config;
+  }
 
-    const config = this.parseConfig(stored);
+  async getRuntimeConfigSnapshot(): Promise<{
+    config: LlmServiceConfig;
+    revision: number;
+    updatedAt: string;
+  } | undefined> {
+    const record = await this.appConfigService.getLatestRevision(
+      COMMON_APP_ID,
+      LLM_SERVICE_CONFIG_KEY,
+    );
+    if (!record) return undefined;
+    const config = this.parseConfig(record.content);
     if (!this.secretReferenceResolver) {
-      return config;
+      return { config, revision: record.revision, updatedAt: record.createdAt };
     }
 
     try {
       const resolvedConfig = await this.secretReferenceResolver.resolveValue(config);
-      return this.validateInput(resolvedConfig, config);
+      return {
+        config: this.validateInput(resolvedConfig, config),
+        revision: record.revision,
+        updatedAt: record.createdAt,
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : "LLM password references are invalid.";
       throw new ApplicationError(503, "LLM_SERVICE_NOT_CONFIGURED", message);

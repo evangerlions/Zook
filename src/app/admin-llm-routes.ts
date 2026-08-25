@@ -124,7 +124,14 @@ export async function handleAdminGetLlmMetrics(this: BackendRouteContext,
   const adminUser = this.authenticateAdmin(request);
   const range = parseLlmMetricsRange.call(this, request.query?.range);
   const provider = parseLlmMetricsProvider(request.query?.provider);
-  const result = await this.adminConsoleService.getLlmMetrics(range, provider);
+  const operation = parseLlmMetricsOperation(request.query?.operation);
+  const providerModel = parseLlmMetricsProvider(request.query?.providerModel);
+  const result = await this.adminConsoleService.getLlmMetrics(
+    range,
+    provider,
+    operation,
+    providerModel,
+  );
 
   await this.auditInterceptor.record({
     appId: "common",
@@ -135,6 +142,8 @@ export async function handleAdminGetLlmMetrics(this: BackendRouteContext,
       adminUser,
       range,
       provider,
+      operation,
+      providerModel,
     },
   });
 
@@ -194,10 +203,10 @@ export async function handleAdminRunLlmSmokeTest(this: BackendRouteContext,
 
 function parseLlmMetricsRange(this: BackendRouteContext, value: string | undefined): LlmMetricsRange {
   if (!value) {
-    return "24h";
+    return "48h";
   }
 
-  if (value === "24h" || value === "7d" || value === "30d") {
+  if (value === "24h" || value === "48h" || value === "7d" || value === "30d") {
     return value;
   }
 
@@ -206,6 +215,14 @@ function parseLlmMetricsRange(this: BackendRouteContext, value: string | undefin
     "REQ_INVALID_QUERY",
     `Unsupported range: ${value}.`,
   );
+}
+
+function parseLlmMetricsOperation(
+  value: string | undefined,
+): "chat" | "embedding" | undefined {
+  if (!value) return undefined;
+  if (value === "chat" || value === "embedding") return value;
+  throw new ApplicationError(400, "REQ_INVALID_QUERY", `Unsupported operation: ${value}.`);
 }
 
 function parseLlmMetricsProvider(value: string | undefined): string | undefined {

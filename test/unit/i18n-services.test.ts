@@ -219,6 +219,18 @@ test("public API message service localizes representative frontend-visible error
     "AI 服务响应超时，请重试。",
   );
   assert.equal(
+    service.fromErrorCode("AI_CONTEXT_TOO_LONG", zhHeaderRequest),
+    "内容过长，请缩短后重试。",
+  );
+  assert.equal(
+    service.fromErrorCode("AI_UPSTREAM_RATE_LIMITED", zhHeaderRequest),
+    "请求过于频繁，请稍后重试。",
+  );
+  assert.equal(
+    service.fromErrorCode("AI_UPSTREAM_QUOTA_EXHAUSTED", zhHeaderRequest),
+    "AI 服务暂时不可用，请稍后重试。",
+  );
+  assert.equal(
     service.fromErrorCode("LOG_TASK_MISMATCH", zhHeaderRequest),
     "日志上传任务不可用，请重新拉取任务后重试。",
   );

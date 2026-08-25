@@ -4294,7 +4294,7 @@ test("ai_novel upstream auth failures return refined code with local debug detai
     aiKey,
   );
   assert.equal(decrypted.code, "AI_UPSTREAM_AUTH_FAILED");
-  assert.equal(decrypted.message, "AI 服务暂不可用，请稍后重试。");
+  assert.equal(decrypted.message, "AI 服务配置异常，请稍后重试。");
   const data = decrypted.data as Record<string, unknown>;
   assert.equal(data.provider, "bailian");
   assert.equal(data.providerStatusCode, 401);

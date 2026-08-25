@@ -143,27 +143,32 @@ Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 
 
 ### 4.6 LLM 页
 
-LLM 页挂在 `common` 工作区下，分成两个标签：
+LLM 页挂在 `common` 工作区下，分成三个标签：
 
 1. `监控`
-2. `配置`
+2. `冒烟测试`
+3. `配置`
 
 #### 监控标签
 
-展示按小时聚合的 LLM 监控数据：
+默认展示最近 48 小时的 LLM 运营数据：
 
-1. 最近 24 小时总请求量
-2. 成功率
-3. 平均首字节延迟
-4. 平均总耗时
-5. 模型对比
-6. 模型下各供应商对比
+1. 调用、canonical 总 Token、可靠性成功率、P50 首响应、P50/P95 总延迟
+2. 调用量/可靠性与 Prompt/可见输出/Reasoning/未分类 Token 趋势
+3. Provider Model Token 排行和 Provider 运营表现
+4. `auto / fixed` route 的基础权重、健康分、动态分、真实选择概率和范围实际流量占比
+5. Provider × Provider Model 交叉矩阵及筛选后的延迟/时间桶深度分析
+
+图表使用 Apache ECharts；复杂表格和筛选继续复用 Ant Design。每张图表和表格都必须说明用途，并覆盖加载、空、错误和旧数据状态。
 
 支持范围切换：
 
 1. `24h`
-2. `7d`
-3. `30d`
+2. `48h`
+3. `7d`
+4. `30d`
+
+`24h/48h` 按小时聚合，`7d/30d` 按天聚合；Chat 与 Embedding 延迟不混合计算。
 
 #### 配置标签
 
@@ -255,12 +260,16 @@ Key ID 与 secret 都存在时才改走代理，否则保持 OpenRouter 直连�
 1. `auto`：按 `weight × 健康分` 计算实际分流概率
 2. `fixed`：固定选择 `weight` 最大的启用 route
 
+Admin 直接展示 canonical selector 返回的 `dynamicScore`、`effectiveProbability` 和 `selectionReason`，前端不得重复实现公式。`auto` 健康分全零时回退基础权重；`fixed` 没有启用 route 时保留并明确标注首条 route 兼容回退。
+
 ### 5.2 健康度规则
 
 健康度只用于 `auto`：
 
 1. 总调用数 `< 10` 时，健康分固定为 `100`
 2. 总调用数 `>= 10` 时，健康分 = 最近 `100` 次结果成功率
+3. 成功率先四舍五入到两位小数，再作为真实路由 `healthScore`
+4. 客户端取消和业务内容拒绝为健康中性，不推进健康样本窗口
 
 说明：
 
@@ -326,8 +335,8 @@ Key ID 与 secret 都存在时才改走代理，否则保持 OpenRouter 直连�
 2. `PUT /api/v1/admin/apps/common/llm-service`
 3. `GET /api/v1/admin/apps/common/llm-service/revisions/{revision}`
 4. `POST /api/v1/admin/apps/common/llm-service/revisions/{revision}/restore`
-5. `GET /api/v1/admin/apps/common/llm-service/metrics?range=24h|7d|30d`
-6. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}?range=24h|7d|30d`
+5. `GET /api/v1/admin/apps/common/llm-service/metrics?range=24h|48h|7d|30d&operation=chat|embedding&provider={provider}&providerModel={providerModel}`
+6. `GET /api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}?range=24h|48h|7d|30d`
 
 ### 7.5 AINovel Feedback 接口
 
@@ -340,7 +349,7 @@ Key ID 与 secret 都存在时才改走代理，否则保持 OpenRouter 直连�
 
 ## 8. 持久化
 
-当前后台状态依赖 Redis-backed `KVManager`。
+业务与运营记录以 PostgreSQL 为持久化真值；短期会话、配置辅助状态仍使用 Redis-backed `KVManager`。
 
 持久化内容包括：
 
@@ -349,15 +358,15 @@ Key ID 与 secret 都存在时才改走代理，否则保持 OpenRouter 直连�
 3. `rolePermissions`
 4. `appConfigs`
 5. 配置版本记录
-6. LLM 健康窗口
-7. LLM 小时级监控桶
-8. AINovel 用户反馈记录、处理状态与附件元数据
-9. 反馈附件文件，存储在 `appRunData/feedback/{appId}/{yyyy-mm-dd}/{feedbackId}/{attachmentId}.{ext}`
+6. PostgreSQL LLM 脱敏调用观察，以及从 observation 按时间顺序派生的 bounded route 健康窗口
+7. AINovel 用户反馈记录、处理状态与附件元数据
+8. 反馈附件文件，存储在 `appRunData/feedback/{appId}/{yyyy-mm-dd}/{feedbackId}/{attachmentId}.{ext}`
 
 其中：
 
-1. 健康窗口只保留最近 `100` 次结果
-2. 小时级监控只保留最近 `1` 年
+1. 每个 route 健康窗口只保留最近 `100` 个健康影响样本
+2. 调用观察保留 `35` 天，支持最长 `30d` 查询
+3. 不存储 prompt、response、userId、Authorization 或 Provider 原始 payload
 
 ---
 
