@@ -156,7 +156,7 @@ LLM 页挂在 `common` 工作区下，分成三个标签：
 1. 调用、canonical 总 Token、可靠性成功率、P50 首响应、P50/P95 总延迟
 2. 调用量/可靠性与 Prompt/可见输出/Reasoning/未分类 Token 趋势
 3. Provider Model Token 排行和 Provider 运营表现
-4. `auto / fixed` route 的基础权重、健康分、动态分、真实选择概率和范围实际流量占比
+4. `auto / fixed` route 的基础权重、健康分、动态分、期望流量和所选时间范围实际流量；每个路由 Model 使用一条实际流量堆叠条，并以竖线标出动态评分推导的期望分界
 5. Provider × Provider Model 交叉矩阵及筛选后的延迟/时间桶深度分析
 
 图表使用 Apache ECharts；复杂表格和筛选继续复用 Ant Design。每张图表和表格都必须说明用途，并覆盖加载、空、错误和旧数据状态。

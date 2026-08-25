@@ -1,6 +1,5 @@
 import { Alert, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import type { EChartsCoreOption } from "echarts/core";
 
 import { formatTimestamp } from "../../lib/format";
 import type {
@@ -11,6 +10,10 @@ import type {
 } from "../../lib/types";
 import { LlmChart } from "./llm-chart";
 import { formatMetricNumber, formatPercent } from "./llm-monitor-view-model";
+import {
+  buildRoutingComparisonOption,
+  type RoutingComparisonRow,
+} from "./routing-comparison-view-model";
 
 interface RoutingRow extends LlmRouteRuntimeStatus {
   key: string;
@@ -21,7 +24,12 @@ interface RoutingRow extends LlmRouteRuntimeStatus {
 }
 
 export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }) {
-  const rows = buildRows(metrics);
+  const allRows = buildRows(metrics);
+  const rows = filterRows(allRows, metrics);
+  const visibleModelKeys = new Set(rows.map((row) => row.modelKey));
+  const chartRows = allRows
+    .filter((row) => visibleModelKeys.has(row.modelKey))
+    .map(toComparisonRow);
   const snapshot = metrics.runtime;
 
   return (
@@ -46,17 +54,21 @@ export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }
 
       {metrics.routingConfigChangedWithinRange ? (
         <Alert
-          message="所选范围内发生过路由配置变更；当前期望概率与历史实际流量仅作参考，不产生偏差告警。"
           showIcon
+          title="所选时间范围内发生过路由配置变更；期望流量来自当前动态评分快照，实际流量来自历史调用，两者仅作参考对比。"
           type="warning"
         />
       ) : null}
 
       <div className="llm-routing-chart">
+        <div className="llm-routing-chart-heading">
+          <strong>实际流量分布 vs 动态评分期望</strong>
+          <span>每个模型一条实色流量条；深色竖线标出当前期望分界，悬浮可查看实际、期望和偏差。</span>
+        </div>
         <LlmChart
-          height={Math.max(260, Math.min(480, metrics.runtime.models.length * 70 + 90))}
-          option={(width) => buildRoutingComparisonOption(rows, width)}
-          summary="每个路由 Model 的当前期望概率和当前范围实际流量占比对比"
+          height={Math.max(260, Math.min(440, visibleModelKeys.size * 48 + 110))}
+          option={(width) => buildRoutingComparisonOption(chartRows, width)}
+          summary="每个路由模型一条实际流量分布，深色竖线标出当前动态评分推导的期望分界；悬浮显示各供应商的实际流量、期望流量和偏差"
         />
       </div>
 
@@ -77,8 +89,6 @@ function buildRows(metrics: AdminLlmMetricsDocument): RoutingRow[] {
   return metrics.runtime.models
     .filter((model) => metrics.operation ? model.kind === metrics.operation : true)
     .flatMap((model) => model.routes
-      .filter((route) => metrics.provider ? route.provider === metrics.provider : true)
-      .filter((route) => metrics.providerModel ? route.providerModel === metrics.providerModel : true)
       .map((route) => {
     const actual = metrics.routes.items.find((item) =>
       item.routingModelKey === model.key &&
@@ -95,6 +105,24 @@ function buildRows(metrics: AdminLlmMetricsDocument): RoutingRow[] {
       actualTrafficShare: actual?.actualTrafficShare ?? 0,
     };
       }));
+}
+
+function filterRows(
+  rows: RoutingRow[],
+  metrics: AdminLlmMetricsDocument,
+): RoutingRow[] {
+  return rows
+    .filter((row) => metrics.provider ? row.provider === metrics.provider : true)
+    .filter((row) => metrics.providerModel ? row.providerModel === metrics.providerModel : true);
+}
+
+function toComparisonRow(row: RoutingRow): RoutingComparisonRow {
+  return {
+    modelKey: row.modelKey,
+    provider: row.provider,
+    expectedTrafficShare: row.effectiveProbability,
+    actualTrafficShare: row.actualTrafficShare,
+  };
 }
 
 function routingColumns(): ColumnsType<RoutingRow> {
@@ -115,8 +143,8 @@ function routingColumns(): ColumnsType<RoutingRow> {
     { title: "健康成功率", dataIndex: "successRate", width: 112, render: (value) => formatPercent(value) },
     { title: "健康分", dataIndex: "healthScore", width: 88, render: (value) => formatMetricNumber(value) },
     { title: "动态分", dataIndex: "dynamicScore", width: 88, render: (value) => formatMetricNumber(value) },
-    { title: "选择概率", dataIndex: "effectiveProbability", width: 108, render: (value) => formatPercent(value) },
-    { title: "范围实际", dataIndex: "actualTrafficShare", width: 102, render: (value) => formatPercent(value) },
+    { title: "期望流量", dataIndex: "effectiveProbability", width: 108, render: (value) => formatPercent(value) },
+    { title: "实际流量", dataIndex: "actualTrafficShare", width: 102, render: (value) => formatPercent(value) },
     { title: "选择原因", dataIndex: "selectionReason", width: 160, render: (value) => selectionReasonLabel(value) },
     { title: "窗口最近错误", dataIndex: "lastErrorAt", width: 156, render: (value) => formatTimestamp(value) },
   ];
@@ -131,43 +159,4 @@ function selectionReasonLabel(value: RoutingRow["selectionReason"]): string {
     not_selected: "fixed 未选中",
     ineligible: "不可选择",
   })[value];
-}
-
-function buildRoutingComparisonOption(
-  rows: RoutingRow[],
-  width: number,
-): EChartsCoreOption {
-  const modelKeys = [...new Set(rows.map((row) => row.modelKey))];
-  const compact = width < 520;
-  const categories = modelKeys.flatMap((key) => [`${key} · 当前期望`, `${key} · 范围实际`]);
-  const providers = [...new Set(rows.map((row) => row.provider))];
-  return {
-    tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, confine: true },
-    legend: { top: 0, type: "scroll" },
-    grid: { top: 52, left: compact ? 94 : 170, right: compact ? 12 : 28, bottom: 30 },
-    xAxis: { type: "value", min: 0, max: 100, name: "%" },
-    yAxis: {
-      type: "category",
-      data: categories,
-      axisLabel: {
-        fontSize: compact ? 9 : 12,
-        formatter: compact ? (value: string) => value.length > 13 ? `${value.slice(0, 12)}…` : value : undefined,
-        width: compact ? 84 : 158,
-        overflow: "truncate",
-      },
-    },
-    series: providers.map((provider) => ({
-      name: provider,
-      type: "bar",
-      stack: "share",
-      barMaxWidth: 18,
-      data: modelKeys.flatMap((modelKey) => {
-        const routeRows = rows.filter((row) => row.modelKey === modelKey && row.provider === provider);
-        return [
-          routeRows.reduce((sum, row) => sum + row.effectiveProbability, 0),
-          routeRows.reduce((sum, row) => sum + row.actualTrafficShare, 0),
-        ];
-      }),
-    })),
-  };
 }
