@@ -1,0 +1,232 @@
+.llm-dashboard {
+  min-width: 0;
+}
+
+.llm-filter-bar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 14px;
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  background: var(--surface-strong);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.llm-filter-controls,
+.llm-refresh-controls,
+.llm-auto-refresh,
+.llm-data-meta,
+.llm-snapshot-meta,
+.llm-formula-note {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.llm-filter-controls {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.llm-refresh-controls,
+.llm-auto-refresh {
+  flex: 0 0 auto;
+}
+
+.llm-auto-refresh {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
+.llm-filter-select.ant-select {
+  min-width: 138px;
+}
+
+.llm-filter-select--model.ant-select {
+  min-width: 190px;
+}
+
+.llm-data-meta {
+  color: var(--text-soft);
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  padding-inline: 4px;
+}
+
+.llm-dashboard-section {
+  min-width: 0;
+}
+
+.llm-dashboard .card-header h2 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.llm-dashboard .card-header p {
+  max-width: 72ch;
+}
+
+.llm-kpi-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.llm-kpi-grid .metric-card {
+  min-width: 0;
+}
+
+.llm-kpi-grid .metric-card strong {
+  font-family: var(--font-mono);
+  font-size: clamp(1.05rem, 1.35vw, 1.35rem);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.llm-kpi-grid .metric-card small {
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.llm-chart-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.llm-chart-card,
+.llm-operations-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.llm-chart {
+  max-width: 100%;
+  min-height: 240px;
+  width: 100%;
+}
+
+.llm-table-block {
+  margin-top: 12px;
+  min-width: 0;
+}
+
+.llm-table-block .ant-table-wrapper,
+.llm-dashboard .ant-table-wrapper {
+  max-width: 100%;
+}
+
+.llm-dashboard .ant-table-cell .ant-btn-link {
+  cursor: pointer;
+}
+
+.llm-formula-note {
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 12px;
+  color: var(--text-soft);
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+}
+
+.llm-formula-note code {
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.llm-snapshot-meta {
+  color: var(--text-soft);
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  justify-content: flex-end;
+}
+
+.llm-routing-chart {
+  margin-block: 8px 14px;
+  min-width: 0;
+}
+
+.llm-matrix-chart-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.llm-skeleton-chart {
+  min-height: 330px;
+}
+
+@media (max-width: 1500px) {
+  .llm-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .llm-chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .llm-filter-bar {
+    align-items: stretch;
+    flex-direction: column;
+    position: static;
+  }
+
+  .llm-refresh-controls {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 720px) {
+  .llm-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .llm-filter-controls .ant-segmented,
+  .llm-filter-select.ant-select,
+  .llm-filter-select--model.ant-select {
+    width: 100%;
+  }
+
+  .llm-dashboard .surface-card {
+    padding: 14px;
+  }
+
+  .llm-dashboard .card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .llm-dashboard .card-header > .ant-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+    width: 100%;
+  }
+
+  .llm-dashboard .card-header > .ant-segmented .ant-segmented-group {
+    min-width: max-content;
+  }
+
+  .llm-snapshot-meta {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .llm-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .llm-refresh-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

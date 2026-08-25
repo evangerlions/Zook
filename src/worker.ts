@@ -17,6 +17,7 @@ async function runTick(): Promise<void> {
   await runtime.database.withExclusiveSession(async () => {
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
+    const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();
     await runtime.queue.processDueJobs((job) => runtime.services.notificationService.processQueueJob(job));
     const buddyNotifications = await runtime.services.buddyNotificationWorkerService.processBatch();
     const buddyInvitationEmails = buddyCapabilities.explicitInviteConsent && buddyCapabilities.emailDelivery
@@ -34,6 +35,8 @@ async function runTick(): Promise<void> {
       error: replay.remaining ? `remaining=${replay.remaining}` : undefined,
       smsCleanupRan: smsCleanup.ran,
       smsCleanupDeleted: smsCleanup.deletedCount,
+      llmCleanupRan: llmCleanup.ran,
+      llmObservationsDeleted: llmCleanup.observations,
       buddyNotificationsProcessed: buddyNotifications.processed,
       buddyNotificationsFailed: buddyNotifications.failed,
       buddyInvitationEmailsProcessed: buddyInvitationEmails.processed,

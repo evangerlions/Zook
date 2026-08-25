@@ -196,20 +196,24 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 1. `common.email_service_regions` 的强类型配置、版本记录与恢复
 2. `common.llm_service` 的强类型配置、版本记录与恢复，以及可选的 OpenRouter `oa-hmac-v1` 透明代理路由；代理开关和 Key ID 存配置，HMAC secret 从 `common.passwords` 动态读取；内置禁用的 OpenRouter `openrouter/free` 测试模型不会改变 AINovel 默认路由
 3. LLM 按 `auto / fixed` 两种策略路由
-4. LLM 健康窗口记录
-5. LLM 小时级监控聚合，并在模型对比中优先展示当前时间范围内有请求量的模型
-6. Admin Web 的 LLM 配置页与监控页
-7. LLM metrics 视图只展示 common LLM model key；AINovel 的 `ainovel-*` 业务 scene route key 会在记录指标时归入实际 provider model key，避免把业务 key 当作模型展示
+4. PostgreSQL 脱敏 LLM call observation；每 route 健康窗口按 observation 时间顺序派生最近 100 个健康影响样本，客户端取消和内容业务拒绝不污染健康分
+5. canonical 路由 scorer 统一 Chat、Embedding 和 Admin runtime 的 `weight × healthScore`、全零回退、fixed 选择与真实概率
+6. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
+7. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行；AINovel `ainovel-*` scene route key 不作为运营 Model 维度
+8. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
 
 对应核心文件：
 
 1. `src/services/common-email-config.service.ts`
 2. `src/services/common-llm-config.service.ts`
 3. `src/services/llm-manager.ts`
-4. `src/services/llm-health.service.ts`
-5. `src/services/llm-metrics.service.ts`
-6. `apps/admin-web/app/routes/llm.tsx`
-7. `docs/admin-web-design.md`
+4. `src/services/llm-routing-score.ts`
+5. `src/services/llm-call-observation.ts`
+6. `src/services/llm-health.service.ts`
+7. `src/services/llm-metrics.service.ts`
+8. `src/infrastructure/database/postgres/postgres-llm-observability.ts`
+9. `apps/admin-web/app/components/llm-monitor/`
+10. `docs/admin-web-design.md`
 
 ### 2.10 App 级 i18n 设置与本地化工具
 

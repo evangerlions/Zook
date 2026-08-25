@@ -3523,29 +3523,39 @@ test("admin llm service API stores versioned common config and exposes metrics",
     maskSensitiveString("mock-bailian-api-key"),
   );
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes.length, 2);
+  assert.equal(updateResponse.body.data.runtime.models[0]?.routes[0]?.dynamicScore, 80);
+  assert.equal(updateResponse.body.data.runtime.models[0]?.routes[0]?.effectiveProbability, 80);
 
-  await runtime.services.llmMetricsService.recordCall({
-    modelKey: "kimi2.5",
+  await runtime.database.llmObservabilityStore.recordObservation({
+    callId: "admin_metric_bailian",
+    occurredAt: now.toISOString(),
+    routingModelKey: "kimi2.5",
     provider: "bailian",
     providerModel: "kimi/kimi-k2.5",
-    ok: true,
-    firstByteLatencyMs: 120,
+    operation: "chat",
+    responseMode: "stream",
+    outcome: "success",
+    healthImpact: "success",
+    firstResponseLatencyMs: 120,
     totalLatencyMs: 500,
-    usage: {
-      promptTokens: 10,
-      completionTokens: 5,
-      totalTokens: 15,
-    },
-    occurredAt: now,
+    promptTokens: 10,
+    completionTokens: 5,
+    totalTokens: 15,
+    usageSource: "provider",
   });
-  await runtime.services.llmMetricsService.recordCall({
-    modelKey: "kimi2.5",
+  await runtime.database.llmObservabilityStore.recordObservation({
+    callId: "admin_metric_volcengine",
+    occurredAt: now.toISOString(),
+    routingModelKey: "kimi2.5",
     provider: "volcengine",
     providerModel: "kimi-2.5",
-    ok: false,
-    firstByteLatencyMs: 300,
+    operation: "chat",
+    responseMode: "stream",
+    outcome: "failure",
+    healthImpact: "failure",
+    firstResponseLatencyMs: 300,
     totalLatencyMs: 900,
-    occurredAt: now,
+    usageSource: "missing",
   });
 
   const metricsResponse = await runtime.app.handle({
@@ -3560,11 +3570,31 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(metricsResponse.statusCode, 200);
   assert.equal(metricsResponse.body.data.summary.requestCount, 2);
   assert.equal(metricsResponse.body.data.summary.successRate, 50);
-  assert.equal(metricsResponse.body.data.models[0]?.modelKey, "kimi2.5");
+  assert.equal(metricsResponse.body.data.models.items[0]?.modelKey, "kimi/kimi-k2.5");
   assert.deepEqual(
     metricsResponse.body.data.providers.map((item: { provider: string }) => item.provider),
     ["bailian", "volcengine"],
   );
+
+  const defaultMetricsResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/llm-service/metrics",
+    headers,
+  });
+  assert.equal(defaultMetricsResponse.statusCode, 200);
+  assert.equal(defaultMetricsResponse.body.data.range, "48h");
+  assert.equal(defaultMetricsResponse.body.data.granularity, "hour");
+
+  const chatMetricsResponse = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/admin/apps/common/llm-service/metrics",
+    headers,
+    query: { range: "48h", operation: "chat", providerModel: "kimi-2.5" },
+  });
+  assert.equal(chatMetricsResponse.statusCode, 200);
+  assert.equal(chatMetricsResponse.body.data.operation, "chat");
+  assert.equal(chatMetricsResponse.body.data.providerModel, "kimi-2.5");
+  assert.equal(chatMetricsResponse.body.data.summary.requestCount, 1);
 
   const providerMetricsResponse = await runtime.app.handle({
     method: "GET",
@@ -3580,7 +3610,7 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(providerMetricsResponse.body.data.provider, "volcengine");
   assert.equal(providerMetricsResponse.body.data.summary.requestCount, 1);
   assert.equal(providerMetricsResponse.body.data.summary.successRate, 0);
-  assert.equal(providerMetricsResponse.body.data.models[0]?.summary.requestCount, 1);
+  assert.equal(providerMetricsResponse.body.data.models.items[0]?.summary.requestCount, 1);
 
   const detailResponse = await runtime.app.handle({
     method: "GET",

@@ -105,14 +105,14 @@ export function createEmptyLlmSummary() {
     requestCount: 0,
     successCount: 0,
     failureCount: 0,
+    timeoutCount: 0,
+    cancelledCount: 0,
     successRate: 100,
-    avgFirstByteLatencyMs: 0,
-    avgTotalLatencyMs: 0,
-    p95FirstByteLatencyMs: 0,
-    p95TotalLatencyMs: 0,
-    promptTokens: 0,
-    completionTokens: 0,
-    totalTokens: 0,
+    latencySampleCount: 0,
+    firstResponseSampleCount: 0,
+    providerUsageCount: 0,
+    estimatedUsageCount: 0,
+    missingUsageCount: 0,
   };
 }
 
