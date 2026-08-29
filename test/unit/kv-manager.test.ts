@@ -37,3 +37,11 @@ test("kv manager isolates values by scope and key", async () => {
   assert.equal(appA?.feature, "alpha");
   assert.equal(appB?.feature, "beta");
 });
+
+test("kv manager set-if-absent has one atomic winner", async () => {
+  const kvManager = await KVManager.create({ backend: new InMemoryKVBackend() });
+  const results = await Promise.all(Array.from({ length: 8 }, (_, index) =>
+    kvManager.setStringIfAbsent("atomic", "claim", `winner-${index}`, 60)));
+  assert.equal(results.filter(Boolean).length, 1);
+  assert.match(await kvManager.getString("atomic", "claim") ?? "", /^winner-/);
+});

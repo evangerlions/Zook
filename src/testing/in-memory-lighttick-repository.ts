@@ -231,6 +231,9 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     const prefix = `${ownerKey(owner)}:`;
     this.profiles.delete(ownerKey(owner));
     this.guestIdentities.delete(ownerKey(owner));
+    for (const [key, operation] of this.upgradeOperations)
+      if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)
+        this.upgradeOperations.delete(key);
     for (const store of [this.goals,this.plans,this.tasks,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
       for (const key of store.keys()) if (key.startsWith(prefix)) store.delete(key);
     }

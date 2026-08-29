@@ -119,6 +119,7 @@ LightTick 原生客户端使用以下核心接口族：
 POST      /api/v1/lighttick/account/guest-sessions
 GET       /api/v1/lighttick/account/session
 POST      /api/v1/lighttick/account/upgrade
+POST      /api/v1/lighttick/account/reauthentication
 GET/PATCH /api/v1/lighttick/profile
 POST      /api/v1/lighttick/onboarding
 POST      /api/v1/lighttick/onboarding/starter
@@ -151,6 +152,11 @@ review、sync、设备注册、完整规划和删除等敏感能力；刷新凭�
 位置，并删除游客 membership；正式账户已有偏好优先，重复 operation 只有内容完全一致时
 才会去重。响应丢失后使用相同 key 和请求重试会返回原结果，改变请求则返回
 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。成功后旧游客 access/refresh session 全部失效。
+
+删除 LightTick 产品账号前，正式密码账户先调用 `/account/reauthentication` 提交
+`current_password`，取得 5 分钟有效、仅可使用一次且绑定当前 LightTick membership 的
+`reauthentication_token`；随后将该证明与 `confirmation=DELETE` 一并提交到
+`DELETE /api/v1/lighttick/me/account`。登出只撤销会话，不删除服务端产品数据。
 
 写命令使用 `Idempotency-Key`；可并发修改资源的命令同时携带
 `base_version`。离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多

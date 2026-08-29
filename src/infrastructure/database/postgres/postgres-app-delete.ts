@@ -8,6 +8,7 @@ export async function deletePostgresApp(query: QueryFn, appId: string): Promise<
   }
 
   const tables = [
+    "zook_lighttick_account_upgrades",
     "zook_lighttick_task_steps",
     "zook_lighttick_tasks",
     "zook_lighttick_change_proposals",

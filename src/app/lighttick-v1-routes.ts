@@ -168,12 +168,25 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       transferred_resource_counts: upgraded.transferredResourceCounts });
   }
 
+  if (request.method === "POST" && request.path === `${PREFIX}account/reauthentication`) {
+    const currentPassword = stringOf(bodyOf(request).current_password, "current_password");
+    if (currentPassword.length < 8 || currentPassword.length > 64)
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "current_password is invalid.");
+    const proof = await context.authService.issueReauthenticationProof(LIGHTTICK_APP_ID, auth.userId, currentPassword);
+    return response(context, request, { reauthentication_token: proof.token, expires_at: proof.expiresAt });
+  }
+
   if (request.method === "DELETE" && request.path === `${PREFIX}me/account`) {
     const body = bodyOf(request); const confirmation = stringOf(body.confirmation, "confirmation");
+    if (confirmation !== "DELETE")
+      throw new ApplicationError(400, "AUTH_ACCOUNT_DELETE_CONFIRMATION_INVALID", "Type DELETE to confirm account deletion.");
+    await context.authService.consumeReauthenticationProof(LIGHTTICK_APP_ID, auth.userId,
+      stringOf(body.reauthentication_token, "reauthentication_token"));
     const result = await context.authService.deleteCurrentAppAccount({ appId: LIGHTTICK_APP_ID, userId: auth.userId, confirmation });
     await runtime.repository.deleteOwnerData(owner);
-    return context.ok({ app_id: LIGHTTICK_APP_ID, membership_status: "DELETED", sessions_revoked: result.revokedSessions,
-      product_data_deleted: result.deleted }, request.requestId as string, { "Set-Cookie": context.authService.buildClearRefreshCookie() });
+    return context.ok({ app_id: LIGHTTICK_APP_ID, membership_status: "DELETED", sessions_revoked: true,
+      product_data_deleted: result.deleted, platform_account_retained: true, other_memberships_retained: true },
+      request.requestId as string, { "Set-Cookie": context.authService.buildClearRefreshCookie() });
   }
   if (request.path === `${PREFIX}profile` && request.method === "GET") {
     const profile = await runtime.profile.getProfile(owner);

@@ -77,6 +77,7 @@ export async function deletePostgresAppUserRuntimeData(
   await query("DELETE FROM zook_client_log_uploads WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_client_log_upload_tasks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   if (appId === "lighttick") {
+    await query("DELETE FROM zook_lighttick_account_upgrades WHERE app_id = $1 AND (guest_user_id = $2 OR target_user_id = $2)", [appId, userId]);
     for (const tableName of LIGHTTICK_USER_RUNTIME_TABLES) {
       await query(`DELETE FROM ${tableName} WHERE app_id = $1 AND user_id = $2`, [appId, userId]);
     }

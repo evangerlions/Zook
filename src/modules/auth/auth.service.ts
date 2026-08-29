@@ -33,7 +33,7 @@ import type {
   SmsLoginCommand,
   UserRecord,
 } from "../../shared/types.ts";
-import { randomNumericCode, sha256 } from "../../shared/utils.ts";
+import { createOpaqueToken, randomNumericCode, sha256 } from "../../shared/utils.ts";
 import { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import { CommonTestAccountService } from "../../services/common-test-account.service.ts";
@@ -60,6 +60,7 @@ interface LoginFailureState {
  */
 export class AuthService {
   private readonly loginFailureScope = "auth.login-failures";
+  private readonly reauthenticationScope = "auth.reauthentication";
   private readonly verificationLimiter: AuthVerificationLimiter;
   private readonly sessionManager: AuthSessionManager;
   private readonly emailFlow: AuthEmailFlow;
@@ -294,6 +295,30 @@ export class AuthService {
 
   async revokeAllSessions(appId: string, userId: string, now = new Date()): Promise<number> {
     return this.sessionManager.revokeAllSessions(appId, userId, now);
+  }
+
+  async issueReauthenticationProof(appId: string, userId: string, currentPassword: string, now = new Date()) {
+    await this.appRegistryService.getAppOrThrow(appId);
+    await this.appRegistryService.ensureExistingMembership(appId, userId);
+    const user = await this.userService.getById(userId);
+    if (!this.verifyPassword(user, currentPassword))
+      unauthorized("AUTH_INVALID_CREDENTIAL", "Account or password is invalid.");
+    const token = createOpaqueToken("reauth"); const expiresAt = new Date(now.getTime() + 5 * 60_000);
+    await this.kvManager.setJson(this.reauthenticationScope, `proof:${sha256(token)}`,
+      { appId, userId, expiresAt: expiresAt.toISOString() }, 5 * 60);
+    return { token, expiresAt: expiresAt.toISOString() };
+  }
+
+  async consumeReauthenticationProof(appId: string, userId: string, token: string, now = new Date()): Promise<void> {
+    const hash = sha256(token);
+    const proof = await this.kvManager.getJson<{ appId: string; userId: string; expiresAt: string }>(
+      this.reauthenticationScope, `proof:${hash}`);
+    if (!proof || proof.appId !== appId || proof.userId !== userId || new Date(proof.expiresAt) <= now)
+      unauthorized("LIGHTTICK_REAUTH_REQUIRED", "Recent reauthentication is required.");
+    const claimed = await this.kvManager.setStringIfAbsent(this.reauthenticationScope,
+      `consumed:${hash}`, now.toISOString(), Math.max(1, Math.ceil((new Date(proof.expiresAt).getTime() - now.getTime()) / 1_000)));
+    if (!claimed) unauthorized("LIGHTTICK_REAUTH_REQUIRED", "Reauthentication proof was already used.");
+    await this.kvManager.delete(this.reauthenticationScope, `proof:${hash}`);
   }
 
   async issueSession(

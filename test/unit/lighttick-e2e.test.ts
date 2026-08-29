@@ -66,7 +66,10 @@ test("recovery remains deterministic across lost response, stale proposal, AI ou
   const staleResponse = await runtime.app.handle({ method: "POST", path: `/api/v1/lighttick/change-proposals/${stale.id}/accept`,
     headers: idempotency(headers, "recovery-stale-001"), body: { base_version: 1 }, requestId: "stale" });
   assert.equal(staleResponse.statusCode, 409); assert.equal(staleResponse.body.code, "LIGHTTICK_PROPOSAL_STALE");
+  const reauthentication = await runtime.services.authService.issueReauthenticationProof(
+    "lighttick", "user_alice", "Password1234");
   const deleted = await runtime.app.handle({ method: "DELETE", path: "/api/v1/lighttick/me/account", headers,
-    body: { confirmation: "DELETE" }, requestId: "delete" }); assert.equal(deleted.statusCode, 200);
+    body: { confirmation: "DELETE", reauthentication_token: reauthentication.token }, requestId: "delete" });
+  assert.equal(deleted.statusCode, 200);
   assert.equal((await services.goals.list(owner)).length, 0);
 });

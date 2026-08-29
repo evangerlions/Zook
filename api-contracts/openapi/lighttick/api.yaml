@@ -110,6 +110,25 @@ paths:
         "409": { $ref: "#/components/responses/LightTickError" }
         "410": { $ref: "#/components/responses/LightTickError" }
         "429": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/reauthentication:
+    post:
+      operationId: reauthenticateLightTickAccount
+      tags: [lighttick-account]
+      summary: Issue a short-lived one-time proof for destructive account operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickReauthenticationRequest" }
+      responses:
+        "200":
+          description: One-time reauthentication proof
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickReauthenticationEnvelope" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/profile:
     get:
       operationId: getLightTickProfile
@@ -1428,6 +1447,27 @@ components:
           maxLength: 4096
           description: Opaque, short-lived one-time proof issued after recent common-auth reauthentication.
       additionalProperties: false
+    LightTickReauthenticationRequest:
+      type: object
+      required: [current_password]
+      properties:
+        current_password: { type: string, minLength: 8, maxLength: 64, format: password }
+      additionalProperties: false
+    LightTickReauthenticationData:
+      type: object
+      required: [reauthentication_token, expires_at]
+      properties:
+        reauthentication_token: { type: string, minLength: 16, maxLength: 4096 }
+        expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickReauthenticationEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickReauthenticationData" }
+        requestId: { type: string }
     LightTickAccountDeletionData:
       type: object
       required: [app_id, membership_status, sessions_revoked, product_data_deleted, platform_account_retained, other_memberships_retained]

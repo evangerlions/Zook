@@ -92,9 +92,12 @@ test("LightTick account deletion revokes only LightTick membership and sessions"
     tokenHash: sha256("lighttick_refresh"), expiresAt: "2027-08-20T00:00:00Z" });
   await runtime.services.refreshTokenStore.create({ id: "rft_app_a", appId: "app_a", userId: "user_alice",
     tokenHash: sha256("app_a_refresh"), expiresAt: "2027-08-20T00:00:00Z" });
+  const reauthentication = await runtime.services.authService.issueReauthenticationProof(
+    "lighttick", "user_alice", "Password1234");
 
   const response = await runtime.app.handle({ method: "DELETE", path: "/api/v1/lighttick/me/account",
-    headers: authorization(accessToken), body: { confirmation: "DELETE" }, requestId: "delete_lighttick" });
+    headers: authorization(accessToken), body: { confirmation: "DELETE",
+      reauthentication_token: reauthentication.token }, requestId: "delete_lighttick" });
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.membership_status, "DELETED");
   assert.equal(response.body.data.product_data_deleted, true);
@@ -107,4 +110,51 @@ test("LightTick account deletion revokes only LightTick membership and sessions"
   const afterDeletion = await runtime.app.handle({ method: "GET", path: "/api/v1/lighttick/profile",
     headers: authorization(accessToken), requestId: "after_delete" });
   assert.equal(afterDeletion.statusCode, 401);
+});
+
+test("LightTick deletion requires a one-time recent password reauthentication proof", async () => {
+  const seed = buildDefaultSeed(undefined, { includeLightTick: true });
+  seed.appUsers.push({ id: "app_user_alice_lighttick", appId: "lighttick", userId: "user_alice",
+    status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: "2026-08-29T00:00:00Z" });
+  const runtime = await createApplication({ seed, lighttickEnabled: true });
+  const accessToken = runtime.services.tokenService.issueAccessToken("user_alice", "lighttick");
+  const denied = await runtime.app.handle({ method: "DELETE", path: "/api/v1/lighttick/me/account",
+    headers: authorization(accessToken), body: { confirmation: "DELETE" }, requestId: "delete_without_reauth" });
+  assert.equal(denied.statusCode, 400);
+  assert.equal(denied.body.code, "REQ_FIELD_REQUIRED");
+
+  const wrong = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/account/reauthentication",
+    headers: authorization(accessToken), body: { current_password: "WrongPassword1234" }, requestId: "reauth_wrong" });
+  assert.equal(wrong.statusCode, 401);
+  const reauthenticated = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/account/reauthentication",
+    headers: authorization(accessToken), body: { current_password: "Password1234" }, requestId: "reauth_ok" });
+  assert.equal(reauthenticated.statusCode, 200);
+  const proof = (reauthenticated.body.data as any).reauthentication_token;
+  assert.ok(proof);
+
+  const deleted = await runtime.app.handle({ method: "DELETE", path: "/api/v1/lighttick/me/account",
+    headers: authorization(accessToken), body: { confirmation: "DELETE", reauthentication_token: proof }, requestId: "delete_reauth" });
+  assert.equal(deleted.statusCode, 200);
+  assert.equal((deleted.body.data as any).sessions_revoked, true);
+  assert.equal((deleted.body.data as any).platform_account_retained, true);
+  await assert.rejects(runtime.services.authService.consumeReauthenticationProof("lighttick", "user_alice", proof),
+    (error: any) => error.code === "LIGHTTICK_REAUTH_REQUIRED");
+});
+
+test("LightTick logout revokes the session without deleting product data", async () => {
+  const seed = buildDefaultSeed(undefined, { includeLightTick: true });
+  seed.appUsers.push({ id: "app_user_alice_lighttick", appId: "lighttick", userId: "user_alice",
+    status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: "2026-08-29T00:00:00Z" });
+  const runtime = await createApplication({ seed, lighttickEnabled: true });
+  const session = await runtime.services.authService.login({
+    appId: "lighttick", account: "alice@example.com", password: "Password1234",
+  });
+  const goal = await runtime.services.lighttickRuntime.goals.create({ appId: "lighttick", userId: "user_alice" }, {
+    title: "Keep after logout", constraints: {},
+  });
+  const revoked = await runtime.services.authService.logout({ appId: "lighttick", scope: "current",
+    refreshToken: session.refreshToken }, runtime.services.tokenService.verifyAccessToken(session.accessToken));
+  assert.equal(revoked, 1);
+  assert.equal((await runtime.services.lighttickRuntime.goals.get({ appId: "lighttick", userId: "user_alice" }, goal.id)).id, goal.id);
+  assert.equal((await runtime.database.findAppUser("lighttick", "user_alice"))?.status, "ACTIVE");
 });

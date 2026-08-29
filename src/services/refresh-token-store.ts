@@ -7,6 +7,7 @@ const APP_INDEX_PREFIX = "app";
 const USER_APP_INDEX_PREFIX = "user-app";
 const RECORD_PREFIX = "record";
 const HASH_PREFIX = "hash";
+const ROTATION_PREFIX = "rotation";
 
 export class RefreshTokenStore {
   constructor(private readonly kvManager: KVManager) {}
@@ -33,6 +34,12 @@ export class RefreshTokenStore {
 
   async update(record: RefreshTokenRecord): Promise<void> {
     await this.kvManager.setJson(REFRESH_TOKEN_SCOPE, this.buildRecordKey(record.id), record);
+  }
+
+  async claimRotation(tokenHash: string, expiresAt: string, now = new Date()): Promise<boolean> {
+    const ttlSeconds = Math.max(1, Math.ceil((new Date(expiresAt).getTime() - now.getTime()) / 1_000));
+    return await this.kvManager.setStringIfAbsent(REFRESH_TOKEN_SCOPE,
+      `${ROTATION_PREFIX}:${tokenHash}`, now.toISOString(), ttlSeconds);
   }
 
   async listByUserAndApp(appId: string, userId: string): Promise<RefreshTokenRecord[]> {

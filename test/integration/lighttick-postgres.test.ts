@@ -114,7 +114,10 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       assert.equal((await repository.upgradeGuestAccount(command)).idempotencyReplayed, true);
       const mismatch = { ...command, requestHash: "changed-request" };
       await assert.rejects(repository.upgradeGuestAccount(mismatch), (error: any) => error.code === "LIGHTTICK_IDEMPOTENCY_MISMATCH");
-      await pool.query("DELETE FROM zook_lighttick_account_upgrades WHERE guest_user_id=$1", [guestUserId]);
+      await repository.deleteOwnerData(targetOwner);
+      assert.equal(await repository.getGoal(targetOwner, "lighttick_pg_upgrade_goal"), undefined);
+      assert.equal((await pool.query("SELECT COUNT(*)::int AS count FROM zook_lighttick_account_upgrades WHERE target_user_id=$1",
+        [targetUserId])).rows[0].count, 0);
       for (const table of ["zook_lighttick_change_log","zook_lighttick_execution_events","zook_lighttick_goals",
         "zook_lighttick_profiles","zook_lighttick_guest_identities"])
         await pool.query(`DELETE FROM ${table} WHERE user_id IN ($1,$2)`, [guestUserId,targetUserId]);

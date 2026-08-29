@@ -3,6 +3,7 @@ import { createClient, type RedisClientType } from "redis";
 export interface KVBackend {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, ttlSeconds?: number): Promise<void>;
+  setIfAbsent(key: string, value: string, ttlSeconds?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
   assertReady(): Promise<void>;
   disconnect?(): Promise<void>;
@@ -38,6 +39,15 @@ class RedisKVBackend implements KVBackend {
     }
 
     await this.client.set(key, value);
+  }
+
+  async setIfAbsent(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    await this.ensureConnected();
+    const result = await this.client.set(key, value, {
+      NX: true,
+      ...(typeof ttlSeconds === "number" && ttlSeconds > 0 ? { EX: ttlSeconds } : {}),
+    });
+    return result === "OK";
   }
 
   async delete(key: string): Promise<void> {
@@ -99,6 +109,14 @@ export class InMemoryKVBackend implements KVBackend {
     });
   }
 
+  async setIfAbsent(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    const current = this.store.get(key);
+    if (current && (!current.expiresAt || current.expiresAt > Date.now())) return false;
+    if (current) this.store.delete(key);
+    await this.set(key, value, ttlSeconds);
+    return true;
+  }
+
   async delete(key: string): Promise<void> {
     this.store.delete(key);
   }
@@ -143,6 +161,10 @@ export class KVManager {
 
   async setString(scope: string, key: string, value: string, ttlSeconds?: number): Promise<void> {
     await this.backend.set(this.buildStorageKey(scope, key), value, ttlSeconds);
+  }
+
+  async setStringIfAbsent(scope: string, key: string, value: string, ttlSeconds?: number): Promise<boolean> {
+    return await this.backend.setIfAbsent(this.buildStorageKey(scope, key), value, ttlSeconds);
   }
 
   async delete(scope: string, key: string): Promise<void> {

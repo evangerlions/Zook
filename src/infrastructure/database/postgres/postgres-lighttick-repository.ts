@@ -381,6 +381,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const tables = ["task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities"];
     await this.transaction(owner, async () => {
+      await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1
+        AND (guest_user_id=$2 OR target_user_id=$2)`, [owner.appId,owner.userId]);
       for (const suffix of tables) await this.query(`DELETE FROM zook_lighttick_${suffix} WHERE app_id=$1 AND user_id=$2`, [owner.appId,owner.userId]);
     });
   }

@@ -27,6 +27,8 @@ action-first 渐进启动闭环。渐进启动提供确定性 starter fallback�
 三日预览、周承诺门槛、同 lineage 任务变体和暂停/恢复模式；原 plan-first onboarding
 继续兼容。受限游客身份可通过设备绑定证明事务升级到正式 LightTick membership，迁移保持
 资源 ID、版本、执行事件、幂等结果和同步序列，并以独立升级操作记录支持丢失响应重放。
+刷新令牌使用原子消费标记保证并发轮换只有一个成功；登出保留产品数据，LightTick 删除则要求
+5 分钟有效的一次性密码重新认证证明，并只清理 LightTick membership、数据和会话。
 能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
 不再拥有生产数据、合同或运行时。
