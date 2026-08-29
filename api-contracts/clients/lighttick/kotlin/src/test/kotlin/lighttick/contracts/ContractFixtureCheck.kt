@@ -54,6 +54,9 @@ fun main(args: Array<String>) {
     val revoked = fixtureRoot.resolve("session-revoked-error.json").readText()
     revoked.requireContains("\"code\": \"AUTH_SESSION_REVOKED\"")
     check(LightTickErrorCode.valueOf("AUTH_SESSION_REVOKED") == LightTickErrorCode.AUTH_SESSION_REVOKED)
+    check(LightTickErrorCode.valueOf("LIGHTTICK_GUEST_CREDENTIAL_INVALID") ==
+        LightTickErrorCode.LIGHTTICK_GUEST_CREDENTIAL_INVALID)
+    check(LightTickErrorCode.valueOf("LIGHTTICK_REAUTH_REQUIRED") == LightTickErrorCode.LIGHTTICK_REAUTH_REQUIRED)
 
     val replay = fixtureRoot.resolve("account-upgrade-lost-response-replay.json").readText()
     replay.requireContains("\"idempotency_replayed\": true")

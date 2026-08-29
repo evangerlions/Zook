@@ -19,9 +19,14 @@ public enum LightTickErrorCode: String, Codable, Sendable {
     case appDisabled = "LIGHTTICK_APP_DISABLED"
     case guestSessionExpired = "LIGHTTICK_GUEST_SESSION_EXPIRED"
     case guestUpgradeInvalid = "LIGHTTICK_GUEST_UPGRADE_INVALID"
+    case guestCredentialInvalid = "LIGHTTICK_GUEST_CREDENTIAL_INVALID"
+    case guestExpired = "LIGHTTICK_GUEST_EXPIRED"
+    case guestRevoked = "LIGHTTICK_GUEST_REVOKED"
     case guestUpgradeConflict = "LIGHTTICK_GUEST_UPGRADE_CONFLICT"
     case accountAlreadyUpgraded = "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED"
     case accountDeletionReauthenticationRequired = "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED"
+    case reauthenticationRequired = "LIGHTTICK_REAUTH_REQUIRED"
+    case appAccessDenied = "LIGHTTICK_APP_ACCESS_DENIED"
     case resourceNotFound = "LIGHTTICK_RESOURCE_NOT_FOUND"
     case invalidStateTransition = "LIGHTTICK_STATE_TRANSITION_INVALID"
     case versionConflict = "LIGHTTICK_VERSION_CONFLICT"
@@ -84,9 +89,9 @@ public struct LightTickPublicConfigData: Codable, Sendable {
     public let minimumClientVersions: LightTickMinimumClientVersions
     public let guestSessionTtlSeconds: Int
     public let features: LightTickPublicFeatureFlags
-    public let privacyPolicyUrl: URL?
-    public let termsOfServiceUrl: URL?
-    public let supportUrl: URL?
+    public let privacyPolicyUrl: URL
+    public let termsOfServiceUrl: URL
+    public let supportUrl: URL
     public let updatedAt: Date
 
     enum CodingKeys: String, CodingKey {

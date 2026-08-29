@@ -77,6 +77,8 @@ final class ContractFixtureTests: XCTestCase {
         )
         XCTAssertEqual(revoked.code, .sessionRevoked)
         XCTAssertEqual(revoked.data.resolutionActions, ["clear_local_session", "create_guest_or_sign_in"])
+        XCTAssertEqual(LightTickErrorCode(rawValue: "LIGHTTICK_GUEST_CREDENTIAL_INVALID"), .guestCredentialInvalid)
+        XCTAssertEqual(LightTickErrorCode(rawValue: "LIGHTTICK_REAUTH_REQUIRED"), .reauthenticationRequired)
     }
 
     func testLostUpgradeResponseReplayFixtureDecodes() throws {
