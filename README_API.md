@@ -116,6 +116,7 @@ POST   /api/v1/frogsleep/focus-buddy/match-profile
 LightTick 原生客户端使用以下核心接口族：
 
 ```text
+GET       /api/v1/lighttick/public/config
 POST      /api/v1/lighttick/account/guest-sessions
 GET       /api/v1/lighttick/account/session
 POST      /api/v1/lighttick/account/upgrade
@@ -136,6 +137,12 @@ POST/GET   /api/v1/lighttick/sync/{push|pull}
 POST/DELETE /api/v1/lighttick/devices...
 DELETE     /api/v1/lighttick/me/account
 ```
+
+`GET /api/v1/lighttick/public/config` 无需登录，即使 LightTick 业务能力默认关闭也可读取。
+它只返回固定 `app_id=lighttick`、`local/dev/online` 环境、配置版本、双端最低版本、
+游客有效期、公开功能开关及 HTTPS 法律/支持地址。响应由 `admin.delivery_config` 的
+显式白名单字段投影生成；密钥、Token、内部地址和其他管理配置不会透传。运行时
+`LIGHTTICK_ENABLED` 与后台 `enabled` 必须同时为真，公开功能开关才可能开启。
 
 游客创建接口是唯一无需 Bearer Token 的账户接口，请求必须携带稳定
 `Idempotency-Key`，并提交 `device_id` 与至少 32 字符、由设备生成且保存在

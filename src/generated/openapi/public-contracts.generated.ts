@@ -8764,6 +8764,9 @@ export const LightTickPublicConfigDataSchema = {
     "minimum_client_versions",
     "guest_session_ttl_seconds",
     "features",
+    "privacy_policy_url",
+    "terms_of_service_url",
+    "support_url",
     "updated_at"
   ],
   "properties": {
@@ -8877,9 +8880,9 @@ export type LightTickPublicConfigData = {
   "notifications": boolean;
   "ai_coach": boolean;
 };
-  "privacy_policy_url"?: string;
-  "terms_of_service_url"?: string;
-  "support_url"?: string;
+  "privacy_policy_url": string;
+  "terms_of_service_url": string;
+  "support_url": string;
   "updated_at": string;
 };
 
@@ -8910,6 +8913,9 @@ export const LightTickPublicConfigEnvelopeSchema = {
         "minimum_client_versions",
         "guest_session_ttl_seconds",
         "features",
+        "privacy_policy_url",
+        "terms_of_service_url",
+        "support_url",
         "updated_at"
       ],
       "properties": {
@@ -9031,9 +9037,9 @@ export type LightTickPublicConfigEnvelope = {
   "notifications": boolean;
   "ai_coach": boolean;
 };
-  "privacy_policy_url"?: string;
-  "terms_of_service_url"?: string;
-  "support_url"?: string;
+  "privacy_policy_url": string;
+  "terms_of_service_url": string;
+  "support_url": string;
   "updated_at": string;
 };
   "requestId": string;

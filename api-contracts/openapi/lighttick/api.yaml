@@ -1323,7 +1323,7 @@ components:
       additionalProperties: false
     LightTickPublicConfigData:
       type: object
-      required: [app_id, enabled, environment, configuration_version, minimum_client_versions, guest_session_ttl_seconds, features, updated_at]
+      required: [app_id, enabled, environment, configuration_version, minimum_client_versions, guest_session_ttl_seconds, features, privacy_policy_url, terms_of_service_url, support_url, updated_at]
       properties:
         app_id: { type: string, const: lighttick }
         enabled: { type: boolean }

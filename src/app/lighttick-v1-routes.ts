@@ -5,6 +5,7 @@ import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { randomId, sha256 } from "../shared/utils.ts";
 import { assertIanaTimezone } from "../modules/lighttick/lighttick-profile.service.ts";
+import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttick-public-config.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 
 const PREFIX = "/api/v1/lighttick/";
@@ -122,6 +123,15 @@ async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind:
 export async function tryHandleLightTickV1Routes(context: BackendRouteContext, enabled: boolean,
   runtime: LightTickRuntime | undefined, request: HttpRequest): Promise<HttpResponse<unknown> | undefined> {
   if (!request.path.startsWith(PREFIX)) return undefined;
+  if (request.method === "GET" && request.path === `${PREFIX}public/config`) {
+    const requestAppId = request.headers["x-app-id"] ?? request.headers["X-App-Id"];
+    if (requestAppId && requestAppId !== LIGHTTICK_APP_ID)
+      throw new ApplicationError(403, "AUTH_APP_SCOPE_MISMATCH", `X-App-Id must match ${LIGHTTICK_APP_ID}.`);
+    if (request.headers.authorization ?? request.headers.Authorization)
+      await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
+    const config = await context.database.findAppConfig(LIGHTTICK_APP_ID, "admin.delivery_config");
+    return response(context, request, buildLightTickPublicConfiguration(enabled, config));
+  }
   if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled for this deployment.");
   if (request.method === "POST" && request.path === `${PREFIX}account/guest-sessions`) {
     if (!runtime.guestIdentity) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick guest sessions are unavailable.");

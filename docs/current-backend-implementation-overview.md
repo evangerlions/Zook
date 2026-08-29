@@ -29,6 +29,8 @@ action-first 渐进启动闭环。渐进启动提供确定性 starter fallback�
 资源 ID、版本、执行事件、幂等结果和同步序列，并以独立升级操作记录支持丢失响应重放。
 刷新令牌使用原子消费标记保证并发轮换只有一个成功；登出保留产品数据，LightTick 删除则要求
 5 分钟有效的一次性密码重新认证证明，并只清理 LightTick membership、数据和会话。
+LightTick 独立公开配置在产品关闭时仍可读取，并以固定白名单响应环境、双端最低版本、
+游客有效期、功能开关与 HTTPS 法律/支持入口；管理配置中的密钥和内部字段不会透传。
 能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
 不再拥有生产数据、合同或运行时。
@@ -270,6 +272,9 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 3. 返回值为当前 app 配置的 JSON 对象
 4. 如果请求同时携带 `X-App-Id` 或 Bearer Token，则必须与 path 中的 `productKey` 对应 app 一致
 5. 这里的 `productKey` 是 URL namespace；运行时数据与鉴权仍使用 `appId`
+6. LightTick 使用独立的 `/api/v1/lighttick/public/config` 合同，不返回通用接口的原始
+   `config` 对象；它在业务关闭时仍提供安全启动元数据，且只有运行时与后台开关同时开启时
+   才会把公开能力标记为启用
 
 ### 2.13 AINovel 加密 AI 能力接口
 
