@@ -117,6 +117,19 @@ function classifyProviderRequestFailure(error: ApplicationError): {
     .toLowerCase();
 
   if (
+    includesAny(searchText, [
+      "context_length_exceeded",
+      "context length exceeded",
+      "context window exceeded",
+      "exceeds the context window",
+      "input is too long",
+      "maximum context length",
+      "too many tokens",
+    ])
+  ) {
+    return { code: "AI_CONTEXT_TOO_LONG", statusCode: 413 };
+  }
+  if (
     providerStatusCode === 401 ||
     providerStatusCode === 403 ||
     includesAny(searchText, [
@@ -130,6 +143,24 @@ function classifyProviderRequestFailure(error: ApplicationError): {
     return { code: "AI_UPSTREAM_AUTH_FAILED", statusCode: 502 };
   }
   if (
+    includesAny(searchText, [
+      "balance",
+      "billing",
+      "insufficient balance",
+      "insufficient funds",
+      "insufficient_quota",
+      "quota",
+    ])
+  ) {
+    return { code: "AI_UPSTREAM_QUOTA_EXHAUSTED", statusCode: 503 };
+  }
+  if (
+    providerStatusCode === 429 ||
+    includesAny(searchText, ["rate_limit", "ratelimit", "throttl"])
+  ) {
+    return { code: "AI_UPSTREAM_RATE_LIMITED", statusCode: 429 };
+  }
+  if (
     providerStatusCode === 400 ||
     includesAny(searchText, [
       "bad_request",
@@ -140,15 +171,6 @@ function classifyProviderRequestFailure(error: ApplicationError): {
     ])
   ) {
     return { code: "AI_UPSTREAM_INVALID_REQUEST", statusCode: 502 };
-  }
-  if (
-    providerStatusCode === 429 ||
-    includesAny(searchText, ["rate_limit", "ratelimit", "throttl"])
-  ) {
-    return { code: "AI_UPSTREAM_RATE_LIMITED", statusCode: 429 };
-  }
-  if (includesAny(searchText, ["balance", "billing", "insufficient", "quota"])) {
-    return { code: "AI_UPSTREAM_QUOTA_EXHAUSTED", statusCode: 503 };
   }
   return { code: "AI_UPSTREAM_BAD_GATEWAY", statusCode: 502 };
 }

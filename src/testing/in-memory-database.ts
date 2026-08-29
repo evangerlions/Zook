@@ -67,6 +67,7 @@ import {
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
 import { InMemoryAiNovelStatisticsStore } from "./in-memory-ai-novel-statistics-store.ts";
+import { InMemoryLlmObservabilityStore } from "./in-memory-llm-observability-store.ts";
 import { conflict } from "../shared/errors.ts";
 import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
 import type {
@@ -103,6 +104,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private readonly buddyCommandContext = new AsyncLocalStorage<Set<string>>();
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
+  readonly llmObservabilityStore = new InMemoryLlmObservabilityStore();
 
   apps: AppRecord[];
   users: UserRecord[];

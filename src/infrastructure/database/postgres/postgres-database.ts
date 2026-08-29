@@ -73,7 +73,7 @@ import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from
 import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../../../modules/bodylog/bodylog-challenge.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { PostgresLightTickRepository } from "./postgres-lighttick-repository.ts";
-import type { LightTickRepository } from "../../../modules/lighttick/lighttick.repository.ts";
+import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
@@ -102,6 +102,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly bodyLogInvitations: PostgresBodyLogInvitationStore;
   private readonly bodyLogChallenges: PostgresBodyLogChallengeStore;
   private readonly lightTick: PostgresLightTickRepository;
+  readonly llmObservabilityStore: PostgresLlmObservabilityStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -121,9 +122,9 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogInvitations = new PostgresBodyLogInvitationStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogChallenges = new PostgresBodyLogChallengeStore(async (sql, values = []) => await this.query(sql, values));
     this.lightTick = new PostgresLightTickRepository(this.pool);
+    this.llmObservabilityStore = new PostgresLlmObservabilityStore(async (sql, values = []) => await this.query(sql, values), async () => await this.pool.connect());
   }
-
-  getLightTickRepository(): LightTickRepository { return this.lightTick; }
+  getLightTickRepository(): PostgresLightTickRepository { return this.lightTick; }
   static async create(
     connectionString: string,
     seed: DatabaseSeed = {},
@@ -138,13 +139,11 @@ export class PostgresDatabase extends ApplicationDatabase {
     await database.initialize();
     return database;
   }
-
   override async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
     const existingClient = this.sessionContext.getStore();
     if (existingClient) {
       return await fn();
     }
-
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
@@ -159,13 +158,11 @@ export class PostgresDatabase extends ApplicationDatabase {
       client.release();
     }
   }
-
   override async withFrogSleepBuddyCommandTransaction<T>(slotKeys: FrogSleepBuddyCommandSlotKey[], fn: () => Promise<T> | T): Promise<T> { return await this.buddyCommandTransaction.run(slotKeys, fn); }
   override async withFrogSleepBuddyInvitationDecisionSafetyTransaction<T>(key: FrogSleepBuddyInvitationDecisionSafetyKey, fn: () => Promise<T> | T): Promise<T> { return await this.buddyDecisionSafetyTransaction.run(key, fn); }
   override async close(): Promise<void> {
     await this.pool.end();
   }
-
   override async exportManagedState(): Promise<ManagedStateSnapshot> {
     return {
       apps: await this.listApps(),
@@ -174,17 +171,14 @@ export class PostgresDatabase extends ApplicationDatabase {
       appConfigs: await this.listAppConfigs(),
     };
   }
-
   override async listApps(): Promise<AppRecord[]> {
     const result = await this.query("SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps ORDER BY id ASC");
     return result.rows.map(parseApp);
   }
-
   override async listAppIds(): Promise<string[]> {
     const result = await this.query("SELECT id FROM zook_apps ORDER BY id ASC");
     return result.rows.map((row) => String(row.id));
   }
-
   override async findApp(appId: string): Promise<AppRecord | undefined> {
     const result = await this.query(
       "SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps WHERE id = $1 OR code = $1 LIMIT 1",

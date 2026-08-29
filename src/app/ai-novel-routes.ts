@@ -58,6 +58,11 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticateProductRequest(request, "ai_novel");
+  const accountRegion = await this.resolveAccountRegion(
+    request,
+    "ai_novel",
+    auth.userId,
+  );
   const routingTier = resolveAiNovelModelRoutingTier.call(this, auth);
   const { keyId, plaintext } = await decryptAiRequestBody.call(this, request);
 
@@ -84,6 +89,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
           routingTier,
           userId: auth.userId,
           locale: this.resolveRequestLocale(request),
+          accountRegion,
         }),
       );
     }
@@ -94,6 +100,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
       routingTier,
       userId: auth.userId,
       locale: this.resolveRequestLocale(request),
+      accountRegion,
     });
     const localDebugResponseText =
       extractLocalAiDebugResponseText.call(this, result);

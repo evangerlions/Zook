@@ -1,7 +1,10 @@
 import { createServer } from "node:http";
 import { buildCorsHeaders, buildCorsPreflightHeaders, resolveCorsDecision } from "./infrastructure/http/cors.ts";
+import { resolveClientAddress } from "./infrastructure/http/client-ip.ts";
 import { readRequestBody } from "./infrastructure/http/request-body.ts";
 import { init } from "./infrastructure/runtime/init.ts";
+import { isTelemetryPath } from "./modules/telemetry/telemetry-gateway.ts";
+import type { TelemetryGatewayResponse } from "./modules/telemetry/telemetry-gateway-types.ts";
 
 function normalizeHeaders(headers: Record<string, string | string[] | undefined>): Record<string, string | undefined> {
   return Object.fromEntries(
@@ -12,14 +15,16 @@ function normalizeHeaders(headers: Record<string, string | string[] | undefined>
   );
 }
 
-function getClientIp(headers: Record<string, string | string[] | undefined>, fallback?: string): string | undefined {
-  const forwardedFor = headers["x-forwarded-for"];
-  const value = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
-  if (value) {
-    return value.split(",")[0]?.trim();
-  }
-
-  return fallback;
+function writeTelemetryResponse(
+  response: import("node:http").ServerResponse,
+  handled: TelemetryGatewayResponse,
+  origin?: string,
+): void {
+  response.statusCode = handled.statusCode;
+  response.setHeader("X-Request-Id", handled.requestId);
+  Object.entries(buildCorsHeaders(origin)).forEach(([key, value]) => response.setHeader(key, value));
+  Object.entries(handled.headers ?? {}).forEach(([key, value]) => response.setHeader(key, value));
+  response.end(handled.body ? Buffer.from(handled.body) : undefined);
 }
 
 const port = Number(process.env.PORT ?? 3100);
@@ -61,10 +66,32 @@ const server = createServer(async (request, response) => {
   }
 
   try {
+    const method = request.method ?? "GET";
+    const normalizedHeaders = normalizeHeaders(request.headers);
+    const clientAddress = resolveClientAddress(
+      request.headers["x-forwarded-for"],
+      request.socket.remoteAddress,
+    );
+    const ipAddress = clientAddress.ipAddress;
+    if (isTelemetryPath(url.pathname)) {
+      const handled = await runtime.telemetryGateway.handle({
+        method,
+        path: url.pathname,
+        query: url.searchParams,
+        headers: normalizedHeaders,
+        body: request,
+        discardBody: () => request.resume(),
+        ipAddress,
+        requestId: normalizedHeaders["x-request-id"],
+      });
+      writeTelemetryResponse(response, handled, corsDecision.origin);
+      return;
+    }
+
     const handled = await runtime.app.handle({
-      method: request.method ?? "GET",
+      method,
       path: url.pathname,
-      headers: normalizeHeaders(request.headers),
+      headers: normalizedHeaders,
       query: Object.fromEntries(url.searchParams.entries()),
       body: await readRequestBody(
         request,
@@ -73,8 +100,8 @@ const server = createServer(async (request, response) => {
           : request.headers["content-type"],
       ),
       hostname: request.headers.host?.split(":")[0],
-      ipAddress: getClientIp(request.headers, request.socket.remoteAddress),
-      trustedProxy: Boolean(request.headers["x-forwarded-for"]),
+      ipAddress,
+      trustedProxy: clientAddress.trustedProxy,
     });
 
     response.statusCode = handled.statusCode;

@@ -31,10 +31,10 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
 
     await suite.test("installs from empty and remains upgrade/idempotency safe", async () => {
       const installed = await pool.query(`SELECT name FROM zook_schema_migrations
-        WHERE name LIKE '028_lighttick%' OR name LIKE '029_lighttick%' OR name LIKE '030_lighttick%'
+        WHERE name LIKE '029_lighttick%' OR name LIKE '030_lighttick%' OR name LIKE '031_lighttick%'
           OR name LIKE '032_lighttick%' ORDER BY name`);
       assert.deepEqual(installed.rows.map(row => row.name), [
-        "028_lighttick_core.sql", "029_lighttick_events_reviews_ai.sql", "030_lighttick_sync_devices.sql",
+        "029_lighttick_core.sql", "030_lighttick_events_reviews_ai.sql", "031_lighttick_sync_devices.sql",
         "032_lighttick_progressive_action_loop.sql",
       ]);
       const before = installed.rows.length;

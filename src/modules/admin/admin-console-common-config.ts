@@ -152,7 +152,9 @@ export class AdminConsoleCommonConfig {
     const runtime = {
       generatedAt: new Date().toISOString(),
       models: await Promise.all(
-        document.config.models.map((model) => this.llmHealthService.buildModelRuntimeStatus(model)),
+        document.config.models.map((model) =>
+          this.llmHealthService.buildModelRuntimeStatus(model, document.config.providers),
+        ),
       ),
     };
 
@@ -174,12 +176,25 @@ export class AdminConsoleCommonConfig {
     return this.getLlmServiceConfig(document.revision);
   }
 
-  async getLlmMetrics(range: LlmMetricsRange, provider?: string): Promise<AdminLlmMetricsDocument> {
+  async getLlmMetrics(
+    range: LlmMetricsRange,
+    provider?: string,
+    operation?: "chat" | "embedding",
+    providerModel?: string,
+  ): Promise<AdminLlmMetricsDocument> {
+    const snapshot = await this.commonLlmConfigService.getRuntimeConfigSnapshot();
+    const config = snapshot?.config ?? await this.commonLlmConfigService.getCurrentConfig();
     return this.llmMetricsService.getOverview(
-      await this.commonLlmConfigService.getCurrentConfig(),
+      config,
       range,
       new Date(),
-      provider,
+      {
+        provider,
+        operation,
+        providerModel,
+        configRevision: snapshot?.revision,
+        configUpdatedAt: snapshot?.updatedAt,
+      },
     );
   }
 

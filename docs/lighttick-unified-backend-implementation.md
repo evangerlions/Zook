@@ -81,8 +81,8 @@ requires an LLM response. First-action feedback is factual only. Standard,
 light, and minimum variants share one lineage; minimum completion is a valid
 action but does not satisfy the standard commitment. Pause metadata and
 recovery mode are stored only in LightTick tables and do not modify Common or
-other product behavior. Migration `032_lighttick_progressive_action_loop.sql`
-is intentionally numbered after the in-flight 027–031 migrations on `main`.
+other product behavior. The LightTick migrations occupy `029` through `032`,
+immediately after `028_llm_call_observations.sql` on the synchronized `main`.
 
 Native delivery uses the committed Swift Package and Kotlin contracts under
 `api-contracts/clients/lighttick/`. Production UI belongs in explicit SwiftUI

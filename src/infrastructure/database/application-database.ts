@@ -45,6 +45,7 @@ import type {
   UserRoleRecord,
   SmsVerificationRecord,
 } from "../../shared/types.ts";
+import type { LlmObservabilityStore } from "./llm-observability-store.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
@@ -83,6 +84,7 @@ export interface ManagedStateSnapshot {
  * Test doubles may keep in-memory state, but business code should only use this API.
  */
 export abstract class ApplicationDatabase {
+  abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],

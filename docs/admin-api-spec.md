@@ -243,8 +243,13 @@ Admin 查看接口：
 
 说明：
 
-- `GET /api/v1/admin/apps/common/llm-service/metrics` 的 `models` 只统计 common LLM model key，并按当前时间范围内的请求量降序返回，便于优先查看真实流量模型。
-- AINovel 的 `ainovel-free-creative`、`ainovel-plus-reasoning`、`ainovel-embedding-default` 等值是业务 scene route key，不是 model key；LLM metrics 会过滤这些业务 key，并把 AINovel 调用归入实际 provider model key（如 `qwen3.6-plus`、`text-embedding-v4`）。
+- `GET /api/v1/admin/apps/common/llm-service/metrics` 的 `models` 按实际 Provider Model 和调用类型统计，并按当前范围 Token/调用量返回有界结果。
+- metrics 默认范围为 `48h`；支持 `24h / 48h / 7d / 30d`，并可使用 `operation=chat|embedding`、`provider`、`providerModel` 组合筛选。短范围按小时、长范围按天返回一条筛选后的 timeline。
+- `models` 按实际 `providerModel × operation` 汇总；`providerMetrics` 按 `provider × operation` 汇总；`crossMetrics` 按 Provider × Provider Model × operation 汇总矩阵；`routes` 按路由 Model × Provider × Provider Model × operation 汇总动态路由。AINovel 的 `ainovel-*` scene route key 不作为运营 Model 排行维度。
+- Provider/Provider Model 筛选不会重算动态路由历史流量分母；routing shares 和配置 revision 检测使用未被下钻筛选缩小的时间 cohort。
+- 响应包含 canonical total Token、Prompt、可见输出、Reasoning、未分类差额、Provider/估算/缺失 usage 数、可靠性成功率和 P50/P95。客户端取消单独计数且不进入可靠性成功率分母；Chat 与 Embedding 不生成混合延迟百分位。
+- `runtime` 直接返回路由 selector 使用的基础权重、健康分、动态分、真实选择概率和选择原因；前端不得重新实现公式。`fixed` 为 100/0，`auto` 健康分全零时回退基础权重。
+- 原始调用观察只保存脱敏维度和数值，不保存 prompt、response、userId、Authorization、Provider payload 或原始错误 body。
 - `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）会执行当前生效配置的完整模型 × 供应商矩阵；响应的 `target` 为 `{ "mode": "matrix" }`。
 - 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。
 - 指定 route 若供应商或 route 已禁用，会返回该 route 的 `skipped` 结果；可用 route 会实际调用上游。聊天冒烟请求使用 64 个输出 token，以便推理模型能在回复前完成必要推理。

@@ -1,7 +1,6 @@
-import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import { withContextUsage } from "./llm-context-window.ts";
 import { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
-import { LlmRequestResolver } from "./llm-request-resolver.ts";
+import { LlmRequestResolver, type ResolvedLlmRequest } from "./llm-request-resolver.ts";
 import type {
   LLMCompleteViaStreamOptions,
   LLMCompletionRequest,
@@ -60,6 +59,7 @@ export class LLMManager {
   async complete(request: LLMCompletionRequest): Promise<LLMCompletionResult> {
     const resolution = await this.requestResolver.resolve(request);
     const startedAt = this.getNow();
+    const observation = this.startObservation(resolution, "non_stream", startedAt);
 
     try {
       const result = await this.providers[
@@ -70,14 +70,7 @@ export class LLMManager {
         resolution.request.model,
       );
       const completedAt = this.getNow();
-      const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
-      await this.recordRouteResult(resolution.routeRefs, {
-        ok: true,
-        firstByteLatencyMs: totalLatencyMs,
-        totalLatencyMs,
-        usage,
-        occurredAt: completedAt,
-      });
+      await observation?.finalize({ usage, completedAt });
       await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
       return {
         ...result,
@@ -88,13 +81,7 @@ export class LLMManager {
       };
     } catch (error) {
       const completedAt = this.getNow();
-      const totalLatencyMs = completedAt.getTime() - startedAt.getTime();
-      await this.recordRouteResult(resolution.routeRefs, {
-        ok: false,
-        firstByteLatencyMs: totalLatencyMs,
-        totalLatencyMs,
-        occurredAt: completedAt,
-      });
+      await observation?.finalize({ error, completedAt });
       throw error;
     }
   }
@@ -105,6 +92,7 @@ export class LLMManager {
   ): Promise<LLMCompletionResult> {
     const resolution = await this.requestResolver.resolve(request);
     const startedAt = this.getNow();
+    const observation = this.startObservation(resolution, "stream", startedAt);
     let firstByteLatencyMs: number | undefined;
     let usage: LLMUsage | undefined;
     let finishReason: string | undefined;
@@ -135,21 +123,37 @@ export class LLMManager {
         const event = next.value;
         switch (event.type) {
           case "content_delta":
-            firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
+            if (firstByteLatencyMs === undefined) {
+              const firstResponseAt = this.getNow();
+              firstByteLatencyMs = firstResponseAt.getTime() - startedAt.getTime();
+              observation?.markFirstResponse(firstResponseAt);
+            }
             text += event.text;
             usageEstimate.addContentDelta(event.text);
             break;
           case "reasoning_delta":
-            firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
+            if (firstByteLatencyMs === undefined) {
+              const firstResponseAt = this.getNow();
+              firstByteLatencyMs = firstResponseAt.getTime() - startedAt.getTime();
+              observation?.markFirstResponse(firstResponseAt);
+            }
             reasoningText += event.text;
             usageEstimate.addReasoningDelta(event.text);
             break;
           case "tool_call_delta":
-            firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
+            if (firstByteLatencyMs === undefined) {
+              const firstResponseAt = this.getNow();
+              firstByteLatencyMs = firstResponseAt.getTime() - startedAt.getTime();
+              observation?.markFirstResponse(firstResponseAt);
+            }
             usageEstimate.addToolCallDelta(event.text);
             break;
           case "tool_call":
-            firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
+            if (firstByteLatencyMs === undefined) {
+              const firstResponseAt = this.getNow();
+              firstByteLatencyMs = firstResponseAt.getTime() - startedAt.getTime();
+              observation?.markFirstResponse(firstResponseAt);
+            }
             toolCalls.push(event.toolCall);
             usageEstimate.addFinalToolCall(event.toolCall);
             break;
@@ -174,14 +178,7 @@ export class LLMManager {
         usageEstimate.toUsageFallback(),
         resolution.request.model,
       );
-      await this.recordRouteResult(resolution.routeRefs, {
-        ok: true,
-        firstByteLatencyMs:
-          firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
-        totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-        usage,
-        occurredAt: completedAt,
-      });
+      await observation?.finalize({ usage, completedAt });
       await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
       return {
         provider: resolution.request.model.provider,
@@ -196,13 +193,7 @@ export class LLMManager {
     } catch (error) {
       void iterator.return?.();
       const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRefs, {
-        ok: false,
-        firstByteLatencyMs:
-          firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
-        totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-        occurredAt: completedAt,
-      });
+      await observation?.finalize({ error, usage, completedAt });
       throw error;
     }
   }
@@ -210,6 +201,7 @@ export class LLMManager {
   async *stream(request: LLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
     const resolution = await this.requestResolver.resolve(request);
     const startedAt = this.getNow();
+    const observation = this.startObservation(resolution, "stream", startedAt);
     let firstByteLatencyMs: number | undefined;
     let usage: LLMUsage | undefined;
     let sawDone = false;
@@ -224,7 +216,11 @@ export class LLMManager {
           case "content_delta":
           case "tool_call_delta":
           case "tool_call":
-            firstByteLatencyMs ??= this.getNow().getTime() - startedAt.getTime();
+            if (firstByteLatencyMs === undefined) {
+              const firstResponseAt = this.getNow();
+              firstByteLatencyMs = firstResponseAt.getTime() - startedAt.getTime();
+              observation?.markFirstResponse(firstResponseAt);
+            }
             this.addUsageEstimateEvent(usageEstimate, event);
             yield event;
             break;
@@ -249,14 +245,7 @@ export class LLMManager {
                 };
               }
             }
-            await this.recordRouteResult(resolution.routeRefs, {
-              ok: true,
-              firstByteLatencyMs:
-                firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
-              totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-              usage,
-              occurredAt: completedAt,
-            });
+            await observation?.finalize({ usage, completedAt });
             await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
             sawDone = true;
             yield event;
@@ -277,15 +266,12 @@ export class LLMManager {
       }
     } catch (error) {
       const completedAt = this.getNow();
-      await this.recordRouteResult(resolution.routeRefs, {
-        ok: false,
-        firstByteLatencyMs:
-          firstByteLatencyMs ?? completedAt.getTime() - startedAt.getTime(),
-        totalLatencyMs: completedAt.getTime() - startedAt.getTime(),
-        usage,
-        occurredAt: completedAt,
-      });
+      await observation?.finalize({ error, usage, completedAt });
       throw error;
+    } finally {
+      if (observation && !observation.isFinalized) {
+        await observation.finalize({ outcome: "cancelled", usage });
+      }
     }
   }
 
@@ -331,35 +317,24 @@ export class LLMManager {
     }
   }
 
-  private async recordRouteResult(
-    routeRefs: {
-      healthRouteRef: LlmRouteRef;
-      metricRouteRef: LlmRouteRef;
-    },
-    result: {
-      ok: boolean;
-      firstByteLatencyMs: number;
-      totalLatencyMs: number;
-      usage?: LLMUsage;
-      occurredAt: Date;
-    },
-  ): Promise<void> {
-    await Promise.all([
-      this.options.llmHealthService?.recordResult(routeRefs.healthRouteRef, {
-        ok: result.ok,
-        timestamp: result.occurredAt.toISOString(),
-        firstByteLatencyMs: result.firstByteLatencyMs,
-        totalLatencyMs: result.totalLatencyMs,
-      }),
-      this.options.llmMetricsService?.recordCall({
-        ...routeRefs.metricRouteRef,
-        ok: result.ok,
-        firstByteLatencyMs: result.firstByteLatencyMs,
-        totalLatencyMs: result.totalLatencyMs,
-        usage: result.usage,
-        occurredAt: result.occurredAt,
-      }),
-    ]);
+  private startObservation(
+    resolution: ResolvedLlmRequest,
+    responseMode: "stream" | "non_stream",
+    startedAt: Date,
+  ) {
+    const recorder = this.options.llmCallObservationRecorder ??
+      this.options.llmMetricsService?.observationRecorder;
+    const route = resolution.routeRef;
+    return recorder?.start({
+      routingModelKey: route.modelKey,
+      provider: route.provider,
+      providerModel: route.providerModel,
+      operation: "chat",
+      responseMode,
+      routingConfigRevision: resolution.routingConfigRevision,
+      startedAt,
+      now: this.options.now,
+    });
   }
 
   private addUsageEstimateEvent(

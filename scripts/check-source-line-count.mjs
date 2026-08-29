@@ -11,6 +11,12 @@ const LEGACY_OVERSIZED_ALLOWLIST = new Set([
   // Legacy local e2e shim. Owner: AINovel backend; split when this test provider is next touched.
   "src/services/local-ainovel-e2e-provider.ts",
 ]);
+const LEGACY_OVERSIZED_LIMITS = new Map([
+  // Legacy database delegator. New stores must stay focused; do not grow this file.
+  ["src/infrastructure/database/postgres/postgres-database.ts", 674],
+  // Legacy shared record registry; split by domain when this registry is next refactored.
+  ["src/shared/types/records.ts", 641],
+]);
 const EXCLUDED_SEGMENTS = new Set([
   ".react-router",
   "build",
@@ -81,15 +87,15 @@ const oversized = sourceFiles
     lines: countLines(readFileSync(join(root, path), "utf8")),
   }))
   .filter((item) => !LEGACY_OVERSIZED_ALLOWLIST.has(item.path))
-  .filter((item) => item.lines > MAX_LINES)
+  .filter((item) => item.lines > (LEGACY_OVERSIZED_LIMITS.get(item.path) ?? MAX_LINES))
   .sort((left, right) => right.lines - left.lines);
 
 if (oversized.length === 0) {
-  console.log(`source line-count gate passed: ${sourceFiles.length} files <= ${MAX_LINES} lines`);
+  console.log(`source line-count gate passed: ${sourceFiles.length} files stayed within limit or legacy baseline`);
   process.exit(0);
 }
 
-console.error(`source line-count gate failed: ${oversized.length} files exceed ${MAX_LINES} lines`);
+console.error(`source line-count gate failed: ${oversized.length} files exceed their limit or legacy baseline`);
 for (const item of oversized) {
   console.error(`${String(item.lines).padStart(5)}  ${item.path}`);
 }

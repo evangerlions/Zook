@@ -1,22 +1,9 @@
 import type { LLMMessage } from "../../services/llm-manager.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
-import type { AiNovelChatStreamChunk } from "./ai-novel-llm.service.ts";
-
-export interface AiNovelLocalDebugLlmRequestPayload {
-  sceneKey: string;
-  sceneRouteKey: string;
-  temperature: number;
-  maxTokens: number;
-  profile?: AiNovelPromptProfile;
-  requestBody: {
-    sceneRouteKey: string;
-    messages: LLMMessage[];
-    temperature: number;
-    maxTokens: number;
-    stream: boolean;
-    providerOptions?: Record<string, unknown>;
-  };
-}
+import type {
+  AiNovelChatStreamChunk,
+  AiNovelLocalDebugLlmRequestPayload,
+} from "./ai-novel-llm-types.ts";
 
 export function buildLocalDebugLlmRequestPayload(input: {
   sceneKey: string;

@@ -58,6 +58,7 @@ import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login
 import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
+import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
@@ -76,6 +77,7 @@ import { VersionedAppConfigService } from "./services/versioned-app-config.servi
 import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
+import { createApplicationTelemetryGateway } from "./application-telemetry-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import { resolveLightTickEnabled } from "./application-lighttick-runtime-config.ts";
@@ -84,17 +86,10 @@ import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-se
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
-
-export async function createApplication(
-  options: CreateApplicationOptions = {},
-) {
+export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
-  const frogsleepEnabled = resolveFrogSleepEnabled(options);
-  const lighttickEnabled = resolveLightTickEnabled(options);
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, {
-    includeFrogSleep: frogsleepEnabled,
-    includeLightTick: lighttickEnabled,
-  });
+  const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickEnabled });
   const kvManager =
     options.kvManager ??
     (options.kvBackend
@@ -158,6 +153,7 @@ export async function createApplication(
     emitToConsole: options.emitLogs ?? false,
     sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
+  const telemetryGateway = createApplicationTelemetryGateway(options, logger);
   if (localRunFileLogSink) {
     logger.info("local run file logging enabled", {
       runId: localRunFileLogSink.runId,
@@ -165,7 +161,6 @@ export async function createApplication(
       logFile: localRunFileLogSink.currentPath,
     });
   }
-
   const appConfigService = new VersionedAppConfigService(
     database,
     cache,
@@ -261,8 +256,14 @@ export async function createApplication(
       await managedStateStore.save(database);
     }
   });
-  const llmHealthService = new LlmHealthService(kvManager);
-  const llmMetricsService = new LlmMetricsService(kvManager);
+  const defaultLlmProviderKeys = ["bailian", "bailian_coding", "openrouter"];
+  const runtimeLlmProviderKeys = {
+    chat: new Set(Object.keys(options.llmProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
+    embedding: new Set(Object.keys(options.embeddingProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
+  };
+  const llmHealthService = new LlmHealthService(database.llmObservabilityStore, runtimeLlmProviderKeys);
+  const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
+  const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
   const accessTokenSecrets = resolveAccessTokenSecrets(options);
@@ -450,8 +451,7 @@ export async function createApplication(
     commonEmailConfigService,
     registrationEmailSender,
   });
-  attachApplicationLightTickWorkers({ runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database,
-    appAiRoutingConfigService });
+  attachApplicationLightTickWorkers({ runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(
     new Map(
@@ -518,12 +518,12 @@ export async function createApplication(
     commonTestAccountService,
     kvManager,
     frogsleepEnabled,
-    lighttickEnabled,
-    lighttickRuntime,
+    lighttickEnabled, lighttickRuntime,
   );
   app.analyticsService = analyticsService;
   return {
     app,
+    telemetryGateway,
     database,
     cache,
     queue,
@@ -562,6 +562,7 @@ export async function createApplication(
       contentSafetyService,
       llmHealthService,
       llmMetricsService,
+      llmObservabilityRetentionService,
       llmSmokeTestService,
       aiNovelAuditFileService,
       aiNovelLlmService,
@@ -587,8 +588,7 @@ export async function createApplication(
       authGuard,
       appAccessGuard,
       rbacGuard,
-      lighttickRepository,
-      lighttickRuntime,
+      lighttickRepository, lighttickRuntime,
     },
     close: async () => {
       await queue.close?.();

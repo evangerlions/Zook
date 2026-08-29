@@ -1,6 +1,7 @@
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
+import type { LlmCallObservationRecorder } from "./llm-call-observation.ts";
 
 export type LLMProviderName = string;
 export type LLMRole = "system" | "user" | "assistant" | "tool";
@@ -118,6 +119,7 @@ export interface LLMManagerOptions {
   commonLlmConfigService?: CommonLlmConfigService;
   llmHealthService?: LlmHealthService;
   llmMetricsService?: LlmMetricsService;
+  llmCallObservationRecorder?: LlmCallObservationRecorder;
   usageRecorder?: (event: {
     appId: string;
     userId: string;
