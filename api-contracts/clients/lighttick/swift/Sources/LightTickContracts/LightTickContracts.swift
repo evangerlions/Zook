@@ -13,9 +13,15 @@ public enum LightTickErrorCode: String, Codable, Sendable {
     case invalidField = "REQ_FIELD_INVALID"
     case authRequired = "AUTH_REQUIRED"
     case invalidToken = "AUTH_TOKEN_INVALID"
+    case sessionRevoked = "AUTH_SESSION_REVOKED"
     case appScopeForbidden = "APP_SCOPE_FORBIDDEN"
     case inactiveMember = "APP_MEMBER_INACTIVE"
     case appDisabled = "LIGHTTICK_APP_DISABLED"
+    case guestSessionExpired = "LIGHTTICK_GUEST_SESSION_EXPIRED"
+    case guestUpgradeInvalid = "LIGHTTICK_GUEST_UPGRADE_INVALID"
+    case guestUpgradeConflict = "LIGHTTICK_GUEST_UPGRADE_CONFLICT"
+    case accountAlreadyUpgraded = "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED"
+    case accountDeletionReauthenticationRequired = "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED"
     case resourceNotFound = "LIGHTTICK_RESOURCE_NOT_FOUND"
     case invalidStateTransition = "LIGHTTICK_STATE_TRANSITION_INVALID"
     case versionConflict = "LIGHTTICK_VERSION_CONFLICT"
@@ -40,6 +46,148 @@ public struct LightTickErrorEnvelope: Codable, Sendable {
     public let message: String
     public let data: LightTickErrorData
     public let requestId: String
+}
+
+public enum LightTickRuntimeEnvironment: String, Codable, Sendable {
+    case local, dev, online
+}
+
+public enum LightTickAccountKind: String, Codable, Sendable {
+    case guest, registered
+}
+
+public struct LightTickPublicFeatureFlags: Codable, Sendable {
+    public let guestSessions: Bool
+    public let accountUpgrade: Bool
+    public let sync: Bool
+    public let notifications: Bool
+    public let aiCoach: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case sync, notifications
+        case guestSessions = "guest_sessions"
+        case accountUpgrade = "account_upgrade"
+        case aiCoach = "ai_coach"
+    }
+}
+
+public struct LightTickMinimumClientVersions: Codable, Sendable {
+    public let ios: String
+    public let android: String
+}
+
+public struct LightTickPublicConfigData: Codable, Sendable {
+    public let appId: String
+    public let enabled: Bool
+    public let environment: LightTickRuntimeEnvironment
+    public let configurationVersion: String
+    public let minimumClientVersions: LightTickMinimumClientVersions
+    public let guestSessionTtlSeconds: Int
+    public let features: LightTickPublicFeatureFlags
+    public let privacyPolicyUrl: URL?
+    public let termsOfServiceUrl: URL?
+    public let supportUrl: URL?
+    public let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case enabled, environment, features
+        case appId = "app_id"
+        case configurationVersion = "configuration_version"
+        case minimumClientVersions = "minimum_client_versions"
+        case guestSessionTtlSeconds = "guest_session_ttl_seconds"
+        case privacyPolicyUrl = "privacy_policy_url"
+        case termsOfServiceUrl = "terms_of_service_url"
+        case supportUrl = "support_url"
+        case updatedAt = "updated_at"
+    }
+}
+
+public struct LightTickGuestSessionData: Codable, Sendable {
+    public let accountKind: LightTickAccountKind
+    public let userId: String
+    public let deviceId: String
+    public let accessToken: String
+    public let refreshToken: String
+    public let expiresIn: Int
+    public let guestExpiresAt: Date
+    public let upgradeToken: String
+
+    enum CodingKeys: String, CodingKey {
+        case accountKind = "account_kind"
+        case userId = "user_id"
+        case deviceId = "device_id"
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+        case expiresIn = "expires_in"
+        case guestExpiresAt = "guest_expires_at"
+        case upgradeToken = "upgrade_token"
+    }
+}
+
+public struct LightTickAccountSessionData: Codable, Sendable {
+    public let appId: String
+    public let accountKind: LightTickAccountKind
+    public let userId: String
+    public let membershipStatus: String
+    public let sessionExpiresAt: Date
+    public let guestExpiresAt: Date?
+    public let syncCursor: String?
+
+    enum CodingKeys: String, CodingKey {
+        case appId = "app_id"
+        case accountKind = "account_kind"
+        case userId = "user_id"
+        case membershipStatus = "membership_status"
+        case sessionExpiresAt = "session_expires_at"
+        case guestExpiresAt = "guest_expires_at"
+        case syncCursor = "sync_cursor"
+    }
+}
+
+public struct LightTickTransferredResourceCounts: Codable, Sendable, Equatable {
+    public let goals: Int
+    public let plans: Int
+    public let tasks: Int
+    public let reviews: Int
+    public let proposals: Int
+}
+
+public struct LightTickAccountUpgradeData: Codable, Sendable {
+    public let accountKind: LightTickAccountKind
+    public let userId: String
+    public let previousGuestUserId: String
+    public let guestSessionRevoked: Bool
+    public let idempotencyReplayed: Bool
+    public let syncCursor: String?
+    public let transferredResourceCounts: LightTickTransferredResourceCounts
+
+    enum CodingKeys: String, CodingKey {
+        case accountKind = "account_kind"
+        case userId = "user_id"
+        case previousGuestUserId = "previous_guest_user_id"
+        case guestSessionRevoked = "guest_session_revoked"
+        case idempotencyReplayed = "idempotency_replayed"
+        case syncCursor = "sync_cursor"
+        case transferredResourceCounts = "transferred_resource_counts"
+    }
+}
+
+public struct LightTickAccountDeletionData: Codable, Sendable {
+    public let appId: String
+    public let membershipStatus: String
+    public let sessionsRevoked: Bool
+    public let productDataDeleted: Bool
+    public let platformAccountRetained: Bool
+    public let otherMembershipsRetained: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case appId = "app_id"
+        case membershipStatus = "membership_status"
+        case sessionsRevoked = "sessions_revoked"
+        case productDataDeleted = "product_data_deleted"
+        case platformAccountRetained = "platform_account_retained"
+        case otherMembershipsRetained = "other_memberships_retained"
+    }
 }
 
 public struct LightTickErrorData: Codable, Sendable {

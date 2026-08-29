@@ -28,8 +28,88 @@ tags:
   - name: lighttick-devices
     description: Native device and push-token registration.
   - name: lighttick-account
-    description: LightTick app-scoped account deletion.
+    description: LightTick guest sessions, account upgrade, session recovery, and app-scoped deletion.
+  - name: lighttick-config
+    description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/public/config:
+    get:
+      operationId: getLightTickPublicConfig
+      tags: [lighttick-config]
+      summary: Get non-secret environment and feature metadata for native clients
+      security: []
+      responses:
+        "200":
+          description: Current public LightTick client configuration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickPublicConfigEnvelope" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+        "503": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/guest-sessions:
+    post:
+      operationId: createLightTickGuestSession
+      tags: [lighttick-account]
+      summary: Create or idempotently recover a device-bound restricted guest session
+      description: The returned upgrade token is an opaque, device-bound proof for a later account upgrade and must be stored as securely as a refresh token.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickGuestSessionRequest" }
+      responses:
+        "201":
+          description: Guest session created or recovered for the same idempotency key and payload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickGuestSessionEnvelope" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+        "503": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/session:
+    get:
+      operationId: getLightTickAccountSession
+      tags: [lighttick-account]
+      summary: Recover the current guest or registered LightTick session metadata
+      description: Native clients refresh access credentials through the common auth contract, then call this endpoint to recover product-scoped state.
+      responses:
+        "200":
+          description: Current product-scoped account session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickAccountSessionEnvelope" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "410": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/upgrade:
+    post:
+      operationId: upgradeLightTickGuestAccount
+      tags: [lighttick-account]
+      summary: Transfer guest-owned LightTick data into the authenticated registered account
+      description: Requires a registered common-auth bearer token plus the guest session's opaque, device-bound upgrade proof. The transfer is transactional and preserves resource identifiers and sync continuity.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickAccountUpgradeRequest" }
+      responses:
+        "200":
+          description: Guest data transferred or the identical transfer replayed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickAccountUpgradeEnvelope" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "410": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/profile:
     get:
       operationId: getLightTickProfile
@@ -508,8 +588,15 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/LightTickAccountDeletionRequest" }
       responses:
-        "200": { $ref: "#/components/responses/LightTickOk" }
+        "200":
+          description: LightTick membership and app-scoped data deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickAccountDeletionEnvelope" }
         "400": { $ref: "#/components/responses/LightTickError" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
 components:
   securitySchemes:
     bearerAuth:
@@ -611,9 +698,15 @@ components:
         - REQ_FIELD_INVALID
         - AUTH_REQUIRED
         - AUTH_TOKEN_INVALID
+        - AUTH_SESSION_REVOKED
         - APP_SCOPE_FORBIDDEN
         - APP_MEMBER_INACTIVE
         - LIGHTTICK_APP_DISABLED
+        - LIGHTTICK_GUEST_SESSION_EXPIRED
+        - LIGHTTICK_GUEST_UPGRADE_INVALID
+        - LIGHTTICK_GUEST_UPGRADE_CONFLICT
+        - LIGHTTICK_ACCOUNT_ALREADY_UPGRADED
+        - LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED
         - LIGHTTICK_RESOURCE_NOT_FOUND
         - LIGHTTICK_STATE_TRANSITION_INVALID
         - LIGHTTICK_VERSION_CONFLICT
@@ -1186,18 +1279,166 @@ components:
         active: { type: boolean }
         created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
         updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickRuntimeEnvironment:
+      type: string
+      enum: [local, dev, online]
+    LightTickAccountKind:
+      type: string
+      enum: [guest, registered]
+    LightTickPublicFeatureFlags:
+      type: object
+      required: [guest_sessions, account_upgrade, sync, notifications, ai_coach]
+      properties:
+        guest_sessions: { type: boolean }
+        account_upgrade: { type: boolean }
+        sync: { type: boolean }
+        notifications: { type: boolean }
+        ai_coach: { type: boolean }
+      additionalProperties: false
+    LightTickMinimumClientVersions:
+      type: object
+      required: [ios, android]
+      properties:
+        ios: { type: string, minLength: 1, maxLength: 64 }
+        android: { type: string, minLength: 1, maxLength: 64 }
+      additionalProperties: false
+    LightTickPublicConfigData:
+      type: object
+      required: [app_id, enabled, environment, configuration_version, minimum_client_versions, guest_session_ttl_seconds, features, updated_at]
+      properties:
+        app_id: { type: string, const: lighttick }
+        enabled: { type: boolean }
+        environment: { $ref: "#/components/schemas/LightTickRuntimeEnvironment" }
+        configuration_version: { type: string, minLength: 1, maxLength: 128 }
+        minimum_client_versions: { $ref: "#/components/schemas/LightTickMinimumClientVersions" }
+        guest_session_ttl_seconds: { type: integer, minimum: 3600, maximum: 7776000 }
+        features: { $ref: "#/components/schemas/LightTickPublicFeatureFlags" }
+        privacy_policy_url: { type: string, format: uri }
+        terms_of_service_url: { type: string, format: uri }
+        support_url: { type: string, format: uri }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickPublicConfigEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickPublicConfigData" }
+        requestId: { type: string }
+    LightTickGuestSessionRequest:
+      type: object
+      required: [device_id, platform, timezone, locale, app_version]
+      properties:
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+        platform: { $ref: "#/components/schemas/LightTickDevicePlatform" }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        locale: { type: string, minLength: 2, maxLength: 16 }
+        app_version: { type: string, minLength: 1, maxLength: 64 }
+      additionalProperties: false
+    LightTickGuestSessionData:
+      type: object
+      required: [account_kind, user_id, device_id, access_token, refresh_token, expires_in, guest_expires_at, upgrade_token]
+      properties:
+        account_kind: { type: string, const: guest }
+        user_id: { $ref: "#/components/schemas/LightTickId" }
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+        access_token: { type: string, minLength: 16 }
+        refresh_token: { type: string, minLength: 16 }
+        expires_in: { type: integer, minimum: 1 }
+        guest_expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        upgrade_token: { type: string, minLength: 32 }
+    LightTickGuestSessionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: CREATED }
+        message: { type: string, example: created }
+        data: { $ref: "#/components/schemas/LightTickGuestSessionData" }
+        requestId: { type: string }
+    LightTickAccountSessionData:
+      type: object
+      required: [app_id, account_kind, user_id, membership_status, session_expires_at]
+      properties:
+        app_id: { type: string, const: lighttick }
+        account_kind: { $ref: "#/components/schemas/LightTickAccountKind" }
+        user_id: { $ref: "#/components/schemas/LightTickId" }
+        membership_status: { type: string, enum: [ACTIVE] }
+        session_expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        guest_expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        sync_cursor: { type: string, maxLength: 512 }
+    LightTickAccountSessionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickAccountSessionData" }
+        requestId: { type: string }
+    LightTickAccountUpgradeRequest:
+      type: object
+      required: [guest_user_id, guest_upgrade_token, device_id]
+      properties:
+        guest_user_id: { $ref: "#/components/schemas/LightTickId" }
+        guest_upgrade_token: { type: string, minLength: 32, maxLength: 4096 }
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+      additionalProperties: false
+    LightTickTransferredResourceCounts:
+      type: object
+      required: [goals, plans, tasks, reviews, proposals]
+      properties:
+        goals: { type: integer, minimum: 0 }
+        plans: { type: integer, minimum: 0 }
+        tasks: { type: integer, minimum: 0 }
+        reviews: { type: integer, minimum: 0 }
+        proposals: { type: integer, minimum: 0 }
+      additionalProperties: false
+    LightTickAccountUpgradeData:
+      type: object
+      required: [account_kind, user_id, previous_guest_user_id, guest_session_revoked, idempotency_replayed, transferred_resource_counts]
+      properties:
+        account_kind: { type: string, const: registered }
+        user_id: { $ref: "#/components/schemas/LightTickId" }
+        previous_guest_user_id: { $ref: "#/components/schemas/LightTickId" }
+        guest_session_revoked: { type: boolean, const: true }
+        idempotency_replayed: { type: boolean }
+        sync_cursor: { type: string, maxLength: 512 }
+        transferred_resource_counts: { $ref: "#/components/schemas/LightTickTransferredResourceCounts" }
+    LightTickAccountUpgradeEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickAccountUpgradeData" }
+        requestId: { type: string }
     LightTickAccountDeletionRequest:
       type: object
-      required: [confirmation]
+      required: [confirmation, reauthentication_token]
       properties:
         confirmation: { type: string, const: DELETE }
+        reauthentication_token:
+          type: string
+          minLength: 16
+          maxLength: 4096
+          description: Opaque, short-lived one-time proof issued after recent common-auth reauthentication.
       additionalProperties: false
     LightTickAccountDeletionData:
       type: object
-      required: [app_id, membership_status, sessions_revoked, product_data_deleted]
+      required: [app_id, membership_status, sessions_revoked, product_data_deleted, platform_account_retained, other_memberships_retained]
       properties:
         app_id: { type: string, const: lighttick }
         membership_status: { type: string, const: DELETED }
         sessions_revoked: { type: boolean }
         product_data_deleted: { type: boolean }
+        platform_account_retained: { type: boolean, const: true }
+        other_memberships_retained: { type: boolean, const: true }
+    LightTickAccountDeletionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickAccountDeletionData" }
+        requestId: { type: string }
   

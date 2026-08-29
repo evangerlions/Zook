@@ -1,0 +1,9 @@
+{
+  "code": "REQ_FIELD_INVALID",
+  "message": "device_id is invalid",
+  "data": {
+    "retryable": false,
+    "field": "device_id"
+  },
+  "requestId": "req_lighttick_account_validation"
+}

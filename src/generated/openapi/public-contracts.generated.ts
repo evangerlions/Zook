@@ -4076,9 +4076,15 @@ export const LightTickRunEnvelopeSchema = {
             "REQ_FIELD_INVALID",
             "AUTH_REQUIRED",
             "AUTH_TOKEN_INVALID",
+            "AUTH_SESSION_REVOKED",
             "APP_SCOPE_FORBIDDEN",
             "APP_MEMBER_INACTIVE",
             "LIGHTTICK_APP_DISABLED",
+            "LIGHTTICK_GUEST_SESSION_EXPIRED",
+            "LIGHTTICK_GUEST_UPGRADE_INVALID",
+            "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+            "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+            "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
             "LIGHTTICK_RESOURCE_NOT_FOUND",
             "LIGHTTICK_STATE_TRANSITION_INVALID",
             "LIGHTTICK_VERSION_CONFLICT",
@@ -4126,7 +4132,7 @@ export type LightTickRunEnvelope = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: "ai" | "template" | "manual";
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
   "created_at": string;
   "updated_at": string;
 };
@@ -4150,9 +4156,15 @@ export const LightTickErrorEnvelopeSchema = {
         "REQ_FIELD_INVALID",
         "AUTH_REQUIRED",
         "AUTH_TOKEN_INVALID",
+        "AUTH_SESSION_REVOKED",
         "APP_SCOPE_FORBIDDEN",
         "APP_MEMBER_INACTIVE",
         "LIGHTTICK_APP_DISABLED",
+        "LIGHTTICK_GUEST_SESSION_EXPIRED",
+        "LIGHTTICK_GUEST_UPGRADE_INVALID",
+        "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+        "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+        "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
@@ -4247,7 +4259,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
   "message": string;
   "data": {
   "retryable": boolean;
@@ -4279,9 +4291,15 @@ export const LightTickErrorCodeSchema = {
     "REQ_FIELD_INVALID",
     "AUTH_REQUIRED",
     "AUTH_TOKEN_INVALID",
+    "AUTH_SESSION_REVOKED",
     "APP_SCOPE_FORBIDDEN",
     "APP_MEMBER_INACTIVE",
     "LIGHTTICK_APP_DISABLED",
+    "LIGHTTICK_GUEST_SESSION_EXPIRED",
+    "LIGHTTICK_GUEST_UPGRADE_INVALID",
+    "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+    "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+    "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
     "LIGHTTICK_RESOURCE_NOT_FOUND",
     "LIGHTTICK_STATE_TRANSITION_INVALID",
     "LIGHTTICK_VERSION_CONFLICT",
@@ -4302,7 +4320,7 @@ export const LightTickErrorCodeSchema = {
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -7783,9 +7801,15 @@ export const LightTickRunDataSchema = {
         "REQ_FIELD_INVALID",
         "AUTH_REQUIRED",
         "AUTH_TOKEN_INVALID",
+        "AUTH_SESSION_REVOKED",
         "APP_SCOPE_FORBIDDEN",
         "APP_MEMBER_INACTIVE",
         "LIGHTTICK_APP_DISABLED",
+        "LIGHTTICK_GUEST_SESSION_EXPIRED",
+        "LIGHTTICK_GUEST_UPGRADE_INVALID",
+        "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+        "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+        "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
@@ -7825,7 +7849,7 @@ export type LightTickRunData = {
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: "ai" | "template" | "manual";
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
   "created_at": string;
   "updated_at": string;
 };
@@ -8139,9 +8163,15 @@ export const LightTickSyncOperationResultSchema = {
         "REQ_FIELD_INVALID",
         "AUTH_REQUIRED",
         "AUTH_TOKEN_INVALID",
+        "AUTH_SESSION_REVOKED",
         "APP_SCOPE_FORBIDDEN",
         "APP_MEMBER_INACTIVE",
         "LIGHTTICK_APP_DISABLED",
+        "LIGHTTICK_GUEST_SESSION_EXPIRED",
+        "LIGHTTICK_GUEST_UPGRADE_INVALID",
+        "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+        "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+        "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
@@ -8175,7 +8205,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -8256,9 +8286,15 @@ export const LightTickSyncPushDataSchema = {
               "REQ_FIELD_INVALID",
               "AUTH_REQUIRED",
               "AUTH_TOKEN_INVALID",
+              "AUTH_SESSION_REVOKED",
               "APP_SCOPE_FORBIDDEN",
               "APP_MEMBER_INACTIVE",
               "LIGHTTICK_APP_DISABLED",
+              "LIGHTTICK_GUEST_SESSION_EXPIRED",
+              "LIGHTTICK_GUEST_UPGRADE_INVALID",
+              "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+              "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+              "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
               "LIGHTTICK_RESOURCE_NOT_FOUND",
               "LIGHTTICK_STATE_TRANSITION_INVALID",
               "LIGHTTICK_VERSION_CONFLICT",
@@ -8301,7 +8337,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
 }
 )[];
   "server_time": string;
@@ -8634,15 +8670,1022 @@ export type LightTickDeviceData = {
   "updated_at": string;
 };
 
+export const LightTickRuntimeEnvironmentSchema = {
+  "type": "string",
+  "enum": [
+    "local",
+    "dev",
+    "online"
+  ]
+} as const;
+
+export type LightTickRuntimeEnvironment = "local" | "dev" | "online";
+
+export const LightTickAccountKindSchema = {
+  "type": "string",
+  "enum": [
+    "guest",
+    "registered"
+  ]
+} as const;
+
+export type LightTickAccountKind = "guest" | "registered";
+
+export const LightTickPublicFeatureFlagsSchema = {
+  "type": "object",
+  "required": [
+    "guest_sessions",
+    "account_upgrade",
+    "sync",
+    "notifications",
+    "ai_coach"
+  ],
+  "properties": {
+    "guest_sessions": {
+      "type": "boolean"
+    },
+    "account_upgrade": {
+      "type": "boolean"
+    },
+    "sync": {
+      "type": "boolean"
+    },
+    "notifications": {
+      "type": "boolean"
+    },
+    "ai_coach": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickPublicFeatureFlags = {
+  "guest_sessions": boolean;
+  "account_upgrade": boolean;
+  "sync": boolean;
+  "notifications": boolean;
+  "ai_coach": boolean;
+};
+
+export const LightTickMinimumClientVersionsSchema = {
+  "type": "object",
+  "required": [
+    "ios",
+    "android"
+  ],
+  "properties": {
+    "ios": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "android": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickMinimumClientVersions = {
+  "ios": string;
+  "android": string;
+};
+
+export const LightTickPublicConfigDataSchema = {
+  "type": "object",
+  "required": [
+    "app_id",
+    "enabled",
+    "environment",
+    "configuration_version",
+    "minimum_client_versions",
+    "guest_session_ttl_seconds",
+    "features",
+    "updated_at"
+  ],
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "const": "lighttick"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "local",
+        "dev",
+        "online"
+      ]
+    },
+    "configuration_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "minimum_client_versions": {
+      "type": "object",
+      "required": [
+        "ios",
+        "android"
+      ],
+      "properties": {
+        "ios": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "android": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "additionalProperties": false
+    },
+    "guest_session_ttl_seconds": {
+      "type": "integer",
+      "minimum": 3600,
+      "maximum": 7776000
+    },
+    "features": {
+      "type": "object",
+      "required": [
+        "guest_sessions",
+        "account_upgrade",
+        "sync",
+        "notifications",
+        "ai_coach"
+      ],
+      "properties": {
+        "guest_sessions": {
+          "type": "boolean"
+        },
+        "account_upgrade": {
+          "type": "boolean"
+        },
+        "sync": {
+          "type": "boolean"
+        },
+        "notifications": {
+          "type": "boolean"
+        },
+        "ai_coach": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "privacy_policy_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "terms_of_service_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "support_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickPublicConfigData = {
+  "app_id": string;
+  "enabled": boolean;
+  "environment": "local" | "dev" | "online";
+  "configuration_version": string;
+  "minimum_client_versions": {
+  "ios": string;
+  "android": string;
+};
+  "guest_session_ttl_seconds": number;
+  "features": {
+  "guest_sessions": boolean;
+  "account_upgrade": boolean;
+  "sync": boolean;
+  "notifications": boolean;
+  "ai_coach": boolean;
+};
+  "privacy_policy_url"?: string;
+  "terms_of_service_url"?: string;
+  "support_url"?: string;
+  "updated_at": string;
+};
+
+export const LightTickPublicConfigEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "app_id",
+        "enabled",
+        "environment",
+        "configuration_version",
+        "minimum_client_versions",
+        "guest_session_ttl_seconds",
+        "features",
+        "updated_at"
+      ],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "local",
+            "dev",
+            "online"
+          ]
+        },
+        "configuration_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "minimum_client_versions": {
+          "type": "object",
+          "required": [
+            "ios",
+            "android"
+          ],
+          "properties": {
+            "ios": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "android": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        "guest_session_ttl_seconds": {
+          "type": "integer",
+          "minimum": 3600,
+          "maximum": 7776000
+        },
+        "features": {
+          "type": "object",
+          "required": [
+            "guest_sessions",
+            "account_upgrade",
+            "sync",
+            "notifications",
+            "ai_coach"
+          ],
+          "properties": {
+            "guest_sessions": {
+              "type": "boolean"
+            },
+            "account_upgrade": {
+              "type": "boolean"
+            },
+            "sync": {
+              "type": "boolean"
+            },
+            "notifications": {
+              "type": "boolean"
+            },
+            "ai_coach": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "privacy_policy_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "terms_of_service_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "support_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPublicConfigEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "app_id": string;
+  "enabled": boolean;
+  "environment": "local" | "dev" | "online";
+  "configuration_version": string;
+  "minimum_client_versions": {
+  "ios": string;
+  "android": string;
+};
+  "guest_session_ttl_seconds": number;
+  "features": {
+  "guest_sessions": boolean;
+  "account_upgrade": boolean;
+  "sync": boolean;
+  "notifications": boolean;
+  "ai_coach": boolean;
+};
+  "privacy_policy_url"?: string;
+  "terms_of_service_url"?: string;
+  "support_url"?: string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickGuestSessionRequestSchema = {
+  "type": "object",
+  "required": [
+    "device_id",
+    "platform",
+    "timezone",
+    "locale",
+    "app_version"
+  ],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android"
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16
+    },
+    "app_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickGuestSessionRequest = {
+  "device_id": string;
+  "platform": "ios" | "android";
+  "timezone": string;
+  "locale": string;
+  "app_version": string;
+};
+
+export const LightTickGuestSessionDataSchema = {
+  "type": "object",
+  "required": [
+    "account_kind",
+    "user_id",
+    "device_id",
+    "access_token",
+    "refresh_token",
+    "expires_in",
+    "guest_expires_at",
+    "upgrade_token"
+  ],
+  "properties": {
+    "account_kind": {
+      "type": "string",
+      "const": "guest"
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "access_token": {
+      "type": "string",
+      "minLength": 16
+    },
+    "refresh_token": {
+      "type": "string",
+      "minLength": 16
+    },
+    "expires_in": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "guest_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "upgrade_token": {
+      "type": "string",
+      "minLength": 32
+    }
+  }
+} as const;
+
+export type LightTickGuestSessionData = {
+  "account_kind": string;
+  "user_id": string;
+  "device_id": string;
+  "access_token": string;
+  "refresh_token": string;
+  "expires_in": number;
+  "guest_expires_at": string;
+  "upgrade_token": string;
+};
+
+export const LightTickGuestSessionEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "CREATED"
+    },
+    "message": {
+      "type": "string",
+      "example": "created"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "account_kind",
+        "user_id",
+        "device_id",
+        "access_token",
+        "refresh_token",
+        "expires_in",
+        "guest_expires_at",
+        "upgrade_token"
+      ],
+      "properties": {
+        "account_kind": {
+          "type": "string",
+          "const": "guest"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "device_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "access_token": {
+          "type": "string",
+          "minLength": 16
+        },
+        "refresh_token": {
+          "type": "string",
+          "minLength": 16
+        },
+        "expires_in": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "guest_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "upgrade_token": {
+          "type": "string",
+          "minLength": 32
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGuestSessionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "account_kind": string;
+  "user_id": string;
+  "device_id": string;
+  "access_token": string;
+  "refresh_token": string;
+  "expires_in": number;
+  "guest_expires_at": string;
+  "upgrade_token": string;
+};
+  "requestId": string;
+};
+
+export const LightTickAccountSessionDataSchema = {
+  "type": "object",
+  "required": [
+    "app_id",
+    "account_kind",
+    "user_id",
+    "membership_status",
+    "session_expires_at"
+  ],
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "const": "lighttick"
+    },
+    "account_kind": {
+      "type": "string",
+      "enum": [
+        "guest",
+        "registered"
+      ]
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "membership_status": {
+      "type": "string",
+      "enum": [
+        "ACTIVE"
+      ]
+    },
+    "session_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "guest_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sync_cursor": {
+      "type": "string",
+      "maxLength": 512
+    }
+  }
+} as const;
+
+export type LightTickAccountSessionData = {
+  "app_id": string;
+  "account_kind": "guest" | "registered";
+  "user_id": string;
+  "membership_status": "ACTIVE";
+  "session_expires_at": string;
+  "guest_expires_at"?: string;
+  "sync_cursor"?: string;
+};
+
+export const LightTickAccountSessionEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "app_id",
+        "account_kind",
+        "user_id",
+        "membership_status",
+        "session_expires_at"
+      ],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "account_kind": {
+          "type": "string",
+          "enum": [
+            "guest",
+            "registered"
+          ]
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "membership_status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE"
+          ]
+        },
+        "session_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "guest_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sync_cursor": {
+          "type": "string",
+          "maxLength": 512
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickAccountSessionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "app_id": string;
+  "account_kind": "guest" | "registered";
+  "user_id": string;
+  "membership_status": "ACTIVE";
+  "session_expires_at": string;
+  "guest_expires_at"?: string;
+  "sync_cursor"?: string;
+};
+  "requestId": string;
+};
+
+export const LightTickAccountUpgradeRequestSchema = {
+  "type": "object",
+  "required": [
+    "guest_user_id",
+    "guest_upgrade_token",
+    "device_id"
+  ],
+  "properties": {
+    "guest_user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "guest_upgrade_token": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 4096
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickAccountUpgradeRequest = {
+  "guest_user_id": string;
+  "guest_upgrade_token": string;
+  "device_id": string;
+};
+
+export const LightTickTransferredResourceCountsSchema = {
+  "type": "object",
+  "required": [
+    "goals",
+    "plans",
+    "tasks",
+    "reviews",
+    "proposals"
+  ],
+  "properties": {
+    "goals": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "plans": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tasks": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reviews": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "proposals": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTransferredResourceCounts = {
+  "goals": number;
+  "plans": number;
+  "tasks": number;
+  "reviews": number;
+  "proposals": number;
+};
+
+export const LightTickAccountUpgradeDataSchema = {
+  "type": "object",
+  "required": [
+    "account_kind",
+    "user_id",
+    "previous_guest_user_id",
+    "guest_session_revoked",
+    "idempotency_replayed",
+    "transferred_resource_counts"
+  ],
+  "properties": {
+    "account_kind": {
+      "type": "string",
+      "const": "registered"
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "previous_guest_user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "guest_session_revoked": {
+      "type": "boolean",
+      "const": true
+    },
+    "idempotency_replayed": {
+      "type": "boolean"
+    },
+    "sync_cursor": {
+      "type": "string",
+      "maxLength": 512
+    },
+    "transferred_resource_counts": {
+      "type": "object",
+      "required": [
+        "goals",
+        "plans",
+        "tasks",
+        "reviews",
+        "proposals"
+      ],
+      "properties": {
+        "goals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "plans": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tasks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviews": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "proposals": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
+export type LightTickAccountUpgradeData = {
+  "account_kind": string;
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "guest_session_revoked": boolean;
+  "idempotency_replayed": boolean;
+  "sync_cursor"?: string;
+  "transferred_resource_counts": {
+  "goals": number;
+  "plans": number;
+  "tasks": number;
+  "reviews": number;
+  "proposals": number;
+};
+};
+
+export const LightTickAccountUpgradeEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "account_kind",
+        "user_id",
+        "previous_guest_user_id",
+        "guest_session_revoked",
+        "idempotency_replayed",
+        "transferred_resource_counts"
+      ],
+      "properties": {
+        "account_kind": {
+          "type": "string",
+          "const": "registered"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "previous_guest_user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "guest_session_revoked": {
+          "type": "boolean",
+          "const": true
+        },
+        "idempotency_replayed": {
+          "type": "boolean"
+        },
+        "sync_cursor": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "transferred_resource_counts": {
+          "type": "object",
+          "required": [
+            "goals",
+            "plans",
+            "tasks",
+            "reviews",
+            "proposals"
+          ],
+          "properties": {
+            "goals": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "plans": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tasks": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reviews": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "proposals": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickAccountUpgradeEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "account_kind": string;
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "guest_session_revoked": boolean;
+  "idempotency_replayed": boolean;
+  "sync_cursor"?: string;
+  "transferred_resource_counts": {
+  "goals": number;
+  "plans": number;
+  "tasks": number;
+  "reviews": number;
+  "proposals": number;
+};
+};
+  "requestId": string;
+};
+
 export const LightTickAccountDeletionRequestSchema = {
   "type": "object",
   "required": [
-    "confirmation"
+    "confirmation",
+    "reauthentication_token"
   ],
   "properties": {
     "confirmation": {
       "type": "string",
       "const": "DELETE"
+    },
+    "reauthentication_token": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 4096,
+      "description": "Opaque, short-lived one-time proof issued after recent common-auth reauthentication."
     }
   },
   "additionalProperties": false
@@ -8650,6 +9693,7 @@ export const LightTickAccountDeletionRequestSchema = {
 
 export type LightTickAccountDeletionRequest = {
   "confirmation": string;
+  "reauthentication_token": string;
 };
 
 export const LightTickAccountDeletionDataSchema = {
@@ -8658,7 +9702,9 @@ export const LightTickAccountDeletionDataSchema = {
     "app_id",
     "membership_status",
     "sessions_revoked",
-    "product_data_deleted"
+    "product_data_deleted",
+    "platform_account_retained",
+    "other_memberships_retained"
   ],
   "properties": {
     "app_id": {
@@ -8674,6 +9720,14 @@ export const LightTickAccountDeletionDataSchema = {
     },
     "product_data_deleted": {
       "type": "boolean"
+    },
+    "platform_account_retained": {
+      "type": "boolean",
+      "const": true
+    },
+    "other_memberships_retained": {
+      "type": "boolean",
+      "const": true
     }
   }
 } as const;
@@ -8683,6 +9737,80 @@ export type LightTickAccountDeletionData = {
   "membership_status": string;
   "sessions_revoked": boolean;
   "product_data_deleted": boolean;
+  "platform_account_retained": boolean;
+  "other_memberships_retained": boolean;
+};
+
+export const LightTickAccountDeletionEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "app_id",
+        "membership_status",
+        "sessions_revoked",
+        "product_data_deleted",
+        "platform_account_retained",
+        "other_memberships_retained"
+      ],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "membership_status": {
+          "type": "string",
+          "const": "DELETED"
+        },
+        "sessions_revoked": {
+          "type": "boolean"
+        },
+        "product_data_deleted": {
+          "type": "boolean"
+        },
+        "platform_account_retained": {
+          "type": "boolean",
+          "const": true
+        },
+        "other_memberships_retained": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickAccountDeletionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "app_id": string;
+  "membership_status": string;
+  "sessions_revoked": boolean;
+  "product_data_deleted": boolean;
+  "platform_account_retained": boolean;
+  "other_memberships_retained": boolean;
+};
+  "requestId": string;
 };
 
 export type AuthSuccessPayload = AuthSessionData;
@@ -11373,7 +12501,14 @@ export const GeneratedPublicContractNames = [
   "FrogSleepTokenRefreshRequest",
   "KickoffPublicConfig",
   "LightTickAccountDeletionData",
+  "LightTickAccountDeletionEnvelope",
   "LightTickAccountDeletionRequest",
+  "LightTickAccountKind",
+  "LightTickAccountSessionData",
+  "LightTickAccountSessionEnvelope",
+  "LightTickAccountUpgradeData",
+  "LightTickAccountUpgradeEnvelope",
+  "LightTickAccountUpgradeRequest",
   "LightTickAvailabilityWindow",
   "LightTickChangeProposalData",
   "LightTickChangeProposalRunRequest",
@@ -11394,7 +12529,11 @@ export const GeneratedPublicContractNames = [
   "LightTickGoalLifecycleRequest",
   "LightTickGoalStatus",
   "LightTickGoalUpdateRequest",
+  "LightTickGuestSessionData",
+  "LightTickGuestSessionEnvelope",
+  "LightTickGuestSessionRequest",
   "LightTickId",
+  "LightTickMinimumClientVersions",
   "LightTickNotificationPreferences",
   "LightTickOnboardingRequest",
   "LightTickPace",
@@ -11408,6 +12547,9 @@ export const GeneratedPublicContractNames = [
   "LightTickProposalImpact",
   "LightTickProposalRejectRequest",
   "LightTickProposalStatus",
+  "LightTickPublicConfigData",
+  "LightTickPublicConfigEnvelope",
+  "LightTickPublicFeatureFlags",
   "LightTickPushProvider",
   "LightTickReviewData",
   "LightTickReviewPeriod",
@@ -11417,6 +12559,7 @@ export const GeneratedPublicContractNames = [
   "LightTickRunEnvelope",
   "LightTickRunKind",
   "LightTickRunStatus",
+  "LightTickRuntimeEnvironment",
   "LightTickSkipReason",
   "LightTickStarterCandidate",
   "LightTickStarterRequest",
@@ -11442,6 +12585,7 @@ export const GeneratedPublicContractNames = [
   "LightTickTimestamp",
   "LightTickTimezone",
   "LightTickTodayData",
+  "LightTickTransferredResourceCounts",
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
   "LogAckRequest",

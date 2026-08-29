@@ -13,9 +13,15 @@ enum class LightTickErrorCode {
     REQ_FIELD_INVALID,
     AUTH_REQUIRED,
     AUTH_TOKEN_INVALID,
+    AUTH_SESSION_REVOKED,
     APP_SCOPE_FORBIDDEN,
     APP_MEMBER_INACTIVE,
     LIGHTTICK_APP_DISABLED,
+    LIGHTTICK_GUEST_SESSION_EXPIRED,
+    LIGHTTICK_GUEST_UPGRADE_INVALID,
+    LIGHTTICK_GUEST_UPGRADE_CONFLICT,
+    LIGHTTICK_ACCOUNT_ALREADY_UPGRADED,
+    LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED,
     LIGHTTICK_RESOURCE_NOT_FOUND,
     LIGHTTICK_STATE_TRANSITION_INVALID,
     LIGHTTICK_VERSION_CONFLICT,
@@ -50,6 +56,85 @@ data class LightTickErrorEnvelope(
     val message: String,
     val data: LightTickErrorData,
     val requestId: String,
+)
+
+enum class LightTickRuntimeEnvironment { local, dev, online }
+
+enum class LightTickAccountKind { guest, registered }
+
+data class LightTickPublicFeatureFlags(
+    val guestSessions: Boolean,
+    val accountUpgrade: Boolean,
+    val sync: Boolean,
+    val notifications: Boolean,
+    val aiCoach: Boolean,
+)
+
+data class LightTickMinimumClientVersions(
+    val ios: String,
+    val android: String,
+)
+
+data class LightTickPublicConfigData(
+    val appId: String,
+    val enabled: Boolean,
+    val environment: LightTickRuntimeEnvironment,
+    val configurationVersion: String,
+    val minimumClientVersions: LightTickMinimumClientVersions,
+    val guestSessionTtlSeconds: Int,
+    val features: LightTickPublicFeatureFlags,
+    val privacyPolicyUrl: String? = null,
+    val termsOfServiceUrl: String? = null,
+    val supportUrl: String? = null,
+    val updatedAt: String,
+)
+
+data class LightTickGuestSessionData(
+    val accountKind: LightTickAccountKind,
+    val userId: String,
+    val deviceId: String,
+    val accessToken: String,
+    val refreshToken: String,
+    val expiresIn: Int,
+    val guestExpiresAt: String,
+    val upgradeToken: String,
+)
+
+data class LightTickAccountSessionData(
+    val appId: String,
+    val accountKind: LightTickAccountKind,
+    val userId: String,
+    val membershipStatus: String,
+    val sessionExpiresAt: String,
+    val guestExpiresAt: String? = null,
+    val syncCursor: String? = null,
+)
+
+data class LightTickTransferredResourceCounts(
+    val goals: Int,
+    val plans: Int,
+    val tasks: Int,
+    val reviews: Int,
+    val proposals: Int,
+)
+
+data class LightTickAccountUpgradeData(
+    val accountKind: LightTickAccountKind,
+    val userId: String,
+    val previousGuestUserId: String,
+    val guestSessionRevoked: Boolean,
+    val idempotencyReplayed: Boolean,
+    val syncCursor: String? = null,
+    val transferredResourceCounts: LightTickTransferredResourceCounts,
+)
+
+data class LightTickAccountDeletionData(
+    val appId: String,
+    val membershipStatus: String,
+    val sessionsRevoked: Boolean,
+    val productDataDeleted: Boolean,
+    val platformAccountRetained: Boolean,
+    val otherMembershipsRetained: Boolean,
 )
 
 enum class LightTickSyncOperationStatus {
