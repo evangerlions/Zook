@@ -1,6 +1,7 @@
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow,
   LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow,
+  LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult,
   LightTickOperationRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow,
   LightTickReviewRow, LightTickTaskRow,
 } from "./lighttick.types.ts";
@@ -17,6 +18,7 @@ export interface LightTickRepository {
   getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined>;
   getGuestIdentityByDevice(deviceId: string): Promise<LightTickGuestIdentityRow | undefined>;
   saveGuestIdentity(row: LightTickGuestIdentityRow): Promise<LightTickGuestIdentityRow>;
+  upgradeGuestAccount(command: LightTickAccountUpgradeCommand): Promise<LightTickAccountUpgradeResult>;
   getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined>;
   saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow>;
   listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]>;

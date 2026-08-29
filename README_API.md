@@ -118,6 +118,7 @@ LightTick 原生客户端使用以下核心接口族：
 ```text
 POST      /api/v1/lighttick/account/guest-sessions
 GET       /api/v1/lighttick/account/session
+POST      /api/v1/lighttick/account/upgrade
 GET/PATCH /api/v1/lighttick/profile
 POST      /api/v1/lighttick/onboarding
 POST      /api/v1/lighttick/onboarding/starter
@@ -143,6 +144,13 @@ LightTick-only guest identity、LightTick membership、access/refresh token 和�
 超限返回 `429 RATE_LIMITED`。游客不能访问其他 Zook 产品，也不能访问 LightTick
 review、sync、设备注册、完整规划和删除等敏感能力；刷新凭据后可调用
 `GET /api/v1/lighttick/account/session` 恢复账户类型和游客到期时间。
+
+正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
+`guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。
+服务端在同一 PostgreSQL 事务中迁移游客资料、目标、计划、任务、事件、操作、设备和同步
+位置，并删除游客 membership；正式账户已有偏好优先，重复 operation 只有内容完全一致时
+才会去重。响应丢失后使用相同 key 和请求重试会返回原结果，改变请求则返回
+`LIGHTTICK_IDEMPOTENCY_MISMATCH`。成功后旧游客 access/refresh session 全部失效。
 
 写命令使用 `Idempotency-Key`；可并发修改资源的命令同时携带
 `base_version`。离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多

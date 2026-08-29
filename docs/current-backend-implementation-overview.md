@@ -25,7 +25,9 @@ LightTick 已在独立 feature worktree 中实现统一后端：唯一产品 key
 计划、Today、任务命令、复盘、提案、同步、设备、通知、AI run，以及 additive 的
 action-first 渐进启动闭环。渐进启动提供确定性 starter fallback、首次行动事实反馈、
 三日预览、周承诺门槛、同 lineage 任务变体和暂停/恢复模式；原 plan-first onboarding
-继续兼容。能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
+继续兼容。受限游客身份可通过设备绑定证明事务升级到正式 LightTick membership，迁移保持
+资源 ID、版本、执行事件、幂等结果和同步序列，并以独立升级操作记录支持丢失响应重放。
+能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
 不再拥有生产数据、合同或运行时。
 

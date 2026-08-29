@@ -292,6 +292,10 @@ export class AuthService {
     return this.sessionManager.revokeIssuedSession(refreshToken);
   }
 
+  async revokeAllSessions(appId: string, userId: string, now = new Date()): Promise<number> {
+    return this.sessionManager.revokeAllSessions(appId, userId, now);
+  }
+
   async issueSession(
     userId: string,
     appId: string,

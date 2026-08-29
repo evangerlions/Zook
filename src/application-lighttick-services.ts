@@ -9,6 +9,11 @@ import { LightTickJobService, LightTickWorker } from "./modules/lighttick/lightt
 import type { LLMManager } from "./services/llm-manager.ts";
 import type { NotificationService } from "./services/notification.service.ts";
 import type { AppAiRoutingConfigService } from "./services/app-ai-routing-config.service.ts";
+import type { AuthService } from "./modules/auth/auth.service.ts";
+import type { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
+import type { KVManager } from "./infrastructure/kv/kv-manager.ts";
+import { LightTickGuestIdentityService } from "./modules/lighttick/lighttick-guest-identity.service.ts";
+import { LightTickAccountUpgradeService } from "./modules/lighttick/lighttick-account-upgrade.service.ts";
 import { randomId } from "./shared/utils.ts";
 import { InMemoryLightTickRepository } from "./testing/in-memory-lighttick-repository.ts";
 
@@ -22,6 +27,12 @@ export function createApplicationLightTickRuntime(repository: LightTickRepositor
   const runtime = createLightTickRuntime(repository);
   runtime.jobs = new LightTickJobService(queue, repository);
   return runtime;
+}
+
+export function attachApplicationLightTickAccount(input: { runtime: LightTickRuntime; database: ApplicationDatabase;
+  kv: KVManager; appRegistry: AppRegistryService; auth: AuthService; repository: LightTickRepository }) {
+  input.runtime.guestIdentity = new LightTickGuestIdentityService(input.database, input.kv, input.appRegistry, input.auth, input.repository);
+  input.runtime.accountUpgrade = new LightTickAccountUpgradeService(input.database, input.auth, input.repository);
 }
 
 export function attachApplicationLightTickWorkers(input: { runtime: LightTickRuntime; repository: LightTickRepository;

@@ -152,6 +152,22 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       guest_expires_at: guest?.expiresAt });
   }
 
+  if (request.method === "POST" && request.path === `${PREFIX}account/upgrade`) {
+    if (!runtime.accountUpgrade)
+      throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick account upgrade is unavailable.");
+    const body = bodyOf(request);
+    const upgraded = await runtime.accountUpgrade.upgrade({ operationId: idempotencyKeyOf(request),
+      guestUserId: stringOf(body.guest_user_id, "guest_user_id"), targetUserId: auth.userId,
+      guestUpgradeToken: stringOf(body.guest_upgrade_token, "guest_upgrade_token"),
+      deviceId: stringOf(body.device_id, "device_id"), requestId: request.requestId });
+    const targetOwner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: upgraded.targetUserId };
+    return response(context, request, { account_kind: "registered", user_id: upgraded.targetUserId,
+      previous_guest_user_id: upgraded.guestUserId, guest_session_revoked: true,
+      idempotency_replayed: upgraded.idempotencyReplayed,
+      sync_cursor: runtime.sync.cursorForSequence(targetOwner, upgraded.lastSequence),
+      transferred_resource_counts: upgraded.transferredResourceCounts });
+  }
+
   if (request.method === "DELETE" && request.path === `${PREFIX}me/account`) {
     const body = bodyOf(request); const confirmation = stringOf(body.confirmation, "confirmation");
     const result = await context.authService.deleteCurrentAppAccount({ appId: LIGHTTICK_APP_ID, userId: auth.userId, confirmation });

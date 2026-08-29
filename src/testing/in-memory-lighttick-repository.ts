@@ -1,6 +1,7 @@
 import type { LightTickAtomicWrite, LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickDeviceRow,
+  LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult,
   LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner,
   LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow,
 } from "../modules/lighttick/lighttick.types.ts";
@@ -22,6 +23,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private operations = new Map<string, LightTickOperationRow>();
   private devices = new Map<string, LightTickDeviceRow>();
   private guestIdentities = new Map<string, LightTickGuestIdentityRow>();
+  private upgradeOperations = new Map<string, { requestHash: string; result: LightTickAccountUpgradeResult }>();
   private events: LightTickExecutionEventRow[] = [];
   private changes: LightTickChangeRow[] = [];
   private sequence = 0;
@@ -33,6 +35,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     const snapshot = clone({ profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
+      upgradeOperations: [...this.upgradeOperations],
       events: this.events, changes: this.changes, sequence: this.sequence });
     this.transactionDepth++;
     try { return await operation(); }
@@ -41,6 +44,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.tasks = new Map(snapshot.tasks); this.reviews = new Map(snapshot.reviews); this.proposals = new Map(snapshot.proposals);
       this.aiRuns = new Map(snapshot.aiRuns); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
       this.guestIdentities = new Map(snapshot.guestIdentities);
+      this.upgradeOperations = new Map(snapshot.upgradeOperations);
       this.events = snapshot.events; this.changes = snapshot.changes; this.sequence = snapshot.sequence;
       throw error;
     } finally { this.transactionDepth--; }
@@ -74,6 +78,96 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     for (const [key, existing] of this.guestIdentities) if (existing.deviceId === row.deviceId && key !== ownerKey(row))
       this.guestIdentities.delete(key);
     this.guestIdentities.set(ownerKey(row), clone(row)); return clone(row);
+  }
+
+  async upgradeGuestAccount(command: LightTickAccountUpgradeCommand): Promise<LightTickAccountUpgradeResult> {
+    const operationKey = `${command.appId}:${command.operationId}`;
+    const previous = this.upgradeOperations.get(operationKey);
+    if (previous) {
+      if (previous.requestHash !== command.requestHash)
+        throw new ApplicationError(409, "LIGHTTICK_IDEMPOTENCY_MISMATCH", "Idempotency key was reused with a different request.");
+      return clone({ ...previous.result, idempotencyReplayed: true });
+    }
+    return await this.transaction({ appId: command.appId, userId: command.guestUserId }, async () => {
+      const guestKey = `${command.appId}:${command.guestUserId}`;
+      const targetKey = `${command.appId}:${command.targetUserId}`;
+      const guest = this.guestIdentities.get(guestKey);
+      if (!guest || guest.deviceId !== command.deviceId || guest.upgradeTokenHash !== command.guestUpgradeTokenHash)
+        throw new ApplicationError(401, "LIGHTTICK_GUEST_CREDENTIAL_INVALID", "Guest upgrade proof is invalid.");
+      if (guest.revokedAt) throw new ApplicationError(410, "LIGHTTICK_GUEST_REVOKED", "Guest session is revoked.");
+      if (new Date(guest.expiresAt) <= new Date(command.now))
+        throw new ApplicationError(410, "LIGHTTICK_GUEST_EXPIRED", "Guest session is expired.");
+
+      const counts = { goals: this.countOwner(this.goals, guestKey), plans: this.countOwner(this.plans, guestKey),
+        tasks: this.countOwner(this.tasks, guestKey), reviews: this.countOwner(this.reviews, guestKey),
+        proposals: this.countOwner(this.proposals, guestKey) };
+      this.mergeProfile(guestKey, targetKey, command.targetUserId);
+      for (const store of [this.goals, this.plans, this.tasks, this.reviews, this.proposals, this.aiRuns] as Map<string, any>[])
+        this.moveOwnedRows(store, guestKey, targetKey, command.targetUserId);
+      this.moveOwnedRows(this.operations as Map<string, any>, guestKey, targetKey, command.targetUserId, true);
+      this.mergeDevices(guestKey, targetKey, command.targetUserId);
+      this.events = this.events.map(row => ownerKey(row) === guestKey ? { ...row, userId: command.targetUserId } : row);
+      this.changes = this.changes.map(row => ownerKey(row) === guestKey ? { ...row, userId: command.targetUserId } : row);
+      this.guestIdentities.set(guestKey, { ...guest, revokedAt: command.now,
+        upgradedToUserId: command.targetUserId, updatedAt: command.now });
+      const lastSequence = this.changes.filter(row => ownerKey(row) === targetKey)
+        .reduce((maximum, row) => Math.max(maximum, row.sequence), 0);
+      const result: LightTickAccountUpgradeResult = { guestUserId: command.guestUserId,
+        targetUserId: command.targetUserId, idempotencyReplayed: false, lastSequence,
+        transferredResourceCounts: counts };
+      this.upgradeOperations.set(operationKey, { requestHash: command.requestHash, result: clone(result) });
+      return clone(result);
+    });
+  }
+
+  private countOwner(store: Map<string, unknown>, prefix: string) {
+    return [...store.keys()].filter(key => key.startsWith(`${prefix}:`)).length;
+  }
+
+  private mergeProfile(guestKey: string, targetKey: string, targetUserId: string) {
+    const guest = this.profiles.get(guestKey); const target = this.profiles.get(targetKey);
+    if (!guest) return;
+    if (!target) { this.profiles.set(targetKey, { ...guest, userId: targetUserId }); this.profiles.delete(guestKey); return; }
+    const rank = (state: string) => ({ not_started: 0, drafting: 1, starter_ready: 2,
+      three_day_active: 3, completed: 4 } as Record<string, number>)[state] ?? 0;
+    const guestAhead = rank(guest.onboardingState) > rank(target.onboardingState);
+    this.profiles.set(targetKey, { ...target,
+      onboardingState: guestAhead ? guest.onboardingState : target.onboardingState,
+      onboardingDraft: guestAhead && Object.keys(target.onboardingDraft).length === 0
+        ? guest.onboardingDraft : target.onboardingDraft,
+      version: Math.max(target.version, guest.version),
+      updatedAt: target.updatedAt >= guest.updatedAt ? target.updatedAt : guest.updatedAt });
+    this.profiles.delete(guestKey);
+  }
+
+  private moveOwnedRows(store: Map<string, any>, guestKey: string, targetKey: string,
+    targetUserId: string, operationStore = false) {
+    for (const [key, row] of [...store]) {
+      if (!key.startsWith(`${guestKey}:`)) continue;
+      const suffix = key.slice(guestKey.length + 1); const destination = `${targetKey}:${suffix}`;
+      const existing = store.get(destination);
+      if (existing) {
+        const equivalent = operationStore
+          ? existing.action === row.action && existing.payloadHash === row.payloadHash
+            && JSON.stringify(existing.resultPayload) === JSON.stringify(row.resultPayload)
+          : JSON.stringify({ ...existing, userId: undefined }) === JSON.stringify({ ...row, userId: undefined });
+        if (!equivalent) throw new ApplicationError(409, "LIGHTTICK_GUEST_UPGRADE_CONFLICT", "Guest data conflicts with registered account data.");
+        store.delete(key); continue;
+      }
+      store.set(destination, { ...row, userId: targetUserId }); store.delete(key);
+    }
+  }
+
+  private mergeDevices(guestKey: string, targetKey: string, targetUserId: string) {
+    for (const [key, row] of [...this.devices]) {
+      if (!key.startsWith(`${guestKey}:`)) continue;
+      const destination = `${targetKey}:${row.id}`;
+      const duplicateToken = [...this.devices.values()].some(item => ownerKey(item) === targetKey
+        && item.pushProvider === row.pushProvider && item.pushToken === row.pushToken);
+      if (!this.devices.has(destination) && !duplicateToken)
+        this.devices.set(destination, { ...row, userId: targetUserId });
+      this.devices.delete(key);
+    }
   }
 
   async getProfile(owner: LightTickOwner) { return clone(this.profiles.get(ownerKey(owner))); }

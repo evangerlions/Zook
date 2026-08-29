@@ -86,6 +86,11 @@ export class LightTickSyncService {
       version: row.entityVersion, operation: row.operation, snapshot: row.snapshot, changed_at: row.changedAt })),
       next_cursor: this.encodeCursor(owner, next), has_more: rows.length > limit, server_time: this.clock().toISOString() };
   }
+  cursorForSequence(owner: LightTickOwner, sequence: number) {
+    if (!Number.isInteger(sequence) || sequence < 0)
+      throw new ApplicationError(500, "LIGHTTICK_SYNC_CURSOR_INVALID", "Sync sequence is invalid.");
+    return this.encodeCursor(owner, sequence);
+  }
   private encodeCursor(owner: LightTickOwner, sequence: number) {
     const subject = `${owner.appId}:${owner.userId}:${sequence}`; return Buffer.from(JSON.stringify({ s: sequence, h: sha256(`${this.cursorSecret}:${subject}`) })).toString("base64url");
   }

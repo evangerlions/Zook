@@ -121,7 +121,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogLeaderboard = new PostgresBodyLogLeaderboardStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogInvitations = new PostgresBodyLogInvitationStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogChallenges = new PostgresBodyLogChallengeStore(async (sql, values = []) => await this.query(sql, values));
-    this.lightTick = new PostgresLightTickRepository(this.pool);
+    this.lightTick = new PostgresLightTickRepository({ query: async (sql, values = []) => await this.query(sql, values), connect: async () => await this.pool.connect() }, async operation => await this.withExclusiveSession(operation));
     this.llmObservabilityStore = new PostgresLlmObservabilityStore(async (sql, values = []) => await this.query(sql, values), async () => await this.pool.connect());
   }
   getLightTickRepository(): PostgresLightTickRepository { return this.lightTick; }

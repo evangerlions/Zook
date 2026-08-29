@@ -28,7 +28,6 @@ import { AuthService } from "./modules/auth/auth.service.ts";
 import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
 import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
-import { LightTickGuestIdentityService } from "./modules/lighttick/lighttick-guest-identity.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service.ts";
@@ -82,7 +81,7 @@ import { createApplicationTelemetryGateway } from "./application-telemetry-runti
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import { resolveLightTickEnabled } from "./application-lighttick-runtime-config.ts";
-import { attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
+import { attachApplicationLightTickAccount, attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
@@ -355,7 +354,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     resolveSecureRefreshCookie(options),
     resolveRefreshCookieSameSite(options),
     resolvePublicSmsTestBypass(options),
-  ); lighttickRuntime.guestIdentity = new LightTickGuestIdentityService(database, kvManager, appRegistryService, authService, lighttickRepository);
+  ); attachApplicationLightTickAccount({ runtime: lighttickRuntime, database, kv: kvManager, appRegistry: appRegistryService, auth: authService, repository: lighttickRepository });
   const qrLoginService = new QrLoginService(
     cache,
     appRegistryService,

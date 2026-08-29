@@ -4,7 +4,19 @@ export type LightTickVersioned = { version: number; createdAt: string; updatedAt
 export interface LightTickGuestIdentityRow extends LightTickOwner {
   deviceId: string; deviceSecretHash: string; platform: "ios" | "android";
   timezone: string; locale: string; appVersion: string; upgradeTokenHash: string;
-  expiresAt: string; revokedAt?: string; createdAt: string; updatedAt: string;
+  expiresAt: string; revokedAt?: string; upgradedToUserId?: string; createdAt: string; updatedAt: string;
+}
+
+export interface LightTickAccountUpgradeCommand {
+  appId: "lighttick"; operationId: string; requestHash: string;
+  guestUserId: string; targetUserId: string; guestUpgradeTokenHash: string;
+  deviceId: string; now: string;
+}
+
+export interface LightTickAccountUpgradeResult {
+  guestUserId: string; targetUserId: string; idempotencyReplayed: boolean;
+  lastSequence: number;
+  transferredResourceCounts: { goals: number; plans: number; tasks: number; reviews: number; proposals: number };
 }
 
 export interface LightTickProfileRow extends LightTickOwner, LightTickVersioned {

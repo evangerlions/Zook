@@ -33,10 +33,11 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
     await suite.test("installs from empty and remains upgrade/idempotency safe", async () => {
       const installed = await pool.query(`SELECT name FROM zook_schema_migrations
         WHERE name LIKE '029_lighttick%' OR name LIKE '030_lighttick%' OR name LIKE '031_lighttick%'
-          OR name LIKE '032_lighttick%' OR name LIKE '033_lighttick%' ORDER BY name`);
+          OR name LIKE '032_lighttick%' OR name LIKE '033_lighttick%' OR name LIKE '034_lighttick%' ORDER BY name`);
       assert.deepEqual(installed.rows.map(row => row.name), [
         "029_lighttick_core.sql", "030_lighttick_events_reviews_ai.sql", "031_lighttick_sync_devices.sql",
         "032_lighttick_progressive_action_loop.sql", "033_lighttick_guest_identities.sql",
+        "034_lighttick_account_upgrades.sql",
       ]);
       const before = installed.rows.length;
       await runPostgresMigrations({ connectionString: databaseUrl, log: () => undefined });
@@ -55,6 +56,7 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       assert.match(definitions, /zook_lighttick_devices_active_token_uidx/);
       assert.match(definitions, /zook_lighttick_tasks_owner_lineage_idx/);
       assert.match(definitions, /zook_lighttick_guest_expiry_idx/);
+      assert.match(definitions, /zook_lighttick_account_upgrades_pkey/);
     });
 
     await suite.test("persists and recovers a device-bound guest identity", async () => {
@@ -75,6 +77,49 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
         throw new Error("force rollback");
       }), /force rollback/);
       assert.equal(await repository.getProfile(owner), undefined);
+    });
+
+    await suite.test("upgrades guest ownership atomically and replays the original result", async () => {
+      const guestUserId = "lighttick_pg_upgrade_guest"; const targetUserId = "lighttick_pg_upgrade_target";
+      await pool.query("DELETE FROM zook_lighttick_account_upgrades WHERE guest_user_id=$1", [guestUserId]);
+      for (const table of ["zook_lighttick_operations","zook_lighttick_change_log","zook_lighttick_execution_events",
+        "zook_lighttick_goals","zook_lighttick_profiles","zook_lighttick_guest_identities"])
+        await pool.query(`DELETE FROM ${table} WHERE user_id IN ($1,$2)`, [guestUserId,targetUserId]);
+      await pool.query("DELETE FROM zook_app_users WHERE app_id='lighttick' AND user_id IN ($1,$2)", [guestUserId,targetUserId]);
+      await pool.query("DELETE FROM zook_users WHERE id IN ($1,$2)", [guestUserId,targetUserId]);
+      await pool.query(`INSERT INTO zook_users (id,password_hash,password_algo,status) VALUES
+        ($1,'guest','lighttick-guest','ACTIVE'),($2,'formal','scrypt','ACTIVE')`, [guestUserId,targetUserId]);
+      await pool.query(`INSERT INTO zook_app_users (id,app_id,user_id,status) VALUES
+        ('app_user_pg_guest','lighttick',$1,'ACTIVE'),('app_user_pg_target','lighttick',$2,'ACTIVE')`, [guestUserId,targetUserId]);
+      const guestOwner = { appId: "lighttick", userId: guestUserId } as const;
+      const targetOwner = { appId: "lighttick", userId: targetUserId } as const;
+      await repository.saveGuestIdentity({ ...guestOwner, deviceId: "lighttick_pg_upgrade_device",
+        deviceSecretHash: "secret", platform: "ios", timezone: "Asia/Shanghai", locale: "zh-CN",
+        appVersion: "1", upgradeTokenHash: "upgrade-proof", expiresAt: "2099-01-01T00:00:00.000Z",
+        createdAt: now, updatedAt: now });
+      await repository.saveGoal({ ...goal("upgrade-me"), ...guestOwner, id: "lighttick_pg_upgrade_goal" }, {
+        event: { ...guestOwner, id: "lighttick_pg_upgrade_event", aggregateType: "goal",
+          aggregateId: "lighttick_pg_upgrade_goal", eventType: "goal_created", aggregateVersion: 1,
+          payload: {}, occurredAt: now, createdAt: now },
+        change: { ...guestOwner, entityType: "goal", entityId: "lighttick_pg_upgrade_goal",
+          entityVersion: 1, operation: "upsert", snapshot: {}, changedAt: now },
+      });
+      const command = { appId: "lighttick", operationId: "lighttick-pg-upgrade-operation", requestHash: "request-hash",
+        guestUserId, targetUserId, guestUpgradeTokenHash: "upgrade-proof", deviceId: "lighttick_pg_upgrade_device",
+        now: "2026-08-29T00:00:00.000Z" } as const;
+      const upgraded = await repository.upgradeGuestAccount(command);
+      assert.equal(upgraded.transferredResourceCounts.goals, 1);
+      assert.equal((await repository.getGoal(targetOwner, "lighttick_pg_upgrade_goal"))?.userId, targetUserId);
+      assert.equal((await repository.getGuestIdentity(guestOwner))?.upgradedToUserId, targetUserId);
+      assert.equal((await repository.upgradeGuestAccount(command)).idempotencyReplayed, true);
+      const mismatch = { ...command, requestHash: "changed-request" };
+      await assert.rejects(repository.upgradeGuestAccount(mismatch), (error: any) => error.code === "LIGHTTICK_IDEMPOTENCY_MISMATCH");
+      await pool.query("DELETE FROM zook_lighttick_account_upgrades WHERE guest_user_id=$1", [guestUserId]);
+      for (const table of ["zook_lighttick_change_log","zook_lighttick_execution_events","zook_lighttick_goals",
+        "zook_lighttick_profiles","zook_lighttick_guest_identities"])
+        await pool.query(`DELETE FROM ${table} WHERE user_id IN ($1,$2)`, [guestUserId,targetUserId]);
+      await pool.query("DELETE FROM zook_app_users WHERE app_id='lighttick' AND user_id IN ($1,$2)", [guestUserId,targetUserId]);
+      await pool.query("DELETE FROM zook_users WHERE id IN ($1,$2)", [guestUserId,targetUserId]);
     });
 
     await suite.test("allows exactly one concurrent update for one base version", async () => {
