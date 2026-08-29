@@ -19,6 +19,16 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 
 公共 OpenAPI 的唯一来源是 `api-contracts/openapi/**`。该目录只参与维护期生成和 lint，不属于根 npm workspace，也不会复制进生产 Docker 镜像。运行时代码只依赖提交后的 `src/generated/openapi/public-contracts.generated.ts`，不得直接读取 `api-contracts/`。旧 API 仓库、submodule 和同步脚本已停用，完整流程见 `docs/api-contracts.md`。
 
+LightTick 已在独立 feature worktree 中实现统一后端：唯一产品 key 为 `lighttick`，
+外部接口合同位于 `api-contracts/openapi/lighttick/api.yaml`，Zook 运行时类型由
+`npm run generate:public-contracts` 固化到 `src/generated/openapi/`。产品域已包含目标、
+计划、Today、任务命令、复盘、提案、同步、设备、通知、AI run，以及 additive 的
+action-first 渐进启动闭环。渐进启动提供确定性 starter fallback、首次行动事实反馈、
+三日预览、周承诺门槛、同 lineage 任务变体和暂停/恢复模式；原 plan-first onboarding
+继续兼容。能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
+测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
+不再拥有生产数据、合同或运行时。
+
 ## 2. 当前已完成的主要功能
 
 ### 2.0 BodyLog app-scoped 产品能力

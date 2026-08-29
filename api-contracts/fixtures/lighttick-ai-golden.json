@@ -1,0 +1,9 @@
+{
+  "fixtureVersion": "1.0.0",
+  "cases": [
+    { "scene": "week_plan", "input": { "period_start": "2026-08-17", "period_end": "2026-08-23", "available_minutes": 120 },
+      "output": { "tasks": [{ "title": "Complete one focused milestone", "estimated_minutes": 60, "priority": 100 }] } },
+    { "scene": "weekly_review", "input": { "event_count": 3 },
+      "output": { "insights": ["Three recorded actions are available."], "recommendations": ["Continue with one bounded next step."] } }
+  ]
+}

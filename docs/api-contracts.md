@@ -6,12 +6,8 @@ Zook owns its public OpenAPI source in `api-contracts/`. This directory was migr
 
 ```text
 api-contracts/openapi/**
-        │ maintenance-time generation
-        ▼
-src/generated/openapi/public-contracts.generated.ts
-        │ imported by Zook runtime code
-        ▼
-API and worker processes
+        ├── maintenance-time generation ──▶ src/generated/openapi/*.ts ──▶ API / worker
+        └── pinned client generation ─────▶ api-contracts/clients/lighttick/{swift,kotlin}
 ```
 
 - `api-contracts/openapi/**` is the canonical external contract source.
@@ -20,6 +16,8 @@ API and worker processes
 - The nested `api-contracts/package.json` is lint tooling only. It is not a root npm workspace and is not installed by the root project.
 - `.dockerignore` excludes `api-contracts/`; production images do not receive contract source or lint dependencies.
 - The former API repository, submodule, and synchronization script are retired. There is no fallback source.
+- `api-contracts/openapi/lighttick/api.yaml` is the sole LightTick wire-contract source. The
+  legacy Go server and Flutter models are reference material only.
 
 ## Change workflow
 
@@ -45,6 +43,10 @@ API and worker processes
    ```
 
 6. Run the affected Zook tests and commit OpenAPI, documentation, and generated output together.
+
+For LightTick changes, also regenerate or update both isolated native contract packages and run
+their shared success/error fixture tests. iOS and Android must pin the same Zook commit; neither
+client may add a private interpretation of enums, errors, cursors, or conflict payloads.
 
 The generator fails if any required contract is missing. It never falls back to a workspace checkout or an external clone.
 

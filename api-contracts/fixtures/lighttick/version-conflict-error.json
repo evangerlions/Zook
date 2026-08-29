@@ -1,0 +1,17 @@
+{
+  "code": "LIGHTTICK_VERSION_CONFLICT",
+  "message": "resource version is stale",
+  "data": {
+    "retryable": false,
+    "resource_id": "task_01JZLIGHTTICK01",
+    "current_version": 4,
+    "server_snapshot": {
+      "id": "task_01JZLIGHTTICK01",
+      "status": "completed",
+      "version": 4
+    },
+    "conflict_fields": ["status"],
+    "resolution_actions": ["accept_server", "create_follow_up"]
+  },
+  "requestId": "req_lighttick_fixture_conflict"
+}

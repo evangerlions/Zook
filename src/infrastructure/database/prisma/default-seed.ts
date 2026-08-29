@@ -11,7 +11,7 @@ import {
  */
 export function buildDefaultSeed(
   passwordHasher = new DevelopmentPasswordHasher(),
-  options: { includeFrogSleep?: boolean } = {},
+  options: { includeFrogSleep?: boolean; includeLightTick?: boolean } = {},
 ): DatabaseSeed {
   const defaultI18nSettings = JSON.stringify(
     DEFAULT_APP_I18N_SETTINGS,
@@ -20,6 +20,7 @@ export function buildDefaultSeed(
   );
 
   const includeFrogSleep = Boolean(options.includeFrogSleep);
+  const includeLightTick = Boolean(options.includeLightTick);
 
   const seed: DatabaseSeed = {
     apps: [
@@ -310,6 +311,61 @@ export function buildDefaultSeed(
         configKey: "i18n.settings",
         configValue: defaultI18nSettings,
         updatedAt: "2026-03-20T09:35:00+08:00",
+      },
+    );
+  }
+
+  if (includeLightTick) {
+    seed.apps.push({
+      id: "lighttick",
+      code: "lighttick",
+      name: "LightTick",
+      nameI18n: { "zh-CN": "LightTick", "en-US": "LightTick" },
+      status: "ACTIVE",
+      apiDomain: "lighttick.example.com",
+      joinMode: "AUTO",
+      createdAt: "2026-08-19T00:00:00.000Z",
+    });
+    seed.roles.push(
+      { id: "role_lighttick_member", appId: "lighttick", code: "member", name: "Member", status: "ACTIVE" },
+      { id: "role_lighttick_admin", appId: "lighttick", code: "admin", name: "Admin", status: "ACTIVE" },
+    );
+    seed.permissions.push({
+      id: "perm_lighttick_use",
+      code: "lighttick:use",
+      name: "Use LightTick",
+      status: "ACTIVE",
+    });
+    seed.rolePermissions.push(
+      { id: "rp_lighttick_member_use", roleId: "role_lighttick_member", permissionId: "perm_lighttick_use" },
+      { id: "rp_lighttick_admin_use", roleId: "role_lighttick_admin", permissionId: "perm_lighttick_use" },
+    );
+    seed.appConfigs.push(
+      {
+        id: "cfg_lighttick_default_role",
+        appId: "lighttick",
+        configKey: "auth.default_role_code",
+        configValue: "member",
+        updatedAt: "2026-08-19T00:00:00.000Z",
+      },
+      {
+        id: "cfg_lighttick_delivery_config",
+        appId: "lighttick",
+        configKey: "admin.delivery_config",
+        configValue: JSON.stringify({
+          app: "lighttick",
+          enabled: false,
+          featureFlags: { aiPlanning: false, offlineSync: false, notifications: false },
+          settings: { apiBasePath: "/api/v1/lighttick" },
+        }, null, 2),
+        updatedAt: "2026-08-19T00:00:00.000Z",
+      },
+      {
+        id: "cfg_lighttick_i18n_settings",
+        appId: "lighttick",
+        configKey: "i18n.settings",
+        configValue: defaultI18nSettings,
+        updatedAt: "2026-08-19T00:00:00.000Z",
       },
     );
   }

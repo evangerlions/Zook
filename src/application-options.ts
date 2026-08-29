@@ -9,6 +9,7 @@ import type { CaptchaVerificationService, TencentCaptchaVerificationConfig } fro
 import type { RegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import type { SmsVerificationSender, TencentSmsVerificationConfig } from "./services/tencent-sms-verification.service.ts";
 import type { DatabaseSeed } from "./shared/types.ts";
+import type { LightTickRepository } from "./modules/lighttick/lighttick.repository.ts";
 
 export interface CreateApplicationOptions {
   seed?: DatabaseSeed;
@@ -66,4 +67,8 @@ export interface CreateApplicationOptions {
    * switch so existing apps and admin surfaces stay unchanged in production.
    */
   frogsleepEnabled?: boolean;
+  /** LightTick is independently disabled unless explicitly enabled. */
+  lighttickEnabled?: boolean;
+  /** Optional product-owned persistence adapter, primarily for deterministic tests. */
+  lighttickRepository?: LightTickRepository;
 }

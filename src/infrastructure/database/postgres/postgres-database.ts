@@ -72,6 +72,8 @@ import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeekl
 import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from "../../../modules/bodylog/bodylog-invitation.types.ts";
 import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../../../modules/bodylog/bodylog-challenge.types.ts";
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
+import { PostgresLightTickRepository } from "./postgres-lighttick-repository.ts";
+import type { LightTickRepository } from "../../../modules/lighttick/lighttick.repository.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
@@ -99,6 +101,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly bodyLogLeaderboard: PostgresBodyLogLeaderboardStore;
   private readonly bodyLogInvitations: PostgresBodyLogInvitationStore;
   private readonly bodyLogChallenges: PostgresBodyLogChallengeStore;
+  private readonly lightTick: PostgresLightTickRepository;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -117,7 +120,10 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogLeaderboard = new PostgresBodyLogLeaderboardStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogInvitations = new PostgresBodyLogInvitationStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogChallenges = new PostgresBodyLogChallengeStore(async (sql, values = []) => await this.query(sql, values));
+    this.lightTick = new PostgresLightTickRepository(this.pool);
   }
+
+  getLightTickRepository(): LightTickRepository { return this.lightTick; }
   static async create(
     connectionString: string,
     seed: DatabaseSeed = {},

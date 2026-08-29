@@ -162,8 +162,8 @@ export function isAdminAuthError(error: unknown): boolean {
     || error.code === "ADMIN_AUTH_REQUIRED"
     || error.code === "ADMIN_BASIC_AUTH_REQUIRED";
 }
-
 export const adminApi = {
+  getLightTickOperations() { return requestJson<import("./types").LightTickAdminOperationsDocument>(adminPath("/apps/lighttick/operations")); },
   login(username: string, password: string) {
     return requestJson<AdminBootstrapResult & { sessionExpiresAt?: string }>(
       adminPath("/auth/login"),

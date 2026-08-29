@@ -42,6 +42,10 @@ export class NotificationService {
     private readonly pushDispatcher: PushDispatcher = new LoggingPushDispatcher(logger),
   ) {}
 
+  async dispatchPush(request: PushDispatchRequest): Promise<void> {
+    await this.pushDispatcher.dispatch(request);
+  }
+
   async queueNotification(command: {
     appId: string;
     recipientUserId: string;

@@ -49,6 +49,12 @@
 3. 非标准历史路径只能作为临时兼容 alias，不能作为新客户端 canonical path；文档中必须同时写出 canonical `/api/v1/{productKey}/...` 路径。
 4. `productKey` 是 URL namespace；`appId` 是 token、membership、配置与数据隔离使用的运行时作用域键。通常二者相同，但文档模板中路径写 `productKey`，鉴权/数据作用域写 `appId`。
 
+LightTick 固定使用 `productKey = appId = lighttick`。其 canonical 合同位于
+`api-contracts/openapi/lighttick/api.yaml`；所有私有业务接口均位于
+`/api/v1/lighttick/...`，并要求 Bearer Token、活跃 app membership 与 app scope
+一致。客户端应从固定 Zook commit 生成类型，不得把旧 Flutter/Go 项目中的 DTO
+视为线上合同。
+
 ## 3. 路径分层
 
 | 层级         | Path 模板                   | 说明                           | 示例                   |
@@ -106,6 +112,41 @@ POST   /api/v1/frogsleep/focus-buddy/match-profile
 /api/v1/sleep-buddy/...
 /api/v1/focus-buddy/...
 ```
+
+LightTick 原生客户端使用以下核心接口族：
+
+```text
+GET/PATCH /api/v1/lighttick/profile
+POST      /api/v1/lighttick/onboarding
+POST      /api/v1/lighttick/onboarding/starter
+POST      /api/v1/lighttick/onboarding/first-action
+POST      /api/v1/lighttick/onboarding/commitment
+GET/POST  /api/v1/lighttick/goals
+POST      /api/v1/lighttick/plan-runs
+GET        /api/v1/lighttick/today
+POST       /api/v1/lighttick/tasks/{taskId}/{command}
+POST       /api/v1/lighttick/tasks/{taskId}/variant
+GET/POST   /api/v1/lighttick/reviews...
+GET/POST   /api/v1/lighttick/change-proposals...
+POST/GET   /api/v1/lighttick/sync/{push|pull}
+POST/DELETE /api/v1/lighttick/devices...
+DELETE     /api/v1/lighttick/me/account
+```
+
+写命令使用 `Idempotency-Key`；可并发修改资源的命令同时携带
+`base_version`。离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多
+500 条，准确值和稳定错误码以 OpenAPI 为准。
+
+渐进式启动是 additive 能力：`/onboarding/starter` 只要求模糊愿望和 IANA
+timezone，并保证用确定性模板返回一个 5–15 分钟推荐动作和两个备选；它不依赖
+LLM 成功。`/onboarding/first-action` 记录实际时长、难度和所选强度，只返回事实
+反馈与三日预览，不产生稳定偏好推断。累计两次有效行动（或显式
+`deep_planning=true`）后，`/onboarding/commitment` 才允许选择周承诺。
+
+任务变体固定为 `standard | light | minimum`，三者共享 `lineage_id`；切换变体不
+新增贡献，终态任务不可切换。目标暂停可携带原因、预计恢复时间、轻任务和通知
+策略；恢复模式为 `original_pace | recovery_mode | adjust_goal`。现有
+`POST /api/v1/lighttick/onboarding` 的 plan-first 行为继续兼容。
 
 ### 4.2 产品公开接口
 

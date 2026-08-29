@@ -17,7 +17,14 @@ async function runTick(): Promise<void> {
   await runtime.database.withExclusiveSession(async () => {
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
-    await runtime.queue.processDueJobs((job) => runtime.services.notificationService.processQueueJob(job));
+    await runtime.queue.processDueJobs(async (job) => {
+      if (job.name.startsWith("lighttick.")) {
+        if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
+        else await runtime.services.lighttickRuntime.worker?.process(job);
+        return;
+      }
+      await runtime.services.notificationService.processQueueJob(job);
+    });
     const buddyNotifications = await runtime.services.buddyNotificationWorkerService.processBatch();
     const buddyInvitationEmails = buddyCapabilities.explicitInviteConsent && buddyCapabilities.emailDelivery
       ? await runtime.services.buddyInvitationEmailWorkerService.processBatch()

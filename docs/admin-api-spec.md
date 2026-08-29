@@ -271,3 +271,6 @@ Admin 查看接口：
 
 - [admin-web-design.md](admin-web-design.md)
 - [current-backend-implementation-overview.md](current-backend-implementation-overview.md)
+## LightTick operations
+
+`GET /api/v1/admin/apps/lighttick/operations` requires an authenticated Admin session. It returns LightTick enablement, rollout flags, notification capabilities, AI scene versions/routes/budgets/fallbacks, and privacy-safe aggregate counters. It never returns user identities, task notes, Coach text, Prompt bodies, push Tokens, or provider credentials. The current page is read-only; any future mutation must use the existing RBAC, secondary-sensitive-operation, versioned configuration, and audit flow.

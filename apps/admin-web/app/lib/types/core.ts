@@ -65,3 +65,11 @@ export interface AdminSensitiveOperationGrantDocument {
   granted: true;
   expiresAt: string;
 }
+
+export interface LightTickAdminOperationsDocument {
+  app_id: "lighttick"; enabled: boolean; admin_user: string;
+  feature_flags: Record<string, boolean>; notification_defaults: Record<string, boolean>;
+  scenes: Array<{ key: string; kind: string; model_alias: string; prompt_version: string; schema_version: string;
+    timeout_ms: number; max_context_tokens: number; max_output_tokens: number; max_estimated_cost_usd: number; fallback: string }>;
+  metrics: Record<string, number>; privacy: { aggregates_only: boolean; private_text_visible: boolean };
+}
