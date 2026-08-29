@@ -116,6 +116,8 @@ POST   /api/v1/frogsleep/focus-buddy/match-profile
 LightTick 原生客户端使用以下核心接口族：
 
 ```text
+POST      /api/v1/lighttick/account/guest-sessions
+GET       /api/v1/lighttick/account/session
 GET/PATCH /api/v1/lighttick/profile
 POST      /api/v1/lighttick/onboarding
 POST      /api/v1/lighttick/onboarding/starter
@@ -132,6 +134,15 @@ POST/GET   /api/v1/lighttick/sync/{push|pull}
 POST/DELETE /api/v1/lighttick/devices...
 DELETE     /api/v1/lighttick/me/account
 ```
+
+游客创建接口是唯一无需 Bearer Token 的账户接口，请求必须携带稳定
+`Idempotency-Key`，并提交 `device_id` 与至少 32 字符、由设备生成且保存在
+Keychain/Keystore 的 `device_secret`。服务端只保存设备密钥与升级证明的哈希，签发 30 天有效的
+LightTick-only guest identity、LightTick membership、access/refresh token 和后续升级
+证明；同一设备恢复必须再次提供正确设备证明。每个来源 IP 每小时最多发起 5 次，
+超限返回 `429 RATE_LIMITED`。游客不能访问其他 Zook 产品，也不能访问 LightTick
+review、sync、设备注册、完整规划和删除等敏感能力；刷新凭据后可调用
+`GET /api/v1/lighttick/account/session` 恢复账户类型和游客到期时间。
 
 写命令使用 `Idempotency-Key`；可并发修改资源的命令同时携带
 `base_version`。离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多

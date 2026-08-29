@@ -81,13 +81,32 @@ requires an LLM response. First-action feedback is factual only. Standard,
 light, and minimum variants share one lineage; minimum completion is a valid
 action but does not satisfy the standard commitment. Pause metadata and
 recovery mode are stored only in LightTick tables and do not modify Common or
-other product behavior. The LightTick migrations occupy `029` through `032`,
+other product behavior. The LightTick migrations occupy `029` through `033`,
 immediately after `028_llm_call_observations.sql` on the synchronized `main`.
 
 Native delivery uses the committed Swift Package and Kotlin contracts under
 `api-contracts/clients/lighttick/`. Production UI belongs in explicit SwiftUI
 and Jetpack Compose app repositories; the historical Flutter prototype is not
 a deployment target.
+
+## Restricted guest identity
+
+Native first launch uses `POST /api/v1/lighttick/account/guest-sessions` with a
+stable `Idempotency-Key`, an installation `device_id`, and a device-generated
+`device_secret` held in Keychain or Keystore. Zook stores only hashes of the
+device secret and upgrade proof. Guest identity metadata is durable PostgreSQL truth
+in `zook_lighttick_guest_identities`; Redis/KV is used only for the bounded IP
+rate window and idempotency lookup.
+
+Guest sessions expire after 30 days, are issued only for the `lighttick` app,
+and create only a LightTick membership. They can use profile, starter,
+first-action, commitment, draft-goal, Today, and task-command routes. Reviews,
+sync, device registration, full planning, account deletion, and other sensitive
+capabilities reject guest access until formal account upgrade. Every creation
+and recovery writes a privacy-safe audit entry containing a device hash rather
+than the raw device identifier or secret. Common auth refresh rotates the
+session credentials; `GET /api/v1/lighttick/account/session` recovers the
+product-scoped account kind and expiry after refresh.
 
 ## Implementation order
 

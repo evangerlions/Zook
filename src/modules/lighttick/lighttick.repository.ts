@@ -1,6 +1,6 @@
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow,
-  LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalRow,
+  LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow,
   LightTickOperationRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow,
   LightTickReviewRow, LightTickTaskRow,
 } from "./lighttick.types.ts";
@@ -14,6 +14,9 @@ export interface LightTickAtomicWrite {
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
 export interface LightTickRepository {
   transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T>;
+  getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined>;
+  getGuestIdentityByDevice(deviceId: string): Promise<LightTickGuestIdentityRow | undefined>;
+  saveGuestIdentity(row: LightTickGuestIdentityRow): Promise<LightTickGuestIdentityRow>;
   getProfile(owner: LightTickOwner): Promise<LightTickProfileRow | undefined>;
   saveProfile(row: LightTickProfileRow, expectedVersion?: number): Promise<LightTickProfileRow>;
   listGoals(owner: LightTickOwner): Promise<LightTickGoalRow[]>;

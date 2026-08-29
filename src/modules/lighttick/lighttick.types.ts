@@ -1,6 +1,12 @@
 export type LightTickOwner = { appId: "lighttick"; userId: string };
 export type LightTickVersioned = { version: number; createdAt: string; updatedAt: string };
 
+export interface LightTickGuestIdentityRow extends LightTickOwner {
+  deviceId: string; deviceSecretHash: string; platform: "ios" | "android";
+  timezone: string; locale: string; appVersion: string; upgradeTokenHash: string;
+  expiresAt: string; revokedAt?: string; createdAt: string; updatedAt: string;
+}
+
 export interface LightTickProfileRow extends LightTickOwner, LightTickVersioned {
   timezone: string; locale: string; pace: "compact" | "balanced" | "relaxed";
   onboardingState: string; notificationPreferences: Record<string, unknown>;

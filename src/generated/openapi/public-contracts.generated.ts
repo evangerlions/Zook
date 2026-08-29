@@ -9043,6 +9043,7 @@ export const LightTickGuestSessionRequestSchema = {
   "type": "object",
   "required": [
     "device_id",
+    "device_secret",
     "platform",
     "timezone",
     "locale",
@@ -9054,6 +9055,12 @@ export const LightTickGuestSessionRequestSchema = {
       "minLength": 8,
       "maxLength": 128,
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "device_secret": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 4096,
+      "description": "Device-generated secret stored in Keychain or Keystore and never logged by the server."
     },
     "platform": {
       "type": "string",
@@ -9084,6 +9091,7 @@ export const LightTickGuestSessionRequestSchema = {
 
 export type LightTickGuestSessionRequest = {
   "device_id": string;
+  "device_secret": string;
   "platform": "ios" | "android";
   "timezone": string;
   "locale": string;

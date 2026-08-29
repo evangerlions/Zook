@@ -4,7 +4,7 @@ import { Pool } from "pg";
 import { runPostgresMigrations } from "../../src/infrastructure/database/postgres/migrate.ts";
 import { PostgresLightTickRepository } from "../../src/infrastructure/database/postgres/postgres-lighttick-repository.ts";
 import type { LightTickAtomicWrite } from "../../src/modules/lighttick/lighttick.repository.ts";
-import type { LightTickGoalRow } from "../../src/modules/lighttick/lighttick.types.ts";
+import type { LightTickGoalRow, LightTickGuestIdentityRow } from "../../src/modules/lighttick/lighttick.types.ts";
 
 const databaseUrl = process.env.LIGHTTICK_TEST_DATABASE_URL?.trim();
 if (!databaseUrl) throw new Error("LIGHTTICK_TEST_DATABASE_URL must point to a disposable PostgreSQL database.");
@@ -28,14 +28,15 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
     await pool.query("DELETE FROM zook_lighttick_change_log WHERE user_id=$1", [owner.userId]);
     await pool.query("DELETE FROM zook_lighttick_goals WHERE user_id=$1", [owner.userId]);
     await pool.query("DELETE FROM zook_lighttick_profiles WHERE user_id=$1", [owner.userId]);
+    await pool.query("DELETE FROM zook_lighttick_guest_identities WHERE user_id=$1 OR device_id='lighttick_pg_device'", [owner.userId]);
 
     await suite.test("installs from empty and remains upgrade/idempotency safe", async () => {
       const installed = await pool.query(`SELECT name FROM zook_schema_migrations
         WHERE name LIKE '029_lighttick%' OR name LIKE '030_lighttick%' OR name LIKE '031_lighttick%'
-          OR name LIKE '032_lighttick%' ORDER BY name`);
+          OR name LIKE '032_lighttick%' OR name LIKE '033_lighttick%' ORDER BY name`);
       assert.deepEqual(installed.rows.map(row => row.name), [
         "029_lighttick_core.sql", "030_lighttick_events_reviews_ai.sql", "031_lighttick_sync_devices.sql",
-        "032_lighttick_progressive_action_loop.sql",
+        "032_lighttick_progressive_action_loop.sql", "033_lighttick_guest_identities.sql",
       ]);
       const before = installed.rows.length;
       await runPostgresMigrations({ connectionString: databaseUrl, log: () => undefined });
@@ -53,6 +54,17 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       assert.match(definitions, /zook_lighttick_operations_pkey/);
       assert.match(definitions, /zook_lighttick_devices_active_token_uidx/);
       assert.match(definitions, /zook_lighttick_tasks_owner_lineage_idx/);
+      assert.match(definitions, /zook_lighttick_guest_expiry_idx/);
+    });
+
+    await suite.test("persists and recovers a device-bound guest identity", async () => {
+      const guest: LightTickGuestIdentityRow = { ...owner, deviceId: "lighttick_pg_device",
+        deviceSecretHash: "secret_hash", platform: "ios", timezone: "Asia/Shanghai", locale: "zh-CN",
+        appVersion: "1.0.0", upgradeTokenHash: "upgrade_hash", expiresAt: "2026-09-20T00:00:00.000Z",
+        createdAt: now, updatedAt: now };
+      await repository.saveGuestIdentity(guest);
+      assert.equal((await repository.getGuestIdentity(owner))?.deviceSecretHash, "secret_hash");
+      assert.equal((await repository.getGuestIdentityByDevice("lighttick_pg_device"))?.userId, owner.userId);
     });
 
     await suite.test("rolls back failed owner transactions", async () => {
@@ -85,6 +97,7 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
     await pool.query("DELETE FROM zook_lighttick_change_log WHERE user_id=$1", [owner.userId]).catch(() => undefined);
     await pool.query("DELETE FROM zook_lighttick_goals WHERE user_id=$1", [owner.userId]).catch(() => undefined);
     await pool.query("DELETE FROM zook_lighttick_profiles WHERE user_id=$1", [owner.userId]).catch(() => undefined);
+    await pool.query("DELETE FROM zook_lighttick_guest_identities WHERE user_id=$1 OR device_id='lighttick_pg_device'", [owner.userId]).catch(() => undefined);
     await pool.end();
   }
 });

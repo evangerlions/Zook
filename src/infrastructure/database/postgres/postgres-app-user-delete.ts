@@ -42,6 +42,7 @@ const LIGHTTICK_USER_RUNTIME_TABLES = [
   "zook_lighttick_sync_cursors",
   "zook_lighttick_devices",
   "zook_lighttick_profiles",
+  "zook_lighttick_guest_identities",
 ] as const;
 
 export async function deletePostgresAppUserRuntimeData(

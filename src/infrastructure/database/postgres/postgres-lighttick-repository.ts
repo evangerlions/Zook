@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickDeviceRow,
-  LightTickGoalRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
+  LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
   LightTickProfileRow, LightTickReviewRow, LightTickTaskRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
@@ -31,6 +31,26 @@ export class PostgresLightTickRepository implements LightTickRepository {
 
   private async query(sql: string, values: unknown[] = []): Promise<QueryResult> {
     return await (this.session.getStore() ?? this.connector).query(sql, values);
+  }
+
+  async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
+    const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);
+    return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
+  }
+  async getGuestIdentityByDevice(deviceId: string): Promise<LightTickGuestIdentityRow | undefined> {
+    const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id='lighttick' AND device_id=$1", [deviceId]);
+    return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
+  }
+  async saveGuestIdentity(row: LightTickGuestIdentityRow): Promise<LightTickGuestIdentityRow> {
+    const result = await this.query(`INSERT INTO zook_lighttick_guest_identities
+      (app_id,user_id,device_id,device_secret_hash,platform,timezone,locale,app_version,upgrade_token_hash,expires_at,revoked_at,created_at,updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+      ON CONFLICT (app_id,device_id) DO UPDATE SET user_id=EXCLUDED.user_id,device_secret_hash=EXCLUDED.device_secret_hash,
+      platform=EXCLUDED.platform,timezone=EXCLUDED.timezone,locale=EXCLUDED.locale,app_version=EXCLUDED.app_version,
+      upgrade_token_hash=EXCLUDED.upgrade_token_hash,expires_at=EXCLUDED.expires_at,revoked_at=EXCLUDED.revoked_at,
+      updated_at=EXCLUDED.updated_at RETURNING *`, [row.appId,row.userId,row.deviceId,row.deviceSecretHash,row.platform,
+      row.timezone,row.locale,row.appVersion,row.upgradeTokenHash,row.expiresAt,row.revokedAt ?? null,row.createdAt,row.updatedAt]);
+    return mapRow<LightTickGuestIdentityRow>(result.rows[0]!);
   }
 
   async transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T> {
@@ -253,7 +273,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
     const tables = ["task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
-      "ai_runs","change_log","operations","sync_cursors","devices","profiles"];
+      "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities"];
     await this.transaction(owner, async () => {
       for (const suffix of tables) await this.query(`DELETE FROM zook_lighttick_${suffix} WHERE app_id=$1 AND user_id=$2`, [owner.appId,owner.userId]);
     });

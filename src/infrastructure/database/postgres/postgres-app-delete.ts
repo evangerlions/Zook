@@ -21,6 +21,7 @@ export async function deletePostgresApp(query: QueryFn, appId: string): Promise<
     "zook_lighttick_sync_cursors",
     "zook_lighttick_devices",
     "zook_lighttick_profiles",
+    "zook_lighttick_guest_identities",
     "zook_bodylog_challenge_members",
     "zook_bodylog_challenges",
     "zook_bodylog_invitation_attributions",

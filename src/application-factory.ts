@@ -28,6 +28,7 @@ import { AuthService } from "./modules/auth/auth.service.ts";
 import { DevelopmentPasswordHasher } from "./modules/auth/password-hasher.ts";
 import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
+import { LightTickGuestIdentityService } from "./modules/lighttick/lighttick-guest-identity.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
 import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service.ts";
@@ -354,7 +355,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     resolveSecureRefreshCookie(options),
     resolveRefreshCookieSameSite(options),
     resolvePublicSmsTestBypass(options),
-  );
+  ); lighttickRuntime.guestIdentity = new LightTickGuestIdentityService(database, kvManager, appRegistryService, authService, lighttickRepository);
   const qrLoginService = new QrLoginService(
     cache,
     appRegistryService,

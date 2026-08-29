@@ -10,6 +10,27 @@ import type { BackendRouteContext } from "./backend-route-context.ts";
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
 
+function idempotencyKeyOf(request: HttpRequest): string {
+  const key = request.headers["idempotency-key"] ?? request.headers["Idempotency-Key"];
+  if (!key || key.length < 8 || key.length > 128)
+    throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Idempotency-Key is required.");
+  return key;
+}
+
+function assertGuestRouteAllowed(request: HttpRequest) {
+  const path = request.path;
+  const allowed = path === `${PREFIX}account/session`
+    || path === `${PREFIX}profile`
+    || path === `${PREFIX}goals`
+    || path === `${PREFIX}today`
+    || path === `${PREFIX}onboarding/starter`
+    || path === `${PREFIX}onboarding/first-action`
+    || path === `${PREFIX}onboarding/commitment`
+    || /^\/api\/v1\/lighttick\/goals\/[^/]+$/.test(path)
+    || /^\/api\/v1\/lighttick\/tasks\/[^/]+\/(start|complete|skip|defer|cancel|variant)$/.test(path);
+  if (!allowed) throw new ApplicationError(403, "APP_SCOPE_FORBIDDEN", "Guest sessions cannot access this LightTick capability.");
+}
+
 function bodyOf(request: HttpRequest): Json {
   if (!request.body || typeof request.body !== "object" || Array.isArray(request.body))
     throw new ApplicationError(400, "REQ_INVALID_BODY", "Request body must be an object.");
@@ -72,8 +93,7 @@ function runData(row: LightTickAiRunRow) { return { id: row.id, kind: row.kind, 
 
 async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
   entityType: string, entityId: string, action: string, execute: () => Promise<T>): Promise<T> {
-  const key = request.headers["idempotency-key"] ?? request.headers["Idempotency-Key"];
-  if (!key || key.length < 8 || key.length > 128) throw new ApplicationError(400, "REQ_FIELD_REQUIRED", "Idempotency-Key is required.");
+  const key = idempotencyKeyOf(request);
   const payload = bodyOf(request); const payloadHash = sha256(canonical(payload));
   return await runtime.repository.transaction(owner, async () => {
     const existing = await runtime.repository.getOperation(owner, key);
@@ -103,8 +123,34 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   runtime: LightTickRuntime | undefined, request: HttpRequest): Promise<HttpResponse<unknown> | undefined> {
   if (!request.path.startsWith(PREFIX)) return undefined;
   if (!enabled || !runtime) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick is not enabled for this deployment.");
+  if (request.method === "POST" && request.path === `${PREFIX}account/guest-sessions`) {
+    if (!runtime.guestIdentity) throw new ApplicationError(503, "LIGHTTICK_APP_DISABLED", "LightTick guest sessions are unavailable.");
+    const body = bodyOf(request); const platform = stringOf(body.platform, "platform");
+    if (platform !== "ios" && platform !== "android") throw new ApplicationError(400, "REQ_FIELD_INVALID", "platform is invalid.");
+    const timezone = stringOf(body.timezone, "timezone"); assertIanaTimezone(timezone);
+    const deviceSecret = stringOf(body.device_secret, "device_secret");
+    if (deviceSecret.length < 32 || deviceSecret.length > 4096)
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "device_secret is invalid.");
+    const created = await runtime.guestIdentity.createOrRecover({
+      deviceId: stringOf(body.device_id, "device_id"), deviceSecret, platform, timezone,
+      locale: stringOf(body.locale, "locale"), appVersion: stringOf(body.app_version, "app_version"),
+      idempotencyKey: idempotencyKeyOf(request), ipAddress: request.ipAddress ?? "unknown", requestId: request.requestId,
+    });
+    return response(context, request, { account_kind: "guest", user_id: created.record.userId,
+      device_id: created.record.deviceId, access_token: created.session.accessToken,
+      refresh_token: created.session.refreshToken, expires_in: created.session.expiresIn,
+      guest_expires_at: created.record.expiresAt, upgrade_token: created.upgradeToken }, 201);
+  }
   const auth = await context.authenticateProductRequest(request, LIGHTTICK_APP_ID);
   const owner: LightTickOwner = { appId: LIGHTTICK_APP_ID, userId: auth.userId };
+  const guest = runtime.guestIdentity ? await runtime.guestIdentity.getActive(auth.userId) : undefined;
+  if (guest) assertGuestRouteAllowed(request);
+
+  if (request.method === "GET" && request.path === `${PREFIX}account/session`) {
+    return response(context, request, { app_id: LIGHTTICK_APP_ID, account_kind: guest ? "guest" : "registered",
+      user_id: auth.userId, membership_status: "ACTIVE", session_expires_at: auth.expiresAt,
+      guest_expires_at: guest?.expiresAt });
+  }
 
   if (request.method === "DELETE" && request.path === `${PREFIX}me/account`) {
     const body = bodyOf(request); const confirmation = stringOf(body.confirmation, "confirmation");
