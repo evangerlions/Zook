@@ -20,6 +20,8 @@ function idempotencyKeyOf(request: HttpRequest): string {
 
 function assertGuestRouteAllowed(request: HttpRequest) {
   const path = request.path;
+  if (path === `${PREFIX}account/upgrade`)
+    throw new ApplicationError(403, "LIGHTTICK_APP_ACCESS_DENIED", "A registered LightTick account is required.");
   const allowed = path === `${PREFIX}account/session`
     || path === `${PREFIX}profile`
     || path === `${PREFIX}goals`

@@ -125,6 +125,49 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       await pool.query("DELETE FROM zook_users WHERE id IN ($1,$2)", [guestUserId,targetUserId]);
     });
 
+    await suite.test("rejects a guest aggregate that references a third-party owner and rolls back", async () => {
+      const guestUserId = "lighttick_pg_security_guest";
+      const targetUserId = "lighttick_pg_security_target";
+      const thirdUserId = "lighttick_pg_security_third";
+      const userIds = [guestUserId, targetUserId, thirdUserId];
+      try {
+        await pool.query(`INSERT INTO zook_users (id,password_hash,password_algo,status) VALUES
+          ($1,'guest','lighttick-guest','ACTIVE'),($2,'formal','scrypt','ACTIVE'),($3,'third','scrypt','ACTIVE')
+          ON CONFLICT (id) DO NOTHING`, userIds);
+        await pool.query(`INSERT INTO zook_app_users (id,app_id,user_id,status) VALUES
+          ('app_user_pg_security_guest','lighttick',$1,'ACTIVE'),
+          ('app_user_pg_security_target','lighttick',$2,'ACTIVE'),
+          ('app_user_pg_security_third','lighttick',$3,'ACTIVE') ON CONFLICT DO NOTHING`, userIds);
+        await repository.saveGuestIdentity({ appId: "lighttick", userId: guestUserId,
+          deviceId: "lighttick_pg_security_device", deviceSecretHash: "secret", platform: "android",
+          timezone: "Asia/Shanghai", locale: "zh-CN", appVersion: "1", upgradeTokenHash: "security-proof",
+          expiresAt: "2099-01-01T00:00:00.000Z", createdAt: now, updatedAt: now });
+        await pool.query(`INSERT INTO zook_lighttick_goals
+          (id,app_id,user_id,title,status,constraints,version,created_at,updated_at)
+          VALUES ('lighttick_pg_third_goal','lighttick',$1,'third goal','active','{}',1,$2,$2)`, [thirdUserId, now]);
+        await pool.query(`INSERT INTO zook_lighttick_plan_cycles
+          (id,app_id,user_id,goal_id,granularity,status,source,period_start,period_end,proposal,version,created_at,updated_at)
+          VALUES ('lighttick_pg_foreign_plan','lighttick',$1,'lighttick_pg_third_goal','week','active','user',
+          '2026-08-24','2026-08-30','{}',1,$2,$2)`, [guestUserId, now]);
+
+        await assert.rejects(repository.upgradeGuestAccount({ appId: "lighttick",
+          operationId: "lighttick-pg-security-upgrade", requestHash: "security-request", guestUserId,
+          targetUserId, guestUpgradeTokenHash: "security-proof", deviceId: "lighttick_pg_security_device",
+          now: "2026-08-29T00:00:00.000Z" }),
+        (error: any) => error.code === "LIGHTTICK_GUEST_UPGRADE_CONFLICT");
+        assert.equal((await pool.query("SELECT user_id FROM zook_lighttick_plan_cycles WHERE id='lighttick_pg_foreign_plan'"))
+          .rows[0]?.user_id, guestUserId);
+        assert.equal((await repository.getGuestIdentity({ appId: "lighttick", userId: guestUserId }))?.revokedAt, null);
+      } finally {
+        await pool.query("DELETE FROM zook_lighttick_plan_cycles WHERE id='lighttick_pg_foreign_plan'");
+        await pool.query("DELETE FROM zook_lighttick_goals WHERE id='lighttick_pg_third_goal'");
+        await pool.query("DELETE FROM zook_lighttick_guest_identities WHERE user_id=$1", [guestUserId]);
+        await pool.query("DELETE FROM zook_lighttick_account_upgrades WHERE operation_id='lighttick-pg-security-upgrade'");
+        await pool.query("DELETE FROM zook_app_users WHERE app_id='lighttick' AND user_id=ANY($1::text[])", [userIds]);
+        await pool.query("DELETE FROM zook_users WHERE id=ANY($1::text[])", [userIds]);
+      }
+    });
+
     await suite.test("allows exactly one concurrent update for one base version", async () => {
       await repository.saveGoal(goal("base"), write("create", 1));
       const outcomes = await Promise.allSettled([

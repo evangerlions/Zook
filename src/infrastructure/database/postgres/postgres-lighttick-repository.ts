@@ -83,6 +83,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
       if (!target.rows[0] || target.rows[0].password_algo === "lighttick-guest" || target.rows[0].status !== "ACTIVE")
         throw new ApplicationError(403, "LIGHTTICK_APP_ACCESS_DENIED", "A registered LightTick account is required.");
 
+      await this.assertUpgradeRelationships(command);
       const count = async (table: string) => Number((await this.query(
         `SELECT COUNT(*)::int AS count FROM ${table} WHERE app_id=$1 AND user_id=$2`,
         [command.appId, command.guestUserId])).rows[0]?.count ?? 0);
@@ -117,6 +118,27 @@ export class PostgresLightTickRepository implements LightTickRepository {
         command.requestHash,command.guestUserId,command.targetUserId,JSON.stringify(result),command.now]);
       return result;
     });
+  }
+
+  private async assertUpgradeRelationships(command: LightTickAccountUpgradeCommand) {
+    const relations = [
+      ["zook_lighttick_plan_cycles", "goal_id", "zook_lighttick_goals"],
+      ["zook_lighttick_tasks", "goal_id", "zook_lighttick_goals"],
+      ["zook_lighttick_tasks", "plan_id", "zook_lighttick_plan_cycles"],
+      ["zook_lighttick_task_steps", "task_id", "zook_lighttick_tasks"],
+      ["zook_lighttick_reviews", "goal_id", "zook_lighttick_goals"],
+      ["zook_lighttick_change_proposals", "plan_id", "zook_lighttick_plan_cycles"],
+    ] as const;
+    for (const [childTable, foreignKey, parentTable] of relations) {
+      const mismatch = await this.query(`SELECT child.id FROM ${childTable} child
+        LEFT JOIN ${parentTable} parent ON parent.id=child.${foreignKey}
+        WHERE child.app_id=$1 AND child.user_id=$2
+          AND (parent.id IS NULL OR parent.app_id<>$1 OR parent.user_id NOT IN ($2,$3)) LIMIT 1`,
+      [command.appId, command.guestUserId, command.targetUserId]);
+      if (mismatch.rows[0])
+        throw new ApplicationError(409, "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+          "Guest data contains a relationship owned by another account.");
+    }
   }
 
   private async mergeUpgradeProfiles(command: LightTickAccountUpgradeCommand) {

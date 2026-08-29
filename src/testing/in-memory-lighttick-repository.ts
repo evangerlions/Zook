@@ -98,6 +98,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       if (new Date(guest.expiresAt) <= new Date(command.now))
         throw new ApplicationError(410, "LIGHTTICK_GUEST_EXPIRED", "Guest session is expired.");
 
+      this.assertUpgradeRelationships(guestKey, targetKey);
       const counts = { goals: this.countOwner(this.goals, guestKey), plans: this.countOwner(this.plans, guestKey),
         tasks: this.countOwner(this.tasks, guestKey), reviews: this.countOwner(this.reviews, guestKey),
         proposals: this.countOwner(this.proposals, guestKey) };
@@ -118,6 +119,23 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.upgradeOperations.set(operationKey, { requestHash: command.requestHash, result: clone(result) });
       return clone(result);
     });
+  }
+
+  private assertUpgradeRelationships(guestKey: string, targetKey: string) {
+    const rules: [Map<string, any>, string, Map<string, any>][] = [
+      [this.plans, "goalId", this.goals], [this.tasks, "goalId", this.goals],
+      [this.tasks, "planId", this.plans],
+      [this.reviews, "goalId", this.goals], [this.proposals, "planId", this.plans],
+    ];
+    for (const [children, foreignKey, parents] of rules) {
+      for (const [key, child] of children) {
+        if (!key.startsWith(`${guestKey}:`)) continue;
+        const related = [...parents.values()].find(parent => parent.id === child[foreignKey]);
+        if (!related || ![guestKey, targetKey].includes(ownerKey(related)))
+          throw new ApplicationError(409, "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+            "Guest data contains a relationship owned by another account.");
+      }
+    }
   }
 
   private countOwner(store: Map<string, unknown>, prefix: string) {
