@@ -7,7 +7,7 @@ import { randomId } from "../../shared/utils.ts";
 export interface ProposedTaskInput { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
 export interface ProposedPlanInput {
   goalId: string; granularity: LightTickPlanRow["granularity"]; periodStart: string; periodEnd: string;
-  source: string; tasks: ProposedTaskInput[];
+  source: string; tasks: ProposedTaskInput[]; metadata?: Record<string, unknown>;
 }
 
 export class LightTickPlanService {
@@ -23,7 +23,8 @@ export class LightTickPlanService {
     const plan: LightTickPlanRow = { ...owner, id: randomId("lighttick_plan"), goalId: input.goalId,
       granularity: input.granularity, status: "proposed", source: input.source,
       periodStart: input.periodStart, periodEnd: input.periodEnd,
-      proposal: { tasks: structuredClone(input.tasks) }, version: 1, createdAt: timestamp, updatedAt: timestamp };
+      proposal: { ...structuredClone(input.metadata ?? {}), tasks: structuredClone(input.tasks) },
+      version: 1, createdAt: timestamp, updatedAt: timestamp };
     return await this.repository.savePlan(plan, this.write(plan, "plan_proposed", 1, timestamp));
   }
 

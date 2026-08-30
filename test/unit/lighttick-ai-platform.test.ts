@@ -14,9 +14,9 @@ import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan
 const owner: LightTickOwner = { appId: "lighttick", userId: "user_ai" };
 const now = "2026-08-20T00:00:00.000Z";
 let sequence = 0;
-async function queued(repository: InMemoryLightTickRepository, inputContext: Record<string, unknown>, kind = "plan") {
+async function queued(repository: InMemoryLightTickRepository, inputContext: Record<string, unknown>, kind = "plan", resourceId?: string) {
   const row: LightTickAiRunRow = { ...owner, id: `lighttick_run_test_${++sequence}`, kind, status: "queued", sceneKey: "test",
-    promptVersion: "1", schemaVersion: "1", attemptCount: 0, inputContext, usage: {}, createdAt: now, updatedAt: now };
+    resourceId, promptVersion: "1", schemaVersion: "1", attemptCount: 0, inputContext, usage: {}, createdAt: now, updatedAt: now };
   return await repository.saveAiRun(row);
 }
 function fakeComplete(result: string | Error) {
@@ -41,6 +41,23 @@ test("AI runner records schema-valid output, route usage, and latency", async ()
   const completed = await runner.execute(owner, run.id, "week_plan");
   assert.equal(completed.status, "succeeded"); assert.equal(completed.provider, "fake");
   assert.equal(completed.usage.totalTokens, 20); assert.equal((completed.output as any).tasks.length, 1);
+});
+
+test("successful plan run materializes exactly one confirmable proposed plan", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const goal = await new LightTickGoalService(repository, () => new Date(now)).create(owner, { title: "Launch", constraints: {} });
+  const request = { goal_id: goal.id, period_start: "2026-08-17", period_end: "2026-08-23", available_minutes: 120 };
+  const run = await queued(repository, request, "plan", goal.id);
+  const runner = new LightTickAiRunner(repository, fakeComplete(JSON.stringify({ tasks: [
+    { title: "Build", estimated_minutes: 60, priority: 10 } ] })) as any, () => new Date(now));
+
+  const completed = await runner.execute(owner, run.id, "week_plan");
+  const plans = await repository.listPlans(owner, goal.id);
+  assert.equal(plans.length, 1); assert.equal(plans[0]?.status, "proposed");
+  assert.equal(completed.resourceId, plans[0]?.id);
+  assert.equal((plans[0]?.proposal as any).ai_run_id, run.id);
+  assert.equal((await runner.execute(owner, run.id, "week_plan")).resourceId, plans[0]?.id);
+  assert.equal((await repository.listPlans(owner, goal.id)).length, 1);
 });
 
 test("malformed/schema-invalid/provider-outage plans fall back deterministically", async () => {
