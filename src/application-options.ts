@@ -72,6 +72,8 @@ export interface CreateApplicationOptions {
   frogsleepEnabled?: boolean;
   /** LightTick is independently disabled unless explicitly enabled. */
   lighttickEnabled?: boolean;
+  /** Seed LightTick metadata/configuration without enabling product routes. */
+  lighttickSeedEnabled?: boolean;
   /** Optional product-owned persistence adapter, primarily for deterministic tests. */
   lighttickRepository?: LightTickRepository;
 }

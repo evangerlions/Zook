@@ -80,7 +80,7 @@ import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { createApplicationTelemetryGateway } from "./application-telemetry-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
-import { resolveLightTickEnabled } from "./application-lighttick-runtime-config.ts";
+import { resolveLightTickEnabled, resolveLightTickSeedEnabled } from "./application-lighttick-runtime-config.ts";
 import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics, attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
@@ -89,7 +89,8 @@ import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCrede
 export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
   const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickEnabled });
+  const lighttickSeedEnabled = resolveLightTickSeedEnabled(options, lighttickEnabled);
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled });
   const kvManager =
     options.kvManager ??
     (options.kvBackend

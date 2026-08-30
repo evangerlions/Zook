@@ -28,6 +28,20 @@ test("LightTick is independently disabled and enabled seed includes product boot
   assert.ok((await enabled.database.listRoles("lighttick")).some((role) => role.code === "member"));
 });
 
+test("LightTick seed can be installed while product routes remain disabled", async () => {
+  const runtime = await createApplication({ lighttickEnabled: false, lighttickSeedEnabled: true });
+  assert.equal((await runtime.database.findApp("lighttick"))?.status, "ACTIVE");
+  assert.equal(
+    JSON.parse((await runtime.database.findAppConfig("lighttick", "admin.delivery_config"))?.configValue ?? "{}").enabled,
+    false,
+  );
+  const response = await runtime.app.handle({
+    method: "GET", path: "/api/v1/lighttick/profile", headers: {}, requestId: "seeded_disabled",
+  });
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.body.code, "LIGHTTICK_APP_DISABLED");
+});
+
 test("LightTick profile route accepts only active LightTick token and membership", async () => {
   const seed = buildDefaultSeed(undefined, { includeFrogSleep: true, includeLightTick: true });
   seed.apps.push({
