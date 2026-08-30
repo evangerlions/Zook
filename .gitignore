@@ -20,6 +20,7 @@ openspec/
 .worktrees/
 
 .storage/
+.artifacts/
 
 # Local assistant memory / workspace metadata (never commit)
 .workbuddy-ai/
