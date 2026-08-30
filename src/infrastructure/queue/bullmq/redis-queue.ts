@@ -48,7 +48,7 @@ export class RedisJobQueue implements JobQueue {
 
     while (true) {
       const popped = await this.client.zPopMin(DUE_JOBS_KEY);
-      const first = popped?.[0];
+      const first = popped;
       if (!first) {
         return;
       }
