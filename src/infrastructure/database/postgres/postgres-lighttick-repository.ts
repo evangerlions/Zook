@@ -4,7 +4,7 @@ import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickDeviceRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult,
   LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner, LightTickPlanRow,
-  LightTickProfileRow, LightTickReviewRow, LightTickTaskRow,
+  LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../../../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 
@@ -266,6 +266,30 @@ export class PostgresLightTickRepository implements LightTickRepository {
         row.startedAt ?? null, row.completedAt ?? null, row.notes ?? null, row.lineageId ?? row.id,
         row.selectedVariant ?? "standard", JSON.stringify(row.variantDefinitions ?? {}), row.completionCriteria ?? null,
         row.actualMinutes ?? null, row.commitmentSatisfied ?? null]);
+  }
+  async listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]> {
+    const result = await this.query(`SELECT * FROM zook_lighttick_task_steps
+      WHERE app_id=$1 AND user_id=$2 AND task_id=$3 ORDER BY position,id`, [owner.appId, owner.userId, taskId]);
+    return result.rows.map(mapRow<LightTickTaskStepRow>);
+  }
+  async getTaskStep(owner: LightTickOwner, taskId: string, id: string): Promise<LightTickTaskStepRow | undefined> {
+    const result = await this.query(`SELECT * FROM zook_lighttick_task_steps
+      WHERE app_id=$1 AND user_id=$2 AND task_id=$3 AND id=$4`, [owner.appId, owner.userId, taskId, id]);
+    return result.rows[0] ? mapRow<LightTickTaskStepRow>(result.rows[0]) : undefined;
+  }
+  async saveTaskStep(row: LightTickTaskStepRow, expectedVersion?: number): Promise<LightTickTaskStepRow> {
+    if (expectedVersion !== undefined) {
+      const result = await this.query(`UPDATE zook_lighttick_task_steps SET title=$1,position=$2,completed=$3,
+        version=version+1,updated_at=$4 WHERE app_id=$5 AND user_id=$6 AND task_id=$7 AND id=$8 AND version=$9 RETURNING *`,
+      [row.title,row.position,row.completed,row.updatedAt,row.appId,row.userId,row.taskId,row.id,expectedVersion]);
+      if (!result.rows[0]) versionConflict(row.id);
+      return mapRow<LightTickTaskStepRow>(result.rows[0]);
+    }
+    const result = await this.query(`INSERT INTO zook_lighttick_task_steps
+      (id,app_id,user_id,task_id,title,position,completed,version,created_at,updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,1,$8,$9) RETURNING *`,
+    [row.id,row.appId,row.userId,row.taskId,row.title,row.position,row.completed,row.createdAt,row.updatedAt]);
+    return mapRow<LightTickTaskStepRow>(result.rows[0]!);
   }
   async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string) {
     const result = await this.query(`SELECT * FROM zook_lighttick_execution_events WHERE app_id=$1 AND user_id=$2

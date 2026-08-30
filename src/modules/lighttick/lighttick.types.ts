@@ -57,6 +57,10 @@ export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   completionCriteria?: string; actualMinutes?: number; commitmentSatisfied?: boolean;
 }
 
+export interface LightTickTaskStepRow extends LightTickOwner, LightTickVersioned {
+  id: string; taskId: string; title: string; position: number; completed: boolean;
+}
+
 export interface LightTickExecutionEventRow extends LightTickOwner {
   id: string; aggregateType: string; aggregateId: string; eventType: string;
   aggregateVersion: number; payload: Record<string, unknown>;

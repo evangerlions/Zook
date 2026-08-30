@@ -73,16 +73,17 @@ function variantData(definition: any) { return { title: definition.title,
   estimated_duration_minutes: definition.estimatedMinutes, completion_criteria: definition.completionCriteria }; }
 function variantsData(definitions: any) { return definitions ? Object.fromEntries(Object.entries(definitions)
   .map(([key, value]) => [key, variantData(value)])) : undefined; }
-function taskData(row: any) { return { id: row.id, goal_id: row.goalId, plan_id: row.planId, title: row.title,
+function taskData(row: any, steps: any[] = []) { return { id: row.id, goal_id: row.goalId, plan_id: row.planId, title: row.title,
   status: row.status, scheduled_date: row.scheduledFor?.slice(0, 10), estimated_duration_minutes: row.estimatedMinutes,
   lineage_id: row.lineageId ?? row.id, selected_variant: row.selectedVariant ?? "standard",
   variants: variantsData(row.variantDefinitions), completion_criteria: row.completionCriteria,
   actual_duration_minutes: row.actualMinutes, commitment_satisfied: row.commitmentSatisfied,
-  priority: row.priority, completed_at: row.completedAt, note: row.notes, version: row.version,
+  priority: row.priority, steps: steps.map(step => ({ id: step.id, title: step.title,
+    completed: step.completed, position: step.position })), completed_at: row.completedAt, note: row.notes, version: row.version,
   created_at: row.createdAt, updated_at: row.updatedAt }; }
 function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id: row.goalId, granularity: row.granularity,
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, source: row.source,
-  ...(tasks ? { tasks: tasks.map(taskData) } : {}), version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
+  ...(tasks ? { tasks: tasks.map(task => taskData(task, task.steps)) } : {}), version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 function reviewData(row: any) { return { id: row.id, goal_id: row.goalId, period: row.period === "week" ? "weekly" : "monthly",
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, facts: row.facts,
   insights: row.output?.insights ?? [], recommendations: row.output?.recommendations ?? [], data_sufficiency: row.dataSufficiency,
@@ -302,7 +303,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (planMatch && request.method === "GET") {
     const plan = await runtime.repository.getPlan(owner, planMatch[1]!);
     if (!plan) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
-    return response(context, request, planData(plan, await runtime.repository.listTasks(owner, plan.id)));
+    const tasks = await runtime.repository.listTasks(owner, plan.id);
+    return response(context, request, planData(plan, await Promise.all(tasks.map(async task =>
+      ({ ...task, steps: await runtime.repository.listTaskSteps(owner, task.id) })))));
   }
   const confirmMatch = request.path.match(/^\/api\/v1\/lighttick\/plans\/([^/]+)\/confirm$/);
   if (confirmMatch && request.method === "POST") {
@@ -315,12 +318,16 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (planTasksMatch && request.method === "GET") {
     const plan = await runtime.repository.getPlan(owner, planTasksMatch[1]!);
     if (!plan) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
-    return response(context, request, { items: (await runtime.repository.listTasks(owner, plan.id)).map(taskData), next_cursor: null });
+    const tasks = await runtime.repository.listTasks(owner, plan.id);
+    return response(context, request, { items: await Promise.all(tasks.map(async task =>
+      taskData(task, await runtime.repository.listTaskSteps(owner, task.id)))), next_cursor: null });
   }
   if (request.path === `${PREFIX}today` && request.method === "GET") {
-    const today = await runtime.today.get(owner); return response(context, request, { business_date: today.businessDate,
-      timezone: today.timezone, primary_task: today.primaryTask ? taskData(today.primaryTask) : undefined,
-      tasks: today.executableTasks.map(taskData), completed_tasks: today.completedTasks.map(taskData),
+    const today = await runtime.today.get(owner);
+    const renderTask = async (task: any) => taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
+    return response(context, request, { business_date: today.businessDate,
+      timezone: today.timezone, primary_task: today.primaryTask ? await renderTask(today.primaryTask) : undefined,
+      tasks: await Promise.all(today.executableTasks.map(renderTask)), completed_tasks: await Promise.all(today.completedTasks.map(renderTask)),
       remaining_estimated_minutes: today.remainingEstimatedMinutes, plan_b_available: today.planBAvailable,
       empty_state_action: today.emptyState === "goal_paused" ? "resume_goal" : today.emptyState === "no_active_plan" ? "generate_plan" : today.emptyState === "no_tasks_today" ? "rest" : "none",
       snapshot_version: today.snapshotVersion });
@@ -332,14 +339,29 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
       : { action };
-    const data = await idempotent(runtime, owner, request, "task", taskMatch[1]!, action, async () =>
-      taskData(await runtime.tasks.command(owner, taskMatch[1]!, numberOf(body.base_version, "base_version"), command)));
+    const data = await idempotent(runtime, owner, request, "task", taskMatch[1]!, action, async () => {
+      const task = await runtime.tasks.command(owner, taskMatch[1]!, numberOf(body.base_version, "base_version"), command);
+      return taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
+    });
     return response(context, request, data);
   }
   const variantMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/variant$/);
   if (variantMatch && request.method === "POST") {
-    const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "task", variantMatch[1]!, "variant", async () =>
-      taskData(await runtime.tasks.switchVariant(owner, variantMatch[1]!, numberOf(body.base_version, "base_version"), body.variant as any)));
+    const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "task", variantMatch[1]!, "variant", async () => {
+      const task = await runtime.tasks.switchVariant(owner, variantMatch[1]!, numberOf(body.base_version, "base_version"), body.variant as any);
+      return taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
+    });
+    return response(context, request, data);
+  }
+  const stepMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/steps\/([^/]+)$/);
+  if (stepMatch && request.method === "POST") {
+    const body = bodyOf(request);
+    if (typeof body.completed !== "boolean") throw new ApplicationError(400, "REQ_FIELD_INVALID", "completed is invalid.");
+    const data = await idempotent(runtime, owner, request, "task", stepMatch[1]!, "step", async () => {
+      const result = await runtime.tasks.setStepCompletion(owner, stepMatch[1]!, stepMatch[2]!,
+        numberOf(body.base_version, "base_version"), body.completed);
+      return taskData(result.task, result.steps);
+    });
     return response(context, request, data);
   }
 

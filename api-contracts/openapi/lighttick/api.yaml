@@ -444,6 +444,24 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/LightTickTaskVariantRequest" }
       responses: *taskCommandResponses
+  /api/v1/lighttick/tasks/{taskId}/steps/{stepId}:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+      - name: stepId
+        in: path
+        required: true
+        schema: { $ref: "#/components/schemas/LightTickId" }
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: updateLightTickTaskStep
+      tags: [lighttick-tasks]
+      summary: Mark one task step complete or incomplete while versioning the parent task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskStepCommandRequest" }
+      responses: *taskCommandResponses
   /api/v1/lighttick/review-runs:
     post:
       operationId: createLightTickReviewRun
@@ -1035,6 +1053,14 @@ components:
         title: { type: string }
         completed: { type: boolean }
         position: { type: integer, minimum: 0 }
+    LightTickTaskStepCommandRequest:
+      type: object
+      required: [base_version, completed]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        completed: { type: boolean }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
     LightTickVersionedCommandRequest:
       type: object
       required: [base_version]

@@ -1,5 +1,5 @@
 import type { LightTickRepository } from "./lighttick.repository.ts";
-import type { LightTickOwner, LightTickTaskRow, LightTickTaskVariant } from "./lighttick.types.ts";
+import type { LightTickOwner, LightTickTaskRow, LightTickTaskStepRow, LightTickTaskVariant } from "./lighttick.types.ts";
 import type { LightTickTaskStatus } from "./lighttick-state-machines.ts";
 import { transitionTask } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
@@ -92,5 +92,29 @@ export class LightTickTaskService {
         operation: "upsert", snapshot: { id: taskId, lineage_id: next.lineageId, selected_variant: variant,
           estimated_duration_minutes: next.estimatedMinutes, version: baseVersion + 1 }, changedAt: timestamp },
     }, baseVersion);
+  }
+
+  async setStepCompletion(owner: LightTickOwner, taskId: string, stepId: string, baseVersion: number,
+    completed: boolean): Promise<{ task: LightTickTaskRow; steps: LightTickTaskStepRow[] }> {
+    return await this.repository.transaction(owner, async () => {
+      const current = await this.repository.getTask(owner, taskId);
+      if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+      const step = await this.repository.getTaskStep(owner, taskId, stepId);
+      if (!step) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task step was not found.");
+      const timestamp = this.clock().toISOString();
+      const savedTask = await this.repository.saveTask({ ...current, updatedAt: timestamp }, {
+        event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: taskId,
+          eventType: "task_step_updated", aggregateVersion: baseVersion + 1,
+          payload: { step_id: stepId, completed, client_base_version: baseVersion },
+          occurredAt: timestamp, createdAt: timestamp },
+        change: { ...owner, entityType: "task", entityId: taskId, entityVersion: baseVersion + 1,
+          operation: "upsert", snapshot: { id: taskId, step_id: stepId, step_completed: completed,
+            version: baseVersion + 1 }, changedAt: timestamp },
+      }, baseVersion);
+      if (step.completed !== completed) {
+        await this.repository.saveTaskStep({ ...step, completed, updatedAt: timestamp }, step.version);
+      }
+      return { task: savedTask, steps: await this.repository.listTaskSteps(owner, taskId) };
+    });
   }
 }

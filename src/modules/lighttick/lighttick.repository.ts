@@ -3,7 +3,7 @@ import type {
   LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult,
   LightTickOperationRow, LightTickOwner, LightTickPlanRow, LightTickProfileRow,
-  LightTickReviewRow, LightTickTaskRow,
+  LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "./lighttick.types.ts";
 
 export interface LightTickAtomicWrite {
@@ -30,6 +30,9 @@ export interface LightTickRepository {
   listTasks(owner: LightTickOwner, planId?: string): Promise<LightTickTaskRow[]>;
   getTask(owner: LightTickOwner, id: string): Promise<LightTickTaskRow | undefined>;
   saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickTaskRow>;
+  listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]>;
+  getTaskStep(owner: LightTickOwner, taskId: string, id: string): Promise<LightTickTaskStepRow | undefined>;
+  saveTaskStep(row: LightTickTaskStepRow, expectedVersion?: number): Promise<LightTickTaskStepRow>;
   listExecutionEvents(owner: LightTickOwner, from?: string, to?: string): Promise<LightTickExecutionEventRow[]>;
   listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]>;
   saveReview(row: LightTickReviewRow): Promise<LightTickReviewRow>;

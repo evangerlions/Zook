@@ -14,6 +14,8 @@ async function fixture() {
       aggregateVersion: 1, payload: {}, occurredAt: now, createdAt: now },
     change: { ...owner, entityType: "task", entityId: "task_a", entityVersion: 1, operation: "upsert", changedAt: now },
   });
+  await repository.saveTaskStep({ ...owner, id: "step_a", taskId: "task_a", title: "Open editor",
+    position: 0, completed: false, version: 1, createdAt: now, updatedAt: now });
   return { repository, service: new LightTickTaskService(repository, () => new Date("2026-08-20T09:00:00Z")) };
 }
 
@@ -27,6 +29,28 @@ test("task commands atomically persist status, event facts, and change feed", as
   assert.equal(events.length, 3);
   assert.equal(events.at(-1)?.payload.actual_minutes, 55);
   assert.equal((await repository.pullChanges(owner, 0, 10)).length, 3);
+});
+
+test("task step completion is versioned with its parent and remains atomic", async () => {
+  const { repository, service } = await fixture();
+  const result = await service.setStepCompletion(owner, "task_a", "step_a", 1, true);
+  assert.deepEqual([result.task.version, result.steps[0]?.completed, result.steps[0]?.version], [2, true, 2]);
+  assert.equal((await repository.listExecutionEvents(owner)).at(-1)?.eventType, "task_step_updated");
+  assert.deepEqual((await repository.pullChanges(owner, 0, 10)).at(-1)?.snapshot, {
+    id: "task_a", step_id: "step_a", step_completed: true, version: 2,
+  });
+
+  await assert.rejects(service.setStepCompletion(owner, "task_a", "step_a", 1, false),
+    (error: any) => error.code === "LIGHTTICK_VERSION_CONFLICT");
+  assert.equal((await repository.getTaskStep(owner, "task_a", "step_a"))?.completed, true);
+});
+
+test("task step completion rejects steps outside the task", async () => {
+  const { repository, service } = await fixture();
+  await repository.saveTaskStep({ ...owner, id: "step_other", taskId: "task_other", title: "Other",
+    position: 0, completed: false, version: 1, createdAt: now, updatedAt: now });
+  await assert.rejects(service.setStepCompletion(owner, "task_a", "step_other", 1, true),
+    (error: any) => error.code === "LIGHTTICK_RESOURCE_NOT_FOUND");
 });
 
 test("task commands reject stale versions, invalid durations, and duplicate terminal actions", async () => {

@@ -3,7 +3,7 @@ import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickDeviceRow,
   LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult,
   LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner,
-  LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow,
+  LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../modules/lighttick/lighttick.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
 
@@ -17,6 +17,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private goals = new Map<string, LightTickGoalRow>();
   private plans = new Map<string, LightTickPlanRow>();
   private tasks = new Map<string, LightTickTaskRow>();
+  private taskSteps = new Map<string, LightTickTaskStepRow>();
   private reviews = new Map<string, LightTickReviewRow>();
   private proposals = new Map<string, LightTickChangeProposalRow>();
   private aiRuns = new Map<string, LightTickAiRunRow>();
@@ -33,7 +34,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.assertOwner(owner);
     if (this.transactionDepth) return await operation();
     const snapshot = clone({ profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
-      tasks: [...this.tasks], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
+      tasks: [...this.tasks], taskSteps: [...this.taskSteps], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
       events: this.events, changes: this.changes, sequence: this.sequence });
@@ -41,7 +42,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     try { return await operation(); }
     catch (error) {
       this.profiles = new Map(snapshot.profiles); this.goals = new Map(snapshot.goals); this.plans = new Map(snapshot.plans);
-      this.tasks = new Map(snapshot.tasks); this.reviews = new Map(snapshot.reviews); this.proposals = new Map(snapshot.proposals);
+      this.tasks = new Map(snapshot.tasks); this.taskSteps = new Map(snapshot.taskSteps); this.reviews = new Map(snapshot.reviews); this.proposals = new Map(snapshot.proposals);
       this.aiRuns = new Map(snapshot.aiRuns); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
       this.guestIdentities = new Map(snapshot.guestIdentities);
       this.upgradeOperations = new Map(snapshot.upgradeOperations);
@@ -103,7 +104,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
         tasks: this.countOwner(this.tasks, guestKey), reviews: this.countOwner(this.reviews, guestKey),
         proposals: this.countOwner(this.proposals, guestKey) };
       this.mergeProfile(guestKey, targetKey, command.targetUserId);
-      for (const store of [this.goals, this.plans, this.tasks, this.reviews, this.proposals, this.aiRuns] as Map<string, any>[])
+      for (const store of [this.goals, this.plans, this.tasks, this.taskSteps, this.reviews, this.proposals, this.aiRuns] as Map<string, any>[])
         this.moveOwnedRows(store, guestKey, targetKey, command.targetUserId);
       this.moveOwnedRows(this.operations as Map<string, any>, guestKey, targetKey, command.targetUserId, true);
       this.mergeDevices(guestKey, targetKey, command.targetUserId);
@@ -125,6 +126,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     const rules: [Map<string, any>, string, Map<string, any>][] = [
       [this.plans, "goalId", this.goals], [this.tasks, "goalId", this.goals],
       [this.tasks, "planId", this.plans],
+      [this.taskSteps, "taskId", this.tasks],
       [this.reviews, "goalId", this.goals], [this.proposals, "planId", this.plans],
     ];
     for (const [children, foreignKey, parents] of rules) {
@@ -213,6 +215,18 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number) {
     return await this.saveAggregate(this.tasks, row, write, expectedVersion);
   }
+  async listTaskSteps(owner: LightTickOwner, taskId: string) {
+    return clone([...this.taskSteps.values()].filter(row => ownerKey(row) === ownerKey(owner) && row.taskId === taskId)
+      .sort((left, right) => left.position - right.position));
+  }
+  async getTaskStep(owner: LightTickOwner, taskId: string, id: string) {
+    const row = this.taskSteps.get(`${ownerKey(owner)}:${id}`);
+    return clone(row?.taskId === taskId ? row : undefined);
+  }
+  async saveTaskStep(row: LightTickTaskStepRow, expectedVersion?: number) {
+    const saved = this.versioned(this.taskSteps.get(rowKey(row)), row, expectedVersion);
+    this.taskSteps.set(rowKey(row), saved); return clone(saved);
+  }
   private async saveAggregate<T extends VersionedOwnerRow & { id: string }>(store: Map<string, T>, row: T,
     write: LightTickAtomicWrite, expectedVersion?: number): Promise<T> {
     return await this.transaction(row, async () => {
@@ -252,7 +266,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     for (const [key, operation] of this.upgradeOperations)
       if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)
         this.upgradeOperations.delete(key);
-    for (const store of [this.goals,this.plans,this.tasks,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
+    for (const store of [this.goals,this.plans,this.tasks,this.taskSteps,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
       for (const key of store.keys()) if (key.startsWith(prefix)) store.delete(key);
     }
     this.events = this.events.filter(row => ownerKey(row) !== ownerKey(owner));

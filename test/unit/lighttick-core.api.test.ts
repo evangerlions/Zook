@@ -78,11 +78,25 @@ test("plan confirmation, Today, and task commands expose deterministic state cha
   const confirmed = await runtime.app.handle({ method: "POST", path: `/api/v1/lighttick/plans/${plan.id}/confirm`,
     headers: { ...headers, "idempotency-key": "plan-confirm-001" }, body: { base_version: 1 }, requestId: "confirm" });
   assert.equal((confirmed.body.data as any).status, "active");
+  const plannedTask = (confirmed.body.data as any).tasks[0];
+  await services.repository.saveTaskStep({ ...owner, id: "step_primary_open", taskId: plannedTask.id,
+    title: "Open the project", position: 0, completed: false, version: 1,
+    createdAt: "2026-08-20T08:00:00.000Z", updatedAt: "2026-08-20T08:00:00.000Z" });
   const today = await runtime.app.handle({ method: "GET", path: "/api/v1/lighttick/today", headers, requestId: "today" });
   assert.equal((today.body.data as any).plan_b_available, true);
   const task = (today.body.data as any).primary_task;
+  assert.deepEqual(task.steps, [{ id: "step_primary_open", title: "Open the project", completed: false, position: 0 }]);
+  const stepped = await runtime.app.handle({ method: "POST", path: `/api/v1/lighttick/tasks/${task.id}/steps/step_primary_open`,
+    headers: { ...headers, "idempotency-key": "task-step-001" }, body: { base_version: task.version, completed: true },
+    requestId: "step" });
+  assert.equal((stepped.body.data as any).steps[0].completed, true);
+  assert.equal((stepped.body.data as any).version, task.version + 1);
+  const steppedReplay = await runtime.app.handle({ method: "POST", path: `/api/v1/lighttick/tasks/${task.id}/steps/step_primary_open`,
+    headers: { ...headers, "idempotency-key": "task-step-001" }, body: { base_version: task.version, completed: true },
+    requestId: "step-replay" });
+  assert.deepEqual(steppedReplay.body.data, stepped.body.data);
   const completeRequest = { method: "POST", path: `/api/v1/lighttick/tasks/${task.id}/complete`,
-    headers: { ...headers, "idempotency-key": "task-complete-001" }, body: { base_version: task.version, actual_duration_minutes: 55 },
+    headers: { ...headers, "idempotency-key": "task-complete-001" }, body: { base_version: task.version + 1, actual_duration_minutes: 55 },
     requestId: "complete" };
   const completed = await runtime.app.handle(completeRequest); assert.equal((completed.body.data as any).status, "completed");
   const replay = await runtime.app.handle({ ...completeRequest, requestId: "complete-replay" });
