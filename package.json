@@ -18,6 +18,7 @@
     "check:line-count": "node scripts/check-source-line-count.mjs",
     "smoke:frogsleep-zook": "node scripts/frogsleep-zook-smoke.mjs",
     "smoke:frogsleep-buddy-invitation": "node scripts/frogsleep-buddy-invitation-smoke.mjs",
+    "smoke:lighttick-dev": "node scripts/lighttick-dev-acceptance.mjs",
     "observe:frogsleep-buddy-rollout": "node --experimental-transform-types scripts/frogsleep-buddy-rollout-observation.ts",
     "worker": "node --experimental-transform-types src/worker.ts",
     "test": "node --experimental-transform-types --test test/unit/*.test.ts",
