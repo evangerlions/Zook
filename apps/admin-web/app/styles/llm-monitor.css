@@ -153,6 +153,25 @@
   min-width: 0;
 }
 
+.llm-routing-chart-heading {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 4px;
+}
+
+.llm-routing-chart-heading strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.llm-routing-chart-heading span {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .llm-matrix-chart-scroll {
   max-width: 100%;
   overflow-x: auto;
