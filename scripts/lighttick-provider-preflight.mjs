@@ -103,27 +103,42 @@ async function inspectDev(baseUrl, apiEnvironment) {
   return result;
 }
 
-function inspectPush(workerEnvironment, workerContainer) {
-  const apnsPath = workerEnvironment.APNS_PRIVATE_KEY_PATH;
-  const apnsConfigured = Boolean(workerEnvironment.APNS_KEY_ID && workerEnvironment.APNS_TEAM_ID &&
-    (workerEnvironment.LIGHTTICK_APNS_BUNDLE_ID || workerEnvironment.APNS_BUNDLE_ID || workerEnvironment.APNS_TOPIC) &&
-    apnsPath && fileReadableInContainer(workerContainer, apnsPath));
-  const fcmPath = workerEnvironment.LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH ?? workerEnvironment.FCM_SERVICE_ACCOUNT_PATH;
-  const fcmConfigured = Boolean((workerEnvironment.LIGHTTICK_FCM_PROJECT_ID || workerEnvironment.FCM_PROJECT_ID) &&
-    fcmPath && fileReadableInContainer(workerContainer, fcmPath));
-  const apnsTokenCount = countTokens(process.env.LIGHTTICK_APNS_SMOKE_TOKENS);
-  const fcmTokenCount = countTokens(process.env.LIGHTTICK_FCM_SMOKE_TOKENS);
+export function evaluatePushReadiness(input) {
+  const apnsCredentialsPresent = input.apnsKeyIdPresent && input.apnsTeamIdPresent && input.apnsKeyReadable;
+  const apnsConfigured = apnsCredentialsPresent && input.apnsSharedTopicPresent && input.lightTickApnsTopicPresent;
+  const fcmConfigured = input.fcmProjectPresent && input.fcmServiceAccountReadable;
   const issues = [];
-  if (!apnsConfigured) issues.push("apns_credentials_incomplete");
-  if (apnsConfigured && workerEnvironment.APNS_SANDBOX !== "true") issues.push("apns_dev_must_use_sandbox");
+  if (!apnsCredentialsPresent) issues.push("apns_credentials_incomplete");
+  if (apnsCredentialsPresent && !input.apnsSharedTopicPresent) issues.push("apns_runtime_topic_missing");
+  if (apnsCredentialsPresent && !input.lightTickApnsTopicPresent) issues.push("lighttick_apns_topic_missing");
+  if (apnsConfigured && !input.apnsSandbox) issues.push("apns_dev_must_use_sandbox");
   if (!fcmConfigured) issues.push("fcm_credentials_incomplete");
-  if (apnsTokenCount < 2) issues.push("apns_multiple_device_tokens_missing");
-  if (fcmTokenCount < 2) issues.push("fcm_multiple_device_tokens_missing");
+  if (input.apnsTokenCount < 2) issues.push("apns_multiple_device_tokens_missing");
+  if (input.fcmTokenCount < 2) issues.push("fcm_multiple_device_tokens_missing");
   return {
-    apns: { configured: apnsConfigured, sandbox: workerEnvironment.APNS_SANDBOX === "true", deviceTokenCount: apnsTokenCount },
-    fcm: { configured: fcmConfigured, deviceTokenCount: fcmTokenCount },
+    apns: { configured: apnsConfigured, sandbox: input.apnsSandbox, deviceTokenCount: input.apnsTokenCount },
+    fcm: { configured: fcmConfigured, deviceTokenCount: input.fcmTokenCount },
     issues,
   };
+}
+
+function inspectPush(workerEnvironment, workerContainer) {
+  const apnsPath = workerEnvironment.APNS_PRIVATE_KEY_PATH;
+  const fcmPath = workerEnvironment.LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH ?? workerEnvironment.FCM_SERVICE_ACCOUNT_PATH;
+  const apnsTokenCount = countTokens(process.env.LIGHTTICK_APNS_SMOKE_TOKENS);
+  const fcmTokenCount = countTokens(process.env.LIGHTTICK_FCM_SMOKE_TOKENS);
+  return evaluatePushReadiness({
+    apnsKeyIdPresent: Boolean(workerEnvironment.APNS_KEY_ID),
+    apnsTeamIdPresent: Boolean(workerEnvironment.APNS_TEAM_ID),
+    apnsSharedTopicPresent: Boolean(workerEnvironment.APNS_BUNDLE_ID || workerEnvironment.APNS_TOPIC),
+    lightTickApnsTopicPresent: Boolean(workerEnvironment.LIGHTTICK_APNS_BUNDLE_ID),
+    apnsKeyReadable: Boolean(apnsPath && fileReadableInContainer(workerContainer, apnsPath)),
+    apnsSandbox: workerEnvironment.APNS_SANDBOX === "true",
+    apnsTokenCount,
+    fcmProjectPresent: Boolean(workerEnvironment.LIGHTTICK_FCM_PROJECT_ID || workerEnvironment.FCM_PROJECT_ID),
+    fcmServiceAccountReadable: Boolean(fcmPath && fileReadableInContainer(workerContainer, fcmPath)),
+    fcmTokenCount,
+  });
 }
 
 export async function runPreflight() {

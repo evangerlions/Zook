@@ -12,7 +12,7 @@ LightTick is an independently gated Zook product. Production runtime ownership i
 
 ## Push configuration and checks
 
-- APNs reuses the configured team/key and selects `LIGHTTICK_APNS_BUNDLE_ID=com.lighttick.app` as the LightTick topic. Dev physical devices require `APNS_SANDBOX=true`; Online requires `false`.
+- APNs reuses the configured team/key. Runtime bootstrap still requires the shared `APNS_BUNDLE_ID` or `APNS_TOPIC`, while LightTick delivery additionally requires `LIGHTTICK_APNS_BUNDLE_ID=com.lighttick.app` so the composite dispatcher selects the app-scoped topic. Dev physical devices require `APNS_SANDBOX=true`; Online requires `false`.
 - Android uses `LIGHTTICK_FCM_PROJECT_ID` and `LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH` when LightTick has a separate Firebase project. Provider credentials and device tokens must never enter logs or committed env files.
 - Register devices through the app-scoped `/api/v1/lighttick/devices` route. Profile notification preferences own enablement, review reminders, daily reminder time, and quiet hours; profile timezone is the scheduling authority.
 - A scheduler tick is keyed by app, user, notification type/resource, and business date. Repeated ticks materialize one provider job. Paused goals suppress task pressure, and invalid provider tokens disable only the matching LightTick device.
