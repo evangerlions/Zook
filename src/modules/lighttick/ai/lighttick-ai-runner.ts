@@ -23,9 +23,11 @@ export class LightTickAiRunner {
     try {
       const context = await assembleLightTickContext(this.repository, owner, run.inputContext);
       const outputSchema = this.outputSchema(sceneName);
+      const constraints = this.constraintInstructions(sceneName, context);
       const result = await this.llm.complete({ modelKey: scene.modelAlias, messages: [
         { role: "system", content: LIGHTTICK_SYSTEM_PROMPT },
         { role: "user", content: `${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(outputSchema)}\n` +
+          `${constraints}\n` +
           `Return one compact JSON object that matches this schema exactly. Do not use Markdown fences or add prose.\n` +
           `INPUT_JSON=${JSON.stringify(context)}` },
       ], temperature: 0.2, maxTokens: scene.maxOutputTokens,
@@ -117,6 +119,19 @@ export class LightTickAiRunner {
     if (["weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
     if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;
     return LIGHTTICK_OUTPUT_SCHEMAS.coach_reply;
+  }
+
+  private constraintInstructions(scene: LightTickAiSceneName, context: any): string {
+    if (!["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene))
+      return "Use only IDs and facts present in INPUT_JSON.";
+    const availableMinutes = Number(context.request.available_minutes ?? context.request.weekly_available_minutes ??
+      context.goal?.constraints?.weekly_available_minutes ?? 300);
+    const periodStart = typeof context.request.period_start === "string" ? context.request.period_start : undefined;
+    const periodEnd = typeof context.request.period_end === "string" ? context.request.period_end : undefined;
+    const scheduling = periodStart && periodEnd
+      ? `If scheduled_for is present, its date must be from ${periodStart} through ${periodEnd} inclusive.`
+      : "Omit scheduled_for from every task because no requested period_start/period_end was supplied.";
+    return `PLAN_CONSTRAINTS: The sum of estimated_minutes must be at most ${availableMinutes}. ${scheduling}`;
   }
 
   private fallback(policy: string, input: Record<string, unknown>) {
