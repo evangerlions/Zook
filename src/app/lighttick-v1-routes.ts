@@ -95,6 +95,7 @@ function proposalData(row: any) { return { id: row.id, plan_id: row.planId, base
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 function runData(row: LightTickAiRunRow) { return { id: row.id, kind: row.kind, scene: row.sceneKey, status: row.status,
   retryable: row.status === "failed", result_resource_id: row.resourceId, error_code: row.errorCode,
+  result: row.status === "succeeded" ? row.output : undefined,
   created_at: row.createdAt, updated_at: row.updatedAt }; }
 
 async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, request: HttpRequest,
@@ -381,6 +382,20 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     });
     await runtime.jobs?.enqueueReview(owner, (data as any).id, body.period === "monthly" ? "monthly_review" : "weekly_review");
     return response(context, request, data, 202);
+  }
+  if (request.path === `${PREFIX}coach-runs` && request.method === "POST") {
+    const body = bodyOf(request); const scene = stringOf(body.scene, "scene");
+    if (!["task_breakdown", "plan_explanation", "recovery", "review_explanation"].includes(scene))
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Coach scene is invalid.");
+    const goalId = stringOf(body.goal_id, "goal_id"); await runtime.goals.get(owner, goalId);
+    if (body.plan_id && !await runtime.repository.getPlan(owner, String(body.plan_id)))
+      throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
+    if (body.review_id && !(await runtime.repository.listReviews(owner)).some(item => item.id === body.review_id))
+      throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Review was not found.");
+    const data = await idempotent(runtime, owner, request, "coach_reply", goalId, scene, async () =>
+      runData(await createRun(runtime, owner, "coach_reply", `lighttick_coach_${scene}_v1`, undefined,
+        { goal_id: goalId, plan_id: body.plan_id, review_id: body.review_id, task_id: body.task_id, coach_scene: scene })));
+    await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "coach_reply"); return response(context, request, data, 202);
   }
   if (request.path === `${PREFIX}reviews` && request.method === "GET")
     return response(context, request, { items: (await runtime.repository.listReviews(owner)).map(reviewData), next_cursor: null });

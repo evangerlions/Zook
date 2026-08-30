@@ -99,6 +99,16 @@ test("malformed/schema-invalid/provider-outage plans fall back deterministically
   }
 });
 
+test("coach outage returns a facts-only fallback without changing plans", async () => {
+  const repository = new InMemoryLightTickRepository(); const goal = await new LightTickGoalService(repository, () => new Date(now))
+    .create(owner, { title: "Launch", constraints: {} });
+  const run = await queued(repository, { goal_id: goal.id, coach_scene: "recovery" }, "coach_reply");
+  const completed = await new LightTickAiRunner(repository, fakeComplete(new Error("offline")) as any, () => new Date(now))
+    .execute(owner, run.id, "coach_reply");
+  assert.equal(completed.status, "succeeded"); assert.equal(completed.provider, "deterministic_template");
+  assert.equal((completed.output as any).source, "facts_only"); assert.equal((await repository.listPlans(owner, goal.id)).length, 0);
+});
+
 test("unsafe proposal output fails without mutating plan and minimal context redacts notes", async () => {
   const repository = new InMemoryLightTickRepository(); const goals = new LightTickGoalService(repository, () => new Date(now));
   const goal = await goals.create(owner, { title: "Safe", constraints: { weekly_available_minutes: 60 } });

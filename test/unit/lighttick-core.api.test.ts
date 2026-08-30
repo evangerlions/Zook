@@ -145,3 +145,20 @@ test("LightTick Admin operations requires a session and exposes aggregates only"
     path: "/api/v1/admin/apps/lighttick/ai-routing/revisions/1/restore", headers: { cookie }, body: {}, requestId: "restore" });
   assert.equal(ungrantedRestore.statusCode, 403); assert.equal(ungrantedRestore.body.code, "ADMIN_SENSITIVE_OPERATION_REQUIRED");
 });
+
+test("Coach API accepts only bounded scenes and persists a recoverable run", async () => {
+  const { runtime, headers, owner } = await setup();
+  const goal = await runtime.services.lighttickRuntime.goals.create(owner, { title: "Launch", constraints: {} });
+  const accepted = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/coach-runs",
+    headers: { ...headers, "idempotency-key": "coach-breakdown-001" },
+    body: { scene: "task_breakdown", goal_id: goal.id }, requestId: "coach" });
+  assert.equal(accepted.statusCode, 202); assert.equal((accepted.body.data as any).status, "queued");
+  const replay = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/coach-runs",
+    headers: { ...headers, "idempotency-key": "coach-breakdown-001" },
+    body: { scene: "task_breakdown", goal_id: goal.id }, requestId: "coach-replay" });
+  assert.deepEqual(replay.body.data, accepted.body.data);
+  const invalid = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/coach-runs",
+    headers: { ...headers, "idempotency-key": "coach-invalid-001" },
+    body: { scene: "free_form_chat", goal_id: goal.id }, requestId: "coach-invalid" });
+  assert.equal(invalid.statusCode, 400); assert.equal(invalid.body.code, "REQ_FIELD_INVALID");
+});

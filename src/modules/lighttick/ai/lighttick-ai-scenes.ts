@@ -22,7 +22,7 @@ export const LIGHTTICK_AI_SCENES = {
     maxOutputTokens: 2_500, maxEstimatedCostUsd: 0.08, fallback: "none" },
   coach_reply: { key: "lighttick.coach_reply.v1", kind: "coach_reply", promptVersion: "1.0.0", schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["plus", "super_plus"], timeoutMs: 15_000, maxContextTokens: 4_000,
-    maxOutputTokens: 800, maxEstimatedCostUsd: 0.03, fallback: "none" },
+    maxOutputTokens: 800, maxEstimatedCostUsd: 0.03, fallback: "facts_only" },
 } as const;
 
 export type LightTickAiSceneName = keyof typeof LIGHTTICK_AI_SCENES;

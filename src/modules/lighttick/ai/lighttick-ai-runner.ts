@@ -108,6 +108,10 @@ export class LightTickAiRunner {
   }
 
   private fallback(policy: string, input: Record<string, unknown>) {
+    if (policy === "facts_only" && input.coach_scene) return {
+      message: "AI 暂时不可用。你可以先查看当前目标、计划和执行事实，稍后安全重试。",
+      source: "facts_only", scene: input.coach_scene,
+    };
     if (policy === "facts_only") return { insights: [], recommendations: [], source: "facts_only" };
     if (policy === "template") return { tasks: [{ title: "Review goal and choose the next smallest step",
       estimated_minutes: Math.min(30, Number(input.available_minutes ?? 30)), priority: 100 }], source: "deterministic_template" };

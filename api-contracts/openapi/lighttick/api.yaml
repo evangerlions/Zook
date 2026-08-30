@@ -494,6 +494,22 @@ paths:
         "400": { $ref: "#/components/responses/LightTickError" }
         "409": { $ref: "#/components/responses/LightTickError" }
         "429": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/coach-runs:
+    post:
+      operationId: createLightTickCoachRun
+      tags: [lighttick-ai]
+      summary: Create a recoverable run for one bounded Phase 1 Coach scene
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickCoachRunRequest" }
+      responses:
+        "202": { $ref: "#/components/responses/LightTickAccepted" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/reviews:
     get:
       operationId: listLightTickReviews
@@ -1209,6 +1225,16 @@ components:
         version: { $ref: "#/components/schemas/LightTickVersion" }
         created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
         updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickCoachRunRequest:
+      type: object
+      required: [scene, goal_id]
+      properties:
+        scene: { enum: [task_breakdown, plan_explanation, recovery, review_explanation] }
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        plan_id: { $ref: "#/components/schemas/LightTickId" }
+        review_id: { $ref: "#/components/schemas/LightTickId" }
+        task_id: { $ref: "#/components/schemas/LightTickId" }
+      additionalProperties: false
     LightTickChangeProposalRunRequest:
       type: object
       required: [plan_id, base_version, reason]
@@ -1295,6 +1321,7 @@ components:
         result_resource_id: { $ref: "#/components/schemas/LightTickId" }
         source: { enum: [ai, template, manual] }
         error_code: { $ref: "#/components/schemas/LightTickErrorCode" }
+        result: { type: object, additionalProperties: true }
         created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
         updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
     LightTickSyncEntityType:
