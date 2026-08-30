@@ -19,13 +19,17 @@ async function setup() {
 }
 
 test("profile/onboarding API persists a replayable run and validates timezone", async () => {
-  const { runtime, headers } = await setup();
+  const { runtime, headers, owner } = await setup();
   const request = { method: "POST", path: "/api/v1/lighttick/onboarding", headers: { ...headers, "idempotency-key": "onboard-alice-001" },
     body: { title: "Ship my product", current_level: "prototype", weekly_available_minutes: 300,
       pace: "balanced", timezone: "Asia/Shanghai" }, requestId: "onboarding" };
   const accepted = await runtime.app.handle(request);
   assert.equal(accepted.statusCode, 202); assert.equal(accepted.body.code, "ACCEPTED");
   assert.equal((accepted.body.data as any).status, "queued");
+  assert.equal((accepted.body.data as any).scene, "lighttick.onboarding_plan.v1");
+  const persistedRun = await runtime.services.lighttickRuntime.repository.getAiRun(owner, (accepted.body.data as any).id);
+  assert.equal(persistedRun?.promptVersion, "1.0.0");
+  assert.equal(persistedRun?.schemaVersion, "1.0.0");
   const replay = await runtime.app.handle({ ...request, requestId: "onboarding-replay" });
   assert.deepEqual(replay.body.data, accepted.body.data);
   const mismatch = await runtime.app.handle({ ...request, body: { ...request.body, timezone: "UTC" }, requestId: "mismatch" });
@@ -185,4 +189,18 @@ test("Coach API accepts only bounded scenes and persists a recoverable run", asy
     headers: { ...headers, "idempotency-key": "coach-invalid-001" },
     body: { scene: "free_form_chat", goal_id: goal.id }, requestId: "coach-invalid" });
   assert.equal(invalid.statusCode, 400); assert.equal(invalid.body.code, "REQ_FIELD_INVALID");
+});
+
+test("AI run APIs reject unknown plan granularities and review periods before enqueue", async () => {
+  const { runtime, headers } = await setup();
+  const invalidPlan = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/plan-runs",
+    headers: { ...headers, "idempotency-key": "invalid-plan-scene-001" },
+    body: { goal_id: "goal_missing", granularity: "quarter" }, requestId: "invalid-plan-scene" });
+  assert.equal(invalidPlan.statusCode, 400); assert.equal(invalidPlan.body.code, "REQ_FIELD_INVALID");
+  const invalidReview = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/review-runs",
+    headers: { ...headers, "idempotency-key": "invalid-review-scene-001" },
+    body: { goal_id: "goal_missing", period: "daily", period_start: "2026-08-20", period_end: "2026-08-20" },
+    requestId: "invalid-review-scene" });
+  assert.equal(invalidReview.statusCode, 400); assert.equal(invalidReview.body.code, "REQ_FIELD_INVALID");
+  assert.equal((runtime.queue as any).jobs.length, 0);
 });

@@ -5,7 +5,7 @@ import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import { assembleLightTickContext } from "./lighttick-ai-context.ts";
-import { LIGHTTICK_AI_SCENES, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
+import { LIGHTTICK_AI_SCENES, LIGHTTICK_OUTPUT_SCHEMAS, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
 import { parseLightTickJson, validatePlanOutput, validateProposalOutput, validateReviewOutput } from "./lighttick-ai-validation.ts";
 
 export class LightTickAiRunner {
@@ -22,10 +22,15 @@ export class LightTickAiRunner {
       startedAt: started.toISOString(), updatedAt: started.toISOString() });
     try {
       const context = await assembleLightTickContext(this.repository, owner, run.inputContext);
+      const outputSchema = this.outputSchema(sceneName);
       const result = await this.llm.complete({ modelKey: scene.modelAlias, messages: [
         { role: "system", content: LIGHTTICK_SYSTEM_PROMPT },
-        { role: "user", content: `${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nINPUT_JSON=${JSON.stringify(context)}` },
-      ], temperature: 0.2, maxTokens: scene.maxOutputTokens, usageOwner: { appId: owner.appId, userId: owner.userId } });
+        { role: "user", content: `${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(outputSchema)}\n` +
+          `Return one compact JSON object that matches this schema exactly. Do not use Markdown fences or add prose.\n` +
+          `INPUT_JSON=${JSON.stringify(context)}` },
+      ], temperature: 0.2, maxTokens: scene.maxOutputTokens,
+        providerOptions: { response_format: { type: "json_object" }, enable_thinking: false },
+        usageOwner: { appId: owner.appId, userId: owner.userId } });
       const output = this.validate(sceneName, parseLightTickJson(result.text), context);
       const materializedId = await this.materializeOutput(owner, run, sceneName, output, "ai");
       const completed = this.clock();
@@ -105,6 +110,13 @@ export class LightTickAiRunner {
     if (typeof output.message !== "string" || output.message.length > 2000)
       throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "Coach output does not match its schema.");
     return output;
+  }
+
+  private outputSchema(scene: LightTickAiSceneName) {
+    if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.plan;
+    if (["weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
+    if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;
+    return LIGHTTICK_OUTPUT_SCHEMAS.coach_reply;
   }
 
   private fallback(policy: string, input: Record<string, unknown>) {

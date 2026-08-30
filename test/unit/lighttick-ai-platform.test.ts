@@ -25,6 +25,21 @@ function fakeComplete(result: string | Error) {
     providerModel: "fake-v1", text: result, usage: { promptTokens: 10, completionTokens: 10, totalTokens: 20 } }; } };
 }
 
+test("AI runner requests compact JSON mode with the scene schema", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const run = await queued(repository, { period_start: "2026-08-17", period_end: "2026-08-23", available_minutes: 120 });
+  let captured: any;
+  const llm = { complete: async (request: any) => {
+    captured = request;
+    return { provider: "fake", modelKey: "fake", providerModel: "fake-v1",
+      text: JSON.stringify({ tasks: [{ title: "Build", estimated_minutes: 60 }] }) };
+  } };
+  await new LightTickAiRunner(repository, llm as any, () => new Date(now)).execute(owner, run.id, "week_plan");
+  assert.deepEqual(captured.providerOptions, { response_format: { type: "json_object" }, enable_thinking: false });
+  assert.match(captured.messages[1].content, /OUTPUT_JSON_SCHEMA=/);
+  assert.match(captured.messages[1].content, /Do not use Markdown fences/);
+});
+
 test("scene registry defines bounded routes, budgets, versions, and fallback policies", () => {
   assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 8);
   for (const scene of Object.values(LIGHTTICK_AI_SCENES)) {

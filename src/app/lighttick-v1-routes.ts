@@ -8,6 +8,7 @@ import { assertIanaTimezone } from "../modules/lighttick/lighttick-profile.servi
 import { buildLightTickPublicConfiguration } from "../modules/lighttick/lighttick-public-config.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { LightTickServerEvent } from "../modules/lighttick/lighttick-analytics.ts";
+import { LIGHTTICK_AI_SCENES, type LightTickAiSceneName } from "../modules/lighttick/ai/lighttick-ai-scenes.ts";
 
 const PREFIX = "/api/v1/lighttick/";
 type Json = Record<string, unknown>;
@@ -130,11 +131,11 @@ async function idempotent<T>(runtime: LightTickRuntime, owner: LightTickOwner, r
   });
 }
 
-async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind: string, sceneKey: string,
+async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind: string, sceneName: LightTickAiSceneName,
   resourceId: string | undefined, input: Json): Promise<LightTickAiRunRow> {
-  const now = new Date().toISOString();
+  const now = new Date().toISOString(); const scene = LIGHTTICK_AI_SCENES[sceneName];
   return await runtime.repository.saveAiRun({ ...owner, id: randomId("lighttick_run"), kind, status: "queued",
-    resourceId, sceneKey, promptVersion: "v1", schemaVersion: "v1", attemptCount: 0,
+    resourceId, sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
     inputContext: input, usage: {}, createdAt: now, updatedAt: now });
 }
 
@@ -243,7 +244,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
         durationMonths: body.duration_months as number | undefined, motivation: body.motivation as string | undefined,
         availabilityWindows: Array.isArray(body.availability_windows) ? body.availability_windows.map((item: any) => ({
           weekday: item.weekday, startTime: item.start_time, endTime: item.end_time })) : undefined });
-      return runData(await createRun(runtime, owner, "onboarding_plan", "lighttick_onboarding_plan_v1", saved.goal.id, body));
+      return runData(await createRun(runtime, owner, "onboarding_plan", "onboarding_plan", saved.goal.id, body));
     });
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "onboarding_plan");
     return response(context, request, data, 202);
@@ -337,11 +338,14 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, data);
   }
   if (request.path === `${PREFIX}plan-runs` && request.method === "POST") {
-    const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "plan", String(body.goal_id), "generate", async () => {
+    const body = bodyOf(request); const granularity = stringOf(body.granularity, "granularity");
+    if (!["month", "week", "day"].includes(granularity))
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "granularity is invalid.");
+    const planScene = `${granularity}_plan` as "month_plan" | "week_plan" | "day_plan";
+    const data = await idempotent(runtime, owner, request, "plan", String(body.goal_id), "generate", async () => {
       await runtime.goals.get(owner, stringOf(body.goal_id, "goal_id"));
-      return runData(await createRun(runtime, owner, "plan", `lighttick_plan_${String(body.granularity)}`, String(body.goal_id), body));
+      return runData(await createRun(runtime, owner, "plan", planScene, String(body.goal_id), body));
     });
-    const planScene = `${String(body.granularity)}_plan` as "month_plan" | "week_plan" | "day_plan";
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, planScene); return response(context, request, data, 202);
   }
   if (request.path === `${PREFIX}plans` && request.method === "GET") {
@@ -427,13 +431,17 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
 
   if (request.path === `${PREFIX}review-runs` && request.method === "POST") {
-    const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
-      const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), body.period === "monthly" ? "month" : "week",
+    const body = bodyOf(request); const period = stringOf(body.period, "period");
+    if (!["weekly", "monthly"].includes(period))
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "period is invalid.");
+    const reviewScene = period === "monthly" ? "monthly_review" : "weekly_review";
+    const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
+      const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "monthly" ? "month" : "week",
         stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"));
-      const run = await createRun(runtime, owner, "review", `lighttick_${body.period}_review_v1`, review.id, body);
+      const run = await createRun(runtime, owner, "review", reviewScene, review.id, body);
       return runData(run);
     });
-    await runtime.jobs?.enqueueReview(owner, (data as any).id, body.period === "monthly" ? "monthly_review" : "weekly_review");
+    await runtime.jobs?.enqueueReview(owner, (data as any).id, reviewScene);
     return response(context, request, data, 202);
   }
   if (request.path === `${PREFIX}coach-runs` && request.method === "POST") {
@@ -446,7 +454,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     if (body.review_id && !(await runtime.repository.listReviews(owner)).some(item => item.id === body.review_id))
       throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Review was not found.");
     const data = await idempotent(runtime, owner, request, "coach_reply", goalId, scene, async () =>
-      runData(await createRun(runtime, owner, "coach_reply", `lighttick_coach_${scene}_v1`, undefined,
+      runData(await createRun(runtime, owner, "coach_reply", "coach_reply", undefined,
         { goal_id: goalId, plan_id: body.plan_id, review_id: body.review_id, task_id: body.task_id, coach_scene: scene })));
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "coach_reply"); return response(context, request, data, 202);
   }
@@ -465,7 +473,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       const plan = await runtime.repository.getPlan(owner, stringOf(body.plan_id, "plan_id"));
       if (!plan) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
       if (plan.version !== numberOf(body.base_version, "base_version")) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Plan version is stale.");
-      return runData(await createRun(runtime, owner, "change_proposal", "lighttick_change_proposal_v1", plan.id, body));
+      return runData(await createRun(runtime, owner, "change_proposal", "change_proposal", plan.id, body));
     }); await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "change_proposal"); return response(context, request, data, 202);
   }
   if (request.path === `${PREFIX}change-proposals` && request.method === "GET") {
