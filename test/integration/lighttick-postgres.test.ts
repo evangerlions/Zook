@@ -93,6 +93,20 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       await pool.query("DELETE FROM zook_lighttick_ai_runs WHERE id=$1", [queued.id]);
     });
 
+    await suite.test("updates a materialized review instead of duplicating its primary key", async () => {
+      const review = { ...owner, id: "lighttick_pg_review", goalId: "lighttick_pg_review_goal", period: "week" as const,
+        status: "ready", periodStart: "2026-08-17", periodEnd: "2026-08-23", facts: { event_count: 1 },
+        output: {}, dataSufficiency: "insufficient", version: 1, createdAt: now, updatedAt: now };
+      await repository.saveReview(review);
+      await repository.saveReview({ ...review, output: { insights: ["kept"] }, dataSufficiency: "sufficient",
+        version: 2, updatedAt: "2026-08-21T00:00:00.000Z" });
+
+      const stored = (await repository.listReviews(owner)).find(item => item.id === review.id);
+      assert.deepEqual(stored?.output, { insights: ["kept"] });
+      assert.equal(stored?.version, 2);
+      await pool.query("DELETE FROM zook_lighttick_reviews WHERE id=$1", [review.id]);
+    });
+
     await suite.test("upgrades guest ownership atomically and replays the original result", async () => {
       const guestUserId = "lighttick_pg_upgrade_guest"; const targetUserId = "lighttick_pg_upgrade_target";
       await pool.query("DELETE FROM zook_lighttick_account_upgrades WHERE guest_user_id=$1", [guestUserId]);

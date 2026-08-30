@@ -12,9 +12,12 @@ const runtime = await init({
 });
 const workerTickLogThrottle = new WorkerTickLogThrottle();
 const buddyCapabilities = resolveBuddyGrowthCapabilities();
+let tickRunning = false;
 
 async function runTick(): Promise<void> {
-  await runtime.database.withExclusiveSession(async () => {
+  if (tickRunning) return;
+  tickRunning = true;
+  try {
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();
@@ -57,7 +60,16 @@ async function runTick(): Promise<void> {
     if (workerTickLogThrottle.shouldLog(context)) {
       runtime.logger.info("worker tick completed", context);
     }
-  });
+  } catch (error) {
+    runtime.logger.error("worker tick failed", {
+      jobName: "worker-tick",
+      jobId: "scheduler",
+      statusCode: 500,
+      error,
+    });
+  } finally {
+    tickRunning = false;
+  }
 }
 
 runtime.logger.info("worker started", {

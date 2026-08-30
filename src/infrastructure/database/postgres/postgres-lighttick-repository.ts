@@ -351,9 +351,14 @@ export class PostgresLightTickRepository implements LightTickRepository {
   async saveReview(row: LightTickReviewRow): Promise<LightTickReviewRow> {
     const result = await this.query(`INSERT INTO zook_lighttick_reviews
       (id,app_id,user_id,goal_id,period,status,period_start,period_end,facts,output,data_sufficiency,version,created_at,updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13,$14) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13,$14)
+      ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status,facts=EXCLUDED.facts,output=EXCLUDED.output,
+      data_sufficiency=EXCLUDED.data_sufficiency,version=EXCLUDED.version,updated_at=EXCLUDED.updated_at
+      WHERE zook_lighttick_reviews.app_id=EXCLUDED.app_id AND zook_lighttick_reviews.user_id=EXCLUDED.user_id
+      RETURNING *`,
       [row.id,row.appId,row.userId,row.goalId,row.period,row.status,row.periodStart,row.periodEnd,JSON.stringify(row.facts),
         JSON.stringify(row.output),row.dataSufficiency,row.version,row.createdAt,row.updatedAt]);
+    if (!result.rows[0]) throw new ApplicationError(409, "LIGHTTICK_APP_ACCESS_DENIED", "Review ownership does not match.");
     return mapRow<LightTickReviewRow>(result.rows[0]!);
   }
 
