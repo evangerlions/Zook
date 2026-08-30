@@ -177,6 +177,42 @@ data class LightTickStarterCandidate(
     val variants: Map<LightTickTaskVariant, LightTickTaskVariantDefinition>,
 )
 
+data class LightTickTaskStepData(
+    val id: String,
+    val title: String,
+    val completed: Boolean,
+    val position: Int,
+)
+
+data class LightTickTaskData(
+    val id: String,
+    val lineageId: String? = null,
+    val planId: String,
+    val title: String,
+    val completionCriteria: String? = null,
+    val selectedVariant: LightTickTaskVariant? = null,
+    val variants: Map<LightTickTaskVariant, LightTickTaskVariantDefinition>? = null,
+    val status: String,
+    val scheduledDate: String,
+    val estimatedDurationMinutes: Int,
+    val actualDurationMinutes: Int? = null,
+    val priority: Int,
+    val steps: List<LightTickTaskStepData>,
+    val note: String? = null,
+    val version: Int,
+)
+
+data class LightTickTodayData(
+    val businessDate: String,
+    val timezone: String,
+    val primaryTask: LightTickTaskData? = null,
+    val tasks: List<LightTickTaskData>,
+    val completedTasks: List<LightTickTaskData>,
+    val remainingEstimatedMinutes: Int,
+    val planBAvailable: Boolean,
+    val snapshotVersion: Int,
+)
+
 data class LightTickSyncOperationResult(
     val operationId: String,
     val status: LightTickSyncOperationStatus,

@@ -101,4 +101,15 @@ final class ContractFixtureTests: XCTestCase {
         XCTAssertTrue(envelope.data.platformAccountRetained)
         XCTAssertTrue(envelope.data.otherMembershipsRetained)
     }
+
+    func testTodayTaskStepsFixtureDecodes() throws {
+        let envelope = try LightTickContractDecoder.makeJSONDecoder().decode(
+            LightTickEnvelope<LightTickTodayData>.self,
+            from: fixture("today-task-steps-success.json")
+        )
+        XCTAssertEqual(envelope.data.primaryTask?.steps, [
+            LightTickTaskStepData(id: "step_prepare", title: "Prepare workspace", completed: false, position: 0)
+        ])
+        XCTAssertEqual(envelope.data.primaryTask?.version, 2)
+    }
 }

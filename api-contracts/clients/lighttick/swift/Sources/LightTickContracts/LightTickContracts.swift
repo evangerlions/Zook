@@ -267,6 +267,63 @@ public struct LightTickStarterCandidate: Codable, Sendable {
     }
 }
 
+public struct LightTickTaskStepData: Codable, Sendable, Equatable {
+    public let id: String
+    public let title: String
+    public let completed: Bool
+    public let position: Int
+}
+
+public struct LightTickTaskData: Codable, Sendable {
+    public let id: String
+    public let lineageId: String?
+    public let planId: String
+    public let title: String
+    public let completionCriteria: String?
+    public let selectedVariant: LightTickTaskVariant?
+    public let variants: [String: LightTickTaskVariantDefinition]?
+    public let status: String
+    public let scheduledDate: String
+    public let estimatedDurationMinutes: Int
+    public let actualDurationMinutes: Int?
+    public let priority: Int
+    public let steps: [LightTickTaskStepData]
+    public let note: String?
+    public let version: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, variants, status, priority, steps, note, version
+        case lineageId = "lineage_id"
+        case planId = "plan_id"
+        case completionCriteria = "completion_criteria"
+        case selectedVariant = "selected_variant"
+        case scheduledDate = "scheduled_date"
+        case estimatedDurationMinutes = "estimated_duration_minutes"
+        case actualDurationMinutes = "actual_duration_minutes"
+    }
+}
+
+public struct LightTickTodayData: Codable, Sendable {
+    public let businessDate: String
+    public let timezone: String
+    public let primaryTask: LightTickTaskData?
+    public let tasks: [LightTickTaskData]
+    public let completedTasks: [LightTickTaskData]
+    public let remainingEstimatedMinutes: Int
+    public let planBAvailable: Bool
+    public let snapshotVersion: Int
+
+    enum CodingKeys: String, CodingKey {
+        case timezone, tasks
+        case businessDate = "business_date"
+        case primaryTask = "primary_task"
+        case completedTasks = "completed_tasks"
+        case remainingEstimatedMinutes = "remaining_estimated_minutes"
+        case planBAvailable = "plan_b_available"
+        case snapshotVersion = "snapshot_version"
+    }
+}
+
 public struct LightTickStarterData: Codable, Sendable {
     public let source: String
     public let wish: String

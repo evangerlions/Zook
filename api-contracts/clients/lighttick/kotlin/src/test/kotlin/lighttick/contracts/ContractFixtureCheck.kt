@@ -71,6 +71,12 @@ fun main(args: Array<String>) {
     )
     check(upgrade.transferredResourceCounts.tasks == 4)
 
+    val today = fixtureRoot.resolve("today-task-steps-success.json").readText()
+    today.requireContains("\"id\": \"step_prepare\"")
+    today.requireContains("\"completed\": false")
+    val step = LightTickTaskStepData("step_prepare", "Prepare workspace", false, 0)
+    check(!step.completed && step.position == 0)
+
     val deletion = fixtureRoot.resolve("account-deletion-isolation-success.json").readText()
     deletion.requireContains("\"product_data_deleted\": true")
     deletion.requireContains("\"platform_account_retained\": true")
