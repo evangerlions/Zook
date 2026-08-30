@@ -22,6 +22,10 @@ function mapRow<T>(row: Record<string, unknown>): T {
   ])) as T;
 }
 
+function timestampString(value: unknown): string {
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
 function versionConflict(resourceId: string): never {
   throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Resource version is stale.", { resourceId });
 }
@@ -158,7 +162,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
       version=GREATEST(version,$3),updated_at=GREATEST(updated_at,$4::timestamptz) WHERE app_id=$5 AND user_id=$6`,
       [guestAhead ? guest.onboarding_state : target.onboarding_state,
         JSON.stringify(guestAhead && Object.keys(targetDraft ?? {}).length === 0 ? guest.onboarding_draft : target.onboarding_draft),
-        Number(guest.version), String(guest.updated_at), command.appId, command.targetUserId]);
+        Number(guest.version), timestampString(guest.updated_at), command.appId, command.targetUserId]);
     await this.query("DELETE FROM zook_lighttick_profiles WHERE app_id=$1 AND user_id=$2", [command.appId,command.guestUserId]);
   }
 

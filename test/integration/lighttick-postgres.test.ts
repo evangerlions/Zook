@@ -97,6 +97,12 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
         deviceSecretHash: "secret", platform: "ios", timezone: "Asia/Shanghai", locale: "zh-CN",
         appVersion: "1", upgradeTokenHash: "upgrade-proof", expiresAt: "2099-01-01T00:00:00.000Z",
         createdAt: now, updatedAt: now });
+      await repository.saveProfile({ ...guestOwner, timezone: "Asia/Shanghai", locale: "zh-CN", pace: "balanced",
+        onboardingState: "completed", notificationPreferences: {}, onboardingDraft: { source: "guest" }, version: 2,
+        createdAt: now, updatedAt: now });
+      await repository.saveProfile({ ...targetOwner, timezone: "Europe/Paris", locale: "fr-FR", pace: "relaxed",
+        onboardingState: "drafting", notificationPreferences: { quiet: true }, onboardingDraft: { source: "target" }, version: 1,
+        createdAt: now, updatedAt: now });
       await repository.saveGoal({ ...goal("upgrade-me"), ...guestOwner, id: "lighttick_pg_upgrade_goal" }, {
         event: { ...guestOwner, id: "lighttick_pg_upgrade_event", aggregateType: "goal",
           aggregateId: "lighttick_pg_upgrade_goal", eventType: "goal_created", aggregateVersion: 1,
@@ -111,6 +117,9 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       assert.equal(upgraded.transferredResourceCounts.goals, 1);
       assert.equal((await repository.getGoal(targetOwner, "lighttick_pg_upgrade_goal"))?.userId, targetUserId);
       assert.equal((await repository.getGuestIdentity(guestOwner))?.upgradedToUserId, targetUserId);
+      const mergedProfile = await repository.getProfile(targetOwner);
+      assert.equal(mergedProfile?.timezone, "Europe/Paris");
+      assert.equal(mergedProfile?.onboardingState, "completed");
       assert.equal((await repository.upgradeGuestAccount(command)).idempotencyReplayed, true);
       const mismatch = { ...command, requestHash: "changed-request" };
       await assert.rejects(repository.upgradeGuestAccount(mismatch), (error: any) => error.code === "LIGHTTICK_IDEMPOTENCY_MISMATCH");
