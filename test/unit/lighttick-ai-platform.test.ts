@@ -10,6 +10,7 @@ import type { LightTickAiRunRow, LightTickOwner } from "../../src/modules/lightt
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import { LightTickGoalService } from "../../src/modules/lighttick/lighttick-goal.service.ts";
 import { LightTickPlanService } from "../../src/modules/lighttick/lighttick-plan.service.ts";
+import { LightTickReviewService } from "../../src/modules/lighttick/lighttick-review.service.ts";
 
 const owner: LightTickOwner = { appId: "lighttick", userId: "user_ai" };
 const now = "2026-08-20T00:00:00.000Z";
@@ -58,6 +59,32 @@ test("successful plan run materializes exactly one confirmable proposed plan", a
   assert.equal((plans[0]?.proposal as any).ai_run_id, run.id);
   assert.equal((await runner.execute(owner, run.id, "week_plan")).resourceId, plans[0]?.id);
   assert.equal((await repository.listPlans(owner, goal.id)).length, 1);
+});
+
+test("review and change-proposal runs materialize client-readable resources", async () => {
+  const repository = new InMemoryLightTickRepository(); const clock = () => new Date(now);
+  const goal = await new LightTickGoalService(repository, clock).create(owner, { title: "Launch", constraints: {} });
+  const review = await new LightTickReviewService(repository, clock).create(owner, goal.id, "week", "2026-08-17", "2026-08-23");
+  const reviewRun = await queued(repository, { goal_id: goal.id }, "review", review.id);
+  const reviewResult = await new LightTickAiRunner(repository, fakeComplete(JSON.stringify({
+    insights: ["完成率稳定"], recommendations: ["保持节奏"],
+  })) as any, clock).execute(owner, reviewRun.id, "weekly_review");
+  assert.equal(reviewResult.resourceId, review.id);
+  assert.deepEqual((await repository.listReviews(owner))[0]?.output.insights, ["完成率稳定"]);
+
+  const plans = new LightTickPlanService(repository, clock);
+  const proposed = await plans.createProposed(owner, { goalId: goal.id, granularity: "week", periodStart: "2026-08-17",
+    periodEnd: "2026-08-23", source: "template", tasks: [{ title: "Build", estimatedMinutes: 60 }] });
+  const active = await plans.confirm(owner, proposed.id, 1); const task = active.tasks[0]!;
+  const proposalRun = await queued(repository, { plan_id: active.plan.id, base_version: active.plan.version,
+    reason: "low_energy" }, "change_proposal", active.plan.id);
+  const proposalResult = await new LightTickAiRunner(repository, fakeComplete(JSON.stringify({
+    diff: [{ action: "update_task", task_id: task.id, estimated_minutes: 30 }],
+    impact: { total_minutes_delta: -30, task_count_delta: 0, commitment_boundary_changed: false },
+  })) as any, clock).execute(owner, proposalRun.id, "change_proposal");
+  const materialized = (await repository.listProposals(owner, active.plan.id))[0]!;
+  assert.equal(proposalResult.resourceId, materialized.id); assert.equal(materialized.status, "pending");
+  assert.equal(materialized.impact.ai_run_id, proposalRun.id);
 });
 
 test("malformed/schema-invalid/provider-outage plans fall back deterministically", async () => {

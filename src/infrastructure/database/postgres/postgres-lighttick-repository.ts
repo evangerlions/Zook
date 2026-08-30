@@ -357,6 +357,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const result = await this.query("SELECT * FROM zook_lighttick_change_proposals WHERE app_id=$1 AND user_id=$2 AND id=$3", [owner.appId,owner.userId,id]);
     return result.rows[0] ? mapRow<LightTickChangeProposalRow>(result.rows[0]) : undefined;
   }
+  async listProposals(owner: LightTickOwner, planId?: string): Promise<LightTickChangeProposalRow[]> {
+    const result = await this.query(`SELECT * FROM zook_lighttick_change_proposals WHERE app_id=$1 AND user_id=$2
+      ${planId ? "AND plan_id=$3" : ""} ORDER BY updated_at DESC`,
+    planId ? [owner.appId, owner.userId, planId] : [owner.appId, owner.userId]);
+    return result.rows.map(mapRow<LightTickChangeProposalRow>);
+  }
   async saveProposal(row: LightTickChangeProposalRow, expectedVersion?: number): Promise<LightTickChangeProposalRow> {
     if (expectedVersion !== undefined) {
       const result = await this.query(`UPDATE zook_lighttick_change_proposals SET status=$1,decided_at=$2,version=version+1,updated_at=NOW()

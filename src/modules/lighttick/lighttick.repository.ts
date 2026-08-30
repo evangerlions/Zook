@@ -38,6 +38,7 @@ export interface LightTickRepository {
   listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]>;
   saveReview(row: LightTickReviewRow): Promise<LightTickReviewRow>;
   getProposal(owner: LightTickOwner, id: string): Promise<LightTickChangeProposalRow | undefined>;
+  listProposals(owner: LightTickOwner, planId?: string): Promise<LightTickChangeProposalRow[]>;
   saveProposal(row: LightTickChangeProposalRow, expectedVersion?: number): Promise<LightTickChangeProposalRow>;
   getAiRun(owner: LightTickOwner, id: string): Promise<LightTickAiRunRow | undefined>;
   saveAiRun(row: LightTickAiRunRow): Promise<LightTickAiRunRow>;

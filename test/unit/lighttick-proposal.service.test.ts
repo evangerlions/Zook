@@ -54,3 +54,19 @@ test("proposal expiration and stale base plan are explicit and cannot mutate cur
   await assert.rejects(service.accept(owner, stale.id, 1), (error: any) => error.code === "LIGHTTICK_PROPOSAL_STALE");
   assert.equal((await repository.getProposal(owner, stale.id))?.status, "superseded");
 });
+
+test("partial acceptance applies only selected diffs and permits a validated edit", async () => {
+  const { repository, active } = await setup(); const [keep, cancel] = active.tasks;
+  const proposal = await repository.saveProposal({ ...owner, id: "proposal_partial", planId: active.plan.id,
+    basePlanVersion: active.plan.version, status: "pending", reason: "Reduce load",
+    diff: [{ action: "update_task", task_id: keep!.id, estimated_minutes: 20 },
+      { action: "cancel_task", task_id: cancel!.id }], impact: { minutes_delta: -70 },
+    expiresAt: "2026-08-21T00:00:00Z", version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() });
+
+  const accepted = await new LightTickProposalService(repository, clock).accept(owner, proposal.id, 1, {
+    acceptedDiffIndices: [0], editedDiffs: [{ action: "update_task", task_id: keep!.id, estimated_minutes: 25 }],
+  });
+  assert.equal(accepted.tasks.find(task => task.id === keep!.id)?.estimatedMinutes, 25);
+  assert.equal(accepted.tasks.find(task => task.id === cancel!.id)?.status, "pending");
+  assert.deepEqual((accepted.plan.proposal.accepted_diff as any[]).map(item => item.task_id), [keep!.id]);
+});

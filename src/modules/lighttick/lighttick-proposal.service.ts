@@ -9,10 +9,12 @@ type ProposalDiff =
   | { action: "cancel_task"; task_id: string }
   | { action: "defer_task"; task_id: string; scheduled_for: string };
 
+export interface ProposalAcceptanceSelection { acceptedDiffIndices?: number[]; editedDiffs?: unknown[]; }
+
 export class LightTickProposalService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
-  async accept(owner: LightTickOwner, proposalId: string, baseVersion: number) {
+  async accept(owner: LightTickOwner, proposalId: string, baseVersion: number, selection: ProposalAcceptanceSelection = {}) {
     const proposal = await this.require(owner, proposalId); assertProposalActionable(proposal.status as "pending", proposal.expiresAt, this.clock());
     if (proposal.version !== baseVersion) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Proposal version is stale.");
     const plan = await this.repository.getPlan(owner, proposal.planId);
@@ -20,7 +22,19 @@ export class LightTickProposalService {
       await this.repository.saveProposal({ ...proposal, status: "superseded", decidedAt: this.clock().toISOString() }, proposal.version);
       throw new ApplicationError(409, "LIGHTTICK_PROPOSAL_STALE", "Base plan changed before proposal acceptance.");
     }
-    const diffs = this.validateDiff(proposal.diff); const timestamp = this.clock().toISOString();
+    const offered = this.validateDiff(proposal.diff);
+    const indices = selection.acceptedDiffIndices ?? offered.map((_, index) => index);
+    if (!indices.length || new Set(indices).size !== indices.length || indices.some(index => !Number.isInteger(index) || index < 0 || index >= offered.length))
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Accepted proposal diff indices are invalid.");
+    let diffs = indices.map(index => offered[index]!);
+    if (selection.editedDiffs?.length) {
+      const edited = this.validateDiff(selection.editedDiffs);
+      const selectedTaskIds = new Set(diffs.map(item => item.task_id));
+      if (edited.some(item => !selectedTaskIds.has(item.task_id)) || new Set(edited.map(item => item.task_id)).size !== edited.length)
+        throw new ApplicationError(400, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Edited diffs must target selected proposal tasks.");
+      diffs = diffs.map(item => edited.find(candidate => candidate.task_id === item.task_id) ?? item);
+    }
+    const timestamp = this.clock().toISOString();
     return await this.repository.transaction(owner, async () => {
       const newPlan: LightTickPlanRow = { ...plan, id: randomId("lighttick_plan"), status: "active",
         source: `proposal:${proposal.id}`, proposal: { parent_plan_id: plan.id, accepted_diff: diffs },

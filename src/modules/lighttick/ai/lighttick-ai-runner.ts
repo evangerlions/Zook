@@ -1,5 +1,6 @@
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
+import { randomId } from "../../../shared/utils.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
@@ -26,21 +27,49 @@ export class LightTickAiRunner {
         { role: "user", content: `${LIGHTTICK_SCENE_PROMPTS[sceneName]}\nINPUT_JSON=${JSON.stringify(context)}` },
       ], temperature: 0.2, maxTokens: scene.maxOutputTokens, usageOwner: { appId: owner.appId, userId: owner.userId } });
       const output = this.validate(sceneName, parseLightTickJson(result.text), context);
-      const planId = await this.materializePlan(owner, run, sceneName, output, "ai");
+      const materializedId = await this.materializeOutput(owner, run, sceneName, output, "ai");
       const completed = this.clock();
       return await this.repository.saveAiRun({ ...run, status: "succeeded", attemptCount: run.attemptCount + 1,
-        resourceId: planId ?? run.resourceId, provider: result.provider, model: result.providerModel, output, usage: result.usage ?? {},
+        resourceId: materializedId ?? run.resourceId, provider: result.provider, model: result.providerModel, output, usage: result.usage ?? {},
         latencyMs: completed.getTime() - started.getTime(), startedAt: started.toISOString(), completedAt: completed.toISOString(),
         updatedAt: completed.toISOString() });
     } catch (error) {
       const completed = this.clock(); const fallback = this.fallback(scene.fallback, run.inputContext);
-      const planId = fallback ? await this.materializePlan(owner, run, sceneName, fallback, "template") : undefined;
+      const materializedId = fallback ? await this.materializeOutput(owner, run, sceneName, fallback, "template") : undefined;
       return await this.repository.saveAiRun({ ...run, status: fallback ? "succeeded" : "failed", attemptCount: run.attemptCount + 1,
-        resourceId: planId ?? run.resourceId, provider: fallback ? "deterministic_template" : run.provider, output: fallback,
+        resourceId: materializedId ?? run.resourceId, provider: fallback ? "deterministic_template" : run.provider, output: fallback,
         errorCode: fallback ? undefined : error instanceof ApplicationError ? error.code : "LIGHTTICK_AI_UNAVAILABLE",
         usage: {}, latencyMs: completed.getTime() - started.getTime(), startedAt: started.toISOString(), completedAt: completed.toISOString(),
         updatedAt: completed.toISOString() });
     }
+  }
+
+  private async materializeOutput(owner: LightTickOwner, run: LightTickAiRunRow, sceneName: LightTickAiSceneName,
+    output: Record<string, unknown>, source: "ai" | "template"): Promise<string | undefined> {
+    if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
+      return await this.materializePlan(owner, run, sceneName, output, source);
+    if (["weekly_review", "monthly_review"].includes(sceneName)) {
+      const review = (await this.repository.listReviews(owner)).find(item => item.id === run.resourceId);
+      if (!review) return undefined;
+      await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
+        status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() });
+      return review.id;
+    }
+    if (sceneName === "change_proposal") {
+      const planId = String(run.inputContext.plan_id ?? run.resourceId ?? "");
+      const existing = (await this.repository.listProposals(owner, planId)).find(item => item.impact.ai_run_id === run.id);
+      if (existing) return existing.id;
+      const plan = await this.repository.getPlan(owner, planId);
+      if (!plan) return undefined;
+      const timestamp = this.clock().toISOString(); const expiresAt = new Date(this.clock().getTime() + 7 * 86_400_000).toISOString();
+      const saved = await this.repository.saveProposal({ ...owner, id: randomId("lighttick_proposal"), planId,
+        basePlanVersion: Number(run.inputContext.base_version ?? plan.version), status: "pending",
+        reason: String(run.inputContext.reason ?? "user_request"), diff: output.diff as unknown[] ?? [],
+        impact: { ...(output.impact as Record<string, unknown> ?? {}), ai_run_id: run.id }, expiresAt,
+        version: 1, createdAt: timestamp, updatedAt: timestamp });
+      return saved.id;
+    }
+    return undefined;
   }
 
   private async materializePlan(owner: LightTickOwner, run: LightTickAiRunRow, sceneName: LightTickAiSceneName,

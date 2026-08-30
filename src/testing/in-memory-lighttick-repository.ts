@@ -242,6 +242,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async listReviews(owner: LightTickOwner) { return clone([...this.reviews.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
   async saveReview(row: LightTickReviewRow) { this.assertOwner(row); this.reviews.set(rowKey(row), clone(row)); return clone(row); }
   async getProposal(owner: LightTickOwner, id: string) { return clone(this.proposals.get(`${ownerKey(owner)}:${id}`)); }
+  async listProposals(owner: LightTickOwner, planId?: string) {
+    return clone([...this.proposals.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!planId || row.planId === planId))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)));
+  }
   async saveProposal(row: LightTickChangeProposalRow, expectedVersion?: number) {
     const saved = this.versioned(this.proposals.get(rowKey(row)), row, expectedVersion);
     this.proposals.set(rowKey(row), saved); return clone(saved);

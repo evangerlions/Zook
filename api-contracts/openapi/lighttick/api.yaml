@@ -536,6 +536,18 @@ paths:
         "400": { $ref: "#/components/responses/LightTickError" }
         "409": { $ref: "#/components/responses/LightTickError" }
         "429": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposals:
+    get:
+      operationId: listLightTickChangeProposals
+      tags: [lighttick-ai, lighttick-plans]
+      summary: List owner-scoped structured change proposals
+      parameters:
+        - name: plan_id
+          in: query
+          schema: { $ref: "#/components/schemas/LightTickId" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/change-proposals/{proposalId}:
     parameters:
       - $ref: "#/components/parameters/ProposalId"
@@ -554,7 +566,11 @@ paths:
       operationId: acceptLightTickChangeProposal
       tags: [lighttick-ai, lighttick-plans]
       summary: Accept and transactionally apply a current proposal
-      requestBody: *versionedCommandBody
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickProposalAcceptRequest" }
       responses:
         "200": { $ref: "#/components/responses/LightTickOk" }
         "404": { $ref: "#/components/responses/LightTickError" }
@@ -576,6 +592,18 @@ paths:
         "200": { $ref: "#/components/responses/LightTickOk" }
         "404": { $ref: "#/components/responses/LightTickError" }
         "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposals/{proposalId}/explain:
+    parameters:
+      - $ref: "#/components/parameters/ProposalId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: explainLightTickChangeProposal
+      tags: [lighttick-ai, lighttick-plans]
+      summary: Explain proposal conclusion, evidence, and changes without mutating the plan
+      requestBody: *versionedCommandBody
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/sync/push:
     post:
       operationId: pushLightTickSyncOperations
@@ -1227,6 +1255,20 @@ components:
         total_minutes_delta: { type: integer }
         commitment_boundary_changed: { type: boolean }
         summary: { type: string }
+    LightTickProposalAcceptRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        accepted_diff_indices:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer, minimum: 0 }
+        edited_diff:
+          type: array
+          items: { type: object, additionalProperties: true }
+      additionalProperties: false
     LightTickProposalRejectRequest:
       type: object
       required: [base_version]
