@@ -10,6 +10,7 @@ export interface ApnsConfig {
   keyId: string;
   /** App bundle ID used as the APNs topic (e.g. "com.hulusleep.app") */
   bundleId: string;
+  bundleIds?: Record<string, string>;
   /** APNs auth key private key in PEM format (.p8 file contents) */
   privateKeyPem: string;
   /** Use production APNs endpoint (defaults to true; false = sandbox) */
@@ -76,7 +77,7 @@ export class ApnsPushDispatcher implements PushDispatcher {
       method: "POST",
       headers: {
         "authorization": `bearer ${token}`,
-        "apns-topic": this.config.bundleId,
+        "apns-topic": this.config.bundleIds?.[request.appId] ?? this.config.bundleId,
         "apns-push-type": "alert",
         "apns-priority": "10",
         "apns-expiration": String(apnsExpiration),
@@ -107,9 +108,9 @@ export class ApnsPushDispatcher implements PushDispatcher {
         this.logger?.warn("APNs device token unrecoverable, removing device", {
           appId: request.appId,
           userId: request.userId,
-          pushToken: request.pushToken,
           reason,
         });
+        await request.invalidateToken?.();
         await this.removeInvalidDevice(request, reason);
         return;
       }
@@ -155,14 +156,14 @@ export class ApnsPushDispatcher implements PushDispatcher {
           body: request.payload.body,
         },
         sound: "default",
-        category: this.mapCategory(request.payload.type),
+        category: this.mapCategory(request.payload.app, request.payload.type),
       },
       ...customData,
     };
   }
 
-  private mapCategory(type: string): string {
-    return `FROGSLEEP_${type.toUpperCase()}`;
+  private mapCategory(app: string, type: string): string {
+    return `${app.toUpperCase()}_${type.toUpperCase()}`;
   }
 
   private async getBearerToken(): Promise<string> {
@@ -244,7 +245,6 @@ export class ApnsPushDispatcher implements PushDispatcher {
       this.logger?.error("failed to remove invalid APNs device", {
         appId: request.appId,
         userId: request.userId,
-        pushToken: request.pushToken,
         reason,
         error: error instanceof Error ? error.message : "unknown",
       });

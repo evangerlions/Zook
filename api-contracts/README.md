@@ -7,6 +7,7 @@
 - `openapi/` — canonical external OpenAPI specifications
 - `openapi/bodylog/api.yaml` — BodyLog profile, social, leaderboard, invitation, and challenge APIs
 - `openapi/frogsleep/api.yaml` — FrogSleep app-scoped public API
+- `openapi/lighttick/api.yaml` — LightTick app-scoped planning, execution, review, AI-run, sync, device, and deletion API
 - `docs/` — protocol and consumer workflow notes
 - `package.json` and `package-lock.json` — reproducible, isolated OpenAPI lint tooling
 - `API.toml` and `_ACTIVE.md` — lightweight ownership metadata
@@ -39,3 +40,10 @@ npm run lint:api-contracts
 Commit OpenAPI changes, related documentation, and regenerated runtime contracts together.
 
 External consumers should pin a Zook commit and export only `api-contracts/` when they need a stable contract snapshot. The former standalone API repository and its submodule flow are no longer authoritative.
+
+## LightTick consumers
+
+LightTick iOS and Android clients consume the same `lighttick/api.yaml` snapshot. Zook owns
+the wire contract and generated runtime types; native packages and shared success/error fixtures
+live under `api-contracts/clients/lighttick/` and `api-contracts/fixtures/lighttick/`. Contract
+changes must regenerate and compile-test both native packages before merge.

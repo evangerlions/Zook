@@ -110,6 +110,32 @@ test("auth service rotates refresh tokens and revokes them on logout", async () 
   );
 });
 
+test("auth service allows exactly one concurrent refresh rotation", async () => {
+  const runtime = await createApplication();
+  const session = await runtime.services.authService.login({
+    appId: "app_a", account: "alice@example.com", password: "Password1234",
+  });
+  const outcomes = await Promise.allSettled(Array.from({ length: 8 }, () =>
+    runtime.services.authService.refresh({ appId: "app_a", refreshToken: session.refreshToken })));
+  assert.equal(outcomes.filter(result => result.status === "fulfilled").length, 1);
+  for (const rejected of outcomes.filter(result => result.status === "rejected") as PromiseRejectedResult[])
+    assert.equal((rejected.reason as { code?: string }).code, "AUTH_REFRESH_TOKEN_REVOKED");
+});
+
+test("refresh API exposes one successful response for concurrent rotation", async () => {
+  const runtime = await createApplication();
+  const session = await runtime.services.authService.login({
+    appId: "app_a", account: "alice@example.com", password: "Password1234",
+  });
+  const responses = await Promise.all(Array.from({ length: 8 }, (_, index) => runtime.app.handle({
+    method: "POST", path: "/api/v1/auth/refresh", headers: {}, requestId: `concurrent-refresh-${index}`,
+    body: { appId: "app_a", refreshToken: session.refreshToken, clientType: "app" },
+  })));
+  assert.equal(responses.filter(response => response.statusCode === 200).length, 1);
+  assert.ok(responses.filter(response => response.statusCode !== 200)
+    .every(response => response.statusCode === 401 && response.body.code === "AUTH_REFRESH_TOKEN_REVOKED"));
+});
+
 test("auth service logout all only revokes sessions for the authenticated app", async () => {
   const runtime = await createApplication();
   const appASession = await runtime.services.authService.login({

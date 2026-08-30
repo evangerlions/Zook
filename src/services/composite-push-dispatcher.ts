@@ -26,7 +26,7 @@ export class CompositePushDispatcher implements PushDispatcher {
   }
 
   async dispatch(request: PushDispatchRequest): Promise<void> {
-    const dispatcher = this.dispatchers.get(request.platform);
+    const dispatcher = this.dispatchers.get(`${request.appId}:${request.platform}`) ?? this.dispatchers.get(request.platform);
     if (!dispatcher) {
       this.logger?.warn("no push dispatcher configured for platform", {
         appId: request.appId,

@@ -55,6 +55,9 @@ export class AuthSessionManager {
         "Refresh token app scope does not match the request.",
       );
     }
+    if (!await this.refreshTokenStore.claimRotation(existingRecord.tokenHash, existingRecord.expiresAt, now)) {
+      unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is revoked.");
+    }
     const user = await this.userService.getById(existingRecord.userId);
     await this.appRegistryService.getAppOrThrow(existingRecord.appId);
     await this.appRegistryService.ensureExistingMembership(

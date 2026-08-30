@@ -3917,6 +3917,5977 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickIdSchema = {
+  "type": "string",
+  "minLength": 8,
+  "maxLength": 128,
+  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+} as const;
+
+export type LightTickId = string;
+
+export const LightTickVersionSchema = {
+  "type": "integer",
+  "minimum": 1
+} as const;
+
+export type LightTickVersion = number;
+
+export const LightTickTimestampSchema = {
+  "type": "string",
+  "format": "date-time"
+} as const;
+
+export type LightTickTimestamp = string;
+
+export const LightTickTimezoneSchema = {
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 64,
+  "description": "IANA timezone identifier such as Asia/Shanghai."
+} as const;
+
+export type LightTickTimezone = string;
+
+export const LightTickEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  [key: string]: unknown;
+};
+  "requestId": string;
+};
+
+export const LightTickRunEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "ACCEPTED"
+    },
+    "message": {
+      "type": "string",
+      "example": "accepted"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "scene",
+        "status",
+        "retryable",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "onboarding_plan",
+            "plan",
+            "review",
+            "change_proposal",
+            "coach_reply"
+          ]
+        },
+        "scene": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "result_resource_type": {
+          "enum": [
+            "goal",
+            "plan",
+            "review",
+            "change_proposal",
+            "coach_message"
+          ]
+        },
+        "result_resource_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "source": {
+          "enum": [
+            "ai",
+            "template",
+            "manual"
+          ]
+        },
+        "error_code": {
+          "type": "string",
+          "enum": [
+            "REQ_INVALID_BODY",
+            "REQ_FIELD_REQUIRED",
+            "REQ_FIELD_INVALID",
+            "AUTH_REQUIRED",
+            "AUTH_TOKEN_INVALID",
+            "AUTH_SESSION_REVOKED",
+            "APP_SCOPE_FORBIDDEN",
+            "APP_MEMBER_INACTIVE",
+            "LIGHTTICK_APP_DISABLED",
+            "LIGHTTICK_GUEST_SESSION_EXPIRED",
+            "LIGHTTICK_GUEST_UPGRADE_INVALID",
+            "LIGHTTICK_GUEST_CREDENTIAL_INVALID",
+            "LIGHTTICK_GUEST_EXPIRED",
+            "LIGHTTICK_GUEST_REVOKED",
+            "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+            "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+            "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
+            "LIGHTTICK_REAUTH_REQUIRED",
+            "LIGHTTICK_APP_ACCESS_DENIED",
+            "LIGHTTICK_RESOURCE_NOT_FOUND",
+            "LIGHTTICK_STATE_TRANSITION_INVALID",
+            "LIGHTTICK_VERSION_CONFLICT",
+            "LIGHTTICK_IDEMPOTENCY_MISMATCH",
+            "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+            "LIGHTTICK_AI_RUN_FAILED",
+            "LIGHTTICK_AI_UNAVAILABLE",
+            "LIGHTTICK_AI_QUOTA_EXCEEDED",
+            "LIGHTTICK_RUN_NOT_READY",
+            "LIGHTTICK_PROPOSAL_STALE",
+            "LIGHTTICK_PROPOSAL_NOT_PENDING",
+            "LIGHTTICK_SYNC_CURSOR_INVALID",
+            "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
+            "LIGHTTICK_SYNC_OPERATION_REJECTED",
+            "LIGHTTICK_TIMEZONE_INVALID",
+            "RATE_LIMITED",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickRunEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "id": string;
+  "kind": "onboarding_plan" | "plan" | "review" | "change_proposal" | "coach_reply";
+  "scene": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "retryable": boolean;
+  "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
+  "result_resource_id"?: string;
+  "source"?: "ai" | "template" | "manual";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "result"?: {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickErrorEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "REQ_INVALID_BODY",
+        "REQ_FIELD_REQUIRED",
+        "REQ_FIELD_INVALID",
+        "AUTH_REQUIRED",
+        "AUTH_TOKEN_INVALID",
+        "AUTH_SESSION_REVOKED",
+        "APP_SCOPE_FORBIDDEN",
+        "APP_MEMBER_INACTIVE",
+        "LIGHTTICK_APP_DISABLED",
+        "LIGHTTICK_GUEST_SESSION_EXPIRED",
+        "LIGHTTICK_GUEST_UPGRADE_INVALID",
+        "LIGHTTICK_GUEST_CREDENTIAL_INVALID",
+        "LIGHTTICK_GUEST_EXPIRED",
+        "LIGHTTICK_GUEST_REVOKED",
+        "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+        "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+        "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
+        "LIGHTTICK_REAUTH_REQUIRED",
+        "LIGHTTICK_APP_ACCESS_DENIED",
+        "LIGHTTICK_RESOURCE_NOT_FOUND",
+        "LIGHTTICK_STATE_TRANSITION_INVALID",
+        "LIGHTTICK_VERSION_CONFLICT",
+        "LIGHTTICK_IDEMPOTENCY_MISMATCH",
+        "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_AI_RUN_FAILED",
+        "LIGHTTICK_AI_UNAVAILABLE",
+        "LIGHTTICK_AI_QUOTA_EXCEEDED",
+        "LIGHTTICK_RUN_NOT_READY",
+        "LIGHTTICK_PROPOSAL_STALE",
+        "LIGHTTICK_PROPOSAL_NOT_PENDING",
+        "LIGHTTICK_SYNC_CURSOR_INVALID",
+        "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
+        "LIGHTTICK_SYNC_OPERATION_REJECTED",
+        "LIGHTTICK_TIMEZONE_INVALID",
+        "RATE_LIMITED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "retryable"
+      ],
+      "properties": {
+        "retryable": {
+          "type": "boolean"
+        },
+        "field": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "current_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "server_snapshot": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "conflict_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resolution_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retry_after_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickErrorEnvelope = {
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "message": string;
+  "data": {
+  "retryable": boolean;
+  "field"?: string;
+  "resource_id"?: string;
+  "current_version"?: number;
+  "server_snapshot"?: {
+  [key: string]: unknown;
+};
+  "conflict_fields"?: string[];
+  "resolution_actions"?: string[];
+  "retry_after_seconds"?: number;
+  "violations"?: (
+{
+  "code": string;
+  "message": string;
+  "field"?: string;
+}
+)[];
+};
+  "requestId": string;
+};
+
+export const LightTickErrorCodeSchema = {
+  "type": "string",
+  "enum": [
+    "REQ_INVALID_BODY",
+    "REQ_FIELD_REQUIRED",
+    "REQ_FIELD_INVALID",
+    "AUTH_REQUIRED",
+    "AUTH_TOKEN_INVALID",
+    "AUTH_SESSION_REVOKED",
+    "APP_SCOPE_FORBIDDEN",
+    "APP_MEMBER_INACTIVE",
+    "LIGHTTICK_APP_DISABLED",
+    "LIGHTTICK_GUEST_SESSION_EXPIRED",
+    "LIGHTTICK_GUEST_UPGRADE_INVALID",
+    "LIGHTTICK_GUEST_CREDENTIAL_INVALID",
+    "LIGHTTICK_GUEST_EXPIRED",
+    "LIGHTTICK_GUEST_REVOKED",
+    "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+    "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+    "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
+    "LIGHTTICK_REAUTH_REQUIRED",
+    "LIGHTTICK_APP_ACCESS_DENIED",
+    "LIGHTTICK_RESOURCE_NOT_FOUND",
+    "LIGHTTICK_STATE_TRANSITION_INVALID",
+    "LIGHTTICK_VERSION_CONFLICT",
+    "LIGHTTICK_IDEMPOTENCY_MISMATCH",
+    "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+    "LIGHTTICK_AI_RUN_FAILED",
+    "LIGHTTICK_AI_UNAVAILABLE",
+    "LIGHTTICK_AI_QUOTA_EXCEEDED",
+    "LIGHTTICK_RUN_NOT_READY",
+    "LIGHTTICK_PROPOSAL_STALE",
+    "LIGHTTICK_PROPOSAL_NOT_PENDING",
+    "LIGHTTICK_SYNC_CURSOR_INVALID",
+    "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
+    "LIGHTTICK_SYNC_OPERATION_REJECTED",
+    "LIGHTTICK_TIMEZONE_INVALID",
+    "RATE_LIMITED",
+    "INTERNAL_ERROR"
+  ]
+} as const;
+
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+
+export const LightTickErrorDataSchema = {
+  "type": "object",
+  "required": [
+    "retryable"
+  ],
+  "properties": {
+    "retryable": {
+      "type": "boolean"
+    },
+    "field": {
+      "type": "string"
+    },
+    "resource_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "current_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "server_snapshot": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "conflict_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "resolution_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "retry_after_seconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickErrorData = {
+  "retryable": boolean;
+  "field"?: string;
+  "resource_id"?: string;
+  "current_version"?: number;
+  "server_snapshot"?: {
+  [key: string]: unknown;
+};
+  "conflict_fields"?: string[];
+  "resolution_actions"?: string[];
+  "retry_after_seconds"?: number;
+  "violations"?: (
+{
+  "code": string;
+  "message": string;
+  "field"?: string;
+}
+)[];
+};
+
+export const LightTickConstraintViolationSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "field": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickConstraintViolation = {
+  "code": string;
+  "message": string;
+  "field"?: string;
+};
+
+export const LightTickProfileDataSchema = {
+  "type": "object",
+  "required": [
+    "user_id",
+    "timezone",
+    "locale",
+    "pace",
+    "onboarding_state",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16
+    },
+    "pace": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "balanced",
+        "relaxed"
+      ]
+    },
+    "onboarding_state": {
+      "enum": [
+        "not_started",
+        "drafting",
+        "generating",
+        "proposed",
+        "completed",
+        "failed"
+      ]
+    },
+    "notification_preferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "daily_reminder_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "review_reminders": {
+          "type": "boolean",
+          "default": true
+        },
+        "quiet_hours_start": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "quiet_hours_end": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickProfileData = {
+  "user_id": string;
+  "timezone": string;
+  "locale": string;
+  "pace": "compact" | "balanced" | "relaxed";
+  "onboarding_state": "not_started" | "drafting" | "generating" | "proposed" | "completed" | "failed";
+  "notification_preferences"?: {
+  "enabled"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+};
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickProfileUpdateRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16
+    },
+    "pace": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "balanced",
+        "relaxed"
+      ]
+    },
+    "notification_preferences": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "daily_reminder_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "review_reminders": {
+          "type": "boolean",
+          "default": true
+        },
+        "quiet_hours_start": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "quiet_hours_end": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickProfileUpdateRequest = {
+  "base_version": number;
+  "timezone"?: string;
+  "locale"?: string;
+  "pace"?: "compact" | "balanced" | "relaxed";
+  "notification_preferences"?: {
+  "enabled"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+};
+};
+
+export const LightTickPaceSchema = {
+  "type": "string",
+  "enum": [
+    "compact",
+    "balanced",
+    "relaxed"
+  ]
+} as const;
+
+export type LightTickPace = "compact" | "balanced" | "relaxed";
+
+export const LightTickNotificationPreferencesSchema = {
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "daily_reminder_time": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "review_reminders": {
+      "type": "boolean",
+      "default": true
+    },
+    "quiet_hours_start": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "quiet_hours_end": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickNotificationPreferences = {
+  "enabled"?: boolean;
+  "daily_reminder_time"?: string;
+  "review_reminders"?: boolean;
+  "quiet_hours_start"?: string;
+  "quiet_hours_end"?: string;
+};
+
+export const LightTickOnboardingRequestSchema = {
+  "type": "object",
+  "required": [
+    "title",
+    "current_level",
+    "weekly_available_minutes",
+    "pace",
+    "timezone"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "current_level": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "weekly_available_minutes": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 10080
+    },
+    "pace": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "balanced",
+        "relaxed"
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "duration_months": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120
+    },
+    "motivation": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "availability_windows": {
+      "type": "array",
+      "maxItems": 28,
+      "items": {
+        "type": "object",
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time"
+        ],
+        "properties": {
+          "weekday": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "start_time": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "end_time": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickOnboardingRequest = {
+  "title": string;
+  "description"?: string;
+  "current_level": string;
+  "weekly_available_minutes": number;
+  "pace": "compact" | "balanced" | "relaxed";
+  "timezone": string;
+  "target_date"?: string;
+  "duration_months"?: number;
+  "motivation"?: string;
+  "availability_windows"?: (
+{
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+}
+)[];
+};
+
+export const LightTickStarterRequestSchema = {
+  "type": "object",
+  "required": [
+    "wish",
+    "timezone"
+  ],
+  "properties": {
+    "wish": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickStarterRequest = {
+  "wish": string;
+  "timezone": string;
+  "locale"?: string;
+};
+
+export const LightTickTaskVariantSchema = {
+  "type": "string",
+  "enum": [
+    "standard",
+    "light",
+    "minimum"
+  ]
+} as const;
+
+export type LightTickTaskVariant = "standard" | "light" | "minimum";
+
+export const LightTickTaskVariantDefinitionSchema = {
+  "type": "object",
+  "required": [
+    "title",
+    "estimated_duration_minutes",
+    "completion_criteria"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "estimated_duration_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "completion_criteria": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTaskVariantDefinition = {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+
+export const LightTickStarterCandidateSchema = {
+  "type": "object",
+  "required": [
+    "candidate_id",
+    "title",
+    "assumption",
+    "variants"
+  ],
+  "properties": {
+    "candidate_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "assumption": {
+      "type": "string"
+    },
+    "variants": {
+      "type": "object",
+      "required": [
+        "standard",
+        "light",
+        "minimum"
+      ],
+      "properties": {
+        "standard": {
+          "type": "object",
+          "required": [
+            "title",
+            "estimated_duration_minutes",
+            "completion_criteria"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "light": {
+          "type": "object",
+          "required": [
+            "title",
+            "estimated_duration_minutes",
+            "completion_criteria"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "minimum": {
+          "type": "object",
+          "required": [
+            "title",
+            "estimated_duration_minutes",
+            "completion_criteria"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
+export type LightTickStarterCandidate = {
+  "candidate_id": string;
+  "title": string;
+  "assumption": string;
+  "variants": {
+  "standard": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum": {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+};
+
+export const LightTickFirstActionRequestSchema = {
+  "type": "object",
+  "required": [
+    "task_id",
+    "base_version",
+    "selected_variant",
+    "actual_duration_minutes"
+  ],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "selected_variant": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "light",
+        "minimum"
+      ]
+    },
+    "actual_duration_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "right",
+        "hard"
+      ]
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickFirstActionRequest = {
+  "task_id": string;
+  "base_version": number;
+  "selected_variant": "standard" | "light" | "minimum";
+  "actual_duration_minutes": number;
+  "difficulty"?: "easy" | "right" | "hard";
+};
+
+export const LightTickCommitmentModeSchema = {
+  "type": "string",
+  "enum": [
+    "recovery",
+    "light",
+    "standard",
+    "sprint"
+  ]
+} as const;
+
+export type LightTickCommitmentMode = "recovery" | "light" | "standard" | "sprint";
+
+export const LightTickCommitmentRequestSchema = {
+  "type": "object",
+  "required": [
+    "goal_id",
+    "mode"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "recovery",
+        "light",
+        "standard",
+        "sprint"
+      ]
+    },
+    "deep_planning": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickCommitmentRequest = {
+  "goal_id": string;
+  "mode": "recovery" | "light" | "standard" | "sprint";
+  "deep_planning"?: boolean;
+};
+
+export const LightTickAvailabilityWindowSchema = {
+  "type": "object",
+  "required": [
+    "weekday",
+    "start_time",
+    "end_time"
+  ],
+  "properties": {
+    "weekday": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 7
+    },
+    "start_time": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "end_time": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickAvailabilityWindow = {
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+};
+
+export const LightTickGoalStatusSchema = {
+  "type": "string",
+  "enum": [
+    "draft",
+    "active",
+    "paused",
+    "recovering",
+    "completed",
+    "archived"
+  ]
+} as const;
+
+export type LightTickGoalStatus = "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+
+export const LightTickGoalDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "constraints",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "paused",
+        "recovering",
+        "completed",
+        "archived"
+      ]
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "motivation": {
+      "type": "string"
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "weekly_available_minutes",
+        "pace"
+      ],
+      "properties": {
+        "current_level": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "weekly_available_minutes": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 10080
+        },
+        "pace": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "balanced",
+            "relaxed"
+          ]
+        },
+        "availability_windows": {
+          "type": "array",
+          "maxItems": 28,
+          "items": {
+            "type": "object",
+            "required": [
+              "weekday",
+              "start_time",
+              "end_time"
+            ],
+            "properties": {
+              "weekday": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7
+              },
+              "start_time": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              },
+              "end_time": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "pause_metadata": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "paused_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expected_resume_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "keep_light_tasks": {
+          "type": "boolean"
+        },
+        "notification_policy": {
+          "enum": [
+            "suppress",
+            "light_only"
+          ]
+        }
+      }
+    },
+    "recovery_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickGoalData = {
+  "id": string;
+  "title": string;
+  "description"?: string;
+  "status": "draft" | "active" | "paused" | "recovering" | "completed" | "archived";
+  "target_date"?: string;
+  "motivation"?: string;
+  "constraints": {
+  "current_level"?: string;
+  "weekly_available_minutes": number;
+  "pace": "compact" | "balanced" | "relaxed";
+  "availability_windows"?: (
+{
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+}
+)[];
+};
+  "pause_metadata"?: {
+  "reason"?: string;
+  "paused_at"?: string;
+  "expected_resume_at"?: string;
+  "keep_light_tasks"?: boolean;
+  "notification_policy"?: "suppress" | "light_only";
+};
+  "recovery_started_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickGoalConstraintsSchema = {
+  "type": "object",
+  "required": [
+    "weekly_available_minutes",
+    "pace"
+  ],
+  "properties": {
+    "current_level": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "weekly_available_minutes": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 10080
+    },
+    "pace": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "balanced",
+        "relaxed"
+      ]
+    },
+    "availability_windows": {
+      "type": "array",
+      "maxItems": 28,
+      "items": {
+        "type": "object",
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time"
+        ],
+        "properties": {
+          "weekday": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "start_time": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "end_time": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickGoalConstraints = {
+  "current_level"?: string;
+  "weekly_available_minutes": number;
+  "pace": "compact" | "balanced" | "relaxed";
+  "availability_windows"?: (
+{
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+}
+)[];
+};
+
+export const LightTickGoalCreateRequestSchema = {
+  "type": "object",
+  "required": [
+    "title",
+    "constraints"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "motivation": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "weekly_available_minutes",
+        "pace"
+      ],
+      "properties": {
+        "current_level": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "weekly_available_minutes": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 10080
+        },
+        "pace": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "balanced",
+            "relaxed"
+          ]
+        },
+        "availability_windows": {
+          "type": "array",
+          "maxItems": 28,
+          "items": {
+            "type": "object",
+            "required": [
+              "weekday",
+              "start_time",
+              "end_time"
+            ],
+            "properties": {
+              "weekday": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7
+              },
+              "start_time": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              },
+              "end_time": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickGoalCreateRequest = {
+  "title": string;
+  "description"?: string;
+  "target_date"?: string;
+  "motivation"?: string;
+  "constraints": {
+  "current_level"?: string;
+  "weekly_available_minutes": number;
+  "pace": "compact" | "balanced" | "relaxed";
+  "availability_windows"?: (
+{
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+}
+)[];
+};
+};
+
+export const LightTickGoalUpdateRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "motivation": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "weekly_available_minutes",
+        "pace"
+      ],
+      "properties": {
+        "current_level": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "weekly_available_minutes": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 10080
+        },
+        "pace": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "balanced",
+            "relaxed"
+          ]
+        },
+        "availability_windows": {
+          "type": "array",
+          "maxItems": 28,
+          "items": {
+            "type": "object",
+            "required": [
+              "weekday",
+              "start_time",
+              "end_time"
+            ],
+            "properties": {
+              "weekday": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7
+              },
+              "start_time": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              },
+              "end_time": {
+                "type": "string",
+                "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickGoalUpdateRequest = {
+  "base_version": number;
+  "title"?: string;
+  "description"?: string;
+  "target_date"?: string;
+  "motivation"?: string;
+  "constraints"?: {
+  "current_level"?: string;
+  "weekly_available_minutes": number;
+  "pace": "compact" | "balanced" | "relaxed";
+  "availability_windows"?: (
+{
+  "weekday": number;
+  "start_time": string;
+  "end_time": string;
+}
+)[];
+};
+};
+
+export const LightTickGoalLifecycleRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version",
+    "action"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": {
+      "enum": [
+        "pause",
+        "resume",
+        "complete",
+        "archive"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "expected_resume_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "keep_light_tasks": {
+      "type": "boolean"
+    },
+    "notification_policy": {
+      "enum": [
+        "suppress",
+        "light_only"
+      ]
+    },
+    "resume_mode": {
+      "enum": [
+        "original_pace",
+        "recovery_mode",
+        "adjust_goal"
+      ]
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickGoalLifecycleRequest = {
+  "base_version": number;
+  "action": "pause" | "resume" | "complete" | "archive";
+  "reason"?: string;
+  "expected_resume_at"?: string;
+  "keep_light_tasks"?: boolean;
+  "notification_policy"?: "suppress" | "light_only";
+  "resume_mode"?: "original_pace" | "recovery_mode" | "adjust_goal";
+};
+
+export const LightTickPlanGranularitySchema = {
+  "type": "string",
+  "enum": [
+    "month",
+    "week",
+    "day"
+  ]
+} as const;
+
+export type LightTickPlanGranularity = "month" | "week" | "day";
+
+export const LightTickPlanStatusSchema = {
+  "type": "string",
+  "enum": [
+    "generating",
+    "proposed",
+    "active",
+    "superseded",
+    "failed"
+  ]
+} as const;
+
+export type LightTickPlanStatus = "generating" | "proposed" | "active" | "superseded" | "failed";
+
+export const LightTickPlanRunRequestSchema = {
+  "type": "object",
+  "required": [
+    "goal_id",
+    "granularity",
+    "period_start",
+    "period_end"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "granularity": {
+      "type": "string",
+      "enum": [
+        "month",
+        "week",
+        "day"
+      ]
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "available_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10080
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickPlanRunRequest = {
+  "goal_id": string;
+  "base_plan_id"?: string;
+  "base_version"?: number;
+  "granularity": "month" | "week" | "day";
+  "period_start": string;
+  "period_end": string;
+  "available_minutes"?: number;
+};
+
+export const LightTickPlanDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "goal_id",
+    "granularity",
+    "status",
+    "period_start",
+    "period_end",
+    "source",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "parent_plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "granularity": {
+      "type": "string",
+      "enum": [
+        "month",
+        "week",
+        "day"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "generating",
+        "proposed",
+        "active",
+        "superseded",
+        "failed"
+      ]
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "ai",
+        "template",
+        "manual"
+      ]
+    },
+    "proposal": {
+      "type": "object",
+      "description": "Persisted plan preview including proposed tasks and non-secret planning assumptions.",
+      "additionalProperties": true
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickPlanData = {
+  "id": string;
+  "goal_id": string;
+  "parent_plan_id"?: string;
+  "granularity": "month" | "week" | "day";
+  "status": "generating" | "proposed" | "active" | "superseded" | "failed";
+  "period_start": string;
+  "period_end": string;
+  "title"?: string;
+  "summary"?: string;
+  "source": "ai" | "template" | "manual";
+  "proposal"?: {
+  [key: string]: unknown;
+};
+  "tasks"?: (
+{
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickTaskStatusSchema = {
+  "type": "string",
+  "enum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "skipped",
+    "deferred",
+    "cancelled"
+  ]
+} as const;
+
+export type LightTickTaskStatus = "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+
+export const LightTickTaskDifficultySchema = {
+  "type": "string",
+  "enum": [
+    "low",
+    "medium",
+    "high"
+  ]
+} as const;
+
+export type LightTickTaskDifficulty = "low" | "medium" | "high";
+
+export const LightTickTaskDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "plan_id",
+    "title",
+    "status",
+    "scheduled_date",
+    "estimated_duration_minutes",
+    "priority",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "lineage_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "completion_criteria": {
+      "type": "string"
+    },
+    "selected_variant": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "light",
+        "minimum"
+      ]
+    },
+    "variants": {
+      "type": "object",
+      "properties": {
+        "standard": {
+          "type": "object",
+          "required": [
+            "title",
+            "estimated_duration_minutes",
+            "completion_criteria"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "light": {
+          "type": "object",
+          "required": [
+            "title",
+            "estimated_duration_minutes",
+            "completion_criteria"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        },
+        "minimum": {
+          "type": "object",
+          "required": [
+            "title",
+            "estimated_duration_minutes",
+            "completion_criteria"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "completion_criteria": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "commitment_satisfied": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "skipped",
+        "deferred",
+        "cancelled"
+      ]
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "estimated_duration_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "actual_duration_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1440
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "completed",
+          "position"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickTaskData = {
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickTaskStepDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "completed",
+    "position"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "completed": {
+      "type": "boolean"
+    },
+    "position": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickTaskStepData = {
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+};
+
+export const LightTickVersionedCommandRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickVersionedCommandRequest = {
+  "base_version": number;
+};
+
+export const LightTickTaskCompleteRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "actual_duration_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1440
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "client_occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTaskCompleteRequest = {
+  "base_version": number;
+  "actual_duration_minutes"?: number;
+  "difficulty"?: "low" | "medium" | "high";
+  "note"?: string;
+  "client_occurred_at"?: string;
+};
+
+export const LightTickSkipReasonSchema = {
+  "type": "string",
+  "enum": [
+    "no_time",
+    "too_difficult",
+    "low_energy",
+    "no_longer_relevant",
+    "blocked",
+    "other"
+  ]
+} as const;
+
+export type LightTickSkipReason = "no_time" | "too_difficult" | "low_energy" | "no_longer_relevant" | "blocked" | "other";
+
+export const LightTickTaskSkipRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version",
+    "reason_code"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "reason_code": {
+      "type": "string",
+      "enum": [
+        "no_time",
+        "too_difficult",
+        "low_energy",
+        "no_longer_relevant",
+        "blocked",
+        "other"
+      ]
+    },
+    "reason_note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "client_occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTaskSkipRequest = {
+  "base_version": number;
+  "reason_code": "no_time" | "too_difficult" | "low_energy" | "no_longer_relevant" | "blocked" | "other";
+  "reason_note"?: string;
+  "client_occurred_at"?: string;
+};
+
+export const LightTickTaskDeferRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version",
+    "target_date",
+    "timezone"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "target_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "reason_code": {
+      "type": "string",
+      "enum": [
+        "no_time",
+        "too_difficult",
+        "low_energy",
+        "no_longer_relevant",
+        "blocked",
+        "other"
+      ]
+    },
+    "reason_note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "client_occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTaskDeferRequest = {
+  "base_version": number;
+  "target_date": string;
+  "timezone": string;
+  "reason_code"?: "no_time" | "too_difficult" | "low_energy" | "no_longer_relevant" | "blocked" | "other";
+  "reason_note"?: string;
+  "client_occurred_at"?: string;
+};
+
+export const LightTickTaskVariantRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version",
+    "variant"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "variant": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "light",
+        "minimum"
+      ]
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTaskVariantRequest = {
+  "base_version": number;
+  "variant": "standard" | "light" | "minimum";
+};
+
+export const LightTickTodayDataSchema = {
+  "type": "object",
+  "required": [
+    "business_date",
+    "timezone",
+    "tasks",
+    "remaining_estimated_minutes",
+    "plan_b_available",
+    "snapshot_version"
+  ],
+  "properties": {
+    "business_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "primary_task": {
+      "type": "object",
+      "required": [
+        "id",
+        "plan_id",
+        "title",
+        "status",
+        "scheduled_date",
+        "estimated_duration_minutes",
+        "priority",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "lineage_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "plan_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "completion_criteria": {
+          "type": "string"
+        },
+        "selected_variant": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "light",
+            "minimum"
+          ]
+        },
+        "variants": {
+          "type": "object",
+          "properties": {
+            "standard": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "light": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            },
+            "minimum": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimated_duration_minutes",
+                "completion_criteria"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "estimated_duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440
+                },
+                "completion_criteria": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "commitment_satisfied": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "in_progress",
+            "completed",
+            "skipped",
+            "deferred",
+            "cancelled"
+          ]
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "scheduled_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "estimated_duration_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "actual_duration_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "completed",
+              "position"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "completed": {
+                "type": "boolean"
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "remaining_estimated_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "plan_b_available": {
+      "type": "boolean"
+    },
+    "empty_state_action": {
+      "enum": [
+        "create_goal",
+        "generate_plan",
+        "resume_goal",
+        "rest",
+        "none"
+      ]
+    },
+    "snapshot_version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+} as const;
+
+export type LightTickTodayData = {
+  "business_date": string;
+  "timezone": string;
+  "primary_task"?: {
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+  "tasks": (
+{
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "remaining_estimated_minutes": number;
+  "plan_b_available": boolean;
+  "empty_state_action"?: "create_goal" | "generate_plan" | "resume_goal" | "rest" | "none";
+  "snapshot_version": number;
+};
+
+export const LightTickReviewPeriodSchema = {
+  "type": "string",
+  "enum": [
+    "weekly",
+    "monthly"
+  ]
+} as const;
+
+export type LightTickReviewPeriod = "weekly" | "monthly";
+
+export const LightTickReviewStatusSchema = {
+  "type": "string",
+  "enum": [
+    "generating",
+    "ready",
+    "acknowledged",
+    "failed"
+  ]
+} as const;
+
+export type LightTickReviewStatus = "generating" | "ready" | "acknowledged" | "failed";
+
+export const LightTickReviewRunRequestSchema = {
+  "type": "object",
+  "required": [
+    "goal_id",
+    "period",
+    "period_start",
+    "period_end"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "monthly"
+      ]
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "mood": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "self_reflection": {
+      "type": "string",
+      "maxLength": 4000
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickReviewRunRequest = {
+  "goal_id": string;
+  "period": "weekly" | "monthly";
+  "period_start": string;
+  "period_end": string;
+  "mood"?: string;
+  "self_reflection"?: string;
+};
+
+export const LightTickReviewDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "goal_id",
+    "period",
+    "status",
+    "period_start",
+    "period_end",
+    "facts",
+    "data_sufficiency",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "monthly"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "generating",
+        "ready",
+        "acknowledged",
+        "failed"
+      ]
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "facts": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "insights": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "data_sufficiency": {
+      "enum": [
+        "insufficient",
+        "basic",
+        "sufficient"
+      ]
+    },
+    "linked_proposal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReviewData = {
+  "id": string;
+  "goal_id": string;
+  "period": "weekly" | "monthly";
+  "status": "generating" | "ready" | "acknowledged" | "failed";
+  "period_start": string;
+  "period_end": string;
+  "facts": {
+  [key: string]: unknown;
+};
+  "insights"?: string[];
+  "recommendations"?: string[];
+  "data_sufficiency": "insufficient" | "basic" | "sufficient";
+  "linked_proposal_id"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickChangeProposalRunRequestSchema = {
+  "type": "object",
+  "required": [
+    "plan_id",
+    "base_version",
+    "reason"
+  ],
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "reason": {
+      "enum": [
+        "user_request",
+        "low_completion",
+        "return_after_break",
+        "low_energy",
+        "schedule_change"
+      ]
+    },
+    "remaining_available_minutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10080
+    },
+    "mood": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "user_context": {
+      "type": "string",
+      "maxLength": 4000
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickChangeProposalRunRequest = {
+  "plan_id": string;
+  "base_version": number;
+  "reason": "user_request" | "low_completion" | "return_after_break" | "low_energy" | "schedule_change";
+  "remaining_available_minutes"?: number;
+  "mood"?: string;
+  "user_context"?: string;
+};
+
+export const LightTickProposalStatusSchema = {
+  "type": "string",
+  "enum": [
+    "pending",
+    "accepted",
+    "rejected",
+    "expired",
+    "superseded"
+  ]
+} as const;
+
+export type LightTickProposalStatus = "pending" | "accepted" | "rejected" | "expired" | "superseded";
+
+export const LightTickChangeProposalDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "plan_id",
+    "base_plan_version",
+    "status",
+    "reason",
+    "diff",
+    "impact",
+    "expires_at",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "base_plan_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "rejected",
+        "expired",
+        "superseded"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "diff": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "operation",
+          "entity_type",
+          "entity_id"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "add",
+              "update",
+              "defer",
+              "cancel"
+            ]
+          },
+          "entity_type": {
+            "enum": [
+              "goal",
+              "plan",
+              "task"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "before": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "after": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "impact": {
+      "type": "object",
+      "required": [
+        "task_count_delta",
+        "total_minutes_delta",
+        "commitment_boundary_changed"
+      ],
+      "properties": {
+        "task_count_delta": {
+          "type": "integer"
+        },
+        "total_minutes_delta": {
+          "type": "integer"
+        },
+        "commitment_boundary_changed": {
+          "type": "boolean"
+        },
+        "summary": {
+          "type": "string"
+        }
+      }
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickChangeProposalData = {
+  "id": string;
+  "plan_id": string;
+  "base_plan_version": number;
+  "status": "pending" | "accepted" | "rejected" | "expired" | "superseded";
+  "reason": string;
+  "diff": (
+{
+  "operation": "add" | "update" | "defer" | "cancel";
+  "entity_type": "goal" | "plan" | "task";
+  "entity_id": string;
+  "before"?: {
+  [key: string]: unknown;
+};
+  "after"?: {
+  [key: string]: unknown;
+};
+}
+)[];
+  "impact": {
+  "task_count_delta": number;
+  "total_minutes_delta": number;
+  "commitment_boundary_changed": boolean;
+  "summary"?: string;
+};
+  "expires_at": string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickPlanDiffItemSchema = {
+  "type": "object",
+  "required": [
+    "operation",
+    "entity_type",
+    "entity_id"
+  ],
+  "properties": {
+    "operation": {
+      "enum": [
+        "add",
+        "update",
+        "defer",
+        "cancel"
+      ]
+    },
+    "entity_type": {
+      "enum": [
+        "goal",
+        "plan",
+        "task"
+      ]
+    },
+    "entity_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "before": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "after": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+} as const;
+
+export type LightTickPlanDiffItem = {
+  "operation": "add" | "update" | "defer" | "cancel";
+  "entity_type": "goal" | "plan" | "task";
+  "entity_id": string;
+  "before"?: {
+  [key: string]: unknown;
+};
+  "after"?: {
+  [key: string]: unknown;
+};
+};
+
+export const LightTickProposalImpactSchema = {
+  "type": "object",
+  "required": [
+    "task_count_delta",
+    "total_minutes_delta",
+    "commitment_boundary_changed"
+  ],
+  "properties": {
+    "task_count_delta": {
+      "type": "integer"
+    },
+    "total_minutes_delta": {
+      "type": "integer"
+    },
+    "commitment_boundary_changed": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickProposalImpact = {
+  "task_count_delta": number;
+  "total_minutes_delta": number;
+  "commitment_boundary_changed": boolean;
+  "summary"?: string;
+};
+
+export const LightTickProposalRejectRequestSchema = {
+  "type": "object",
+  "required": [
+    "base_version"
+  ],
+  "properties": {
+    "base_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickProposalRejectRequest = {
+  "base_version": number;
+  "reason"?: string;
+};
+
+export const LightTickRunKindSchema = {
+  "type": "string",
+  "enum": [
+    "onboarding_plan",
+    "plan",
+    "review",
+    "change_proposal",
+    "coach_reply"
+  ]
+} as const;
+
+export type LightTickRunKind = "onboarding_plan" | "plan" | "review" | "change_proposal" | "coach_reply";
+
+export const LightTickRunStatusSchema = {
+  "type": "string",
+  "enum": [
+    "queued",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled"
+  ]
+} as const;
+
+export type LightTickRunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+
+export const LightTickRunDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "scene",
+    "status",
+    "retryable",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "onboarding_plan",
+        "plan",
+        "review",
+        "change_proposal",
+        "coach_reply"
+      ]
+    },
+    "scene": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "retryable": {
+      "type": "boolean"
+    },
+    "result_resource_type": {
+      "enum": [
+        "goal",
+        "plan",
+        "review",
+        "change_proposal",
+        "coach_message"
+      ]
+    },
+    "result_resource_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "source": {
+      "enum": [
+        "ai",
+        "template",
+        "manual"
+      ]
+    },
+    "error_code": {
+      "type": "string",
+      "enum": [
+        "REQ_INVALID_BODY",
+        "REQ_FIELD_REQUIRED",
+        "REQ_FIELD_INVALID",
+        "AUTH_REQUIRED",
+        "AUTH_TOKEN_INVALID",
+        "AUTH_SESSION_REVOKED",
+        "APP_SCOPE_FORBIDDEN",
+        "APP_MEMBER_INACTIVE",
+        "LIGHTTICK_APP_DISABLED",
+        "LIGHTTICK_GUEST_SESSION_EXPIRED",
+        "LIGHTTICK_GUEST_UPGRADE_INVALID",
+        "LIGHTTICK_GUEST_CREDENTIAL_INVALID",
+        "LIGHTTICK_GUEST_EXPIRED",
+        "LIGHTTICK_GUEST_REVOKED",
+        "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+        "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+        "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
+        "LIGHTTICK_REAUTH_REQUIRED",
+        "LIGHTTICK_APP_ACCESS_DENIED",
+        "LIGHTTICK_RESOURCE_NOT_FOUND",
+        "LIGHTTICK_STATE_TRANSITION_INVALID",
+        "LIGHTTICK_VERSION_CONFLICT",
+        "LIGHTTICK_IDEMPOTENCY_MISMATCH",
+        "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_AI_RUN_FAILED",
+        "LIGHTTICK_AI_UNAVAILABLE",
+        "LIGHTTICK_AI_QUOTA_EXCEEDED",
+        "LIGHTTICK_RUN_NOT_READY",
+        "LIGHTTICK_PROPOSAL_STALE",
+        "LIGHTTICK_PROPOSAL_NOT_PENDING",
+        "LIGHTTICK_SYNC_CURSOR_INVALID",
+        "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
+        "LIGHTTICK_SYNC_OPERATION_REJECTED",
+        "LIGHTTICK_TIMEZONE_INVALID",
+        "RATE_LIMITED",
+        "INTERNAL_ERROR"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickRunData = {
+  "id": string;
+  "kind": "onboarding_plan" | "plan" | "review" | "change_proposal" | "coach_reply";
+  "scene": string;
+  "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  "retryable": boolean;
+  "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
+  "result_resource_id"?: string;
+  "source"?: "ai" | "template" | "manual";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "result"?: {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickSyncEntityTypeSchema = {
+  "type": "string",
+  "enum": [
+    "profile",
+    "goal",
+    "plan",
+    "task",
+    "task_step",
+    "review",
+    "change_proposal"
+  ]
+} as const;
+
+export type LightTickSyncEntityType = "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+
+export const LightTickSyncActionSchema = {
+  "type": "string",
+  "enum": [
+    "create",
+    "update",
+    "start",
+    "complete",
+    "skip",
+    "defer",
+    "cancel",
+    "accept",
+    "reject",
+    "delete"
+  ]
+} as const;
+
+export type LightTickSyncAction = "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
+
+export const LightTickSyncOperationSchema = {
+  "type": "object",
+  "required": [
+    "operation_id",
+    "device_id",
+    "entity_type",
+    "entity_id",
+    "action",
+    "base_version",
+    "client_occurred_at",
+    "payload"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "profile",
+        "goal",
+        "plan",
+        "task",
+        "task_step",
+        "review",
+        "change_proposal"
+      ]
+    },
+    "entity_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "create",
+        "update",
+        "start",
+        "complete",
+        "skip",
+        "defer",
+        "cancel",
+        "accept",
+        "reject",
+        "delete"
+      ]
+    },
+    "base_version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "client_occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "maxProperties": 64,
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickSyncOperation = {
+  "operation_id": string;
+  "device_id": string;
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_id": string;
+  "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
+  "base_version": number;
+  "client_occurred_at": string;
+  "payload": {
+  [key: string]: unknown;
+};
+};
+
+export const LightTickSyncPushRequestSchema = {
+  "type": "object",
+  "required": [
+    "operations"
+  ],
+  "properties": {
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": [
+          "operation_id",
+          "device_id",
+          "entity_type",
+          "entity_id",
+          "action",
+          "base_version",
+          "client_occurred_at",
+          "payload"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "device_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": [
+              "profile",
+              "goal",
+              "plan",
+              "task",
+              "task_step",
+              "review",
+              "change_proposal"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "start",
+              "complete",
+              "skip",
+              "defer",
+              "cancel",
+              "accept",
+              "reject",
+              "delete"
+            ]
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "client_occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "type": "object",
+            "maxProperties": 64,
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickSyncPushRequest = {
+  "operations": (
+{
+  "operation_id": string;
+  "device_id": string;
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_id": string;
+  "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
+  "base_version": number;
+  "client_occurred_at": string;
+  "payload": {
+  [key: string]: unknown;
+};
+}
+)[];
+};
+
+export const LightTickSyncOperationStatusSchema = {
+  "type": "string",
+  "enum": [
+    "accepted",
+    "duplicate",
+    "conflict",
+    "rejected",
+    "retryable"
+  ]
+} as const;
+
+export type LightTickSyncOperationStatus = "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
+
+export const LightTickSyncOperationResultSchema = {
+  "type": "object",
+  "required": [
+    "operation_id",
+    "status"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "duplicate",
+        "conflict",
+        "rejected",
+        "retryable"
+      ]
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "profile",
+        "goal",
+        "plan",
+        "task",
+        "task_step",
+        "review",
+        "change_proposal"
+      ]
+    },
+    "entity_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "server_snapshot": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "conflict_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "resolution_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "error_code": {
+      "type": "string",
+      "enum": [
+        "REQ_INVALID_BODY",
+        "REQ_FIELD_REQUIRED",
+        "REQ_FIELD_INVALID",
+        "AUTH_REQUIRED",
+        "AUTH_TOKEN_INVALID",
+        "AUTH_SESSION_REVOKED",
+        "APP_SCOPE_FORBIDDEN",
+        "APP_MEMBER_INACTIVE",
+        "LIGHTTICK_APP_DISABLED",
+        "LIGHTTICK_GUEST_SESSION_EXPIRED",
+        "LIGHTTICK_GUEST_UPGRADE_INVALID",
+        "LIGHTTICK_GUEST_CREDENTIAL_INVALID",
+        "LIGHTTICK_GUEST_EXPIRED",
+        "LIGHTTICK_GUEST_REVOKED",
+        "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+        "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+        "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
+        "LIGHTTICK_REAUTH_REQUIRED",
+        "LIGHTTICK_APP_ACCESS_DENIED",
+        "LIGHTTICK_RESOURCE_NOT_FOUND",
+        "LIGHTTICK_STATE_TRANSITION_INVALID",
+        "LIGHTTICK_VERSION_CONFLICT",
+        "LIGHTTICK_IDEMPOTENCY_MISMATCH",
+        "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+        "LIGHTTICK_AI_RUN_FAILED",
+        "LIGHTTICK_AI_UNAVAILABLE",
+        "LIGHTTICK_AI_QUOTA_EXCEEDED",
+        "LIGHTTICK_RUN_NOT_READY",
+        "LIGHTTICK_PROPOSAL_STALE",
+        "LIGHTTICK_PROPOSAL_NOT_PENDING",
+        "LIGHTTICK_SYNC_CURSOR_INVALID",
+        "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
+        "LIGHTTICK_SYNC_OPERATION_REJECTED",
+        "LIGHTTICK_TIMEZONE_INVALID",
+        "RATE_LIMITED",
+        "INTERNAL_ERROR"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickSyncOperationResult = {
+  "operation_id": string;
+  "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_id"?: string;
+  "version"?: number;
+  "server_snapshot"?: {
+  [key: string]: unknown;
+};
+  "conflict_fields"?: string[];
+  "resolution_actions"?: string[];
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+};
+
+export const LightTickSyncPushDataSchema = {
+  "type": "object",
+  "required": [
+    "results",
+    "server_time"
+  ],
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "operation_id",
+          "status"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "duplicate",
+              "conflict",
+              "rejected",
+              "retryable"
+            ]
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": [
+              "profile",
+              "goal",
+              "plan",
+              "task",
+              "task_step",
+              "review",
+              "change_proposal"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "server_snapshot": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "conflict_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resolution_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "error_code": {
+            "type": "string",
+            "enum": [
+              "REQ_INVALID_BODY",
+              "REQ_FIELD_REQUIRED",
+              "REQ_FIELD_INVALID",
+              "AUTH_REQUIRED",
+              "AUTH_TOKEN_INVALID",
+              "AUTH_SESSION_REVOKED",
+              "APP_SCOPE_FORBIDDEN",
+              "APP_MEMBER_INACTIVE",
+              "LIGHTTICK_APP_DISABLED",
+              "LIGHTTICK_GUEST_SESSION_EXPIRED",
+              "LIGHTTICK_GUEST_UPGRADE_INVALID",
+              "LIGHTTICK_GUEST_CREDENTIAL_INVALID",
+              "LIGHTTICK_GUEST_EXPIRED",
+              "LIGHTTICK_GUEST_REVOKED",
+              "LIGHTTICK_GUEST_UPGRADE_CONFLICT",
+              "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED",
+              "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED",
+              "LIGHTTICK_REAUTH_REQUIRED",
+              "LIGHTTICK_APP_ACCESS_DENIED",
+              "LIGHTTICK_RESOURCE_NOT_FOUND",
+              "LIGHTTICK_STATE_TRANSITION_INVALID",
+              "LIGHTTICK_VERSION_CONFLICT",
+              "LIGHTTICK_IDEMPOTENCY_MISMATCH",
+              "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+              "LIGHTTICK_AI_RUN_FAILED",
+              "LIGHTTICK_AI_UNAVAILABLE",
+              "LIGHTTICK_AI_QUOTA_EXCEEDED",
+              "LIGHTTICK_RUN_NOT_READY",
+              "LIGHTTICK_PROPOSAL_STALE",
+              "LIGHTTICK_PROPOSAL_NOT_PENDING",
+              "LIGHTTICK_SYNC_CURSOR_INVALID",
+              "LIGHTTICK_SYNC_BATCH_TOO_LARGE",
+              "LIGHTTICK_SYNC_OPERATION_REJECTED",
+              "LIGHTTICK_TIMEZONE_INVALID",
+              "RATE_LIMITED",
+              "INTERNAL_ERROR"
+            ]
+          }
+        }
+      }
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickSyncPushData = {
+  "results": (
+{
+  "operation_id": string;
+  "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_id"?: string;
+  "version"?: number;
+  "server_snapshot"?: {
+  [key: string]: unknown;
+};
+  "conflict_fields"?: string[];
+  "resolution_actions"?: string[];
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+}
+)[];
+  "server_time": string;
+};
+
+export const LightTickSyncChangeSchema = {
+  "type": "object",
+  "required": [
+    "sequence",
+    "entity_type",
+    "entity_id",
+    "version",
+    "operation",
+    "changed_at"
+  ],
+  "properties": {
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "profile",
+        "goal",
+        "plan",
+        "task",
+        "task_step",
+        "review",
+        "change_proposal"
+      ]
+    },
+    "entity_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "operation": {
+      "enum": [
+        "upsert",
+        "delete"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "changed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickSyncChange = {
+  "sequence": number;
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_id": string;
+  "version": number;
+  "operation": "upsert" | "delete";
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "changed_at": string;
+};
+
+export const LightTickSyncPullDataSchema = {
+  "type": "object",
+  "required": [
+    "changes",
+    "next_cursor",
+    "has_more",
+    "server_time"
+  ],
+  "properties": {
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "sequence",
+          "entity_type",
+          "entity_id",
+          "version",
+          "operation",
+          "changed_at"
+        ],
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": [
+              "profile",
+              "goal",
+              "plan",
+              "task",
+              "task_step",
+              "review",
+              "change_proposal"
+            ]
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "operation": {
+            "enum": [
+              "upsert",
+              "delete"
+            ]
+          },
+          "snapshot": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "changed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": "string"
+    },
+    "has_more": {
+      "type": "boolean"
+    },
+    "server_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickSyncPullData = {
+  "changes": (
+{
+  "sequence": number;
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_id": string;
+  "version": number;
+  "operation": "upsert" | "delete";
+  "snapshot"?: {
+  [key: string]: unknown;
+};
+  "changed_at": string;
+}
+)[];
+  "next_cursor": string;
+  "has_more": boolean;
+  "server_time": string;
+};
+
+export const LightTickDevicePlatformSchema = {
+  "type": "string",
+  "enum": [
+    "ios",
+    "android"
+  ]
+} as const;
+
+export type LightTickDevicePlatform = "ios" | "android";
+
+export const LightTickPushProviderSchema = {
+  "type": "string",
+  "enum": [
+    "apns",
+    "fcm"
+  ]
+} as const;
+
+export type LightTickPushProvider = "apns" | "fcm";
+
+export const LightTickDeviceUpsertRequestSchema = {
+  "type": "object",
+  "required": [
+    "device_id",
+    "platform",
+    "push_provider",
+    "push_token",
+    "timezone",
+    "locale",
+    "app_version"
+  ],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android"
+      ]
+    },
+    "push_provider": {
+      "type": "string",
+      "enum": [
+        "apns",
+        "fcm"
+      ]
+    },
+    "push_token": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 4096
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16
+    },
+    "app_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "notifications_enabled": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickDeviceUpsertRequest = {
+  "device_id": string;
+  "platform": "ios" | "android";
+  "push_provider": "apns" | "fcm";
+  "push_token": string;
+  "timezone": string;
+  "locale": string;
+  "app_version": string;
+  "notifications_enabled"?: boolean;
+};
+
+export const LightTickDeviceDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "platform",
+    "push_provider",
+    "timezone",
+    "locale",
+    "app_version",
+    "active",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android"
+      ]
+    },
+    "push_provider": {
+      "type": "string",
+      "enum": [
+        "apns",
+        "fcm"
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "locale": {
+      "type": "string"
+    },
+    "app_version": {
+      "type": "string"
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickDeviceData = {
+  "id": string;
+  "platform": "ios" | "android";
+  "push_provider": "apns" | "fcm";
+  "timezone": string;
+  "locale": string;
+  "app_version": string;
+  "active": boolean;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickRuntimeEnvironmentSchema = {
+  "type": "string",
+  "enum": [
+    "local",
+    "dev",
+    "online"
+  ]
+} as const;
+
+export type LightTickRuntimeEnvironment = "local" | "dev" | "online";
+
+export const LightTickAccountKindSchema = {
+  "type": "string",
+  "enum": [
+    "guest",
+    "registered"
+  ]
+} as const;
+
+export type LightTickAccountKind = "guest" | "registered";
+
+export const LightTickPublicFeatureFlagsSchema = {
+  "type": "object",
+  "required": [
+    "guest_sessions",
+    "account_upgrade",
+    "sync",
+    "notifications",
+    "ai_coach"
+  ],
+  "properties": {
+    "guest_sessions": {
+      "type": "boolean"
+    },
+    "account_upgrade": {
+      "type": "boolean"
+    },
+    "sync": {
+      "type": "boolean"
+    },
+    "notifications": {
+      "type": "boolean"
+    },
+    "ai_coach": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickPublicFeatureFlags = {
+  "guest_sessions": boolean;
+  "account_upgrade": boolean;
+  "sync": boolean;
+  "notifications": boolean;
+  "ai_coach": boolean;
+};
+
+export const LightTickMinimumClientVersionsSchema = {
+  "type": "object",
+  "required": [
+    "ios",
+    "android"
+  ],
+  "properties": {
+    "ios": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "android": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickMinimumClientVersions = {
+  "ios": string;
+  "android": string;
+};
+
+export const LightTickPublicConfigDataSchema = {
+  "type": "object",
+  "required": [
+    "app_id",
+    "enabled",
+    "environment",
+    "configuration_version",
+    "minimum_client_versions",
+    "guest_session_ttl_seconds",
+    "features",
+    "privacy_policy_url",
+    "terms_of_service_url",
+    "support_url",
+    "updated_at"
+  ],
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "const": "lighttick"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "local",
+        "dev",
+        "online"
+      ]
+    },
+    "configuration_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "minimum_client_versions": {
+      "type": "object",
+      "required": [
+        "ios",
+        "android"
+      ],
+      "properties": {
+        "ios": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "android": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "additionalProperties": false
+    },
+    "guest_session_ttl_seconds": {
+      "type": "integer",
+      "minimum": 3600,
+      "maximum": 7776000
+    },
+    "features": {
+      "type": "object",
+      "required": [
+        "guest_sessions",
+        "account_upgrade",
+        "sync",
+        "notifications",
+        "ai_coach"
+      ],
+      "properties": {
+        "guest_sessions": {
+          "type": "boolean"
+        },
+        "account_upgrade": {
+          "type": "boolean"
+        },
+        "sync": {
+          "type": "boolean"
+        },
+        "notifications": {
+          "type": "boolean"
+        },
+        "ai_coach": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "privacy_policy_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "terms_of_service_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "support_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickPublicConfigData = {
+  "app_id": string;
+  "enabled": boolean;
+  "environment": "local" | "dev" | "online";
+  "configuration_version": string;
+  "minimum_client_versions": {
+  "ios": string;
+  "android": string;
+};
+  "guest_session_ttl_seconds": number;
+  "features": {
+  "guest_sessions": boolean;
+  "account_upgrade": boolean;
+  "sync": boolean;
+  "notifications": boolean;
+  "ai_coach": boolean;
+};
+  "privacy_policy_url": string;
+  "terms_of_service_url": string;
+  "support_url": string;
+  "updated_at": string;
+};
+
+export const LightTickPublicConfigEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "app_id",
+        "enabled",
+        "environment",
+        "configuration_version",
+        "minimum_client_versions",
+        "guest_session_ttl_seconds",
+        "features",
+        "privacy_policy_url",
+        "terms_of_service_url",
+        "support_url",
+        "updated_at"
+      ],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "local",
+            "dev",
+            "online"
+          ]
+        },
+        "configuration_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "minimum_client_versions": {
+          "type": "object",
+          "required": [
+            "ios",
+            "android"
+          ],
+          "properties": {
+            "ios": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "android": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        "guest_session_ttl_seconds": {
+          "type": "integer",
+          "minimum": 3600,
+          "maximum": 7776000
+        },
+        "features": {
+          "type": "object",
+          "required": [
+            "guest_sessions",
+            "account_upgrade",
+            "sync",
+            "notifications",
+            "ai_coach"
+          ],
+          "properties": {
+            "guest_sessions": {
+              "type": "boolean"
+            },
+            "account_upgrade": {
+              "type": "boolean"
+            },
+            "sync": {
+              "type": "boolean"
+            },
+            "notifications": {
+              "type": "boolean"
+            },
+            "ai_coach": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "privacy_policy_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "terms_of_service_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "support_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickPublicConfigEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "app_id": string;
+  "enabled": boolean;
+  "environment": "local" | "dev" | "online";
+  "configuration_version": string;
+  "minimum_client_versions": {
+  "ios": string;
+  "android": string;
+};
+  "guest_session_ttl_seconds": number;
+  "features": {
+  "guest_sessions": boolean;
+  "account_upgrade": boolean;
+  "sync": boolean;
+  "notifications": boolean;
+  "ai_coach": boolean;
+};
+  "privacy_policy_url": string;
+  "terms_of_service_url": string;
+  "support_url": string;
+  "updated_at": string;
+};
+  "requestId": string;
+};
+
+export const LightTickGuestSessionRequestSchema = {
+  "type": "object",
+  "required": [
+    "device_id",
+    "device_secret",
+    "platform",
+    "timezone",
+    "locale",
+    "app_version"
+  ],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "device_secret": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 4096,
+      "description": "Device-generated secret stored in Keychain or Keystore and never logged by the server."
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android"
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "IANA timezone identifier such as Asia/Shanghai."
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16
+    },
+    "app_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickGuestSessionRequest = {
+  "device_id": string;
+  "device_secret": string;
+  "platform": "ios" | "android";
+  "timezone": string;
+  "locale": string;
+  "app_version": string;
+};
+
+export const LightTickGuestSessionDataSchema = {
+  "type": "object",
+  "required": [
+    "account_kind",
+    "user_id",
+    "device_id",
+    "access_token",
+    "refresh_token",
+    "expires_in",
+    "guest_expires_at",
+    "upgrade_token"
+  ],
+  "properties": {
+    "account_kind": {
+      "type": "string",
+      "const": "guest"
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "access_token": {
+      "type": "string",
+      "minLength": 16
+    },
+    "refresh_token": {
+      "type": "string",
+      "minLength": 16
+    },
+    "expires_in": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "guest_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "upgrade_token": {
+      "type": "string",
+      "minLength": 32
+    }
+  }
+} as const;
+
+export type LightTickGuestSessionData = {
+  "account_kind": string;
+  "user_id": string;
+  "device_id": string;
+  "access_token": string;
+  "refresh_token": string;
+  "expires_in": number;
+  "guest_expires_at": string;
+  "upgrade_token": string;
+};
+
+export const LightTickGuestSessionEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "CREATED"
+    },
+    "message": {
+      "type": "string",
+      "example": "created"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "account_kind",
+        "user_id",
+        "device_id",
+        "access_token",
+        "refresh_token",
+        "expires_in",
+        "guest_expires_at",
+        "upgrade_token"
+      ],
+      "properties": {
+        "account_kind": {
+          "type": "string",
+          "const": "guest"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "device_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "access_token": {
+          "type": "string",
+          "minLength": 16
+        },
+        "refresh_token": {
+          "type": "string",
+          "minLength": 16
+        },
+        "expires_in": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "guest_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "upgrade_token": {
+          "type": "string",
+          "minLength": 32
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickGuestSessionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "account_kind": string;
+  "user_id": string;
+  "device_id": string;
+  "access_token": string;
+  "refresh_token": string;
+  "expires_in": number;
+  "guest_expires_at": string;
+  "upgrade_token": string;
+};
+  "requestId": string;
+};
+
+export const LightTickAccountSessionDataSchema = {
+  "type": "object",
+  "required": [
+    "app_id",
+    "account_kind",
+    "user_id",
+    "membership_status",
+    "session_expires_at"
+  ],
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "const": "lighttick"
+    },
+    "account_kind": {
+      "type": "string",
+      "enum": [
+        "guest",
+        "registered"
+      ]
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "membership_status": {
+      "type": "string",
+      "enum": [
+        "ACTIVE"
+      ]
+    },
+    "session_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "guest_expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sync_cursor": {
+      "type": "string",
+      "maxLength": 512
+    }
+  }
+} as const;
+
+export type LightTickAccountSessionData = {
+  "app_id": string;
+  "account_kind": "guest" | "registered";
+  "user_id": string;
+  "membership_status": "ACTIVE";
+  "session_expires_at": string;
+  "guest_expires_at"?: string;
+  "sync_cursor"?: string;
+};
+
+export const LightTickAccountSessionEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "app_id",
+        "account_kind",
+        "user_id",
+        "membership_status",
+        "session_expires_at"
+      ],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "account_kind": {
+          "type": "string",
+          "enum": [
+            "guest",
+            "registered"
+          ]
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "membership_status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE"
+          ]
+        },
+        "session_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "guest_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sync_cursor": {
+          "type": "string",
+          "maxLength": 512
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickAccountSessionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "app_id": string;
+  "account_kind": "guest" | "registered";
+  "user_id": string;
+  "membership_status": "ACTIVE";
+  "session_expires_at": string;
+  "guest_expires_at"?: string;
+  "sync_cursor"?: string;
+};
+  "requestId": string;
+};
+
+export const LightTickAccountUpgradeRequestSchema = {
+  "type": "object",
+  "required": [
+    "guest_user_id",
+    "guest_upgrade_token",
+    "device_id"
+  ],
+  "properties": {
+    "guest_user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "guest_upgrade_token": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 4096
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickAccountUpgradeRequest = {
+  "guest_user_id": string;
+  "guest_upgrade_token": string;
+  "device_id": string;
+};
+
+export const LightTickTransferredResourceCountsSchema = {
+  "type": "object",
+  "required": [
+    "goals",
+    "plans",
+    "tasks",
+    "reviews",
+    "proposals"
+  ],
+  "properties": {
+    "goals": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "plans": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tasks": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reviews": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "proposals": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickTransferredResourceCounts = {
+  "goals": number;
+  "plans": number;
+  "tasks": number;
+  "reviews": number;
+  "proposals": number;
+};
+
+export const LightTickAccountUpgradeDataSchema = {
+  "type": "object",
+  "required": [
+    "account_kind",
+    "user_id",
+    "previous_guest_user_id",
+    "guest_session_revoked",
+    "idempotency_replayed",
+    "transferred_resource_counts"
+  ],
+  "properties": {
+    "account_kind": {
+      "type": "string",
+      "const": "registered"
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "previous_guest_user_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "guest_session_revoked": {
+      "type": "boolean",
+      "const": true
+    },
+    "idempotency_replayed": {
+      "type": "boolean"
+    },
+    "sync_cursor": {
+      "type": "string",
+      "maxLength": 512
+    },
+    "transferred_resource_counts": {
+      "type": "object",
+      "required": [
+        "goals",
+        "plans",
+        "tasks",
+        "reviews",
+        "proposals"
+      ],
+      "properties": {
+        "goals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "plans": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tasks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviews": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "proposals": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+} as const;
+
+export type LightTickAccountUpgradeData = {
+  "account_kind": string;
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "guest_session_revoked": boolean;
+  "idempotency_replayed": boolean;
+  "sync_cursor"?: string;
+  "transferred_resource_counts": {
+  "goals": number;
+  "plans": number;
+  "tasks": number;
+  "reviews": number;
+  "proposals": number;
+};
+};
+
+export const LightTickAccountUpgradeEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "account_kind",
+        "user_id",
+        "previous_guest_user_id",
+        "guest_session_revoked",
+        "idempotency_replayed",
+        "transferred_resource_counts"
+      ],
+      "properties": {
+        "account_kind": {
+          "type": "string",
+          "const": "registered"
+        },
+        "user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "previous_guest_user_id": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+        },
+        "guest_session_revoked": {
+          "type": "boolean",
+          "const": true
+        },
+        "idempotency_replayed": {
+          "type": "boolean"
+        },
+        "sync_cursor": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "transferred_resource_counts": {
+          "type": "object",
+          "required": [
+            "goals",
+            "plans",
+            "tasks",
+            "reviews",
+            "proposals"
+          ],
+          "properties": {
+            "goals": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "plans": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tasks": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reviews": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "proposals": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickAccountUpgradeEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "account_kind": string;
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "guest_session_revoked": boolean;
+  "idempotency_replayed": boolean;
+  "sync_cursor"?: string;
+  "transferred_resource_counts": {
+  "goals": number;
+  "plans": number;
+  "tasks": number;
+  "reviews": number;
+  "proposals": number;
+};
+};
+  "requestId": string;
+};
+
+export const LightTickAccountDeletionRequestSchema = {
+  "type": "object",
+  "required": [
+    "confirmation",
+    "reauthentication_token"
+  ],
+  "properties": {
+    "confirmation": {
+      "type": "string",
+      "const": "DELETE"
+    },
+    "reauthentication_token": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 4096,
+      "description": "Opaque, short-lived one-time proof issued after recent common-auth reauthentication."
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickAccountDeletionRequest = {
+  "confirmation": string;
+  "reauthentication_token": string;
+};
+
+export const LightTickAccountDeletionDataSchema = {
+  "type": "object",
+  "required": [
+    "app_id",
+    "membership_status",
+    "sessions_revoked",
+    "product_data_deleted",
+    "platform_account_retained",
+    "other_memberships_retained"
+  ],
+  "properties": {
+    "app_id": {
+      "type": "string",
+      "const": "lighttick"
+    },
+    "membership_status": {
+      "type": "string",
+      "const": "DELETED"
+    },
+    "sessions_revoked": {
+      "type": "boolean"
+    },
+    "product_data_deleted": {
+      "type": "boolean"
+    },
+    "platform_account_retained": {
+      "type": "boolean",
+      "const": true
+    },
+    "other_memberships_retained": {
+      "type": "boolean",
+      "const": true
+    }
+  }
+} as const;
+
+export type LightTickAccountDeletionData = {
+  "app_id": string;
+  "membership_status": string;
+  "sessions_revoked": boolean;
+  "product_data_deleted": boolean;
+  "platform_account_retained": boolean;
+  "other_memberships_retained": boolean;
+};
+
+export const LightTickAccountDeletionEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "app_id",
+        "membership_status",
+        "sessions_revoked",
+        "product_data_deleted",
+        "platform_account_retained",
+        "other_memberships_retained"
+      ],
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "const": "lighttick"
+        },
+        "membership_status": {
+          "type": "string",
+          "const": "DELETED"
+        },
+        "sessions_revoked": {
+          "type": "boolean"
+        },
+        "product_data_deleted": {
+          "type": "boolean"
+        },
+        "platform_account_retained": {
+          "type": "boolean",
+          "const": true
+        },
+        "other_memberships_retained": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickAccountDeletionEnvelope = {
+  "code": string;
+  "message": string;
+  "data": {
+  "app_id": string;
+  "membership_status": string;
+  "sessions_revoked": boolean;
+  "product_data_deleted": boolean;
+  "platform_account_retained": boolean;
+  "other_memberships_retained": boolean;
+};
+  "requestId": string;
+};
+
 export type AuthSuccessPayload = AuthSessionData;
 export type CurrentUserDocument = CurrentUserData;
 export type PublicAppConfigDocument = PublicConfigData;
@@ -6604,6 +12575,94 @@ export const GeneratedPublicContractNames = [
   "FrogSleepSleepReportRequest",
   "FrogSleepTokenRefreshRequest",
   "KickoffPublicConfig",
+  "LightTickAccountDeletionData",
+  "LightTickAccountDeletionEnvelope",
+  "LightTickAccountDeletionRequest",
+  "LightTickAccountKind",
+  "LightTickAccountSessionData",
+  "LightTickAccountSessionEnvelope",
+  "LightTickAccountUpgradeData",
+  "LightTickAccountUpgradeEnvelope",
+  "LightTickAccountUpgradeRequest",
+  "LightTickAvailabilityWindow",
+  "LightTickChangeProposalData",
+  "LightTickChangeProposalRunRequest",
+  "LightTickCommitmentMode",
+  "LightTickCommitmentRequest",
+  "LightTickConstraintViolation",
+  "LightTickDeviceData",
+  "LightTickDevicePlatform",
+  "LightTickDeviceUpsertRequest",
+  "LightTickEnvelope",
+  "LightTickErrorCode",
+  "LightTickErrorData",
+  "LightTickErrorEnvelope",
+  "LightTickFirstActionRequest",
+  "LightTickGoalConstraints",
+  "LightTickGoalCreateRequest",
+  "LightTickGoalData",
+  "LightTickGoalLifecycleRequest",
+  "LightTickGoalStatus",
+  "LightTickGoalUpdateRequest",
+  "LightTickGuestSessionData",
+  "LightTickGuestSessionEnvelope",
+  "LightTickGuestSessionRequest",
+  "LightTickId",
+  "LightTickMinimumClientVersions",
+  "LightTickNotificationPreferences",
+  "LightTickOnboardingRequest",
+  "LightTickPace",
+  "LightTickPlanData",
+  "LightTickPlanDiffItem",
+  "LightTickPlanGranularity",
+  "LightTickPlanRunRequest",
+  "LightTickPlanStatus",
+  "LightTickProfileData",
+  "LightTickProfileUpdateRequest",
+  "LightTickProposalImpact",
+  "LightTickProposalRejectRequest",
+  "LightTickProposalStatus",
+  "LightTickPublicConfigData",
+  "LightTickPublicConfigEnvelope",
+  "LightTickPublicFeatureFlags",
+  "LightTickPushProvider",
+  "LightTickReviewData",
+  "LightTickReviewPeriod",
+  "LightTickReviewRunRequest",
+  "LightTickReviewStatus",
+  "LightTickRunData",
+  "LightTickRunEnvelope",
+  "LightTickRunKind",
+  "LightTickRunStatus",
+  "LightTickRuntimeEnvironment",
+  "LightTickSkipReason",
+  "LightTickStarterCandidate",
+  "LightTickStarterRequest",
+  "LightTickSyncAction",
+  "LightTickSyncChange",
+  "LightTickSyncEntityType",
+  "LightTickSyncOperation",
+  "LightTickSyncOperationResult",
+  "LightTickSyncOperationStatus",
+  "LightTickSyncPullData",
+  "LightTickSyncPushData",
+  "LightTickSyncPushRequest",
+  "LightTickTaskCompleteRequest",
+  "LightTickTaskData",
+  "LightTickTaskDeferRequest",
+  "LightTickTaskDifficulty",
+  "LightTickTaskSkipRequest",
+  "LightTickTaskStatus",
+  "LightTickTaskStepData",
+  "LightTickTaskVariant",
+  "LightTickTaskVariantDefinition",
+  "LightTickTaskVariantRequest",
+  "LightTickTimestamp",
+  "LightTickTimezone",
+  "LightTickTodayData",
+  "LightTickTransferredResourceCounts",
+  "LightTickVersion",
+  "LightTickVersionedCommandRequest",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",

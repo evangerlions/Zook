@@ -1,0 +1,20 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "account_kind": "registered",
+    "user_id": "user_01K4REGISTERED",
+    "previous_guest_user_id": "guest_01K4LIGHTTICK",
+    "guest_session_revoked": true,
+    "idempotency_replayed": true,
+    "sync_cursor": "cursor_after_upgrade_42",
+    "transferred_resource_counts": {
+      "goals": 1,
+      "plans": 1,
+      "tasks": 4,
+      "reviews": 0,
+      "proposals": 0
+    }
+  },
+  "requestId": "req_lighttick_upgrade_replay"
+}

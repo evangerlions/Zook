@@ -470,8 +470,9 @@ export async function tryHandleFrogSleepV1Routes(
       invitationId,
       action,
     );
+    const terminalStatus = action === "cancel" ? "cancelled" : "declined";
     await new LegacyBuddyInvitationAdapter(this.database).syncTerminal(
-      "focus", invitationId, action, auth.userId,
+      "focus", invitationId, terminalStatus, auth.userId,
     );
     return frogSleepOk(this, result, routeRequest.requestId as string, LEGACY_INVITATION_HEADERS);
   }

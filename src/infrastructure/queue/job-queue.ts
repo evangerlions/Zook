@@ -4,7 +4,7 @@ export interface JobQueue {
   add(
     name: string,
     payload: Record<string, unknown>,
-    options?: { attempts?: number; backoffMs?: number },
+    options?: { attempts?: number; backoffMs?: number; jobId?: string },
   ): Promise<QueueJob>;
   processDueJobs(
     handler: (job: QueueJob) => Promise<void> | void,

@@ -12,6 +12,7 @@ import { AppRegistryService } from "../modules/app-registry/app-registry.service
 import { AuthService } from "../modules/auth/auth.service.ts";
 import { UserService } from "../modules/user/user.service.ts";
 import { AdminSessionStore } from "../services/admin-session-store.ts";
+import { AdminSensitiveOperationService } from "../services/admin-sensitive-operation.service.ts";
 import { CommonTestAccountService } from "../services/common-test-account.service.ts";
 import { NotificationService } from "../services/notification.service.ts";
 import { AiNovelStatisticsService } from "../services/ai-novel-statistics.service.ts";
@@ -86,6 +87,7 @@ export class BackendRouteContext {
     protected readonly commonTestAccountService: CommonTestAccountService,
     protected readonly kvManager: KVManager,
     protected readonly routeAuditInterceptor: AuditInterceptor,
+    protected readonly adminSensitiveOperationService: AdminSensitiveOperationService,
   ) {}
 
   public async authenticate(
@@ -170,6 +172,16 @@ export class BackendRouteContext {
     }
 
     return request.adminSession;
+  }
+
+  public async assertAdminSensitiveOperation(session: AdminSessionRecord, operation: string): Promise<void> {
+    await this.adminSensitiveOperationService.assertGranted(session, operation);
+  }
+
+  public async recordAdminReadAudit(adminUser: string, action: string, resourceType: string,
+    resourceId: string, requestId?: string): Promise<void> {
+    await this.routeAuditInterceptor.record({ appId: resourceId, actorUserId: adminUser, action, resourceType,
+      resourceId, payload: { requestId, privacy: "aggregates_only" } });
   }
 
   public validateAdminCredentials(username: string, password: string): string {

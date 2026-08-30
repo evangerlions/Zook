@@ -80,20 +80,17 @@ import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { createApplicationTelemetryGateway } from "./application-telemetry-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
+import { resolveLightTickEnabled, resolveLightTickSeedEnabled } from "./application-lighttick-runtime-config.ts";
+import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics, attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
 import { resolveTencentCaptchaVerificationConfig, resolveTencentCloudCommonCredentials, resolveTencentSmsVerificationConfig } from "./tencent-cloud-runtime-config.ts";
-
-/**
- * createApplication produces a full runtime context that tests can reuse without real infra.
- */
-export async function createApplication(
-  options: CreateApplicationOptions = {},
-) {
+export async function createApplication(options: CreateApplicationOptions = {}) {
   const passwordHasher = new DevelopmentPasswordHasher();
-  const frogsleepEnabled = resolveFrogSleepEnabled(options);
-  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled });
+  const frogsleepEnabled = resolveFrogSleepEnabled(options); const lighttickEnabled = resolveLightTickEnabled(options);
+  const lighttickSeedEnabled = resolveLightTickSeedEnabled(options, lighttickEnabled);
+  const baseSeed = options.seed ?? buildDefaultSeed(passwordHasher, { includeFrogSleep: frogsleepEnabled, includeLightTick: lighttickSeedEnabled });
   const kvManager =
     options.kvManager ??
     (options.kvBackend
@@ -129,6 +126,7 @@ export async function createApplication(
               resolveRuntimeMigrationDatabaseUrl(),
           },
         ));
+  const lighttickRepository = resolveApplicationLightTickRepository(database, options.lighttickRepository);
   const cache = new InMemoryCache();
   const defaultQueueBackend =
     options.queueRedisUrl?.trim() || resolveRuntimeRedisUrl()
@@ -148,6 +146,7 @@ export async function createApplication(
             })(),
         )
       : new InMemoryJobQueue());
+  const lighttickRuntime = createApplicationLightTickRuntime(lighttickRepository, queue);
   const localRunFileLogSink = createLocalRunFileLogSink({
     service: options.serviceName ?? "api",
   });
@@ -163,14 +162,13 @@ export async function createApplication(
       logFile: localRunFileLogSink.currentPath,
     });
   }
-
   const appConfigService = new VersionedAppConfigService(
     database,
     cache,
     kvManager,
   );
   const appI18nConfigService = new AppI18nConfigService(appConfigService);
-  const appAiRoutingConfigService = new AppAiRoutingConfigService();
+  const appAiRoutingConfigService = new AppAiRoutingConfigService(appConfigService);
   const passwordManager = new PasswordManager(kvManager);
   const adminSessionStore = new AdminSessionStore(kvManager);
   const refreshTokenStore = new RefreshTokenStore(kvManager);
@@ -357,7 +355,7 @@ export async function createApplication(
     resolveSecureRefreshCookie(options),
     resolveRefreshCookieSameSite(options),
     resolvePublicSmsTestBypass(options),
-  );
+  ); attachApplicationLightTickAccount({ runtime: lighttickRuntime, database, kv: kvManager, appRegistry: appRegistryService, auth: authService, repository: lighttickRepository });
   const qrLoginService = new QrLoginService(
     cache,
     appRegistryService,
@@ -367,7 +365,7 @@ export async function createApplication(
   const getuiGyOneClickLoginService = new GetuiGyOneClickLoginService(
     commonGetuiGyConfigService,
   );
-  const analyticsService = new AnalyticsService(database, appRegistryService);
+  const analyticsService = new AnalyticsService(database, appRegistryService); attachApplicationLightTickAnalytics(lighttickRuntime, analyticsService);
   const {
     aiNovelStatisticsService,
     embeddingManager,
@@ -454,6 +452,7 @@ export async function createApplication(
     commonEmailConfigService,
     registrationEmailSender,
   });
+  attachApplicationLightTickWorkers({ runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(
     new Map(
@@ -520,6 +519,7 @@ export async function createApplication(
     commonTestAccountService,
     kvManager,
     frogsleepEnabled,
+    lighttickEnabled, lighttickRuntime,
   );
   app.analyticsService = analyticsService;
   return {
@@ -589,6 +589,7 @@ export async function createApplication(
       authGuard,
       appAccessGuard,
       rbacGuard,
+      lighttickRepository, lighttickRuntime,
     },
     close: async () => {
       await queue.close?.();

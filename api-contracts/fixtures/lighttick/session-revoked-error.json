@@ -1,0 +1,9 @@
+{
+  "code": "AUTH_SESSION_REVOKED",
+  "message": "the LightTick session has been revoked",
+  "data": {
+    "retryable": false,
+    "resolution_actions": ["clear_local_session", "create_guest_or_sign_in"]
+  },
+  "requestId": "req_lighttick_session_revoked"
+}

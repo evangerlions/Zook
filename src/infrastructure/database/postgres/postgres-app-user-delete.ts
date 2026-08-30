@@ -28,6 +28,23 @@ const FROGSLEEP_USER_RUNTIME_TABLES = [
   "zook_frogsleep_entitlement_records",
 ] as const;
 
+const LIGHTTICK_USER_RUNTIME_TABLES = [
+  "zook_lighttick_task_steps",
+  "zook_lighttick_tasks",
+  "zook_lighttick_change_proposals",
+  "zook_lighttick_reviews",
+  "zook_lighttick_plan_cycles",
+  "zook_lighttick_goals",
+  "zook_lighttick_execution_events",
+  "zook_lighttick_ai_runs",
+  "zook_lighttick_change_log",
+  "zook_lighttick_operations",
+  "zook_lighttick_sync_cursors",
+  "zook_lighttick_devices",
+  "zook_lighttick_profiles",
+  "zook_lighttick_guest_identities",
+] as const;
+
 export async function deletePostgresAppUserRuntimeData(
   query: QueryFn,
   appId: string,
@@ -59,6 +76,12 @@ export async function deletePostgresAppUserRuntimeData(
   await query("DELETE FROM zook_client_log_lines WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_client_log_uploads WHERE app_id = $1 AND user_id = $2", [appId, userId]);
   await query("DELETE FROM zook_client_log_upload_tasks WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  if (appId === "lighttick") {
+    await query("DELETE FROM zook_lighttick_account_upgrades WHERE app_id = $1 AND (guest_user_id = $2 OR target_user_id = $2)", [appId, userId]);
+    for (const tableName of LIGHTTICK_USER_RUNTIME_TABLES) {
+      await query(`DELETE FROM ${tableName} WHERE app_id = $1 AND user_id = $2`, [appId, userId]);
+    }
+  }
   if (appId !== "frogsleep") {
     return;
   }

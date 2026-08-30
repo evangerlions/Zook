@@ -49,6 +49,12 @@
 3. 非标准历史路径只能作为临时兼容 alias，不能作为新客户端 canonical path；文档中必须同时写出 canonical `/api/v1/{productKey}/...` 路径。
 4. `productKey` 是 URL namespace；`appId` 是 token、membership、配置与数据隔离使用的运行时作用域键。通常二者相同，但文档模板中路径写 `productKey`，鉴权/数据作用域写 `appId`。
 
+LightTick 固定使用 `productKey = appId = lighttick`。其 canonical 合同位于
+`api-contracts/openapi/lighttick/api.yaml`；所有私有业务接口均位于
+`/api/v1/lighttick/...`，并要求 Bearer Token、活跃 app membership 与 app scope
+一致。客户端应从固定 Zook commit 生成类型，不得把旧 Flutter/Go 项目中的 DTO
+视为线上合同。
+
 ## 3. 路径分层
 
 | 层级         | Path 模板                   | 说明                           | 示例                   |
@@ -106,6 +112,82 @@ POST   /api/v1/frogsleep/focus-buddy/match-profile
 /api/v1/sleep-buddy/...
 /api/v1/focus-buddy/...
 ```
+
+LightTick 原生客户端使用以下核心接口族：
+
+```text
+GET       /api/v1/lighttick/public/config
+POST      /api/v1/lighttick/account/guest-sessions
+GET       /api/v1/lighttick/account/session
+POST      /api/v1/lighttick/account/upgrade
+POST      /api/v1/lighttick/account/reauthentication
+GET/PATCH /api/v1/lighttick/profile
+POST      /api/v1/lighttick/onboarding
+POST      /api/v1/lighttick/onboarding/starter
+POST      /api/v1/lighttick/onboarding/first-action
+POST      /api/v1/lighttick/onboarding/commitment
+GET/POST  /api/v1/lighttick/goals
+POST      /api/v1/lighttick/plan-runs
+GET        /api/v1/lighttick/today
+POST       /api/v1/lighttick/tasks/{taskId}/{command}
+POST       /api/v1/lighttick/tasks/{taskId}/variant
+GET/POST   /api/v1/lighttick/reviews...
+GET/POST   /api/v1/lighttick/change-proposals...
+POST/GET   /api/v1/lighttick/sync/{push|pull}
+POST/DELETE /api/v1/lighttick/devices...
+DELETE     /api/v1/lighttick/me/account
+```
+
+`GET /api/v1/lighttick/public/config` 无需登录，即使 LightTick 业务能力默认关闭也可读取。
+它只返回固定 `app_id=lighttick`、`local/dev/online` 环境、配置版本、双端最低版本、
+游客有效期、公开功能开关及 HTTPS 法律/支持地址。响应由 `admin.delivery_config` 的
+显式白名单字段投影生成；密钥、Token、内部地址和其他管理配置不会透传。运行时
+`LIGHTTICK_ENABLED` 与后台 `enabled` 必须同时为真，公开功能开关才可能开启。
+
+游客创建接口是唯一无需 Bearer Token 的账户接口，请求必须携带稳定
+`Idempotency-Key`，并提交 `device_id` 与至少 32 字符、由设备生成且保存在
+Keychain/Keystore 的 `device_secret`。服务端只保存设备密钥与升级证明的哈希，签发 30 天有效的
+LightTick-only guest identity、LightTick membership、access/refresh token 和后续升级
+证明；同一设备恢复必须再次提供正确设备证明。每个来源 IP 每小时最多发起 5 次，
+超限返回 `429 RATE_LIMITED`。游客不能访问其他 Zook 产品，也不能访问 LightTick
+review、sync、设备注册、完整规划和删除等敏感能力；刷新凭据后可调用
+`GET /api/v1/lighttick/account/session` 恢复账户类型和游客到期时间。
+
+LightTick 推送设备通过 `POST /api/v1/lighttick/devices` 注册或更新，并通过
+`DELETE /api/v1/lighttick/devices/{deviceId}` 软删除。注册必须提交匹配的
+`ios/apns` 或 `android/fcm`、IANA timezone、locale、app version 和 push token，且受
+Bearer token 的 `lighttick` membership 隔离。通知总开关、每日提醒时间、复盘提醒和
+安静时段通过 `PATCH /api/v1/lighttick/profile` 的 `notification_preferences` 更新；部分更新会与
+现有偏好合并。服务端按 app/user/type/resource/business date 幂等调度，暂停目标会抑制任务压力类通知，
+APNs/FCM 的不可恢复 token 只会禁用匹配的 LightTick 设备，429/5xx 仍按队列退避重试。
+Provider payload 只含安全展示文案、类型、可选资源 ID 和 `sync=true`，不含任务笔记、Coach 文本或凭据。
+
+正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
+`guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。
+服务端在同一 PostgreSQL 事务中迁移游客资料、目标、计划、任务、事件、操作、设备和同步
+位置，并删除游客 membership；正式账户已有偏好优先，重复 operation 只有内容完全一致时
+才会去重。响应丢失后使用相同 key 和请求重试会返回原结果，改变请求则返回
+`LIGHTTICK_IDEMPOTENCY_MISMATCH`。成功后旧游客 access/refresh session 全部失效。
+
+删除 LightTick 产品账号前，正式密码账户先调用 `/account/reauthentication` 提交
+`current_password`，取得 5 分钟有效、仅可使用一次且绑定当前 LightTick membership 的
+`reauthentication_token`；随后将该证明与 `confirmation=DELETE` 一并提交到
+`DELETE /api/v1/lighttick/me/account`。登出只撤销会话，不删除服务端产品数据。
+
+写命令使用 `Idempotency-Key`；可并发修改资源的命令同时携带
+`base_version`。离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多
+500 条，准确值和稳定错误码以 OpenAPI 为准。
+
+渐进式启动是 additive 能力：`/onboarding/starter` 只要求模糊愿望和 IANA
+timezone，并保证用确定性模板返回一个 5–15 分钟推荐动作和两个备选；它不依赖
+LLM 成功。`/onboarding/first-action` 记录实际时长、难度和所选强度，只返回事实
+反馈与三日预览，不产生稳定偏好推断。累计两次有效行动（或显式
+`deep_planning=true`）后，`/onboarding/commitment` 才允许选择周承诺。
+
+任务变体固定为 `standard | light | minimum`，三者共享 `lineage_id`；切换变体不
+新增贡献，终态任务不可切换。目标暂停可携带原因、预计恢复时间、轻任务和通知
+策略；恢复模式为 `original_pace | recovery_mode | adjust_goal`。现有
+`POST /api/v1/lighttick/onboarding` 的 plan-first 行为继续兼容。
 
 ### 4.2 产品公开接口
 

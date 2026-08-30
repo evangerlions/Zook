@@ -18,11 +18,15 @@
     "check:line-count": "node scripts/check-source-line-count.mjs",
     "smoke:frogsleep-zook": "node scripts/frogsleep-zook-smoke.mjs",
     "smoke:frogsleep-buddy-invitation": "node scripts/frogsleep-buddy-invitation-smoke.mjs",
+    "smoke:lighttick-dev": "node scripts/lighttick-dev-acceptance.mjs",
+    "preflight:lighttick-providers": "node scripts/lighttick-provider-preflight.mjs",
     "observe:frogsleep-buddy-rollout": "node --experimental-transform-types scripts/frogsleep-buddy-rollout-observation.ts",
     "worker": "node --experimental-transform-types src/worker.ts",
     "test": "node --experimental-transform-types --test test/unit/*.test.ts",
     "test:postgres:buddy": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-concurrency.test.ts",
-    "test:postgres:buddy-migration": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-migration-upgrade.test.ts"
+    "test:postgres:buddy-migration": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-migration-upgrade.test.ts",
+    "test:postgres:lighttick": "node --experimental-transform-types --test test/integration/lighttick-postgres.test.ts",
+    "test:lighttick-ai-evals": "node --experimental-transform-types --test test/unit/lighttick-ai-platform.test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.3.5"

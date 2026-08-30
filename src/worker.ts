@@ -12,13 +12,24 @@ const runtime = await init({
 });
 const workerTickLogThrottle = new WorkerTickLogThrottle();
 const buddyCapabilities = resolveBuddyGrowthCapabilities();
+let tickRunning = false;
 
 async function runTick(): Promise<void> {
-  await runtime.database.withExclusiveSession(async () => {
+  if (tickRunning) return;
+  tickRunning = true;
+  try {
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();
-    await runtime.queue.processDueJobs((job) => runtime.services.notificationService.processQueueJob(job));
+    await runtime.queue.processDueJobs(async (job) => {
+      if (job.name.startsWith("lighttick.")) {
+        if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
+        else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
+        else await runtime.services.lighttickRuntime.worker?.process(job);
+        return;
+      }
+      await runtime.services.notificationService.processQueueJob(job);
+    });
     const buddyNotifications = await runtime.services.buddyNotificationWorkerService.processBatch();
     const buddyInvitationEmails = buddyCapabilities.explicitInviteConsent && buddyCapabilities.emailDelivery
       ? await runtime.services.buddyInvitationEmailWorkerService.processBatch()
@@ -49,7 +60,16 @@ async function runTick(): Promise<void> {
     if (workerTickLogThrottle.shouldLog(context)) {
       runtime.logger.info("worker tick completed", context);
     }
-  });
+  } catch (error) {
+    runtime.logger.error("worker tick failed", {
+      jobName: "worker-tick",
+      jobId: "scheduler",
+      statusCode: 500,
+      error,
+    });
+  } finally {
+    tickRunning = false;
+  }
 }
 
 runtime.logger.info("worker started", {

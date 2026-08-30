@@ -61,6 +61,9 @@ import type { BodyLogLeaderboardService } from "../modules/bodylog/bodylog-leade
 import type { BodyLogInvitationService } from "../modules/bodylog/bodylog-invitation.service.ts";
 import type { BodyLogChallengeService } from "../modules/bodylog/bodylog-challenge.service.ts";
 import { tryHandleBodyLogAssociationRoutes } from "./bodylog-association-routes.ts";
+import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
+import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
+import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -87,7 +90,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly adminBasicAuth: ResolvedAdminBasicAuth | null,
     private readonly adminSessionStore: AdminSessionStore,
     private readonly appLogSecretService: AppLogSecretService,
-    private readonly adminSensitiveOperationService: AdminSensitiveOperationService,
+    adminSensitiveOperationService: AdminSensitiveOperationService,
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
     private readonly contentSafetyService: ContentSafetyService,
@@ -123,6 +126,8 @@ export class BackendApplication extends BackendRouteContext {
     private readonly commonTestAccountService: CommonTestAccountService,
     private readonly kvManager: KVManager,
     private readonly frogsleepEnabled = false,
+    private readonly lighttickEnabled = false,
+    private readonly lighttickRuntime?: LightTickRuntime,
   ) {
     super(
       database,
@@ -144,6 +149,7 @@ export class BackendApplication extends BackendRouteContext {
       commonTestAccountService,
       kvManager,
       auditInterceptor,
+      adminSensitiveOperationService,
     );
   }
 
@@ -225,6 +231,8 @@ export class BackendApplication extends BackendRouteContext {
       );
     }
 
+    const lightTickAdminResponse = await tryHandleLightTickAdminRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
+    if (lightTickAdminResponse) return lightTickAdminResponse;
     const adminResponse = await tryHandleAdminRoutes.call(this, request);
     if (adminResponse) {
       return adminResponse;
@@ -284,6 +292,16 @@ export class BackendApplication extends BackendRouteContext {
       if (frogSleepResponse) {
         return frogSleepResponse;
       }
+    }
+
+    const lightTickResponse = await tryHandleLightTickV1Routes(
+      this,
+      this.lighttickEnabled,
+      this.lighttickRuntime,
+      request,
+    );
+    if (lightTickResponse) {
+      return lightTickResponse;
     }
 
     throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");

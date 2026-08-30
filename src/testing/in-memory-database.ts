@@ -868,7 +868,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   insertAnalyticsEvents(records: AnalyticsEventRecord[]): void {
-    this.analyticsEvents.push(...structuredClone(records));
+    const existing = new Set(this.analyticsEvents.map(item => item.id));
+    this.analyticsEvents.push(...structuredClone(records.filter(item => !existing.has(item.id))));
   }
 
   listAnalyticsEvents(appId: string): AnalyticsEventRecord[] {

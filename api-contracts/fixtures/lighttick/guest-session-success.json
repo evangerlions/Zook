@@ -1,0 +1,15 @@
+{
+  "code": "CREATED",
+  "message": "created",
+  "data": {
+    "account_kind": "guest",
+    "user_id": "guest_01K4LIGHTTICK",
+    "device_id": "device_01K4IOS0001",
+    "access_token": "fixture.access.token.lighttick",
+    "refresh_token": "fixture-refresh-token-lighttick",
+    "expires_in": 3600,
+    "guest_expires_at": "2026-09-28T10:30:00Z",
+    "upgrade_token": "fixture-device-bound-upgrade-token-0001"
+  },
+  "requestId": "req_lighttick_guest_success"
+}

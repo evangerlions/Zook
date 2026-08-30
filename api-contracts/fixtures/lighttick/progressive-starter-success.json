@@ -1,0 +1,35 @@
+{
+  "code": "CREATED",
+  "message": "created",
+  "data": {
+    "source": "deterministic_template",
+    "wish": "我想学编程",
+    "assumption": "先用低成本行动确认方向，再逐步增加计划精度",
+    "recommended": {
+      "id": "lighttick_task_fixture_001",
+      "lineage_id": "lighttick_lineage_fixture_001",
+      "title": "打开一个在线编辑器，运行第一段示例代码",
+      "selected_variant": "standard",
+      "estimated_duration_minutes": 10,
+      "variants": {
+        "standard": { "title": "运行第一段示例代码", "estimated_duration_minutes": 10, "completion_criteria": "看到代码成功运行" },
+        "light": { "title": "运行一个示例", "estimated_duration_minutes": 7, "completion_criteria": "看到一次运行结果" },
+        "minimum": { "title": "打开编辑器", "estimated_duration_minutes": 5, "completion_criteria": "打开并保存链接" }
+      },
+      "version": 1
+    },
+    "alternatives": [
+      { "candidate_id": "candidate_2", "title": "找一个可靠示例", "assumption": "先探索", "variants": {
+        "standard": { "title": "找一个可靠示例", "estimated_duration_minutes": 10, "completion_criteria": "收藏一个示例" },
+        "light": { "title": "浏览一个示例", "estimated_duration_minutes": 7, "completion_criteria": "打开一个示例" },
+        "minimum": { "title": "搜索示例", "estimated_duration_minutes": 5, "completion_criteria": "完成一次搜索" }
+      }},
+      { "candidate_id": "candidate_3", "title": "写下下一步", "assumption": "先具体化", "variants": {
+        "standard": { "title": "写下下一步", "estimated_duration_minutes": 10, "completion_criteria": "写下一条动作" },
+        "light": { "title": "写下关键词", "estimated_duration_minutes": 7, "completion_criteria": "写下三个词" },
+        "minimum": { "title": "写下一个词", "estimated_duration_minutes": 5, "completion_criteria": "留下一个词" }
+      }}
+    ]
+  },
+  "requestId": "req_progressive_fixture"
+}

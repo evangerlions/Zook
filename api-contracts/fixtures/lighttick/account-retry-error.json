@@ -1,0 +1,9 @@
+{
+  "code": "RATE_LIMITED",
+  "message": "guest session creation is temporarily rate limited",
+  "data": {
+    "retryable": true,
+    "retry_after_seconds": 30
+  },
+  "requestId": "req_lighttick_account_retry"
+}
