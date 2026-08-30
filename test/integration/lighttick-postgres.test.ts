@@ -79,6 +79,20 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
       assert.equal(await repository.getProfile(owner), undefined);
     });
 
+    await suite.test("updates the materialized resource when an AI run completes", async () => {
+      const queued = { ...owner, id: "lighttick_pg_ai_run", kind: "plan", status: "queued" as const,
+        resourceId: "lighttick_pg_goal_before_materialization", sceneKey: "lighttick_plan_week",
+        promptVersion: "v1", schemaVersion: "v1", attemptCount: 0, inputContext: {}, usage: {},
+        createdAt: now, updatedAt: now };
+      await repository.saveAiRun(queued);
+      await repository.saveAiRun({ ...queued, status: "succeeded", resourceId: "lighttick_pg_plan_after_materialization",
+        provider: "deterministic_template", attemptCount: 1, output: { tasks: [] }, updatedAt: now });
+
+      assert.equal((await repository.getAiRun(owner, queued.id))?.resourceId,
+        "lighttick_pg_plan_after_materialization");
+      await pool.query("DELETE FROM zook_lighttick_ai_runs WHERE id=$1", [queued.id]);
+    });
+
     await suite.test("upgrades guest ownership atomically and replays the original result", async () => {
       const guestUserId = "lighttick_pg_upgrade_guest"; const targetUserId = "lighttick_pg_upgrade_target";
       await pool.query("DELETE FROM zook_lighttick_account_upgrades WHERE guest_user_id=$1", [guestUserId]);

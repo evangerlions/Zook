@@ -390,7 +390,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const result = await this.query(`INSERT INTO zook_lighttick_ai_runs
       (id,app_id,user_id,kind,status,resource_id,scene_key,prompt_version,schema_version,provider,model,attempt_count,input_context,output,error_code,usage,latency_ms,created_at,started_at,completed_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14::jsonb,$15,$16::jsonb,$17,$18,$19,$20,$21)
-      ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status,provider=EXCLUDED.provider,model=EXCLUDED.model,
+      ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status,resource_id=EXCLUDED.resource_id,provider=EXCLUDED.provider,model=EXCLUDED.model,
       attempt_count=EXCLUDED.attempt_count,output=EXCLUDED.output,error_code=EXCLUDED.error_code,usage=EXCLUDED.usage,
       latency_ms=EXCLUDED.latency_ms,started_at=EXCLUDED.started_at,completed_at=EXCLUDED.completed_at,updated_at=EXCLUDED.updated_at RETURNING *`,
       [row.id,row.appId,row.userId,row.kind,row.status,row.resourceId ?? null,row.sceneKey,row.promptVersion,row.schemaVersion,
