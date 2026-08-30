@@ -13,6 +13,10 @@ export interface ProposedPlanInput {
 export class LightTickPlanService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
+  async list(owner: LightTickOwner, goalId?: string): Promise<LightTickPlanRow[]> {
+    return await this.repository.listPlans(owner, goalId);
+  }
+
   async createProposed(owner: LightTickOwner, input: ProposedPlanInput): Promise<LightTickPlanRow> {
     await this.requireGoal(owner, input.goalId); this.validateTasks(input.tasks);
     const timestamp = this.clock().toISOString();

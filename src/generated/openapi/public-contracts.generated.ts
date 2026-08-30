@@ -5801,6 +5801,11 @@ export const LightTickPlanDataSchema = {
         "manual"
       ]
     },
+    "proposal": {
+      "type": "object",
+      "description": "Persisted plan preview including proposed tasks and non-secret planning assumptions.",
+      "additionalProperties": true
+    },
     "tasks": {
       "type": "array",
       "items": {
@@ -6049,6 +6054,9 @@ export type LightTickPlanData = {
   "title"?: string;
   "summary"?: string;
   "source": "ai" | "template" | "manual";
+  "proposal"?: {
+  [key: string]: unknown;
+};
   "tasks"?: (
 {
   "id": string;
@@ -6458,6 +6466,14 @@ export const LightTickTaskCompleteRequestSchema = {
       "minimum": 0,
       "maximum": 1440
     },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
     "note": {
       "type": "string",
       "maxLength": 4000
@@ -6473,6 +6489,7 @@ export const LightTickTaskCompleteRequestSchema = {
 export type LightTickTaskCompleteRequest = {
   "base_version": number;
   "actual_duration_minutes"?: number;
+  "difficulty"?: "low" | "medium" | "high";
   "note"?: string;
   "client_occurred_at"?: string;
 };

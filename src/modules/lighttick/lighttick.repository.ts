@@ -25,6 +25,7 @@ export interface LightTickRepository {
   getGoal(owner: LightTickOwner, id: string): Promise<LightTickGoalRow | undefined>;
   saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow>;
   getPlan(owner: LightTickOwner, id: string): Promise<LightTickPlanRow | undefined>;
+  listPlans(owner: LightTickOwner, goalId?: string): Promise<LightTickPlanRow[]>;
   getActivePlan(owner: LightTickOwner): Promise<LightTickPlanRow | undefined>;
   savePlan(row: LightTickPlanRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickPlanRow>;
   listTasks(owner: LightTickOwner, planId?: string): Promise<LightTickTaskRow[]>;

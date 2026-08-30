@@ -317,6 +317,17 @@ paths:
         "409": { $ref: "#/components/responses/LightTickError" }
         "429": { $ref: "#/components/responses/LightTickError" }
         "503": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/plans:
+    get:
+      operationId: listLightTickPlans
+      tags: [lighttick-plans]
+      summary: List owner-scoped plans, optionally filtered by goal
+      parameters:
+        - name: goal_id
+          in: query
+          schema: { $ref: "#/components/schemas/LightTickId" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
   /api/v1/lighttick/plans/{planId}:
     parameters:
       - $ref: "#/components/parameters/PlanId"
@@ -1011,6 +1022,10 @@ components:
         title: { type: string }
         summary: { type: string }
         source: { enum: [ai, template, manual] }
+        proposal:
+          type: object
+          description: Persisted plan preview including proposed tasks and non-secret planning assumptions.
+          additionalProperties: true
         tasks: { type: array, items: { $ref: "#/components/schemas/LightTickTaskData" } }
         version: { $ref: "#/components/schemas/LightTickVersion" }
         created_at: { $ref: "#/components/schemas/LightTickTimestamp" }

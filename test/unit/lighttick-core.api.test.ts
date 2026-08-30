@@ -78,6 +78,11 @@ test("plan confirmation, Today, and task commands expose deterministic state cha
   const confirmed = await runtime.app.handle({ method: "POST", path: `/api/v1/lighttick/plans/${plan.id}/confirm`,
     headers: { ...headers, "idempotency-key": "plan-confirm-001" }, body: { base_version: 1 }, requestId: "confirm" });
   assert.equal((confirmed.body.data as any).status, "active");
+  const journeyPlans = await runtime.app.handle({ method: "GET", path: "/api/v1/lighttick/plans",
+    query: { goal_id: goal.id }, headers, requestId: "journey-plans" });
+  assert.equal(journeyPlans.statusCode, 200);
+  assert.equal((journeyPlans.body.data as any).items[0].id, plan.id);
+  assert.deepEqual((journeyPlans.body.data as any).items[0].proposal.tasks.map((item: any) => item.title), ["Primary", "Backup"]);
   const plannedTask = (confirmed.body.data as any).tasks[0];
   await services.repository.saveTaskStep({ ...owner, id: "step_primary_open", taskId: plannedTask.id,
     title: "Open the project", position: 0, completed: false, version: 1,

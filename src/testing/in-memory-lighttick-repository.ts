@@ -201,6 +201,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     return await this.saveAggregate(this.goals, row, write, expectedVersion);
   }
   async getPlan(owner: LightTickOwner, id: string) { return clone(this.plans.get(`${ownerKey(owner)}:${id}`)); }
+  async listPlans(owner: LightTickOwner, goalId?: string) {
+    return clone([...this.plans.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!goalId || row.goalId === goalId))
+      .sort((left, right) => right.periodStart.localeCompare(left.periodStart) || right.updatedAt.localeCompare(left.updatedAt)));
+  }
   async getActivePlan(owner: LightTickOwner) {
     return clone([...this.plans.values()].filter(row => ownerKey(row) === ownerKey(owner) && row.status === "active")
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0]);

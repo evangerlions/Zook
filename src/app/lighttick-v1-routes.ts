@@ -25,6 +25,7 @@ function assertGuestRouteAllowed(request: HttpRequest) {
   const allowed = path === `${PREFIX}account/session`
     || path === `${PREFIX}profile`
     || path === `${PREFIX}goals`
+    || path === `${PREFIX}plans`
     || path === `${PREFIX}today`
     || path === `${PREFIX}onboarding/starter`
     || path === `${PREFIX}onboarding/first-action`
@@ -83,6 +84,7 @@ function taskData(row: any, steps: any[] = []) { return { id: row.id, goal_id: r
   created_at: row.createdAt, updated_at: row.updatedAt }; }
 function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id: row.goalId, granularity: row.granularity,
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, source: row.source,
+  proposal: row.proposal,
   ...(tasks ? { tasks: tasks.map(task => taskData(task, task.steps)) } : {}), version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 function reviewData(row: any) { return { id: row.id, goal_id: row.goalId, period: row.period === "week" ? "weekly" : "monthly",
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, facts: row.facts,
@@ -298,6 +300,10 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     });
     const planScene = `${String(body.granularity)}_plan` as "month_plan" | "week_plan" | "day_plan";
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, planScene); return response(context, request, data, 202);
+  }
+  if (request.path === `${PREFIX}plans` && request.method === "GET") {
+    const goalId = request.query?.goal_id?.trim() || undefined;
+    return response(context, request, { items: (await runtime.plans.list(owner, goalId)).map(plan => planData(plan)), next_cursor: null });
   }
   const planMatch = request.path.match(/^\/api\/v1\/lighttick\/plans\/([^/]+)$/);
   if (planMatch && request.method === "GET") {
