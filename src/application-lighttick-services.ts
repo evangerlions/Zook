@@ -16,6 +16,8 @@ import { LightTickGuestIdentityService } from "./modules/lighttick/lighttick-gue
 import { LightTickAccountUpgradeService } from "./modules/lighttick/lighttick-account-upgrade.service.ts";
 import { randomId } from "./shared/utils.ts";
 import { InMemoryLightTickRepository } from "./testing/in-memory-lighttick-repository.ts";
+import type { AnalyticsService } from "./modules/analytics/analytics.service.ts";
+import { LightTickAnalyticsService } from "./modules/lighttick/lighttick-analytics.ts";
 
 export function resolveApplicationLightTickRepository(database: ApplicationDatabase, override?: LightTickRepository) {
   return override ?? (database instanceof PostgresDatabase
@@ -35,6 +37,10 @@ export function attachApplicationLightTickAccount(input: { runtime: LightTickRun
   input.runtime.accountUpgrade = new LightTickAccountUpgradeService(input.database, input.auth, input.repository);
 }
 
+export function attachApplicationLightTickAnalytics(runtime: LightTickRuntime, analytics: AnalyticsService) {
+  runtime.analytics = new LightTickAnalyticsService(analytics);
+}
+
 export function attachApplicationLightTickWorkers(input: { runtime: LightTickRuntime; repository: LightTickRepository;
   queue: JobQueue; llmManager: LLMManager; notificationService: NotificationService; database: ApplicationDatabase;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
@@ -45,5 +51,6 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",
       eventType: "lighttick.notification.send", payload,
       errorMessage: error instanceof Error ? error.message : "LightTick notification enqueue failed",
-      retryCount: 0, nextRetryAt: new Date(Date.now() + 60_000).toISOString(), createdAt: new Date().toISOString() }));
+      retryCount: 0, nextRetryAt: new Date(Date.now() + 60_000).toISOString(), createdAt: new Date().toISOString() }),
+    undefined, input.runtime.analytics);
 }

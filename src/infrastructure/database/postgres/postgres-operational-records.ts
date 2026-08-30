@@ -114,7 +114,8 @@ export class PostgresOperationalRecordsStore {
       await this.query(
         `INSERT INTO zook_analytics_events (
            id, app_id, user_id, platform, session_id, page_key, event_name, duration_ms, occurred_at, received_at, metadata
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, $11::jsonb)`,
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, $11::jsonb)
+         ON CONFLICT (id) DO NOTHING`,
         [record.id, record.appId, record.userId, record.platform, record.sessionId, record.pageKey, record.eventName, record.durationMs ?? null, record.occurredAt, record.receivedAt, JSON.stringify(record.metadata ?? {})],
       );
     }

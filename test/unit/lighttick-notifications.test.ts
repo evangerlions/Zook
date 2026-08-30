@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { InMemoryJobQueue } from "../../src/infrastructure/queue/bullmq/in-memory-queue.ts";
-import { LightTickNotificationService, lightTickAnalyticsPayload, redactLightTickLog } from "../../src/modules/lighttick/lighttick-notifications.ts";
+import { LightTickNotificationService, redactLightTickLog } from "../../src/modules/lighttick/lighttick-notifications.ts";
+import { sanitizeMetadata } from "../../src/modules/lighttick/lighttick-analytics.ts";
 import { InMemoryLightTickRepository } from "../../src/testing/in-memory-lighttick-repository.ts";
 import type { LightTickOwner } from "../../src/modules/lighttick/lighttick.types.ts";
 
@@ -45,7 +46,7 @@ test("enqueue failure is recoverable, cross-app jobs are rejected, and telemetry
   assert.equal(failed.length, 1);
   await assert.rejects(() => service.process({ id: "job_cross", name: "lighttick.notification.send", payload: { app_id: "other",
     user_id: owner.userId, notification: {} }, attemptsMade: 0, maxAttempts: 1, backoffMs: 1, availableAt: now }));
-  assert.deepEqual(lightTickAnalyticsPayload("lighttick_task_completed", { duration: 20, note: "secret", push_token: "secret" }), { duration: 20 });
+  assert.deepEqual(sanitizeMetadata({ actual_minutes: 20, note: "secret", push_token: "secret" }), { actual_minutes: 20 });
   assert.deepEqual(redactLightTickLog({ request_id: "r1", authorization: "Bearer secret", prompt: "private" }),
     { request_id: "r1", authorization: "[REDACTED]", prompt: "[REDACTED]" });
 });

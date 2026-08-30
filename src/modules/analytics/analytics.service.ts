@@ -1,6 +1,6 @@
 import { badRequest } from "../../shared/errors.ts";
-import type { AnalyticsEventInput, MetricsOverviewItem, PageMetricItem, Platform } from "../../shared/types.ts";
-import { enumerateDateKeys, toDateKey, randomId } from "../../shared/utils.ts";
+import type { AnalyticsEventInput, EventName, MetricsOverviewItem, PageMetricItem, Platform } from "../../shared/types.ts";
+import { enumerateDateKeys, toDateKey, randomId, sha256 } from "../../shared/utils.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 
@@ -19,6 +19,13 @@ const SUPPORTED_EVENTS = new Set([
   "frogsleep_focus_session_reported",
   "frogsleep_focus_relationship_created",
   "frogsleep_focus_achievement_unlocked",
+  "lighttick_guest_created", "lighttick_account_upgraded", "lighttick_session_recovered",
+  "lighttick_wish_submitted", "lighttick_starter_shown", "lighttick_starter_started", "lighttick_starter_completed",
+  "lighttick_preview_viewed", "lighttick_weekly_commitment", "lighttick_plan_confirmed",
+  "lighttick_task_started", "lighttick_task_completed", "lighttick_task_skipped", "lighttick_task_deferred",
+  "lighttick_goal_paused", "lighttick_goal_resumed", "lighttick_recovery_started", "lighttick_return_observed",
+  "lighttick_review_viewed", "lighttick_proposal_accepted", "lighttick_proposal_rejected", "lighttick_sync_conflict",
+  "lighttick_notification_queued", "lighttick_notification_delivered", "lighttick_notification_suppressed", "lighttick_notification_failed",
 ]);
 
 /**
@@ -55,6 +62,16 @@ export class AnalyticsService {
     return {
       accepted: command.events.length,
     };
+  }
+
+  async recordServerEvent(event: { appId: string; userId: string; eventName: EventName; dedupeKey: string;
+    pageKey: string; platform: Platform; occurredAt: string; metadata?: Record<string, unknown> }): Promise<void> {
+    await this.appRegistryService.getAppOrThrow(event.appId);
+    if (!SUPPORTED_EVENTS.has(event.eventName)) badRequest("REQ_INVALID_EVENT", `Unsupported event name: ${event.eventName}.`);
+    const id = `analytics_${sha256(`${event.appId}:${event.userId}:${event.dedupeKey}`).slice(0, 40)}`;
+    await this.database.insertAnalyticsEvents([{ id, appId: event.appId, userId: event.userId, platform: event.platform,
+      sessionId: `server:${event.userId}`, pageKey: event.pageKey, eventName: event.eventName,
+      occurredAt: event.occurredAt, receivedAt: new Date().toISOString(), metadata: event.metadata ?? {} }]);
   }
 
   async getOverview(appId: string, dateFrom: string, dateTo: string): Promise<{ timezone: string; items: MetricsOverviewItem[] }> {

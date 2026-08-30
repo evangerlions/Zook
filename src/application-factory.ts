@@ -81,7 +81,7 @@ import { createApplicationTelemetryGateway } from "./application-telemetry-runti
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
 import { resolveLightTickEnabled } from "./application-lighttick-runtime-config.ts";
-import { attachApplicationLightTickAccount, attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
+import { attachApplicationLightTickAccount, attachApplicationLightTickAnalytics, attachApplicationLightTickWorkers, createApplicationLightTickRuntime, resolveApplicationLightTickRepository } from "./application-lighttick-services.ts";
 import { createFrogSleepWorkerServices } from "./application-frogsleep-worker-services.ts";
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { resolvePublicSmsTestBypass } from "./application-public-sms-runtime-config.ts";
@@ -364,7 +364,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const getuiGyOneClickLoginService = new GetuiGyOneClickLoginService(
     commonGetuiGyConfigService,
   );
-  const analyticsService = new AnalyticsService(database, appRegistryService);
+  const analyticsService = new AnalyticsService(database, appRegistryService); attachApplicationLightTickAnalytics(lighttickRuntime, analyticsService);
   const {
     aiNovelStatisticsService,
     embeddingManager,

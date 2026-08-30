@@ -12,6 +12,7 @@ import type { LightTickJobService, LightTickWorker } from "./lighttick-worker.ts
 import type { LightTickNotificationService } from "./lighttick-notifications.ts";
 import type { LightTickGuestIdentityService } from "./lighttick-guest-identity.service.ts";
 import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade.service.ts";
+import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
   repository: LightTickRepository;
@@ -29,6 +30,7 @@ export interface LightTickRuntime {
   notifications?: LightTickNotificationService;
   guestIdentity?: LightTickGuestIdentityService;
   accountUpgrade?: LightTickAccountUpgradeService;
+  analytics?: LightTickAnalyticsService;
 }
 
 export function createLightTickRuntime(repository: LightTickRepository): LightTickRuntime {
