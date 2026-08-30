@@ -24,6 +24,13 @@ Migration rules:
 | Legacy method and path | Legacy behavior | Canonical Zook direction | Decision |
 |---|---|---|---|
 | `POST /api/v1/auth/verify` | Decodes JWT payload without signature verification | Existing Zook `/api/v1/auth/*` and authenticated user endpoints | Remove; do not alias insecure verification |
+| `POST /api/v1/auth/register` | Creates a standalone legacy user and token without Zook app membership semantics | Zook Common `POST /api/v1/auth/register` with `appId=lighttick` | Reuse Common Auth; require LightTick membership activation and do not import legacy users/tokens |
+| `POST /api/v1/auth/login` | Authenticates against the standalone legacy user table | Zook Common `POST /api/v1/auth/login` with `appId=lighttick` | Reuse Common Auth and app-scoped membership checks; no credential migration |
+| `POST /api/v1/auth/guest` | Creates an unscoped guest in the legacy user table | `POST /api/v1/lighttick/account/guest-sessions` | Replace with device-bound, expiring, LightTick-only guest identity |
+| `POST /api/v1/auth/upgrade` | Converts the legacy guest row without transactional product-data transfer | `POST /api/v1/lighttick/account/upgrade` | Replace with idempotent PostgreSQL ownership migration and token revocation |
+| `POST /api/v1/auth/refresh` | Rotates a legacy token without Zook session/app isolation | Zook Common `POST /api/v1/auth/refresh` with `appId=lighttick` | Reuse single-use Common refresh rotation; legacy refresh tokens are invalid |
+| `POST /api/v1/auth/logout` | Revokes only the standalone legacy session | Zook Common `POST /api/v1/auth/logout` | Reuse Common session revocation; product data remains intact |
+| `GET /api/v1/auth/me` | Returns the standalone legacy user shape | `GET /api/v1/lighttick/account/session` plus Common user APIs | Replace with LightTick account kind, membership, expiry, and sync cursor; do not expose legacy IDs |
 | `POST /api/v1/goals` | Validates input, returns `status=created`, writes nothing | `POST /api/v1/lighttick/goals` | Rebuild with app/owner scope, persistence, version, event, change log |
 | `GET /api/v1/goals` | Returns empty paged list | `GET /api/v1/lighttick/goals` | Rebuild with stable cursor and owner scope |
 | `GET /api/v1/goals/{id}` | Always returns not found | `GET /api/v1/lighttick/goals/{goal_id}` | Rebuild; non-owner lookup must not disclose existence |
@@ -188,4 +195,3 @@ provider-free fixtures.
   runs exist.
 - Kafka, Neo4j, Weaviate, full multi-agent orchestration, social features, and
   growth visualization in the core-loop release.
-
