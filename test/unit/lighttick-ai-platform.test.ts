@@ -37,7 +37,23 @@ test("AI runner requests compact JSON mode with the scene schema", async () => {
   await new LightTickAiRunner(repository, llm as any, () => new Date(now)).execute(owner, run.id, "week_plan");
   assert.deepEqual(captured.providerOptions, { response_format: { type: "json_object" }, enable_thinking: false });
   assert.match(captured.messages[1].content, /OUTPUT_JSON_SCHEMA=/);
+  assert.match(captured.messages[1].content, /at most 120/);
+  assert.match(captured.messages[1].content, /2026-08-17 through 2026-08-23/);
   assert.match(captured.messages[1].content, /Do not use Markdown fences/);
+});
+
+test("onboarding plan prompt prohibits invented dates when no period was requested", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const run = await queued(repository, { weekly_available_minutes: 120 }, "onboarding_plan");
+  let prompt = "";
+  const llm = { complete: async (request: any) => {
+    prompt = request.messages[1].content;
+    return { provider: "fake", modelKey: "fake", providerModel: "fake-v1",
+      text: JSON.stringify({ tasks: [{ title: "Build", estimated_minutes: 60 }] }) };
+  } };
+  await new LightTickAiRunner(repository, llm as any, () => new Date(now)).execute(owner, run.id, "onboarding_plan");
+  assert.match(prompt, /at most 120/);
+  assert.match(prompt, /Omit scheduled_for from every task/);
 });
 
 test("scene registry defines bounded routes, budgets, versions, and fallback policies", () => {
