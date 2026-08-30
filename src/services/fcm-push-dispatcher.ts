@@ -92,9 +92,9 @@ export class FcmPushDispatcher implements PushDispatcher {
         this.logger?.warn("FCM device token unrecoverable, removing device", {
           appId: request.appId,
           userId: request.userId,
-          pushToken: request.pushToken,
           errorCode,
         });
+        await request.invalidateToken?.();
         await this.removeInvalidDevice(request);
         return;
       }
@@ -253,7 +253,6 @@ export class FcmPushDispatcher implements PushDispatcher {
       this.logger?.error("failed to remove invalid FCM device", {
         appId: request.appId,
         userId: request.userId,
-        pushToken: request.pushToken,
         error: error instanceof Error ? error.message : "unknown",
       });
     }

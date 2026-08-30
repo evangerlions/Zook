@@ -20,12 +20,23 @@ export class LightTickNotificationService {
     const existing = await this.repository.getOperation(owner, operationId); if (existing) return existing.resultPayload;
     const jobPayload = { app_id: owner.appId, user_id: owner.userId, business_date: businessDate, notification: payload };
     try {
-      const job = await this.queue.add("lighttick.notification.send", jobPayload, { attempts: 5, backoffMs: 1000 });
+      const job = await this.queue.add("lighttick.notification.send", jobPayload, { attempts: 5, backoffMs: 1000,
+        jobId: `lighttick_push_${sha256(`${owner.appId}:${owner.userId}:${operationId}`).slice(0, 32)}` });
       const now = this.clock().toISOString(); const result = { job_id: job.id, queued: true };
       await this.repository.saveOperation({ ...owner, operationId, deviceId: "scheduler", payloadHash: sha256(JSON.stringify(jobPayload)),
         entityType: "notification", entityId: job.id, action: "enqueue", requestPayload: jobPayload, resultPayload: result,
         status: "accepted", createdAt: now, updatedAt: now }); return result;
     } catch (error) { await this.recordEnqueueFailure(jobPayload, error); return { queued: false }; }
+  }
+
+  async schedule(job: QueueJob) {
+    if (job.name !== "lighttick.notification.schedule") return;
+    if (job.payload.app_id !== "lighttick") throw new Error("Cross-app LightTick notification rejected.");
+    const type = String(job.payload.notification_key) as LightTickNotificationType;
+    if (!allowedTypes.has(type)) throw new Error("LightTick notification key is invalid.");
+    const copy = defaultCopy(type);
+    return await this.enqueue({ appId: "lighttick", userId: String(job.payload.user_id) },
+      String(job.payload.business_date), { type, title_key: copy.titleKey, body_key: copy.bodyKey });
   }
 
   async process(job: QueueJob) {
@@ -34,6 +45,7 @@ export class LightTickNotificationService {
     if (job.payload.app_id !== owner.appId) throw new Error("Cross-app LightTick notification rejected.");
     const profile = await this.repository.getProfile(owner); if (profile?.notificationPreferences.enabled === false) return;
     const notification = job.payload.notification as LightTickPushPayload;
+    if (notification.type === "review_ready" && profile?.notificationPreferences.review_reminders === false) return;
     if (notification.type === "daily_tasks" || notification.type === "unfinished_task") {
       const goals = await this.repository.listGoals(owner);
       const target = notification.resource_id ? goals.find(goal => goal.id === notification.resource_id) : undefined;
@@ -42,8 +54,15 @@ export class LightTickNotificationService {
     if (profile && isQuietHour(this.clock(), profile.timezone, profile.notificationPreferences)) return;
     const devices = (await this.repository.listDevices(owner)).filter(device => device.active && device.notificationsEnabled);
     for (const device of devices) {
-      try { await this.dispatcher.dispatch({ appId: owner.appId, userId: owner.userId, platform: device.platform,
-        pushToken: device.pushToken, payload: job.payload.notification as any }); }
+      try {
+        const copy = defaultCopy(notification.type);
+        await this.dispatcher.dispatch({ appId: owner.appId, userId: owner.userId, platform: device.platform,
+          pushToken: device.pushToken, payload: { app: "lighttick", type: notification.type,
+            entityId: notification.resource_id, title: copy.title, body: copy.body,
+            data: { type: notification.type, sync: "true",
+              ...(notification.resource_id ? { resource_id: notification.resource_id } : {}) } },
+          invalidateToken: async () => { await this.repository.deleteDevice(owner, device.id, this.clock().toISOString()); } });
+      }
       catch (error) {
         if (/unregistered|invalid.token/i.test(error instanceof Error ? error.message : String(error))) {
           await this.repository.deleteDevice(owner, device.id, this.clock().toISOString()); continue;
@@ -51,6 +70,16 @@ export class LightTickNotificationService {
         throw error;
       }
     }
+  }
+}
+
+function defaultCopy(type: LightTickNotificationType) {
+  switch (type) {
+    case "daily_tasks": return { titleKey: "daily.title", bodyKey: "daily.body", title: "今天先推进这一件", body: "打开 LightTick 查看今天的小行动。" };
+    case "unfinished_task": return { titleKey: "unfinished.title", bodyKey: "unfinished.body", title: "今天还可以轻轻推进", body: "回到 LightTick 完成或调整今天的任务。" };
+    case "review_ready": return { titleKey: "review.title", bodyKey: "review.body", title: "本周复盘已准备好", body: "查看结论和下一步建议。" };
+    case "recovery": return { titleKey: "recovery.title", bodyKey: "recovery.body", title: "可以从更小一步重新开始", body: "LightTick 已准备好恢复建议。" };
+    case "plan_proposal": return { titleKey: "proposal.title", bodyKey: "proposal.body", title: "计划调整建议已准备好", body: "确认后才会更新你的计划。" };
   }
 }
 

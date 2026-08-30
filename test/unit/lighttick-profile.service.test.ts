@@ -36,3 +36,18 @@ test("onboarding rejects invalid timezone, budget, and availability windows with
   assert.equal(await repository.getProfile(owner), undefined);
   assert.deepEqual(await repository.listGoals(owner), []);
 });
+
+test("notification preferences validate clocks and merge partial updates", async () => {
+  const repository = new InMemoryLightTickRepository(); const service = new LightTickProfileService(repository, () => fixed);
+  await service.submitOnboarding(owner, { title: "Goal", currentLevel: "Beginner", weeklyAvailableMinutes: 120,
+    pace: "balanced", timezone: "Asia/Shanghai" });
+  const initial = (await service.getProfile(owner))!;
+  const quiet = await service.updateProfile(owner, initial.version, { notificationPreferences: {
+    quiet_hours_start: "22:00", quiet_hours_end: "07:00", enabled: true,
+  } });
+  const updated = await service.updateProfile(owner, quiet.version, { notificationPreferences: { review_reminders: false } });
+  assert.deepEqual(updated.notificationPreferences, { quiet_hours_start: "22:00", quiet_hours_end: "07:00",
+    enabled: true, review_reminders: false });
+  await assert.rejects(service.updateProfile(owner, updated.version, { notificationPreferences: { quiet_hours_start: "25:00" } }));
+  await assert.rejects(service.updateProfile(owner, updated.version, { notificationPreferences: { token: "secret" } }));
+});

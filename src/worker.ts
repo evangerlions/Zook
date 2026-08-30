@@ -21,6 +21,7 @@ async function runTick(): Promise<void> {
     await runtime.queue.processDueJobs(async (job) => {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
+        else if (job.name === "lighttick.notification.schedule") await runtime.services.lighttickRuntime.notifications?.schedule(job);
         else await runtime.services.lighttickRuntime.worker?.process(job);
         return;
       }

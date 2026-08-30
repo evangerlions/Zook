@@ -14,6 +14,25 @@ export interface LightTickOnboardingDraft {
 
 const clockPattern = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const notificationPreferenceKeys = new Set(["enabled", "daily_reminder_time", "review_reminders", "quiet_hours_start", "quiet_hours_end"]);
+
+function validateNotificationPreferences(input: Record<string, unknown>): Record<string, unknown> {
+  if (!input || Array.isArray(input) || typeof input !== "object")
+    throw new ApplicationError(400, "REQ_INVALID_BODY", "Notification preferences are invalid.");
+  for (const key of Object.keys(input)) {
+    if (!notificationPreferenceKeys.has(key))
+      throw new ApplicationError(400, "REQ_INVALID_BODY", "Notification preferences contain an unsupported field.");
+  }
+  for (const key of ["enabled", "review_reminders"] as const) {
+    if (input[key] !== undefined && typeof input[key] !== "boolean")
+      throw new ApplicationError(400, "REQ_INVALID_BODY", `${key} must be boolean.`);
+  }
+  for (const key of ["daily_reminder_time", "quiet_hours_start", "quiet_hours_end"] as const) {
+    if (input[key] !== undefined && (typeof input[key] !== "string" || !clockPattern.test(input[key] as string)))
+      throw new ApplicationError(400, "REQ_INVALID_BODY", `${key} must use HH:mm.`);
+  }
+  return input;
+}
 
 export function assertIanaTimezone(timezone: string): void {
   try { new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(); }
@@ -66,10 +85,12 @@ export class LightTickProfileService {
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Locale is invalid.");
     if (patch.pace !== undefined && !["compact", "balanced", "relaxed"].includes(patch.pace))
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Pace is invalid.");
+    const notificationPreferences = patch.notificationPreferences === undefined ? current.notificationPreferences
+      : { ...current.notificationPreferences, ...validateNotificationPreferences(patch.notificationPreferences) };
     return await this.repository.saveProfile({ ...current,
       timezone: patch.timezone ?? current.timezone, locale: patch.locale?.trim() ?? current.locale,
       pace: patch.pace ?? current.pace,
-      notificationPreferences: patch.notificationPreferences ?? current.notificationPreferences,
+      notificationPreferences,
       updatedAt: this.clock().toISOString(),
     }, baseVersion);
   }

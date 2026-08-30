@@ -43,6 +43,30 @@ test("profile/onboarding API persists a replayable run and validates timezone", 
   assert.equal(invalid.statusCode, 400); assert.equal(invalid.body.code, "LIGHTTICK_TIMEZONE_INVALID");
 });
 
+test("device registration and notification preferences are app scoped and validated", async () => {
+  const { runtime, headers, owner } = await setup();
+  await runtime.services.lighttickRuntime.profile.submitOnboarding(owner, { title: "Ship", currentLevel: "MVP",
+    weeklyAvailableMinutes: 120, pace: "balanced", timezone: "Asia/Shanghai" });
+  const profile = await runtime.services.lighttickRuntime.profile.getProfile(owner);
+  const preferences = await runtime.app.handle({ method: "PATCH", path: "/api/v1/lighttick/profile", headers,
+    body: { base_version: profile!.version, notification_preferences: { enabled: true,
+      quiet_hours_start: "22:00", quiet_hours_end: "07:00" } }, requestId: "preferences" });
+  assert.equal(preferences.statusCode, 200);
+  const register = { method: "POST", path: "/api/v1/lighttick/devices",
+    headers: { ...headers, "idempotency-key": "device-register-001" }, body: { device_id: "device-ios-001",
+      platform: "ios", push_provider: "apns", push_token: "push-token-1234567890", timezone: "Asia/Shanghai",
+      locale: "zh-CN", app_version: "1.0.0", notifications_enabled: true }, requestId: "device" };
+  const created = await runtime.app.handle(register); const replay = await runtime.app.handle({ ...register, requestId: "device-replay" });
+  assert.equal(created.statusCode, 200); assert.deepEqual(replay.body.data, created.body.data);
+  assert.equal((await runtime.services.lighttickRuntime.repository.listDevices(owner)).length, 1);
+  const invalid = await runtime.app.handle({ ...register, headers: { ...headers, "idempotency-key": "device-invalid-001" },
+    body: { ...register.body, platform: "android", push_provider: "apns" }, requestId: "device-invalid" });
+  assert.equal(invalid.statusCode, 400);
+  const removed = await runtime.app.handle({ method: "DELETE", path: "/api/v1/lighttick/devices/device-ios-001",
+    headers, requestId: "device-delete" });
+  assert.equal((removed.body.data as any).active, false);
+});
+
 test("goal API enforces owner scope, lifecycle versions, envelopes, and idempotency", async () => {
   const { runtime, headers, owner } = await setup();
   const createRequest = { method: "POST", path: "/api/v1/lighttick/goals", headers: { ...headers, "idempotency-key": "goal-create-001" },

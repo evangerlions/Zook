@@ -31,6 +31,9 @@ action-first 渐进启动闭环。渐进启动提供确定性 starter fallback�
 5 分钟有效的一次性密码重新认证证明，并只清理 LightTick membership、数据和会话。
 LightTick 独立公开配置在产品关闭时仍可读取，并以固定白名单响应环境、双端最低版本、
 游客有效期、功能开关与 HTTPS 法律/支持入口；管理配置中的密钥和内部字段不会透传。
+LightTick 通知已复用公共 APNs/FCM 适配器，但使用产品自有安全载荷、APNs topic 和可选独立
+Firebase 项目；调度按业务日期幂等，遵守 profile timezone、安静时段、分类偏好和暂停目标，
+不可恢复 token 只失活匹配的 LightTick device，日志不记录 token 或 provider 凭据。
 能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
 不再拥有生产数据、合同或运行时。

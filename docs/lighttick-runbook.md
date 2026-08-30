@@ -10,6 +10,14 @@ LightTick is an independently gated Zook product. Production runtime ownership i
 4. Correlate by request ID, run ID, or job ID. Logs must never include bearer/refresh/push Tokens, provider keys, Prompt bodies, task notes, Coach text, or private context.
 5. Inspect failed events and DLQ entries. Retry only idempotent jobs with the same stable run/resource IDs.
 
+## Push configuration and checks
+
+- APNs reuses the configured team/key and selects `LIGHTTICK_APNS_BUNDLE_ID=com.lighttick.app` as the LightTick topic. Dev physical devices require `APNS_SANDBOX=true`; Online requires `false`.
+- Android uses `LIGHTTICK_FCM_PROJECT_ID` and `LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH` when LightTick has a separate Firebase project. Provider credentials and device tokens must never enter logs or committed env files.
+- Register devices through the app-scoped `/api/v1/lighttick/devices` route. Profile notification preferences own enablement, review reminders, daily reminder time, and quiet hours; profile timezone is the scheduling authority.
+- A scheduler tick is keyed by app, user, notification type/resource, and business date. Repeated ticks materialize one provider job. Paused goals suppress task pressure, and invalid provider tokens disable only the matching LightTick device.
+- Provider smoke tests belong to Dev acceptance: verify one valid and one invalid token on each enabled platform, quiet-hour suppression, paused goals, duplicate scheduling, retryable 429/5xx behavior, and cross-app isolation.
+
 ## Failure controls
 
 - API/DB incident: disable LightTick without changing other app registrations or memberships.

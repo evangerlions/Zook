@@ -32,7 +32,8 @@ export class LightTickJobService {
   private async enqueueOnce(owner: LightTickOwner, operationId: string, name: string, payload: Record<string, unknown>) {
     const existing = await this.repository.getOperation(owner, operationId);
     if (existing) return existing.resultPayload;
-    const job = await this.queue.add(name, payload, { attempts: 3, backoffMs: 1000 }); const now = this.clock().toISOString();
+    const job = await this.queue.add(name, payload, { attempts: 3, backoffMs: 1000,
+      jobId: `lighttick_job_${sha256(`${owner.appId}:${owner.userId}:${operationId}`).slice(0, 32)}` }); const now = this.clock().toISOString();
     const result = { job_id: job.id, name: job.name };
     await this.repository.saveOperation({ ...owner, operationId, deviceId: "worker", payloadHash: sha256(JSON.stringify(payload)),
       entityType: "job", entityId: job.id, action: "enqueue", requestPayload: payload, resultPayload: result,

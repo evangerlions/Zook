@@ -21,12 +21,12 @@ export class RedisJobQueue implements JobQueue {
   async add(
     name: string,
     payload: Record<string, unknown>,
-    options: { attempts?: number; backoffMs?: number } = {},
+    options: { attempts?: number; backoffMs?: number; jobId?: string } = {},
   ): Promise<QueueJob> {
     await this.ensureConnected();
 
     const job: QueueJob = {
-      id: randomId("job"),
+      id: options.jobId ?? randomId("job"),
       name,
       payload,
       attemptsMade: 0,

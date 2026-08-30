@@ -244,7 +244,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
         const result = await runtime.progressive.completeFirstAction(owner, { taskId: stringOf(body.task_id, "task_id"),
           baseVersion: numberOf(body.base_version, "base_version"), selectedVariant: body.selected_variant as any,
           actualMinutes: numberOf(body.actual_duration_minutes, "actual_duration_minutes"), difficulty: body.difficulty as string | undefined });
-        return { feedback: result.feedback, three_day_preview: result.threeDayPreview.map(taskData),
+        return { feedback: result.feedback, three_day_preview: result.threeDayPreview.map(task => taskData(task)),
           weekly_commitment: result.weeklyCommitment };
       });
     return response(context, request, data);

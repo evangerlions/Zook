@@ -153,6 +153,15 @@ LightTick-only guest identity、LightTick membership、access/refresh token 和�
 review、sync、设备注册、完整规划和删除等敏感能力；刷新凭据后可调用
 `GET /api/v1/lighttick/account/session` 恢复账户类型和游客到期时间。
 
+LightTick 推送设备通过 `POST /api/v1/lighttick/devices` 注册或更新，并通过
+`DELETE /api/v1/lighttick/devices/{deviceId}` 软删除。注册必须提交匹配的
+`ios/apns` 或 `android/fcm`、IANA timezone、locale、app version 和 push token，且受
+Bearer token 的 `lighttick` membership 隔离。通知总开关、每日提醒时间、复盘提醒和
+安静时段通过 `PATCH /api/v1/lighttick/profile` 的 `notification_preferences` 更新；部分更新会与
+现有偏好合并。服务端按 app/user/type/resource/business date 幂等调度，暂停目标会抑制任务压力类通知，
+APNs/FCM 的不可恢复 token 只会禁用匹配的 LightTick 设备，429/5xx 仍按队列退避重试。
+Provider payload 只含安全展示文案、类型、可选资源 ID 和 `sync=true`，不含任务笔记、Coach 文本或凭据。
+
 正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
 `guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。
 服务端在同一 PostgreSQL 事务中迁移游客资料、目标、计划、任务、事件、操作、设备和同步

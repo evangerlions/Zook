@@ -61,3 +61,40 @@ test("notification preferences and overnight quiet hours suppress delivery", asy
   await service.enqueue(owner, "2026-08-20", { type: "unfinished_task", title_key: "a", body_key: "b" });
   await queue.processDueJobs(job => service.process(job), new Date("2030-01-01")); assert.equal(sent, 0);
 });
+
+test("scheduler materializes one provider-safe push and invalidates only the LightTick device", async () => {
+  const repository = new InMemoryLightTickRepository(); const queue = new InMemoryJobQueue();
+  await device(repository, "device_lighttick_001", "push_token_lighttick_123456");
+  const seen: any[] = [];
+  const service = new LightTickNotificationService(repository, queue, { dispatch: async request => {
+    seen.push(request);
+    await request.invalidateToken?.();
+  } }, undefined, () => new Date(now));
+  const schedule = { id: "schedule-1", name: "lighttick.notification.schedule", payload: {
+    app_id: "lighttick", user_id: owner.userId, notification_key: "daily_tasks", business_date: "2026-08-20",
+  }, attemptsMade: 0, maxAttempts: 3, backoffMs: 1000, availableAt: now };
+
+  await Promise.all([service.schedule(schedule), service.schedule(schedule)]);
+  assert.equal(queue.jobs.length, 1);
+  await queue.processDueJobs(job => service.process(job), new Date("2030-01-01"));
+
+  assert.equal(seen.length, 1);
+  assert.deepEqual(seen[0].payload, { app: "lighttick", type: "daily_tasks", entityId: undefined,
+    title: "今天先推进这一件", body: "打开 LightTick 查看今天的小行动。",
+    data: { type: "daily_tasks", sync: "true" } });
+  assert.equal((await repository.listDevices(owner))[0]?.active, false);
+});
+
+test("paused goals and disabled review reminders suppress product notifications", async () => {
+  const repository = new InMemoryLightTickRepository(); const queue = new InMemoryJobQueue(); let sent = 0;
+  await device(repository, "device_paused_001", "push_token_paused_123456");
+  repository.listGoals = async () => [{ id: "goal-paused", status: "paused" }] as any;
+  await repository.saveProfile({ ...owner, timezone: "Asia/Shanghai", locale: "zh-CN", pace: "balanced",
+    onboardingState: "completed", notificationPreferences: { enabled: true, review_reminders: false },
+    onboardingDraft: {}, version: 1, createdAt: now, updatedAt: now });
+  const service = new LightTickNotificationService(repository, queue, { dispatch: async () => { sent++; } });
+  await service.enqueue(owner, "2026-08-20", { type: "daily_tasks", resource_id: "goal-paused", title_key: "a", body_key: "b" });
+  await service.enqueue(owner, "2026-08-20", { type: "review_ready", title_key: "a", body_key: "b" });
+  await queue.processDueJobs(job => service.process(job), new Date("2030-01-01"));
+  assert.equal(sent, 0);
+});
