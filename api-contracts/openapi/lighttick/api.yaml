@@ -1073,6 +1073,7 @@ components:
       properties:
         base_version: { $ref: "#/components/schemas/LightTickVersion" }
         actual_duration_minutes: { type: integer, minimum: 0, maximum: 1440 }
+        difficulty: { $ref: "#/components/schemas/LightTickTaskDifficulty" }
         note: { type: string, maxLength: 4000 }
         client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
       additionalProperties: false

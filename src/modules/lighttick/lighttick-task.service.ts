@@ -7,7 +7,7 @@ import { randomId } from "../../shared/utils.ts";
 
 export type LightTickTaskCommand =
   | { action: "start" }
-  | { action: "complete"; actualMinutes?: number; notes?: string }
+  | { action: "complete"; actualMinutes?: number; difficulty?: "low" | "medium" | "high"; notes?: string }
   | { action: "skip"; reason: "blocked" | "not_relevant" | "too_hard" | "no_time" | "other"; notes?: string }
   | { action: "defer"; scheduledFor: string; notes?: string }
   | { action: "cancel"; notes?: string };
@@ -27,6 +27,10 @@ export class LightTickTaskService {
       (!Number.isInteger(command.actualMinutes) || command.actualMinutes < 1 || command.actualMinutes > 1440)) {
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Actual duration is invalid.");
     }
+    if (command.action === "complete" && command.difficulty !== undefined &&
+      !["low", "medium", "high"].includes(command.difficulty)) {
+      throw new ApplicationError(400, "REQ_FIELD_INVALID", "Task difficulty is invalid.");
+    }
     if (command.action === "defer" && Number.isNaN(Date.parse(command.scheduledFor))) {
       throw new ApplicationError(400, "REQ_INVALID_BODY", "Deferred schedule is invalid.");
     }
@@ -41,6 +45,7 @@ export class LightTickTaskService {
     const payload: Record<string, unknown> = { action: command.action, client_base_version: baseVersion };
     if (command.action === "complete") {
       payload.actual_minutes = command.actualMinutes;
+      payload.difficulty = command.difficulty;
       payload.selected_variant = selectedVariant;
       payload.valid_action = true;
       payload.commitment_satisfied = selectedVariant === "standard";

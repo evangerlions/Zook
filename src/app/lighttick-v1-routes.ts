@@ -335,7 +335,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   const taskMatch = request.path.match(/^\/api\/v1\/lighttick\/tasks\/([^/]+)\/(start|complete|skip|defer|cancel)$/);
   if (taskMatch && request.method === "POST") {
     const body = bodyOf(request); const action = taskMatch[2]!; const command: any = action === "complete"
-      ? { action, actualMinutes: body.actual_duration_minutes, notes: body.note }
+      ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
       : { action };

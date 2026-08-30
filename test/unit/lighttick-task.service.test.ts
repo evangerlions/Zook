@@ -23,11 +23,13 @@ test("task commands atomically persist status, event facts, and change feed", as
   const { repository, service } = await fixture();
   const started = await service.command(owner, "task_a", 1, { action: "start" });
   assert.deepEqual([started.status, started.version, started.startedAt], ["in_progress", 2, "2026-08-20T09:00:00.000Z"]);
-  const completed = await service.command(owner, "task_a", 2, { action: "complete", actualMinutes: 55, notes: "Done" });
+  const completed = await service.command(owner, "task_a", 2, { action: "complete", actualMinutes: 55,
+    difficulty: "medium", notes: "Done" });
   assert.deepEqual([completed.status, completed.version, completed.notes], ["completed", 3, "Done"]);
   const events = await repository.listExecutionEvents(owner);
   assert.equal(events.length, 3);
   assert.equal(events.at(-1)?.payload.actual_minutes, 55);
+  assert.equal(events.at(-1)?.payload.difficulty, "medium");
   assert.equal((await repository.pullChanges(owner, 0, 10)).length, 3);
 });
 
