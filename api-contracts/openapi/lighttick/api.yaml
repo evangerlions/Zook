@@ -430,7 +430,11 @@ paths:
       operationId: cancelLightTickTask
       tags: [lighttick-tasks]
       summary: Cancel a task through an explicit lifecycle command
-      requestBody: *versionedCommandBody
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskCancelRequest" }
       responses: *taskCommandResponses
   /api/v1/lighttick/tasks/{taskId}/variant:
     parameters: *taskCommandParameters
@@ -1098,6 +1102,14 @@ components:
         timezone: { $ref: "#/components/schemas/LightTickTimezone" }
         reason_code: { $ref: "#/components/schemas/LightTickSkipReason" }
         reason_note: { type: string, maxLength: 2000 }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickTaskCancelRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        note: { type: string, maxLength: 4000 }
         client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
       additionalProperties: false
     LightTickTaskVariantRequest:

@@ -338,6 +338,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       ? { action, actualMinutes: body.actual_duration_minutes, difficulty: body.difficulty, notes: body.note }
       : action === "skip" ? { action, reason: body.reason_code === "no_longer_relevant" ? "not_relevant" : body.reason_code, notes: body.reason_note }
       : action === "defer" ? { action, scheduledFor: `${stringOf(body.target_date, "target_date")}T12:00:00.000Z`, notes: body.reason_note }
+      : action === "cancel" ? { action, notes: body.note }
       : { action };
     const data = await idempotent(runtime, owner, request, "task", taskMatch[1]!, action, async () => {
       const task = await runtime.tasks.command(owner, taskMatch[1]!, numberOf(body.base_version, "base_version"), command);

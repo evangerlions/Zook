@@ -67,3 +67,9 @@ test("task commands reject stale versions, invalid durations, and duplicate term
     (error: any) => error.code === "LIGHTTICK_STATE_TRANSITION_INVALID");
   assert.equal((await repository.listExecutionEvents(owner)).length, 3);
 });
+
+test("task cancellation retains the factual note", async () => {
+  const { service } = await fixture();
+  const cancelled = await service.command(owner, "task_a", 1, { action: "cancel", notes: "Goal changed" });
+  assert.equal(cancelled.notes, "Goal changed");
+});
