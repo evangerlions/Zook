@@ -247,6 +247,11 @@ test("FrogSleep sleep buddy rejects cancelled and self-accepted invites", async 
     requestId: "req_sleep_cancelled_invite_cancel",
   } as never);
   assert.equal(cancelResponse.statusCode, 200);
+  const canonical = await runtime.database.findFrogSleepBuddyInvitationBundle(
+    "frogsleep",
+    `legacy_sleep_${cancelledInvite.body.data.invite_id}`,
+  );
+  assert.equal(canonical?.status, "cancelled");
 
   const cancelledAccept = await runtime.app.handle({
     method: "POST",
