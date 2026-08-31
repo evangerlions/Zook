@@ -161,6 +161,9 @@ Bearer token 的 `lighttick` membership 隔离。通知总开关、每日提醒�
 现有偏好合并。服务端按 app/user/type/resource/business date 幂等调度，暂停目标会抑制任务压力类通知，
 APNs/FCM 的不可恢复 token 只会禁用匹配的 LightTick 设备，429/5xx 仍按队列退避重试。
 Provider payload 只含安全展示文案、类型、可选资源 ID 和 `sync=true`，不含任务笔记、Coach 文本或凭据。
+Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并携带
+`X-HTTP-Method-Override: PATCH`；此兼容头只允许用于该路径，其他路径或方法会返回
+`400 REQ_METHOD_OVERRIDE_INVALID`。标准客户端仍直接使用 OpenAPI 中的 `PATCH`。
 
 正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
 `guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。

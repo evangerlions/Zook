@@ -56,6 +56,18 @@ test("device registration and notification preferences are app scoped and valida
     body: { base_version: profile!.version, notification_preferences: { enabled: true,
       quiet_hours_start: "22:00", quiet_hours_end: "07:00" } }, requestId: "preferences" });
   assert.equal(preferences.statusCode, 200);
+  const updatedProfile = await runtime.services.lighttickRuntime.profile.getProfile(owner);
+  const androidOverride = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/profile",
+    headers: { ...headers, "x-http-method-override": "PATCH" }, body: { base_version: updatedProfile!.version,
+      notification_preferences: { enabled: true, daily_reminder_time: "08:30", review_reminders: false } },
+    requestId: "preferences-android" });
+  assert.equal(androidOverride.statusCode, 200);
+  assert.equal((androidOverride.body.data as any).notification_preferences.daily_reminder_time, "08:30");
+  const invalidOverride = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/devices",
+    headers: { ...headers, "x-http-method-override": "PATCH", "idempotency-key": "invalid-override" }, body: {},
+    requestId: "invalid-override" });
+  assert.equal(invalidOverride.statusCode, 400);
+  assert.equal(invalidOverride.body.code, "REQ_METHOD_OVERRIDE_INVALID");
   const register = { method: "POST", path: "/api/v1/lighttick/devices",
     headers: { ...headers, "idempotency-key": "device-register-001" }, body: { device_id: "device-ios-001",
       platform: "ios", push_provider: "apns", push_token: "push-token-1234567890", timezone: "Asia/Shanghai",

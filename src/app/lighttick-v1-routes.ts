@@ -142,6 +142,12 @@ async function createRun(runtime: LightTickRuntime, owner: LightTickOwner, kind:
 export async function tryHandleLightTickV1Routes(context: BackendRouteContext, enabled: boolean,
   runtime: LightTickRuntime | undefined, request: HttpRequest): Promise<HttpResponse<unknown> | undefined> {
   if (!request.path.startsWith(PREFIX)) return undefined;
+  const methodOverride = request.headers["x-http-method-override"] ?? request.headers["X-HTTP-Method-Override"];
+  if (methodOverride !== undefined) {
+    if (request.path !== `${PREFIX}profile` || request.method !== "POST" || methodOverride.toUpperCase() !== "PATCH")
+      throw new ApplicationError(400, "REQ_METHOD_OVERRIDE_INVALID", "HTTP method override is not allowed for this route.");
+    request = { ...request, method: "PATCH" };
+  }
   if (request.method === "GET" && request.path === `${PREFIX}public/config`) {
     const requestAppId = request.headers["x-app-id"] ?? request.headers["X-App-Id"];
     if (requestAppId && requestAppId !== LIGHTTICK_APP_ID)
