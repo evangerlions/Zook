@@ -199,7 +199,11 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/LightTickFirstActionRequest" }
       responses:
-        "200": { $ref: "#/components/responses/LightTickOk" }
+        "200":
+          description: First action recorded with factual feedback and a three-day preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickFirstActionEnvelope" }
         "400": { $ref: "#/components/responses/LightTickError" }
         "404": { $ref: "#/components/responses/LightTickError" }
         "409": { $ref: "#/components/responses/LightTickError" }
@@ -943,6 +947,43 @@ components:
         selected_variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
         actual_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
         difficulty: { enum: [easy, right, hard] }
+      additionalProperties: false
+    LightTickFirstActionFeedback:
+      type: object
+      required: [estimated_duration_minutes, actual_duration_minutes, selected_variant, stable_inference]
+      properties:
+        estimated_duration_minutes: { type: integer, minimum: 1 }
+        actual_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        selected_variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
+        difficulty: { enum: [easy, right, hard] }
+        stable_inference: { type: [string, "null"] }
+      additionalProperties: false
+    LightTickWeeklyCommitmentAvailability:
+      type: object
+      required: [eligible, valid_action_count, unlock_requirement]
+      properties:
+        eligible: { type: boolean }
+        valid_action_count: { type: integer, minimum: 0 }
+        unlock_requirement: { type: [string, "null"] }
+      additionalProperties: false
+    LightTickFirstActionData:
+      type: object
+      required: [feedback, three_day_preview, weekly_commitment]
+      properties:
+        feedback: { $ref: "#/components/schemas/LightTickFirstActionFeedback" }
+        three_day_preview:
+          type: array
+          items: { $ref: "#/components/schemas/LightTickTaskData" }
+        weekly_commitment: { $ref: "#/components/schemas/LightTickWeeklyCommitmentAvailability" }
+      additionalProperties: false
+    LightTickFirstActionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        requestId: { type: string }
+        data: { $ref: "#/components/schemas/LightTickFirstActionData" }
       additionalProperties: false
     LightTickCommitmentMode:
       type: string
