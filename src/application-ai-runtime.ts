@@ -19,6 +19,10 @@ import {
 } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager, type LLMProvider } from "./services/llm-manager.ts";
 import { createOpenRouterAwareProvider } from "./services/openrouter-aware-provider.ts";
+import {
+  VolcengineAgentPlanProvider,
+  VOLCENGINE_AGENT_PLAN_PROVIDER_KEY,
+} from "./services/volcengine-agent-plan-provider.ts";
 
 interface ApplicationAiRuntimeOptions {
   database: ApplicationDatabase;
@@ -46,6 +50,9 @@ export function createApplicationAiRuntime(
     options.commonPasswordConfigService,
     options.logger,
   );
+  const volcengineAgentPlanProvider = new VolcengineAgentPlanProvider({
+    logger: options.logger,
+  });
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
     : undefined;
@@ -60,6 +67,8 @@ export function createApplicationAiRuntime(
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
     openrouter: localAiNovelE2eProvider ?? openRouterProvider,
+    [VOLCENGINE_AGENT_PLAN_PROVIDER_KEY]:
+      localAiNovelE2eProvider ?? volcengineAgentPlanProvider,
   };
   const embeddingProviders = options.embeddingProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,

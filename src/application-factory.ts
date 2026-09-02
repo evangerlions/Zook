@@ -74,9 +74,10 @@ import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-cal
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
-import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
+import { resolveRuntimeLlmProviderKeys } from "./application-llm-provider-keys.ts";
+import { initializeApplicationConfigs } from "./application-startup-config.ts";
 import { createApplicationTelemetryGateway } from "./application-telemetry-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
@@ -234,34 +235,17 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     appLogSecretService,
   );
-  await database.withExclusiveSession(async () => {
-    const initializedCommonLlmConfig =
-      await commonLlmConfigService.initializeDefaultConfig();
-    const initializedAppLogSecrets =
-      await appLogSecretService.initializeSecrets(await database.listAppIds());
-    const initializedRemoteLogPullConfigs =
-      await appRemoteLogPullService.initializeMissingConfigs(
-        await database.listAppIds(),
-      );
-    const initializedGetuiGyConfig =
-      await commonGetuiGyConfigService.initializeDefaultConfig();
-    const migratedAiNovelKickoffPrompts =
-      await migrateAiNovelKickoffPromptConfig(appConfigService);
-    if (
-      initializedCommonLlmConfig ||
-      initializedAppLogSecrets ||
-      initializedRemoteLogPullConfigs ||
-      initializedGetuiGyConfig ||
-      migratedAiNovelKickoffPrompts
-    ) {
-      await managedStateStore.save(database);
-    }
+  await initializeApplicationConfigs({
+    database,
+    managedStateStore,
+    appConfigService,
+    appLogSecretService,
+    appRemoteLogPullService,
+    commonGetuiGyConfigService,
+    commonLlmConfigService,
+    commonPasswordConfigService,
   });
-  const defaultLlmProviderKeys = ["bailian", "bailian_coding", "openrouter"];
-  const runtimeLlmProviderKeys = {
-    chat: new Set(Object.keys(options.llmProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
-    embedding: new Set(Object.keys(options.embeddingProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
-  };
+  const runtimeLlmProviderKeys = resolveRuntimeLlmProviderKeys(options);
   const llmHealthService = new LlmHealthService(database.llmObservabilityStore, runtimeLlmProviderKeys);
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
   const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
