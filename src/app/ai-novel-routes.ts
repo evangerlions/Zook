@@ -90,6 +90,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
           userId: auth.userId,
           locale: this.resolveRequestLocale(request),
           accountRegion,
+          signal: request.signal,
         }),
       );
     }

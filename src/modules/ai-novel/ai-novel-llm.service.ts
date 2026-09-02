@@ -74,6 +74,7 @@ interface AiNovelRequestOptions {
   userId?: string;
   locale?: string;
   accountRegion?: AccountRegion;
+  signal?: AbortSignal;
 }
 
 export class AiNovelLlmService {
@@ -229,7 +230,10 @@ export class AiNovelLlmService {
     const maxTokens =
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-
+    const llmRequestContext = {
+      ...aiNovelUsageOwner(options),
+      ...(options.signal ? { signal: options.signal } : {}),
+    };
     try {
       const requestPlan = buildAiNovelStreamRequestPlan({
         accountRegion: options.accountRegion,
@@ -258,7 +262,7 @@ export class AiNovelLlmService {
         ...(requestPlan.providerOptions
           ? { providerOptions: requestPlan.providerOptions }
           : {}),
-        ...aiNovelUsageOwner(options),
+        ...llmRequestContext,
       });
       switch (requestPlan.adapter) {
         case "kickoff":
