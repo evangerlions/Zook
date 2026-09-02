@@ -989,10 +989,7 @@ test("ai_novel imported kickoff streams with imported authoring glossary and too
     context: {
       meta: {
         extras: {
-          kickoffMode: "imported_book",
-          bookId: "book_1",
-          latestImportedChapterIndex: 10,
-          targetChapterIndex: 11,
+          progression: "十章内不得揭开完整真相。",
         },
       },
     },
@@ -2635,6 +2632,9 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
             ],
             trigger: "第一晚听见广播点名不存在的学生。",
             language: "简体中文",
+            extras: {
+              progression: "十章内不得让主角掌握完整真相。",
+            },
           },
         },
         messages: [
@@ -2720,6 +2720,14 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   assert.match(
     String(systemMessages[0]?.content ?? ""),
     /- language: 简体中文/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /extras is the author's durable custom-requirements area/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /"progression":"十章内不得让主角掌握完整真相。"/,
   );
   assert.match(
     String(systemMessages[0]?.content ?? ""),

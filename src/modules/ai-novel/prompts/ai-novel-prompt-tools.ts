@@ -138,7 +138,12 @@ const bookContractSchema: Record<string, unknown> = {
     scale: bookScaleSchema,
     language: { type: "string" },
     toneRegister: { type: "string" },
-    extras: { type: "object", additionalProperties: true },
+    extras: {
+      type: "object",
+      description:
+        "Author-defined durable custom requirements. Existing omitted entries are preserved; null removes an existing entry.",
+      additionalProperties: true,
+    },
     readiness: { type: "number" },
   },
 };
@@ -317,7 +322,11 @@ const writeStateTools: LLMToolDefinition[] = [
           },
           language: { type: "string" },
           toneRegister: { type: "string" },
-          extras: { type: "object" },
+          extras: {
+            type: "object",
+            description:
+              "Patch the author's durable custom requirements. Omitted entries are preserved; set an existing key to null only when the author removes it.",
+          },
           readiness: { type: "number" },
         },
       },
