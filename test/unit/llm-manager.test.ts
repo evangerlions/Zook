@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
+import { InMemoryLlmObservabilityStore } from "../../src/testing/in-memory-llm-observability-store.ts";
+import { LlmHealthService } from "../../src/services/llm-health.service.ts";
+import { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
 import { LlmCallerCancelledError } from "../../src/services/llm-caller-cancellation.ts";
-import type { LlmHealthService } from "../../src/services/llm-health.service.ts";
-import type { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
 import {
   DEFAULT_LLM_MODEL_REGISTRY,
   type LLMCompletionResult,
@@ -15,8 +16,12 @@ import {
 
 test("llm manager excludes caller cancellation from route health", async () => {
   const caller = new AbortController();
-  let healthSamples = 0;
-  let metricSamples = 0;
+  const observabilityStore = new InMemoryLlmObservabilityStore();
+  const healthService = new LlmHealthService(observabilityStore);
+  const metricsService = new LlmMetricsService(
+    observabilityStore,
+    healthService,
+  );
   const provider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
       throw new Error("should use stream");
@@ -37,16 +42,8 @@ test("llm manager excludes caller cancellation from route health", async () => {
     { bailian: provider },
     DEFAULT_LLM_MODEL_REGISTRY,
     {
-      llmHealthService: {
-        async recordResult() {
-          healthSamples += 1;
-        },
-      } as unknown as LlmHealthService,
-      llmMetricsService: {
-        async recordCall() {
-          metricSamples += 1;
-        },
-      } as unknown as LlmMetricsService,
+      llmHealthService: healthService,
+      llmMetricsService: metricsService,
     },
   );
   const events: LLMStreamEvent[] = [];
@@ -61,8 +58,18 @@ test("llm manager excludes caller cancellation from route health", async () => {
   }
 
   assert.deepEqual(events, [{ type: "content_delta", text: "partial" }]);
-  assert.equal(healthSamples, 0);
-  assert.equal(metricSamples, 0);
+  assert.equal(observabilityStore.observations.length, 1);
+  assert.equal(observabilityStore.observations[0]?.outcome, "cancelled");
+  assert.equal(observabilityStore.observations[0]?.healthImpact, "neutral");
+  assert.equal(
+    await observabilityStore.getRouteHealth({
+      routingModelKey: "kimi2.5",
+      provider: "bailian",
+      providerModel: "kimi/kimi-k2.5",
+      operation: "chat",
+    }),
+    undefined,
+  );
 });
 
 test("llm manager resolves kimi2.5 to the Bailian provider model", async () => {

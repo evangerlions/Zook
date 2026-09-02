@@ -89,6 +89,13 @@ const server = createServer(async (request, response) => {
         ipAddress,
         requestId: normalizedHeaders["x-request-id"],
       });
+      if (
+        requestCancellation.signal.aborted ||
+        response.destroyed ||
+        response.writableEnded
+      ) {
+        return;
+      }
       writeTelemetryResponse(response, handled, corsDecision.origin);
       return;
     }
@@ -110,6 +117,13 @@ const server = createServer(async (request, response) => {
       signal: requestCancellation.signal,
     });
 
+    if (
+      requestCancellation.signal.aborted ||
+      response.destroyed ||
+      response.writableEnded
+    ) {
+      return;
+    }
     response.statusCode = handled.statusCode;
     response.setHeader("Content-Type", handled.contentType ?? "application/json; charset=utf-8");
     Object.entries(buildCorsHeaders(corsDecision.origin)).forEach(([key, value]) => {
@@ -122,7 +136,13 @@ const server = createServer(async (request, response) => {
       response.flushHeaders();
       try {
         for await (const chunk of handled.streamBody) {
-          if (requestCancellation.signal.aborted) break;
+          if (
+            requestCancellation.signal.aborted ||
+            response.destroyed ||
+            response.writableEnded
+          ) {
+            break;
+          }
           response.write(chunk);
         }
       } finally {
@@ -132,9 +152,17 @@ const server = createServer(async (request, response) => {
       return;
     }
 
-    response.end(JSON.stringify(handled.body));
+    if (!response.destroyed && !response.writableEnded) {
+      response.end(JSON.stringify(handled.body));
+    }
   } catch (error) {
-    if (response.destroyed) return;
+    if (
+      requestCancellation.signal.aborted ||
+      response.destroyed ||
+      response.writableEnded
+    ) {
+      return;
+    }
     response.statusCode = 400;
     response.setHeader("Content-Type", "application/json; charset=utf-8");
     Object.entries(buildCorsHeaders(corsDecision.origin)).forEach(([key, value]) => {
