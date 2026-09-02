@@ -22,6 +22,11 @@ test("postgres LLM observation CTE is idempotent and concurrency-safe", { skip: 
       import.meta.url,
     ));
     await pool.query(await readFile(migrationPath, "utf8"));
+    const errorMessageMigrationPath = fileURLToPath(new URL(
+      "../../src/infrastructure/database/postgres/migrations/035_llm_observation_error_messages.sql",
+      import.meta.url,
+    ));
+    await pool.query(await readFile(errorMessageMigrationPath, "utf8"));
     const store = new PostgresLlmObservabilityStore(
       async (sql, values = []) => await pool!.query(sql, values),
       async () => await pool!.connect(),
@@ -74,6 +79,8 @@ test("postgres LLM observation CTE is idempotent and concurrency-safe", { skip: 
     assert.equal(metrics.timeline.reduce((sum, item) => sum + item.requestCount, 0), 1000);
     assert.equal(metrics.routes.items[0]?.routingModelRequestCount, 1000);
     assert.equal(metrics.cross.items[0]?.requestCount, 1000);
+    assert.equal(metrics.healthFailures.items[0]?.count, 100);
+    assert.equal(metrics.healthFailures.items[0]?.errorCode, "UNKNOWN_ERROR");
 
     for (const [callId, provider] of [["share_a", "share-provider-a"], ["share_b", "share-provider-b"]] as const) {
       await store.recordObservation({

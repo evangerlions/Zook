@@ -13,6 +13,7 @@ import {
   formatMetricNumber,
   formatPercent,
 } from "./llm-monitor-view-model";
+import { SuccessRateBadge } from "./success-rate-badge";
 
 export function OperationsTables({
   metrics,
@@ -107,6 +108,7 @@ function modelColumns(
   return [
     { title: "Provider Model", dataIndex: "providerModel", fixed: "left", width: 190, ellipsis: true, render: (value, row) => <Button aria-pressed={selectedModel === value} onClick={() => onSelect(value, row.operation)} type="link">{value}</Button> },
     { title: "类型", dataIndex: "operation", width: 92, render: (value) => <Tag>{value}</Tag> },
+    { title: "上游成功率", width: 112, render: (_, row) => <SuccessRateBadge value={row.summary.successRate} /> },
     { title: "调用", width: 88, sorter: (a, b) => a.summary.requestCount - b.summary.requestCount, render: (_, row) => formatMetricNumber(row.summary.requestCount) },
     { title: "总 Token", width: 116, sorter: (a, b) => (a.summary.totalTokens ?? 0) - (b.summary.totalTokens ?? 0), render: (_, row) => formatMetricNumber(row.summary.totalTokens) },
     { title: "Prompt", width: 104, render: (_, row) => formatMetricNumber(row.summary.promptTokens) },
@@ -115,7 +117,6 @@ function modelColumns(
     { title: "未分类", width: 96, render: (_, row) => formatMetricNumber(row.summary.unclassifiedTokens) },
     { title: "单次 Token", width: 108, render: (_, row) => formatMetricNumber(row.summary.requestCount ? Math.round((row.summary.totalTokens ?? 0) / row.summary.requestCount) : undefined) },
     { title: "占比", width: 92, render: (_, row) => formatPercent(totalTokens ? ((row.summary.totalTokens ?? 0) / totalTokens) * 100 : 0) },
-    { title: "成功率", width: 96, render: (_, row) => formatPercent(row.summary.successRate) },
     { title: "P50", width: 96, render: (_, row) => formatLatency(row.summary.p50TotalLatencyMs) },
     { title: "P95", width: 96, render: (_, row) => formatLatency(row.summary.p95TotalLatencyMs) },
   ];
@@ -129,8 +130,8 @@ function providerColumns(
   return [
     { title: "Provider", dataIndex: "label", fixed: "left", width: 180, ellipsis: true, render: (value, row) => <Button aria-pressed={selectedProvider === row.provider} onClick={() => onSelect(row.provider, row.operation)} type="link">{value}</Button> },
     { title: "类型", dataIndex: "operation", width: 92, render: (value) => <Tag>{value}</Tag> },
+    { title: "上游成功率", width: 112, render: (_, row) => <SuccessRateBadge value={row.summary.successRate} /> },
     { title: "调用", width: 88, sorter: (a, b) => a.summary.requestCount - b.summary.requestCount, render: (_, row) => formatMetricNumber(row.summary.requestCount) },
-    { title: "成功率", width: 96, render: (_, row) => formatPercent(row.summary.successRate) },
     { title: "总 Token", width: 116, sorter: (a, b) => (a.summary.totalTokens ?? 0) - (b.summary.totalTokens ?? 0), render: (_, row) => formatMetricNumber(row.summary.totalTokens) },
     { title: "Prompt", width: 104, render: (_, row) => formatMetricNumber(row.summary.promptTokens) },
     { title: "可见输出", width: 104, render: (_, row) => formatMetricNumber(row.summary.visibleOutputTokens) },

@@ -107,7 +107,6 @@ export function createEmptyLlmSummary() {
     failureCount: 0,
     timeoutCount: 0,
     cancelledCount: 0,
-    successRate: 100,
     latencySampleCount: 0,
     firstResponseSampleCount: 0,
     providerUsageCount: 0,

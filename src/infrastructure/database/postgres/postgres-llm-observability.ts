@@ -2,6 +2,7 @@ import type {
   LlmBoundedAggregateGroup,
   LlmCallObservationRecord,
   LlmCrossAggregate,
+  LlmHealthFailureAggregate,
   LlmObservabilityFilter,
   LlmObservabilityQueryResult,
   LlmObservabilityStore,
@@ -25,6 +26,7 @@ interface PostgresSnapshotClient {
 const PROVIDER_LIMIT = 50;
 const MODEL_LIMIT = 100;
 const ROUTE_LIMIT = 500;
+const HEALTH_FAILURE_LIMIT = 100;
 
 const AGGREGATE_COLUMNS = `
   COUNT(*)::bigint AS request_count,
@@ -72,13 +74,13 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
            operation, response_mode, outcome, health_impact,
            first_response_latency_ms, total_latency_ms,
            prompt_tokens, completion_tokens, reasoning_tokens, total_tokens,
-           usage_source, error_code, routing_config_revision
+           usage_source, error_code, error_message, routing_config_revision
          )
          VALUES (
            $1, $2::timestamptz, $3, $4, $5,
            $6, $7, $8, $9,
            $10, $11, $12, $13, $14, $15,
-           $16, $17, $18
+           $16, $17, $18, $19
          )
          ON CONFLICT (call_id) DO NOTHING
          RETURNING call_id`,
@@ -100,6 +102,7 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
         record.totalTokens ?? null,
         record.usageSource,
         record.errorCode ?? null,
+        record.errorMessage ?? null,
         record.routingConfigRevision ?? null,
       ],
     );
@@ -180,6 +183,10 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
     const models = await query(buildGroupedSql("provider_model, operation", full.where, MODEL_LIMIT), full.values);
     const cross = await query(buildGroupedSql("provider, provider_model, operation", full.where, ROUTE_LIMIT), full.values);
     const routes = await query(buildRouteGroupedSql(routing.where, ROUTE_LIMIT), routing.values);
+    const healthFailures = await query(
+      buildHealthFailureGroupedSql(full.where, HEALTH_FAILURE_LIMIT),
+      full.values,
+    );
     const availableResult = await query("SELECT MIN(occurred_at) AS data_available_since FROM zook_llm_call_observations");
     const revisionsResult = await query(
       `SELECT DISTINCT routing_config_revision
@@ -226,6 +233,20 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
         operation: String(row.operation) as LlmOperation,
         ...parseAggregate(row),
       })),
+      healthFailures: parseBounded(
+        healthFailures.rows,
+        HEALTH_FAILURE_LIMIT,
+        (row): LlmHealthFailureAggregate => ({
+          routingModelKey: String(row.routing_model_key),
+          provider: String(row.provider),
+          providerModel: String(row.provider_model),
+          operation: String(row.operation) as LlmOperation,
+          errorCode: String(row.error_code),
+          errorMessage: row.error_message ? String(row.error_message) : undefined,
+          count: numberValue(row.failure_count),
+          lastOccurredAt: toIsoString(row.last_occurred_at),
+        }),
+      ),
       routingConfigRevisions: revisionsResult.rows.map((row) => numberValue(row.routing_config_revision)),
     };
   }
@@ -309,6 +330,29 @@ function buildRouteGroupedSql(where: string, limit: number): string {
     )
     SELECT * FROM counted
     ORDER BY total_tokens DESC NULLS LAST, request_count DESC
+    LIMIT ${limit}`;
+}
+
+function buildHealthFailureGroupedSql(where: string, limit: number): string {
+  return `WITH grouped AS (
+      SELECT
+        routing_model_key,
+        provider,
+        provider_model,
+        operation,
+        COALESCE(NULLIF(error_code, ''), 'UNKNOWN_ERROR') AS error_code,
+        NULLIF(error_message, '') AS error_message,
+        COUNT(*)::bigint AS failure_count,
+        MAX(occurred_at) AS last_occurred_at
+      FROM zook_llm_call_observations ${where}
+        AND health_impact = 'failure'
+      GROUP BY routing_model_key, provider, provider_model, operation,
+        COALESCE(NULLIF(error_code, ''), 'UNKNOWN_ERROR'), NULLIF(error_message, '')
+    ), counted AS (
+      SELECT *, COUNT(*) OVER()::bigint AS total_count FROM grouped
+    )
+    SELECT * FROM counted
+    ORDER BY failure_count DESC, last_occurred_at DESC
     LIMIT ${limit}`;
 }
 

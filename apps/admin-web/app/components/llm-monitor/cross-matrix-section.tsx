@@ -34,7 +34,7 @@ export function CrossMatrixSection({
   selectedProvider: string;
   selectedProviderModel: string;
 }) {
-  const [metric, setMetric] = useState<MatrixMetric>("calls");
+  const [metric, setMetric] = useState<MatrixMetric>("success");
   const matrix = useMemo(() => buildMatrix(metrics.crossMetrics.items), [metrics.crossMetrics.items]);
   const option = useMemo(() => buildHeatmapOption(matrix, metric), [matrix, metric]);
 
@@ -116,12 +116,14 @@ function buildHeatmapOption(
   matrix: ReturnType<typeof buildMatrix>,
   metric: MatrixMetric,
 ): EChartsCoreOption {
-  const values = matrix.routes.map((route) => metricValue(route, metric));
+  const values = matrix.routes
+    .map((route) => metricValue(route, metric))
+    .filter((value): value is number => value !== undefined);
   const max = Math.max(1, ...values);
   const data = matrix.routes.map((route) => [
     matrix.models.indexOf(route.providerModel),
     matrix.rows.findIndex((row) => row.provider === route.provider && row.operation === route.operation),
-    metricValue(route, metric),
+    metricValue(route, metric) ?? null,
     route.provider,
     route.providerModel,
     route.operation,
@@ -131,7 +133,8 @@ function buildHeatmapOption(
       confine: true,
       formatter: (params: { data?: unknown[] }) => {
         const item = params.data ?? [];
-        return `${item[3]} · ${item[4]} · ${item[5]}<br/>${formatMetricValue(Number(item[2] ?? 0), metric)}`;
+        const value = typeof item[2] === "number" ? item[2] : undefined;
+        return `${item[3]} · ${item[4]} · ${item[5]}<br/>${formatMetricValue(value, metric)}`;
       },
     },
     grid: { top: 34, left: 150, right: 30, bottom: 86 },
@@ -160,7 +163,13 @@ function buildHeatmapOption(
       name: "交叉指标",
       type: "heatmap",
       data,
-      label: { show: true, formatter: (params: { value?: unknown[] }) => formatMetricValue(Number(params.value?.[2] ?? 0), metric) },
+      label: {
+        show: true,
+        formatter: (params: { value?: unknown[] }) => formatMetricValue(
+          typeof params.value?.[2] === "number" ? params.value[2] : undefined,
+          metric,
+        ),
+      },
       emphasis: { itemStyle: { shadowBlur: 8, shadowColor: "rgba(15, 23, 42, 0.28)" } },
     }],
   };
@@ -204,7 +213,7 @@ function matrixColumns(
   ];
 }
 
-function metricValue(route: LlmCrossMetricsGroup, metric: MatrixMetric): number {
+function metricValue(route: LlmCrossMetricsGroup, metric: MatrixMetric): number | undefined {
   switch (metric) {
     case "calls": return route.summary.requestCount;
     case "tokens": return route.summary.totalTokens ?? 0;
@@ -214,7 +223,7 @@ function metricValue(route: LlmCrossMetricsGroup, metric: MatrixMetric): number 
   }
 }
 
-function formatMetricValue(value: number, metric: MatrixMetric): string {
+function formatMetricValue(value: number | undefined, metric: MatrixMetric): string {
   if (metric === "success") return formatPercent(value);
   if (metric === "p50" || metric === "p95") return formatLatency(value || undefined);
   return formatMetricNumber(value);
