@@ -60,7 +60,7 @@ export interface LlmRouteRuntimeStatus {
   weight: number;
   configuredWeight: number;
   sampleSize: number;
-  successRate: number;
+  successRate?: number;
   healthScore: number;
   dynamicScore: number;
   effectiveProbability: number;
@@ -107,7 +107,7 @@ export interface LlmMetricsSummary {
   failureCount: number;
   timeoutCount: number;
   cancelledCount: number;
-  successRate: number;
+  successRate?: number;
   latencySampleCount: number;
   firstResponseSampleCount: number;
   avgFirstByteLatencyMs?: number;
@@ -168,6 +168,17 @@ export interface LlmProviderMetricsOption {
   label: string;
 }
 
+export interface LlmHealthFailureMetricsGroup {
+  routingModelKey: string;
+  provider: string;
+  providerModel: string;
+  operation: LlmMetricsOperation;
+  errorCode: string;
+  errorMessage?: string;
+  count: number;
+  lastOccurredAt: string;
+}
+
 export interface LlmBoundedMetricsGroup<T> {
   items: T[];
   totalCount: number;
@@ -191,6 +202,7 @@ export interface AdminLlmMetricsDocument {
   models: LlmBoundedMetricsGroup<LlmModelMetricsGroup>;
   routes: LlmBoundedMetricsGroup<LlmRouteMetricsGroup>;
   crossMetrics: LlmBoundedMetricsGroup<LlmCrossMetricsGroup>;
+  healthFailures: LlmBoundedMetricsGroup<LlmHealthFailureMetricsGroup>;
   runtime: LlmRuntimeSnapshot;
   routingConfigChangedWithinRange: boolean;
 }

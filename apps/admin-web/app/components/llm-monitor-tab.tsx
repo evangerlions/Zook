@@ -7,6 +7,7 @@ import { CrossMatrixSection } from "./llm-monitor/cross-matrix-section";
 import { DetailSection } from "./llm-monitor/detail-section";
 import { OperationsTables } from "./llm-monitor/operations-tables";
 import { OverviewSection } from "./llm-monitor/overview-section";
+import { ReliabilityErrorsSection } from "./llm-monitor/reliability-errors-section";
 import { RoutingSection } from "./llm-monitor/routing-section";
 
 const RANGE_OPTIONS: LlmMetricsRange[] = ["24h", "48h", "7d", "30d"];
@@ -107,6 +108,8 @@ export function LlmMonitorTab() {
       ) : metrics ? (
         <>
           <OverviewSection metrics={metrics} />
+          <ReliabilityErrorsSection metrics={metrics} />
+          <RoutingSection metrics={metrics} />
           <OperationsTables
             metrics={metrics}
             onSelectModel={(model, operation) => {
@@ -122,7 +125,6 @@ export function LlmMonitorTab() {
             selectedModel={metrics.providerModel ?? ""}
             selectedProvider={metrics.provider ?? ""}
           />
-          <RoutingSection metrics={metrics} />
           <CrossMatrixSection
             metrics={metrics}
             onSelect={dashboard.selectIntersection}

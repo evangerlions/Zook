@@ -138,6 +138,7 @@ export class LlmMetricsService {
           summary: toMetricsSummary(item),
         })),
       },
+      healthFailures: result.healthFailures,
       runtime,
       routingConfigChangedWithinRange:
         result.routingConfigRevisions.length > 1 ||
@@ -194,7 +195,7 @@ function toMetricsSummary(
     cancelledCount: aggregate.cancelledCount,
     successRate: reliabilityDenominator
       ? roundTwo((aggregate.successCount / reliabilityDenominator) * 100)
-      : 100,
+      : undefined,
     latencySampleCount: aggregate.latencySampleCount,
     firstResponseSampleCount: aggregate.firstResponseSampleCount,
     avgFirstByteLatencyMs: includeLatency ? aggregate.avgFirstResponseLatencyMs : undefined,

@@ -13,6 +13,15 @@ const COLORS = {
   slate: "#64748b",
 };
 
+export type SuccessRateTone = "healthy" | "warning" | "critical" | "unknown";
+
+export function successRateTone(value?: number): SuccessRateTone {
+  if (value === undefined) return "unknown";
+  if (value >= 99) return "healthy";
+  if (value >= 95) return "warning";
+  return "critical";
+}
+
 export function formatMetricNumber(value?: number): string {
   return value === undefined ? "—" : new Intl.NumberFormat("zh-CN").format(value);
 }
@@ -47,11 +56,11 @@ export function buildCallsOption(items: LlmHourlySeriesItem[], width = 1000): EC
           item.bucket,
           `调用 ${formatMetricNumber(item.requestCount)}`,
           `成功 ${item.successCount} · 失败 ${item.failureCount} · 超时 ${item.timeoutCount} · 取消 ${item.cancelledCount}`,
-          `可靠性成功率 ${formatPercent(item.successRate)}`,
+          `上游调用成功率 ${formatPercent(item.successRate)}`,
         ].join("<br/>");
       },
     },
-    legend: { top: 0, itemGap: compact ? 8 : 20, textStyle: { fontSize: compact ? 10 : 12 }, data: ["调用次数", "可靠性成功率"] },
+    legend: { top: 0, itemGap: compact ? 8 : 20, textStyle: { fontSize: compact ? 10 : 12 }, data: ["调用次数", "上游调用成功率"] },
     grid: { top: 48, left: compact ? 34 : 52, right: compact ? 34 : 52, bottom: 42, containLabel: true },
     xAxis: { type: "category", data: labels, axisLabel: { fontSize: compact ? 9 : 12, hideOverlap: true } },
     yAxis: [
@@ -66,7 +75,7 @@ export function buildCallsOption(items: LlmHourlySeriesItem[], width = 1000): EC
         data: items.map((item) => item.available ? item.requestCount : null),
       },
       {
-        name: "可靠性成功率",
+        name: "上游调用成功率",
         type: "line",
         yAxisIndex: 1,
         symbolSize: 5,

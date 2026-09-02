@@ -7,6 +7,7 @@ import { LlmHealthService } from "../../src/services/llm-health.service.ts";
 import { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
 import { evaluateLlmRoutes, selectLlmRoute } from "../../src/services/llm-routing-score.ts";
 import { LLMManager, type LLMProvider, type LLMStreamEvent } from "../../src/services/llm-manager.ts";
+import { ApplicationError } from "../../src/shared/errors.ts";
 
 test("llm observation store records 1000 concurrent calls without loss and ignores duplicate call ids", async () => {
   const store = new InMemoryLlmObservabilityStore();
@@ -99,7 +100,73 @@ test("neutral cancellation does not advance health warm-up", async () => {
   });
   assert.equal(snapshot.totalCalls, 0);
   assert.equal(snapshot.sampleSize, 0);
+  assert.equal(snapshot.successRate, undefined);
   assert.equal(snapshot.healthScore, 100);
+});
+
+test("LLM metrics show zero for all failures and rank only health-impacting errors", async () => {
+  const store = new InMemoryLlmObservabilityStore();
+  const health = new LlmHealthService(store);
+  const metrics = new LlmMetricsService(store, health);
+
+  for (const index of [0, 1]) {
+    const session = new LlmCallObservationRecorder(store).start({
+      routingModelKey: "model-a",
+      provider: "provider-a",
+      providerModel: "upstream-a",
+      operation: "chat",
+      responseMode: "non_stream",
+      startedAt: new Date(`2026-08-25T0${index}:00:00.000Z`),
+      now: () => new Date(`2026-08-25T0${index}:00:01.000Z`),
+    });
+    await session.finalize({
+      error: new ApplicationError(
+        502,
+        "LLM_PROVIDER_REQUEST_FAILED",
+        "Invalid key sk-sensitive12345 from provider",
+        { errorCode: "invalid_api_key" },
+      ),
+    });
+  }
+
+  const neutralSession = new LlmCallObservationRecorder(store).start({
+    routingModelKey: "model-a",
+    provider: "provider-a",
+    providerModel: "upstream-a",
+    operation: "chat",
+    responseMode: "non_stream",
+    startedAt: new Date("2026-08-25T02:00:00.000Z"),
+    now: () => new Date("2026-08-25T02:00:01.000Z"),
+  });
+  await neutralSession.finalize({
+    error: new ApplicationError(
+      400,
+      "LLM_PROVIDER_CONTENT_SENSITIVE",
+      "Content rejected",
+    ),
+  });
+
+  const overview = await metrics.getOverview(
+    emptyConfig(),
+    "48h",
+    new Date("2026-08-25T04:00:00.000Z"),
+  );
+  assert.equal(overview.summary.successRate, 0);
+  assert.equal(overview.healthFailures.items.length, 1);
+  assert.equal(overview.healthFailures.items[0]?.errorCode, "invalid_api_key");
+  assert.equal(overview.healthFailures.items[0]?.errorMessage, "Invalid key [redacted] from provider");
+  assert.equal(overview.healthFailures.items[0]?.count, 2);
+});
+
+test("LLM metrics leave success rate empty when there are no reliability samples", async () => {
+  const store = new InMemoryLlmObservabilityStore();
+  const metrics = new LlmMetricsService(store, new LlmHealthService(store));
+  const overview = await metrics.getOverview(
+    emptyConfig(),
+    "24h",
+    new Date("2026-08-25T04:00:00.000Z"),
+  );
+  assert.equal(overview.summary.successRate, undefined);
 });
 
 test("TTFT includes streams that produced content before failure or cancellation", async () => {

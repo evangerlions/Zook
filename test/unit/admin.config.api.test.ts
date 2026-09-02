@@ -3556,6 +3556,8 @@ test("admin llm service API stores versioned common config and exposes metrics",
     firstResponseLatencyMs: 300,
     totalLatencyMs: 900,
     usageSource: "missing",
+    errorCode: "upstream_unavailable",
+    errorMessage: "Provider is temporarily unavailable",
   });
 
   const metricsResponse = await runtime.app.handle({
@@ -3570,6 +3572,8 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(metricsResponse.statusCode, 200);
   assert.equal(metricsResponse.body.data.summary.requestCount, 2);
   assert.equal(metricsResponse.body.data.summary.successRate, 50);
+  assert.equal(metricsResponse.body.data.healthFailures.items[0]?.errorCode, "upstream_unavailable");
+  assert.equal(metricsResponse.body.data.healthFailures.items[0]?.count, 1);
   assert.equal(metricsResponse.body.data.models.items[0]?.modelKey, "kimi/kimi-k2.5");
   assert.deepEqual(
     metricsResponse.body.data.providers.map((item: { provider: string }) => item.provider),
