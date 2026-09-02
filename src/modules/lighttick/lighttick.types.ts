@@ -67,6 +67,26 @@ export interface LightTickExecutionEventRow extends LightTickOwner {
   occurredAt: string; createdAt: string;
 }
 
+export interface LightTickInsightAuditRow extends LightTickOwner {
+  id: string; ruleId: string; kind: "factual" | "hypothesis" | "rule";
+  evidenceCount: number; evidenceWindow: Record<string, unknown>;
+  output: Record<string, unknown>; createdAt: string;
+}
+
+export interface LightTickChatMessageRow extends LightTickOwner {
+  id: string; threadId: string; goalId: string; role: "user" | "assistant";
+  content: string; runId?: string; createdAt: string;
+}
+
+export interface LightTickDnaInsightRow extends LightTickOwner, LightTickVersioned {
+  id: string; signature: string; ruleId: string; statement: string;
+  kind: "hypothesis" | "rule";
+  status: "proposed" | "confirmed" | "denied" | "corrected" | "expired" | "dismissed";
+  evidenceCount: number; dataRange: Record<string, unknown>; confidence: number;
+  scope: string; allowedEffects: string[]; userFeedback?: string; goalId?: string;
+  createdAt: string; expiresAt: string;
+}
+
 export interface LightTickReviewRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; period: "week" | "month"; status: string;
   periodStart: string; periodEnd: string; facts: Record<string, unknown>;

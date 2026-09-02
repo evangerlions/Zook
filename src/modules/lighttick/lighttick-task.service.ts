@@ -49,9 +49,14 @@ export class LightTickTaskService {
       payload.selected_variant = selectedVariant;
       payload.valid_action = true;
       payload.commitment_satisfied = selectedVariant === "standard";
+      payload.estimated_minutes = current.estimatedMinutes;
+      payload.title = current.title;
+      payload.lineage_id = current.lineageId ?? current.id;
+      payload.scheduled_for = current.scheduledFor ?? null;
     }
     if (command.action === "skip") payload.reason = command.reason;
     if (command.action === "defer") payload.scheduled_for = next.scheduledFor;
+    if (command.action === "skip") { payload.title = current.title; payload.lineage_id = current.lineageId ?? current.id; }
     if (notes) payload.notes = notes;
     const goal = command.action === "complete" ? await this.repository.getGoal(owner, current.goalId) : undefined;
     const pausedAt = goal?.pauseMetadata?.pausedAt ? Date.parse(goal.pauseMetadata.pausedAt) : Number.NaN;

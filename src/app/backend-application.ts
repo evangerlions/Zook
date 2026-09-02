@@ -62,6 +62,7 @@ import type { BodyLogInvitationService } from "../modules/bodylog/bodylog-invita
 import type { BodyLogChallengeService } from "../modules/bodylog/bodylog-challenge.service.ts";
 import { tryHandleBodyLogAssociationRoutes } from "./bodylog-association-routes.ts";
 import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
+import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
 
@@ -302,6 +303,16 @@ export class BackendApplication extends BackendRouteContext {
     );
     if (lightTickResponse) {
       return lightTickResponse;
+    }
+
+    const lightTickPhase2Response = await tryHandleLightTickPhase2Routes(
+      this,
+      this.lighttickEnabled,
+      this.lighttickRuntime,
+      request,
+    );
+    if (lightTickPhase2Response) {
+      return lightTickPhase2Response;
     }
 
     throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");

@@ -407,7 +407,16 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       : { action };
     const data = await idempotent(runtime, owner, request, "task", taskMatch[1]!, action, async () => {
       const task = await runtime.tasks.command(owner, taskMatch[1]!, numberOf(body.base_version, "base_version"), command);
-      return taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
+      const rendered = taskData(task, await runtime.repository.listTaskSteps(owner, task.id));
+      if (action === "complete") {
+        const actual = body.actual_duration_minutes as number | undefined;
+        if (actual !== undefined) {
+          const feedback = await runtime.feedback.singleCompletionFeedback(owner, task, actual);
+          rendered.feedback = { rule_id: feedback.ruleId, kind: feedback.kind, message: feedback.message,
+            evidence_count: feedback.evidenceCount, data_range: feedback.dataRange, confident: false };
+        }
+      }
+      return rendered;
     });
     const event = ({ start: "lighttick_task_started", complete: "lighttick_task_completed", skip: "lighttick_task_skipped",
       defer: "lighttick_task_deferred" } as const)[action as "start" | "complete" | "skip" | "defer"];
@@ -452,6 +461,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   }
   if (request.path === `${PREFIX}coach-runs` && request.method === "POST") {
     const body = bodyOf(request); const scene = stringOf(body.scene, "scene");
+    if (scene === "chat") return undefined;
     if (!["task_breakdown", "plan_explanation", "recovery", "review_explanation"].includes(scene))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Coach scene is invalid.");
     const goalId = stringOf(body.goal_id, "goal_id"); await runtime.goals.get(owner, goalId);
