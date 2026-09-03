@@ -77,6 +77,28 @@ test("consecutive skips within seven days are grouped per lineage", () => {
   assert.ok(feedback.some(item => item.ruleId === "hypothesis.consecutive_skips"));
 });
 
+test("bias direction wording: over-estimated time means underestimated duration", () => {
+  const underEstimated = Array.from({ length: 7 }, (_, index) => completionEvent({
+    occurredAt: `2026-09-0${index + 1}T02:00:00Z`,
+    payload: { action: "complete", actual_minutes: 45, estimated_minutes: 30, valid_action: true,
+      title: "晨读", lineage_id: "lineage-1" } }));
+  const rule = evaluateFeedbackRules(aggregateExecutionFacts(underEstimated, TIMEZONE))
+    .find(item => item.ruleId === "rule.time_estimation_bias");
+  assert.ok(rule);
+  assert.match(rule.message, /低估了自己/);
+});
+
+test("bias direction wording: under-estimated time means overestimated duration", () => {
+  const overEstimated = Array.from({ length: 7 }, (_, index) => completionEvent({
+    occurredAt: `2026-09-0${index + 1}T02:00:00Z`,
+    payload: { action: "complete", actual_minutes: 15, estimated_minutes: 30, valid_action: true,
+      title: "晨读", lineage_id: "lineage-1" } }));
+  const rule = evaluateFeedbackRules(aggregateExecutionFacts(overEstimated, TIMEZONE))
+    .find(item => item.ruleId === "rule.time_estimation_bias");
+  assert.ok(rule);
+  assert.match(rule.message, /高估了自己/);
+});
+
 test("single completion feedback builder never claims stability", () => {
   const feedback = buildSingleCompletionFeedback(
     { id: "task-1", title: "晨跑", estimatedMinutes: 20, selectedVariant: "standard" }, 32, "2026-09-01T00:00:00Z");

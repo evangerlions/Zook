@@ -167,7 +167,7 @@ export function evaluateFeedbackRules(facts: LightTickExecutionFacts): LightTick
     const deviation = group.totalActualMinutes - group.totalEstimatedMinutes;
     const ratio = group.totalEstimatedMinutes > 0 ? deviation / group.totalEstimatedMinutes : 0;
     const kind: LightTickFeedbackKind = group.count >= 7 && group.consistentDirection ? "rule" : "hypothesis";
-    const direction = deviation > 5 ? "高估了自己" : deviation < -5 ? "低估了自己" : "估算比较准";
+    const direction = deviation > 5 ? "低估了自己" : deviation < -5 ? "高估了自己" : "估算比较准";
     outputs.push({
       ruleId: kind === "rule" ? "rule.time_estimation_bias" : "hypothesis.time_estimation_bias", kind,
       message: kind === "rule"
