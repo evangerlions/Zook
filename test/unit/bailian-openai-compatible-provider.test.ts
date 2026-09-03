@@ -806,7 +806,6 @@ test("bailian provider logs local provider request summary and tiny stream delta
     assert.equal(bodySummary.enableThinking, true);
     assert.equal(bodySummary.toolCount, 1);
     assert.equal(requestLog.modelKey, "kimi2.5");
-    assert.equal(requestLog.sceneRouteKey, undefined);
 
     const systemPromptLog = logger.records.find(
       (entry) => entry.message === "ai_novel local provider system prompt",
@@ -871,7 +870,7 @@ test("bailian provider logs local provider request summary and tiny stream delta
   }
 });
 
-test("bailian provider local request log separates resolved model and scene route keys", async () => {
+test("bailian provider local request log uses the concrete model key", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "local";
   const logger = new StructuredLogger("api", { emitToConsole: false });
@@ -891,8 +890,7 @@ test("bailian provider local request log separates resolved model and scene rout
         ...createResolvedRequest(),
         model: {
           provider: "bailian",
-          modelKey: "ainovel-plus-reasoning",
-          modelKeyKind: "scene_route",
+          modelKey: "qwen3.6-plus",
           resolvedModelKey: "qwen3.6-plus",
           providerModel: "qwen3.6-plus",
         },
@@ -904,7 +902,6 @@ test("bailian provider local request log separates resolved model and scene rout
     );
     assert.ok(requestLog);
     assert.equal(requestLog.modelKey, "qwen3.6-plus");
-    assert.equal(requestLog.sceneRouteKey, "ainovel-plus-reasoning");
     assert.equal(requestLog.providerModel, "qwen3.6-plus");
   } finally {
     process.env.APP_ENV = previousAppEnv;

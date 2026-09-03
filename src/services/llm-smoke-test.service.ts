@@ -8,7 +8,6 @@ import type {
   AdminLlmSmokeTestRequestPayload,
   AdminLlmSmokeTestResponsePayload,
   AdminLlmSmokeTestRunRequest,
-  AdminLlmSmokeTestSkipPayload,
   AdminLlmSmokeTestSummary,
   AdminLlmSmokeTestTarget,
 } from "../shared/types.ts";
@@ -108,47 +107,12 @@ export class LlmSmokeTestService {
       modelLabel: item.model.label,
       provider: item.provider.key,
       providerLabel: item.provider.label,
-      providerModel: item.route?.providerModel ?? "",
-      configured: Boolean(item.route),
+      providerModel: item.route.providerModel,
+      configured: true,
       details: {},
     };
 
-    if (!item.route) {
-      return {
-        ...base,
-        status: "skipped",
-        message: "当前模型没有配置该供应商 route。",
-        details: {
-          skip: this.buildSkipDetails("当前模型没有配置该供应商 route。", item, false),
-        },
-      };
-    }
-
     const requestDetails = this.buildRequestDetails(item);
-
-    if (!item.provider.enabled) {
-      return {
-        ...base,
-        status: "skipped",
-        message: "该供应商已禁用，未发起测试请求。",
-        details: {
-          request: requestDetails,
-          skip: this.buildSkipDetails("该供应商已禁用，未发起测试请求。", item, true),
-        },
-      };
-    }
-
-    if (!item.route.enabled) {
-      return {
-        ...base,
-        status: "skipped",
-        message: "该 route 已禁用，未发起测试请求。",
-        details: {
-          request: requestDetails,
-          skip: this.buildSkipDetails("该 route 已禁用，未发起测试请求。", item, true),
-        },
-      };
-    }
 
     const startedAt = this.getNow().getTime();
 
@@ -251,11 +215,6 @@ export class LlmSmokeTestService {
   }
 
   private buildChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMCompletionRequest {
-    const route = item.route;
-    if (!route) {
-      throw new Error("Smoke test route is missing.");
-    }
-
     return {
       temperature: 0,
       maxTokens: SMOKE_CHAT_MAX_TOKENS,
@@ -265,7 +224,7 @@ export class LlmSmokeTestService {
         provider: item.provider.key,
         modelKey: item.model.key,
         resolvedModelKey: item.model.key,
-        providerModel: route.providerModel,
+        providerModel: item.route.providerModel,
         providerConfig: {
           baseUrl: item.provider.baseUrl,
           apiKey: item.provider.apiKey,
@@ -276,11 +235,6 @@ export class LlmSmokeTestService {
   }
 
   private buildEmbeddingRequest(item: LlmSmokeMatrixItem): ResolvedEmbeddingRequest {
-    const route = item.route;
-    if (!route) {
-      throw new Error("Smoke test route is missing.");
-    }
-
     return {
       input: SMOKE_EMBEDDING_INPUT,
       providerOptions: {},
@@ -288,7 +242,7 @@ export class LlmSmokeTestService {
         provider: item.provider.key,
         modelKey: item.model.key,
         resolvedModelKey: item.model.key,
-        providerModel: route.providerModel,
+        providerModel: item.route.providerModel,
         providerConfig: {
           baseUrl: item.provider.baseUrl,
           apiKey: item.provider.apiKey,
@@ -339,10 +293,6 @@ export class LlmSmokeTestService {
   }
 
   private buildRequestDetails(item: LlmSmokeMatrixItem): AdminLlmSmokeTestRequestPayload | undefined {
-    if (!item.route) {
-      return undefined;
-    }
-
     return item.model.kind === "embedding"
       ? {
           modelKind: "embedding",
@@ -435,14 +385,6 @@ export class LlmSmokeTestService {
     };
   }
 
-  private buildSkipDetails(reason: string, item: LlmSmokeMatrixItem, configured: boolean): AdminLlmSmokeTestSkipPayload {
-    return {
-      reason,
-      configured,
-      providerEnabled: item.provider.enabled,
-      ...(item.route ? { routeEnabled: item.route.enabled } : {}),
-    };
-  }
 }
 
 function truncateText(value: string, limit: number): string {

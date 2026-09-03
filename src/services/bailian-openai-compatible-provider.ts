@@ -322,13 +322,9 @@ export class BailianOpenAICompatibleProvider
 
   private getLocalLogModel(request: ResolvedLLMCompletionRequest): {
     modelKey: string;
-    sceneRouteKey?: string;
   } {
     return {
       modelKey: request.model.resolvedModelKey || request.model.modelKey,
-      ...(request.model.modelKeyKind === "scene_route"
-        ? { sceneRouteKey: request.model.modelKey }
-        : {}),
     };
   }
 

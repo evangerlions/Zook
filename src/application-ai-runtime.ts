@@ -3,6 +3,10 @@ import type { KVManager } from "./infrastructure/kv/kv-manager.ts";
 import type { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { AiNovelStatisticsService } from "./services/ai-novel-statistics.service.ts";
 import { createAiNovelStatisticsUsageOptions } from "./services/ai-novel-statistics-usage-recorder.ts";
+import {
+  AliyunTokenPlanProvider,
+  ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
+} from "./services/aliyun-token-plan-provider.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import type { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
@@ -45,6 +49,9 @@ export function createApplicationAiRuntime(
   const bailianProvider = new BailianOpenAICompatibleProvider({
     logger: options.logger,
   });
+  const aliyunTokenPlanProvider = new AliyunTokenPlanProvider({
+    logger: options.logger,
+  });
   const openRouterProvider = createOpenRouterAwareProvider(
     options.commonLlmConfigService,
     options.commonPasswordConfigService,
@@ -66,6 +73,8 @@ export function createApplicationAiRuntime(
   const llmProviders = options.llmProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
+    [ALIYUN_TOKEN_PLAN_PROVIDER_KEY]:
+      localAiNovelE2eProvider ?? aliyunTokenPlanProvider,
     openrouter: localAiNovelE2eProvider ?? openRouterProvider,
     [VOLCENGINE_AGENT_PLAN_PROVIDER_KEY]:
       localAiNovelE2eProvider ?? volcengineAgentPlanProvider,

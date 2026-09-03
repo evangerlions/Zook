@@ -15,7 +15,7 @@
 
 本期还新增一个产品专属配置页：
 
-3. AINovel AI Routing `ai_novel.model_routing`
+3. AINovel AI Model `ai_novel.model_selection`
 4. AINovel Feedback 用户反馈观测
 
 ---
@@ -27,7 +27,7 @@ Admin Web
 ├── Sidebar
 │   ├── 应用
 │   ├── 配置
-│   ├── AI Routing（仅 ai_novel）
+│   ├── AI Model（仅 ai_novel）
 │   ├── Feedback（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
@@ -39,7 +39,7 @@ Admin Web
 └── Main Content
     ├── /apps   -> App 总控页
     ├── /config -> App JSON 配置页
-    ├── /ai-routing -> AINovel AI Routing 硬编码路由只读页
+    ├── /ai-routing -> AINovel 文本模型权重配置页
     ├── /feedback -> AINovel App 内反馈与截图观测页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
@@ -117,16 +117,18 @@ admin.delivery_config
 4. 回调记录以独立标签展示，支持按事件类型与收件邮箱过滤
 5. 回调记录只用于运营排查投递、退信、打开、点击、退订等反馈，不反向修改登录或邮件发送配置
 
-### 4.4 AINovel AI Routing 页
+### 4.4 AINovel AI Model 页
 
-AI Routing 页挂在 `ai_novel` 工作区下，当前只展示 Zook 代码硬编码的只读路由表，不再作为运行时配置来源。
+AI Model 页挂在 `ai_novel` 工作区下，维护 AINovel 所有文本生成任务共用的模型权重。
 
 交互原则：
 
 1. 只在当前选中的 App 是 `ai_novel` 时展示
-2. 只读展示硬编码的 scene-first routing JSON
-3. 不再支持保存、版本历史、恢复
-4. 不在这页编辑 `provider / providerModel`，那部分仍归 `common.llm_service`
+2. `chat.default` 以数组编辑模型 Key 与 Weight；只展示 `common.llm_service` 中 `kind=chat` 的逻辑模型，并标记当前没有可用配置路由的模型
+3. 模型 Key 不可重复，每项 Weight 大于 0，总权重必须等于 100；当前不提供场景级配置
+4. `ai_novel.model_selection` 支持保存确认、版本历史、查看和恢复；没有保存记录时显示代码默认路由 `qwen3.6-plus: 100`
+5. 配置 JSON 区支持直接复制粘贴；前端实时校验语法、字段、模型 Key、重复项、Weight 精度和总和，校验通过后同步上方表单并允许保存，后端保存时再次校验
+6. 不在这页编辑 `provider / providerModel`，那部分仍归 `common.llm_service`
 
 ### 4.5 AINovel Feedback 页
 
@@ -146,7 +148,7 @@ Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 
 LLM 页挂在 `common` 工作区下，分成三个标签：
 
 1. `监控`
-2. `冒烟测试`
+2. `冒烟测试`：全量模式只展示并请求已启用的实际模型路由，不生成“跳过”行
 3. `配置`
 
 #### 监控标签

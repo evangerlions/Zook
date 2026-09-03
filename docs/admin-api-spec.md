@@ -85,23 +85,44 @@
 admin.delivery_config
 ```
 
-### 3.5 AINovel AI Routing
+### 3.5 AINovel 模型选择
 
-AINovel model routing 当前由 Zook 代码硬编码，不再从 admin 配置读取。客户端只提交 `scene_key`，用户档位由 Zook 在运行时判定，随后使用硬编码的 `scene_key + tier` 路由表选择 AINovel 业务 route key。
+AINovel 所有文本场景共用同一组模型权重配置。客户端只提交 `scene_key` 来选择 Prompt/工具工作流，不提交模型键、Provider 或用户档位。
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
-| `GET` | `/api/v1/admin/apps/{appId}/ai-routing` | 获取硬编码路由表的只读 JSON 快照 |
-| `PUT` | `/api/v1/admin/apps/{appId}/ai-routing` | 当前不支持，返回 `REQ_INVALID_BODY` |
-| `GET` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}` | 当前无版本记录，返回 `REQ_INVALID_QUERY` |
-| `POST` | `/api/v1/admin/apps/{appId}/ai-routing/revisions/{revision}/restore` | 当前无版本记录，返回 `REQ_INVALID_QUERY` |
+| `GET` | `/api/v1/admin/apps/ai_novel/model-selection` | 获取当前 AINovel 模型选择、可选文本模型和版本历史 |
+| `PUT` | `/api/v1/admin/apps/ai_novel/model-selection` | 更新 AINovel 模型选择 |
+| `GET` | `/api/v1/admin/apps/ai_novel/model-selection/revisions/{revision}` | 获取指定模型选择历史版本 |
+| `POST` | `/api/v1/admin/apps/ai_novel/model-selection/revisions/{revision}/restore` | 恢复指定模型选择历史版本 |
 
-当前只支持：
+模型选择使用通用版本化 App 配置存储：
 
 ```text
 appId = ai_novel
-configKey = ai_novel.model_routing
+configKey = ai_novel.model_selection
 ```
+
+`PUT model-selection` 请求结构：
+
+```json
+{
+  "config": {
+    "schemaVersion": 1,
+    "chat": {
+      "default": [
+        { "modelKey": "qwen3.6-plus", "weight": 50 },
+        { "modelKey": "qwen3.5-flash", "weight": 50 }
+      ]
+    }
+  },
+  "desc": "调整 AINovel 默认模型权重"
+}
+```
+
+`chat.default` 是唯一的 AINovel 文本模型路由。每个 `modelKey` 必须唯一，并引用 `common.llm_service.models` 中存在的 `chat` 模型；每项 `weight` 必须大于 0、最多两位小数，数组权重总和必须等于 100。Zook 复用通用 LLM routing affinity，以请求 `X-Did` 与认证 UID 计算 `[0,1)` routing unit，再按数组顺序累计权重选择模型；缺少合法 DID 或 UID 时沿用通用 affinity 的随机回退。当前不支持场景级覆盖。
+
+整条配置缺失时使用代码默认路由 `[{ "modelKey": "qwen3.6-plus", "weight": 100 }]`；已保存配置损坏或引用无效模型时，运行时返回 `AI_UPSTREAM_CONFIG_INVALID`，不会静默回退。Provider、`providerModel`、密钥和 Provider 路由权重仍只在 `common.llm_service` 中维护。Embedding 不读取这份配置，继续走既有 `text-embedding-v4` 路由。
 
 ### 3.6 AINovel Feedback
 
@@ -245,18 +266,19 @@ Admin 查看接口：
 
 - `GET /api/v1/admin/apps/common/llm-service/metrics` 的 `models` 按实际 Provider Model 和调用类型统计，并按当前范围 Token/调用量返回有界结果。
 - metrics 默认范围为 `48h`；支持 `24h / 48h / 7d / 30d`，并可使用 `operation=chat|embedding`、`provider`、`providerModel` 组合筛选。短范围按小时、长范围按天返回一条筛选后的 timeline。
-- `models` 按实际 `providerModel × operation` 汇总；`providerMetrics` 按 `provider × operation` 汇总；`crossMetrics` 按 Provider × Provider Model × operation 汇总矩阵；`routes` 按路由 Model × Provider × Provider Model × operation 汇总动态路由。AINovel 的 `ainovel-*` scene route key 不作为运营 Model 排行维度。
+- `models` 按实际 `providerModel × operation` 汇总；`providerMetrics` 按 `provider × operation` 汇总；`crossMetrics` 按 Provider × Provider Model × operation 汇总矩阵；`routes` 按路由 Model × Provider × Provider Model × operation 汇总动态路由。
 - Provider/Provider Model 筛选不会重算动态路由历史流量分母；routing shares 和配置 revision 检测使用未被下钻筛选缩小的时间 cohort。
 - 响应包含 canonical total Token、Prompt、可见输出、Reasoning、未分类差额、Provider/估算/缺失 usage 数、上游调用成功率和 P50/P95。成功率为 `success / (success + failure + timeout)`，按每次上游调用计数，不代表一次用户请求的最终结果；客户端取消单独计数且不进入分母，没有可靠性样本时 `successRate` 省略。Chat 与 Embedding 不生成混合延迟百分位。
 - `healthFailures` 返回当前筛选范围内 `health_impact = failure` 的 Top 100 错误组合，按发生次数排序。每项包含路由 Model、Provider、Provider Model、类型、错误码、可选脱敏错误信息、次数和最近发生时间；迁移前记录的 `errorMessage` 可能为空。客户端取消和健康中性事件不进入此列表。
-- `runtime` 直接返回路由 selector 使用的基础权重、健康分、动态分、真实选择概率和选择原因；前端不得重新实现公式。`fixed` 为 100/0，`auto` 健康分全零时回退基础权重。
+- `runtime` 直接返回路由 selector 使用的基础权重、健康分、动态分、真实选择概率和选择原因；前端不得重新实现公式。`fixed` 为 100/0，`auto` 健康分全零时回退基础权重。实际请求的 DID 与 UID 清洗后都至少包含 3 个字母数字字符时，Provider 使用两者末尾 3 个 base36 字符之和对 1,000 取模，按配置基础权重保持粘性；此时健康分继续用于运营观察，但不移动该身份的 Provider 分桶。任一入参不足 3 位时，该项由路由方法内部随机值替代。
 - 原始调用观察只保存脱敏维度、数值、稳定错误码及最多 300 字符的脱敏错误信息，不保存 prompt、response、userId、Authorization、Provider payload 或原始错误 body。
-- `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）会执行当前生效配置的完整模型 × 供应商矩阵；响应的 `target` 为 `{ "mode": "matrix" }`。
+- `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）只执行当前生效配置中 Provider 与 route 都启用的模型路由；未配置、Provider 已禁用或 route 已禁用的组合不会进入执行计划、不会请求上游，也不会出现在响应 `items` 中。响应的 `target` 为 `{ "mode": "matrix" }`。
 - 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。
-- 指定 route 若供应商或 route 已禁用，会返回该 route 的 `skipped` 结果；可用 route 会实际调用上游。聊天冒烟请求使用 64 个输出 token，以便推理模型能在回复前完成必要推理。
+- 指定 route 若不存在、供应商已禁用或 route 已禁用，会直接返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会发起上游请求。可执行 route 会实际调用上游；聊天冒烟请求使用 64 个输出 token，以便推理模型能在回复前完成必要推理。
 - 无论全量还是指定路由，冒烟测试共用 10 秒全局冷却；响应中始终包含本次 `target`、`summary` 与 `items`。
 - `config.openRouter.useTransparentProxy=true` 时，发往 `openrouter.ai` 的请求会在发送前动态读取 `common.passwords` 中由 `transparentProxyHmacSecretKey` 指定的 HMAC secret。只有 Key ID 和 secret 都存在时才改走 `transparentProxyBaseUrl`；Secret 缺失时保持直连，错误格式的非空 Secret 会拒绝请求而不会静默降级。
 - OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。
+- 阿里云百炼 Token Plan 使用独立 Provider key `bailian_token_plan` 和套餐专属 Base URL `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，不得复用 `bailian_coding`。在 PASSWORDS 中配置 `bailian.token_plan_api_key` 后，启动配置迁移会幂等加入该 Chat Provider 及 `tokenplan-*` 文本模型；不会加入 Embedding，也不会修改 `defaultModelKey` 或既有模型流量权重。当前接入范围仅为 OpenAI Chat Completions 与应用自定义 Function Calling，不使用 Anthropic 端点，也不启用依赖 Responses API 的 Token Plan 内置 Harness 工具。
 
 ### 3.12 Admin 指标
 

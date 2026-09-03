@@ -2,19 +2,6 @@ import type { PublicConfigData as GeneratedPublicConfigData } from "../../genera
 import type { ConfigRevisionMeta, ClientLogUploadTaskStatus } from "./records.ts";
 import type { AdminAppSummary } from "./admin-core.ts";
 
-export type AiNovelModelRoutingTier = "free" | "plus" | "super_plus";
-export type AiNovelRoutingChannel = "chat" | "embedding";
-
-export interface AiNovelSceneRoutingConfig {
-  kind: AiNovelRoutingChannel;
-  routes: Record<AiNovelModelRoutingTier, string>;
-}
-
-export interface AiNovelModelRoutingConfig {
-  defaultTier: AiNovelModelRoutingTier;
-  scenes: Record<string, AiNovelSceneRoutingConfig>;
-}
-
 export interface AdminAiRoutingDocument {
   app: AdminAppSummary;
   configKey: string;
@@ -24,6 +11,40 @@ export interface AdminAiRoutingDocument {
   desc?: string;
   isLatest: boolean;
   revisions: ConfigRevisionMeta[];
+}
+
+export interface AiNovelModelSelectionConfig {
+  schemaVersion: 1;
+  chat: {
+    default: AiNovelWeightedModel[];
+  };
+}
+
+export interface AiNovelWeightedModel {
+  modelKey: string;
+  weight: number;
+}
+
+export interface AiNovelChatModelOption {
+  key: string;
+  label: string;
+  configuredAvailable: boolean;
+}
+
+export interface AiNovelModelSelectionDocument {
+  configKey: string;
+  config: AiNovelModelSelectionConfig;
+  availableChatModels: AiNovelChatModelOption[];
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAiNovelModelSelectionDocument
+  extends AiNovelModelSelectionDocument {
+  app: AdminAppSummary;
 }
 
 export type PublicAppConfigDocument = GeneratedPublicConfigData;

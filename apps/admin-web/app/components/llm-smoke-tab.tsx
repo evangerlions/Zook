@@ -25,6 +25,10 @@ export function LlmSmokeTab({
   runningSmokeTest,
   smokeDocument,
 }: LlmSmokeTabProps) {
+  const visibleItems = useMemo(
+    () => smokeDocument?.items.filter((item) => item.status !== "skipped") ?? [],
+    [smokeDocument],
+  );
   const smokeColumns = useMemo(
     () => [
       {
@@ -123,16 +127,16 @@ export function LlmSmokeTab({
             <h2>执行结果</h2>
             <p>按 route 查看状态、耗时与返回摘要；需要排查时再展开原始诊断数据。</p>
           </div>
-          {smokeDocument ? <span className="llm-smoke-result-count">{smokeDocument.items.length} 条结果</span> : null}
+          {smokeDocument ? <span className="llm-smoke-result-count">{visibleItems.length} 条结果</span> : null}
         </div>
 
-        {smokeDocument?.items.length ? (
+        {visibleItems.length ? (
           <>
             <div className="llm-smoke-table-frame">
               <Table<AdminLlmSmokeTestItem>
                 className="smoke-table"
                 columns={smokeColumns}
-                dataSource={smokeDocument.items}
+                dataSource={visibleItems}
                 pagination={false}
                 rowClassName={(item) => `smoke-table-row smoke-table-row--${item.status}`}
                 rowKey={(item) => `${item.provider}-${item.modelKey}-${item.providerModel || "missing"}`}
@@ -155,8 +159,12 @@ export function LlmSmokeTab({
           <div className="llm-smoke-empty-state">
             <span className="llm-smoke-empty-index" aria-hidden="true">01</span>
             <div>
-              <strong>还没有测试记录</strong>
-              <p>选择上方测试范围并运行后，结果会按 route 出现在这里。</p>
+              <strong>{smokeDocument ? "没有可执行路由" : "还没有测试记录"}</strong>
+              <p>
+                {smokeDocument
+                  ? "当前没有同时启用 Provider 与 route 的模型配置，因此未发起请求。"
+                  : "选择上方测试范围并运行后，结果会按 route 出现在这里。"}
+              </p>
             </div>
           </div>
         )}

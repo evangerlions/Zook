@@ -3,19 +3,15 @@ import type {
   LLMMessage,
   LLMManager,
   LLMCompletionResult,
+  LlmRoutingIdentity,
 } from "../../services/llm-manager.ts";
 import type {
   EmbeddingManager,
 } from "../../services/embedding-manager.ts";
-import {
-  AppAiRoutingConfigService,
-  AI_NOVEL_APP_ID,
-} from "../../services/app-ai-routing-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { ContentSafetyService } from "../../services/content-safety.service.ts";
 import type {
   AccountRegion,
-  AiNovelModelRoutingTier,
 } from "../../shared/types.ts";
 import {
   resolveAiNovelChatScene,
@@ -59,6 +55,8 @@ import type {
   AiNovelChatStreamChunk,
   AiNovelEmbeddingsResponse,
 } from "./ai-novel-llm-types.ts";
+import type { AiNovelModelSelectionConfigService } from "./ai-novel-model-selection-config.service.ts";
+import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
 
 export type {
   AiNovelChatResponse,
@@ -70,8 +68,8 @@ export type {
 interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
   requestId?: string;
-  routingTier?: AiNovelModelRoutingTier;
   userId?: string;
+  routingIdentity?: LlmRoutingIdentity;
   locale?: string;
   accountRegion?: AccountRegion;
   signal?: AbortSignal;
@@ -79,11 +77,12 @@ interface AiNovelRequestOptions {
 
 export class AiNovelLlmService {
   private static readonly STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
+  private static readonly EMBEDDING_MODEL_KEY = "text-embedding-v4";
 
   constructor(
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
-    private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
+    private readonly modelSelectionConfigService: AiNovelModelSelectionConfigService,
     private readonly logger?: StructuredLogger,
     private readonly contentSafetyService?: ContentSafetyService,
   ) {}
@@ -102,12 +101,10 @@ export class AiNovelLlmService {
     if (scene.requiresStream) {
       badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=true.`);
     }
-    const sceneRouteKey =
-      await this.appAiRoutingConfigService.resolveSceneRouteKey(
-        AI_NOVEL_APP_ID,
-        "chat",
-        scene.sceneKey,
-        options.routingTier,
+    const sceneRouteKey = scene.sceneKey;
+    const modelKey =
+      await this.modelSelectionConfigService.resolveChatModelKey(
+        options.routingIdentity,
       );
     const messages = normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
@@ -125,29 +122,35 @@ export class AiNovelLlmService {
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
     const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
+    const llmRequestContext = {
+      ...aiNovelUsageOwner(options),
+      ...(options.routingIdentity
+        ? { routingIdentity: options.routingIdentity }
+        : {}),
+    };
     try {
       const llmRequest = {
-        modelKey: sceneRouteKey,
-        modelKeyKind: "scene_route" as const,
+        modelKey,
         messages: requestPlan.messages,
         temperature,
         maxTokens,
         ...(requestPlan.providerOptions
           ? { providerOptions: requestPlan.providerOptions }
           : {}),
-        ...aiNovelUsageOwner(options),
+        ...llmRequestContext,
       };
       const result: LLMCompletionResult =
         shouldUseStreamedCompletion && requestPlan.forcedToolName
           ? await completeRequiredToolViaStream(this.llmManager, {
               sceneRouteKey,
+              modelKey,
               messages: requestPlan.messages,
               temperature,
               maxTokens,
               ...(requestPlan.providerOptions
                 ? { providerOptions: requestPlan.providerOptions }
                 : {}),
-              ...aiNovelUsageOwner(options),
+              ...llmRequestContext,
               forcedToolName: requestPlan.forcedToolName,
             })
           : shouldUseStreamedCompletion
@@ -164,7 +167,7 @@ export class AiNovelLlmService {
       const response: AiNovelChatResponse = {
         sceneKey: scene.sceneKey,
         completion: {
-          sceneRouteKey: result.modelKey,
+          sceneRouteKey,
           provider: result.provider,
           providerModel: result.providerModel,
           content: completionContent,
@@ -215,12 +218,10 @@ export class AiNovelLlmService {
     if (scene.supportsStream === false) {
       badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=false.`);
     }
-    const sceneRouteKey =
-      await this.appAiRoutingConfigService.resolveSceneRouteKey(
-        AI_NOVEL_APP_ID,
-        "chat",
-        scene.sceneKey,
-        options.routingTier,
+    const sceneRouteKey = scene.sceneKey;
+    const modelKey =
+      await this.modelSelectionConfigService.resolveChatModelKey(
+        options.routingIdentity,
       );
     const messages = normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
@@ -232,6 +233,9 @@ export class AiNovelLlmService {
       scene.defaultMaxTokens;
     const llmRequestContext = {
       ...aiNovelUsageOwner(options),
+      ...(options.routingIdentity
+        ? { routingIdentity: options.routingIdentity }
+        : {}),
       ...(options.signal ? { signal: options.signal } : {}),
     };
     try {
@@ -254,8 +258,7 @@ export class AiNovelLlmService {
         });
       }
       const events = this.llmManager.stream({
-        modelKey: sceneRouteKey,
-        modelKeyKind: "scene_route",
+        modelKey,
         messages: requestPlan.messages,
         temperature,
         maxTokens,
@@ -332,26 +335,22 @@ export class AiNovelLlmService {
 
     const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelEmbeddingScene(sceneKey);
-    const sceneRouteKey =
-      await this.appAiRoutingConfigService.resolveSceneRouteKey(
-        AI_NOVEL_APP_ID,
-        "embedding",
-        scene.sceneKey,
-        options.routingTier,
-      );
+    const sceneRouteKey = scene.sceneKey;
     const input = normalizeEmbeddingInput(body.input);
 
     try {
       const result = await this.embeddingManager.embed({
-        modelKey: sceneRouteKey,
-        modelKeyKind: "scene_route",
+        modelKey: AiNovelLlmService.EMBEDDING_MODEL_KEY,
         input,
         ...aiNovelUsageOwner(options),
+        ...(options.routingIdentity
+          ? { routingIdentity: options.routingIdentity }
+          : {}),
       });
 
       return {
         sceneKey: scene.sceneKey,
-        sceneRouteKey: result.modelKey,
+        sceneRouteKey,
         provider: result.provider,
         providerModel: result.providerModel,
         vectors: result.vectors,

@@ -22,21 +22,27 @@ export function LlmSmokeRunner({ config, onRun, running }: LlmSmokeRunnerProps) 
   const [mode, setMode] = useState<LlmSmokeTestMode>("matrix");
   const [selectedModelKey, setSelectedModelKey] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("");
-  const selectedModel = useMemo(
-    () => config?.models.find((item) => item.key === selectedModelKey)
-      ?? config?.models.find((item) => item.key === config.defaultModelKey)
-      ?? config?.models[0],
-    [config, selectedModelKey],
+  const runnableModels = useMemo(
+    () => (config?.models ?? []).filter((model) =>
+      model.routes.some((route) => isRunnableRoute(config, route)),
+    ),
+    [config],
   );
-  const selectedRoute = selectedModel?.routes.find(
+  const selectedModel = runnableModels.find((item) => item.key === selectedModelKey)
+    ?? runnableModels.find((item) => item.key === config?.defaultModelKey)
+    ?? runnableModels[0];
+  const runnableRoutes = selectedModel?.routes.filter(
+    (route) => isRunnableRoute(config, route),
+  ) ?? [];
+  const selectedRoute = runnableRoutes.find(
     (route) => route.provider === selectedProvider,
-  ) ?? selectedModel?.routes[0];
+  ) ?? runnableRoutes[0];
 
-  const modelOptions = (config?.models ?? []).map((model) => ({
+  const modelOptions = runnableModels.map((model) => ({
     label: `${model.label} (${model.key})`,
     value: model.key,
   }));
-  const providerOptions = (selectedModel?.routes ?? []).map((route) => {
+  const providerOptions = runnableRoutes.map((route) => {
     const provider = config?.providers.find((item) => item.key === route.provider);
     return {
       label: `${provider?.label ?? route.provider} · ${route.providerModel}`,
@@ -51,8 +57,11 @@ export function LlmSmokeRunner({ config, onRun, running }: LlmSmokeRunnerProps) 
 
   function handleModelChange(modelKey: string) {
     setSelectedModelKey(modelKey);
-    const nextModel = config?.models.find((item) => item.key === modelKey);
-    setSelectedProvider(nextModel?.routes[0]?.provider ?? "");
+    const nextModel = runnableModels.find((item) => item.key === modelKey);
+    setSelectedProvider(
+      nextModel?.routes.find((route) => isRunnableRoute(config, route))
+        ?.provider ?? "",
+    );
   }
 
   function handleRun() {
@@ -113,8 +122,8 @@ export function LlmSmokeRunner({ config, onRun, running }: LlmSmokeRunnerProps) 
         </div>
       ) : (
         <div className="llm-smoke-mode-note">
-          <strong>覆盖全部配置组合</strong>
-          <span>逐项检查每个模型与供应商，未配置或已停用的组合会明确标记为跳过。</span>
+          <strong>覆盖全部可执行路由</strong>
+          <span>只请求已启用模型 route；未配置或已停用的组合不会请求，也不会出现在结果中。</span>
         </div>
       )}
 
@@ -131,5 +140,16 @@ export function LlmSmokeRunner({ config, onRun, running }: LlmSmokeRunnerProps) 
         </Button>
       </div>
     </section>
+  );
+}
+
+function isRunnableRoute(
+  config: LlmServiceConfig | null,
+  route: LlmServiceConfig["models"][number]["routes"][number],
+): boolean {
+  return route.enabled && Boolean(
+    config?.providers.find(
+      (provider) => provider.key === route.provider && provider.enabled,
+    ),
   );
 }

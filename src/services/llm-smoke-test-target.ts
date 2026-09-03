@@ -10,7 +10,7 @@ import type {
 export interface LlmSmokeMatrixItem {
   model: LlmModelConfig;
   provider: LlmProviderConfig;
-  route?: LlmServiceConfig["models"][number]["routes"][number];
+  route: LlmServiceConfig["models"][number]["routes"][number];
 }
 
 export function resolveLlmSmokeTestTarget(
@@ -32,12 +32,16 @@ export function buildLlmSmokeTestMatrix(
   target: AdminLlmSmokeTestTarget,
 ): LlmSmokeMatrixItem[] {
   if (target.mode === "matrix") {
+    const providers = new Map(
+      config.providers.map((provider) => [provider.key, provider]),
+    );
     return config.models.flatMap((model) =>
-      config.providers.map((provider) => ({
-        model,
-        provider,
-        route: model.routes.find((route) => route.provider === provider.key),
-      })),
+      model.routes.flatMap((route) => {
+        const provider = providers.get(route.provider);
+        return route.enabled && provider?.enabled
+          ? [{ model, provider, route }]
+          : [];
+      }),
     );
   }
 
@@ -50,6 +54,9 @@ export function buildLlmSmokeTestMatrix(
   const route = model.routes.find((item) => item.provider === provider.key);
   if (!route) {
     throwInvalidSmokeTarget(target, "目标模型没有配置该供应商 route。");
+  }
+  if (!provider.enabled || !route.enabled) {
+    throwInvalidSmokeTarget(target, "目标模型 route 当前未启用，不能发起冒烟请求。");
   }
 
   return [{

@@ -22,6 +22,7 @@ import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveR
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
+import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
@@ -217,6 +218,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appConfigService,
     secretReferenceResolver,
   );
+  const aiNovelModelSelectionConfigService =
+    new AiNovelModelSelectionConfigService(
+      appConfigService,
+      commonLlmConfigService,
+    );
   const commonContentSafetyConfigService = new CommonContentSafetyConfigService(
     appConfigService,
   );
@@ -374,6 +380,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appConfigService,
     appI18nConfigService,
     appAiRoutingConfigService,
+    aiNovelModelSelectionConfigService,
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
@@ -407,7 +414,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
-    appAiRoutingConfigService,
+    aiNovelModelSelectionConfigService,
     logger,
     contentSafetyService,
   );
@@ -536,6 +543,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       emailTestSendService,
       userService,
       appAiRoutingConfigService,
+      aiNovelModelSelectionConfigService,
       tokenService,
       authService,
       getuiGyOneClickLoginService,

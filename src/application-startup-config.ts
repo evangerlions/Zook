@@ -7,6 +7,7 @@ import type { CommonGetuiGyConfigService } from "./services/common-getui-gy-conf
 import type { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
 import type { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
+import { importAliyunTokenPlanConfig } from "./services/aliyun-token-plan-config.ts";
 import { importVolcengineAgentPlanConfig } from "./services/volcengine-agent-plan-config.ts";
 
 interface ApplicationStartupConfigOptions {
@@ -26,6 +27,11 @@ export async function initializeApplicationConfigs(
   await options.database.withExclusiveSession(async () => {
     const initializedCommonLlmConfig =
       await options.commonLlmConfigService.initializeDefaultConfig();
+    const importedAliyunTokenPlan =
+      await importAliyunTokenPlanConfig(
+        options.commonLlmConfigService,
+        options.commonPasswordConfigService,
+      );
     const importedVolcengineAgentPlan =
       await importVolcengineAgentPlanConfig(
         options.commonLlmConfigService,
@@ -46,6 +52,7 @@ export async function initializeApplicationConfigs(
 
     if (
       initializedCommonLlmConfig ||
+      importedAliyunTokenPlan ||
       importedVolcengineAgentPlan ||
       initializedAppLogSecrets ||
       initializedRemoteLogPullConfigs ||
