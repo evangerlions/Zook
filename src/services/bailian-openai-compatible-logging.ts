@@ -11,13 +11,11 @@ export class BailianOpenAICompatibleLocalLogger {
 
   beginStream(input: {
     modelKey: string;
-    sceneRouteKey?: string;
     providerModel: string;
   }): BailianOpenAICompatibleStreamLogSession {
     return new BailianOpenAICompatibleStreamLogSession({
       logger: this.logger,
       modelKey: input.modelKey,
-      sceneRouteKey: input.sceneRouteKey,
       providerModel: input.providerModel,
       providerName: this.providerName,
       enabled: shouldLogLocalProviderTraffic(),
@@ -29,7 +27,6 @@ export class BailianOpenAICompatibleLocalLogger {
     mode: "complete" | "stream";
     url: string;
     modelKey: string;
-    sceneRouteKey?: string;
     providerModel: string;
     body: Record<string, unknown>;
     redactBody?: boolean;
@@ -42,7 +39,6 @@ export class BailianOpenAICompatibleLocalLogger {
       mode: input.mode,
       url: input.url,
       modelKey: input.modelKey,
-      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
       provider: this.providerName,
       bodySummary,
@@ -63,7 +59,6 @@ export class BailianOpenAICompatibleLocalLogger {
       mode: "complete" | "stream";
       url: string;
       modelKey: string;
-      sceneRouteKey?: string;
       providerModel: string;
       body: Record<string, unknown>;
     },
@@ -77,7 +72,6 @@ export class BailianOpenAICompatibleLocalLogger {
       mode: input.mode,
       url: input.url,
       modelKey: input.modelKey,
-      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
       provider: this.providerName,
       systemPromptCount: systemPrompts.length,
@@ -101,7 +95,6 @@ export class BailianOpenAICompatibleLocalLogger {
   chatResponse(input: {
     mode: "complete";
     modelKey: string;
-    sceneRouteKey?: string;
     providerModel: string;
     payload: OpenAICompatibleResponsePayload;
   }): void {
@@ -112,7 +105,6 @@ export class BailianOpenAICompatibleLocalLogger {
     this.logger.info("ai_novel local provider chat response completed", {
       mode: input.mode,
       modelKey: input.modelKey,
-      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
       provider: this.providerName,
       id: input.payload.id,
@@ -133,7 +125,6 @@ export class BailianOpenAICompatibleLocalLogger {
   chatErrorResponse(input: {
     mode: "complete";
     modelKey: string;
-    sceneRouteKey?: string;
     providerModel: string;
     statusCode: number;
     payload: OpenAICompatibleResponsePayload;
@@ -144,7 +135,6 @@ export class BailianOpenAICompatibleLocalLogger {
     this.logger.warn("ai_novel local provider chat error response body", {
       mode: input.mode,
       modelKey: input.modelKey,
-      ...(input.sceneRouteKey ? { sceneRouteKey: input.sceneRouteKey } : {}),
       providerModel: input.providerModel,
       provider: this.providerName,
       statusCode: input.statusCode,
@@ -171,7 +161,6 @@ export class BailianOpenAICompatibleStreamLogSession {
     private readonly input: {
       logger?: StructuredLogger;
       modelKey: string;
-      sceneRouteKey?: string;
       providerModel: string;
       providerName: string;
       enabled: boolean;
@@ -189,9 +178,6 @@ export class BailianOpenAICompatibleStreamLogSession {
     const event = summarizeStreamChunk(input.chunk);
     this.lastStreamEvent = {
       modelKey: this.input.modelKey,
-      ...(this.input.sceneRouteKey
-        ? { sceneRouteKey: this.input.sceneRouteKey }
-        : {}),
       providerModel: this.input.providerModel,
       provider: this.input.providerName,
       chunkIndex: this.streamChunkCount,
@@ -220,9 +206,6 @@ export class BailianOpenAICompatibleStreamLogSession {
     const elapsedMs = Date.now() - this.input.startedAtMs;
     this.input.logger.error("ai_novel local provider stream failed", {
       modelKey: this.input.modelKey,
-      ...(this.input.sceneRouteKey
-        ? { sceneRouteKey: this.input.sceneRouteKey }
-        : {}),
       providerModel: this.input.providerModel,
       provider: this.input.providerName,
       elapsedMs,

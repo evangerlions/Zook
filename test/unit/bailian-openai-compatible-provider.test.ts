@@ -3,6 +3,7 @@ import test from "node:test";
 import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { BailianOpenAICompatibleProvider } from "../../src/services/bailian-openai-compatible-provider.ts";
 import type { ResolvedEmbeddingRequest } from "../../src/services/embedding-manager.ts";
+import { LlmCallerCancelledError } from "../../src/services/llm-caller-cancellation.ts";
 import type {
   LLMStreamEvent,
   ResolvedLLMCompletionRequest,
@@ -33,6 +34,40 @@ function createResolvedRequest(
     providerOptions,
   };
 }
+
+test("bailian provider aborts upstream streaming when the caller cancels", async () => {
+  const caller = new AbortController();
+  let upstreamSignal: AbortSignal | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      upstreamSignal = init?.signal ?? undefined;
+      const signal = upstreamSignal;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            signal?.addEventListener("abort", () => {
+              controller.error(signal.reason ?? new Error("aborted"));
+            });
+          },
+        }),
+        { status: 200 },
+      );
+    },
+  });
+  const iterator = provider
+    .stream({ ...createResolvedRequest(), signal: caller.signal })
+    [Symbol.asyncIterator]();
+
+  const pending = iterator.next();
+  await new Promise((resolve) => setImmediate(resolve));
+  caller.abort(new DOMException("Client disconnected.", "AbortError"));
+
+  await assert.rejects(
+    pending,
+    (error: unknown) => error instanceof LlmCallerCancelledError,
+  );
+  assert.equal(upstreamSignal?.aborted, true);
+});
 
 function createResolvedEmbeddingRequest(
   providerOptions?: Record<string, unknown>,
@@ -771,7 +806,6 @@ test("bailian provider logs local provider request summary and tiny stream delta
     assert.equal(bodySummary.enableThinking, true);
     assert.equal(bodySummary.toolCount, 1);
     assert.equal(requestLog.modelKey, "kimi2.5");
-    assert.equal(requestLog.sceneRouteKey, undefined);
 
     const systemPromptLog = logger.records.find(
       (entry) => entry.message === "ai_novel local provider system prompt",
@@ -836,7 +870,7 @@ test("bailian provider logs local provider request summary and tiny stream delta
   }
 });
 
-test("bailian provider local request log separates resolved model and scene route keys", async () => {
+test("bailian provider local request log uses the concrete model key", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "local";
   const logger = new StructuredLogger("api", { emitToConsole: false });
@@ -856,8 +890,7 @@ test("bailian provider local request log separates resolved model and scene rout
         ...createResolvedRequest(),
         model: {
           provider: "bailian",
-          modelKey: "ainovel-plus-reasoning",
-          modelKeyKind: "scene_route",
+          modelKey: "qwen3.6-plus",
           resolvedModelKey: "qwen3.6-plus",
           providerModel: "qwen3.6-plus",
         },
@@ -869,7 +902,6 @@ test("bailian provider local request log separates resolved model and scene rout
     );
     assert.ok(requestLog);
     assert.equal(requestLog.modelKey, "qwen3.6-plus");
-    assert.equal(requestLog.sceneRouteKey, "ainovel-plus-reasoning");
     assert.equal(requestLog.providerModel, "qwen3.6-plus");
   } finally {
     process.env.APP_ENV = previousAppEnv;

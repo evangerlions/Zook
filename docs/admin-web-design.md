@@ -15,7 +15,7 @@
 
 本期还新增一个产品专属配置页：
 
-3. AINovel AI Routing `ai_novel.model_routing`
+3. AINovel AI Model `ai_novel.model_selection`
 4. AINovel Feedback 用户反馈观测
 
 ---
@@ -27,7 +27,7 @@ Admin Web
 ├── Sidebar
 │   ├── 应用
 │   ├── 配置
-│   ├── AI Routing（仅 ai_novel）
+│   ├── AI Model（仅 ai_novel）
 │   ├── Feedback（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
@@ -39,7 +39,7 @@ Admin Web
 └── Main Content
     ├── /apps   -> App 总控页
     ├── /config -> App JSON 配置页
-    ├── /ai-routing -> AINovel AI Routing 硬编码路由只读页
+    ├── /ai-routing -> AINovel 文本模型权重配置页
     ├── /feedback -> AINovel App 内反馈与截图观测页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
@@ -117,16 +117,18 @@ admin.delivery_config
 4. 回调记录以独立标签展示，支持按事件类型与收件邮箱过滤
 5. 回调记录只用于运营排查投递、退信、打开、点击、退订等反馈，不反向修改登录或邮件发送配置
 
-### 4.4 AINovel AI Routing 页
+### 4.4 AINovel AI Model 页
 
-AI Routing 页挂在 `ai_novel` 工作区下，当前只展示 Zook 代码硬编码的只读路由表，不再作为运行时配置来源。
+AI Model 页挂在 `ai_novel` 工作区下，维护 AINovel 所有文本生成任务共用的模型权重。
 
 交互原则：
 
 1. 只在当前选中的 App 是 `ai_novel` 时展示
-2. 只读展示硬编码的 scene-first routing JSON
-3. 不再支持保存、版本历史、恢复
-4. 不在这页编辑 `provider / providerModel`，那部分仍归 `common.llm_service`
+2. `chat.default` 以数组编辑模型 Key 与 Weight；只展示 `common.llm_service` 中 `kind=chat` 的逻辑模型，并标记当前没有可用配置路由的模型
+3. 模型 Key 不可重复，每项 Weight 大于 0，总权重必须等于 100；当前不提供场景级配置
+4. `ai_novel.model_selection` 支持保存确认、版本历史、查看和恢复；没有保存记录时显示代码默认路由 `qwen3.6-plus: 100`
+5. 配置 JSON 区支持直接复制粘贴；前端实时校验语法、字段、模型 Key、重复项、Weight 精度和总和，校验通过后同步上方表单并允许保存，后端保存时再次校验
+6. 不在这页编辑 `provider / providerModel`，那部分仍归 `common.llm_service`
 
 ### 4.5 AINovel Feedback 页
 
@@ -146,18 +148,20 @@ Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 
 LLM 页挂在 `common` 工作区下，分成三个标签：
 
 1. `监控`
-2. `冒烟测试`
+2. `冒烟测试`：全量模式只展示并请求已启用的实际模型路由，不生成“跳过”行
 3. `配置`
 
 #### 监控标签
 
 默认展示最近 48 小时的 LLM 运营数据：
 
-1. 调用、canonical 总 Token、可靠性成功率、P50 首响应、P50/P95 总延迟
-2. 调用量/可靠性与 Prompt/可见输出/Reasoning/未分类 Token 趋势
-3. Provider Model Token 排行和 Provider 运营表现
-4. `auto / fixed` route 的基础权重、健康分、动态分、期望流量和所选时间范围实际流量；每个路由 Model 使用一条实际流量堆叠条，并以竖线标出动态评分推导的期望分界
+1. 上游调用成功率、成功/失败/超时数量和调用趋势；明确该口径按上游调用计数，不等同于用户请求最终成功率
+2. 影响健康成功率的 Top 错误码与脱敏错误信息，可按调用量 Top 5 路由 Model 筛选
+3. 路由图只展示所选范围内的调用占比，每个路由 Model 一行；`auto / fixed` route 的健康成功率、基础权重、健康分、动态分和当前选择概率保留在下方表格，无健康样本时成功率显示 `—`
+4. Provider Model Token 排行和 Provider 运营表现
 5. Provider × Provider Model 交叉矩阵及筛选后的延迟/时间桶深度分析
+
+成功率是第一视觉优先级：总览卡和表格成功率使用 `>=99%` 绿色、`95%–99%` 橙色、`<95%` 红色。路由图标题统一为“调用占比”，不再重复展示当前目标分流。
 
 图表使用 Apache ECharts；复杂表格和筛选继续复用 Ant Design。每张图表和表格都必须说明用途，并覆盖加载、空、错误和旧数据状态。
 

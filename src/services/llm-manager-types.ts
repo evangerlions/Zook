@@ -14,9 +14,13 @@ export interface LLMMessage {
   reasoningContent?: string;
 }
 
+export interface LlmRoutingIdentity {
+  did?: string;
+  uid?: string;
+}
+
 export interface LLMCompletionRequest {
   modelKey: string;
-  modelKeyKind?: "model" | "scene_route";
   messages: LLMMessage[];
   temperature?: number;
   maxTokens?: number;
@@ -25,6 +29,8 @@ export interface LLMCompletionRequest {
     appId: string;
     userId: string;
   };
+  routingIdentity?: LlmRoutingIdentity;
+  signal?: AbortSignal;
 }
 
 export interface LLMCompleteViaStreamOptions {
@@ -85,7 +91,6 @@ export type LLMStreamEvent = (
 export interface ResolvedLLMModel {
   provider: LLMProviderName;
   modelKey: string;
-  modelKeyKind?: "model" | "scene_route";
   resolvedModelKey: string;
   providerModel: string;
   providerConfig?: {
@@ -97,7 +102,7 @@ export interface ResolvedLLMModel {
 
 export interface ResolvedLLMCompletionRequest extends Omit<
   LLMCompletionRequest,
-  "modelKey"
+  "modelKey" | "routingIdentity"
 > {
   model: ResolvedLLMModel;
 }

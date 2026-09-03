@@ -301,7 +301,7 @@ test("admin bootstrap and config APIs expose app list and editable JSON config",
   assert.match(configResponse.body.data.rawJson, /featureFlags/);
 });
 
-test("admin ai routing API exposes hardcoded default config", async () => {
+test("admin ai routing API no longer exposes AINovel tier routing", async () => {
   const runtime = await createApplication({
     adminBasicAuth: {
       username: "admin",
@@ -318,51 +318,8 @@ test("admin ai routing API exposes hardcoded default config", async () => {
     headers,
   });
 
-  assert.equal(getResponse.statusCode, 200);
-  assert.equal(getResponse.body.data.app.appId, "ai_novel");
-  assert.equal(getResponse.body.data.configKey, "ai_novel.model_routing");
-  assert.match(getResponse.body.data.rawJson, /"defaultTier": "free"/);
-  assert.match(getResponse.body.data.rawJson, /"scenes": \{/);
-  assert.match(
-    getResponse.body.data.rawJson,
-    /"free": "ainovel-free-creative"/,
-  );
-  assert.equal(getResponse.body.data.desc, "hardcoded");
-  assert.equal(getResponse.body.data.revisions.length, 0);
-
-  const updateResponse = await runtime.app.handle({
-    method: "PUT",
-    path: "/api/v1/admin/apps/ai_novel/ai-routing",
-    headers,
-    body: {
-      rawJson: getResponse.body.data.rawJson,
-      desc: "ignored update",
-    },
-  });
-
-  assert.equal(updateResponse.statusCode, 400);
-  assert.equal(updateResponse.body.code, "REQ_INVALID_BODY");
-
-  const revisionResponse = await runtime.app.handle({
-    method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/ai-routing/revisions/1",
-    headers,
-  });
-
-  assert.equal(revisionResponse.statusCode, 404);
-  assert.equal(revisionResponse.body.code, "REQ_INVALID_QUERY");
-
-  const restoreResponse = await runtime.app.handle({
-    method: "POST",
-    path: "/api/v1/admin/apps/ai_novel/ai-routing/revisions/1/restore",
-    headers,
-    body: {
-      desc: "rollback ai routing",
-    },
-  });
-
-  assert.equal(restoreResponse.statusCode, 404);
-  assert.equal(restoreResponse.body.code, "REQ_INVALID_QUERY");
+  assert.equal(getResponse.statusCode, 404);
+  assert.equal(getResponse.body.code, "APP_NOT_FOUND");
 });
 
 test("public app config API exposes admin delivery config for the requested app", async () => {
@@ -3556,6 +3513,8 @@ test("admin llm service API stores versioned common config and exposes metrics",
     firstResponseLatencyMs: 300,
     totalLatencyMs: 900,
     usageSource: "missing",
+    errorCode: "upstream_unavailable",
+    errorMessage: "Provider is temporarily unavailable",
   });
 
   const metricsResponse = await runtime.app.handle({
@@ -3570,6 +3529,8 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(metricsResponse.statusCode, 200);
   assert.equal(metricsResponse.body.data.summary.requestCount, 2);
   assert.equal(metricsResponse.body.data.summary.successRate, 50);
+  assert.equal(metricsResponse.body.data.healthFailures.items[0]?.errorCode, "upstream_unavailable");
+  assert.equal(metricsResponse.body.data.healthFailures.items[0]?.count, 1);
   assert.equal(metricsResponse.body.data.models.items[0]?.modelKey, "kimi/kimi-k2.5");
   assert.deepEqual(
     metricsResponse.body.data.providers.map((item: { provider: string }) => item.provider),

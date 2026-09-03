@@ -62,17 +62,21 @@ test("LLM smoke summary prioritizes route failures", () => {
   );
 });
 
-test("LLM smoke summary labels all-skipped runs", () => {
+test("LLM smoke summary labels runs without executable routes", () => {
   const document = createSmokeDocument({
     summary: {
-      totalCount: 1,
+      totalCount: 0,
       attemptedCount: 0,
       successCount: 0,
       failureCount: 0,
-      skippedCount: 1,
+      skippedCount: 0,
       successRate: 0,
     },
   });
 
-  assert.equal(createLlmSmokeSummaryPresentation(document).statusTone, "neutral");
+  assert.deepEqual(createLlmSmokeSummaryPresentation(document), {
+    scope: "全量矩阵",
+    statusLabel: "没有可执行路由",
+    statusTone: "neutral",
+  });
 });

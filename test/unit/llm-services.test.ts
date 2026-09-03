@@ -445,11 +445,11 @@ test("llm manager resolves {{zook.ps.xxx}} apiKey references from password works
   assert.equal(resolvedApiKey, "resolved-bailian-key");
 });
 
-test("llm manager records AINovel scene route keys under concrete model keys", async () => {
+test("llm manager separates routing model keys from provider model metrics", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
-    defaultModelKey: "ainovel-premium-creative",
+    defaultModelKey: "product-chat",
     providers: [
       {
         key: "bailian",
@@ -462,8 +462,8 @@ test("llm manager records AINovel scene route keys under concrete model keys", a
     ],
     models: [
       {
-        key: "ainovel-premium-creative",
-        label: "AINovel Premium Creative",
+        key: "product-chat",
+        label: "Product Chat",
         kind: "chat",
         strategy: "fixed",
         routes: [
@@ -504,7 +504,7 @@ test("llm manager records AINovel scene route keys under concrete model keys", a
   );
 
   await manager.complete({
-    modelKey: "ainovel-premium-creative",
+    modelKey: "product-chat",
     messages: [{ role: "user", content: "hello" }],
   });
 
@@ -513,13 +513,13 @@ test("llm manager records AINovel scene route keys under concrete model keys", a
     "24h",
     new Date("2026-03-24T10:50:00+08:00"),
   );
-  assert.equal(overview.models.items.some((item) => item.modelKey === "ainovel-premium-creative"), false);
+  assert.equal(overview.models.items.some((item) => item.modelKey === "product-chat"), false);
   assert.equal(overview.models.items[0]?.modelKey, "glm-5");
   assert.equal(overview.models.items[0]?.summary.requestCount, 1);
   assert.equal(
     (
       await fixture.llmHealthService.getRouteSnapshot({
-        modelKey: "ainovel-premium-creative",
+        modelKey: "product-chat",
         provider: "bailian",
         providerModel: "glm-5",
       })
@@ -538,7 +538,7 @@ test("llm manager records AINovel scene route keys under concrete model keys", a
   );
 });
 
-test("llm manager resolves AINovel route aliases through configured concrete model routes", async () => {
+test("llm manager routes the selected concrete AINovel model", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -562,20 +562,6 @@ test("llm manager resolves AINovel route aliases through configured concrete mod
       },
     ],
     models: [
-      {
-        key: "ainovel-plus-reasoning",
-        label: "stale AINovel Plus Reasoning",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
       {
         key: "qwen3.6-plus",
         label: "qwen3.6-plus",
@@ -616,13 +602,12 @@ test("llm manager resolves AINovel route aliases through configured concrete mod
   );
 
   const result = await manager.complete({
-    modelKey: "ainovel-plus-reasoning",
-    modelKeyKind: "scene_route",
+    modelKey: "qwen3.6-plus",
     messages: [{ role: "user", content: "hello" }],
   });
 
   assert.deepEqual(calls, ["bailian_coding"]);
-  assert.equal(result.modelKey, "ainovel-plus-reasoning");
+  assert.equal(result.modelKey, "qwen3.6-plus");
   assert.equal(result.provider, "bailian_coding");
   assert.equal(result.providerModel, "qwen3.6-plus");
   assert.equal(
@@ -650,7 +635,7 @@ test("llm manager resolves AINovel route aliases through configured concrete mod
   assert.equal(detail.routes.some((item) => item.provider === "bailian"), false);
 });
 
-test("embedding manager records AINovel scene route keys under concrete model keys", async () => {
+test("embedding manager records the concrete embedding model key", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -681,8 +666,8 @@ test("embedding manager records AINovel scene route keys under concrete model ke
         ],
       },
       {
-        key: "ainovel-embedding-default",
-        label: "AINovel Embedding Default",
+        key: "text-embedding-v4",
+        label: "Text Embedding v4",
         kind: "embedding",
         strategy: "fixed",
         routes: [
@@ -720,7 +705,7 @@ test("embedding manager records AINovel scene route keys under concrete model ke
   );
 
   await manager.embed({
-    modelKey: "ainovel-embedding-default",
+    modelKey: "text-embedding-v4",
     input: ["hello"],
   });
 
@@ -729,20 +714,8 @@ test("embedding manager records AINovel scene route keys under concrete model ke
     "24h",
     new Date("2026-03-24T10:50:00+08:00"),
   );
-  assert.equal(overview.models.items.some((item) => item.modelKey === "ainovel-embedding-default"), false);
   assert.equal(overview.models.items[0]?.modelKey, "text-embedding-v4");
   assert.equal(overview.models.items[0]?.summary.requestCount, 1);
-  assert.equal(
-    (
-      await fixture.llmHealthService.getRouteSnapshot({
-        modelKey: "ainovel-embedding-default",
-        provider: "bailian",
-        providerModel: "text-embedding-v4",
-        operation: "embedding",
-      })
-    ).totalCalls,
-    1,
-  );
   assert.equal(
     (
       await fixture.llmHealthService.getRouteSnapshot({
@@ -752,11 +725,11 @@ test("embedding manager records AINovel scene route keys under concrete model ke
         operation: "embedding",
       })
     ).totalCalls,
-    0,
+    1,
   );
 });
 
-test("embedding manager resolves AINovel route aliases through configured concrete model routes", async () => {
+test("embedding manager routes the selected concrete embedding model", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -789,20 +762,6 @@ test("embedding manager resolves AINovel route aliases through configured concre
           {
             provider: "bailian",
             providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-embedding-default",
-        label: "stale AINovel Embedding Default",
-        kind: "embedding",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "text-embedding-v4",
             enabled: true,
             weight: 100,
           },
@@ -868,13 +827,12 @@ test("embedding manager resolves AINovel route aliases through configured concre
   );
 
   const result = await manager.embed({
-    modelKey: "ainovel-embedding-default",
-    modelKeyKind: "scene_route",
+    modelKey: "text-embedding-v4",
     input: ["hello"],
   });
 
   assert.deepEqual(calls, ["bailian_coding"]);
-  assert.equal(result.modelKey, "ainovel-embedding-default");
+  assert.equal(result.modelKey, "text-embedding-v4");
   assert.equal(result.provider, "bailian_coding");
   assert.equal(result.providerModel, "text-embedding-v4");
   assert.equal(
@@ -1094,7 +1052,7 @@ test("llm metrics service filters overview and model detail by provider", async 
   assert.equal(detail.routes[0]?.summary.totalTokens, 60);
 });
 
-test("common llm metrics exclude AINovel scene route keys from model statistics", async () => {
+test("common llm metrics report observed concrete models", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -1110,20 +1068,6 @@ test("common llm metrics exclude AINovel scene route keys from model statistics"
       },
     ],
     models: [
-      {
-        key: "ainovel-free-creative",
-        label: "AINovel Free Creative",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
       {
         key: "qwen3.6-plus",
         label: "qwen3.6-plus",
@@ -1142,8 +1086,6 @@ test("common llm metrics exclude AINovel scene route keys from model statistics"
   });
 
   const config = await fixture.commonLlmConfigService.getCurrentConfig();
-  assert.equal(config.models.some((item) => item.key === "ainovel-free-creative"), true);
-
   await recordMetricCall(fixture, {
     modelKey: "qwen3.6-plus",
     provider: "bailian",
@@ -1160,7 +1102,6 @@ test("common llm metrics exclude AINovel scene route keys from model statistics"
     new Date("2026-03-24T10:50:00+08:00"),
   );
   assert.equal(overview.summary.requestCount, 1);
-  assert.equal(overview.models.items.some((item) => item.modelKey === "ainovel-free-creative"), false);
   assert.equal(overview.models.items[0]?.modelKey, "qwen3.6-plus");
   assert.equal(overview.models.items[0]?.summary.requestCount, 1);
 
@@ -1174,7 +1115,7 @@ test("common llm metrics exclude AINovel scene route keys from model statistics"
   assert.equal(detail.routes[0]?.summary.requestCount, 1);
 });
 
-test("llm smoke test service returns success/failure/skipped matrix results and enforces cooldown", async () => {
+test("llm smoke test service runs only executable matrix routes and enforces cooldown", async () => {
   const fixture = await createLlmFixture();
   await fixture.commonLlmConfigService.updateConfig({
     enabled: true,
@@ -1202,6 +1143,14 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
         enabled: false,
         baseUrl: "https://api.openai.com/v1",
         apiKey: "mock-openai-api-key",
+        timeoutMs: 30000,
+      },
+      {
+        key: "unused",
+        label: "Unused",
+        enabled: true,
+        baseUrl: "https://unused.example.com/v1",
+        apiKey: "mock-unused-api-key",
         timeoutMs: 30000,
       },
     ],
@@ -1235,11 +1184,13 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
   });
 
   let now = new Date("2026-03-24T10:00:00+08:00");
+  const providerCalls: string[] = [];
   const smokeTestService = new LlmSmokeTestService(
     fixture.commonLlmConfigService,
     fixture.kvManager,
     {
-      bailian: createMockProvider("bailian", []),
+      bailian: createMockProvider("bailian", providerCalls),
+      unused: createMockProvider("unused", providerCalls),
     },
     {},
     {
@@ -1248,21 +1199,20 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
   );
 
   const firstRun = await smokeTestService.run();
-  assert.equal(firstRun.summary.totalCount, 3);
+  assert.equal(firstRun.summary.totalCount, 2);
   assert.equal(firstRun.summary.attemptedCount, 2);
   assert.equal(firstRun.summary.successCount, 1);
   assert.equal(firstRun.summary.failureCount, 1);
-  assert.equal(firstRun.summary.skippedCount, 1);
+  assert.equal(firstRun.summary.skippedCount, 0);
   assert.equal(firstRun.items[0]?.status, "success");
   assert.equal(firstRun.items[1]?.status, "failed");
-  assert.equal(firstRun.items[2]?.status, "skipped");
+  assert.equal(firstRun.items.length, 2);
+  assert.deepEqual(providerCalls, ["bailian"]);
   assert.equal(firstRun.items[0]?.details.request?.provider, "bailian");
   assert.equal(firstRun.items[0]?.details.request?.messages.length, 2);
   assert.equal(firstRun.items[0]?.details.response?.text, "bailian:ok");
   assert.equal(firstRun.items[1]?.details.error?.code, "LLM_ROUTE_NOT_AVAILABLE");
   assert.equal(firstRun.items[1]?.details.request?.providerModel, "kimi-2.5");
-  assert.equal(firstRun.items[2]?.details.skip?.providerEnabled, false);
-  assert.equal(firstRun.items[2]?.details.skip?.routeEnabled, false);
 
   await assert.rejects(
     () => smokeTestService.run(),
@@ -1271,7 +1221,7 @@ test("llm smoke test service returns success/failure/skipped matrix results and 
 
   now = new Date("2026-03-24T10:00:11+08:00");
   const secondRun = await smokeTestService.run();
-  assert.equal(secondRun.summary.totalCount, 3);
+  assert.equal(secondRun.summary.totalCount, 2);
 });
 
 test("llm smoke test service runs only the selected model/provider route with a reasoning-safe token limit", async () => {

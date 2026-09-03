@@ -23,6 +23,7 @@ export interface LlmCallObservationRecord {
   totalTokens?: number;
   usageSource: LlmUsageSource;
   errorCode?: string;
+  errorMessage?: string;
   routingConfigRevision?: number;
 }
 
@@ -103,6 +104,17 @@ export interface LlmCrossAggregate extends LlmObservationAggregate {
   operation: LlmOperation;
 }
 
+export interface LlmHealthFailureAggregate {
+  routingModelKey: string;
+  provider: string;
+  providerModel: string;
+  operation: LlmOperation;
+  errorCode: string;
+  errorMessage?: string;
+  count: number;
+  lastOccurredAt: string;
+}
+
 export interface LlmBoundedAggregateGroup<T> {
   items: T[];
   totalCount: number;
@@ -118,6 +130,7 @@ export interface LlmObservabilityQueryResult {
   providerModels: LlmBoundedAggregateGroup<LlmProviderModelAggregate>;
   routes: LlmBoundedAggregateGroup<LlmRouteAggregate>;
   cross: LlmBoundedAggregateGroup<LlmCrossAggregate>;
+  healthFailures: LlmBoundedAggregateGroup<LlmHealthFailureAggregate>;
   routingConfigRevisions: number[];
 }
 

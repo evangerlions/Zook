@@ -23,5 +23,5 @@ export function createLlmSmokeSummaryPresentation(
     return { scope, statusLabel: "运行正常", statusTone: "success" };
   }
 
-  return { scope, statusLabel: "全部跳过", statusTone: "neutral" };
+  return { scope, statusLabel: "没有可执行路由", statusTone: "neutral" };
 }

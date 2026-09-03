@@ -22,6 +22,7 @@ import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveR
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
+import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
@@ -74,9 +75,10 @@ import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-cal
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
-import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
+import { resolveRuntimeLlmProviderKeys } from "./application-llm-provider-keys.ts";
+import { initializeApplicationConfigs } from "./application-startup-config.ts";
 import { createApplicationTelemetryGateway } from "./application-telemetry-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
@@ -216,6 +218,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appConfigService,
     secretReferenceResolver,
   );
+  const aiNovelModelSelectionConfigService =
+    new AiNovelModelSelectionConfigService(
+      appConfigService,
+      commonLlmConfigService,
+    );
   const commonContentSafetyConfigService = new CommonContentSafetyConfigService(
     appConfigService,
   );
@@ -234,34 +241,17 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     appLogSecretService,
   );
-  await database.withExclusiveSession(async () => {
-    const initializedCommonLlmConfig =
-      await commonLlmConfigService.initializeDefaultConfig();
-    const initializedAppLogSecrets =
-      await appLogSecretService.initializeSecrets(await database.listAppIds());
-    const initializedRemoteLogPullConfigs =
-      await appRemoteLogPullService.initializeMissingConfigs(
-        await database.listAppIds(),
-      );
-    const initializedGetuiGyConfig =
-      await commonGetuiGyConfigService.initializeDefaultConfig();
-    const migratedAiNovelKickoffPrompts =
-      await migrateAiNovelKickoffPromptConfig(appConfigService);
-    if (
-      initializedCommonLlmConfig ||
-      initializedAppLogSecrets ||
-      initializedRemoteLogPullConfigs ||
-      initializedGetuiGyConfig ||
-      migratedAiNovelKickoffPrompts
-    ) {
-      await managedStateStore.save(database);
-    }
+  await initializeApplicationConfigs({
+    database,
+    managedStateStore,
+    appConfigService,
+    appLogSecretService,
+    appRemoteLogPullService,
+    commonGetuiGyConfigService,
+    commonLlmConfigService,
+    commonPasswordConfigService,
   });
-  const defaultLlmProviderKeys = ["bailian", "bailian_coding", "openrouter"];
-  const runtimeLlmProviderKeys = {
-    chat: new Set(Object.keys(options.llmProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
-    embedding: new Set(Object.keys(options.embeddingProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
-  };
+  const runtimeLlmProviderKeys = resolveRuntimeLlmProviderKeys(options);
   const llmHealthService = new LlmHealthService(database.llmObservabilityStore, runtimeLlmProviderKeys);
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
   const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
@@ -390,6 +380,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appConfigService,
     appI18nConfigService,
     appAiRoutingConfigService,
+    aiNovelModelSelectionConfigService,
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
@@ -423,7 +414,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
-    appAiRoutingConfigService,
+    aiNovelModelSelectionConfigService,
     logger,
     contentSafetyService,
   );
@@ -552,6 +543,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       emailTestSendService,
       userService,
       appAiRoutingConfigService,
+      aiNovelModelSelectionConfigService,
       tokenService,
       authService,
       getuiGyOneClickLoginService,

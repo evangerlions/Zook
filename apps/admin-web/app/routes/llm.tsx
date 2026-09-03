@@ -231,7 +231,7 @@ export default function LlmRoute() {
       setNotice(
         makeNotice(
           "success",
-          `冒烟测试完成：成功 ${payload.summary.successCount}，失败 ${payload.summary.failureCount}，跳过 ${payload.summary.skippedCount}。`,
+          `冒烟测试完成：成功 ${payload.summary.successCount}，失败 ${payload.summary.failureCount}。`,
         ),
       );
     } catch (error) {

@@ -20,8 +20,8 @@ paths:
         the inner payload must contain `scene_key + messages` or
         `sceneKey + messages`. Clients must not send `model`,
         `modelKey`, `providerModel`, `tier`, `routingTier`, or `modelTier`;
-        AINovel route keys are business scene route keys rather than common LLM
-        model keys, and user tier routing is resolved by Zook. When `stream=true`
+        scene keys select only the Prompt/tool workflow, while all chat scenes
+        share the server-side AINovel default model selection. When `stream=true`
         is present in the decrypted inner body, the same endpoint switches to
         `text/event-stream` SSE output instead of a single JSON response.
 
@@ -84,6 +84,7 @@ paths:
       tags: [ainovel, ai]
       parameters:
         - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/XDid"
       requestBody:
         required: true
         content:
@@ -182,6 +183,7 @@ paths:
       tags: [ainovel, ai]
       parameters:
         - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/XDid"
       requestBody:
         required: true
         content:
@@ -304,6 +306,17 @@ components:
       schema:
         type: string
         const: ai_novel
+    XDid:
+      name: X-Did
+      in: header
+      required: false
+      description: |
+        Stable device identifier used together with the authenticated UID for
+        sticky weighted Provider routing. If either identity is unavailable,
+        Provider selection falls back to per-request randomness.
+      schema:
+        type: string
+        minLength: 1
   schemas:
     AesEncryptedAiRequestEnvelope:
       type: object
