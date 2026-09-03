@@ -14,7 +14,7 @@ export async function tryHandleAdminCoreRoutes(
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
   const publicConfigMatch = request.path.match(/^\/api\/v1\/([^/]+)\/public\/config$/);
-  if (request.method === "GET" && publicConfigMatch) {
+  if (request.method === "GET" && publicConfigMatch && publicConfigMatch[1] !== "lighttick") {
     return await handleGetPublicAppConfig.call(this, request, decodeURIComponent(publicConfigMatch[1] as string));
   }
   if (request.method === "POST" && request.path === "/api/v1/admin/auth/login") {

@@ -17,15 +17,19 @@ export class InMemoryJobQueue implements JobQueue {
   async add(
     name: string,
     payload: Record<string, unknown>,
-    options: { attempts?: number; backoffMs?: number } = {},
+    options: { attempts?: number; backoffMs?: number; jobId?: string } = {},
   ): Promise<QueueJob> {
     if (this.failNextAdd) {
       this.failNextAdd = false;
       throw new Error("Queue add failed");
     }
 
+    if (options.jobId) {
+      const existing = this.jobs.find(job => job.id === options.jobId);
+      if (existing) return structuredClone(existing);
+    }
     const job: QueueJob = {
-      id: randomId("job"),
+      id: options.jobId ?? randomId("job"),
       name,
       payload,
       attemptsMade: 0,

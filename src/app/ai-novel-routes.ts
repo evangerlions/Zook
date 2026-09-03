@@ -1,6 +1,7 @@
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { PublicContractValidator } from "../generated/openapi/public-contract-validator.ts";
+import { resolveAiNovelRoutingIdentity } from "../modules/ai-novel/ai-novel-routing-identity.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import {
   buildEncryptedAiErrorPayload,
@@ -11,7 +12,6 @@ import {
   extractLocalAiDebugResponseText,
   handleEncryptedAiRequest,
   logEncryptedAiBusinessError,
-  resolveAiNovelModelRoutingTier,
   shouldExposeLocalAiRequestDebugFields,
   shouldServeLocalDebugEndpoint,
 } from "./encrypted-ai-routes.ts";
@@ -63,7 +63,10 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
     "ai_novel",
     auth.userId,
   );
-  const routingTier = resolveAiNovelModelRoutingTier.call(this, auth);
+  const routingIdentity = resolveAiNovelRoutingIdentity(
+    request.headers,
+    auth.userId,
+  );
   const { keyId, plaintext } = await decryptAiRequestBody.call(this, request);
 
   try {
@@ -86,10 +89,11 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
           exposeLocalDebug:
             shouldExposeLocalAiRequestDebugFields.call(this, request),
           requestId: request.requestId as string,
-          routingTier,
           userId: auth.userId,
+          routingIdentity,
           locale: this.resolveRequestLocale(request),
           accountRegion,
+          signal: request.signal,
         }),
       );
     }
@@ -97,8 +101,8 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
     const result = await this.aiNovelLlmService.createChatCompletion(body, {
       exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(this, request),
       requestId: request.requestId as string,
-      routingTier,
       userId: auth.userId,
+      routingIdentity,
       locale: this.resolveRequestLocale(request),
       accountRegion,
     });
@@ -147,8 +151,11 @@ export async function handleAiNovelEmbeddings(this: BackendRouteContext,
   return handleEncryptedAiRequest.call(this, request, async (body, auth) => {
     return await this.aiNovelLlmService.createEmbeddings(body, {
       requestId: request.requestId as string,
-      routingTier: resolveAiNovelModelRoutingTier.call(this, auth),
       userId: auth.userId,
+      routingIdentity: resolveAiNovelRoutingIdentity(
+        request.headers,
+        auth.userId,
+      ),
     });
   });
 }

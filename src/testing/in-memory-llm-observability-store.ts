@@ -2,6 +2,7 @@ import type {
   LlmBoundedAggregateGroup,
   LlmCallObservationRecord,
   LlmCrossAggregate,
+  LlmHealthFailureAggregate,
   LlmObservabilityFilter,
   LlmObservabilityQueryResult,
   LlmObservabilityStore,
@@ -19,6 +20,7 @@ import { toDateKey, toHourKey } from "../shared/utils.ts";
 const PROVIDER_LIMIT = 50;
 const MODEL_LIMIT = 100;
 const ROUTE_LIMIT = 500;
+const HEALTH_FAILURE_LIMIT = 100;
 
 export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
   readonly observations: LlmCallObservationRecord[] = [];
@@ -90,6 +92,10 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
       providerModels: bounded(groupByProviderModel(rangeRecords), MODEL_LIMIT),
       routes: bounded(groupByRoute(routingRecords), ROUTE_LIMIT),
       cross: bounded(groupByCross(rangeRecords), ROUTE_LIMIT),
+      healthFailures: boundedHealthFailures(
+        groupHealthFailures(rangeRecords),
+        HEALTH_FAILURE_LIMIT,
+      ),
       routingConfigRevisions: Array.from(new Set(
         revisionRecords.map((item) => item.routingConfigRevision).filter((item): item is number => item !== undefined),
       )).sort((left, right) => left - right),
@@ -153,6 +159,33 @@ function groupByCross(records: LlmCallObservationRecord[]): LlmCrossAggregate[] 
     });
 }
 
+function groupHealthFailures(records: LlmCallObservationRecord[]): LlmHealthFailureAggregate[] {
+  return group(
+    records.filter((item) => item.healthImpact === "failure"),
+    (item) => [
+      item.routingModelKey,
+      item.provider,
+      item.providerModel,
+      item.operation,
+      item.errorCode || "UNKNOWN_ERROR",
+      item.errorMessage || "",
+    ].join("\u0000"),
+  ).map(([key, items]) => {
+    const [routingModelKey, provider, providerModel, operation, errorCode, errorMessage] =
+      key.split("\u0000") as [string, string, string, LlmOperation, string, string];
+    return {
+      routingModelKey,
+      provider,
+      providerModel,
+      operation,
+      errorCode,
+      errorMessage: errorMessage || undefined,
+      count: items.length,
+      lastOccurredAt: items.map((item) => item.occurredAt).sort().at(-1)!,
+    };
+  });
+}
+
 function group(
   records: LlmCallObservationRecord[],
   keyFor: (record: LlmCallObservationRecord) => string,
@@ -170,6 +203,20 @@ function bounded<T extends { totalTokens?: number; requestCount: number }>(
 ): LlmBoundedAggregateGroup<T> {
   const sorted = [...items].sort((left, right) =>
     (right.totalTokens ?? 0) - (left.totalTokens ?? 0) || right.requestCount - left.requestCount,
+  );
+  return {
+    items: sorted.slice(0, limit),
+    totalCount: sorted.length,
+    truncated: sorted.length > limit,
+  };
+}
+
+function boundedHealthFailures(
+  items: LlmHealthFailureAggregate[],
+  limit: number,
+): LlmBoundedAggregateGroup<LlmHealthFailureAggregate> {
+  const sorted = [...items].sort((left, right) =>
+    right.count - left.count || right.lastOccurredAt.localeCompare(left.lastOccurredAt),
   );
   return {
     items: sorted.slice(0, limit),

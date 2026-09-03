@@ -8,6 +8,7 @@ export default [
     route("auth-rate-limits", "routes/auth-rate-limits.tsx"),
     route("config", "routes/config.tsx"),
     route("ai-routing", "routes/ai-routing.tsx"),
+    route("lighttick", "routes/lighttick.tsx"),
     route("feedback", "routes/feedback.tsx"),
     route("remote-log-pull", "routes/remote-log-pull.tsx"),
     route("remote-log-pull/tasks/:taskId", "routes/remote-log-pull-task.tsx"),

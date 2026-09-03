@@ -1,0 +1,44 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "results": [
+      {
+        "operation_id": "op_01JZLIGHTTICK001",
+        "status": "accepted",
+        "entity_type": "task",
+        "entity_id": "task_01JZLIGHTTICK01",
+        "version": 4
+      },
+      {
+        "operation_id": "op_01JZLIGHTTICK002",
+        "status": "duplicate",
+        "entity_type": "task",
+        "entity_id": "task_01JZLIGHTTICK02",
+        "version": 2
+      },
+      {
+        "operation_id": "op_01JZLIGHTTICK003",
+        "status": "conflict",
+        "entity_type": "task",
+        "entity_id": "task_01JZLIGHTTICK03",
+        "version": 5,
+        "conflict_fields": ["status", "version"],
+        "resolution_actions": ["keep_server", "refresh_and_retry"],
+        "error_code": "LIGHTTICK_VERSION_CONFLICT"
+      },
+      {
+        "operation_id": "op_01JZLIGHTTICK004",
+        "status": "rejected",
+        "error_code": "LIGHTTICK_SYNC_OPERATION_REJECTED"
+      },
+      {
+        "operation_id": "op_01JZLIGHTTICK005",
+        "status": "retryable",
+        "error_code": "LIGHTTICK_AI_UNAVAILABLE"
+      }
+    ],
+    "server_time": "2026-08-19T10:30:00Z"
+  },
+  "requestId": "req_lighttick_fixture_success"
+}

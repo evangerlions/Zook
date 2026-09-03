@@ -21,7 +21,7 @@ export interface LlmRouteRef {
 export interface LlmRouteHealthSnapshot {
   totalCalls: number;
   sampleSize: number;
-  successRate: number;
+  successRate?: number;
   healthScore: number;
   lastErrorAt?: string;
 }
@@ -94,7 +94,7 @@ export class LlmHealthService {
         weight: route.route.weight,
         configuredWeight: route.configuredWeight,
         sampleSize: health[index]?.sampleSize ?? 0,
-        successRate: health[index]?.successRate ?? 100,
+        successRate: health[index]?.successRate,
         healthScore: health[index]?.healthScore ?? 100,
         dynamicScore: roundRoutingValue(route.dynamicScore),
         effectiveProbability: roundRoutingValue(route.effectiveProbability),
@@ -110,7 +110,7 @@ function emptyHealthSnapshot(): LlmRouteHealthSnapshot {
   return {
     totalCalls: 0,
     sampleSize: 0,
-    successRate: 100,
+    successRate: undefined,
     healthScore: 100,
   };
 }

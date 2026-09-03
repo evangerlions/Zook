@@ -260,7 +260,7 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
         extras: {
           type: "object",
           description:
-            "Real JSON object for rare extra premise facts that do not fit canonical fields.",
+            "Author-defined durable custom requirements. Preserve omitted entries, write additions as a real JSON object, and set an existing key to null only when the author removes it.",
         },
       },
     },

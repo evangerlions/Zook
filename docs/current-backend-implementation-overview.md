@@ -19,6 +19,25 @@ FrogSleep 搭子闭环已覆盖统一邀请、授权、通知、成长主页、�
 
 公共 OpenAPI 的唯一来源是 `api-contracts/openapi/**`。该目录只参与维护期生成和 lint，不属于根 npm workspace，也不会复制进生产 Docker 镜像。运行时代码只依赖提交后的 `src/generated/openapi/public-contracts.generated.ts`，不得直接读取 `api-contracts/`。旧 API 仓库、submodule 和同步脚本已停用，完整流程见 `docs/api-contracts.md`。
 
+LightTick 已在独立 feature worktree 中实现统一后端：唯一产品 key 为 `lighttick`，
+外部接口合同位于 `api-contracts/openapi/lighttick/api.yaml`，Zook 运行时类型由
+`npm run generate:public-contracts` 固化到 `src/generated/openapi/`。产品域已包含目标、
+计划、Today、任务命令、复盘、提案、同步、设备、通知、AI run，以及 additive 的
+action-first 渐进启动闭环。渐进启动提供确定性 starter fallback、首次行动事实反馈、
+三日预览、周承诺门槛、同 lineage 任务变体和暂停/恢复模式；原 plan-first onboarding
+继续兼容。受限游客身份可通过设备绑定证明事务升级到正式 LightTick membership，迁移保持
+资源 ID、版本、执行事件、幂等结果和同步序列，并以独立升级操作记录支持丢失响应重放。
+刷新令牌使用原子消费标记保证并发轮换只有一个成功；登出保留产品数据，LightTick 删除则要求
+5 分钟有效的一次性密码重新认证证明，并只清理 LightTick membership、数据和会话。
+LightTick 独立公开配置在产品关闭时仍可读取，并以固定白名单响应环境、双端最低版本、
+游客有效期、功能开关与 HTTPS 法律/支持入口；管理配置中的密钥和内部字段不会透传。
+LightTick 通知已复用公共 APNs/FCM 适配器，但使用产品自有安全载荷、APNs topic 和可选独立
+Firebase 项目；调度按业务日期幂等，遵守 profile timezone、安静时段、分类偏好和暂停目标，
+不可恢复 token 只失活匹配的 LightTick device，日志不记录 token 或 provider 凭据。
+能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
+测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
+不再拥有生产数据、合同或运行时。
+
 ## 2. 当前已完成的主要功能
 
 ### 2.0 BodyLog app-scoped 产品能力
@@ -195,12 +214,13 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 
 1. `common.email_service_regions` 的强类型配置、版本记录与恢复
 2. `common.llm_service` 的强类型配置、版本记录与恢复，以及可选的 OpenRouter `oa-hmac-v1` 透明代理路由；代理开关和 Key ID 存配置，HMAC secret 从 `common.passwords` 动态读取；内置禁用的 OpenRouter `openrouter/free` 测试模型不会改变 AINovel 默认路由
-3. LLM 按 `auto / fixed` 两种策略路由
-4. PostgreSQL 脱敏 LLM call observation；每 route 健康窗口按 observation 时间顺序派生最近 100 个健康影响样本，客户端取消和内容业务拒绝不污染健康分
-5. canonical 路由 scorer 统一 Chat、Embedding 和 Admin runtime 的 `weight × healthScore`、全零回退、fixed 选择与真实概率
-6. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
-7. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行；AINovel `ainovel-*` scene route key 不作为运营 Model 维度
-8. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
+3. 阿里云百炼 Token Plan 作为独立 Chat Provider `bailian_token_plan` 接入其套餐专属 OpenAI-compatible Base URL，与 `bailian_coding` 完全分离；`common.passwords` 中存在 `bailian.token_plan_api_key` 时，启动配置迁移会幂等加入 Token Plan Provider 和其支持的文本模型，不改变现有默认模型或既有模型路由；当前不使用 Anthropic 端点或依赖 Responses API 的内置 Harness
+4. LLM 按 `auto / fixed` 两种策略路由；公共方法 `resolveLlmRoutingUnit(did, uid)` 直接接收两个可空字符串，各取清洗后的末尾 3 个 base36 字符，使用两者之和对 1,000 取模形成稳定 Provider 分桶；任一入参清洗后不足 3 位时，该项由方法内部 `Math.random()` 生成的 0–999 值替代
+5. PostgreSQL 脱敏 LLM call observation；每 route 健康窗口按 observation 时间顺序派生最近 100 个健康影响样本，客户端取消和内容业务拒绝不污染健康分
+6. canonical 路由 scorer 统一 Chat、Embedding 和 Admin runtime 的 `weight × healthScore`、全零回退与 fixed 选择；健康加权概率用于缺省身份请求，完整 DID+UID 请求按基础权重保持稳定 Provider 分桶
+7. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
+8. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
+9. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
 
 对应核心文件：
 
@@ -256,6 +276,9 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 3. 返回值为当前 app 配置的 JSON 对象
 4. 如果请求同时携带 `X-App-Id` 或 Bearer Token，则必须与 path 中的 `productKey` 对应 app 一致
 5. 这里的 `productKey` 是 URL namespace；运行时数据与鉴权仍使用 `appId`
+6. LightTick 使用独立的 `/api/v1/lighttick/public/config` 合同，不返回通用接口的原始
+   `config` 对象；它在业务关闭时仍提供安全启动元数据，且只有运行时与后台开关同时开启时
+   才会把公开能力标记为启用
 
 ### 2.13 AINovel 加密 AI 能力接口
 
@@ -266,7 +289,7 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 3. 两条接口都强制要求 Bearer 鉴权与 `app_id = ai_novel`
 4. 请求与响应都支持 `AES-256-GCM` JSON envelope
 5. 解密成功后的业务成功与业务错误都会加密返回
-6. `scene_key` / `sceneKey` 是 AINovel scene-first 入口；客户端不允许直传底层 `model`、`modelKey`、`providerModel`、会员档位或 routing tier 字段。AINovel routing 中的 `ainovel-*` 值是业务 scene route key，不是 common LLM model key
+6. `scene_key` / `sceneKey` 只选择 AINovel 的 Prompt、工具和响应工作流；客户端不允许直传底层 `model`、`modelKey`、`providerModel` 或 routing tier 字段。所有文本场景共用服务端 `ai_novel.model_selection.chat.default` 选出的模型
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
 9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
@@ -278,22 +301,22 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 2. `src/services/aes-gcm-payload-crypto.service.ts`
 3. `src/app.module.ts`
 
-### 2.14 AINovel 产品级 AI Routing 配置
+### 2.14 AINovel 产品级模型选择
 
-当前 `ai_novel` 专属的产品级模型路由由 Zook 代码硬编码：
+当前 `ai_novel` 使用单一默认模型权重路由：
 
-1. Admin 侧的 `ai_novel.model_routing` 只保留只读展示，不再作为运行时配置来源
-2. 配置结构为 scene-first：`scenes.{scene_key}.kind + scenes.{scene_key}.routes.{free|plus|super_plus}`
-3. 运行时由 Zook 根据已认证用户解析 model routing tier，再用 `scene_key + tier` 选择业务 scene route key；当前 resolver 默认返回 `free`，后续接会员权益时只替换 Zook 侧判定
-4. AINovel 客户端只发送 `scene_key`，不参与免费 / 付费档位判断
-5. `fact_embed / episode_embed / summary_embed / query_memory_embed` 继续走独立 embedding scene route key
-6. `common.llm_service` 默认文档只预填可统计、可冒烟的实际模型 key；AINovel routing 中的 `ainovel-*` 只作为业务 route key 保留
+1. `ai_novel.model_selection` 使用通用版本化 App 配置存储，结构为 `schemaVersion + chat.default[]`，不支持会员档位或场景级模型覆盖
+2. `chat.default` 的每一项为 `modelKey + weight`，模型键不可重复，每项权重大于 0 且最多两位小数，总和必须等于 100
+3. 文本请求复用通用 `llm-routing-affinity`，以 `X-Did + auth UID` 得到同一个 routing unit，再按数组顺序累计权重选择最终 common LLM model key；所有文本场景使用同一结果
+4. 整条配置不存在时使用代码默认 `qwen3.6-plus: 100`；配置损坏或引用失效模型时明确返回 `AI_UPSTREAM_CONFIG_INVALID`
+5. Provider、上游 `providerModel`、密钥、Provider 路由权重和健康路由仍由 `common.llm_service` 负责
+6. Embedding 使用代码中固定的 `text-embedding-v4` common model key，其 Provider 路由仍归 `common.llm_service`
 
 对应核心文件：
 
-1. `src/services/app-ai-routing-config.service.ts`
-2. `src/services/common-llm-config.service.ts`
-3. `src/modules/ai-novel/ai-novel-llm-scenes.ts`
+1. `src/modules/ai-novel/ai-novel-model-selection-config.service.ts`
+2. `src/modules/ai-novel/ai-novel-model-weight-selection.ts`
+3. `src/services/common-llm-config.service.ts`
 4. `src/modules/ai-novel/ai-novel-llm.service.ts`
 5. `src/app.module.ts`
 

@@ -1,0 +1,1617 @@
+openapi: 3.1.1
+info:
+  title: LightTick Public API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Canonical app-scoped API for the LightTick AI coaching core loop and native clients.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+tags:
+  - name: lighttick-profile
+    description: Profile preferences and resumable onboarding.
+  - name: lighttick-goals
+    description: Goal aggregates and lifecycle commands.
+  - name: lighttick-plans
+    description: Proposed and confirmed planning cycles.
+  - name: lighttick-tasks
+    description: Today projection and deterministic task commands.
+  - name: lighttick-reviews
+    description: Weekly/monthly reviews and constrained change proposals.
+  - name: lighttick-ai
+    description: Persisted asynchronous AI scene runs.
+  - name: lighttick-sync
+    description: Idempotent offline mutation push and cursor-based pull.
+  - name: lighttick-devices
+    description: Native device and push-token registration.
+  - name: lighttick-account
+    description: LightTick guest sessions, account upgrade, session recovery, and app-scoped deletion.
+  - name: lighttick-config
+    description: Public, non-secret native client configuration.
+paths:
+  /api/v1/lighttick/public/config:
+    get:
+      operationId: getLightTickPublicConfig
+      tags: [lighttick-config]
+      summary: Get non-secret environment and feature metadata for native clients
+      security: []
+      responses:
+        "200":
+          description: Current public LightTick client configuration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickPublicConfigEnvelope" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+        "503": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/guest-sessions:
+    post:
+      operationId: createLightTickGuestSession
+      tags: [lighttick-account]
+      summary: Create or idempotently recover a device-bound restricted guest session
+      description: The returned upgrade token is an opaque, device-bound proof for a later account upgrade and must be stored as securely as a refresh token.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickGuestSessionRequest" }
+      responses:
+        "201":
+          description: Guest session created or recovered for the same idempotency key and payload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickGuestSessionEnvelope" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+        "503": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/session:
+    get:
+      operationId: getLightTickAccountSession
+      tags: [lighttick-account]
+      summary: Recover the current guest or registered LightTick session metadata
+      description: Native clients refresh access credentials through the common auth contract, then call this endpoint to recover product-scoped state.
+      responses:
+        "200":
+          description: Current product-scoped account session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickAccountSessionEnvelope" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "410": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/upgrade:
+    post:
+      operationId: upgradeLightTickGuestAccount
+      tags: [lighttick-account]
+      summary: Transfer guest-owned LightTick data into the authenticated registered account
+      description: Requires a registered common-auth bearer token plus the guest session's opaque, device-bound upgrade proof. The transfer is transactional and preserves resource identifiers and sync continuity.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickAccountUpgradeRequest" }
+      responses:
+        "200":
+          description: Guest data transferred or the identical transfer replayed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickAccountUpgradeEnvelope" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "410": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/account/reauthentication:
+    post:
+      operationId: reauthenticateLightTickAccount
+      tags: [lighttick-account]
+      summary: Issue a short-lived one-time proof for destructive account operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickReauthenticationRequest" }
+      responses:
+        "200":
+          description: One-time reauthentication proof
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickReauthenticationEnvelope" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/profile:
+    get:
+      operationId: getLightTickProfile
+      tags: [lighttick-profile]
+      summary: Get the current user's LightTick profile and onboarding state
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+    patch:
+      operationId: updateLightTickProfile
+      tags: [lighttick-profile]
+      summary: Update current user's timezone, locale, pace, and notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickProfileUpdateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/onboarding:
+    post:
+      operationId: startLightTickOnboarding
+      tags: [lighttick-profile, lighttick-ai]
+      summary: Persist onboarding constraints and create a recoverable initial-plan run
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickOnboardingRequest" }
+      responses:
+        "202": { $ref: "#/components/responses/LightTickAccepted" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+        "503": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/onboarding/starter:
+    post:
+      operationId: createLightTickStarter
+      tags: [lighttick-profile, lighttick-tasks]
+      summary: Create an action-first starter from a fuzzy wish using an always-available deterministic fallback
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickStarterRequest" }
+      responses:
+        "201": { $ref: "#/components/responses/LightTickCreated" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/onboarding/first-action:
+    post:
+      operationId: completeLightTickFirstAction
+      tags: [lighttick-profile, lighttick-tasks]
+      summary: Complete the first action and return factual feedback plus a three-day preview
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickFirstActionRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/onboarding/commitment:
+    post:
+      operationId: selectLightTickCommitment
+      tags: [lighttick-profile, lighttick-goals]
+      summary: Select a weekly commitment after two valid actions or an explicit deep-planning request
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickCommitmentRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/runs/{runId}:
+    parameters:
+      - $ref: "#/components/parameters/RunId"
+    get:
+      operationId: getLightTickRun
+      tags: [lighttick-ai]
+      summary: Get persisted generation, review, or proposal run state
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/goals:
+    get:
+      operationId: listLightTickGoals
+      tags: [lighttick-goals]
+      summary: List owner-scoped goals using a stable cursor
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ListLimit"
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+    post:
+      operationId: createLightTickGoal
+      tags: [lighttick-goals]
+      summary: Create a draft or active LightTick goal
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickGoalCreateRequest" }
+      responses:
+        "201": { $ref: "#/components/responses/LightTickCreated" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/goals/{goalId}:
+    parameters:
+      - $ref: "#/components/parameters/GoalId"
+    get:
+      operationId: getLightTickGoal
+      tags: [lighttick-goals]
+      summary: Get an owner-scoped goal
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+    patch:
+      operationId: updateLightTickGoal
+      tags: [lighttick-goals]
+      summary: Update goal fields with optimistic concurrency
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickGoalUpdateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/goals/{goalId}/lifecycle:
+    parameters:
+      - $ref: "#/components/parameters/GoalId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: transitionLightTickGoal
+      tags: [lighttick-goals]
+      summary: Pause, resume, complete, or archive a goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickGoalLifecycleRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/plan-runs:
+    post:
+      operationId: createLightTickPlanRun
+      tags: [lighttick-plans, lighttick-ai]
+      summary: Create a persisted month, week, or day plan-generation run
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickPlanRunRequest" }
+      responses:
+        "202": { $ref: "#/components/responses/LightTickAccepted" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+        "503": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/plans:
+    get:
+      operationId: listLightTickPlans
+      tags: [lighttick-plans]
+      summary: List owner-scoped plans, optionally filtered by goal
+      parameters:
+        - name: goal_id
+          in: query
+          schema: { $ref: "#/components/schemas/LightTickId" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+  /api/v1/lighttick/plans/{planId}:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      operationId: getLightTickPlan
+      tags: [lighttick-plans]
+      summary: Get an owner-scoped plan and its hierarchy
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/plans/{planId}/confirm:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: confirmLightTickPlan
+      tags: [lighttick-plans]
+      summary: Confirm a proposed plan and activate its first task set
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickVersionedCommandRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/plans/{planId}/tasks:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+      - $ref: "#/components/parameters/Cursor"
+      - $ref: "#/components/parameters/ListLimit"
+    get:
+      operationId: listLightTickPlanTasks
+      tags: [lighttick-plans, lighttick-tasks]
+      summary: List tasks belonging to an owner-scoped plan
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/today:
+    get:
+      operationId: getLightTickToday
+      tags: [lighttick-tasks]
+      summary: Get the actionable Today snapshot in the user's IANA timezone
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Optional business date for deterministic refresh; defaults to the user's current local date.
+          schema: { type: string, format: date }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/tasks/{taskId}/start:
+    parameters: &taskCommandParameters
+      - $ref: "#/components/parameters/TaskId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: startLightTickTask
+      tags: [lighttick-tasks]
+      summary: Mark a task in progress
+      requestBody: &versionedCommandBody
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickVersionedCommandRequest" }
+      responses: &taskCommandResponses
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/tasks/{taskId}/complete:
+    parameters: *taskCommandParameters
+    post:
+      operationId: completeLightTickTask
+      tags: [lighttick-tasks]
+      summary: Complete a task and record actual execution facts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskCompleteRequest" }
+      responses: *taskCommandResponses
+  /api/v1/lighttick/tasks/{taskId}/skip:
+    parameters: *taskCommandParameters
+    post:
+      operationId: skipLightTickTask
+      tags: [lighttick-tasks]
+      summary: Skip a task with a controlled reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskSkipRequest" }
+      responses: *taskCommandResponses
+  /api/v1/lighttick/tasks/{taskId}/defer:
+    parameters: *taskCommandParameters
+    post:
+      operationId: deferLightTickTask
+      tags: [lighttick-tasks]
+      summary: Defer a task while preserving schedule history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskDeferRequest" }
+      responses: *taskCommandResponses
+  /api/v1/lighttick/tasks/{taskId}/cancel:
+    parameters: *taskCommandParameters
+    post:
+      operationId: cancelLightTickTask
+      tags: [lighttick-tasks]
+      summary: Cancel a task through an explicit lifecycle command
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskCancelRequest" }
+      responses: *taskCommandResponses
+  /api/v1/lighttick/tasks/{taskId}/variant:
+    parameters: *taskCommandParameters
+    post:
+      operationId: switchLightTickTaskVariant
+      tags: [lighttick-tasks]
+      summary: Switch standard, light, or minimum intensity without changing task lineage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskVariantRequest" }
+      responses: *taskCommandResponses
+  /api/v1/lighttick/tasks/{taskId}/steps/{stepId}:
+    parameters:
+      - $ref: "#/components/parameters/TaskId"
+      - name: stepId
+        in: path
+        required: true
+        schema: { $ref: "#/components/schemas/LightTickId" }
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: updateLightTickTaskStep
+      tags: [lighttick-tasks]
+      summary: Mark one task step complete or incomplete while versioning the parent task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickTaskStepCommandRequest" }
+      responses: *taskCommandResponses
+  /api/v1/lighttick/review-runs:
+    post:
+      operationId: createLightTickReviewRun
+      tags: [lighttick-reviews, lighttick-ai]
+      summary: Create a server-derived weekly or monthly review run
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickReviewRunRequest" }
+      responses:
+        "202": { $ref: "#/components/responses/LightTickAccepted" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/coach-runs:
+    post:
+      operationId: createLightTickCoachRun
+      tags: [lighttick-ai]
+      summary: Create a recoverable run for one bounded Phase 1 Coach scene
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickCoachRunRequest" }
+      responses:
+        "202": { $ref: "#/components/responses/LightTickAccepted" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/reviews:
+    get:
+      operationId: listLightTickReviews
+      tags: [lighttick-reviews]
+      summary: List persisted owner-scoped reviews
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ListLimit"
+        - name: period
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/LightTickReviewPeriod" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/reviews/{reviewId}:
+    parameters:
+      - $ref: "#/components/parameters/ReviewId"
+    get:
+      operationId: getLightTickReview
+      tags: [lighttick-reviews]
+      summary: Get a persisted review and optional linked proposal
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposal-runs:
+    post:
+      operationId: createLightTickChangeProposalRun
+      tags: [lighttick-ai, lighttick-plans]
+      summary: Create a recoverable AI replan run that can produce a material-change proposal
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickChangeProposalRunRequest" }
+      responses:
+        "202": { $ref: "#/components/responses/LightTickAccepted" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+        "429": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposals:
+    get:
+      operationId: listLightTickChangeProposals
+      tags: [lighttick-ai, lighttick-plans]
+      summary: List owner-scoped structured change proposals
+      parameters:
+        - name: plan_id
+          in: query
+          schema: { $ref: "#/components/schemas/LightTickId" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposals/{proposalId}:
+    parameters:
+      - $ref: "#/components/parameters/ProposalId"
+    get:
+      operationId: getLightTickChangeProposal
+      tags: [lighttick-ai, lighttick-plans]
+      summary: Get a structured plan-change diff, reason, and impact
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposals/{proposalId}/accept:
+    parameters:
+      - $ref: "#/components/parameters/ProposalId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: acceptLightTickChangeProposal
+      tags: [lighttick-ai, lighttick-plans]
+      summary: Accept and transactionally apply a current proposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickProposalAcceptRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposals/{proposalId}/reject:
+    parameters:
+      - $ref: "#/components/parameters/ProposalId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: rejectLightTickChangeProposal
+      tags: [lighttick-ai, lighttick-plans]
+      summary: Reject a pending proposal without changing the active plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickProposalRejectRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/change-proposals/{proposalId}/explain:
+    parameters:
+      - $ref: "#/components/parameters/ProposalId"
+      - $ref: "#/components/parameters/IdempotencyKey"
+    post:
+      operationId: explainLightTickChangeProposal
+      tags: [lighttick-ai, lighttick-plans]
+      summary: Explain proposal conclusion, evidence, and changes without mutating the plan
+      requestBody: *versionedCommandBody
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/sync/push:
+    post:
+      operationId: pushLightTickSyncOperations
+      tags: [lighttick-sync]
+      summary: Apply an idempotent batch of offline client operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickSyncPushRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "413": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/sync/pull:
+    get:
+      operationId: pullLightTickSyncChanges
+      tags: [lighttick-sync]
+      summary: Pull an ordered owner-scoped change feed
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/devices:
+    post:
+      operationId: registerLightTickDevice
+      tags: [lighttick-devices]
+      summary: Idempotently register a LightTick APNs or FCM device
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickDeviceUpsertRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/devices/{deviceId}:
+    parameters:
+      - $ref: "#/components/parameters/DeviceId"
+    delete:
+      operationId: deleteLightTickDevice
+      tags: [lighttick-devices]
+      summary: Remove an owner-scoped LightTick device
+      responses:
+        "200": { $ref: "#/components/responses/LightTickOk" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/me/account:
+    delete:
+      operationId: deleteLightTickAccount
+      tags: [lighttick-account]
+      summary: Delete the LightTick membership and app-scoped product data only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickAccountDeletionRequest" }
+      responses:
+        "200":
+          description: LightTick membership and app-scoped data deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickAccountDeletionEnvelope" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated stable operation key. Reuse with a different canonical payload is rejected.
+      schema: { type: string, minLength: 8, maxLength: 128 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor bound to the authenticated LightTick app member.
+      schema: { type: string, minLength: 1, maxLength: 512 }
+    ListLimit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    RunId: { name: runId, in: path, required: true, schema: { $ref: "#/components/schemas/LightTickId" } }
+    GoalId: { name: goalId, in: path, required: true, schema: { $ref: "#/components/schemas/LightTickId" } }
+    PlanId: { name: planId, in: path, required: true, schema: { $ref: "#/components/schemas/LightTickId" } }
+    TaskId: { name: taskId, in: path, required: true, schema: { $ref: "#/components/schemas/LightTickId" } }
+    ReviewId: { name: reviewId, in: path, required: true, schema: { $ref: "#/components/schemas/LightTickId" } }
+    ProposalId: { name: proposalId, in: path, required: true, schema: { $ref: "#/components/schemas/LightTickId" } }
+    DeviceId: { name: deviceId, in: path, required: true, schema: { $ref: "#/components/schemas/LightTickId" } }
+  responses:
+    LightTickOk:
+      description: Successful LightTick response
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LightTickEnvelope" }
+    LightTickCreated:
+      description: LightTick resource created
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LightTickEnvelope" }
+    LightTickAccepted:
+      description: Persisted asynchronous run accepted
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LightTickRunEnvelope" }
+    LightTickError:
+      description: Stable LightTick or Zook platform error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LightTickErrorEnvelope" }
+  schemas:
+    LightTickId:
+      type: string
+      minLength: 8
+      maxLength: 128
+      pattern: "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    LightTickVersion:
+      type: integer
+      minimum: 1
+    LightTickTimestamp:
+      type: string
+      format: date-time
+    LightTickTimezone:
+      type: string
+      minLength: 1
+      maxLength: 64
+      description: IANA timezone identifier such as Asia/Shanghai.
+    LightTickEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { type: object, additionalProperties: true }
+        requestId: { type: string }
+    LightTickRunEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: ACCEPTED }
+        message: { type: string, example: accepted }
+        data: { $ref: "#/components/schemas/LightTickRunData" }
+        requestId: { type: string }
+    LightTickErrorEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { $ref: "#/components/schemas/LightTickErrorCode" }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/LightTickErrorData" }
+        requestId: { type: string }
+    LightTickErrorCode:
+      type: string
+      enum:
+        - REQ_INVALID_BODY
+        - REQ_FIELD_REQUIRED
+        - REQ_FIELD_INVALID
+        - AUTH_REQUIRED
+        - AUTH_TOKEN_INVALID
+        - AUTH_SESSION_REVOKED
+        - APP_SCOPE_FORBIDDEN
+        - APP_MEMBER_INACTIVE
+        - LIGHTTICK_APP_DISABLED
+        - LIGHTTICK_GUEST_SESSION_EXPIRED
+        - LIGHTTICK_GUEST_UPGRADE_INVALID
+        - LIGHTTICK_GUEST_CREDENTIAL_INVALID
+        - LIGHTTICK_GUEST_EXPIRED
+        - LIGHTTICK_GUEST_REVOKED
+        - LIGHTTICK_GUEST_UPGRADE_CONFLICT
+        - LIGHTTICK_ACCOUNT_ALREADY_UPGRADED
+        - LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED
+        - LIGHTTICK_REAUTH_REQUIRED
+        - LIGHTTICK_APP_ACCESS_DENIED
+        - LIGHTTICK_RESOURCE_NOT_FOUND
+        - LIGHTTICK_STATE_TRANSITION_INVALID
+        - LIGHTTICK_VERSION_CONFLICT
+        - LIGHTTICK_IDEMPOTENCY_MISMATCH
+        - LIGHTTICK_PLAN_CONSTRAINT_FAILED
+        - LIGHTTICK_AI_RUN_FAILED
+        - LIGHTTICK_AI_UNAVAILABLE
+        - LIGHTTICK_AI_QUOTA_EXCEEDED
+        - LIGHTTICK_RUN_NOT_READY
+        - LIGHTTICK_PROPOSAL_STALE
+        - LIGHTTICK_PROPOSAL_NOT_PENDING
+        - LIGHTTICK_SYNC_CURSOR_INVALID
+        - LIGHTTICK_SYNC_BATCH_TOO_LARGE
+        - LIGHTTICK_SYNC_OPERATION_REJECTED
+        - LIGHTTICK_TIMEZONE_INVALID
+        - RATE_LIMITED
+        - INTERNAL_ERROR
+    LightTickErrorData:
+      type: object
+      required: [retryable]
+      properties:
+        retryable: { type: boolean }
+        field: { type: string }
+        resource_id: { $ref: "#/components/schemas/LightTickId" }
+        current_version: { $ref: "#/components/schemas/LightTickVersion" }
+        server_snapshot: { type: object, additionalProperties: true }
+        conflict_fields: { type: array, items: { type: string } }
+        resolution_actions: { type: array, items: { type: string } }
+        retry_after_seconds: { type: integer, minimum: 0 }
+        violations:
+          type: array
+          items: { $ref: "#/components/schemas/LightTickConstraintViolation" }
+    LightTickConstraintViolation:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        field: { type: string }
+    LightTickProfileData:
+      type: object
+      required: [user_id, timezone, locale, pace, onboarding_state, version, created_at, updated_at]
+      properties:
+        user_id: { $ref: "#/components/schemas/LightTickId" }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        locale: { type: string, minLength: 2, maxLength: 16 }
+        pace: { $ref: "#/components/schemas/LightTickPace" }
+        onboarding_state: { enum: [not_started, drafting, generating, proposed, completed, failed] }
+        notification_preferences: { $ref: "#/components/schemas/LightTickNotificationPreferences" }
+        version: { $ref: "#/components/schemas/LightTickVersion" }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickProfileUpdateRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        locale: { type: string, minLength: 2, maxLength: 16 }
+        pace: { $ref: "#/components/schemas/LightTickPace" }
+        notification_preferences: { $ref: "#/components/schemas/LightTickNotificationPreferences" }
+      additionalProperties: false
+    LightTickPace:
+      type: string
+      enum: [compact, balanced, relaxed]
+    LightTickNotificationPreferences:
+      type: object
+      properties:
+        enabled: { type: boolean, default: true }
+        daily_reminder_time: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        review_reminders: { type: boolean, default: true }
+        quiet_hours_start: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        quiet_hours_end: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+      additionalProperties: false
+    LightTickOnboardingRequest:
+      type: object
+      required: [title, current_level, weekly_available_minutes, pace, timezone]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 4000 }
+        current_level: { type: string, minLength: 1, maxLength: 500 }
+        weekly_available_minutes: { type: integer, minimum: 30, maximum: 10080 }
+        pace: { $ref: "#/components/schemas/LightTickPace" }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        target_date: { type: string, format: date }
+        duration_months: { type: integer, minimum: 1, maximum: 120 }
+        motivation: { type: string, maxLength: 4000 }
+        availability_windows:
+          type: array
+          maxItems: 28
+          items: { $ref: "#/components/schemas/LightTickAvailabilityWindow" }
+      additionalProperties: false
+    LightTickStarterRequest:
+      type: object
+      required: [wish, timezone]
+      properties:
+        wish: { type: string, minLength: 1, maxLength: 500 }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        locale: { type: string, minLength: 2, maxLength: 16 }
+      additionalProperties: false
+    LightTickTaskVariant:
+      type: string
+      enum: [standard, light, minimum]
+    LightTickTaskVariantDefinition:
+      type: object
+      required: [title, estimated_duration_minutes, completion_criteria]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        estimated_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        completion_criteria: { type: string, minLength: 1, maxLength: 1000 }
+      additionalProperties: false
+    LightTickStarterCandidate:
+      type: object
+      required: [candidate_id, title, assumption, variants]
+      properties:
+        candidate_id: { $ref: "#/components/schemas/LightTickId" }
+        title: { type: string }
+        assumption: { type: string }
+        variants:
+          type: object
+          required: [standard, light, minimum]
+          properties:
+            standard: { $ref: "#/components/schemas/LightTickTaskVariantDefinition" }
+            light: { $ref: "#/components/schemas/LightTickTaskVariantDefinition" }
+            minimum: { $ref: "#/components/schemas/LightTickTaskVariantDefinition" }
+          additionalProperties: false
+    LightTickFirstActionRequest:
+      type: object
+      required: [task_id, base_version, selected_variant, actual_duration_minutes]
+      properties:
+        task_id: { $ref: "#/components/schemas/LightTickId" }
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        selected_variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
+        actual_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        difficulty: { enum: [easy, right, hard] }
+      additionalProperties: false
+    LightTickCommitmentMode:
+      type: string
+      enum: [recovery, light, standard, sprint]
+    LightTickCommitmentRequest:
+      type: object
+      required: [goal_id, mode]
+      properties:
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        mode: { $ref: "#/components/schemas/LightTickCommitmentMode" }
+        deep_planning: { type: boolean, default: false }
+      additionalProperties: false
+    LightTickAvailabilityWindow:
+      type: object
+      required: [weekday, start_time, end_time]
+      properties:
+        weekday: { type: integer, minimum: 1, maximum: 7 }
+        start_time: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        end_time: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+      additionalProperties: false
+    LightTickGoalStatus:
+      type: string
+      enum: [draft, active, paused, recovering, completed, archived]
+    LightTickGoalData:
+      type: object
+      required: [id, title, status, constraints, version, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        title: { type: string }
+        description: { type: string }
+        status: { $ref: "#/components/schemas/LightTickGoalStatus" }
+        target_date: { type: string, format: date }
+        motivation: { type: string }
+        constraints: { $ref: "#/components/schemas/LightTickGoalConstraints" }
+        pause_metadata:
+          type: object
+          properties:
+            reason: { type: string }
+            paused_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+            expected_resume_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+            keep_light_tasks: { type: boolean }
+            notification_policy: { enum: [suppress, light_only] }
+        recovery_started_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        version: { $ref: "#/components/schemas/LightTickVersion" }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickGoalConstraints:
+      type: object
+      required: [weekly_available_minutes, pace]
+      properties:
+        current_level: { type: string, maxLength: 500 }
+        weekly_available_minutes: { type: integer, minimum: 30, maximum: 10080 }
+        pace: { $ref: "#/components/schemas/LightTickPace" }
+        availability_windows:
+          type: array
+          maxItems: 28
+          items: { $ref: "#/components/schemas/LightTickAvailabilityWindow" }
+      additionalProperties: false
+    LightTickGoalCreateRequest:
+      type: object
+      required: [title, constraints]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 4000 }
+        target_date: { type: string, format: date }
+        motivation: { type: string, maxLength: 4000 }
+        constraints: { $ref: "#/components/schemas/LightTickGoalConstraints" }
+      additionalProperties: false
+    LightTickGoalUpdateRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 4000 }
+        target_date: { type: string, format: date }
+        motivation: { type: string, maxLength: 4000 }
+        constraints: { $ref: "#/components/schemas/LightTickGoalConstraints" }
+      additionalProperties: false
+    LightTickGoalLifecycleRequest:
+      type: object
+      required: [base_version, action]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        action: { enum: [pause, resume, complete, archive] }
+        reason: { type: string, maxLength: 1000 }
+        expected_resume_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        keep_light_tasks: { type: boolean }
+        notification_policy: { enum: [suppress, light_only] }
+        resume_mode: { enum: [original_pace, recovery_mode, adjust_goal] }
+      additionalProperties: false
+    LightTickPlanGranularity:
+      type: string
+      enum: [month, week, day]
+    LightTickPlanStatus:
+      type: string
+      enum: [generating, proposed, active, superseded, failed]
+    LightTickPlanRunRequest:
+      type: object
+      required: [goal_id, granularity, period_start, period_end]
+      properties:
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        base_plan_id: { $ref: "#/components/schemas/LightTickId" }
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        granularity: { $ref: "#/components/schemas/LightTickPlanGranularity" }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        available_minutes: { type: integer, minimum: 0, maximum: 10080 }
+      additionalProperties: false
+    LightTickPlanData:
+      type: object
+      required: [id, goal_id, granularity, status, period_start, period_end, source, version, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        parent_plan_id: { $ref: "#/components/schemas/LightTickId" }
+        granularity: { $ref: "#/components/schemas/LightTickPlanGranularity" }
+        status: { $ref: "#/components/schemas/LightTickPlanStatus" }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        title: { type: string }
+        summary: { type: string }
+        source: { enum: [ai, template, manual] }
+        proposal:
+          type: object
+          description: Persisted plan preview including proposed tasks and non-secret planning assumptions.
+          additionalProperties: true
+        tasks: { type: array, items: { $ref: "#/components/schemas/LightTickTaskData" } }
+        version: { $ref: "#/components/schemas/LightTickVersion" }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickTaskStatus:
+      type: string
+      enum: [pending, in_progress, completed, skipped, deferred, cancelled]
+    LightTickTaskDifficulty:
+      type: string
+      enum: [low, medium, high]
+    LightTickTaskData:
+      type: object
+      required: [id, plan_id, title, status, scheduled_date, estimated_duration_minutes, priority, version, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        lineage_id: { $ref: "#/components/schemas/LightTickId" }
+        plan_id: { $ref: "#/components/schemas/LightTickId" }
+        title: { type: string }
+        completion_criteria: { type: string }
+        selected_variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
+        variants:
+          type: object
+          properties:
+            standard: { $ref: "#/components/schemas/LightTickTaskVariantDefinition" }
+            light: { $ref: "#/components/schemas/LightTickTaskVariantDefinition" }
+            minimum: { $ref: "#/components/schemas/LightTickTaskVariantDefinition" }
+        commitment_satisfied: { type: boolean }
+        status: { $ref: "#/components/schemas/LightTickTaskStatus" }
+        difficulty: { $ref: "#/components/schemas/LightTickTaskDifficulty" }
+        scheduled_date: { type: string, format: date }
+        estimated_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        actual_duration_minutes: { type: integer, minimum: 0, maximum: 1440 }
+        priority: { type: integer, minimum: 0, maximum: 1000 }
+        steps: { type: array, items: { $ref: "#/components/schemas/LightTickTaskStepData" } }
+        completed_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        version: { $ref: "#/components/schemas/LightTickVersion" }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickTaskStepData:
+      type: object
+      required: [id, title, completed, position]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        title: { type: string }
+        completed: { type: boolean }
+        position: { type: integer, minimum: 0 }
+    LightTickTaskStepCommandRequest:
+      type: object
+      required: [base_version, completed]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        completed: { type: boolean }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickVersionedCommandRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+      additionalProperties: false
+    LightTickTaskCompleteRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        actual_duration_minutes: { type: integer, minimum: 0, maximum: 1440 }
+        difficulty: { $ref: "#/components/schemas/LightTickTaskDifficulty" }
+        note: { type: string, maxLength: 4000 }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickSkipReason:
+      type: string
+      enum: [no_time, too_difficult, low_energy, no_longer_relevant, blocked, other]
+    LightTickTaskSkipRequest:
+      type: object
+      required: [base_version, reason_code]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        reason_code: { $ref: "#/components/schemas/LightTickSkipReason" }
+        reason_note: { type: string, maxLength: 2000 }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickTaskDeferRequest:
+      type: object
+      required: [base_version, target_date, timezone]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        target_date: { type: string, format: date }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        reason_code: { $ref: "#/components/schemas/LightTickSkipReason" }
+        reason_note: { type: string, maxLength: 2000 }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickTaskCancelRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        note: { type: string, maxLength: 4000 }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickTaskVariantRequest:
+      type: object
+      required: [base_version, variant]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
+      additionalProperties: false
+    LightTickTodayData:
+      type: object
+      required: [business_date, timezone, tasks, remaining_estimated_minutes, plan_b_available, snapshot_version]
+      properties:
+        business_date: { type: string, format: date }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        primary_task: { $ref: "#/components/schemas/LightTickTaskData" }
+        tasks: { type: array, items: { $ref: "#/components/schemas/LightTickTaskData" } }
+        remaining_estimated_minutes: { type: integer, minimum: 0 }
+        plan_b_available: { type: boolean }
+        empty_state_action: { enum: [create_goal, generate_plan, resume_goal, rest, none] }
+        snapshot_version: { type: integer, minimum: 0 }
+    LightTickReviewPeriod:
+      type: string
+      enum: [weekly, monthly]
+    LightTickReviewStatus:
+      type: string
+      enum: [generating, ready, acknowledged, failed]
+    LightTickReviewRunRequest:
+      type: object
+      required: [goal_id, period, period_start, period_end]
+      properties:
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        period: { $ref: "#/components/schemas/LightTickReviewPeriod" }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        mood: { type: string, maxLength: 100 }
+        self_reflection: { type: string, maxLength: 4000 }
+      additionalProperties: false
+    LightTickReviewData:
+      type: object
+      required: [id, goal_id, period, status, period_start, period_end, facts, data_sufficiency, version, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        period: { $ref: "#/components/schemas/LightTickReviewPeriod" }
+        status: { $ref: "#/components/schemas/LightTickReviewStatus" }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        facts: { type: object, additionalProperties: true }
+        insights: { type: array, items: { type: string } }
+        recommendations: { type: array, items: { type: string } }
+        data_sufficiency: { enum: [insufficient, basic, sufficient] }
+        linked_proposal_id: { $ref: "#/components/schemas/LightTickId" }
+        version: { $ref: "#/components/schemas/LightTickVersion" }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickCoachRunRequest:
+      type: object
+      required: [scene, goal_id]
+      properties:
+        scene: { enum: [task_breakdown, plan_explanation, recovery, review_explanation] }
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        plan_id: { $ref: "#/components/schemas/LightTickId" }
+        review_id: { $ref: "#/components/schemas/LightTickId" }
+        task_id: { $ref: "#/components/schemas/LightTickId" }
+      additionalProperties: false
+    LightTickChangeProposalRunRequest:
+      type: object
+      required: [plan_id, base_version, reason]
+      properties:
+        plan_id: { $ref: "#/components/schemas/LightTickId" }
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        reason: { enum: [user_request, low_completion, return_after_break, low_energy, schedule_change] }
+        remaining_available_minutes: { type: integer, minimum: 0, maximum: 10080 }
+        mood: { type: string, maxLength: 100 }
+        user_context: { type: string, maxLength: 4000 }
+      additionalProperties: false
+    LightTickProposalStatus:
+      type: string
+      enum: [pending, accepted, rejected, expired, superseded]
+    LightTickChangeProposalData:
+      type: object
+      required: [id, plan_id, base_plan_version, status, reason, diff, impact, expires_at, version, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        plan_id: { $ref: "#/components/schemas/LightTickId" }
+        base_plan_version: { $ref: "#/components/schemas/LightTickVersion" }
+        status: { $ref: "#/components/schemas/LightTickProposalStatus" }
+        reason: { type: string }
+        diff: { type: array, items: { $ref: "#/components/schemas/LightTickPlanDiffItem" } }
+        impact: { $ref: "#/components/schemas/LightTickProposalImpact" }
+        expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        version: { $ref: "#/components/schemas/LightTickVersion" }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickPlanDiffItem:
+      type: object
+      required: [operation, entity_type, entity_id]
+      properties:
+        operation: { enum: [add, update, defer, cancel] }
+        entity_type: { enum: [goal, plan, task] }
+        entity_id: { $ref: "#/components/schemas/LightTickId" }
+        before: { type: object, additionalProperties: true }
+        after: { type: object, additionalProperties: true }
+    LightTickProposalImpact:
+      type: object
+      required: [task_count_delta, total_minutes_delta, commitment_boundary_changed]
+      properties:
+        task_count_delta: { type: integer }
+        total_minutes_delta: { type: integer }
+        commitment_boundary_changed: { type: boolean }
+        summary: { type: string }
+    LightTickProposalAcceptRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        accepted_diff_indices:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer, minimum: 0 }
+        edited_diff:
+          type: array
+          items: { type: object, additionalProperties: true }
+      additionalProperties: false
+    LightTickProposalRejectRequest:
+      type: object
+      required: [base_version]
+      properties:
+        base_version: { $ref: "#/components/schemas/LightTickVersion" }
+        reason: { type: string, maxLength: 1000 }
+      additionalProperties: false
+    LightTickRunKind:
+      type: string
+      enum: [onboarding_plan, plan, review, change_proposal, coach_reply]
+    LightTickRunStatus:
+      type: string
+      enum: [queued, running, succeeded, failed, cancelled]
+    LightTickRunData:
+      type: object
+      required: [id, kind, scene, status, retryable, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        kind: { $ref: "#/components/schemas/LightTickRunKind" }
+        scene: { type: string }
+        status: { $ref: "#/components/schemas/LightTickRunStatus" }
+        retryable: { type: boolean }
+        result_resource_type: { enum: [goal, plan, review, change_proposal, coach_message] }
+        result_resource_id: { $ref: "#/components/schemas/LightTickId" }
+        source: { enum: [ai, template, manual] }
+        error_code: { $ref: "#/components/schemas/LightTickErrorCode" }
+        result: { type: object, additionalProperties: true }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickSyncEntityType:
+      type: string
+      enum: [profile, goal, plan, task, task_step, review, change_proposal]
+    LightTickSyncAction:
+      type: string
+      enum: [create, update, start, complete, skip, defer, cancel, accept, reject, delete]
+    LightTickSyncOperation:
+      type: object
+      required: [operation_id, device_id, entity_type, entity_id, action, base_version, client_occurred_at, payload]
+      properties:
+        operation_id: { $ref: "#/components/schemas/LightTickId" }
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+        entity_type: { $ref: "#/components/schemas/LightTickSyncEntityType" }
+        entity_id: { $ref: "#/components/schemas/LightTickId" }
+        action: { $ref: "#/components/schemas/LightTickSyncAction" }
+        base_version: { type: integer, minimum: 0 }
+        client_occurred_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        payload: { type: object, maxProperties: 64, additionalProperties: true }
+      additionalProperties: false
+    LightTickSyncPushRequest:
+      type: object
+      required: [operations]
+      properties:
+        operations:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/LightTickSyncOperation" }
+      additionalProperties: false
+    LightTickSyncOperationStatus:
+      type: string
+      enum: [accepted, duplicate, conflict, rejected, retryable]
+    LightTickSyncOperationResult:
+      type: object
+      required: [operation_id, status]
+      properties:
+        operation_id: { $ref: "#/components/schemas/LightTickId" }
+        status: { $ref: "#/components/schemas/LightTickSyncOperationStatus" }
+        entity_type: { $ref: "#/components/schemas/LightTickSyncEntityType" }
+        entity_id: { $ref: "#/components/schemas/LightTickId" }
+        version: { type: integer, minimum: 0 }
+        server_snapshot: { type: object, additionalProperties: true }
+        conflict_fields: { type: array, items: { type: string } }
+        resolution_actions: { type: array, items: { type: string } }
+        error_code: { $ref: "#/components/schemas/LightTickErrorCode" }
+    LightTickSyncPushData:
+      type: object
+      required: [results, server_time]
+      properties:
+        results: { type: array, items: { $ref: "#/components/schemas/LightTickSyncOperationResult" } }
+        server_time: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickSyncChange:
+      type: object
+      required: [sequence, entity_type, entity_id, version, operation, changed_at]
+      properties:
+        sequence: { type: integer, minimum: 1 }
+        entity_type: { $ref: "#/components/schemas/LightTickSyncEntityType" }
+        entity_id: { $ref: "#/components/schemas/LightTickId" }
+        version: { type: integer, minimum: 1 }
+        operation: { enum: [upsert, delete] }
+        snapshot: { type: object, additionalProperties: true }
+        changed_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickSyncPullData:
+      type: object
+      required: [changes, next_cursor, has_more, server_time]
+      properties:
+        changes: { type: array, items: { $ref: "#/components/schemas/LightTickSyncChange" } }
+        next_cursor: { type: string }
+        has_more: { type: boolean }
+        server_time: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickDevicePlatform:
+      type: string
+      enum: [ios, android]
+    LightTickPushProvider:
+      type: string
+      enum: [apns, fcm]
+    LightTickDeviceUpsertRequest:
+      type: object
+      required: [device_id, platform, push_provider, push_token, timezone, locale, app_version]
+      properties:
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+        platform: { $ref: "#/components/schemas/LightTickDevicePlatform" }
+        push_provider: { $ref: "#/components/schemas/LightTickPushProvider" }
+        push_token: { type: string, minLength: 16, maxLength: 4096 }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        locale: { type: string, minLength: 2, maxLength: 16 }
+        app_version: { type: string, minLength: 1, maxLength: 64 }
+        notifications_enabled: { type: boolean, default: true }
+      additionalProperties: false
+    LightTickDeviceData:
+      type: object
+      required: [id, platform, push_provider, timezone, locale, app_version, active, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        platform: { $ref: "#/components/schemas/LightTickDevicePlatform" }
+        push_provider: { $ref: "#/components/schemas/LightTickPushProvider" }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        locale: { type: string }
+        app_version: { type: string }
+        active: { type: boolean }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickRuntimeEnvironment:
+      type: string
+      enum: [local, dev, online]
+    LightTickAccountKind:
+      type: string
+      enum: [guest, registered]
+    LightTickPublicFeatureFlags:
+      type: object
+      required: [guest_sessions, account_upgrade, sync, notifications, ai_coach]
+      properties:
+        guest_sessions: { type: boolean }
+        account_upgrade: { type: boolean }
+        sync: { type: boolean }
+        notifications: { type: boolean }
+        ai_coach: { type: boolean }
+      additionalProperties: false
+    LightTickMinimumClientVersions:
+      type: object
+      required: [ios, android]
+      properties:
+        ios: { type: string, minLength: 1, maxLength: 64 }
+        android: { type: string, minLength: 1, maxLength: 64 }
+      additionalProperties: false
+    LightTickPublicConfigData:
+      type: object
+      required: [app_id, enabled, environment, configuration_version, minimum_client_versions, guest_session_ttl_seconds, features, privacy_policy_url, terms_of_service_url, support_url, updated_at]
+      properties:
+        app_id: { type: string, const: lighttick }
+        enabled: { type: boolean }
+        environment: { $ref: "#/components/schemas/LightTickRuntimeEnvironment" }
+        configuration_version: { type: string, minLength: 1, maxLength: 128 }
+        minimum_client_versions: { $ref: "#/components/schemas/LightTickMinimumClientVersions" }
+        guest_session_ttl_seconds: { type: integer, minimum: 3600, maximum: 7776000 }
+        features: { $ref: "#/components/schemas/LightTickPublicFeatureFlags" }
+        privacy_policy_url: { type: string, format: uri }
+        terms_of_service_url: { type: string, format: uri }
+        support_url: { type: string, format: uri }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickPublicConfigEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickPublicConfigData" }
+        requestId: { type: string }
+    LightTickGuestSessionRequest:
+      type: object
+      required: [device_id, device_secret, platform, timezone, locale, app_version]
+      properties:
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+        device_secret:
+          type: string
+          minLength: 32
+          maxLength: 4096
+          description: Device-generated secret stored in Keychain or Keystore and never logged by the server.
+        platform: { $ref: "#/components/schemas/LightTickDevicePlatform" }
+        timezone: { $ref: "#/components/schemas/LightTickTimezone" }
+        locale: { type: string, minLength: 2, maxLength: 16 }
+        app_version: { type: string, minLength: 1, maxLength: 64 }
+      additionalProperties: false
+    LightTickGuestSessionData:
+      type: object
+      required: [account_kind, user_id, device_id, access_token, refresh_token, expires_in, guest_expires_at, upgrade_token]
+      properties:
+        account_kind: { type: string, const: guest }
+        user_id: { $ref: "#/components/schemas/LightTickId" }
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+        access_token: { type: string, minLength: 16 }
+        refresh_token: { type: string, minLength: 16 }
+        expires_in: { type: integer, minimum: 1 }
+        guest_expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        upgrade_token: { type: string, minLength: 32 }
+    LightTickGuestSessionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: CREATED }
+        message: { type: string, example: created }
+        data: { $ref: "#/components/schemas/LightTickGuestSessionData" }
+        requestId: { type: string }
+    LightTickAccountSessionData:
+      type: object
+      required: [app_id, account_kind, user_id, membership_status, session_expires_at]
+      properties:
+        app_id: { type: string, const: lighttick }
+        account_kind: { $ref: "#/components/schemas/LightTickAccountKind" }
+        user_id: { $ref: "#/components/schemas/LightTickId" }
+        membership_status: { type: string, enum: [ACTIVE] }
+        session_expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        guest_expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        sync_cursor: { type: string, maxLength: 512 }
+    LightTickAccountSessionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickAccountSessionData" }
+        requestId: { type: string }
+    LightTickAccountUpgradeRequest:
+      type: object
+      required: [guest_user_id, guest_upgrade_token, device_id]
+      properties:
+        guest_user_id: { $ref: "#/components/schemas/LightTickId" }
+        guest_upgrade_token: { type: string, minLength: 32, maxLength: 4096 }
+        device_id: { $ref: "#/components/schemas/LightTickId" }
+      additionalProperties: false
+    LightTickTransferredResourceCounts:
+      type: object
+      required: [goals, plans, tasks, reviews, proposals]
+      properties:
+        goals: { type: integer, minimum: 0 }
+        plans: { type: integer, minimum: 0 }
+        tasks: { type: integer, minimum: 0 }
+        reviews: { type: integer, minimum: 0 }
+        proposals: { type: integer, minimum: 0 }
+      additionalProperties: false
+    LightTickAccountUpgradeData:
+      type: object
+      required: [account_kind, user_id, previous_guest_user_id, guest_session_revoked, idempotency_replayed, transferred_resource_counts]
+      properties:
+        account_kind: { type: string, const: registered }
+        user_id: { $ref: "#/components/schemas/LightTickId" }
+        previous_guest_user_id: { $ref: "#/components/schemas/LightTickId" }
+        guest_session_revoked: { type: boolean, const: true }
+        idempotency_replayed: { type: boolean }
+        sync_cursor: { type: string, maxLength: 512 }
+        transferred_resource_counts: { $ref: "#/components/schemas/LightTickTransferredResourceCounts" }
+    LightTickAccountUpgradeEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickAccountUpgradeData" }
+        requestId: { type: string }
+    LightTickAccountDeletionRequest:
+      type: object
+      required: [confirmation, reauthentication_token]
+      properties:
+        confirmation: { type: string, const: DELETE }
+        reauthentication_token:
+          type: string
+          minLength: 16
+          maxLength: 4096
+          description: Opaque, short-lived one-time proof issued after recent common-auth reauthentication.
+      additionalProperties: false
+    LightTickReauthenticationRequest:
+      type: object
+      required: [current_password]
+      properties:
+        current_password: { type: string, minLength: 8, maxLength: 64, format: password }
+      additionalProperties: false
+    LightTickReauthenticationData:
+      type: object
+      required: [reauthentication_token, expires_at]
+      properties:
+        reauthentication_token: { type: string, minLength: 16, maxLength: 4096 }
+        expires_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+      additionalProperties: false
+    LightTickReauthenticationEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickReauthenticationData" }
+        requestId: { type: string }
+    LightTickAccountDeletionData:
+      type: object
+      required: [app_id, membership_status, sessions_revoked, product_data_deleted, platform_account_retained, other_memberships_retained]
+      properties:
+        app_id: { type: string, const: lighttick }
+        membership_status: { type: string, const: DELETED }
+        sessions_revoked: { type: boolean }
+        product_data_deleted: { type: boolean }
+        platform_account_retained: { type: boolean, const: true }
+        other_memberships_retained: { type: boolean, const: true }
+    LightTickAccountDeletionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        data: { $ref: "#/components/schemas/LightTickAccountDeletionData" }
+        requestId: { type: string }
+  

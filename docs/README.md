@@ -24,9 +24,17 @@
 
 1. [current-backend-implementation-overview.md](current-backend-implementation-overview.md)
    当前后端已经做到什么程度。
-2. [backend-i18n-design.md](backend-i18n-design.md)
+2. [lighttick-unified-backend-implementation.md](lighttick-unified-backend-implementation.md)
+   LightTick 统一后端的运行时边界、模块约束和实施顺序。
+3. [lighttick-backend-migration-map.md](lighttick-backend-migration-map.md)
+   LightTick 旧 Go/Flutter 能力到 Zook 合同的完整迁移决策。
+4. [lighttick-native-client-integration.md](lighttick-native-client-integration.md)
+   SwiftUI、Jetpack Compose 与系统原生端能力的合同和模块边界。
+5. [lighttick-release-gates.md](lighttick-release-gates.md)
+   LightTick dev 槽验收、可观测性、隐私和发布门槛。
+6. [backend-i18n-design.md](backend-i18n-design.md)
    服务端多语言文本设计。
-3. [small-medium-app-backend-design-discussion.md](small-medium-app-backend-design-discussion.md)
+7. [small-medium-app-backend-design-discussion.md](small-medium-app-backend-design-discussion.md)
    更偏长期架构讨论与实施约定。
 
 ### 厂商 / 方案记录

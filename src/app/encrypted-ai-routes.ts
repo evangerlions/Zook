@@ -1,6 +1,5 @@
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
 import type {
-  AiNovelModelRoutingTier,
   AuthContext,
   HttpRequest,
   HttpResponse,
@@ -64,13 +63,6 @@ export async function handleEncryptedAiRequest(this: BackendRouteContext,
       ),
     );
   }
-}
-
-export function resolveAiNovelModelRoutingTier(this: BackendRouteContext, 
-  auth: AuthContext,
-): AiNovelModelRoutingTier {
-  void auth;
-  return "free";
 }
 
 export async function decryptAiRequestBody(this: BackendRouteContext, 

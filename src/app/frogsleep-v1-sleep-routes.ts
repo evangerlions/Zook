@@ -215,7 +215,8 @@ export async function handleSleepInviteAction(context: BackendRouteContext, requ
     return frogSleepOk(context, relationship, request.requestId as string, legacyInvitationHeaders);
   }
   const result = await sleepBuddyService(context).inviteAction(auth.userId, inviteId, action);
-  await new LegacyBuddyInvitationAdapter(context.database).syncTerminal("sleep", inviteId, action, auth.userId);
+  const terminalStatus = action === "cancel" ? "cancelled" : "declined";
+  await new LegacyBuddyInvitationAdapter(context.database).syncTerminal("sleep", inviteId, terminalStatus, auth.userId);
   return frogSleepOk(context, result, request.requestId as string, legacyInvitationHeaders);
 }
 

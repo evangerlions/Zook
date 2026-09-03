@@ -15,6 +15,8 @@ test("chapter_draft prompt prioritizes chapter-level execution without early pay
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
   assert.match(systemPrompt, /Chapter execution contract/);
+  assert.match(systemPrompt, /Contract\.extras/);
+  assert.match(systemPrompt, /author-defined requirement/);
   assert.match(systemPrompt, /MainLine\.sourceBeat/);
   assert.match(systemPrompt, /source of truth/);
   assert.match(systemPrompt, /concise execution note/);
@@ -78,6 +80,12 @@ test("chapter_draft_review prompt does not suggest future beat fixes", () => {
   assert.match(systemPrompt, /draft\.characterCount/);
   assert.match(systemPrompt, /planned\/covered\/missed\/extra/);
   assert.match(systemPrompt, /blocking field/);
+  assert.match(systemPrompt, /Contract\.extras/);
+  assert.match(systemPrompt, /requires needs_repair/);
+  assert.match(
+    systemPrompt,
+    /use only Contract\.extras, plannedChecklist, story window, and draft/,
+  );
   assert.doesNotMatch(systemPrompt, /10% hard acceptance variance/);
   assert.doesNotMatch(systemPrompt, /minChars \\* 0\\.9/);
   assert.doesNotMatch(systemPrompt, /later MainLine beat/);
@@ -147,6 +155,8 @@ test("import_book_agent prompt explains import submit tools", () => {
   assert.match(systemPrompt, /submit_chapter_summaries/);
   assert.match(systemPrompt, /submit_hot_handoff/);
   assert.match(systemPrompt, /Call every expected submit tool/);
+  assert.match(systemPrompt, /BookContract\.extras/);
+  assert.match(systemPrompt, /author-defined requirements/);
 });
 
 test("imported-book kickoff prompt uses continuation tools and ready checkpoint", () => {
@@ -157,10 +167,7 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
     context: {
       meta: {
         extras: {
-          kickoffMode: "imported_book",
-          bookId: "book_1",
-          latestImportedChapterIndex: 50,
-          targetChapterIndex: 51,
+          progression: "十章内不得揭开完整真相。",
         },
       },
     },
@@ -183,6 +190,10 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
   assert.match(systemPrompt, /search_imported_book/);
   assert.match(systemPrompt, /update_import_writing_artifacts/);
   assert.match(systemPrompt, /ready continuation card/);
+  assert.match(systemPrompt, /BookContract\.extras/);
+  assert.match(systemPrompt, /author's durable custom requirements/);
+  assert.match(systemPrompt, /adds or changes a custom requirement/);
+  assert.match(systemPrompt, /existing key to null/);
   assert.match(systemPrompt, /Localized authoring glossary:/);
   assert.match(systemPrompt, /开书、开始写、正式开始/);
   assert.match(systemPrompt, /current imported writing artifacts/);
@@ -194,7 +205,8 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
     systemPrompt,
     /Do not treat this as opening an existing book file/,
   );
-  assert.match(userPrompt, /latestImportedChapterIndex/);
+  assert.match(userPrompt, /十章内不得揭开完整真相/);
+  assert.doesNotMatch(userPrompt, /kickoffMode|bookId|targetChapterIndex/);
   assert.match(userPrompt, /我想改成朝堂线续写/);
 });
 
@@ -221,6 +233,8 @@ test("next_chapter_brief prompt keeps compatible brief string shape", () => {
   assert.match(systemPrompt, /Never silently rewrite/);
   assert.match(systemPrompt, /not to narrate the later journey/);
   assert.match(systemPrompt, /concrete current-chapter constraints/);
+  assert.match(systemPrompt, /Contract\.extras/);
+  assert.match(systemPrompt, /author-defined requirement/);
   assert.match(systemPrompt, /target writing language/);
   assert.match(systemPrompt, /Do not include markdown fences/);
 });
@@ -267,4 +281,12 @@ test("book contract tool preserves optional story anchor names", () => {
 
   assert.ok(properties.name);
   assert.deepEqual(items.required, ["label", "role", "rules"]);
+
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.match(systemPrompt, /Contract\.extras/);
+  assert.match(systemPrompt, /remember, persist, add, or change/);
+  assert.match(systemPrompt, /existing key to null/);
+  const extras = (patch.properties as Record<string, unknown>)
+    .extras as Record<string, unknown>;
+  assert.match(String(extras.description ?? ""), /durable custom requirements/);
 });

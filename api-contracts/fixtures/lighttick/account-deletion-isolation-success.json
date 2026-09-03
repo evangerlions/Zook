@@ -1,0 +1,13 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "app_id": "lighttick",
+    "membership_status": "DELETED",
+    "sessions_revoked": true,
+    "product_data_deleted": true,
+    "platform_account_retained": true,
+    "other_memberships_retained": true
+  },
+  "requestId": "req_lighttick_deletion_isolation"
+}

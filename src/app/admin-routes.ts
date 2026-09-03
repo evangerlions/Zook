@@ -1,6 +1,7 @@
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { tryHandleAdminAppSettingsRoutes } from "./admin-app-settings-routes.ts";
+import { tryHandleAdminAiNovelModelSelectionRoutes } from "./admin-ai-novel-model-selection-routes.ts";
 import { tryHandleAdminAuthGetuiRoutes } from "./admin-auth-getui-routes.ts";
 import { tryHandleAdminCoreRoutes } from "./admin-core-routes.ts";
 import { tryHandleAdminEmailSmsRoutes } from "./admin-email-sms-routes.ts";
@@ -16,6 +17,7 @@ const adminRouteHandlers = [
   tryHandleAdminSecurityRoutes,
   tryHandleAdminTestAccountRoutes,
   tryHandleAdminLlmRoutes,
+  tryHandleAdminAiNovelModelSelectionRoutes,
   tryHandleAdminAppSettingsRoutes,
   tryHandleAdminRemoteLogRoutes,
 ];

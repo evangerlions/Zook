@@ -79,6 +79,7 @@ function loadEchartsRuntime(): Promise<typeof import("echarts/core")> {
         charts.HeatmapChart,
         components.LegendComponent,
         charts.LineChart,
+        charts.ScatterChart,
         components.TooltipComponent,
         components.VisualMapComponent,
       ]);

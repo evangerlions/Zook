@@ -17,6 +17,7 @@ export function createPushDispatcher(options: {
   const apnsTeamId = process.env.APNS_TEAM_ID?.trim();
   const apnsBundleId = process.env.APNS_BUNDLE_ID?.trim() ?? process.env.APNS_TOPIC?.trim();
   const apnsKeyPath = process.env.APNS_PRIVATE_KEY_PATH?.trim();
+  const lightTickApnsBundleId = process.env.LIGHTTICK_APNS_BUNDLE_ID?.trim();
   const apnsSandbox = process.env.APNS_SANDBOX?.trim().toLowerCase() === "true";
 
   if (apnsKeyId && apnsTeamId && apnsBundleId && apnsKeyPath) {
@@ -27,6 +28,7 @@ export function createPushDispatcher(options: {
           teamId: apnsTeamId,
           keyId: apnsKeyId,
           bundleId: apnsBundleId,
+          bundleIds: lightTickApnsBundleId ? { lighttick: lightTickApnsBundleId } : undefined,
           privateKeyPem,
           production: !apnsSandbox,
         },
@@ -71,7 +73,25 @@ export function createPushDispatcher(options: {
     }
   }
 
-  if (!dispatchers.ios && !dispatchers.android) {
+  const lightTickFcmProjectId = process.env.LIGHTTICK_FCM_PROJECT_ID?.trim();
+  const lightTickFcmServiceAccountPath = process.env.LIGHTTICK_FCM_SERVICE_ACCOUNT_PATH?.trim();
+  if (lightTickFcmProjectId && lightTickFcmServiceAccountPath) {
+    try {
+      const serviceAccount = JSON.parse(readFileSync(lightTickFcmServiceAccountPath, "utf8")) as {
+        client_email: string;
+        private_key: string;
+      };
+      dispatchers["lighttick:android"] = new FcmPushDispatcher({ projectId: lightTickFcmProjectId,
+        clientEmail: serviceAccount.client_email, privateKeyPem: serviceAccount.private_key }, { logger, database });
+      logger.info("LightTick FCM push dispatcher configured", { projectId: lightTickFcmProjectId });
+    } catch (error) {
+      logger.error("failed to configure LightTick FCM push dispatcher", {
+        error: error instanceof Error ? error.message : "unknown", serviceAccountPath: lightTickFcmServiceAccountPath,
+      });
+    }
+  }
+
+  if (Object.keys(dispatchers).length === 0) {
     logger.info("no push dispatchers configured, using logging fallback");
     return {
       async dispatch(req: PushDispatchRequest): Promise<void> {

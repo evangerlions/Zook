@@ -56,6 +56,14 @@ test("RefreshTokenStore update modifies the record", async () => {
   assert.equal(found.revokedAt, "2026-04-13T00:00:00.000Z");
 });
 
+test("RefreshTokenStore grants one rotation claim per token hash", async () => {
+  const { store } = await createStore();
+  const expiresAt = new Date(Date.now() + 60_000).toISOString();
+  const claims = await Promise.all(Array.from({ length: 8 }, () =>
+    store.claimRotation("hash_rotation", expiresAt)));
+  assert.equal(claims.filter(Boolean).length, 1);
+});
+
 // --- Revoke all ---
 
 test("RefreshTokenStore revokes all tokens for a user-app pair", async () => {

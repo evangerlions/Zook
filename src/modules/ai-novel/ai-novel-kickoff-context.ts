@@ -90,6 +90,8 @@ const KICKOFF_SYSTEM_PROMPT = [
   "## Meta rules",
   "- Update only fields that are more certain now.",
   "- Use canonical premise fields as the durable contract: storyPromise, storyAnchors, focalization, startState, trigger, drive, pressureSources, stakes, worldConstraints, changeHorizon, premiseScale, language, toneRegister, extras.",
+  "- extras is the author's durable custom-requirements area. Write the author's supplemental requirements there, preserve all existing entries, and never merely claim they were remembered without update_meta succeeding.",
+  "- To remove an obsolete extras entry, set that existing key to null in update_meta.extras; omission preserves it.",
   "- storyAnchors are long-term story roots, not a full character list. Use them to prevent drift around the protagonist or protagonist group, central relationship, core mystery, durable pressure source, or core stage.",
   "- When a storyAnchor represents the protagonist, include `name`: a concrete character name, alias, or codename suitable for the user's genre and language.",
   "- Do not use pronouns or generic labels as protagonist `name`: never use 我, I, 主角, 男主, 女主, 他, 她, 少年, 青年, protagonist, hero, heroine, or main character unless the user explicitly states that exact string is the character's literal name.",
@@ -234,6 +236,7 @@ function renderKickoffSummary(meta: KickoffMeta): string {
     `- premiseScale.pace: ${renderScaleChoice(meta.premiseScale.pace)}`,
     `- language: ${meta.language}`,
     `- toneRegister: ${meta.toneRegister}`,
+    `- extras: ${JSON.stringify(meta.extras)}`,
   ].join("\n");
 }
 

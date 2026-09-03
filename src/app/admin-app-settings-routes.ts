@@ -76,6 +76,7 @@ export async function handleAdminUpdateAiRouting(this: BackendRouteContext,
   appId: string,
 ): Promise<HttpResponse<AdminAiRoutingDocument>> {
   const adminUser = this.authenticateAdmin(request);
+  if (appId === "lighttick") await this.assertAdminSensitiveOperation(this.requireAdminSession(request), "lighttick.ai-routing.write");
   const body = this.validationPipe.asObject(request.body);
   const rawJson = this.validationPipe.requireString(body, "rawJson");
   const desc = this.validationPipe.optionalString(body, "desc");
@@ -121,6 +122,7 @@ export async function handleAdminRestoreAiRoutingRevision(this: BackendRouteCont
   revision: number,
 ): Promise<HttpResponse<AdminAiRoutingDocument>> {
   const adminUser = this.authenticateAdmin(request);
+  if (appId === "lighttick") await this.assertAdminSensitiveOperation(this.requireAdminSession(request), "lighttick.ai-routing.write");
   const body = this.validationPipe.asObject(request.body ?? {});
   const desc = this.validationPipe.optionalString(body, "desc");
   const result = await this.adminConsoleService.restoreAiRouting(

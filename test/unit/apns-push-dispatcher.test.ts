@@ -154,3 +154,25 @@ test("APNs dispatcher preserves retryable failures without removing devices", as
 
   assert.equal(database.listFrogSleepDevices({ appId: "frogsleep", userId: "user_alice" }).length, 1);
 });
+
+test("APNs dispatcher selects the LightTick topic and invokes product-scoped invalidation", async () => {
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const privateKeyPem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  let topic = ""; let payload: any; let invalidated = 0;
+  const dispatcher = new ApnsPushDispatcher({ teamId: "TEAM123456", keyId: "KEY1234567",
+    bundleId: "com.example.frogsleep", bundleIds: { lighttick: "com.lighttick.app" }, privateKeyPem, production: false }, {
+    fetchImplementation: (async (_url, init) => {
+      topic = String((init?.headers as Record<string, string>)["apns-topic"]);
+      payload = JSON.parse(String(init?.body));
+      return new Response(JSON.stringify({ reason: "BadDeviceToken" }), { status: 400 });
+    }) as typeof fetch,
+  });
+  await dispatcher.dispatch({ appId: "lighttick", userId: "user_lighttick", platform: "ios", pushToken: "invalid",
+    payload: { app: "lighttick", type: "daily_tasks", title: "Today", body: "Open LightTick", data: { sync: "true" } },
+    invalidateToken: async () => { invalidated++; } });
+
+  assert.equal(topic, "com.lighttick.app");
+  assert.equal(payload.aps.category, "LIGHTTICK_DAILY_TASKS");
+  assert.equal(payload.sync, "true");
+  assert.equal(invalidated, 1);
+});

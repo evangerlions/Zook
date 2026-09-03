@@ -49,6 +49,12 @@
 3. 非标准历史路径只能作为临时兼容 alias，不能作为新客户端 canonical path；文档中必须同时写出 canonical `/api/v1/{productKey}/...` 路径。
 4. `productKey` 是 URL namespace；`appId` 是 token、membership、配置与数据隔离使用的运行时作用域键。通常二者相同，但文档模板中路径写 `productKey`，鉴权/数据作用域写 `appId`。
 
+LightTick 固定使用 `productKey = appId = lighttick`。其 canonical 合同位于
+`api-contracts/openapi/lighttick/api.yaml`；所有私有业务接口均位于
+`/api/v1/lighttick/...`，并要求 Bearer Token、活跃 app membership 与 app scope
+一致。客户端应从固定 Zook commit 生成类型，不得把旧 Flutter/Go 项目中的 DTO
+视为线上合同。
+
 ## 3. 路径分层
 
 | 层级         | Path 模板                   | 说明                           | 示例                   |
@@ -106,6 +112,82 @@ POST   /api/v1/frogsleep/focus-buddy/match-profile
 /api/v1/sleep-buddy/...
 /api/v1/focus-buddy/...
 ```
+
+LightTick 原生客户端使用以下核心接口族：
+
+```text
+GET       /api/v1/lighttick/public/config
+POST      /api/v1/lighttick/account/guest-sessions
+GET       /api/v1/lighttick/account/session
+POST      /api/v1/lighttick/account/upgrade
+POST      /api/v1/lighttick/account/reauthentication
+GET/PATCH /api/v1/lighttick/profile
+POST      /api/v1/lighttick/onboarding
+POST      /api/v1/lighttick/onboarding/starter
+POST      /api/v1/lighttick/onboarding/first-action
+POST      /api/v1/lighttick/onboarding/commitment
+GET/POST  /api/v1/lighttick/goals
+POST      /api/v1/lighttick/plan-runs
+GET        /api/v1/lighttick/today
+POST       /api/v1/lighttick/tasks/{taskId}/{command}
+POST       /api/v1/lighttick/tasks/{taskId}/variant
+GET/POST   /api/v1/lighttick/reviews...
+GET/POST   /api/v1/lighttick/change-proposals...
+POST/GET   /api/v1/lighttick/sync/{push|pull}
+POST/DELETE /api/v1/lighttick/devices...
+DELETE     /api/v1/lighttick/me/account
+```
+
+`GET /api/v1/lighttick/public/config` 无需登录，即使 LightTick 业务能力默认关闭也可读取。
+它只返回固定 `app_id=lighttick`、`local/dev/online` 环境、配置版本、双端最低版本、
+游客有效期、公开功能开关及 HTTPS 法律/支持地址。响应由 `admin.delivery_config` 的
+显式白名单字段投影生成；密钥、Token、内部地址和其他管理配置不会透传。运行时
+`LIGHTTICK_ENABLED` 与后台 `enabled` 必须同时为真，公开功能开关才可能开启。
+
+游客创建接口是唯一无需 Bearer Token 的账户接口，请求必须携带稳定
+`Idempotency-Key`，并提交 `device_id` 与至少 32 字符、由设备生成且保存在
+Keychain/Keystore 的 `device_secret`。服务端只保存设备密钥与升级证明的哈希，签发 30 天有效的
+LightTick-only guest identity、LightTick membership、access/refresh token 和后续升级
+证明；同一设备恢复必须再次提供正确设备证明。每个来源 IP 每小时最多发起 5 次，
+超限返回 `429 RATE_LIMITED`。游客不能访问其他 Zook 产品，也不能访问 LightTick
+review、sync、设备注册、完整规划和删除等敏感能力；刷新凭据后可调用
+`GET /api/v1/lighttick/account/session` 恢复账户类型和游客到期时间。
+
+LightTick 推送设备通过 `POST /api/v1/lighttick/devices` 注册或更新，并通过
+`DELETE /api/v1/lighttick/devices/{deviceId}` 软删除。注册必须提交匹配的
+`ios/apns` 或 `android/fcm`、IANA timezone、locale、app version 和 push token，且受
+Bearer token 的 `lighttick` membership 隔离。通知总开关、每日提醒时间、复盘提醒和
+安静时段通过 `PATCH /api/v1/lighttick/profile` 的 `notification_preferences` 更新；部分更新会与
+现有偏好合并。服务端按 app/user/type/resource/business date 幂等调度，暂停目标会抑制任务压力类通知，
+APNs/FCM 的不可恢复 token 只会禁用匹配的 LightTick 设备，429/5xx 仍按队列退避重试。
+Provider payload 只含安全展示文案、类型、可选资源 ID 和 `sync=true`，不含任务笔记、Coach 文本或凭据。
+
+正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
+`guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。
+服务端在同一 PostgreSQL 事务中迁移游客资料、目标、计划、任务、事件、操作、设备和同步
+位置，并删除游客 membership；正式账户已有偏好优先，重复 operation 只有内容完全一致时
+才会去重。响应丢失后使用相同 key 和请求重试会返回原结果，改变请求则返回
+`LIGHTTICK_IDEMPOTENCY_MISMATCH`。成功后旧游客 access/refresh session 全部失效。
+
+删除 LightTick 产品账号前，正式密码账户先调用 `/account/reauthentication` 提交
+`current_password`，取得 5 分钟有效、仅可使用一次且绑定当前 LightTick membership 的
+`reauthentication_token`；随后将该证明与 `confirmation=DELETE` 一并提交到
+`DELETE /api/v1/lighttick/me/account`。登出只撤销会话，不删除服务端产品数据。
+
+写命令使用 `Idempotency-Key`；可并发修改资源的命令同时携带
+`base_version`。离线同步单批最多 50 个 operation、pull 单页默认 100 条且最多
+500 条，准确值和稳定错误码以 OpenAPI 为准。
+
+渐进式启动是 additive 能力：`/onboarding/starter` 只要求模糊愿望和 IANA
+timezone，并保证用确定性模板返回一个 5–15 分钟推荐动作和两个备选；它不依赖
+LLM 成功。`/onboarding/first-action` 记录实际时长、难度和所选强度，只返回事实
+反馈与三日预览，不产生稳定偏好推断。累计两次有效行动（或显式
+`deep_planning=true`）后，`/onboarding/commitment` 才允许选择周承诺。
+
+任务变体固定为 `standard | light | minimum`，三者共享 `lineage_id`；切换变体不
+新增贡献，终态任务不可切换。目标暂停可携带原因、预计恢复时间、轻任务和通知
+策略；恢复模式为 `original_pace | recovery_mode | adjust_goal`。现有
+`POST /api/v1/lighttick/onboarding` 的 plan-first 行为继续兼容。
 
 ### 4.2 产品公开接口
 
@@ -338,12 +420,12 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 如果账号不存在，密码登录返回 `401 AUTH_ACCOUNT_NOT_FOUND`，`message` 会按请求语言本地化提示账号不存在；如果账号存在但密码错误，仍返回 `401 AUTH_INVALID_CREDENTIAL`。
 
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
-19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
-20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。AINovel 的 `ainovel-free-creative` / `ainovel-plus-reasoning` 等值属于业务 scene route key，不是 common LLM model key。
+19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
+20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。`scene_key` 只选择 Prompt、工具与响应工作流；所有文本场景共用服务端版本化的 `ai_novel.model_selection.chat.default` 加权数组，并复用通用 LLM 的 `X-Did + auth UID` routing affinity。Provider 与上游模型路由仍统一归 `common.llm_service`。
 21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、非流式的 hard compact 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
 22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
 23. 一旦 AI 请求解密成功，业务成功结果与业务错误都会加密返回；客户端需要先解密，再读取其中的标准 `code + message + data + requestId` 响应包。
-24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时会返回 `text/event-stream`；每个 SSE `data:` 事件仍然是一个加密 outer envelope。解密后的正常事件类型通常为 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`；其中 `content_delta` 是 assistant 正文增量事件，`tool_call_delta` 是通用 provider/tool 参数进度事件，只携带可读 `text` 和可选 `toolCallId`、`toolCallName`、`toolArgumentPath`，不是产品工作流状态。步骤 chrome、本地化文案、loading detail 映射和 retry UI 都由 AINovel 负责。客户端回放 assistant 历史时可以携带 `reasoningContent`，Zook 会在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，用于保持多轮上下文与 LLM cache 连贯；该字段不应作为普通用户可见内容展示。`usage` 与 `done.usage` 包含 `promptTokens`、`completionTokens`、`totalTokens`，并在 provider 返回时额外携带 `reasoningTokens`，在服务端能识别模型窗口时额外携带 `contextWindowTokens`、`contextUsedRatio`，客户端应以这些字段判断 hard compact 阈值。`done.completion` 当前保证包含 `sceneRouteKey`、`content`，并按需携带 `reasoningText`、`finishReason`；这里的 `sceneRouteKey` 仍是 AINovel 业务 route key，不是 common LLM `modelKey`。对于 `kickoff_turn`，Zook 只负责单轮 assistant content / tool_call 输出，不在服务端内部继续 kickoff tool loop；后续 tool 执行与下一轮请求由 AINovel engine 负责。服务端会在 relay `ask_question` 时再次规范化 payload：`options` 只保留 2 到 4 个非空、去重后的字符串；`optionSubtitles` 只有在与 `options` 一一对应时才会继续下发；如果规范化后仍不合法，则改为发出流式错误事件而不是把非法 `tool_call` 直接交给客户端。如果在请求解密成功后发生 mid-stream 业务失败，服务端会发出一个加密后的非 `OK` 业务错误 envelope，客户端应把该事件视为流式失败，且后续不应再期待 `done` 事件。上游 context-window 超限统一返回 `AI_CONTEXT_TOO_LONG`；rate limit、timeout、响应格式和服务配置异常保留各自稳定错误码。`AI_UPSTREAM_QUOTA_EXHAUSTED` 只显示通用“AI 服务暂时不可用，请稍后重试。”，不得向客户端暴露额度信息。
+24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时会返回 `text/event-stream`；每个 SSE `data:` 事件仍然是一个加密 outer envelope。解密后的正常事件类型通常为 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`；其中 `content_delta` 是 assistant 正文增量事件，`tool_call_delta` 是通用 provider/tool 参数进度事件，只携带可读 `text` 和可选 `toolCallId`、`toolCallName`、`toolArgumentPath`，不是产品工作流状态。步骤 chrome、本地化文案、loading detail 映射和 retry UI 都由 AINovel 负责。客户端回放 assistant 历史时可以携带 `reasoningContent`，Zook 会在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，用于保持多轮上下文与 LLM cache 连贯；该字段不应作为普通用户可见内容展示。`usage` 与 `done.usage` 包含 `promptTokens`、`completionTokens`、`totalTokens`，并在 provider 返回时额外携带 `reasoningTokens`，在服务端能识别模型窗口时额外携带 `contextWindowTokens`、`contextUsedRatio`，客户端应以这些字段判断 hard compact 阈值。`done.completion` 当前保证包含 `sceneRouteKey`、`content`，并按需携带 `reasoningText`、`finishReason`；`sceneRouteKey` 当前与规范化后的 `sceneKey` 相同，只用于工作流诊断，不参与模型选择。对于 `kickoff_turn`，Zook 只负责单轮 assistant content / tool_call 输出，不在服务端内部继续 kickoff tool loop；后续 tool 执行与下一轮请求由 AINovel engine 负责。服务端会在 relay `ask_question` 时再次规范化 payload：`options` 只保留 2 到 4 个非空、去重后的字符串；`optionSubtitles` 只有在与 `options` 一一对应时才会继续下发；如果规范化后仍不合法，则改为发出流式错误事件而不是把非法 `tool_call` 直接交给客户端。如果在请求解密成功后发生 mid-stream 业务失败，服务端会发出一个加密后的非 `OK` 业务错误 envelope，客户端应把该事件视为流式失败，且后续不应再期待 `done` 事件。客户端主动关闭 SSE 连接时，服务端会取消当前上游 LLM stream；断开后不再保证收到 `usage` 或 `done`，客户端应保留已收到的增量并完成本地 interrupted 状态持久化。上游 context-window 超限统一返回 `AI_CONTEXT_TOO_LONG`；rate limit、timeout、响应格式和服务配置异常保留各自稳定错误码。`AI_UPSTREAM_QUOTA_EXHAUSTED` 只显示通用“AI 服务暂时不可用，请稍后重试。”，不得向客户端暴露额度信息。
 25. **仅 local 联调环境**允许在 AI 加密 envelope 外层额外挂一个明文字段用于第 8 人员排查：客户端请求体可带 `localDebugRequestPlaintext`，服务端 chat-completion 成功响应可带 `localDebugResponseText`。这两个字段都只是调试镜像，前后端业务逻辑都不得依赖它们。
 26. **仅 local 联调环境**开放 `POST /api/v1/ai_novel/debug/audit-file`，用于 Flutter Web 把完整自包含的 generation audit HTML 上传给本机 Zook。该接口仍要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；生产环境或非 localhost/127.0.0.1 host 返回 `404`。请求体为 `{ “sessionId”: “...”, “html”: “...” }`；服务端只 sanitize `sessionId` 并覆盖写入 AINovel 仓库 `.zook/quality-generation/app/{safeSessionId}/generation-audit.html`，响应 `filePath`、`fileUrl`、`viewUrl`、`updatedAt`。其中 `viewUrl` 是 local-only HTTP 查看地址，用于 Flutter Web 在新标签页打开报告；Zook 不解析 HTML 或 audit JSON。
 27. `POST /api/v1/ai_novel/ai-output-reports` 支持 `chat_message` 与 `chapter_revision`；举报接收以 `submissionId`、target、分类、scene 和非空原文为最小必需信息，`messageId` / `sessionId` / 章节定位等相关元数据只用于尽力关联，缺失时不拒绝举报。`contentHash` 由服务端按实际收到的原文统一计算；章节 `chapterId` 为零基，第一章可传 `0`。合规举报入口不做会拒绝有效举报的同步频率限制；滥用识别和处置应在受理后异步完成。服务端只在受限 Admin detail 接口解密举报原文，普通列表、日志和 audit payload 不包含原文。`POST /api/v1/ai_novel/ai-output-reactions` 当前只接受章节 revision 的 `like`，并使用相同的零基 `chapterId`。

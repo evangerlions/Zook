@@ -4,14 +4,24 @@ import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
 import type { NotificationQueueResult } from "../shared/types.ts";
 import { randomId } from "../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../modules/frogsleep/frogsleep-app.ts";
-import type { FrogSleepNotificationPayload } from "../modules/frogsleep/frogsleep-notifications.ts";
+export interface PushNotificationPayload {
+  app: string;
+  type: string;
+  entityId?: string;
+  relationshipId?: string;
+  sessionId?: string;
+  title: string;
+  body: string;
+  data: Record<string, string>;
+}
 
 export interface PushDispatchRequest {
   appId: string;
   userId: string;
   platform: string;
   pushToken: string;
-  payload: FrogSleepNotificationPayload;
+  payload: PushNotificationPayload;
+  invalidateToken?: () => Promise<void>;
 }
 
 export interface PushDispatcher {
@@ -41,6 +51,10 @@ export class NotificationService {
     private readonly logger: StructuredLogger,
     private readonly pushDispatcher: PushDispatcher = new LoggingPushDispatcher(logger),
   ) {}
+
+  async dispatchPush(request: PushDispatchRequest): Promise<void> {
+    await this.pushDispatcher.dispatch(request);
+  }
 
   async queueNotification(command: {
     appId: string;
@@ -148,7 +162,7 @@ export class NotificationService {
       retryCount: number;
     },
   ): Promise<void> {
-    const payload = record.payload as unknown as FrogSleepNotificationPayload;
+    const payload = record.payload as unknown as PushNotificationPayload;
     const devices = await this.database.listFrogSleepDevices({
       appId: record.appId,
       userId: record.recipientUserId,

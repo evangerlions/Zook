@@ -1,6 +1,5 @@
-import { Alert, Table, Tag } from "antd";
+import { Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import type { EChartsCoreOption } from "echarts/core";
 
 import { formatTimestamp } from "../../lib/format";
 import type {
@@ -11,6 +10,11 @@ import type {
 } from "../../lib/types";
 import { LlmChart } from "./llm-chart";
 import { formatMetricNumber, formatPercent } from "./llm-monitor-view-model";
+import { SuccessRateBadge } from "./success-rate-badge";
+import {
+  buildRoutingComparisonOption,
+  type RoutingComparisonRow,
+} from "./routing-comparison-view-model";
 
 interface RoutingRow extends LlmRouteRuntimeStatus {
   key: string;
@@ -21,7 +25,12 @@ interface RoutingRow extends LlmRouteRuntimeStatus {
 }
 
 export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }) {
-  const rows = buildRows(metrics);
+  const allRows = buildRows(metrics);
+  const rows = filterRows(allRows, metrics);
+  const visibleModelKeys = new Set(rows.map((row) => row.modelKey));
+  const chartRows = allRows
+    .filter((row) => visibleModelKeys.has(row.modelKey))
+    .map(toComparisonRow);
   const snapshot = metrics.runtime;
 
   return (
@@ -29,7 +38,7 @@ export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }
       <header className="card-header">
         <div>
           <h2>当前动态路由决策</h2>
-          <p>直接展示后端 selector 使用的基础权重、健康分、动态分和归一化选择概率，前端不复算。</p>
+          <p>先看各路由的健康成功率和调用占比；当前路由规则保留在下方表格。</p>
         </div>
         <div className="llm-snapshot-meta">
           <Tag color="blue">当前快照</Tag>
@@ -39,24 +48,15 @@ export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }
         </div>
       </header>
 
-      <div className="llm-formula-note">
-        <code>动态分 = 基础权重 × 健康分 ÷ 100</code>
-        <span>auto 按 selectionEligible route 动态分归一化；fixed 为 100/0，健康分仅观测。</span>
-      </div>
-
-      {metrics.routingConfigChangedWithinRange ? (
-        <Alert
-          message="所选范围内发生过路由配置变更；当前期望概率与历史实际流量仅作参考，不产生偏差告警。"
-          showIcon
-          type="warning"
-        />
-      ) : null}
-
       <div className="llm-routing-chart">
+        <div className="llm-routing-chart-heading">
+          <strong>调用占比</strong>
+          <span>{metrics.range} 内每个模型的实际调用分布；一个模型只显示一行。</span>
+        </div>
         <LlmChart
-          height={Math.max(260, Math.min(480, metrics.runtime.models.length * 70 + 90))}
-          option={(width) => buildRoutingComparisonOption(rows, width)}
-          summary="每个路由 Model 的当前期望概率和当前范围实际流量占比对比"
+          height={Math.max(260, Math.min(440, visibleModelKeys.size * 48 + 110))}
+          option={(width) => buildRoutingComparisonOption(chartRows, width)}
+          summary={`${metrics.range} 内每个路由模型的调用占比，每个模型一行`}
         />
       </div>
 
@@ -69,6 +69,11 @@ export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }
         scroll={{ x: 1540 }}
         size="small"
       />
+
+      <div className="llm-formula-note llm-formula-note--secondary">
+        <code>当前目标：基础权重 × 健康分，再在同一 Model 内归一化</code>
+        <span>auto 使用健康分；fixed 直接按 100% / 0% 选择，健康分仅用于观察。</span>
+      </div>
     </section>
   );
 }
@@ -77,8 +82,6 @@ function buildRows(metrics: AdminLlmMetricsDocument): RoutingRow[] {
   return metrics.runtime.models
     .filter((model) => metrics.operation ? model.kind === metrics.operation : true)
     .flatMap((model) => model.routes
-      .filter((route) => metrics.provider ? route.provider === metrics.provider : true)
-      .filter((route) => metrics.providerModel ? route.providerModel === metrics.providerModel : true)
       .map((route) => {
     const actual = metrics.routes.items.find((item) =>
       item.routingModelKey === model.key &&
@@ -97,6 +100,23 @@ function buildRows(metrics: AdminLlmMetricsDocument): RoutingRow[] {
       }));
 }
 
+function filterRows(
+  rows: RoutingRow[],
+  metrics: AdminLlmMetricsDocument,
+): RoutingRow[] {
+  return rows
+    .filter((row) => metrics.provider ? row.provider === metrics.provider : true)
+    .filter((row) => metrics.providerModel ? row.providerModel === metrics.providerModel : true);
+}
+
+function toComparisonRow(row: RoutingRow): RoutingComparisonRow {
+  return {
+    modelKey: row.modelKey,
+    provider: row.provider,
+    actualTrafficShare: row.actualTrafficShare,
+  };
+}
+
 function routingColumns(): ColumnsType<RoutingRow> {
   return [
     { title: "路由 Model", dataIndex: "modelKey", fixed: "left", width: 165, ellipsis: true },
@@ -110,13 +130,18 @@ function routingColumns(): ColumnsType<RoutingRow> {
         ? <Tag color={row.runtimeAvailable ? "success" : "warning"}>{row.runtimeAvailable ? "可选择" : "Adapter 不可用"}</Tag>
         : <Tag>{row.ineligibleReason === "provider_disabled" ? "Provider 禁用" : "Route 禁用"}</Tag>,
     },
-    { title: "基础权重", dataIndex: "configuredWeight", width: 96, render: (value) => formatMetricNumber(value) },
+    {
+      title: "健康成功率",
+      dataIndex: "successRate",
+      width: 118,
+      render: (value) => <SuccessRateBadge value={value} />,
+    },
     { title: "健康样本", dataIndex: "sampleSize", width: 96, render: (value) => formatMetricNumber(value) },
-    { title: "健康成功率", dataIndex: "successRate", width: 112, render: (value) => formatPercent(value) },
+    { title: "基础权重", dataIndex: "configuredWeight", width: 96, render: (value) => formatMetricNumber(value) },
     { title: "健康分", dataIndex: "healthScore", width: 88, render: (value) => formatMetricNumber(value) },
     { title: "动态分", dataIndex: "dynamicScore", width: 88, render: (value) => formatMetricNumber(value) },
-    { title: "选择概率", dataIndex: "effectiveProbability", width: 108, render: (value) => formatPercent(value) },
-    { title: "范围实际", dataIndex: "actualTrafficShare", width: 102, render: (value) => formatPercent(value) },
+    { title: "当前目标占比", dataIndex: "effectiveProbability", width: 126, render: (value) => formatPercent(value) },
+    { title: "调用占比", dataIndex: "actualTrafficShare", width: 104, render: (value) => formatPercent(value) },
     { title: "选择原因", dataIndex: "selectionReason", width: 160, render: (value) => selectionReasonLabel(value) },
     { title: "窗口最近错误", dataIndex: "lastErrorAt", width: 156, render: (value) => formatTimestamp(value) },
   ];
@@ -131,43 +156,4 @@ function selectionReasonLabel(value: RoutingRow["selectionReason"]): string {
     not_selected: "fixed 未选中",
     ineligible: "不可选择",
   })[value];
-}
-
-function buildRoutingComparisonOption(
-  rows: RoutingRow[],
-  width: number,
-): EChartsCoreOption {
-  const modelKeys = [...new Set(rows.map((row) => row.modelKey))];
-  const compact = width < 520;
-  const categories = modelKeys.flatMap((key) => [`${key} · 当前期望`, `${key} · 范围实际`]);
-  const providers = [...new Set(rows.map((row) => row.provider))];
-  return {
-    tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, confine: true },
-    legend: { top: 0, type: "scroll" },
-    grid: { top: 52, left: compact ? 94 : 170, right: compact ? 12 : 28, bottom: 30 },
-    xAxis: { type: "value", min: 0, max: 100, name: "%" },
-    yAxis: {
-      type: "category",
-      data: categories,
-      axisLabel: {
-        fontSize: compact ? 9 : 12,
-        formatter: compact ? (value: string) => value.length > 13 ? `${value.slice(0, 12)}…` : value : undefined,
-        width: compact ? 84 : 158,
-        overflow: "truncate",
-      },
-    },
-    series: providers.map((provider) => ({
-      name: provider,
-      type: "bar",
-      stack: "share",
-      barMaxWidth: 18,
-      data: modelKeys.flatMap((modelKey) => {
-        const routeRows = rows.filter((row) => row.modelKey === modelKey && row.provider === provider);
-        return [
-          routeRows.reduce((sum, row) => sum + row.effectiveProbability, 0),
-          routeRows.reduce((sum, row) => sum + row.actualTrafficShare, 0),
-        ];
-      }),
-    })),
-  };
 }
