@@ -3,6 +3,43 @@ import test from "node:test";
 import { resolveAiNovelChatScene } from "../../src/modules/ai-novel/ai-novel-llm-scenes.ts";
 import { buildAiNovelPromptAssembly } from "../../src/modules/ai-novel/ai-novel-llm-prompts.ts";
 
+test("write_turn prompt requires coordinated structural story changes", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "write_turn",
+    messages: [],
+    context: {},
+  });
+
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.match(systemPrompt, /Structural-change protocol/);
+  assert.match(systemPrompt, /central relationship\/romance/);
+  assert.match(systemPrompt, /single Contract field/);
+  assert.match(systemPrompt, /every affected Contract field and the MainLine/);
+  assert.match(systemPrompt, /chapters 1–10/);
+  assert.match(systemPrompt, /exactly one ask_question/);
+  assert.match(systemPrompt, /not a catch-all memory bucket/);
+  assert.match(systemPrompt, /map the request to canonical fields first/);
+  assert.match(systemPrompt, /Workflow status such as ready is never/);
+  assert.match(systemPrompt, /explicitly asks for a lasting custom requirement/);
+  assert.match(systemPrompt, /Do not store genre labels, chapter summaries/);
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    [
+      "read_book_contract",
+      "read_main_line",
+      "read_chapter_frame",
+      "read_story_window",
+      "read_current_brief",
+      "ask_question",
+      "set_book_contract",
+      "set_main_line",
+      "read_draft",
+      "write_draft",
+      "search_story_history",
+    ],
+  );
+});
+
 test("chapter_draft prompt prioritizes chapter-level execution without early payoff", () => {
   const assembly = buildAiNovelPromptAssembly({
     profile: "chapter_draft",
@@ -284,7 +321,11 @@ test("book contract tool preserves optional story anchor names", () => {
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
   assert.match(systemPrompt, /Contract\.extras/);
-  assert.match(systemPrompt, /remember, persist, add, or change/);
+  assert.match(
+    systemPrompt,
+    /explicitly asks for a lasting custom requirement/,
+  );
+  assert.match(systemPrompt, /no canonical field can represent it/);
   assert.match(systemPrompt, /existing key to null/);
   const extras = (patch.properties as Record<string, unknown>)
     .extras as Record<string, unknown>;
