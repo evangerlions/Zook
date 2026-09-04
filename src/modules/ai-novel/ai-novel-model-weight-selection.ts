@@ -24,15 +24,36 @@ export function selectAiNovelChatModelKey(
   routingIdentity?: LlmRoutingIdentity,
   resolveRoutingUnit: AiNovelRoutingUnitResolver = resolveLlmRoutingUnit,
   modelHealth?: ReadonlyMap<string, AiNovelModelHealthInput>,
+  excludedModelKeys?: ReadonlySet<string>,
 ): string {
-  const models = buildAiNovelEffectiveModelWeights(config, modelHealth);
+  const models = buildAiNovelEffectiveModelWeights(
+    config,
+    modelHealth,
+    excludedModelKeys,
+  );
   const routingUnit = resolveRoutingUnit(
     routingIdentity?.did,
     routingIdentity?.uid,
   );
-  const totalWeight = models.reduce((sum, model) => sum + model.effectiveWeight, 0);
+  const totalWeight = totalEffectiveWeight(models);
   if (totalWeight <= 0) {
-    return selectAiNovelChatModelKey(config, routingIdentity, resolveRoutingUnit);
+    const fallbackModels = buildAiNovelEffectiveModelWeights(
+      config,
+      undefined,
+      excludedModelKeys,
+    );
+    return selectByWeight(fallbackModels, routingUnit);
+  }
+  return selectByWeight(models, routingUnit);
+}
+
+function selectByWeight(
+  models: AiNovelEffectiveModelWeight[],
+  routingUnit: number,
+): string {
+  const totalWeight = totalEffectiveWeight(models);
+  if (totalWeight <= 0) {
+    throw new Error("No AINovel model remains after exclusions.");
   }
   const targetWeight = routingUnit * totalWeight;
   let upperBound = 0;
@@ -48,6 +69,7 @@ export function selectAiNovelChatModelKey(
 export function buildAiNovelEffectiveModelWeights(
   config: AiNovelModelSelectionConfig,
   modelHealth?: ReadonlyMap<string, AiNovelModelHealthInput>,
+  excludedModelKeys?: ReadonlySet<string>,
 ): AiNovelEffectiveModelWeight[] {
   return config.chat.default.map((model) => {
     const health = modelHealth?.get(model.modelKey);
@@ -62,9 +84,13 @@ export function buildAiNovelEffectiveModelWeights(
     return {
       modelKey: model.modelKey,
       configuredWeight: model.weight,
-      effectiveWeight: health?.available === false
+      effectiveWeight: excludedModelKeys?.has(model.modelKey) || health?.available === false
         ? 0
         : model.weight * healthFactor,
     };
   });
+}
+
+function totalEffectiveWeight(models: AiNovelEffectiveModelWeight[]): number {
+  return models.reduce((sum, model) => sum + model.effectiveWeight, 0);
 }

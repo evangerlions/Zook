@@ -26,6 +26,10 @@ export {
   AI_NOVEL_MODEL_SELECTION_CONFIG_KEY,
 } from "./ai-novel-model-selection-config.ts";
 
+export interface AiNovelModelSelectionOptions {
+  excludedModelKeys?: ReadonlySet<string>;
+}
+
 export class AiNovelModelSelectionConfigService {
   constructor(
     private readonly appConfigService: VersionedAppConfigService,
@@ -130,17 +134,28 @@ export class AiNovelModelSelectionConfigService {
 
   async resolveChatModelKey(
     routingIdentity?: LlmRoutingIdentity,
+    options: AiNovelModelSelectionOptions = {},
   ): Promise<string> {
     const config = await this.getCurrentConfig();
     await this.assertConfiguredModels(config, "runtime");
     const llmConfig = await this.commonLlmConfigService.getCurrentConfig();
     if (!llmConfig.enabled) {
-      return selectAiNovelChatModelKey(config, routingIdentity);
+      return selectAiNovelChatModelKey(
+        config,
+        routingIdentity,
+        undefined,
+        undefined,
+        options.excludedModelKeys,
+      );
     }
     const health = await this.readModelHealth(config);
     if (
       health.size === config.chat.default.length &&
-      buildAiNovelEffectiveModelWeights(config, health).every(
+      buildAiNovelEffectiveModelWeights(
+        config,
+        health,
+        options.excludedModelKeys,
+      ).every(
         (model) => model.effectiveWeight <= 0,
       )
     ) {
@@ -150,7 +165,13 @@ export class AiNovelModelSelectionConfigService {
         "No healthy AINovel model is available.",
       );
     }
-    return selectAiNovelChatModelKey(config, routingIdentity, undefined, health);
+    return selectAiNovelChatModelKey(
+      config,
+      routingIdentity,
+      undefined,
+      health,
+      options.excludedModelKeys,
+    );
   }
 
   createDefaultConfig(): AiNovelModelSelectionConfig {
