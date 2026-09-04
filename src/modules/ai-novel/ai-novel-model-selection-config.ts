@@ -125,8 +125,8 @@ function normalizeWeight(
   index: number,
   invalid: (message: string) => never,
 ): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-    invalid(`${path}[${index}].weight must be greater than 0.`);
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    invalid(`${path}[${index}].weight must be greater than or equal to 0.`);
   }
   const normalized = Math.round(value * WEIGHT_PRECISION) / WEIGHT_PRECISION;
   if (Math.abs(value - normalized) > 0.000001) {

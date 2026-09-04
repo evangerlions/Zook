@@ -8,6 +8,7 @@ export type LlmMetricsGranularity = "hour" | "day";
 export interface LlmCallObservationRecord {
   callId: string;
   occurredAt: string;
+  appId?: string;
   routingModelKey: string;
   provider: string;
   providerModel: string;
@@ -49,6 +50,7 @@ export interface LlmObservabilityFilter {
   provider?: string;
   providerModel?: string;
   routingModelKey?: string;
+  appId?: string;
 }
 
 export interface LlmObservationAggregate {
@@ -138,5 +140,6 @@ export interface LlmObservabilityStore {
   recordObservation(record: LlmCallObservationRecord): Promise<boolean>;
   getRouteHealth(key: LlmRouteHealthKey): Promise<LlmRouteHealthRecord | undefined>;
   queryMetrics(filter: LlmObservabilityFilter): Promise<LlmObservabilityQueryResult>;
+  queryRoutingModelRequestCounts(filter: LlmObservabilityFilter): Promise<Record<string, number>>;
   deleteBefore(cutoffIso: string): Promise<{ observations: number }>;
 }

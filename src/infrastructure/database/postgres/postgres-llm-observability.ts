@@ -70,23 +70,24 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
   async recordObservation(record: LlmCallObservationRecord): Promise<boolean> {
     const result = await this.query(
       `INSERT INTO zook_llm_call_observations (
-           call_id, occurred_at, routing_model_key, provider, provider_model,
+           call_id, occurred_at, app_id, routing_model_key, provider, provider_model,
            operation, response_mode, outcome, health_impact,
            first_response_latency_ms, total_latency_ms,
            prompt_tokens, completion_tokens, reasoning_tokens, total_tokens,
            usage_source, error_code, error_message, routing_config_revision
          )
          VALUES (
-           $1, $2::timestamptz, $3, $4, $5,
-           $6, $7, $8, $9,
-           $10, $11, $12, $13, $14, $15,
-           $16, $17, $18, $19
+           $1, $2::timestamptz, $3, $4, $5, $6,
+           $7, $8, $9, $10,
+           $11, $12, $13, $14, $15, $16,
+           $17, $18, $19, $20
          )
          ON CONFLICT (call_id) DO NOTHING
          RETURNING call_id`,
       [
         record.callId,
         record.occurredAt,
+        record.appId ?? null,
         record.routingModelKey,
         record.provider,
         record.providerModel,
@@ -156,6 +157,21 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
     } finally {
       client.release();
     }
+  }
+
+  async queryRoutingModelRequestCounts(
+    filter: LlmObservabilityFilter,
+  ): Promise<Record<string, number>> {
+    const query = buildWhere(filter);
+    const result = await this.query(
+      `SELECT routing_model_key, COUNT(*)::bigint AS request_count
+       FROM zook_llm_call_observations ${query.where}
+       GROUP BY routing_model_key`,
+      query.values,
+    );
+    return Object.fromEntries(
+      result.rows.map((row) => [String(row.routing_model_key), numberValue(row.request_count)]),
+    );
   }
 
   private async queryMetricsWith(
@@ -271,6 +287,7 @@ function buildWhere(filter: LlmObservabilityFilter): { where: string; values: un
     ["provider", filter.provider],
     ["provider_model", filter.providerModel],
     ["routing_model_key", filter.routingModelKey],
+    ["app_id", filter.appId],
   ] as const) {
     if (!value) continue;
     values.push(value);

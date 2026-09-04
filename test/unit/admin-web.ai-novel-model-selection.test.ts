@@ -31,6 +31,27 @@ test("AINovel model JSON parser accepts and normalizes valid weighted models", (
   );
 });
 
+test("AINovel model JSON parser accepts zero weight as an explicit disable", () => {
+  assert.deepEqual(
+    parseAiNovelModelSelectionText(
+      JSON.stringify({
+        schemaVersion: 1,
+        chat: {
+          default: [
+            { modelKey: "model-a", weight: 0 },
+            { modelKey: "model-b", weight: 100 },
+          ],
+        },
+      }),
+      AVAILABLE_MODELS,
+    ).chat.default,
+    [
+      { modelKey: "model-a", weight: 0 },
+      { modelKey: "model-b", weight: 100 },
+    ],
+  );
+});
+
 test("AINovel model JSON parser rejects syntax errors and unsupported fields", () => {
   assert.throws(
     () => parseAiNovelModelSelectionText("{", AVAILABLE_MODELS),

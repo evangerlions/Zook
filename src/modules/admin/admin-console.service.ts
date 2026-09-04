@@ -53,6 +53,7 @@ import {
   normalizeRequiredAppNames,
 } from "./admin-console-config-utils.ts";
 import { createDefaultRoles } from "./admin-console-roles.ts";
+import { AdminAiNovelModelHealthService } from "./admin-ai-novel-model-health.service.ts";
 
 export class AdminConsoleService extends AdminConsoleCommonFacade {
   constructor(
@@ -73,6 +74,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     private readonly emailTestSendService: EmailTestSendService,
     private readonly llmHealthService: LlmHealthService,
     private readonly llmMetricsService: LlmMetricsService,
+    private readonly adminAiNovelModelHealthService: AdminAiNovelModelHealthService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly smsVerificationRecordService: SmsVerificationRecordService,
@@ -387,7 +389,12 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
 
   async getAiNovelModelSelection(revision?: number): Promise<AdminAiNovelModelSelectionDocument> {
     const app = await this.requireConfigApp("ai_novel");
-    return { app: await this.toSummary(app), ...await this.aiNovelModelSelectionConfigService.getDocument(revision) };
+    const document = await this.aiNovelModelSelectionConfigService.getDocument(revision);
+    return {
+      app: await this.toSummary(app),
+      ...document,
+      modelHealth: await this.adminAiNovelModelHealthService.getModelHealth(document.config),
+    };
   }
 
   async updateAiNovelModelSelection(input: unknown, desc?: string): Promise<AdminAiNovelModelSelectionDocument> {

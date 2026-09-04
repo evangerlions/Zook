@@ -3481,7 +3481,9 @@ test("admin llm service API stores versioned common config and exposes metrics",
   );
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes.length, 2);
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes[0]?.dynamicScore, 80);
-  assert.equal(updateResponse.body.data.runtime.models[0]?.routes[0]?.effectiveProbability, 80);
+  assert.equal(updateResponse.body.data.runtime.models[0]?.routes[0]?.effectiveProbability, 100);
+  assert.equal(updateResponse.body.data.runtime.models[0]?.routes[1]?.runtimeAvailable, false);
+  assert.equal(updateResponse.body.data.runtime.models[0]?.routes[1]?.ineligibleReason, "runtime_unavailable");
 
   await runtime.database.llmObservabilityStore.recordObservation({
     callId: "admin_metric_bailian",

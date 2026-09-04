@@ -96,7 +96,7 @@ test("routing unit replaces invalid or short DID and UID inputs with random part
   }
 });
 
-test("chat auto routing keeps one DID and UID on the same provider", async () => {
+test("chat auto routing keeps affinity until a provider becomes unhealthy", async () => {
   const calls: string[] = [];
   let favorProviderA = true;
   const manager = new LLMManager(
@@ -142,7 +142,8 @@ test("chat auto routing keeps one DID and UID on the same provider", async () =>
     });
   }
 
-  assert.equal(new Set(calls).size, 1);
+  assert.deepEqual(new Set(calls.slice(0, 4)), new Set(["provider-a"]));
+  assert.deepEqual(new Set(calls.slice(4)), new Set(["provider-b"]));
 });
 
 test("embedding auto routing uses the same stable routing identity", async () => {

@@ -54,6 +54,7 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
   async queryMetrics(filter: LlmObservabilityFilter): Promise<LlmObservabilityQueryResult> {
     const records = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.provider ? item.provider === filter.provider : true)
       .filter((item) => filter.providerModel ? item.providerModel === filter.providerModel : true);
@@ -62,17 +63,21 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
       : true);
     const routingRecords = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.routingModelKey ? item.routingModelKey === filter.routingModelKey : true);
     const providerRecords = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.providerModel ? item.providerModel === filter.providerModel : true)
       .filter((item) => filter.routingModelKey ? item.routingModelKey === filter.routingModelKey : true);
     const revisionRecords = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true);
     const allFiltered = this.observations
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.provider ? item.provider === filter.provider : true)
       .filter((item) => filter.providerModel ? item.providerModel === filter.providerModel : true)
@@ -100,6 +105,22 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
         revisionRecords.map((item) => item.routingConfigRevision).filter((item): item is number => item !== undefined),
       )).sort((left, right) => left - right),
     };
+  }
+
+  async queryRoutingModelRequestCounts(
+    filter: LlmObservabilityFilter,
+  ): Promise<Record<string, number>> {
+    const counts = new Map<string, number>();
+    for (const item of this.observations) {
+      if (item.occurredAt < filter.occurredAtFrom || item.occurredAt >= filter.occurredAtTo) continue;
+      if (filter.appId && item.appId !== filter.appId) continue;
+      if (filter.operation && item.operation !== filter.operation) continue;
+      if (filter.provider && item.provider !== filter.provider) continue;
+      if (filter.providerModel && item.providerModel !== filter.providerModel) continue;
+      if (filter.routingModelKey && item.routingModelKey !== filter.routingModelKey) continue;
+      counts.set(item.routingModelKey, (counts.get(item.routingModelKey) ?? 0) + 1);
+    }
+    return Object.fromEntries(counts);
   }
 
   async deleteBefore(cutoffIso: string): Promise<{ observations: number }> {

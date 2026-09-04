@@ -38,11 +38,24 @@ export interface AiNovelChatModelOption {
   configuredAvailable: boolean;
 }
 
+export interface AiNovelModelHealth {
+  modelKey: string;
+  configuredWeight: number;
+  effectiveWeight: number;
+  actualHitRate: number;
+  successRate?: number;
+  healthScore: number;
+  sampleSize: number;
+  available: boolean;
+  lastErrorAt?: string;
+}
+
 export interface AdminAiNovelModelSelectionDocument {
   app: AdminAppSummary;
   configKey: string;
   config: AiNovelModelSelectionConfig;
   availableChatModels: AiNovelChatModelOption[];
+  modelHealth: AiNovelModelHealth[];
   updatedAt?: string;
   revision?: number;
   desc?: string;

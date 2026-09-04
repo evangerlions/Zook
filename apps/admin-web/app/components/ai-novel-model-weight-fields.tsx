@@ -62,7 +62,7 @@ export function AiNovelModelWeightFields({
               addonAfter="%"
               disabled={disabled}
               max={100}
-              min={0.01}
+              min={0}
               onChange={(weight) => updateItem(index, { weight: weight ?? 0 })}
               precision={2}
               value={item.weight}
