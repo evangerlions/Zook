@@ -1,6 +1,8 @@
 import type { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import type { LlmRoutingIdentity } from "../../services/llm-manager.ts";
 import type { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
+import type { LlmModelHealthReader } from "../../services/llm-model-health.service.ts";
+import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type {
   AiNovelChatModelOption,
@@ -16,6 +18,7 @@ import {
   parseStoredAiNovelModelSelectionConfig,
 } from "./ai-novel-model-selection-config.ts";
 import { selectAiNovelChatModelKey } from "./ai-novel-model-weight-selection.ts";
+import { buildAiNovelEffectiveModelWeights } from "./ai-novel-model-weight-selection.ts";
 import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
 
 export {
@@ -23,10 +26,16 @@ export {
   AI_NOVEL_MODEL_SELECTION_CONFIG_KEY,
 } from "./ai-novel-model-selection-config.ts";
 
+export interface AiNovelModelSelectionOptions {
+  excludedModelKeys?: ReadonlySet<string>;
+}
+
 export class AiNovelModelSelectionConfigService {
   constructor(
     private readonly appConfigService: VersionedAppConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
+    private readonly modelHealthReader: LlmModelHealthReader,
+    private readonly logger?: StructuredLogger,
   ) {}
 
   async getDocument(revision?: number): Promise<AiNovelModelSelectionDocument> {
@@ -125,10 +134,44 @@ export class AiNovelModelSelectionConfigService {
 
   async resolveChatModelKey(
     routingIdentity?: LlmRoutingIdentity,
+    options: AiNovelModelSelectionOptions = {},
   ): Promise<string> {
     const config = await this.getCurrentConfig();
     await this.assertConfiguredModels(config, "runtime");
-    return selectAiNovelChatModelKey(config, routingIdentity);
+    const llmConfig = await this.commonLlmConfigService.getCurrentConfig();
+    if (!llmConfig.enabled) {
+      return selectAiNovelChatModelKey(
+        config,
+        routingIdentity,
+        undefined,
+        undefined,
+        options.excludedModelKeys,
+      );
+    }
+    const health = await this.readModelHealth(config);
+    if (
+      health.size === config.chat.default.length &&
+      buildAiNovelEffectiveModelWeights(
+        config,
+        health,
+        options.excludedModelKeys,
+      ).every(
+        (model) => model.effectiveWeight <= 0,
+      )
+    ) {
+      throw new ApplicationError(
+        503,
+        "AI_MODEL_NOT_AVAILABLE",
+        "No healthy AINovel model is available.",
+      );
+    }
+    return selectAiNovelChatModelKey(
+      config,
+      routingIdentity,
+      undefined,
+      health,
+      options.excludedModelKeys,
+    );
   }
 
   createDefaultConfig(): AiNovelModelSelectionConfig {
@@ -176,6 +219,33 @@ export class AiNovelModelSelectionConfigService {
           ),
       }))
       .sort((left, right) => left.label.localeCompare(right.label, "zh-CN"));
+  }
+
+  private async readModelHealth(
+    config: AiNovelModelSelectionConfig,
+  ): Promise<Map<string, { available: boolean; healthScore: number }>> {
+    const entries = await Promise.all(
+      config.chat.default.map(async (model) => {
+        try {
+          return [
+            model.modelKey,
+            await this.modelHealthReader.getModelHealth(model.modelKey),
+          ] as const;
+        } catch (error) {
+          // A failed health read is explicitly treated as unavailable for this
+          // model only. Other models can still use their known health scores.
+          this.logger?.warn("AINovel model health lookup failed; model marked unavailable", {
+            modelKey: model.modelKey,
+            error,
+          });
+          return [
+            model.modelKey,
+            { available: false, healthScore: 0 },
+          ] as const;
+        }
+      }),
+    );
+    return new Map(entries);
   }
 
   private async assertConfiguredModels(

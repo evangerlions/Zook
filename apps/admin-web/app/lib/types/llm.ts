@@ -53,7 +53,7 @@ export interface LlmRouteRuntimeStatus {
   providerEnabled: boolean;
   selectionEligible: boolean;
   runtimeAvailable: boolean;
-  ineligibleReason?: "route_disabled" | "provider_disabled";
+  ineligibleReason?: "route_disabled" | "provider_disabled" | "runtime_unavailable";
   weight: number;
   configuredWeight: number;
   sampleSize: number;

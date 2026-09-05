@@ -6,6 +6,7 @@ import { RevisionHistoryDock } from "./revision-history-dock";
 import { RevisionList } from "./revision-list";
 import { SaveConfirmModal } from "./save-confirm-modal";
 import { AiNovelModelWeightFields } from "./ai-novel-model-weight-fields";
+import { AiNovelModelHealthTable } from "./ai-novel-model-health-table";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
@@ -202,7 +203,7 @@ export function AiNovelModelSelectionPanel() {
   const modelKeys = weightedModels.map((item) => item.modelKey);
   const weightsInvalid =
     weightedModels.length === 0 ||
-    weightedModels.some((item) => !item.modelKey || item.weight <= 0) ||
+    weightedModels.some((item) => !item.modelKey || item.weight < 0) ||
     new Set(modelKeys).size !== modelKeys.length ||
     Math.abs(totalWeight - 100) > 0.001;
 
@@ -234,7 +235,7 @@ export function AiNovelModelSelectionPanel() {
               onChange={handleWeightedModelsChange}
             />
             <small className="field-hint">
-              这里只配置 AINovel 选择逻辑模型的权重；Provider、上游模型和密钥仍由 Server → LLM 管理。
+              这里只配置 AINovel 选择逻辑模型的基础权重；Weight 为 0 表示关闭该模型。运行时会结合 LLM Service 健康分动态调整，健康为 0 的已启用模型使用 0.01% 权重因子进行探测。Provider、上游模型和密钥仍由 Server → LLM 管理。
             </small>
 
             <div className="button-row">
@@ -255,6 +256,8 @@ export function AiNovelModelSelectionPanel() {
                 刷新最新
               </Button>
             </div>
+
+            {document ? <AiNovelModelHealthTable items={document.modelHealth} /> : null}
 
             <Collapse
               items={[

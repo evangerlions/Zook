@@ -31,6 +31,18 @@ export interface AiNovelChatModelOption {
   configuredAvailable: boolean;
 }
 
+export interface AiNovelModelHealth {
+  modelKey: string;
+  configuredWeight: number;
+  effectiveWeight: number;
+  actualHitRate: number;
+  successRate?: number;
+  healthScore: number;
+  sampleSize: number;
+  available: boolean;
+  lastErrorAt?: string;
+}
+
 export interface AiNovelModelSelectionDocument {
   configKey: string;
   config: AiNovelModelSelectionConfig;
@@ -45,6 +57,7 @@ export interface AiNovelModelSelectionDocument {
 export interface AdminAiNovelModelSelectionDocument
   extends AiNovelModelSelectionDocument {
   app: AdminAppSummary;
+  modelHealth: AiNovelModelHealth[];
 }
 
 export type PublicAppConfigDocument = GeneratedPublicConfigData;

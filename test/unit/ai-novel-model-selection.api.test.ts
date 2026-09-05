@@ -53,6 +53,17 @@ test("AINovel model selection defaults to qwen3.6-plus without stored config", a
       (model: { key: string }) => model.key === "qwen3.6-plus",
     ),
   );
+  assert.deepEqual(response.body.data.modelHealth, [
+    {
+      modelKey: "qwen3.6-plus",
+      configuredWeight: 100,
+      effectiveWeight: 0,
+      actualHitRate: 0,
+      healthScore: 0,
+      sampleSize: 0,
+      available: false,
+    },
+  ]);
 });
 
 test("AINovel model selection saves weighted models and restores revisions", async () => {
@@ -117,6 +128,146 @@ test("AINovel model selection saves weighted models and restores revisions", asy
   assert.deepEqual(restored.body.data.config.chat.default, [
     { modelKey: "qwen3.5-flash", weight: 100 },
   ]);
+});
+
+test("AINovel model selection allows zero weight to disable a model", async () => {
+  const runtime = await createRuntime();
+  const response = await request(
+    runtime,
+    "PUT",
+    "/api/v1/admin/apps/ai_novel/model-selection",
+    {
+      config: {
+        schemaVersion: 1,
+        chat: {
+          default: [
+            { modelKey: "qwen3.6-plus", weight: 0 },
+            { modelKey: "qwen3.5-flash", weight: 100 },
+          ],
+        },
+      },
+    },
+  );
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.body.data.config.chat.default, [
+    { modelKey: "qwen3.6-plus", weight: 0 },
+    { modelKey: "qwen3.5-flash", weight: 100 },
+  ]);
+  assert.equal(
+    await runtime.services.aiNovelModelSelectionConfigService.resolveChatModelKey({
+      did: "device_abc",
+      uid: "user_001",
+    }),
+    "qwen3.5-flash",
+  );
+});
+
+test("AINovel model selection exposes observed model hit rates", async () => {
+  const runtime = await createRuntime();
+  await request(runtime, "PUT", "/api/v1/admin/apps/ai_novel/model-selection", {
+    config: {
+      schemaVersion: 1,
+      chat: {
+        default: [
+          { modelKey: "qwen3.6-plus", weight: 50 },
+          { modelKey: "qwen3.5-flash", weight: 50 },
+        ],
+      },
+    },
+  });
+  const now = new Date();
+  for (const [index, modelKey] of [
+    "qwen3.6-plus",
+    "qwen3.6-plus",
+    "qwen3.5-flash",
+  ].entries()) {
+    await runtime.database.llmObservabilityStore.recordObservation({
+      callId: `ainovel_model_hit_${index}`,
+      occurredAt: new Date(now.getTime() - index * 1000).toISOString(),
+      appId: "ai_novel",
+      routingModelKey: modelKey,
+      provider: "bailian",
+      providerModel: modelKey,
+      operation: "chat",
+      responseMode: "non_stream",
+      outcome: "success",
+      healthImpact: "success",
+      totalLatencyMs: 20,
+      usageSource: "missing",
+    });
+  }
+
+  const response = await request(
+    runtime,
+    "GET",
+    "/api/v1/admin/apps/ai_novel/model-selection",
+  );
+  const modelHealth = response.body.data.modelHealth as Array<{
+    modelKey: string;
+    actualHitRate: number;
+  }>;
+  assert.equal(response.statusCode, 200);
+  assert.equal(
+    modelHealth.find((item) => item.modelKey === "qwen3.6-plus")?.actualHitRate,
+    66.67,
+  );
+  assert.equal(
+    modelHealth.find((item) => item.modelKey === "qwen3.5-flash")?.actualHitRate,
+    33.33,
+  );
+});
+
+test("AINovel model health failures are isolated to the affected model", async () => {
+  const runtime = await createRuntime();
+  await request(runtime, "PUT", "/api/v1/admin/apps/ai_novel/model-selection", {
+    config: {
+      schemaVersion: 1,
+      chat: {
+        default: [
+          { modelKey: "qwen3.6-plus", weight: 50 },
+          { modelKey: "qwen3.5-flash", weight: 50 },
+        ],
+      },
+    },
+  });
+  const commonLlmConfig = await runtime.services.commonLlmConfigService.getCurrentConfig();
+  await runtime.services.commonLlmConfigService.updateConfig({
+    ...commonLlmConfig,
+    enabled: true,
+  });
+
+  const service = runtime.services.aiNovelModelSelectionConfigService as unknown as {
+    modelHealthReader: {
+      getModelHealth(modelKey: string): Promise<{
+        modelKey: string;
+        available: boolean;
+        healthScore: number;
+        sampleSize: number;
+      }>;
+    };
+  };
+  (service.modelHealthReader as unknown as { cache: Map<string, unknown> }).cache.clear();
+  service.modelHealthReader = {
+    async getModelHealth(modelKey) {
+      if (modelKey === "qwen3.6-plus") {
+        throw new Error("health backend unavailable");
+      }
+      return {
+        modelKey,
+        available: true,
+        healthScore: 100,
+        sampleSize: 10,
+      };
+    },
+  };
+
+  const selected =
+    await runtime.services.aiNovelModelSelectionConfigService.resolveChatModelKey({
+      did: "device_abc",
+      uid: "user_001",
+    });
+  assert.equal(selected, "qwen3.5-flash");
 });
 
 test("AINovel model selection rejects invalid model arrays", async () => {
@@ -217,5 +368,47 @@ test("AINovel runtime rejects a damaged stored selection instead of using the de
       error instanceof ApplicationError &&
       error.statusCode === 502 &&
       error.code === "AI_UPSTREAM_CONFIG_INVALID",
+  );
+});
+
+test("AINovel runtime refuses to route when every configured model is unavailable", async () => {
+  const runtime = await createRuntime();
+  await runtime.services.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "qwen3.6-plus",
+    providers: [
+      {
+        key: "missing-adapter",
+        label: "Missing adapter",
+        enabled: true,
+        baseUrl: "https://missing.invalid",
+        apiKey: "test-key",
+        timeoutMs: 1000,
+      },
+    ],
+    models: [
+      {
+        key: "qwen3.6-plus",
+        label: "Qwen",
+        kind: "chat",
+        strategy: "auto",
+        routes: [
+          {
+            provider: "missing-adapter",
+            providerModel: "qwen3.6-plus",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+
+  await assert.rejects(
+    () => runtime.services.aiNovelModelSelectionConfigService.resolveChatModelKey(),
+    (error: unknown) =>
+      error instanceof ApplicationError &&
+      error.statusCode === 503 &&
+      error.code === "AI_MODEL_NOT_AVAILABLE",
   );
 });

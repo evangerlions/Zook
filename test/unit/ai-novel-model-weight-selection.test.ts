@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildAiNovelEffectiveModelWeights,
   selectAiNovelChatModelKey,
 } from "../../src/modules/ai-novel/ai-novel-model-weight-selection.ts";
 import type { AiNovelModelSelectionConfig } from "../../src/shared/types.ts";
@@ -40,4 +41,63 @@ test("AINovel weighted selection delegates DID and UID to common affinity", () =
   );
   assert.deepEqual(received, ["device_abc", "user_xyz"]);
   assert.equal(selected, "model-2");
+});
+
+test("AINovel weighted selection applies model health without changing configured weights", () => {
+  const selection = config([50, 30, 20]);
+  const health = new Map([
+    ["model-1", { available: false, healthScore: 0 }],
+    ["model-2", { available: true, healthScore: 50 }],
+    ["model-3", { available: true, healthScore: 100 }],
+  ]);
+
+  assert.equal(
+    selectAiNovelChatModelKey(selection, undefined, () => 0, health),
+    "model-2",
+  );
+  assert.deepEqual(selection.chat.default.map((model) => model.weight), [50, 30, 20]);
+});
+
+test("AINovel health selection preserves the base bucket when every model is unavailable", () => {
+  const selection = config([50, 30, 20]);
+  const health = new Map([
+    ["model-1", { available: false, healthScore: 0 }],
+    ["model-2", { available: false, healthScore: 0 }],
+    ["model-3", { available: false, healthScore: 0 }],
+  ]);
+
+  assert.equal(
+    selectAiNovelChatModelKey(selection, undefined, () => 0.65, health),
+    "model-2",
+  );
+});
+
+test("AINovel keeps a small probe weight for a reachable model with zero health", () => {
+  const weights = buildAiNovelEffectiveModelWeights(
+    config([50, 50]),
+    new Map([
+      ["model-1", { available: true, healthScore: 0 }],
+      ["model-2", { available: true, healthScore: 100 }],
+    ]),
+  );
+
+  assert.equal(weights[0]?.effectiveWeight, 0.005);
+  assert.equal(weights[1]?.effectiveWeight, 50);
+});
+
+test("AINovel configured zero weight always disables a model", () => {
+  const selection = config([0, 100]);
+  const health = new Map([
+    ["model-1", { available: true, healthScore: 100 }],
+    ["model-2", { available: true, healthScore: 100 }],
+  ]);
+
+  assert.deepEqual(
+    buildAiNovelEffectiveModelWeights(selection, health).map((model) => model.effectiveWeight),
+    [0, 100],
+  );
+  assert.equal(
+    selectAiNovelChatModelKey(selection, undefined, () => 0, health),
+    "model-2",
+  );
 });

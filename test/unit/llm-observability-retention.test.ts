@@ -44,6 +44,7 @@ function createRetentionStore() {
     async recordObservation() { return true; },
     async getRouteHealth() { return undefined; },
     async queryMetrics() { throw new Error("unused"); },
+    async queryRoutingModelRequestCounts() { throw new Error("unused"); },
     async deleteBefore(cutoffIso) {
       store.deleteCalls += 1;
       store.lastCutoff = cutoffIso;

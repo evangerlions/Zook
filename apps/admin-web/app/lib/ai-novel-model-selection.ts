@@ -56,8 +56,8 @@ export function parseAiNovelModelSelectionText(
 }
 
 function normalizeWeight(value: unknown, index: number): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-    throw new Error(`chat.default[${index}].weight 必须大于 0。`);
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error(`chat.default[${index}].weight 必须大于等于 0。`);
   }
   const normalized = Math.round(value * WEIGHT_PRECISION) / WEIGHT_PRECISION;
   if (Math.abs(value - normalized) > 0.000001) {
