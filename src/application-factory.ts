@@ -23,6 +23,8 @@ import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
+import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
+import { AiNovelSkillService } from "./modules/ai-novel/ai-novel-skill.service.ts";
 import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
@@ -379,6 +381,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const aiNovelAuditFileService = new AiNovelAuditFileService(
     options.aiNovelAuditFileRoot,
   );
+  const aiNovelSkillService = new AiNovelSkillService(
+    new AiNovelSkillRepository(options.aiNovelSkillRoot),
+  );
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
@@ -490,6 +495,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     bodyLogChallengeService,
     llmSmokeTestService,
     aiNovelAuditFileService,
+    aiNovelSkillService,
     aiNovelLlmService,
     aiPayloadCryptoService,
     storageService,
@@ -563,6 +569,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       llmObservabilityRetentionService,
       llmSmokeTestService,
       aiNovelAuditFileService,
+      aiNovelSkillService,
       aiNovelLlmService,
       rbacService,
       storageService,

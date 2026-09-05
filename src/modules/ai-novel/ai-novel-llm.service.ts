@@ -32,6 +32,7 @@ import {
   assertNoClientModelSelection,
   normalizeEmbeddingInput,
   normalizeMessages,
+  optionalAiNovelAgentProtocol,
   optionalNumber,
   optionalPositiveInteger,
   requireSceneKey,
@@ -115,6 +116,7 @@ export class AiNovelLlmService {
       badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=true.`);
     }
     const sceneRouteKey = scene.sceneKey;
+    const agentProtocol = optionalAiNovelAgentProtocol(body.agentProtocol);
     const modelKey =
       await this.modelSelectionConfigService.resolveChatModelKey(
         options.routingIdentity,
@@ -123,6 +125,7 @@ export class AiNovelLlmService {
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const requestPlan = buildAiNovelCompletionRequestPlan({
       accountRegion: options.accountRegion,
+      agentProtocol,
       context: body.context,
       locale: options.locale,
       messages,
@@ -232,6 +235,7 @@ export class AiNovelLlmService {
       badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=false.`);
     }
     const sceneRouteKey = scene.sceneKey;
+    const agentProtocol = optionalAiNovelAgentProtocol(body.agentProtocol);
     const messages = normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const temperature =
@@ -250,6 +254,7 @@ export class AiNovelLlmService {
     try {
       const requestPlan = buildAiNovelStreamRequestPlan({
         accountRegion: options.accountRegion,
+        agentProtocol,
         context: body.context,
         locale: options.locale,
         messages,

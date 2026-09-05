@@ -11,6 +11,7 @@ import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import { AdminConsoleService } from "../modules/admin/admin-console.service.ts";
 import { AiNovelAuditFileService } from "../modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "../modules/ai-novel/ai-novel-llm.service.ts";
+import { AiNovelSkillService } from "../modules/ai-novel/ai-novel-skill.service.ts";
 import { AppRegistryService } from "../modules/app-registry/app-registry.service.ts";
 import { AuthService } from "../modules/auth/auth.service.ts";
 import { QrLoginService } from "../modules/auth/qr-login.service.ts";
@@ -101,6 +102,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly bodyLogChallengeService: BodyLogChallengeService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelAuditFileService: AiNovelAuditFileService,
+    private readonly aiNovelSkillService: AiNovelSkillService,
     private readonly aiNovelLlmService: AiNovelLlmService,
     private readonly aiPayloadCryptoService: AesGcmPayloadCryptoService,
     private readonly storageService: StorageService,
@@ -206,6 +208,7 @@ export class BackendApplication extends BackendRouteContext {
       embeddingManager: this.embeddingManager,
       llmSmokeTestService: this.llmSmokeTestService,
       aiNovelAuditFileService: this.aiNovelAuditFileService,
+      aiNovelSkillService: this.aiNovelSkillService,
       aiNovelLlmService: this.aiNovelLlmService,
       aiPayloadCryptoService: this.aiPayloadCryptoService,
       storageService: this.storageService,

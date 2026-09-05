@@ -315,6 +315,63 @@ test("ai_novel chat completions route requires bearer auth", async () => {
   assert.equal(response.body.code, "AUTH_BEARER_REQUIRED");
 });
 
+test("ai_novel encrypted Skill update endpoints expose only current named packages", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  const headers = {
+    authorization: `Bearer ${token}`,
+    "X-App-Id": "ai_novel",
+  };
+
+  const query = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/agent-skills/query",
+    headers,
+    body: encryptAiPayload({}, aiKey),
+  });
+  assert.equal(query.statusCode, 200);
+  assert.equal((query.body as Record<string, unknown>).encrypted, true);
+  const queryEnvelope = decryptAiPayload(
+    query.body as Record<string, unknown>,
+    aiKey,
+  );
+  const manifest = queryEnvelope.data as Record<string, unknown>;
+  const skills = manifest.skills as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    skills.map((skill) => skill.name),
+    ["chapter-continuity-review", "chapter-voice-review"],
+  );
+  assert.ok(typeof manifest.skillSetVersion === "string");
+
+  const fetch = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/agent-skills/fetch",
+    headers,
+    body: encryptAiPayload(
+      {
+        skillSetVersion: manifest.skillSetVersion,
+        names: ["chapter-continuity-review"],
+      },
+      aiKey,
+    ),
+  });
+  assert.equal(fetch.statusCode, 200);
+  const fetchEnvelope = decryptAiPayload(
+    fetch.body as Record<string, unknown>,
+    aiKey,
+  );
+  const fetched = fetchEnvelope.data as Record<string, unknown>;
+  const packages = fetched.skills as Array<Record<string, unknown>>;
+  assert.equal(packages.length, 1);
+  assert.equal(packages[0]?.name, "chapter-continuity-review");
+  const files = packages[0]?.files as Array<Record<string, unknown>>;
+  assert.equal(files.some((file) => file.path === "/skills/ainovel/chapter-continuity-review/SKILL.md"), true);
+  assert.equal(files.some((file) => String(file.path).endsWith(".sh")), false);
+});
+
 test("ai_novel chat completions route resolves scene_key to scene route selection", async () => {
   const { runtime, aiKey } = await createAiNovelRuntime();
   const token = runtime.services.tokenService.issueAccessToken(
@@ -3271,6 +3328,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
       "read_draft",
       "read_main_line",
       "read_story_window",
+      "read_writing_context",
       "search_story_history",
       "set_book_contract",
       "set_main_line",
@@ -3402,7 +3460,7 @@ test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", a
   assert.equal(toolCall.id, "write_turn_prompted_tool_0");
 });
 
-test("ai_novel chapter_draft supplies read, search history, and draft write tools", async () => {
+test("ai_novel legacy chapter_draft preserves its read, search, and draft write tools", async () => {
   let capturedToolNames: string[] = [];
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   let capturedEnableThinking: unknown;
@@ -3508,11 +3566,122 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
   assert.equal(capturedMessages[0].role, "system");
   assert.equal(capturedMessages[1].role, "user");
   assert.match(String(capturedMessages![0].content ?? ""), /ChapterDraftAgent/);
+  assert.doesNotMatch(
+    String(capturedMessages![0].content ?? ""),
+    /read_writing_context/,
+  );
   assert.match(String(capturedMessages![1].content ?? ""), /用雨夜事故开篇/);
   assert.match(String(capturedMessages![1].content ?? ""), /生成目标章节首稿/);
   assert.equal(
     capturedMessages.filter((message) => message.role === "system").length,
     1,
+  );
+});
+
+test("ai_novel pi-v1 keeps raw context out of the provider request", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> = [];
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      yield { type: "content_delta", text: "Use the context tool." };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "write_turn",
+        agentProtocol: "pi-v1",
+        stream: true,
+        context: {
+          suppliedTools: ["read_writing_context"],
+          contract: { storyPromise: "must not enter provider messages" },
+          turnId: "must_not_enter_provider_messages",
+        },
+        messages: [{ role: "user", content: "Continue the current chapter." }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  await collectSseEvents(response.streamBody);
+  assert.deepEqual(
+    capturedMessages.map((message) => message.role),
+    ["system", "user"],
+  );
+  assert.equal(capturedMessages[1]?.content, "Continue the current chapter.");
+  assert.doesNotMatch(
+    capturedMessages.map((message) => message.content ?? "").join("\n"),
+    /must not enter provider messages|must_not_enter_provider_messages/,
+  );
+});
+
+test("ai_novel pi-v1 kickoff keeps Meta out of the provider system prompt", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> = [];
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      yield { type: "content_delta", text: "Read Meta first." };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "kickoff_turn",
+        agentProtocol: "pi-v1",
+        stream: true,
+        context: {
+          meta: { storyPromise: "must not enter the kickoff prompt" },
+        },
+        messages: [{ role: "user", content: "Start my book." }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  await collectSseEvents(response.streamBody);
+  assert.doesNotMatch(
+    String(capturedMessages.find((message) => message.role === "system")?.content ?? ""),
+    /must not enter the kickoff prompt/,
   );
 });
 

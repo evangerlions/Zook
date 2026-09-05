@@ -110,7 +110,9 @@ test("local AINovel E2E provider can ask once before kickoff ready", async () =>
   try {
     const provider = new LocalAiNovelE2eProvider();
     const firstEvents = await collectStream(
-      provider.stream(kickoffRequest([{ role: "user", content: "我要写东方玄幻。" }])),
+      provider.stream(
+        kickoffRequest([{ role: "user", content: "我要写东方玄幻。" }]),
+      ),
     );
     const firstToolCalls = firstEvents.filter(
       (event) => event.type === "tool_call",
@@ -119,9 +121,9 @@ test("local AINovel E2E provider can ask once before kickoff ready", async () =>
     assert.equal(firstToolCalls.length, 1);
     assert.equal(firstToolCalls[0].toolCall.name, "ask_question");
     assert.deepEqual(
-      (firstToolCalls[0].toolCall.input.options as Array<{ label: string }>).map(
-        (option) => option.label,
-      ),
+      (
+        firstToolCalls[0].toolCall.input.options as Array<{ label: string }>
+      ).map((option) => option.label),
       ["追兵压迫", "残魂交易"],
     );
 
@@ -143,10 +145,7 @@ test("local AINovel E2E provider can ask once before kickoff ready", async () =>
 
     assert.deepEqual(continuationToolNames, ["update_meta", "ready"]);
   } finally {
-    restoreOptionalEnv(
-      AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV,
-      previousAskFirst,
-    );
+    restoreOptionalEnv(AINOVEL_E2E_KICKOFF_ASK_FIRST_ENV, previousAskFirst);
   }
 });
 
@@ -281,6 +280,100 @@ test("local AINovel E2E provider exercises chapter draft reasoning replay", asyn
   const toolCalls = retryEvents.filter((event) => event.type === "tool_call");
   assert.equal(toolCalls.length, 1);
   assert.equal(toolCalls[0].toolCall.name, "write_draft");
+});
+
+test("local AINovel E2E provider reads Skill before writing context", async () => {
+  const provider = new LocalAiNovelE2eProvider();
+  const baseMessages: ResolvedLLMCompletionRequest["messages"] = [
+    {
+      role: "user",
+      content: "Use chapter-continuity-review to check the current chapter.",
+    },
+  ];
+  const providerOptions = {
+    tools: ["read", "read_writing_context", "write_draft"].map(
+      (name) => ({ type: "function", function: { name } }),
+    ),
+  };
+  const request = (messages: ResolvedLLMCompletionRequest["messages"]) =>
+    ({
+      model: {
+        provider: "bailian",
+        modelKey: "qwen3.6-plus",
+        resolvedModelKey: "qwen3.6-plus",
+        providerModel: "qwen3.6-plus",
+      },
+      messages,
+      providerOptions,
+    }) satisfies ResolvedLLMCompletionRequest;
+
+  const skillEvents = await collectStream(
+    provider.stream(request(baseMessages)),
+  );
+  const skillCall = skillEvents.find((event) => event.type === "tool_call");
+  assert.ok(skillCall && skillCall.type === "tool_call");
+  assert.equal(skillCall.toolCall.name, "read");
+
+  const contextEvents = await collectStream(
+    provider.stream(
+      request([
+        ...baseMessages,
+        {
+          role: "tool",
+          toolCallId: "autoctx_test_initial",
+          content: '{"kind":"writing_context","draft":{"content":"正文"}}',
+        },
+        {
+          role: "tool",
+          toolCallId: skillCall.toolCall.id,
+          content: '# Chapter continuity review\n\nRead context.',
+        },
+      ]),
+    ),
+  );
+  const contextCall = contextEvents.find((event) => event.type === "tool_call");
+  assert.ok(contextCall && contextCall.type === "tool_call");
+  assert.equal(contextCall.toolCall.name, "read_writing_context");
+
+  const reviewEvents = await collectStream(
+    provider.stream(
+      request([
+        ...baseMessages,
+        {
+          role: "tool",
+          toolCallId: skillCall.toolCall.id,
+          content: '# Chapter continuity review\n\nRead context.',
+        },
+        {
+          role: "tool",
+          toolCallId: contextCall.toolCall.id,
+          content: '{"kind":"writing_context","draft":{"content":"正文"}}',
+        },
+      ]),
+    ),
+  );
+  assert.ok(reviewEvents.some((event) => event.type === "content_delta"));
+  assert.equal(
+    reviewEvents.some((event) => event.type === "tool_call"),
+    false,
+  );
+
+  const unrelatedEvents = await collectStream(
+    provider.stream(
+      request([
+        ...baseMessages,
+        { role: "assistant", content: "Review complete." },
+        { role: "user", content: "Continue writing." },
+      ]),
+    ),
+  );
+  assert.equal(
+    unrelatedEvents.some(
+      (event) =>
+        event.type === "tool_call" && event.toolCall.name === "read",
+    ),
+    false,
+  );
 });
 
 async function collectStream<T>(stream: AsyncIterable<T>): Promise<T[]> {

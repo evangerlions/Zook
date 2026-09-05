@@ -59,10 +59,7 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
         };
         yield {
           type: "tool_call",
-          toolCall: this.toolCall(
-            "ask_question",
-            kickoffAskQuestionPayload(),
-          ),
+          toolCall: this.toolCall("ask_question", kickoffAskQuestionPayload()),
         };
         yield this.usage();
         yield { type: "done", finishReason: "tool_calls" };
@@ -105,6 +102,63 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
       }
       yield this.usage();
       yield { type: "done", finishReason: "tool_calls" };
+      return;
+    }
+
+    if (
+      toolNames.includes("read") &&
+      /(?:使用|use)\s*chapter-continuity-review/i.test(
+        [...request.messages]
+          .reverse()
+          .find((message) => message.role === "user")?.content ?? "",
+      )
+    ) {
+      const toolMessages = request.messages.filter(
+        (message) => message.role === "tool",
+      );
+      const hasSkill = toolMessages.some((message) =>
+        message.content.includes('# Chapter continuity review'),
+      );
+      if (!hasSkill) {
+        yield this.reasoningDelta(
+          "本地 E2E 推理：先读取章节连续性检查 Skill 的完整说明。",
+        );
+        yield {
+          type: "tool_call",
+          toolCall: this.toolCall("read", {
+            path: "/skills/ainovel/chapter-continuity-review/SKILL.md",
+          }),
+        };
+        yield this.usage();
+        yield { type: "done", finishReason: "tool_calls" };
+        return;
+      }
+      const hasWritingContext = toolMessages.some(
+        (message) =>
+          !message.toolCallId?.startsWith("autoctx_") &&
+          message.content.includes('"kind":"writing_context"'),
+      );
+      if (!hasWritingContext && toolNames.includes("read_writing_context")) {
+        yield this.reasoningDelta(
+          "本地 E2E 推理：按照 Skill 读取当前章节与连续性上下文。",
+        );
+        yield {
+          type: "tool_call",
+          toolCall: this.toolCall("read_writing_context", {}),
+        };
+        yield this.usage();
+        yield { type: "done", finishReason: "tool_calls" };
+        return;
+      }
+      yield this.reasoningDelta(
+        "本地 E2E 推理：依据 Skill 与当前章节上下文完成只读检查。",
+      );
+      yield {
+        type: "content_delta",
+        text: "连续性检查完成：当前上下文中未发现明确冲突；未核实的远端历史应再通过搜索确认。",
+      };
+      yield this.usage();
+      yield { type: "done", finishReason: "stop" };
       return;
     }
 
@@ -249,11 +303,15 @@ export class LocalAiNovelE2eProvider implements LLMProvider, EmbeddingProvider {
   }
 }
 
-function hasDraftToolRetryMessage(messages: ResolvedLLMCompletionRequest["messages"]): boolean {
+function hasDraftToolRetryMessage(
+  messages: ResolvedLLMCompletionRequest["messages"],
+): boolean {
   return messages.some(
     (message) =>
       message.role === "user" &&
-      message.content.includes("The previous assistant turn did not call write_draft"),
+      message.content.includes(
+        "The previous assistant turn did not call write_draft",
+      ),
   );
 }
 
@@ -589,7 +647,9 @@ function forcedStructuredToolPayload(
     return {
       snapshot:
         "本地导入正文已建立核心冲突、人物状态和续写边界；后续只能在最新已导入章节之后推进。",
-      evidence: [`local imported chapters ${importRange.startChapterIndex}..${importRange.endChapterIndex}`],
+      evidence: [
+        `local imported chapters ${importRange.startChapterIndex}..${importRange.endChapterIndex}`,
+      ],
       sourceRange: {
         startChapterIndex: importRange.startChapterIndex,
         endChapterIndex: importRange.endChapterIndex,
@@ -645,7 +705,9 @@ function forcedStructuredToolPayload(
       unresolvedThreads: ["新续写压力尚未展开"],
       characterStates: ["导入主角群：保持最新导入章节后的状态"],
       styleSignals: ["延续原书气口"],
-      evidence: [`local imported chapter ${importRange.latestImportedChapterIndex}`],
+      evidence: [
+        `local imported chapter ${importRange.latestImportedChapterIndex}`,
+      ],
     };
   }
   return { ok: true };
@@ -696,7 +758,9 @@ function latestUserContent(
   return latestUser?.content ?? "";
 }
 
-function lastExplicitChapterRange(text: string): ImportChapterRange | undefined {
+function lastExplicitChapterRange(
+  text: string,
+): ImportChapterRange | undefined {
   const ranges = Array.from(
     text.matchAll(/chapters?\s+(\d+)\s*(?:\.\.|-|to|至|到)\s*(\d+)/gi),
   );
@@ -706,7 +770,12 @@ function lastExplicitChapterRange(text: string): ImportChapterRange | undefined 
   }
   const left = Number.parseInt(last[1] ?? "", 10);
   const right = Number.parseInt(last[2] ?? "", 10);
-  if (!Number.isInteger(left) || !Number.isInteger(right) || left <= 0 || right <= 0) {
+  if (
+    !Number.isInteger(left) ||
+    !Number.isInteger(right) ||
+    left <= 0 ||
+    right <= 0
+  ) {
     return undefined;
   }
   const start = Math.min(left, right);
@@ -746,6 +815,8 @@ function toolProgressSpec(
       return { known: true, path: "handoff" };
     case "submit_import_plan_update":
     case "submit_chapter_summaries":
+    case "read":
+    case "read_writing_context":
       return { known: true };
     default:
       return undefined;

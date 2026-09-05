@@ -4,6 +4,19 @@ import type {
   LLMToolCall,
 } from "../../services/llm-manager.ts";
 
+export type AiNovelAgentProtocol = "pi-v1";
+
+export function optionalAiNovelAgentProtocol(
+  value: unknown,
+): AiNovelAgentProtocol | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (value === "pi-v1") return value;
+  badRequest(
+    "REQ_INVALID_BODY",
+    "agentProtocol must be pi-v1 when provided.",
+  );
+}
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

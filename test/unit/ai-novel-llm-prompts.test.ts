@@ -20,11 +20,16 @@ test("write_turn prompt requires coordinated structural story changes", () => {
   assert.match(systemPrompt, /not a catch-all memory bucket/);
   assert.match(systemPrompt, /map the request to canonical fields first/);
   assert.match(systemPrompt, /Workflow status such as ready is never/);
-  assert.match(systemPrompt, /explicitly asks for a lasting custom requirement/);
+  assert.match(
+    systemPrompt,
+    /explicitly asks for a lasting custom requirement/,
+  );
   assert.match(systemPrompt, /Do not store genre labels, chapter summaries/);
+  assert.doesNotMatch(systemPrompt, /Skill discipline|call read with its listed location/);
   assert.deepEqual(
     assembly.tools.map((tool) => tool.name),
     [
+      "read_writing_context",
       "read_book_contract",
       "read_main_line",
       "read_chapter_frame",
@@ -40,11 +45,157 @@ test("write_turn prompt requires coordinated structural story changes", () => {
   );
 });
 
+test("agent scenes expose only client-supplied tools including virtual read", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "write_turn",
+    agentProtocol: "pi-v1",
+    messages: [{ role: "user", content: "review continuity" }],
+    context: {
+      suppliedTools: ["read", "read_writing_context"],
+      skills: [
+        {
+          name: "chapter-continuity-review",
+          description: "Review continuity.",
+          location: "/skills/ainovel/chapter-continuity-review/SKILL.md",
+        },
+      ],
+    },
+  });
+
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    ["read", "read_writing_context"],
+  );
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.match(systemPrompt, /Skill discipline/);
+  assert.match(systemPrompt, /call read with its listed location/);
+  assert.equal(assembly.messages[1]?.content, "review continuity");
+});
+
+test("legacy requests never receive Skill schema or Skill instructions", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "write_turn",
+    messages: [{ role: "user", content: "review continuity" }],
+    context: {
+      suppliedTools: ["read", "read_writing_context"],
+      skills: [
+        {
+          name: "chapter-continuity-review",
+          description: "Review continuity.",
+          location: "/skills/ainovel/chapter-continuity-review/SKILL.md",
+        },
+      ],
+    },
+  });
+
+  assert.equal(
+    assembly.tools.some((tool) => tool.name === "read"),
+    false,
+  );
+  assert.doesNotMatch(
+    String(assembly.messages[0]?.content ?? ""),
+    /Skill discipline|call read with its listed location/,
+  );
+});
+
+test("pi-v1 keeps raw dynamic context out of provider messages", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "write_turn",
+    agentProtocol: "pi-v1",
+    messages: [{ role: "user", content: "review continuity" }],
+    context: {
+      suppliedTools: ["read", "read_writing_context"],
+      skills: [
+        {
+          name: "chapter-continuity-review",
+          description: "Review continuity.",
+          location: "/skills/ainovel/chapter-continuity-review/SKILL.md",
+        },
+      ],
+      contract: { storyPromise: "must not enter the prompt" },
+      turnId: "turn_should_not_enter_the_prompt",
+    },
+  });
+
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    ["read", "read_writing_context"],
+  );
+  assert.equal(assembly.messages.length, 2);
+  assert.equal(assembly.messages[1]?.content, "review continuity");
+  assert.doesNotMatch(
+    assembly.messages.map((message) => message.content ?? "").join("\n"),
+    /must not enter the prompt|turn_should_not_enter_the_prompt|chapter-continuity-review/,
+  );
+});
+
+test("history QA is read-only and chapter draft does not expose Skills", () => {
+  const history = buildAiNovelPromptAssembly({
+    profile: "history_chapter_qa",
+    messages: [{ role: "user", content: "What happened?" }],
+    context: {
+      suppliedTools: ["read", "read_draft", "search_story_history"],
+    },
+  });
+  assert.match(String(history.messages[0]?.content ?? ""), /read-only/);
+  assert.match(
+    String(history.messages[0]?.content ?? ""),
+    /Do not mutate Contract, MainLine, or any chapter draft/,
+  );
+  assert.deepEqual(
+    history.tools.map((tool) => tool.name),
+    ["read_draft", "search_story_history"],
+  );
+
+  const chapterDraft = buildAiNovelPromptAssembly({
+    profile: "chapter_draft",
+    agentProtocol: "pi-v1",
+    messages: [{ role: "user", content: "Draft it." }],
+    context: {
+      suppliedTools: [
+        "read",
+        "read_writing_context",
+        "read_draft",
+        "search_story_history",
+        "write_draft",
+      ],
+    },
+  });
+  assert.deepEqual(
+    chapterDraft.tools.map((tool) => tool.name),
+    ["read_writing_context", "read_draft", "search_story_history", "write_draft"],
+  );
+  assert.doesNotMatch(
+    String(chapterDraft.messages[0]?.content ?? ""),
+    /call read with its listed location/,
+  );
+});
+
+test("legacy chapter draft keeps its pre-Pi tools and supplied-context prompt", () => {
+  const assembly = buildAiNovelPromptAssembly({
+    profile: "chapter_draft",
+    messages: [{ role: "user", content: "Draft it." }],
+    context: {
+      fragments: { draft: { title: "Draft", content: "Existing body" } },
+    },
+  });
+
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    ["read_draft", "search_story_history", "write_draft"],
+  );
+  const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.match(systemPrompt, /Use the supplied context/);
+  assert.doesNotMatch(systemPrompt, /read_writing_context/);
+});
+
 test("chapter_draft prompt prioritizes chapter-level execution without early payoff", () => {
   const assembly = buildAiNovelPromptAssembly({
     profile: "chapter_draft",
+    agentProtocol: "pi-v1",
     messages: [],
     context: {
+      suppliedTools: ["read_writing_context", "write_draft"],
       chapterFrame: { chapterIndex: 2 },
       currentBrief: "Keep the investigation pressure unresolved.",
     },
@@ -74,7 +225,7 @@ test("chapter_draft prompt prioritizes chapter-level execution without early pay
   assert.match(systemPrompt, /character response/);
   assert.match(systemPrompt, /book's tone/);
   assert.match(systemPrompt, /Repair mode/);
-  assert.match(systemPrompt, /fragments\.draft\.content/);
+  assert.match(systemPrompt, /read_writing_context tool result/);
   assert.match(systemPrompt, /Review issues JSON/);
   assert.match(systemPrompt, /Treat review suggestions as examples, not canon/);
   assert.match(systemPrompt, /MainLine\.futureMilestones/);
@@ -106,9 +257,10 @@ test("chapter_draft_review prompt does not suggest future beat fixes", () => {
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
-  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
-    "submit_chapter_review",
-  ]);
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    ["submit_chapter_review"],
+  );
   assert.equal(assembly.forcedToolName, "submit_chapter_review");
   assert.match(systemPrompt, /call submit_chapter_review exactly once/);
   assert.match(systemPrompt, /target density guidance/);
@@ -153,9 +305,10 @@ test("chapter_summary prompt keeps generated context in target language", () => 
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
-  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
-    "submit_chapter_summary",
-  ]);
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    ["submit_chapter_summary"],
+  );
   assert.equal(assembly.forcedToolName, "submit_chapter_summary");
   assert.match(systemPrompt, /call submit_chapter_summary exactly once/);
   assert.match(systemPrompt, /target writing language/);
@@ -177,13 +330,16 @@ test("import_book_agent prompt explains import submit tools", () => {
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
-  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
-    "submit_import_plan_update",
-    "submit_rolling_snapshot",
-    "submit_chapter_summaries",
-    "submit_snapshot",
-    "submit_hot_handoff",
-  ]);
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    [
+      "submit_import_plan_update",
+      "submit_rolling_snapshot",
+      "submit_chapter_summaries",
+      "submit_snapshot",
+      "submit_hot_handoff",
+    ],
+  );
   assert.equal(assembly.forcedToolName, undefined);
   assert.match(systemPrompt, /Extract facts faithfully/);
   assert.match(systemPrompt, /Do not use memory/);
@@ -191,7 +347,7 @@ test("import_book_agent prompt explains import submit tools", () => {
   assert.match(systemPrompt, /submit_rolling_snapshot/);
   assert.match(systemPrompt, /submit_chapter_summaries/);
   assert.match(systemPrompt, /submit_hot_handoff/);
-  assert.match(systemPrompt, /Call every expected submit tool/);
+  assert.match(systemPrompt, /Call every required submit tool exposed/);
   assert.match(systemPrompt, /BookContract\.extras/);
   assert.match(systemPrompt, /author-defined requirements/);
 });
@@ -212,14 +368,17 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
   const userPrompt = String(assembly.messages[1]?.content ?? "");
-  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
-    "read_import_result",
-    "search_imported_book",
-    "read_imported_chapter",
-    "update_import_writing_artifacts",
-    "ask_question",
-    "ready",
-  ]);
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    [
+      "read_import_result",
+      "search_imported_book",
+      "read_imported_chapter",
+      "update_import_writing_artifacts",
+      "ask_question",
+      "ready",
+    ],
+  );
   assert.equal(assembly.forcedToolName, undefined);
   assert.match(systemPrompt, /imported-book kickoff agent/);
   assert.match(systemPrompt, /This is not a blank new-book kickoff/);
@@ -231,6 +390,7 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
   assert.match(systemPrompt, /author's durable custom requirements/);
   assert.match(systemPrompt, /adds or changes a custom requirement/);
   assert.match(systemPrompt, /existing key to null/);
+  assert.doesNotMatch(systemPrompt, /Skill discipline|call read with its listed location/);
   assert.match(systemPrompt, /Localized authoring glossary:/);
   assert.match(systemPrompt, /开书、开始写、正式开始/);
   assert.match(systemPrompt, /current imported writing artifacts/);
@@ -255,9 +415,10 @@ test("next_chapter_brief prompt keeps compatible brief string shape", () => {
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
-  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
-    "submit_next_chapter_brief",
-  ]);
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    ["submit_next_chapter_brief"],
+  );
   assert.equal(assembly.forcedToolName, "submit_next_chapter_brief");
   assert.match(systemPrompt, /string field named `brief`/);
   assert.match(systemPrompt, /taskBook/);
@@ -283,9 +444,10 @@ test("snapshot_generation prompt uses a required structured output tool", () => 
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
-  assert.deepEqual(assembly.tools.map((tool) => tool.name), [
-    "submit_snapshot",
-  ]);
+  assert.deepEqual(
+    assembly.tools.map((tool) => tool.name),
+    ["submit_snapshot"],
+  );
   assert.equal(assembly.forcedToolName, "submit_snapshot");
   assert.match(systemPrompt, /call submit_snapshot exactly once/);
 });
@@ -327,7 +489,9 @@ test("book contract tool preserves optional story anchor names", () => {
   );
   assert.match(systemPrompt, /no canonical field can represent it/);
   assert.match(systemPrompt, /existing key to null/);
-  const extras = (patch.properties as Record<string, unknown>)
-    .extras as Record<string, unknown>;
+  const extras = (patch.properties as Record<string, unknown>).extras as Record<
+    string,
+    unknown
+  >;
   assert.match(String(extras.description ?? ""), /durable custom requirements/);
 });

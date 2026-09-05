@@ -21,6 +21,8 @@ export async function tryHandleAiNovelRoutes(
 ): Promise<HttpResponse<unknown> | undefined> {
   if (request.method === "GET" && request.path === "/api/v1/ai_novel/statistics") return await handleAiNovelStatistics.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/statistics/snapshot") return await handleAiNovelStatisticsSnapshot.call(this, request);
+  if (request.method === "POST" && request.path === "/api/v1/ai_novel/agent-skills/query") return await handleAiNovelSkillQuery.call(this, request);
+  if (request.method === "POST" && request.path === "/api/v1/ai_novel/agent-skills/fetch") return await handleAiNovelSkillFetch.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/chat-completions") return await handleAiNovelChatCompletions.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") return await handleAiNovelEmbeddings.call(this, request);
   const aiNovelAuditFileViewMatch = request.path.match(/^\/api\/v1\/ai_novel\/debug\/audit-file\/([^/]+)$/);
@@ -52,6 +54,22 @@ export async function handleAiNovelStatisticsSnapshot(this: BackendRouteContext,
     await this.aiNovelStatisticsService.recordSnapshot(auth, validated),
     request.requestId as string,
   );
+}
+
+export async function handleAiNovelSkillQuery(this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  return handleEncryptedAiRequest.call(this, request, async () => {
+    return await this.aiNovelSkillService.query();
+  });
+}
+
+export async function handleAiNovelSkillFetch(this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  return handleEncryptedAiRequest.call(this, request, async (body) => {
+    return await this.aiNovelSkillService.fetch(body);
+  });
 }
 
 export async function handleAiNovelChatCompletions(this: BackendRouteContext, 

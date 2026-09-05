@@ -25,6 +25,13 @@ paths:
         is present in the decrypted inner body, the same endpoint switches to
         `text/event-stream` SSE output instead of a single JSON response.
 
+        An optional decrypted top-level `agentProtocol: "pi-v1"` selects the
+        context-on-demand Agent contract. In that contract Zook does not embed
+        raw client context in the system prompt or any user message; the client
+        reads current novel state through normal tool calls. Its absence retains
+        the legacy context assembly for older clients. Unknown values are
+        rejected with `REQ_INVALID_BODY`.
+
         Supported chat scene keys are:
         - `kickoff_turn`
         - `chat_compaction`
@@ -153,6 +160,100 @@ paths:
                   not know whether the product-level write agent loop should
                   stop after local `read_draft`, `search_story_history`, or
                   `write_draft` tool execution.
+        "400":
+          description: Plain error when outer envelope is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Plain error when bearer auth is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Plain error on app scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/agent-skills/query:
+    post:
+      operationId: queryAiNovelAgentSkills
+      summary: Query the current immutable AINovel Skill manifest
+      description: |
+        The client must send an AES-256-GCM encrypted JSON envelope. The
+        decrypted request body is an empty object. The encrypted response data
+        is `AiNovelAgentSkillManifest`. It contains all currently active Skill
+        names, descriptions, virtual entrypoint locations, versions, and hashes.
+        Clients compare this manifest with their local immutable cache to detect
+        additions, modifications, and removals. This endpoint never returns
+        complete Skill contents.
+      tags: [ainovel, agent-skills]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/XDid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AesEncryptedAiRequestEnvelope"
+      responses:
+        "200":
+          description: Encrypted Skill manifest envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AesEncryptedAiResponseEnvelope"
+        "400":
+          description: Plain error when outer envelope is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Plain error when bearer auth is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Plain error on app scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/agent-skills/fetch:
+    post:
+      operationId: fetchAiNovelAgentSkillPackages
+      summary: Fetch selected AINovel Skill packages from one manifest revision
+      description: |
+        The client must send an AES-256-GCM encrypted JSON envelope. The
+        decrypted request body is `AiNovelAgentSkillFetchRequest`. It may name
+        only Skills present in the exact `skillSetVersion` returned by query.
+        The encrypted response contains complete text-only Skill packages for
+        those names. A stale manifest revision returns encrypted business code
+        `AINOVEL_SKILL_SET_STALE`; the client must query again and must not mix
+        packages from different revisions into one active local snapshot.
+      tags: [ainovel, agent-skills]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/XDid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AesEncryptedAiRequestEnvelope"
+      responses:
+        "200":
+          description: Encrypted selected Skill package envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AesEncryptedAiResponseEnvelope"
         "400":
           description: Plain error when outer envelope is invalid
           content:
@@ -357,6 +458,74 @@ components:
         localDebugResponseText:
           type: string
           description: local-only plaintext mirror for chat text; ignored by client business logic
+      additionalProperties: false
+    AiNovelAgentSkillManifest:
+      type: object
+      required: [skillSetVersion, skills]
+      properties:
+        skillSetVersion:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiNovelAgentSkillManifestEntry"
+      additionalProperties: false
+    AiNovelAgentSkillManifestEntry:
+      type: object
+      required: [name, description, location, version, sha256]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+          description: Allowlisted virtual read path; never a server filesystem path.
+        version:
+          type: string
+        sha256:
+          type: string
+      additionalProperties: false
+    AiNovelAgentSkillFetchRequest:
+      type: object
+      required: [skillSetVersion, names]
+      properties:
+        skillSetVersion:
+          type: string
+        names:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+      additionalProperties: false
+    AiNovelAgentSkillPackage:
+      type: object
+      required: [name, version, sha256, files]
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        sha256:
+          type: string
+        files:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/AiNovelAgentSkillFile"
+      additionalProperties: false
+    AiNovelAgentSkillFile:
+      type: object
+      required: [path, content, sha256]
+      properties:
+        path:
+          type: string
+          description: Allowlisted virtual text path.
+        content:
+          type: string
+        sha256:
+          type: string
       additionalProperties: false
     AiNovelChatSceneKey:
       type: string
