@@ -7,6 +7,7 @@ import {
   AliyunTokenPlanProvider,
   ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
 } from "./services/aliyun-token-plan-provider.ts";
+import { BaiOpenAICompatibleProvider, BAI_PROVIDER_KEY } from "./services/bai-openai-compatible-provider.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import type { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
@@ -49,6 +50,7 @@ export function createApplicationAiRuntime(
   const bailianProvider = new BailianOpenAICompatibleProvider({
     logger: options.logger,
   });
+  const baiProvider = new BaiOpenAICompatibleProvider({ logger: options.logger });
   const aliyunTokenPlanProvider = new AliyunTokenPlanProvider({
     logger: options.logger,
   });
@@ -75,6 +77,7 @@ export function createApplicationAiRuntime(
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
     [ALIYUN_TOKEN_PLAN_PROVIDER_KEY]:
       localAiNovelE2eProvider ?? aliyunTokenPlanProvider,
+    [BAI_PROVIDER_KEY]: localAiNovelE2eProvider ?? baiProvider,
     openrouter: localAiNovelE2eProvider ?? openRouterProvider,
     [VOLCENGINE_AGENT_PLAN_PROVIDER_KEY]:
       localAiNovelE2eProvider ?? volcengineAgentPlanProvider,
