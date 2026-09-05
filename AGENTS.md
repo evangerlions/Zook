@@ -52,3 +52,10 @@
 
 - `apps/admin-web` 的前端界面默认使用 Ant Design (`antd`) 作为组件与交互基础。
 - 在 admin 前端开发中，优先复用现有的 Ant Design 组件、模式和交互，不要引入新的 UI 组件库。
+
+## LLM Model Identity and Provider Routes
+
+- `common.llm_service.models[].key` 表示 Provider 无关的逻辑模型身份；同一个模型只能保留一个逻辑 key，不能按 Provider 创建 `openrouter-*`、`bailian-*` 等重复模型。
+- 新增 Provider 或为同一模型接入新的上游时，只能在已有逻辑模型下新增或调整 `routes[]`；Provider、上游模型名和认证信息属于 route / provider 配置，不属于逻辑模型 key。
+- Provider 的 `providerModel` 必须保留上游要求的完整模型名与必要变体（例如 OpenRouter 的 `minimax/minimax-m3:free`），但这不应导致新的逻辑模型 key。
+- DeepSeek V4 Flash 的不同 Provider、版本后缀统一归入 `deepseek-v4-flash`；DeepSeek V4 Pro 同理统一归入 `deepseek-v4-pro`。AINovel 的模型选择配置也只能引用这些逻辑 key。
