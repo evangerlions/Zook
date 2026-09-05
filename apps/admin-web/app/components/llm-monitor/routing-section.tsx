@@ -128,7 +128,11 @@ function routingColumns(): ColumnsType<RoutingRow> {
       width: 112,
       render: (_, row) => row.selectionEligible
         ? <Tag color={row.runtimeAvailable ? "success" : "warning"}>{row.runtimeAvailable ? "可选择" : "Adapter 不可用"}</Tag>
-        : <Tag>{row.ineligibleReason === "provider_disabled" ? "Provider 禁用" : "Route 禁用"}</Tag>,
+        : <Tag>{row.ineligibleReason === "provider_disabled"
+          ? "Provider 禁用"
+          : row.ineligibleReason === "runtime_unavailable"
+            ? "Adapter 不可用"
+            : "Route 禁用"}</Tag>,
     },
     {
       title: "健康成功率",

@@ -250,9 +250,7 @@ export class LlmRequestResolver {
         route,
         providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
         runtimeAvailable: Boolean(this.options.providers[route.provider]),
-        healthScore: stableIdentity
-          ? 100
-          : healthSnapshots[index]?.healthScore ?? 100,
+        healthScore: healthSnapshots[index]?.healthScore ?? 100,
       })),
     );
     const routingUnit = stableIdentity
@@ -269,7 +267,11 @@ export class LlmRequestResolver {
     }
 
     const provider = providerMap.get(chosenRoute.provider);
-    if (!provider || !this.options.providers[provider.key]) {
+    if (
+      !chosenRoute.enabled ||
+      !provider?.enabled ||
+      !this.options.providers[provider.key]
+    ) {
       throw new ApplicationError(
         503,
         "LLM_ROUTE_NOT_AVAILABLE",

@@ -20,6 +20,7 @@ import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
 import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
+import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
@@ -59,6 +60,7 @@ import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login
 import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
+import { LlmModelHealthService } from "./services/llm-model-health.service.ts";
 import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
@@ -218,11 +220,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     appConfigService,
     secretReferenceResolver,
   );
-  const aiNovelModelSelectionConfigService =
-    new AiNovelModelSelectionConfigService(
-      appConfigService,
-      commonLlmConfigService,
-    );
   const commonContentSafetyConfigService = new CommonContentSafetyConfigService(
     appConfigService,
   );
@@ -254,6 +251,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const runtimeLlmProviderKeys = resolveRuntimeLlmProviderKeys(options);
   const llmHealthService = new LlmHealthService(database.llmObservabilityStore, runtimeLlmProviderKeys);
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
+  const llmModelHealthService = new LlmModelHealthService(commonLlmConfigService, llmHealthService);
+  const aiNovelModelSelectionConfigService = new AiNovelModelSelectionConfigService(
+    appConfigService,
+    commonLlmConfigService,
+    llmModelHealthService,
+    logger,
+  );
   const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
@@ -393,6 +397,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     emailTestSendService,
     llmHealthService,
     llmMetricsService,
+    new AdminAiNovelModelHealthService(llmMetricsService, llmModelHealthService),
     llmSmokeTestService,
     refreshTokenStore,
     smsVerificationRecordService,

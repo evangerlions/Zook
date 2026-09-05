@@ -339,6 +339,7 @@ export class LLMManager {
       this.options.llmMetricsService?.observationRecorder;
     const route = resolution.routeRef;
     return recorder?.start({
+      appId: resolution.request.usageOwner?.appId,
       routingModelKey: route.modelKey,
       provider: route.provider,
       providerModel: route.providerModel,

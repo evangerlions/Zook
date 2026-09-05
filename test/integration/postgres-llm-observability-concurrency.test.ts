@@ -27,6 +27,11 @@ test("postgres LLM observation CTE is idempotent and concurrency-safe", { skip: 
       import.meta.url,
     ));
     await pool.query(await readFile(errorMessageMigrationPath, "utf8"));
+    const appScopeMigrationPath = fileURLToPath(new URL(
+      "../../src/infrastructure/database/postgres/migrations/036_llm_observation_app_scope.sql",
+      import.meta.url,
+    ));
+    await pool.query(await readFile(appScopeMigrationPath, "utf8"));
     const store = new PostgresLlmObservabilityStore(
       async (sql, values = []) => await pool!.query(sql, values),
       async () => await pool!.connect(),

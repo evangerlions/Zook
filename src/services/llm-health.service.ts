@@ -26,6 +26,15 @@ export interface LlmRouteHealthSnapshot {
   lastErrorAt?: string;
 }
 
+export interface LlmModelHealthSnapshot {
+  modelKey: string;
+  available: boolean;
+  healthScore: number;
+  successRate?: number;
+  sampleSize: number;
+  lastErrorAt?: string;
+}
+
 export class LlmHealthService {
   constructor(
     private readonly store: LlmObservabilityStore,
@@ -53,6 +62,58 @@ export class LlmHealthService {
       successRate,
       healthScore: record.totalCalls < HEALTH_MIN_CALLS ? 100 : successRate,
       lastErrorAt: record.lastErrorAt,
+    };
+  }
+
+  async getModelHealth(
+    model: LlmModelConfig,
+    providers: LlmProviderConfig[] = [],
+    runtimeProviderKeys?: Partial<Record<LlmOperation, Set<string>>>,
+  ): Promise<LlmModelHealthSnapshot> {
+    const runtime = await this.buildModelRuntimeStatus(
+      model,
+      providers,
+      runtimeProviderKeys,
+    );
+    const routes = runtime.routes.filter((route) =>
+      route.selectionEligible && route.runtimeAvailable,
+    );
+    const consideredRoutes = runtime.strategy === "fixed"
+      ? routes.filter((route) => route.selected)
+      : routes;
+    const configuredWeight = consideredRoutes.reduce(
+      (sum, route) => sum + route.configuredWeight,
+      0,
+    );
+    const dynamicWeight = consideredRoutes.reduce(
+      (sum, route) => sum + route.dynamicScore,
+      0,
+    );
+    const sampleSize = consideredRoutes.reduce(
+      (sum, route) => sum + route.sampleSize,
+      0,
+    );
+    const weightedSuccessSamples = consideredRoutes.reduce(
+      (sum, route) => sum + (route.successRate ?? 0) * route.sampleSize,
+      0,
+    );
+    const lastErrorAt = consideredRoutes
+      .map((route) => route.lastErrorAt)
+      .filter((value): value is string => Boolean(value))
+      .sort()
+      .at(-1);
+
+    return {
+      modelKey: model.key,
+      available: consideredRoutes.length > 0,
+      healthScore: configuredWeight > 0
+        ? roundRoutingValue((dynamicWeight / configuredWeight) * 100)
+        : 0,
+      successRate: sampleSize > 0
+        ? roundRoutingValue(weightedSuccessSamples / sampleSize)
+        : undefined,
+      sampleSize,
+      lastErrorAt,
     };
   }
 
