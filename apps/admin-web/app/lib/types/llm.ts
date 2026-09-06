@@ -38,10 +38,13 @@ export interface OpenRouterConfig {
   transparentProxyHmacSecretKey: string;
 }
 
+export interface BaiConfig extends OpenRouterConfig {}
+
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
   openRouter: OpenRouterConfig;
+  bai: BaiConfig;
   providers: LlmProviderConfig[];
   models: LlmModelConfig[];
 }
@@ -289,6 +292,7 @@ export interface LlmConfigDraft {
   enabled: boolean;
   defaultModelKey: string;
   openRouter: OpenRouterConfig;
+  bai: BaiConfig;
   providers: LlmProviderDraft[];
   models: LlmModelDraft[];
 }

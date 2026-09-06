@@ -8,6 +8,7 @@ import type { CommonLlmConfigService } from "./services/common-llm-config.servic
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
 import type { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { importAliyunTokenPlanConfig } from "./services/aliyun-token-plan-config.ts";
+import { importBaiConfig } from "./services/bai-config.ts";
 import { importVolcengineAgentPlanConfig } from "./services/volcengine-agent-plan-config.ts";
 
 interface ApplicationStartupConfigOptions {
@@ -32,6 +33,10 @@ export async function initializeApplicationConfigs(
         options.commonLlmConfigService,
         options.commonPasswordConfigService,
       );
+    const importedBai = await importBaiConfig(
+      options.commonLlmConfigService,
+      options.commonPasswordConfigService,
+    );
     const importedVolcengineAgentPlan =
       await importVolcengineAgentPlanConfig(
         options.commonLlmConfigService,
@@ -53,6 +58,7 @@ export async function initializeApplicationConfigs(
     if (
       initializedCommonLlmConfig ||
       importedAliyunTokenPlan ||
+      importedBai ||
       importedVolcengineAgentPlan ||
       initializedAppLogSecrets ||
       initializedRemoteLogPullConfigs ||

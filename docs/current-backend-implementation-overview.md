@@ -215,12 +215,13 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 1. `common.email_service_regions` 的强类型配置、版本记录与恢复
 2. `common.llm_service` 的强类型配置、版本记录与恢复，以及可选的 OpenRouter `oa-hmac-v1` 透明代理路由；代理开关和 Key ID 存配置，HMAC secret 从 `common.passwords` 动态读取；内置禁用的 OpenRouter `openrouter/free` 测试模型不会改变 AINovel 默认路由
 3. 阿里云百炼 Token Plan 作为独立 Chat Provider `bailian_token_plan` 接入其套餐专属 OpenAI-compatible Base URL，与 `bailian_coding` 完全分离；`common.passwords` 中存在 `bailian.token_plan_api_key` 时，启动配置迁移会幂等加入 Token Plan Provider 和其支持的文本模型，不改变现有默认模型或既有模型路由；当前不使用 Anthropic 端点或依赖 Responses API 的内置 Harness
-4. LLM 按 `auto / fixed` 两种策略路由；公共方法 `resolveLlmRoutingUnit(did, uid)` 直接接收两个可空字符串，各取清洗后的末尾 3 个 base36 字符，使用两者之和对 1,000 取模形成稳定 Provider 分桶；任一入参清洗后不足 3 位时，该项由方法内部 `Math.random()` 生成的 0–999 值替代
-5. PostgreSQL 脱敏 LLM call observation；每 route 健康窗口按 observation 时间顺序派生最近 100 个健康影响样本，客户端取消和内容业务拒绝不污染健康分
-6. canonical 路由 scorer 统一 Chat、Embedding 和 Admin runtime 的 `weight × healthScore`、全零回退与 fixed 选择；健康加权概率用于缺省身份请求，完整 DID+UID 请求按基础权重保持稳定 Provider 分桶
-7. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
-8. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
-9. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
+4. B.AI 作为独立 Chat Provider `bai` 接入 `https://api.b.ai/v1`；`common.passwords` 中存在 `bai.api_key` 时，启动配置迁移会幂等加入 `bai-glm-5.3-flash`，通过 `{{zook.ps.bai.api_key}}` 动态解析密钥，不改变默认模型、AINovel 选模权重或 embedding 路由。GLM-5.3-Flash 默认使用 low reasoning effort，为用户可见输出保留预算；B.AI 可选择独立的 HMAC 透明代理配置，不读取本机 HTTP(S) proxy 环境变量。
+5. LLM 按 `auto / fixed` 两种策略路由；公共方法 `resolveLlmRoutingUnit(did, uid)` 直接接收两个可空字符串，各取清洗后的末尾 3 个 base36 字符，使用两者之和对 1,000 取模形成稳定 Provider 分桶；任一入参清洗后不足 3 位时，该项由方法内部 `Math.random()` 生成的 0–999 值替代
+6. PostgreSQL 脱敏 LLM call observation；每 route 健康窗口按 observation 时间顺序派生最近 100 个健康影响样本，客户端取消和内容业务拒绝不污染健康分
+7. canonical 路由 scorer 统一 Chat、Embedding 和 Admin runtime 的 `weight × healthScore`、全零回退与 fixed 选择；健康加权概率用于缺省身份请求，完整 DID+UID 请求按基础权重保持稳定 Provider 分桶
+8. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
+9. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
+10. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
 
 对应核心文件：
 

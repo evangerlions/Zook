@@ -17,6 +17,7 @@ import {
   createDefaultOpenRouterConfig,
   normalizeOpenRouterConfig,
 } from "./openrouter-config.ts";
+import { createDefaultBaiConfig, normalizeBaiConfig } from "./bai-transparent-proxy-config.ts";
 
 const COMMON_APP_ID = "common";
 const LLM_SERVICE_CONFIG_KEY = "common.llm_service";
@@ -265,6 +266,7 @@ export class CommonLlmConfigService {
       enabled: Boolean(source.enabled),
       defaultModelKey,
       openRouter: normalizeOpenRouterConfig(source.openRouter),
+      bai: normalizeBaiConfig(source.bai),
       providers,
       models,
     };
@@ -305,6 +307,7 @@ export class CommonLlmConfigService {
       enabled: false,
       defaultModelKey: QWEN_PLUS_MODEL_KEY,
       openRouter: createDefaultOpenRouterConfig(),
+      bai: createDefaultBaiConfig(),
       providers: [
         {
           key: "bailian",
