@@ -7,6 +7,7 @@ import {
   buildLatencyOption,
   formatLatency,
   formatMetricNumber,
+  formatTokenNumber,
 } from "./llm-monitor-view-model";
 import { SuccessRateBadge } from "./success-rate-badge";
 
@@ -73,11 +74,11 @@ function detailColumns(granularity: "hour" | "day"): ColumnsType<LlmHourlySeries
     { title: "失败", dataIndex: "failureCount", width: 82, sorter: (a, b) => a.failureCount - b.failureCount, render: formatMetricNumber },
     { title: "超时", dataIndex: "timeoutCount", width: 82, sorter: (a, b) => a.timeoutCount - b.timeoutCount, render: formatMetricNumber },
     { title: "取消", dataIndex: "cancelledCount", width: 82, sorter: (a, b) => a.cancelledCount - b.cancelledCount, render: formatMetricNumber },
-    { title: "总 Token", dataIndex: "totalTokens", width: 112, sorter: (a, b) => (a.totalTokens ?? 0) - (b.totalTokens ?? 0), render: formatMetricNumber },
-    { title: "Prompt", dataIndex: "promptTokens", width: 96, sorter: optionalNumberSorter("promptTokens"), render: formatMetricNumber },
-    { title: "可见输出", dataIndex: "visibleOutputTokens", width: 100, sorter: optionalNumberSorter("visibleOutputTokens"), render: formatMetricNumber },
-    { title: "Reasoning", dataIndex: "reasoningTokens", width: 100, sorter: optionalNumberSorter("reasoningTokens"), render: formatMetricNumber },
-    { title: "未分类", dataIndex: "unclassifiedTokens", width: 96, sorter: optionalNumberSorter("unclassifiedTokens"), render: formatMetricNumber },
+    { title: "总 Token", dataIndex: "totalTokens", width: 112, sorter: (a, b) => (a.totalTokens ?? 0) - (b.totalTokens ?? 0), render: formatTokenNumber },
+    { title: "Prompt", dataIndex: "promptTokens", width: 96, sorter: optionalNumberSorter("promptTokens"), render: formatTokenNumber },
+    { title: "可见输出", dataIndex: "visibleOutputTokens", width: 100, sorter: optionalNumberSorter("visibleOutputTokens"), render: formatTokenNumber },
+    { title: "Reasoning", dataIndex: "reasoningTokens", width: 100, sorter: optionalNumberSorter("reasoningTokens"), render: formatTokenNumber },
+    { title: "未分类", dataIndex: "unclassifiedTokens", width: 96, sorter: optionalNumberSorter("unclassifiedTokens"), render: formatTokenNumber },
     { title: "P50 首响应", dataIndex: "p50FirstByteLatencyMs", width: 112, sorter: optionalNumberSorter("p50FirstByteLatencyMs"), render: formatLatency },
     { title: "P95 首响应", dataIndex: "p95FirstByteLatencyMs", width: 112, sorter: optionalNumberSorter("p95FirstByteLatencyMs"), render: formatLatency },
     { title: "P50 总延迟", dataIndex: "p50TotalLatencyMs", width: 112, sorter: optionalNumberSorter("p50TotalLatencyMs"), render: formatLatency },
