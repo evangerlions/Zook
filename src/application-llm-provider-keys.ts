@@ -1,10 +1,12 @@
 import type { CreateApplicationOptions } from "./application-options.ts";
 import { ALIYUN_TOKEN_PLAN_PROVIDER_KEY } from "./services/aliyun-token-plan-provider.ts";
+import { BAI_PROVIDER_KEY } from "./services/bai-openai-compatible-provider.ts";
 import { VOLCENGINE_AGENT_PLAN_PROVIDER_KEY } from "./services/volcengine-agent-plan-provider.ts";
 
 const DEFAULT_CHAT_PROVIDER_KEYS = [
   "bailian",
   "bailian_coding",
+  BAI_PROVIDER_KEY,
   "openrouter",
   ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
   VOLCENGINE_AGENT_PLAN_PROVIDER_KEY,
