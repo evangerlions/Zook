@@ -279,7 +279,7 @@ Admin 查看接口：
 - `config.openRouter.useTransparentProxy=true` 时，发往 `openrouter.ai` 的请求会在发送前动态读取 `common.passwords` 中由 `transparentProxyHmacSecretKey` 指定的 HMAC secret。只有 Key ID 和 secret 都存在时才改走 `transparentProxyBaseUrl`；Secret 缺失时保持直连，错误格式的非空 Secret 会拒绝请求而不会静默降级。
 - OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。
 - 阿里云百炼 Token Plan 使用独立 Provider key `bailian_token_plan` 和套餐专属 Base URL `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，不得复用 `bailian_coding`。在 PASSWORDS 中配置 `bailian.token_plan_api_key` 后，启动配置迁移会幂等加入该 Chat Provider 及 `tokenplan-*` 文本模型；不会加入 Embedding，也不会修改 `defaultModelKey` 或既有模型流量权重。当前接入范围仅为 OpenAI Chat Completions 与应用自定义 Function Calling，不使用 Anthropic 端点，也不启用依赖 Responses API 的 Token Plan 内置 Harness 工具。
-- B.AI 使用独立 Chat Provider key `bai` 和 Base URL `https://api.b.ai/v1`。在 PASSWORDS 中配置 `bai.api_key` 后，启动配置迁移会幂等加入 `bai-glm-5.3-flash`；密钥在 `common.llm_service` 中只以 `{{zook.ps.bai.api_key}}` 引用保存。该导入不会改变默认模型、AINovel 选模权重或 embedding 路由。GLM-5.3-Flash 默认使用 `reasoning_effort: "low"`，以为用户可见回复保留输出预算；显式指定的 reasoning effort 优先。B.AI 仅在 `HTTP[S]_PROXY` 或小写等价变量存在时使用该进程的代理配置，其他 provider 不受影响。
+- B.AI 使用独立 Chat Provider key `bai` 和 Base URL `https://api.b.ai/v1`。在 PASSWORDS 中配置 `bai.api_key` 后，启动配置迁移会幂等加入 `bai-glm-5.3-flash`；密钥在 `common.llm_service` 中只以 `{{zook.ps.bai.api_key}}` 引用保存。该导入不会改变默认模型、AINovel 选模权重或 embedding 路由。GLM-5.3-Flash 默认使用 `reasoning_effort: "low"`，以为用户可见回复保留输出预算；显式指定的 reasoning effort 优先。`config.bai` 的透明代理使用与 OpenRouter 相同的 `oa-hmac-v1` 和 `X-Proxy-*` 签名信封，但有独立开关、Base URL、Key ID 与 `common.passwords` HMAC key；启用后请求只会发往该受控代理，Secret 缺失时保持直连。
 
 ### 3.12 Admin 指标
 

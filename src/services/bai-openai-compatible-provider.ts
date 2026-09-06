@@ -1,6 +1,5 @@
 import { BailianOpenAICompatibleProvider } from "./bailian-openai-compatible-provider.ts";
 import type { BailianOpenAICompatibleProviderOptions } from "./bailian-openai-compatible-types.ts";
-import { createBaiProxyAwareFetch } from "./bai-proxy-fetch.ts";
 import type { ResolvedLLMCompletionRequest } from "./llm-manager.ts";
 
 export const BAI_PROVIDER_KEY = "bai";
@@ -18,8 +17,6 @@ export class BaiOpenAICompatibleProvider extends BailianOpenAICompatibleProvider
       providerName: BAI_PROVIDER_KEY,
       baseUrl: options.baseUrl ?? DEFAULT_BAI_BASE_URL,
       apiKey: options.apiKey ?? "",
-      fetchImplementation:
-        options.fetchImplementation ?? createBaiProxyAwareFetch() ?? globalThis.fetch,
     });
   }
 
