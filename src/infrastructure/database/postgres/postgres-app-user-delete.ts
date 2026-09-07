@@ -50,6 +50,28 @@ export async function deletePostgresAppUserRuntimeData(
   appId: string,
   userId: string,
 ): Promise<void> {
+  if (appId === 'bodylog') {
+    for (const table of ['bodylog_seven_day_plans', 'bodylog_daily_aggregates', 'bodylog_notification_preferences', 'bodylog_push_devices']) {
+      await query(`DELETE FROM ${table} WHERE user_id = $1`, [userId]);
+    }
+  }
+  await query('DELETE FROM zook_user_subscriptions WHERE app_id = $1 AND user_id = $2', [appId, userId]);
+  await query(`UPDATE zook_bodylog_group_daily_records SET
+    completed_user_ids = completed_user_ids - $2,
+    completed_count = jsonb_array_length(completed_user_ids - $2),
+    completion_rate = 100.0 * jsonb_array_length(completed_user_ids - $2) / GREATEST(total_members, 1)
+    WHERE group_id IN (SELECT id FROM zook_bodylog_groups WHERE app_id = $1) AND completed_user_ids ? $2`, [appId, userId]);
+  const userBuddyPairs = "SELECT id FROM zook_bodylog_buddy_pairs WHERE app_id = $1 AND (user_id = $2 OR partner_user_id = $2)";
+  await query(`DELETE FROM zook_bodylog_buddy_activities WHERE pair_id IN (${userBuddyPairs})`, [appId, userId]);
+  await query(`DELETE FROM zook_bodylog_buddy_encouragements WHERE pair_id IN (${userBuddyPairs})`, [appId, userId]);
+  await query(`DELETE FROM zook_bodylog_buddy_pairs WHERE id IN (${userBuddyPairs})`, [appId, userId]);
+
+  const userLedGroups = "SELECT id FROM zook_bodylog_groups WHERE app_id = $1 AND leader_user_id = $2";
+  await query(`DELETE FROM zook_bodylog_group_members WHERE group_id IN (${userLedGroups}) OR (group_id IN (SELECT id FROM zook_bodylog_groups WHERE app_id = $1) AND user_id = $2)`, [appId, userId]);
+  await query(`DELETE FROM zook_bodylog_group_daily_records WHERE group_id IN (${userLedGroups})`, [appId, userId]);
+  await query(`DELETE FROM zook_bodylog_group_activities WHERE group_id IN (${userLedGroups}) OR (group_id IN (SELECT id FROM zook_bodylog_groups WHERE app_id = $1) AND actor_user_id = $2)`, [appId, userId]);
+  await query(`DELETE FROM zook_bodylog_groups WHERE id IN (${userLedGroups})`, [appId, userId]);
+
   await query("DELETE FROM zook_bodylog_challenge_members WHERE app_id = $1 AND challenge_id IN (SELECT challenge_id FROM zook_bodylog_challenge_members WHERE app_id = $1 AND user_id = $2)", [appId, userId]);
   await query("DELETE FROM zook_bodylog_challenges WHERE app_id = $1 AND (creator_user_id = $2 OR id NOT IN (SELECT DISTINCT challenge_id FROM zook_bodylog_challenge_members WHERE app_id = $1))", [appId, userId]);
   await query("DELETE FROM zook_bodylog_invitation_attributions WHERE app_id = $1 AND (inviter_user_id = $2 OR invitee_user_id = $2)", [appId, userId]);

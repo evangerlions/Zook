@@ -318,7 +318,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/tasks/{taskId}/ack`          | 客户端无日志时回执 `no_data`                                                                                                        |
 | `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
 | `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
-| `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`                                                                  |
+| `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`；`bodylog` 与 `lighttick` 为产品专属实现（见各产品章节）                                                                 |
 | `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
 | `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
 | `GET` / `POST` | `/api/v1/bodylog/friend-requests` | 查询或发起 BodyLog 好友申请                                                                                                        |
@@ -467,15 +467,52 @@ POST /api/v1/auth/login/email
 | `POST` | `/api/v1/bodylog/leaderboards/current/aggregate` | 周标识、日期与完成 habit id | 上报由服务端计分的每日聚合 |
 | `DELETE` | `/api/v1/bodylog/leaderboards/current/membership` | `{ "timezone": "Asia/Shanghai" }` | 退出当前周排行榜 |
 | `GET` | `/api/v1/bodylog/leaderboards/current/{public\|friends}` | Header `X-Time-Zone` | 获取公开榜或好友榜 |
-| `GET` / `POST` | `/api/v1/bodylog/invitations` | POST: `{ "installId": "..." }` | 查询邀请奖励状态或创建 14 天邀请 |
+| `GET` / `POST` | `/api/v1/bodylog/invitations` | POST: `{ "installId": "...", "intent"?: "general\|buddy\|group" }` | 查询邀请奖励状态或创建 14 天邀请；`intent` 缺省 `general`，决定分享链接路径 `/i/`、`/b/`、`/g/` |
 | `POST` | `/api/v1/bodylog/invitations/attribute` | `{ "token": "...", "installId": "..." }` | 绑定邀请归因，禁止自己邀请和同设备归因 |
 | `POST` | `/api/v1/bodylog/invitations/progress` | 当天日期与时区 | 记录邀请资格进度 |
 | `GET` / `POST` | `/api/v1/bodylog/challenges` | POST: 主题、1–7 个好友和时区 | 查询或创建挑战 |
 | `GET` | `/api/v1/bodylog/challenges/{challengeId}` | 无 | 获取可见挑战详情 |
 | `POST` | `/api/v1/bodylog/challenges/{challengeId}/respond` | `{ "action": "accept" }` | 接受或拒绝挑战 |
 | `POST` | `/api/v1/bodylog/challenges/{challengeId}/progress` | 当天日期、完成状态和时区 | 更新挑战进度 |
+| `GET` | `/api/v1/bodylog/public/config` | 无（匿名） | BodyLog 专属公开配置；响应为功能开关映射（见下文），不走通用 `admin.delivery_config` 模板 |
+| `POST` | `/api/v1/bodylog/buddies` | `{ "partnerUserId": "...", "sharedHabitIds": [...] }` | 发起搭子配对 |
+| `GET` | `/api/v1/bodylog/buddies` | 无 | 查询我的搭子列表 |
+| `GET` | `/api/v1/bodylog/buddies/{pairId}` | 无 | 搭子详情（连续天数、层级、活动） |
+| `POST` | `/api/v1/bodylog/buddies/{pairId}/accept` | 无 | 接受配对邀请 |
+| `POST` | `/api/v1/bodylog/buddies/{pairId}/dissolve` | 无 | 解除搭子关系 |
+| `POST` | `/api/v1/bodylog/buddies/encourage` | `{ "pairId": "...", "emoji": "...", "isSameAction"?, "targetHabitId"? }` | 发送鼓励动作 |
+| `POST` | `/api/v1/bodylog/buddies/checkin` | `{ "habitId": "...", "count"?: 1 }` | 记录搭子打卡同步 |
+| `POST` | `/api/v1/bodylog/groups` | `{ "name": "...", "icon"?, "sharedHabitIds": [...], "completionRule"?: "all\|majority", "maxMembers"? }` | 创建打卡小组 |
+| `GET` | `/api/v1/bodylog/groups` | 无 | 查询我所在的小组 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/invite` | `{ "userId": "..." }` | 邀请成员加入小组 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/accept` | `{ "token": "..." }` | 接受小组邀请 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/leave` | 无 | 退出小组 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/checkin` | `{ "habitId": "...", "count"? }` | 小组打卡 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
+| `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/missions` | 无 | 计划任务列表 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete` | 无 | 完成一项任务 |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards` | 无 | 计划奖励列表 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards/{rewardId}/claim` | 无 | 领取奖励 |
+| `GET` | `/api/v1/bodylog/notification-preferences` | 无 | 查询通知偏好 |
+| `PUT` | `/api/v1/bodylog/notification-preferences` | `{ "enabledCategories"?, "quietHours"?, "mergeRequests"?, "leaderboardRankPush"?, "marketingConsent"? }` | 更新通知偏好 |
+| `POST` | `/api/v1/bodylog/push-devices` | `{ "deviceToken": "...", "platform": "ios\|android", "name"?: "..." }` | 注册推送设备 |
+| `GET` | `/api/v1/bodylog/push-devices` | 无 | 列出推送设备 |
+| `DELETE` | `/api/v1/bodylog/push-devices/{deviceId}` | 无 | 移除推送设备 |
 
-成功响应的 `data`：
+BodyLog 新增接口约定：
+
+- 创建搭子返回 `{ pair, invitationUrl }`；仅被邀请者可接受，发起者不能代替对方接受。邀请接受时重新检查拉黑及双方额度。邀请 14 天后过期，不再占用额度，可重新发送；缺少发起者记录的历史邀请也需重新发送。
+- 创建小组返回 `{ group, invitationUrl }`；详情返回 `{ group, members, recentActivities, weeklyRecords }`，每日记录的 `completionRate` 为 0–100 的百分数。
+- 直接配对/小组链接分别为 `/b/{pairId}?token=...` 和 `/g/{groupId}?token=...`；小组接受请求从链接提取 groupId 和 token。小组共享链接有效期为创建后 7 天；定向邀请链接随通知 `data.invitation_url` 发送。`POST groups/{groupId}/invite` 返回 `{ invited: true }`。邀请归因接口生成的 `/i/{token}`、`/b/{token}`、`/g/{token}` 仍由归因接口消费。
+- 小组仅活跃组长/管理员可邀请；离组组长的权限立即失效，组长转让持久化。打卡仅接受小组共同习惯和正整数 count。
+- 全部 `seven-day-plan/*` 接口受 `growth` 开关控制，关闭时返回 `404 BODYLOG_FEATURE_DISABLED`。同一任务只能完成一次，重复并发请求返回 `409 BODYLOG_GROWTH_MISSION_COMPLETED`；奖励只能在计划完成后领取。
+- 注册推送设备的 `name` 可省略；同一设备 token 被新账号注册后转移归属，旧账号列表不再显示该设备。
+- 注销 BodyLog app 账号会清理成长计划、通知偏好、设备、订阅、搭子关系与所拥有的小组；其他小组中的个人成员和活动记录同时清理。共享 Zook 用户及其他产品数据保留。
+
+Profile 成功响应的 `data`：
 
 ```json
 {

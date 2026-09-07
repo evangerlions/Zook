@@ -1,11 +1,27 @@
 type QueryFn = (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
 
 export async function deletePostgresApp(query: QueryFn, appId: string): Promise<void> {
+  if (appId === 'bodylog') {
+    for (const table of ['bodylog_seven_day_plans', 'bodylog_daily_aggregates', 'bodylog_notification_preferences', 'bodylog_push_devices', 'bodylog_settlement_jobs']) {
+      await query(`DELETE FROM ${table}`);
+    }
+  }
+  await query('DELETE FROM zook_user_subscriptions WHERE app_id = $1', [appId]);
   const roleRows = await query("SELECT id FROM zook_roles WHERE app_id = $1", [appId]);
   const roleIds = roleRows.rows.map((row) => String((row as { id: unknown }).id));
   if (roleIds.length > 0) {
     await query("DELETE FROM zook_role_permissions WHERE role_id = ANY($1::text[])", [roleIds]);
   }
+
+  // These child tables are keyed by pair/group rather than app_id. Remove
+  // them explicitly before deleting the app-scoped roots.
+  await query("DELETE FROM zook_bodylog_buddy_activities WHERE pair_id IN (SELECT id FROM zook_bodylog_buddy_pairs WHERE app_id = $1)", [appId]);
+  await query("DELETE FROM zook_bodylog_buddy_encouragements WHERE pair_id IN (SELECT id FROM zook_bodylog_buddy_pairs WHERE app_id = $1)", [appId]);
+  await query("DELETE FROM zook_bodylog_buddy_pairs WHERE app_id = $1", [appId]);
+  await query("DELETE FROM zook_bodylog_group_members WHERE group_id IN (SELECT id FROM zook_bodylog_groups WHERE app_id = $1)", [appId]);
+  await query("DELETE FROM zook_bodylog_group_daily_records WHERE group_id IN (SELECT id FROM zook_bodylog_groups WHERE app_id = $1)", [appId]);
+  await query("DELETE FROM zook_bodylog_group_activities WHERE group_id IN (SELECT id FROM zook_bodylog_groups WHERE app_id = $1)", [appId]);
+  await query("DELETE FROM zook_bodylog_groups WHERE app_id = $1", [appId]);
 
   const tables = [
     "zook_lighttick_account_upgrades",

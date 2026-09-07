@@ -21,6 +21,16 @@ tags:
     description: Invitation attribution and reward progress.
   - name: bodylog-challenge
     description: Friend challenge creation, responses, and progress.
+  - name: bodylog-buddy
+    description: Buddy pair creation, acceptance, encouragement, and check-in.
+  - name: bodylog-group
+    description: Check-in group creation, invitation, acceptance, and check-in.
+  - name: bodylog-growth
+    description: Seven-day growth plan enrollment, missions, and rewards.
+  - name: bodylog-notification
+    description: Notification preferences and push device management.
+  - name: bodylog-config
+    description: Anonymous public configuration (feature flags).
 paths:
   /api/v1/bodylog/profile:
     get:
@@ -325,6 +335,318 @@ paths:
         "200": { $ref: "#/components/responses/Challenge" }
         "400": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/buddies:
+    post:
+      operationId: createBodyLogBuddyPair
+      tags: [bodylog-buddy]
+      summary: Create a buddy pair with a friend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogCreateBuddyPairRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/BuddyPairCreate" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+    get:
+      operationId: listBodyLogBuddies
+      tags: [bodylog-buddy]
+      summary: List all buddy pairs for the signed-in user
+      responses:
+        "200": { $ref: "#/components/responses/BuddyList" }
+        "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/buddies/{pairId}:
+    parameters:
+      - $ref: "#/components/parameters/PairId"
+    get:
+      operationId: getBodyLogBuddyDetail
+      tags: [bodylog-buddy]
+      summary: Get buddy pair detail including activities
+      responses:
+        "200": { $ref: "#/components/responses/BuddyDetail" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/buddies/{pairId}/accept:
+    parameters:
+      - $ref: "#/components/parameters/PairId"
+    post:
+      operationId: acceptBodyLogBuddyPair
+      tags: [bodylog-buddy]
+      summary: Accept a pending buddy pair invitation
+      responses:
+        "200": { $ref: "#/components/responses/BuddyPair" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/buddies/{pairId}/dissolve:
+    parameters:
+      - $ref: "#/components/parameters/PairId"
+    post:
+      operationId: dissolveBodyLogBuddyPair
+      tags: [bodylog-buddy]
+      summary: Dissolve a buddy pair
+      responses:
+        "200": { $ref: "#/components/responses/Dissolved" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/buddies/encourage:
+    post:
+      operationId: encourageBodyLogBuddy
+      tags: [bodylog-buddy]
+      summary: Send encouragement to buddy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogEncourageBuddyRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/BuddyEncouragement" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/buddies/checkin:
+    post:
+      operationId: checkinBodyLogBuddy
+      tags: [bodylog-buddy]
+      summary: Record a buddy check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogBuddyCheckinRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Recorded" }
+        "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups:
+    post:
+      operationId: createBodyLogGroup
+      tags: [bodylog-group]
+      summary: Create a check-in group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogCreateGroupRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/GroupCreate" }
+        "400": { $ref: "#/components/responses/Error" }
+    get:
+      operationId: listBodyLogGroups
+      tags: [bodylog-group]
+      summary: List all groups for the signed-in user
+      responses:
+        "200": { $ref: "#/components/responses/GroupList" }
+        "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    get:
+      operationId: getBodyLogGroupDetail
+      tags: [bodylog-group]
+      summary: Get group detail including members and activities
+      responses:
+        "200": { $ref: "#/components/responses/GroupDetail" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}/invite:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    post:
+      operationId: inviteBodyLogGroupMember
+      tags: [bodylog-group]
+      summary: Invite a user to join the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogInviteGroupMemberRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/GroupInvitation" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}/accept:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    post:
+      operationId: acceptBodyLogGroupInvite
+      tags: [bodylog-group]
+      summary: Accept a group invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/BodyLogAcceptGroupInviteRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Group" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}/leave:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    post:
+      operationId: leaveBodyLogGroup
+      tags: [bodylog-group]
+      summary: Leave a group
+      responses:
+        "200": { $ref: "#/components/responses/Left" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}/checkin:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    post:
+      operationId: checkinBodyLogGroup
+      tags: [bodylog-group]
+      summary: Record a group check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogGroupCheckinRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/Recorded" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/enroll:
+    post:
+      operationId: enrollBodyLogSevenDayPlan
+      tags: [bodylog-growth]
+      summary: Enroll in a 7-day growth plan
+      description: Requires the growth feature flag (disabled by default); returns 404 when disabled.
+      responses:
+        "200": { $ref: "#/components/responses/GrowthPlan" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/active:
+    get:
+      operationId: getBodyLogActiveSevenDayPlan
+      tags: [bodylog-growth]
+      summary: Get the user's active 7-day plan
+      responses:
+        "200": { $ref: "#/components/responses/GrowthPlan" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/{planId}:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      operationId: getBodyLogSevenDayPlan
+      tags: [bodylog-growth]
+      summary: Get a specific 7-day plan
+      responses:
+        "200": { $ref: "#/components/responses/GrowthPlan" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/{planId}/missions:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      operationId: listBodyLogMissions
+      tags: [bodylog-growth]
+      summary: List all missions for a 7-day plan
+      responses:
+        "200": { $ref: "#/components/responses/MissionList" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+      - $ref: "#/components/parameters/MissionId"
+    post:
+      operationId: completeBodyLogMission
+      tags: [bodylog-growth]
+      summary: Mark a mission as completed
+      responses:
+        "200": { $ref: "#/components/responses/Mission" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/{planId}/rewards:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      operationId: listBodyLogRewards
+      tags: [bodylog-growth]
+      summary: List all rewards for a 7-day plan
+      responses:
+        "200": { $ref: "#/components/responses/RewardList" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/{planId}/rewards/{rewardId}/claim:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+      - $ref: "#/components/parameters/RewardId"
+    post:
+      operationId: claimBodyLogReward
+      tags: [bodylog-growth]
+      summary: Claim a reward
+      description: Only the owner of a completed plan with all missions completed can claim; incomplete plans return 409.
+      responses:
+        "200": { $ref: "#/components/responses/Reward" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/public/config:
+    get:
+      operationId: getBodyLogPublicConfig
+      tags: [bodylog-config]
+      summary: Anonymous BodyLog public configuration (feature flag map)
+      security: []
+      responses:
+        "200": { $ref: "#/components/responses/PublicConfig" }
+  /api/v1/bodylog/notification-preferences:
+    get:
+      operationId: getBodyLogNotificationPreferences
+      tags: [bodylog-notification]
+      summary: Get the signed-in user's notification preferences
+      responses:
+        "200": { $ref: "#/components/responses/NotificationPreferences" }
+        "401": { $ref: "#/components/responses/Error" }
+    put:
+      operationId: updateBodyLogNotificationPreferences
+      tags: [bodylog-notification]
+      summary: Update the signed-in user's notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogNotificationPreferencesUpdateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/NotificationPreferences" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/push-devices:
+    get:
+      operationId: listBodyLogPushDevices
+      tags: [bodylog-notification]
+      summary: List registered push devices
+      responses:
+        "200": { $ref: "#/components/responses/PushDeviceList" }
+        "401": { $ref: "#/components/responses/Error" }
+    post:
+      operationId: registerBodyLogPushDevice
+      tags: [bodylog-notification]
+      summary: Register a push device for the signed-in user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogPushDeviceRegisterRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/PushDevice" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/push-devices/{deviceId}:
+    delete:
+      operationId: removeBodyLogPushDevice
+      tags: [bodylog-notification]
+      summary: Remove a registered push device
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/PushDeviceRemoved" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
 components:
   securitySchemes:
     bearerAuth:
@@ -354,6 +676,31 @@ components:
       schema: { type: string, minLength: 1 }
     ChallengeId:
       name: challengeId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    PairId:
+      name: pairId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    PlanId:
+      name: planId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    MissionId:
+      name: missionId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    RewardId:
+      name: rewardId
       in: path
       required: true
       schema: { type: string, minLength: 1 }
@@ -476,6 +823,121 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/BodyLogChallengeListResponse" }
+    BuddyPairCreate:
+      description: Created buddy pair with invitation URL
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogBuddyPairCreateResponse" }
+    BuddyList:
+      description: Buddy pairs list
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogBuddyListResponse" }
+    BuddyDetail:
+      description: Buddy pair detail with activities
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogBuddyDetailResponse" }
+    BuddyPair:
+      description: Buddy pair
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogBuddyPairResponse" }
+    Dissolved:
+      description: Buddy pair dissolved
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogDissolvedResponse" }
+    BuddyEncouragement:
+      description: Buddy encouragement
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogBuddyEncouragementResponse" }
+    Recorded:
+      description: Check-in recorded
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogRecordedResponse" }
+    GroupCreate:
+      description: Created group with invitation URL
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupCreateResponse" }
+    GroupList:
+      description: Groups list
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupListResponse" }
+    GroupDetail:
+      description: Group detail with members and activities
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupDetailResponse" }
+    GroupInvitation:
+      description: Group invitation sent
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupInvitationResponse" }
+    Group:
+      description: Group
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupResponse" }
+    Left:
+      description: Left group
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogLeftResponse" }
+    GrowthPlan:
+      description: 7-day growth plan
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGrowthPlanResponse" }
+    MissionList:
+      description: List of missions
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogMissionListResponse" }
+    Mission:
+      description: Mission
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogMissionResponse" }
+    RewardList:
+      description: List of rewards
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogRewardListResponse" }
+    Reward:
+      description: Reward
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogRewardResponse" }
+    PublicConfig:
+      description: BodyLog public feature flag configuration
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogPublicConfigResponse" }
+    NotificationPreferences:
+      description: Notification preferences
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogNotificationPreferencesResponse" }
+    PushDeviceList:
+      description: Registered push devices
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogPushDeviceListResponse" }
+    PushDevice:
+      description: Registered push device
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogPushDeviceResponse" }
+    PushDeviceRemoved:
+      description: Push device removed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogPushDeviceRemovedResponse" }
   schemas:
     BodyLogProfileUpdateRequest:
       type: object
@@ -531,6 +993,7 @@ components:
       required: [installId]
       properties:
         installId: { type: string, minLength: 8 }
+        intent: { type: string, enum: [general, buddy, group], default: general }
     BodyLogInvitationAttributeRequest:
       type: object
       additionalProperties: false
@@ -572,6 +1035,64 @@ components:
         date: { $ref: "#/components/schemas/BodyLogDate" }
         completed: { type: boolean }
         timezone: { type: string, minLength: 1 }
+    BodyLogCreateBuddyPairRequest:
+      type: object
+      additionalProperties: false
+      required: [partnerUserId, sharedHabitIds]
+      properties:
+        partnerUserId: { type: string, minLength: 1 }
+        sharedHabitIds:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1 }
+    BodyLogEncourageBuddyRequest:
+      type: object
+      additionalProperties: false
+      required: [pairId, emoji, isSameAction]
+      properties:
+        pairId: { type: string, minLength: 1 }
+        emoji: { $ref: "#/components/schemas/BodyLogBuddyEncouragementEmoji" }
+        isSameAction: { type: boolean }
+        targetHabitId: { type: string, minLength: 1 }
+    BodyLogBuddyCheckinRequest:
+      type: object
+      additionalProperties: false
+      required: [habitId]
+      properties:
+        habitId: { type: string, minLength: 1 }
+        count: { type: integer, minimum: 1 }
+    BodyLogCreateGroupRequest:
+      type: object
+      additionalProperties: false
+      required: [name, sharedHabitIds]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 30 }
+        icon: { type: string, minLength: 1 }
+        sharedHabitIds:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1 }
+        completionRule: { $ref: "#/components/schemas/BodyLogCompletionRule" }
+        maxMembers: { type: integer, minimum: 2, maximum: 10 }
+    BodyLogInviteGroupMemberRequest:
+      type: object
+      additionalProperties: false
+      required: [userId]
+      properties:
+        userId: { type: string, minLength: 1 }
+    BodyLogAcceptGroupInviteRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1 }
+    BodyLogGroupCheckinRequest:
+      type: object
+      additionalProperties: false
+      required: [habitId]
+      properties:
+        habitId: { type: string, minLength: 1 }
+        count: { type: integer, minimum: 1 }
     BodyLogAvatarKey:
       type: string
       enum: [mint_runner, blue_drop, orange_sun, purple_moon]
@@ -581,6 +1102,36 @@ components:
     BodyLogChallengeTheme:
       type: string
       enum: [steady_week, morning_rhythm, movement_breaks, mindful_week]
+    BodyLogBuddyEncouragementEmoji:
+      type: string
+      enum: ["💪", "👏", "🔥", "😊"]
+    BodyLogCompletionRule:
+      type: string
+      enum: [all, majority]
+    BodyLogBuddyPairStatus:
+      type: string
+      enum: [pending, active, dissolved]
+    BodyLogBuddyTier:
+      type: string
+      enum: [copper, silver, gold, diamond, legend]
+    BodyLogGroupStatus:
+      type: string
+      enum: [active, inactive, archived]
+    BodyLogGroupTier:
+      type: string
+      enum: [bronze, silver, gold, platinum, diamond]
+    BodyLogGroupMemberRole:
+      type: string
+      enum: [leader, admin, member]
+    BodyLogGroupMemberStatus:
+      type: string
+      enum: [pending, active, left, removed]
+    BodyLogBuddyActivityType:
+      type: string
+      enum: [checked_in, encouraged, viewed, reminded, milestone, revived]
+    BodyLogGroupActivityType:
+      type: string
+      enum: [joined, left, checked_in, encouraged, milestone]
     BodyLogDate:
       type: string
       pattern: "^\\d{4}-\\d{2}-\\d{2}$"
@@ -789,6 +1340,194 @@ components:
           items: { $ref: "#/components/schemas/BodyLogChallengeMemberData" }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+    BodyLogBuddyPairData:
+      type: object
+      required:
+        [
+          id,
+          partnerUserId,
+          partnerNickname,
+          partnerAvatarKey,
+          sharedHabitIds,
+          status,
+          consecutiveDays,
+          maxConsecutive,
+          currentTier,
+          lastActiveDate,
+          createdAt,
+          acceptedAt,
+        ]
+      properties:
+        id: { type: string }
+        partnerUserId: { type: string }
+        partnerNickname: { type: string }
+        partnerAvatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        sharedHabitIds:
+          type: array
+          items: { type: string }
+        status: { $ref: "#/components/schemas/BodyLogBuddyPairStatus" }
+        consecutiveDays: { type: integer, minimum: 0 }
+        maxConsecutive: { type: integer, minimum: 0 }
+        currentTier:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/BodyLogBuddyTier" },
+                { type: "null" },
+              ],
+          }
+        lastActiveDate:
+          {
+            oneOf:
+              [{ $ref: "#/components/schemas/BodyLogDate" }, { type: "null" }],
+          }
+        createdAt: { type: string, format: date-time }
+        acceptedAt: { type: [string, "null"], format: date-time }
+    BodyLogBuddyActivityData:
+      type: object
+      required:
+        [
+          id,
+          pairId,
+          actorUserId,
+          actorNickname,
+          actorAvatarKey,
+          type,
+          targetHabitId,
+          payload,
+          createdAt,
+        ]
+      properties:
+        id: { type: string }
+        pairId: { type: string }
+        actorUserId: { type: string }
+        actorNickname: { type: string }
+        actorAvatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        type: { $ref: "#/components/schemas/BodyLogBuddyActivityType" }
+        targetHabitId: { type: [string, "null"] }
+        targetHabitName: { type: string }
+        payload: { type: object }
+        createdAt: { type: string, format: date-time }
+    BodyLogBuddyEncouragementData:
+      type: object
+      required:
+        [
+          id,
+          pairId,
+          fromUserId,
+          fromNickname,
+          toUserId,
+          emoji,
+          isSameAction,
+          createdAt,
+        ]
+      properties:
+        id: { type: string }
+        pairId: { type: string }
+        fromUserId: { type: string }
+        fromNickname: { type: string }
+        toUserId: { type: string }
+        emoji: { $ref: "#/components/schemas/BodyLogBuddyEncouragementEmoji" }
+        isSameAction: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    BodyLogCheckInGroupData:
+      type: object
+      required:
+        [
+          id,
+          name,
+          icon,
+          leaderUserId,
+          leaderNickname,
+          leaderAvatarKey,
+          sharedHabitIds,
+          completionRule,
+          maxMembers,
+          currentMembers,
+          status,
+          consecutiveDays,
+          maxConsecutive,
+          currentTier,
+          lastActiveDate,
+          createdAt,
+        ]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        icon: { type: [string, "null"] }
+        leaderUserId: { type: string }
+        leaderNickname: { type: string }
+        leaderAvatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        sharedHabitIds:
+          type: array
+          items: { type: string }
+        completionRule: { $ref: "#/components/schemas/BodyLogCompletionRule" }
+        maxMembers: { type: integer, minimum: 2 }
+        currentMembers: { type: integer, minimum: 1 }
+        status: { $ref: "#/components/schemas/BodyLogGroupStatus" }
+        consecutiveDays: { type: integer, minimum: 0 }
+        maxConsecutive: { type: integer, minimum: 0 }
+        currentTier:
+          {
+            oneOf:
+              [
+                { $ref: "#/components/schemas/BodyLogGroupTier" },
+                { type: "null" },
+              ],
+          }
+        lastActiveDate:
+          {
+            oneOf:
+              [{ $ref: "#/components/schemas/BodyLogDate" }, { type: "null" }],
+          }
+        createdAt: { type: string, format: date-time }
+    BodyLogGroupMemberData:
+      type: object
+      required: [userId, nickname, avatarKey, role, status, joinedAt]
+      properties:
+        userId: { type: string }
+        nickname: { type: string }
+        avatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        role: { $ref: "#/components/schemas/BodyLogGroupMemberRole" }
+        status: { $ref: "#/components/schemas/BodyLogGroupMemberStatus" }
+        joinedAt: { type: string, format: date-time }
+    BodyLogGroupActivityData:
+      type: object
+      required:
+        [
+          id,
+          groupId,
+          actorUserId,
+          actorNickname,
+          actorAvatarKey,
+          type,
+          targetHabitId,
+          payload,
+          createdAt,
+        ]
+      properties:
+        id: { type: string }
+        groupId: { type: string }
+        actorUserId: { type: string }
+        actorNickname: { type: string }
+        actorAvatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        type: { $ref: "#/components/schemas/BodyLogGroupActivityType" }
+        targetHabitId: { type: [string, "null"] }
+        targetHabitName: { type: string }
+        payload: { type: object }
+        createdAt: { type: string, format: date-time }
+    BodyLogGroupDailyRecordData:
+      type: object
+      required:
+        [date, completedUserIds, totalMembers, completedCount, completionRate]
+      properties:
+        date: { $ref: "#/components/schemas/BodyLogDate" }
+        completedUserIds:
+          type: array
+          items: { type: string }
+        totalMembers: { type: integer, minimum: 1 }
+        completedCount: { type: integer, minimum: 0 }
+        completionRate: { type: number, minimum: 0, maximum: 100 }
     BodyLogErrorResponse:
       type: object
       required: [code, message]
@@ -981,3 +1720,347 @@ components:
             items: { $ref: "#/components/schemas/BodyLogChallengeData" },
           }
         requestId: { type: string }
+    BodyLogBuddyPairCreateResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [pair, invitationUrl]
+          properties:
+            pair: { $ref: "#/components/schemas/BodyLogBuddyPairData" }
+            invitationUrl: { type: string, format: uri }
+        requestId: { type: string }
+    BodyLogBuddyListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [buddies, total]
+          properties:
+            buddies:
+              type: array
+              items: { $ref: "#/components/schemas/BodyLogBuddyPairData" }
+            total: { type: integer, minimum: 0 }
+        requestId: { type: string }
+    BodyLogBuddyDetailResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [pair, activities, encouragements]
+          properties:
+            pair: { $ref: "#/components/schemas/BodyLogBuddyPairData" }
+            activities:
+              type: array
+              items: { $ref: "#/components/schemas/BodyLogBuddyActivityData" }
+            encouragements:
+              type: array
+              items:
+                { $ref: "#/components/schemas/BodyLogBuddyEncouragementData" }
+        requestId: { type: string }
+    BodyLogBuddyPairResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogBuddyPairData" }
+        requestId: { type: string }
+    BodyLogDissolvedResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [dissolved]
+          properties: { dissolved: { type: boolean, const: true } }
+        requestId: { type: string }
+    BodyLogBuddyEncouragementResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogBuddyEncouragementData" }
+        requestId: { type: string }
+    BodyLogRecordedResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [recorded]
+          properties: { recorded: { type: boolean, const: true } }
+        requestId: { type: string }
+    BodyLogGroupCreateResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [group, invitationUrl]
+          properties:
+            group: { $ref: "#/components/schemas/BodyLogCheckInGroupData" }
+            invitationUrl: { type: string, format: uri }
+        requestId: { type: string }
+    BodyLogGroupListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [groups, total]
+          properties:
+            groups:
+              type: array
+              items: { $ref: "#/components/schemas/BodyLogCheckInGroupData" }
+            total: { type: integer, minimum: 0 }
+        requestId: { type: string }
+    BodyLogGroupDetailResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [group, members, recentActivities, weeklyRecords]
+          properties:
+            group: { $ref: "#/components/schemas/BodyLogCheckInGroupData" }
+            members:
+              type: array
+              items: { $ref: "#/components/schemas/BodyLogGroupMemberData" }
+            recentActivities:
+              type: array
+              items: { $ref: "#/components/schemas/BodyLogGroupActivityData" }
+            weeklyRecords:
+              type: array
+              items: { $ref: "#/components/schemas/BodyLogGroupDailyRecordData" }
+        requestId: { type: string }
+    BodyLogGroupInvitationResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [invited]
+          properties: { invited: { type: boolean, const: true } }
+        requestId: { type: string }
+    BodyLogGroupResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogCheckInGroupData" }
+        requestId: { type: string }
+    BodyLogLeftResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [left]
+          properties: { left: { type: boolean, const: true } }
+        requestId: { type: string }
+    BodyLogGrowthPlanResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogGrowthPlanData" }
+        requestId: { type: string }
+    BodyLogMissionListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/BodyLogMissionData" }
+        requestId: { type: string }
+    BodyLogMissionResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogMissionData" }
+        requestId: { type: string }
+    BodyLogRewardListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/BodyLogRewardData" }
+        requestId: { type: string }
+    BodyLogRewardResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogRewardData" }
+        requestId: { type: string }
+    BodyLogPublicConfigData:
+      type: object
+      description: Feature flag key to enabled state
+      additionalProperties: { type: boolean }
+    BodyLogPublicConfigResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogPublicConfigData" }
+        requestId: { type: string }
+    BodyLogNotificationQuietHours:
+      type: object
+      required: [isEnabled, startHour, endHour]
+      properties:
+        isEnabled: { type: boolean }
+        startHour: { type: integer, minimum: 0, maximum: 23 }
+        endHour: { type: integer, minimum: 0, maximum: 23 }
+    BodyLogNotificationPreferencesData:
+      type: object
+      required: [userId, enabledCategories, quietHours, mergeRequests, leaderboardRankPush, marketingConsent]
+      properties:
+        userId: { type: string }
+        enabledCategories:
+          type: array
+          items:
+            type: string
+            enum: [sevenDayPlan, friendRequest, challengeInvite, challengeStartEnd, rewardArrived, activity]
+        quietHours: { $ref: "#/components/schemas/BodyLogNotificationQuietHours" }
+        mergeRequests: { type: boolean }
+        leaderboardRankPush: { type: boolean }
+        marketingConsent: { type: boolean }
+    BodyLogNotificationPreferencesUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        enabledCategories:
+          type: array
+          items:
+            type: string
+            enum: [sevenDayPlan, friendRequest, challengeInvite, challengeStartEnd, rewardArrived, activity]
+        quietHours: { $ref: "#/components/schemas/BodyLogNotificationQuietHours" }
+        mergeRequests: { type: boolean }
+        leaderboardRankPush: { type: boolean }
+        marketingConsent: { type: boolean }
+    BodyLogNotificationPreferencesResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogNotificationPreferencesData" }
+        requestId: { type: string }
+    BodyLogPushDeviceData:
+      type: object
+      required: [id, platform, name, lastSeenAt]
+      properties:
+        id: { type: string }
+        platform: { type: string, enum: [ios, android] }
+        name: { type: string }
+        lastSeenAt: { type: string, format: date-time }
+    BodyLogPushDeviceRegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [deviceToken, platform]
+      properties:
+        deviceToken: { type: string, minLength: 1 }
+        platform: { type: string, enum: [ios, android] }
+        name: { type: string }
+    BodyLogPushDeviceListResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/BodyLogPushDeviceData" }
+        requestId: { type: string }
+    BodyLogPushDeviceResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogPushDeviceData" }
+        requestId: { type: string }
+    BodyLogPushDeviceRemovedResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [removed]
+          properties:
+            removed: { type: boolean }
+        requestId: { type: string }
+    BodyLogGrowthPlanData:
+      type: object
+      required: [id, userId, startDate, endDate, status, completedMissions, totalMissions, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        status: { type: string, enum: [active, completed, cancelled] }
+        completedMissions: { type: integer, minimum: 0 }
+        totalMissions: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BodyLogMissionData:
+      type: object
+      required: [id, planId, day, type, target, completed, completedAt, createdAt]
+      properties:
+        id: { type: string }
+        planId: { type: string }
+        day: { type: integer, minimum: 1, maximum: 7 }
+        type: { type: string, enum: [steps, water, sleep] }
+        target: { type: integer, minimum: 0 }
+        completed: { type: boolean }
+        completedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    BodyLogRewardData:
+      type: object
+      required: [id, planId, type, value, claimed, claimedAt, createdAt]
+      properties:
+        id: { type: string }
+        planId: { type: string }
+        type: { type: string }
+        value: { type: string }
+        claimed: { type: boolean }
+        claimedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }

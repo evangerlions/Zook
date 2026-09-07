@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --experimental-transform-types src/main.ts",
+    "dev": "node --experimental-transform-types --env-file-if-exists=.env.local src/main.ts",
     "dev:stack": "bash ./scripts/dev-stack.sh",
     "generate:public-contracts": "python3 build_scripts/generate_public_contracts.py --out src/generated/openapi/public-contracts.generated.ts",
     "check:api-contracts": "python3 build_scripts/generate_public_contracts.py --check --out src/generated/openapi/public-contracts.generated.ts",

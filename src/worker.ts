@@ -40,6 +40,7 @@ async function runTick(): Promise<void> {
     const buddyGrowth = buddyCapabilities.goalsAndReports
       ? await runtime.services.buddyMilestoneReportService.processBatch()
       : { relationships: 0, milestones: 0, reports: 0 };
+    const bodyLogSettlement = await runtime.services.bodyLogWorkerService.processBatch();
 
     const context = {
       jobName: "failed-events-replay",
@@ -66,6 +67,9 @@ async function runTick(): Promise<void> {
       buddyGrowthRelationships: buddyGrowth.relationships,
       buddyMilestonesGenerated: buddyGrowth.milestones,
       buddyReportsGenerated: buddyGrowth.reports,
+      bodyLogDailyBuddySettlement: bodyLogSettlement.dailyBuddySettlement,
+      bodyLogDailyGroupSettlement: bodyLogSettlement.dailyGroupSettlement,
+      bodyLogWeeklyGroupSettlement: bodyLogSettlement.weeklyGroupSettlement,
     };
 
     if (workerTickLogThrottle.shouldLog(context)) {

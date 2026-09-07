@@ -33,11 +33,7 @@ import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
-import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service.ts";
-import { BodyLogSocialService } from "./modules/bodylog/bodylog-social.service.ts";
-import { BodyLogLeaderboardService } from "./modules/bodylog/bodylog-leaderboard.service.ts";
-import { BodyLogInvitationService } from "./modules/bodylog/bodylog-invitation.service.ts";
-import { BodyLogChallengeService } from "./modules/bodylog/bodylog-challenge.service.ts";
+import { createBodyLogServices } from "./application-bodylog-services.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { AiOutputReportingService } from "./services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
@@ -431,11 +427,6 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     logger,
   );
-  const bodyLogProfileService = new BodyLogProfileService(database, contentSafetyService);
-  const bodyLogSocialService = new BodyLogSocialService(database, bodyLogProfileService);
-  const bodyLogLeaderboardService = new BodyLogLeaderboardService(database, bodyLogProfileService);
-  const bodyLogInvitationService = new BodyLogInvitationService(database);
-  const bodyLogChallengeService = new BodyLogChallengeService(database, bodyLogProfileService);
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
@@ -474,14 +465,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     registrationEmailSender,
   });
   attachApplicationLightTickWorkers({ runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService });
+  const { bodyLogProfileService, bodyLogSocialService, bodyLogLeaderboardService, bodyLogInvitationService, bodyLogChallengeService, bodyLogBuddyService, bodyLogGroupService, bodyLogWorkerService, bodyLogGrowthService, bodyLogNotificationService, bodyLogFeatureFlagService } = createBodyLogServices({ database, contentSafetyService, notificationService, logger });
   const apps = await database.listApps();
-  const appContextResolver = new AppContextResolver(
-    new Map(
-      apps
-        .filter((item) => item.apiDomain)
-        .map((item) => [item.apiDomain as string, item.id]),
-    ),
-  );
+  const appContextResolver = new AppContextResolver(new Map(apps.filter((item) => item.apiDomain).map((item) => [item.apiDomain as string, item.id])));
   const authGuard = new AuthGuard(tokenService);
   const appAccessGuard = new AppAccessGuard();
   const rbacGuard = new RbacGuard(rbacService);
@@ -513,6 +499,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     bodyLogLeaderboardService,
     bodyLogInvitationService,
     bodyLogChallengeService,
+    bodyLogBuddyService,
+    bodyLogGroupService,
+    bodyLogWorkerService,
+    bodyLogGrowthService,
+    bodyLogNotificationService,
+    bodyLogFeatureFlagService,
     llmSmokeTestService,
     aiNovelAuditFileService,
     aiNovelLlmService,
@@ -599,6 +591,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       buddyNotificationWorkerService,
       buddyInvitationEmailWorkerService,
       buddyMilestoneReportService,
+      bodyLogWorkerService,
+      bodyLogBuddyService,
+      bodyLogGroupService,
+      bodyLogGrowthService,
+      bodyLogNotificationService,
+      bodyLogFeatureFlagService,
       failedEventRetryService,
       tencentSesEmailCallbackService,
       feedbackService,
