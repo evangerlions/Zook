@@ -223,6 +223,8 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 9. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
 10. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
 11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：2 分钟内至少两位用户累计四次连续失败先进入不中断用户流量的确认状态，服务端立即用同一冒烟请求最多探测两次；两次都失败才隔离 `routingModelKey × provider × providerModel`。worker 用同一冒烟请求两次连续成功恢复正式熔断；管理台 runtime route 状态展示确认、熔断和下次探测信息，并支持对当前配置中的单一路由手动解除，关闭开关会清除全部既有状态
+12. `common.email_service_regions.llmAlertRecipients` 可配置 LLM 运营告警收件人；worker 使用现有腾讯云 SES 凭据和 `llm-alert` 模板，对超过 20 次调用且成功率低于 90% 的完整小时、以及正式 route 熔断分别发送去重邮件
+13. AINovel 反馈持久化成功后复用同一内部告警收件人和 `llm-alert` 模板发送反馈正文；同一用户按 Asia/Shanghai 自然日最多一封，投递失败不会影响用户反馈提交
 
 对应核心文件：
 

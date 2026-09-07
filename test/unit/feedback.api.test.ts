@@ -4,6 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
+import { FeedbackService } from "../../src/services/feedback.service.ts";
+import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
+import { PersistentFileStore } from "../../src/infrastructure/files/persistent-file-store.ts";
 
 async function loginAiNovel(runtime: Awaited<ReturnType<typeof createApplication>>) {
   return await runtime.services.authService.login({
@@ -117,6 +120,25 @@ test("AI Novel feedback persists text-only submissions and audit action", async 
   assert.equal(runtime.database.feedbackRecords[0]?.platform, "ios");
   assert.equal(runtime.database.feedbackRecords[0]?.status, "new");
   assert.ok(runtime.database.auditLogs.some((item) => item.action === "feedback.submit"));
+});
+
+test("AI Novel feedback remains accepted when its post-persistence alert callback throws", async () => {
+  const database = new InMemoryDatabase();
+  const service = new FeedbackService(
+    database,
+    new PersistentFileStore(tempStorageRoot()),
+    () => {
+      throw new Error("alert delivery unavailable");
+    },
+  );
+  const result = await service.submit({
+    auth: { appId: "ai_novel", userId: "feedback_alert_user" } as never,
+    message: "This feedback must persist even if the internal email alert fails.",
+    attachments: [],
+  });
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(result.accepted, true);
+  assert.equal(database.feedbackRecords.length, 1);
 });
 
 test("AI Novel feedback writes private appRunData attachments and admin can fetch them", async () => {

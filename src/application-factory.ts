@@ -62,6 +62,7 @@ import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmModelHealthService } from "./services/llm-model-health.service.ts";
 import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
+import { LlmEmailAlertService } from "./services/llm-email-alert.service.ts";
 import { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
@@ -311,6 +312,15 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     kvManager,
     registrationEmailSender,
   );
+  const llmEmailAlertService = new LlmEmailAlertService(
+    database.llmObservabilityStore,
+    kvManager,
+    commonLlmConfigService,
+    commonEmailConfigService,
+    llmRouteCircuitBreaker,
+    registrationEmailSender,
+    logger,
+  );
   const adminSensitiveOperationService = new AdminSensitiveOperationService(
     kvManager,
     options.adminSensitiveOperation,
@@ -434,7 +444,11 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
-  const feedbackService = new FeedbackService(database, persistentFileStore);
+  const feedbackService = new FeedbackService(
+    database,
+    persistentFileStore,
+    (feedback) => llmEmailAlertService.sendAiNovelFeedbackAlert(feedback),
+  );
   const aiOutputReportingService = new AiOutputReportingService(database, aiPayloadCryptoService, appLogSecretService);
   const clientLogUploadService = new ClientLogUploadService(
     database,
@@ -570,6 +584,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       llmHealthService,
       llmMetricsService,
       llmObservabilityRetentionService,
+      llmEmailAlertService,
       llmRouteCircuitBreaker,
       llmRouteCircuitRecoveryService,
       llmSmokeTestService,

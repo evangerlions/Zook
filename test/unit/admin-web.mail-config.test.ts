@@ -103,9 +103,25 @@ test("admin web mail raw parser rejects invalid numeric and duplicate fields", (
   );
 });
 
+test("admin web mail recipients require Guangzhou sender and llm-alert template", () => {
+  assert.throws(
+    () => parseMailConfigText(`{
+      "enabled": true,
+      "llmAlertRecipients": ["ops@example.com"],
+      "regions": [{
+        "region": "ap-guangzhou",
+        "sender": { "id": "noreply", "address": "noreply@example.com" },
+        "templates": [{ "locale": "zh-CN", "templateId": 10001, "name": "verify-code", "subject": "验证码" }]
+      }]
+    }`),
+    /llm-alert/,
+  );
+});
+
 test("admin web mail form serializer keeps validating string inputs", () => {
   const result = serializeMailDraft({
     enabled: true,
+    llmAlertRecipients: "",
     regions: [
       {
         region: "ap-guangzhou",
