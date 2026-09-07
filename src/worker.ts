@@ -21,6 +21,8 @@ async function runTick(): Promise<void> {
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();
+    const llmCircuitConfirmation = await runtime.services.llmRouteCircuitRecoveryService.runPendingConfirmations();
+    const llmCircuitRecovery = await runtime.services.llmRouteCircuitRecoveryService.runDueRecoveries();
     await runtime.queue.processDueJobs(async (job) => {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
@@ -48,6 +50,12 @@ async function runTick(): Promise<void> {
       smsCleanupDeleted: smsCleanup.deletedCount,
       llmCleanupRan: llmCleanup.ran,
       llmObservationsDeleted: llmCleanup.observations,
+      llmCircuitConfirmationAttempted: llmCircuitConfirmation.attempted,
+      llmCircuitConfirmationCleared: llmCircuitConfirmation.cleared,
+      llmCircuitConfirmationOpened: llmCircuitConfirmation.opened,
+      llmCircuitRecoveryAttempted: llmCircuitRecovery.attempted,
+      llmCircuitRecoveryRestored: llmCircuitRecovery.restored,
+      llmCircuitRecoveryFailed: llmCircuitRecovery.failed,
       buddyNotificationsProcessed: buddyNotifications.processed,
       buddyNotificationsFailed: buddyNotifications.failed,
       buddyInvitationEmailsProcessed: buddyInvitationEmails.processed,

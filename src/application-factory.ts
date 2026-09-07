@@ -62,6 +62,7 @@ import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmModelHealthService } from "./services/llm-model-health.service.ts";
 import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
+import { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
@@ -249,7 +250,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonPasswordConfigService,
   });
   const runtimeLlmProviderKeys = resolveRuntimeLlmProviderKeys(options);
-  const llmHealthService = new LlmHealthService(database.llmObservabilityStore, runtimeLlmProviderKeys);
+  const llmRouteCircuitBreaker = new LlmRouteCircuitBreakerService(kvManager);
+  const llmHealthService = new LlmHealthService(
+    database.llmObservabilityStore,
+    runtimeLlmProviderKeys,
+    llmRouteCircuitBreaker,
+  );
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
   const llmModelHealthService = new LlmModelHealthService(commonLlmConfigService, llmHealthService);
   const aiNovelModelSelectionConfigService = new AiNovelModelSelectionConfigService(
@@ -365,6 +371,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     embeddingManager,
     llmManager,
     llmSmokeTestService,
+    llmRouteCircuitRecoveryService,
   } = createApplicationAiRuntime({
     database,
     commonLlmConfigService,
@@ -372,6 +379,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmHealthService,
     llmMetricsService,
     kvManager,
+    llmRouteCircuitBreaker,
     logger,
     llmProviders: options.llmProviders,
     embeddingProviders: options.embeddingProviders,
@@ -402,6 +410,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     refreshTokenStore,
     smsVerificationRecordService,
     managedStateStore,
+    llmRouteCircuitBreaker,
   );
   const rbacService = new RbacService(database);
   const contentSafetyService = new ContentSafetyService(
@@ -561,6 +570,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       llmHealthService,
       llmMetricsService,
       llmObservabilityRetentionService,
+      llmRouteCircuitBreaker,
+      llmRouteCircuitRecoveryService,
       llmSmokeTestService,
       aiNovelAuditFileService,
       aiNovelLlmService,

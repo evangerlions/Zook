@@ -8,6 +8,8 @@ import type {
   AdminGetuiGyServiceDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
+  AdminLlmRouteCircuitResetDocument,
+  AdminLlmRouteCircuitResetRequest,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestRunRequest,
@@ -127,6 +129,12 @@ export class AdminConsoleCommonFacade {
 
   async runLlmSmokeTest(input?: AdminLlmSmokeTestRunRequest): Promise<AdminLlmSmokeTestDocument> {
     return this.commonConfig.runLlmSmokeTest(input);
+  }
+
+  async resetLlmRouteCircuit(
+    input: AdminLlmRouteCircuitResetRequest,
+  ): Promise<AdminLlmRouteCircuitResetDocument> {
+    return this.commonConfig.resetLlmRouteCircuit(input);
   }
 
   async getContentSafetyConfig(revision?: number): Promise<AdminContentSafetyDocument> {

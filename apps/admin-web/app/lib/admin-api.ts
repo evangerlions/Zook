@@ -25,6 +25,8 @@ import type {
   AdminRemoteLogPullTaskListDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
+  AdminLlmRouteCircuitResetDocument,
+  AdminLlmRouteCircuitResetRequest,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestRunRequest,
@@ -508,6 +510,12 @@ export const adminApi = {
   getLlmMetrics(range: LlmMetricsRange, filters: { provider?: string; providerModel?: string; operation?: "chat" | "embedding" } = {}) {
     const query = new URLSearchParams(cleanQuery({ range, ...filters }));
     return requestJson<AdminLlmMetricsDocument>(adminPath(`/apps/common/llm-service/metrics?${query.toString()}`));
+  },
+  resetLlmRouteCircuit(input: AdminLlmRouteCircuitResetRequest) {
+    return requestJson<AdminLlmRouteCircuitResetDocument>(
+      adminPath("/apps/common/llm-service/circuits/reset"),
+      { method: "POST", body: input },
+    );
   },
   getLlmModelMetrics(modelKey: string, range: LlmMetricsRange, provider?: string) {
     const query = new URLSearchParams(cleanQuery({ range, provider }));

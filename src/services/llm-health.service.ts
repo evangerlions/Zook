@@ -8,6 +8,7 @@ import {
   evaluateLlmRoutes,
   roundRoutingValue,
 } from "./llm-routing-score.ts";
+import type { LlmRouteCircuitBreakerService } from "./llm-route-circuit-breaker.service.ts";
 
 const HEALTH_MIN_CALLS = 10;
 
@@ -39,6 +40,7 @@ export class LlmHealthService {
   constructor(
     private readonly store: LlmObservabilityStore,
     private readonly runtimeProviderKeys?: Partial<Record<LlmOperation, Set<string>>>,
+    private readonly circuitBreaker?: LlmRouteCircuitBreakerService,
   ) {}
 
   async getRouteSnapshot(route: LlmRouteRef): Promise<LlmRouteHealthSnapshot> {
@@ -121,6 +123,7 @@ export class LlmHealthService {
     model: LlmModelConfig,
     providers: LlmProviderConfig[] = [],
     runtimeProviderKeys?: Partial<Record<LlmOperation, Set<string>>>,
+    circuitBreakerEnabled = false,
   ): Promise<LlmModelRuntimeStatus> {
     const availableProviderKeys = (runtimeProviderKeys ?? this.runtimeProviderKeys)?.[model.kind];
     const providersByKey = new Map(providers.map((provider) => [provider.key, provider]));
@@ -130,6 +133,14 @@ export class LlmHealthService {
       providerModel: route.providerModel,
       operation: model.kind,
     })));
+    const circuits = await Promise.all(model.routes.map((route) =>
+      this.circuitBreaker?.getRuntimeStatus({
+        modelKey: model.key,
+        provider: route.provider,
+        providerModel: route.providerModel,
+        operation: model.kind,
+      }, circuitBreakerEnabled),
+    ));
     const evaluation = evaluateLlmRoutes(
       model.strategy,
       model.routes.map((route, index) => ({
@@ -137,6 +148,7 @@ export class LlmHealthService {
         providerEnabled: providersByKey.get(route.provider)?.enabled ?? true,
         runtimeAvailable: availableProviderKeys?.has(route.provider) ?? true,
         healthScore: health[index]?.healthScore ?? 100,
+        circuitOpen: circuits[index]?.state === "open",
       })),
     );
 
@@ -162,6 +174,7 @@ export class LlmHealthService {
         selectionReason: route.selectionReason,
         selected: route.selected,
         lastErrorAt: health[index]?.lastErrorAt,
+        circuit: circuits[index],
       })),
     };
   }

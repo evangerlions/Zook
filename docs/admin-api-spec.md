@@ -260,6 +260,7 @@ Admin 查看接口：
 | `POST` | `/api/v1/admin/apps/common/llm-service/revisions/{revision}/restore` | 恢复指定历史版本 |
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics` | 获取 LLM 聚合指标 |
 | `GET` | `/api/v1/admin/apps/common/llm-service/metrics/models/{modelKey}` | 获取单模型指标 |
+| `POST` | `/api/v1/admin/apps/common/llm-service/circuits/reset` | 解除一个 Chat route 的确认或熔断状态 |
 | `POST` | `/api/v1/admin/apps/common/llm-service/smoke-test` | 运行全量或指定路由的冒烟测试 |
 
 说明：
@@ -271,6 +272,9 @@ Admin 查看接口：
 - 响应包含 canonical total Token、Prompt、可见输出、Reasoning、未分类差额、Provider/估算/缺失 usage 数、上游调用成功率和 P50/P95。成功率为 `success / (success + failure + timeout)`，按每次上游调用计数，不代表一次用户请求的最终结果；客户端取消单独计数且不进入分母，没有可靠性样本时 `successRate` 省略。Chat 与 Embedding 不生成混合延迟百分位。
 - `healthFailures` 返回当前筛选范围内 `health_impact = failure` 的 Top 100 错误组合，按发生次数排序。每项包含路由 Model、Provider、Provider Model、类型、错误码、可选脱敏错误信息、次数和最近发生时间；迁移前记录的 `errorMessage` 可能为空。客户端取消和健康中性事件不进入此列表。
 - `runtime` 直接返回路由 selector 使用的基础权重、健康分、动态分、真实选择概率和选择原因；前端不得重新实现公式。`fixed` 为 100/0，`auto` 健康分全零时回退基础权重。实际请求的 DID 与 UID 清洗后都至少包含 3 个字母数字字符时，Provider 使用两者末尾 3 个 base36 字符之和对 1,000 取模，按配置基础权重保持粘性；此时健康分继续用于运营观察，但不移动该身份的 Provider 分桶。任一入参不足 3 位时，该项由路由方法内部随机值替代。
+- `config.routeCircuitBreaker.enabled` 默认 `false`。开启后，仅 Chat 流式请求在首个有效 chunk（非空内容、非空 reasoning 或完整 tool call）前失败时才会计数；同一 `routingModelKey × provider × providerModel` 在 2 分钟内至少有 2 位用户、累计 4 次连续失败时先进入 `confirming`。确认期间该 route 继续参与 selector，后续同类失败不会重复启动确认；任意一次首个有效 chunk 会清除未正式熔断的失败窗口。用户取消、非流式调用和首个有效 chunk 后的失败不计入。
+- 进入 `confirming` 后，当前 API 进程立即用与管理台相同的 64-token Chat 冒烟请求对同一 provider/model 进行最多两次后台探测；任一次成功即清除失败计数，只有两次都失败才转为正式 `open` 熔断。正式熔断初始持续 5 分钟。worker 到期后仍用同一冒烟请求探测；连续 2 次成功才恢复。探测失败的下一次间隔依次为 10、20、60、120 分钟，之后保持 120 分钟。关闭配置会立即清除既有熔断状态。`runtime.models[].routes[].circuit` 返回开关、`closed/confirming/open` 状态、失败/用户数、下次探测时间和连续探测成功数，供管理台直接展示。
+- `POST /api/v1/admin/apps/common/llm-service/circuits/reset` 使用管理台认证，body 必须为 `{ "modelKey", "provider", "providerModel" }`，且必须匹配当前配置中的 Chat route。它会清除对应 route 的 `confirming` 或 `open` 运行时状态，取消中的后台确认任务会安全退出；响应 `{ "cleared", "route" }`。不匹配当前 Chat route 时返回 `400 ADMIN_LLM_SERVICE_INVALID`。操作会记录审计日志。
 - 原始调用观察只保存脱敏维度、数值、稳定错误码及最多 300 字符的脱敏错误信息，不保存 prompt、response、userId、Authorization、Provider payload 或原始错误 body。
 - `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）只执行当前生效配置中 Provider 与 route 都启用的模型路由；未配置、Provider 已禁用或 route 已禁用的组合不会进入执行计划、不会请求上游，也不会出现在响应 `items` 中。响应的 `target` 为 `{ "mode": "matrix" }`。
 - 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。

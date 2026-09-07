@@ -17,6 +17,7 @@ import { EmailTestSendService } from "../../services/email-test-send.service.ts"
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
+import { LlmRouteCircuitBreakerService } from "../../services/llm-route-circuit-breaker.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
 import { createAppNameI18n } from "../../shared/app-name.ts";
@@ -79,6 +80,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly smsVerificationRecordService: SmsVerificationRecordService,
     private readonly managedStateStore: ManagedStateStore,
+    private readonly llmRouteCircuitBreaker?: LlmRouteCircuitBreakerService,
   ) {
     super(
       new AdminConsoleCommonConfig(
@@ -95,6 +97,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
         llmHealthService,
         llmMetricsService,
         llmSmokeTestService,
+        llmRouteCircuitBreaker,
       ),
     );
   }
