@@ -54,6 +54,7 @@ import {
 } from "./admin-console-config-utils.ts";
 import { createDefaultRoles } from "./admin-console-roles.ts";
 import { AdminAiNovelModelHealthService } from "./admin-ai-novel-model-health.service.ts";
+import { AiNovelConversationRecordService } from "../ai-novel/ai-novel-conversation-record.service.ts";
 
 export class AdminConsoleService extends AdminConsoleCommonFacade {
   constructor(
@@ -79,6 +80,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly smsVerificationRecordService: SmsVerificationRecordService,
     private readonly managedStateStore: ManagedStateStore,
+    private readonly aiNovelConversationRecordService: AiNovelConversationRecordService,
   ) {
     super(
       new AdminConsoleCommonConfig(
@@ -395,6 +397,14 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
       ...document,
       modelHealth: await this.adminAiNovelModelHealthService.getModelHealth(document.config),
     };
+  }
+
+  async getAiNovelConversationRecords(input: {
+    uid?: string;
+    did?: string;
+    page?: number;
+  }) {
+    return await this.aiNovelConversationRecordService.listForAdmin(input);
   }
 
   async updateAiNovelModelSelection(input: unknown, desc?: string): Promise<AdminAiNovelModelSelectionDocument> {

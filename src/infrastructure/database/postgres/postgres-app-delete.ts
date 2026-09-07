@@ -43,6 +43,7 @@ export async function deletePostgresApp(query: QueryFn, appId: string): Promise<
     "zook_failed_events",
     "zook_analytics_events",
     "zook_content_safety_checks",
+    "zook_ai_novel_conversation_records",
     "zook_ai_novel_daily_statistics",
     "zook_ai_novel_statistics_snapshots",
     "zook_feedback_attachments",

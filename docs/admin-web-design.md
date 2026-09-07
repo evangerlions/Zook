@@ -17,6 +17,7 @@
 
 3. AINovel AI Model `ai_novel.model_selection`
 4. AINovel Feedback 用户反馈观测
+5. AINovel 对话记录查询
 
 ---
 
@@ -29,6 +30,7 @@ Admin Web
 │   ├── 配置
 │   ├── AI Model（仅 ai_novel）
 │   ├── Feedback（仅 ai_novel）
+│   ├── 对话记录（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
 ├── Topbar
@@ -41,6 +43,7 @@ Admin Web
     ├── /config -> App JSON 配置页
     ├── /ai-routing -> AINovel 文本模型权重配置页
     ├── /feedback -> AINovel App 内反馈与截图观测页
+    ├── /conversation-records -> AINovel 用户/AI 对话记录页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
 ```
@@ -143,7 +146,19 @@ Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 
 5. 附件只能通过 Admin 登录会话代理读取，不生成公开 URL
 6. 该页不提供客服回复或用户端反馈历史
 
-### 4.6 LLM 页
+### 4.6 AINovel 对话记录页
+
+对话记录页挂在 `ai_novel` 工作区下，用于按用户或设备标识查看最近完成的 AI 对话。
+
+交互原则：
+
+1. 只在当前选中的 App 是 `ai_novel` 时展示。
+2. 页面打开后默认展示全部用户最新 100 个完整 Turn，即 200 条用户/AI 消息；管理员也可选择 `UID` 或 `DID` 并输入精确值筛选。
+3. 每个 Turn 按用户正文、AI 正文和时间展示；同时显示 scene、UID 和已记录的 DID。
+4. `上一页` 和 `下一页` 按时间切换 100 个 Turn 的范围；当前页始终按时间从新到旧展示。
+5. 不提供正文全文搜索、批量导出或编辑功能。
+
+### 4.7 LLM 页
 
 LLM 页挂在 `common` 工作区下，分成三个标签：
 

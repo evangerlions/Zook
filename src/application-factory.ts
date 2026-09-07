@@ -23,6 +23,7 @@ import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
+import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
 import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
@@ -376,9 +377,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmProviders: options.llmProviders,
     embeddingProviders: options.embeddingProviders,
   });
-  const aiNovelAuditFileService = new AiNovelAuditFileService(
-    options.aiNovelAuditFileRoot,
-  );
+  const aiNovelAuditFileService = new AiNovelAuditFileService(options.aiNovelAuditFileRoot);
+  const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
@@ -402,6 +402,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     refreshTokenStore,
     smsVerificationRecordService,
     managedStateStore,
+    aiNovelConversationRecordService,
   );
   const rbacService = new RbacService(database);
   const contentSafetyService = new ContentSafetyService(
@@ -422,6 +423,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     aiNovelModelSelectionConfigService,
     logger,
     contentSafetyService,
+    aiNovelConversationRecordService,
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);

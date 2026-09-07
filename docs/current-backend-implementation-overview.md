@@ -295,6 +295,7 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
 9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
 10. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
+11. AINovel 已完成的 Chat 会保存最后一条用户正文和最终 AI 正文，并同时关联认证 UID、请求 `X-DID`、请求 ID 与 scene；每位用户在第 121 个 Turn 写入时裁剪为最新 100 个 Turn。Admin 可在 `ai_novel` 工作区按 UID 或 DID 查看，每页最多 100 个 Turn（200 条消息），不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload
 
 对应核心文件：
 

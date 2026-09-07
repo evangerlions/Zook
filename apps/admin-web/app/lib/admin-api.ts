@@ -2,6 +2,7 @@ import type {
   AdminAppSummary,
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
+  AdminAiNovelConversationRecordDocument,
   AiNovelModelSelectionConfig,
   AdminAppLogSecretRevealDocument,
   AdminAuthRateLimitDocument,
@@ -373,6 +374,16 @@ export const adminApi = {
     const query = new URLSearchParams(cleanQuery({ limit: input.limit ? String(input.limit) : undefined, status }));
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
+  },
+  getAiNovelConversationRecords(input: { uid?: string; did?: string; page?: number }) {
+    const query = new URLSearchParams(cleanQuery({
+      uid: input.uid,
+      did: input.did,
+      page: input.page === undefined ? undefined : String(input.page),
+    }));
+    return requestJson<AdminAiNovelConversationRecordDocument>(
+      adminPath(`/apps/ai_novel/conversation-records?${query.toString()}`),
+    );
   },
   updateAiNovelFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
     const path = `/apps/ai_novel/feedback/${encodeURIComponent(feedbackId)}/status`;

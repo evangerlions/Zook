@@ -52,6 +52,7 @@ import { runPostgresMigrations } from "./migrate.ts";
 import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
 import { PostgresAiNovelStatisticsStore } from "./postgres-ai-novel-statistics.ts";
+import { PostgresAiNovelConversationStore } from "./postgres-ai-novel-conversation.ts";
 import { PostgresAiOutputReportingStore } from "./postgres-ai-output-reporting.ts";
 import { PostgresAppUserStore } from "./postgres-app-users.ts";
 import { PostgresEmailDeliveryEventStore } from "./postgres-email-delivery-events.ts";
@@ -95,6 +96,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyCommandTransaction: PostgresBuddyCommandTransaction<PoolClient>;
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly aiNovelStatistics: PostgresAiNovelStatisticsStore;
+  readonly aiNovelConversationStore: PostgresAiNovelConversationStore;
   private readonly aiOutputReporting: PostgresAiOutputReportingStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
   private readonly bodyLogSocial: PostgresBodyLogSocialStore;
@@ -115,6 +117,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyCommandTransaction = new PostgresBuddyCommandTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.aiNovelStatistics = new PostgresAiNovelStatisticsStore(async (sql, values = []) => await this.query(sql, values));
+    this.aiNovelConversationStore = new PostgresAiNovelConversationStore(async (sql, values = []) => await this.query(sql, values));
     this.aiOutputReporting = new PostgresAiOutputReportingStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
     this.bodyLogSocial = new PostgresBodyLogSocialStore(async (sql, values = []) => await this.query(sql, values));
@@ -186,7 +189,6 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
     return result.rows[0] ? parseApp(result.rows[0]) : undefined;
   }
-
   override async findAppByApiDomain(hostname: string): Promise<AppRecord | undefined> {
     const result = await this.query(
       "SELECT id, code, name, name_i18n, status, api_domain, join_mode, created_at FROM zook_apps WHERE lower(api_domain) = lower($1) LIMIT 1",
@@ -194,7 +196,6 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
     return result.rows[0] ? parseApp(result.rows[0]) : undefined;
   }
-
   override async insertApp(record: AppRecord): Promise<void> {
     await this.query(
       `INSERT INTO zook_apps (id, code, name, name_i18n, status, api_domain, join_mode, created_at)
@@ -641,7 +642,6 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): Promise<void> { await this.operationalRecords.insertContentSafetyCheckRecord(record); }
   override async listContentSafetyCheckRecords(filter: { createdAtFromIso?: string; createdAtToIso?: string; appId?: string; source?: ContentSafetyCheckRecord["source"]; method?: ContentSafetyCheckRecord["method"]; taskType?: string; decision?: ContentSafetyCheckRecord["decision"]; limit?: number } = {}): Promise<ContentSafetyCheckRecord[]> { return await this.operationalRecords.listContentSafetyCheckRecords(filter); }
   override async deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): Promise<number> { return await this.operationalRecords.deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso); }
-
   private async initialize(): Promise<void> {
     if (this.initialized) {
       return;

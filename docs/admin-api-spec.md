@@ -164,6 +164,22 @@ Admin 查看接口：
 | `GET` | `/api/v1/admin/apps/ai_novel/ai-output-reports/{reportId}` | 受限读取举报详情并解密举报原文 |
 | `PATCH` | `/api/v1/admin/apps/ai_novel/ai-output-reports/{reportId}/status` | 更新 `received/reviewing/resolved/rejected`，可附 resolution 字段 |
 
+### 3.6.2 AINovel 对话记录
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/ai_novel/conversation-records?uid={uid}&page={page}` | 按 UID 查看已完成的 AINovel 对话 Turn |
+| `GET` | `/api/v1/admin/apps/ai_novel/conversation-records?did={did}&page={page}` | 按请求 `X-DID` 查看已完成的 AINovel 对话 Turn |
+| `GET` | `/api/v1/admin/apps/ai_novel/conversation-records?page={page}` | 查看全部用户最新完成的 AINovel 对话 Turn |
+
+规则：
+
+1. `uid` 和 `did` 均为可选，但不能同时携带；`page` 从 `0` 开始。两者都不传时按全部用户查询。
+2. 每页最多返回 100 个完整 Turn，即最多 200 条用户/AI 消息；默认页是最新记录，后续页按时间向前翻阅。
+3. 每个 Turn 仅保存最后一条用户正文和最终 AI 正文，不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload。
+4. 同一用户记录达到第 121 个 Turn 时，在写入事务中批量裁剪为最新 100 个 Turn；没有时间到期清理。用户注销时删除其对话记录。
+5. 读取需要 Admin 认证并写入 `admin.ai_novel_conversation.read` 审计；审计只记录查询类型和页码，不记录 UID、DID 或正文。
+
 说明：
 
 1. 列表、普通日志和 audit payload 不包含举报原文。

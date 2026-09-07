@@ -58,6 +58,7 @@ import type {
 } from "./ai-novel-llm-types.ts";
 import type { AiNovelModelSelectionConfigService } from "./ai-novel-model-selection-config.service.ts";
 import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
+import { AiNovelConversationRecordService } from "./ai-novel-conversation-record.service.ts";
 import {
   isRetryableAiNovelStreamError,
   streamWithAiNovelModelRetry,
@@ -98,6 +99,7 @@ export class AiNovelLlmService {
     private readonly modelSelectionConfigService: AiNovelModelSelectionConfigService,
     private readonly logger?: StructuredLogger,
     private readonly contentSafetyService?: ContentSafetyService,
+    private readonly conversationRecordService?: AiNovelConversationRecordService,
   ) {}
 
   async createChatCompletion(
@@ -208,6 +210,12 @@ export class AiNovelLlmService {
             }
           : {}),
       };
+      await this.recordCompletedConversation({
+        options,
+        messages,
+        sceneKey: scene.sceneKey,
+        assistantText: completionContent,
+      });
       return response;
     } catch (error) {
       throw this.mapAndLogUpstreamError(error, {
@@ -268,7 +276,7 @@ export class AiNovelLlmService {
           profile: requestPlan.profile,
         });
       }
-      yield* streamWithAiNovelModelRetry({
+      const stream = streamWithAiNovelModelRetry({
         initiallyYielded,
         resolveModelKey: (excludedModelKeys) =>
           this.modelSelectionConfigService.resolveChatModelKey(
@@ -293,6 +301,17 @@ export class AiNovelLlmService {
           });
         },
       });
+      for await (const chunk of stream) {
+        if (chunk.type === "done") {
+          await this.recordCompletedConversation({
+            options,
+            messages,
+            sceneKey: scene.sceneKey,
+            assistantText: chunk.completion.content,
+          });
+        }
+        yield chunk;
+      }
     } catch (error) {
       throw this.mapAndLogUpstreamError(error, {
         stage: "chat_stream",
@@ -455,6 +474,39 @@ export class AiNovelLlmService {
       sceneKey,
       text: content,
     });
+  }
+
+  private async recordCompletedConversation(input: {
+    options: AiNovelRequestOptions;
+    messages: LLMMessage[];
+    sceneKey: string;
+    assistantText: string;
+  }): Promise<void> {
+    const userText = [...input.messages]
+      .reverse()
+      .find((message) => message.role === "user")
+      ?.content
+      ?.trim();
+    if (!this.conversationRecordService || !input.options.userId || !input.options.requestId || !userText) {
+      return;
+    }
+    try {
+      await this.conversationRecordService.recordCompletedTurn({
+        userId: input.options.userId,
+        did: input.options.routingIdentity?.did,
+        requestId: input.options.requestId,
+        sceneKey: input.sceneKey,
+        userText,
+        assistantText: input.assistantText,
+      });
+    } catch (error) {
+      this.logger?.warn("AINovel completed conversation record write failed", {
+        requestId: input.options.requestId,
+        sceneKey: input.sceneKey,
+        userId: input.options.userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private mapAndLogUpstreamError(

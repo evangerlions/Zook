@@ -7,6 +7,8 @@ import {
   streamWithAiNovelModelRetry,
 } from "../../src/modules/ai-novel/ai-novel-stream-retry.ts";
 import { AiNovelLlmService } from "../../src/modules/ai-novel/ai-novel-llm.service.ts";
+import { AiNovelConversationRecordService } from "../../src/modules/ai-novel/ai-novel-conversation-record.service.ts";
+import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 
 async function collect<T>(stream: AsyncIterable<T>): Promise<T[]> {
   const chunks: T[] = [];
@@ -174,6 +176,9 @@ test("AINovel stream does not retry non-upstream validation failures", async () 
 test("AINovel stream service excludes the failed model on a pre-chunk retry", async () => {
   const modelCalls: string[] = [];
   const excludedSets: string[] = [];
+  const conversationRecords = new AiNovelConversationRecordService(
+    new InMemoryDatabase(),
+  );
   const service = new AiNovelLlmService(
     {
       stream: async function* ({ modelKey }: { modelKey: string }) {
@@ -198,6 +203,9 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
         return excluded.has("model-a") ? "model-b" : "model-a";
       },
     } as never,
+    undefined,
+    undefined,
+    conversationRecords,
   );
 
   const chunks = await collect(
@@ -207,7 +215,11 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
         context: { meta: { language: "zh-CN" } },
         messages: [{ role: "user", content: "继续" }],
       },
-      { routingIdentity: { did: "did_abc", uid: "uid_xyz" } },
+      {
+        requestId: "stream_request_1",
+        userId: "uid_xyz",
+        routingIdentity: { did: "did_abc", uid: "uid_xyz" },
+      },
     ),
   );
 
@@ -224,4 +236,54 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
       },
     },
   ]);
+  const document = await conversationRecords.listForAdmin({ uid: "uid_xyz" });
+  assert.equal(document.items.length, 1);
+  assert.equal(document.items[0]?.userText, "继续");
+  assert.equal(document.items[0]?.assistantText, "ok");
+  assert.equal(document.items[0]?.did, "did_abc");
+});
+
+test("AINovel non-stream completion records only the latest user text and final assistant text", async () => {
+  const conversationRecords = new AiNovelConversationRecordService(
+    new InMemoryDatabase(),
+  );
+  const service = new AiNovelLlmService(
+    {
+      async complete() {
+        return {
+          provider: "test",
+          modelKey: "model-a",
+          providerModel: "upstream-a",
+          text: "最终回复",
+        };
+      },
+    } as never,
+    {} as never,
+    { resolveChatModelKey: async () => "model-a" } as never,
+    undefined,
+    undefined,
+    conversationRecords,
+  );
+
+  await service.createChatCompletion(
+    {
+      sceneKey: "chat_compaction",
+      messages: [
+        { role: "system", content: "不要保存我" },
+        { role: "user", content: "旧问题" },
+        { role: "assistant", content: "旧回复" },
+        { role: "user", content: "最新问题" },
+      ],
+    },
+    {
+      requestId: "complete_request_1",
+      userId: "uid_complete",
+      routingIdentity: { did: "did_complete", uid: "uid_complete" },
+    },
+  );
+
+  const document = await conversationRecords.listForAdmin({ did: "did_complete" });
+  assert.equal(document.items.length, 1);
+  assert.equal(document.items[0]?.userText, "最新问题");
+  assert.equal(document.items[0]?.assistantText, "最终回复");
 });
