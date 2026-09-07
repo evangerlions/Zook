@@ -2700,12 +2700,22 @@ export const BodyLogInvitationCreateRequestSchema = {
     "installId": {
       "type": "string",
       "minLength": 8
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "general",
+        "buddy",
+        "group"
+      ],
+      "default": "general"
     }
   }
 } as const;
 
 export type BodyLogInvitationCreateRequest = {
   "installId": string;
+  "intent"?: "general" | "buddy" | "group";
 };
 
 export const BodyLogInvitationAttributeRequestSchema = {

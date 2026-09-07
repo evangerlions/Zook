@@ -1,24 +1,31 @@
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService, LlmRouteRef } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
-import type { LLMManagerOptions, LLMProviderName, LLMUsage, ResolvedLLMModel } from "./llm-manager.ts";
+import type {
+  LLMManagerOptions,
+  LLMProviderName,
+  LLMUsage,
+  LlmRoutingIdentity,
+  ResolvedLLMModel,
+} from "./llm-manager.ts";
 import { estimateEmbeddingUsage } from "./llm-usage-estimator.ts";
 import {
-  resolveAiNovelSceneRouteAlias,
-} from "./ai-novel-llm-model-aliases.ts";
+  hasStableLlmRoutingInputs,
+  resolveLlmRoutingUnit,
+} from "./llm-routing-affinity.ts";
 import { ApplicationError, badRequest, internalError } from "../shared/errors.ts";
 import type { LlmModelConfig, LlmProviderConfig, LlmServiceConfig } from "../shared/types.ts";
 import { evaluateLlmRoutes, selectLlmRoute } from "./llm-routing-score.ts";
 
 export interface EmbeddingRequest {
   modelKey: string;
-  modelKeyKind?: "model" | "scene_route";
   input: string[];
   providerOptions?: Record<string, unknown>;
   usageOwner?: {
     appId: string;
     userId: string;
   };
+  routingIdentity?: LlmRoutingIdentity;
 }
 
 export interface EmbeddingVector {
@@ -35,7 +42,10 @@ export interface EmbeddingResult {
   providerRequestId?: string;
 }
 
-export interface ResolvedEmbeddingRequest extends Omit<EmbeddingRequest, "modelKey"> {
+export interface ResolvedEmbeddingRequest extends Omit<
+  EmbeddingRequest,
+  "modelKey" | "routingIdentity"
+> {
   model: ResolvedLLMModel;
 }
 
@@ -123,7 +133,7 @@ export class EmbeddingManager {
       const selection = await this.resolveConfiguredModel(
         commonConfig,
         modelKey,
-        request.modelKeyKind,
+        request.routingIdentity,
       );
       const healthRouteRef = {
         modelKey: selection.routeModelKey,
@@ -131,14 +141,15 @@ export class EmbeddingManager {
         providerModel: selection.route.providerModel,
         operation: "embedding" as const,
       };
+      const { routingIdentity: _routingIdentity, ...providerRequest } = request;
+      void _routingIdentity;
       return {
         request: {
-          ...request,
+          ...providerRequest,
           input,
           model: {
             provider: selection.provider.key,
             modelKey,
-            modelKeyKind: request.modelKeyKind,
             resolvedModelKey: selection.routeModelKey,
             providerModel: selection.route.providerModel,
             providerConfig: {
@@ -162,14 +173,15 @@ export class EmbeddingManager {
       internalError(`Embedding provider ${resolvedModel.provider} is not configured.`);
     }
 
+    const { routingIdentity: _routingIdentity, ...providerRequest } = request;
+    void _routingIdentity;
     return {
       request: {
-        ...request,
+        ...providerRequest,
         input,
         model: {
           provider: resolvedModel.provider,
           modelKey,
-          modelKeyKind: request.modelKeyKind,
           resolvedModelKey: modelKey,
           providerModel: resolvedModel.providerModel,
         },
@@ -186,15 +198,13 @@ export class EmbeddingManager {
   private async resolveConfiguredModel(
     config: LlmServiceConfig,
     modelKey: string,
-    modelKeyKind?: "model" | "scene_route",
+    routingIdentity?: LlmRoutingIdentity,
   ): Promise<{
     provider: LlmProviderConfig;
     route: LlmModelConfig["routes"][number];
     routeModelKey: string;
   }> {
-    const alias =
-      modelKeyKind === "scene_route" ? resolveAiNovelSceneRouteAlias(modelKey) : undefined;
-    const routeModelKey = alias?.kind === "embedding" ? alias.modelKey : modelKey;
+    const routeModelKey = modelKey;
     const model = config.models.find((item) => item.key === routeModelKey);
 
     if (!model) {
@@ -206,6 +216,10 @@ export class EmbeddingManager {
     }
 
     const providerMap = new Map(config.providers.map((item) => [item.key, item]));
+    const stableIdentity = hasStableLlmRoutingInputs(
+      routingIdentity?.did,
+      routingIdentity?.uid,
+    );
     const healthSnapshots = await Promise.all(model.routes.map((route) =>
       this.options.llmHealthService?.getRouteSnapshot({
         modelKey: model.key,
@@ -220,10 +234,16 @@ export class EmbeddingManager {
         route,
         providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
         runtimeAvailable: Boolean(this.providers[route.provider]),
-        healthScore: healthSnapshots[index]?.healthScore ?? 100,
+        healthScore: stableIdentity
+          ? 100
+          : healthSnapshots[index]?.healthScore ?? 100,
       })),
     );
-    const chosenRoute = selectLlmRoute(evaluation, this.options.random)?.route;
+    const routingUnit = stableIdentity
+      ? resolveLlmRoutingUnit(routingIdentity?.did, routingIdentity?.uid)
+      : this.options.random?.() ??
+        resolveLlmRoutingUnit(routingIdentity?.did, routingIdentity?.uid);
+    const chosenRoute = selectLlmRoute(evaluation, () => routingUnit)?.route;
     if (!chosenRoute) {
       throw new ApplicationError(
         503,

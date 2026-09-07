@@ -3,6 +3,7 @@ import type {
   LLMCompletionResult,
   LLMManager,
   LLMMessage,
+  LlmRoutingIdentity,
   LLMToolCall,
 } from "../../services/llm-manager.ts";
 
@@ -13,11 +14,13 @@ export async function completeRequiredToolViaStream(
   llmManager: LLMManager,
   input: {
     sceneRouteKey: string;
+    modelKey: string;
     messages: LLMMessage[];
     temperature: number;
     maxTokens: number;
     providerOptions?: Record<string, unknown>;
     usageOwner?: { appId: string; userId: string };
+    routingIdentity?: LlmRoutingIdentity;
     forcedToolName: string;
   },
 ): Promise<LLMCompletionResult> {
@@ -27,13 +30,15 @@ export async function completeRequiredToolViaStream(
   for (let attempt = 1; attempt <= REQUIRED_TOOL_STREAM_ATTEMPTS; attempt += 1) {
     const result = await llmManager.completeViaStream(
       {
-        modelKey: input.sceneRouteKey,
-        modelKeyKind: "scene_route",
+        modelKey: input.modelKey,
         messages,
         temperature: input.temperature,
         maxTokens: input.maxTokens,
         ...(input.providerOptions ? { providerOptions: input.providerOptions } : {}),
         ...(input.usageOwner ? { usageOwner: input.usageOwner } : {}),
+        ...(input.routingIdentity
+          ? { routingIdentity: input.routingIdentity }
+          : {}),
       },
       { firstContentTimeoutMs: STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS },
     );

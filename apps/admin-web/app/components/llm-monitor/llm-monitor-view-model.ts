@@ -13,8 +13,28 @@ const COLORS = {
   slate: "#64748b",
 };
 
+export type SuccessRateTone = "healthy" | "warning" | "critical" | "unknown";
+
+export function successRateTone(value?: number): SuccessRateTone {
+  if (value === undefined) return "unknown";
+  if (value >= 99) return "healthy";
+  if (value >= 95) return "warning";
+  return "critical";
+}
+
 export function formatMetricNumber(value?: number): string {
   return value === undefined ? "—" : new Intl.NumberFormat("zh-CN").format(value);
+}
+
+export function formatTokenNumber(value?: number): string {
+  if (value === undefined) return "—";
+  const absolute = Math.abs(value);
+  const unit: readonly [number, string] = absolute >= 1_000_000_000 ? [1_000_000_000, "B"]
+    : absolute >= 1_000_000 ? [1_000_000, "M"]
+      : absolute >= 1_000 ? [1_000, "K"]
+        : [1, ""];
+  const scaled = value / unit[0];
+  return `${scaled.toFixed(scaled >= 100 || unit[0] === 1 ? 0 : 1).replace(/\.0$/, "")}${unit[1]}`;
 }
 
 export function formatLatency(value?: number): string {
@@ -47,11 +67,11 @@ export function buildCallsOption(items: LlmHourlySeriesItem[], width = 1000): EC
           item.bucket,
           `调用 ${formatMetricNumber(item.requestCount)}`,
           `成功 ${item.successCount} · 失败 ${item.failureCount} · 超时 ${item.timeoutCount} · 取消 ${item.cancelledCount}`,
-          `可靠性成功率 ${formatPercent(item.successRate)}`,
+          `上游调用成功率 ${formatPercent(item.successRate)}`,
         ].join("<br/>");
       },
     },
-    legend: { top: 0, itemGap: compact ? 8 : 20, textStyle: { fontSize: compact ? 10 : 12 }, data: ["调用次数", "可靠性成功率"] },
+    legend: { top: 0, itemGap: compact ? 8 : 20, textStyle: { fontSize: compact ? 10 : 12 }, data: ["调用次数", "上游调用成功率"] },
     grid: { top: 48, left: compact ? 34 : 52, right: compact ? 34 : 52, bottom: 42, containLabel: true },
     xAxis: { type: "category", data: labels, axisLabel: { fontSize: compact ? 9 : 12, hideOverlap: true } },
     yAxis: [
@@ -66,7 +86,7 @@ export function buildCallsOption(items: LlmHourlySeriesItem[], width = 1000): EC
         data: items.map((item) => item.available ? item.requestCount : null),
       },
       {
-        name: "可靠性成功率",
+        name: "上游调用成功率",
         type: "line",
         yAxisIndex: 1,
         symbolSize: 5,
@@ -99,27 +119,27 @@ export function buildTokenOption(items: LlmHourlySeriesItem[], width = 1000): EC
         if (!item) return "无数据";
         return [
           item.bucket,
-          `Prompt ${formatMetricNumber(item.promptTokens)}`,
-          `可见输出 ${formatMetricNumber(item.visibleOutputTokens)}`,
-          `Reasoning ${formatMetricNumber(item.reasoningTokens)}`,
-          `未分类 ${formatMetricNumber(item.unclassifiedTokens)}`,
-          `canonical 总 Token ${formatMetricNumber(item.totalTokens)}`,
+          `总 Token ${formatTokenNumber(item.totalTokens)}`,
+          `Prompt ${formatTokenNumber(item.promptTokens)}`,
+          `可见输出 ${formatTokenNumber(item.visibleOutputTokens)}`,
+          `Reasoning ${formatTokenNumber(item.reasoningTokens)}`,
+          `未分类 ${formatTokenNumber(item.unclassifiedTokens)}`,
           `Provider ${item.providerUsageCount} · 估算 ${item.estimatedUsageCount} · 缺失 ${item.missingUsageCount}`,
         ].join("<br/>");
       },
     },
-    legend: { top: 0, type: "scroll", itemGap: compact ? 8 : 20, textStyle: { fontSize: compact ? 10 : 12 } },
+    legend: { top: 0, data: ["总 Token"], textStyle: { fontSize: compact ? 10 : 12 } },
     grid: { top: 48, left: compact ? 36 : 58, right: compact ? 12 : 24, bottom: 42, containLabel: true },
     xAxis: { type: "category", data: labels, axisLabel: { fontSize: compact ? 9 : 12, hideOverlap: true } },
     yAxis: { type: "value", name: compact ? "" : "Token", splitNumber: compact ? 2 : 5, axisLabel: { fontSize: compact ? 9 : 12, formatter: (value: number) => compactNumber(value) } },
-    series: series.map(([name, field]) => ({
-      name,
+    series: [{
+      name: "总 Token",
       type: "line",
-      stack: "tokens",
+      smooth: 0.2,
       areaStyle: { opacity: 0.18 },
       showSymbol: false,
-      data: items.map((item) => item.available ? (item[field] ?? 0) : null),
-    })),
+      data: items.map((item) => item.available ? (item.totalTokens ?? 0) : null),
+    }],
   };
 }
 
@@ -208,9 +228,4 @@ function shortBucket(bucket: string): string {
   return bucket.includes("T") ? bucket.slice(5).replace("T", " ") : bucket.slice(5);
 }
 
-function compactNumber(value: number): string {
-  return new Intl.NumberFormat("zh-CN", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
+function compactNumber(value: number): string { return formatTokenNumber(value); }

@@ -20,6 +20,7 @@ import type { StructuredLogger } from "../infrastructure/logging/pino-logger.mod
 const DEFAULT_TIMEZONE = "Asia/Shanghai";
 
 export interface LlmMetricsQuery {
+  appId?: string;
   operation?: LlmMetricsOperation;
   provider?: string;
   providerModel?: string;
@@ -56,13 +57,19 @@ export class LlmMetricsService {
       provider: query.provider,
       providerModel: query.providerModel,
       routingModelKey: query.routingModelKey,
+      appId: query.appId,
     });
     const runtime = {
       generatedAt: now.toISOString(),
       configRevision: query.configRevision,
       configUpdatedAt: query.configUpdatedAt,
       models: await Promise.all(config.models.map((model) =>
-        this.healthService.buildModelRuntimeStatus(model, config.providers),
+        this.healthService.buildModelRuntimeStatus(
+          model,
+          config.providers,
+          undefined,
+          Boolean(config.routeCircuitBreaker?.enabled),
+        ),
       )),
     };
     const providerLabels = new Map(config.providers.map((item) => [item.key, item.label || item.key]));
@@ -138,12 +145,29 @@ export class LlmMetricsService {
           summary: toMetricsSummary(item),
         })),
       },
+      healthFailures: result.healthFailures,
       runtime,
       routingConfigChangedWithinRange:
         result.routingConfigRevisions.length > 1 ||
         Boolean(query.configRevision && result.routingConfigRevisions.some((revision) => revision !== query.configRevision)) ||
         isWithinWindow(query.configUpdatedAt, window.from, window.to),
     };
+  }
+
+  async getRoutingModelRequestCounts(
+    range: LlmMetricsRange,
+    now = new Date(),
+    operation: LlmMetricsOperation = "chat",
+    appId?: string,
+  ): Promise<Record<string, number>> {
+    const window = buildMetricsWindow(range, now);
+    return this.store.queryRoutingModelRequestCounts({
+      occurredAtFrom: window.from.toISOString(),
+      occurredAtTo: window.to.toISOString(),
+      granularity: window.granularity,
+      operation,
+      ...(appId ? { appId } : {}),
+    });
   }
 
   async getModelDetail(
@@ -194,7 +218,7 @@ function toMetricsSummary(
     cancelledCount: aggregate.cancelledCount,
     successRate: reliabilityDenominator
       ? roundTwo((aggregate.successCount / reliabilityDenominator) * 100)
-      : 100,
+      : undefined,
     latencySampleCount: aggregate.latencySampleCount,
     firstResponseSampleCount: aggregate.firstResponseSampleCount,
     avgFirstByteLatencyMs: includeLatency ? aggregate.avgFirstResponseLatencyMs : undefined,

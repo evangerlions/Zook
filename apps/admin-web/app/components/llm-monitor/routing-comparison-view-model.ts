@@ -5,13 +5,11 @@ import { formatPercent } from "./llm-monitor-view-model.ts";
 export interface RoutingComparisonRow {
   modelKey: string;
   provider: string;
-  expectedTrafficShare: number;
   actualTrafficShare: number;
 }
 
 interface ProviderComparison {
   provider: string;
-  expectedTrafficShare: number;
   actualTrafficShare: number;
 }
 
@@ -28,7 +26,6 @@ interface ChartLabelParam {
   value?: unknown;
 }
 
-const EXPECTED_BOUNDARY_SERIES = "期望分界";
 const PROVIDER_COLORS = [
   "#2563eb",
   "#0f766e",
@@ -60,7 +57,7 @@ export function buildRoutingComparisonOption(
     legend: {
       top: 0,
       type: "scroll",
-      data: [...providers, EXPECTED_BOUNDARY_SERIES],
+      data: providers,
       itemGap: compact ? 10 : 18,
       textStyle: { fontSize: compact ? 10 : 12 },
     },
@@ -90,49 +87,24 @@ export function buildRoutingComparisonOption(
         overflow: "truncate",
       },
     },
-    series: [
-      ...providers.map((provider) => ({
-        name: provider,
-        type: "bar",
-        stack: "actualTraffic",
-        barMaxWidth: compact ? 20 : 28,
-        data: comparisons.map((comparison) =>
-          comparison.providers.find((item) => item.provider === provider)?.actualTrafficShare ?? 0),
-        label: {
-          show: !compact,
-          position: "inside",
-          color: "#ffffff",
-          fontWeight: 600,
-          textBorderColor: "rgba(15, 23, 42, 0.55)",
-          textBorderWidth: 2,
-          formatter: (params: ChartLabelParam) => formatActualShareLabel(params.value),
-        },
-        emphasis: { focus: "series" },
-      })),
-      {
-        name: EXPECTED_BOUNDARY_SERIES,
-        type: "scatter",
-        symbol: "rect",
-        symbolSize: compact ? [3, 26] : [4, 36],
-        symbolOffset: [0, 0],
-        z: 10,
-        itemStyle: {
-          color: "#0f172a",
-          borderColor: "#ffffff",
-          borderWidth: 1,
-        },
-        label: {
-          show: !compact,
-          position: "top",
-          distance: 4,
-          color: "#0f172a",
-          fontSize: 10,
-          fontWeight: 600,
-          formatter: (params: ChartLabelParam) => formatExpectedBoundaryLabel(params.value),
-        },
-        data: buildExpectedBoundaries(comparisons, providers),
+    series: providers.map((provider) => ({
+      name: provider,
+      type: "bar",
+      stack: "trafficShare",
+      barMaxWidth: compact ? 20 : 28,
+      data: comparisons.map((comparison) =>
+        comparison.providers.find((item) => item.provider === provider)?.actualTrafficShare ?? 0),
+      label: {
+        show: !compact,
+        position: "inside",
+        color: "#ffffff",
+        fontWeight: 600,
+        textBorderColor: "rgba(15, 23, 42, 0.55)",
+        textBorderWidth: 2,
+        formatter: (params: ChartLabelParam) => formatActualShareLabel(params.value),
       },
-    ],
+      emphasis: { focus: "series" },
+    })),
   };
 }
 
@@ -144,29 +116,9 @@ function buildModelComparisons(rows: RoutingComparisonRow[]): ModelComparison[] 
       modelKey,
       providers: unique(providerRows.map((row) => row.provider)).map((provider) => ({
         provider,
-        expectedTrafficShare: sumShare(providerRows, provider, "expectedTrafficShare"),
-        actualTrafficShare: sumShare(providerRows, provider, "actualTrafficShare"),
+        actualTrafficShare: sumShare(providerRows, provider),
       })),
     };
-  });
-}
-
-function buildExpectedBoundaries(
-  comparisons: ModelComparison[],
-  providers: string[],
-): Array<{ value: [number, string] }> {
-  return comparisons.flatMap((comparison) => {
-    let cumulative = 0;
-    const boundaries: Array<{ value: [number, string] }> = [];
-    const positiveProviders = providers.filter((provider) =>
-      expectedShare(comparison, provider) > 0);
-    for (const provider of positiveProviders.slice(0, -1)) {
-      cumulative += expectedShare(comparison, provider);
-      if (cumulative > 0 && cumulative < 100) {
-        boundaries.push({ value: [cumulative, comparison.modelKey] });
-      }
-    }
-    return boundaries;
   });
 }
 
@@ -183,11 +135,9 @@ function formatComparisonTooltip(
   );
   return [
     modelKey,
-    ...comparison.providers.map((item) => {
-      const delta = item.actualTrafficShare - item.expectedTrafficShare;
-      return `${item.provider}  实际 ${formatPercent(item.actualTrafficShare)} · 期望 ${formatPercent(item.expectedTrafficShare)} · 偏差 ${formatDelta(delta)}`;
-    }),
-    ...(actualTotal > 0 ? [] : ["所选时间范围内暂无实际调用"]),
+    ...comparison.providers.map((item) =>
+      `${item.provider}  调用占比 ${formatPercent(item.actualTrafficShare)}`),
+    ...(actualTotal > 0 ? [] : ["所选时间范围内暂无调用"]),
   ].join("\n");
 }
 
@@ -195,28 +145,13 @@ function formatActualShareLabel(value: unknown): string {
   return typeof value === "number" && value >= 8 ? formatPercent(value) : "";
 }
 
-function formatExpectedBoundaryLabel(value: unknown): string {
-  if (!Array.isArray(value) || typeof value[0] !== "number") return "";
-  return `期望 ${formatPercent(value[0])}`;
-}
-
-function formatDelta(value: number): string {
-  const prefix = value > 0 ? "+" : "";
-  return `${prefix}${formatPercent(value).replace("%", " 个百分点")}`;
-}
-
-function expectedShare(comparison: ModelComparison, provider: string): number {
-  return comparison.providers.find((item) => item.provider === provider)?.expectedTrafficShare ?? 0;
-}
-
 function sumShare(
   rows: RoutingComparisonRow[],
   provider: string,
-  field: "expectedTrafficShare" | "actualTrafficShare",
 ): number {
   return rows
     .filter((row) => row.provider === provider)
-    .reduce((sum, row) => sum + row[field], 0);
+    .reduce((sum, row) => sum + row.actualTrafficShare, 0);
 }
 
 function unique<T>(items: T[]): T[] {

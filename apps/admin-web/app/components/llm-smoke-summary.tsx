@@ -55,10 +55,6 @@ export function LlmSmokeSummary({ document }: LlmSmokeSummaryProps) {
           <dt>失败</dt>
           <dd>{summary.failureCount}</dd>
         </div>
-        <div>
-          <dt>跳过</dt>
-          <dd>{summary.skippedCount}</dd>
-        </div>
       </dl>
     </aside>
   );

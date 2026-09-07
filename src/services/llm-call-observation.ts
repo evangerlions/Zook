@@ -10,6 +10,7 @@ import { randomId } from "../shared/utils.ts";
 import type { LLMUsage } from "./llm-manager-types.ts";
 
 interface LlmCallObservationContext {
+  appId?: string;
   routingModelKey: string;
   provider: string;
   providerModel: string;
@@ -66,6 +67,7 @@ export class LlmCallObservationSession {
     const record: LlmCallObservationRecord = {
       callId: this.callId,
       occurredAt: completedAt.toISOString(),
+      ...(this.context.appId ? { appId: this.context.appId } : {}),
       routingModelKey: this.context.routingModelKey,
       provider: this.context.provider,
       providerModel: this.context.providerModel,
@@ -83,6 +85,7 @@ export class LlmCallObservationSession {
       totalTokens: usage?.totalTokens,
       usageSource: usage ? usage.estimated ? "estimated" : "provider" : "missing",
       errorCode: classification.errorCode,
+      errorMessage: classification.errorMessage,
       routingConfigRevision: this.context.routingConfigRevision,
     };
     try {
@@ -109,6 +112,7 @@ function classifyFinalization(input: LlmCallFinalization): {
   outcome: LlmCallObservationRecord["outcome"];
   healthImpact: LlmCallObservationRecord["healthImpact"];
   errorCode?: string;
+  errorMessage?: string;
 } {
   if (input.outcome === "cancelled") {
     return { outcome: "cancelled", healthImpact: "neutral" };
@@ -117,8 +121,14 @@ function classifyFinalization(input: LlmCallFinalization): {
     return { outcome: input.outcome ?? "success", healthImpact: "success" };
   }
   const applicationError = input.error instanceof ApplicationError ? input.error : undefined;
-  const errorCode = applicationError?.code;
-  if (errorCode === "LLM_PROVIDER_CONTENT_SENSITIVE") {
+  const applicationErrorCode = applicationError?.code;
+  const providerErrorCode = readDetailString(applicationError?.details, "errorCode");
+  const errorCode = providerErrorCode ?? applicationErrorCode ??
+    (input.error instanceof Error ? input.error.name : "UNKNOWN_ERROR");
+  const errorMessage = sanitizeErrorMessage(
+    input.error instanceof Error ? input.error.message : String(input.error),
+  );
+  if (applicationErrorCode === "LLM_PROVIDER_CONTENT_SENSITIVE") {
     return { outcome: "failure", healthImpact: "neutral", errorCode };
   }
   const timeout = applicationError?.statusCode === 504 ||
@@ -127,8 +137,20 @@ function classifyFinalization(input: LlmCallFinalization): {
   return {
     outcome: timeout ? "timeout" : input.outcome ?? "failure",
     healthImpact: "failure",
-    errorCode: errorCode ?? (input.error instanceof Error ? input.error.name : "UNKNOWN_ERROR"),
+    errorCode,
+    errorMessage,
   };
+}
+
+function sanitizeErrorMessage(message: string): string {
+  return message
+    .replace(/Bearer\s+[^\s,;]+/gi, "Bearer [redacted]")
+    .replace(/\bsk-[A-Za-z0-9_-]{8,}\b/g, "[redacted]")
+    .replace(/((?:api[-_ ]?key|authorization|access[-_ ]?token)\s*[:=]\s*)[^\s,;]+/gi, "$1[redacted]")
+    .replace(/([?&](?:api_key|key|token)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300);
 }
 
 function readDetailString(details: unknown, key: string): string | undefined {

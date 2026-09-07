@@ -7,6 +7,7 @@ import { LlmHealthService } from "../../src/services/llm-health.service.ts";
 import { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
 import { evaluateLlmRoutes, selectLlmRoute } from "../../src/services/llm-routing-score.ts";
 import { LLMManager, type LLMProvider, type LLMStreamEvent } from "../../src/services/llm-manager.ts";
+import { ApplicationError } from "../../src/shared/errors.ts";
 
 test("llm observation store records 1000 concurrent calls without loss and ignores duplicate call ids", async () => {
   const store = new InMemoryLlmObservabilityStore();
@@ -77,6 +78,38 @@ test("llm metrics keep canonical totals and do not double-count reasoning tokens
   assert.equal(allOperations.latencyByOperation.chat?.p50TotalLatencyMs, 200);
 });
 
+test("routing model request counts can be scoped to one application", async () => {
+  const store = new InMemoryLlmObservabilityStore();
+  const occurredAt = new Date("2026-08-25T10:00:00+08:00").toISOString();
+  for (const [index, appId] of ["ai_novel", "ai_novel", "lighttick"].entries()) {
+    await store.recordObservation({
+      callId: `app_scope_${index}`,
+      occurredAt,
+      appId,
+      routingModelKey: index === 2 ? "model-b" : "model-a",
+      provider: "provider-a",
+      providerModel: "upstream-a",
+      operation: "chat",
+      responseMode: "non_stream",
+      outcome: "success",
+      healthImpact: "success",
+      totalLatencyMs: 20,
+      usageSource: "missing",
+    });
+  }
+
+  assert.deepEqual(
+    await store.queryRoutingModelRequestCounts({
+      occurredAtFrom: "2026-08-25T01:00:00.000Z",
+      occurredAtTo: "2026-08-25T03:00:00.000Z",
+      granularity: "hour",
+      operation: "chat",
+      appId: "ai_novel",
+    }),
+    { "model-a": 2 },
+  );
+});
+
 test("neutral cancellation does not advance health warm-up", async () => {
   const store = new InMemoryLlmObservabilityStore();
   const health = new LlmHealthService(store);
@@ -99,7 +132,73 @@ test("neutral cancellation does not advance health warm-up", async () => {
   });
   assert.equal(snapshot.totalCalls, 0);
   assert.equal(snapshot.sampleSize, 0);
+  assert.equal(snapshot.successRate, undefined);
   assert.equal(snapshot.healthScore, 100);
+});
+
+test("LLM metrics show zero for all failures and rank only health-impacting errors", async () => {
+  const store = new InMemoryLlmObservabilityStore();
+  const health = new LlmHealthService(store);
+  const metrics = new LlmMetricsService(store, health);
+
+  for (const index of [0, 1]) {
+    const session = new LlmCallObservationRecorder(store).start({
+      routingModelKey: "model-a",
+      provider: "provider-a",
+      providerModel: "upstream-a",
+      operation: "chat",
+      responseMode: "non_stream",
+      startedAt: new Date(`2026-08-25T0${index}:00:00.000Z`),
+      now: () => new Date(`2026-08-25T0${index}:00:01.000Z`),
+    });
+    await session.finalize({
+      error: new ApplicationError(
+        502,
+        "LLM_PROVIDER_REQUEST_FAILED",
+        "Invalid key sk-sensitive12345 from provider",
+        { errorCode: "invalid_api_key" },
+      ),
+    });
+  }
+
+  const neutralSession = new LlmCallObservationRecorder(store).start({
+    routingModelKey: "model-a",
+    provider: "provider-a",
+    providerModel: "upstream-a",
+    operation: "chat",
+    responseMode: "non_stream",
+    startedAt: new Date("2026-08-25T02:00:00.000Z"),
+    now: () => new Date("2026-08-25T02:00:01.000Z"),
+  });
+  await neutralSession.finalize({
+    error: new ApplicationError(
+      400,
+      "LLM_PROVIDER_CONTENT_SENSITIVE",
+      "Content rejected",
+    ),
+  });
+
+  const overview = await metrics.getOverview(
+    emptyConfig(),
+    "48h",
+    new Date("2026-08-25T04:00:00.000Z"),
+  );
+  assert.equal(overview.summary.successRate, 0);
+  assert.equal(overview.healthFailures.items.length, 1);
+  assert.equal(overview.healthFailures.items[0]?.errorCode, "invalid_api_key");
+  assert.equal(overview.healthFailures.items[0]?.errorMessage, "Invalid key [redacted] from provider");
+  assert.equal(overview.healthFailures.items[0]?.count, 2);
+});
+
+test("LLM metrics leave success rate empty when there are no reliability samples", async () => {
+  const store = new InMemoryLlmObservabilityStore();
+  const metrics = new LlmMetricsService(store, new LlmHealthService(store));
+  const overview = await metrics.getOverview(
+    emptyConfig(),
+    "24h",
+    new Date("2026-08-25T04:00:00.000Z"),
+  );
+  assert.equal(overview.summary.successRate, undefined);
 });
 
 test("TTFT includes streams that produced content before failure or cancellation", async () => {
@@ -272,6 +371,7 @@ test("telemetry persistence failure does not fail a successful completion", asyn
     async recordObservation() { throw new Error("database unavailable"); },
     async getRouteHealth() { return undefined; },
     async queryMetrics() { throw new Error("unused"); },
+    async queryRoutingModelRequestCounts() { throw new Error("unused"); },
     async deleteBefore() { return { observations: 0 }; },
   });
   const provider: LLMProvider = {
@@ -345,6 +445,64 @@ test("routing evaluation exposes auto fallback, zero-score boundary, and fixed c
   ]);
   assert.equal(fixedFallback.routes[0]?.selectionReason, "compatibility_fallback");
   assert.equal(fixedFallback.routes[0]?.effectiveProbability, 100);
+});
+
+test("model health aggregates route health into one model-level score", async () => {
+  const store = new InMemoryLlmObservabilityStore();
+  const health = new LlmHealthService(store, {
+    chat: new Set(["provider-a", "provider-b"]),
+  });
+  for (let index = 0; index < 11; index += 1) {
+    await store.recordObservation({
+      callId: `model_health_a_${index}`,
+      occurredAt: new Date(1_800_000_100_000 + index).toISOString(),
+      routingModelKey: "model-a",
+      provider: "provider-a",
+      providerModel: "upstream-a",
+      operation: "chat",
+      responseMode: "non_stream",
+      outcome: index < 10 ? "success" : "failure",
+      healthImpact: index < 10 ? "success" : "failure",
+      totalLatencyMs: 20,
+      usageSource: "missing",
+    });
+    await store.recordObservation({
+      callId: `model_health_b_${index}`,
+      occurredAt: new Date(1_800_000_100_100 + index).toISOString(),
+      routingModelKey: "model-a",
+      provider: "provider-b",
+      providerModel: "upstream-b",
+      operation: "chat",
+      responseMode: "non_stream",
+      outcome: "success",
+      healthImpact: "success",
+      totalLatencyMs: 20,
+      usageSource: "missing",
+    });
+  }
+
+  const snapshot = await health.getModelHealth(
+    {
+      key: "model-a",
+      label: "Model A",
+      kind: "chat",
+      strategy: "auto",
+      routes: [
+        { provider: "provider-a", providerModel: "upstream-a", enabled: true, weight: 80 },
+        { provider: "provider-b", providerModel: "upstream-b", enabled: true, weight: 20 },
+      ],
+    },
+    [
+      { key: "provider-a", label: "A", enabled: true, baseUrl: "https://a.invalid", apiKey: "a", timeoutMs: 1000 },
+      { key: "provider-b", label: "B", enabled: true, baseUrl: "https://b.invalid", apiKey: "b", timeoutMs: 1000 },
+    ],
+  );
+
+  assert.equal(snapshot.modelKey, "model-a");
+  assert.equal(snapshot.available, true);
+  assert.equal(snapshot.sampleSize, 22);
+  assert.equal(snapshot.healthScore, 92.73);
+  assert.equal(snapshot.successRate, 95.46);
 });
 
 test("runtime provider availability is operation-specific", async () => {

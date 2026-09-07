@@ -7,8 +7,9 @@ import {
   buildLatencyOption,
   formatLatency,
   formatMetricNumber,
-  formatPercent,
+  formatTokenNumber,
 } from "./llm-monitor-view-model";
+import { SuccessRateBadge } from "./success-rate-badge";
 
 export function DetailSection({
   metrics,
@@ -61,17 +62,23 @@ export function DetailSection({
 function detailColumns(granularity: "hour" | "day"): ColumnsType<LlmHourlySeriesItem> {
   return [
     { title: granularity === "hour" ? "小时" : "日期", dataIndex: "bucket", fixed: "left", width: 150 },
+    {
+      title: "上游成功率",
+      dataIndex: "successRate",
+      width: 112,
+      sorter: (a, b) => (a.successRate ?? -1) - (b.successRate ?? -1),
+      render: (value) => <SuccessRateBadge value={value} />,
+    },
     { title: "调用", dataIndex: "requestCount", width: 82, sorter: (a, b) => a.requestCount - b.requestCount, render: formatMetricNumber },
     { title: "成功", dataIndex: "successCount", width: 82, sorter: (a, b) => a.successCount - b.successCount, render: formatMetricNumber },
     { title: "失败", dataIndex: "failureCount", width: 82, sorter: (a, b) => a.failureCount - b.failureCount, render: formatMetricNumber },
     { title: "超时", dataIndex: "timeoutCount", width: 82, sorter: (a, b) => a.timeoutCount - b.timeoutCount, render: formatMetricNumber },
     { title: "取消", dataIndex: "cancelledCount", width: 82, sorter: (a, b) => a.cancelledCount - b.cancelledCount, render: formatMetricNumber },
-    { title: "成功率", dataIndex: "successRate", width: 96, sorter: (a, b) => a.successRate - b.successRate, render: formatPercent },
-    { title: "总 Token", dataIndex: "totalTokens", width: 112, sorter: (a, b) => (a.totalTokens ?? 0) - (b.totalTokens ?? 0), render: formatMetricNumber },
-    { title: "Prompt", dataIndex: "promptTokens", width: 96, sorter: optionalNumberSorter("promptTokens"), render: formatMetricNumber },
-    { title: "可见输出", dataIndex: "visibleOutputTokens", width: 100, sorter: optionalNumberSorter("visibleOutputTokens"), render: formatMetricNumber },
-    { title: "Reasoning", dataIndex: "reasoningTokens", width: 100, sorter: optionalNumberSorter("reasoningTokens"), render: formatMetricNumber },
-    { title: "未分类", dataIndex: "unclassifiedTokens", width: 96, sorter: optionalNumberSorter("unclassifiedTokens"), render: formatMetricNumber },
+    { title: "总 Token", dataIndex: "totalTokens", width: 112, sorter: (a, b) => (a.totalTokens ?? 0) - (b.totalTokens ?? 0), render: formatTokenNumber },
+    { title: "Prompt", dataIndex: "promptTokens", width: 96, sorter: optionalNumberSorter("promptTokens"), render: formatTokenNumber },
+    { title: "可见输出", dataIndex: "visibleOutputTokens", width: 100, sorter: optionalNumberSorter("visibleOutputTokens"), render: formatTokenNumber },
+    { title: "Reasoning", dataIndex: "reasoningTokens", width: 100, sorter: optionalNumberSorter("reasoningTokens"), render: formatTokenNumber },
+    { title: "未分类", dataIndex: "unclassifiedTokens", width: 96, sorter: optionalNumberSorter("unclassifiedTokens"), render: formatTokenNumber },
     { title: "P50 首响应", dataIndex: "p50FirstByteLatencyMs", width: 112, sorter: optionalNumberSorter("p50FirstByteLatencyMs"), render: formatLatency },
     { title: "P95 首响应", dataIndex: "p95FirstByteLatencyMs", width: 112, sorter: optionalNumberSorter("p95FirstByteLatencyMs"), render: formatLatency },
     { title: "P50 总延迟", dataIndex: "p50TotalLatencyMs", width: 112, sorter: optionalNumberSorter("p50TotalLatencyMs"), render: formatLatency },

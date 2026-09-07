@@ -1,13 +1,76 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
+import { InMemoryLlmObservabilityStore } from "../../src/testing/in-memory-llm-observability-store.ts";
+import { LlmHealthService } from "../../src/services/llm-health.service.ts";
+import { LlmMetricsService } from "../../src/services/llm-metrics.service.ts";
+import { LlmCallerCancelledError } from "../../src/services/llm-caller-cancellation.ts";
 import {
+  DEFAULT_LLM_MODEL_REGISTRY,
   type LLMCompletionResult,
   type LLMProvider,
   LLMManager,
   type LLMStreamEvent,
   type ResolvedLLMCompletionRequest,
 } from "../../src/services/llm-manager.ts";
+
+test("llm manager excludes caller cancellation from route health", async () => {
+  const caller = new AbortController();
+  const observabilityStore = new InMemoryLlmObservabilityStore();
+  const healthService = new LlmHealthService(observabilityStore);
+  const metricsService = new LlmMetricsService(
+    observabilityStore,
+    healthService,
+  );
+  const provider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("should use stream");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      yield { type: "content_delta", text: "partial" };
+      if (!request.signal?.aborted) {
+        await new Promise<void>((resolve) => {
+          request.signal?.addEventListener("abort", () => resolve(), {
+            once: true,
+          });
+        });
+      }
+      throw new LlmCallerCancelledError(request.signal?.reason);
+    },
+  };
+  const manager = new LLMManager(
+    { bailian: provider },
+    DEFAULT_LLM_MODEL_REGISTRY,
+    {
+      llmHealthService: healthService,
+      llmMetricsService: metricsService,
+    },
+  );
+  const events: LLMStreamEvent[] = [];
+
+  for await (const event of manager.stream({
+    modelKey: "kimi2.5",
+    messages: [{ role: "user", content: "hello" }],
+    signal: caller.signal,
+  })) {
+    events.push(event);
+    caller.abort(new DOMException("Client disconnected.", "AbortError"));
+  }
+
+  assert.deepEqual(events, [{ type: "content_delta", text: "partial" }]);
+  assert.equal(observabilityStore.observations.length, 1);
+  assert.equal(observabilityStore.observations[0]?.outcome, "cancelled");
+  assert.equal(observabilityStore.observations[0]?.healthImpact, "neutral");
+  assert.equal(
+    await observabilityStore.getRouteHealth({
+      routingModelKey: "kimi2.5",
+      provider: "bailian",
+      providerModel: "kimi/kimi-k2.5",
+      operation: "chat",
+    }),
+    undefined,
+  );
+});
 
 test("llm manager resolves kimi2.5 to the Bailian provider model", async () => {
   let capturedRequest: ResolvedLLMCompletionRequest | undefined;

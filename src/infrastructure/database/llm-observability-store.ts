@@ -8,6 +8,7 @@ export type LlmMetricsGranularity = "hour" | "day";
 export interface LlmCallObservationRecord {
   callId: string;
   occurredAt: string;
+  appId?: string;
   routingModelKey: string;
   provider: string;
   providerModel: string;
@@ -23,6 +24,7 @@ export interface LlmCallObservationRecord {
   totalTokens?: number;
   usageSource: LlmUsageSource;
   errorCode?: string;
+  errorMessage?: string;
   routingConfigRevision?: number;
 }
 
@@ -48,6 +50,7 @@ export interface LlmObservabilityFilter {
   provider?: string;
   providerModel?: string;
   routingModelKey?: string;
+  appId?: string;
 }
 
 export interface LlmObservationAggregate {
@@ -103,6 +106,17 @@ export interface LlmCrossAggregate extends LlmObservationAggregate {
   operation: LlmOperation;
 }
 
+export interface LlmHealthFailureAggregate {
+  routingModelKey: string;
+  provider: string;
+  providerModel: string;
+  operation: LlmOperation;
+  errorCode: string;
+  errorMessage?: string;
+  count: number;
+  lastOccurredAt: string;
+}
+
 export interface LlmBoundedAggregateGroup<T> {
   items: T[];
   totalCount: number;
@@ -118,6 +132,7 @@ export interface LlmObservabilityQueryResult {
   providerModels: LlmBoundedAggregateGroup<LlmProviderModelAggregate>;
   routes: LlmBoundedAggregateGroup<LlmRouteAggregate>;
   cross: LlmBoundedAggregateGroup<LlmCrossAggregate>;
+  healthFailures: LlmBoundedAggregateGroup<LlmHealthFailureAggregate>;
   routingConfigRevisions: number[];
 }
 
@@ -125,5 +140,6 @@ export interface LlmObservabilityStore {
   recordObservation(record: LlmCallObservationRecord): Promise<boolean>;
   getRouteHealth(key: LlmRouteHealthKey): Promise<LlmRouteHealthRecord | undefined>;
   queryMetrics(filter: LlmObservabilityFilter): Promise<LlmObservabilityQueryResult>;
+  queryRoutingModelRequestCounts(filter: LlmObservabilityFilter): Promise<Record<string, number>>;
   deleteBefore(cutoffIso: string): Promise<{ observations: number }>;
 }

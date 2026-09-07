@@ -1,6 +1,7 @@
 import { withContextUsage } from "./llm-context-window.ts";
 import { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
 import { LlmRequestResolver, type ResolvedLlmRequest } from "./llm-request-resolver.ts";
+import { isLlmCallerCancelledError } from "./llm-caller-cancellation.ts";
 import type {
   LLMCompleteViaStreamOptions,
   LLMCompletionRequest,
@@ -9,6 +10,7 @@ import type {
   LLMModelRegistry,
   LLMProvider,
   LLMProviderName,
+  LlmRoutingIdentity,
   LLMStreamEvent,
   LLMToolCall,
   LLMUsage,
@@ -32,6 +34,7 @@ export type {
   LLMModelRegistry,
   LLMProvider,
   LLMProviderName,
+  LlmRoutingIdentity,
   LLMRole,
   LLMStreamEvent,
   LLMToolCall,
@@ -99,6 +102,7 @@ export class LLMManager {
     let text = "";
     let reasoningText = "";
     let sawDone = false;
+    let sawEffectiveChunk = false;
     const toolCalls: LLMToolCall[] = [];
     const usageEstimate = createUsageEstimateAccumulator(resolution.request);
     const iterator = this.providers[resolution.request.model.provider]
@@ -121,6 +125,10 @@ export class LLMManager {
         }
 
         const event = next.value;
+        if (!sawEffectiveChunk && isEffectiveStreamEvent(event)) {
+          sawEffectiveChunk = true;
+          await this.recordFirstEffectiveChunk(resolution);
+        }
         switch (event.type) {
           case "content_delta":
             if (firstByteLatencyMs === undefined) {
@@ -193,24 +201,39 @@ export class LLMManager {
     } catch (error) {
       void iterator.return?.();
       const completedAt = this.getNow();
+      if (
+        !sawEffectiveChunk &&
+        !resolution.request.signal?.aborted &&
+        !isLlmCallerCancelledError(error)
+      ) {
+        await this.recordPreFirstChunkFailure(resolution);
+      }
       await observation?.finalize({ error, usage, completedAt });
       throw error;
     }
   }
 
   async *stream(request: LLMCompletionRequest): AsyncIterable<LLMStreamEvent> {
+    if (request.signal?.aborted) return;
     const resolution = await this.requestResolver.resolve(request);
+    if (request.signal?.aborted) return;
     const startedAt = this.getNow();
     const observation = this.startObservation(resolution, "stream", startedAt);
     let firstByteLatencyMs: number | undefined;
     let usage: LLMUsage | undefined;
     let sawDone = false;
+    let sawEffectiveChunk = false;
     const usageEstimate = createUsageEstimateAccumulator(resolution.request);
 
     try {
       for await (const event of this.providers[
         resolution.request.model.provider
       ].stream(resolution.request)) {
+        if (resolution.request.signal?.aborted) return;
+        if (!sawEffectiveChunk && isEffectiveStreamEvent(event)) {
+          sawEffectiveChunk = true;
+          await this.recordFirstEffectiveChunk(resolution);
+        }
         switch (event.type) {
           case "reasoning_delta":
           case "content_delta":
@@ -256,6 +279,7 @@ export class LLMManager {
         }
       }
 
+      if (resolution.request.signal?.aborted) return;
       if (!sawDone) {
         throw new ApplicationError(
           502,
@@ -265,7 +289,16 @@ export class LLMManager {
         );
       }
     } catch (error) {
+      if (
+        resolution.request.signal?.aborted ||
+        isLlmCallerCancelledError(error)
+      ) {
+        return;
+      }
       const completedAt = this.getNow();
+      if (!sawEffectiveChunk) {
+        await this.recordPreFirstChunkFailure(resolution);
+      }
       await observation?.finalize({ error, usage, completedAt });
       throw error;
     } finally {
@@ -326,6 +359,7 @@ export class LLMManager {
       this.options.llmMetricsService?.observationRecorder;
     const route = resolution.routeRef;
     return recorder?.start({
+      appId: resolution.request.usageOwner?.appId,
       routingModelKey: route.modelKey,
       provider: route.provider,
       providerModel: route.providerModel,
@@ -392,6 +426,38 @@ export class LLMManager {
     }
   }
 
+  private async recordFirstEffectiveChunk(resolution: ResolvedLlmRequest): Promise<void> {
+    const circuitBreaker = this.options.llmRouteCircuitBreaker;
+    if (!circuitBreaker) return;
+    try {
+      await circuitBreaker.recordFirstEffectiveChunk(
+        resolution.routeRef,
+        resolution.circuitBreakerEnabled,
+      );
+    } catch {
+      // Circuit bookkeeping must not alter the user-visible upstream result.
+    }
+  }
+
+  private async recordPreFirstChunkFailure(resolution: ResolvedLlmRequest): Promise<void> {
+    const circuitBreaker = this.options.llmRouteCircuitBreaker;
+    if (!circuitBreaker) return;
+    try {
+      const confirmation = await circuitBreaker.recordPreFirstChunkFailure(
+        resolution.routeRef,
+        resolution.request.usageOwner?.userId,
+        resolution.circuitBreakerEnabled,
+      );
+      if (confirmation) {
+        void Promise.resolve(
+          this.options.onLlmRouteCircuitConfirmation?.(confirmation),
+        ).catch(() => undefined);
+      }
+    } catch {
+      // Circuit bookkeeping must not alter the user-visible upstream failure.
+    }
+  }
+
   private getNow(): Date {
     return this.options.now?.() ?? new Date();
   }
@@ -407,5 +473,21 @@ export class LLMManager {
         eventType: String(rawEvent.type ?? "unknown"),
       },
     );
+  }
+}
+
+function isEffectiveStreamEvent(event: LLMStreamEvent): boolean {
+  switch (event.type) {
+    case "content_delta":
+    case "reasoning_delta":
+      return Boolean(event.text.trim());
+    case "tool_call":
+      return Boolean(event.toolCall.id && event.toolCall.name);
+    case "tool_call_delta":
+    case "usage":
+    case "done":
+      return false;
+    default:
+      return false;
   }
 }

@@ -67,8 +67,10 @@ import {
   type ManagedStateSnapshot,
 } from "../infrastructure/database/application-database.ts";
 import { InMemoryAiNovelStatisticsStore } from "./in-memory-ai-novel-statistics-store.ts";
+import { InMemoryAiNovelConversationStore } from "./in-memory-ai-novel-conversation-store.ts";
 import { InMemoryLlmObservabilityStore } from "./in-memory-llm-observability-store.ts";
 import { conflict } from "../shared/errors.ts";
+import type { AiNovelConversationRecord } from "../shared/types/ai-novel-conversation.ts";
 import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
 import type {
   BodyLogBlockRecord,
@@ -105,6 +107,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
   readonly llmObservabilityStore = new InMemoryLlmObservabilityStore();
+  readonly aiNovelConversationStore: InMemoryAiNovelConversationStore;
 
   apps: AppRecord[];
   users: UserRecord[];
@@ -145,6 +148,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   frogSleepBuddyGroupInvitations: FrogSleepBuddyGroupInvitationRecord[];
   aiOutputReportRecords: AiOutputReportRecord[];
   aiOutputReactionRecords: AiOutputReactionRecord[];
+  aiNovelConversationRecords: AiNovelConversationRecord[];
   bodyLogProfiles: BodyLogProfileRecord[];
   bodyLogFriendRequests: BodyLogFriendRequestRecord[];
   bodyLogFriendships: BodyLogFriendshipRecord[];
@@ -203,6 +207,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.frogSleepBuddyNotificationDeliveries = [];
     this.aiOutputReportRecords = structuredClone(seed.aiOutputReportRecords ?? []);
     this.aiOutputReactionRecords = structuredClone(seed.aiOutputReactionRecords ?? []);
+    this.aiNovelConversationRecords = structuredClone(seed.aiNovelConversationRecords ?? []);
+    this.aiNovelConversationStore = new InMemoryAiNovelConversationStore(
+      () => this.aiNovelConversationRecords,
+      (records) => { this.aiNovelConversationRecords = records; },
+    );
     this.bodyLogProfiles = [];
     this.bodyLogFriendRequests = [];
     this.bodyLogFriendships = [];
@@ -387,6 +396,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.clientLogUploads = this.clientLogUploads.filter((item) => item.appId !== appId);
     this.clientLogLines = this.clientLogLines.filter((item) => item.appId !== appId);
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.appId !== appId);
+    this.aiNovelConversationRecords = this.aiNovelConversationRecords.filter((item) => item.appId !== appId);
     this.feedbackRecords = this.feedbackRecords.filter((item) => item.appId !== appId);
     this.feedbackAttachments = this.feedbackAttachments.filter((item) => item.appId !== appId);
     this.frogSleepDevices = this.frogSleepDevices.filter((item) => item.appId !== appId);
@@ -548,6 +558,9 @@ export class InMemoryDatabase extends ApplicationDatabase {
       (item) => item.appId !== appId || item.userId !== userId,
     );
     this.aiOutputReactionRecords = this.aiOutputReactionRecords.filter(
+      (item) => item.appId !== appId || item.userId !== userId,
+    );
+    this.aiNovelConversationRecords = this.aiNovelConversationRecords.filter(
       (item) => item.appId !== appId || item.userId !== userId,
     );
     this.aiNovelStatistics.deleteUser(appId, userId);
@@ -1842,6 +1855,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.contentSafetyCheckRecords = this.contentSafetyCheckRecords.filter((item) => item.createdAt >= cutoffIso);
     return before - this.contentSafetyCheckRecords.length;
   }
+
 
   insertFeedback(record: FeedbackRecord, attachments: FeedbackAttachmentRecord[]): void {
     this.feedbackRecords.push(structuredClone(record));

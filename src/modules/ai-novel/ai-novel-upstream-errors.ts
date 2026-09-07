@@ -5,7 +5,7 @@ import {
 } from "../../shared/error-diagnostics.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { ErrorCode } from "../../shared/types.ts";
-import { AI_NOVEL_APP_ID } from "../../services/app-ai-routing-config.service.ts";
+import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-llm-prompts.ts";
 
 export function mapAndLogAiNovelUpstreamError(

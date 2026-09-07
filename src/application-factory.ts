@@ -20,8 +20,11 @@ import { RedisJobQueue } from "./infrastructure/queue/bullmq/redis-queue.ts";
 import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
 import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
+import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
 import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
+import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
+import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
@@ -30,11 +33,7 @@ import { QrLoginService } from "./modules/auth/qr-login.service.ts";
 import { TokenService } from "./modules/auth/token.service.ts";
 import { RbacService } from "./modules/iam/rbac.service.ts";
 import { UserService } from "./modules/user/user.service.ts";
-import { BodyLogProfileService } from "./modules/bodylog/bodylog-profile.service.ts";
-import { BodyLogSocialService } from "./modules/bodylog/bodylog-social.service.ts";
-import { BodyLogLeaderboardService } from "./modules/bodylog/bodylog-leaderboard.service.ts";
-import { BodyLogInvitationService } from "./modules/bodylog/bodylog-invitation.service.ts";
-import { BodyLogChallengeService } from "./modules/bodylog/bodylog-challenge.service.ts";
+import { createBodyLogServices } from "./application-bodylog-services.ts";
 import { AdminSensitiveOperationService } from "./services/admin-sensitive-operation.service.ts";
 import { AiOutputReportingService } from "./services/ai-output-reporting.service.ts";
 import { AesGcmPayloadCryptoService, CompositeAesGcmEncryptionKeyResolver, StaticAesGcmEncryptionKeyResolver } from "./services/aes-gcm-payload-crypto.service.ts";
@@ -58,7 +57,10 @@ import { GetuiGyOneClickLoginService } from "./services/getui-gy-one-click-login
 import { I18nService } from "./services/i18n.service.ts";
 import { LlmHealthService } from "./services/llm-health.service.ts";
 import { LlmMetricsService } from "./services/llm-metrics.service.ts";
+import { LlmModelHealthService } from "./services/llm-model-health.service.ts";
 import { LlmObservabilityRetentionService } from "./services/llm-observability-retention.service.ts";
+import { LlmEmailAlertService } from "./services/llm-email-alert.service.ts";
+import { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
 import { NotificationService } from "./services/notification.service.ts";
 import { AdminSessionStore } from "./services/admin-session-store.ts";
 import { PasswordManager } from "./services/password-manager.ts";
@@ -74,9 +76,10 @@ import { TencentSesEmailCallbackService } from "./services/tencent-ses-email-cal
 import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "./services/tencent-ses-registration-email.service.ts";
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
-import { migrateAiNovelKickoffPromptConfig } from "./modules/ai-novel/ai-novel-kickoff-prompt-config-migration.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
+import { resolveRuntimeLlmProviderKeys } from "./application-llm-provider-keys.ts";
+import { initializeApplicationConfigs } from "./application-startup-config.ts";
 import { createApplicationTelemetryGateway } from "./application-telemetry-runtime.ts";
 import { resolveAccessTokenSecrets, resolveAdminBasicAuth, resolveRefreshCookieSameSite, resolveSecureRefreshCookie } from "./application-auth-runtime-config.ts";
 import { resolveFrogSleepEnabled } from "./application-frogsleep-runtime-config.ts";
@@ -234,36 +237,31 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     appLogSecretService,
   );
-  await database.withExclusiveSession(async () => {
-    const initializedCommonLlmConfig =
-      await commonLlmConfigService.initializeDefaultConfig();
-    const initializedAppLogSecrets =
-      await appLogSecretService.initializeSecrets(await database.listAppIds());
-    const initializedRemoteLogPullConfigs =
-      await appRemoteLogPullService.initializeMissingConfigs(
-        await database.listAppIds(),
-      );
-    const initializedGetuiGyConfig =
-      await commonGetuiGyConfigService.initializeDefaultConfig();
-    const migratedAiNovelKickoffPrompts =
-      await migrateAiNovelKickoffPromptConfig(appConfigService);
-    if (
-      initializedCommonLlmConfig ||
-      initializedAppLogSecrets ||
-      initializedRemoteLogPullConfigs ||
-      initializedGetuiGyConfig ||
-      migratedAiNovelKickoffPrompts
-    ) {
-      await managedStateStore.save(database);
-    }
+  await initializeApplicationConfigs({
+    database,
+    managedStateStore,
+    appConfigService,
+    appLogSecretService,
+    appRemoteLogPullService,
+    commonGetuiGyConfigService,
+    commonLlmConfigService,
+    commonPasswordConfigService,
   });
-  const defaultLlmProviderKeys = ["bailian", "bailian_coding", "openrouter"];
-  const runtimeLlmProviderKeys = {
-    chat: new Set(Object.keys(options.llmProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
-    embedding: new Set(Object.keys(options.embeddingProviders ?? Object.fromEntries(defaultLlmProviderKeys.map((key) => [key, true])))),
-  };
-  const llmHealthService = new LlmHealthService(database.llmObservabilityStore, runtimeLlmProviderKeys);
+  const runtimeLlmProviderKeys = resolveRuntimeLlmProviderKeys(options);
+  const llmRouteCircuitBreaker = new LlmRouteCircuitBreakerService(kvManager);
+  const llmHealthService = new LlmHealthService(
+    database.llmObservabilityStore,
+    runtimeLlmProviderKeys,
+    llmRouteCircuitBreaker,
+  );
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
+  const llmModelHealthService = new LlmModelHealthService(commonLlmConfigService, llmHealthService);
+  const aiNovelModelSelectionConfigService = new AiNovelModelSelectionConfigService(
+    appConfigService,
+    commonLlmConfigService,
+    llmModelHealthService,
+    logger,
+  );
   const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
   const userService = new UserService(database);
@@ -310,6 +308,15 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonEmailConfigService,
     kvManager,
     registrationEmailSender,
+  );
+  const llmEmailAlertService = new LlmEmailAlertService(
+    database.llmObservabilityStore,
+    kvManager,
+    commonLlmConfigService,
+    commonEmailConfigService,
+    llmRouteCircuitBreaker,
+    registrationEmailSender,
+    logger,
   );
   const adminSensitiveOperationService = new AdminSensitiveOperationService(
     kvManager,
@@ -371,6 +378,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     embeddingManager,
     llmManager,
     llmSmokeTestService,
+    llmRouteCircuitRecoveryService,
   } = createApplicationAiRuntime({
     database,
     commonLlmConfigService,
@@ -378,18 +386,19 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmHealthService,
     llmMetricsService,
     kvManager,
+    llmRouteCircuitBreaker,
     logger,
     llmProviders: options.llmProviders,
     embeddingProviders: options.embeddingProviders,
   });
-  const aiNovelAuditFileService = new AiNovelAuditFileService(
-    options.aiNovelAuditFileRoot,
-  );
+  const aiNovelAuditFileService = new AiNovelAuditFileService(options.aiNovelAuditFileRoot);
+  const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
     appI18nConfigService,
     appAiRoutingConfigService,
+    aiNovelModelSelectionConfigService,
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
@@ -402,10 +411,13 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     emailTestSendService,
     llmHealthService,
     llmMetricsService,
+    new AdminAiNovelModelHealthService(llmMetricsService, llmModelHealthService),
     llmSmokeTestService,
     refreshTokenStore,
     smsVerificationRecordService,
     managedStateStore,
+    aiNovelConversationRecordService,
+    llmRouteCircuitBreaker,
   );
   const rbacService = new RbacService(database);
   const contentSafetyService = new ContentSafetyService(
@@ -415,21 +427,21 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database,
     logger,
   );
-  const bodyLogProfileService = new BodyLogProfileService(database, contentSafetyService);
-  const bodyLogSocialService = new BodyLogSocialService(database, bodyLogProfileService);
-  const bodyLogLeaderboardService = new BodyLogLeaderboardService(database, bodyLogProfileService);
-  const bodyLogInvitationService = new BodyLogInvitationService(database);
-  const bodyLogChallengeService = new BodyLogChallengeService(database, bodyLogProfileService);
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
     embeddingManager,
-    appAiRoutingConfigService,
+    aiNovelModelSelectionConfigService,
     logger,
     contentSafetyService,
+    aiNovelConversationRecordService,
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
-  const feedbackService = new FeedbackService(database, persistentFileStore);
+  const feedbackService = new FeedbackService(
+    database,
+    persistentFileStore,
+    (feedback) => llmEmailAlertService.sendAiNovelFeedbackAlert(feedback),
+  );
   const aiOutputReportingService = new AiOutputReportingService(database, aiPayloadCryptoService, appLogSecretService);
   const clientLogUploadService = new ClientLogUploadService(
     database,
@@ -453,14 +465,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     registrationEmailSender,
   });
   attachApplicationLightTickWorkers({ runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService });
+  const { bodyLogProfileService, bodyLogSocialService, bodyLogLeaderboardService, bodyLogInvitationService, bodyLogChallengeService, bodyLogBuddyService, bodyLogGroupService, bodyLogWorkerService, bodyLogGrowthService, bodyLogNotificationService, bodyLogFeatureFlagService } = createBodyLogServices({ database, contentSafetyService, notificationService, logger });
   const apps = await database.listApps();
-  const appContextResolver = new AppContextResolver(
-    new Map(
-      apps
-        .filter((item) => item.apiDomain)
-        .map((item) => [item.apiDomain as string, item.id]),
-    ),
-  );
+  const appContextResolver = new AppContextResolver(new Map(apps.filter((item) => item.apiDomain).map((item) => [item.apiDomain as string, item.id])));
   const authGuard = new AuthGuard(tokenService);
   const appAccessGuard = new AppAccessGuard();
   const rbacGuard = new RbacGuard(rbacService);
@@ -492,6 +499,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     bodyLogLeaderboardService,
     bodyLogInvitationService,
     bodyLogChallengeService,
+    bodyLogBuddyService,
+    bodyLogGroupService,
+    bodyLogWorkerService,
+    bodyLogGrowthService,
+    bodyLogNotificationService,
+    bodyLogFeatureFlagService,
     llmSmokeTestService,
     aiNovelAuditFileService,
     aiNovelLlmService,
@@ -552,6 +565,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       emailTestSendService,
       userService,
       appAiRoutingConfigService,
+      aiNovelModelSelectionConfigService,
       tokenService,
       authService,
       getuiGyOneClickLoginService,
@@ -564,6 +578,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       llmHealthService,
       llmMetricsService,
       llmObservabilityRetentionService,
+      llmEmailAlertService,
+      llmRouteCircuitBreaker,
+      llmRouteCircuitRecoveryService,
       llmSmokeTestService,
       aiNovelAuditFileService,
       aiNovelLlmService,
@@ -574,6 +591,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       buddyNotificationWorkerService,
       buddyInvitationEmailWorkerService,
       buddyMilestoneReportService,
+      bodyLogWorkerService,
+      bodyLogBuddyService,
+      bodyLogGroupService,
+      bodyLogGrowthService,
+      bodyLogNotificationService,
+      bodyLogFeatureFlagService,
       failedEventRetryService,
       tencentSesEmailCallbackService,
       feedbackService,

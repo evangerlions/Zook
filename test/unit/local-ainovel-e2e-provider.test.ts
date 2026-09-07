@@ -5,7 +5,6 @@ import {
   LocalAiNovelE2eProvider,
   shouldUseLocalAiNovelE2eProvider,
 } from "../../src/services/local-ainovel-e2e-provider.ts";
-import { AppAiRoutingConfigService } from "../../src/services/app-ai-routing-config.service.ts";
 import type { ResolvedLLMCompletionRequest } from "../../src/services/llm-manager.ts";
 
 test("local AINovel E2E provider requires explicit flag and local runtime", () => {
@@ -67,8 +66,7 @@ test("local AINovel E2E provider streams kickoff update and ready tools", async 
   for await (const event of provider.stream({
     model: {
       provider: "bailian",
-      modelKey: "ainovel-plus-reasoning",
-      modelKeyKind: "scene_route",
+      modelKey: "qwen3.6-plus",
       resolvedModelKey: "qwen3.6-plus",
       providerModel: "qwen3.6-plus",
     },
@@ -185,8 +183,7 @@ test("local AINovel E2E provider submits every required import tool in one turn"
     provider.stream({
       model: {
         provider: "bailian",
-        modelKey: "ainovel-plus-reasoning",
-        modelKeyKind: "scene_route",
+        modelKey: "qwen3.6-plus",
         resolvedModelKey: "qwen3.6-plus",
         providerModel: "qwen3.6-plus",
       },
@@ -240,8 +237,7 @@ test("local AINovel E2E provider exercises chapter draft reasoning replay", asyn
     provider.stream({
       model: {
         provider: "bailian",
-        modelKey: "ainovel-plus-reasoning",
-        modelKeyKind: "scene_route",
+        modelKey: "qwen3.6-plus",
         resolvedModelKey: "qwen3.6-plus",
         providerModel: "qwen3.6-plus",
       },
@@ -261,8 +257,7 @@ test("local AINovel E2E provider exercises chapter draft reasoning replay", asyn
     provider.stream({
       model: {
         provider: "bailian",
-        modelKey: "ainovel-plus-reasoning",
-        modelKeyKind: "scene_route",
+        modelKey: "qwen3.6-plus",
         resolvedModelKey: "qwen3.6-plus",
         providerModel: "qwen3.6-plus",
       },
@@ -313,8 +308,7 @@ function kickoffRequest(
   return {
     model: {
       provider: "bailian",
-      modelKey: "ainovel-plus-reasoning",
-      modelKeyKind: "scene_route",
+      modelKey: "qwen3.6-plus",
       resolvedModelKey: "qwen3.6-plus",
       providerModel: "qwen3.6-plus",
     },
@@ -327,31 +321,6 @@ function kickoffRequest(
     },
   };
 }
-
-test("local AINovel E2E mode uses default scene routing without stored admin config", async () => {
-  const previousFlag = process.env.AINOVEL_E2E_LLM_PROVIDER;
-  const previousAppEnv = process.env.APP_ENV;
-  const previousNodeEnv = process.env.NODE_ENV;
-  process.env.AINOVEL_E2E_LLM_PROVIDER = "1";
-  process.env.APP_ENV = "local";
-  process.env.NODE_ENV = "development";
-
-  try {
-    const service = new AppAiRoutingConfigService();
-
-    const routeKey = await service.resolveSceneRouteKey(
-      "ai_novel",
-      "chat",
-      "kickoff_turn",
-      "free",
-    );
-    assert.equal(routeKey, "ainovel-plus-reasoning");
-  } finally {
-    restoreOptionalEnv("AINOVEL_E2E_LLM_PROVIDER", previousFlag);
-    restoreOptionalEnv("APP_ENV", previousAppEnv);
-    restoreOptionalEnv("NODE_ENV", previousNodeEnv);
-  }
-});
 
 function restoreOptionalEnv(key: string, value: string | undefined): void {
   if (value === undefined) {

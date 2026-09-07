@@ -15,11 +15,6 @@ import type {
   LLMProvider,
   LLMStreamEvent,
 } from "../../src/services/llm-manager.ts";
-import { AI_NOVEL_MODEL_ROUTING_CONFIG_KEY } from "../../src/services/app-ai-routing-config.service.ts";
-import {
-  AI_NOVEL_CHAT_SCENE_KEYS,
-  AI_NOVEL_EMBEDDING_SCENE_KEYS,
-} from "../../src/modules/ai-novel/ai-novel-llm-scenes.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
 
 const AI_TEST_KEY_ID = "logk_d5872ff066b8450b9aeed1c53f0df7f1";
@@ -244,7 +239,7 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
 
   await runtime.services.commonLlmConfigService.updateConfig({
     enabled: true,
-    defaultModelKey: "ainovel-free-creative",
+    defaultModelKey: "qwen3.6-plus",
     providers: [
       {
         key: "bailian",
@@ -273,118 +268,6 @@ async function createAiNovelRuntime(options: CreateAiNovelRuntimeOptions = {}) {
       {
         key: "text-embedding-v4",
         label: "Text Embedding v4",
-        kind: "embedding",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "text-embedding-v4",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-free-creative",
-        label: "AINovel Free Creative",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-free-reasoning",
-        label: "AINovel Free Reasoning",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-plus-creative",
-        label: "AINovel Plus Creative",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-plus-reasoning",
-        label: "AINovel Plus Reasoning",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-super-creative",
-        label: "AINovel Super Creative",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-super-reasoning",
-        label: "AINovel Super Reasoning",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-lowcost-structured",
-        label: "AINovel Low-cost Structured",
-        kind: "chat",
-        strategy: "fixed",
-        routes: [
-          {
-            provider: "bailian",
-            providerModel: "qwen3.6-plus",
-            enabled: true,
-            weight: 100,
-          },
-        ],
-      },
-      {
-        key: "ainovel-embedding-default",
-        label: "AINovel Embedding Default",
         kind: "embedding",
         strategy: "fixed",
         routes: [
@@ -474,12 +357,97 @@ test("ai_novel chat completions route resolves scene_key to scene route selectio
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   assert.equal(data.sceneKey, "chapter_summary");
   const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal(completion.sceneRouteKey, "chapter_summary");
   assert.equal(completion.provider, "bailian");
   assert.equal(completion.providerModel, "qwen3.6-plus");
   assert.equal(
     (response.body as Record<string, unknown>).localDebugResponseText,
     JSON.stringify(forcedStructuredToolPayload("submit_chapter_summary")),
+  );
+});
+
+test("ai_novel model selection config controls the upstream model without changing the scene route", async () => {
+  let selectedModel:
+    | { modelKey: string; providerModel: string }
+    | undefined;
+  const { runtime, aiKey } = await createAiNovelRuntime({
+    llmProvider: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("write_turn should use streaming");
+      },
+      async *stream(request): AsyncIterable<LLMStreamEvent> {
+        selectedModel = {
+          modelKey: request.model.modelKey,
+          providerModel: request.model.providerModel,
+        };
+        yield { type: "content_delta", text: "configured model" };
+        yield { type: "done", finishReason: "stop" };
+      },
+    },
+  });
+  const commonConfig =
+    await runtime.services.commonLlmConfigService.getCurrentConfig();
+  await runtime.services.commonLlmConfigService.updateConfig({
+    ...commonConfig,
+    models: [
+      ...commonConfig.models,
+      {
+        key: "configured-chat",
+        label: "AINovel Configured Chat",
+        kind: "chat",
+        strategy: "fixed",
+        routes: [
+          {
+            provider: "bailian",
+            providerModel: "configured-upstream-model",
+            enabled: true,
+            weight: 100,
+          },
+        ],
+      },
+    ],
+  });
+  await runtime.services.aiNovelModelSelectionConfigService.updateConfig({
+    schemaVersion: 1,
+    chat: {
+      default: [{ modelKey: "configured-chat", weight: 100 }],
+    },
+  });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+      "X-Did": "web_mf123_deviceabc",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "write_turn",
+        stream: true,
+        messages: [{ role: "user", content: "continue" }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  const events = await collectSseEvents(response.streamBody);
+  assert.deepEqual(selectedModel, {
+    modelKey: "configured-chat",
+    providerModel: "configured-upstream-model",
+  });
+  const done = events
+    .map((event) => normalizeAiEvent(decryptAiPayload(event, aiKey)))
+    .find((event) => event.type === "done");
+  assert.equal(
+    (done?.completion as Record<string, unknown>)?.sceneRouteKey,
+    "write_turn",
   );
 });
 
@@ -569,7 +537,7 @@ test("ai_novel structured workflow scenes use thinking streams with required too
       },
       async *stream(request): AsyncIterable<LLMStreamEvent> {
         streamCalls += 1;
-        assert.match(request.model.modelKey, /^ainovel-/);
+        assert.equal(request.model.modelKey, "qwen3.6-plus");
         assert.equal(request.model.providerModel, "qwen3.6-plus");
         assert.equal(request.providerOptions?.enable_thinking, true);
         assert.equal(request.providerOptions?.tool_choice, "auto");
@@ -989,10 +957,7 @@ test("ai_novel imported kickoff streams with imported authoring glossary and too
     context: {
       meta: {
         extras: {
-          kickoffMode: "imported_book",
-          bookId: "book_1",
-          latestImportedChapterIndex: 10,
-          targetChapterIndex: 11,
+          progression: "十章内不得揭开完整真相。",
         },
       },
     },
@@ -1033,26 +998,6 @@ test("ai_novel imported kickoff streams with imported authoring glossary and too
       "ready",
     ],
   );
-});
-
-test("ai_novel scene routing config validates all novel-engine chat scene keys", async () => {
-  const { runtime } = await createAiNovelRuntime();
-  const config =
-    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
-      "ai_novel",
-    );
-  const expectedSceneKeys = [
-    ...AI_NOVEL_CHAT_SCENE_KEYS,
-    ...AI_NOVEL_EMBEDDING_SCENE_KEYS,
-  ].sort();
-
-  assert.deepEqual(Object.keys(config.scenes).sort(), expectedSceneKeys);
-  for (const sceneKey of AI_NOVEL_CHAT_SCENE_KEYS) {
-    assert.equal(config.scenes[sceneKey]?.kind, "chat");
-  }
-  for (const sceneKey of AI_NOVEL_EMBEDDING_SCENE_KEYS) {
-    assert.equal(config.scenes[sceneKey]?.kind, "embedding");
-  }
 });
 
 test("ai_novel chat completions route supports encrypted SSE streaming", async () => {
@@ -1119,7 +1064,7 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   const doneUsage = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .usage ?? {}) as Record<string, unknown>;
   assert.equal(doneUsage.contextWindowTokens, 1_000_000);
-  assert.equal(doneCompletion.sceneRouteKey, "ainovel-free-creative");
+  assert.equal(doneCompletion.sceneRouteKey, "write_turn");
   assert.equal(doneCompletion.content, "第八十一回……");
   assert.equal(doneCompletion.provider, undefined);
   assert.equal(doneCompletion.providerModel, undefined);
@@ -1188,8 +1133,8 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
     unknown
   >;
   assert.equal(debugPayload.sceneKey, "write_turn");
-  assert.equal(debugPayload.sceneRouteKey, "ainovel-free-creative");
-  assert.equal(requestBody.sceneRouteKey, "ainovel-free-creative");
+  assert.equal(debugPayload.sceneRouteKey, "write_turn");
+  assert.equal(requestBody.sceneRouteKey, "write_turn");
   assert.equal("modelKey" in requestBody, false);
   assert.equal(messages[0].role, "system");
   assert.ok(
@@ -2449,7 +2394,7 @@ test("ai_novel kickoff_turn assigns a fallback tool_call id when upstream omits 
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "read_meta");
-  assert.match(String(toolCall.id), /^ainovel-.*_kickoff_tool_0$/);
+  assert.equal(toolCall.id, "kickoff_turn_kickoff_tool_0");
 });
 
 test("ai_novel kickoff_turn relays generic tool argument deltas before final tool_call", async () => {
@@ -2635,6 +2580,9 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
             ],
             trigger: "第一晚听见广播点名不存在的学生。",
             language: "简体中文",
+            extras: {
+              progression: "十章内不得让主角掌握完整真相。",
+            },
           },
         },
         messages: [
@@ -2720,6 +2668,14 @@ test("ai_novel kickoff_turn builds one merged system message with workflow promp
   assert.match(
     String(systemMessages[0]?.content ?? ""),
     /- language: 简体中文/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /extras is the author's durable custom-requirements area/,
+  );
+  assert.match(
+    String(systemMessages[0]?.content ?? ""),
+    /"progression":"十章内不得让主角掌握完整真相。"/,
   );
   assert.match(
     String(systemMessages[0]?.content ?? ""),
@@ -3443,7 +3399,7 @@ test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", a
   );
   const toolCall = decryptedEvents[0].toolCall as Record<string, unknown>;
   assert.equal(toolCall.name, "read_draft");
-  assert.match(String(toolCall.id), /^ainovel-.*_prompted_tool_0$/);
+  assert.equal(toolCall.id, "write_turn_prompted_tool_0");
 });
 
 test("ai_novel chapter_draft supplies read, search history, and draft write tools", async () => {
@@ -3675,7 +3631,7 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   assert.equal(data.sceneKey, "chapter_summary");
   const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.sceneRouteKey, "ainovel-lowcost-structured");
+  assert.equal(completion.sceneRouteKey, "chapter_summary");
   const localDebugLlmRequest = (data.localDebugLlmRequest ?? {}) as Record<
     string,
     unknown
@@ -3685,11 +3641,11 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   assert.equal(localDebugLlmRequest.sceneKey, "chapter_summary");
   assert.equal(
     localDebugLlmRequest.sceneRouteKey,
-    "ainovel-lowcost-structured",
+    "chapter_summary",
   );
   assert.equal(
     localDebugRequestBody.sceneRouteKey,
-    "ainovel-lowcost-structured",
+    "chapter_summary",
   );
   assert.equal("modelKey" in localDebugRequestBody, false);
   assert.equal(localDebugRequestBody.stream, true);
@@ -3770,11 +3726,11 @@ test("ai_novel job scenes use fixed input/output prompts over thinking tool stre
   assert.equal(reviewDebugLlmRequest.sceneKey, "chapter_draft_review");
   assert.equal(
     reviewDebugLlmRequest.sceneRouteKey,
-    "ainovel-lowcost-structured",
+    "chapter_draft_review",
   );
   assert.equal(
     reviewDebugRequestBody.sceneRouteKey,
-    "ainovel-lowcost-structured",
+    "chapter_draft_review",
   );
   assert.equal("modelKey" in reviewDebugRequestBody, false);
   assert.equal(reviewDebugRequestBody.stream, true);
@@ -4350,7 +4306,7 @@ test("ai_novel embeddings route resolves scene_key to embedding scene route sele
   assert.equal(decrypted.code, "OK");
   const data = (decrypted.data ?? {}) as Record<string, unknown>;
   assert.equal(data.sceneKey, "summary_embed");
-  assert.equal(data.sceneRouteKey, "ainovel-embedding-default");
+  assert.equal(data.sceneRouteKey, "summary_embed");
   assert.equal(data.provider, "bailian");
   assert.equal(data.providerModel, "text-embedding-v4");
   assert.equal(data.providerRequestId, "emb-req-001");
@@ -4586,135 +4542,6 @@ test("ai_novel routes reject unknown encryption keys before entering AI flow", a
 
   assert.equal(response.statusCode, 400);
   assert.equal(response.body.code, "AI_UNKNOWN_KEY_ID");
-});
-
-test("ai_novel routes ignore admin scene routing overrides", async () => {
-  const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken(
-    "user_alice",
-    "ai_novel",
-  );
-
-  const config =
-    runtime.services.appAiRoutingConfigService.createDefaultConfig();
-  config.scenes.chapter_summary.routes.free = "ainovel-plus-creative";
-  await runtime.services.appConfigService.setValue(
-    "ai_novel",
-    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
-    JSON.stringify(config),
-    "test-override",
-  );
-
-  const response = await runtime.app.handle({
-    method: "POST",
-    path: "/api/v1/ai_novel/ai/chat-completions",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "X-App-Id": "ai_novel",
-    },
-    body: encryptAiPayload(
-      {
-        scene_key: "chapter_summary",
-        messages: [
-          {
-            role: "user",
-            content: "hello",
-          },
-        ],
-      },
-      aiKey,
-    ),
-  });
-
-  const decrypted = decryptAiPayload(
-    response.body as Record<string, unknown>,
-    aiKey,
-  );
-  const data = (decrypted.data ?? {}) as Record<string, unknown>;
-  const completion = (data.completion ?? {}) as Record<string, unknown>;
-  assert.equal(completion.sceneRouteKey, "ainovel-lowcost-structured");
-  assert.equal(completion.providerModel, "qwen3.6-plus");
-});
-
-test("ai_novel runtime ignores stale admin routing config", async () => {
-  const { runtime } = await createAiNovelRuntime();
-  await runtime.services.appConfigService.setValue(
-    "ai_novel",
-    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
-    JSON.stringify(
-      {
-        defaultTier: "free",
-        tiers: {
-          free: {
-            chat: {
-              kickoff_turn: "legacy-admin-route",
-            },
-            embedding: {},
-          },
-        },
-      },
-      null,
-      2,
-    ),
-    "test-stale-route",
-  );
-
-  const config =
-    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
-      "ai_novel",
-    );
-  assert.equal(
-    config.scenes.kickoff_turn?.routes.free,
-    "ainovel-plus-reasoning",
-  );
-});
-
-test("ai_novel routes ignore missing admin route mapping", async () => {
-  const { runtime, aiKey } = await createAiNovelRuntime();
-  const token = runtime.services.tokenService.issueAccessToken(
-    "user_alice",
-    "ai_novel",
-  );
-  const currentConfig =
-    await runtime.services.appAiRoutingConfigService.getCurrentConfig(
-      "ai_novel",
-    );
-  delete (currentConfig.scenes.chapter_summary.routes as Record<string, string>)
-    .free;
-  await runtime.services.appConfigService.setValue(
-    "ai_novel",
-    AI_NOVEL_MODEL_ROUTING_CONFIG_KEY,
-    JSON.stringify(currentConfig, null, 2),
-    "test-missing-route",
-  );
-
-  const response = await runtime.app.handle({
-    method: "POST",
-    path: "/api/v1/ai_novel/ai/chat-completions",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "X-App-Id": "ai_novel",
-    },
-    body: encryptAiPayload(
-      {
-        scene_key: "chapter_summary",
-        messages: [
-          {
-            role: "user",
-            content: "hello",
-          },
-        ],
-      },
-      aiKey,
-    ),
-  });
-
-  assert.equal(response.statusCode, 200);
-  const decrypted = decryptAiPayload(
-    response.body as Record<string, unknown>,
-    aiKey,
-  );
-  assert.equal(decrypted.code, "OK");
 });
 
 test("ai_novel chat completions rejects keyword-sensitive user input before LLM", async () => {

@@ -185,6 +185,7 @@ export class BodyLogChallengeService {
     const scheduledDates = challenge.startDate && challenge.endDate
       ? datesBetween(challenge.startDate, challenge.endDate)
       : [];
+    const today = todayIn(challenge.timezone);
     const scored = await Promise.all(visibleMembers.map(async (member) => {
       const profile = await this.profiles.getOrCreate(member.userId);
       const result = calculateBodyLogConsistencyScore({
@@ -204,6 +205,7 @@ export class BodyLogChallengeService {
         userId: member.userId, nickname: profile.nickname,
         avatarKey: profile.avatarKey, memberStatus: member.status,
         score: result.score, effectiveDays: result.effectiveQualifiedDays,
+        completedToday: member.completedDates.includes(today),
       };
     }));
     scored.sort((left, right) =>

@@ -7,21 +7,20 @@ const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "qwen3.5-flash": 1_000_000,
   "qwen3.5-plus": 1_000_000,
   "qwen3.6-plus": 1_000_000,
+  "qwen3.6-flash": 1_000_000,
+  "qwen3.7-max": 1_000_000,
+  "qwen3.7-plus": 1_000_000,
+  "qwen3.8-flash": 1_000_000,
+  "qwen3.8-max": 1_000_000,
+  "deepseek-v4-flash-0731": 1_000_000,
+  "deepseek-v4-pro": 1_000_000,
+  "deepseek-v4-pro-0813": 1_000_000,
+  "glm-5.2": 1_000_000,
   "deepseek-v3.2": 128_000,
   "siliconflow/deepseek-v3.2": 128_000,
   "glm-5": 128_000,
   "minimax-m2.7": 200_000,
   "minimax/minimax-m2.7": 200_000,
-};
-
-const MODEL_KEY_CONTEXT_WINDOWS: Record<string, number> = {
-  "ainovel-free-creative": 1_000_000,
-  "ainovel-free-reasoning": 1_000_000,
-  "ainovel-plus-creative": 1_000_000,
-  "ainovel-plus-reasoning": 1_000_000,
-  "ainovel-super-creative": 1_000_000,
-  "ainovel-super-reasoning": 1_000_000,
-  "ainovel-lowcost-structured": 1_000_000,
 };
 
 export function withContextUsage(
@@ -50,10 +49,8 @@ function inferContextWindowTokens(
   providerModel: string,
 ): number | undefined {
   const normalizedProviderModel = providerModel.trim().toLowerCase();
-  return (
-    MODEL_CONTEXT_WINDOWS[normalizedProviderModel] ??
-    MODEL_KEY_CONTEXT_WINDOWS[modelKey.trim()]
-  );
+  return MODEL_CONTEXT_WINDOWS[normalizedProviderModel] ??
+    MODEL_CONTEXT_WINDOWS[modelKey.trim().toLowerCase()];
 }
 
 function clampRatio(value: number): number {

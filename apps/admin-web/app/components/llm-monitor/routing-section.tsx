@@ -1,4 +1,4 @@
-import { Alert, Table, Tag } from "antd";
+import { Button, Popconfirm, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
 import { formatTimestamp } from "../../lib/format";
@@ -10,6 +10,8 @@ import type {
 } from "../../lib/types";
 import { LlmChart } from "./llm-chart";
 import { formatMetricNumber, formatPercent } from "./llm-monitor-view-model";
+import { SuccessRateBadge } from "./success-rate-badge";
+import { ProviderBadge } from "./provider-badge";
 import {
   buildRoutingComparisonOption,
   type RoutingComparisonRow,
@@ -23,7 +25,15 @@ interface RoutingRow extends LlmRouteRuntimeStatus {
   actualTrafficShare: number;
 }
 
-export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }) {
+export function RoutingSection({
+  metrics,
+  onResetCircuit,
+  resettingCircuitKey,
+}: {
+  metrics: AdminLlmMetricsDocument;
+  onResetCircuit: (row: RoutingRow) => Promise<void>;
+  resettingCircuitKey?: string;
+}) {
   const allRows = buildRows(metrics);
   const rows = filterRows(allRows, metrics);
   const visibleModelKeys = new Set(rows.map((row) => row.modelKey));
@@ -37,7 +47,7 @@ export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }
       <header className="card-header">
         <div>
           <h2>当前动态路由决策</h2>
-          <p>直接展示后端 selector 使用的基础权重、健康分、动态分和归一化选择概率，前端不复算。</p>
+          <p>先看各路由的健康成功率和调用占比；当前路由规则保留在下方表格。</p>
         </div>
         <div className="llm-snapshot-meta">
           <Tag color="blue">当前快照</Tag>
@@ -47,40 +57,32 @@ export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }
         </div>
       </header>
 
-      <div className="llm-formula-note">
-        <code>动态分 = 基础权重 × 健康分 ÷ 100</code>
-        <span>auto 按 selectionEligible route 动态分归一化；fixed 为 100/0，健康分仅观测。</span>
-      </div>
-
-      {metrics.routingConfigChangedWithinRange ? (
-        <Alert
-          showIcon
-          title="所选时间范围内发生过路由配置变更；期望流量来自当前动态评分快照，实际流量来自历史调用，两者仅作参考对比。"
-          type="warning"
-        />
-      ) : null}
-
       <div className="llm-routing-chart">
         <div className="llm-routing-chart-heading">
-          <strong>实际流量分布 vs 动态评分期望</strong>
-          <span>每个模型一条实色流量条；深色竖线标出当前期望分界，悬浮可查看实际、期望和偏差。</span>
+          <strong>调用占比</strong>
+          <span>{metrics.range} 内每个模型的实际调用分布；一个模型只显示一行。</span>
         </div>
         <LlmChart
           height={Math.max(260, Math.min(440, visibleModelKeys.size * 48 + 110))}
           option={(width) => buildRoutingComparisonOption(chartRows, width)}
-          summary="每个路由模型一条实际流量分布，深色竖线标出当前动态评分推导的期望分界；悬浮显示各供应商的实际流量、期望流量和偏差"
+          summary={`${metrics.range} 内每个路由模型的调用占比，每个模型一行`}
         />
       </div>
 
       <Table<RoutingRow>
-        columns={routingColumns()}
+        columns={routingColumns(onResetCircuit, resettingCircuitKey)}
         dataSource={rows}
         locale={{ emptyText: "当前配置没有可展示的 route" }}
         pagination={{ pageSize: 12, hideOnSinglePage: true }}
         rowKey="key"
-        scroll={{ x: 1540 }}
+        scroll={{ x: 1760 }}
         size="small"
       />
+
+      <div className="llm-formula-note llm-formula-note--secondary">
+        <code>当前目标：基础权重 × 健康分，再在同一 Model 内归一化</code>
+        <span>auto 使用健康分；fixed 直接按 100% / 0% 选择，健康分仅用于观察。</span>
+      </div>
     </section>
   );
 }
@@ -120,31 +122,85 @@ function toComparisonRow(row: RoutingRow): RoutingComparisonRow {
   return {
     modelKey: row.modelKey,
     provider: row.provider,
-    expectedTrafficShare: row.effectiveProbability,
     actualTrafficShare: row.actualTrafficShare,
   };
 }
 
-function routingColumns(): ColumnsType<RoutingRow> {
+function routingColumns(
+  onResetCircuit: (row: RoutingRow) => Promise<void>,
+  resettingCircuitKey?: string,
+): ColumnsType<RoutingRow> {
   return [
     { title: "路由 Model", dataIndex: "modelKey", fixed: "left", width: 165, ellipsis: true },
-    { title: "Provider", dataIndex: "provider", width: 130, ellipsis: true },
+    {
+      title: "Provider",
+      dataIndex: "provider",
+      width: 130,
+      ellipsis: true,
+      render: (value) => <ProviderBadge provider={value} />,
+    },
     { title: "Provider Model", dataIndex: "providerModel", width: 180, ellipsis: true },
     { title: "策略", dataIndex: "strategy", width: 78, render: (value) => <Tag>{value}</Tag> },
     {
       title: "状态",
       width: 112,
-      render: (_, row) => row.selectionEligible
+      render: (_, row) => row.circuit?.state === "open"
+        ? <Tag color="error">熔断中</Tag>
+        : row.circuit?.state === "confirming"
+          ? <Tag color="processing">确认中</Tag>
+        : row.selectionEligible
         ? <Tag color={row.runtimeAvailable ? "success" : "warning"}>{row.runtimeAvailable ? "可选择" : "Adapter 不可用"}</Tag>
-        : <Tag>{row.ineligibleReason === "provider_disabled" ? "Provider 禁用" : "Route 禁用"}</Tag>,
+        : <Tag>{row.ineligibleReason === "provider_disabled"
+          ? "Provider 禁用"
+          : row.ineligibleReason === "runtime_unavailable"
+            ? "Adapter 不可用"
+            : "Route 禁用"}</Tag>,
     },
-    { title: "基础权重", dataIndex: "configuredWeight", width: 96, render: (value) => formatMetricNumber(value) },
+    {
+      title: "熔断恢复",
+      width: 190,
+      render: (_, row) => {
+        if (!row.circuit?.enabled) return <span>未启用</span>;
+        if (row.circuit.state === "confirming") return <span>后台两次确认中</span>;
+        if (row.circuit.state !== "open") return <span>正常</span>;
+        return <span>{`失败 ${row.circuit.failureCount} · 用户 ${row.circuit.distinctUserCount} · 探测 ${row.circuit.recoverySuccessCount}/2`}</span>;
+      },
+    },
+    {
+      title: "下次探测",
+      dataIndex: ["circuit", "nextRecoveryAt"],
+      width: 156,
+      render: (_, row) => formatTimestamp(row.circuit?.nextRecoveryAt),
+    },
+    {
+      title: "操作",
+      width: 108,
+      render: (_, row) => row.circuit?.state === "open" || row.circuit?.state === "confirming"
+        ? (
+          <Popconfirm
+            cancelText="保留"
+            description="会立即清除该 route 的确认或熔断状态，重新参与正常路由。"
+            okText="解除"
+            onConfirm={() => onResetCircuit(row)}
+            title="解除该 route 的熔断？"
+          >
+            <Button danger loading={resettingCircuitKey === row.key} size="small">解除熔断</Button>
+          </Popconfirm>
+        )
+        : "—",
+    },
+    {
+      title: "健康成功率",
+      dataIndex: "successRate",
+      width: 118,
+      render: (value) => <SuccessRateBadge value={value} />,
+    },
     { title: "健康样本", dataIndex: "sampleSize", width: 96, render: (value) => formatMetricNumber(value) },
-    { title: "健康成功率", dataIndex: "successRate", width: 112, render: (value) => formatPercent(value) },
+    { title: "基础权重", dataIndex: "configuredWeight", width: 96, render: (value) => formatMetricNumber(value) },
     { title: "健康分", dataIndex: "healthScore", width: 88, render: (value) => formatMetricNumber(value) },
     { title: "动态分", dataIndex: "dynamicScore", width: 88, render: (value) => formatMetricNumber(value) },
-    { title: "期望流量", dataIndex: "effectiveProbability", width: 108, render: (value) => formatPercent(value) },
-    { title: "实际流量", dataIndex: "actualTrafficShare", width: 102, render: (value) => formatPercent(value) },
+    { title: "当前目标占比", dataIndex: "effectiveProbability", width: 126, render: (value) => formatPercent(value) },
+    { title: "调用占比", dataIndex: "actualTrafficShare", width: 104, render: (value) => formatPercent(value) },
     { title: "选择原因", dataIndex: "selectionReason", width: 160, render: (value) => selectionReasonLabel(value) },
     { title: "窗口最近错误", dataIndex: "lastErrorAt", width: 156, render: (value) => formatTimestamp(value) },
   ];

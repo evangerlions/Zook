@@ -10,6 +10,7 @@ export default [
     route("ai-routing", "routes/ai-routing.tsx"),
     route("lighttick", "routes/lighttick.tsx"),
     route("feedback", "routes/feedback.tsx"),
+    route("conversation-records", "routes/conversation-records.tsx"),
     route("remote-log-pull", "routes/remote-log-pull.tsx"),
     route("remote-log-pull/tasks/:taskId", "routes/remote-log-pull-task.tsx"),
     route("mail", "routes/mail.tsx"),

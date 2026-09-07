@@ -243,6 +243,16 @@ function LlmFormConfigEditor({
         onChange={(value) => onDraftChange((current) => ({ ...current, enabled: value }))}
       />
 
+      <ToggleField
+        checked={draft.routeCircuitBreaker.enabled}
+        hint="只统计流式请求首个有效 chunk 前的失败：2 分钟内至少 2 位用户连续失败 4 次才封路由。关闭会立即解除既有熔断。"
+        label="启用上游路由熔断"
+        onChange={(value) => onDraftChange((current) => ({
+          ...current,
+          routeCircuitBreaker: { ...current.routeCircuitBreaker, enabled: value },
+        }))}
+      />
+
       <Field hint="启用状态下必须选择一个存在的模型。" label="默认模型">
         <Select
           onChange={(value) => onDraftChange((current) => ({ ...current, defaultModelKey: value }))}

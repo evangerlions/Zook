@@ -1,5 +1,4 @@
 import type { LlmRouteRef } from "./llm-health.service.ts";
-import { resolveAiNovelSceneRouteAlias } from "./ai-novel-llm-model-aliases.ts";
 import type {
   LLMCompletionRequest,
   LLMManagerOptions,
@@ -21,6 +20,10 @@ import type {
   LlmServiceConfig,
 } from "../shared/types.ts";
 import { evaluateLlmRoutes, selectLlmRoute } from "./llm-routing-score.ts";
+import {
+  hasStableLlmRoutingInputs,
+  resolveLlmRoutingUnit,
+} from "./llm-routing-affinity.ts";
 
 const VALID_ROLES = new Set<LLMRole>(["system", "user", "assistant", "tool"]);
 
@@ -28,6 +31,7 @@ export interface ResolvedLlmRequest {
   request: ResolvedLLMCompletionRequest;
   routeRef: LlmRouteRef;
   routingConfigRevision?: number;
+  circuitBreakerEnabled: boolean;
 }
 
 interface LlmRequestResolverOptions {
@@ -138,7 +142,7 @@ export class LlmRequestResolver {
     const selection = await this.resolveConfiguredModel(
       commonConfig,
       modelKey,
-      request.modelKeyKind,
+      request.routingIdentity,
     );
     const healthRouteRef = {
       modelKey: selection.routeModelKey,
@@ -146,14 +150,15 @@ export class LlmRequestResolver {
       providerModel: selection.route.providerModel,
       operation: "chat" as const,
     };
+    const { routingIdentity: _routingIdentity, ...providerRequest } = request;
+    void _routingIdentity;
     return {
       request: {
-        ...request,
+        ...providerRequest,
         messages,
         model: {
           provider: selection.provider.key,
           modelKey,
-          modelKeyKind: request.modelKeyKind,
           resolvedModelKey: selection.routeModelKey,
           providerModel: selection.route.providerModel,
           providerConfig: {
@@ -165,6 +170,7 @@ export class LlmRequestResolver {
       },
       routeRef: healthRouteRef,
       routingConfigRevision,
+      circuitBreakerEnabled: Boolean(commonConfig.routeCircuitBreaker?.enabled),
     };
   }
 
@@ -182,14 +188,15 @@ export class LlmRequestResolver {
       internalError(`LLM provider ${resolvedModel.provider} is not configured.`);
     }
 
+    const { routingIdentity: _routingIdentity, ...providerRequest } = request;
+    void _routingIdentity;
     return {
       request: {
-        ...request,
+        ...providerRequest,
         messages,
         model: {
           provider: resolvedModel.provider,
           modelKey,
-          modelKeyKind: request.modelKeyKind,
           resolvedModelKey: modelKey,
           providerModel: resolvedModel.providerModel,
         },
@@ -200,21 +207,20 @@ export class LlmRequestResolver {
         providerModel: resolvedModel.providerModel,
         operation: "chat",
       },
+      circuitBreakerEnabled: false,
     };
   }
 
   private async resolveConfiguredModel(
     config: LlmServiceConfig,
     modelKey: string,
-    modelKeyKind?: "model" | "scene_route",
+    routingIdentity?: LLMCompletionRequest["routingIdentity"],
   ): Promise<{
     provider: LlmProviderConfig;
     route: LlmModelConfig["routes"][number];
     routeModelKey: string;
   }> {
-    const alias =
-      modelKeyKind === "scene_route" ? resolveAiNovelSceneRouteAlias(modelKey) : undefined;
-    const routeModelKey = alias?.kind === "chat" ? alias.modelKey : modelKey;
+    const routeModelKey = modelKey;
     const model = config.models.find((item) => item.key === routeModelKey);
 
     if (!model) {
@@ -229,6 +235,10 @@ export class LlmRequestResolver {
     }
 
     const providerMap = new Map(config.providers.map((item) => [item.key, item]));
+    const stableIdentity = hasStableLlmRoutingInputs(
+      routingIdentity?.did,
+      routingIdentity?.uid,
+    );
     const healthSnapshots = await Promise.all(model.routes.map((route) =>
       this.options.managerOptions.llmHealthService?.getRouteSnapshot({
         modelKey: model.key,
@@ -237,19 +247,29 @@ export class LlmRequestResolver {
         operation: model.kind,
       }),
     ));
+    const circuitOpen = await Promise.all(model.routes.map((route) =>
+      this.options.managerOptions.llmRouteCircuitBreaker?.isOpen({
+        modelKey: model.key,
+        provider: route.provider,
+        providerModel: route.providerModel,
+        operation: "chat",
+      }, Boolean(config.routeCircuitBreaker?.enabled)) ?? false,
+    ));
     const evaluation = evaluateLlmRoutes(
       model.strategy,
       model.routes.map((route, index) => ({
         route,
         providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
         runtimeAvailable: Boolean(this.options.providers[route.provider]),
+        circuitOpen: circuitOpen[index],
         healthScore: healthSnapshots[index]?.healthScore ?? 100,
       })),
     );
-    const chosenRoute = selectLlmRoute(
-      evaluation,
-      this.options.managerOptions.random,
-    )?.route;
+    const routingUnit = stableIdentity
+      ? resolveLlmRoutingUnit(routingIdentity?.did, routingIdentity?.uid)
+      : this.options.managerOptions.random?.() ??
+        resolveLlmRoutingUnit(routingIdentity?.did, routingIdentity?.uid);
+    const chosenRoute = selectLlmRoute(evaluation, () => routingUnit)?.route;
     if (!chosenRoute) {
       throw new ApplicationError(
         503,
@@ -259,7 +279,11 @@ export class LlmRequestResolver {
     }
 
     const provider = providerMap.get(chosenRoute.provider);
-    if (!provider || !this.options.providers[provider.key]) {
+    if (
+      !chosenRoute.enabled ||
+      !provider?.enabled ||
+      !this.options.providers[provider.key]
+    ) {
       throw new ApplicationError(
         503,
         "LLM_ROUTE_NOT_AVAILABLE",

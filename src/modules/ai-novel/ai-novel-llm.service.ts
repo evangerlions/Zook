@@ -3,19 +3,16 @@ import type {
   LLMMessage,
   LLMManager,
   LLMCompletionResult,
+  LlmRoutingIdentity,
+  LLMStreamEvent,
 } from "../../services/llm-manager.ts";
 import type {
   EmbeddingManager,
 } from "../../services/embedding-manager.ts";
-import {
-  AppAiRoutingConfigService,
-  AI_NOVEL_APP_ID,
-} from "../../services/app-ai-routing-config.service.ts";
 import type { StructuredLogger } from "../../infrastructure/logging/pino-logger.module.ts";
 import type { ContentSafetyService } from "../../services/content-safety.service.ts";
 import type {
   AccountRegion,
-  AiNovelModelRoutingTier,
 } from "../../shared/types.ts";
 import {
   resolveAiNovelChatScene,
@@ -59,6 +56,21 @@ import type {
   AiNovelChatStreamChunk,
   AiNovelEmbeddingsResponse,
 } from "./ai-novel-llm-types.ts";
+import type { AiNovelModelSelectionConfigService } from "./ai-novel-model-selection-config.service.ts";
+import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
+import { AiNovelConversationRecordService } from "./ai-novel-conversation-record.service.ts";
+import {
+  isRetryableAiNovelStreamError,
+  streamWithAiNovelModelRetry,
+} from "./ai-novel-stream-retry.ts";
+
+type AiNovelStreamRequestPlan = ReturnType<typeof buildAiNovelStreamRequestPlan>;
+
+interface AiNovelLlmRequestContext {
+  usageOwner?: { appId: "ai_novel"; userId: string };
+  routingIdentity?: LlmRoutingIdentity;
+  signal?: AbortSignal;
+}
 
 export type {
   AiNovelChatResponse,
@@ -70,21 +82,24 @@ export type {
 interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
   requestId?: string;
-  routingTier?: AiNovelModelRoutingTier;
   userId?: string;
+  routingIdentity?: LlmRoutingIdentity;
   locale?: string;
   accountRegion?: AccountRegion;
+  signal?: AbortSignal;
 }
 
 export class AiNovelLlmService {
   private static readonly STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
+  private static readonly EMBEDDING_MODEL_KEY = "text-embedding-v4";
 
   constructor(
     private readonly llmManager: LLMManager,
     private readonly embeddingManager: EmbeddingManager,
-    private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
+    private readonly modelSelectionConfigService: AiNovelModelSelectionConfigService,
     private readonly logger?: StructuredLogger,
     private readonly contentSafetyService?: ContentSafetyService,
+    private readonly conversationRecordService?: AiNovelConversationRecordService,
   ) {}
 
   async createChatCompletion(
@@ -101,12 +116,10 @@ export class AiNovelLlmService {
     if (scene.requiresStream) {
       badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=true.`);
     }
-    const sceneRouteKey =
-      await this.appAiRoutingConfigService.resolveSceneRouteKey(
-        AI_NOVEL_APP_ID,
-        "chat",
-        scene.sceneKey,
-        options.routingTier,
+    const sceneRouteKey = scene.sceneKey;
+    const modelKey =
+      await this.modelSelectionConfigService.resolveChatModelKey(
+        options.routingIdentity,
       );
     const messages = normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
@@ -124,29 +137,35 @@ export class AiNovelLlmService {
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
     const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
+    const llmRequestContext: AiNovelLlmRequestContext = {
+      ...aiNovelUsageOwner(options),
+      ...(options.routingIdentity
+        ? { routingIdentity: options.routingIdentity }
+        : {}),
+    };
     try {
       const llmRequest = {
-        modelKey: sceneRouteKey,
-        modelKeyKind: "scene_route" as const,
+        modelKey,
         messages: requestPlan.messages,
         temperature,
         maxTokens,
         ...(requestPlan.providerOptions
           ? { providerOptions: requestPlan.providerOptions }
           : {}),
-        ...aiNovelUsageOwner(options),
+        ...llmRequestContext,
       };
       const result: LLMCompletionResult =
         shouldUseStreamedCompletion && requestPlan.forcedToolName
           ? await completeRequiredToolViaStream(this.llmManager, {
               sceneRouteKey,
+              modelKey,
               messages: requestPlan.messages,
               temperature,
               maxTokens,
               ...(requestPlan.providerOptions
                 ? { providerOptions: requestPlan.providerOptions }
                 : {}),
-              ...aiNovelUsageOwner(options),
+              ...llmRequestContext,
               forcedToolName: requestPlan.forcedToolName,
             })
           : shouldUseStreamedCompletion
@@ -163,7 +182,7 @@ export class AiNovelLlmService {
       const response: AiNovelChatResponse = {
         sceneKey: scene.sceneKey,
         completion: {
-          sceneRouteKey: result.modelKey,
+          sceneRouteKey,
           provider: result.provider,
           providerModel: result.providerModel,
           content: completionContent,
@@ -191,6 +210,12 @@ export class AiNovelLlmService {
             }
           : {}),
       };
+      await this.recordCompletedConversation({
+        options,
+        messages,
+        sceneKey: scene.sceneKey,
+        assistantText: completionContent,
+      });
       return response;
     } catch (error) {
       throw this.mapAndLogUpstreamError(error, {
@@ -214,13 +239,7 @@ export class AiNovelLlmService {
     if (scene.supportsStream === false) {
       badRequest("REQ_INVALID_BODY", `${scene.sceneKey} requires stream=false.`);
     }
-    const sceneRouteKey =
-      await this.appAiRoutingConfigService.resolveSceneRouteKey(
-        AI_NOVEL_APP_ID,
-        "chat",
-        scene.sceneKey,
-        options.routingTier,
-      );
+    const sceneRouteKey = scene.sceneKey;
     const messages = normalizeMessages(body.messages);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const temperature =
@@ -229,7 +248,13 @@ export class AiNovelLlmService {
     const maxTokens =
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-
+    const llmRequestContext: AiNovelLlmRequestContext = {
+      ...aiNovelUsageOwner(options),
+      ...(options.routingIdentity
+        ? { routingIdentity: options.routingIdentity }
+        : {}),
+      ...(options.signal ? { signal: options.signal } : {}),
+    };
     try {
       const requestPlan = buildAiNovelStreamRequestPlan({
         accountRegion: options.accountRegion,
@@ -238,7 +263,9 @@ export class AiNovelLlmService {
         messages,
         scene,
       });
+      let initiallyYielded = false;
       if (options.exposeLocalDebug === true) {
+        initiallyYielded = true;
         yield buildLocalDebugLlmRequestChunk({
           sceneKey: scene.sceneKey,
           sceneRouteKey,
@@ -249,65 +276,41 @@ export class AiNovelLlmService {
           profile: requestPlan.profile,
         });
       }
-      const events = this.llmManager.stream({
-        modelKey: sceneRouteKey,
-        modelKeyKind: "scene_route",
-        messages: requestPlan.messages,
-        temperature,
-        maxTokens,
-        ...(requestPlan.providerOptions
-          ? { providerOptions: requestPlan.providerOptions }
-          : {}),
-        ...aiNovelUsageOwner(options),
+      const stream = streamWithAiNovelModelRetry({
+        initiallyYielded,
+        resolveModelKey: (excludedModelKeys) =>
+          this.modelSelectionConfigService.resolveChatModelKey(
+            options.routingIdentity,
+            { excludedModelKeys },
+          ),
+        run: (modelKey) =>
+          this.runAiNovelStreamAttempt({
+            modelKey,
+            requestPlan,
+            sceneRouteKey,
+            temperature,
+            maxTokens,
+            llmRequestContext,
+          }),
+        shouldRetry: isRetryableAiNovelStreamError,
+        onRetry: (modelKey, error) => {
+          this.logger?.warn("AINovel stream failed before first chunk; retrying with another model", {
+            modelKey,
+            requestId: options.requestId,
+            error,
+          });
+        },
       });
-      switch (requestPlan.adapter) {
-        case "kickoff":
-          yield* adaptKickoffAiNovelStream({
-            sceneRouteKey,
-            events,
-            normalizeToolCall: (toolCall, fallbackIndex) => ({
-              ...toolCall,
-              id: normalizeAiNovelToolCallId(
-                toolCall.id,
-                buildAiNovelFallbackToolCallId(
-                  sceneRouteKey,
-                  "kickoff",
-                  fallbackIndex,
-                ),
-              ),
-            }),
+      for await (const chunk of stream) {
+        if (chunk.type === "done") {
+          await this.recordCompletedConversation({
+            options,
+            messages,
+            sceneKey: scene.sceneKey,
+            assistantText: chunk.completion.content,
           });
-          return;
-        case "imported_kickoff":
-          yield* adaptKickoffAiNovelStream({
-            sceneRouteKey,
-            events,
-            normalizeToolCall: (toolCall, fallbackIndex) =>
-              normalizeAiNovelPromptedToolCall(
-                toolCall,
-                sceneRouteKey,
-                fallbackIndex,
-              ),
-          });
-          return;
-        case "prompted":
-          yield* adaptPromptedAiNovelStream({
-            sceneRouteKey,
-            profile: requestPlan.profile,
-            events,
-            normalizeToolCall: (toolCall, fallbackIndex) =>
-              normalizeAiNovelPromptedToolCall(
-                toolCall,
-                sceneRouteKey,
-                fallbackIndex,
-              ),
-          });
-          return;
-        case "basic":
-          yield* adaptBasicAiNovelStream({ sceneRouteKey, events });
-          return;
-        default:
-          return assertNeverRequestPlan(requestPlan);
+        }
+        yield chunk;
       }
     } catch (error) {
       throw this.mapAndLogUpstreamError(error, {
@@ -320,6 +323,86 @@ export class AiNovelLlmService {
     }
   }
 
+  private async *runAiNovelStreamAttempt(input: {
+    modelKey: string;
+    requestPlan: AiNovelStreamRequestPlan;
+    sceneRouteKey: string;
+    temperature: number;
+    maxTokens: number;
+    llmRequestContext: AiNovelLlmRequestContext;
+  }): AsyncIterable<AiNovelChatStreamChunk> {
+    const events = this.llmManager.stream({
+      modelKey: input.modelKey,
+      messages: input.requestPlan.messages,
+      temperature: input.temperature,
+      maxTokens: input.maxTokens,
+      ...(input.requestPlan.providerOptions
+        ? { providerOptions: input.requestPlan.providerOptions }
+        : {}),
+      ...input.llmRequestContext,
+    });
+    yield* this.adaptAiNovelStream({
+      sceneRouteKey: input.sceneRouteKey,
+      requestPlan: input.requestPlan,
+      events,
+    });
+  }
+
+  private adaptAiNovelStream(input: {
+    sceneRouteKey: string;
+    requestPlan: AiNovelStreamRequestPlan;
+    events: AsyncIterable<LLMStreamEvent>;
+  }): AsyncIterable<AiNovelChatStreamChunk> {
+    switch (input.requestPlan.adapter) {
+      case "kickoff":
+        return adaptKickoffAiNovelStream({
+          sceneRouteKey: input.sceneRouteKey,
+          events: input.events,
+          normalizeToolCall: (toolCall, fallbackIndex) => ({
+            ...toolCall,
+            id: normalizeAiNovelToolCallId(
+              toolCall.id,
+              buildAiNovelFallbackToolCallId(
+                input.sceneRouteKey,
+                "kickoff",
+                fallbackIndex,
+              ),
+            ),
+          }),
+        });
+      case "imported_kickoff":
+        return adaptKickoffAiNovelStream({
+          sceneRouteKey: input.sceneRouteKey,
+          events: input.events,
+          normalizeToolCall: (toolCall, fallbackIndex) =>
+            normalizeAiNovelPromptedToolCall(
+              toolCall,
+              input.sceneRouteKey,
+              fallbackIndex,
+            ),
+        });
+      case "prompted":
+        return adaptPromptedAiNovelStream({
+          sceneRouteKey: input.sceneRouteKey,
+          profile: input.requestPlan.profile,
+          events: input.events,
+          normalizeToolCall: (toolCall, fallbackIndex) =>
+            normalizeAiNovelPromptedToolCall(
+              toolCall,
+              input.sceneRouteKey,
+              fallbackIndex,
+            ),
+        });
+      case "basic":
+        return adaptBasicAiNovelStream({
+          sceneRouteKey: input.sceneRouteKey,
+          events: input.events,
+        });
+      default:
+        return assertNeverRequestPlan(input.requestPlan);
+    }
+  }
+
   async createEmbeddings(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
@@ -328,26 +411,22 @@ export class AiNovelLlmService {
 
     const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelEmbeddingScene(sceneKey);
-    const sceneRouteKey =
-      await this.appAiRoutingConfigService.resolveSceneRouteKey(
-        AI_NOVEL_APP_ID,
-        "embedding",
-        scene.sceneKey,
-        options.routingTier,
-      );
+    const sceneRouteKey = scene.sceneKey;
     const input = normalizeEmbeddingInput(body.input);
 
     try {
       const result = await this.embeddingManager.embed({
-        modelKey: sceneRouteKey,
-        modelKeyKind: "scene_route",
+        modelKey: AiNovelLlmService.EMBEDDING_MODEL_KEY,
         input,
         ...aiNovelUsageOwner(options),
+        ...(options.routingIdentity
+          ? { routingIdentity: options.routingIdentity }
+          : {}),
       });
 
       return {
         sceneKey: scene.sceneKey,
-        sceneRouteKey: result.modelKey,
+        sceneRouteKey,
         provider: result.provider,
         providerModel: result.providerModel,
         vectors: result.vectors,
@@ -395,6 +474,39 @@ export class AiNovelLlmService {
       sceneKey,
       text: content,
     });
+  }
+
+  private async recordCompletedConversation(input: {
+    options: AiNovelRequestOptions;
+    messages: LLMMessage[];
+    sceneKey: string;
+    assistantText: string;
+  }): Promise<void> {
+    const userText = [...input.messages]
+      .reverse()
+      .find((message) => message.role === "user")
+      ?.content
+      ?.trim();
+    if (!this.conversationRecordService || !input.options.userId || !input.options.requestId || !userText) {
+      return;
+    }
+    try {
+      await this.conversationRecordService.recordCompletedTurn({
+        userId: input.options.userId,
+        did: input.options.routingIdentity?.did,
+        requestId: input.options.requestId,
+        sceneKey: input.sceneKey,
+        userText,
+        assistantText: input.assistantText,
+      });
+    } catch (error) {
+      this.logger?.warn("AINovel completed conversation record write failed", {
+        requestId: input.options.requestId,
+        sceneKey: input.sceneKey,
+        userId: input.options.userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private mapAndLogUpstreamError(

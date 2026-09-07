@@ -31,6 +31,7 @@ export interface HttpRequest {
   cookies?: Record<string, string>;
   auth?: AuthContext;
   adminSession?: AdminSessionRecord | null;
+  signal?: AbortSignal;
 }
 
 export interface HttpResponse<T> {

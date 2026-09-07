@@ -60,6 +60,12 @@ import type { BodyLogSocialService } from "../modules/bodylog/bodylog-social.ser
 import type { BodyLogLeaderboardService } from "../modules/bodylog/bodylog-leaderboard.service.ts";
 import type { BodyLogInvitationService } from "../modules/bodylog/bodylog-invitation.service.ts";
 import type { BodyLogChallengeService } from "../modules/bodylog/bodylog-challenge.service.ts";
+import type { BodyLogBuddyService } from "../modules/bodylog/bodylog-buddy.service.ts";
+import type { BodyLogGroupService } from "../modules/bodylog/bodylog-group.service.ts";
+import type { BodyLogWorkerService } from "../modules/bodylog/bodylog-worker.service.ts";
+import type { BodyLogGrowthService } from "../modules/bodylog/bodylog-growth.service.ts";
+import type { BodyLogNotificationService } from "../modules/bodylog/bodylog-notification.service.ts";
+import type { BodyLogFeatureFlagService } from "../modules/bodylog/bodylog-feature-flag.service.ts";
 import { tryHandleBodyLogAssociationRoutes } from "./bodylog-association-routes.ts";
 import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
 import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
@@ -100,6 +106,12 @@ export class BackendApplication extends BackendRouteContext {
     private readonly bodyLogLeaderboardService: BodyLogLeaderboardService,
     private readonly bodyLogInvitationService: BodyLogInvitationService,
     private readonly bodyLogChallengeService: BodyLogChallengeService,
+    private readonly bodyLogBuddyService: BodyLogBuddyService,
+    private readonly bodyLogGroupService: BodyLogGroupService,
+    private readonly bodyLogWorkerService: BodyLogWorkerService,
+    private readonly bodyLogGrowthService: BodyLogGrowthService,
+    private readonly bodyLogNotificationService: BodyLogNotificationService,
+    private readonly bodyLogFeatureFlagService: BodyLogFeatureFlagService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly aiNovelAuditFileService: AiNovelAuditFileService,
     private readonly aiNovelLlmService: AiNovelLlmService,
@@ -251,6 +263,11 @@ export class BackendApplication extends BackendRouteContext {
       this.bodyLogLeaderboardService,
       this.bodyLogInvitationService,
       this.bodyLogChallengeService,
+      this.bodyLogBuddyService,
+      this.bodyLogGroupService,
+      this.bodyLogGrowthService,
+      this.bodyLogNotificationService,
+      this.bodyLogFeatureFlagService,
       request,
     );
     if (bodyLogResponse) {

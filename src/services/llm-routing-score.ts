@@ -16,13 +16,14 @@ export interface LlmRouteScoreInput {
   providerEnabled: boolean;
   runtimeAvailable: boolean;
   healthScore: number;
+  circuitOpen?: boolean;
 }
 
 export interface LlmRouteScoreEvaluation {
   route: LlmModelRouteConfig;
   selectionEligible: boolean;
   runtimeAvailable: boolean;
-  ineligibleReason?: "route_disabled" | "provider_disabled";
+  ineligibleReason?: "route_disabled" | "provider_disabled" | "runtime_unavailable" | "circuit_open";
   configuredWeight: number;
   healthScore: number;
   dynamicScore: number;
@@ -101,10 +102,10 @@ function evaluateAutoRoutes(inputs: LlmRouteScoreInput[]): LlmRoutingEvaluation 
 
 function evaluateFixedRoutes(inputs: LlmRouteScoreInput[]): LlmRoutingEvaluation {
   const base = inputs.map(buildBaseEvaluation);
-  const eligible = base.filter((item) => item.selectionEligible);
+  const eligible = base.filter((item) => item.selectionEligible && item.runtimeAvailable);
   const selected = eligible.length
     ? eligible.reduce((best, item) => item.configuredWeight > best.configuredWeight ? item : best)
-    : base[0];
+    : base.find((item) => item.runtimeAvailable && item.ineligibleReason !== "circuit_open");
   const compatibilityFallback = eligible.length === 0 && Boolean(selected);
 
   return {
@@ -122,14 +123,20 @@ function evaluateFixedRoutes(inputs: LlmRouteScoreInput[]): LlmRoutingEvaluation
 }
 
 function buildBaseEvaluation(input: LlmRouteScoreInput): LlmRouteScoreEvaluation {
-  const selectionEligible = input.route.enabled && input.providerEnabled;
+  const selectionEligible = input.route.enabled && input.providerEnabled && input.runtimeAvailable && !input.circuitOpen;
   return {
     route: input.route,
     selectionEligible,
     runtimeAvailable: input.runtimeAvailable,
     ineligibleReason: !input.route.enabled
       ? "route_disabled"
-      : !input.providerEnabled ? "provider_disabled" : undefined,
+      : !input.providerEnabled
+        ? "provider_disabled"
+        : !input.runtimeAvailable
+          ? "runtime_unavailable"
+          : input.circuitOpen
+            ? "circuit_open"
+          : undefined,
     configuredWeight: input.route.weight,
     healthScore: input.healthScore,
     dynamicScore: input.route.weight * (input.healthScore / 100),

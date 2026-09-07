@@ -7,7 +7,9 @@ import {
   buildTokenOption,
   formatLatency,
   formatMetricNumber,
+  formatTokenNumber,
   formatPercent,
+  successRateTone,
   tokenCoverage,
 } from "./llm-monitor-view-model";
 
@@ -28,11 +30,16 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
       <section className="surface-card">
         <header className="card-header compact-card-header">
           <div>
-            <h2>{metrics.range} 运营总览</h2>
-            <p>第一眼判断调用规模、Token 消耗、可靠性和典型/长尾等待时间。</p>
+            <h2>{metrics.range} 上游调用成功率</h2>
+            <p>先看成功、失败和超时。这里统计每一次上游调用，不等同于一次用户请求的最终结果。</p>
           </div>
         </header>
-        <div className="metric-grid llm-kpi-grid">
+        <div className={`metric-grid llm-kpi-grid llm-kpi-grid--${successRateTone(summary.successRate)}`}>
+          <MetricCard
+            hint={`成功 ${summary.successCount} · 失败 ${summary.failureCount} · 超时 ${summary.timeoutCount}；取消 ${summary.cancelledCount} 不进入分母`}
+            label="上游调用成功率"
+            value={formatPercent(summary.successRate)}
+          />
           <MetricCard
             hint={`成功 ${summary.successCount} · 失败 ${summary.failureCount} · 超时 ${summary.timeoutCount} · 取消 ${summary.cancelledCount}`}
             label="上游调用次数"
@@ -41,12 +48,7 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
           <MetricCard
             hint={tokenCoverage(summary)}
             label="总 Token 消耗"
-            value={formatMetricNumber(summary.totalTokens)}
-          />
-          <MetricCard
-            hint="成功 ÷（成功 + 失败 + 超时），客户端取消不进入分母"
-            label="可靠性成功率"
-            value={formatPercent(summary.successRate)}
+            value={formatTokenNumber(summary.totalTokens)}
           />
           <MetricCard
             hint={`仅 Streaming Chat · ${summary.firstResponseSampleCount} 个样本`}
@@ -70,25 +72,25 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
         <section className="surface-card llm-chart-card">
           <header className="card-header compact-card-header">
             <div>
-              <h2>调用量与可靠性</h2>
-              <p>判断流量变化是否伴随失败或超时增加。</p>
+              <h2>调用量与上游成功率</h2>
+              <p>每个时间桶都直接列出成功、失败和超时，避免把上游调用成功率误读为用户请求成功率。</p>
             </div>
           </header>
           <LlmChart
             option={(width) => buildCallsOption(metrics.items, width)}
-            summary={`${metrics.range} 调用次数柱状图和可靠性成功率折线图`}
+            summary={`${metrics.range} 调用次数柱状图和上游调用成功率折线图`}
           />
         </section>
         <section className="surface-card llm-chart-card">
           <header className="card-header compact-card-header">
             <div>
-              <h2>Token 结构趋势</h2>
-              <p>识别增长来自 Prompt、可见输出、Reasoning 还是未分类差额。</p>
+              <h2>Token 增长趋势</h2>
+              <p>默认查看 canonical 总 Token；悬浮查看 Prompt、可见输出、Reasoning 与未分类构成。</p>
             </div>
           </header>
           <LlmChart
             option={(width) => buildTokenOption(metrics.items, width)}
-            summary={`${metrics.range} Prompt、可见输出、Reasoning 和未分类 Token 堆叠趋势`}
+            summary={`${metrics.range} canonical 总 Token 趋势；悬浮查看结构明细`}
           />
         </section>
       </div> : (

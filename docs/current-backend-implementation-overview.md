@@ -53,6 +53,10 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 7. 邀请归因包含同设备、自邀请和重复归因防护；挑战仅允许邀请未拉黑好友。
 8. 完整外部契约位于 `api-contracts/openapi/bodylog/api.yaml`。
 
+新增搭子、小组、7 天成长计划、通知偏好和推送设备接口。PostgreSQL store 通过请求事务上下文执行，搭子接受需要接收者确认，小组成员变更与组长转让原子保存。Growth 入口默认关闭；任务完成与计划计数在同一 SQL 内提交。订阅查询和里程碑奖励使用已有订阅记录；本次不包含 IAP 验证接口。
+
+BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周报表。任务领取标记与结算数据在同一 PostgreSQL 事务中提交，失败回滚后可重试；不依赖进程内时间戳或独立 KV 标记。真实数据库验证命令为 `BODYLOG_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/bodylog-postgres.test.ts`，使用独立临时 schema，覆盖迁移重放、多连接任务去重与回滚。发布前须在 dev 环境验证当前 main SHA；这些本地验证不表示已上线。
+
 对应核心文件：
 
 1. `src/modules/bodylog/bodylog-profile.service.ts`
@@ -214,12 +218,17 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 
 1. `common.email_service_regions` 的强类型配置、版本记录与恢复
 2. `common.llm_service` 的强类型配置、版本记录与恢复，以及可选的 OpenRouter `oa-hmac-v1` 透明代理路由；代理开关和 Key ID 存配置，HMAC secret 从 `common.passwords` 动态读取；内置禁用的 OpenRouter `openrouter/free` 测试模型不会改变 AINovel 默认路由
-3. LLM 按 `auto / fixed` 两种策略路由
-4. PostgreSQL 脱敏 LLM call observation；每 route 健康窗口按 observation 时间顺序派生最近 100 个健康影响样本，客户端取消和内容业务拒绝不污染健康分
-5. canonical 路由 scorer 统一 Chat、Embedding 和 Admin runtime 的 `weight × healthScore`、全零回退、fixed 选择与真实概率
-6. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
-7. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行；AINovel `ainovel-*` scene route key 不作为运营 Model 维度
-8. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
+3. 阿里云百炼 Token Plan 作为独立 Chat Provider `bailian_token_plan` 接入其套餐专属 OpenAI-compatible Base URL，与 `bailian_coding` 完全分离；`common.passwords` 中存在 `bailian.token_plan_api_key` 时，启动配置迁移会幂等加入 Token Plan Provider 和其支持的文本模型，不改变现有默认模型或既有模型路由；当前不使用 Anthropic 端点或依赖 Responses API 的内置 Harness
+4. B.AI 作为独立 Chat Provider `bai` 接入 `https://api.b.ai/v1`；`common.passwords` 中存在 `bai.api_key` 时，启动配置迁移会幂等加入 `bai-glm-5.3-flash`，通过 `{{zook.ps.bai.api_key}}` 动态解析密钥，不改变默认模型、AINovel 选模权重或 embedding 路由。GLM-5.3-Flash 默认使用 low reasoning effort，为用户可见输出保留预算；B.AI 可选择独立的 HMAC 透明代理配置，不读取本机 HTTP(S) proxy 环境变量。
+5. LLM 按 `auto / fixed` 两种策略路由；公共方法 `resolveLlmRoutingUnit(did, uid)` 直接接收两个可空字符串，各取清洗后的末尾 3 个 base36 字符，使用两者之和对 1,000 取模形成稳定 Provider 分桶；任一入参清洗后不足 3 位时，该项由方法内部 `Math.random()` 生成的 0–999 值替代
+6. PostgreSQL 脱敏 LLM call observation；每 route 健康窗口按 observation 时间顺序派生最近 100 个健康影响样本，客户端取消和内容业务拒绝不污染健康分
+7. canonical 路由 scorer 统一 Chat、Embedding 和 Admin runtime 的 `weight × healthScore`、全零回退与 fixed 选择；健康加权概率用于缺省身份请求，完整 DID+UID 请求按基础权重保持稳定 Provider 分桶
+8. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
+9. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
+10. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
+11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：2 分钟内至少两位用户累计四次连续失败先进入不中断用户流量的确认状态，服务端立即用同一冒烟请求最多探测两次；两次都失败才隔离 `routingModelKey × provider × providerModel`。worker 用同一冒烟请求两次连续成功恢复正式熔断；管理台 runtime route 状态展示确认、熔断和下次探测信息，并支持对当前配置中的单一路由手动解除，关闭开关会清除全部既有状态
+12. `common.email_service_regions.llmAlertRecipients` 可配置 LLM 运营告警收件人；worker 使用现有腾讯云 SES 凭据和 `llm-alert` 模板，对超过 20 次调用且成功率低于 90% 的完整小时、以及正式 route 熔断分别发送去重邮件
+13. AINovel 反馈持久化成功后复用同一内部告警收件人和 `llm-alert` 模板发送反馈正文；同一用户按 Asia/Shanghai 自然日最多一封，投递失败不会影响用户反馈提交
 
 对应核心文件：
 
@@ -233,6 +242,8 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 8. `src/infrastructure/database/postgres/postgres-llm-observability.ts`
 9. `apps/admin-web/app/components/llm-monitor/`
 10. `docs/admin-web-design.md`
+11. `src/services/llm-route-circuit-breaker.service.ts`
+12. `src/services/llm-route-circuit-recovery.service.ts`
 
 ### 2.10 App 级 i18n 设置与本地化工具
 
@@ -288,11 +299,12 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 3. 两条接口都强制要求 Bearer 鉴权与 `app_id = ai_novel`
 4. 请求与响应都支持 `AES-256-GCM` JSON envelope
 5. 解密成功后的业务成功与业务错误都会加密返回
-6. `scene_key` / `sceneKey` 是 AINovel scene-first 入口；客户端不允许直传底层 `model`、`modelKey`、`providerModel`、会员档位或 routing tier 字段。AINovel routing 中的 `ainovel-*` 值是业务 scene route key，不是 common LLM model key
+6. `scene_key` / `sceneKey` 只选择 AINovel 的 Prompt、工具和响应工作流；客户端不允许直传底层 `model`、`modelKey`、`providerModel` 或 routing tier 字段。所有文本场景共用服务端 `ai_novel.model_selection.chat.default` 选出的模型
 7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
 9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
 10. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
+11. AINovel 已完成的 Chat 会保存最后一条用户正文和最终 AI 正文，并同时关联认证 UID、请求 `X-DID`、请求 ID 与 scene；每位用户在第 121 个 Turn 写入时裁剪为最新 100 个 Turn。Admin 可在 `ai_novel` 工作区按 UID 或 DID 查看，每页最多 100 个 Turn（200 条消息），不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload
 
 对应核心文件：
 
@@ -300,22 +312,22 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 2. `src/services/aes-gcm-payload-crypto.service.ts`
 3. `src/app.module.ts`
 
-### 2.14 AINovel 产品级 AI Routing 配置
+### 2.14 AINovel 产品级模型选择
 
-当前 `ai_novel` 专属的产品级模型路由由 Zook 代码硬编码：
+当前 `ai_novel` 使用单一默认模型权重路由：
 
-1. Admin 侧的 `ai_novel.model_routing` 只保留只读展示，不再作为运行时配置来源
-2. 配置结构为 scene-first：`scenes.{scene_key}.kind + scenes.{scene_key}.routes.{free|plus|super_plus}`
-3. 运行时由 Zook 根据已认证用户解析 model routing tier，再用 `scene_key + tier` 选择业务 scene route key；当前 resolver 默认返回 `free`，后续接会员权益时只替换 Zook 侧判定
-4. AINovel 客户端只发送 `scene_key`，不参与免费 / 付费档位判断
-5. `fact_embed / episode_embed / summary_embed / query_memory_embed` 继续走独立 embedding scene route key
-6. `common.llm_service` 默认文档只预填可统计、可冒烟的实际模型 key；AINovel routing 中的 `ainovel-*` 只作为业务 route key 保留
+1. `ai_novel.model_selection` 使用通用版本化 App 配置存储，结构为 `schemaVersion + chat.default[]`，不支持会员档位或场景级模型覆盖
+2. `chat.default` 的每一项为 `modelKey + weight`，模型键不可重复，每项权重大于 0 且最多两位小数，总和必须等于 100
+3. 文本请求复用通用 `llm-routing-affinity`，以 `X-Did + auth UID` 得到同一个 routing unit，再按数组顺序累计权重选择最终 common LLM model key；所有文本场景使用同一结果
+4. 整条配置不存在时使用代码默认 `qwen3.6-plus: 100`；配置损坏或引用失效模型时明确返回 `AI_UPSTREAM_CONFIG_INVALID`
+5. Provider、上游 `providerModel`、密钥、Provider 路由权重和健康路由仍由 `common.llm_service` 负责
+6. Embedding 使用代码中固定的 `text-embedding-v4` common model key，其 Provider 路由仍归 `common.llm_service`
 
 对应核心文件：
 
-1. `src/services/app-ai-routing-config.service.ts`
-2. `src/services/common-llm-config.service.ts`
-3. `src/modules/ai-novel/ai-novel-llm-scenes.ts`
+1. `src/modules/ai-novel/ai-novel-model-selection-config.service.ts`
+2. `src/modules/ai-novel/ai-novel-model-weight-selection.ts`
+3. `src/services/common-llm-config.service.ts`
 4. `src/modules/ai-novel/ai-novel-llm.service.ts`
 5. `src/app.module.ts`
 

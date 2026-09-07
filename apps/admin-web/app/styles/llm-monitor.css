@@ -72,7 +72,7 @@
 }
 
 .llm-kpi-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: minmax(210px, 1.45fr) repeat(5, minmax(0, 1fr));
 }
 
 .llm-kpi-grid .metric-card {
@@ -90,6 +90,80 @@
   display: block;
   font-size: 0.76rem;
   line-height: 1.45;
+}
+
+.llm-kpi-grid > .metric-card:first-child {
+  border-color: color-mix(in srgb, currentColor 20%, transparent);
+  position: relative;
+}
+
+.llm-kpi-grid > .metric-card:first-child::before {
+  border-radius: 999px;
+  content: "";
+  inset-block: 16px;
+  inset-inline-start: 0;
+  position: absolute;
+  width: 4px;
+}
+
+.llm-kpi-grid--healthy > .metric-card:first-child {
+  background: rgba(22, 163, 74, 0.07);
+  color: #15803d;
+}
+
+.llm-kpi-grid--warning > .metric-card:first-child {
+  background: rgba(217, 119, 6, 0.08);
+  color: #b45309;
+}
+
+.llm-kpi-grid--critical > .metric-card:first-child {
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+}
+
+.llm-kpi-grid--unknown > .metric-card:first-child {
+  background: rgba(100, 116, 139, 0.08);
+  color: var(--text-soft);
+}
+
+.llm-kpi-grid > .metric-card:first-child::before {
+  background: currentColor;
+}
+
+.llm-kpi-grid > .metric-card:first-child p,
+.llm-kpi-grid > .metric-card:first-child small {
+  color: currentColor;
+}
+
+.llm-success-rate {
+  border-radius: 7px;
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: 0.24rem 0.5rem;
+}
+
+.llm-success-rate--healthy {
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+}
+
+.llm-success-rate--warning {
+  background: rgba(217, 119, 6, 0.11);
+  color: #b45309;
+}
+
+.llm-success-rate--critical {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.llm-success-rate--unknown {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--text-soft);
 }
 
 .llm-chart-grid {
@@ -116,6 +190,28 @@
   min-width: 0;
 }
 
+.llm-reliability-errors.has-errors {
+  border-top: 3px solid rgba(220, 38, 38, 0.72);
+}
+
+.llm-error-filter {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.llm-error-filter > span,
+.llm-table-footnote,
+.llm-muted-value {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.llm-table-footnote {
+  margin: 10px 0 0;
+}
+
 .llm-table-block .ant-table-wrapper,
 .llm-dashboard .ant-table-wrapper {
   max-width: 100%;
@@ -123,6 +219,60 @@
 
 .llm-dashboard .ant-table-cell .ant-btn-link {
   cursor: pointer;
+}
+
+.llm-provider-badge {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 8px;
+}
+
+.llm-provider-badge__dot {
+  background: currentColor;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 6px;
+  width: 6px;
+}
+
+.llm-provider-badge__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llm-provider-badge--bai {
+  background: rgba(225, 81, 55, 0.1);
+  border-color: rgba(225, 81, 55, 0.22);
+  color: #c2412d;
+}
+
+.llm-provider-badge--bailian {
+  background: rgba(37, 99, 235, 0.09);
+  border-color: rgba(37, 99, 235, 0.2);
+  color: #1d4ed8;
+}
+
+.llm-provider-badge--openrouter {
+  background: rgba(124, 58, 237, 0.09);
+  border-color: rgba(124, 58, 237, 0.2);
+  color: #6d28d9;
+}
+
+.llm-provider-badge--volcengine {
+  background: rgba(8, 145, 178, 0.09);
+  border-color: rgba(8, 145, 178, 0.2);
+  color: #0e7490;
+}
+
+.llm-provider-badge--neutral {
+  background: rgba(71, 85, 105, 0.08);
+  border-color: rgba(71, 85, 105, 0.16);
+  color: #475569;
 }
 
 .llm-formula-note {
@@ -139,6 +289,11 @@
 .llm-formula-note code {
   color: var(--text);
   font-family: var(--font-mono);
+}
+
+.llm-formula-note--secondary {
+  margin-bottom: 0;
+  margin-top: 14px;
 }
 
 .llm-snapshot-meta {
@@ -209,6 +364,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .llm-kpi-grid > .metric-card:first-child {
+    grid-column: 1 / -1;
+  }
+
   .llm-filter-controls .ant-segmented,
   .llm-filter-select.ant-select,
   .llm-filter-select--model.ant-select {
@@ -236,6 +395,11 @@
 
   .llm-snapshot-meta {
     justify-content: flex-start;
+  }
+
+  .llm-error-filter {
+    align-items: stretch;
+    width: 100%;
   }
 }
 

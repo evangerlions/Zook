@@ -2,6 +2,8 @@ import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
 import type { LlmCallObservationRecorder } from "./llm-call-observation.ts";
+import type { LlmRouteCircuitBreakerService } from "./llm-route-circuit-breaker.service.ts";
+import type { LlmRouteRef } from "./llm-health.service.ts";
 
 export type LLMProviderName = string;
 export type LLMRole = "system" | "user" | "assistant" | "tool";
@@ -14,9 +16,13 @@ export interface LLMMessage {
   reasoningContent?: string;
 }
 
+export interface LlmRoutingIdentity {
+  did?: string;
+  uid?: string;
+}
+
 export interface LLMCompletionRequest {
   modelKey: string;
-  modelKeyKind?: "model" | "scene_route";
   messages: LLMMessage[];
   temperature?: number;
   maxTokens?: number;
@@ -25,6 +31,8 @@ export interface LLMCompletionRequest {
     appId: string;
     userId: string;
   };
+  routingIdentity?: LlmRoutingIdentity;
+  signal?: AbortSignal;
 }
 
 export interface LLMCompleteViaStreamOptions {
@@ -85,7 +93,6 @@ export type LLMStreamEvent = (
 export interface ResolvedLLMModel {
   provider: LLMProviderName;
   modelKey: string;
-  modelKeyKind?: "model" | "scene_route";
   resolvedModelKey: string;
   providerModel: string;
   providerConfig?: {
@@ -97,7 +104,7 @@ export interface ResolvedLLMModel {
 
 export interface ResolvedLLMCompletionRequest extends Omit<
   LLMCompletionRequest,
-  "modelKey"
+  "modelKey" | "routingIdentity"
 > {
   model: ResolvedLLMModel;
 }
@@ -120,6 +127,8 @@ export interface LLMManagerOptions {
   llmHealthService?: LlmHealthService;
   llmMetricsService?: LlmMetricsService;
   llmCallObservationRecorder?: LlmCallObservationRecorder;
+  llmRouteCircuitBreaker?: LlmRouteCircuitBreakerService;
+  onLlmRouteCircuitConfirmation?: (route: LlmRouteRef) => Promise<void> | void;
   usageRecorder?: (event: {
     appId: string;
     userId: string;

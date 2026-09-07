@@ -1,4 +1,5 @@
 import type { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
+import { ApplicationError } from "../../shared/errors.ts";
 import type { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.ts";
 import type { CommonAuthRateLimitConfigService } from "../../services/common-auth-rate-limit-config.service.ts";
 import type { CommonContentSafetyConfigService } from "../../services/common-content-safety-config.service.ts";
@@ -11,6 +12,7 @@ import type { EmailTestSendService } from "../../services/email-test-send.servic
 import type { LlmHealthService } from "../../services/llm-health.service.ts";
 import type { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import type { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
+import type { LlmRouteCircuitBreakerService } from "../../services/llm-route-circuit-breaker.service.ts";
 import type {
   AdminAuthRateLimitDocument,
   AdminContentSafetyDocument,
@@ -21,6 +23,8 @@ import type {
   AdminGetuiGyServiceDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
+  AdminLlmRouteCircuitResetDocument,
+  AdminLlmRouteCircuitResetRequest,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestRunRequest,
@@ -46,6 +50,7 @@ export class AdminConsoleCommonConfig {
     private readonly llmHealthService: LlmHealthService,
     private readonly llmMetricsService: LlmMetricsService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
+    private readonly llmRouteCircuitBreaker?: LlmRouteCircuitBreakerService,
   ) {}
 
   async getEmailServiceConfig(revision?: number): Promise<AdminEmailServiceDocument> {
@@ -153,7 +158,12 @@ export class AdminConsoleCommonConfig {
       generatedAt: new Date().toISOString(),
       models: await Promise.all(
         document.config.models.map((model) =>
-          this.llmHealthService.buildModelRuntimeStatus(model, document.config.providers),
+          this.llmHealthService.buildModelRuntimeStatus(
+            model,
+            document.config.providers,
+            undefined,
+            Boolean(document.config.routeCircuitBreaker?.enabled),
+          ),
         ),
       ),
     };
@@ -166,12 +176,18 @@ export class AdminConsoleCommonConfig {
 
   async updateLlmServiceConfig(input: unknown, desc?: string): Promise<AdminLlmServiceDocument> {
     const document = await this.commonLlmConfigService.updateConfig(input, desc);
+    if (!document.config.routeCircuitBreaker?.enabled) {
+      await this.llmRouteCircuitBreaker?.resetAll();
+    }
     await this.saveState();
     return this.getLlmServiceConfig(document.revision);
   }
 
   async restoreLlmServiceConfig(revision: number, desc?: string): Promise<AdminLlmServiceDocument> {
     const document = await this.commonLlmConfigService.restoreConfig(revision, desc);
+    if (!document.config.routeCircuitBreaker?.enabled) {
+      await this.llmRouteCircuitBreaker?.resetAll();
+    }
     await this.saveState();
     return this.getLlmServiceConfig(document.revision);
   }
@@ -216,6 +232,28 @@ export class AdminConsoleCommonConfig {
     input?: AdminLlmSmokeTestRunRequest,
   ): Promise<AdminLlmSmokeTestDocument> {
     return this.llmSmokeTestService.run(input);
+  }
+
+  async resetLlmRouteCircuit(
+    input: AdminLlmRouteCircuitResetRequest,
+  ): Promise<AdminLlmRouteCircuitResetDocument> {
+    const config = await this.commonLlmConfigService.getCurrentConfig();
+    const model = config.models.find((item) => item.key === input.modelKey && item.kind === "chat");
+    const route = model?.routes.find((item) =>
+      item.provider === input.provider && item.providerModel === input.providerModel,
+    );
+    if (!model || !route) {
+      throw new ApplicationError(400, "ADMIN_LLM_SERVICE_INVALID", "The requested LLM chat route is not configured.");
+    }
+    return {
+      cleared: await this.llmRouteCircuitBreaker?.resetRoute({
+        modelKey: model.key,
+        provider: route.provider,
+        providerModel: route.providerModel,
+        operation: "chat",
+      }) ?? false,
+      route: input,
+    };
   }
 
   async getContentSafetyConfig(revision?: number): Promise<AdminContentSafetyDocument> {

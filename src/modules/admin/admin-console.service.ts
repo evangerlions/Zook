@@ -3,6 +3,7 @@ import { ManagedStateStore } from "../../infrastructure/kv/managed-state.store.t
 import { VersionedAppConfigService } from "../../services/versioned-app-config.service.ts";
 import { AppI18nConfigService } from "../../services/app-i18n-config.service.ts";
 import { AppAiRoutingConfigService } from "../../services/app-ai-routing-config.service.ts";
+import { AiNovelModelSelectionConfigService } from "../ai-novel/ai-novel-model-selection-config.service.ts";
 import { AppLogSecretService } from "../../services/app-log-secret.service.ts";
 import { AppRemoteLogPullService } from "../../services/app-remote-log-pull.service.ts";
 import { CommonEmailConfigService } from "../../services/common-email-config.service.ts";
@@ -16,14 +17,15 @@ import { EmailTestSendService } from "../../services/email-test-send.service.ts"
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "../../services/llm-smoke-test.service.ts";
+import { LlmRouteCircuitBreakerService } from "../../services/llm-route-circuit-breaker.service.ts";
 import { RefreshTokenStore } from "../../services/refresh-token-store.ts";
 import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
 import { createAppNameI18n } from "../../shared/app-name.ts";
 import { ApplicationError, badRequest, conflict } from "../../shared/errors.ts";
 import type {
   AdminAiRoutingDocument,
+  AdminAiNovelModelSelectionDocument,
   AdminAppSummary,
-  AdminAuthRateLimitDocument,
   AdminAppI18nDocument,
   AdminAppLogSecretRevealDocument,
   AdminAppRemoteLogPullSettingsDocument,
@@ -33,28 +35,14 @@ import type {
   AdminBootstrapResult,
   AdminConfigDocument,
   AdminDeleteAppResult,
-  AdminEmailServiceDocument,
-  AdminEmailTestSendCommand,
-  AdminEmailTestSendDocument,
-  AdminGetuiGyCredentialRevealDocument,
-  AdminGetuiGyServiceDocument,
-  AdminContentSafetyDocument,
-  GetuiGySensitiveCredentialField,
-  AdminLlmMetricsDocument,
-  AdminLlmModelMetricsDocument,
-  AdminLlmSmokeTestDocument,
-  AdminLlmSmokeTestRunRequest,
-  AdminLlmServiceDocument,
-  AdminPasswordDocument,
   AdminPasswordRevealDocument,
-  AdminSmsServiceDocument,
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   AppRecord,
-  LlmMetricsRange,
   PublicAppConfigDocument,
 } from "../../shared/types.ts";
 import { AdminConsoleCommonConfig } from "./admin-console-common-config.ts";
+import { AdminConsoleCommonFacade } from "./admin-console-common-facade.ts";
 import {
   ADMIN_CONFIG_KEY,
   APP_ID_PATTERN,
@@ -66,15 +54,16 @@ import {
   normalizeRequiredAppNames,
 } from "./admin-console-config-utils.ts";
 import { createDefaultRoles } from "./admin-console-roles.ts";
+import { AdminAiNovelModelHealthService } from "./admin-ai-novel-model-health.service.ts";
+import { AiNovelConversationRecordService } from "../ai-novel/ai-novel-conversation-record.service.ts";
 
-export class AdminConsoleService {
-  private readonly commonConfig: AdminConsoleCommonConfig;
-
+export class AdminConsoleService extends AdminConsoleCommonFacade {
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly appConfigService: VersionedAppConfigService,
     private readonly appI18nConfigService: AppI18nConfigService,
     private readonly appAiRoutingConfigService: AppAiRoutingConfigService,
+    private readonly aiNovelModelSelectionConfigService: AiNovelModelSelectionConfigService,
     private readonly appRemoteLogPullService: AppRemoteLogPullService,
     private readonly appLogSecretService: AppLogSecretService,
     private readonly commonEmailConfigService: CommonEmailConfigService,
@@ -87,25 +76,31 @@ export class AdminConsoleService {
     private readonly emailTestSendService: EmailTestSendService,
     private readonly llmHealthService: LlmHealthService,
     private readonly llmMetricsService: LlmMetricsService,
+    private readonly adminAiNovelModelHealthService: AdminAiNovelModelHealthService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly smsVerificationRecordService: SmsVerificationRecordService,
     private readonly managedStateStore: ManagedStateStore,
+    private readonly aiNovelConversationRecordService: AiNovelConversationRecordService,
+    private readonly llmRouteCircuitBreaker?: LlmRouteCircuitBreakerService,
   ) {
-    this.commonConfig = new AdminConsoleCommonConfig(
-      database,
-      managedStateStore,
-      commonEmailConfigService,
-      commonSmsConfigService,
-      commonAuthRateLimitConfigService,
-      commonGetuiGyConfigService,
-      commonLlmConfigService,
-      commonContentSafetyConfigService,
-      commonPasswordConfigService,
-      emailTestSendService,
-      llmHealthService,
-      llmMetricsService,
-      llmSmokeTestService,
+    super(
+      new AdminConsoleCommonConfig(
+        database,
+        managedStateStore,
+        commonEmailConfigService,
+        commonSmsConfigService,
+        commonAuthRateLimitConfigService,
+        commonGetuiGyConfigService,
+        commonLlmConfigService,
+        commonContentSafetyConfigService,
+        commonPasswordConfigService,
+        emailTestSendService,
+        llmHealthService,
+        llmMetricsService,
+        llmSmokeTestService,
+        llmRouteCircuitBreaker,
+      ),
     );
   }
 
@@ -375,81 +370,6 @@ export class AdminConsoleService {
     return Object.keys(parsed as Record<string, unknown>).length === 0;
   }
 
-  async getEmailServiceConfig(revision?: number): Promise<AdminEmailServiceDocument> {
-    return this.commonConfig.getEmailServiceConfig(revision);
-  }
-
-  async getAuthRateLimitConfig(revision?: number): Promise<AdminAuthRateLimitDocument> {
-    return this.commonConfig.getAuthRateLimitConfig(revision);
-  }
-
-  async getSmsServiceConfig(revision?: number): Promise<AdminSmsServiceDocument> {
-    return this.commonConfig.getSmsServiceConfig(revision);
-  }
-
-  async updateSmsServiceConfig(input: unknown, desc?: string): Promise<AdminSmsServiceDocument> {
-    return this.commonConfig.updateSmsServiceConfig(input, desc);
-  }
-
-  async restoreSmsServiceConfig(revision: number, desc?: string): Promise<AdminSmsServiceDocument> {
-    return this.commonConfig.restoreSmsServiceConfig(revision, desc);
-  }
-
-  async updateAuthRateLimitConfig(input: unknown, desc?: string): Promise<AdminAuthRateLimitDocument> {
-    return this.commonConfig.updateAuthRateLimitConfig(input, desc);
-  }
-
-  async restoreAuthRateLimitConfig(revision: number, desc?: string): Promise<AdminAuthRateLimitDocument> {
-    return this.commonConfig.restoreAuthRateLimitConfig(revision, desc);
-  }
-
-  async getGetuiGyServiceConfig(revision?: number): Promise<AdminGetuiGyServiceDocument> {
-    return this.commonConfig.getGetuiGyServiceConfig(revision);
-  }
-
-  async updateGetuiGyServiceConfig(input: unknown, desc?: string): Promise<AdminGetuiGyServiceDocument> {
-    return this.commonConfig.updateGetuiGyServiceConfig(input, desc);
-  }
-
-  async restoreGetuiGyServiceConfig(revision: number, desc?: string): Promise<AdminGetuiGyServiceDocument> {
-    return this.commonConfig.restoreGetuiGyServiceConfig(revision, desc);
-  }
-
-  async revealGetuiGyCredentialValue(
-    zookAppId: string,
-    field: GetuiGySensitiveCredentialField,
-  ): Promise<AdminGetuiGyCredentialRevealDocument> {
-    return this.commonConfig.revealGetuiGyCredentialValue(zookAppId, field);
-  }
-
-  async updateEmailServiceConfig(input: unknown, desc?: string): Promise<AdminEmailServiceDocument> {
-    return this.commonConfig.updateEmailServiceConfig(input, desc);
-  }
-
-  async restoreEmailServiceConfig(revision: number, desc?: string): Promise<AdminEmailServiceDocument> {
-    return this.commonConfig.restoreEmailServiceConfig(revision, desc);
-  }
-
-  async sendEmailTest(input: AdminEmailTestSendCommand): Promise<AdminEmailTestSendDocument> {
-    return this.commonConfig.sendEmailTest(input);
-  }
-
-  async getPasswordConfig(): Promise<AdminPasswordDocument> {
-    return this.commonConfig.getPasswordConfig();
-  }
-
-  async updatePasswordConfig(input: unknown): Promise<AdminPasswordDocument> {
-    return this.commonConfig.updatePasswordConfig(input);
-  }
-
-  async upsertPasswordItem(input: unknown): Promise<AdminPasswordDocument> {
-    return this.commonConfig.upsertPasswordItem(input);
-  }
-
-  async deletePasswordItem(key: string): Promise<AdminPasswordDocument> {
-    return this.commonConfig.deletePasswordItem(key);
-  }
-
   async getI18nSettings(appId: string, revision?: number): Promise<AdminAppI18nDocument> {
     const app = await this.requireConfigApp(appId);
     const document = await this.appI18nConfigService.getDocument(app.id, revision);
@@ -472,8 +392,34 @@ export class AdminConsoleService {
     };
   }
 
-  async getAiRoutingSettings(appId: string, revision?: number): Promise<AdminAiRoutingDocument> {
-    return this.getAiRouting(appId, revision);
+  async getAiNovelModelSelection(revision?: number): Promise<AdminAiNovelModelSelectionDocument> {
+    const app = await this.requireConfigApp("ai_novel");
+    const document = await this.aiNovelModelSelectionConfigService.getDocument(revision);
+    return {
+      app: await this.toSummary(app),
+      ...document,
+      modelHealth: await this.adminAiNovelModelHealthService.getModelHealth(document.config),
+    };
+  }
+
+  async getAiNovelConversationRecords(input: {
+    uid?: string;
+    did?: string;
+    page?: number;
+  }) {
+    return await this.aiNovelConversationRecordService.listForAdmin(input);
+  }
+
+  async updateAiNovelModelSelection(input: unknown, desc?: string): Promise<AdminAiNovelModelSelectionDocument> {
+    await this.aiNovelModelSelectionConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getAiNovelModelSelection();
+  }
+
+  async restoreAiNovelModelSelection(revision: number, desc?: string): Promise<AdminAiNovelModelSelectionDocument> {
+    await this.aiNovelModelSelectionConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return this.getAiNovelModelSelection();
   }
 
   async updateRemoteLogPullSettings(
@@ -545,46 +491,6 @@ export class AdminConsoleService {
     const document = await this.appI18nConfigService.restoreConfig(app.id, revision, desc);
     await this.managedStateStore.save(this.database);
     return this.getI18nSettings(app.id, document.revision);
-  }
-
-  async getLlmServiceConfig(revision?: number): Promise<AdminLlmServiceDocument> {
-    return this.commonConfig.getLlmServiceConfig(revision);
-  }
-
-  async updateLlmServiceConfig(input: unknown, desc?: string): Promise<AdminLlmServiceDocument> {
-    return this.commonConfig.updateLlmServiceConfig(input, desc);
-  }
-
-  async restoreLlmServiceConfig(revision: number, desc?: string): Promise<AdminLlmServiceDocument> {
-    return this.commonConfig.restoreLlmServiceConfig(revision, desc);
-  }
-
-  async getLlmMetrics(range: LlmMetricsRange, provider?: string, operation?: "chat" | "embedding", providerModel?: string): Promise<AdminLlmMetricsDocument> {
-    return this.commonConfig.getLlmMetrics(range, provider, operation, providerModel);
-  }
-
-  async getLlmModelMetrics(
-    modelKey: string,
-    range: LlmMetricsRange,
-    provider?: string,
-  ): Promise<AdminLlmModelMetricsDocument> {
-    return this.commonConfig.getLlmModelMetrics(modelKey, range, provider);
-  }
-
-  async runLlmSmokeTest(input?: AdminLlmSmokeTestRunRequest): Promise<AdminLlmSmokeTestDocument> {
-    return this.commonConfig.runLlmSmokeTest(input);
-  }
-
-  async getContentSafetyConfig(revision?: number): Promise<AdminContentSafetyDocument> {
-    return this.commonConfig.getContentSafetyConfig(revision);
-  }
-
-  async updateContentSafetyConfig(input: unknown, desc?: string): Promise<AdminContentSafetyDocument> {
-    return this.commonConfig.updateContentSafetyConfig(input, desc);
-  }
-
-  async restoreContentSafetyConfig(revision: number, desc?: string): Promise<AdminContentSafetyDocument> {
-    return this.commonConfig.restoreContentSafetyConfig(revision, desc);
   }
 
   private async toSummary(app: AppRecord): Promise<AdminAppSummary> {

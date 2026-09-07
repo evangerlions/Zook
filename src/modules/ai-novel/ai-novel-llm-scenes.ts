@@ -8,7 +8,6 @@ export type AiNovelChatSceneProfile = AiNovelPromptProfile;
 export interface AiNovelChatScene {
   sceneKey: string;
   kind: "chat";
-  defaultSceneRouteKey: string;
   defaultTemperature: number;
   defaultMaxTokens: number;
   responseMode: Exclude<AiNovelSceneResponseMode, "embedding">;
@@ -21,7 +20,6 @@ export interface AiNovelChatScene {
 export interface AiNovelEmbeddingScene {
   sceneKey: string;
   kind: "embedding";
-  defaultSceneRouteKey: string;
   responseMode: "embedding";
 }
 
@@ -29,7 +27,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   kickoff_turn: {
     sceneKey: "kickoff_turn",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-free-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 4000,
     responseMode: "text",
@@ -37,7 +34,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   kickoff_turn_imported_book: {
     sceneKey: "kickoff_turn_imported_book",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-plus-reasoning",
     defaultTemperature: 0.25,
     defaultMaxTokens: 5000,
     responseMode: "text",
@@ -47,7 +43,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   chat_compaction: {
     sceneKey: "chat_compaction",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "text",
@@ -56,7 +51,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   write_turn: {
     sceneKey: "write_turn",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-free-creative",
     defaultTemperature: 0.55,
     defaultMaxTokens: 8000,
     responseMode: "text",
@@ -66,7 +60,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   chapter_draft: {
     sceneKey: "chapter_draft",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-free-creative",
     defaultTemperature: 0.65,
     defaultMaxTokens: 20000,
     responseMode: "text",
@@ -76,7 +69,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   import_book_agent: {
     sceneKey: "import_book_agent",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-plus-reasoning",
     defaultTemperature: 0.2,
     defaultMaxTokens: 6000,
     responseMode: "text",
@@ -87,7 +79,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   chapter_summary: {
     sceneKey: "chapter_summary",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "json",
@@ -98,7 +89,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   chapter_draft_review: {
     sceneKey: "chapter_draft_review",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "json",
@@ -109,7 +99,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   snapshot_generation: {
     sceneKey: "snapshot_generation",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0,
     defaultMaxTokens: 4000,
     responseMode: "json",
@@ -120,7 +109,6 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   next_chapter_brief: {
     sceneKey: "next_chapter_brief",
     kind: "chat",
-    defaultSceneRouteKey: "ainovel-lowcost-structured",
     defaultTemperature: 0.15,
     defaultMaxTokens: 3000,
     responseMode: "json",
@@ -134,25 +122,21 @@ const EMBEDDING_SCENES: Record<string, AiNovelEmbeddingScene> = {
   fact_embed: {
     sceneKey: "fact_embed",
     kind: "embedding",
-    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   episode_embed: {
     sceneKey: "episode_embed",
     kind: "embedding",
-    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   summary_embed: {
     sceneKey: "summary_embed",
     kind: "embedding",
-    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
   query_memory_embed: {
     sceneKey: "query_memory_embed",
     kind: "embedding",
-    defaultSceneRouteKey: "ainovel-embedding-default",
     responseMode: "embedding",
   },
 };

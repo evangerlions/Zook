@@ -2,6 +2,7 @@ import type {
   LlmBoundedAggregateGroup,
   LlmCallObservationRecord,
   LlmCrossAggregate,
+  LlmHealthFailureAggregate,
   LlmObservabilityFilter,
   LlmObservabilityQueryResult,
   LlmObservabilityStore,
@@ -19,6 +20,7 @@ import { toDateKey, toHourKey } from "../shared/utils.ts";
 const PROVIDER_LIMIT = 50;
 const MODEL_LIMIT = 100;
 const ROUTE_LIMIT = 500;
+const HEALTH_FAILURE_LIMIT = 100;
 
 export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
   readonly observations: LlmCallObservationRecord[] = [];
@@ -52,6 +54,7 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
   async queryMetrics(filter: LlmObservabilityFilter): Promise<LlmObservabilityQueryResult> {
     const records = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.provider ? item.provider === filter.provider : true)
       .filter((item) => filter.providerModel ? item.providerModel === filter.providerModel : true);
@@ -60,17 +63,21 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
       : true);
     const routingRecords = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.routingModelKey ? item.routingModelKey === filter.routingModelKey : true);
     const providerRecords = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.providerModel ? item.providerModel === filter.providerModel : true)
       .filter((item) => filter.routingModelKey ? item.routingModelKey === filter.routingModelKey : true);
     const revisionRecords = this.observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true);
     const allFiltered = this.observations
+      .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.provider ? item.provider === filter.provider : true)
       .filter((item) => filter.providerModel ? item.providerModel === filter.providerModel : true)
@@ -90,10 +97,30 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
       providerModels: bounded(groupByProviderModel(rangeRecords), MODEL_LIMIT),
       routes: bounded(groupByRoute(routingRecords), ROUTE_LIMIT),
       cross: bounded(groupByCross(rangeRecords), ROUTE_LIMIT),
+      healthFailures: boundedHealthFailures(
+        groupHealthFailures(rangeRecords),
+        HEALTH_FAILURE_LIMIT,
+      ),
       routingConfigRevisions: Array.from(new Set(
         revisionRecords.map((item) => item.routingConfigRevision).filter((item): item is number => item !== undefined),
       )).sort((left, right) => left - right),
     };
+  }
+
+  async queryRoutingModelRequestCounts(
+    filter: LlmObservabilityFilter,
+  ): Promise<Record<string, number>> {
+    const counts = new Map<string, number>();
+    for (const item of this.observations) {
+      if (item.occurredAt < filter.occurredAtFrom || item.occurredAt >= filter.occurredAtTo) continue;
+      if (filter.appId && item.appId !== filter.appId) continue;
+      if (filter.operation && item.operation !== filter.operation) continue;
+      if (filter.provider && item.provider !== filter.provider) continue;
+      if (filter.providerModel && item.providerModel !== filter.providerModel) continue;
+      if (filter.routingModelKey && item.routingModelKey !== filter.routingModelKey) continue;
+      counts.set(item.routingModelKey, (counts.get(item.routingModelKey) ?? 0) + 1);
+    }
+    return Object.fromEntries(counts);
   }
 
   async deleteBefore(cutoffIso: string): Promise<{ observations: number }> {
@@ -153,6 +180,33 @@ function groupByCross(records: LlmCallObservationRecord[]): LlmCrossAggregate[] 
     });
 }
 
+function groupHealthFailures(records: LlmCallObservationRecord[]): LlmHealthFailureAggregate[] {
+  return group(
+    records.filter((item) => item.healthImpact === "failure"),
+    (item) => [
+      item.routingModelKey,
+      item.provider,
+      item.providerModel,
+      item.operation,
+      item.errorCode || "UNKNOWN_ERROR",
+      item.errorMessage || "",
+    ].join("\u0000"),
+  ).map(([key, items]) => {
+    const [routingModelKey, provider, providerModel, operation, errorCode, errorMessage] =
+      key.split("\u0000") as [string, string, string, LlmOperation, string, string];
+    return {
+      routingModelKey,
+      provider,
+      providerModel,
+      operation,
+      errorCode,
+      errorMessage: errorMessage || undefined,
+      count: items.length,
+      lastOccurredAt: items.map((item) => item.occurredAt).sort().at(-1)!,
+    };
+  });
+}
+
 function group(
   records: LlmCallObservationRecord[],
   keyFor: (record: LlmCallObservationRecord) => string,
@@ -170,6 +224,20 @@ function bounded<T extends { totalTokens?: number; requestCount: number }>(
 ): LlmBoundedAggregateGroup<T> {
   const sorted = [...items].sort((left, right) =>
     (right.totalTokens ?? 0) - (left.totalTokens ?? 0) || right.requestCount - left.requestCount,
+  );
+  return {
+    items: sorted.slice(0, limit),
+    totalCount: sorted.length,
+    truncated: sorted.length > limit,
+  };
+}
+
+function boundedHealthFailures(
+  items: LlmHealthFailureAggregate[],
+  limit: number,
+): LlmBoundedAggregateGroup<LlmHealthFailureAggregate> {
+  const sorted = [...items].sort((left, right) =>
+    right.count - left.count || right.lastOccurredAt.localeCompare(left.lastOccurredAt),
   );
   return {
     items: sorted.slice(0, limit),

@@ -34,17 +34,31 @@ export interface LlmModelConfig {
   routes: LlmModelRouteConfig[];
 }
 
-export interface OpenRouterConfig {
+export interface TransparentProxyConfig {
   useTransparentProxy: boolean;
   transparentProxyBaseUrl: string;
   transparentProxyKeyId: string;
   transparentProxyHmacSecretKey: string;
 }
 
+export interface OpenRouterConfig extends TransparentProxyConfig {}
+
+export interface BaiConfig extends TransparentProxyConfig {}
+
+/**
+ * A deliberately small, global safety switch.  Per-route state is runtime
+ * data, rather than user-editable configuration.
+ */
+export interface LlmRouteCircuitBreakerConfig {
+  enabled: boolean;
+}
+
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
   openRouter: OpenRouterConfig;
+  bai: BaiConfig;
+  routeCircuitBreaker: LlmRouteCircuitBreakerConfig;
   providers: LlmProviderConfig[];
   models: LlmModelConfig[];
 }
@@ -56,11 +70,11 @@ export interface LlmRouteRuntimeStatus {
   providerEnabled: boolean;
   selectionEligible: boolean;
   runtimeAvailable: boolean;
-  ineligibleReason?: "route_disabled" | "provider_disabled";
+  ineligibleReason?: "route_disabled" | "provider_disabled" | "runtime_unavailable" | "circuit_open";
   weight: number;
   configuredWeight: number;
   sampleSize: number;
-  successRate: number;
+  successRate?: number;
   healthScore: number;
   dynamicScore: number;
   effectiveProbability: number;
@@ -73,6 +87,31 @@ export interface LlmRouteRuntimeStatus {
     | "ineligible";
   selected: boolean;
   lastErrorAt?: string;
+  circuit?: LlmRouteCircuitRuntimeStatus;
+}
+
+export interface LlmRouteCircuitRuntimeStatus {
+  enabled: boolean;
+  state: "closed" | "confirming" | "open";
+  failureCount: number;
+  distinctUserCount: number;
+  confirmationStartedAt?: string;
+  openedAt?: string;
+  blockedUntil?: string;
+  nextRecoveryAt?: string;
+  recoverySuccessCount: number;
+  recoveryFailureCount: number;
+}
+
+export interface AdminLlmRouteCircuitResetRequest {
+  modelKey: string;
+  provider: string;
+  providerModel: string;
+}
+
+export interface AdminLlmRouteCircuitResetDocument {
+  cleared: boolean;
+  route: AdminLlmRouteCircuitResetRequest;
 }
 
 export interface LlmModelRuntimeStatus {
@@ -107,7 +146,7 @@ export interface LlmMetricsSummary {
   failureCount: number;
   timeoutCount: number;
   cancelledCount: number;
-  successRate: number;
+  successRate?: number;
   latencySampleCount: number;
   firstResponseSampleCount: number;
   avgFirstByteLatencyMs?: number;
@@ -168,6 +207,17 @@ export interface LlmProviderMetricsOption {
   label: string;
 }
 
+export interface LlmHealthFailureMetricsGroup {
+  routingModelKey: string;
+  provider: string;
+  providerModel: string;
+  operation: LlmMetricsOperation;
+  errorCode: string;
+  errorMessage?: string;
+  count: number;
+  lastOccurredAt: string;
+}
+
 export interface LlmBoundedMetricsGroup<T> {
   items: T[];
   totalCount: number;
@@ -191,6 +241,7 @@ export interface AdminLlmMetricsDocument {
   models: LlmBoundedMetricsGroup<LlmModelMetricsGroup>;
   routes: LlmBoundedMetricsGroup<LlmRouteMetricsGroup>;
   crossMetrics: LlmBoundedMetricsGroup<LlmCrossMetricsGroup>;
+  healthFailures: LlmBoundedMetricsGroup<LlmHealthFailureMetricsGroup>;
   runtime: LlmRuntimeSnapshot;
   routingConfigChangedWithinRange: boolean;
 }

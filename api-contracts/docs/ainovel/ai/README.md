@@ -21,7 +21,7 @@ Excluded:
 ## Rules
 
 1. Both AI endpoints are **scene-first**: the decrypted inner payload must provide `scene_key` or `sceneKey`.
-2. Client must **not** send `model` / `providerModel` / `modelKey` / `tier` / `routingTier` / `modelTier` directly. AINovel `ainovel-*` values are business scene route keys, not common LLM model keys, and user tier routing is resolved by Zook.
+2. Client must **not** send `model` / `providerModel` / `modelKey` / `tier` / `routingTier` / `modelTier` directly. Scene keys select only the Prompt/tool workflow; every chat scene uses the same server-side AINovel default model selection.
 3. AI request/response business payloads travel inside an AES-256-GCM JSON envelope.
 4. Only auth / app-scope / outer-envelope errors may return plain JSON.
 5. After request decryption succeeds, business success and business failure both return encrypted envelopes.

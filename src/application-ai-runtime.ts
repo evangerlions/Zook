@@ -3,6 +3,12 @@ import type { KVManager } from "./infrastructure/kv/kv-manager.ts";
 import type { StructuredLogger } from "./infrastructure/logging/pino-logger.module.ts";
 import { AiNovelStatisticsService } from "./services/ai-novel-statistics.service.ts";
 import { createAiNovelStatisticsUsageOptions } from "./services/ai-novel-statistics-usage-recorder.ts";
+import {
+  AliyunTokenPlanProvider,
+  ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
+} from "./services/aliyun-token-plan-provider.ts";
+import { BAI_PROVIDER_KEY } from "./services/bai-openai-compatible-provider.ts";
+import { createBaiAwareProvider } from "./services/bai-aware-provider.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import type { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
@@ -13,12 +19,18 @@ import {
 import type { LlmHealthService } from "./services/llm-health.service.ts";
 import type { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
+import type { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
+import { LlmRouteCircuitRecoveryService } from "./services/llm-route-circuit-recovery.service.ts";
 import {
   LocalAiNovelE2eProvider,
   shouldUseLocalAiNovelE2eProvider,
 } from "./services/local-ainovel-e2e-provider.ts";
 import { LLMManager, type LLMProvider } from "./services/llm-manager.ts";
 import { createOpenRouterAwareProvider } from "./services/openrouter-aware-provider.ts";
+import {
+  VolcengineAgentPlanProvider,
+  VOLCENGINE_AGENT_PLAN_PROVIDER_KEY,
+} from "./services/volcengine-agent-plan-provider.ts";
 
 interface ApplicationAiRuntimeOptions {
   database: ApplicationDatabase;
@@ -27,6 +39,7 @@ interface ApplicationAiRuntimeOptions {
   llmHealthService: LlmHealthService;
   llmMetricsService: LlmMetricsService;
   kvManager: KVManager;
+  llmRouteCircuitBreaker: LlmRouteCircuitBreakerService;
   logger: StructuredLogger;
   llmProviders?: Record<string, LLMProvider>;
   embeddingProviders?: Record<string, EmbeddingProvider>;
@@ -41,11 +54,22 @@ export function createApplicationAiRuntime(
   const bailianProvider = new BailianOpenAICompatibleProvider({
     logger: options.logger,
   });
+  const baiProvider = createBaiAwareProvider(
+    options.commonLlmConfigService,
+    options.commonPasswordConfigService,
+    options.logger,
+  );
+  const aliyunTokenPlanProvider = new AliyunTokenPlanProvider({
+    logger: options.logger,
+  });
   const openRouterProvider = createOpenRouterAwareProvider(
     options.commonLlmConfigService,
     options.commonPasswordConfigService,
     options.logger,
   );
+  const volcengineAgentPlanProvider = new VolcengineAgentPlanProvider({
+    logger: options.logger,
+  });
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
     : undefined;
@@ -59,7 +83,12 @@ export function createApplicationAiRuntime(
   const llmProviders = options.llmProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,
     bailian_coding: localAiNovelE2eProvider ?? bailianProvider,
+    [ALIYUN_TOKEN_PLAN_PROVIDER_KEY]:
+      localAiNovelE2eProvider ?? aliyunTokenPlanProvider,
+    [BAI_PROVIDER_KEY]: localAiNovelE2eProvider ?? baiProvider,
     openrouter: localAiNovelE2eProvider ?? openRouterProvider,
+    [VOLCENGINE_AGENT_PLAN_PROVIDER_KEY]:
+      localAiNovelE2eProvider ?? volcengineAgentPlanProvider,
   };
   const embeddingProviders = options.embeddingProviders ?? {
     bailian: localAiNovelE2eProvider ?? bailianProvider,
@@ -70,10 +99,18 @@ export function createApplicationAiRuntime(
     aiNovelStatisticsService,
     options.logger,
   );
+  const llmRouteCircuitRecoveryService = new LlmRouteCircuitRecoveryService(
+    options.commonLlmConfigService,
+    options.llmRouteCircuitBreaker,
+    llmProviders,
+  );
   const managerOptions = {
     commonLlmConfigService: options.commonLlmConfigService,
     llmHealthService: options.llmHealthService,
     llmMetricsService: options.llmMetricsService,
+    llmRouteCircuitBreaker: options.llmRouteCircuitBreaker,
+    onLlmRouteCircuitConfirmation: (route: Parameters<typeof llmRouteCircuitRecoveryService.confirmRoute>[0]) =>
+      llmRouteCircuitRecoveryService.confirmRoute(route),
     ...statisticsUsageOptions,
   };
 
@@ -91,5 +128,6 @@ export function createApplicationAiRuntime(
       llmProviders,
       embeddingProviders,
     ),
+    llmRouteCircuitRecoveryService,
   };
 }

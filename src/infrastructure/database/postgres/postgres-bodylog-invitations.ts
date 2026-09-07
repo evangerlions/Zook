@@ -11,7 +11,7 @@ export class PostgresBodyLogInvitationStore {
 
   async findByTokenHash(appId: string, tokenHash: string) {
     const result = await this.query(
-      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, expires_at, created_at
+      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, intent, expires_at, created_at
        FROM zook_bodylog_invitations WHERE app_id = $1 AND token_hash = $2`,
       [appId, tokenHash],
     );
@@ -21,16 +21,16 @@ export class PostgresBodyLogInvitationStore {
   async insertInvitation(record: BodyLogInvitationRecord) {
     await this.query(
       `INSERT INTO zook_bodylog_invitations
-       (id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, expires_at, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::timestamptz)`,
+       (id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, intent, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::timestamptz)`,
       [record.id, record.appId, record.inviterUserId, record.inviterInstallIdHash, record.tokenHash,
-        record.expiresAt, record.createdAt],
+        record.intent, record.expiresAt, record.createdAt],
     );
   }
 
   async listInvitations(appId: string, inviterUserId: string) {
     const result = await this.query(
-      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, expires_at, created_at
+      `SELECT id, app_id, inviter_user_id, inviter_install_id_hash, token_hash, intent, expires_at, created_at
        FROM zook_bodylog_invitations WHERE app_id = $1 AND inviter_user_id = $2`,
       [appId, inviterUserId],
     );
@@ -79,6 +79,7 @@ function invitation(row: Record<string, unknown>): BodyLogInvitationRecord {
     inviterUserId: String(row.inviter_user_id),
     inviterInstallIdHash: String(row.inviter_install_id_hash),
     tokenHash: String(row.token_hash),
+    intent: String(row.intent ?? "general") as "general" | "buddy" | "group",
     expiresAt: iso(row.expires_at), createdAt: iso(row.created_at),
   };
 }
