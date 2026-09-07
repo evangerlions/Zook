@@ -1,7 +1,10 @@
 import { Alert, Button, Empty, Segmented, Select, Skeleton, Switch, Tag } from "antd";
+import { useState } from "react";
 
 import { useLlmOperationsDashboard } from "../hooks/use-llm-operations-dashboard";
-import { formatTimestamp } from "../lib/format";
+import { adminApi } from "../lib/admin-api";
+import { useAdminSession } from "../lib/admin-session";
+import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import type { LlmMetricsOperation, LlmMetricsRange } from "../lib/types";
 import { CrossMatrixSection } from "./llm-monitor/cross-matrix-section";
 import { DetailSection } from "./llm-monitor/detail-section";
@@ -14,6 +17,8 @@ const RANGE_OPTIONS: LlmMetricsRange[] = ["24h", "48h", "7d", "30d"];
 
 export function LlmMonitorTab() {
   const dashboard = useLlmOperationsDashboard();
+  const { setNotice } = useAdminSession();
+  const [resettingCircuitKey, setResettingCircuitKey] = useState("");
   const metrics = dashboard.metrics;
 
   return (
@@ -109,7 +114,26 @@ export function LlmMonitorTab() {
         <>
           <OverviewSection metrics={metrics} />
           <ReliabilityErrorsSection metrics={metrics} />
-          <RoutingSection metrics={metrics} />
+          <RoutingSection
+            metrics={metrics}
+            resettingCircuitKey={resettingCircuitKey}
+            onResetCircuit={async (row) => {
+              setResettingCircuitKey(row.key);
+              try {
+                const result = await adminApi.resetLlmRouteCircuit({
+                  modelKey: row.modelKey,
+                  provider: row.provider,
+                  providerModel: row.providerModel,
+                });
+                setNotice(makeNotice("success", result.cleared ? "该 route 的熔断已解除。" : "该 route 当前没有熔断状态。"));
+                await dashboard.refresh();
+              } catch (error) {
+                setNotice(makeNotice("error", formatApiError(error)));
+              } finally {
+                setResettingCircuitKey("");
+              }
+            }}
+          />
           <OperationsTables
             metrics={metrics}
             onSelectModel={(model, operation) => {

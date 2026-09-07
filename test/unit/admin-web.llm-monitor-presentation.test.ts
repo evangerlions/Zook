@@ -16,6 +16,7 @@ import {
   buildTopRoutingModelOptions,
   filterHealthFailures,
 } from "../../apps/admin-web/app/components/llm-monitor/reliability-errors-view-model.ts";
+import { providerTone } from "../../apps/admin-web/app/components/llm-monitor/provider-presentation.ts";
 import type { LlmHourlySeriesItem, LlmMetricsSummary } from "../../apps/admin-web/app/lib/types/llm.ts";
 
 test("LLM monitor formatters keep units compact and missing values explicit", () => {
@@ -140,6 +141,14 @@ test("LLM error table offers the five most-used routing models and filters failu
   ];
   assert.deepEqual(filterHealthFailures(failures, "model-6"), [failures[0]]);
   assert.deepEqual(filterHealthFailures(failures, ""), failures);
+});
+
+test("LLM provider badges use stable tones without tinting unrelated table cells", () => {
+  assert.equal(providerTone("bai"), "bai");
+  assert.equal(providerTone("bailian_token_plan"), "bailian");
+  assert.equal(providerTone("openrouter"), "openrouter");
+  assert.equal(providerTone("volcengine_agent_plan"), "volcengine");
+  assert.equal(providerTone("custom-provider"), "neutral");
 });
 
 function emptySummary(): LlmMetricsSummary {

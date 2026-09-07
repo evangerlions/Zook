@@ -3485,6 +3485,36 @@ test("admin llm service API stores versioned common config and exposes metrics",
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes[1]?.runtimeAvailable, false);
   assert.equal(updateResponse.body.data.runtime.models[0]?.routes[1]?.ineligibleReason, "runtime_unavailable");
 
+  for (const userId of ["circuit-a", "circuit-b", "circuit-a", "circuit-b"]) {
+    await runtime.services.llmRouteCircuitBreaker.recordPreFirstChunkFailure({
+      modelKey: "kimi2.5",
+      provider: "bailian",
+      providerModel: "kimi/kimi-k2.5",
+      operation: "chat",
+    }, userId, true);
+  }
+  const resetCircuitResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/llm-service/circuits/reset",
+    headers,
+    body: {
+      modelKey: "kimi2.5",
+      provider: "bailian",
+      providerModel: "kimi/kimi-k2.5",
+    },
+  });
+  assert.equal(resetCircuitResponse.statusCode, 200);
+  assert.equal(resetCircuitResponse.body.data.cleared, true);
+  assert.equal(
+    (await runtime.services.llmRouteCircuitBreaker.getRuntimeStatus({
+      modelKey: "kimi2.5",
+      provider: "bailian",
+      providerModel: "kimi/kimi-k2.5",
+      operation: "chat",
+    }, true)).state,
+    "closed",
+  );
+
   await runtime.database.llmObservabilityStore.recordObservation({
     callId: "admin_metric_bailian",
     occurredAt: now.toISOString(),

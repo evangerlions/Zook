@@ -2,6 +2,8 @@ import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
 import type { LlmCallObservationRecorder } from "./llm-call-observation.ts";
+import type { LlmRouteCircuitBreakerService } from "./llm-route-circuit-breaker.service.ts";
+import type { LlmRouteRef } from "./llm-health.service.ts";
 
 export type LLMProviderName = string;
 export type LLMRole = "system" | "user" | "assistant" | "tool";
@@ -125,6 +127,8 @@ export interface LLMManagerOptions {
   llmHealthService?: LlmHealthService;
   llmMetricsService?: LlmMetricsService;
   llmCallObservationRecorder?: LlmCallObservationRecorder;
+  llmRouteCircuitBreaker?: LlmRouteCircuitBreakerService;
+  onLlmRouteCircuitConfirmation?: (route: LlmRouteRef) => Promise<void> | void;
   usageRecorder?: (event: {
     appId: string;
     userId: string;

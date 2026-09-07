@@ -29,6 +29,7 @@ export function createDefaultLlmConfig(): LlmConfigDraft {
     defaultModelKey: "",
     openRouter: createDefaultOpenRouterConfig(),
     bai: createDefaultBaiConfig(),
+    routeCircuitBreaker: { enabled: false },
     providers: [],
     models: [],
   };
@@ -70,6 +71,7 @@ export function cloneLlmConfig(config: LlmConfigDraft | LlmServiceConfig = creat
     defaultModelKey: String(config?.defaultModelKey ?? ""),
     openRouter: normalizeOpenRouterConfigInput(config?.openRouter),
     bai: normalizeBaiConfigInput(config?.bai),
+    routeCircuitBreaker: { enabled: Boolean(config?.routeCircuitBreaker?.enabled) },
     providers: Array.isArray(config?.providers)
       ? config.providers.map((item) => ({
           key: String(item?.key ?? ""),
@@ -135,6 +137,7 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
     defaultModelKey: String(draft.defaultModelKey ?? "").trim(),
     openRouter: draft.openRouter,
     bai: draft.bai,
+    routeCircuitBreaker: { enabled: Boolean(draft.routeCircuitBreaker?.enabled) },
     providers: draft.providers.map((item) => ({
       key: String(item?.key ?? "").trim(),
       label: String(item?.label ?? "").trim(),
@@ -167,6 +170,7 @@ export function serializeLlmDraftForPreview(draft: LlmConfigDraft) {
       defaultModelKey: String(draft.defaultModelKey ?? ""),
       openRouter: draft.openRouter,
       bai: draft.bai,
+      routeCircuitBreaker: draft.routeCircuitBreaker,
       providers: draft.providers,
       models: draft.models,
     };
@@ -206,6 +210,7 @@ export function safeSerializeLlmDraft(draft: LlmConfigDraft) {
       defaultModelKey: String(draft.defaultModelKey ?? ""),
       openRouter: draft.openRouter,
       bai: draft.bai,
+      routeCircuitBreaker: draft.routeCircuitBreaker,
       providers: draft.providers,
       models: draft.models,
     };
@@ -251,6 +256,7 @@ function normalizeLlmConfigInput(input: unknown): LlmServiceConfig {
     defaultModelKey,
     openRouter: normalizeOpenRouterConfigInput(source.openRouter),
     bai: normalizeBaiConfigInput(source.bai),
+    routeCircuitBreaker: { enabled: Boolean((source.routeCircuitBreaker as Record<string, unknown> | undefined)?.enabled) },
     providers,
     models,
   };

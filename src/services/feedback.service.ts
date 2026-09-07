@@ -45,6 +45,11 @@ interface SubmitFeedbackCommand {
   metadata?: Record<string, unknown>;
 }
 
+type FeedbackSubmittedHandler = (feedback: Pick<
+  FeedbackRecord,
+  "id" | "userId" | "message" | "createdAt"
+>) => Promise<void> | void;
+
 interface ParsedAttachment {
   id: string;
   fileName: string;
@@ -171,6 +176,7 @@ export class FeedbackService {
   constructor(
     private readonly database: ApplicationDatabase,
     private readonly fileStore: PersistentFileStore,
+    private readonly onSubmitted?: FeedbackSubmittedHandler,
   ) {}
 
   async submit(command: SubmitFeedbackCommand): Promise<FeedbackSubmitDocument> {
@@ -259,6 +265,9 @@ export class FeedbackService {
       updatedAt: now,
     };
     await this.database.insertFeedback(record, attachmentRecords);
+    void Promise.resolve()
+      .then(() => this.onSubmitted?.(record))
+      .catch(() => undefined);
     return {
       accepted: true,
       id: feedbackId,

@@ -69,6 +69,7 @@ export function createEmptyMailRegion(region: MailRegionDraft["region"]): MailRe
 export function createDefaultMailConfig(): MailConfigDraft {
   return {
     enabled: false,
+    llmAlertRecipients: "",
     regions: MAIL_SENDER_REGION_OPTIONS.map((option) => createEmptyMailRegion(option.value)),
   };
 }
@@ -88,6 +89,7 @@ export function cloneMailConfig(config: MailConfigDraft | EmailServiceConfig = c
   const sourceRegions = Array.isArray(config?.regions) ? config.regions : [];
   return {
     enabled: Boolean(config?.enabled),
+    llmAlertRecipients: Array.isArray(config?.llmAlertRecipients) ? config.llmAlertRecipients.join("\n") : "",
     regions: MAIL_SENDER_REGION_OPTIONS.map((option) => {
       const source = sourceRegions.find((item) => item?.region === option.value);
       return {
@@ -170,6 +172,7 @@ export function serializeMailDraft(draft: MailConfigDraft) {
   return normalizeMailConfigInput(
     {
       enabled: Boolean(draft.enabled),
+      llmAlertRecipients: String(draft.llmAlertRecipients ?? "").split(/[\n,;]/).map((item) => item.trim()).filter(Boolean),
       regions: draft.regions.map((regionConfig, regionIndex) => ({
         region: String(regionConfig?.region ?? MAIL_SENDER_REGION_OPTIONS[regionIndex]?.value ?? "").trim(),
         sender: regionConfig?.sender
@@ -248,6 +251,7 @@ export function serializeMailDraftForPreview(draft: MailConfigDraft) {
   } catch {
     return {
       enabled: Boolean(draft.enabled),
+      llmAlertRecipients: draft.llmAlertRecipients,
       regions: draft.regions.map((region) => ({
         region: region.region,
         sender: region.sender,
@@ -263,6 +267,7 @@ export function safeSerializeMailDraft(draft: MailConfigDraft) {
   } catch {
     return {
       enabled: Boolean(draft.enabled),
+      llmAlertRecipients: draft.llmAlertRecipients,
       regions: draft.regions.map((region) => ({
         region: region.region,
         sender: region.sender,
@@ -285,6 +290,7 @@ function normalizeMailConfigInput(input: unknown, mode: "form" | "raw"): EmailSe
   const source = input as Record<string, unknown>;
   const config: EmailServiceConfig = {
     enabled: Boolean(source.enabled),
+    llmAlertRecipients: normalizeAlertRecipients(source.llmAlertRecipients),
     regions: normalizeRegions(source.regions, mode),
   };
 
@@ -295,12 +301,34 @@ function normalizeMailConfigInput(input: unknown, mode: "form" | "raw"): EmailSe
   }
 
   assertVerificationTemplateNames(config.regions);
+  assertLlmAlertTemplate(config);
 
   if (!config.regions.some((item) => item.sender && item.templates.length)) {
     throw new Error("至少需要为一个 Region 配置发件地址和模板。");
   }
 
   return config;
+}
+
+function assertLlmAlertTemplate(config: EmailServiceConfig) {
+  if (!config.llmAlertRecipients.length) return;
+  const region = config.regions.find((item) => item.region === "ap-guangzhou");
+  const template = region?.templates.find((item) => item.name === "llm-alert");
+  if (!region?.sender || !template) {
+    throw new Error("填写 LLM 告警收件人后，广州 Region 必须配置发件地址和名为 llm-alert 的模板。");
+  }
+}
+
+function normalizeAlertRecipients(value: unknown): string[] {
+  if (value == null || value === "") return [];
+  if (!Array.isArray(value)) throw new Error("LLM 告警收件人必须是数组。");
+  const recipients = value.map((item) => optionalString(item).toLowerCase()).filter(Boolean);
+  for (const email of recipients) {
+    if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)) {
+      throw new Error(`LLM 告警收件人邮箱格式不正确：${email}`);
+    }
+  }
+  return [...new Set(recipients)];
 }
 
 function normalizeRegions(value: unknown, mode: "form" | "raw"): EmailServiceConfig["regions"] {
