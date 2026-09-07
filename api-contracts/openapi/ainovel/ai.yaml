@@ -122,9 +122,10 @@ paths:
 
                   `usage` contains `promptTokens`, `completionTokens`, and
                   `totalTokens`; it may also include `reasoningTokens`,
-                  `contextWindowTokens`, and `contextUsedRatio` so clients can
-                  trigger hard context compaction from provider-reported usage
-                  instead of estimating local transcript size.
+                  `contextWindowTokens`, and `contextUsedRatio`. Zook emits a
+                  fixed 256,000-token Agent operating budget in every usage
+                  payload so clients can trigger context compaction without
+                  estimating local transcript size or model-specific windows.
 
                   Product-level loading step choreography, localization keys,
                   and operation labels are client-owned. Zook does not emit
@@ -555,12 +556,12 @@ components:
         contextWindowTokens:
           type: integer
           minimum: 1
-          description: Provider/model context window when known.
+          description: Zook's fixed 256,000-token Agent operating budget.
         contextUsedRatio:
           type: number
           minimum: 0
           maximum: 1
-          description: "`promptTokens / contextWindowTokens` when known."
+          description: "`promptTokens / contextWindowTokens` for Zook's fixed Agent operating budget."
       additionalProperties: false
     AiNovelDebugAuditFileRequest:
       type: object

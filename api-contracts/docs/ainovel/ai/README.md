@@ -75,7 +75,7 @@ Contract rule:
 - product workflow keys, localized loading steps, retry UI, and fullscreen loading detail mapping are owned by AINovel, not Zook
 - `tool_call` events are a single provider round boundary, not a product agent-loop completion signal
 - the `done` event currently guarantees `completion.sceneRouteKey`, `completion.content`, optional `completion.reasoningText`, and optional `completion.finishReason`
-- `usage` events and `done.usage` include `promptTokens`, `completionTokens`, `totalTokens`, and may include provider-reported `reasoningTokens`, `contextWindowTokens`, plus `contextUsedRatio`
+- `usage` events and `done.usage` include `promptTokens`, `completionTokens`, `totalTokens`, optional provider-reported `reasoningTokens`, and Zook's fixed `contextWindowTokens: 256000` plus the corresponding `contextUsedRatio`
 - if the stream fails after request decryption succeeds, the server emits an encrypted business error envelope with a non-`OK` `code` and the client must treat that event as terminal failure
 - after such an error envelope, clients must not expect a follow-up `done` event
 

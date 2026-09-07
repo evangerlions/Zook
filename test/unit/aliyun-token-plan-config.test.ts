@@ -3,7 +3,6 @@ import test from "node:test";
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
 import { resolveRuntimeLlmProviderKeys } from "../../src/application-llm-provider-keys.ts";
 import { CommonPasswordConfigService } from "../../src/services/common-password-config.service.ts";
-import { withContextUsage } from "../../src/services/llm-context-window.ts";
 import { PasswordManager } from "../../src/services/password-manager.ts";
 import {
   addAliyunTokenPlanConfig,
@@ -130,25 +129,4 @@ test("Aliyun Token Plan is available for chat but not embeddings", () => {
     providerKeys.embedding.has(ALIYUN_TOKEN_PLAN_PROVIDER_KEY),
     false,
   );
-});
-
-test("Aliyun Token Plan chat models report their one-million-token context window", () => {
-  for (const model of ALIYUN_TOKEN_PLAN_CHAT_MODELS) {
-    const usage = withContextUsage(
-      {
-        promptTokens: 250_000,
-        completionTokens: 1_000,
-        totalTokens: 251_000,
-      },
-      {
-        provider: ALIYUN_TOKEN_PLAN_PROVIDER_KEY,
-        modelKey: model.key,
-        resolvedModelKey: model.key,
-        providerModel: model.providerModel,
-      },
-    );
-
-    assert.equal(usage?.contextWindowTokens, 1_000_000, model.providerModel);
-    assert.equal(usage?.contextUsedRatio, 0.25, model.providerModel);
-  }
 });

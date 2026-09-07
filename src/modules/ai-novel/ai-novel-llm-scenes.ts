@@ -46,7 +46,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "text",
-    supportsStream: false,
+    supportsStream: true,
   },
   write_turn: {
     sceneKey: "write_turn",

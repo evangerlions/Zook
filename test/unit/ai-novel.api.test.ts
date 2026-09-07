@@ -1114,13 +1114,13 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   );
   const usage = ((decryptedEvents[2]?.data as Record<string, unknown>).usage ??
     {}) as Record<string, unknown>;
-  assert.equal(usage.contextWindowTokens, 1_000_000);
-  assert.equal(usage.contextUsedRatio, 12 / 1_000_000);
+  assert.equal(usage.contextWindowTokens, 256_000);
+  assert.equal(usage.contextUsedRatio, 12 / 256_000);
   const doneCompletion = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .completion ?? {}) as Record<string, unknown>;
   const doneUsage = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .usage ?? {}) as Record<string, unknown>;
-  assert.equal(doneUsage.contextWindowTokens, 1_000_000);
+  assert.equal(doneUsage.contextWindowTokens, 256_000);
   assert.equal(doneCompletion.sceneRouteKey, "write_turn");
   assert.equal(doneCompletion.content, "第八十一回……");
   assert.equal(doneCompletion.provider, undefined);
@@ -1538,8 +1538,8 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
     string,
     unknown
   >;
-  assert.equal(usageEvent.contextWindowTokens, 1_000_000);
-  assert.equal(usageEvent.contextUsedRatio, 21 / 1_000_000);
+  assert.equal(usageEvent.contextWindowTokens, 256_000);
+  assert.equal(usageEvent.contextUsedRatio, 21 / 256_000);
 
   const updateMeta = decryptedEvents[1].toolCall as Record<string, unknown>;
   assert.equal(updateMeta.name, "update_meta");
