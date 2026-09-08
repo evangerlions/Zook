@@ -1,5 +1,5 @@
 import { badRequest } from "../shared/errors.ts";
-import type { OpenRouterConfig } from "../shared/types.ts";
+import type { OpenRouterConfig, TransparentProxyConfig } from "../shared/types.ts";
 
 const DEFAULT_PROXY_BASE_URL = "https://oa.zimozone.com";
 const DEFAULT_PROXY_HMAC_SECRET_KEY = "openrouter.proxy.hmac_secret";
@@ -7,21 +7,42 @@ const KEY_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 const PASSWORD_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 
 export function createDefaultOpenRouterConfig(): OpenRouterConfig {
-  return {
-    useTransparentProxy: false,
-    transparentProxyBaseUrl: DEFAULT_PROXY_BASE_URL,
-    transparentProxyKeyId: "",
-    transparentProxyHmacSecretKey: DEFAULT_PROXY_HMAC_SECRET_KEY,
-  };
+  return createDefaultTransparentProxyConfig(
+    DEFAULT_PROXY_BASE_URL,
+    DEFAULT_PROXY_HMAC_SECRET_KEY,
+  );
 }
 
 export function normalizeOpenRouterConfig(value: unknown): OpenRouterConfig {
-  const defaults = createDefaultOpenRouterConfig();
+  return normalizeTransparentProxyConfig(
+    value,
+    createDefaultOpenRouterConfig(),
+    "OpenRouter",
+  );
+}
+
+export function createDefaultTransparentProxyConfig(
+  transparentProxyBaseUrl: string,
+  transparentProxyHmacSecretKey: string,
+): TransparentProxyConfig {
+  return {
+    useTransparentProxy: false,
+    transparentProxyBaseUrl,
+    transparentProxyKeyId: "",
+    transparentProxyHmacSecretKey,
+  };
+}
+
+export function normalizeTransparentProxyConfig(
+  value: unknown,
+  defaults: TransparentProxyConfig,
+  providerLabel: string,
+): TransparentProxyConfig {
   if (value === undefined || value === null) {
     return defaults;
   }
   if (typeof value !== "object" || Array.isArray(value)) {
-    badRequest("ADMIN_LLM_SERVICE_INVALID", "openRouter must be a JSON object.");
+    badRequest("ADMIN_LLM_SERVICE_INVALID", `${providerLabel} proxy config must be a JSON object.`);
   }
 
   const source = value as Record<string, unknown>;
@@ -29,6 +50,7 @@ export function normalizeOpenRouterConfig(value: unknown): OpenRouterConfig {
     useTransparentProxy: Boolean(source.useTransparentProxy),
     transparentProxyBaseUrl: normalizeProxyBaseUrl(
       source.transparentProxyBaseUrl ?? defaults.transparentProxyBaseUrl,
+      providerLabel,
     ),
     transparentProxyKeyId: optionalString(source.transparentProxyKeyId),
     transparentProxyHmacSecretKey:
@@ -42,32 +64,35 @@ export function normalizeOpenRouterConfig(value: unknown): OpenRouterConfig {
   ) {
     badRequest(
       "ADMIN_LLM_SERVICE_INVALID",
-      "OpenRouter transparent proxy key id is invalid.",
+      `${providerLabel} transparent proxy key id is invalid.`,
     );
   }
   if (!PASSWORD_KEY_PATTERN.test(config.transparentProxyHmacSecretKey)) {
     badRequest(
       "ADMIN_LLM_SERVICE_INVALID",
-      "OpenRouter transparent proxy HMAC secret key is invalid.",
+      `${providerLabel} transparent proxy HMAC secret key is invalid.`,
+    );
+  }
+  if (config.useTransparentProxy && !config.transparentProxyBaseUrl) {
+    badRequest(
+      "ADMIN_LLM_SERVICE_INVALID",
+      `${providerLabel} transparent proxy base URL is required when enabled.`,
     );
   }
   if (config.useTransparentProxy && !config.transparentProxyKeyId) {
     badRequest(
       "ADMIN_LLM_SERVICE_INVALID",
-      "OpenRouter transparent proxy key id is required when enabled.",
+      `${providerLabel} transparent proxy key id is required when enabled.`,
     );
   }
 
   return config;
 }
 
-function normalizeProxyBaseUrl(value: unknown): string {
+function normalizeProxyBaseUrl(value: unknown, providerLabel: string): string {
   const normalized = optionalString(value).replace(/\/+$/, "");
   if (!normalized) {
-    badRequest(
-      "ADMIN_LLM_SERVICE_INVALID",
-      "OpenRouter transparent proxy base URL is required.",
-    );
+    return "";
   }
 
   let parsed: URL;
@@ -76,7 +101,7 @@ function normalizeProxyBaseUrl(value: unknown): string {
   } catch {
     badRequest(
       "ADMIN_LLM_SERVICE_INVALID",
-      "OpenRouter transparent proxy base URL is invalid.",
+      `${providerLabel} transparent proxy base URL is invalid.`,
     );
   }
   if (
@@ -88,7 +113,7 @@ function normalizeProxyBaseUrl(value: unknown): string {
   ) {
     badRequest(
       "ADMIN_LLM_SERVICE_INVALID",
-      "OpenRouter transparent proxy base URL must be an HTTPS URL without credentials, query, or fragment.",
+      `${providerLabel} transparent proxy base URL must be an HTTPS URL without credentials, query, or fragment.`,
     );
   }
   return normalized;

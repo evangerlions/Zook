@@ -1,0 +1,69 @@
+.conversation-records-search {
+  position: sticky;
+  top: 12px;
+  z-index: 12;
+}
+
+.conversation-records-list {
+  display: grid;
+  gap: 14px;
+}
+
+.conversation-records-list-header,
+.conversation-record > header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.conversation-records-list-header h2,
+.conversation-records-list-header p {
+  margin: 0;
+}
+
+.conversation-records-list-header p,
+.conversation-record > header time {
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.conversation-record {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.conversation-message {
+  display: grid;
+  gap: 6px;
+}
+
+.conversation-message strong {
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.conversation-message pre {
+  background: var(--surface-soft);
+  border-radius: var(--radius-sm);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .conversation-records-search {
+    position: static;
+  }
+
+  .conversation-records-list-header,
+  .conversation-record > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

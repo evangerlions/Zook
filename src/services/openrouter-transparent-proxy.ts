@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { ApplicationError } from "../shared/errors.ts";
-import type { OpenRouterConfig } from "../shared/types.ts";
+import type { TransparentProxyConfig } from "../shared/types.ts";
 
 export const OPENROUTER_HMAC_VERSION = "oa-hmac-v1";
 export const OPENROUTER_PROXY_HEADERS = Object.freeze({
@@ -10,8 +10,8 @@ export const OPENROUTER_PROXY_HEADERS = Object.freeze({
   signature: "x-proxy-signature",
 });
 
-interface OpenRouterTransparentProxyFetchOptions {
-  resolveConfig: () => Promise<OpenRouterConfig>;
+export interface TransparentProxyFetchOptions {
+  resolveConfig: () => Promise<TransparentProxyConfig>;
   resolveSecret: (key: string) => Promise<string | undefined>;
   fetchImplementation?: typeof fetch;
   nowSeconds?: () => number;
@@ -35,7 +35,15 @@ interface OpenRouterSignatureInput {
 }
 
 export function createOpenRouterTransparentProxyFetch(
-  options: OpenRouterTransparentProxyFetchOptions,
+  options: TransparentProxyFetchOptions,
+): typeof fetch {
+  return createTransparentProxyFetch(options, isOpenRouterUrl, "OpenRouter");
+}
+
+export function createTransparentProxyFetch(
+  options: TransparentProxyFetchOptions,
+  shouldProxyUrl: (url: URL) => boolean,
+  providerLabel: string,
 ): typeof fetch {
   const fetchImplementation = options.fetchImplementation ?? globalThis.fetch;
   if (!fetchImplementation) {
@@ -44,7 +52,7 @@ export function createOpenRouterTransparentProxyFetch(
 
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const sourceUrl = new URL(input instanceof Request ? input.url : String(input));
-    if (!isOpenRouterUrl(sourceUrl)) {
+    if (!shouldProxyUrl(sourceUrl)) {
       return fetchImplementation(input, init);
     }
 
@@ -60,7 +68,7 @@ export function createOpenRouterTransparentProxyFetch(
       return fetchImplementation(input, init);
     }
 
-    assertValidHmacSecret(encodedSecret);
+    assertValidHmacSecret(encodedSecret, providerLabel);
     const method = resolveMethod(input, init);
     const proxyUrl = buildProxyUrl(sourceUrl, config.transparentProxyBaseUrl);
     const headers = mergeHeaders(input, init);
@@ -129,14 +137,14 @@ function buildCanonicalRequest(input: OpenRouterSignatureInput): string {
   ].join("\n");
 }
 
-function assertValidHmacSecret(encodedSecret: string): void {
+function assertValidHmacSecret(encodedSecret: string, providerLabel: string): void {
   try {
     decodeHmacSecret(encodedSecret);
   } catch {
     throw new ApplicationError(
       503,
       "LLM_SERVICE_NOT_CONFIGURED",
-      "OpenRouter transparent proxy HMAC secret must be a 32-byte Base64URL value.",
+      `${providerLabel} transparent proxy HMAC secret must be a 32-byte Base64URL value.`,
     );
   }
 }

@@ -18,7 +18,7 @@ export function tryHandleBodyLogAssociationRoutes(
         apps: [],
         details: [{
           appID: BODYLOG_APPLICATION_IDENTIFIER,
-          paths: ["/i/*"],
+          paths: ["/i/*", "/b/*", "/g/*"],
         }],
       },
     } as never,

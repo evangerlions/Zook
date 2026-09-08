@@ -3,6 +3,7 @@ export type * from "./types/config";
 export type * from "./types/remote-log";
 export type * from "./types/mail";
 export type * from "./types/feedback";
+export type * from "./types/conversation";
 export type * from "./types/auth-rate-limit";
 export type * from "./types/content-safety";
 export type * from "./types/getui-password-sms";

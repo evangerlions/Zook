@@ -14,8 +14,15 @@ export async function tryHandleAdminCoreRoutes(
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
   const publicConfigMatch = request.path.match(/^\/api\/v1\/([^/]+)\/public\/config$/);
-  if (request.method === "GET" && publicConfigMatch && publicConfigMatch[1] !== "lighttick") {
-    return await handleGetPublicAppConfig.call(this, request, decodeURIComponent(publicConfigMatch[1] as string));
+  if (request.method === "GET" && publicConfigMatch) {
+    const productKey = publicConfigMatch[1] as string;
+    // lighttick 与 bodylog 各自提供专属公开配置（分别见 lighttick-v1-routes /
+    // bodylog-v1-routes），不走通用的 admin.delivery_config 模板，
+    // 避免匿名请求回退到占位默认值。
+    if (productKey === "lighttick" || productKey === "bodylog") {
+      return undefined;
+    }
+    return await handleGetPublicAppConfig.call(this, request, decodeURIComponent(productKey));
   }
   if (request.method === "POST" && request.path === "/api/v1/admin/auth/login") {
     return await handleAdminLogin.call(this, request);

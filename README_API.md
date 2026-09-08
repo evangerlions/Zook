@@ -161,6 +161,33 @@ Bearer token 的 `lighttick` membership 隔离。通知总开关、每日提醒�
 现有偏好合并。服务端按 app/user/type/resource/business date 幂等调度，暂停目标会抑制任务压力类通知，
 APNs/FCM 的不可恢复 token 只会禁用匹配的 LightTick 设备，429/5xx 仍按队列退避重试。
 Provider payload 只含安全展示文案、类型、可选资源 ID 和 `sync=true`，不含任务笔记、Coach 文本或凭据。
+Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并携带
+`X-HTTP-Method-Override: PATCH`；此兼容头只允许用于该路径，其他路径或方法会返回
+`400 REQ_METHOD_OVERRIDE_INVALID`。标准客户端仍直接使用 OpenAPI 中的 `PATCH`。
+
+LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
+
+| 方法 | 路径 | 请求与响应 `data` |
+| --- | --- | --- |
+| GET | `/execution-facts` | 可选 `from`（含）/`to`（不含）时间戳；返回 `window/completed_count/average_deviation_minutes/by_lineage/by_slot/consecutive_skips/feedback`，读取同时记录 insight audit |
+| POST | `/coach-runs` | `scene=chat`、`goal_id`、`message`（去空白后 1–4000 字符），可选 `thread_id/plan_id/task_id/review_id`；返回 202 AI run，并含 `thread_id/message_id` |
+| GET | `/chat/messages` | 必填 `goal_id`，可选 `thread_id`（默认 goal_id）、`limit`（1–200，默认 50）；返回 `{ thread_id, goal_id, items }`，最近消息按时间升序排列 |
+| GET | `/chat/intents` | 返回 `{ intents: [{ key, label, message }] }` 快捷话术 |
+| GET | `/dna/insights` | 同步并返回 `{ items, next_cursor: null }`；可选 `goal_id` 仅过滤绑定该目标的记录，当前自动生成的洞察未绑定目标 |
+| POST | `/dna/insights/{insightId}/feedback` | `action=confirm/deny/correct/dismiss`；correct 必须提供去空白后 2–500 字符 `correction`；返回洞察 |
+| POST | `/proposals/from-facts` | `{ goal_id }`；返回 `{ items, suppressed? }`，只生成待确认提案，不直接改计划 |
+| GET | `/reviews/{reviewId}/actions` | 返回 `{ review, recommendations, action_state }`，推荐包含稳定 id、证据及可选 proposedTasks |
+| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 必填 2–500 字符 `ignore_reason`；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
+| GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
+| POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
+
+- 以上能力仅限正式 LightTick membership 的 Bearer Token；游客返回 `403 APP_SCOPE_FORBIDDEN`，产品关闭返回 `503 LIGHTTICK_APP_DISABLED`。数据按 app/user 隔离。
+- chat 必须携带 8–128 字符 `Idempotency-Key`；消息发出即保存，异步结果通过 `/runs/{runId}` 和消息列表读取，同 key 不同内容返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`。其他 Phase 2 写接口不要求该 header。
+- 复盘采纳在同一事务中创建 proposed plan 并保存决策；仍须走计划确认流程才生效。重复决策返回 `409 LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED`，并发竞争也可能返回 `409 LIGHTTICK_VERSION_CONFLICT`；失败不遗留计划。无可操作推荐返回 `409 LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS`。
+- 完成事件会中断同 lineage 的连续跳过。已有 pending 提案返回 `suppressed=duplicate_pending`，7 天内拒绝至少 3 次返回 `rejection_dampening`。
+- `POST /tasks/{taskId}/complete` 提供 `actual_duration_minutes` 时，任务响应额外包含 `feedback: { rule_id, kind, message, evidence_count, data_range, confident }`，只描述本次事实，不推断稳定偏好。
+- DNA hypothesis 不能确认生效，返回 `409 LIGHTTICK_INSIGHT_NOT_ACTIONABLE`；只有用户确认的 rule 获得 allowed_effects。节奏建议使用持久化数值证据：实际耗时大于预计建议上调，小于预计建议下调；零偏差或历史记录缺少数值证据时不输出方向性建议。
+- rhythm accept 只记录意向，不修改任务或计划；dismiss 退出建议流。`suggestion` 顶层保留 `insightId/ruleId/evidenceCount` 等 camelCase，内层 task 使用 `estimated_minutes/selected_variant`；复盘响应的 `proposed_plan` 保留存储行 camelCase（如 goalId/periodStart/createdAt），其他字段形状以 OpenAPI 为准。
 
 正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
 `guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。
@@ -318,7 +345,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/tasks/{taskId}/ack`          | 客户端无日志时回执 `no_data`                                                                                                        |
 | `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
 | `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
-| `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`                                                                  |
+| `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`；`bodylog` 与 `lighttick` 为产品专属实现（见各产品章节）                                                                 |
 | `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
 | `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
 | `GET` / `POST` | `/api/v1/bodylog/friend-requests` | 查询或发起 BodyLog 好友申请                                                                                                        |
@@ -327,7 +354,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
-| `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片                                             |
+| `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；内部邮件提醒不会影响提交结果             |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
 | `POST` | `/api/v1/ai_novel/statistics/snapshot`     | 上报当前账号本地写作总量与权威每日字数快照，需要 Bearer 鉴权；服务端校验账号并保留自己的 Token 用量                                  |
 | `POST` | `/api/v1/ai_novel/ai-output-reports`      | 提交 AI 消息或章节 revision 举报；按客户端 `submissionId` 幂等，举报原文在服务端加密存储                                              |
@@ -470,15 +497,52 @@ POST /api/v1/auth/login/email
 | `POST` | `/api/v1/bodylog/leaderboards/current/aggregate` | 周标识、日期与完成 habit id | 上报由服务端计分的每日聚合 |
 | `DELETE` | `/api/v1/bodylog/leaderboards/current/membership` | `{ "timezone": "Asia/Shanghai" }` | 退出当前周排行榜 |
 | `GET` | `/api/v1/bodylog/leaderboards/current/{public\|friends}` | Header `X-Time-Zone` | 获取公开榜或好友榜 |
-| `GET` / `POST` | `/api/v1/bodylog/invitations` | POST: `{ "installId": "..." }` | 查询邀请奖励状态或创建 14 天邀请 |
+| `GET` / `POST` | `/api/v1/bodylog/invitations` | POST: `{ "installId": "...", "intent"?: "general\|buddy\|group" }` | 查询邀请奖励状态或创建 14 天邀请；`intent` 缺省 `general`，决定分享链接路径 `/i/`、`/b/`、`/g/` |
 | `POST` | `/api/v1/bodylog/invitations/attribute` | `{ "token": "...", "installId": "..." }` | 绑定邀请归因，禁止自己邀请和同设备归因 |
 | `POST` | `/api/v1/bodylog/invitations/progress` | 当天日期与时区 | 记录邀请资格进度 |
 | `GET` / `POST` | `/api/v1/bodylog/challenges` | POST: 主题、1–7 个好友和时区 | 查询或创建挑战 |
 | `GET` | `/api/v1/bodylog/challenges/{challengeId}` | 无 | 获取可见挑战详情 |
 | `POST` | `/api/v1/bodylog/challenges/{challengeId}/respond` | `{ "action": "accept" }` | 接受或拒绝挑战 |
 | `POST` | `/api/v1/bodylog/challenges/{challengeId}/progress` | 当天日期、完成状态和时区 | 更新挑战进度 |
+| `GET` | `/api/v1/bodylog/public/config` | 无（匿名） | BodyLog 专属公开配置；响应为功能开关映射（见下文），不走通用 `admin.delivery_config` 模板 |
+| `POST` | `/api/v1/bodylog/buddies` | `{ "partnerUserId": "...", "sharedHabitIds": [...] }` | 发起搭子配对 |
+| `GET` | `/api/v1/bodylog/buddies` | 无 | 查询我的搭子列表 |
+| `GET` | `/api/v1/bodylog/buddies/{pairId}` | 无 | 搭子详情（连续天数、层级、活动） |
+| `POST` | `/api/v1/bodylog/buddies/{pairId}/accept` | 无 | 接受配对邀请 |
+| `POST` | `/api/v1/bodylog/buddies/{pairId}/dissolve` | 无 | 解除搭子关系 |
+| `POST` | `/api/v1/bodylog/buddies/encourage` | `{ "pairId": "...", "emoji": "...", "isSameAction"?, "targetHabitId"? }` | 发送鼓励动作 |
+| `POST` | `/api/v1/bodylog/buddies/checkin` | `{ "habitId": "...", "count"?: 1 }` | 记录搭子打卡同步 |
+| `POST` | `/api/v1/bodylog/groups` | `{ "name": "...", "icon"?, "sharedHabitIds": [...], "completionRule"?: "all\|majority", "maxMembers"? }` | 创建打卡小组 |
+| `GET` | `/api/v1/bodylog/groups` | 无 | 查询我所在的小组 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/invite` | `{ "userId": "..." }` | 邀请成员加入小组 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/accept` | `{ "token": "..." }` | 接受小组邀请 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/leave` | 无 | 退出小组 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/checkin` | `{ "habitId": "...", "count"? }` | 小组打卡 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
+| `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/missions` | 无 | 计划任务列表 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete` | 无 | 完成一项任务 |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards` | 无 | 计划奖励列表 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards/{rewardId}/claim` | 无 | 领取奖励 |
+| `GET` | `/api/v1/bodylog/notification-preferences` | 无 | 查询通知偏好 |
+| `PUT` | `/api/v1/bodylog/notification-preferences` | `{ "enabledCategories"?, "quietHours"?, "mergeRequests"?, "leaderboardRankPush"?, "marketingConsent"? }` | 更新通知偏好 |
+| `POST` | `/api/v1/bodylog/push-devices` | `{ "deviceToken": "...", "platform": "ios\|android", "name"?: "..." }` | 注册推送设备 |
+| `GET` | `/api/v1/bodylog/push-devices` | 无 | 列出推送设备 |
+| `DELETE` | `/api/v1/bodylog/push-devices/{deviceId}` | 无 | 移除推送设备 |
 
-成功响应的 `data`：
+BodyLog 新增接口约定：
+
+- 创建搭子返回 `{ pair, invitationUrl }`；仅被邀请者可接受，发起者不能代替对方接受。邀请接受时重新检查拉黑及双方额度。邀请 14 天后过期，不再占用额度，可重新发送；缺少发起者记录的历史邀请也需重新发送。
+- 创建小组返回 `{ group, invitationUrl }`；详情返回 `{ group, members, recentActivities, weeklyRecords }`，每日记录的 `completionRate` 为 0–100 的百分数。
+- 直接配对/小组链接分别为 `/b/{pairId}?token=...` 和 `/g/{groupId}?token=...`；小组接受请求从链接提取 groupId 和 token。小组共享链接有效期为创建后 7 天；定向邀请链接随通知 `data.invitation_url` 发送。`POST groups/{groupId}/invite` 返回 `{ invited: true }`。邀请归因接口生成的 `/i/{token}`、`/b/{token}`、`/g/{token}` 仍由归因接口消费。
+- 小组仅活跃组长/管理员可邀请；离组组长的权限立即失效，组长转让持久化。打卡仅接受小组共同习惯和正整数 count。
+- 全部 `seven-day-plan/*` 接口受 `growth` 开关控制，关闭时返回 `404 BODYLOG_FEATURE_DISABLED`。同一任务只能完成一次，重复并发请求返回 `409 BODYLOG_GROWTH_MISSION_COMPLETED`；奖励只能在计划完成后领取。
+- 注册推送设备的 `name` 可省略；同一设备 token 被新账号注册后转移归属，旧账号列表不再显示该设备。
+- 注销 BodyLog app 账号会清理成长计划、通知偏好、设备、订阅、搭子关系与所拥有的小组；其他小组中的个人成员和活动记录同时清理。共享 Zook 用户及其他产品数据保留。
+
+Profile 成功响应的 `data`：
 
 ```json
 {

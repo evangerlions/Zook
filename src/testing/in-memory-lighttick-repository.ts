@@ -1,7 +1,8 @@
 import type { LightTickAtomicWrite, LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
+import { AsyncLocalStorage } from "node:async_hooks";
 import type {
-  LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickDeviceRow,
-  LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult,
+  LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow, LightTickDeviceRow,
+  LightTickAccountUpgradeCommand, LightTickAccountUpgradeResult, LightTickInsightAuditRow,
   LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow, LightTickOperationRow, LightTickOwner,
   LightTickPlanRow, LightTickProfileRow, LightTickReviewRow, LightTickTaskRow, LightTickTaskStepRow,
 } from "../modules/lighttick/lighttick.types.ts";
@@ -26,19 +27,33 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private guestIdentities = new Map<string, LightTickGuestIdentityRow>();
   private upgradeOperations = new Map<string, { requestHash: string; result: LightTickAccountUpgradeResult }>();
   private events: LightTickExecutionEventRow[] = [];
+  private insightAudits: LightTickInsightAuditRow[] = [];
+  private chatMessages: LightTickChatMessageRow[] = [];
+  private dnaInsights: LightTickDnaInsightRow[] = [];
   private changes: LightTickChangeRow[] = [];
   private sequence = 0;
-  private transactionDepth = 0;
+  private readonly transactionSession = new AsyncLocalStorage<boolean>();
+  private transactionTail: Promise<void> = Promise.resolve();
 
   async transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T> {
     this.assertOwner(owner);
-    if (this.transactionDepth) return await operation();
+    if (this.transactionSession.getStore()) return await operation();
+    // Serialize snapshots across owners as all maps belong to this repository.
+    const previous = this.transactionTail;
+    let release!: () => void;
+    this.transactionTail = new Promise<void>(resolve => { release = resolve; });
+    await previous;
+    try { return await this.transactionSession.run(true, () => this.runTransaction(operation)); }
+    finally { release(); }
+  }
+
+  private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
     const snapshot = clone({ profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
-      events: this.events, changes: this.changes, sequence: this.sequence });
-    this.transactionDepth++;
+      events: this.events, insightAudits: this.insightAudits, chatMessages: this.chatMessages, dnaInsights: this.dnaInsights,
+      changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
       this.profiles = new Map(snapshot.profiles); this.goals = new Map(snapshot.goals); this.plans = new Map(snapshot.plans);
@@ -46,9 +61,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.aiRuns = new Map(snapshot.aiRuns); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
       this.guestIdentities = new Map(snapshot.guestIdentities);
       this.upgradeOperations = new Map(snapshot.upgradeOperations);
-      this.events = snapshot.events; this.changes = snapshot.changes; this.sequence = snapshot.sequence;
+      this.events = snapshot.events; this.insightAudits = snapshot.insightAudits;
+      this.chatMessages = snapshot.chatMessages; this.dnaInsights = snapshot.dnaInsights; this.changes = snapshot.changes; this.sequence = snapshot.sequence;
       throw error;
-    } finally { this.transactionDepth--; }
+    }
   }
 
   private assertOwner(owner: LightTickOwner) {
@@ -109,6 +125,9 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       this.moveOwnedRows(this.operations as Map<string, any>, guestKey, targetKey, command.targetUserId, true);
       this.mergeDevices(guestKey, targetKey, command.targetUserId);
       this.events = this.events.map(row => ownerKey(row) === guestKey ? { ...row, userId: command.targetUserId } : row);
+      this.insightAudits = this.insightAudits.map(row => ownerKey(row) === guestKey ? { ...row, userId: command.targetUserId } : row);
+      this.chatMessages = this.chatMessages.map(row => ownerKey(row) === guestKey ? { ...row, userId: command.targetUserId } : row);
+      this.dnaInsights = this.dnaInsights.map(row => ownerKey(row) === guestKey ? { ...row, userId: command.targetUserId } : row);
       this.changes = this.changes.map(row => ownerKey(row) === guestKey ? { ...row, userId: command.targetUserId } : row);
       this.guestIdentities.set(guestKey, { ...guest, revokedAt: command.now,
         upgradedToUserId: command.targetUserId, updatedAt: command.now });
@@ -240,7 +259,13 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   async listReviews(owner: LightTickOwner) { return clone([...this.reviews.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
-  async saveReview(row: LightTickReviewRow) { this.assertOwner(row); this.reviews.set(rowKey(row), clone(row)); return clone(row); }
+  async saveReview(row: LightTickReviewRow, expectedVersion?: number) {
+    this.assertOwner(row);
+    if (expectedVersion !== undefined && this.reviews.get(rowKey(row))?.version !== expectedVersion)
+      throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Resource version is stale.");
+    const saved = expectedVersion === undefined ? row : { ...row, version: expectedVersion + 1 };
+    this.reviews.set(rowKey(row), clone(saved)); return clone(saved);
+  }
   async getProposal(owner: LightTickOwner, id: string) { return clone(this.proposals.get(`${ownerKey(owner)}:${id}`)); }
   async listProposals(owner: LightTickOwner, planId?: string) {
     return clone([...this.proposals.values()].filter(row => ownerKey(row) === ownerKey(owner) && (!planId || row.planId === planId))
@@ -278,11 +303,57 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       for (const key of store.keys()) if (key.startsWith(prefix)) store.delete(key);
     }
     this.events = this.events.filter(row => ownerKey(row) !== ownerKey(owner));
+    this.insightAudits = this.insightAudits.filter(row => ownerKey(row) !== ownerKey(owner));
+    this.chatMessages = this.chatMessages.filter(row => ownerKey(row) !== ownerKey(owner));
+    this.dnaInsights = this.dnaInsights.filter(row => ownerKey(row) !== ownerKey(owner));
     this.changes = this.changes.filter(row => ownerKey(row) !== ownerKey(owner));
   }
   async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string) {
     return clone(this.events.filter(row => ownerKey(row) === ownerKey(owner) &&
       (!from || row.occurredAt >= from) && (!to || row.occurredAt < to)));
+  }
+  async appendInsightAudit(row: LightTickInsightAuditRow): Promise<LightTickInsightAuditRow> {
+    this.insightAudits.push(clone(row)); return clone(row);
+  }
+  async listInsightAudits(owner: LightTickOwner, from?: string, to?: string) {
+    return clone(this.insightAudits.filter(row => ownerKey(row) === ownerKey(owner) &&
+      (!from || row.createdAt >= from) && (!to || row.createdAt < to))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+  }
+  async saveChatMessage(row: LightTickChatMessageRow): Promise<LightTickChatMessageRow> {
+    this.chatMessages.push(clone(row)); return clone(row);
+  }
+  async listChatMessages(owner: LightTickOwner, threadId: string, limit: number): Promise<LightTickChatMessageRow[]> {
+    const bounded = Math.min(Math.max(limit, 1), 200);
+    return clone(this.chatMessages.filter(row => ownerKey(row) === ownerKey(owner) && row.threadId === threadId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-bounded));
+  }
+  async getDnaInsight(owner: LightTickOwner, id: string): Promise<LightTickDnaInsightRow | undefined> {
+    return clone(this.dnaInsights.find(row => ownerKey(row) === ownerKey(owner) && row.id === id));
+  }
+  async listDnaInsights(owner: LightTickOwner, goalId?: string): Promise<LightTickDnaInsightRow[]> {
+    return clone(this.dnaInsights.filter(row => ownerKey(row) === ownerKey(owner) && (!goalId || row.goalId === goalId))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+  }
+  async saveDnaInsight(row: LightTickDnaInsightRow, expectedVersion?: number): Promise<LightTickDnaInsightRow> {
+    const existing = this.dnaInsights.find(item => ownerKey(item) === ownerKey(row) && item.id === row.id);
+    if (expectedVersion !== undefined) {
+      if (!existing || existing.version !== expectedVersion)
+        throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Resource version is stale.");
+      const updated = clone({ ...existing, ...row, version: existing.version + 1, updatedAt: row.updatedAt });
+      this.dnaInsights = this.dnaInsights.map(item => item.id === existing.id ? updated : item);
+      return clone(updated);
+    }
+    const bySignature = this.dnaInsights.find(item => ownerKey(item) === ownerKey(row) && item.signature === row.signature
+      && item.status === "proposed");
+    if (bySignature && bySignature.id !== row.id) {
+      const merged = clone({ ...bySignature, statement: row.statement, kind: row.kind, evidenceCount: row.evidenceCount,
+        dataRange: row.dataRange, evidence: row.evidence, confidence: row.confidence, scope: row.scope, expiresAt: row.expiresAt,
+        updatedAt: row.updatedAt, version: bySignature.version + 1 });
+      this.dnaInsights = this.dnaInsights.map(item => item.id === bySignature.id ? merged : item);
+      return clone(merged);
+    }
+    this.dnaInsights.push(clone(row)); return clone(row);
   }
   async getAdminOperationalSummary() {
     return { profiles: this.profiles.size, onboarding_completed: [...this.profiles.values()].filter(row => row.onboardingState === "completed").length,

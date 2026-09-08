@@ -21,6 +21,9 @@ async function runTick(): Promise<void> {
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();
+    const llmCircuitConfirmation = await runtime.services.llmRouteCircuitRecoveryService.runPendingConfirmations();
+    const llmCircuitRecovery = await runtime.services.llmRouteCircuitRecoveryService.runDueRecoveries();
+    const llmEmailAlerts = await runtime.services.llmEmailAlertService.runDueAlerts();
     await runtime.queue.processDueJobs(async (job) => {
       if (job.name.startsWith("lighttick.")) {
         if (job.name === "lighttick.notification.send") await runtime.services.lighttickRuntime.notifications?.process(job);
@@ -37,6 +40,7 @@ async function runTick(): Promise<void> {
     const buddyGrowth = buddyCapabilities.goalsAndReports
       ? await runtime.services.buddyMilestoneReportService.processBatch()
       : { relationships: 0, milestones: 0, reports: 0 };
+    const bodyLogSettlement = await runtime.services.bodyLogWorkerService.processBatch();
 
     const context = {
       jobName: "failed-events-replay",
@@ -48,6 +52,14 @@ async function runTick(): Promise<void> {
       smsCleanupDeleted: smsCleanup.deletedCount,
       llmCleanupRan: llmCleanup.ran,
       llmObservationsDeleted: llmCleanup.observations,
+      llmCircuitConfirmationAttempted: llmCircuitConfirmation.attempted,
+      llmCircuitConfirmationCleared: llmCircuitConfirmation.cleared,
+      llmCircuitConfirmationOpened: llmCircuitConfirmation.opened,
+      llmCircuitRecoveryAttempted: llmCircuitRecovery.attempted,
+      llmCircuitRecoveryRestored: llmCircuitRecovery.restored,
+      llmCircuitRecoveryFailed: llmCircuitRecovery.failed,
+      llmEmailAlertsHourly: llmEmailAlerts.hourly,
+      llmEmailAlertsCircuits: llmEmailAlerts.circuits,
       buddyNotificationsProcessed: buddyNotifications.processed,
       buddyNotificationsFailed: buddyNotifications.failed,
       buddyInvitationEmailsProcessed: buddyInvitationEmails.processed,
@@ -55,6 +67,9 @@ async function runTick(): Promise<void> {
       buddyGrowthRelationships: buddyGrowth.relationships,
       buddyMilestonesGenerated: buddyGrowth.milestones,
       buddyReportsGenerated: buddyGrowth.reports,
+      bodyLogDailyBuddySettlement: bodyLogSettlement.dailyBuddySettlement,
+      bodyLogDailyGroupSettlement: bodyLogSettlement.dailyGroupSettlement,
+      bodyLogWeeklyGroupSettlement: bodyLogSettlement.weeklyGroupSettlement,
     };
 
     if (workerTickLogThrottle.shouldLog(context)) {

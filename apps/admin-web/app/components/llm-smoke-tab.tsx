@@ -5,6 +5,7 @@ import { JsonPreview } from "./json-preview";
 import { LlmSmokeRunner } from "./llm-smoke-runner";
 import { LlmSmokeSummary } from "./llm-smoke-summary";
 import { toModelKindLabel } from "../lib/llm-config";
+import { sortLlmSmokeItems } from "../lib/llm-smoke-presentation";
 import type {
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestItem,
@@ -26,7 +27,7 @@ export function LlmSmokeTab({
   smokeDocument,
 }: LlmSmokeTabProps) {
   const visibleItems = useMemo(
-    () => smokeDocument?.items.filter((item) => item.status !== "skipped") ?? [],
+    () => sortLlmSmokeItems(smokeDocument?.items.filter((item) => item.status !== "skipped") ?? []),
     [smokeDocument],
   );
   const smokeColumns = useMemo(

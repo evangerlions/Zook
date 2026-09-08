@@ -64,7 +64,12 @@ export class LlmMetricsService {
       configRevision: query.configRevision,
       configUpdatedAt: query.configUpdatedAt,
       models: await Promise.all(config.models.map((model) =>
-        this.healthService.buildModelRuntimeStatus(model, config.providers),
+        this.healthService.buildModelRuntimeStatus(
+          model,
+          config.providers,
+          undefined,
+          Boolean(config.routeCircuitBreaker?.enabled),
+        ),
       )),
     };
     const providerLabels = new Map(config.providers.map((item) => [item.key, item.label || item.key]));

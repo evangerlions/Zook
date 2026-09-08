@@ -13,6 +13,7 @@ import {
   createDefaultOpenRouterConfig,
   normalizeOpenRouterConfigInput,
 } from "./openrouter-config.ts";
+import { createDefaultBaiConfig, normalizeBaiConfigInput } from "./bai-config.ts";
 
 const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -27,6 +28,8 @@ export function createDefaultLlmConfig(): LlmConfigDraft {
     enabled: false,
     defaultModelKey: "",
     openRouter: createDefaultOpenRouterConfig(),
+    bai: createDefaultBaiConfig(),
+    routeCircuitBreaker: { enabled: false },
     providers: [],
     models: [],
   };
@@ -67,6 +70,8 @@ export function cloneLlmConfig(config: LlmConfigDraft | LlmServiceConfig = creat
     enabled: Boolean(config?.enabled),
     defaultModelKey: String(config?.defaultModelKey ?? ""),
     openRouter: normalizeOpenRouterConfigInput(config?.openRouter),
+    bai: normalizeBaiConfigInput(config?.bai),
+    routeCircuitBreaker: { enabled: Boolean(config?.routeCircuitBreaker?.enabled) },
     providers: Array.isArray(config?.providers)
       ? config.providers.map((item) => ({
           key: String(item?.key ?? ""),
@@ -131,6 +136,8 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
     enabled: Boolean(draft.enabled),
     defaultModelKey: String(draft.defaultModelKey ?? "").trim(),
     openRouter: draft.openRouter,
+    bai: draft.bai,
+    routeCircuitBreaker: { enabled: Boolean(draft.routeCircuitBreaker?.enabled) },
     providers: draft.providers.map((item) => ({
       key: String(item?.key ?? "").trim(),
       label: String(item?.label ?? "").trim(),
@@ -162,6 +169,8 @@ export function serializeLlmDraftForPreview(draft: LlmConfigDraft) {
       enabled: Boolean(draft.enabled),
       defaultModelKey: String(draft.defaultModelKey ?? ""),
       openRouter: draft.openRouter,
+      bai: draft.bai,
+      routeCircuitBreaker: draft.routeCircuitBreaker,
       providers: draft.providers,
       models: draft.models,
     };
@@ -200,6 +209,8 @@ export function safeSerializeLlmDraft(draft: LlmConfigDraft) {
       enabled: Boolean(draft.enabled),
       defaultModelKey: String(draft.defaultModelKey ?? ""),
       openRouter: draft.openRouter,
+      bai: draft.bai,
+      routeCircuitBreaker: draft.routeCircuitBreaker,
       providers: draft.providers,
       models: draft.models,
     };
@@ -244,6 +255,8 @@ function normalizeLlmConfigInput(input: unknown): LlmServiceConfig {
     enabled: Boolean(source.enabled),
     defaultModelKey,
     openRouter: normalizeOpenRouterConfigInput(source.openRouter),
+    bai: normalizeBaiConfigInput(source.bai),
+    routeCircuitBreaker: { enabled: Boolean((source.routeCircuitBreaker as Record<string, unknown> | undefined)?.enabled) },
     providers,
     models,
   };

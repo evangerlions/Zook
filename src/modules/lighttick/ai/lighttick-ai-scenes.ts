@@ -23,6 +23,9 @@ export const LIGHTTICK_AI_SCENES = {
   coach_reply: { key: "lighttick.coach_reply.v1", kind: "coach_reply", promptVersion: "1.0.0", schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["plus", "super_plus"], timeoutMs: 15_000, maxContextTokens: 4_000,
     maxOutputTokens: 800, maxEstimatedCostUsd: 0.03, fallback: "facts_only" },
+  coach_chat: { key: "lighttick.coach_chat.v1", kind: "coach_reply", promptVersion: "1.1.0", schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 6_000,
+    maxOutputTokens: 800, maxEstimatedCostUsd: 0.04, fallback: "facts_only" },
 } as const;
 
 export type LightTickAiSceneName = keyof typeof LIGHTTICK_AI_SCENES;
@@ -40,6 +43,7 @@ export const LIGHTTICK_SCENE_PROMPTS: Record<LightTickAiSceneName, string> = {
   monthly_review: "Summarize only supplied monthly execution facts and provide bounded recommendations.",
   change_proposal: "Return a constrained task diff; never mutate a goal or plan directly.",
   coach_reply: "Give a brief response grounded in supplied goal and execution facts.",
+  coach_chat: "Reply conversationally to the latest user message. Ground every claim in supplied facts and conversation history; never invent completion history or preferences from a single message.",
 };
 
 export const LIGHTTICK_OUTPUT_SCHEMAS = {
