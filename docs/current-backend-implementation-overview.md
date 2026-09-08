@@ -34,6 +34,7 @@ LightTick 独立公开配置在产品关闭时仍可读取，并以固定白名�
 LightTick 通知已复用公共 APNs/FCM 适配器，但使用产品自有安全载荷、APNs topic 和可选独立
 Firebase 项目；调度按业务日期幂等，遵守 profile timezone、安静时段、分类偏好和暂停目标，
 不可恢复 token 只失活匹配的 LightTick device，日志不记录 token 或 provider 凭据。
+Phase 2 已实现执行事实与审计、Coach chat 消息存储、DNA 用户反馈、事实驱动提案、复盘决策和 Today 节奏建议。复盘采纳使用数据库事务及版本 CAS，失败整体回滚；有效完成会中断连续跳过。DNA 通过 additive evidence JSONB 迁移保留数值偏差，零偏差或无证据不输出方向建议。公开协议统一维护于 README_API.md 与 LightTick OpenAPI，生成快照供运行时使用；这些能力只对正式账号开放。
 能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
 不再拥有生产数据、合同或运行时。

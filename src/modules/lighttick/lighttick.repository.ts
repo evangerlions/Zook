@@ -43,7 +43,7 @@ export interface LightTickRepository {
   listDnaInsights(owner: LightTickOwner, goalId?: string): Promise<LightTickDnaInsightRow[]>;
   saveDnaInsight(row: LightTickDnaInsightRow, expectedVersion?: number): Promise<LightTickDnaInsightRow>;
   listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]>;
-  saveReview(row: LightTickReviewRow): Promise<LightTickReviewRow>;
+  saveReview(row: LightTickReviewRow, expectedVersion?: number): Promise<LightTickReviewRow>;
   getProposal(owner: LightTickOwner, id: string): Promise<LightTickChangeProposalRow | undefined>;
   listProposals(owner: LightTickOwner, planId?: string): Promise<LightTickChangeProposalRow[]>;
   saveProposal(row: LightTickChangeProposalRow, expectedVersion?: number): Promise<LightTickChangeProposalRow>;

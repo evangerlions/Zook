@@ -8,6 +8,15 @@ import type { LightTickExecutionEventRow } from "../../src/modules/lighttick/lig
 const OWNER = { appId: "lighttick" as const, userId: "user-1" };
 const TIMEZONE = "Asia/Shanghai";
 
+test("a valid completion interrupts skips in the same lineage", () => {
+  const events = ["skip", "complete", "skip"].map((action, index) => completionEvent({
+    occurredAt: `2026-09-0${index + 1}T02:00:00Z`,
+    eventType: action === "skip" ? "task_skipped" : "task_completed",
+    payload: { action, lineage_id: "l1", title: "任务", actual_minutes: 10, valid_action: true },
+  }));
+  assert.equal(aggregateExecutionFacts(events, TIMEZONE).maxConsecutiveSkipsByLineage.l1?.count, 1);
+});
+
 function completionEvent(overrides: Partial<LightTickExecutionEventRow> & { occurredAt: string; payload: Record<string, unknown> }): LightTickExecutionEventRow {
   return { id: `evt-${overrides.occurredAt}`, ...OWNER, aggregateType: "task", aggregateId: "task-1",
     eventType: "task_completed", aggregateVersion: 1, createdAt: overrides.occurredAt, ...overrides };

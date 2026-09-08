@@ -89,6 +89,9 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED"
+  | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS"
+  | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE"
   | "AI_DECRYPT_FAILED"
   | "AI_EMBEDDING_INPUT_INVALID"
   | "AI_ENCRYPT_FAILED"

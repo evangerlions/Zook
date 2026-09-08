@@ -349,23 +349,23 @@ export class PostgresLightTickRepository implements LightTickRepository {
     if (expectedVersion !== undefined) {
       const result = await this.query(`UPDATE zook_lighttick_dna_insights SET
         statement=$1,kind=$2,status=$3,evidence_count=$4,data_range=$5::jsonb,confidence=$6,scope=$7,
-        allowed_effects=$8::jsonb,user_feedback=$9,expires_at=$10,updated_at=NOW(),version=version+1
+        allowed_effects=$8::jsonb,user_feedback=$9,expires_at=$10,evidence=$15::jsonb,updated_at=NOW(),version=version+1
         WHERE app_id=$11 AND user_id=$12 AND id=$13 AND version=$14 RETURNING *`,
         [row.statement,row.kind,row.status,row.evidenceCount,JSON.stringify(row.dataRange),row.confidence,row.scope,
-          JSON.stringify(row.allowedEffects),row.userFeedback ?? null,row.expiresAt,row.appId,row.userId,row.id,expectedVersion]);
+          JSON.stringify(row.allowedEffects),row.userFeedback ?? null,row.expiresAt,row.appId,row.userId,row.id,expectedVersion,JSON.stringify(row.evidence ?? {})]);
       if (!result.rows[0]) versionConflict(row.id);
       return mapRow<LightTickDnaInsightRow>(result.rows[0]);
     }
     const result = await this.query(`INSERT INTO zook_lighttick_dna_insights
-      (id,app_id,user_id,signature,rule_id,statement,kind,status,evidence_count,data_range,confidence,scope,allowed_effects,user_feedback,goal_id,created_at,expires_at,updated_at,version)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13::jsonb,$14,$15,$16,$17,$18,1)
+      (id,app_id,user_id,signature,rule_id,statement,kind,status,evidence_count,data_range,confidence,scope,allowed_effects,user_feedback,goal_id,created_at,expires_at,updated_at,version,evidence)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13::jsonb,$14,$15,$16,$17,$18,1,$19::jsonb)
       ON CONFLICT (app_id,user_id,signature) DO UPDATE SET statement=EXCLUDED.statement,kind=EXCLUDED.kind,
       evidence_count=EXCLUDED.evidence_count,data_range=EXCLUDED.data_range,confidence=EXCLUDED.confidence,
-      scope=EXCLUDED.scope,expires_at=EXCLUDED.expires_at,updated_at=EXCLUDED.updated_at
+      scope=EXCLUDED.scope,evidence=EXCLUDED.evidence,expires_at=EXCLUDED.expires_at,updated_at=EXCLUDED.updated_at
       WHERE zook_lighttick_dna_insights.status='proposed' RETURNING *`,
       [row.id,row.appId,row.userId,row.signature,row.ruleId,row.statement,row.kind,row.status,row.evidenceCount,
         JSON.stringify(row.dataRange),row.confidence,row.scope,JSON.stringify(row.allowedEffects),row.userFeedback ?? null,
-        row.goalId ?? null,row.createdAt,row.expiresAt,row.updatedAt]);
+        row.goalId ?? null,row.createdAt,row.expiresAt,row.updatedAt,JSON.stringify(row.evidence ?? {})]);
     return mapRow<LightTickDnaInsightRow>(result.rows[0]!);
   }
 
@@ -409,7 +409,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
     const result = await this.query("SELECT * FROM zook_lighttick_reviews WHERE app_id=$1 AND user_id=$2 ORDER BY period_start DESC", [owner.appId, owner.userId]);
     return result.rows.map(mapRow<LightTickReviewRow>);
   }
-  async saveReview(row: LightTickReviewRow): Promise<LightTickReviewRow> {
+  async saveReview(row: LightTickReviewRow, expectedVersion?: number): Promise<LightTickReviewRow> {
+    if (expectedVersion !== undefined) {
+      const result = await this.query(`UPDATE zook_lighttick_reviews SET
+        status=$1,facts=$2::jsonb,output=$3::jsonb,data_sufficiency=$4,version=version+1,updated_at=$5
+        WHERE app_id=$6 AND user_id=$7 AND id=$8 AND version=$9 RETURNING *`,
+        [row.status,JSON.stringify(row.facts),JSON.stringify(row.output),row.dataSufficiency,row.updatedAt,
+          row.appId,row.userId,row.id,expectedVersion]);
+      if (!result.rows[0]) versionConflict(row.id);
+      return mapRow<LightTickReviewRow>(result.rows[0]);
+    }
     const result = await this.query(`INSERT INTO zook_lighttick_reviews
       (id,app_id,user_id,goal_id,period,status,period_start,period_end,facts,output,data_sufficiency,version,created_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13,$14)

@@ -83,6 +83,7 @@ export interface LightTickDnaInsightRow extends LightTickOwner, LightTickVersion
   kind: "hypothesis" | "rule";
   status: "proposed" | "confirmed" | "denied" | "corrected" | "expired" | "dismissed";
   evidenceCount: number; dataRange: Record<string, unknown>; confidence: number;
+  evidence?: Record<string, unknown>;
   scope: string; allowedEffects: string[]; userFeedback?: string; goalId?: string;
   createdAt: string; expiresAt: string;
 }

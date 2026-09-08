@@ -46,11 +46,13 @@ export class LightTickRhythmSuggestionService {
         ?? executable.find(candidate => candidate.title.includes(title) || title.includes(candidate.title));
       if (!task) continue;
       if (insight.ruleId === "rule.time_estimation_bias") {
+        const action = this.estimationAction(insight, task);
+        if (!action) continue;
         return { suggestion: { insightId: insight.id, ruleId: insight.ruleId, kind: insight.kind,
           statement: insight.statement, confidence: insight.confidence, evidenceCount: insight.evidenceCount,
           scope: insight.scope, task: { id: task.id, title: task.title, estimated_minutes: task.estimatedMinutes,
             selected_variant: task.selectedVariant ?? "standard" },
-          action: this.estimationAction(insight, task) } };
+          action } };
       }
     }
     return { reason: "no_matching_task" };
@@ -68,7 +70,11 @@ export class LightTickRhythmSuggestionService {
       updatedAt: this.clock().toISOString() }, insight.version);
   }
 
-  private estimationAction(insight: LightTickDnaInsightRow, task: LightTickTaskRow): string {
-    return `你通常低估“${task.title}”需要的时长（${insight.evidenceCount} 次样本）。开始前建议把预计时长上调，或选更轻松的版本。`;
+  private estimationAction(insight: LightTickDnaInsightRow, task: LightTickTaskRow): string | undefined {
+    const deviation = insight.evidence?.deviation_minutes;
+    if (typeof deviation !== "number" || !Number.isFinite(deviation) || deviation === 0) return undefined;
+    return deviation > 0
+      ? `你通常低估“${task.title}”需要的时长（${insight.evidenceCount} 次样本）。开始前建议把预计时长上调，或选更轻松的版本。`
+      : `你通常高估“${task.title}”需要的时长（${insight.evidenceCount} 次样本）。可以根据实际耗时适当下调预计时长。`;
   }
 }

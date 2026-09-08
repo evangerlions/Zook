@@ -165,6 +165,30 @@ Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并�
 `X-HTTP-Method-Override: PATCH`；此兼容头只允许用于该路径，其他路径或方法会返回
 `400 REQ_METHOD_OVERRIDE_INVALID`。标准客户端仍直接使用 OpenAPI 中的 `PATCH`。
 
+LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
+
+| 方法 | 路径 | 请求与响应 `data` |
+| --- | --- | --- |
+| GET | `/execution-facts` | 可选 `from`（含）/`to`（不含）时间戳；返回 `window/completed_count/average_deviation_minutes/by_lineage/by_slot/consecutive_skips/feedback`，读取同时记录 insight audit |
+| POST | `/coach-runs` | `scene=chat`、`goal_id`、`message`（去空白后 1–4000 字符），可选 `thread_id/plan_id/task_id/review_id`；返回 202 AI run，并含 `thread_id/message_id` |
+| GET | `/chat/messages` | 必填 `goal_id`，可选 `thread_id`（默认 goal_id）、`limit`（1–200，默认 50）；返回 `{ thread_id, goal_id, items }`，最近消息按时间升序排列 |
+| GET | `/chat/intents` | 返回 `{ intents: [{ key, label, message }] }` 快捷话术 |
+| GET | `/dna/insights` | 同步并返回 `{ items, next_cursor: null }`；可选 `goal_id` 仅过滤绑定该目标的记录，当前自动生成的洞察未绑定目标 |
+| POST | `/dna/insights/{insightId}/feedback` | `action=confirm/deny/correct/dismiss`；correct 必须提供去空白后 2–500 字符 `correction`；返回洞察 |
+| POST | `/proposals/from-facts` | `{ goal_id }`；返回 `{ items, suppressed? }`，只生成待确认提案，不直接改计划 |
+| GET | `/reviews/{reviewId}/actions` | 返回 `{ review, recommendations, action_state }`，推荐包含稳定 id、证据及可选 proposedTasks |
+| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 必填 2–500 字符 `ignore_reason`；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
+| GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
+| POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
+
+- 以上能力仅限正式 LightTick membership 的 Bearer Token；游客返回 `403 APP_SCOPE_FORBIDDEN`，产品关闭返回 `503 LIGHTTICK_APP_DISABLED`。数据按 app/user 隔离。
+- chat 必须携带 8–128 字符 `Idempotency-Key`；消息发出即保存，异步结果通过 `/runs/{runId}` 和消息列表读取，同 key 不同内容返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`。其他 Phase 2 写接口不要求该 header。
+- 复盘采纳在同一事务中创建 proposed plan 并保存决策；仍须走计划确认流程才生效。重复决策返回 `409 LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED`，并发竞争也可能返回 `409 LIGHTTICK_VERSION_CONFLICT`；失败不遗留计划。无可操作推荐返回 `409 LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS`。
+- 完成事件会中断同 lineage 的连续跳过。已有 pending 提案返回 `suppressed=duplicate_pending`，7 天内拒绝至少 3 次返回 `rejection_dampening`。
+- `POST /tasks/{taskId}/complete` 提供 `actual_duration_minutes` 时，任务响应额外包含 `feedback: { rule_id, kind, message, evidence_count, data_range, confident }`，只描述本次事实，不推断稳定偏好。
+- DNA hypothesis 不能确认生效，返回 `409 LIGHTTICK_INSIGHT_NOT_ACTIONABLE`；只有用户确认的 rule 获得 allowed_effects。节奏建议使用持久化数值证据：实际耗时大于预计建议上调，小于预计建议下调；零偏差或历史记录缺少数值证据时不输出方向性建议。
+- rhythm accept 只记录意向，不修改任务或计划；dismiss 退出建议流。`suggestion` 顶层保留 `insightId/ruleId/evidenceCount` 等 camelCase，内层 task 使用 `estimated_minutes/selected_variant`；复盘响应的 `proposed_plan` 保留存储行 camelCase（如 goalId/periodStart/createdAt），其他字段形状以 OpenAPI 为准。
+
 正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
 `guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。
 服务端在同一 PostgreSQL 事务中迁移游客资料、目标、计划、任务、事件、操作、设备和同步

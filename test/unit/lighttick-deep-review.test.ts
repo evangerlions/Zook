@@ -89,6 +89,24 @@ test("an action cannot be applied twice", async () => {
     (error: any) => error.code === "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED");
 });
 
+test("concurrent review acceptance produces only one plan", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const { review } = await makeReview(repository, [{ id: "a", title: "调整节奏" }]);
+  const service = new LightTickDeepReviewService(repository, clock);
+  const results = await Promise.allSettled([service.apply(owner, review.id, "accept_all"), service.apply(owner, review.id, "accept_all")]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  assert.equal((await repository.listPlans(owner)).length, 1);
+});
+
+test("failed decision persistence rolls back its proposed plan", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const { review } = await makeReview(repository, [{ id: "a", title: "调整节奏" }]);
+  repository.saveReview = async () => { throw new Error("injected storage failure"); };
+  await assert.rejects(new LightTickDeepReviewService(repository, clock).apply(owner, review.id, "accept_all"), /storage failure/);
+  assert.equal((await repository.listPlans(owner)).length, 0);
+  assert.equal((await repository.listReviews(owner))[0]!.output.action_state, undefined);
+});
+
 test("foreign review is rejected by owner scoped repository", async () => {
   const repository = new InMemoryLightTickRepository();
   const { review } = await makeReview(repository, [{ title: "调整节奏" }]);

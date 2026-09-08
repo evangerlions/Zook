@@ -44,10 +44,10 @@ export class LightTickDnaService {
       const row = await this.repository.saveDnaInsight(existing ? { ...existing, statement: output.message,
         kind: output.kind as "hypothesis" | "rule", evidenceCount: output.evidenceCount, dataRange: output.dataRange,
         confidence: Number(confidence.toFixed(2)), scope: SCOPE_BY_RULE[output.ruleId] ?? "general",
-        expiresAt, updatedAt: timestamp } : { ...owner, id: randomId("lighttick_dna"), signature, ruleId: output.ruleId,
+        evidence: output.facts, expiresAt, updatedAt: timestamp } : { ...owner, id: randomId("lighttick_dna"), signature, ruleId: output.ruleId,
         statement: output.message, kind: output.kind as "hypothesis" | "rule", status: "proposed",
         evidenceCount: output.evidenceCount, dataRange: output.dataRange, confidence: Number(confidence.toFixed(2)),
-        scope: SCOPE_BY_RULE[output.ruleId] ?? "general", allowedEffects: [], goalId: undefined,
+        scope: SCOPE_BY_RULE[output.ruleId] ?? "general", evidence: output.facts, allowedEffects: [], goalId: undefined,
         createdAt: timestamp, expiresAt, updatedAt: timestamp, version: 1 }, existing?.version);
       saved.push(row);
     }

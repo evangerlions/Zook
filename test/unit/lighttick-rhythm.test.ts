@@ -11,6 +11,27 @@ const owner: LightTickOwner = { appId: "lighttick", userId: "user_rhythm" };
 const clock = () => new Date("2026-09-02T01:00:00.000Z");
 const BUSINESS = "2026-09-02";
 
+for (const actual of [10, 20]) {
+  test(`rhythm respects actual ${actual} versus estimated 20 minutes`, async () => {
+    const repository = new InMemoryLightTickRepository();
+    const { task } = await goalWithActivePlan(repository);
+    for (let day = 1; day <= 7; day++) {
+      const current = (await repository.getTask(owner, task.id))!;
+      await repository.saveTask(current, {
+        event: completion(`2026-08-${20 + day}T02:00:00.000Z`, actual, 20, task.title, task.lineageId ?? task.id),
+        change: { ...owner, entityType: "task", entityId: task.id, entityVersion: current.version + 1,
+          operation: "upsert", snapshot: {}, changedAt: clock().toISOString() },
+      }, current.version);
+    }
+    const dna = new LightTickDnaService(repository, clock);
+    const insight = (await dna.synchronize(owner)).find(item => item.kind === "rule")!;
+    await dna.feedback(owner, insight.id, "confirm");
+    const result = await new LightTickRhythmSuggestionService(repository, dna, clock).suggest(owner);
+    if (actual < 20) assert.match(result.suggestion?.action ?? "", /下调/);
+    else assert.equal(result.suggestion, undefined);
+  });
+}
+
 function completion(occurredAt: string, actual: number, estimated: number,
   title: string, lineage: string): LightTickExecutionEventRow {
   return { id: `e-${occurredAt}-${lineage}`, ...owner, aggregateType: "task", aggregateId: lineage,

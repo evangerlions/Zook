@@ -59,6 +59,11 @@ export class LightTickDeepReviewService {
 
   async apply(owner: LightTickOwner, reviewId: string, action: DeepReviewAction,
     selectedIds: string[] = [], ignoreReason?: string): Promise<DeepReviewActionResult> {
+    return await this.repository.transaction(owner, () => this.applyDecision(owner, reviewId, action, selectedIds, ignoreReason));
+  }
+
+  private async applyDecision(owner: LightTickOwner, reviewId: string, action: DeepReviewAction,
+    selectedIds: string[], ignoreReason?: string): Promise<DeepReviewActionResult> {
     const review = await this.require(owner, reviewId);
     const recommendations = normalizeReviewRecommendations(review);
     const previous = asRecord(review.output.action_state);
@@ -111,6 +116,6 @@ export class LightTickDeepReviewService {
   private async saveState(review: LightTickReviewRow, actionState: Record<string, unknown>, timestamp: string) {
     return await this.repository.saveReview({ ...review,
       output: { ...review.output, recommendations: normalizeReviewRecommendations(review), action_state: actionState },
-      version: review.version + 1, updatedAt: timestamp });
+      version: review.version + 1, updatedAt: timestamp }, review.version);
   }
 }

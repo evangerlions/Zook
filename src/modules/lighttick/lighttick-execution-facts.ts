@@ -117,7 +117,7 @@ export function aggregateExecutionFacts(events: LightTickExecutionEventRow[], ti
 
 function maxConsecutiveSkips(events: LightTickExecutionEventRow[]): LightTickExecutionFacts["maxConsecutiveSkipsByLineage"] {
   const ordered = [...events]
-    .filter(event => event.eventType === "task_skipped" && event.payload.action === "skip")
+    .filter(event => (event.eventType === "task_skipped" && event.payload.action === "skip") || isCompletionEvent(event))
     .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
   const running: Record<string, { title: string; count: number; best: number; lastAt: string }> = {};
   const result: LightTickExecutionFacts["maxConsecutiveSkipsByLineage"] = {};
@@ -125,6 +125,10 @@ function maxConsecutiveSkips(events: LightTickExecutionEventRow[]): LightTickExe
     const lineage = payloadString(event.payload, "lineage_id") ?? payloadString(event.payload, "task_id") ?? "unknown";
     const title = payloadString(event.payload, "title") ?? lineage;
     const previous = running[lineage];
+    if (isCompletionEvent(event)) {
+      delete running[lineage];
+      continue;
+    }
     const wasInterrupted = previous !== undefined
       && Date.parse(event.occurredAt) - Date.parse(previous.lastAt) < 7 * MINUTES_PER_DAY;
     const count = wasInterrupted ? previous.count + 1 : 1;
