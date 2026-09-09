@@ -304,7 +304,7 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 7. 所有 Agent scene 都采用单轮 tool-calling HTTP/SSE 输出：Zook 注入唯一 system prompt，并按解密后 context 的 `suppliedTools` 过滤工具；AINovel 的 Pi Agent 负责工具执行、error tool result、interactive tool 暂停和下一轮回写。解密 inner body 的顶层 `agentProtocol = pi-v1` 启用按需上下文：Zook 不再把 raw context 拼入 system 或 user message，当前状态由客户端 Agent 的真实 read tool 返回；缺失该字段的旧客户端保持原有 context 组装。Zook 不修复 tool name 大小写，也不规范化或重写客户端工具 payload
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
 9. AINovel 通过 AES-GCM 的 `agent-skills/query` / `agent-skills/fetch` 在每个 app 生命周期首次懒加载 Skill manifest 与仅有变更的 package，并固定本地 snapshot。只有 `agentProtocol = pi-v1` 的 interactive Write Agent，且 `suppliedTools` 声明 `read` 并提供非空批准 catalog 时才可使用虚拟 `read(path)`。Pi 客户端在每次 Agent run 开始时将 catalog 作为独立 bootstrap system-reminder 放入正常 transcript；Zook 仅用加密 context 过滤 schema，不向模型串行化 raw catalog。完整内容和 references 由 AINovel 的本地 allowlist snapshot 作为 normal tool result 返回，运行中不访问网络。旧客户端、其他 Agent scene 与 Generation Job scene 不提供 Skill
-10. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
+10. local/dev 环境额外提供 AINovel Trace Console：客户端向 `POST /api/v1/ai_novel/debug/traces` 发送结构化 capture，Zook 按 `kind + sessionId` 追加保存，并通过 `/debug/traces`、`/debug/traces/data` 和 `/debug/traces/{sessionId}` 过滤与渲染。online/production 返回 404；shared dev 的 GET 需要 Admin 认证
 11. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
 12. AINovel 已完成的 Chat 会保存最后一条用户正文和最终 AI 正文，并同时关联认证 UID、请求 `X-DID`、请求 ID 与 scene；每位用户在第 121 个 Turn 写入时裁剪为最新 100 个 Turn。Admin 可在 `ai_novel` 工作区按 UID 或 DID 查看，每页最多 100 个 Turn（200 条消息），不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload
 
@@ -424,7 +424,7 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 49. `GET /api/v1/{productKey}/public/config`
 50. `POST /api/v1/ai_novel/ai/chat-completions`
 51. `POST /api/v1/ai_novel/ai/embeddings`
-52. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
+52. `POST/GET /api/v1/ai_novel/debug/traces` 与相关 data/session GET（local/dev only；shared dev GET 需 Admin 认证）
 53. `POST /telemetry/ga4`
 54. `POST /telemetry/sentry/api/{projectId}/envelope/`
 

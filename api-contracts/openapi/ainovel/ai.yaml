@@ -317,16 +317,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /api/v1/ai_novel/debug/audit-file:
+  /api/v1/ai_novel/debug/traces:
     post:
-      operationId: writeAiNovelDebugAuditFile
-      summary: Local-only debug audit HTML file writer
+      operationId: writeAiNovelDebugTrace
+      summary: Local-only AINovel trace artifact writer
       description: |
-        Local/debug-only endpoint for Flutter Web QA. Production and non-local
-        hosts return 404. The server does not parse audit contents; it sanitizes
-        `sessionId` and overwrites one fixed `generation-audit.html` file under
-        the local AINovel repo debug artifact directory. The response includes
-        a localhost `viewUrl` that browsers can open from Flutter Web.
+        Local/dev-only endpoint for the AINovel Trace Console. Production and
+        non-local hosts return 404. The server appends structured trace captures
+        to the stable AI session and renders the browser view itself.
       tags: [ainovel, debug]
       parameters:
         - $ref: "#/components/parameters/XAppId"
@@ -335,14 +333,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AiNovelDebugAuditFileRequest"
+              $ref: "#/components/schemas/AiNovelDebugTraceWriteRequest"
       responses:
         "200":
-          description: Local file location that was created or overwritten
+          description: Structured trace capture appended to the session
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AiNovelDebugAuditFileResponse"
+                $ref: "#/components/schemas/AiNovelDebugTraceWriteResponse"
         "400":
           description: Invalid request body
           content:
@@ -367,12 +365,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /api/v1/ai_novel/debug/audit-file/{sessionId}:
     get:
-      operationId: viewAiNovelDebugAuditFile
-      summary: Local-only debug audit HTML viewer
+      operationId: openAiNovelDebugTraceConsole
+      summary: Local-only AINovel Trace Console
+      description: Local/dev-only HTML console. Shared dev requires admin authentication.
+      tags: [ainovel, debug]
+      responses:
+        "200":
+          description: Trace Console HTML.
+          content:
+            text/html:
+              schema:
+                type: string
+        "401":
+          description: Admin authentication required in shared dev
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Returned in production or non-local contexts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/debug/traces/data:
+    get:
+      operationId: listAiNovelDebugTraces
+      summary: Local-only AINovel trace metadata list
+      description: Local/dev-only metadata list used by the Trace Console filters.
+      tags: [ainovel, debug]
+      parameters:
+        - name: kind
+          in: query
+          schema: { $ref: "#/components/schemas/AiNovelTraceKind" }
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/AiNovelTraceStatus" }
+        - name: bookId
+          in: query
+          schema: { type: string }
+        - name: chapterId
+          in: query
+          schema: { type: string }
+        - name: query
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Stored local trace metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelDebugTraceListResponse"
+        "401":
+          description: Admin authentication required in shared dev
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Returned in production or non-local contexts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/debug/traces/{sessionId}:
+    get:
+      operationId: viewAiNovelDebugTrace
+      summary: Local-only AINovel session trace viewer
       description: |
-        Local/debug-only browser view for a previously uploaded audit report.
+        Local/debug-only browser view rendered from all captures for a session.
         Production and non-local hosts return 404.
       tags: [ainovel, debug]
       parameters:
@@ -381,13 +444,25 @@ paths:
           required: true
           schema:
             type: string
+        - name: kind
+          in: query
+          required: false
+          description: Selects the trace kind when one business session id is shared by multiple flows.
+          schema:
+            $ref: "#/components/schemas/AiNovelTraceKind"
       responses:
         "200":
-          description: Self-contained audit HTML.
+          description: Server-rendered session trace HTML.
           content:
             text/html:
               schema:
                 type: string
+        "401":
+          description: Admin authentication required in shared dev
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Returned in production or non-local contexts
           content:
@@ -563,33 +638,77 @@ components:
           maximum: 1
           description: "`promptTokens / contextWindowTokens` for Zook's fixed Agent operating budget."
       additionalProperties: false
-    AiNovelDebugAuditFileRequest:
+    AiNovelTraceKind:
+      type: string
+      enum: [kickoff, import_book, imported_kickoff, writing, history_qa, advance_chapter]
+    AiNovelTraceStatus:
+      type: string
+      enum: [running, completed, failed, cancelled]
+    AiNovelDebugTraceWriteRequest:
       type: object
-      required: [sessionId, html]
+      required: [sessionId, kind, status, trace]
       properties:
         sessionId:
           type: string
-          description: Debug session id; sanitized before being used as a directory name.
-        html:
+          description: Stable AI session id; the filesystem key is a one-way hash.
+        kind:
+          $ref: "#/components/schemas/AiNovelTraceKind"
+        status:
+          $ref: "#/components/schemas/AiNovelTraceStatus"
+        bookId:
           type: string
-          description: Complete self-contained audit HTML.
+        chapterId:
+          type: string
+        title:
+          type: string
+        trace:
+          type: object
+          description: Structured client trace capture for one completed or failed operation.
+          additionalProperties: true
       additionalProperties: false
-    AiNovelDebugAuditFileResponse:
+    AiNovelDebugTraceManifest:
       type: object
-      required: [filePath, fileUrl, viewUrl, updatedAt]
+      required: [sessionId, kind, status, captureCount, createdAt, updatedAt]
       properties:
-        filePath:
+        sessionId:
           type: string
-        fileUrl:
+        kind:
+          $ref: "#/components/schemas/AiNovelTraceKind"
+        status:
+          $ref: "#/components/schemas/AiNovelTraceStatus"
+        bookId:
           type: string
-          format: uri
-        viewUrl:
+        chapterId:
           type: string
-          format: uri
-          description: Browser-safe localhost URL for opening the report from Flutter Web.
+        title:
+          type: string
+        captureCount:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
         updatedAt:
           type: string
           format: date-time
+    AiNovelDebugTraceWriteResponse:
+      allOf:
+        - $ref: "#/components/schemas/AiNovelDebugTraceManifest"
+        - type: object
+          required: [viewUrl]
+          properties:
+            viewUrl:
+              type: string
+              format: uri
+          additionalProperties: false
+    AiNovelDebugTraceListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiNovelDebugTraceManifest"
       additionalProperties: false
     ErrorResponse:
       type: object

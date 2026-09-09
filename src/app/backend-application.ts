@@ -9,7 +9,7 @@ import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import { AdminConsoleService } from "../modules/admin/admin-console.service.ts";
-import { AiNovelAuditFileService } from "../modules/ai-novel/ai-novel-audit-file.service.ts";
+import { AiNovelDebugTraceService } from "../modules/ai-novel/ai-novel-debug-trace.service.ts";
 import { AiNovelLlmService } from "../modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelSkillService } from "../modules/ai-novel/ai-novel-skill.service.ts";
 import { AppRegistryService } from "../modules/app-registry/app-registry.service.ts";
@@ -114,7 +114,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly bodyLogNotificationService: BodyLogNotificationService,
     private readonly bodyLogFeatureFlagService: BodyLogFeatureFlagService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
-    private readonly aiNovelAuditFileService: AiNovelAuditFileService,
+    readonly aiNovelDebugTraceService: AiNovelDebugTraceService,
     private readonly aiNovelSkillService: AiNovelSkillService,
     private readonly aiNovelLlmService: AiNovelLlmService,
     private readonly aiPayloadCryptoService: AesGcmPayloadCryptoService,
@@ -220,7 +220,7 @@ export class BackendApplication extends BackendRouteContext {
       llmManager: this.llmManager,
       embeddingManager: this.embeddingManager,
       llmSmokeTestService: this.llmSmokeTestService,
-      aiNovelAuditFileService: this.aiNovelAuditFileService,
+      aiNovelDebugTraceService: this.aiNovelDebugTraceService,
       aiNovelSkillService: this.aiNovelSkillService,
       aiNovelLlmService: this.aiNovelLlmService,
       aiPayloadCryptoService: this.aiPayloadCryptoService,
