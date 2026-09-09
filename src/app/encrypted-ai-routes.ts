@@ -349,24 +349,7 @@ export function isLocalOrDevRuntime(this: BackendRouteContext): boolean {
 }
 
 export function shouldServeLocalDebugEndpoint(this: BackendRouteContext, request: HttpRequest): boolean {
-  return (
-    process.env.NODE_ENV !== "production" &&
-    shouldExposeLocalAiDebugFields.call(this, request)
-  );
-}
-
-export function buildLocalDebugAuditFileViewUrl(this: BackendRouteContext, 
-  request: HttpRequest,
-  sessionId: string,
-): string {
-  const host =
-    getHeader(request.headers, "x-forwarded-host") ??
-    getHeader(request.headers, "host") ??
-    "localhost";
-  const protocol = getHeader(request.headers, "x-forwarded-proto") ?? "http";
-  return `${protocol}://${host}/api/v1/ai_novel/debug/audit-file/${encodeURIComponent(
-    this.aiNovelAuditFileService.sanitizeSessionId(sessionId),
-  )}`;
+  return shouldExposeLocalAiDebugFields.call(this, request);
 }
 
 export function shouldExposeLocalAiRequestDebugFields(this: BackendRouteContext, request: HttpRequest): boolean {

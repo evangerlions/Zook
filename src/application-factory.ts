@@ -21,7 +21,7 @@ import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
 import { resolveRuntimeDatabaseUrl, resolveRuntimeMigrationDatabaseUrl, resolveRuntimeRedisUrl } from "./infrastructure/runtime/runtime-readiness.ts";
 import { AdminConsoleService } from "./modules/admin/admin-console.service.ts";
 import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-model-health.service.ts";
-import { AiNovelAuditFileService } from "./modules/ai-novel/ai-novel-audit-file.service.ts";
+import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trace.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
 import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
@@ -393,8 +393,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     llmProviders: options.llmProviders,
     embeddingProviders: options.embeddingProviders,
   });
-  const aiNovelAuditFileService = new AiNovelAuditFileService(
-    options.aiNovelAuditFileRoot,
+  const aiNovelDebugTraceService = new AiNovelDebugTraceService(
+    options.aiNovelDebugTraceRoot,
   );
   const aiNovelSkillService = new AiNovelSkillService(
     new AiNovelSkillRepository(options.aiNovelSkillRoot),
@@ -513,7 +513,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     bodyLogNotificationService,
     bodyLogFeatureFlagService,
     llmSmokeTestService,
-    aiNovelAuditFileService,
+    aiNovelDebugTraceService,
     aiNovelSkillService,
     aiNovelLlmService,
     aiPayloadCryptoService,
@@ -590,7 +590,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       llmRouteCircuitBreaker,
       llmRouteCircuitRecoveryService,
       llmSmokeTestService,
-      aiNovelAuditFileService,
+      aiNovelDebugTraceService,
       aiNovelSkillService,
       aiNovelLlmService,
       rbacService,

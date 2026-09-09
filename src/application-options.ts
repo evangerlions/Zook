@@ -62,7 +62,7 @@ export interface CreateApplicationOptions {
   queue?: JobQueue;
   queueRedisUrl?: string;
   fileStorageRoot?: string;
-  aiNovelAuditFileRoot?: string;
+  aiNovelDebugTraceRoot?: string;
   /** Test-only override for the checked-in AINovel Skill package root. */
   aiNovelSkillRoot?: string;
   telemetryGatewayConfig?: TelemetryGatewayConfig;
