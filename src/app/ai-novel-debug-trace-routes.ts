@@ -48,7 +48,7 @@ async function writeTrace(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
-  await this.authenticateProductRequest(request, "ai_novel");
+  const auth = await this.authenticateProductRequest(request, "ai_novel");
   const body = this.validationPipe.asObject(request.body);
   const sessionId = requiredText(body.sessionId, "sessionId");
   const kind = requiredEnum(body.kind, "kind", AI_NOVEL_TRACE_KINDS);
@@ -56,6 +56,7 @@ async function writeTrace(
   const trace = requiredObject(body.trace, "trace");
   const manifest = await this.aiNovelDebugTraceService.write({
     sessionId,
+    uid: auth.userId,
     kind,
     status,
     ...(optionalText(body.bookId) ? { bookId: optionalText(body.bookId) } : {}),
@@ -77,6 +78,8 @@ async function listTraces(
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const filter: AiNovelDebugTraceFilter = {
+    ...(optionalText(request.query?.uid) ? { uid: optionalText(request.query?.uid) } : {}),
+    ...(optionalText(request.query?.cid) ? { cid: optionalText(request.query?.cid) } : {}),
     ...(optionalEnum(request.query?.kind, AI_NOVEL_TRACE_KINDS) ? { kind: optionalEnum(request.query?.kind, AI_NOVEL_TRACE_KINDS) } : {}),
     ...(optionalEnum(request.query?.status, AI_NOVEL_TRACE_STATUSES) ? { status: optionalEnum(request.query?.status, AI_NOVEL_TRACE_STATUSES) } : {}),
     ...(optionalText(request.query?.bookId) ? { bookId: optionalText(request.query?.bookId) } : {}),
@@ -99,7 +102,8 @@ async function viewTrace(
       decodeURIComponent(encodedSessionId),
       optionalEnum(request.query?.kind, AI_NOVEL_TRACE_KINDS),
     );
-    return htmlResponse(renderAiNovelDebugTraceDetail(session), request);
+    const sessions = await this.aiNovelDebugTraceService.list();
+    return htmlResponse(renderAiNovelDebugTraceDetail(session, sessions), request);
   } catch (error: unknown) {
     if (isMissingTrace(error)) {
       throw new ApplicationError(404, "TRACE_NOT_FOUND", "Trace session not found.");

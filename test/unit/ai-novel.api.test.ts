@@ -1400,12 +1400,34 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
       trace: { modelRequests: [{ sceneKey: "import_book_agent" }] },
     },
   });
+  await runtime.services.appRegistryService.ensureMembership(
+    "ai_novel",
+    "user_bob",
+  );
+  const otherUserToken = runtime.services.tokenService.issueAccessToken(
+    "user_bob",
+    "ai_novel",
+  );
+  await runtime.app.handle({
+    ...baseRequest,
+    headers: {
+      ...baseRequest.headers,
+      authorization: `Bearer ${otherUserToken}`,
+    },
+    body: {
+      sessionId: "other-user-session",
+      kind: "writing",
+      status: "completed",
+      trace: { modelRequests: [] },
+    },
+  });
 
   assert.equal(first.statusCode, 200);
   assert.equal(second.statusCode, 200);
   const firstData = first.body.data as Record<string, unknown>;
   const secondData = second.body.data as Record<string, unknown>;
   assert.equal(firstData.sessionId, "../bad/session");
+  assert.equal(firstData.uid, "user_alice");
   assert.equal(firstData.captureCount, 1);
   assert.equal(secondData.status, "completed");
   assert.equal(secondData.captureCount, 2);
@@ -1422,13 +1444,33 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
   const data = await runtime.app.handle({
     method: "GET",
     path: "/api/v1/ai_novel/debug/traces/data",
-    query: { kind: "writing", bookId: "book_1", chapterId: "3" },
+    query: {
+      kind: "writing",
+      uid: "user_alice",
+      cid: "../bad/session",
+      bookId: "book_1",
+      chapterId: "3",
+    },
     headers: { host: "localhost:3100" },
   });
   assert.equal(data.statusCode, 200);
   const items = (data.body.data as { items: Record<string, unknown>[] }).items;
   assert.equal(items.length, 1);
   assert.equal(items[0]?.sessionId, "../bad/session");
+  assert.equal(items[0]?.uid, "user_alice");
+
+  const bobData = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces/data",
+    query: { uid: "user_bob" },
+    headers: { host: "localhost:3100" },
+  });
+  assert.deepEqual(
+    (bobData.body.data as { items: Record<string, unknown>[] }).items.map(
+      (item) => item.uid,
+    ),
+    ["user_bob"],
+  );
 
   const allData = await runtime.app.handle({
     method: "GET",
@@ -1437,7 +1479,7 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
   });
   assert.equal(
     (allData.body.data as { items: Record<string, unknown>[] }).items.length,
-    2,
+    3,
   );
 
   const view = await runtime.app.handle({
@@ -1455,9 +1497,24 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
   assert.equal(view.statusCode, 200);
   assert.equal(view.contentType, "text/html; charset=utf-8");
   assert.match(viewedHtml, /Conversation trace/);
+  assert.match(viewedHtml, /Context diff/);
+  assert.match(viewedHtml, /All model requests in this turn/);
+  assert.match(viewedHtml, /View raw JSON/);
+  assert.match(viewedHtml, /json-key/);
+  assert.match(viewedHtml, /turn-search/);
+  assert.match(viewedHtml, /status-icon/);
+  assert.match(viewedHtml, /role-icon/);
+  assert.ok(
+    viewedHtml.indexOf("Messages in current context") <
+      viewedHtml.indexOf("All model requests in this turn"),
+  );
+  assert.ok(
+    viewedHtml.indexOf("All model requests in this turn") <
+      viewedHtml.indexOf("Context diff"),
+  );
   assert.match(viewedHtml, /first turn/);
   assert.match(viewedHtml, /second turn/);
-  assert.match(viewedHtml, /2<\/strong><span>captures retained/);
+  assert.match(viewedHtml, /"captureCount":2/);
 
   const missingView = await runtime.app.handle({
     method: "GET",
@@ -1476,11 +1533,10 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
   for await (const chunk of console.streamBody ?? []) consoleHtml += chunk;
   assert.equal(console.statusCode, 200);
   assert.match(consoleHtml, /AINovel Trace Console/);
-  assert.match(
-    consoleHtml,
-    /const root='\/api\/v1\/ai_novel\/debug\/traces'/,
-  );
-  assert.match(consoleHtml, /fetch\(root\+'\/data\?'/);
+  assert.match(consoleHtml, /const root = '\/api\/v1\/ai_novel\/debug\/traces'/);
+  assert.match(consoleHtml, /name="uid"/);
+  assert.match(consoleHtml, /name="cid"/);
+  assert.match(consoleHtml, /fetch\(root \+ '\/data\?'/);
 });
 
 test("ai_novel trace storage does not merge ids with similar punctuation", async () => {

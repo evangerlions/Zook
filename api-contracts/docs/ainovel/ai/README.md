@@ -39,13 +39,15 @@ For local联调 only:
 - request outer envelope may carry `localDebugRequestPlaintext`
 - chat-completion response outer envelope may carry `localDebugResponseText`
 - Flutter debug tooling may call `POST /api/v1/ai_novel/debug/traces` with a
-  stable session id, trace kind/status metadata, and one structured trace
-  capture. Local Zook appends every capture for the session and exposes
-  `GET /api/v1/ai_novel/debug/traces` as the
-  filterable Trace Console and `GET /api/v1/ai_novel/debug/traces/{sessionId}`
-  as the server-rendered conversation trace page. Storage is keyed by
-  `kind + sessionId`, so Import and imported Kickoff may safely share their
-  business session id without overwriting one another.
+  stable session id (the console's `cid`), trace kind/status metadata, and one
+  structured trace capture. Zook stamps the authenticated user as `uid`,
+  appends every capture for the session, and exposes
+  `GET /api/v1/ai_novel/debug/traces/data` with UID/CID filters. The browser
+  console renders Sessions → Turns → request details; each turn groups one user
+  message with its Pi/tool loop, compares context with the preceding turn, and
+  provides colored messages, collapsible requests, and raw JSON. Storage is
+  keyed by `kind + sessionId`, so Import and imported Kickoff may safely share
+  their business session id without overwriting one another.
   Shared dev requires the existing admin authentication on all GET routes;
   local/test runs remain directly accessible.
 
