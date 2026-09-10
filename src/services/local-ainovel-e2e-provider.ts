@@ -762,7 +762,9 @@ function lastExplicitChapterRange(
   text: string,
 ): ImportChapterRange | undefined {
   const ranges = Array.from(
-    text.matchAll(/chapters?\s+(\d+)\s*(?:\.\.|-|to|至|到)\s*(\d+)/gi),
+    text.matchAll(
+      /(?:chapters?|range)\s*["':= ]*\s*(\d+)\s*(?:\.\.|-|to|至|到)\s*(\d+)/gi,
+    ),
   );
   const last = ranges.at(-1);
   if (!last) {
