@@ -54,6 +54,9 @@ export async function tryHandleBodyLogV1Routes(
   if (request.path.startsWith("/api/v1/bodylog/seven-day-plan/") && !(await featureFlagService.isEnabled("growth"))) {
     throw new ApplicationError(404, "BODYLOG_FEATURE_DISABLED", "Feature is not available.");
   }
+  if (request.path === "/api/v1/bodylog/subscription/status" && request.method === "GET") {
+    return context.ok(await buddyService.subscriptionStatus(auth.userId), request.requestId as string);
+  }
   if (request.path === BODYLOG_PROFILE_PATH && request.method === "GET") {
     const profile = await profileService.getOrCreate(auth.userId);
     return context.ok(profile, request.requestId as string);
@@ -112,6 +115,9 @@ export async function tryHandleBodyLogV1Routes(
       await socialService.report(auth.userId, body.targetUserId, body.reason),
       request.requestId as string,
     );
+  }
+  if (request.path === "/api/v1/bodylog/leaderboards/current/snapshot" && request.method === "GET") {
+    return context.ok(await leaderboardService.snapshot(auth.userId, request.headers["x-time-zone"] ?? "UTC"), request.requestId as string);
   }
   if (request.path === "/api/v1/bodylog/leaderboards/current/join" && request.method === "POST") {
     const body = requestBody(request);
@@ -264,7 +270,10 @@ export async function tryHandleBodyLogV1Routes(
   }
   if (request.path === "/api/v1/bodylog/buddies/checkin" && request.method === "POST") {
     const body = requestBody(request);
-    await buddyService.recordCheckin(auth.userId, validation.requireString(body, "habitId"), body.count === undefined ? 1 : validation.requireNumber(body, "count"));
+    await buddyService.recordCheckin(auth.userId, validation.requireString(body, "habitId"), body.count === undefined ? 1 : validation.requireNumber(body, "count"),
+      body.eventId !== undefined || body.occurredAt !== undefined ? {
+        eventId: validation.requireString(body, "eventId"), occurredAt: validation.requireString(body, "occurredAt"),
+      } : undefined);
     return context.ok({ recorded: true }, request.requestId as string);
   }
 
@@ -320,6 +329,9 @@ export async function tryHandleBodyLogV1Routes(
   if (request.path === "/api/v1/bodylog/seven-day-plan/enroll" && request.method === "POST") {
     const plan = await growthService.enroll(auth.userId);
     return context.ok(plan, request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/seven-day-plan/latest" && request.method === "GET") {
+    return context.ok(await growthService.getLatestPlan(auth.userId), request.requestId as string);
   }
   if (request.path === "/api/v1/bodylog/seven-day-plan/active" && request.method === "GET") {
     const plan = await growthService.getActivePlan(auth.userId);

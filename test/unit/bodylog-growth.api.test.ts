@@ -44,6 +44,7 @@ describe("BodyLogGrowthService", () => {
   beforeEach(() => {
     mockDb = {
       createGrowthPlan: mock.fn(async () => mockPlan),
+      findLatestGrowthPlan: mock.fn(async () => null),
       findActiveGrowthPlan: mock.fn(async () => null),
       findGrowthPlanById: mock.fn(async () => mockPlan),
       updateGrowthPlan: mock.fn(async () => mockPlan),

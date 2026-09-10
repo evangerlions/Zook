@@ -51,6 +51,7 @@ const groupStore = (pool: Pool): BodyLogGroupStore => ({
 const growthStore = (pool: Pool): BodyLogGrowthStore => ({
   createGrowthPlan: (input) => growthSql.createPostgresGrowthPlan(pool, input),
   findGrowthPlanById: (planId) => growthSql.findPostgresGrowthPlanById(pool, planId),
+  findLatestGrowthPlan: (userId) => growthSql.findPostgresLatestGrowthPlan(pool, userId),
   findActiveGrowthPlan: (userId) => growthSql.findPostgresActiveGrowthPlan(pool, userId),
   updateGrowthPlan: (planId, input) => growthSql.updatePostgresGrowthPlan(pool, planId, input),
   incrementGrowthPlanCompletedMissions: (planId) => growthSql.incrementPostgresGrowthPlanCompletedMissions(pool, planId),

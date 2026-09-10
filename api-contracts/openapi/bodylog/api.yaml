@@ -32,6 +32,32 @@ tags:
   - name: bodylog-config
     description: Anonymous public configuration (feature flags).
 paths:
+  /api/v1/bodylog/subscription/status:
+    get:
+      operationId: getBodyLogSubscriptionStatus
+      tags: [bodylog-profile]
+      summary: Read authoritative cloud entitlement used for social quotas
+      responses:
+        "200":
+          description: Cloud subscription, or free when no active grant exists
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, data]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+                  data:
+                    type: object
+                    required: [tier, expiresAt, autoRenew]
+                    properties:
+                      tier: { type: string, enum: [free, plus, pro] }
+                      expiresAt: { type: [string, "null"], format: date-time }
+                      autoRenew: { type: boolean }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/profile:
     get:
       operationId: getBodyLogProfile
@@ -152,6 +178,39 @@ paths:
       responses:
         "200": { $ref: "#/components/responses/Report" }
         "400": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/leaderboards/current/snapshot:
+    get:
+      operationId: getBodyLogScoringSnapshot
+      tags: [bodylog-leaderboard]
+      summary: Read the signed-in user's frozen weekly scoring selection
+      parameters:
+        - in: header
+          name: x-time-zone
+          schema: { type: string, default: UTC }
+      responses:
+        "200":
+          description: Current membership and scoring habits; an unjoined user gets an empty habits array
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, data]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+                  data:
+                    type: object
+                    required: [seasonLabel, timezone, habits, joined]
+                    properties:
+                      seasonLabel: { type: string }
+                      timezone: { type: string }
+                      joined: { type: boolean }
+                      habits:
+                        type: array
+                        items: { $ref: "#/components/schemas/BodyLogScoringHabit" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/leaderboards/current/join:
     post:
       operationId: joinBodyLogLeaderboard
@@ -520,6 +579,14 @@ paths:
         "200": { $ref: "#/components/responses/GrowthPlan" }
         "404": { $ref: "#/components/responses/Error" }
         "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/latest:
+    get:
+      operationId: getBodyLogLatestSevenDayPlan
+      tags: [bodylog-growth]
+      summary: Get the latest plan including completed plans for reward recovery
+      responses:
+        "200": { $ref: "#/components/responses/GrowthPlan" }
+        "404": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/seven-day-plan/active:
     get:
       operationId: getBodyLogActiveSevenDayPlan
@@ -1055,12 +1122,15 @@ components:
         isSameAction: { type: boolean }
         targetHabitId: { type: string, minLength: 1 }
     BodyLogBuddyCheckinRequest:
+      description: Supply eventId and occurredAt together for retry-safe local log delivery. Reusing an eventId with different content returns BODYLOG_EVENT_CONFLICT. Dates use UTC and do not reopen settled days.
       type: object
       additionalProperties: false
       required: [habitId]
       properties:
         habitId: { type: string, minLength: 1 }
         count: { type: integer, minimum: 1 }
+        eventId: { type: string, pattern: "^[A-Za-z0-9_-]{1,128}$" }
+        occurredAt: { type: string, format: date-time }
     BodyLogCreateGroupRequest:
       type: object
       additionalProperties: false

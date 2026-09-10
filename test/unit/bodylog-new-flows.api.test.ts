@@ -1,3 +1,4 @@
+import { deliverBodyLogPush } from "../../src/services/bodylog-push-delivery.ts";
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildDefaultSeed } from '../../src/infrastructure/database/prisma/default-seed.ts';
@@ -72,6 +73,58 @@ test('BodyLog growth stays disabled and notification preferences/devices isolate
   assert.equal((await call('user_alice', 'GET', 'notification-preferences')).body.data.marketingConsent, true);
   assert.equal((await call('user_alice', 'POST', 'push-devices', { deviceToken: 'device', platform: 'ios' })).statusCode, 200);
   await call('user_bob', 'POST', 'push-devices', { deviceToken: 'device', platform: 'ios' });
+  assert.deepEqual((await call('user_alice', 'GET', 'push-devices')).body.data, []);
+  assert.equal((await call('user_bob', 'GET', 'push-devices')).body.data.length, 1);
+});
+
+
+test('BodyLog local log retries are idempotent and preserve occurrence time', async () => {
+  const { call } = await setup();
+  const created = await call('user_alice', 'POST', 'buddies', { partnerUserId: 'user_bob', sharedHabitIds: ['water'] });
+  const id = created.body.data.pair.id;
+  await call('user_bob', 'POST', `buddies/${id}/accept`);
+  const event = { habitId: 'water', count: 1, eventId: 'log-1', occurredAt: new Date().toISOString() };
+  for (const response of await Promise.all([call('user_alice', 'POST', 'buddies/checkin', event), call('user_alice', 'POST', 'buddies/checkin', event)])) assert.equal(response.statusCode, 200);
+  const feed = await call('user_alice', 'GET', `buddies/${id}`);
+  assert.equal(feed.body.data.activities.filter((item: any) => item.type === 'checked_in').length, 1);
+  assert.equal((await call('user_alice', 'POST', 'buddies/checkin', { ...event, count: 2 })).statusCode, 409);
+  assert.equal((await call('user_alice', 'POST', 'buddies/checkin', { habitId: 'water', eventId: 'missing-date' })).statusCode, 400);
+});
+
+test('BodyLog cloud entitlement defaults to free without a server grant', async () => {
+  const { call } = await setup();
+  const response = await call('user_alice', 'GET', 'subscription/status');
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.body.data, { tier: 'free', expiresAt: null, autoRenew: false });
+});
+
+
+test('BodyLog latest plan survives completion and isolates accounts', async () => {
+  const { runtime, call } = await setup();
+  const stores = resolveBodyLogStores(runtime.database);
+  await stores.flags.updateBodyLogFeatureFlag('growth', true);
+  const enrolled = await call('user_alice', 'POST', 'seven-day-plan/enroll');
+  const id = enrolled.body.data.id;
+  await stores.growth.updateGrowthPlan(id, { status: 'completed', completedMissions: 21 });
+  assert.equal((await call('user_alice', 'GET', 'seven-day-plan/active')).body.data, null);
+  assert.equal((await call('user_alice', 'GET', 'seven-day-plan/latest')).body.data.id, id);
+  assert.equal((await call('user_bob', 'GET', 'seven-day-plan/latest')).body.data, null);
+});
+
+
+test('BodyLog push uses owned devices, category preferences and invalidation', async () => {
+  const { runtime, call } = await setup();
+  await call('user_alice', 'POST', 'push-devices', { platform: 'ios', deviceToken: 'alice-token' });
+  await call('user_bob', 'POST', 'push-devices', { platform: 'android', deviceToken: 'bob-token' });
+  const sent: string[] = [];
+  const dispatcher = { async dispatch(request: any) { sent.push(request.pushToken); await request.invalidateToken(); } };
+  const record = { recipientUserId: 'user_alice', payload: { type: 'buddy_checked_in', title: 'Checkin', body: 'Done', data: {} } };
+  await call('user_alice', 'PUT', 'notification-preferences', { enabledCategories: [] });
+  await deliverBodyLogPush(runtime.database, dispatcher, record);
+  assert.deepEqual(sent, []);
+  await call('user_alice', 'PUT', 'notification-preferences', { enabledCategories: ['activity'] });
+  await deliverBodyLogPush(runtime.database, dispatcher, record);
+  assert.deepEqual(sent, ['alice-token']);
   assert.deepEqual((await call('user_alice', 'GET', 'push-devices')).body.data, []);
   assert.equal((await call('user_bob', 'GET', 'push-devices')).body.data.length, 1);
 });

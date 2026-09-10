@@ -81,6 +81,7 @@ export interface BodyLogSubscriptionStore {
 export interface BodyLogGrowthStore {
   createGrowthPlan(input: CreateGrowthPlanInput): MaybePromise<BodyLogGrowthPlan>;
   findGrowthPlanById(planId: string): MaybePromise<BodyLogGrowthPlan | null>;
+  findLatestGrowthPlan(userId: string): MaybePromise<BodyLogGrowthPlan | null>;
   findActiveGrowthPlan(userId: string): MaybePromise<BodyLogGrowthPlan | null>;
   updateGrowthPlan(planId: string, input: UpdateGrowthPlanInput): MaybePromise<BodyLogGrowthPlan>;
   incrementGrowthPlanCompletedMissions(planId: string): MaybePromise<void>;

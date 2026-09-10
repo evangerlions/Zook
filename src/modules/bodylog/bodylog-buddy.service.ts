@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { BodyLogBuddyStore, BodyLogSocialAccess } from "../../infrastructure/bodylog-store-ports.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
@@ -38,6 +38,12 @@ export class BodyLogBuddyService {
     private readonly subscriptionService?: SubscriptionService,
   ) {
     this.settlement = new BodyLogBuddySettlement(store, notificationService, subscriptionService);
+  }
+
+  /** Cloud entitlement used by buddy/group quotas; never trusts a client premium flag. */
+  async subscriptionStatus(userId: string) {
+    const subscription = await this.subscriptionService?.getActiveSubscription(BODYLOG_APP_ID, userId);
+    return { tier: subscription?.tier ?? "free", expiresAt: subscription?.expiresAt ?? null, autoRenew: subscription?.autoRenew ?? false };
   }
 
   /**
@@ -379,7 +385,11 @@ export class BodyLogBuddyService {
   /**
    * 记录打卡（广播给搭子）
    */
-  async recordCheckin(userId: string, habitId: string, count: number): Promise<void> {
+  async recordCheckin(userId: string, habitId: string, count: number, event?: { eventId: string; occurredAt: string }): Promise<void> {
+    const occurredAt = event ? new Date(event.occurredAt) : new Date();
+    if (event && (!/^[A-Za-z0-9_-]{1,128}$/.test(event.eventId) || !Number.isFinite(occurredAt.getTime()) || occurredAt.getTime() > Date.now() + 300_000)) {
+      throw new ApplicationError(400, "REQ_INVALID_BODY", "A stable eventId and valid occurredAt are required.");
+    }
     if (typeof habitId !== 'string' || !habitId.trim() || !Number.isInteger(count) || count < 1) {
       throw new ApplicationError(400, "REQ_INVALID_BODY", "A habit and a positive integer count are required.");
     }
@@ -390,18 +400,29 @@ export class BodyLogBuddyService {
     if (activePairs.length === 0) return;
 
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const today = occurredAt.toISOString().split("T")[0];
 
     for (const pair of activePairs) {
-      // 创建活动记录
+      // A retried local log keeps its ID and timestamp; old logs cannot enter a new pair.
+      if (event && occurredAt < new Date(pair.acceptedAt ?? pair.createdAt)) continue;
+      const activityId = event
+        ? "buddy_activity_" + createHash("sha256").update(JSON.stringify([pair.id, userId, event.eventId])).digest("hex")
+        : randomId("buddy_activity");
+      const existing = event ? (await this.store.listBodyLogBuddyActivities(pair.id)).find(item => item.id === activityId) : undefined;
+      if (existing) {
+        if (existing.targetHabitId !== habitId || existing.payload.count !== count || existing.createdAt !== occurredAt.toISOString()) {
+          throw new ApplicationError(409, "BODYLOG_EVENT_CONFLICT", "Event ID was already used with different content.");
+        }
+        continue;
+      }
       const activity: BuddyActivityRecord = {
-        id: randomId("buddy_activity"),
+        id: activityId,
         pairId: pair.id,
         actorUserId: userId,
         type: "checked_in",
         targetHabitId: habitId,
         payload: { count, date: today },
-        createdAt: now.toISOString(),
+        createdAt: occurredAt.toISOString(),
       };
 
       await this.store.insertBodyLogBuddyActivity(activity);
@@ -413,7 +434,7 @@ export class BodyLogBuddyService {
       // 更新最后活跃日期
       const updatedPair: BuddyPairRecord = {
         ...pair,
-        lastActiveDate: today,
+        lastActiveDate: pair.lastActiveDate && pair.lastActiveDate > today ? pair.lastActiveDate : today,
         updatedAt: now.toISOString(),
       };
 
