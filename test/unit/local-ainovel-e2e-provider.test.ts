@@ -190,7 +190,7 @@ test("local AINovel E2E provider submits every required import tool in one turn"
         {
           role: "user",
           content:
-            "Step: read_aligned_recent_batch\nReading chapters 10..12 for import.",
+            'Step: read_aligned_recent_batch\ncontext={"range":"10..12"} for import.',
         },
       ],
       providerOptions: {

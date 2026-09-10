@@ -323,8 +323,9 @@ paths:
       summary: Local-only AINovel trace artifact writer
       description: |
         Local/dev-only endpoint for the AINovel Trace Console. Production and
-        non-local hosts return 404. The server appends structured trace captures
-        to the stable AI session and renders the browser view itself.
+        non-local hosts return 404. The server stamps the authenticated user as
+        `uid`, treats `sessionId` as the conversation id (`cid`), appends the
+        structured capture, and renders the browser view itself.
       tags: [ainovel, debug]
       parameters:
         - $ref: "#/components/parameters/XAppId"
@@ -396,6 +397,14 @@ paths:
       description: Local/dev-only metadata list used by the Trace Console filters.
       tags: [ainovel, debug]
       parameters:
+        - name: uid
+          in: query
+          description: Filter by the authenticated AINovel user id.
+          schema: { type: string }
+        - name: cid
+          in: query
+          description: Filter by conversation id; this is the stored sessionId.
+          schema: { type: string }
         - name: kind
           in: query
           schema: { $ref: "#/components/schemas/AiNovelTraceKind" }
@@ -435,7 +444,8 @@ paths:
       operationId: viewAiNovelDebugTrace
       summary: Local-only AINovel session trace viewer
       description: |
-        Local/debug-only browser view rendered from all captures for a session.
+        Local/debug-only browser view rendered as Sessions → Turns → request
+        details. Each turn compares its context with the preceding turn.
         Production and non-local hosts return 404.
       tags: [ainovel, debug]
       parameters:
@@ -672,6 +682,10 @@ components:
       properties:
         sessionId:
           type: string
+          description: Conversation id (`cid`) used to group turns.
+        uid:
+          type: string
+          description: Authenticated AINovel user id that owns the trace.
         kind:
           $ref: "#/components/schemas/AiNovelTraceKind"
         status:

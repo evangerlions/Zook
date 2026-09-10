@@ -23,6 +23,8 @@ export type AiNovelTraceStatus = (typeof AI_NOVEL_TRACE_STATUSES)[number];
 
 export interface AiNovelDebugTraceManifest {
   sessionId: string;
+  /** Authenticated AINovel user that owns this local-debug trace. */
+  uid?: string;
   kind: AiNovelTraceKind;
   status: AiNovelTraceStatus;
   bookId?: string;
@@ -46,6 +48,7 @@ export interface AiNovelDebugTraceSession {
 
 export interface AiNovelDebugTraceWriteCommand {
   sessionId: string;
+  uid?: string;
   kind: AiNovelTraceKind;
   status: AiNovelTraceStatus;
   bookId?: string;
@@ -55,6 +58,9 @@ export interface AiNovelDebugTraceWriteCommand {
 }
 
 export interface AiNovelDebugTraceFilter {
+  uid?: string;
+  /** `cid` is the UI/API alias for the existing session id. */
+  cid?: string;
   kind?: AiNovelTraceKind;
   status?: AiNovelTraceStatus;
   bookId?: string;
@@ -90,8 +96,10 @@ export class AiNovelDebugTraceService {
       const bookId = normalizeOptional(command.bookId) ?? current?.manifest.bookId;
       const chapterId = normalizeOptional(command.chapterId) ?? current?.manifest.chapterId;
       const title = normalizeOptional(command.title) ?? current?.manifest.title;
+      const uid = normalizeOptional(command.uid) ?? current?.manifest.uid;
       const manifest: AiNovelDebugTraceManifest = {
         sessionId,
+        ...(uid ? { uid } : {}),
         kind: command.kind,
         status: command.status,
         ...(bookId ? { bookId } : {}),
@@ -222,6 +230,8 @@ export class AiNovelDebugTraceService {
 }
 
 function matchesFilter(item: AiNovelDebugTraceManifest, filter: AiNovelDebugTraceFilter): boolean {
+  if (filter.uid && item.uid !== filter.uid) return false;
+  if (filter.cid && item.sessionId !== filter.cid) return false;
   if (filter.kind && item.kind !== filter.kind) return false;
   if (filter.status && item.status !== filter.status) return false;
   if (filter.bookId && item.bookId !== filter.bookId) return false;
@@ -247,6 +257,7 @@ function parseManifest(value: unknown): AiNovelDebugTraceManifest | null {
   ) return null;
   return {
     sessionId: item.sessionId,
+    ...(typeof item.uid === "string" ? { uid: item.uid } : {}),
     kind: item.kind as AiNovelTraceKind,
     status: item.status as AiNovelTraceStatus,
     ...(typeof item.bookId === "string" ? { bookId: item.bookId } : {}),
