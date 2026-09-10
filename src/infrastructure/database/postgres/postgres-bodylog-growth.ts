@@ -301,3 +301,9 @@ function mapRewardRow(row: any): BodyLogGrowthReward {
     createdAt: row.created_at,
   };
 }
+
+/** Retains access to completion rewards after a plan leaves active status. */
+export async function findPostgresLatestGrowthPlan(pool: Pool, userId: string): Promise<BodyLogGrowthPlan | null> {
+  const result = await pool.query("SELECT * FROM bodylog_seven_day_plans WHERE user_id = $1 AND app_id = 'bodylog' ORDER BY created_at DESC LIMIT 1", [userId]);
+  return result.rows[0] ? mapPlanRow(result.rows[0]) : null;
+}

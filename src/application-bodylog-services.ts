@@ -34,7 +34,7 @@ export function createBodyLogServices(input: {
   const execute = <T>(operation: () => Promise<T>) => database.withExclusiveSession(operation);
   const bodyLogProfileService = new BodyLogProfileService(database, contentSafetyService);
   const bodyLogSocialService = new BodyLogSocialService(database, bodyLogProfileService);
-  const bodyLogLeaderboardService = new BodyLogLeaderboardService(database, bodyLogProfileService);
+  const bodyLogLeaderboardService = withBodyLogExecution(new BodyLogLeaderboardService(database, bodyLogProfileService), execute);
   const bodyLogInvitationService = new BodyLogInvitationService(database);
   const bodyLogChallengeService = new BodyLogChallengeService(database, bodyLogProfileService);
   const bodyLogGrowthService = withBodyLogExecution(new BodyLogGrowthService(stores.growth), execute);

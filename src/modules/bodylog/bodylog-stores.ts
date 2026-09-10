@@ -168,6 +168,9 @@ export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {
     return record;
   }
   findGrowthPlanById(planId: string): BodyLogGrowthPlan | null { return this.cloneFound(this.plans.find((r) => r.id === planId)); }
+  findLatestGrowthPlan(userId: string): BodyLogGrowthPlan | null {
+    return this.cloneFound(this.plans.filter(r => r.userId === userId).sort(byIsoDesc(r => r.createdAt))[0]);
+  }
   findActiveGrowthPlan(userId: string): BodyLogGrowthPlan | null {
     const active = this.plans.filter((r) => r.userId === userId && r.status === "active").sort(byIsoDesc((r) => r.createdAt));
     return this.cloneFound(active[0]);

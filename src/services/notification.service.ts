@@ -1,3 +1,4 @@
+import { deliverBodyLogPush } from "./bodylog-push-delivery.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { JobQueue } from "../infrastructure/queue/job-queue.ts";
@@ -135,6 +136,16 @@ export class NotificationService {
       return;
     }
 
+    if (record.appId === "bodylog" && record.channel === "push") {
+      try {
+        await deliverBodyLogPush(this.database, this.pushDispatcher, record);
+        await this.database.updateNotificationJob(record.id, { status: "SENT", retryCount: record.retryCount + 1 });
+      } catch (error) {
+        await this.database.updateNotificationJob(record.id, { status: "FAILED", retryCount: record.retryCount + 1 });
+        throw error;
+      }
+      return;
+    }
     if (record.appId === FROGSLEEP_APP_ID && record.channel === "push") {
       await this.processFrogSleepPushJob(job, record);
       return;

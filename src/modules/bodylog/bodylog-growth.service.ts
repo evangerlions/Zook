@@ -127,6 +127,11 @@ export class BodyLogGrowthService {
     return toPlanDocument(plan);
   }
 
+  async getLatestPlan(userId: string): Promise<BodyLogGrowthPlanDocument | null> {
+    const plan = await this.database.findLatestGrowthPlan(userId);
+    return plan ? toPlanDocument(plan) : null;
+  }
+
   async getActivePlan(userId: string): Promise<BodyLogGrowthPlanDocument | null> {
     const plan = await this.database.findActiveGrowthPlan(userId);
     if (!plan) {
