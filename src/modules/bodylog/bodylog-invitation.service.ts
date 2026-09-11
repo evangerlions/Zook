@@ -10,7 +10,7 @@ const DAY_MS = 86_400_000;
 export class BodyLogInvitationService {
   constructor(private readonly database: ApplicationDatabase) {}
 
-  async create(inviterUserId: string, installId: unknown) {
+  async create(inviterUserId: string, installId: unknown, intent?: "general" | "buddy" | "group") {
     if (typeof installId !== "string" || installId.trim().length < 8) {
       throw new ApplicationError(400, "BODYLOG_INVITATION_INVALID", "Installation identifier is required.");
     }
@@ -20,11 +20,15 @@ export class BodyLogInvitationService {
     const record = {
       id: randomId("bodylog_invitation"), appId: BODYLOG_APP_ID,
       inviterUserId, inviterInstallIdHash: hash(installId), tokenHash: hash(token),
+      intent: intent ?? "general",
       expiresAt: expiresAt.toISOString(), createdAt: now.toISOString(),
     };
     await this.database.insertBodyLogInvitation(record);
+
+    // 根据intent生成不同的URL路径
+    const urlPath = intent === "buddy" ? "b" : intent === "group" ? "g" : "i";
     return {
-      token, url: `https://bodylog.app/i/${token}`,
+      token, url: `https://bodylog.app/${urlPath}/${token}`,
       expiresAt: record.expiresAt,
     };
   }

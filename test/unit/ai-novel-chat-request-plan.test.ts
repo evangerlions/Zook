@@ -29,12 +29,37 @@ test("stream request plan finalizes kickoff messages and CN identity exactly onc
     "ask_question",
     "ready",
   ]);
-  const systemPrompts = plan.messages.filter((message) => message.role === "system");
+  const systemPrompts = plan.messages.filter(
+    (message) => message.role === "system",
+  );
   assert.equal(systemPrompts.length, 1);
   assert.equal(
-    countOccurrences(String(systemPrompts[0]?.content), CN_AI_ASSISTANT_IDENTITY_RESPONSE),
+    countOccurrences(
+      String(systemPrompts[0]?.content),
+      CN_AI_ASSISTANT_IDENTITY_RESPONSE,
+    ),
     1,
   );
+});
+
+test("pi-v1 kickoff omits the dynamic Meta summary from the system prompt", () => {
+  const plan = buildAiNovelStreamRequestPlan({
+    accountRegion: "GLOBAL",
+    agentProtocol: "pi-v1",
+    context: {
+      meta: {
+        storyPromise: "This dynamic premise must not enter the system prompt.",
+      },
+    },
+    messages: USER_MESSAGES,
+    scene: resolveAiNovelChatScene("kickoff_turn"),
+  });
+
+  const systemPrompt = String(
+    plan.messages.find((message) => message.role === "system")?.content ?? "",
+  );
+  assert.doesNotMatch(systemPrompt, /dynamic premise must not enter/);
+  assert.match(systemPrompt, /call read_meta before making a state-dependent decision/);
 });
 
 test("stream request plan preserves every existing adapter and provider option branch", () => {
@@ -59,6 +84,19 @@ test("stream request plan preserves every existing adapter and provider option b
   assert.equal(writeTurn.profile, "write_turn");
   assert.equal(writeTurn.providerOptions?.enable_thinking, true);
 
+  const historyQa = buildAiNovelStreamRequestPlan({
+    accountRegion: "GLOBAL",
+    context: { suppliedTools: ["read_draft", "search_story_history"] },
+    messages: USER_MESSAGES,
+    scene: resolveAiNovelChatScene("history_chapter_qa"),
+  });
+  assert.equal(historyQa.adapter, "prompted");
+  assert.equal(historyQa.profile, "history_chapter_qa");
+  assert.deepEqual(toolNames(historyQa.providerOptions), [
+    "read_draft",
+    "search_story_history",
+  ]);
+
   const importAgent = buildAiNovelStreamRequestPlan({
     accountRegion: "GLOBAL",
     context: {},
@@ -82,7 +120,13 @@ test("stream request plan preserves every existing adapter and provider option b
   assert.equal(basic.profile, undefined);
   assert.equal(basic.providerOptions, undefined);
 
-  for (const plan of [importedKickoff, writeTurn, importAgent, basic]) {
+  for (const plan of [
+    importedKickoff,
+    writeTurn,
+    historyQa,
+    importAgent,
+    basic,
+  ]) {
     assert.doesNotMatch(
       plan.messages.map((message) => message.content ?? "").join("\n"),
       new RegExp(CN_AI_ASSISTANT_IDENTITY_RESPONSE),
@@ -126,9 +170,7 @@ function toolNames(providerOptions: Record<string, unknown> | undefined) {
     return [];
   }
   return tools.map((tool) =>
-    String(
-      (tool as { function?: { name?: unknown } }).function?.name ?? "",
-    ),
+    String((tool as { function?: { name?: unknown } }).function?.name ?? ""),
   );
 }
 

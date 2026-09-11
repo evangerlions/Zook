@@ -46,7 +46,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultTemperature: 0,
     defaultMaxTokens: 3000,
     responseMode: "text",
-    supportsStream: false,
+    supportsStream: true,
   },
   write_turn: {
     sceneKey: "write_turn",
@@ -55,6 +55,15 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     defaultMaxTokens: 8000,
     responseMode: "text",
     profile: "write_turn",
+    requiresStream: true,
+  },
+  history_chapter_qa: {
+    sceneKey: "history_chapter_qa",
+    kind: "chat",
+    defaultTemperature: 0.3,
+    defaultMaxTokens: 6000,
+    responseMode: "text",
+    profile: "history_chapter_qa",
     requiresStream: true,
   },
   chapter_draft: {

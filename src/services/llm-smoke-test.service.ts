@@ -215,23 +215,7 @@ export class LlmSmokeTestService {
   }
 
   private buildChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMCompletionRequest {
-    return {
-      temperature: 0,
-      maxTokens: SMOKE_CHAT_MAX_TOKENS,
-      messages: SMOKE_MESSAGES,
-      providerOptions: {},
-      model: {
-        provider: item.provider.key,
-        modelKey: item.model.key,
-        resolvedModelKey: item.model.key,
-        providerModel: item.route.providerModel,
-        providerConfig: {
-          baseUrl: item.provider.baseUrl,
-          apiKey: item.provider.apiKey,
-          timeoutMs: item.provider.timeoutMs,
-        },
-      },
-    };
+    return buildLlmSmokeChatRequest(item);
   }
 
   private buildEmbeddingRequest(item: LlmSmokeMatrixItem): ResolvedEmbeddingRequest {
@@ -385,6 +369,27 @@ export class LlmSmokeTestService {
     };
   }
 
+}
+
+/** Shared by the circuit-recovery worker so probes remain identical to admin smoke checks. */
+export function buildLlmSmokeChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMCompletionRequest {
+  return {
+    temperature: 0,
+    maxTokens: SMOKE_CHAT_MAX_TOKENS,
+    messages: SMOKE_MESSAGES,
+    providerOptions: {},
+    model: {
+      provider: item.provider.key,
+      modelKey: item.model.key,
+      resolvedModelKey: item.model.key,
+      providerModel: item.route.providerModel,
+      providerConfig: {
+        baseUrl: item.provider.baseUrl,
+        apiKey: item.provider.apiKey,
+        timeoutMs: item.provider.timeoutMs,
+      },
+    },
+  };
 }
 
 function truncateText(value: string, limit: number): string {

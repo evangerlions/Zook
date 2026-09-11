@@ -16,7 +16,7 @@ test("BodyLog association document is public and limited to invitation paths", a
       apps: [],
       details: [{
         appID: "LTN9Y4UXN3.com.youwoai.habittap",
-        paths: ["/i/*"],
+        paths: ["/i/*", "/b/*", "/g/*"],
       }],
     },
   });

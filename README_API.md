@@ -161,6 +161,33 @@ Bearer token 的 `lighttick` membership 隔离。通知总开关、每日提醒�
 现有偏好合并。服务端按 app/user/type/resource/business date 幂等调度，暂停目标会抑制任务压力类通知，
 APNs/FCM 的不可恢复 token 只会禁用匹配的 LightTick 设备，429/5xx 仍按队列退避重试。
 Provider payload 只含安全展示文案、类型、可选资源 ID 和 `sync=true`，不含任务笔记、Coach 文本或凭据。
+Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并携带
+`X-HTTP-Method-Override: PATCH`；此兼容头只允许用于该路径，其他路径或方法会返回
+`400 REQ_METHOD_OVERRIDE_INVALID`。标准客户端仍直接使用 OpenAPI 中的 `PATCH`。
+
+LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
+
+| 方法 | 路径 | 请求与响应 `data` |
+| --- | --- | --- |
+| GET | `/execution-facts` | 可选 `from`（含）/`to`（不含）时间戳；返回 `window/completed_count/average_deviation_minutes/by_lineage/by_slot/consecutive_skips/feedback`，读取同时记录 insight audit |
+| POST | `/coach-runs` | `scene=chat`、`goal_id`、`message`（去空白后 1–4000 字符），可选 `thread_id/plan_id/task_id/review_id`；返回 202 AI run，并含 `thread_id/message_id` |
+| GET | `/chat/messages` | 必填 `goal_id`，可选 `thread_id`（默认 goal_id）、`limit`（1–200，默认 50）；返回 `{ thread_id, goal_id, items }`，最近消息按时间升序排列 |
+| GET | `/chat/intents` | 返回 `{ intents: [{ key, label, message }] }` 快捷话术 |
+| GET | `/dna/insights` | 同步并返回 `{ items, next_cursor: null }`；可选 `goal_id` 仅过滤绑定该目标的记录，当前自动生成的洞察未绑定目标 |
+| POST | `/dna/insights/{insightId}/feedback` | `action=confirm/deny/correct/dismiss`；correct 必须提供去空白后 2–500 字符 `correction`；返回洞察 |
+| POST | `/proposals/from-facts` | `{ goal_id }`；返回 `{ items, suppressed? }`，只生成待确认提案，不直接改计划 |
+| GET | `/reviews/{reviewId}/actions` | 返回 `{ review, recommendations, action_state }`，推荐包含稳定 id、证据及可选 proposedTasks |
+| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 必填 2–500 字符 `ignore_reason`；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
+| GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
+| POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
+
+- 以上能力仅限正式 LightTick membership 的 Bearer Token；游客返回 `403 APP_SCOPE_FORBIDDEN`，产品关闭返回 `503 LIGHTTICK_APP_DISABLED`。数据按 app/user 隔离。
+- chat 必须携带 8–128 字符 `Idempotency-Key`；消息发出即保存，异步结果通过 `/runs/{runId}` 和消息列表读取，同 key 不同内容返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`。其他 Phase 2 写接口不要求该 header。
+- 复盘采纳在同一事务中创建 proposed plan 并保存决策；仍须走计划确认流程才生效。重复决策返回 `409 LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED`，并发竞争也可能返回 `409 LIGHTTICK_VERSION_CONFLICT`；失败不遗留计划。无可操作推荐返回 `409 LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS`。
+- 完成事件会中断同 lineage 的连续跳过。已有 pending 提案返回 `suppressed=duplicate_pending`，7 天内拒绝至少 3 次返回 `rejection_dampening`。
+- `POST /tasks/{taskId}/complete` 提供 `actual_duration_minutes` 时，任务响应额外包含 `feedback: { rule_id, kind, message, evidence_count, data_range, confident }`，只描述本次事实，不推断稳定偏好。
+- DNA hypothesis 不能确认生效，返回 `409 LIGHTTICK_INSIGHT_NOT_ACTIONABLE`；只有用户确认的 rule 获得 allowed_effects。节奏建议使用持久化数值证据：实际耗时大于预计建议上调，小于预计建议下调；零偏差或历史记录缺少数值证据时不输出方向性建议。
+- rhythm accept 只记录意向，不修改任务或计划；dismiss 退出建议流。`suggestion` 顶层保留 `insightId/ruleId/evidenceCount` 等 camelCase，内层 task 使用 `estimated_minutes/selected_variant`；复盘响应的 `proposed_plan` 保留存储行 camelCase（如 goalId/periodStart/createdAt），其他字段形状以 OpenAPI 为准。
 
 正式 LightTick 账户使用自己的 Bearer Token 调用 `/account/upgrade`，同时提交原游客
 `guest_user_id`、设备绑定的 `guest_upgrade_token`、`device_id` 和稳定 `Idempotency-Key`。
@@ -318,7 +345,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/tasks/{taskId}/ack`          | 客户端无日志时回执 `no_data`                                                                                                        |
 | `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
 | `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
-| `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`                                                                  |
+| `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`；`bodylog` 与 `lighttick` 为产品专属实现（见各产品章节）                                                                 |
 | `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
 | `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
 | `GET` / `POST` | `/api/v1/bodylog/friend-requests` | 查询或发起 BodyLog 好友申请                                                                                                        |
@@ -327,7 +354,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
-| `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片                                             |
+| `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；内部邮件提醒不会影响提交结果             |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
 | `POST` | `/api/v1/ai_novel/statistics/snapshot`     | 上报当前账号本地写作总量与权威每日字数快照，需要 Bearer 鉴权；服务端校验账号并保留自己的 Token 用量                                  |
 | `POST` | `/api/v1/ai_novel/ai-output-reports`      | 提交 AI 消息或章节 revision 举报；按客户端 `submissionId` 幂等，举报原文在服务端加密存储                                              |
@@ -422,15 +449,18 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
 20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。`scene_key` 只选择 Prompt、工具与响应工作流；所有文本场景共用服务端版本化的 `ai_novel.model_selection.chat.default` 加权数组，并复用通用 LLM 的 `X-Did + auth UID` routing affinity。Provider 与上游模型路由仍统一归 `common.llm_service`。
-21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、非流式的 hard compact 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
+21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、可流式取消的 Pi context compaction 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
 22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
 23. 一旦 AI 请求解密成功，业务成功结果与业务错误都会加密返回；客户端需要先解密，再读取其中的标准 `code + message + data + requestId` 响应包。
-24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时会返回 `text/event-stream`；每个 SSE `data:` 事件仍然是一个加密 outer envelope。解密后的正常事件类型通常为 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`；其中 `content_delta` 是 assistant 正文增量事件，`tool_call_delta` 是通用 provider/tool 参数进度事件，只携带可读 `text` 和可选 `toolCallId`、`toolCallName`、`toolArgumentPath`，不是产品工作流状态。步骤 chrome、本地化文案、loading detail 映射和 retry UI 都由 AINovel 负责。客户端回放 assistant 历史时可以携带 `reasoningContent`，Zook 会在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，用于保持多轮上下文与 LLM cache 连贯；该字段不应作为普通用户可见内容展示。`usage` 与 `done.usage` 包含 `promptTokens`、`completionTokens`、`totalTokens`，并在 provider 返回时额外携带 `reasoningTokens`，在服务端能识别模型窗口时额外携带 `contextWindowTokens`、`contextUsedRatio`，客户端应以这些字段判断 hard compact 阈值。`done.completion` 当前保证包含 `sceneRouteKey`、`content`，并按需携带 `reasoningText`、`finishReason`；`sceneRouteKey` 当前与规范化后的 `sceneKey` 相同，只用于工作流诊断，不参与模型选择。对于 `kickoff_turn`，Zook 只负责单轮 assistant content / tool_call 输出，不在服务端内部继续 kickoff tool loop；后续 tool 执行与下一轮请求由 AINovel engine 负责。服务端会在 relay `ask_question` 时再次规范化 payload：`options` 只保留 2 到 4 个非空、去重后的字符串；`optionSubtitles` 只有在与 `options` 一一对应时才会继续下发；如果规范化后仍不合法，则改为发出流式错误事件而不是把非法 `tool_call` 直接交给客户端。如果在请求解密成功后发生 mid-stream 业务失败，服务端会发出一个加密后的非 `OK` 业务错误 envelope，客户端应把该事件视为流式失败，且后续不应再期待 `done` 事件。客户端主动关闭 SSE 连接时，服务端会取消当前上游 LLM stream；断开后不再保证收到 `usage` 或 `done`，客户端应保留已收到的增量并完成本地 interrupted 状态持久化。上游 context-window 超限统一返回 `AI_CONTEXT_TOO_LONG`；rate limit、timeout、响应格式和服务配置异常保留各自稳定错误码。`AI_UPSTREAM_QUOTA_EXHAUSTED` 只显示通用“AI 服务暂时不可用，请稍后重试。”，不得向客户端暴露额度信息。
+24. `POST /api/v1/ai_novel/ai/chat-completions` 在 `stream=true` 时返回 `text/event-stream`；每个 SSE `data:` 事件仍是加密 outer envelope。解密后的正常事件包括 `reasoning_delta`、`content_delta`、`tool_call_delta`、`tool_call`、`usage`、`done`。`tool_call_delta` 仅是 provider/tool 参数进度，步骤 UI、重试和本地化仍由 AINovel 负责。assistant 历史可携带 `reasoningContent`，Zook 在兼容 provider 请求中转为 `reasoning_content`；`completionTokens` 已包含 reasoning 子集，客户端不得重复相加。`usage.contextWindowTokens` 是 Zook 固定下发的 256,000-token Agent operating budget，不按模型或 provider route 变化；`contextUsedRatio` 按该预算计算。所有 Agent scene 均只由 Zook 输出单轮模型结果，AINovel Pi Agent 执行工具并决定后续回合。Pi-v1 的 raw context 不进入 provider prompt；Zook 仅按加密 `suppliedTools` 过滤 schema。interactive Write Agent 在携带批准 catalog 和 `read` capability 时获得受限虚拟 `read(path)`：AINovel 在每个 app 生命周期首次通过加密 `agent-skills/query` / `agent-skills/fetch` 更新并固定本地 snapshot，Skill 与 references 的读取不在 tool round 内访问网络。旧客户端、其他 Agent scene 和 Generation Job 均不提供该 capability。Zook 不修复工具名大小写、不重写 tool payload，也不执行客户端 Skill。断开 SSE 会取消上游流；之后不保证有 `usage` 或 `done`，客户端必须持久化已收到的增量为 interrupted 状态。`AI_CONTEXT_TOO_LONG`、rate limit、timeout、provider 格式和配置错误各保留稳定业务码。
+24a. `POST /api/v1/ai_novel/agent-skills/query` 与 `POST /api/v1/ai_novel/agent-skills/fetch` 都使用相同 AES-256-GCM envelope 与 `ai_novel` 鉴权。query 的解密 response 只含 manifest（Skill name、description、虚拟 location、version、hash）；fetch 必须携带该 manifest 的 `skillSetVersion` 和非空去重 Skill name 列表，才返回指定的 text-only Skill package。客户端须在 app 生命周期首次懒加载时原子固定一个本地 snapshot；`AINOVEL_SKILL_SET_STALE` 表示必须重新 query，禁止拼接不同 revision 的 package。
 25. **仅 local 联调环境**允许在 AI 加密 envelope 外层额外挂一个明文字段用于第 8 人员排查：客户端请求体可带 `localDebugRequestPlaintext`，服务端 chat-completion 成功响应可带 `localDebugResponseText`。这两个字段都只是调试镜像，前后端业务逻辑都不得依赖它们。
-26. **仅 local 联调环境**开放 `POST /api/v1/ai_novel/debug/audit-file`，用于 Flutter Web 把完整自包含的 generation audit HTML 上传给本机 Zook。该接口仍要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；生产环境或非 localhost/127.0.0.1 host 返回 `404`。请求体为 `{ “sessionId”: “...”, “html”: “...” }`；服务端只 sanitize `sessionId` 并覆盖写入 AINovel 仓库 `.zook/quality-generation/app/{safeSessionId}/generation-audit.html`，响应 `filePath`、`fileUrl`、`viewUrl`、`updatedAt`。其中 `viewUrl` 是 local-only HTTP 查看地址，用于 Flutter Web 在新标签页打开报告；Zook 不解析 HTML 或 audit JSON。
+26. **仅 local / dev 环境**开放 AINovel Trace Console：`POST /api/v1/ai_novel/debug/traces` 接收稳定 `sessionId`（详情页称为 `cid`）、结构化 trace capture 与最小 metadata（`kind`、`status`、可选 `bookId` / `chapterId` / `title`），并由鉴权用户自动记录 `uid`；按 `kind + sessionId` 追加保存。`GET /api/v1/ai_novel/debug/traces/data` 支持按 `uid`、`cid`、kind、status、book、chapter 和关键词过滤，默认按最近活动返回 sessions；`GET /api/v1/ai_novel/debug/traces/{sessionId}?kind=...` 默认渲染 Sessions → Turns → request details 的 HTML，使用 `Accept: application/json` 时返回同一会话的结构化 session、manifest 列表和 normalized view model，供 Admin `/conversation-records` 直接显示；turn 按一次用户消息及其 Pi/tool loop 聚合，并显示相邻 turn 的上下文 diff、彩色消息、可折叠历史请求和原始 JSON。AINovel 不生成或上传 HTML，发送使用 5 秒上限的 best-effort 异步任务，不阻塞产品完成。写入接口要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；shared dev 的全部 GET 复用 Admin 认证，本机 local/test 可直接查看。所有这些路由在 online / production 或非 local/dev host 都返回 `404`：代码可随 Zook 发布，但线上既不接收 trace、也不写文件、更不暴露 Console。
 27. `POST /api/v1/ai_novel/ai-output-reports` 支持 `chat_message` 与 `chapter_revision`；举报接收以 `submissionId`、target、分类、scene 和非空原文为最小必需信息，`messageId` / `sessionId` / 章节定位等相关元数据只用于尽力关联，缺失时不拒绝举报。`contentHash` 由服务端按实际收到的原文统一计算；章节 `chapterId` 为零基，第一章可传 `0`。合规举报入口不做会拒绝有效举报的同步频率限制；滥用识别和处置应在受理后异步完成。服务端只在受限 Admin detail 接口解密举报原文，普通列表、日志和 audit payload 不包含原文。`POST /api/v1/ai_novel/ai-output-reactions` 当前只接受章节 revision 的 `like`，并使用相同的零基 `chapterId`。
 28. 客户端日志回捞现在使用轻量 claim 模式：先调 `GET /api/v1/logs/policy`，再用 `X-Did` 调 `GET /api/v1/logs/pull-task` 领取任务；有日志时用 `POST /api/v1/logs/upload` 并带 `X-Log-Claim-Token` 上传，无日志时用 `POST /api/v1/logs/tasks/{taskId}/ack` 回执 `no_data`。后端实现细节见 [docs/client-log-remote-pull-backend.md](docs/client-log-remote-pull-backend.md)。
 29. 服务端不再把上传日志逐行落库；上传成功后会把解密解压后的 `.ndjson` 文件直接存到本地，并在 admin 的 `Remote Log Pull` 页面里提供”查看日志 / 下载原始文件”。日志浏览解析发生在前端，不做服务端分页。
+
+30. AINovel chat completion 的解密 inner body 可选传 `agentProtocol = "pi-v1"`。该协议在保持同一 endpoint、加密 envelope 与 SSE event shape 的前提下启用按需上下文：Zook 不把 raw `context` 串行化进 system prompt 或 user message；AINovel Pi Agent 通过真实 read tool 获取 Meta、Contract、MainLine、Draft 与其他当前状态。未传字段的旧客户端保持旧 context 组装；未知值返回 `400 REQ_INVALID_BODY`。
 30. 如果客户端在本地重试超过阈值后仍然上传失败，可以调用 `POST /api/v1/logs/tasks/{taskId}/fail` 主动把任务标记为 `FAILED`，并附带失败原因，方便 admin 排障。
 31. admin 当前还提供 `Remote Log Pull` 的独立日志详情页：任务列表只展示摘要，点”查看日志”后进入详情页查看任务摘要、文件摘要和本地解析后的日志表格。
 32. `/telemetry/ga4` 与 `/telemetry/sentry/api/{projectId}/envelope/` 是
@@ -463,19 +493,66 @@ POST /api/v1/auth/login/email
 | `GET` / `DELETE` | `/api/v1/bodylog/friends[/{friendUserId}]` | 无 | 查询或删除好友 |
 | `GET` / `POST` / `DELETE` | `/api/v1/bodylog/blocks[/{targetUserId}]` | POST: `{ "targetUserId": "user_456" }` | 查询、拉黑或解除拉黑 |
 | `POST` | `/api/v1/bodylog/reports` | `{ "targetUserId": "user_456", "reason": "offensive_profile" }` | 使用固定原因举报用户 |
+| `GET` | `/api/v1/bodylog/leaderboards/current/snapshot` | Header `X-Time-Zone` | 当前用户已冻结的参赛习惯、时区和 joined 状态；未参赛 habits 为空 |
 | `POST` | `/api/v1/bodylog/leaderboards/current/join` | 当前周、时区与 1–5 个习惯快照 | 加入当前周排行榜 |
 | `POST` | `/api/v1/bodylog/leaderboards/current/aggregate` | 周标识、日期与完成 habit id | 上报由服务端计分的每日聚合 |
 | `DELETE` | `/api/v1/bodylog/leaderboards/current/membership` | `{ "timezone": "Asia/Shanghai" }` | 退出当前周排行榜 |
 | `GET` | `/api/v1/bodylog/leaderboards/current/{public\|friends}` | Header `X-Time-Zone` | 获取公开榜或好友榜 |
-| `GET` / `POST` | `/api/v1/bodylog/invitations` | POST: `{ "installId": "..." }` | 查询邀请奖励状态或创建 14 天邀请 |
+| `GET` / `POST` | `/api/v1/bodylog/invitations` | POST: `{ "installId": "...", "intent"?: "general\|buddy\|group" }` | 查询邀请奖励状态或创建 14 天邀请；`intent` 缺省 `general`，决定分享链接路径 `/i/`、`/b/`、`/g/` |
 | `POST` | `/api/v1/bodylog/invitations/attribute` | `{ "token": "...", "installId": "..." }` | 绑定邀请归因，禁止自己邀请和同设备归因 |
 | `POST` | `/api/v1/bodylog/invitations/progress` | 当天日期与时区 | 记录邀请资格进度 |
 | `GET` / `POST` | `/api/v1/bodylog/challenges` | POST: 主题、1–7 个好友和时区 | 查询或创建挑战 |
 | `GET` | `/api/v1/bodylog/challenges/{challengeId}` | 无 | 获取可见挑战详情 |
 | `POST` | `/api/v1/bodylog/challenges/{challengeId}/respond` | `{ "action": "accept" }` | 接受或拒绝挑战 |
 | `POST` | `/api/v1/bodylog/challenges/{challengeId}/progress` | 当天日期、完成状态和时区 | 更新挑战进度 |
+| `GET` | `/api/v1/bodylog/public/config` | 无（匿名） | BodyLog 专属公开配置；响应为功能开关映射（见下文），不走通用 `admin.delivery_config` 模板 |
+| `POST` | `/api/v1/bodylog/buddies` | `{ "partnerUserId": "...", "sharedHabitIds": [...] }` | 发起搭子配对 |
+| `GET` | `/api/v1/bodylog/buddies` | 无 | 查询我的搭子列表 |
+| `GET` | `/api/v1/bodylog/buddies/{pairId}` | 无 | 搭子详情（连续天数、层级、活动） |
+| `POST` | `/api/v1/bodylog/buddies/{pairId}/accept` | 无 | 接受配对邀请 |
+| `POST` | `/api/v1/bodylog/buddies/{pairId}/dissolve` | 无 | 解除搭子关系 |
+| `POST` | `/api/v1/bodylog/buddies/encourage` | `{ "pairId": "...", "emoji": "...", "isSameAction"?, "targetHabitId"? }` | 发送鼓励动作 |
+| `POST` | `/api/v1/bodylog/buddies/checkin` | `{ "habitId": "...", "count"?: 1, "eventId"?: "local-log-id", "occurredAt"?: "ISO timestamp" }` | 记录搭子打卡同步 |
+| `POST` | `/api/v1/bodylog/groups` | `{ "name": "...", "icon"?, "sharedHabitIds": [...], "completionRule"?: "all\|majority", "maxMembers"? }` | 创建打卡小组 |
+| `GET` | `/api/v1/bodylog/groups` | 无 | 查询我所在的小组 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/invite` | `{ "userId": "..." }` | 邀请成员加入小组 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/accept` | `{ "token": "..." }` | 接受小组邀请 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/leave` | 无 | 退出小组 |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/checkin` | `{ "habitId": "...", "count"? }` | 小组打卡 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
+| `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
+| `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |
+| `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/missions` | 无 | 计划任务列表 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/missions/{missionId}/complete` | 无 | 完成一项任务 |
+| `GET` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards` | 无 | 计划奖励列表 |
+| `POST` | `/api/v1/bodylog/seven-day-plan/{planId}/rewards/{rewardId}/claim` | 无 | 领取奖励 |
+| `GET` | `/api/v1/bodylog/notification-preferences` | 无 | 查询通知偏好 |
+| `PUT` | `/api/v1/bodylog/notification-preferences` | `{ "enabledCategories"?, "quietHours"?, "mergeRequests"?, "leaderboardRankPush"?, "marketingConsent"? }` | 更新通知偏好 |
+| `POST` | `/api/v1/bodylog/push-devices` | `{ "deviceToken": "...", "platform": "ios\|android", "name"?: "..." }` | 注册推送设备 |
+| `GET` | `/api/v1/bodylog/push-devices` | 无 | 列出推送设备 |
+| `DELETE` | `/api/v1/bodylog/push-devices/{deviceId}` | 无 | 移除推送设备 |
 
-成功响应的 `data`：
+BodyLog 新增接口约定：
+
+- 新客户端在 `/buddies/checkin` 同时传 `eventId` 与 `occurredAt`。同一账号、同一配对、同一事件重复发送不增加活动或重复入队通知；改变习惯、次数或时间后复用事件 ID 返回 409 `BODYLOG_EVENT_CONFLICT`。缺一个字段、非法 ID/时间或超过服务器时间 5 分钟的未来时间返回 400。旧版不带这两个字段仍按原有非幂等方式处理。
+- `occurredAt` 使用带时区的 ISO 8601 时间；服务端按 UTC 归属活动日期。早于关系接受时间的本地记录不进入新关系；历史补报不会重新结算已结算的搭子日期。客户端只上传用户明确共享的非私密习惯。
+- `/leaderboards/current/snapshot` 只返回当前认证用户的目标快照；客户端使用其中的时区、habitId 和 scheduledDates 生成每日完整聚合。聚合为覆盖更新，空数组可反映撤销；它不是多设备日志合并协议。
+- `/subscription/status` 使用搭子/小组额度判断的同一份服务端权益，不接受客户端 premium 布尔值。此查询不代替 App Store / Google Play 购买凭证验签接口。
+- BodyLog 推送从自己的设备表取 token，应用当前通知类别设置；`buddy_invite` 归 `friendRequest`，等级奖励归 `rewardArrived`，其他搭子动态归 `activity`。现有 quietHours 不含时区字段，按 UTC 小时判断；静默窗口内跳过本条通知。分发失败会标记 FAILED 并抛给任务队列重试。部署配置见 `docs/bodylog-client-cloud-integration.md`。
+
+
+- 创建搭子返回 `{ pair, invitationUrl }`；仅被邀请者可接受，发起者不能代替对方接受。邀请接受时重新检查拉黑及双方额度。邀请 14 天后过期，不再占用额度，可重新发送；缺少发起者记录的历史邀请也需重新发送。
+- 创建小组返回 `{ group, invitationUrl }`；详情返回 `{ group, members, recentActivities, weeklyRecords }`，每日记录的 `completionRate` 为 0–100 的百分数。
+- 直接配对/小组链接分别为 `/b/{pairId}?token=...` 和 `/g/{groupId}?token=...`；小组接受请求从链接提取 groupId 和 token。小组共享链接有效期为创建后 7 天；定向邀请链接随通知 `data.invitation_url` 发送。`POST groups/{groupId}/invite` 返回 `{ invited: true }`。邀请归因接口生成的 `/i/{token}`、`/b/{token}`、`/g/{token}` 仍由归因接口消费。
+- 小组仅活跃组长/管理员可邀请；离组组长的权限立即失效，组长转让持久化。打卡仅接受小组共同习惯和正整数 count。
+- 全部 `seven-day-plan/*` 接口受 `growth` 开关控制，关闭时返回 `404 BODYLOG_FEATURE_DISABLED`。同一任务只能完成一次，重复并发请求返回 `409 BODYLOG_GROWTH_MISSION_COMPLETED`；奖励只能在计划完成后领取。
+- 注册推送设备的 `name` 可省略；同一设备 token 被新账号注册后转移归属，旧账号列表不再显示该设备。
+- 注销 BodyLog app 账号会清理成长计划、通知偏好、设备、订阅、搭子关系与所拥有的小组；其他小组中的个人成员和活动记录同时清理。共享 Zook 用户及其他产品数据保留。
+
+Profile 成功响应的 `data`：
 
 ```json
 {

@@ -31,6 +31,7 @@ export interface ResolvedLlmRequest {
   request: ResolvedLLMCompletionRequest;
   routeRef: LlmRouteRef;
   routingConfigRevision?: number;
+  circuitBreakerEnabled: boolean;
 }
 
 interface LlmRequestResolverOptions {
@@ -169,6 +170,7 @@ export class LlmRequestResolver {
       },
       routeRef: healthRouteRef,
       routingConfigRevision,
+      circuitBreakerEnabled: Boolean(commonConfig.routeCircuitBreaker?.enabled),
     };
   }
 
@@ -205,6 +207,7 @@ export class LlmRequestResolver {
         providerModel: resolvedModel.providerModel,
         operation: "chat",
       },
+      circuitBreakerEnabled: false,
     };
   }
 
@@ -244,12 +247,21 @@ export class LlmRequestResolver {
         operation: model.kind,
       }),
     ));
+    const circuitOpen = await Promise.all(model.routes.map((route) =>
+      this.options.managerOptions.llmRouteCircuitBreaker?.isOpen({
+        modelKey: model.key,
+        provider: route.provider,
+        providerModel: route.providerModel,
+        operation: "chat",
+      }, Boolean(config.routeCircuitBreaker?.enabled)) ?? false,
+    ));
     const evaluation = evaluateLlmRoutes(
       model.strategy,
       model.routes.map((route, index) => ({
         route,
         providerEnabled: providerMap.get(route.provider)?.enabled ?? false,
         runtimeAvailable: Boolean(this.options.providers[route.provider]),
+        circuitOpen: circuitOpen[index],
         healthScore: healthSnapshots[index]?.healthScore ?? 100,
       })),
     );

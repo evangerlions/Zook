@@ -16,6 +16,7 @@ import type {
   LLMStreamEvent,
 } from "../../src/services/llm-manager.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
+import { AiNovelDebugTraceService } from "../../src/modules/ai-novel/ai-novel-debug-trace.service.ts";
 
 const AI_TEST_KEY_ID = "logk_d5872ff066b8450b9aeed1c53f0df7f1";
 
@@ -313,6 +314,63 @@ test("ai_novel chat completions route requires bearer auth", async () => {
 
   assert.equal(response.statusCode, 401);
   assert.equal(response.body.code, "AUTH_BEARER_REQUIRED");
+});
+
+test("ai_novel encrypted Skill update endpoints expose only current named packages", async () => {
+  const { runtime, aiKey } = await createAiNovelRuntime();
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+  const headers = {
+    authorization: `Bearer ${token}`,
+    "X-App-Id": "ai_novel",
+  };
+
+  const query = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/agent-skills/query",
+    headers,
+    body: encryptAiPayload({}, aiKey),
+  });
+  assert.equal(query.statusCode, 200);
+  assert.equal((query.body as Record<string, unknown>).encrypted, true);
+  const queryEnvelope = decryptAiPayload(
+    query.body as Record<string, unknown>,
+    aiKey,
+  );
+  const manifest = queryEnvelope.data as Record<string, unknown>;
+  const skills = manifest.skills as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    skills.map((skill) => skill.name),
+    ["chapter-continuity-review", "chapter-voice-review"],
+  );
+  assert.ok(typeof manifest.skillSetVersion === "string");
+
+  const fetch = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/agent-skills/fetch",
+    headers,
+    body: encryptAiPayload(
+      {
+        skillSetVersion: manifest.skillSetVersion,
+        names: ["chapter-continuity-review"],
+      },
+      aiKey,
+    ),
+  });
+  assert.equal(fetch.statusCode, 200);
+  const fetchEnvelope = decryptAiPayload(
+    fetch.body as Record<string, unknown>,
+    aiKey,
+  );
+  const fetched = fetchEnvelope.data as Record<string, unknown>;
+  const packages = fetched.skills as Array<Record<string, unknown>>;
+  assert.equal(packages.length, 1);
+  assert.equal(packages[0]?.name, "chapter-continuity-review");
+  const files = packages[0]?.files as Array<Record<string, unknown>>;
+  assert.equal(files.some((file) => file.path === "/skills/ainovel/chapter-continuity-review/SKILL.md"), true);
+  assert.equal(files.some((file) => String(file.path).endsWith(".sh")), false);
 });
 
 test("ai_novel chat completions route resolves scene_key to scene route selection", async () => {
@@ -1057,13 +1115,13 @@ test("ai_novel chat completions route supports encrypted SSE streaming", async (
   );
   const usage = ((decryptedEvents[2]?.data as Record<string, unknown>).usage ??
     {}) as Record<string, unknown>;
-  assert.equal(usage.contextWindowTokens, 1_000_000);
-  assert.equal(usage.contextUsedRatio, 12 / 1_000_000);
+  assert.equal(usage.contextWindowTokens, 256_000);
+  assert.equal(usage.contextUsedRatio, 12 / 256_000);
   const doneCompletion = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .completion ?? {}) as Record<string, unknown>;
   const doneUsage = ((decryptedEvents[3]?.data as Record<string, unknown>)
     .usage ?? {}) as Record<string, unknown>;
-  assert.equal(doneUsage.contextWindowTokens, 1_000_000);
+  assert.equal(doneUsage.contextWindowTokens, 256_000);
   assert.equal(doneCompletion.sceneRouteKey, "write_turn");
   assert.equal(doneCompletion.content, "第八十一回……");
   assert.equal(doneCompletion.provider, undefined);
@@ -1151,9 +1209,9 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
   assert.equal(decryptedEvents[1].type, "content_delta");
 });
 
-test("ai_novel audit-file endpoint is hidden outside local debug hosts", async () => {
-  const root = await mkdtemp(join(tmpdir(), "zook-audit-hidden-"));
-  const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+test("ai_novel trace console is hidden outside local debug hosts", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zook-trace-hidden-"));
+  const runtime = await createApplication({ aiNovelDebugTraceRoot: root });
   const token = runtime.services.tokenService.issueAccessToken(
     "user_alice",
     "ai_novel",
@@ -1161,7 +1219,7 @@ test("ai_novel audit-file endpoint is hidden outside local debug hosts", async (
 
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/api/v1/ai_novel/debug/audit-file",
+    path: "/api/v1/ai_novel/debug/traces",
     headers: {
       authorization: `Bearer ${token}`,
       host: "api.example.com",
@@ -1169,19 +1227,23 @@ test("ai_novel audit-file endpoint is hidden outside local debug hosts", async (
     },
     body: {
       sessionId: "session_1",
-      html: "<!doctype html><html></html>",
+      kind: "writing",
+      status: "completed",
+      trace: { modelRequests: [] },
     },
   });
 
   assert.equal(response.statusCode, 404);
 });
 
-test("ai_novel audit-file endpoint is hidden in production", async () => {
+test("ai_novel trace console is hidden in the online runtime", async () => {
   const previousNodeEnv = process.env.NODE_ENV;
-  process.env.NODE_ENV = "production";
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.NODE_ENV = "development";
+  process.env.APP_ENV = "online";
   try {
-    const root = await mkdtemp(join(tmpdir(), "zook-audit-production-"));
-    const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+    const root = await mkdtemp(join(tmpdir(), "zook-trace-production-"));
+    const runtime = await createApplication({ aiNovelDebugTraceRoot: root });
     const token = runtime.services.tokenService.issueAccessToken(
       "user_alice",
       "ai_novel",
@@ -1189,7 +1251,7 @@ test("ai_novel audit-file endpoint is hidden in production", async () => {
 
     const response = await runtime.app.handle({
       method: "POST",
-      path: "/api/v1/ai_novel/debug/audit-file",
+      path: "/api/v1/ai_novel/debug/traces",
       headers: {
         authorization: `Bearer ${token}`,
         host: "127.0.0.1:3100",
@@ -1197,7 +1259,9 @@ test("ai_novel audit-file endpoint is hidden in production", async () => {
       },
       body: {
         sessionId: "session_1",
-        html: "<!doctype html><html></html>",
+        kind: "writing",
+        status: "completed",
+        trace: { modelRequests: [] },
       },
     });
 
@@ -1208,23 +1272,68 @@ test("ai_novel audit-file endpoint is hidden in production", async () => {
     } else {
       process.env.NODE_ENV = previousNodeEnv;
     }
+    if (previousAppEnv == null) {
+      delete process.env.APP_ENV;
+    } else {
+      process.env.APP_ENV = previousAppEnv;
+    }
   }
 });
 
-test("ai_novel audit-file endpoint requires ai_novel bearer auth", async () => {
-  const root = await mkdtemp(join(tmpdir(), "zook-audit-auth-"));
-  const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+test("ai_novel trace console remains available in Docker-like dev runtime", async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.NODE_ENV = "production";
+  process.env.APP_ENV = "dev";
+  try {
+    const root = await mkdtemp(join(tmpdir(), "zook-trace-dev-"));
+    const runtime = await createApplication({
+      aiNovelDebugTraceRoot: root,
+      adminBasicAuth: { username: "admin", password: "AdminPass123!" },
+    });
+
+    const unauthenticated = await runtime.app.handle({
+      method: "GET",
+      path: "/api/v1/ai_novel/debug/traces",
+      headers: { host: "app-dev.youwoai.net" },
+    });
+    assert.equal(unauthenticated.statusCode, 401);
+
+    const response = await runtime.app.handle({
+      method: "GET",
+      path: "/api/v1/ai_novel/debug/traces",
+      headers: {
+        host: "app-dev.youwoai.net",
+        authorization: `Basic ${Buffer.from("admin:AdminPass123!").toString("base64")}`,
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.contentType, "text/html; charset=utf-8");
+  } finally {
+    if (previousNodeEnv == null) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousAppEnv == null) delete process.env.APP_ENV;
+    else process.env.APP_ENV = previousAppEnv;
+  }
+});
+
+test("ai_novel trace writer requires ai_novel bearer auth", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zook-trace-auth-"));
+  const runtime = await createApplication({ aiNovelDebugTraceRoot: root });
 
   const response = await runtime.app.handle({
     method: "POST",
-    path: "/api/v1/ai_novel/debug/audit-file",
+    path: "/api/v1/ai_novel/debug/traces",
     headers: {
       host: "127.0.0.1:3100",
       "X-App-Id": "ai_novel",
     },
     body: {
       sessionId: "session_1",
-      html: "<!doctype html><html></html>",
+      kind: "writing",
+      status: "completed",
+      trace: { modelRequests: [] },
     },
   });
 
@@ -1232,9 +1341,9 @@ test("ai_novel audit-file endpoint requires ai_novel bearer auth", async () => {
   assert.equal(response.body.code, "AUTH_BEARER_REQUIRED");
 });
 
-test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session path", async () => {
-  const root = await mkdtemp(join(tmpdir(), "zook-audit-file-"));
-  const runtime = await createApplication({ aiNovelAuditFileRoot: root });
+test("ai_novel trace console appends, filters, and renders session traces", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zook-trace-console-"));
+  const runtime = await createApplication({ aiNovelDebugTraceRoot: root });
   await runtime.services.appRegistryService.ensureMembership(
     "ai_novel",
     "user_alice",
@@ -1245,7 +1354,7 @@ test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session pat
   );
   const baseRequest = {
     method: "POST",
-    path: "/api/v1/ai_novel/debug/audit-file",
+    path: "/api/v1/ai_novel/debug/traces",
     headers: {
       authorization: `Bearer ${token}`,
       host: "localhost:3100",
@@ -1257,14 +1366,59 @@ test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session pat
     ...baseRequest,
     body: {
       sessionId: "../bad/session",
-      html: "<!doctype html><html>first</html>",
+      kind: "writing",
+      status: "running",
+      bookId: "book_1",
+      chapterId: "3",
+      title: "Chapter three chat",
+      trace: {
+        modelRequests: [{ sceneKey: "write_turn", messages: [{ role: "user", content: "first turn" }] }],
+      },
     },
   });
   const second = await runtime.app.handle({
     ...baseRequest,
     body: {
       sessionId: "../bad/session",
-      html: "<!doctype html><html>second</html>",
+      kind: "writing",
+      status: "completed",
+      bookId: "book_1",
+      chapterId: "3",
+      title: "Chapter three chat",
+      trace: {
+        modelRequests: [{ sceneKey: "write_turn", messages: [{ role: "assistant", content: "second turn" }] }],
+      },
+    },
+  });
+  const otherKind = await runtime.app.handle({
+    ...baseRequest,
+    body: {
+      sessionId: "../bad/session",
+      kind: "import_book",
+      status: "completed",
+      bookId: "book_1",
+      trace: { modelRequests: [{ sceneKey: "import_book_agent" }] },
+    },
+  });
+  await runtime.services.appRegistryService.ensureMembership(
+    "ai_novel",
+    "user_bob",
+  );
+  const otherUserToken = runtime.services.tokenService.issueAccessToken(
+    "user_bob",
+    "ai_novel",
+  );
+  await runtime.app.handle({
+    ...baseRequest,
+    headers: {
+      ...baseRequest.headers,
+      authorization: `Bearer ${otherUserToken}`,
+    },
+    body: {
+      sessionId: "other-user-session",
+      kind: "writing",
+      status: "completed",
+      trace: { modelRequests: [] },
     },
   });
 
@@ -1272,28 +1426,73 @@ test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session pat
   assert.equal(second.statusCode, 200);
   const firstData = first.body.data as Record<string, unknown>;
   const secondData = second.body.data as Record<string, unknown>;
+  assert.equal(firstData.sessionId, "../bad/session");
+  assert.equal(firstData.uid, "user_alice");
+  assert.equal(firstData.captureCount, 1);
+  assert.equal(secondData.status, "completed");
+  assert.equal(secondData.captureCount, 2);
   assert.equal(
-    firstData.filePath,
-    join(root, "bad_session", "generation-audit.html"),
+    (otherKind.body.data as Record<string, unknown>).captureCount,
+    1,
   );
-  assert.equal(secondData.filePath, firstData.filePath);
   assert.equal(
     secondData.viewUrl,
-    "http://localhost:3100/api/v1/ai_novel/debug/audit-file/bad_session",
-  );
-  assert.equal(
-    await readFile(firstData.filePath as string, "utf8"),
-    "<!doctype html><html>second</html>",
-  );
-  assert.match(
-    String(secondData.fileUrl),
-    /^file:\/\/.*generation-audit\.html$/,
+    "http://localhost:3100/api/v1/ai_novel/debug/traces/..%2Fbad%2Fsession?kind=writing",
   );
   assert.match(String(secondData.updatedAt), /^\d{4}-\d{2}-\d{2}T/);
 
+  const data = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces/data",
+    query: {
+      kind: "writing",
+      uid: "user_alice",
+      cid: "../bad/session",
+      bookId: "book_1",
+      chapterId: "3",
+    },
+    headers: { host: "localhost:3100" },
+  });
+  assert.equal(data.statusCode, 200);
+  const items = (data.body.data as { items: Record<string, unknown>[] }).items;
+  assert.equal(items.length, 1);
+  assert.equal(items[0]?.sessionId, "../bad/session");
+  assert.equal(items[0]?.uid, "user_alice");
+
+  const bobData = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces/data",
+    query: { uid: "user_bob" },
+    headers: { host: "localhost:3100" },
+  });
+  assert.deepEqual(
+    (bobData.body.data as { items: Record<string, unknown>[] }).items.map(
+      (item) => item.uid,
+    ),
+    ["user_bob"],
+  );
+
+  const allData = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces/data",
+    headers: { host: "localhost:3100" },
+  });
+  assert.equal(
+    (allData.body.data as { items: Record<string, unknown>[] }).items.length,
+    3,
+  );
+  const allItems = (allData.body.data as { items: Record<string, unknown>[] }).items;
+  assert.deepEqual(
+    allItems.map((item) => item.updatedAt),
+    [...allItems].sort((left, right) =>
+      Date.parse(String(right.updatedAt)) - Date.parse(String(left.updatedAt)),
+    ).map((item) => item.updatedAt),
+  );
+
   const view = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/ai_novel/debug/audit-file/bad_session",
+    path: "/api/v1/ai_novel/debug/traces/..%2Fbad%2Fsession",
+    query: { kind: "writing" },
     headers: {
       host: "localhost:3100",
     },
@@ -1304,7 +1503,94 @@ test("ai_novel audit-file endpoint writes, overwrites, and sanitizes session pat
   }
   assert.equal(view.statusCode, 200);
   assert.equal(view.contentType, "text/html; charset=utf-8");
-  assert.equal(viewedHtml, "<!doctype html><html>second</html>");
+  assert.match(viewedHtml, /Conversation trace/);
+  assert.match(viewedHtml, /Context diff/);
+  assert.match(viewedHtml, /All model requests in this turn/);
+  assert.match(viewedHtml, /View raw JSON/);
+  assert.match(viewedHtml, /json-key/);
+  assert.match(viewedHtml, /turn-search/);
+  assert.match(viewedHtml, /status-icon/);
+  assert.match(viewedHtml, /role-icon/);
+  assert.ok(
+    viewedHtml.indexOf("Messages in current context") <
+      viewedHtml.indexOf("All model requests in this turn"),
+  );
+  assert.ok(
+    viewedHtml.indexOf("All model requests in this turn") <
+      viewedHtml.indexOf("Context diff"),
+  );
+  assert.match(viewedHtml, /first turn/);
+  assert.match(viewedHtml, /second turn/);
+  assert.match(viewedHtml, /"captureCount":2/);
+
+  const jsonView = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces/..%2Fbad%2Fsession",
+    query: { kind: "writing" },
+    headers: {
+      host: "localhost:3100",
+      accept: "application/json",
+    },
+  });
+  assert.equal(jsonView.statusCode, 200);
+  const jsonViewData = jsonView.body.data as Record<string, unknown>;
+  assert.equal(
+    (jsonViewData.session as Record<string, unknown>).manifest &&
+      ((jsonViewData.session as Record<string, unknown>).manifest as Record<string, unknown>).sessionId,
+    "../bad/session",
+  );
+  assert.equal(
+    (jsonViewData.viewModel as Record<string, unknown>).turns instanceof Array,
+    true,
+  );
+
+  const missingView = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces/missing_session",
+    headers: { host: "localhost:3100" },
+  });
+  assert.equal(missingView.statusCode, 404);
+  assert.equal(missingView.body.code, "TRACE_NOT_FOUND");
+
+  const console = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces",
+    headers: { host: "localhost:3100" },
+  });
+  let consoleHtml = "";
+  for await (const chunk of console.streamBody ?? []) consoleHtml += chunk;
+  assert.equal(console.statusCode, 200);
+  assert.match(consoleHtml, /AINovel Trace Console/);
+  assert.match(consoleHtml, /const root = '\/api\/v1\/ai_novel\/debug\/traces'/);
+  assert.match(consoleHtml, /name="uid"/);
+  assert.match(consoleHtml, /name="cid"/);
+  assert.match(consoleHtml, /fetch\(root \+ '\/data\?'/);
+});
+
+test("ai_novel trace storage does not merge ids with similar punctuation", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zook-trace-id-hash-"));
+  const service = new AiNovelDebugTraceService(root);
+
+  await service.write({
+    sessionId: "session/a",
+    kind: "writing",
+    status: "completed",
+    trace: { marker: "slash" },
+  });
+  await service.write({
+    sessionId: "session?a",
+    kind: "writing",
+    status: "completed",
+    trace: { marker: "question" },
+  });
+
+  const sessions = await service.list({ kind: "writing" });
+  assert.deepEqual(
+    new Set(sessions.map((item) => item.sessionId)),
+    new Set(["session/a", "session?a"]),
+  );
+  assert.equal((await service.read("session/a", "writing")).captures.length, 1);
+  assert.equal((await service.read("session?a", "writing")).captures.length, 1);
 });
 
 test("ai_novel kickoff_turn stream emits normalized kickoff action events", async () => {
@@ -1481,8 +1767,8 @@ test("ai_novel kickoff_turn stream emits normalized kickoff action events", asyn
     string,
     unknown
   >;
-  assert.equal(usageEvent.contextWindowTokens, 1_000_000);
-  assert.equal(usageEvent.contextUsedRatio, 21 / 1_000_000);
+  assert.equal(usageEvent.contextWindowTokens, 256_000);
+  assert.equal(usageEvent.contextUsedRatio, 21 / 256_000);
 
   const updateMeta = decryptedEvents[1].toolCall as Record<string, unknown>;
   assert.equal(updateMeta.name, "update_meta");
@@ -3271,6 +3557,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
       "read_draft",
       "read_main_line",
       "read_story_window",
+      "read_writing_context",
       "search_story_history",
       "set_book_contract",
       "set_main_line",
@@ -3402,7 +3689,7 @@ test("ai_novel write_turn assigns fallback ids for blank prompted tool calls", a
   assert.equal(toolCall.id, "write_turn_prompted_tool_0");
 });
 
-test("ai_novel chapter_draft supplies read, search history, and draft write tools", async () => {
+test("ai_novel legacy chapter_draft preserves its read, search, and draft write tools", async () => {
   let capturedToolNames: string[] = [];
   let capturedMessages: Array<{ role: string; content?: string }> | undefined;
   let capturedEnableThinking: unknown;
@@ -3508,11 +3795,122 @@ test("ai_novel chapter_draft supplies read, search history, and draft write tool
   assert.equal(capturedMessages[0].role, "system");
   assert.equal(capturedMessages[1].role, "user");
   assert.match(String(capturedMessages![0].content ?? ""), /ChapterDraftAgent/);
+  assert.doesNotMatch(
+    String(capturedMessages![0].content ?? ""),
+    /read_writing_context/,
+  );
   assert.match(String(capturedMessages![1].content ?? ""), /用雨夜事故开篇/);
   assert.match(String(capturedMessages![1].content ?? ""), /生成目标章节首稿/);
   assert.equal(
     capturedMessages.filter((message) => message.role === "system").length,
     1,
+  );
+});
+
+test("ai_novel pi-v1 keeps raw context out of the provider request", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> = [];
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      yield { type: "content_delta", text: "Use the context tool." };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "write_turn",
+        agentProtocol: "pi-v1",
+        stream: true,
+        context: {
+          suppliedTools: ["read_writing_context"],
+          contract: { storyPromise: "must not enter provider messages" },
+          turnId: "must_not_enter_provider_messages",
+        },
+        messages: [{ role: "user", content: "Continue the current chapter." }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  await collectSseEvents(response.streamBody);
+  assert.deepEqual(
+    capturedMessages.map((message) => message.role),
+    ["system", "user"],
+  );
+  assert.equal(capturedMessages[1]?.content, "Continue the current chapter.");
+  assert.doesNotMatch(
+    capturedMessages.map((message) => message.content ?? "").join("\n"),
+    /must not enter provider messages|must_not_enter_provider_messages/,
+  );
+});
+
+test("ai_novel pi-v1 kickoff keeps Meta out of the provider system prompt", async () => {
+  let capturedMessages: Array<{ role: string; content?: string }> = [];
+  const llmProvider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(request): AsyncIterable<LLMStreamEvent> {
+      capturedMessages = request.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      yield { type: "content_delta", text: "Read Meta first." };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const { runtime, aiKey } = await createAiNovelRuntime({ llmProvider });
+  const token = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/ai_novel/ai/chat-completions",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "X-App-Id": "ai_novel",
+    },
+    body: encryptAiPayload(
+      {
+        scene_key: "kickoff_turn",
+        agentProtocol: "pi-v1",
+        stream: true,
+        context: {
+          meta: { storyPromise: "must not enter the kickoff prompt" },
+        },
+        messages: [{ role: "user", content: "Start my book." }],
+      },
+      aiKey,
+    ),
+  });
+
+  assert.equal(response.statusCode, 200);
+  await collectSseEvents(response.streamBody);
+  assert.doesNotMatch(
+    String(capturedMessages.find((message) => message.role === "system")?.content ?? ""),
+    /must not enter the kickoff prompt/,
   );
 });
 

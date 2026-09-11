@@ -4,7 +4,7 @@ import { randomId } from "../../../shared/utils.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
-import { assembleLightTickContext } from "./lighttick-ai-context.ts";
+import { assembleChatContext, assembleLightTickContext } from "./lighttick-ai-context.ts";
 import { LIGHTTICK_AI_SCENES, LIGHTTICK_OUTPUT_SCHEMAS, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
 import { parseLightTickJson, validatePlanOutput, validateProposalOutput, validateReviewOutput } from "./lighttick-ai-validation.ts";
 
@@ -21,7 +21,10 @@ export class LightTickAiRunner {
     await this.repository.saveAiRun({ ...run, status: "running", attemptCount: run.attemptCount + 1,
       startedAt: started.toISOString(), updatedAt: started.toISOString() });
     try {
-      const context = await assembleLightTickContext(this.repository, owner, run.inputContext);
+      const context = sceneName === "coach_chat"
+        ? await assembleChatContext(this.repository, owner, run.inputContext,
+          String(run.inputContext.thread_id ?? run.inputContext.goal_id ?? "default"))
+        : await assembleLightTickContext(this.repository, owner, run.inputContext);
       const outputSchema = this.outputSchema(sceneName);
       const constraints = this.constraintInstructions(sceneName, context);
       const result = await this.llm.complete({ modelKey: scene.modelAlias, messages: [
@@ -75,6 +78,15 @@ export class LightTickAiRunner {
         impact: { ...(output.impact as Record<string, unknown> ?? {}), ai_run_id: run.id }, expiresAt,
         version: 1, createdAt: timestamp, updatedAt: timestamp });
       return saved.id;
+    }
+    if (sceneName === "coach_chat") {
+      if (typeof output.message !== "string" || !output.message.trim()) return undefined;
+      const goalId = String(run.inputContext.goal_id ?? "");
+      const threadId = String(run.inputContext.thread_id ?? goalId ?? "default");
+      const timestamp = this.clock().toISOString();
+      await this.repository.saveChatMessage({ ...owner, id: randomId("lighttick_chat"), threadId, goalId,
+        role: "assistant", content: output.message.slice(0, 4000), runId: run.id, createdAt: timestamp });
+      return run.id;
     }
     return undefined;
   }

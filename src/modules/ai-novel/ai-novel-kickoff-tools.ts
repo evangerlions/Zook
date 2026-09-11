@@ -423,5 +423,4 @@ const kickoffToolDefinitions: LLMToolDefinition[] = [
   },
 ];
 
-
 export { kickoffToolDefinitions };

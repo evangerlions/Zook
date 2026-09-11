@@ -1,4 +1,4 @@
-import { Table, Tag } from "antd";
+import { Button, Popconfirm, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
 import { formatTimestamp } from "../../lib/format";
@@ -11,6 +11,7 @@ import type {
 import { LlmChart } from "./llm-chart";
 import { formatMetricNumber, formatPercent } from "./llm-monitor-view-model";
 import { SuccessRateBadge } from "./success-rate-badge";
+import { ProviderBadge } from "./provider-badge";
 import {
   buildRoutingComparisonOption,
   type RoutingComparisonRow,
@@ -24,7 +25,15 @@ interface RoutingRow extends LlmRouteRuntimeStatus {
   actualTrafficShare: number;
 }
 
-export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }) {
+export function RoutingSection({
+  metrics,
+  onResetCircuit,
+  resettingCircuitKey,
+}: {
+  metrics: AdminLlmMetricsDocument;
+  onResetCircuit: (row: RoutingRow) => Promise<void>;
+  resettingCircuitKey?: string;
+}) {
   const allRows = buildRows(metrics);
   const rows = filterRows(allRows, metrics);
   const visibleModelKeys = new Set(rows.map((row) => row.modelKey));
@@ -61,12 +70,12 @@ export function RoutingSection({ metrics }: { metrics: AdminLlmMetricsDocument }
       </div>
 
       <Table<RoutingRow>
-        columns={routingColumns()}
+        columns={routingColumns(onResetCircuit, resettingCircuitKey)}
         dataSource={rows}
         locale={{ emptyText: "当前配置没有可展示的 route" }}
         pagination={{ pageSize: 12, hideOnSinglePage: true }}
         rowKey="key"
-        scroll={{ x: 1540 }}
+        scroll={{ x: 1760 }}
         size="small"
       />
 
@@ -117,22 +126,68 @@ function toComparisonRow(row: RoutingRow): RoutingComparisonRow {
   };
 }
 
-function routingColumns(): ColumnsType<RoutingRow> {
+function routingColumns(
+  onResetCircuit: (row: RoutingRow) => Promise<void>,
+  resettingCircuitKey?: string,
+): ColumnsType<RoutingRow> {
   return [
     { title: "路由 Model", dataIndex: "modelKey", fixed: "left", width: 165, ellipsis: true },
-    { title: "Provider", dataIndex: "provider", width: 130, ellipsis: true },
+    {
+      title: "Provider",
+      dataIndex: "provider",
+      width: 130,
+      ellipsis: true,
+      render: (value) => <ProviderBadge provider={value} />,
+    },
     { title: "Provider Model", dataIndex: "providerModel", width: 180, ellipsis: true },
     { title: "策略", dataIndex: "strategy", width: 78, render: (value) => <Tag>{value}</Tag> },
     {
       title: "状态",
       width: 112,
-      render: (_, row) => row.selectionEligible
+      render: (_, row) => row.circuit?.state === "open"
+        ? <Tag color="error">熔断中</Tag>
+        : row.circuit?.state === "confirming"
+          ? <Tag color="processing">确认中</Tag>
+        : row.selectionEligible
         ? <Tag color={row.runtimeAvailable ? "success" : "warning"}>{row.runtimeAvailable ? "可选择" : "Adapter 不可用"}</Tag>
         : <Tag>{row.ineligibleReason === "provider_disabled"
           ? "Provider 禁用"
           : row.ineligibleReason === "runtime_unavailable"
             ? "Adapter 不可用"
             : "Route 禁用"}</Tag>,
+    },
+    {
+      title: "熔断恢复",
+      width: 190,
+      render: (_, row) => {
+        if (!row.circuit?.enabled) return <span>未启用</span>;
+        if (row.circuit.state === "confirming") return <span>后台两次确认中</span>;
+        if (row.circuit.state !== "open") return <span>正常</span>;
+        return <span>{`失败 ${row.circuit.failureCount} · 用户 ${row.circuit.distinctUserCount} · 探测 ${row.circuit.recoverySuccessCount}/2`}</span>;
+      },
+    },
+    {
+      title: "下次探测",
+      dataIndex: ["circuit", "nextRecoveryAt"],
+      width: 156,
+      render: (_, row) => formatTimestamp(row.circuit?.nextRecoveryAt),
+    },
+    {
+      title: "操作",
+      width: 108,
+      render: (_, row) => row.circuit?.state === "open" || row.circuit?.state === "confirming"
+        ? (
+          <Popconfirm
+            cancelText="保留"
+            description="会立即清除该 route 的确认或熔断状态，重新参与正常路由。"
+            okText="解除"
+            onConfirm={() => onResetCircuit(row)}
+            title="解除该 route 的熔断？"
+          >
+            <Button danger loading={resettingCircuitKey === row.key} size="small">解除熔断</Button>
+          </Popconfirm>
+        )
+        : "—",
     },
     {
       title: "健康成功率",

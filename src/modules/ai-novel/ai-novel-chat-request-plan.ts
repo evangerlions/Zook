@@ -1,4 +1,7 @@
-import type { LLMMessage, LLMToolDefinition } from "../../services/llm-manager.ts";
+import type {
+  LLMMessage,
+  LLMToolDefinition,
+} from "../../services/llm-manager.ts";
 import type { AccountRegion } from "../../shared/types.ts";
 import {
   buildKickoffMessages,
@@ -7,8 +10,10 @@ import {
 import { kickoffToolDefinitions } from "./ai-novel-kickoff-tools.ts";
 import {
   buildAiNovelPromptAssembly,
+  filterAiNovelAgentTools,
   toOpenAiToolDefinitions,
 } from "./ai-novel-llm-prompts.ts";
+import type { AiNovelAgentProtocol } from "./ai-novel-llm-request-validation.ts";
 import type { AiNovelChatScene } from "./ai-novel-llm-scenes.ts";
 import type { AiNovelPromptProfile } from "./prompts/ai-novel-prompt-types.ts";
 import { applyAiNovelRegionSystemPrompt } from "./ai-novel-region-system-prompt.ts";
@@ -45,6 +50,7 @@ export type AiNovelStreamRequestPlan =
 
 interface BuildAiNovelRequestPlanInput {
   accountRegion?: AccountRegion;
+  agentProtocol?: AiNovelAgentProtocol;
   context: unknown;
   locale?: string;
   messages: LLMMessage[];
@@ -82,12 +88,20 @@ export function buildAiNovelStreamRequestPlan(
         adapter: "kickoff",
         messages: buildKickoffMessages(
           input.messages,
-          normalizeKickoffMetaContext(input.context),
+          input.agentProtocol === "pi-v1"
+            ? undefined
+            : normalizeKickoffMetaContext(input.context),
           input.locale,
         ),
         providerOptions: {
           enable_thinking: true,
-          tools: toOpenAiToolDefinitions(kickoffToolDefinitions),
+          tools: toOpenAiToolDefinitions(
+            filterAiNovelAgentTools(
+              kickoffToolDefinitions,
+              input.context,
+              input.agentProtocol,
+            ),
+          ),
           tool_choice: "auto",
         },
       },
@@ -130,6 +144,7 @@ function buildScenePromptAssembly(input: BuildAiNovelRequestPlanInput) {
         profile: input.scene.profile,
         messages: input.messages,
         context: input.context,
+        agentProtocol: input.agentProtocol,
         locale: input.locale,
       })
     : { messages: input.messages, tools: [] as LLMToolDefinition[] };

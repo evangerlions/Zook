@@ -11,6 +11,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: lighttick-phase2
+    description: Registered-account execution facts, chat, DNA and review decisions.
   - name: lighttick-profile
     description: Profile preferences and resumable onboarding.
   - name: lighttick-goals
@@ -32,6 +34,424 @@ tags:
   - name: lighttick-config
     description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/execution-facts:
+    get:
+      operationId: getLightTickExecutionFacts
+      tags:
+        - lighttick-phase2
+      summary: Get windowed execution facts and feedback
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. from is inclusive and to exclusive; omitted bounds include all
+        history. Valid completions interrupt skip streaks. Reads append audit
+        records.
+      parameters:
+        - in: query
+          name: from
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickExecutionFactsData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+  /api/v1/lighttick/chat/messages:
+    get:
+      operationId: listLightTickChatMessages
+      tags:
+        - lighttick-phase2
+      summary: Read recent chat history
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. thread_id defaults to goal_id. Returns the latest bounded messages in
+        ascending time order.
+      parameters:
+        - in: query
+          name: goal_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: thread_id
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickChatMessagesData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+  /api/v1/lighttick/chat/intents:
+    get:
+      operationId: listLightTickChatIntents
+      tags:
+        - lighttick-phase2
+      summary: List suggested chat prompts
+      description: "Requires a registered LightTick membership; guest sessions receive 403. "
+      parameters: []
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickChatIntentsData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+  /api/v1/lighttick/dna/insights:
+    get:
+      operationId: listLightTickDnaInsights
+      tags:
+        - lighttick-phase2
+      summary: Synchronize and list DNA insights
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. Synchronizes deterministic rule outputs. Newly synchronized insights
+        have no goal_id; goal_id filters stored goal-specific insights only.
+      parameters:
+        - in: query
+          name: goal_id
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickDnaInsightsData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+  "/api/v1/lighttick/dna/insights/{insightId}/feedback":
+    post:
+      operationId: recordLightTickDnaFeedback
+      tags:
+        - lighttick-phase2
+      summary: Confirm, deny, correct or dismiss an insight
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. Only proposed rules can be confirmed; hypotheses return
+        LIGHTTICK_INSIGHT_NOT_ACTIONABLE (409). correct requires 2–500 trimmed
+        characters. dismiss permits proposed or confirmed insights. Other decided
+        states return 409.
+      parameters:
+        - in: path
+          name: insightId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickDnaInsight"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LightTickDnaFeedbackRequest"
+  /api/v1/lighttick/proposals/from-facts:
+    post:
+      operationId: createLightTickFactsProposals
+      tags:
+        - lighttick-phase2
+      summary: Propose adjustments from execution facts
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. Does not apply a plan change. An existing pending proposal or three
+        rejections in seven days suppresses proposals.
+      parameters: []
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickFactsProposalsData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LightTickFactsProposalRequest"
+  "/api/v1/lighttick/reviews/{reviewId}/actions":
+    get:
+      operationId: getLightTickReviewActions
+      tags:
+        - lighttick-phase2
+      summary: Read actionable review recommendations
+      description: "Requires a registered LightTick membership; guest sessions receive 403. "
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickReviewActionsData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+    post:
+      operationId: applyLightTickReviewAction
+      tags:
+        - lighttick-phase2
+      summary: Record a review decision atomically
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. accept_partial requires nonempty known recommendation_ids; ignore
+        requires a 2–500 character ignore_reason. Acceptance creates a proposed
+        plan, not an active plan. Concurrent or repeated decisions return 409
+        LIGHTTICK_VERSION_CONFLICT or LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED;
+        failed persistence rolls back the plan. proposed_plan retains camelCase
+        fields.
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickReviewActionResult"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LightTickReviewActionRequest"
+  /api/v1/lighttick/today/rhythm-suggestion:
+    get:
+      operationId: getLightTickRhythmSuggestion
+      tags:
+        - lighttick-phase2
+      summary: Get at most one direction-aware suggestion
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. Uses confirmed insights matching today's executable tasks. Positive
+        numeric deviation suggests increasing duration, negative suggests
+        decreasing it; zero or absent numeric evidence produces no directional
+        suggestion. Top-level suggestion fields retain camelCase.
+      parameters: []
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickRhythmData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+  /api/v1/lighttick/today/rhythm-suggestion/feedback:
+    post:
+      operationId: recordLightTickRhythmFeedback
+      tags:
+        - lighttick-phase2
+      summary: Accept or dismiss a rhythm suggestion
+      description: Requires a registered LightTick membership; guest sessions receive
+        403. accept records intent only and does not mutate tasks or plans;
+        dismiss retires the insight from the feed.
+      parameters: []
+      responses:
+        "200":
+          description: Successful owner-scoped response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LightTickEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/LightTickRhythmFeedbackData"
+        "400":
+          $ref: "#/components/responses/LightTickError"
+        "401":
+          $ref: "#/components/responses/LightTickError"
+        "403":
+          $ref: "#/components/responses/LightTickError"
+        "404":
+          $ref: "#/components/responses/LightTickError"
+        "409":
+          $ref: "#/components/responses/LightTickError"
+        "503":
+          $ref: "#/components/responses/LightTickError"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LightTickRhythmFeedbackRequest"
   /api/v1/lighttick/public/config:
     get:
       operationId: getLightTickPublicConfig
@@ -199,7 +619,11 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/LightTickFirstActionRequest" }
       responses:
-        "200": { $ref: "#/components/responses/LightTickOk" }
+        "200":
+          description: First action recorded with factual feedback and a three-day preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickFirstActionEnvelope" }
         "400": { $ref: "#/components/responses/LightTickError" }
         "404": { $ref: "#/components/responses/LightTickError" }
         "409": { $ref: "#/components/responses/LightTickError" }
@@ -498,7 +922,8 @@ paths:
     post:
       operationId: createLightTickCoachRun
       tags: [lighttick-ai]
-      summary: Create a recoverable run for one bounded Phase 1 Coach scene
+      summary: Create a recoverable bounded Coach or multi-turn chat run
+      description: For scene=chat, message is required (trimmed, 1–4000 characters); thread_id defaults to goal_id. The user message is persisted before queueing, and the response adds thread_id and message_id. Poll the run and read chat/messages for the assistant response. Registered accounts only; guests receive 403. Reusing Idempotency-Key with a different body returns 409.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -746,6 +1171,626 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/LightTickErrorEnvelope" }
   schemas:
+    LightTickEvidenceRange:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+    LightTickFactFeedback:
+      type: object
+      required:
+        - rule_id
+        - kind
+        - message
+        - evidence_count
+        - data_range
+        - confident
+      properties:
+        rule_id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - factual
+            - hypothesis
+            - rule
+        message:
+          type: string
+        evidence_count:
+          type: integer
+        data_range:
+          $ref: "#/components/schemas/LightTickEvidenceRange"
+        confident:
+          type: boolean
+    LightTickExecutionFactsData:
+      type: object
+      required:
+        - window
+        - completed_count
+        - average_deviation_minutes
+        - by_lineage
+        - by_slot
+        - consecutive_skips
+        - feedback
+      properties:
+        window:
+          $ref: "#/components/schemas/LightTickEvidenceRange"
+        completed_count:
+          type: integer
+        average_deviation_minutes:
+          type: number
+        by_lineage:
+          type: object
+          additionalProperties:
+            type: object
+            required:
+              - title
+              - count
+              - total_estimated_minutes
+              - total_actual_minutes
+              - deviation_minutes
+            properties:
+              title:
+                type: string
+              count:
+                type: integer
+              total_estimated_minutes:
+                type: number
+              total_actual_minutes:
+                type: number
+              deviation_minutes:
+                type: number
+        by_slot:
+          type: object
+          additionalProperties:
+            type: object
+            required:
+              - count
+              - average_deviation_minutes
+            properties:
+              count:
+                type: integer
+              average_deviation_minutes:
+                type: number
+        consecutive_skips:
+          type: object
+          additionalProperties:
+            type: object
+            required:
+              - title
+              - count
+            properties:
+              title:
+                type: string
+              count:
+                type: integer
+        feedback:
+          type: array
+          items:
+            $ref: "#/components/schemas/LightTickFactFeedback"
+    LightTickChatMessage:
+      type: object
+      required:
+        - id
+        - role
+        - content
+        - created_at
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum:
+            - user
+            - assistant
+        content:
+          type: string
+        run_id:
+          type:
+            - string
+            - "null"
+        created_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
+    LightTickChatMessagesData:
+      type: object
+      required:
+        - thread_id
+        - goal_id
+        - items
+      properties:
+        thread_id:
+          type: string
+        goal_id:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LightTickChatMessage"
+    LightTickChatIntentsData:
+      type: object
+      required:
+        - intents
+      properties:
+        intents:
+          type: array
+          items:
+            type: object
+            required:
+              - key
+              - label
+              - message
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+              message:
+                type: string
+    LightTickDnaInsight:
+      type: object
+      required:
+        - id
+        - rule_id
+        - statement
+        - kind
+        - status
+        - evidence_count
+        - data_range
+        - confidence
+        - scope
+        - allowed_effects
+        - created_at
+        - expires_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        rule_id:
+          type: string
+        statement:
+          type: string
+        kind:
+          type: string
+          enum:
+            - hypothesis
+            - rule
+        status:
+          type: string
+          enum:
+            - proposed
+            - confirmed
+            - denied
+            - corrected
+            - expired
+            - dismissed
+        evidence_count:
+          type: integer
+        data_range:
+          $ref: "#/components/schemas/LightTickEvidenceRange"
+        confidence:
+          type: number
+        scope:
+          type: string
+        allowed_effects:
+          type: array
+          items:
+            type: string
+        user_feedback:
+          type:
+            - string
+            - "null"
+        created_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
+        expires_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
+        updated_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
+    LightTickDnaInsightsData:
+      type: object
+      required:
+        - items
+        - next_cursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LightTickDnaInsight"
+        next_cursor:
+          type: "null"
+    LightTickDnaFeedbackRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum:
+            - confirm
+            - deny
+            - correct
+            - dismiss
+        correction:
+          type: string
+          minLength: 2
+          maxLength: 500
+    LightTickFactsProposalRequest:
+      type: object
+      required:
+        - goal_id
+      properties:
+        goal_id:
+          type: string
+    LightTickFactsProposalsData:
+      type: object
+      required:
+        - items
+      properties:
+        suppressed:
+          type: string
+          enum:
+            - duplicate_pending
+            - rejection_dampening
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - plan_id
+              - status
+              - reason
+              - diff
+              - impact
+              - expires_at
+              - created_at
+            properties:
+              id:
+                type: string
+              plan_id:
+                type: string
+              status:
+                type: string
+              reason:
+                type: string
+              diff:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LightTickPlanDiffItem"
+              impact:
+                type: object
+                additionalProperties: true
+              expires_at:
+                $ref: "#/components/schemas/LightTickTimestamp"
+              created_at:
+                $ref: "#/components/schemas/LightTickTimestamp"
+    LightTickReviewRecommendation:
+      type: object
+      required:
+        - id
+        - title
+        - detail
+        - action
+        - evidence
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        action:
+          type: string
+        evidence:
+          type: object
+          additionalProperties: true
+        proposedTasks:
+          type: array
+          items:
+            type: object
+            required:
+              - title
+              - estimatedMinutes
+            properties:
+              title:
+                type: string
+              estimatedMinutes:
+                type: integer
+              priority:
+                type: integer
+              scheduledFor:
+                type: string
+    LightTickReviewActionState:
+      type: object
+      required: []
+      properties:
+        status:
+          type: string
+          enum:
+            - ignored
+            - proposed
+            - accepted
+        action:
+          type: string
+          enum:
+            - accept_all
+            - accept_partial
+            - ignore
+        selected_ids:
+          type: array
+          items:
+            type: string
+        ignore_reason:
+          type: string
+        proposed_plan_id:
+          type: string
+        decided_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
+    LightTickReviewActionView:
+      type: object
+      required:
+        - id
+        - goal_id
+        - period
+        - status
+        - period_start
+        - period_end
+        - facts
+        - insights
+        - recommendations
+        - data_sufficiency
+        - version
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        goal_id:
+          type: string
+        period:
+          type: string
+          enum:
+            - week
+            - month
+        status:
+          type: string
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        facts:
+          type: object
+          additionalProperties: true
+        insights:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: object
+                description: Original AI recommendation; normalized recommendations are returned separately.
+                additionalProperties: true
+        data_sufficiency:
+          type: string
+        action_state:
+          $ref: "#/components/schemas/LightTickReviewActionState"
+        version:
+          type: integer
+        created_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
+        updated_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
+    LightTickReviewActionsData:
+      type: object
+      required:
+        - review
+        - recommendations
+        - action_state
+      properties:
+        review:
+          $ref: "#/components/schemas/LightTickReviewActionView"
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LightTickReviewRecommendation"
+        action_state:
+          $ref: "#/components/schemas/LightTickReviewActionState"
+    LightTickReviewActionRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum:
+            - accept_all
+            - accept_partial
+            - ignore
+        recommendation_ids:
+          type: array
+          items:
+            type: string
+        ignore_reason:
+          type: string
+          minLength: 2
+          maxLength: 500
+    LightTickReviewProposedPlan:
+      type: object
+      required:
+        - id
+        - appId
+        - userId
+        - goalId
+        - granularity
+        - status
+        - source
+        - periodStart
+        - periodEnd
+        - proposal
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        appId:
+          type: string
+          enum:
+            - lighttick
+        userId:
+          type: string
+        goalId:
+          type: string
+        granularity:
+          type: string
+          enum:
+            - day
+            - week
+            - month
+        status:
+          type: string
+          enum:
+            - proposed
+        source:
+          type: string
+        periodStart:
+          type: string
+        periodEnd:
+          type: string
+        proposal:
+          type: object
+          additionalProperties: true
+        version:
+          type: integer
+        createdAt:
+          $ref: "#/components/schemas/LightTickTimestamp"
+        updatedAt:
+          $ref: "#/components/schemas/LightTickTimestamp"
+    LightTickReviewActionResult:
+      type: object
+      required:
+        - review
+        - action
+        - selected_recommendation_ids
+        - recommendations
+      properties:
+        review:
+          $ref: "#/components/schemas/LightTickReviewActionView"
+        action:
+          type: string
+          enum:
+            - accept_all
+            - accept_partial
+            - ignore
+        selected_recommendation_ids:
+          type: array
+          items:
+            type: string
+        proposed_plan:
+          $ref: "#/components/schemas/LightTickReviewProposedPlan"
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LightTickReviewRecommendation"
+    LightTickRhythmSuggestion:
+      type: object
+      required:
+        - insightId
+        - ruleId
+        - kind
+        - statement
+        - confidence
+        - evidenceCount
+        - scope
+        - task
+        - action
+      properties:
+        insightId:
+          type: string
+        ruleId:
+          type: string
+        kind:
+          type: string
+        statement:
+          type: string
+        confidence:
+          type: number
+        evidenceCount:
+          type: integer
+        scope:
+          type: string
+        task:
+          type: object
+          required:
+            - id
+            - title
+            - estimated_minutes
+            - selected_variant
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            estimated_minutes:
+              type: integer
+            selected_variant:
+              type: string
+        action:
+          type: string
+    LightTickRhythmData:
+      type: object
+      required: []
+      properties:
+        suggestion:
+          $ref: "#/components/schemas/LightTickRhythmSuggestion"
+        reason:
+          type: string
+          enum:
+            - no_today_tasks
+            - no_confirmed_insight
+            - no_matching_task
+    LightTickRhythmFeedbackRequest:
+      type: object
+      required:
+        - insight_id
+        - action
+      properties:
+        insight_id:
+          type: string
+        action:
+          type: string
+          enum:
+            - accept
+            - dismiss
+    LightTickRhythmFeedbackData:
+      type: object
+      required:
+        - id
+        - rule_id
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+        rule_id:
+          type: string
+        status:
+          type: string
+        user_feedback:
+          type:
+            - string
+            - "null"
+        updated_at:
+          $ref: "#/components/schemas/LightTickTimestamp"
     LightTickId:
       type: string
       minLength: 8
@@ -811,6 +1856,9 @@ components:
         - LIGHTTICK_RESOURCE_NOT_FOUND
         - LIGHTTICK_STATE_TRANSITION_INVALID
         - LIGHTTICK_VERSION_CONFLICT
+        - LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED
+        - LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS
+        - LIGHTTICK_INSIGHT_NOT_ACTIONABLE
         - LIGHTTICK_IDEMPOTENCY_MISMATCH
         - LIGHTTICK_PLAN_CONSTRAINT_FAILED
         - LIGHTTICK_AI_RUN_FAILED
@@ -943,6 +1991,43 @@ components:
         selected_variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
         actual_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
         difficulty: { enum: [easy, right, hard] }
+      additionalProperties: false
+    LightTickFirstActionFeedback:
+      type: object
+      required: [estimated_duration_minutes, actual_duration_minutes, selected_variant, stable_inference]
+      properties:
+        estimated_duration_minutes: { type: integer, minimum: 1 }
+        actual_duration_minutes: { type: integer, minimum: 1, maximum: 1440 }
+        selected_variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
+        difficulty: { enum: [easy, right, hard] }
+        stable_inference: { type: [string, "null"] }
+      additionalProperties: false
+    LightTickWeeklyCommitmentAvailability:
+      type: object
+      required: [eligible, valid_action_count, unlock_requirement]
+      properties:
+        eligible: { type: boolean }
+        valid_action_count: { type: integer, minimum: 0 }
+        unlock_requirement: { type: [string, "null"] }
+      additionalProperties: false
+    LightTickFirstActionData:
+      type: object
+      required: [feedback, three_day_preview, weekly_commitment]
+      properties:
+        feedback: { $ref: "#/components/schemas/LightTickFirstActionFeedback" }
+        three_day_preview:
+          type: array
+          items: { $ref: "#/components/schemas/LightTickTaskData" }
+        weekly_commitment: { $ref: "#/components/schemas/LightTickWeeklyCommitmentAvailability" }
+      additionalProperties: false
+    LightTickFirstActionEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        requestId: { type: string }
+        data: { $ref: "#/components/schemas/LightTickFirstActionData" }
       additionalProperties: false
     LightTickCommitmentMode:
       type: string
@@ -1084,6 +2169,8 @@ components:
       type: object
       required: [id, plan_id, title, status, scheduled_date, estimated_duration_minutes, priority, version, created_at, updated_at]
       properties:
+        feedback:
+          $ref: "#/components/schemas/LightTickFactFeedback"
         id: { $ref: "#/components/schemas/LightTickId" }
         lineage_id: { $ref: "#/components/schemas/LightTickId" }
         plan_id: { $ref: "#/components/schemas/LightTickId" }
@@ -1219,7 +2306,12 @@ components:
         period_end: { type: string, format: date }
         facts: { type: object, additionalProperties: true }
         insights: { type: array, items: { type: string } }
-        recommendations: { type: array, items: { type: string } }
+        recommendations:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - $ref: "#/components/schemas/LightTickReviewRecommendation"
         data_sufficiency: { enum: [insufficient, basic, sufficient] }
         linked_proposal_id: { $ref: "#/components/schemas/LightTickId" }
         version: { $ref: "#/components/schemas/LightTickVersion" }
@@ -1228,8 +2320,15 @@ components:
     LightTickCoachRunRequest:
       type: object
       required: [scene, goal_id]
+      if:
+        properties:
+          scene: { const: chat }
+      then:
+        required: [message]
       properties:
-        scene: { enum: [task_breakdown, plan_explanation, recovery, review_explanation] }
+        scene: { enum: [task_breakdown, plan_explanation, recovery, review_explanation, chat] }
+        message: { type: string, minLength: 1, maxLength: 4000 }
+        thread_id: { type: string, maxLength: 128 }
         goal_id: { $ref: "#/components/schemas/LightTickId" }
         plan_id: { $ref: "#/components/schemas/LightTickId" }
         review_id: { $ref: "#/components/schemas/LightTickId" }
@@ -1317,6 +2416,8 @@ components:
         scene: { type: string }
         status: { $ref: "#/components/schemas/LightTickRunStatus" }
         retryable: { type: boolean }
+        thread_id: { type: string, description: Present on chat creation responses. }
+        message_id: { type: string, description: Persisted user message ID on chat creation. }
         result_resource_type: { enum: [goal, plan, review, change_proposal, coach_message] }
         result_resource_id: { $ref: "#/components/schemas/LightTickId" }
         source: { enum: [ai, template, manual] }

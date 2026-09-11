@@ -108,7 +108,7 @@ test("Postgres app-user runtime deletion removes every LightTick owner table onl
   }, "lighttick", "user_alice");
 
   const lightTickDeletes = queries.filter(query => query.sql.startsWith("DELETE FROM zook_lighttick_"));
-  assert.equal(lightTickDeletes.length, 15);
+  assert.equal(lightTickDeletes.length, 18);
   assert.ok(lightTickDeletes.some(query => query.sql.startsWith("DELETE FROM zook_lighttick_change_proposals")));
   assert.ok(lightTickDeletes.some(query => query.sql.startsWith("DELETE FROM zook_lighttick_devices")));
   assert.ok(lightTickDeletes.some(query => query.sql.startsWith("DELETE FROM zook_lighttick_operations")));
@@ -127,7 +127,7 @@ test("Postgres app deletion includes all LightTick product tables", async () => 
     return { rows: sql.startsWith("SELECT id FROM zook_roles") ? [{ id: "role_lighttick_member" }] : [] };
   }, "lighttick");
   const lightTickDeletes = queries.filter(query => query.sql.startsWith("DELETE FROM zook_lighttick_"));
-  assert.equal(lightTickDeletes.length, 15);
+  assert.equal(lightTickDeletes.length, 18);
   assert.ok(lightTickDeletes.some(query => query.sql.startsWith("DELETE FROM zook_lighttick_account_upgrades")));
   assert.ok(lightTickDeletes.every(query => JSON.stringify(query.values) === JSON.stringify(["lighttick"])));
   assert.equal(queries.at(-1)?.sql, "DELETE FROM zook_apps WHERE id = $1");

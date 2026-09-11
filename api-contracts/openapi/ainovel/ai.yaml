@@ -25,6 +25,13 @@ paths:
         is present in the decrypted inner body, the same endpoint switches to
         `text/event-stream` SSE output instead of a single JSON response.
 
+        An optional decrypted top-level `agentProtocol: "pi-v1"` selects the
+        context-on-demand Agent contract. In that contract Zook does not embed
+        raw client context in the system prompt or any user message; the client
+        reads current novel state through normal tool calls. Its absence retains
+        the legacy context assembly for older clients. Unknown values are
+        rejected with `REQ_INVALID_BODY`.
+
         Supported chat scene keys are:
         - `kickoff_turn`
         - `chat_compaction`
@@ -115,9 +122,10 @@ paths:
 
                   `usage` contains `promptTokens`, `completionTokens`, and
                   `totalTokens`; it may also include `reasoningTokens`,
-                  `contextWindowTokens`, and `contextUsedRatio` so clients can
-                  trigger hard context compaction from provider-reported usage
-                  instead of estimating local transcript size.
+                  `contextWindowTokens`, and `contextUsedRatio`. Zook emits a
+                  fixed 256,000-token Agent operating budget in every usage
+                  payload so clients can trigger context compaction without
+                  estimating local transcript size or model-specific windows.
 
                   Product-level loading step choreography, localization keys,
                   and operation labels are client-owned. Zook does not emit
@@ -153,6 +161,100 @@ paths:
                   not know whether the product-level write agent loop should
                   stop after local `read_draft`, `search_story_history`, or
                   `write_draft` tool execution.
+        "400":
+          description: Plain error when outer envelope is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Plain error when bearer auth is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Plain error on app scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/agent-skills/query:
+    post:
+      operationId: queryAiNovelAgentSkills
+      summary: Query the current immutable AINovel Skill manifest
+      description: |
+        The client must send an AES-256-GCM encrypted JSON envelope. The
+        decrypted request body is an empty object. The encrypted response data
+        is `AiNovelAgentSkillManifest`. It contains all currently active Skill
+        names, descriptions, virtual entrypoint locations, versions, and hashes.
+        Clients compare this manifest with their local immutable cache to detect
+        additions, modifications, and removals. This endpoint never returns
+        complete Skill contents.
+      tags: [ainovel, agent-skills]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/XDid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AesEncryptedAiRequestEnvelope"
+      responses:
+        "200":
+          description: Encrypted Skill manifest envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AesEncryptedAiResponseEnvelope"
+        "400":
+          description: Plain error when outer envelope is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Plain error when bearer auth is missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Plain error on app scope mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/agent-skills/fetch:
+    post:
+      operationId: fetchAiNovelAgentSkillPackages
+      summary: Fetch selected AINovel Skill packages from one manifest revision
+      description: |
+        The client must send an AES-256-GCM encrypted JSON envelope. The
+        decrypted request body is `AiNovelAgentSkillFetchRequest`. It may name
+        only Skills present in the exact `skillSetVersion` returned by query.
+        The encrypted response contains complete text-only Skill packages for
+        those names. A stale manifest revision returns encrypted business code
+        `AINOVEL_SKILL_SET_STALE`; the client must query again and must not mix
+        packages from different revisions into one active local snapshot.
+      tags: [ainovel, agent-skills]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/XDid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AesEncryptedAiRequestEnvelope"
+      responses:
+        "200":
+          description: Encrypted selected Skill package envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AesEncryptedAiResponseEnvelope"
         "400":
           description: Plain error when outer envelope is invalid
           content:
@@ -215,16 +317,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /api/v1/ai_novel/debug/audit-file:
+  /api/v1/ai_novel/debug/traces:
     post:
-      operationId: writeAiNovelDebugAuditFile
-      summary: Local-only debug audit HTML file writer
+      operationId: writeAiNovelDebugTrace
+      summary: Local-only AINovel trace artifact writer
       description: |
-        Local/debug-only endpoint for Flutter Web QA. Production and non-local
-        hosts return 404. The server does not parse audit contents; it sanitizes
-        `sessionId` and overwrites one fixed `generation-audit.html` file under
-        the local AINovel repo debug artifact directory. The response includes
-        a localhost `viewUrl` that browsers can open from Flutter Web.
+        Local/dev-only endpoint for the AINovel Trace Console. Production and
+        non-local hosts return 404. The server stamps the authenticated user as
+        `uid`, treats `sessionId` as the conversation id (`cid`), appends the
+        structured capture, and renders the browser view itself.
       tags: [ainovel, debug]
       parameters:
         - $ref: "#/components/parameters/XAppId"
@@ -233,14 +334,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AiNovelDebugAuditFileRequest"
+              $ref: "#/components/schemas/AiNovelDebugTraceWriteRequest"
       responses:
         "200":
-          description: Local file location that was created or overwritten
+          description: Structured trace capture appended to the session
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AiNovelDebugAuditFileResponse"
+                $ref: "#/components/schemas/AiNovelDebugTraceWriteResponse"
         "400":
           description: Invalid request body
           content:
@@ -265,13 +366,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /api/v1/ai_novel/debug/audit-file/{sessionId}:
     get:
-      operationId: viewAiNovelDebugAuditFile
-      summary: Local-only debug audit HTML viewer
+      operationId: openAiNovelDebugTraceConsole
+      summary: Local-only AINovel Trace Console
+      description: Local/dev-only HTML console. Shared dev requires admin authentication.
+      tags: [ainovel, debug]
+      responses:
+        "200":
+          description: Trace Console HTML.
+          content:
+            text/html:
+              schema:
+                type: string
+        "401":
+          description: Admin authentication required in shared dev
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Returned in production or non-local contexts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/debug/traces/data:
+    get:
+      operationId: listAiNovelDebugTraces
+      summary: Local-only AINovel trace metadata list
+      description: Local/dev-only metadata list used by the Trace Console filters.
+      tags: [ainovel, debug]
+      parameters:
+        - name: uid
+          in: query
+          description: Filter by the authenticated AINovel user id.
+          schema: { type: string }
+        - name: cid
+          in: query
+          description: Filter by conversation id; this is the stored sessionId.
+          schema: { type: string }
+        - name: kind
+          in: query
+          schema: { $ref: "#/components/schemas/AiNovelTraceKind" }
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/AiNovelTraceStatus" }
+        - name: bookId
+          in: query
+          schema: { type: string }
+        - name: chapterId
+          in: query
+          schema: { type: string }
+        - name: query
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Stored local trace metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelDebugTraceListResponse"
+        "401":
+          description: Admin authentication required in shared dev
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Returned in production or non-local contexts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/ai_novel/debug/traces/{sessionId}:
+    get:
+      operationId: viewAiNovelDebugTrace
+      summary: Local-only AINovel session trace viewer
       description: |
-        Local/debug-only browser view for a previously uploaded audit report.
-        Production and non-local hosts return 404.
+        Local/debug-only browser view rendered as Sessions → Turns → request
+        details. Each turn compares its context with the preceding turn.
+        Send `Accept: application/json` to receive the structured session,
+        session manifest list, and normalized view model used by the Admin
+        Console. Production and non-local hosts return 404.
       tags: [ainovel, debug]
       parameters:
         - name: sessionId
@@ -279,13 +456,28 @@ paths:
           required: true
           schema:
             type: string
+        - name: kind
+          in: query
+          required: false
+          description: Selects the trace kind when one business session id is shared by multiple flows.
+          schema:
+            $ref: "#/components/schemas/AiNovelTraceKind"
       responses:
         "200":
-          description: Self-contained audit HTML.
+          description: Server-rendered session trace HTML, or structured JSON when requested.
           content:
             text/html:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelDebugTraceViewResponse"
+        "401":
+          description: Admin authentication required in shared dev
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Returned in production or non-local contexts
           content:
@@ -358,6 +550,74 @@ components:
           type: string
           description: local-only plaintext mirror for chat text; ignored by client business logic
       additionalProperties: false
+    AiNovelAgentSkillManifest:
+      type: object
+      required: [skillSetVersion, skills]
+      properties:
+        skillSetVersion:
+          type: string
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiNovelAgentSkillManifestEntry"
+      additionalProperties: false
+    AiNovelAgentSkillManifestEntry:
+      type: object
+      required: [name, description, location, version, sha256]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+          description: Allowlisted virtual read path; never a server filesystem path.
+        version:
+          type: string
+        sha256:
+          type: string
+      additionalProperties: false
+    AiNovelAgentSkillFetchRequest:
+      type: object
+      required: [skillSetVersion, names]
+      properties:
+        skillSetVersion:
+          type: string
+        names:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+      additionalProperties: false
+    AiNovelAgentSkillPackage:
+      type: object
+      required: [name, version, sha256, files]
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        sha256:
+          type: string
+        files:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/AiNovelAgentSkillFile"
+      additionalProperties: false
+    AiNovelAgentSkillFile:
+      type: object
+      required: [path, content, sha256]
+      properties:
+        path:
+          type: string
+          description: Allowlisted virtual text path.
+        content:
+          type: string
+        sha256:
+          type: string
+      additionalProperties: false
     AiNovelChatSceneKey:
       type: string
       enum:
@@ -386,40 +646,106 @@ components:
         contextWindowTokens:
           type: integer
           minimum: 1
-          description: Provider/model context window when known.
+          description: Zook's fixed 256,000-token Agent operating budget.
         contextUsedRatio:
           type: number
           minimum: 0
           maximum: 1
-          description: "`promptTokens / contextWindowTokens` when known."
+          description: "`promptTokens / contextWindowTokens` for Zook's fixed Agent operating budget."
       additionalProperties: false
-    AiNovelDebugAuditFileRequest:
+    AiNovelTraceKind:
+      type: string
+      enum: [kickoff, import_book, imported_kickoff, writing, history_qa, advance_chapter]
+    AiNovelTraceStatus:
+      type: string
+      enum: [running, completed, failed, cancelled]
+    AiNovelDebugTraceWriteRequest:
       type: object
-      required: [sessionId, html]
+      required: [sessionId, kind, status, trace]
       properties:
         sessionId:
           type: string
-          description: Debug session id; sanitized before being used as a directory name.
-        html:
+          description: Stable AI session id; the filesystem key is a one-way hash.
+        kind:
+          $ref: "#/components/schemas/AiNovelTraceKind"
+        status:
+          $ref: "#/components/schemas/AiNovelTraceStatus"
+        bookId:
           type: string
-          description: Complete self-contained audit HTML.
+        chapterId:
+          type: string
+        title:
+          type: string
+        trace:
+          type: object
+          description: Structured client trace capture for one completed or failed operation.
+          additionalProperties: true
       additionalProperties: false
-    AiNovelDebugAuditFileResponse:
+    AiNovelDebugTraceManifest:
       type: object
-      required: [filePath, fileUrl, viewUrl, updatedAt]
+      required: [sessionId, kind, status, captureCount, createdAt, updatedAt]
       properties:
-        filePath:
+        sessionId:
           type: string
-        fileUrl:
+          description: Conversation id (`cid`) used to group turns.
+        uid:
           type: string
-          format: uri
-        viewUrl:
+          description: Authenticated AINovel user id that owns the trace.
+        kind:
+          $ref: "#/components/schemas/AiNovelTraceKind"
+        status:
+          $ref: "#/components/schemas/AiNovelTraceStatus"
+        bookId:
           type: string
-          format: uri
-          description: Browser-safe localhost URL for opening the report from Flutter Web.
+        chapterId:
+          type: string
+        title:
+          type: string
+        captureCount:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
         updatedAt:
           type: string
           format: date-time
+    AiNovelDebugTraceWriteResponse:
+      allOf:
+        - $ref: "#/components/schemas/AiNovelDebugTraceManifest"
+        - type: object
+          required: [viewUrl]
+          properties:
+            viewUrl:
+              type: string
+              format: uri
+          additionalProperties: false
+    AiNovelDebugTraceListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiNovelDebugTraceManifest"
+      additionalProperties: false
+    AiNovelDebugTraceViewResponse:
+      type: object
+      required: [session, sessions, viewModel]
+      properties:
+        session:
+          type: object
+          description: Full stored trace session, including all captures.
+          additionalProperties: true
+        sessions:
+          type: array
+          description: Session manifests used by the session selector.
+          items:
+            $ref: "#/components/schemas/AiNovelDebugTraceManifest"
+        viewModel:
+          type: object
+          description: Normalized Turns → requests → messages and context diff.
+          additionalProperties: true
       additionalProperties: false
     ErrorResponse:
       type: object

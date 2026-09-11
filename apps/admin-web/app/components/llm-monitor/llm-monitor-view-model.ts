@@ -26,6 +26,17 @@ export function formatMetricNumber(value?: number): string {
   return value === undefined ? "—" : new Intl.NumberFormat("zh-CN").format(value);
 }
 
+export function formatTokenNumber(value?: number): string {
+  if (value === undefined) return "—";
+  const absolute = Math.abs(value);
+  const unit: readonly [number, string] = absolute >= 1_000_000_000 ? [1_000_000_000, "B"]
+    : absolute >= 1_000_000 ? [1_000_000, "M"]
+      : absolute >= 1_000 ? [1_000, "K"]
+        : [1, ""];
+  const scaled = value / unit[0];
+  return `${scaled.toFixed(scaled >= 100 || unit[0] === 1 ? 0 : 1).replace(/\.0$/, "")}${unit[1]}`;
+}
+
 export function formatLatency(value?: number): string {
   if (value === undefined) return "—";
   return value >= 1000 ? `${(value / 1000).toFixed(value >= 10_000 ? 1 : 2)} s` : `${value} ms`;
@@ -108,27 +119,27 @@ export function buildTokenOption(items: LlmHourlySeriesItem[], width = 1000): EC
         if (!item) return "无数据";
         return [
           item.bucket,
-          `Prompt ${formatMetricNumber(item.promptTokens)}`,
-          `可见输出 ${formatMetricNumber(item.visibleOutputTokens)}`,
-          `Reasoning ${formatMetricNumber(item.reasoningTokens)}`,
-          `未分类 ${formatMetricNumber(item.unclassifiedTokens)}`,
-          `canonical 总 Token ${formatMetricNumber(item.totalTokens)}`,
+          `总 Token ${formatTokenNumber(item.totalTokens)}`,
+          `Prompt ${formatTokenNumber(item.promptTokens)}`,
+          `可见输出 ${formatTokenNumber(item.visibleOutputTokens)}`,
+          `Reasoning ${formatTokenNumber(item.reasoningTokens)}`,
+          `未分类 ${formatTokenNumber(item.unclassifiedTokens)}`,
           `Provider ${item.providerUsageCount} · 估算 ${item.estimatedUsageCount} · 缺失 ${item.missingUsageCount}`,
         ].join("<br/>");
       },
     },
-    legend: { top: 0, type: "scroll", itemGap: compact ? 8 : 20, textStyle: { fontSize: compact ? 10 : 12 } },
+    legend: { top: 0, data: ["总 Token"], textStyle: { fontSize: compact ? 10 : 12 } },
     grid: { top: 48, left: compact ? 36 : 58, right: compact ? 12 : 24, bottom: 42, containLabel: true },
     xAxis: { type: "category", data: labels, axisLabel: { fontSize: compact ? 9 : 12, hideOverlap: true } },
     yAxis: { type: "value", name: compact ? "" : "Token", splitNumber: compact ? 2 : 5, axisLabel: { fontSize: compact ? 9 : 12, formatter: (value: number) => compactNumber(value) } },
-    series: series.map(([name, field]) => ({
-      name,
+    series: [{
+      name: "总 Token",
       type: "line",
-      stack: "tokens",
+      smooth: 0.2,
       areaStyle: { opacity: 0.18 },
       showSymbol: false,
-      data: items.map((item) => item.available ? (item[field] ?? 0) : null),
-    })),
+      data: items.map((item) => item.available ? (item.totalTokens ?? 0) : null),
+    }],
   };
 }
 
@@ -217,9 +228,4 @@ function shortBucket(bucket: string): string {
   return bucket.includes("T") ? bucket.slice(5).replace("T", " ") : bucket.slice(5);
 }
 
-function compactNumber(value: number): string {
-  return new Intl.NumberFormat("zh-CN", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
+function compactNumber(value: number): string { return formatTokenNumber(value); }

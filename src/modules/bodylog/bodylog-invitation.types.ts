@@ -1,9 +1,12 @@
+export type BodyLogInvitationIntent = "general" | "buddy" | "group";
+
 export interface BodyLogInvitationRecord {
   id: string;
   appId: string;
   inviterUserId: string;
   inviterInstallIdHash: string;
   tokenHash: string;
+  intent: BodyLogInvitationIntent;
   expiresAt: string;
   createdAt: string;
 }

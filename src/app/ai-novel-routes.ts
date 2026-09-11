@@ -5,7 +5,6 @@ import { resolveAiNovelRoutingIdentity } from "../modules/ai-novel/ai-novel-rout
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import {
   buildEncryptedAiErrorPayload,
-  buildLocalDebugAuditFileViewUrl,
   decryptAiRequestBody,
   encryptedAiResponse,
   encryptedAiStreamResponse,
@@ -13,19 +12,20 @@ import {
   handleEncryptedAiRequest,
   logEncryptedAiBusinessError,
   shouldExposeLocalAiRequestDebugFields,
-  shouldServeLocalDebugEndpoint,
 } from "./encrypted-ai-routes.ts";
+import { tryHandleAiNovelDebugTraceRoutes } from "./ai-novel-debug-trace-routes.ts";
 export async function tryHandleAiNovelRoutes(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
+  const traceResponse = await tryHandleAiNovelDebugTraceRoutes.call(this, request);
+  if (traceResponse) return traceResponse;
   if (request.method === "GET" && request.path === "/api/v1/ai_novel/statistics") return await handleAiNovelStatistics.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/statistics/snapshot") return await handleAiNovelStatisticsSnapshot.call(this, request);
+  if (request.method === "POST" && request.path === "/api/v1/ai_novel/agent-skills/query") return await handleAiNovelSkillQuery.call(this, request);
+  if (request.method === "POST" && request.path === "/api/v1/ai_novel/agent-skills/fetch") return await handleAiNovelSkillFetch.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/chat-completions") return await handleAiNovelChatCompletions.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") return await handleAiNovelEmbeddings.call(this, request);
-  const aiNovelAuditFileViewMatch = request.path.match(/^\/api\/v1\/ai_novel\/debug\/audit-file\/([^/]+)$/);
-  if (request.method === "GET" && aiNovelAuditFileViewMatch) return await handleAiNovelAuditFileView.call(this, request, aiNovelAuditFileViewMatch[1] ?? "");
-  if (request.method === "POST" && request.path === "/api/v1/ai_novel/debug/audit-file") return await handleAiNovelAuditFile.call(this, request);
   return undefined;
 }
 
@@ -52,6 +52,22 @@ export async function handleAiNovelStatisticsSnapshot(this: BackendRouteContext,
     await this.aiNovelStatisticsService.recordSnapshot(auth, validated),
     request.requestId as string,
   );
+}
+
+export async function handleAiNovelSkillQuery(this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  return handleEncryptedAiRequest.call(this, request, async () => {
+    return await this.aiNovelSkillService.query();
+  });
+}
+
+export async function handleAiNovelSkillFetch(this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  return handleEncryptedAiRequest.call(this, request, async (body) => {
+    return await this.aiNovelSkillService.fetch(body);
+  });
 }
 
 export async function handleAiNovelChatCompletions(this: BackendRouteContext, 
@@ -158,73 +174,4 @@ export async function handleAiNovelEmbeddings(this: BackendRouteContext,
       ),
     });
   });
-}
-
-export async function handleAiNovelAuditFile(this: BackendRouteContext, 
-  request: HttpRequest,
-): Promise<HttpResponse<unknown>> {
-  if (!shouldServeLocalDebugEndpoint.call(this, request)) {
-    throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");
-  }
-
-  await this.authenticateProductRequest(request, "ai_novel");
-  const body = this.validationPipe.asObject(request.body);
-  const sessionId = typeof body.sessionId === "string" ? body.sessionId : "";
-  const html = typeof body.html === "string" ? body.html : "";
-  if (sessionId.trim().isEmpty) {
-    throw new ApplicationError(
-      400,
-      "REQ_INVALID_BODY",
-      "sessionId is required.",
-    );
-  }
-  if (html.trim().isEmpty) {
-    throw new ApplicationError(400, "REQ_INVALID_BODY", "html is required.");
-  }
-
-  const result = await this.aiNovelAuditFileService.writeAuditFile({
-    sessionId,
-    html,
-  });
-  return this.ok(
-    {
-      ...result,
-      viewUrl: buildLocalDebugAuditFileViewUrl.call(this, request, sessionId),
-    },
-    request.requestId as string,
-  );
-}
-
-export async function handleAiNovelAuditFileView(this: BackendRouteContext, 
-  request: HttpRequest,
-  encodedSessionId: string,
-): Promise<HttpResponse<unknown>> {
-  if (!shouldServeLocalDebugEndpoint.call(this, request)) {
-    throw new ApplicationError(404, "REQ_ROUTE_NOT_FOUND", "Route not found.");
-  }
-  const sessionId = decodeURIComponent(encodedSessionId);
-  if (sessionId.trim().isEmpty) {
-    throw new ApplicationError(
-      400,
-      "REQ_INVALID_BODY",
-      "sessionId is required.",
-    );
-  }
-  const html = await this.aiNovelAuditFileService.readAuditFile(sessionId);
-  return {
-    statusCode: 200,
-    contentType: "text/html; charset=utf-8",
-    headers: {
-      "Cache-Control": "no-store",
-    },
-    body: {
-      code: "OK",
-      message: "success",
-      data: null,
-      requestId: request.requestId as string,
-    },
-    streamBody: (async function* () {
-      yield html;
-    })(),
-  };
 }

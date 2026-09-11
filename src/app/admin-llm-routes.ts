@@ -1,5 +1,6 @@
 import { ApplicationError } from "../shared/errors.ts";
 import type {
+  AdminLlmRouteCircuitResetRequest,
   AdminLlmSmokeTestRunRequest,
   HttpRequest,
   HttpResponse,
@@ -20,6 +21,7 @@ export async function tryHandleAdminLlmRoutes(
   const adminLlmRestoreMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/llm-service\/revisions\/(\d+)\/restore$/);
   if (request.method === "POST" && adminLlmRestoreMatch) return await handleAdminRestoreLlmServiceRevision.call(this, request, Number(adminLlmRestoreMatch[1]));
   if (request.method === "GET" && request.path === "/api/v1/admin/apps/common/llm-service/metrics") return await handleAdminGetLlmMetrics.call(this, request);
+  if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/llm-service/circuits/reset") return await handleAdminResetLlmRouteCircuit.call(this, request);
   if (request.method === "POST" && request.path === "/api/v1/admin/apps/common/llm-service/smoke-test") return await handleAdminRunLlmSmokeTest.call(this, request);
   const adminLlmModelMetricsMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/llm-service\/metrics\/models\/([^/]+)$/);
   if (request.method === "GET" && adminLlmModelMetricsMatch) {
@@ -147,6 +149,28 @@ export async function handleAdminGetLlmMetrics(this: BackendRouteContext,
     },
   });
 
+  return this.ok(result, request.requestId as string);
+}
+
+export async function handleAdminResetLlmRouteCircuit(
+  this: BackendRouteContext,
+  request: HttpRequest,
+): Promise<HttpResponse<unknown>> {
+  const adminUser = this.authenticateAdmin(request);
+  const body = this.validationPipe.asObject(request.body);
+  const input: AdminLlmRouteCircuitResetRequest = {
+    modelKey: this.validationPipe.requireString(body, "modelKey"),
+    provider: this.validationPipe.requireString(body, "provider"),
+    providerModel: this.validationPipe.requireString(body, "providerModel"),
+  };
+  const result = await this.adminConsoleService.resetLlmRouteCircuit(input);
+  await this.auditInterceptor.record({
+    appId: "common",
+    action: "admin.llm_service.circuit.reset",
+    resourceType: "app_config",
+    resourceId: `${input.modelKey}:${input.provider}:${input.providerModel}`,
+    payload: { adminUser, ...result },
+  });
   return this.ok(result, request.requestId as string);
 }
 

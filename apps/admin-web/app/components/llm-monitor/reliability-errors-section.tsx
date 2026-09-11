@@ -8,6 +8,7 @@ import type {
   LlmHealthFailureMetricsGroup,
 } from "../../lib/types";
 import { formatMetricNumber } from "./llm-monitor-view-model";
+import { ProviderBadge } from "./provider-badge";
 import {
   buildTopRoutingModelOptions,
   filterHealthFailures,
@@ -105,7 +106,13 @@ function failureColumns(): ColumnsType<LlmHealthFailureMetricsGroup> {
       render: formatMetricNumber,
     },
     { title: "路由 Model", dataIndex: "routingModelKey", width: 180, ellipsis: true },
-    { title: "Provider", dataIndex: "provider", width: 140, ellipsis: true },
+    {
+      title: "Provider",
+      dataIndex: "provider",
+      width: 140,
+      ellipsis: true,
+      render: (value) => <ProviderBadge provider={value} />,
+    },
     { title: "Provider Model", dataIndex: "providerModel", width: 190, ellipsis: true },
     { title: "类型", dataIndex: "operation", width: 100, render: (value) => <Tag>{value}</Tag> },
     { title: "最近发生", dataIndex: "lastOccurredAt", width: 170, render: formatTimestamp },
