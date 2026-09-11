@@ -104,3 +104,43 @@ test("trace view model falls back to adjacent user messages when no turn id exis
   assert.equal(model.turns[0]?.requests.length, 2);
   assert.equal(model.turns[1]?.userMessage?.content, "Second");
 });
+
+test("trace view model keeps legacy top-level messages and runs visible as turns", () => {
+  const session = {
+    manifest: {
+      sessionId: "conversation-legacy",
+      kind: "writing" as const,
+      status: "completed" as const,
+      captureCount: 2,
+      createdAt: "2026-09-09T00:00:00.000Z",
+      updatedAt: "2026-09-09T00:00:01.000Z",
+    },
+    captures: [
+      {
+        capturedAt: "2026-09-09T00:00:00.000Z",
+        status: "completed" as const,
+        trace: {
+          messages: [{ role: "user", content: "Legacy message" }],
+          events: [{ type: "content_delta", text: "Legacy answer" }],
+        },
+      },
+      {
+        capturedAt: "2026-09-09T00:00:01.000Z",
+        status: "completed" as const,
+        trace: {
+          runs: [
+            {
+              messages: [{ role: "user", content: "Legacy run" }],
+              events: [{ type: "tool_call", toolName: "read_memory" }],
+            },
+          ],
+        },
+      },
+    ],
+  } satisfies AiNovelDebugTraceSession;
+
+  const model = buildAiNovelDebugTraceViewModel(session);
+  assert.equal(model.turns.length, 2);
+  assert.equal(model.turns[0]?.userMessage?.content, "Legacy message");
+  assert.equal(model.turns[1]?.userMessage?.content, "Legacy run");
+});

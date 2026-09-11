@@ -446,7 +446,9 @@ paths:
       description: |
         Local/debug-only browser view rendered as Sessions → Turns → request
         details. Each turn compares its context with the preceding turn.
-        Production and non-local hosts return 404.
+        Send `Accept: application/json` to receive the structured session,
+        session manifest list, and normalized view model used by the Admin
+        Console. Production and non-local hosts return 404.
       tags: [ainovel, debug]
       parameters:
         - name: sessionId
@@ -462,11 +464,14 @@ paths:
             $ref: "#/components/schemas/AiNovelTraceKind"
       responses:
         "200":
-          description: Server-rendered session trace HTML.
+          description: Server-rendered session trace HTML, or structured JSON when requested.
           content:
             text/html:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelDebugTraceViewResponse"
         "401":
           description: Admin authentication required in shared dev
           content:
@@ -723,6 +728,24 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AiNovelDebugTraceManifest"
+      additionalProperties: false
+    AiNovelDebugTraceViewResponse:
+      type: object
+      required: [session, sessions, viewModel]
+      properties:
+        session:
+          type: object
+          description: Full stored trace session, including all captures.
+          additionalProperties: true
+        sessions:
+          type: array
+          description: Session manifests used by the session selector.
+          items:
+            $ref: "#/components/schemas/AiNovelDebugTraceManifest"
+        viewModel:
+          type: object
+          description: Normalized Turns → requests → messages and context diff.
+          additionalProperties: true
       additionalProperties: false
     ErrorResponse:
       type: object

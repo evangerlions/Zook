@@ -18,10 +18,10 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
     const result = await this.query(
       `INSERT INTO zook_ai_novel_conversation_records (
          id, app_id, user_id, did, request_id, scene_key,
-         user_text, assistant_text, created_at
+         message_id, session_id, turn_id, user_text, assistant_text, created_at
        ) VALUES (
-         $1, $2, $3, $4, $5, $6,
-         $7, $8, $9::timestamptz
+         $1, $2, $3, $4, $5, $6, $7, $8, $9,
+         $10, $11, $12::timestamptz
        )
        ON CONFLICT (app_id, user_id, request_id) DO NOTHING
        RETURNING id`,
@@ -32,6 +32,9 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
         record.did ?? null,
         record.requestId,
         record.sceneKey,
+        record.messageId ?? null,
+        record.sessionId ?? null,
+        record.turnId ?? null,
         record.userText,
         record.assistantText,
         record.createdAt,
@@ -61,7 +64,8 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
     const offset = normalizeOffset(filter.offset);
     values.push(limit, offset);
     const result = await this.query(
-      `SELECT id, app_id, user_id, did, request_id, scene_key,
+      `SELECT id, app_id, user_id, did, request_id,
+              message_id, session_id, turn_id, scene_key,
               user_text, assistant_text, created_at
        FROM zook_ai_novel_conversation_records
        WHERE ${clauses.join(" AND ")}
@@ -105,11 +109,22 @@ function parseRecord(row: QueryResultRow): AiNovelConversationRecord {
     userId: String(row.user_id),
     did: row.did ? String(row.did) : undefined,
     requestId: String(row.request_id),
+    ...optionalRowText(row.message_id, "messageId"),
+    ...optionalRowText(row.session_id, "sessionId"),
+    ...optionalRowText(row.turn_id, "turnId"),
     sceneKey: String(row.scene_key),
     userText: String(row.user_text),
     assistantText: String(row.assistant_text),
     createdAt: toIsoString(row.created_at) as string,
   };
+}
+
+function optionalRowText(
+  value: unknown,
+  key: "messageId" | "sessionId" | "turnId",
+): Record<string, string> {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return normalized ? { [key]: normalized } : {};
 }
 
 function normalizeLimit(value?: number): number {

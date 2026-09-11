@@ -22,7 +22,7 @@ const APP_WORKSPACES = [
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Model", code: "AIM", description: "配置 AINovel 文本模型权重" },
   { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
-  { to: "/conversation-records", label: "对话记录", code: "MSG", description: "按 UID / DID 查看最近 AI 对话" },
+  { to: "/conversation-records", label: "对话记录", code: "MSG", description: "按 UID / CID 查看会话与上下文" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
   { to: "/lighttick", label: "LightTick Ops", code: "LTK", description: "查看 LightTick 功能、AI 场景与隐私安全指标" },
 ];

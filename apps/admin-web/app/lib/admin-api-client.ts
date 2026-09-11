@@ -33,9 +33,18 @@ async function parseResponsePayload<T>(response: Response): Promise<ApiEnvelope<
     return response.json() as Promise<ApiEnvelope<T>>;
   }
 
+  const message = await response.text();
+  if (response.ok) {
+    throw new ApiError(
+      "后台返回了非 JSON 响应，请确认 Zook 后端与 Admin Web 版本一致。",
+      response.status,
+      "ADMIN_INVALID_RESPONSE",
+    );
+  }
+
   return {
     code: response.ok ? "OK" : "HTTP_ERROR",
-    message: await response.text(),
+    message,
     data: null as T,
     requestId: "admin_plain_text",
   };

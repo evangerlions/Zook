@@ -59,7 +59,12 @@ import type {
 } from "./ai-novel-llm-types.ts";
 import type { AiNovelModelSelectionConfigService } from "./ai-novel-model-selection-config.service.ts";
 import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
-import { AiNovelConversationRecordService } from "./ai-novel-conversation-record.service.ts";
+import {
+  AiNovelConversationRecordService,
+} from "./ai-novel-conversation-record.service.ts";
+import {
+  extractAiNovelConversationRecordIds,
+} from "./ai-novel-conversation-record-ids.ts";
 import {
   isRetryableAiNovelStreamError,
   streamWithAiNovelModelRetry,
@@ -124,6 +129,7 @@ export class AiNovelLlmService {
         options.routingIdentity,
       );
     const messages = normalizeMessages(body.messages);
+    const conversationRecordIds = extractAiNovelConversationRecordIds(body);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const requestPlan = buildAiNovelCompletionRequestPlan({
       accountRegion: options.accountRegion,
@@ -216,6 +222,7 @@ export class AiNovelLlmService {
       await this.recordCompletedConversation({
         options,
         messages,
+        conversationRecordIds,
         sceneKey: scene.sceneKey,
         assistantText: completionContent,
       });
@@ -245,6 +252,7 @@ export class AiNovelLlmService {
     const sceneRouteKey = scene.sceneKey;
     const agentProtocol = optionalAiNovelAgentProtocol(body.agentProtocol);
     const messages = normalizeMessages(body.messages);
+    const conversationRecordIds = extractAiNovelConversationRecordIds(body);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const temperature =
       optionalNumber(body.temperature, "temperature") ??
@@ -311,6 +319,7 @@ export class AiNovelLlmService {
           await this.recordCompletedConversation({
             options,
             messages,
+            conversationRecordIds,
             sceneKey: scene.sceneKey,
             assistantText: chunk.completion.content,
           });
@@ -484,6 +493,11 @@ export class AiNovelLlmService {
   private async recordCompletedConversation(input: {
     options: AiNovelRequestOptions;
     messages: LLMMessage[];
+    conversationRecordIds: {
+      messageId?: string;
+      sessionId?: string;
+      turnId?: string;
+    };
     sceneKey: string;
     assistantText: string;
   }): Promise<void> {
@@ -492,7 +506,8 @@ export class AiNovelLlmService {
       .find((message) => message.role === "user")
       ?.content
       ?.trim();
-    if (!this.conversationRecordService || !input.options.userId || !input.options.requestId || !userText) {
+    if (!this.conversationRecordService || !input.options.userId ||
+        !input.options.requestId || !userText) {
       return;
     }
     try {
@@ -500,6 +515,7 @@ export class AiNovelLlmService {
         userId: input.options.userId,
         did: input.options.routingIdentity?.did,
         requestId: input.options.requestId,
+        ...input.conversationRecordIds,
         sceneKey: input.sceneKey,
         userText,
         assistantText: input.assistantText,

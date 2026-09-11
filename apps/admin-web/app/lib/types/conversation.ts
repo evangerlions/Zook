@@ -4,6 +4,9 @@ export interface AdminAiNovelConversationRecord {
   userId: string;
   did?: string;
   requestId: string;
+  messageId?: string;
+  sessionId?: string;
+  turnId?: string;
   sceneKey: string;
   userText: string;
   assistantText: string;

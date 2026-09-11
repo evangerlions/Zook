@@ -2,7 +2,28 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { AiNovelConversationRecordService } from "../../src/modules/ai-novel/ai-novel-conversation-record.service.ts";
+import { extractAiNovelConversationRecordIds } from "../../src/modules/ai-novel/ai-novel-conversation-record-ids.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
+
+test("conversation record ids are optional and malformed legacy values are ignored", () => {
+  assert.deepEqual(
+    extractAiNovelConversationRecordIds({
+      messages: [{ role: "user", content: "旧客户端" }],
+    }),
+    {},
+  );
+  assert.deepEqual(
+    extractAiNovelConversationRecordIds({
+      context: { messageId: 123, sessionId: " session_a ", turn_id: "turn_a" },
+      messages: [{ role: "user", content: "新客户端", id: "message_a" }],
+    }),
+    {
+      messageId: "message_a",
+      sessionId: "session_a",
+      turnId: "turn_a",
+    },
+  );
+});
 
 test("AINovel conversation records trim from 121 turns to the latest 100 turns", async () => {
   const database = new InMemoryDatabase();
@@ -18,7 +39,7 @@ test("AINovel conversation records trim from 121 turns to the latest 100 turns",
       userId: "user_a",
       did: "did_a",
       requestId: `request_${index}`,
-      sceneKey: "chapter_draft",
+      sceneKey: "write_turn",
       userText: `用户 ${index}`,
       assistantText: `AI ${index}`,
     });
@@ -45,7 +66,7 @@ test("AINovel conversation records support DID lookup and page through older ran
       userId: `user_${index}`,
       did: "shared_did",
       requestId: "request_1",
-      sceneKey: "chapter_draft",
+      sceneKey: "write_turn",
       userText: `用户 ${index}`,
       assistantText: `AI ${index}`,
     });
@@ -71,7 +92,7 @@ test("AINovel conversation record lookup defaults to every user and pages older 
     await service.recordCompletedTurn({
       userId: `user_${index % 2}`,
       requestId: `request_${index}`,
-      sceneKey: "chapter_draft",
+      sceneKey: "write_turn",
       userText: `用户 ${index}`,
       assistantText: `AI ${index}`,
     });
@@ -103,7 +124,7 @@ test("AINovel conversation records are removed with the user's app runtime data"
   await service.recordCompletedTurn({
     userId: "user_delete",
     requestId: "request_delete",
-    sceneKey: "chapter_draft",
+    sceneKey: "write_turn",
     userText: "待删除用户正文",
     assistantText: "待删除 AI 正文",
   });

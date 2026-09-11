@@ -212,8 +212,12 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
     service.createChatCompletionStream(
       {
         sceneKey: "kickoff_turn",
-        context: { meta: { language: "zh-CN" } },
-        messages: [{ role: "user", content: "继续" }],
+        context: {
+          meta: { language: "zh-CN" },
+          sessionId: "session_stream",
+          turnId: "turn_stream",
+        },
+        messages: [{ role: "user", content: "继续", messageId: "msg_stream" }],
       },
       {
         requestId: "stream_request_1",
@@ -241,9 +245,12 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
   assert.equal(document.items[0]?.userText, "继续");
   assert.equal(document.items[0]?.assistantText, "ok");
   assert.equal(document.items[0]?.did, "did_abc");
+  assert.equal(document.items[0]?.messageId, "msg_stream");
+  assert.equal(document.items[0]?.sessionId, "session_stream");
+  assert.equal(document.items[0]?.turnId, "turn_stream");
 });
 
-test("AINovel non-stream completion records only the latest user text and final assistant text", async () => {
+test("AINovel internal compaction completion is not recorded as a user conversation", async () => {
   const conversationRecords = new AiNovelConversationRecordService(
     new InMemoryDatabase(),
   );
@@ -283,7 +290,5 @@ test("AINovel non-stream completion records only the latest user text and final 
   );
 
   const document = await conversationRecords.listForAdmin({ did: "did_complete" });
-  assert.equal(document.items.length, 1);
-  assert.equal(document.items[0]?.userText, "最新问题");
-  assert.equal(document.items[0]?.assistantText, "最终回复");
+  assert.equal(document.items.length, 0);
 });

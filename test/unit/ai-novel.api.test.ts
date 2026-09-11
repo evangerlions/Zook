@@ -1481,6 +1481,13 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
     (allData.body.data as { items: Record<string, unknown>[] }).items.length,
     3,
   );
+  const allItems = (allData.body.data as { items: Record<string, unknown>[] }).items;
+  assert.deepEqual(
+    allItems.map((item) => item.updatedAt),
+    [...allItems].sort((left, right) =>
+      Date.parse(String(right.updatedAt)) - Date.parse(String(left.updatedAt)),
+    ).map((item) => item.updatedAt),
+  );
 
   const view = await runtime.app.handle({
     method: "GET",
@@ -1515,6 +1522,27 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
   assert.match(viewedHtml, /first turn/);
   assert.match(viewedHtml, /second turn/);
   assert.match(viewedHtml, /"captureCount":2/);
+
+  const jsonView = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/debug/traces/..%2Fbad%2Fsession",
+    query: { kind: "writing" },
+    headers: {
+      host: "localhost:3100",
+      accept: "application/json",
+    },
+  });
+  assert.equal(jsonView.statusCode, 200);
+  const jsonViewData = jsonView.body.data as Record<string, unknown>;
+  assert.equal(
+    (jsonViewData.session as Record<string, unknown>).manifest &&
+      ((jsonViewData.session as Record<string, unknown>).manifest as Record<string, unknown>).sessionId,
+    "../bad/session",
+  );
+  assert.equal(
+    (jsonViewData.viewModel as Record<string, unknown>).turns instanceof Array,
+    true,
+  );
 
   const missingView = await runtime.app.handle({
     method: "GET",

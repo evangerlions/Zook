@@ -56,6 +56,10 @@ function resolveAdminRuntimeVersion() {
 }
 
 function createRuntimeConfig(options: AdminServerOptions) {
+  const appEnv = (process.env.APP_ENV ?? "").trim().toLowerCase();
+  const nodeEnv = (process.env.NODE_ENV ?? "").trim().toLowerCase();
+  const onlineOrProduction = appEnv === "online" || appEnv === "prod" || appEnv === "production"
+    || (!appEnv && nodeEnv === "production");
   return {
     brandName: options.brandName ?? process.env.ADMIN_BRAND_NAME ?? DEFAULT_BRAND_NAME,
     defaultAppId: options.defaultAppId ?? process.env.ADMIN_DEFAULT_APP_ID ?? "",
@@ -63,6 +67,7 @@ function createRuntimeConfig(options: AdminServerOptions) {
     healthPath: "/api/health",
     analyticsUrl: process.env.ADMIN_ANALYTICS_URL ?? "https://analytics.youwoai.net",
     logsUrl: process.env.ADMIN_LOG_URL ?? "https://logs.youwoai.net/",
+    traceConsoleEnabled: !onlineOrProduction,
   };
 }
 

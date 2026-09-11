@@ -1,59 +1,127 @@
-import { Button, Empty, Input, Segmented, Space, Spin, Tag } from "antd";
-import { useEffect, useState } from "react";
+import { Button, Input, Select, Space } from "antd";
+import { useEffect, useRef, useState } from "react";
 
+import { ConversationTraceView } from "../components/conversation-trace-view";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
-import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
-import type { AdminAiNovelConversationRecordDocument } from "../lib/types";
+import { formatApiError, makeNotice } from "../lib/format";
+import type {
+  AdminAiNovelDebugTraceDocument,
+  AiNovelDebugTraceManifest,
+  AiNovelTraceKind,
+  AiNovelTraceStatus,
+} from "../lib/types";
 
 const AI_NOVEL_APP_ID = "ai_novel";
-type QueryType = "uid" | "did";
-type ConversationQuery = Pick<AdminAiNovelConversationRecordDocument["query"], "uid" | "did">;
+
+interface TraceFilters {
+  uid: string;
+  cid: string;
+  kind?: AiNovelTraceKind;
+  status?: AiNovelTraceStatus;
+  bookId: string;
+  chapterId: string;
+  query: string;
+}
+
+const EMPTY_FILTERS: TraceFilters = {
+  uid: "",
+  cid: "",
+  bookId: "",
+  chapterId: "",
+  query: "",
+};
 
 export default function ConversationRecordsRoute() {
-  const { apps, selectedAppId, setNotice } = useAdminSession();
-  const [queryType, setQueryType] = useState<QueryType>("uid");
-  const [queryValue, setQueryValue] = useState("");
-  const [document, setDocument] = useState<AdminAiNovelConversationRecordDocument | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { apps, runtimeConfig, selectedAppId, setNotice } = useAdminSession();
+  const [filters, setFilters] = useState<TraceFilters>(EMPTY_FILTERS);
+  const [sessions, setSessions] = useState<AiNovelDebugTraceManifest[]>([]);
+  const [selectedSession, setSelectedSession] = useState<AiNovelDebugTraceManifest | null>(null);
+  const [trace, setTrace] = useState<AdminAiNovelDebugTraceDocument | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const sessionsRequestRef = useRef(0);
+  const detailRequestRef = useRef(0);
 
   const aiNovelApp = apps.find((item) => item.appId === AI_NOVEL_APP_ID);
   const isAiNovelSelected = selectedAppId === AI_NOVEL_APP_ID;
 
-  function inputQuery(): ConversationQuery {
-    const value = queryValue.trim();
-    if (!value) return {};
-    return queryType === "uid" ? { uid: value } : { did: value };
-  }
-
-  async function load(page = 0, query = inputQuery()) {
-    setLoading(true);
-    try {
-      setDocument(await adminApi.getAiNovelConversationRecords({
-        ...query,
-        page,
-      }));
-    } catch (error) {
-      setNotice(makeNotice("error", formatApiError(error)));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    if (!isAiNovelSelected) {
-      setDocument(null);
+    if (!isAiNovelSelected || !runtimeConfig.traceConsoleEnabled) {
+      sessionsRequestRef.current += 1;
+      detailRequestRef.current += 1;
+      setSessions([]);
+      setSelectedSession(null);
+      setTrace(null);
+      setDetailError(null);
       return;
     }
-    void load(0, {});
-  }, [selectedAppId]);
+    void loadSessions(EMPTY_FILTERS);
+  }, [isAiNovelSelected, runtimeConfig.traceConsoleEnabled]);
+
+  async function loadSessions(nextFilters: TraceFilters) {
+    const requestId = ++sessionsRequestRef.current;
+    detailRequestRef.current += 1;
+    setLoadingSessions(true);
+    setTrace(null);
+    setDetailError(null);
+    try {
+      const document = await adminApi.getAiNovelDebugTraceSessions(toApiFilters(nextFilters));
+      if (requestId !== sessionsRequestRef.current) return;
+      setFilters(nextFilters);
+      setSessions(document.items);
+      const current = selectedSession && document.items.find((item) => sameSession(item, selectedSession));
+      const nextSession = current ?? document.items[0] ?? null;
+      setSelectedSession(nextSession);
+      if (nextSession) {
+        await loadSession(nextSession);
+      }
+    } catch (error) {
+      if (requestId !== sessionsRequestRef.current) return;
+      setSessions([]);
+      setSelectedSession(null);
+      setDetailError(null);
+      setNotice(makeNotice("error", formatApiError(error)));
+    } finally {
+      if (requestId === sessionsRequestRef.current) setLoadingSessions(false);
+    }
+  }
+
+  async function loadSession(session: AiNovelDebugTraceManifest) {
+    const requestId = ++detailRequestRef.current;
+    setSelectedSession(session);
+    setTrace(null);
+    setDetailError(null);
+    setLoadingDetail(true);
+    try {
+      const document = await adminApi.getAiNovelDebugTraceSession(session.sessionId, session.kind);
+      if (requestId === detailRequestRef.current) setTrace(document);
+    } catch (error) {
+      if (requestId !== detailRequestRef.current) return;
+      setTrace(null);
+      const message = formatApiError(error);
+      setDetailError(message);
+      setNotice(makeNotice("error", message));
+    } finally {
+      if (requestId === detailRequestRef.current) setLoadingDetail(false);
+    }
+  }
+
+  function updateFilter<Key extends keyof TraceFilters>(key: Key, value: TraceFilters[Key]) {
+    setFilters((current) => ({ ...current, [key]: value }));
+  }
 
   if (!aiNovelApp) {
-    return <section className="empty-state">当前工作区中还没有 `ai_novel` 项目，暂时无法查看对话记录。</section>;
+    return <section className="empty-state">当前工作区中还没有 `ai_novel` 项目，暂时无法查看对话追踪。</section>;
   }
 
   if (!isAiNovelSelected) {
-    return <section className="empty-state">对话记录仅支持 AINovel。请先在项目空间切换到 `ai_novel`。</section>;
+    return <section className="empty-state">对话追踪仅支持 AINovel。请先在项目空间切换到 `ai_novel`。</section>;
+  }
+
+  if (!runtimeConfig.traceConsoleEnabled) {
+    return <section className="empty-state">Trace Console 仅在 local / dev 环境开放。</section>;
   }
 
   return (
@@ -61,82 +129,90 @@ export default function ConversationRecordsRoute() {
       <header className="page-header">
         <div>
           <h1>对话记录</h1>
-          <p>默认显示全部用户最新 200 条消息；输入 UID 或 DID 可精确筛选，每页对应 100 个完整 Turn。</p>
+          <p>按 UID / CID 筛选已采集 Trace 的会话；每个 Turn 包含一次用户消息及其完整的 Pi / tool loop。未上传 Trace 的旧客户端记录不会出现在此页。</p>
         </div>
+        <Button loading={loadingSessions} onClick={() => void loadSessions(filters)}>刷新</Button>
       </header>
-
-      <section className="surface-card conversation-records-search">
-        <Space wrap>
-          <Segmented<QueryType>
-            onChange={(value) => setQueryType(value)}
-            options={[
-              { label: "UID", value: "uid" },
-              { label: "DID", value: "did" },
-            ]}
-            value={queryType}
-          />
-          <Input.Search
-            allowClear
-            aria-label={`${queryType.toUpperCase()} 查询，可留空显示全部最新消息`}
-            onChange={(event) => setQueryValue(event.target.value)}
-            onSearch={() => void load(0)}
-            placeholder={`可选：输入 ${queryType.toUpperCase()}`}
-            style={{ width: 320 }}
-            value={queryValue}
-          />
-        </Space>
-      </section>
-
-      {loading ? <section className="surface-card"><Spin /></section> : null}
-
-      {document ? (
-        <section className="surface-card conversation-records-list">
-          <header className="conversation-records-list-header">
-            <div>
-              <h2>第 {document.page + 1} 页</h2>
-              <p>{queryLabel(document.query)} · 当前显示 {document.items.length * 2} 条消息，按时间从新到旧排列。</p>
-            </div>
-            <Space>
-              <Button disabled={document.page === 0 || loading} onClick={() => void load(document.page - 1, document.query)}>
-                上一页
-              </Button>
-              <Button disabled={!document.hasMore || loading} onClick={() => void load(document.page + 1, document.query)}>
-                下一页
-              </Button>
-            </Space>
-          </header>
-
-          {document.items.length ? document.items.map((item) => (
-            <article className="conversation-record" key={item.id}>
-              <header>
-                <div>
-                  <Tag>{item.sceneKey}</Tag>
-                  <Tag color="blue">UID {item.userId}</Tag>
-                  {item.did ? <Tag>DID {item.did}</Tag> : null}
-                </div>
-                <time>{formatTimestamp(item.createdAt)}</time>
-              </header>
-              <ConversationMessage label="用户" content={item.userText} />
-              <ConversationMessage label="AI" content={item.assistantText} />
-            </article>
-          )) : <Empty description="没有找到对话记录" />}
-        </section>
-      ) : null}
+      <TraceFilters filters={filters} loading={loadingSessions} onChange={updateFilter} onSubmit={() => void loadSessions(filters)} onClear={() => void loadSessions(EMPTY_FILTERS)} />
+      <ConversationTraceView
+        loadingDetail={loadingDetail}
+        loadingSessions={loadingSessions}
+        selectedSession={selectedSession}
+        sessions={sessions}
+        trace={trace}
+        detailError={detailError}
+        onRetrySession={selectedSession ? () => void loadSession(selectedSession) : undefined}
+        onSelectSession={(session) => void loadSession(session)}
+      />
     </section>
   );
 }
 
-function ConversationMessage({ label, content }: { label: string; content: string }) {
+function TraceFilters({
+  filters,
+  loading,
+  onChange,
+  onSubmit,
+  onClear,
+}: {
+  filters: TraceFilters;
+  loading: boolean;
+  onChange: <Key extends keyof TraceFilters>(key: Key, value: TraceFilters[Key]) => void;
+  onSubmit: () => void;
+  onClear: () => void;
+}) {
   return (
-    <section className="conversation-message">
-      <strong>{label}</strong>
-      <pre>{content || "（无正文）"}</pre>
+    <section className="surface-card conversation-records-search">
+      <div className="conversation-trace-filter-grid">
+        <label><span>UID</span><Input onChange={(event) => onChange("uid", event.target.value)} onPressEnter={onSubmit} placeholder="用户 UID" value={filters.uid} /></label>
+        <label><span>CID</span><Input onChange={(event) => onChange("cid", event.target.value)} onPressEnter={onSubmit} placeholder="会话 / session ID" value={filters.cid} /></label>
+        <label><span>Kind</span><Select allowClear onChange={(value: AiNovelTraceKind | undefined) => onChange("kind", value)} options={traceKindOptions} placeholder="全部类型" value={filters.kind} /></label>
+        <label><span>Status</span><Select allowClear onChange={(value: AiNovelTraceStatus | undefined) => onChange("status", value)} options={traceStatusOptions} placeholder="全部状态" value={filters.status} /></label>
+      </div>
+      <details className="conversation-trace-more-filters">
+        <summary>更多筛选</summary>
+        <div className="conversation-trace-filter-grid is-secondary">
+          <label><span>关键词</span><Input onChange={(event) => onChange("query", event.target.value)} onPressEnter={onSubmit} placeholder="标题、书籍或章节" value={filters.query} /></label>
+          <label><span>Book ID</span><Input onChange={(event) => onChange("bookId", event.target.value)} onPressEnter={onSubmit} placeholder="Book ID" value={filters.bookId} /></label>
+          <label><span>Chapter ID</span><Input onChange={(event) => onChange("chapterId", event.target.value)} onPressEnter={onSubmit} placeholder="Chapter ID" value={filters.chapterId} /></label>
+        </div>
+      </details>
+      <Space className="conversation-trace-filter-actions">
+        <Button loading={loading} onClick={onSubmit} type="primary">筛选</Button>
+        <Button disabled={loading} onClick={onClear}>清空</Button>
+      </Space>
     </section>
   );
 }
 
-function queryLabel(query: ConversationQuery): string {
-  if (query.uid) return `UID ${query.uid}`;
-  if (query.did) return `DID ${query.did}`;
-  return "全部用户";
+const traceKindOptions = [
+  { label: "kickoff", value: "kickoff" },
+  { label: "import_book", value: "import_book" },
+  { label: "imported_kickoff", value: "imported_kickoff" },
+  { label: "writing", value: "writing" },
+  { label: "history_qa", value: "history_qa" },
+  { label: "advance_chapter", value: "advance_chapter" },
+] satisfies Array<{ label: string; value: AiNovelTraceKind }>;
+
+const traceStatusOptions = [
+  { label: "running", value: "running" },
+  { label: "completed", value: "completed" },
+  { label: "failed", value: "failed" },
+  { label: "cancelled", value: "cancelled" },
+] satisfies Array<{ label: string; value: AiNovelTraceStatus }>;
+
+function toApiFilters(filters: TraceFilters) {
+  return {
+    uid: filters.uid.trim() || undefined,
+    cid: filters.cid.trim() || undefined,
+    kind: filters.kind,
+    status: filters.status,
+    bookId: filters.bookId.trim() || undefined,
+    chapterId: filters.chapterId.trim() || undefined,
+    query: filters.query.trim() || undefined,
+  };
+}
+
+function sameSession(left: AiNovelDebugTraceManifest, right: AiNovelDebugTraceManifest): boolean {
+  return left.sessionId === right.sessionId && left.kind === right.kind;
 }

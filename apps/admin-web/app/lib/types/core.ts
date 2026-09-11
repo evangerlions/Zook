@@ -7,6 +7,7 @@ export interface RuntimeConfig {
   healthPath: string;
   analyticsUrl: string;
   logsUrl: string;
+  traceConsoleEnabled: boolean;
 }
 
 export interface NoticeState {

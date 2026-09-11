@@ -166,6 +166,8 @@ Admin 查看接口：
 
 ### 3.6.2 AINovel 对话记录
 
+后台 `/conversation-records` 页面现在直接使用 local/dev Trace Console 数据，展示 Sessions → Turns → Detail 三栏。Trace 数据接口不复用下列历史摘要接口，线上环境不发起 Trace 请求。
+
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/admin/apps/ai_novel/conversation-records?uid={uid}&page={page}` | 按 UID 查看已完成的 AINovel 对话 Turn |
@@ -176,9 +178,11 @@ Admin 查看接口：
 
 1. `uid` 和 `did` 均为可选，但不能同时携带；`page` 从 `0` 开始。两者都不传时按全部用户查询。
 2. 每页最多返回 100 个完整 Turn，即最多 200 条用户/AI 消息；默认页是最新记录，后续页按时间向前翻阅。
-3. 每个 Turn 仅保存最后一条用户正文和最终 AI 正文，不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload。
-4. 同一用户记录达到第 121 个 Turn 时，在写入事务中批量裁剪为最新 100 个 Turn；没有时间到期清理。用户注销时删除其对话记录。
-5. 读取需要 Admin 认证并写入 `admin.ai_novel_conversation.read` 审计；审计只记录查询类型和页码，不记录 UID、DID 或正文。
+3. 每个 Turn 仅保存最后一条用户正文和最终 AI 正文，不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload；如果客户端提供 `messageId`、`sessionId`、`turnId`，响应会原样返回这些关联 ID。
+4. `messageId`、`sessionId`、`turnId` 均为可选字段。旧客户端没有这些字段时，服务端返回空缺字段，不会拒绝请求或抛出异常。
+5. 同一用户记录达到第 121 个 Turn 时，在写入事务中批量裁剪为最新 100 个 Turn；没有时间到期清理。用户注销时删除其对话记录。
+6. 读取需要 Admin 认证并写入 `admin.ai_novel_conversation.read` 审计；审计只记录查询类型和页码，不记录 UID、DID 或正文。
+7. 只有 `kickoff_turn`、`kickoff_turn_imported_book`、`write_turn`、`history_chapter_qa` 这四类用户可见对话 scene 会写入；compaction、import、chapter summary、snapshot 和 next-chapter brief 等内部 scene 不写入。
 
 说明：
 

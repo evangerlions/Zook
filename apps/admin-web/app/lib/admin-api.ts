@@ -3,6 +3,10 @@ import type {
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
   AdminAiNovelConversationRecordDocument,
+  AdminAiNovelDebugTraceDocument,
+  AdminAiNovelDebugTraceListDocument,
+  AiNovelTraceKind,
+  AiNovelTraceStatus,
   AiNovelModelSelectionConfig,
   AdminAppLogSecretRevealDocument,
   AdminAuthRateLimitDocument,
@@ -385,6 +389,35 @@ export const adminApi = {
     }));
     return requestJson<AdminAiNovelConversationRecordDocument>(
       adminPath(`/apps/ai_novel/conversation-records?${query.toString()}`),
+    );
+  },
+  getAiNovelDebugTraceSessions(input: {
+    uid?: string;
+    cid?: string;
+    kind?: AiNovelTraceKind;
+    status?: AiNovelTraceStatus;
+    bookId?: string;
+    chapterId?: string;
+    query?: string;
+  } = {}) {
+    const query = new URLSearchParams(cleanQuery({
+      uid: input.uid,
+      cid: input.cid,
+      kind: input.kind,
+      status: input.status,
+      bookId: input.bookId,
+      chapterId: input.chapterId,
+      query: input.query,
+    }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminAiNovelDebugTraceListDocument>(
+      `/api/v1/ai_novel/debug/traces/data${suffix}`,
+    );
+  },
+  getAiNovelDebugTraceSession(sessionId: string, kind: AiNovelTraceKind) {
+    const query = new URLSearchParams({ kind });
+    return requestJson<AdminAiNovelDebugTraceDocument>(
+      `/api/v1/ai_novel/debug/traces/${encodeURIComponent(sessionId)}?${query.toString()}`,
     );
   },
   updateAiNovelFeedbackStatus(feedbackId: string, status: FeedbackStatus) {

@@ -10,6 +10,19 @@ const PAGE_SIZE_TURNS = 100;
 const HIGH_WATER_MARK_TURNS = 120;
 const RETAINED_TURNS = 100;
 
+export const AI_NOVEL_USER_CONVERSATION_SCENES = [
+  "kickoff_turn",
+  "kickoff_turn_imported_book",
+  "write_turn",
+  "history_chapter_qa",
+] as const;
+
+export function isAiNovelUserConversationScene(sceneKey: string): boolean {
+  return AI_NOVEL_USER_CONVERSATION_SCENES.includes(
+    sceneKey as (typeof AI_NOVEL_USER_CONVERSATION_SCENES)[number],
+  );
+}
+
 export class AiNovelConversationRecordService {
   constructor(
     private readonly database: ApplicationDatabase,
@@ -20,11 +33,17 @@ export class AiNovelConversationRecordService {
     userId: string;
     did?: string;
     requestId: string;
+    messageId?: string;
+    sessionId?: string;
+    turnId?: string;
     sceneKey: string;
     userText: string;
     assistantText: string;
   }): Promise<void> {
-    if (!input.userText.trim()) return;
+    if (!isAiNovelUserConversationScene(input.sceneKey) || !input.userText.trim()) return;
+    const messageId = normalizeOptionalId(input.messageId);
+    const sessionId = normalizeOptionalId(input.sessionId);
+    const turnId = normalizeOptionalId(input.turnId);
 
     await this.database.withExclusiveSession(async () => {
       const inserted = await this.database.aiNovelConversationStore.insert({
@@ -33,6 +52,9 @@ export class AiNovelConversationRecordService {
         userId: input.userId,
         did: normalizeOptionalDid(input.did),
         requestId: input.requestId,
+        ...(messageId ? { messageId } : {}),
+        ...(sessionId ? { sessionId } : {}),
+        ...(turnId ? { turnId } : {}),
         sceneKey: input.sceneKey,
         userText: input.userText,
         assistantText: input.assistantText,
@@ -83,6 +105,11 @@ export class AiNovelConversationRecordService {
 function normalizeOptionalDid(value?: string): string | undefined {
   const normalized = value?.trim();
   return normalized && normalized.length <= 200 ? normalized : undefined;
+}
+
+function normalizeOptionalId(value?: string): string | undefined {
+  const normalized = value?.trim();
+  return normalized && normalized.length <= 160 ? normalized : undefined;
 }
 
 function normalizeQueryIdentifier(value: string | undefined, field: "uid" | "did"): string | undefined {

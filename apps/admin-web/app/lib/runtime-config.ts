@@ -7,6 +7,7 @@ const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   healthPath: "/api/health",
   analyticsUrl: "https://analytics.youwoai.net",
   logsUrl: "https://logs.youwoai.net/",
+  traceConsoleEnabled: import.meta.env.DEV,
 };
 
 declare global {

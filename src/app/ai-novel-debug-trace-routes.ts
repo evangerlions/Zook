@@ -8,6 +8,7 @@ import {
   type AiNovelTraceKind,
   type AiNovelTraceStatus,
 } from "../modules/ai-novel/ai-novel-debug-trace.service.ts";
+import { buildAiNovelDebugTraceViewModel } from "../modules/ai-novel/ai-novel-debug-trace-view-model.ts";
 import {
   renderAiNovelDebugTraceConsole,
   renderAiNovelDebugTraceDetail,
@@ -103,6 +104,16 @@ async function viewTrace(
       optionalEnum(request.query?.kind, AI_NOVEL_TRACE_KINDS),
     );
     const sessions = await this.aiNovelDebugTraceService.list();
+    if (acceptsJson(request)) {
+      return this.ok(
+        {
+          session,
+          sessions,
+          viewModel: buildAiNovelDebugTraceViewModel(session),
+        },
+        request.requestId as string,
+      );
+    }
     return htmlResponse(renderAiNovelDebugTraceDetail(session, sessions), request);
   } catch (error: unknown) {
     if (isMissingTrace(error)) {
@@ -110,6 +121,13 @@ async function viewTrace(
     }
     throw error;
   }
+}
+
+function acceptsJson(request: HttpRequest): boolean {
+  return (getHeader(request.headers, "accept") ?? "")
+    .toLowerCase()
+    .split(",")
+    .some((value) => value.trim().startsWith("application/json"));
 }
 
 function htmlResponse(html: string, request: HttpRequest): HttpResponse<unknown> {

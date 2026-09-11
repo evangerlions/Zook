@@ -133,7 +133,7 @@ export class AiNovelDebugTraceService {
     return manifests
       .filter((item): item is AiNovelDebugTraceManifest => item !== null)
       .filter((item) => matchesFilter(item, filter))
-      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+      .sort(compareManifests);
   }
 
   async read(
@@ -227,6 +227,23 @@ export class AiNovelDebugTraceService {
       throw new RangeError("Trace payload exceeds the 12 MiB local-debug limit.");
     }
   }
+}
+
+function compareManifests(
+  left: AiNovelDebugTraceManifest,
+  right: AiNovelDebugTraceManifest,
+): number {
+  const rightTime = Date.parse(right.updatedAt);
+  const leftTime = Date.parse(left.updatedAt);
+  if (Number.isFinite(rightTime) && Number.isFinite(leftTime) && rightTime !== leftTime) {
+    return rightTime - leftTime;
+  }
+  if (Number.isFinite(rightTime) !== Number.isFinite(leftTime)) {
+    return Number.isFinite(rightTime) ? -1 : 1;
+  }
+  return right.updatedAt.localeCompare(left.updatedAt) ||
+    left.kind.localeCompare(right.kind) ||
+    left.sessionId.localeCompare(right.sessionId);
 }
 
 function matchesFilter(item: AiNovelDebugTraceManifest, filter: AiNovelDebugTraceFilter): boolean {

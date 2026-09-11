@@ -148,15 +148,17 @@ Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 
 
 ### 4.6 AINovel 对话记录页
 
-对话记录页挂在 `ai_novel` 工作区下，用于按用户或设备标识查看最近完成的 AI 对话。
+对话记录页挂在 `ai_novel` 工作区下，直接承载 AINovel Trace Console，用于按用户或会话标识排查完整的 AI 调用上下文。
 
 交互原则：
 
 1. 只在当前选中的 App 是 `ai_novel` 时展示。
-2. 页面打开后默认展示全部用户最新 100 个完整 Turn，即 200 条用户/AI 消息；管理员也可选择 `UID` 或 `DID` 并输入精确值筛选。
-3. 每个 Turn 按用户正文、AI 正文和时间展示；同时显示 scene、UID 和已记录的 DID。
-4. `上一页` 和 `下一页` 按时间切换 100 个 Turn 的范围；当前页始终按时间从新到旧展示。
-5. 不提供正文全文搜索、批量导出或编辑功能。
+2. 页面顶部提供 `UID`、`CID`、kind、status 筛选；不填筛选条件时默认展示最近活动的会话。
+3. 主体固定为三栏：左侧 `Sessions`，中间 `Turns`，右侧当前 Turn 的详情。
+4. 一个 Turn 表示一次用户消息及其完整 Pi / tool loop；请求、消息和工具信息均可折叠查看。
+5. 消息按 user / assistant / tool / system 使用不同颜色；Context diff 放在详情底部，并对新增、删除行着色。
+6. 每个模型请求都提供“查看原始 JSON”，不保存或展示服务端密钥。
+7. 页面使用 Trace API 的 JSON 内容协商响应；Trace API 仍只在 local/dev 生效，online 不请求也不展示 Trace 数据。
 
 ### 4.7 LLM 页
 

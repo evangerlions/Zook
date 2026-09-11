@@ -122,10 +122,12 @@ function collectRequests(
     if (visited.has(value)) return;
     visited.add(value);
     if (Array.isArray(value)) {
-      if (key === "modelRequests" || key === "requests") {
+      if (key === "modelRequests" || key === "requests" || key === "runs") {
         for (const item of value) {
           if (isRequest(item)) {
             requests.push({ raw: item, capturedAt, captureStatus });
+          } else {
+            visit(item, "", capturedAt, captureStatus);
           }
         }
         return;
@@ -134,12 +136,20 @@ function collectRequests(
       return;
     }
     const object = value as Record<string, unknown>;
+    if (key === "" && isRequest(object) && !hasRequestCollection(object)) {
+      requests.push({ raw: object, capturedAt, captureStatus });
+      return;
+    }
     for (const [nextKey, nextValue] of Object.entries(object)) {
       visit(nextValue, nextKey, capturedAt, captureStatus);
     }
   };
   visit(trace, "");
   return requests;
+}
+
+function hasRequestCollection(value: Record<string, unknown>): boolean {
+  return Array.isArray(value.modelRequests) || Array.isArray(value.requests) || Array.isArray(value.runs);
 }
 
 function isRequest(value: unknown): value is Record<string, unknown> {
