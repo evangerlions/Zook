@@ -38,14 +38,25 @@ For local联调 only:
 
 - request outer envelope may carry `localDebugRequestPlaintext`
 - chat-completion response outer envelope may carry `localDebugResponseText`
-- Flutter Web may call `POST /api/v1/ai_novel/debug/audit-file` with
-  `{ sessionId, html }` to ask local Zook to create or overwrite the fixed
-  `generation-audit.html` file in the local AINovel repo. The response includes
-  `viewUrl`, a localhost HTTP URL that the browser can open in a new tab.
+- Flutter debug tooling may call `POST /api/v1/ai_novel/debug/traces` with a
+  stable session id (the console's `cid`), trace kind/status metadata, and one
+  structured trace capture. Zook stamps the authenticated user as `uid`,
+  appends every capture for the session, and exposes
+  `GET /api/v1/ai_novel/debug/traces/data` with UID/CID filters. The browser
+  console renders Sessions → Turns → request details; each turn groups one user
+  message with its Pi/tool loop, compares context with the preceding turn, and
+  provides colored messages, collapsible requests, and raw JSON. Storage is
+  keyed by `kind + sessionId`, so Import and imported Kickoff may safely share
+  their business session id without overwriting one another.
+  Shared dev requires the existing admin authentication on all GET routes;
+  local/test runs remain directly accessible.
 
 These fields are for human inspection only and must never become business dependencies.
-The audit-file endpoint is also human-inspection-only: production/non-local
-contexts return 404, and Zook stores the HTML string without parsing audit data.
+All Trace Console routes are human-inspection-only: online/production and
+non-local contexts return 404. AINovel never builds or uploads Trace Console
+HTML; it sends structured trace data and Zook owns storage and presentation.
+Trace publication is bounded and best-effort, so it cannot delay canonical
+writes or UI completion.
 
 ## Streaming rule
 
@@ -75,7 +86,7 @@ Contract rule:
 - product workflow keys, localized loading steps, retry UI, and fullscreen loading detail mapping are owned by AINovel, not Zook
 - `tool_call` events are a single provider round boundary, not a product agent-loop completion signal
 - the `done` event currently guarantees `completion.sceneRouteKey`, `completion.content`, optional `completion.reasoningText`, and optional `completion.finishReason`
-- `usage` events and `done.usage` include `promptTokens`, `completionTokens`, `totalTokens`, and may include provider-reported `reasoningTokens`, `contextWindowTokens`, plus `contextUsedRatio`
+- `usage` events and `done.usage` include `promptTokens`, `completionTokens`, `totalTokens`, optional provider-reported `reasoningTokens`, and Zook's fixed `contextWindowTokens: 256000` plus the corresponding `contextUsedRatio`
 - if the stream fails after request decryption succeeds, the server emits an encrypted business error envelope with a non-`OK` `code` and the client must treat that event as terminal failure
 - after such an error envelope, clients must not expect a follow-up `done` event
 

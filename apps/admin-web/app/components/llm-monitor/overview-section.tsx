@@ -7,6 +7,7 @@ import {
   buildTokenOption,
   formatLatency,
   formatMetricNumber,
+  formatTokenNumber,
   formatPercent,
   successRateTone,
   tokenCoverage,
@@ -47,7 +48,7 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
           <MetricCard
             hint={tokenCoverage(summary)}
             label="总 Token 消耗"
-            value={formatMetricNumber(summary.totalTokens)}
+            value={formatTokenNumber(summary.totalTokens)}
           />
           <MetricCard
             hint={`仅 Streaming Chat · ${summary.firstResponseSampleCount} 个样本`}
@@ -83,13 +84,13 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
         <section className="surface-card llm-chart-card">
           <header className="card-header compact-card-header">
             <div>
-              <h2>Token 结构趋势</h2>
-              <p>识别增长来自 Prompt、可见输出、Reasoning 还是未分类差额。</p>
+              <h2>Token 增长趋势</h2>
+              <p>默认查看 canonical 总 Token；悬浮查看 Prompt、可见输出、Reasoning 与未分类构成。</p>
             </div>
           </header>
           <LlmChart
             option={(width) => buildTokenOption(metrics.items, width)}
-            summary={`${metrics.range} Prompt、可见输出、Reasoning 和未分类 Token 堆叠趋势`}
+            summary={`${metrics.range} canonical 总 Token 趋势；悬浮查看结构明细`}
           />
         </section>
       </div> : (

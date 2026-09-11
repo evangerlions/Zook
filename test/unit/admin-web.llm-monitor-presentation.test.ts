@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   buildCallsOption,
+  buildTokenOption,
   buildTokenRankingOption,
   formatLatency,
+  formatTokenNumber,
   formatPercent,
   successRateTone,
   tokenCoverage,
@@ -14,6 +16,7 @@ import {
   buildTopRoutingModelOptions,
   filterHealthFailures,
 } from "../../apps/admin-web/app/components/llm-monitor/reliability-errors-view-model.ts";
+import { providerTone } from "../../apps/admin-web/app/components/llm-monitor/provider-presentation.ts";
 import type { LlmHourlySeriesItem, LlmMetricsSummary } from "../../apps/admin-web/app/lib/types/llm.ts";
 
 test("LLM monitor formatters keep units compact and missing values explicit", () => {
@@ -22,10 +25,20 @@ test("LLM monitor formatters keep units compact and missing values explicit", ()
   assert.equal(formatLatency(1250), "1.25 s");
   assert.equal(formatPercent(94.5), "94.5%");
   assert.equal(formatPercent(undefined), "—");
+  assert.equal(formatTokenNumber(117_102_956), "117M");
+  assert.equal(formatTokenNumber(7_463_923), "7.5M");
+  assert.equal(formatTokenNumber(231_435), "231K");
   assert.equal(successRateTone(100), "healthy");
   assert.equal(successRateTone(97), "warning");
   assert.equal(successRateTone(50), "critical");
   assert.equal(successRateTone(undefined), "unknown");
+});
+
+test("LLM token trend defaults to one canonical total series while retaining breakdown in the tooltip", () => {
+  const item: LlmHourlySeriesItem = { bucket: "2026-08-25T10", available: true, ...emptySummary(), totalTokens: 1_500_000, promptTokens: 1_000_000, visibleOutputTokens: 300_000, reasoningTokens: 200_000 };
+  const option = buildTokenOption([item]) as { series: Array<{ name: string; data: number[] }>; tooltip: { formatter: (params: Array<{ dataIndex: number }>) => string } };
+  assert.deepEqual(option.series.map(({ name, data }) => ({ name, data })), [{ name: "总 Token", data: [1_500_000] }]);
+  assert.match(option.tooltip.formatter([{ dataIndex: 0 }]), /Prompt 1M/);
 });
 
 test("LLM call trend omits reliability points with no reliability samples", () => {
@@ -128,6 +141,14 @@ test("LLM error table offers the five most-used routing models and filters failu
   ];
   assert.deepEqual(filterHealthFailures(failures, "model-6"), [failures[0]]);
   assert.deepEqual(filterHealthFailures(failures, ""), failures);
+});
+
+test("LLM provider badges use stable tones without tinting unrelated table cells", () => {
+  assert.equal(providerTone("bai"), "bai");
+  assert.equal(providerTone("bailian_token_plan"), "bailian");
+  assert.equal(providerTone("openrouter"), "openrouter");
+  assert.equal(providerTone("volcengine_agent_plan"), "volcengine");
+  assert.equal(providerTone("custom-provider"), "neutral");
 });
 
 function emptySummary(): LlmMetricsSummary {

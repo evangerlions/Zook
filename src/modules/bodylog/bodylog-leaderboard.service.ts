@@ -33,6 +33,15 @@ export class BodyLogLeaderboardService {
     private readonly profiles: BodyLogProfileService,
   ) {}
 
+  /** Frozen scoring selection, visible only to its authenticated owner. */
+  async snapshot(userId: string, timezone: unknown) {
+    const zone = this.validTimezone(timezone);
+    const seasonLabel = currentBodyLogSeasonLabel(new Date(), zone);
+    const snapshot = await this.database.findBodyLogWeeklyGoalSnapshot(BODYLOG_APP_ID, userId, seasonLabel);
+    const entry = await this.database.findBodyLogLeaderboardEntry(BODYLOG_APP_ID, userId, seasonLabel);
+    return { seasonLabel, timezone: snapshot?.timezone ?? zone, habits: entry?.optedIn ? snapshot?.habits ?? [] : [], joined: entry?.optedIn ?? false };
+  }
+
   async join(userId: string, input: {
     seasonLabel: unknown;
     timezone: unknown;

@@ -8,6 +8,10 @@ import { LightTickTaskService } from "./lighttick-task.service.ts";
 import { LightTickTodayService } from "./lighttick-today.service.ts";
 import { LightTickSyncService } from "./lighttick-sync.service.ts";
 import { LightTickProgressiveService } from "./lighttick-progressive.service.ts";
+import { LightTickFeedbackService, profileTimezoneResolver } from "./lighttick-feedback.service.ts";
+import { LightTickDnaService } from "./lighttick-dna.service.ts";
+import { LightTickDeepReviewService } from "./lighttick-deep-review.service.ts";
+import { LightTickRhythmSuggestionService } from "./lighttick-rhythm.service.ts";
 import type { LightTickJobService, LightTickWorker } from "./lighttick-worker.ts";
 import type { LightTickNotificationService } from "./lighttick-notifications.ts";
 import type { LightTickGuestIdentityService } from "./lighttick-guest-identity.service.ts";
@@ -25,6 +29,10 @@ export interface LightTickRuntime {
   proposals: LightTickProposalService;
   sync: LightTickSyncService;
   progressive: LightTickProgressiveService;
+  feedback: LightTickFeedbackService;
+  dna: LightTickDnaService;
+  deepReview: LightTickDeepReviewService;
+  rhythm: LightTickRhythmSuggestionService;
   jobs?: LightTickJobService;
   worker?: LightTickWorker;
   notifications?: LightTickNotificationService;
@@ -46,5 +54,9 @@ export function createLightTickRuntime(repository: LightTickRepository): LightTi
     proposals: new LightTickProposalService(repository),
     sync: new LightTickSyncService(repository, tasks),
     progressive: new LightTickProgressiveService(repository, tasks),
+    feedback: new LightTickFeedbackService(repository, profileTimezoneResolver(repository)),
+    dna: new LightTickDnaService(repository),
+    deepReview: new LightTickDeepReviewService(repository),
+    rhythm: new LightTickRhythmSuggestionService(repository),
   };
 }

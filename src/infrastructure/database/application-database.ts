@@ -46,6 +46,7 @@ import type {
   SmsVerificationRecord,
 } from "../../shared/types.ts";
 import type { LlmObservabilityStore } from "./llm-observability-store.ts";
+import type { AiNovelConversationStore } from "./ai-novel-conversation-store.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
@@ -85,6 +86,7 @@ export interface ManagedStateSnapshot {
  */
 export abstract class ApplicationDatabase {
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
+  abstract readonly aiNovelConversationStore: AiNovelConversationStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],
@@ -156,7 +158,6 @@ export abstract class ApplicationDatabase {
   abstract insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): MaybePromise<void>;
   abstract updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): MaybePromise<void>;
   abstract listBodyLogChallengeMembers(appId: string): MaybePromise<BodyLogChallengeMemberRecord[]>;
-
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;
   abstract insertRoles(records: RoleRecord[]): MaybePromise<void>;
@@ -442,6 +443,7 @@ export abstract class ApplicationDatabase {
     limit?: number;
   }): MaybePromise<ContentSafetyCheckRecord[]>;
   abstract deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
+
 
   abstract insertFeedback(
     record: FeedbackRecord,

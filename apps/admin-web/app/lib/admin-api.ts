@@ -2,6 +2,11 @@ import type {
   AdminAppSummary,
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
+  AdminAiNovelConversationRecordDocument,
+  AdminAiNovelDebugTraceDocument,
+  AdminAiNovelDebugTraceListDocument,
+  AiNovelTraceKind,
+  AiNovelTraceStatus,
   AiNovelModelSelectionConfig,
   AdminAppLogSecretRevealDocument,
   AdminAuthRateLimitDocument,
@@ -25,6 +30,8 @@ import type {
   AdminRemoteLogPullTaskListDocument,
   AdminLlmMetricsDocument,
   AdminLlmModelMetricsDocument,
+  AdminLlmRouteCircuitResetDocument,
+  AdminLlmRouteCircuitResetRequest,
   AdminLlmServiceDocument,
   AdminLlmSmokeTestDocument,
   AdminLlmSmokeTestRunRequest,
@@ -374,6 +381,45 @@ export const adminApi = {
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
   },
+  getAiNovelConversationRecords(input: { uid?: string; did?: string; page?: number }) {
+    const query = new URLSearchParams(cleanQuery({
+      uid: input.uid,
+      did: input.did,
+      page: input.page === undefined ? undefined : String(input.page),
+    }));
+    return requestJson<AdminAiNovelConversationRecordDocument>(
+      adminPath(`/apps/ai_novel/conversation-records?${query.toString()}`),
+    );
+  },
+  getAiNovelDebugTraceSessions(input: {
+    uid?: string;
+    cid?: string;
+    kind?: AiNovelTraceKind;
+    status?: AiNovelTraceStatus;
+    bookId?: string;
+    chapterId?: string;
+    query?: string;
+  } = {}) {
+    const query = new URLSearchParams(cleanQuery({
+      uid: input.uid,
+      cid: input.cid,
+      kind: input.kind,
+      status: input.status,
+      bookId: input.bookId,
+      chapterId: input.chapterId,
+      query: input.query,
+    }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminAiNovelDebugTraceListDocument>(
+      `/api/v1/ai_novel/debug/traces/data${suffix}`,
+    );
+  },
+  getAiNovelDebugTraceSession(sessionId: string, kind: AiNovelTraceKind) {
+    const query = new URLSearchParams({ kind });
+    return requestJson<AdminAiNovelDebugTraceDocument>(
+      `/api/v1/ai_novel/debug/traces/${encodeURIComponent(sessionId)}?${query.toString()}`,
+    );
+  },
   updateAiNovelFeedbackStatus(feedbackId: string, status: FeedbackStatus) {
     const path = `/apps/ai_novel/feedback/${encodeURIComponent(feedbackId)}/status`;
     return requestJson<AdminFeedbackStatusUpdateDocument>(adminPath(path), { method: "PATCH", body: { status } });
@@ -508,6 +554,12 @@ export const adminApi = {
   getLlmMetrics(range: LlmMetricsRange, filters: { provider?: string; providerModel?: string; operation?: "chat" | "embedding" } = {}) {
     const query = new URLSearchParams(cleanQuery({ range, ...filters }));
     return requestJson<AdminLlmMetricsDocument>(adminPath(`/apps/common/llm-service/metrics?${query.toString()}`));
+  },
+  resetLlmRouteCircuit(input: AdminLlmRouteCircuitResetRequest) {
+    return requestJson<AdminLlmRouteCircuitResetDocument>(
+      adminPath("/apps/common/llm-service/circuits/reset"),
+      { method: "POST", body: input },
+    );
   },
   getLlmModelMetrics(modelKey: string, range: LlmMetricsRange, provider?: string) {
     const query = new URLSearchParams(cleanQuery({ range, provider }));

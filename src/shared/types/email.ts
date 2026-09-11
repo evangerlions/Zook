@@ -32,6 +32,7 @@ export interface EmailServiceRegionConfig {
 
 export interface EmailServiceConfig {
   enabled: boolean;
+  llmAlertRecipients: string[];
   regions: EmailServiceRegionConfig[];
 }
 

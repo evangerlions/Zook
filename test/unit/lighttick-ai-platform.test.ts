@@ -57,7 +57,7 @@ test("onboarding plan prompt prohibits invented dates when no period was request
 });
 
 test("scene registry defines bounded routes, budgets, versions, and fallback policies", () => {
-  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 8);
+  assert.equal(Object.keys(LIGHTTICK_AI_SCENES).length, 9);
   for (const scene of Object.values(LIGHTTICK_AI_SCENES)) {
     assert.match(scene.key, /^lighttick\./); assert.ok(scene.timeoutMs <= 30_000);
     assert.ok(scene.maxContextTokens <= 10_000); assert.ok(scene.maxOutputTokens <= 4_000);

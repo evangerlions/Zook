@@ -17,6 +17,7 @@
 
 3. AINovel AI Model `ai_novel.model_selection`
 4. AINovel Feedback 用户反馈观测
+5. AINovel 对话记录查询
 
 ---
 
@@ -29,6 +30,7 @@ Admin Web
 │   ├── 配置
 │   ├── AI Model（仅 ai_novel）
 │   ├── Feedback（仅 ai_novel）
+│   ├── 对话记录（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
 ├── Topbar
@@ -41,6 +43,7 @@ Admin Web
     ├── /config -> App JSON 配置页
     ├── /ai-routing -> AINovel 文本模型权重配置页
     ├── /feedback -> AINovel App 内反馈与截图观测页
+    ├── /conversation-records -> AINovel 用户/AI 对话记录页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
 ```
@@ -143,7 +146,21 @@ Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 
 5. 附件只能通过 Admin 登录会话代理读取，不生成公开 URL
 6. 该页不提供客服回复或用户端反馈历史
 
-### 4.6 LLM 页
+### 4.6 AINovel 对话记录页
+
+对话记录页挂在 `ai_novel` 工作区下，直接承载 AINovel Trace Console，用于按用户或会话标识排查完整的 AI 调用上下文。
+
+交互原则：
+
+1. 只在当前选中的 App 是 `ai_novel` 时展示。
+2. 页面顶部提供 `UID`、`CID`、kind、status 筛选；不填筛选条件时默认展示最近活动的会话。
+3. 主体固定为三栏：左侧 `Sessions`，中间 `Turns`，右侧当前 Turn 的详情。
+4. 一个 Turn 表示一次用户消息及其完整 Pi / tool loop；请求、消息和工具信息均可折叠查看。
+5. 消息按 user / assistant / tool / system 使用不同颜色；Context diff 放在详情底部，并对新增、删除行着色。
+6. 每个模型请求都提供“查看原始 JSON”，不保存或展示服务端密钥。
+7. 页面使用 Trace API 的 JSON 内容协商响应；Trace API 仍只在 local/dev 生效，online 不请求也不展示 Trace 数据。
+
+### 4.7 LLM 页
 
 LLM 页挂在 `common` 工作区下，分成三个标签：
 

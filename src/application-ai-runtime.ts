@@ -19,6 +19,8 @@ import {
 import type { LlmHealthService } from "./services/llm-health.service.ts";
 import type { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
+import type { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
+import { LlmRouteCircuitRecoveryService } from "./services/llm-route-circuit-recovery.service.ts";
 import {
   LocalAiNovelE2eProvider,
   shouldUseLocalAiNovelE2eProvider,
@@ -37,6 +39,7 @@ interface ApplicationAiRuntimeOptions {
   llmHealthService: LlmHealthService;
   llmMetricsService: LlmMetricsService;
   kvManager: KVManager;
+  llmRouteCircuitBreaker: LlmRouteCircuitBreakerService;
   logger: StructuredLogger;
   llmProviders?: Record<string, LLMProvider>;
   embeddingProviders?: Record<string, EmbeddingProvider>;
@@ -96,10 +99,18 @@ export function createApplicationAiRuntime(
     aiNovelStatisticsService,
     options.logger,
   );
+  const llmRouteCircuitRecoveryService = new LlmRouteCircuitRecoveryService(
+    options.commonLlmConfigService,
+    options.llmRouteCircuitBreaker,
+    llmProviders,
+  );
   const managerOptions = {
     commonLlmConfigService: options.commonLlmConfigService,
     llmHealthService: options.llmHealthService,
     llmMetricsService: options.llmMetricsService,
+    llmRouteCircuitBreaker: options.llmRouteCircuitBreaker,
+    onLlmRouteCircuitConfirmation: (route: Parameters<typeof llmRouteCircuitRecoveryService.confirmRoute>[0]) =>
+      llmRouteCircuitRecoveryService.confirmRoute(route),
     ...statisticsUsageOptions,
   };
 
@@ -117,5 +128,6 @@ export function createApplicationAiRuntime(
       llmProviders,
       embeddingProviders,
     ),
+    llmRouteCircuitRecoveryService,
   };
 }

@@ -18,6 +18,7 @@ export function createPushDispatcher(options: {
   const apnsBundleId = process.env.APNS_BUNDLE_ID?.trim() ?? process.env.APNS_TOPIC?.trim();
   const apnsKeyPath = process.env.APNS_PRIVATE_KEY_PATH?.trim();
   const lightTickApnsBundleId = process.env.LIGHTTICK_APNS_BUNDLE_ID?.trim();
+  const bodyLogApnsBundleId = process.env.BODYLOG_APNS_BUNDLE_ID?.trim();
   const apnsSandbox = process.env.APNS_SANDBOX?.trim().toLowerCase() === "true";
 
   if (apnsKeyId && apnsTeamId && apnsBundleId && apnsKeyPath) {
@@ -28,7 +29,7 @@ export function createPushDispatcher(options: {
           teamId: apnsTeamId,
           keyId: apnsKeyId,
           bundleId: apnsBundleId,
-          bundleIds: lightTickApnsBundleId ? { lighttick: lightTickApnsBundleId } : undefined,
+          bundleIds: { ...(lightTickApnsBundleId ? { lighttick: lightTickApnsBundleId } : {}), ...(bodyLogApnsBundleId ? { bodylog: bodyLogApnsBundleId } : {}) },
           privateKeyPem,
           production: !apnsSandbox,
         },
@@ -91,10 +92,24 @@ export function createPushDispatcher(options: {
     }
   }
 
-  if (Object.keys(dispatchers).length === 0) {
+  const hadPlatformDispatcher = Object.values(dispatchers).some(Boolean);
+  // BodyLog must never report a logging-only fallback as successful delivery.
+  const unavailable: PushDispatcher = { async dispatch() { throw new Error("BodyLog push provider is not configured"); } };
+  dispatchers["bodylog:ios"] = bodyLogApnsBundleId ? dispatchers.ios ?? unavailable : unavailable;
+  dispatchers["bodylog:android"] = unavailable;
+  const bodyLogProject = process.env.BODYLOG_FCM_PROJECT_ID?.trim();
+  const bodyLogAccountPath = process.env.BODYLOG_FCM_SERVICE_ACCOUNT_PATH?.trim();
+  if (bodyLogProject && bodyLogAccountPath) {
+    const account = JSON.parse(readFileSync(bodyLogAccountPath, "utf8")) as { client_email: string; private_key: string };
+    dispatchers["bodylog:android"] = new FcmPushDispatcher({ projectId: bodyLogProject,
+      clientEmail: account.client_email, privateKeyPem: account.private_key }, { logger, database });
+  }
+
+  if (!hadPlatformDispatcher && !(bodyLogProject && bodyLogAccountPath)) {
     logger.info("no push dispatchers configured, using logging fallback");
     return {
       async dispatch(req: PushDispatchRequest): Promise<void> {
+        if (req.appId === "bodylog") throw new Error("BodyLog push provider is not configured");
         logger.info("push notification dispatched (logging fallback)", {
           appId: req.appId,
           userId: req.userId,

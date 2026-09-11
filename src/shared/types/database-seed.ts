@@ -35,6 +35,7 @@ import type {
   UserRecord,
   UserRoleRecord,
 } from "./records.ts";
+import type { AiNovelConversationRecord } from "./ai-novel-conversation.ts";
 import type { SmsVerificationRecord } from "./sms-verification.ts";
 
 export interface DatabaseSeed {
@@ -70,4 +71,5 @@ export interface DatabaseSeed {
   aiOutputReactionRecords?: AiOutputReactionRecord[];
   aiNovelStatisticsSnapshots?: AiNovelStatisticsSnapshotRecord[];
   aiNovelDailyStatistics?: AiNovelDailyStatisticsRecord[];
+  aiNovelConversationRecords?: AiNovelConversationRecord[];
 }

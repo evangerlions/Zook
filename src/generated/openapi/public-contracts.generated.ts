@@ -2700,12 +2700,22 @@ export const BodyLogInvitationCreateRequestSchema = {
     "installId": {
       "type": "string",
       "minLength": 8
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "general",
+        "buddy",
+        "group"
+      ],
+      "default": "general"
     }
   }
 } as const;
 
 export type BodyLogInvitationCreateRequest = {
   "installId": string;
+  "intent"?: "general" | "buddy" | "group";
 };
 
 export const BodyLogInvitationAttributeRequestSchema = {
@@ -3917,6 +3927,3156 @@ export type BodyLogChallengeData = {
   "updatedAt": string;
 };
 
+export const LightTickCoachRunRequestSchema = {
+  "type": "object",
+  "required": [
+    "scene",
+    "goal_id"
+  ],
+  "if": {
+    "properties": {
+      "scene": {
+        "const": "chat"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "message"
+    ]
+  },
+  "properties": {
+    "scene": {
+      "enum": [
+        "task_breakdown",
+        "plan_explanation",
+        "recovery",
+        "review_explanation",
+        "chat"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "thread_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "goal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "review_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickCoachRunRequest = {
+  "scene": "task_breakdown" | "plan_explanation" | "recovery" | "review_explanation" | "chat";
+  "message"?: string;
+  "thread_id"?: string;
+  "goal_id": string;
+  "plan_id"?: string;
+  "review_id"?: string;
+  "task_id"?: string;
+};
+
+export const LightTickFirstActionFeedbackSchema = {
+  "type": "object",
+  "required": [
+    "estimated_duration_minutes",
+    "actual_duration_minutes",
+    "selected_variant",
+    "stable_inference"
+  ],
+  "properties": {
+    "estimated_duration_minutes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "actual_duration_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "selected_variant": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "light",
+        "minimum"
+      ]
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "right",
+        "hard"
+      ]
+    },
+    "stable_inference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickFirstActionFeedback = {
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes": number;
+  "selected_variant": "standard" | "light" | "minimum";
+  "difficulty"?: "easy" | "right" | "hard";
+  "stable_inference": string | null;
+};
+
+export const LightTickWeeklyCommitmentAvailabilitySchema = {
+  "type": "object",
+  "required": [
+    "eligible",
+    "valid_action_count",
+    "unlock_requirement"
+  ],
+  "properties": {
+    "eligible": {
+      "type": "boolean"
+    },
+    "valid_action_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unlock_requirement": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickWeeklyCommitmentAvailability = {
+  "eligible": boolean;
+  "valid_action_count": number;
+  "unlock_requirement": string | null;
+};
+
+export const LightTickFirstActionDataSchema = {
+  "type": "object",
+  "required": [
+    "feedback",
+    "three_day_preview",
+    "weekly_commitment"
+  ],
+  "properties": {
+    "feedback": {
+      "type": "object",
+      "required": [
+        "estimated_duration_minutes",
+        "actual_duration_minutes",
+        "selected_variant",
+        "stable_inference"
+      ],
+      "properties": {
+        "estimated_duration_minutes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "actual_duration_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "selected_variant": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "light",
+            "minimum"
+          ]
+        },
+        "difficulty": {
+          "enum": [
+            "easy",
+            "right",
+            "hard"
+          ]
+        },
+        "stable_inference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "three_day_preview": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "title",
+          "status",
+          "scheduled_date",
+          "estimated_duration_minutes",
+          "priority",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "plan_id": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completion_criteria": {
+            "type": "string"
+          },
+          "selected_variant": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "light",
+              "minimum"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "properties": {
+              "standard": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "light": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minimum": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "estimated_duration_minutes",
+                  "completion_criteria"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "estimated_duration_minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "completion_criteria": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "commitment_satisfied": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "deferred",
+              "cancelled"
+            ]
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "scheduled_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_duration_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "actual_duration_minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "title",
+                "completed",
+                "position"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "weekly_commitment": {
+      "type": "object",
+      "required": [
+        "eligible",
+        "valid_action_count",
+        "unlock_requirement"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "valid_action_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unlock_requirement": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickFirstActionData = {
+  "feedback": {
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes": number;
+  "selected_variant": "standard" | "light" | "minimum";
+  "difficulty"?: "easy" | "right" | "hard";
+  "stable_inference": string | null;
+};
+  "three_day_preview": (
+{
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "weekly_commitment": {
+  "eligible": boolean;
+  "valid_action_count": number;
+  "unlock_requirement": string | null;
+};
+};
+
+export const LightTickFirstActionEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "example": "OK"
+    },
+    "message": {
+      "type": "string",
+      "example": "success"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "feedback",
+        "three_day_preview",
+        "weekly_commitment"
+      ],
+      "properties": {
+        "feedback": {
+          "type": "object",
+          "required": [
+            "estimated_duration_minutes",
+            "actual_duration_minutes",
+            "selected_variant",
+            "stable_inference"
+          ],
+          "properties": {
+            "estimated_duration_minutes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "actual_duration_minutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1440
+            },
+            "selected_variant": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "light",
+                "minimum"
+              ]
+            },
+            "difficulty": {
+              "enum": [
+                "easy",
+                "right",
+                "hard"
+              ]
+            },
+            "stable_inference": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "three_day_preview": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "plan_id",
+              "title",
+              "status",
+              "scheduled_date",
+              "estimated_duration_minutes",
+              "priority",
+              "version",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "feedback": {
+                "type": "object",
+                "required": [
+                  "rule_id",
+                  "kind",
+                  "message",
+                  "evidence_count",
+                  "data_range",
+                  "confident"
+                ],
+                "properties": {
+                  "rule_id": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "factual",
+                      "hypothesis",
+                      "rule"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "evidence_count": {
+                    "type": "integer"
+                  },
+                  "data_range": {
+                    "type": "object",
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "to": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "confident": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "lineage_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "plan_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "completion_criteria": {
+                "type": "string"
+              },
+              "selected_variant": {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "light",
+                  "minimum"
+                ]
+              },
+              "variants": {
+                "type": "object",
+                "properties": {
+                  "standard": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "light": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "minimum": {
+                    "type": "object",
+                    "required": [
+                      "title",
+                      "estimated_duration_minutes",
+                      "completion_criteria"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "estimated_duration_minutes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1440
+                      },
+                      "completion_criteria": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "commitment_satisfied": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "in_progress",
+                  "completed",
+                  "skipped",
+                  "deferred",
+                  "cancelled"
+                ]
+              },
+              "difficulty": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "scheduled_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "estimated_duration_minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              "actual_duration_minutes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              "priority": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title",
+                    "completed",
+                    "position"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "completed": {
+                      "type": "boolean"
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "completed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "weekly_commitment": {
+          "type": "object",
+          "required": [
+            "eligible",
+            "valid_action_count",
+            "unlock_requirement"
+          ],
+          "properties": {
+            "eligible": {
+              "type": "boolean"
+            },
+            "valid_action_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unlock_requirement": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickFirstActionEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "feedback": {
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes": number;
+  "selected_variant": "standard" | "light" | "minimum";
+  "difficulty"?: "easy" | "right" | "hard";
+  "stable_inference": string | null;
+};
+  "three_day_preview": (
+{
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+  "id": string;
+  "lineage_id"?: string;
+  "plan_id": string;
+  "title": string;
+  "completion_criteria"?: string;
+  "selected_variant"?: "standard" | "light" | "minimum";
+  "variants"?: {
+  "standard"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "light"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+  "minimum"?: {
+  "title": string;
+  "estimated_duration_minutes": number;
+  "completion_criteria": string;
+};
+};
+  "commitment_satisfied"?: boolean;
+  "status": "pending" | "in_progress" | "completed" | "skipped" | "deferred" | "cancelled";
+  "difficulty"?: "low" | "medium" | "high";
+  "scheduled_date": string;
+  "estimated_duration_minutes": number;
+  "actual_duration_minutes"?: number;
+  "priority": number;
+  "steps"?: (
+{
+  "id": string;
+  "title": string;
+  "completed": boolean;
+  "position": number;
+}
+)[];
+  "completed_at"?: string;
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "weekly_commitment": {
+  "eligible": boolean;
+  "valid_action_count": number;
+  "unlock_requirement": string | null;
+};
+};
+};
+
+export const LightTickEvidenceRangeSchema = {
+  "type": "object",
+  "required": [
+    "from",
+    "to"
+  ],
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "to": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickEvidenceRange = {
+  "from": string;
+  "to": string;
+};
+
+export const LightTickFactFeedbackSchema = {
+  "type": "object",
+  "required": [
+    "rule_id",
+    "kind",
+    "message",
+    "evidence_count",
+    "data_range",
+    "confident"
+  ],
+  "properties": {
+    "rule_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "factual",
+        "hypothesis",
+        "rule"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "evidence_count": {
+      "type": "integer"
+    },
+    "data_range": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      }
+    },
+    "confident": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type LightTickFactFeedback = {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
+
+export const LightTickExecutionFactsDataSchema = {
+  "type": "object",
+  "required": [
+    "window",
+    "completed_count",
+    "average_deviation_minutes",
+    "by_lineage",
+    "by_slot",
+    "consecutive_skips",
+    "feedback"
+  ],
+  "properties": {
+    "window": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      }
+    },
+    "completed_count": {
+      "type": "integer"
+    },
+    "average_deviation_minutes": {
+      "type": "number"
+    },
+    "by_lineage": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "title",
+          "count",
+          "total_estimated_minutes",
+          "total_actual_minutes",
+          "deviation_minutes"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "total_estimated_minutes": {
+            "type": "number"
+          },
+          "total_actual_minutes": {
+            "type": "number"
+          },
+          "deviation_minutes": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "by_slot": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "count",
+          "average_deviation_minutes"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "average_deviation_minutes": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "consecutive_skips": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "title",
+          "count"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "feedback": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "kind",
+          "message",
+          "evidence_count",
+          "data_range",
+          "confident"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "factual",
+              "hypothesis",
+              "rule"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "evidence_count": {
+            "type": "integer"
+          },
+          "data_range": {
+            "type": "object",
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            }
+          },
+          "confident": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickExecutionFactsData = {
+  "window": {
+  "from": string;
+  "to": string;
+};
+  "completed_count": number;
+  "average_deviation_minutes": number;
+  "by_lineage": {
+  [key: string]: {
+  "title": string;
+  "count": number;
+  "total_estimated_minutes": number;
+  "total_actual_minutes": number;
+  "deviation_minutes": number;
+};
+};
+  "by_slot": {
+  [key: string]: {
+  "count": number;
+  "average_deviation_minutes": number;
+};
+};
+  "consecutive_skips": {
+  [key: string]: {
+  "title": string;
+  "count": number;
+};
+};
+  "feedback": (
+{
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+}
+)[];
+};
+
+export const LightTickChatMessageSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "role",
+    "content",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "assistant"
+      ]
+    },
+    "content": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickChatMessage = {
+  "id": string;
+  "role": "user" | "assistant";
+  "content": string;
+  "run_id"?: string | null;
+  "created_at": string;
+};
+
+export const LightTickChatMessagesDataSchema = {
+  "type": "object",
+  "required": [
+    "thread_id",
+    "goal_id",
+    "items"
+  ],
+  "properties": {
+    "thread_id": {
+      "type": "string"
+    },
+    "goal_id": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "content",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickChatMessagesData = {
+  "thread_id": string;
+  "goal_id": string;
+  "items": (
+{
+  "id": string;
+  "role": "user" | "assistant";
+  "content": string;
+  "run_id"?: string | null;
+  "created_at": string;
+}
+)[];
+};
+
+export const LightTickChatIntentsDataSchema = {
+  "type": "object",
+  "required": [
+    "intents"
+  ],
+  "properties": {
+    "intents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "message"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickChatIntentsData = {
+  "intents": (
+{
+  "key": string;
+  "label": string;
+  "message": string;
+}
+)[];
+};
+
+export const LightTickDnaInsightSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "rule_id",
+    "statement",
+    "kind",
+    "status",
+    "evidence_count",
+    "data_range",
+    "confidence",
+    "scope",
+    "allowed_effects",
+    "created_at",
+    "expires_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "rule_id": {
+      "type": "string"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "hypothesis",
+        "rule"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed",
+        "confirmed",
+        "denied",
+        "corrected",
+        "expired",
+        "dismissed"
+      ]
+    },
+    "evidence_count": {
+      "type": "integer"
+    },
+    "data_range": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      }
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "allowed_effects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "user_feedback": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickDnaInsight = {
+  "id": string;
+  "rule_id": string;
+  "statement": string;
+  "kind": "hypothesis" | "rule";
+  "status": "proposed" | "confirmed" | "denied" | "corrected" | "expired" | "dismissed";
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confidence": number;
+  "scope": string;
+  "allowed_effects": string[];
+  "user_feedback"?: string | null;
+  "created_at": string;
+  "expires_at": string;
+  "updated_at": string;
+};
+
+export const LightTickDnaInsightsDataSchema = {
+  "type": "object",
+  "required": [
+    "items",
+    "next_cursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "rule_id",
+          "statement",
+          "kind",
+          "status",
+          "evidence_count",
+          "data_range",
+          "confidence",
+          "scope",
+          "allowed_effects",
+          "created_at",
+          "expires_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rule_id": {
+            "type": "string"
+          },
+          "statement": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "hypothesis",
+              "rule"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "confirmed",
+              "denied",
+              "corrected",
+              "expired",
+              "dismissed"
+            ]
+          },
+          "evidence_count": {
+            "type": "integer"
+          },
+          "data_range": {
+            "type": "object",
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              }
+            }
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "allowed_effects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "user_feedback": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "next_cursor": {
+      "type": "null"
+    }
+  }
+} as const;
+
+export type LightTickDnaInsightsData = {
+  "items": (
+{
+  "id": string;
+  "rule_id": string;
+  "statement": string;
+  "kind": "hypothesis" | "rule";
+  "status": "proposed" | "confirmed" | "denied" | "corrected" | "expired" | "dismissed";
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confidence": number;
+  "scope": string;
+  "allowed_effects": string[];
+  "user_feedback"?: string | null;
+  "created_at": string;
+  "expires_at": string;
+  "updated_at": string;
+}
+)[];
+  "next_cursor": unknown;
+};
+
+export const LightTickDnaFeedbackRequestSchema = {
+  "type": "object",
+  "required": [
+    "action"
+  ],
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "confirm",
+        "deny",
+        "correct",
+        "dismiss"
+      ]
+    },
+    "correction": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 500
+    }
+  }
+} as const;
+
+export type LightTickDnaFeedbackRequest = {
+  "action": "confirm" | "deny" | "correct" | "dismiss";
+  "correction"?: string;
+};
+
+export const LightTickFactsProposalRequestSchema = {
+  "type": "object",
+  "required": [
+    "goal_id"
+  ],
+  "properties": {
+    "goal_id": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickFactsProposalRequest = {
+  "goal_id": string;
+};
+
+export const LightTickFactsProposalsDataSchema = {
+  "type": "object",
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "suppressed": {
+      "type": "string",
+      "enum": [
+        "duplicate_pending",
+        "rejection_dampening"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "plan_id",
+          "status",
+          "reason",
+          "diff",
+          "impact",
+          "expires_at",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "plan_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "diff": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "operation",
+                "entity_type",
+                "entity_id"
+              ],
+              "properties": {
+                "operation": {
+                  "enum": [
+                    "add",
+                    "update",
+                    "defer",
+                    "cancel"
+                  ]
+                },
+                "entity_type": {
+                  "enum": [
+                    "goal",
+                    "plan",
+                    "task"
+                  ]
+                },
+                "entity_id": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+                },
+                "before": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "after": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "impact": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickFactsProposalsData = {
+  "suppressed"?: "duplicate_pending" | "rejection_dampening";
+  "items": (
+{
+  "id": string;
+  "plan_id": string;
+  "status": string;
+  "reason": string;
+  "diff": (
+{
+  "operation": "add" | "update" | "defer" | "cancel";
+  "entity_type": "goal" | "plan" | "task";
+  "entity_id": string;
+  "before"?: {
+  [key: string]: unknown;
+};
+  "after"?: {
+  [key: string]: unknown;
+};
+}
+)[];
+  "impact": {
+  [key: string]: unknown;
+};
+  "expires_at": string;
+  "created_at": string;
+}
+)[];
+};
+
+export const LightTickReviewRecommendationSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "detail",
+    "action",
+    "evidence"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "proposedTasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "title",
+          "estimatedMinutes"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "estimatedMinutes": {
+            "type": "integer"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "scheduledFor": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReviewRecommendation = {
+  "id": string;
+  "title": string;
+  "detail": string;
+  "action": string;
+  "evidence": {
+  [key: string]: unknown;
+};
+  "proposedTasks"?: (
+{
+  "title": string;
+  "estimatedMinutes": number;
+  "priority"?: number;
+  "scheduledFor"?: string;
+}
+)[];
+};
+
+export const LightTickReviewActionStateSchema = {
+  "type": "object",
+  "required": [],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "ignored",
+        "proposed",
+        "accepted"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "accept_all",
+        "accept_partial",
+        "ignore"
+      ]
+    },
+    "selected_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ignore_reason": {
+      "type": "string"
+    },
+    "proposed_plan_id": {
+      "type": "string"
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReviewActionState = {
+  "status"?: "ignored" | "proposed" | "accepted";
+  "action"?: "accept_all" | "accept_partial" | "ignore";
+  "selected_ids"?: string[];
+  "ignore_reason"?: string;
+  "proposed_plan_id"?: string;
+  "decided_at"?: string;
+};
+
+export const LightTickReviewActionViewSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "goal_id",
+    "period",
+    "status",
+    "period_start",
+    "period_end",
+    "facts",
+    "insights",
+    "recommendations",
+    "data_sufficiency",
+    "version",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "goal_id": {
+      "type": "string"
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "week",
+        "month"
+      ]
+    },
+    "status": {
+      "type": "string"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "facts": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "insights": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "description": "Original AI recommendation; normalized recommendations are returned separately.",
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "data_sufficiency": {
+      "type": "string"
+    },
+    "action_state": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ignored",
+            "proposed",
+            "accepted"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "accept_all",
+            "accept_partial",
+            "ignore"
+          ]
+        },
+        "selected_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore_reason": {
+          "type": "string"
+        },
+        "proposed_plan_id": {
+          "type": "string"
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "version": {
+      "type": "integer"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReviewActionView = {
+  "id": string;
+  "goal_id": string;
+  "period": "week" | "month";
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "facts": {
+  [key: string]: unknown;
+};
+  "insights": string[];
+  "recommendations": (
+string | {
+  [key: string]: unknown;
+}
+)[];
+  "data_sufficiency": string;
+  "action_state"?: {
+  "status"?: "ignored" | "proposed" | "accepted";
+  "action"?: "accept_all" | "accept_partial" | "ignore";
+  "selected_ids"?: string[];
+  "ignore_reason"?: string;
+  "proposed_plan_id"?: string;
+  "decided_at"?: string;
+};
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const LightTickReviewActionsDataSchema = {
+  "type": "object",
+  "required": [
+    "review",
+    "recommendations",
+    "action_state"
+  ],
+  "properties": {
+    "review": {
+      "type": "object",
+      "required": [
+        "id",
+        "goal_id",
+        "period",
+        "status",
+        "period_start",
+        "period_end",
+        "facts",
+        "insights",
+        "recommendations",
+        "data_sufficiency",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "goal_id": {
+          "type": "string"
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "week",
+            "month"
+          ]
+        },
+        "status": {
+          "type": "string"
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "facts": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "insights": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "description": "Original AI recommendation; normalized recommendations are returned separately.",
+                "additionalProperties": true
+              }
+            ]
+          }
+        },
+        "data_sufficiency": {
+          "type": "string"
+        },
+        "action_state": {
+          "type": "object",
+          "required": [],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "ignored",
+                "proposed",
+                "accepted"
+              ]
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "accept_all",
+                "accept_partial",
+                "ignore"
+              ]
+            },
+            "selected_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ignore_reason": {
+              "type": "string"
+            },
+            "proposed_plan_id": {
+              "type": "string"
+            },
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "version": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "detail",
+          "action",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "proposedTasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimatedMinutes"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "estimatedMinutes": {
+                  "type": "integer"
+                },
+                "priority": {
+                  "type": "integer"
+                },
+                "scheduledFor": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "action_state": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ignored",
+            "proposed",
+            "accepted"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "accept_all",
+            "accept_partial",
+            "ignore"
+          ]
+        },
+        "selected_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore_reason": {
+          "type": "string"
+        },
+        "proposed_plan_id": {
+          "type": "string"
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReviewActionsData = {
+  "review": {
+  "id": string;
+  "goal_id": string;
+  "period": "week" | "month";
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "facts": {
+  [key: string]: unknown;
+};
+  "insights": string[];
+  "recommendations": (
+string | {
+  [key: string]: unknown;
+}
+)[];
+  "data_sufficiency": string;
+  "action_state"?: {
+  "status"?: "ignored" | "proposed" | "accepted";
+  "action"?: "accept_all" | "accept_partial" | "ignore";
+  "selected_ids"?: string[];
+  "ignore_reason"?: string;
+  "proposed_plan_id"?: string;
+  "decided_at"?: string;
+};
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+  "recommendations": (
+{
+  "id": string;
+  "title": string;
+  "detail": string;
+  "action": string;
+  "evidence": {
+  [key: string]: unknown;
+};
+  "proposedTasks"?: (
+{
+  "title": string;
+  "estimatedMinutes": number;
+  "priority"?: number;
+  "scheduledFor"?: string;
+}
+)[];
+}
+)[];
+  "action_state": {
+  "status"?: "ignored" | "proposed" | "accepted";
+  "action"?: "accept_all" | "accept_partial" | "ignore";
+  "selected_ids"?: string[];
+  "ignore_reason"?: string;
+  "proposed_plan_id"?: string;
+  "decided_at"?: string;
+};
+};
+
+export const LightTickReviewActionRequestSchema = {
+  "type": "object",
+  "required": [
+    "action"
+  ],
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "accept_all",
+        "accept_partial",
+        "ignore"
+      ]
+    },
+    "recommendation_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ignore_reason": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 500
+    }
+  }
+} as const;
+
+export type LightTickReviewActionRequest = {
+  "action": "accept_all" | "accept_partial" | "ignore";
+  "recommendation_ids"?: string[];
+  "ignore_reason"?: string;
+};
+
+export const LightTickReviewProposedPlanSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "appId",
+    "userId",
+    "goalId",
+    "granularity",
+    "status",
+    "source",
+    "periodStart",
+    "periodEnd",
+    "proposal",
+    "version",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "appId": {
+      "type": "string",
+      "enum": [
+        "lighttick"
+      ]
+    },
+    "userId": {
+      "type": "string"
+    },
+    "goalId": {
+      "type": "string"
+    },
+    "granularity": {
+      "type": "string",
+      "enum": [
+        "day",
+        "week",
+        "month"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed"
+      ]
+    },
+    "source": {
+      "type": "string"
+    },
+    "periodStart": {
+      "type": "string"
+    },
+    "periodEnd": {
+      "type": "string"
+    },
+    "proposal": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "version": {
+      "type": "integer"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickReviewProposedPlan = {
+  "id": string;
+  "appId": "lighttick";
+  "userId": string;
+  "goalId": string;
+  "granularity": "day" | "week" | "month";
+  "status": "proposed";
+  "source": string;
+  "periodStart": string;
+  "periodEnd": string;
+  "proposal": {
+  [key: string]: unknown;
+};
+  "version": number;
+  "createdAt": string;
+  "updatedAt": string;
+};
+
+export const LightTickReviewActionResultSchema = {
+  "type": "object",
+  "required": [
+    "review",
+    "action",
+    "selected_recommendation_ids",
+    "recommendations"
+  ],
+  "properties": {
+    "review": {
+      "type": "object",
+      "required": [
+        "id",
+        "goal_id",
+        "period",
+        "status",
+        "period_start",
+        "period_end",
+        "facts",
+        "insights",
+        "recommendations",
+        "data_sufficiency",
+        "version",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "goal_id": {
+          "type": "string"
+        },
+        "period": {
+          "type": "string",
+          "enum": [
+            "week",
+            "month"
+          ]
+        },
+        "status": {
+          "type": "string"
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date"
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date"
+        },
+        "facts": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "insights": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "description": "Original AI recommendation; normalized recommendations are returned separately.",
+                "additionalProperties": true
+              }
+            ]
+          }
+        },
+        "data_sufficiency": {
+          "type": "string"
+        },
+        "action_state": {
+          "type": "object",
+          "required": [],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "ignored",
+                "proposed",
+                "accepted"
+              ]
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "accept_all",
+                "accept_partial",
+                "ignore"
+              ]
+            },
+            "selected_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ignore_reason": {
+              "type": "string"
+            },
+            "proposed_plan_id": {
+              "type": "string"
+            },
+            "decided_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "version": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "accept_all",
+        "accept_partial",
+        "ignore"
+      ]
+    },
+    "selected_recommendation_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "proposed_plan": {
+      "type": "object",
+      "required": [
+        "id",
+        "appId",
+        "userId",
+        "goalId",
+        "granularity",
+        "status",
+        "source",
+        "periodStart",
+        "periodEnd",
+        "proposal",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "appId": {
+          "type": "string",
+          "enum": [
+            "lighttick"
+          ]
+        },
+        "userId": {
+          "type": "string"
+        },
+        "goalId": {
+          "type": "string"
+        },
+        "granularity": {
+          "type": "string",
+          "enum": [
+            "day",
+            "week",
+            "month"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed"
+          ]
+        },
+        "source": {
+          "type": "string"
+        },
+        "periodStart": {
+          "type": "string"
+        },
+        "periodEnd": {
+          "type": "string"
+        },
+        "proposal": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "version": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "detail",
+          "action",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "proposedTasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "title",
+                "estimatedMinutes"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "estimatedMinutes": {
+                  "type": "integer"
+                },
+                "priority": {
+                  "type": "integer"
+                },
+                "scheduledFor": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type LightTickReviewActionResult = {
+  "review": {
+  "id": string;
+  "goal_id": string;
+  "period": "week" | "month";
+  "status": string;
+  "period_start": string;
+  "period_end": string;
+  "facts": {
+  [key: string]: unknown;
+};
+  "insights": string[];
+  "recommendations": (
+string | {
+  [key: string]: unknown;
+}
+)[];
+  "data_sufficiency": string;
+  "action_state"?: {
+  "status"?: "ignored" | "proposed" | "accepted";
+  "action"?: "accept_all" | "accept_partial" | "ignore";
+  "selected_ids"?: string[];
+  "ignore_reason"?: string;
+  "proposed_plan_id"?: string;
+  "decided_at"?: string;
+};
+  "version": number;
+  "created_at": string;
+  "updated_at": string;
+};
+  "action": "accept_all" | "accept_partial" | "ignore";
+  "selected_recommendation_ids": string[];
+  "proposed_plan"?: {
+  "id": string;
+  "appId": "lighttick";
+  "userId": string;
+  "goalId": string;
+  "granularity": "day" | "week" | "month";
+  "status": "proposed";
+  "source": string;
+  "periodStart": string;
+  "periodEnd": string;
+  "proposal": {
+  [key: string]: unknown;
+};
+  "version": number;
+  "createdAt": string;
+  "updatedAt": string;
+};
+  "recommendations": (
+{
+  "id": string;
+  "title": string;
+  "detail": string;
+  "action": string;
+  "evidence": {
+  [key: string]: unknown;
+};
+  "proposedTasks"?: (
+{
+  "title": string;
+  "estimatedMinutes": number;
+  "priority"?: number;
+  "scheduledFor"?: string;
+}
+)[];
+}
+)[];
+};
+
+export const LightTickRhythmSuggestionSchema = {
+  "type": "object",
+  "required": [
+    "insightId",
+    "ruleId",
+    "kind",
+    "statement",
+    "confidence",
+    "evidenceCount",
+    "scope",
+    "task",
+    "action"
+  ],
+  "properties": {
+    "insightId": {
+      "type": "string"
+    },
+    "ruleId": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "evidenceCount": {
+      "type": "integer"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "estimated_minutes",
+        "selected_variant"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "estimated_minutes": {
+          "type": "integer"
+        },
+        "selected_variant": {
+          "type": "string"
+        }
+      }
+    },
+    "action": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type LightTickRhythmSuggestion = {
+  "insightId": string;
+  "ruleId": string;
+  "kind": string;
+  "statement": string;
+  "confidence": number;
+  "evidenceCount": number;
+  "scope": string;
+  "task": {
+  "id": string;
+  "title": string;
+  "estimated_minutes": number;
+  "selected_variant": string;
+};
+  "action": string;
+};
+
+export const LightTickRhythmDataSchema = {
+  "type": "object",
+  "required": [],
+  "properties": {
+    "suggestion": {
+      "type": "object",
+      "required": [
+        "insightId",
+        "ruleId",
+        "kind",
+        "statement",
+        "confidence",
+        "evidenceCount",
+        "scope",
+        "task",
+        "action"
+      ],
+      "properties": {
+        "insightId": {
+          "type": "string"
+        },
+        "ruleId": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "evidenceCount": {
+          "type": "integer"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "task": {
+          "type": "object",
+          "required": [
+            "id",
+            "title",
+            "estimated_minutes",
+            "selected_variant"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "estimated_minutes": {
+              "type": "integer"
+            },
+            "selected_variant": {
+              "type": "string"
+            }
+          }
+        },
+        "action": {
+          "type": "string"
+        }
+      }
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "no_today_tasks",
+        "no_confirmed_insight",
+        "no_matching_task"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickRhythmData = {
+  "suggestion"?: {
+  "insightId": string;
+  "ruleId": string;
+  "kind": string;
+  "statement": string;
+  "confidence": number;
+  "evidenceCount": number;
+  "scope": string;
+  "task": {
+  "id": string;
+  "title": string;
+  "estimated_minutes": number;
+  "selected_variant": string;
+};
+  "action": string;
+};
+  "reason"?: "no_today_tasks" | "no_confirmed_insight" | "no_matching_task";
+};
+
+export const LightTickRhythmFeedbackRequestSchema = {
+  "type": "object",
+  "required": [
+    "insight_id",
+    "action"
+  ],
+  "properties": {
+    "insight_id": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "accept",
+        "dismiss"
+      ]
+    }
+  }
+} as const;
+
+export type LightTickRhythmFeedbackRequest = {
+  "insight_id": string;
+  "action": "accept" | "dismiss";
+};
+
+export const LightTickRhythmFeedbackDataSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "rule_id",
+    "status",
+    "updated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "rule_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "user_feedback": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type LightTickRhythmFeedbackData = {
+  "id": string;
+  "rule_id": string;
+  "status": string;
+  "user_feedback"?: string | null;
+  "updated_at": string;
+};
+
 export const LightTickIdSchema = {
   "type": "string",
   "minLength": 8,
@@ -4046,6 +7206,14 @@ export const LightTickRunEnvelopeSchema = {
         "retryable": {
           "type": "boolean"
         },
+        "thread_id": {
+          "type": "string",
+          "description": "Present on chat creation responses."
+        },
+        "message_id": {
+          "type": "string",
+          "description": "Persisted user message ID on chat creation."
+        },
         "result_resource_type": {
           "enum": [
             "goal",
@@ -4093,6 +7261,9 @@ export const LightTickRunEnvelopeSchema = {
             "LIGHTTICK_RESOURCE_NOT_FOUND",
             "LIGHTTICK_STATE_TRANSITION_INVALID",
             "LIGHTTICK_VERSION_CONFLICT",
+            "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED",
+            "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS",
+            "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
             "LIGHTTICK_IDEMPOTENCY_MISMATCH",
             "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
             "LIGHTTICK_AI_RUN_FAILED",
@@ -4138,10 +7309,12 @@ export type LightTickRunEnvelope = {
   "scene": string;
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "retryable": boolean;
+  "thread_id"?: string;
+  "message_id"?: string;
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: "ai" | "template" | "manual";
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
   "result"?: {
   [key: string]: unknown;
 };
@@ -4185,6 +7358,9 @@ export const LightTickErrorEnvelopeSchema = {
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
+        "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED",
+        "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS",
+        "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
         "LIGHTTICK_AI_RUN_FAILED",
@@ -4276,7 +7452,7 @@ export const LightTickErrorEnvelopeSchema = {
 } as const;
 
 export type LightTickErrorEnvelope = {
-  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "code": "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
   "message": string;
   "data": {
   "retryable": boolean;
@@ -4325,6 +7501,9 @@ export const LightTickErrorCodeSchema = {
     "LIGHTTICK_RESOURCE_NOT_FOUND",
     "LIGHTTICK_STATE_TRANSITION_INVALID",
     "LIGHTTICK_VERSION_CONFLICT",
+    "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED",
+    "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS",
+    "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
     "LIGHTTICK_IDEMPOTENCY_MISMATCH",
     "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
     "LIGHTTICK_AI_RUN_FAILED",
@@ -4342,7 +7521,7 @@ export const LightTickErrorCodeSchema = {
   ]
 } as const;
 
-export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+export type LightTickErrorCode = "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
 
 export const LightTickErrorDataSchema = {
   "type": "object",
@@ -5830,6 +9009,54 @@ export const LightTickPlanDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
           "id": {
             "type": "string",
             "minLength": 8,
@@ -6066,6 +9293,17 @@ export type LightTickPlanData = {
 };
   "tasks"?: (
 {
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
   "id": string;
   "lineage_id"?: string;
   "plan_id": string;
@@ -6155,6 +9393,54 @@ export const LightTickTaskDataSchema = {
     "updated_at"
   ],
   "properties": {
+    "feedback": {
+      "type": "object",
+      "required": [
+        "rule_id",
+        "kind",
+        "message",
+        "evidence_count",
+        "data_range",
+        "confident"
+      ],
+      "properties": {
+        "rule_id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "factual",
+            "hypothesis",
+            "rule"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "evidence_count": {
+          "type": "integer"
+        },
+        "data_range": {
+          "type": "object",
+          "required": [
+            "from",
+            "to"
+          ],
+          "properties": {
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          }
+        },
+        "confident": {
+          "type": "boolean"
+        }
+      }
+    },
     "id": {
       "type": "string",
       "minLength": 8,
@@ -6361,6 +9647,17 @@ export const LightTickTaskDataSchema = {
 } as const;
 
 export type LightTickTaskData = {
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
   "id": string;
   "lineage_id"?: string;
   "plan_id": string;
@@ -6674,6 +9971,54 @@ export const LightTickTodayDataSchema = {
         "updated_at"
       ],
       "properties": {
+        "feedback": {
+          "type": "object",
+          "required": [
+            "rule_id",
+            "kind",
+            "message",
+            "evidence_count",
+            "data_range",
+            "confident"
+          ],
+          "properties": {
+            "rule_id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "factual",
+                "hypothesis",
+                "rule"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "evidence_count": {
+              "type": "integer"
+            },
+            "data_range": {
+              "type": "object",
+              "required": [
+                "from",
+                "to"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              }
+            },
+            "confident": {
+              "type": "boolean"
+            }
+          }
+        },
         "id": {
           "type": "string",
           "minLength": 8,
@@ -6895,6 +10240,54 @@ export const LightTickTodayDataSchema = {
           "updated_at"
         ],
         "properties": {
+          "feedback": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "kind",
+              "message",
+              "evidence_count",
+              "data_range",
+              "confident"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "factual",
+                  "hypothesis",
+                  "rule"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "evidence_count": {
+                "type": "integer"
+              },
+              "data_range": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  }
+                }
+              },
+              "confident": {
+                "type": "boolean"
+              }
+            }
+          },
           "id": {
             "type": "string",
             "minLength": 8,
@@ -7127,6 +10520,17 @@ export type LightTickTodayData = {
   "business_date": string;
   "timezone": string;
   "primary_task"?: {
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
   "id": string;
   "lineage_id"?: string;
   "plan_id": string;
@@ -7172,6 +10576,17 @@ export type LightTickTodayData = {
 };
   "tasks": (
 {
+  "feedback"?: {
+  "rule_id": string;
+  "kind": "factual" | "hypothesis" | "rule";
+  "message": string;
+  "evidence_count": number;
+  "data_range": {
+  "from": string;
+  "to": string;
+};
+  "confident": boolean;
+};
   "id": string;
   "lineage_id"?: string;
   "plan_id": string;
@@ -7360,7 +10775,63 @@ export const LightTickReviewDataSchema = {
     "recommendations": {
       "type": "array",
       "items": {
-        "type": "string"
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "detail",
+              "action",
+              "evidence"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "proposedTasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "title",
+                    "estimatedMinutes"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "estimatedMinutes": {
+                      "type": "integer"
+                    },
+                    "priority": {
+                      "type": "integer"
+                    },
+                    "scheduledFor": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "data_sufficiency": {
@@ -7402,7 +10873,25 @@ export type LightTickReviewData = {
   [key: string]: unknown;
 };
   "insights"?: string[];
-  "recommendations"?: string[];
+  "recommendations"?: (
+string | {
+  "id": string;
+  "title": string;
+  "detail": string;
+  "action": string;
+  "evidence": {
+  [key: string]: unknown;
+};
+  "proposedTasks"?: (
+{
+  "title": string;
+  "estimatedMinutes": number;
+  "priority"?: number;
+  "scheduledFor"?: string;
+}
+)[];
+}
+)[];
   "data_sufficiency": "insufficient" | "basic" | "sufficient";
   "linked_proposal_id"?: string;
   "version": number;
@@ -7810,6 +11299,14 @@ export const LightTickRunDataSchema = {
     "retryable": {
       "type": "boolean"
     },
+    "thread_id": {
+      "type": "string",
+      "description": "Present on chat creation responses."
+    },
+    "message_id": {
+      "type": "string",
+      "description": "Persisted user message ID on chat creation."
+    },
     "result_resource_type": {
       "enum": [
         "goal",
@@ -7857,6 +11354,9 @@ export const LightTickRunDataSchema = {
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
+        "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED",
+        "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS",
+        "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
         "LIGHTTICK_AI_RUN_FAILED",
@@ -7894,10 +11394,12 @@ export type LightTickRunData = {
   "scene": string;
   "status": "queued" | "running" | "succeeded" | "failed" | "cancelled";
   "retryable": boolean;
+  "thread_id"?: string;
+  "message_id"?: string;
   "result_resource_type"?: "goal" | "plan" | "review" | "change_proposal" | "coach_message";
   "result_resource_id"?: string;
   "source"?: "ai" | "template" | "manual";
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
   "result"?: {
   [key: string]: unknown;
 };
@@ -8231,6 +11733,9 @@ export const LightTickSyncOperationResultSchema = {
         "LIGHTTICK_RESOURCE_NOT_FOUND",
         "LIGHTTICK_STATE_TRANSITION_INVALID",
         "LIGHTTICK_VERSION_CONFLICT",
+        "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED",
+        "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS",
+        "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
         "LIGHTTICK_IDEMPOTENCY_MISMATCH",
         "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
         "LIGHTTICK_AI_RUN_FAILED",
@@ -8261,7 +11766,7 @@ export type LightTickSyncOperationResult = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
 };
 
 export const LightTickSyncPushDataSchema = {
@@ -8359,6 +11864,9 @@ export const LightTickSyncPushDataSchema = {
               "LIGHTTICK_RESOURCE_NOT_FOUND",
               "LIGHTTICK_STATE_TRANSITION_INVALID",
               "LIGHTTICK_VERSION_CONFLICT",
+              "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED",
+              "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS",
+              "LIGHTTICK_INSIGHT_NOT_ACTIONABLE",
               "LIGHTTICK_IDEMPOTENCY_MISMATCH",
               "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
               "LIGHTTICK_AI_RUN_FAILED",
@@ -8398,7 +11906,7 @@ export type LightTickSyncPushData = {
 };
   "conflict_fields"?: string[];
   "resolution_actions"?: string[];
-  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
+  "error_code"?: "REQ_INVALID_BODY" | "REQ_FIELD_REQUIRED" | "REQ_FIELD_INVALID" | "AUTH_REQUIRED" | "AUTH_TOKEN_INVALID" | "AUTH_SESSION_REVOKED" | "APP_SCOPE_FORBIDDEN" | "APP_MEMBER_INACTIVE" | "LIGHTTICK_APP_DISABLED" | "LIGHTTICK_GUEST_SESSION_EXPIRED" | "LIGHTTICK_GUEST_UPGRADE_INVALID" | "LIGHTTICK_GUEST_CREDENTIAL_INVALID" | "LIGHTTICK_GUEST_EXPIRED" | "LIGHTTICK_GUEST_REVOKED" | "LIGHTTICK_GUEST_UPGRADE_CONFLICT" | "LIGHTTICK_ACCOUNT_ALREADY_UPGRADED" | "LIGHTTICK_ACCOUNT_DELETION_REAUTH_REQUIRED" | "LIGHTTICK_REAUTH_REQUIRED" | "LIGHTTICK_APP_ACCESS_DENIED" | "LIGHTTICK_RESOURCE_NOT_FOUND" | "LIGHTTICK_STATE_TRANSITION_INVALID" | "LIGHTTICK_VERSION_CONFLICT" | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED" | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS" | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE" | "LIGHTTICK_IDEMPOTENCY_MISMATCH" | "LIGHTTICK_PLAN_CONSTRAINT_FAILED" | "LIGHTTICK_AI_RUN_FAILED" | "LIGHTTICK_AI_UNAVAILABLE" | "LIGHTTICK_AI_QUOTA_EXCEEDED" | "LIGHTTICK_RUN_NOT_READY" | "LIGHTTICK_PROPOSAL_STALE" | "LIGHTTICK_PROPOSAL_NOT_PENDING" | "LIGHTTICK_SYNC_CURSOR_INVALID" | "LIGHTTICK_SYNC_BATCH_TOO_LARGE" | "LIGHTTICK_SYNC_OPERATION_REJECTED" | "LIGHTTICK_TIMEZONE_INVALID" | "RATE_LIMITED" | "INTERNAL_ERROR";
 }
 )[];
   "server_time": string;
@@ -12587,16 +16095,31 @@ export const GeneratedPublicContractNames = [
   "LightTickAvailabilityWindow",
   "LightTickChangeProposalData",
   "LightTickChangeProposalRunRequest",
+  "LightTickChatIntentsData",
+  "LightTickChatMessage",
+  "LightTickChatMessagesData",
+  "LightTickCoachRunRequest",
   "LightTickCommitmentMode",
   "LightTickCommitmentRequest",
   "LightTickConstraintViolation",
   "LightTickDeviceData",
   "LightTickDevicePlatform",
   "LightTickDeviceUpsertRequest",
+  "LightTickDnaFeedbackRequest",
+  "LightTickDnaInsight",
+  "LightTickDnaInsightsData",
   "LightTickEnvelope",
   "LightTickErrorCode",
   "LightTickErrorData",
   "LightTickErrorEnvelope",
+  "LightTickEvidenceRange",
+  "LightTickExecutionFactsData",
+  "LightTickFactFeedback",
+  "LightTickFactsProposalRequest",
+  "LightTickFactsProposalsData",
+  "LightTickFirstActionData",
+  "LightTickFirstActionEnvelope",
+  "LightTickFirstActionFeedback",
   "LightTickFirstActionRequest",
   "LightTickGoalConstraints",
   "LightTickGoalCreateRequest",
@@ -12626,10 +16149,21 @@ export const GeneratedPublicContractNames = [
   "LightTickPublicConfigEnvelope",
   "LightTickPublicFeatureFlags",
   "LightTickPushProvider",
+  "LightTickReviewActionRequest",
+  "LightTickReviewActionResult",
+  "LightTickReviewActionState",
+  "LightTickReviewActionView",
+  "LightTickReviewActionsData",
   "LightTickReviewData",
   "LightTickReviewPeriod",
+  "LightTickReviewProposedPlan",
+  "LightTickReviewRecommendation",
   "LightTickReviewRunRequest",
   "LightTickReviewStatus",
+  "LightTickRhythmData",
+  "LightTickRhythmFeedbackData",
+  "LightTickRhythmFeedbackRequest",
+  "LightTickRhythmSuggestion",
   "LightTickRunData",
   "LightTickRunEnvelope",
   "LightTickRunKind",
@@ -12663,6 +16197,7 @@ export const GeneratedPublicContractNames = [
   "LightTickTransferredResourceCounts",
   "LightTickVersion",
   "LightTickVersionedCommandRequest",
+  "LightTickWeeklyCommitmentAvailability",
   "LogAckRequest",
   "LogFailData",
   "LogFailRequest",

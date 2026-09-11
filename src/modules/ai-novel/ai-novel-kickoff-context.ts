@@ -1,8 +1,5 @@
 import type { LLMMessage } from "../../services/llm-manager.ts";
-import {
-  DEFAULT_APP_I18N_SETTINGS,
-  pickI18nText,
-} from "../../shared/i18n.ts";
+import { DEFAULT_APP_I18N_SETTINGS, pickI18nText } from "../../shared/i18n.ts";
 import type {
   KickoffChapterLength,
   KickoffDrive,
@@ -55,7 +52,7 @@ const KICKOFF_SYSTEM_PROMPT = [
   "",
   "## Workflow discipline",
   "1. Infer from the current conversation and summary first.",
-  "2. If state may be incomplete or stale, call read_meta before deciding.",
+  "2. If state is not already established by a real read_meta tool result, call read_meta before making a state-dependent decision, calling update_meta, or calling ready.",
   "3. In a single turn, you may call multiple tools when that helps you refresh state and then take the next structured step.",
   "4. When stable structured information becomes clear, call update_meta.",
   "5. In most turns, if any necessary information is still missing, continue with exactly one focused ask_question.",
@@ -135,7 +132,7 @@ const KICKOFF_SYSTEM_PROMPT = [
 
 export function buildKickoffMessages(
   messages: LLMMessage[],
-  meta: KickoffMeta,
+  meta: KickoffMeta | undefined,
   locale = DEFAULT_APP_I18N_SETTINGS.defaultLocale,
 ): LLMMessage[] {
   return [
@@ -143,7 +140,7 @@ export function buildKickoffMessages(
       role: "system",
       content: [
         KICKOFF_SYSTEM_PROMPT,
-        renderKickoffSummary(meta),
+        ...(meta === undefined ? [] : [renderKickoffSummary(meta)]),
         buildKickoffAuthoringGlossaryHint(locale),
       ].join("\n\n"),
     },
@@ -293,7 +290,10 @@ function normalizeChapterLength(value: unknown): KickoffChapterLength {
   return chapterLength;
 }
 
-function normalizeStoryAnchors(value: unknown, maxItems: number): StoryAnchor[] {
+function normalizeStoryAnchors(
+  value: unknown,
+  maxItems: number,
+): StoryAnchor[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -359,7 +359,9 @@ function renderChapterLength(chapterLength: KickoffChapterLength): string {
         : chapterLength.maxChars !== undefined
           ? `<=${chapterLength.maxChars}`
           : "";
-  return [chapterLength.preset, range, chapterLength.note].filter(Boolean).join(" / ");
+  return [chapterLength.preset, range, chapterLength.note]
+    .filter(Boolean)
+    .join(" / ");
 }
 
 function readOptionalString(value: unknown): string | undefined {

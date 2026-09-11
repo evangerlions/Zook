@@ -221,6 +221,60 @@
   cursor: pointer;
 }
 
+.llm-provider-badge {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 8px;
+}
+
+.llm-provider-badge__dot {
+  background: currentColor;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 6px;
+  width: 6px;
+}
+
+.llm-provider-badge__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llm-provider-badge--bai {
+  background: rgba(225, 81, 55, 0.1);
+  border-color: rgba(225, 81, 55, 0.22);
+  color: #c2412d;
+}
+
+.llm-provider-badge--bailian {
+  background: rgba(37, 99, 235, 0.09);
+  border-color: rgba(37, 99, 235, 0.2);
+  color: #1d4ed8;
+}
+
+.llm-provider-badge--openrouter {
+  background: rgba(124, 58, 237, 0.09);
+  border-color: rgba(124, 58, 237, 0.2);
+  color: #6d28d9;
+}
+
+.llm-provider-badge--volcengine {
+  background: rgba(8, 145, 178, 0.09);
+  border-color: rgba(8, 145, 178, 0.2);
+  color: #0e7490;
+}
+
+.llm-provider-badge--neutral {
+  background: rgba(71, 85, 105, 0.08);
+  border-color: rgba(71, 85, 105, 0.16);
+  color: #475569;
+}
+
 .llm-formula-note {
   background: rgba(37, 99, 235, 0.06);
   border: 1px solid rgba(37, 99, 235, 0.14);

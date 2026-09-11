@@ -34,6 +34,7 @@ LightTick 独立公开配置在产品关闭时仍可读取，并以固定白名�
 LightTick 通知已复用公共 APNs/FCM 适配器，但使用产品自有安全载荷、APNs topic 和可选独立
 Firebase 项目；调度按业务日期幂等，遵守 profile timezone、安静时段、分类偏好和暂停目标，
 不可恢复 token 只失活匹配的 LightTick device，日志不记录 token 或 provider 凭据。
+Phase 2 已实现执行事实与审计、Coach chat 消息存储、DNA 用户反馈、事实驱动提案、复盘决策和 Today 节奏建议。复盘采纳使用数据库事务及版本 CAS，失败整体回滚；有效完成会中断连续跳过。DNA 通过 additive evidence JSONB 迁移保留数值偏差，零偏差或无证据不输出方向建议。公开协议统一维护于 README_API.md 与 LightTick OpenAPI，生成快照供运行时使用；这些能力只对正式账号开放。
 能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
 不再拥有生产数据、合同或运行时。
@@ -52,6 +53,10 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 6. 排行榜只接收冻结的目标快照和完成聚合，服务端负责计分与公开资格判定。
 7. 邀请归因包含同设备、自邀请和重复归因防护；挑战仅允许邀请未拉黑好友。
 8. 完整外部契约位于 `api-contracts/openapi/bodylog/api.yaml`。
+
+新增搭子、小组、7 天成长计划、通知偏好和推送设备接口。PostgreSQL store 通过请求事务上下文执行，搭子接受需要接收者确认，小组成员变更与组长转让原子保存。新增本地日志 eventId 去重、保留 occurredAt 的搭子补报、排行榜冻结快照读取、最近成长计划读取及产品内云端权益查询。BodyLog 推送已接入自己的设备表与通知偏好，实际使用 APNs/FCM dispatcher，缺少产品配置时明确失败。Growth 入口默认关闭；任务完成与计划计数在同一 SQL 内提交。订阅查询和里程碑奖励使用已有订阅记录；本次不包含 IAP 验证接口。
+
+BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周报表。任务领取标记与结算数据在同一 PostgreSQL 事务中提交，失败回滚后可重试；不依赖进程内时间戳或独立 KV 标记。真实数据库验证命令为 `BODYLOG_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/bodylog-postgres.test.ts`，使用独立临时 schema，覆盖迁移重放、多连接任务去重与回滚。发布前须在 dev 环境验证当前 main SHA；这些本地验证不表示已上线。
 
 对应核心文件：
 
@@ -222,6 +227,9 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 8. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
 9. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
 10. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
+11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：2 分钟内至少两位用户累计四次连续失败先进入不中断用户流量的确认状态，服务端立即用同一冒烟请求最多探测两次；两次都失败才隔离 `routingModelKey × provider × providerModel`。worker 用同一冒烟请求两次连续成功恢复正式熔断；管理台 runtime route 状态展示确认、熔断和下次探测信息，并支持对当前配置中的单一路由手动解除，关闭开关会清除全部既有状态
+12. `common.email_service_regions.llmAlertRecipients` 可配置 LLM 运营告警收件人；worker 使用现有腾讯云 SES 凭据和 `llm-alert` 模板，对超过 20 次调用且成功率低于 90% 的完整小时、以及正式 route 熔断分别发送去重邮件
+13. AINovel 反馈持久化成功后复用同一内部告警收件人和 `llm-alert` 模板发送反馈正文；同一用户按 Asia/Shanghai 自然日最多一封，投递失败不会影响用户反馈提交
 
 对应核心文件：
 
@@ -235,6 +243,8 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 8. `src/infrastructure/database/postgres/postgres-llm-observability.ts`
 9. `apps/admin-web/app/components/llm-monitor/`
 10. `docs/admin-web-design.md`
+11. `src/services/llm-route-circuit-breaker.service.ts`
+12. `src/services/llm-route-circuit-recovery.service.ts`
 
 ### 2.10 App 级 i18n 设置与本地化工具
 
@@ -291,10 +301,12 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 4. 请求与响应都支持 `AES-256-GCM` JSON envelope
 5. 解密成功后的业务成功与业务错误都会加密返回
 6. `scene_key` / `sceneKey` 只选择 AINovel 的 Prompt、工具和响应工作流；客户端不允许直传底层 `model`、`modelKey`、`providerModel` 或 routing tier 字段。所有文本场景共用服务端 `ai_novel.model_selection.chat.default` 选出的模型
-7. `kickoff_turn` 目前采用单轮 tool-calling 输出：Zook 注入 kickoff prompt + tools，并把 assistant text 与 `tool_call` 事件回传给客户端；AINovel engine 负责真正的 kickoff tool loop 与 interactive tool 结果回写。为避免上游模型偶发输出越过 UI 合同的 `ask_question` payload，Zook 会在 relay 前再次规范化 `options / optionSubtitles`，必要时转成流式错误事件
+7. 所有 Agent scene 都采用单轮 tool-calling HTTP/SSE 输出：Zook 注入唯一 system prompt，并按解密后 context 的 `suppliedTools` 过滤工具；AINovel 的 Pi Agent 负责工具执行、error tool result、interactive tool 暂停和下一轮回写。解密 inner body 的顶层 `agentProtocol = pi-v1` 启用按需上下文：Zook 不再把 raw context 拼入 system 或 user message，当前状态由客户端 Agent 的真实 read tool 返回；缺失该字段的旧客户端保持原有 context 组装。Zook 不修复 tool name 大小写，也不规范化或重写客户端工具 payload
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
-9. local/debug 环境额外提供 `POST /api/v1/ai_novel/debug/audit-file`，仅用于 AINovel Flutter Web 上传 generation audit HTML；生产或非本机 host 返回 404，服务端只按固定文件名覆盖写本地文件，不解析 audit 内容，并返回 local-only `viewUrl` 供浏览器新标签页打开报告
-10. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
+9. AINovel 通过 AES-GCM 的 `agent-skills/query` / `agent-skills/fetch` 在每个 app 生命周期首次懒加载 Skill manifest 与仅有变更的 package，并固定本地 snapshot。只有 `agentProtocol = pi-v1` 的 interactive Write Agent，且 `suppliedTools` 声明 `read` 并提供非空批准 catalog 时才可使用虚拟 `read(path)`。Pi 客户端在每次 Agent run 开始时将 catalog 作为独立 bootstrap system-reminder 放入正常 transcript；Zook 仅用加密 context 过滤 schema，不向模型串行化 raw catalog。完整内容和 references 由 AINovel 的本地 allowlist snapshot 作为 normal tool result 返回，运行中不访问网络。旧客户端、其他 Agent scene 与 Generation Job scene 不提供 Skill
+10. local/dev 环境额外提供 AINovel Trace Console：客户端向 `POST /api/v1/ai_novel/debug/traces` 发送结构化 capture，Zook 用鉴权用户记录 `uid`，将 `sessionId` 作为 `cid`，按 `kind + sessionId` 追加保存；`/debug/traces/data` 默认按最近活动返回 sessions，并支持 uid/cid 过滤；`/debug/traces/{sessionId}` 默认渲染 Sessions → Turns → request details，带 `Accept: application/json` 时返回同一会话的结构化数据，由 Admin `/conversation-records` 直接呈现三栏 Sessions → Turns → Detail；按用户消息聚合 Pi/tool loop，展示相邻 turn 上下文 diff、彩色消息、折叠请求和 raw JSON。online/production 返回 404；shared dev 的 GET 需要 Admin 认证
+11. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
+12. AINovel 已完成的 Chat 会保存最后一条用户正文和最终 AI 正文，并同时关联认证 UID、请求 `X-DID`、请求 ID 与 scene；每位用户在第 121 个 Turn 写入时裁剪为最新 100 个 Turn。Admin 可在 `ai_novel` 工作区按 UID 或 DID 查看，每页最多 100 个 Turn（200 条消息），不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload
 
 对应核心文件：
 
@@ -412,7 +424,7 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 49. `GET /api/v1/{productKey}/public/config`
 50. `POST /api/v1/ai_novel/ai/chat-completions`
 51. `POST /api/v1/ai_novel/ai/embeddings`
-52. `POST /api/v1/ai_novel/debug/audit-file`（local/debug only）
+52. `POST/GET /api/v1/ai_novel/debug/traces` 与相关 data/session GET（local/dev only；shared dev GET 需 Admin 认证）
 53. `POST /telemetry/ga4`
 54. `POST /telemetry/sentry/api/{projectId}/envelope/`
 

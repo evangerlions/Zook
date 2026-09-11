@@ -252,6 +252,11 @@ const importEvidenceSchema: Record<string, unknown> = {
 
 const contextReadTools: LLMToolDefinition[] = [
   createTool(
+    "read_writing_context",
+    "Read the complete current Writing context in one call.",
+    {},
+  ),
+  createTool(
     "read_book_contract",
     "Read the current book contract fragment.",
     {},
@@ -704,7 +709,22 @@ export const SUBMIT_HOT_HANDOFF_TOOL = createTool(
   ["targetChapterIndex", "handoff"],
 );
 
+export const READ_TOOL = createTool(
+  "read",
+  "Read text from an approved virtual Skill path.",
+  {
+    path: {
+      type: "string",
+      description: "Exact virtual path from the approved Skill catalog or its referenced files.",
+    },
+    offset: { type: "integer", minimum: 1 },
+    limit: { type: "integer", minimum: 1 },
+  },
+  ["path"],
+);
+
 export const WRITE_TURN_TOOLS: LLMToolDefinition[] = [
+  READ_TOOL,
   ...contextReadTools,
   ...interactionTools,
   ...writeStateTools,
@@ -712,10 +732,24 @@ export const WRITE_TURN_TOOLS: LLMToolDefinition[] = [
   ...storyHistoryTools,
 ];
 
-export const CHAPTER_DRAFT_TOOLS: LLMToolDefinition[] = [
+export const HISTORY_CHAPTER_QA_TOOLS: LLMToolDefinition[] = [
+  readDraftTool,
+  ...storyHistoryTools,
+];
+
+export const LEGACY_CHAPTER_DRAFT_TOOLS: LLMToolDefinition[] = [
   readDraftTool,
   ...storyHistoryTools,
   writeDraftTool,
+];
+
+export const CHAPTER_DRAFT_TOOLS: LLMToolDefinition[] = [
+  createTool(
+    "read_writing_context",
+    "Read the complete current Writing context in one call.",
+    {},
+  ),
+  ...LEGACY_CHAPTER_DRAFT_TOOLS,
 ];
 
 export const IMPORTED_BOOK_KICKOFF_TOOLS: LLMToolDefinition[] = [
@@ -759,12 +793,12 @@ export const IMPORTED_BOOK_KICKOFF_TOOLS: LLMToolDefinition[] = [
       },
       importEvidence: {
         ...importEvidenceSchema,
-        description:
-          "Evidence supporting revised source-sensitive claims.",
+        description: "Evidence supporting revised source-sensitive claims.",
       },
       evidenceRefs: {
         type: "array",
-        description: "Evidence refs from read_import_result/search/read chapter supporting the update.",
+        description:
+          "Evidence refs from read_import_result/search/read chapter supporting the update.",
         items: { type: "string" },
       },
       changedFields: { type: "array", items: { type: "string" } },
