@@ -16,7 +16,20 @@ import {
   buildTopRoutingModelOptions,
   filterHealthFailures,
 } from "../../apps/admin-web/app/components/llm-monitor/reliability-errors-view-model.ts";
+import {
+  formatCrossMatrixMetricValue,
+  getCrossMatrixMetricValue,
+} from "../../apps/admin-web/app/components/llm-monitor/cross-matrix-metrics.ts";
 import { providerTone } from "../../apps/admin-web/app/components/llm-monitor/provider-presentation.ts";
+import {
+  compareNumbers,
+  compareText,
+  compareTimestamps,
+  MULTI_SORT_DIRECTIONS,
+  multiColumnSorter,
+  multiSortPriority,
+  toggleMultiSort,
+} from "../../apps/admin-web/app/components/llm-monitor/table-sorting.ts";
 import type { LlmHourlySeriesItem, LlmMetricsSummary } from "../../apps/admin-web/app/lib/types/llm.ts";
 
 test("LLM monitor formatters keep units compact and missing values explicit", () => {
@@ -77,6 +90,18 @@ test("LLM token ranking keeps four non-overlapping token components", () => {
   ]);
   assert.match(tokenCoverage(summary), /Provider 80%/);
   assert.match(tokenCoverage(summary), /估算 20%/);
+});
+
+test("LLM cross-matrix keeps missing Token values distinct from zero", () => {
+  const route = {
+    provider: "provider-a",
+    providerModel: "model-a",
+    operation: "chat" as const,
+    summary: emptySummary(),
+  };
+  assert.equal(getCrossMatrixMetricValue(route, "tokens"), undefined);
+  assert.equal(formatCrossMatrixMetricValue(undefined, "tokens"), "—");
+  assert.equal(formatCrossMatrixMetricValue(1_500_000, "tokens"), "1.5M");
 });
 
 test("LLM routing share keeps exactly one row per model without current-target markers", () => {
@@ -149,6 +174,36 @@ test("LLM provider badges use stable tones without tinting unrelated table cells
   assert.equal(providerTone("openrouter"), "openrouter");
   assert.equal(providerTone("volcengine_agent_plan"), "volcengine");
   assert.equal(providerTone("custom-provider"), "neutral");
+});
+
+test("LLM monitor tables use three-state, click-order multi-column sorting", () => {
+  assert.deepEqual(MULTI_SORT_DIRECTIONS, ["ascend", "descend", null]);
+  const sorter = multiColumnSorter<{ value: number }>((left, right) => compareNumbers(left.value, right.value));
+  assert.equal(sorter.multiple, 1);
+  assert.equal(sorter.compare({ value: 1 }, { value: 2 }), -1);
+  assert.equal(compareNumbers(undefined, undefined), 0);
+  assert.ok(compareNumbers(undefined, 1) < 0);
+  assert.equal(compareText("model-2", "model-10"), -1);
+  assert.equal(compareTimestamps("2026-09-01T00:00:00Z", "2026-09-02T00:00:00Z"), -86_400_000);
+
+  const first = toggleMultiSort([], "a");
+  const second = toggleMultiSort(first, "b");
+  const firstDescending = toggleMultiSort(second, "a");
+  assert.deepEqual(firstDescending, [
+    { key: "a", order: "descend" },
+    { key: "b", order: "ascend" },
+  ]);
+  assert.equal(multiSortPriority(firstDescending, "a"), 2);
+  assert.equal(multiSortPriority(firstDescending, "b"), 1);
+  assert.equal(multiSortPriority(firstDescending, "c"), 0);
+  assert.deepEqual(toggleMultiSort(firstDescending, "a"), [{ key: "b", order: "ascend" }]);
+  assert.deepEqual(toggleMultiSort([{ key: "b", order: "ascend" }], "a"), [
+    { key: "b", order: "ascend" },
+    { key: "a", order: "ascend" },
+  ]);
+  const reverseClickOrder = toggleMultiSort(toggleMultiSort([], "b"), "a");
+  assert.equal(multiSortPriority(reverseClickOrder, "b"), 2);
+  assert.equal(multiSortPriority(reverseClickOrder, "a"), 1);
 });
 
 function emptySummary(): LlmMetricsSummary {

@@ -30,7 +30,6 @@ export interface EmailServiceRegionConfig {
 
 export interface EmailServiceConfig {
   enabled: boolean;
-  llmAlertRecipients: string[];
   regions: EmailServiceRegionConfig[];
 }
 
@@ -129,7 +128,6 @@ export interface MailRegionDraft {
 
 export interface MailConfigDraft {
   enabled: boolean;
-  llmAlertRecipients: string;
   regions: MailRegionDraft[];
 }
 
