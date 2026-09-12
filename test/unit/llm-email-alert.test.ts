@@ -5,7 +5,7 @@ import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-man
 import { LlmEmailAlertService } from "../../src/services/llm-email-alert.service.ts";
 
 test("LLM alert emails once for a completed hour below 90% after more than 20 requests", async () => {
-  const sent: Array<{ email: string; subject: string; templateData: Record<string, unknown> }> = [];
+  const sent: Array<{ to: string; subject: string; text: string }> = [];
   const service = await createService({
     summary: { requestCount: 21, successCount: 18, failureCount: 3, timeoutCount: 0 },
     sent,
@@ -13,15 +13,15 @@ test("LLM alert emails once for a completed hour below 90% after more than 20 re
   const now = new Date("2030-01-01T10:12:00.000Z");
 
   assert.deepEqual(await service.runDueAlerts(now), { hourly: 1, circuits: 0 });
-  assert.equal(sent.length, 2);
+  assert.equal(sent.length, 1);
   assert.match(sent[0]?.subject ?? "", /hourly success rate/i);
-  assert.match(String(sent[0]?.templateData.summary), /85\.7%/);
+  assert.match(sent[0]?.text ?? "", /85\.7%/);
   assert.deepEqual(await service.runDueAlerts(now), { hourly: 0, circuits: 0 });
-  assert.equal(sent.length, 2);
+  assert.equal(sent.length, 1);
 });
 
 test("LLM alert emails once when a configured route is formally circuit-open", async () => {
-  const sent: Array<{ email: string; subject: string; templateData: Record<string, unknown> }> = [];
+  const sent: Array<{ to: string; subject: string; text: string }> = [];
   const service = await createService({
     summary: { requestCount: 0, successCount: 0, failureCount: 0, timeoutCount: 0 },
     sent,
@@ -29,27 +29,27 @@ test("LLM alert emails once when a configured route is formally circuit-open", a
   });
 
   assert.deepEqual(await service.runDueAlerts(new Date("2030-01-01T10:12:00.000Z")), { hourly: 0, circuits: 1 });
-  assert.equal(sent.length, 2);
+  assert.equal(sent.length, 1);
   assert.match(sent[0]?.subject ?? "", /circuit opened/i);
   assert.deepEqual(await service.runDueAlerts(new Date("2030-01-01T10:13:00.000Z")), { hourly: 0, circuits: 0 });
 });
 
 test("LLM alert retries only a failed recipient without duplicating delivered recipients", async () => {
-  const sent: Array<{ email: string; subject: string; templateData: Record<string, unknown> }> = [];
+  const sent: Array<{ to: string; subject: string; text: string }> = [];
   const service = await createService({
     summary: { requestCount: 21, successCount: 18, failureCount: 3, timeoutCount: 0 },
     sent,
     failFirstDelivery: true,
   });
   const now = new Date("2030-01-01T10:12:00.000Z");
+  assert.deepEqual(await service.runDueAlerts(now), { hourly: 0, circuits: 0 });
+  assert.equal(sent.length, 0);
   assert.deepEqual(await service.runDueAlerts(now), { hourly: 1, circuits: 0 });
   assert.equal(sent.length, 1);
-  assert.deepEqual(await service.runDueAlerts(now), { hourly: 1, circuits: 0 });
-  assert.equal(sent.length, 2);
 });
 
 test("LLM alert ignores the 20-call boundary and isolates alert evaluation errors", async () => {
-  const sent: Array<{ email: string; subject: string; templateData: Record<string, unknown> }> = [];
+  const sent: Array<{ to: string; subject: string; text: string }> = [];
   const atThreshold = await createService({
     summary: { requestCount: 20, successCount: 0, failureCount: 20, timeoutCount: 0 },
     sent,
@@ -63,19 +63,19 @@ test("LLM alert ignores the 20-call boundary and isolates alert evaluation error
   assert.deepEqual(await failingMetrics.runDueAlerts(new Date("2030-01-01T10:12:00.000Z")), { hourly: 0, circuits: 0 });
 });
 
-test("LLM alert does nothing when no recipients are configured", async () => {
-  const sent: Array<{ email: string; subject: string; templateData: Record<string, unknown> }> = [];
+test("LLM alert does nothing when SMTP environment is absent", async () => {
+  const sent: Array<{ to: string; subject: string; text: string }> = [];
   const service = await createService({
     summary: { requestCount: 21, successCount: 18, failureCount: 3, timeoutCount: 0 },
     sent,
-    recipients: [],
+    smtpConfigured: false,
   });
   assert.deepEqual(await service.runDueAlerts(new Date("2030-01-01T10:12:00.000Z")), { hourly: 0, circuits: 0 });
   assert.equal(sent.length, 0);
 });
 
 test("AINovel feedback alert includes content and only notifies once per user per day", async () => {
-  const sent: Array<{ email: string; subject: string; templateData: Record<string, unknown> }> = [];
+  const sent: Array<{ to: string; subject: string; text: string }> = [];
   const service = await createService({
     summary: { requestCount: 0, successCount: 0, failureCount: 0, timeoutCount: 0 },
     sent,
@@ -104,21 +104,20 @@ test("AINovel feedback alert includes content and only notifies once per user pe
     message: "The same user may notify again after the next Asia Shanghai calendar day begins.",
     createdAt: "2030-01-01T16:01:00.000Z",
   });
-  assert.equal(sent.length, 6);
-  assert.match(String(sent[0]?.templateData.details), /cursor after saving/);
-  assert.doesNotMatch(String(sent[0]?.templateData.summary), /user-a/);
+  assert.equal(sent.length, 3);
+  assert.match(sent[0]?.text ?? "", /cursor after saving/);
+  assert.doesNotMatch(sent[0]?.text ?? "", /user-a/);
 });
 
 async function createService(input: {
   summary: { requestCount: number; successCount: number; failureCount: number; timeoutCount: number };
-  sent: Array<{ email: string; subject: string; templateData: Record<string, unknown> }>;
+  sent: Array<{ to: string; subject: string; text: string }>;
   circuitState?: "closed" | "open";
   failFirstDelivery?: boolean;
   throwMetrics?: boolean;
-  recipients?: string[];
+  smtpConfigured?: boolean;
 }) {
   let deliveryAttempts = 0;
-  const recipients = input.recipients ?? ["ops@example.com", "oncall@example.com"];
   return new LlmEmailAlertService(
     {
       async queryMetrics() {
@@ -146,19 +145,6 @@ async function createService(input: {
       },
     } as never,
     {
-      async getDocument() {
-        return { config: { enabled: true, llmAlertRecipients: recipients } };
-      },
-      async getRuntimeConfig() {
-        return {
-          config: { llmAlertRecipients: recipients },
-          resolvedRegion: "ap-guangzhou",
-          sender: { address: "noreply@example.com" },
-          template: { templateId: 123 },
-        };
-      },
-    } as never,
-    {
       async getRuntimeStatus() {
         return {
           enabled: true,
@@ -172,21 +158,27 @@ async function createService(input: {
         };
       },
     } as never,
+    { warn() {} } as never,
     {
-      async sendTemplateEmail(command) {
+      environment: input.smtpConfigured === false
+        ? {}
+        : {
+            EMAIL_USERNAME: "alerts@163.com",
+            EMAIL_PASSWORD: "smtp-password",
+            EMAIL_TO_ADDRESS: "ops@example.com",
+          },
+      async sendMail(message) {
         deliveryAttempts += 1;
         if (input.failFirstDelivery && deliveryAttempts === 1) {
-          throw new Error("SES unavailable");
+          throw new Error("SMTP unavailable");
         }
         input.sent.push({
-          email: command.email,
-          subject: command.subject,
-          templateData: command.templateData,
+          to: message.to,
+          subject: message.subject,
+          text: message.text,
         });
-        return { provider: "tencent_ses" };
       },
-    } as never,
-    { warn() {} } as never,
+    },
   );
 }
 

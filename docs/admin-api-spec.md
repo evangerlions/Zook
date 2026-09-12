@@ -140,7 +140,7 @@ AINovel App 内反馈由用户登录态提交，附件写入 Zook 的私有 `app
 2. 单张附件最大 3 MB，总 payload 最大 10 MB。
 3. 图片-only 反馈按空正文处理；少于 30 字的反馈返回 `REQ_INVALID_BODY`。
 4. 防滥用限制包括：用户 5 次 / 小时、20 次 / 天，IP fallback 20 次 / 小时，用户每日图片字节上限，以及短时间重复正文检测。
-5. 成功提交会记录 audit action `feedback.submit`；如 `common.email_service_regions.llmAlertRecipients` 已配置，系统会使用同一 `llm-alert` SES 模板发送内部提醒，正文包含反馈内容。同一用户按 Asia/Shanghai 自然日最多提醒一次；邮件发送失败不会影响反馈提交响应。
+5. 成功提交会记录 audit action `feedback.submit`；如进程配置了 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS`，系统会直接通过小流量 SMTP 内部提醒发送反馈正文。同一用户按 Asia/Shanghai 自然日最多提醒一次；邮件发送失败不会影响反馈提交响应。
 
 Admin 查看接口：
 
@@ -234,7 +234,7 @@ Admin 查看接口：
 
 支持的腾讯云 SES 事件：`delivered`、`dropped`、`bounce`、`open`、`click`、`spamreport`、`unsubscribe`、`deferred`。未知事件返回 `REQ_INVALID_BODY`，不会写入回调记录。生产环境必须在 Admin 密码服务中配置 `tencent.ses_callback_token`，并在腾讯云控制台回调地址中使用同一个长随机 token。
 
-`common.email_service_regions.llmAlertRecipients` 是 LLM 运营告警收件人列表；为空时不发送告警。配置后，worker 会对上一个完整自然小时的上游调用做检查：调用数大于 20 且成功率低于 90% 时发送一次邮件；任一 Chat route 进入正式 `open` 熔断时也发送一次邮件。每个小时窗口和每次 route 熔断状态分别去重。告警使用广州 SES Region 的 sender 和名为 `llm-alert` 的模板，并传入 `alertType`、`summary`、`details` 三个模板变量；填写收件人时这两项必须已在邮件服务配置中登记。
+LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_regions`。进程同时配置 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` 时，告警直接使用与 CI/CD 相同的 `smtp.163.com:465` SMTP 契约发送到 `EMAIL_TO_ADDRESS`；缺少任意一项时告警保持禁用，不影响 API 或 worker 主流程。worker 会对上一个完整自然小时的上游调用做检查：调用数大于 20 且成功率低于 90% 时发送一次邮件；任一 Chat route 进入正式 `open` 熔断时也发送一次。每个小时窗口和每次 route 熔断状态分别去重。
 
 ### 3.8 Common Passwords
 
