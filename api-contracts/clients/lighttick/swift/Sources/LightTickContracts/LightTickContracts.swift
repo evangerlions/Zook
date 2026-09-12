@@ -370,3 +370,16 @@ public enum LightTickContractDecoder {
         return decoder
     }
 }
+
+
+/// GET /api/v1/lighttick/onboarding/commitment (account-scoped, read-only).
+public struct LightTickCommitmentState: Codable, Equatable, Sendable {
+    public let commitmentMode: String?
+    public let validActionCount: Int
+    public let requiredActionCount: Int
+    public let eligible: Bool
+    enum CodingKeys: String, CodingKey {
+        case commitmentMode = "commitment_mode", validActionCount = "valid_action_count"
+        case requiredActionCount = "required_action_count", eligible
+    }
+}

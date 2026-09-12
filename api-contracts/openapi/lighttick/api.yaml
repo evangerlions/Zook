@@ -628,6 +628,19 @@ paths:
         "404": { $ref: "#/components/responses/LightTickError" }
         "409": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/onboarding/commitment:
+    get:
+      operationId: getLightTickCommitmentState
+      tags: [lighttick-profile]
+      summary: Read account-wide saved commitment and current eligibility
+      description: Read-only. No profile returns a null mode. Counts use the same effective-action rule as selection; deep planning does not change eligibility.
+      responses:
+        "200":
+          description: Saved preference and live eligibility
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LightTickCommitmentStateEnvelope" }
+        "401": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
     post:
       operationId: selectLightTickCommitment
       tags: [lighttick-profile, lighttick-goals]
@@ -2032,6 +2045,27 @@ components:
     LightTickCommitmentMode:
       type: string
       enum: [recovery, light, standard, sprint]
+    LightTickCommitmentState:
+      type: object
+      required: [commitment_mode, valid_action_count, required_action_count, eligible]
+      properties:
+        commitment_mode:
+          type: [string, "null"]
+          enum: [recovery, light, standard, sprint, null]
+          description: Account-wide saved selection, or null if never selected or unrecognized legacy data.
+        valid_action_count: { type: integer, minimum: 0 }
+        required_action_count: { type: integer, const: 2 }
+        eligible: { type: boolean, description: True when at least two effective actions exist; not a persisted deep-planning bypass. }
+      additionalProperties: false
+    LightTickCommitmentStateEnvelope:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data: { $ref: "#/components/schemas/LightTickCommitmentState" }
+      additionalProperties: false
     LightTickCommitmentRequest:
       type: object
       required: [goal_id, mode]

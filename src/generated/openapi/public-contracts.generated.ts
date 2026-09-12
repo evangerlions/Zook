@@ -4084,6 +4084,124 @@ export type LightTickWeeklyCommitmentAvailability = {
   "unlock_requirement": string | null;
 };
 
+export const LightTickCommitmentStateSchema = {
+  "type": "object",
+  "required": [
+    "commitment_mode",
+    "valid_action_count",
+    "required_action_count",
+    "eligible"
+  ],
+  "properties": {
+    "commitment_mode": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "recovery",
+        "light",
+        "standard",
+        "sprint",
+        null
+      ],
+      "description": "Account-wide saved selection, or null if never selected or unrecognized legacy data."
+    },
+    "valid_action_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "required_action_count": {
+      "type": "integer",
+      "const": 2
+    },
+    "eligible": {
+      "type": "boolean",
+      "description": "True when at least two effective actions exist; not a persisted deep-planning bypass."
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickCommitmentState = {
+  "commitment_mode": "recovery" | "light" | "standard" | "sprint" | null;
+  "valid_action_count": number;
+  "required_action_count": number;
+  "eligible": boolean;
+};
+
+export const LightTickCommitmentStateEnvelopeSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "commitment_mode",
+        "valid_action_count",
+        "required_action_count",
+        "eligible"
+      ],
+      "properties": {
+        "commitment_mode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "recovery",
+            "light",
+            "standard",
+            "sprint",
+            null
+          ],
+          "description": "Account-wide saved selection, or null if never selected or unrecognized legacy data."
+        },
+        "valid_action_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_action_count": {
+          "type": "integer",
+          "const": 2
+        },
+        "eligible": {
+          "type": "boolean",
+          "description": "True when at least two effective actions exist; not a persisted deep-planning bypass."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type LightTickCommitmentStateEnvelope = {
+  "code": string;
+  "message": string;
+  "requestId": string;
+  "data": {
+  "commitment_mode": "recovery" | "light" | "standard" | "sprint" | null;
+  "valid_action_count": number;
+  "required_action_count": number;
+  "eligible": boolean;
+};
+};
+
 export const LightTickFirstActionDataSchema = {
   "type": "object",
   "required": [
@@ -16101,6 +16219,8 @@ export const GeneratedPublicContractNames = [
   "LightTickCoachRunRequest",
   "LightTickCommitmentMode",
   "LightTickCommitmentRequest",
+  "LightTickCommitmentState",
+  "LightTickCommitmentStateEnvelope",
   "LightTickConstraintViolation",
   "LightTickDeviceData",
   "LightTickDevicePlatform",

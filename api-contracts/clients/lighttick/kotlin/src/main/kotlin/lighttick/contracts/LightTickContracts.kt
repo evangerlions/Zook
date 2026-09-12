@@ -228,3 +228,12 @@ data class LightTickSyncPushData(
     val results: List<LightTickSyncOperationResult>,
     val serverTime: String,
 )
+
+
+/** GET /api/v1/lighttick/onboarding/commitment (account-scoped, read-only). */
+data class LightTickCommitmentState(
+    val commitmentMode: String?,
+    val validActionCount: Int,
+    val requiredActionCount: Int,
+    val eligible: Boolean,
+)

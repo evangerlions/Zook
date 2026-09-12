@@ -1057,3 +1057,9 @@ APNs / FCM 返回不可恢复的无效 token 错误时，服务端会仅将当�
 公开 handoff `GET /frogsleep/buddy-invitation?token=...` 返回 `no-store` 的安全页面，尝试打开 `frogsleep://buddy-invitation` 并提供手工码路径，不展示邮箱或用户资料。
 
 以下路径仅为兼容旧客户端的非 canonical 路径，新接入不得使用：`/api/v1/frogsleep/sleep-buddy/invites*`、`/api/v1/frogsleep/focus-buddy/invites*`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。
+
+### LightTick 周承诺状态
+
+`GET /api/v1/lighttick/onboarding/commitment` 返回当前鉴权账户的 `{ commitment_mode, valid_action_count, required_action_count: 2, eligible }`。未选择或无 profile 时 mode 为 null。模式为 recovery/light/standard/sprint；读取无副作用，访客可用，账户隔离。计数与 POST 使用相同有效行动规则，deep_planning 不改写 eligible。
+
+LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_planning）；无 profile 时返回 404，不再返回未实际保存的成功。客户端仅在写入成功后更新选择，失败保留原值；重启从 GET 恢复，不用当日完成项推算累计资格。新客户端应在此接口部署后启用；旧服务不支持 GET 时显示“暂时无法核对本周投入”并保留其他 Journey 能力。

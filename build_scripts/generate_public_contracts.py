@@ -111,6 +111,8 @@ SPECS: dict[str, list[str]] = {
         "LightTickCoachRunRequest",
         "LightTickFirstActionFeedback",
         "LightTickWeeklyCommitmentAvailability",
+        "LightTickCommitmentState",
+        "LightTickCommitmentStateEnvelope",
         "LightTickFirstActionData",
         "LightTickFirstActionEnvelope",
         "LightTickEvidenceRange",
