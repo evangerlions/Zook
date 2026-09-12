@@ -13,8 +13,15 @@ import {
   buildTopRoutingModelOptions,
   filterHealthFailures,
 } from "./reliability-errors-view-model";
+import {
+  compareNumbers,
+  compareText,
+  compareTimestamps,
+} from "./table-sorting";
+import { useMultiColumnSort, type MultiColumnSortController } from "./use-multi-column-sort";
 
 export function ReliabilityErrorsSection({ metrics }: { metrics: AdminLlmMetricsDocument }) {
+  const sort = useMultiColumnSort();
   const [modelKey, setModelKey] = useState("");
   const topModels = useMemo(
     () => buildTopRoutingModelOptions(metrics.routes.items),
@@ -58,7 +65,7 @@ export function ReliabilityErrorsSection({ metrics }: { metrics: AdminLlmMetrics
 
       {metrics.healthFailures.items.length ? (
         <Table<LlmHealthFailureMetricsGroup>
-          columns={failureColumns()}
+          columns={failureColumns(sort)}
           dataSource={failures}
           locale={{ emptyText: "这个 Top 5 模型在当前范围没有影响健康的错误" }}
           pagination={{ pageSize: 10, hideOnSinglePage: true }}
@@ -72,6 +79,7 @@ export function ReliabilityErrorsSection({ metrics }: { metrics: AdminLlmMetrics
           ].join(":")}
           scroll={{ x: 1140 }}
           size="small"
+          sortDirections={sort.sortDirections}
         />
       ) : (
         <Empty description="当前筛选范围没有影响健康成功率的失败或超时" />
@@ -83,9 +91,10 @@ export function ReliabilityErrorsSection({ metrics }: { metrics: AdminLlmMetrics
   );
 }
 
-function failureColumns(): ColumnsType<LlmHealthFailureMetricsGroup> {
+function failureColumns(sort: MultiColumnSortController): ColumnsType<LlmHealthFailureMetricsGroup> {
   return [
     {
+      ...sort.column<LlmHealthFailureMetricsGroup>("errorCode", (left, right) => compareText(left.errorCode, right.errorCode)),
       title: "错误码",
       dataIndex: "errorCode",
       fixed: "left",
@@ -93,28 +102,54 @@ function failureColumns(): ColumnsType<LlmHealthFailureMetricsGroup> {
       render: (value) => <Tag color="error">{value}</Tag>,
     },
     {
+      ...sort.column<LlmHealthFailureMetricsGroup>("errorMessage", (left, right) => compareText(left.errorMessage, right.errorMessage)),
       title: "错误信息",
       dataIndex: "errorMessage",
       width: 360,
       render: (value) => value || <span className="llm-muted-value">历史记录未保存错误信息</span>,
     },
     {
+      ...sort.column<LlmHealthFailureMetricsGroup>("count", (left, right) => compareNumbers(left.count, right.count)),
       title: "次数",
       dataIndex: "count",
       width: 88,
-      sorter: (left, right) => left.count - right.count,
       render: formatMetricNumber,
     },
-    { title: "路由 Model", dataIndex: "routingModelKey", width: 180, ellipsis: true },
     {
+      ...sort.column<LlmHealthFailureMetricsGroup>("routingModelKey", (left, right) => compareText(left.routingModelKey, right.routingModelKey)),
+      title: "路由 Model",
+      dataIndex: "routingModelKey",
+      width: 180,
+      ellipsis: true,
+    },
+    {
+      ...sort.column<LlmHealthFailureMetricsGroup>("provider", (left, right) => compareText(left.provider, right.provider)),
       title: "Provider",
       dataIndex: "provider",
       width: 140,
       ellipsis: true,
       render: (value) => <ProviderBadge provider={value} />,
     },
-    { title: "Provider Model", dataIndex: "providerModel", width: 190, ellipsis: true },
-    { title: "类型", dataIndex: "operation", width: 100, render: (value) => <Tag>{value}</Tag> },
-    { title: "最近发生", dataIndex: "lastOccurredAt", width: 170, render: formatTimestamp },
+    {
+      ...sort.column<LlmHealthFailureMetricsGroup>("providerModel", (left, right) => compareText(left.providerModel, right.providerModel)),
+      title: "Provider Model",
+      dataIndex: "providerModel",
+      width: 190,
+      ellipsis: true,
+    },
+    {
+      ...sort.column<LlmHealthFailureMetricsGroup>("operation", (left, right) => compareText(left.operation, right.operation)),
+      title: "类型",
+      dataIndex: "operation",
+      width: 100,
+      render: (value) => <Tag>{value}</Tag>,
+    },
+    {
+      ...sort.column<LlmHealthFailureMetricsGroup>("lastOccurredAt", (left, right) => compareTimestamps(left.lastOccurredAt, right.lastOccurredAt)),
+      title: "最近发生",
+      dataIndex: "lastOccurredAt",
+      width: 170,
+      render: formatTimestamp,
+    },
   ];
 }

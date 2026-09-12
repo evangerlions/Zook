@@ -16,6 +16,12 @@ import {
   buildRoutingComparisonOption,
   type RoutingComparisonRow,
 } from "./routing-comparison-view-model";
+import {
+  compareNumbers,
+  compareText,
+  compareTimestamps,
+} from "./table-sorting";
+import { useMultiColumnSort, type MultiColumnSortController } from "./use-multi-column-sort";
 
 interface RoutingRow extends LlmRouteRuntimeStatus {
   key: string;
@@ -34,6 +40,7 @@ export function RoutingSection({
   onResetCircuit: (row: RoutingRow) => Promise<void>;
   resettingCircuitKey?: string;
 }) {
+  const sort = useMultiColumnSort();
   const allRows = buildRows(metrics);
   const rows = filterRows(allRows, metrics);
   const visibleModelKeys = new Set(rows.map((row) => row.modelKey));
@@ -70,13 +77,14 @@ export function RoutingSection({
       </div>
 
       <Table<RoutingRow>
-        columns={routingColumns(onResetCircuit, resettingCircuitKey)}
+        columns={routingColumns(onResetCircuit, sort, resettingCircuitKey)}
         dataSource={rows}
         locale={{ emptyText: "当前配置没有可展示的 route" }}
         pagination={{ pageSize: 12, hideOnSinglePage: true }}
         rowKey="key"
         scroll={{ x: 1760 }}
         size="small"
+        sortDirections={sort.sortDirections}
       />
 
       <div className="llm-formula-note llm-formula-note--secondary">
@@ -128,45 +136,65 @@ function toComparisonRow(row: RoutingRow): RoutingComparisonRow {
 
 function routingColumns(
   onResetCircuit: (row: RoutingRow) => Promise<void>,
+  sort: MultiColumnSortController,
   resettingCircuitKey?: string,
 ): ColumnsType<RoutingRow> {
   return [
-    { title: "路由 Model", dataIndex: "modelKey", fixed: "left", width: 165, ellipsis: true },
     {
+      ...sort.column<RoutingRow>("modelKey", (left, right) => compareText(left.modelKey, right.modelKey)),
+      title: "路由 Model",
+      dataIndex: "modelKey",
+      fixed: "left",
+      width: 165,
+      ellipsis: true,
+    },
+    {
+      ...sort.column<RoutingRow>("provider", (left, right) => compareText(left.provider, right.provider)),
       title: "Provider",
       dataIndex: "provider",
       width: 130,
       ellipsis: true,
       render: (value) => <ProviderBadge provider={value} />,
     },
-    { title: "Provider Model", dataIndex: "providerModel", width: 180, ellipsis: true },
-    { title: "策略", dataIndex: "strategy", width: 78, render: (value) => <Tag>{value}</Tag> },
     {
+      ...sort.column<RoutingRow>("providerModel", (left, right) => compareText(left.providerModel, right.providerModel)),
+      title: "Provider Model",
+      dataIndex: "providerModel",
+      width: 180,
+      ellipsis: true,
+    },
+    {
+      ...sort.column<RoutingRow>("strategy", (left, right) => compareText(left.strategy, right.strategy)),
+      title: "策略",
+      dataIndex: "strategy",
+      width: 78,
+      render: (value) => <Tag>{value}</Tag>,
+    },
+    {
+      ...sort.column<RoutingRow>("status", (left, right) => compareText(routeStatusLabel(left), routeStatusLabel(right))),
       title: "状态",
       width: 112,
-      render: (_, row) => row.circuit?.state === "open"
-        ? <Tag color="error">熔断中</Tag>
-        : row.circuit?.state === "confirming"
-          ? <Tag color="processing">确认中</Tag>
-        : row.selectionEligible
-        ? <Tag color={row.runtimeAvailable ? "success" : "warning"}>{row.runtimeAvailable ? "可选择" : "Adapter 不可用"}</Tag>
-        : <Tag>{row.ineligibleReason === "provider_disabled"
-          ? "Provider 禁用"
-          : row.ineligibleReason === "runtime_unavailable"
-            ? "Adapter 不可用"
-            : "Route 禁用"}</Tag>,
+      render: (_, row) => <Tag
+        color={row.circuit?.state === "open"
+          ? "error"
+          : row.circuit?.state === "confirming"
+            ? "processing"
+            : row.selectionEligible
+              ? row.runtimeAvailable ? "success" : "warning"
+              : undefined}
+      >{routeStatusLabel(row)}</Tag>,
     },
     {
+      ...sort.column<RoutingRow>("circuitRecovery", compareCircuitRecovery),
       title: "熔断恢复",
       width: 190,
-      render: (_, row) => {
-        if (!row.circuit?.enabled) return <span>未启用</span>;
-        if (row.circuit.state === "confirming") return <span>后台两次确认中</span>;
-        if (row.circuit.state !== "open") return <span>正常</span>;
-        return <span>{`失败 ${row.circuit.failureCount} · 用户 ${row.circuit.distinctUserCount} · 探测 ${row.circuit.recoverySuccessCount}/2`}</span>;
-      },
+      render: (_, row) => <span>{circuitRecoveryLabel(row)}</span>,
     },
     {
+      ...sort.column<RoutingRow>("nextRecoveryAt", (left, right) => compareTimestamps(
+        left.circuit?.nextRecoveryAt,
+        right.circuit?.nextRecoveryAt,
+      )),
       title: "下次探测",
       dataIndex: ["circuit", "nextRecoveryAt"],
       width: 156,
@@ -190,20 +218,98 @@ function routingColumns(
         : "—",
     },
     {
+      ...sort.column<RoutingRow>("successRate", (left, right) => compareNumbers(left.successRate, right.successRate)),
       title: "健康成功率",
       dataIndex: "successRate",
       width: 118,
       render: (value) => <SuccessRateBadge value={value} />,
     },
-    { title: "健康样本", dataIndex: "sampleSize", width: 96, render: (value) => formatMetricNumber(value) },
-    { title: "基础权重", dataIndex: "configuredWeight", width: 96, render: (value) => formatMetricNumber(value) },
-    { title: "健康分", dataIndex: "healthScore", width: 88, render: (value) => formatMetricNumber(value) },
-    { title: "动态分", dataIndex: "dynamicScore", width: 88, render: (value) => formatMetricNumber(value) },
-    { title: "当前目标占比", dataIndex: "effectiveProbability", width: 126, render: (value) => formatPercent(value) },
-    { title: "调用占比", dataIndex: "actualTrafficShare", width: 104, render: (value) => formatPercent(value) },
-    { title: "选择原因", dataIndex: "selectionReason", width: 160, render: (value) => selectionReasonLabel(value) },
-    { title: "窗口最近错误", dataIndex: "lastErrorAt", width: 156, render: (value) => formatTimestamp(value) },
+    {
+      ...sort.column<RoutingRow>("sampleSize", (left, right) => compareNumbers(left.sampleSize, right.sampleSize)),
+      title: "健康样本",
+      dataIndex: "sampleSize",
+      width: 96,
+      render: (value) => formatMetricNumber(value),
+    },
+    {
+      ...sort.column<RoutingRow>("configuredWeight", (left, right) => compareNumbers(left.configuredWeight, right.configuredWeight)),
+      title: "基础权重",
+      dataIndex: "configuredWeight",
+      width: 96,
+      render: (value) => formatMetricNumber(value),
+    },
+    {
+      ...sort.column<RoutingRow>("healthScore", (left, right) => compareNumbers(left.healthScore, right.healthScore)),
+      title: "健康分",
+      dataIndex: "healthScore",
+      width: 88,
+      render: (value) => formatMetricNumber(value),
+    },
+    {
+      ...sort.column<RoutingRow>("dynamicScore", (left, right) => compareNumbers(left.dynamicScore, right.dynamicScore)),
+      title: "动态分",
+      dataIndex: "dynamicScore",
+      width: 88,
+      render: (value) => formatMetricNumber(value),
+    },
+    {
+      ...sort.column<RoutingRow>("effectiveProbability", (left, right) => compareNumbers(left.effectiveProbability, right.effectiveProbability)),
+      title: "当前目标占比",
+      dataIndex: "effectiveProbability",
+      width: 126,
+      render: (value) => formatPercent(value),
+    },
+    {
+      ...sort.column<RoutingRow>("actualTrafficShare", (left, right) => compareNumbers(left.actualTrafficShare, right.actualTrafficShare)),
+      title: "调用占比",
+      dataIndex: "actualTrafficShare",
+      width: 104,
+      render: (value) => formatPercent(value),
+    },
+    {
+      ...sort.column<RoutingRow>("selectionReason", (left, right) => compareText(
+        selectionReasonLabel(left.selectionReason),
+        selectionReasonLabel(right.selectionReason),
+      )),
+      title: "选择原因",
+      dataIndex: "selectionReason",
+      width: 160,
+      render: (value) => selectionReasonLabel(value),
+    },
+    {
+      ...sort.column<RoutingRow>("lastErrorAt", (left, right) => compareTimestamps(left.lastErrorAt, right.lastErrorAt)),
+      title: "窗口最近错误",
+      dataIndex: "lastErrorAt",
+      width: 156,
+      render: (value) => formatTimestamp(value),
+    },
   ];
+}
+
+function circuitRecoveryLabel(row: RoutingRow): string {
+  if (!row.circuit?.enabled) return "未启用";
+  if (row.circuit.state === "confirming") return "后台两次确认中";
+  if (row.circuit.state !== "open") return "正常";
+  return `失败 ${row.circuit.failureCount} · 用户 ${row.circuit.distinctUserCount} · 探测 ${row.circuit.recoverySuccessCount}/2`;
+}
+
+function compareCircuitRecovery(left: RoutingRow, right: RoutingRow): number {
+  const statusComparison = compareText(circuitRecoveryLabel(left), circuitRecoveryLabel(right));
+  if (statusComparison !== 0) return statusComparison;
+  return compareNumbers(left.circuit?.failureCount, right.circuit?.failureCount) ||
+    compareNumbers(left.circuit?.distinctUserCount, right.circuit?.distinctUserCount) ||
+    compareNumbers(left.circuit?.recoverySuccessCount, right.circuit?.recoverySuccessCount);
+}
+
+function routeStatusLabel(row: RoutingRow): string {
+  if (row.circuit?.state === "open") return "熔断中";
+  if (row.circuit?.state === "confirming") return "确认中";
+  if (row.selectionEligible) return row.runtimeAvailable ? "可选择" : "Adapter 不可用";
+  return row.ineligibleReason === "provider_disabled"
+    ? "Provider 禁用"
+    : row.ineligibleReason === "runtime_unavailable"
+      ? "Adapter 不可用"
+      : "Route 禁用";
 }
 
 function selectionReasonLabel(value: RoutingRow["selectionReason"]): string {

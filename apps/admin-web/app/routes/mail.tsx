@@ -355,21 +355,6 @@ export default function MailRoute() {
                       onChange={(value) => setDraft((current) => ({ ...current, enabled: value }))}
                     />
 
-                    <Field
-                      hint="一行一个邮箱。配置后，LLM 成功率/熔断和 AINovel 用户反馈会使用名为 llm-alert 的 SES 模板发送。"
-                      label="LLM 告警收件人"
-                    >
-                      <Input.TextArea
-                        autoSize={{ minRows: 2, maxRows: 5 }}
-                        onChange={(event) => setDraft((current) => ({
-                          ...current,
-                          llmAlertRecipients: event.target.value,
-                        }))}
-                        placeholder="ops@example.com&#10;oncall@example.com"
-                        value={draft.llmAlertRecipients}
-                      />
-                    </Field>
-
                     {draft.regions.map((region, regionIndex) => (
                       <article className="mail-region-card" key={region.region}>
                         <div className="card-header">

@@ -1,29 +1,41 @@
 import type { LlmObservabilityStore } from "../infrastructure/database/llm-observability-store.ts";
 import { createHash } from "node:crypto";
+import { createTransport } from "nodemailer";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import type { KVManager } from "../infrastructure/kv/kv-manager.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
-import { DEFAULT_EMAIL_REGION } from "./common-email-config-normalizer.ts";
-import type { CommonEmailConfigService } from "./common-email-config.service.ts";
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmRouteCircuitBreakerService } from "./llm-route-circuit-breaker.service.ts";
-import type { RegistrationEmailSender } from "./tencent-ses-registration-email.service.ts";
 import { toDateKey } from "../shared/utils.ts";
 
 const SCOPE = "llm-email-alert";
-const ALERT_TEMPLATE_NAME = "llm-alert";
 const HOURLY_DEDUPE_TTL_SECONDS = 3 * 24 * 60 * 60;
 const SUCCESS_RATE_THRESHOLD = 90;
 const MINIMUM_REQUEST_COUNT = 20;
 
+interface AlertEmailMessage {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}
+
+export interface LlmEmailAlertServiceOptions {
+  environment?: NodeJS.ProcessEnv;
+  sendMail?: (message: AlertEmailMessage) => Promise<void>;
+}
+
 export class LlmEmailAlertService {
+  private smtpMissingLogged = false;
+
   constructor(
     private readonly observabilityStore: LlmObservabilityStore,
     private readonly kvManager: KVManager,
     private readonly commonLlmConfigService: CommonLlmConfigService,
-    private readonly commonEmailConfigService: CommonEmailConfigService,
     private readonly circuitBreaker: LlmRouteCircuitBreakerService,
-    private readonly emailSender: RegistrationEmailSender,
     private readonly logger: StructuredLogger,
+    private readonly options: LlmEmailAlertServiceOptions = {},
   ) {}
 
   async runDueAlerts(now = new Date()): Promise<{ hourly: number; circuits: number }> {
@@ -107,30 +119,22 @@ export class LlmEmailAlertService {
     details: string,
     text: string,
   ): Promise<boolean> {
-    const emailConfig = await this.commonEmailConfigService.getDocument();
-    if (!emailConfig.config.enabled || !emailConfig.config.llmAlertRecipients.length) return false;
+    const smtp = this.getSmtpConfig();
+    if (!smtp) return false;
+    const claimed = await this.kvManager.setStringIfAbsent(SCOPE, key, "1", ttlSeconds);
+    if (!claimed) return false;
     try {
-      const runtime = await this.commonEmailConfigService.getRuntimeConfig(
-        "zh-CN",
-        DEFAULT_EMAIL_REGION,
-        ALERT_TEMPLATE_NAME,
-      );
-      const recipients = runtime.config.llmAlertRecipients;
-      if (!recipients.length) return false;
-      const results = await Promise.all(recipients.map((email) => this.sendToRecipient({
-        key,
-        ttlSeconds,
-        email,
-        region: runtime.resolvedRegion,
-        fromEmailAddress: runtime.sender.address,
-        templateId: runtime.template.templateId,
-        summary,
-        details,
-        text,
-      })));
-      return results.some(Boolean);
+      await this.sendMail(smtp, {
+        from: smtp.username,
+        to: smtp.recipient,
+        subject: `[Zook Alert] ${summary}`,
+        text: `${details}\n\n${text}`,
+        html: `<h2>${escapeHtml(summary)}</h2><p>${escapeHtml(details)}</p><pre>${escapeHtml(text)}</pre>`,
+      });
+      return true;
     } catch (error) {
-      this.logger.warn("failed to prepare LLM email alert", {
+      await this.kvManager.delete(SCOPE, key);
+      this.logger.warn("failed to deliver Zook alert email", {
         alertKey: key,
         errorCode: error instanceof Error ? error.name : "unknown",
       });
@@ -138,44 +142,39 @@ export class LlmEmailAlertService {
     }
   }
 
-  private async sendToRecipient(input: {
-    key: string;
-    ttlSeconds?: number;
-    email: string;
-    region: "ap-guangzhou" | "ap-hongkong";
-    fromEmailAddress: string;
-    templateId: number;
-    summary: string;
-    details: string;
-    text: string;
-  }): Promise<boolean> {
-    const recipientKey = `${input.key}:recipient:${hashValue(input.email)}`;
-    const claimed = await this.kvManager.setStringIfAbsent(SCOPE, recipientKey, "1", input.ttlSeconds);
-    if (!claimed) return false;
-    try {
-      await this.emailSender.sendTemplateEmail({
-        email: input.email,
-        clientRegion: DEFAULT_EMAIL_REGION,
-        region: input.region,
-        fromEmailAddress: input.fromEmailAddress,
-        subject: `[Zook LLM Alert] ${input.summary}`,
-        templateId: input.templateId,
-        templateData: {
-          alertType: input.summary,
-          summary: input.details,
-          details: input.text,
-        },
+  private getSmtpConfig(): { username: string; password: string; recipient: string } | undefined {
+    const environment = this.options.environment ?? process.env;
+    const username = environment.EMAIL_USERNAME?.trim();
+    const password = environment.EMAIL_PASSWORD?.trim();
+    const recipient = environment.EMAIL_TO_ADDRESS?.trim();
+    if (username && password && recipient) return { username, password, recipient };
+    if (!this.smtpMissingLogged) {
+      this.smtpMissingLogged = true;
+      this.logger.warn("Zook alert email is disabled because SMTP environment is incomplete", {
+        hasUsername: Boolean(username),
+        hasPassword: Boolean(password),
+        hasRecipient: Boolean(recipient),
       });
-      return true;
-    } catch (error) {
-      await this.kvManager.delete(SCOPE, recipientKey);
-      this.logger.warn("failed to deliver LLM email alert", {
-        alertKey: input.key,
-        recipientHash: hashValue(input.email),
-        errorCode: error instanceof Error ? error.name : "unknown",
-      });
-      return false;
     }
+    return undefined;
+  }
+
+  private async sendMail(
+    smtp: { username: string; password: string },
+    message: AlertEmailMessage,
+  ): Promise<void> {
+    if (this.options.sendMail) return await this.options.sendMail(message);
+    const transporter = createTransport({
+      host: "smtp.163.com",
+      port: 465,
+      secure: true,
+      requireTLS: true,
+      auth: {
+        user: smtp.username,
+        pass: smtp.password,
+      },
+    } satisfies SMTPTransport.Options);
+    await transporter.sendMail(message);
   }
 
   private async runBestEffort(label: string, task: () => Promise<number>): Promise<number> {
@@ -193,4 +192,14 @@ export class LlmEmailAlertService {
 
 function hashValue(value: string): string {
   return createHash("sha256").update(value).digest("base64url");
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    "\"": "&quot;",
+  })[character] ?? character);
 }

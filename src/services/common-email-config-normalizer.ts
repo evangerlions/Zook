@@ -43,7 +43,6 @@ export function validateEmailServiceConfig(
   const source = input as Record<string, unknown>;
   const config: EmailServiceConfig = {
     enabled: Boolean(source.enabled),
-    llmAlertRecipients: normalizeAlertRecipients(source.llmAlertRecipients),
     regions: normalizeRegions(source.regions, allowLegacyFallback),
   };
 
@@ -54,7 +53,6 @@ export function validateEmailServiceConfig(
   }
 
   assertVerificationTemplateNames(config.regions);
-  assertLlmAlertTemplate(config);
 
   if (!config.regions.some((item) => item.sender && item.templates.length)) {
     badRequest(
@@ -65,42 +63,15 @@ export function validateEmailServiceConfig(
   return config;
 }
 
-function assertLlmAlertTemplate(config: EmailServiceConfig): void {
-  if (!config.llmAlertRecipients.length) return;
-  const regionConfig = config.regions.find((item) => item.region === DEFAULT_EMAIL_REGION);
-  const template = regionConfig?.templates.find((item) => item.name === "llm-alert");
-  if (!regionConfig?.sender || !template) {
-    badRequest(
-      "ADMIN_EMAIL_SERVICE_INVALID",
-      `LLM alert recipients require a sender and llm-alert template in ${DEFAULT_EMAIL_REGION}.`,
-    );
-  }
-}
-
 export function createDefaultEmailServiceConfig(): EmailServiceConfig {
   return {
     enabled: false,
-    llmAlertRecipients: [],
     regions: EMAIL_REGIONS.map((region) => ({
       region,
       sender: null,
       templates: [],
     })),
   };
-}
-
-function normalizeAlertRecipients(value: unknown): string[] {
-  if (value == null || value === "") return [];
-  if (!Array.isArray(value)) {
-    badRequest("ADMIN_EMAIL_SERVICE_INVALID", "llmAlertRecipients must be an array of email addresses.");
-  }
-  const recipients = value.map((item) => String(item ?? "").trim().toLowerCase()).filter(Boolean);
-  for (const email of recipients) {
-    if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)) {
-      badRequest("ADMIN_EMAIL_SERVICE_INVALID", `Invalid LLM alert recipient: ${email}`);
-    }
-  }
-  return [...new Set(recipients)];
 }
 
 export function assertRuntimeEmailServiceConfig(

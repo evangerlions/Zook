@@ -315,9 +315,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     database.llmObservabilityStore,
     kvManager,
     commonLlmConfigService,
-    commonEmailConfigService,
     llmRouteCircuitBreaker,
-    registrationEmailSender,
     logger,
   );
   const adminSensitiveOperationService = new AdminSensitiveOperationService(
