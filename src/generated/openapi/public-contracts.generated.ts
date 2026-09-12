@@ -6385,7 +6385,7 @@ export const LightTickReviewActionRequestSchema = {
     },
     "ignore_reason": {
       "type": "string",
-      "minLength": 2,
+      "description": "Optional explanation; omitted or blank values are treated as absent.",
       "maxLength": 500
     }
   }

@@ -177,7 +177,7 @@ LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 | POST | `/dna/insights/{insightId}/feedback` | `action=confirm/deny/correct/dismiss`；correct 必须提供去空白后 2–500 字符 `correction`；返回洞察 |
 | POST | `/proposals/from-facts` | `{ goal_id }`；返回 `{ items, suppressed? }`，只生成待确认提案，不直接改计划 |
 | GET | `/reviews/{reviewId}/actions` | 返回 `{ review, recommendations, action_state }`，推荐包含稳定 id、证据及可选 proposedTasks |
-| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 必填 2–500 字符 `ignore_reason`；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
+| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 可选 `ignore_reason`（最多 500 字符，省略或空白按未提供处理，非空内容去除首尾空白后保存）；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
 | GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
 | POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
 

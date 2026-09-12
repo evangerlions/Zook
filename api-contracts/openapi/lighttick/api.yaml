@@ -335,7 +335,7 @@ paths:
       summary: Record a review decision atomically
       description: Requires a registered LightTick membership; guest sessions receive
         403. accept_partial requires nonempty known recommendation_ids; ignore
-        requires a 2–500 character ignore_reason. Acceptance creates a proposed
+        accepts an optional ignore_reason (up to 500 characters); blank reasons are omitted. Acceptance creates a proposed
         plan, not an active plan. Concurrent or repeated decisions return 409
         LIGHTTICK_VERSION_CONFLICT or LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED;
         failed persistence rolls back the plan. proposed_plan retains camelCase
@@ -1621,7 +1621,7 @@ components:
             type: string
         ignore_reason:
           type: string
-          minLength: 2
+          description: Optional explanation; omitted or blank values are treated as absent.
           maxLength: 500
     LightTickReviewProposedPlan:
       type: object
