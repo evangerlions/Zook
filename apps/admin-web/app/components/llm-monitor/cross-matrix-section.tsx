@@ -9,9 +9,11 @@ import type {
   LlmMetricsOperation,
 } from "../../lib/types";
 import { LlmChart } from "./llm-chart";
-import { formatLatency, formatMetricNumber, formatPercent } from "./llm-monitor-view-model";
-
-type MatrixMetric = "calls" | "tokens" | "success" | "p50" | "p95";
+import {
+  formatCrossMatrixMetricValue,
+  getCrossMatrixMetricValue,
+  type MatrixMetric,
+} from "./cross-matrix-metrics";
 
 const METRICS: Array<{ label: string; value: MatrixMetric }> = [
   { label: "调用次数", value: "calls" },
@@ -117,13 +119,13 @@ function buildHeatmapOption(
   metric: MatrixMetric,
 ): EChartsCoreOption {
   const values = matrix.routes
-    .map((route) => metricValue(route, metric))
+    .map((route) => getCrossMatrixMetricValue(route, metric))
     .filter((value): value is number => value !== undefined);
   const max = Math.max(1, ...values);
   const data = matrix.routes.map((route) => [
     matrix.models.indexOf(route.providerModel),
     matrix.rows.findIndex((row) => row.provider === route.provider && row.operation === route.operation),
-    metricValue(route, metric) ?? null,
+    getCrossMatrixMetricValue(route, metric) ?? null,
     route.provider,
     route.providerModel,
     route.operation,
@@ -134,7 +136,7 @@ function buildHeatmapOption(
       formatter: (params: { data?: unknown[] }) => {
         const item = params.data ?? [];
         const value = typeof item[2] === "number" ? item[2] : undefined;
-        return `${item[3]} · ${item[4]} · ${item[5]}<br/>${formatMetricValue(value, metric)}`;
+        return `${item[3]} · ${item[4]} · ${item[5]}<br/>${formatCrossMatrixMetricValue(value, metric)}`;
       },
     },
     grid: { top: 34, left: 150, right: 30, bottom: 86 },
@@ -165,7 +167,7 @@ function buildHeatmapOption(
       data,
       label: {
         show: true,
-        formatter: (params: { value?: unknown[] }) => formatMetricValue(
+        formatter: (params: { value?: unknown[] }) => formatCrossMatrixMetricValue(
           typeof params.value?.[2] === "number" ? params.value[2] : undefined,
           metric,
         ),
@@ -197,36 +199,20 @@ function matrixColumns(
       render: (_: unknown, row: MatrixTableRow) => {
         const route = row.values.get(model);
         if (!route) return "—";
-        const value = metricValue(route, metric);
+        const value = getCrossMatrixMetricValue(route, metric);
         return (
           <Button
-            aria-label={`${row.provider} ${model} ${row.operation} ${formatMetricValue(value, metric)}`}
+            aria-label={`${row.provider} ${model} ${row.operation} ${formatCrossMatrixMetricValue(value, metric)}`}
             aria-pressed={selected.provider === row.provider && selected.providerModel === model && selected.operation === row.operation}
             onClick={() => onSelect(row.provider, model, row.operation)}
             type="link"
           >
-            {formatMetricValue(value, metric)}
+            {formatCrossMatrixMetricValue(value, metric)}
           </Button>
         );
       },
     })),
   ];
-}
-
-function metricValue(route: LlmCrossMetricsGroup, metric: MatrixMetric): number | undefined {
-  switch (metric) {
-    case "calls": return route.summary.requestCount;
-    case "tokens": return route.summary.totalTokens ?? 0;
-    case "success": return route.summary.successRate;
-    case "p50": return route.summary.p50TotalLatencyMs ?? 0;
-    case "p95": return route.summary.p95TotalLatencyMs ?? 0;
-  }
-}
-
-function formatMetricValue(value: number | undefined, metric: MatrixMetric): string {
-  if (metric === "success") return formatPercent(value);
-  if (metric === "p50" || metric === "p95") return formatLatency(value || undefined);
-  return formatMetricNumber(value);
 }
 
 function parseHeatmapSelection(params: unknown): {
