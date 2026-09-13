@@ -1,10 +1,14 @@
-import { Button, Empty, Input, Segmented, Space, Spin, Tag } from "antd";
+import { Button, Descriptions, Drawer, Empty, Input, Segmented, Space, Table, Tag } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import { useEffect, useRef, useState } from "react";
 
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
-import type { AdminAiNovelConversationRecordDocument } from "../lib/types";
+import type {
+  AdminAiNovelConversationRecord,
+  AdminAiNovelConversationRecordDocument,
+} from "../lib/types";
 
 const AI_NOVEL_APP_ID = "ai_novel";
 type QueryType = "uid" | "did";
@@ -15,6 +19,7 @@ export default function ConversationHistoryRoute() {
   const [queryType, setQueryType] = useState<QueryType>("uid");
   const [queryValue, setQueryValue] = useState("");
   const [document, setDocument] = useState<AdminAiNovelConversationRecordDocument | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<AdminAiNovelConversationRecord | null>(null);
   const [loading, setLoading] = useState(false);
   const requestRef = useRef(0);
 
@@ -30,6 +35,7 @@ export default function ConversationHistoryRoute() {
   async function load(page = 0, query = inputQuery()) {
     const requestId = ++requestRef.current;
     setLoading(true);
+    setSelectedRecord(null);
     try {
       const nextDocument = await adminApi.getAiNovelConversationRecords({
         ...query,
@@ -49,6 +55,7 @@ export default function ConversationHistoryRoute() {
     if (!isAiNovelSelected) {
       requestRef.current += 1;
       setDocument(null);
+      setSelectedRecord(null);
       setLoading(false);
       return;
     }
@@ -63,13 +70,16 @@ export default function ConversationHistoryRoute() {
     return <section className="empty-state">历史聊天仅支持 AINovel。请先在项目空间切换到 `ai_novel`。</section>;
   }
 
+  const records = document?.items ?? [];
+
   return (
     <section className="stack conversation-history-page">
       <header className="page-header">
         <div>
           <h1>历史聊天</h1>
-          <p>查询服务端保存的已完成聊天摘要；输入 UID 或 DID 可精确筛选，每页最多显示 100 个完整 Turn。</p>
+          <p>查询服务端保存的已完成聊天摘要；消息列表按高密度表格展示，点击详情查看完整内容。</p>
         </div>
+        <Button loading={loading} onClick={() => void load(document?.page ?? 0, document?.query ?? inputQuery())}>刷新</Button>
       </header>
 
       <section className="surface-card conversation-history-search">
@@ -94,49 +104,130 @@ export default function ConversationHistoryRoute() {
         </Space>
       </section>
 
-      {loading ? <section className="surface-card"><Spin /></section> : null}
+      <section className="surface-card conversation-history-table-card">
+        <header className="conversation-history-table-header">
+          <div>
+            <h2>{document ? `第 ${document.page + 1} 页` : "聊天列表"}</h2>
+            <p>{document ? `${queryLabel(document.query)} · 当前显示 ${records.length} 个 Turn，按时间从新到旧排列。` : "正在加载历史聊天记录…"}</p>
+          </div>
+          <Space>
+            <Button disabled={!document || document.page === 0 || loading} onClick={() => {
+              if (document) void load(document.page - 1, document.query);
+            }}>
+              上一页
+            </Button>
+            <Button disabled={!document || !document.hasMore || loading} onClick={() => {
+              if (document) void load(document.page + 1, document.query);
+            }}>
+              下一页
+            </Button>
+          </Space>
+        </header>
 
-      {document ? (
-        <section className="surface-card conversation-history-list">
-          <header className="conversation-history-list-header">
-            <div>
-              <h2>第 {document.page + 1} 页</h2>
-              <p>{queryLabel(document.query)} · 当前显示 {document.items.length} 个 Turn，按时间从新到旧排列。</p>
-            </div>
-            <Space>
-              <Button disabled={document.page === 0 || loading} onClick={() => void load(document.page - 1, document.query)}>
-                上一页
-              </Button>
-              <Button disabled={!document.hasMore || loading} onClick={() => void load(document.page + 1, document.query)}>
-                下一页
-              </Button>
-            </Space>
-          </header>
+        <Table<AdminAiNovelConversationRecord>
+          className="conversation-history-table"
+          columns={conversationHistoryColumns(setSelectedRecord)}
+          dataSource={records}
+          loading={loading}
+          locale={{ emptyText: <Empty description="没有找到历史聊天" /> }}
+          pagination={false}
+          rowKey="id"
+          scroll={{ x: 1040 }}
+          size="small"
+        />
+      </section>
 
-          {document.items.length ? document.items.map((item) => (
-            <article className="conversation-history-record" key={item.id}>
-              <header>
-                <div>
-                  <Tag>{item.sceneKey}</Tag>
-                  <Tag color="blue">UID {item.userId}</Tag>
-                  {item.did ? <Tag>DID {item.did}</Tag> : null}
-                </div>
-                <time>{formatTimestamp(item.createdAt)}</time>
-              </header>
-              <ConversationMessage label="用户" content={item.userText} />
-              <ConversationMessage label="AI" content={item.assistantText} />
-            </article>
-          )) : <Empty description="没有找到历史聊天" />}
-        </section>
-      ) : null}
+      <Drawer
+        className="conversation-history-drawer"
+        onClose={() => setSelectedRecord(null)}
+        open={Boolean(selectedRecord)}
+        placement="right"
+        title="聊天详情"
+        width={560}
+      >
+        {selectedRecord ? <ConversationHistoryDetail record={selectedRecord} /> : null}
+      </Drawer>
     </section>
   );
 }
 
-function ConversationMessage({ label, content }: { label: string; content: string }) {
+function conversationHistoryColumns(
+  onOpenDetail: (record: AdminAiNovelConversationRecord) => void,
+): ColumnsType<AdminAiNovelConversationRecord> {
+  return [
+    {
+      title: "场景",
+      dataIndex: "sceneKey",
+      width: 150,
+      render: (value: string) => <Tag>{value}</Tag>,
+    },
+    {
+      title: "用户消息",
+      dataIndex: "userText",
+      width: 300,
+      render: (value: string) => <MessagePreview content={value} />,
+    },
+    {
+      title: "AI 回复",
+      dataIndex: "assistantText",
+      width: 360,
+      render: (value: string) => <MessagePreview content={value} />,
+    },
+    {
+      title: "时间",
+      dataIndex: "createdAt",
+      width: 170,
+      render: (value: string) => formatTimestamp(value),
+    },
+    {
+      title: "用户",
+      width: 180,
+      render: (_, record) => (
+        <div className="conversation-history-user">
+          <strong>{record.userId}</strong>
+          {record.did ? <small>DID {record.did}</small> : null}
+        </div>
+      ),
+    },
+    {
+      title: "操作",
+      width: 84,
+      fixed: "right",
+      render: (_, record) => (
+        <Button size="small" onClick={() => onOpenDetail(record)}>详情</Button>
+      ),
+    },
+  ];
+}
+
+function MessagePreview({ content }: { content: string }) {
+  const value = content || "（无正文）";
+  return <div className={`conversation-history-message-preview${content ? "" : " is-empty"}`} title={content || undefined}>{value}</div>;
+}
+
+function ConversationHistoryDetail({ record }: { record: AdminAiNovelConversationRecord }) {
   return (
-    <section className="conversation-history-message">
-      <strong>{label}</strong>
+    <div className="conversation-history-detail">
+      <Descriptions bordered column={1} size="small">
+        <Descriptions.Item label="场景"><Tag>{record.sceneKey}</Tag></Descriptions.Item>
+        <Descriptions.Item label="用户">{record.userId}</Descriptions.Item>
+        <Descriptions.Item label="DID">{record.did ?? "—"}</Descriptions.Item>
+        <Descriptions.Item label="时间">{formatTimestamp(record.createdAt)}</Descriptions.Item>
+        <Descriptions.Item label="请求 ID">{record.requestId}</Descriptions.Item>
+        <Descriptions.Item label="消息 ID">{record.messageId ?? "—"}</Descriptions.Item>
+        <Descriptions.Item label="会话 ID">{record.sessionId ?? "—"}</Descriptions.Item>
+        <Descriptions.Item label="Turn ID">{record.turnId ?? "—"}</Descriptions.Item>
+      </Descriptions>
+      <MessageDetail label="用户消息" content={record.userText} />
+      <MessageDetail label="AI 回复" content={record.assistantText} />
+    </div>
+  );
+}
+
+function MessageDetail({ label, content }: { label: string; content: string }) {
+  return (
+    <section className="conversation-history-message-detail">
+      <h3>{label}</h3>
       <pre>{content || "（无正文）"}</pre>
     </section>
   );
