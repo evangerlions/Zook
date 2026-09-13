@@ -14,9 +14,9 @@ lighttick.worker=new LightTickWorker(new LightTickAiRunner(lighttick.repository,
   const adjusted=input.messages[1].content.includes("五分钟");
   return {provider:"acceptance-fake",providerModel:"fake",text:JSON.stringify(clarify?{message:"已记下你的成果要求，请确认摘要后生成草案。",fields:{outcome:"可运行的小示例"}}:{tasks:[{title:adjusted?"完成五分钟小练习":"运行一个小示例并保存结果",estimated_minutes:adjusted?5:10}]})};
 }} as any));
-let offline=false;
+let offline=false,disconnect=false;
 async function reset(){
- offline=false;
+ offline=false;disconnect=false;
  await lighttick.repository.deleteOwnerData(owner);
  const now=new Date().toISOString();
  await lighttick.repository.saveGoal({...owner,id:"planning-ui-goal",title:"做出一个可运行的小示例",status:"active",constraints:{weekly_available_minutes:30},version:1,createdAt:now,updatedAt:now},{event:{...owner,id:"ui-event",aggregateType:"goal",aggregateId:"planning-ui-goal",eventType:"goal_created",aggregateVersion:1,payload:{},occurredAt:now,createdAt:now},change:{...owner,entityType:"goal",entityId:"planning-ui-goal",entityVersion:1,operation:"upsert",snapshot:{},changedAt:now}});
@@ -26,6 +26,7 @@ http.createServer(async(req,res)=>{
  try{
  const url=new URL(req.url!,"http://127.0.0.1");
  if(url.pathname==="/__reset"){await reset();res.end("{}");return;}
+ if(url.pathname==="/__disconnect"){disconnect=url.searchParams.get("value")==="1";res.end("{}");return;}
  if(url.pathname==="/__offline"){offline=url.searchParams.get("value")==="1";res.end("{}");return;}
  if(url.pathname==="/__conflict"){
   const goal=await lighttick.repository.getGoal(owner,"planning-ui-goal");
@@ -33,6 +34,7 @@ http.createServer(async(req,res)=>{
   res.end("{}");return;
  }
  if(url.pathname==="/__state"){res.setHeader("Content-Type","application/json");res.end(JSON.stringify({tasks:(await lighttick.repository.listTasks(owner)).length,plans:(await lighttick.repository.listPlans(owner)).length}));return;}
+ if(disconnect){res.destroy();return;}
  if(offline){res.writeHead(503,{"Content-Type":"application/json"});res.end(JSON.stringify({code:"LIGHTTICK_AI_UNAVAILABLE",message:"Fixture service unavailable"}));return;}
  let body="";for await(const chunk of req)body+=chunk;
  const token=runtime.services.tokenService.issueAccessToken(owner.userId,"lighttick");
