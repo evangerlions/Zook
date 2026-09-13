@@ -1,3 +1,4 @@
+import { RightOutlined } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, Select, type MenuProps } from "antd";
 import { useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
@@ -184,7 +185,7 @@ export function AppShell() {
             onClick={handleToggleSidebar}
             type="text"
           >
-            <span aria-hidden="true">{sidebarCollapsed ? "»" : "«"}</span>
+            {sidebarCollapsed ? <RightOutlined aria-hidden="true" /> : <span aria-hidden="true">«</span>}
             <span>{sidebarCollapsed ? "展开" : "折叠"}</span>
           </Button>
         </div>
@@ -201,7 +202,7 @@ export function AppShell() {
               className={({ isActive }) => `nav-link${isActive ? " is-active" : ""}`}
               end
               key={item.to}
-              title={sidebarCollapsed ? `${item.label} · ${item.description}` : undefined}
+              title={`${item.label} · ${item.description}`}
               to={item.to}
             >
               <span aria-hidden="true" className="nav-code">
@@ -232,7 +233,7 @@ export function AppShell() {
                 onChange={handleProjectSpaceChange}
                 options={projectSpaceOptions}
                 popupMatchSelectWidth={false}
-                size="large"
+                size="middle"
                 value={currentProjectSpaceValue}
               />
             </div>

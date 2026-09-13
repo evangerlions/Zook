@@ -8,6 +8,7 @@ import {
   toModelKindLabel,
   toRouteStrategyLabel,
 } from "../lib/llm-config";
+import { getLlmSeriesToneClass } from "../lib/llm-series-tone";
 import type { LlmModelDraft, LlmProviderDraft, LlmRouteDraft } from "../lib/types";
 
 export function LlmProviderCard({
@@ -104,7 +105,7 @@ export function LlmModelCard({
   onRouteChange: (routeIndex: number, key: keyof LlmRouteDraft, value: string | boolean) => void;
   onRouteRemove: (routeIndex: number) => void;
 }) {
-  const toneClass = getModelToneClass(model.key);
+  const toneClass = getLlmSeriesToneClass(model.label || model.key);
 
   return (
     <article className={`config-item model-card ${toneClass}${collapsed ? " model-card--collapsed" : ""}`}>
@@ -214,11 +215,4 @@ export function LlmModelCard({
       )}
     </article>
   );
-}
-
-const MODEL_TONE_CLASSES = ["model-card--blue", "model-card--violet", "model-card--teal", "model-card--amber"];
-
-function getModelToneClass(modelKey: string) {
-  const hash = [...modelKey].reduce((sum, character) => sum + character.charCodeAt(0), 0);
-  return MODEL_TONE_CLASSES[hash % MODEL_TONE_CLASSES.length];
 }

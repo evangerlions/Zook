@@ -236,58 +236,60 @@ function LlmFormConfigEditor({
 }) {
   return (
     <>
-      <ToggleField
-        checked={draft.enabled}
-        hint="关闭后不会影响历史版本，但不会再参与默认路由。"
-        label="启用 LLM 服务"
-        onChange={(value) => onDraftChange((current) => ({ ...current, enabled: value }))}
-      />
-
-      <ToggleField
-        checked={draft.routeCircuitBreaker.enabled}
-        hint="只统计流式请求首个有效 chunk 前的失败：2 分钟内至少 2 位用户连续失败 4 次才封路由。关闭会立即解除既有熔断。"
-        label="启用上游路由熔断"
-        onChange={(value) => onDraftChange((current) => ({
-          ...current,
-          routeCircuitBreaker: { ...current.routeCircuitBreaker, enabled: value },
-        }))}
-      />
-
-      <ToggleField
-        checked={draft.emailAlerts.llmEnabled}
-        hint="控制 LLM 小时成功率与正式熔断告警邮件；不影响指标或熔断本身。"
-        label="发送 LLM 告警邮件"
-        onChange={(value) => onDraftChange((current) => ({
-          ...current,
-          emailAlerts: { ...current.emailAlerts, llmEnabled: value },
-        }))}
-      />
-
-      <ToggleField
-        checked={draft.emailAlerts.aiNovelFeedbackEnabled}
-        hint="控制 AINovel 新反馈邮件；不影响反馈保存和后台列表。"
-        label="发送 AINovel 反馈邮件"
-        onChange={(value) => onDraftChange((current) => ({
-          ...current,
-          emailAlerts: { ...current.emailAlerts, aiNovelFeedbackEnabled: value },
-        }))}
-      />
-
-      <Field hint="启用状态下必须选择一个存在的模型。" label="默认模型">
-        <Select
-          onChange={(value) => onDraftChange((current) => ({ ...current, defaultModelKey: value }))}
-          options={[
-            { label: "请选择", value: "" },
-            ...chatModelOptions.map((item) => ({
-              label: `${item.label || item.key} (${toModelKindLabel(item.kind)})`,
-              value: item.key,
-            })),
-          ]}
-          value={draft.defaultModelKey}
+      <div className="llm-global-grid">
+        <ToggleField
+          checked={draft.enabled}
+          hint="关闭后不会参与默认路由。"
+          label="启用 LLM 服务"
+          onChange={(value) => onDraftChange((current) => ({ ...current, enabled: value }))}
         />
-      </Field>
 
-      <section className="config-item">
+        <ToggleField
+          checked={draft.routeCircuitBreaker.enabled}
+          hint="只统计流式请求首个有效 chunk 前的失败：2 分钟内至少 2 位用户连续失败 4 次才封路由。关闭会立即解除既有熔断。"
+          label="启用上游路由熔断"
+          onChange={(value) => onDraftChange((current) => ({
+            ...current,
+            routeCircuitBreaker: { ...current.routeCircuitBreaker, enabled: value },
+          }))}
+        />
+
+        <ToggleField
+          checked={draft.emailAlerts.llmEnabled}
+          hint="控制 LLM 小时成功率与正式熔断告警邮件；不影响指标或熔断本身。"
+          label="发送 LLM 告警邮件"
+          onChange={(value) => onDraftChange((current) => ({
+            ...current,
+            emailAlerts: { ...current.emailAlerts, llmEnabled: value },
+          }))}
+        />
+
+        <ToggleField
+          checked={draft.emailAlerts.aiNovelFeedbackEnabled}
+          hint="控制 AINovel 新反馈邮件；不影响反馈保存和后台列表。"
+          label="发送 AINovel 反馈邮件"
+          onChange={(value) => onDraftChange((current) => ({
+            ...current,
+            emailAlerts: { ...current.emailAlerts, aiNovelFeedbackEnabled: value },
+          }))}
+        />
+
+        <Field hint="启用状态下必须选择一个存在的模型。" label="默认模型">
+          <Select
+            onChange={(value) => onDraftChange((current) => ({ ...current, defaultModelKey: value }))}
+            options={[
+              { label: "请选择", value: "" },
+              ...chatModelOptions.map((item) => ({
+                label: `${item.label || item.key} (${toModelKindLabel(item.kind)})`,
+                value: item.key,
+              })),
+            ]}
+            value={draft.defaultModelKey}
+          />
+        </Field>
+      </div>
+
+      <section className="config-item llm-proxy-config">
         <div className="config-item-header">
           <div className="config-item-title">
             <h3>OpenRouter 透明代理</h3>

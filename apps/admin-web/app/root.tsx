@@ -54,10 +54,10 @@ export default function App() {
     <ConfigProvider
       theme={{
         token: {
-          borderRadius: 14,
-          colorPrimary: "#2157d5",
-          colorText: "#132033",
-          colorTextSecondary: "#607187",
+          borderRadius: 9,
+          colorPrimary: "#356fe6",
+          colorText: "#17212d",
+          colorTextSecondary: "#657386",
           fontFamily: "\"Manrope\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
         },
       }}
