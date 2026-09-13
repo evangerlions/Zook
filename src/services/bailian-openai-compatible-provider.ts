@@ -33,6 +33,7 @@ import {
   readOptionalNonBlankString,
   readOptionalString,
   resolveStreamTimeouts,
+  shouldIncludeDeepSeekReasoningPlaceholder,
   throwEmbeddingRequestFailed,
   throwProviderRequestFailed,
   throwProviderResponseInvalid,
@@ -374,26 +375,33 @@ export class BailianOpenAICompatibleProvider
     return {
       ...this.getForwardedProviderOptions(request.providerOptions),
       model: request.model.providerModel,
-      messages: request.messages.map((message) => ({
-        role: message.role,
-        ...(message.content === undefined ? {} : { content: message.content }),
-        ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
-        ...(message.role === "assistant" && message.reasoningContent
-          ? { reasoning_content: message.reasoningContent }
-          : {}),
-        ...(Array.isArray(message.toolCalls) && message.toolCalls.length > 0
-          ? {
-              tool_calls: message.toolCalls.map((toolCall) => ({
-                id: toolCall.id,
-                type: "function",
-                function: {
-                  name: toolCall.name,
-                  arguments: JSON.stringify(toolCall.input ?? {}),
-                },
-              })),
-            }
-          : {}),
-      })),
+      messages: request.messages.map((message) => {
+        const hasReasoningContent =
+          message.role === "assistant" &&
+          Boolean(message.reasoningContent);
+        const includeDeepSeekReasoningPlaceholder =
+          shouldIncludeDeepSeekReasoningPlaceholder(request, message);
+        return {
+          role: message.role,
+          ...(message.content === undefined ? {} : { content: message.content }),
+          ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
+          ...(hasReasoningContent || includeDeepSeekReasoningPlaceholder
+            ? { reasoning_content: message.reasoningContent ?? "" }
+            : {}),
+          ...(Array.isArray(message.toolCalls) && message.toolCalls.length > 0
+            ? {
+                tool_calls: message.toolCalls.map((toolCall) => ({
+                  id: toolCall.id,
+                  type: "function",
+                  function: {
+                    name: toolCall.name,
+                    arguments: JSON.stringify(toolCall.input ?? {}),
+                  },
+                })),
+              }
+            : {}),
+        };
+      }),
       ...(request.temperature === undefined
         ? {}
         : { temperature: request.temperature }),

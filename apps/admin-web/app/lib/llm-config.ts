@@ -30,6 +30,7 @@ export function createDefaultLlmConfig(): LlmConfigDraft {
     openRouter: createDefaultOpenRouterConfig(),
     bai: createDefaultBaiConfig(),
     routeCircuitBreaker: { enabled: false },
+    emailAlerts: { llmEnabled: true, aiNovelFeedbackEnabled: true },
     providers: [],
     models: [],
   };
@@ -72,6 +73,10 @@ export function cloneLlmConfig(config: LlmConfigDraft | LlmServiceConfig = creat
     openRouter: normalizeOpenRouterConfigInput(config?.openRouter),
     bai: normalizeBaiConfigInput(config?.bai),
     routeCircuitBreaker: { enabled: Boolean(config?.routeCircuitBreaker?.enabled) },
+    emailAlerts: {
+      llmEnabled: config?.emailAlerts?.llmEnabled !== false,
+      aiNovelFeedbackEnabled: config?.emailAlerts?.aiNovelFeedbackEnabled !== false,
+    },
     providers: Array.isArray(config?.providers)
       ? config.providers.map((item) => ({
           key: String(item?.key ?? ""),
@@ -138,6 +143,10 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
     openRouter: draft.openRouter,
     bai: draft.bai,
     routeCircuitBreaker: { enabled: Boolean(draft.routeCircuitBreaker?.enabled) },
+    emailAlerts: {
+      llmEnabled: Boolean(draft.emailAlerts?.llmEnabled),
+      aiNovelFeedbackEnabled: Boolean(draft.emailAlerts?.aiNovelFeedbackEnabled),
+    },
     providers: draft.providers.map((item) => ({
       key: String(item?.key ?? "").trim(),
       label: String(item?.label ?? "").trim(),
@@ -171,6 +180,7 @@ export function serializeLlmDraftForPreview(draft: LlmConfigDraft) {
       openRouter: draft.openRouter,
       bai: draft.bai,
       routeCircuitBreaker: draft.routeCircuitBreaker,
+      emailAlerts: draft.emailAlerts,
       providers: draft.providers,
       models: draft.models,
     };
@@ -211,6 +221,7 @@ export function safeSerializeLlmDraft(draft: LlmConfigDraft) {
       openRouter: draft.openRouter,
       bai: draft.bai,
       routeCircuitBreaker: draft.routeCircuitBreaker,
+      emailAlerts: draft.emailAlerts,
       providers: draft.providers,
       models: draft.models,
     };
@@ -257,6 +268,10 @@ function normalizeLlmConfigInput(input: unknown): LlmServiceConfig {
     openRouter: normalizeOpenRouterConfigInput(source.openRouter),
     bai: normalizeBaiConfigInput(source.bai),
     routeCircuitBreaker: { enabled: Boolean((source.routeCircuitBreaker as Record<string, unknown> | undefined)?.enabled) },
+    emailAlerts: {
+      llmEnabled: (source.emailAlerts as Record<string, unknown> | undefined)?.llmEnabled !== false,
+      aiNovelFeedbackEnabled: (source.emailAlerts as Record<string, unknown> | undefined)?.aiNovelFeedbackEnabled !== false,
+    },
     providers,
     models,
   };
