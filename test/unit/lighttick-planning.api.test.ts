@@ -31,7 +31,7 @@ test("planning HTTP contracts, auth, gate, queue, replay and explicit confirmati
   assert.equal((await call("","POST",{goal_id:goal.id,thread_id:"foreign"},"injection")).statusCode,400);
   const patch={base_version:session.version,fields:{period_start:{value:"2026-09-13",source:"user"},period_end:{value:"2026-09-19",source:"confirmed"}}};
   check(contracts.LightTickPlanningContextRequestSchema,patch);
-  const ready=await call("/"+session.id+"/context","PATCH",patch,"context");assert.equal(ready.statusCode,200);session=(ready.body.data as any).session;
+  const ready=await call("/"+session.id+"/context","POST",patch,"context",{...headers,"x-http-method-override":"PATCH"} as any);assert.equal(ready.statusCode,200);session=(ready.body.data as any).session;
   const fixtures=JSON.parse(readFileSync(new URL("../../api-contracts/fixtures/lighttick/planning-errors.json",import.meta.url),"utf8"));
   for(const fixture of fixtures.cases){const failed=await call("/"+session.id+fixture.suffix,fixture.method,fixture.body,fixture.name);assert.equal(failed.statusCode,fixture.status,fixture.name);assert.equal(failed.body.code,fixture.code,fixture.name);}
   const draft={base_version:session.version,context_revision:session.context_revision,deep_planning:true};

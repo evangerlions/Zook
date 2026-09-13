@@ -1088,3 +1088,5 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 409 错误：LIGHTTICK_VERSION_CONFLICT（重读并重新预览）、LIGHTTICK_PLANNING_BUSY（等待当前 run）、LIGHTTICK_PLANNING_NOT_READY（补充并确认摘要）、LIGHTTICK_PLANNING_STALE（旧/过期草案，重新生成）、LIGHTTICK_STATE_TRANSITION_INVALID（解锁或目标状态不允许）。异步失败通过 session.last_error 和 run.error_code 返回 LIGHTTICK_AI_UNAVAILABLE 或 LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE；保留输入，不用通用模板伪造对话规划成功。客户端缩短摘要后以新 key 重试。
 
 Canonical OpenAPI 与生成模型已同步；跨端错误/并发样例见 `api-contracts/fixtures/lighttick/planning-errors.json`。本阶段尚未接入 iOS/Android 会话 UI。
+
+Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。

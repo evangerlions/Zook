@@ -237,3 +237,32 @@ data class LightTickCommitmentState(
     val requiredActionCount: Int,
     val eligible: Boolean,
 )
+
+// BEGIN GENERATED PLANNING SESSION
+
+sealed interface PlanningScalar {
+    data class Text(val value: String): PlanningScalar
+    data class Minutes(val value: Int): PlanningScalar
+}
+data class PlanningValue(val value: PlanningScalar, val source: String, val source_message_id: String? = null)
+data class PlanningSession(
+
+    val id: String,
+    val goal_id: String,
+    val thread_id: String,
+    val status: String,
+    val version: Int,
+    val context_revision: Int,
+    val context: Map<String, PlanningValue>,
+    val questions: List<String>,
+    val clarification_rounds: Int,
+    val active_run_id: String?,
+    val draft_plan_id: String?,
+    val draft_revision: Int?,
+    val draft_expires_at: String?,
+    val last_error: String?,
+    val can_generate: Boolean,
+    val created_at: String,
+    val updated_at: String,
+)
+// END GENERATED PLANNING SESSION

@@ -15,6 +15,12 @@ export async function tryHandleLightTickPlanningRoutes(context: BackendRouteCont
   const owner = {appId:"lighttick" as const,userId:auth.userId};
   const service = new LightTickPlanningService(runtime!.repository);
   if (request.method === "GET" && match[1] && !match[2]) return context.ok(sessionData(await service.get(owner,match[1])),request.requestId!);
+  const override = getHeader(request.headers,"x-http-method-override");
+  if (override !== undefined) {
+    if (request.method !== "POST" || match[2] !== "context" || override.toUpperCase() !== "PATCH")
+      planningError(400,"REQ_FIELD_INVALID","Method override is only supported for context PATCH.");
+    request = {...request, method:"PATCH"};
+  }
   const action = !match[1] ? "create" : match[2];
   if (!action || request.method !== (action === "context" ? "PATCH" : "POST")) planningError(405,"REQ_METHOD_NOT_ALLOWED","Method is not supported.");
   if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)) planningError(400,"REQ_INVALID_BODY","JSON body is required.");
