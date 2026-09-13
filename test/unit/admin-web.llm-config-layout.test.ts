@@ -43,6 +43,8 @@ test("admin web llm compact layout preserves dense desktop and mobile breakpoint
   const routeStylesheet = await readFile(routeStylePath, "utf8");
 
   assert.match(stylesheet, /\.llm-config-page \.provider-list[\s\S]*minmax\(580px, 1fr\)/);
+  assert.match(stylesheet, /\.llm-config-page \.provider-list \.config-form-grid[\s\S]*minmax\(0, 0\.55fr\)/);
+  assert.match(stylesheet, /\.llm-config-page \.provider-list \.field[\s\S]*min-width: 0/);
   assert.match(routeStylesheet, /\.llm-config-page \.route-item-fields[\s\S]*minmax\(190px, 1\.8fr\)/);
   assert.match(`${stylesheet}\n${routeStylesheet}`, /@media \(max-width: 640px\)/);
 });
