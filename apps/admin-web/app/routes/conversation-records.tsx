@@ -128,7 +128,7 @@ export default function ConversationRecordsRoute() {
     <section className="stack conversation-records-page">
       <header className="page-header">
         <div>
-          <h1>对话记录</h1>
+          <h1>对话追踪</h1>
           <p>按 UID / CID 筛选已采集 Trace 的会话；每个 Turn 包含一次用户消息及其完整的 Pi / tool loop。未上传 Trace 的旧客户端记录不会出现在此页。</p>
         </div>
         <Button loading={loadingSessions} onClick={() => void loadSessions(filters)}>刷新</Button>

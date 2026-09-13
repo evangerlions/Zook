@@ -166,7 +166,7 @@ Admin 查看接口：
 
 ### 3.6.2 AINovel 对话记录
 
-后台 `/conversation-records` 页面现在直接使用 local/dev Trace Console 数据，展示 Sessions → Turns → Detail 三栏。Trace 数据接口不复用下列历史摘要接口，线上环境不发起 Trace 请求。
+后台现在有两个互不复用的 AINovel 入口：`/conversation-records` 是仅 local/dev 开放的 Trace Console，展示 Sessions → Turns → Detail；`/conversation-history` 是历史聊天 item，调用下列历史摘要接口查询已完成 Turn。Trace 数据接口不复用历史摘要接口，线上环境不发起 Trace 请求。
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
