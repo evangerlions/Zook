@@ -19,6 +19,7 @@ import type { LightTickAccountUpgradeService } from "./lighttick-account-upgrade
 import type { LightTickAnalyticsService } from "./lighttick-analytics.ts";
 
 export interface LightTickRuntime {
+  planningEnabled: boolean;
   repository: LightTickRepository;
   profile: LightTickProfileService;
   goals: LightTickGoalService;
@@ -44,6 +45,7 @@ export interface LightTickRuntime {
 export function createLightTickRuntime(repository: LightTickRepository): LightTickRuntime {
   const tasks = new LightTickTaskService(repository);
   return {
+    planningEnabled: process.env.LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED === "1",
     repository,
     profile: new LightTickProfileService(repository),
     goals: new LightTickGoalService(repository),

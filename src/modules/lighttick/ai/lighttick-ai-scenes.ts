@@ -29,6 +29,9 @@ export const LIGHTTICK_AI_SCENES = {
   coach_chat: { key: "lighttick.coach_chat.v1", kind: "coach_reply", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 6_000,
     maxOutputTokens: 800, maxEstimatedCostUsd: 0.04, fallback: "facts_only" },
+  planning_clarify: { key: "lighttick.planning_clarify.v1", kind: "coach_reply", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 8_000,
+    maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.04, fallback: "none" },
 } as const;
 
 export type LightTickAiSceneName = keyof typeof LIGHTTICK_AI_SCENES;

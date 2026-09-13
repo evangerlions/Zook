@@ -330,3 +330,6 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 ## LightTick operations
 
 `GET /api/v1/admin/apps/lighttick/operations` requires an authenticated Admin session. It returns LightTick enablement, rollout flags, notification capabilities, AI scene versions/routes/budgets/fallbacks, and privacy-safe aggregate counters. It never returns user identities, task notes, Coach text, Prompt bodies, push Tokens, or provider credentials. The current page is read-only; any future mutation must use the existing RBAC, secondary-sensitive-operation, versioned configuration, and audit flow.
+
+### LightTick 对话规划配置（2026-09-13）
+新增场景 planning_clarify（lighttick.planning_clarify.v1），沿用现有场景路由解析与逻辑模型配置，无新增管理接口。模板包版本 1.3.0；week_plan 可用于会话草案。入口由服务器环境变量 LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 启用，默认关闭，关闭入口保留数据库记录和已排队任务。场景 tiers 仍为路由元数据，不能将其当作新增订阅计费校验。

@@ -1,3 +1,4 @@
+import { LightTickPlanningAiRunner } from "../planning/planning-ai-runner.ts";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { randomId } from "../../../shared/utils.ts";
@@ -17,6 +18,7 @@ export class LightTickAiRunner {
   async execute(owner: LightTickOwner, runId: string, sceneName: LightTickAiSceneName): Promise<LightTickAiRunRow> {
     let run = await this.repository.getAiRun(owner, runId);
     if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "AI run was not found.");
+    if (run.inputContext.planning_session_id) return await new LightTickPlanningAiRunner(this.repository,this.llm,this.clock,this.resolveScene).execute(owner,runId);
     if (!["queued", "failed"].includes(run.status)) return run;
     const scene = await this.resolveScene(sceneName); const started = this.clock();
     run = { ...run, promptVersion: LIGHTTICK_PROMPT_VERSION };

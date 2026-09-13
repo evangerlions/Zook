@@ -665,3 +665,6 @@ Admin Web 默认端口当前为 `3110`。
 PostgreSQL migration 017 增加 app-scoped code/token 唯一约束、recipient binding、邮件 delivery/attempt outbox，并非破坏性投影仍存活的 sleep/focus 旧邀请。邮件 worker 使用公共腾讯云 SES 配置，支持 provider correlation、指数退避、最多五次、永久配置错误直接死信及 callback 状态回写。Admin 只读诊断接口只返回掩码邮箱和投递元数据。
 
 能力开关依赖 `FROGSLEEP_BUDDY_INBOX_ENABLED`、`FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED` 和 `FROGSLEEP_BUDDY_EMAIL_ENABLED`；handoff base URL 使用 `FROGSLEEP_BUDDY_HANDOFF_BASE_URL` 或 app delivery config。生产可用仍以 migration、API/worker 同版本、SES sender/template/callback、真实邮箱与两账号验收全部通过为前提。
+
+### LightTick 对话规划 P2（2026-09-13）
+新增 PlanningSession 六个公共接口、摘要来源合并、异步澄清/草案调整、版本失效与原子确认；默认由 LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED 关闭。迁移 060 为独立增量表，支持 owner 删除。新草案复用现有计划/任务，旧客户端无需修改；原生入口和真实 provider 质量验收属于 P3。接入协议见 README_API.md；契约位于 api-contracts/openapi/lighttick/api.yaml。

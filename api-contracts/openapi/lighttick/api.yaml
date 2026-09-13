@@ -11,6 +11,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: lighttick-planning
+    description: Versioned planning conversations and explicit draft confirmation.
   - name: lighttick-phase2
     description: Registered-account execution facts, chat, DNA and review decisions.
   - name: lighttick-profile
@@ -34,6 +36,250 @@ tags:
   - name: lighttick-config
     description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/planning-sessions:
+    post:
+      operationId: createLightTickPlanningSession
+      tags:
+      - lighttick-planning
+      summary: createLightTickPlanningSession
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload.
+        Drafts are new planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningMutationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningCreateRequest'
+  /api/v1/lighttick/planning-sessions/{session_id}:
+    get:
+      operationId: getLightTickPlanningSession
+      tags:
+      - lighttick-planning
+      summary: getLightTickPlanningSession
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload.
+        Drafts are new planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/planning-sessions/{session_id}/messages:
+    post:
+      operationId: sendLightTickPlanningMessage
+      tags:
+      - lighttick-planning
+      summary: sendLightTickPlanningMessage
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload.
+        Drafts are new planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningMutationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningMessageRequest'
+  /api/v1/lighttick/planning-sessions/{session_id}/context:
+    patch:
+      operationId: updateLightTickPlanningContext
+      tags:
+      - lighttick-planning
+      summary: updateLightTickPlanningContext
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload.
+        Drafts are new planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningMutationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningContextRequest'
+  /api/v1/lighttick/planning-sessions/{session_id}/drafts:
+    post:
+      operationId: generateLightTickPlanningDraft
+      tags:
+      - lighttick-planning
+      summary: generateLightTickPlanningDraft
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload.
+        Drafts are new planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningMutationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningDraftRequest'
+  /api/v1/lighttick/planning-sessions/{session_id}/confirm:
+    post:
+      operationId: confirmLightTickPlanningDraft
+      tags:
+      - lighttick-planning
+      summary: confirmLightTickPlanningDraft
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload.
+        Drafts are new planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningMutationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningConfirmRequest'
   /api/v1/lighttick/execution-facts:
     get:
       operationId: getLightTickExecutionFacts
@@ -1184,6 +1430,394 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/LightTickErrorEnvelope" }
   schemas:
+    LightTickPlanningValue:
+      type: object
+      additionalProperties: false
+      required:
+      - value
+      - source
+      properties:
+        value:
+          oneOf:
+          - type: string
+            maxLength: 1000
+          - type: integer
+            minimum: 1
+            maximum: 10080
+        source:
+          type: string
+          enum:
+          - user
+          - confirmed
+          - imported
+          - assumption
+        source_message_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+    LightTickPlanningContext:
+      type: object
+      additionalProperties: false
+      properties:
+        objective:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        outcome:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        experience:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        available_minutes:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        period_start:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        period_end:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+        constraints:
+          $ref: '#/components/schemas/LightTickPlanningValue'
+    LightTickPlanningSession:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - goal_id
+      - thread_id
+      - status
+      - version
+      - context_revision
+      - context
+      - questions
+      - clarification_rounds
+      - active_run_id
+      - draft_plan_id
+      - draft_revision
+      - draft_expires_at
+      - last_error
+      - can_generate
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        thread_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum:
+          - collecting
+          - ready
+          - generating
+          - draft_ready
+          - confirmed
+        version:
+          type: integer
+          minimum: 1
+        context_revision:
+          type: integer
+          minimum: 1
+        context:
+          $ref: '#/components/schemas/LightTickPlanningContext'
+        questions:
+          type: array
+          maxItems: 2
+          items:
+            type: string
+        clarification_rounds:
+          type: integer
+          minimum: 0
+        active_run_id:
+          type:
+          - string
+          - 'null'
+        draft_plan_id:
+          type:
+          - string
+          - 'null'
+        draft_revision:
+          type:
+          - integer
+          - 'null'
+        draft_expires_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        last_error:
+          type:
+          - string
+          - 'null'
+        can_generate:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LightTickPlanningCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - goal_id
+      properties:
+        goal_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+    LightTickPlanningMessageRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - message
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    LightTickPlanningContextRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - fields
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        fields:
+          type: object
+          minProperties: 1
+          additionalProperties: false
+          properties:
+            objective:
+              type: object
+              additionalProperties: false
+              required:
+              - value
+              - source
+              properties:
+                value:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                source:
+                  type: string
+                  enum:
+                  - user
+                  - confirmed
+            outcome:
+              type: object
+              additionalProperties: false
+              required:
+              - value
+              - source
+              properties:
+                value:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                source:
+                  type: string
+                  enum:
+                  - user
+                  - confirmed
+            experience:
+              type: object
+              additionalProperties: false
+              required:
+              - value
+              - source
+              properties:
+                value:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                source:
+                  type: string
+                  enum:
+                  - user
+                  - confirmed
+            available_minutes:
+              type: object
+              additionalProperties: false
+              required:
+              - value
+              - source
+              properties:
+                value:
+                  type: integer
+                  minimum: 1
+                  maximum: 10080
+                source:
+                  type: string
+                  enum:
+                  - user
+                  - confirmed
+            period_start:
+              type: object
+              additionalProperties: false
+              required:
+              - value
+              - source
+              properties:
+                value:
+                  type: string
+                  format: date
+                source:
+                  type: string
+                  enum:
+                  - user
+                  - confirmed
+            period_end:
+              type: object
+              additionalProperties: false
+              required:
+              - value
+              - source
+              properties:
+                value:
+                  type: string
+                  format: date
+                source:
+                  type: string
+                  enum:
+                  - user
+                  - confirmed
+            constraints:
+              type: object
+              additionalProperties: false
+              required:
+              - value
+              - source
+              properties:
+                value:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                source:
+                  type: string
+                  enum:
+                  - user
+                  - confirmed
+    LightTickPlanningDraftRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - context_revision
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        context_revision:
+          type: integer
+          minimum: 1
+        instruction:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        deep_planning:
+          type: boolean
+    LightTickPlanningConfirmRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - base_version
+      - context_revision
+      - draft_plan_id
+      - plan_version
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+        context_revision:
+          type: integer
+          minimum: 1
+        draft_plan_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        plan_version:
+          type: integer
+          minimum: 1
+    LightTickPlanningMutationData:
+      type: object
+      additionalProperties: false
+      required:
+      - session
+      - run
+      properties:
+        session:
+          $ref: '#/components/schemas/LightTickPlanningSession'
+        run:
+          oneOf:
+          - type: 'null'
+          - type: object
+            additionalProperties: false
+            required:
+            - id
+            - status
+            - scene
+            - prompt_version
+            properties:
+              id:
+                type: string
+                minLength: 1
+                maxLength: 200
+              status:
+                type: string
+              scene:
+                type: string
+                minLength: 1
+                maxLength: 200
+              prompt_version:
+                type: string
+                minLength: 1
+                maxLength: 200
+    LightTickPlanningEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPlanningSession'
+        requestId:
+          type: string
+    LightTickPlanningMutationEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickPlanningMutationData'
+        requestId:
+          type: string
     LightTickEvidenceRange:
       type: object
       required:
@@ -1855,6 +2489,10 @@ components:
         - AUTH_SESSION_REVOKED
         - APP_SCOPE_FORBIDDEN
         - APP_MEMBER_INACTIVE
+        - LIGHTTICK_PLANNING_BUSY
+        - LIGHTTICK_PLANNING_NOT_READY
+        - LIGHTTICK_PLANNING_STALE
+        - LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE
         - LIGHTTICK_APP_DISABLED
         - LIGHTTICK_GUEST_SESSION_EXPIRED
         - LIGHTTICK_GUEST_UPGRADE_INVALID
