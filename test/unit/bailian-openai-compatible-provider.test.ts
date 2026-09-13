@@ -246,6 +246,133 @@ test("bailian provider sends assistant reasoning content in OpenAI-compatible hi
   assert.ok(Array.isArray(messages[0]?.tool_calls));
 });
 
+test("bailian provider keeps an empty DeepSeek reasoning field on tool-call history", async () => {
+  let capturedInit: RequestInit | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      capturedInit = init;
+      return createJsonResponse({
+        choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+        usage: {
+          prompt_tokens: 30,
+          completion_tokens: 2,
+          total_tokens: 32,
+        },
+      });
+    },
+  });
+
+  await provider.complete({
+    ...createResolvedRequest({
+      enable_thinking: true,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "lookup",
+            description: "Look up context",
+            parameters: { type: "object", properties: {} },
+          },
+        },
+      ],
+    }),
+    model: {
+      provider: "bai",
+      modelKey: "deepseek-v4-flash",
+      resolvedModelKey: "deepseek-v4-flash",
+      providerModel: "deepseek-v4-flash",
+    },
+    messages: [
+      {
+        role: "assistant",
+        content: "previous answer",
+      },
+      {
+        role: "assistant",
+        content: "",
+        toolCalls: [
+          {
+            id: "call_1",
+            name: "lookup",
+            input: { query: "chapter context" },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        toolCallId: "call_1",
+        content: "tool result",
+      },
+      {
+        role: "user",
+        content: "continue",
+      },
+    ],
+  });
+
+  const body = JSON.parse(String(capturedInit?.body)) as Record<
+    string,
+    unknown
+  >;
+  const messages = body.messages as Array<Record<string, unknown>>;
+  assert.equal(messages[0]?.reasoning_content, "");
+  assert.equal(messages[1]?.reasoning_content, "");
+  assert.ok(Array.isArray(messages[1]?.tool_calls));
+});
+
+test("bailian provider does not add DeepSeek reasoning placeholders to other models", async () => {
+  let capturedInit: RequestInit | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    fetchImplementation: async (_input, init) => {
+      capturedInit = init;
+      return createJsonResponse({
+        choices: [{ message: { content: "ok" }, finish_reason: "stop" }],
+        usage: {
+          prompt_tokens: 30,
+          completion_tokens: 2,
+          total_tokens: 32,
+        },
+      });
+    },
+  });
+
+  await provider.complete({
+    ...createResolvedRequest({
+      enable_thinking: true,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "lookup",
+            description: "Look up context",
+            parameters: { type: "object", properties: {} },
+          },
+        },
+      ],
+    }),
+    messages: [
+      {
+        role: "assistant",
+        content: "",
+        toolCalls: [
+          {
+            id: "call_1",
+            name: "lookup",
+            input: { query: "chapter context" },
+          },
+        ],
+      },
+    ],
+  });
+
+  const body = JSON.parse(String(capturedInit?.body)) as Record<
+    string,
+    unknown
+  >;
+  const messages = body.messages as Array<Record<string, unknown>>;
+  assert.equal("reasoning_content" in messages[0]!, false);
+});
+
 test("bailian provider parses non-streaming completion tool calls", async () => {
   const provider = new BailianOpenAICompatibleProvider({
     fetchImplementation: async () =>

@@ -7,6 +7,7 @@ import {
   type OpenAICompatibleResponsePayload,
   type StreamTimeoutOptions,
 } from "./bailian-openai-compatible-types.ts";
+import type { ResolvedLLMCompletionRequest } from "./llm-manager.ts";
 
 export function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -52,6 +53,29 @@ export function resolveStreamTimeouts(
       DEFAULT_STREAM_IDLE_TIMEOUT_MS,
     ),
   };
+}
+
+/**
+ * DeepSeek thinking requests with tools require reasoning_content to remain
+ * present on assistant history, including older turns with no saved trace.
+ */
+export function shouldIncludeDeepSeekReasoningPlaceholder(
+  request: Pick<ResolvedLLMCompletionRequest, "model" | "providerOptions">,
+  message: ResolvedLLMCompletionRequest["messages"][number],
+): boolean {
+  if (
+    message.role !== "assistant" ||
+    request.providerOptions?.enable_thinking !== true
+  ) {
+    return false;
+  }
+
+  const tools = request.providerOptions.tools;
+  return (
+    Array.isArray(tools) &&
+    tools.length > 0 &&
+    /deepseek/i.test(request.model.providerModel)
+  );
 }
 
 export function throwProviderRequestFailed(
