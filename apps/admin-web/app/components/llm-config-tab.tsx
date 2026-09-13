@@ -253,6 +253,26 @@ function LlmFormConfigEditor({
         }))}
       />
 
+      <ToggleField
+        checked={draft.emailAlerts.llmEnabled}
+        hint="控制 LLM 小时成功率与正式熔断告警邮件；不影响指标或熔断本身。"
+        label="发送 LLM 告警邮件"
+        onChange={(value) => onDraftChange((current) => ({
+          ...current,
+          emailAlerts: { ...current.emailAlerts, llmEnabled: value },
+        }))}
+      />
+
+      <ToggleField
+        checked={draft.emailAlerts.aiNovelFeedbackEnabled}
+        hint="控制 AINovel 新反馈邮件；不影响反馈保存和后台列表。"
+        label="发送 AINovel 反馈邮件"
+        onChange={(value) => onDraftChange((current) => ({
+          ...current,
+          emailAlerts: { ...current.emailAlerts, aiNovelFeedbackEnabled: value },
+        }))}
+      />
+
       <Field hint="启用状态下必须选择一个存在的模型。" label="默认模型">
         <Select
           onChange={(value) => onDraftChange((current) => ({ ...current, defaultModelKey: value }))}

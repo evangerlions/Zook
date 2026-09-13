@@ -65,6 +65,20 @@ export function normalizeLlmRouteCircuitBreakerConfig(
   return { enabled: Boolean((value as Record<string, unknown>).enabled) };
 }
 
+export function normalizeLlmEmailAlertConfig(value: unknown): {
+  llmEnabled: boolean;
+  aiNovelFeedbackEnabled: boolean;
+} {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { llmEnabled: true, aiNovelFeedbackEnabled: true };
+  }
+  const source = value as Record<string, unknown>;
+  return {
+    llmEnabled: source.llmEnabled !== false,
+    aiNovelFeedbackEnabled: source.aiNovelFeedbackEnabled !== false,
+  };
+}
+
 function createDefaultModels(): LlmModelConfig[] {
   return [
     createQwenPlusModel(),
@@ -282,6 +296,7 @@ export class CommonLlmConfigService {
       openRouter: normalizeOpenRouterConfig(source.openRouter),
       bai: normalizeBaiConfig(source.bai),
       routeCircuitBreaker: normalizeLlmRouteCircuitBreakerConfig(source.routeCircuitBreaker),
+      emailAlerts: normalizeLlmEmailAlertConfig(source.emailAlerts),
       providers,
       models,
     };
@@ -324,6 +339,7 @@ export class CommonLlmConfigService {
       openRouter: createDefaultOpenRouterConfig(),
       bai: createDefaultBaiConfig(),
       routeCircuitBreaker: createDefaultLlmRouteCircuitBreakerConfig(),
+      emailAlerts: { llmEnabled: true, aiNovelFeedbackEnabled: true },
       providers: [
         {
           key: "bailian",
