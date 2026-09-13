@@ -1209,7 +1209,7 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
   assert.equal(decryptedEvents[1].type, "content_delta");
 });
 
-test("ai_novel trace console is hidden outside local debug hosts", async () => {
+test("ai_novel trace API is hidden outside local debug hosts", async () => {
   const root = await mkdtemp(join(tmpdir(), "zook-trace-hidden-"));
   const runtime = await createApplication({ aiNovelDebugTraceRoot: root });
   const token = runtime.services.tokenService.issueAccessToken(
@@ -1236,7 +1236,7 @@ test("ai_novel trace console is hidden outside local debug hosts", async () => {
   assert.equal(response.statusCode, 404);
 });
 
-test("ai_novel trace console is hidden in the online runtime", async () => {
+test("ai_novel trace API is hidden in the online runtime", async () => {
   const previousNodeEnv = process.env.NODE_ENV;
   const previousAppEnv = process.env.APP_ENV;
   process.env.NODE_ENV = "development";
@@ -1280,7 +1280,7 @@ test("ai_novel trace console is hidden in the online runtime", async () => {
   }
 });
 
-test("ai_novel trace console remains available in Docker-like dev runtime", async () => {
+test("ai_novel trace data API remains available in Docker-like dev runtime", async () => {
   const previousNodeEnv = process.env.NODE_ENV;
   const previousAppEnv = process.env.APP_ENV;
   process.env.NODE_ENV = "production";
@@ -1301,7 +1301,7 @@ test("ai_novel trace console remains available in Docker-like dev runtime", asyn
 
     const response = await runtime.app.handle({
       method: "GET",
-      path: "/api/v1/ai_novel/debug/traces",
+      path: "/api/v1/ai_novel/debug/traces/data",
       headers: {
         host: "app-dev.youwoai.net",
         authorization: `Basic ${Buffer.from("admin:AdminPass123!").toString("base64")}`,
@@ -1309,7 +1309,6 @@ test("ai_novel trace console remains available in Docker-like dev runtime", asyn
     });
 
     assert.equal(response.statusCode, 200);
-    assert.equal(response.contentType, "text/html; charset=utf-8");
   } finally {
     if (previousNodeEnv == null) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previousNodeEnv;
@@ -1341,7 +1340,7 @@ test("ai_novel trace writer requires ai_novel bearer auth", async () => {
   assert.equal(response.body.code, "AUTH_BEARER_REQUIRED");
 });
 
-test("ai_novel trace console appends, filters, and renders session traces", async () => {
+test("ai_novel trace data API appends and filters session traces", async () => {
   const root = await mkdtemp(join(tmpdir(), "zook-trace-console-"));
   const runtime = await createApplication({ aiNovelDebugTraceRoot: root });
   await runtime.services.appRegistryService.ensureMembership(
@@ -1435,10 +1434,7 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
     (otherKind.body.data as Record<string, unknown>).captureCount,
     1,
   );
-  assert.equal(
-    secondData.viewUrl,
-    "http://localhost:3100/api/v1/ai_novel/debug/traces/..%2Fbad%2Fsession?kind=writing",
-  );
+  assert.equal("viewUrl" in secondData, false);
   assert.match(String(secondData.updatedAt), /^\d{4}-\d{2}-\d{2}T/);
 
   const data = await runtime.app.handle({
@@ -1497,31 +1493,17 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
       host: "localhost:3100",
     },
   });
-  let viewedHtml = "";
-  for await (const chunk of view.streamBody ?? []) {
-    viewedHtml += chunk;
-  }
   assert.equal(view.statusCode, 200);
-  assert.equal(view.contentType, "text/html; charset=utf-8");
-  assert.match(viewedHtml, /Conversation trace/);
-  assert.match(viewedHtml, /Context diff/);
-  assert.match(viewedHtml, /All model requests in this turn/);
-  assert.match(viewedHtml, /View raw JSON/);
-  assert.match(viewedHtml, /json-key/);
-  assert.match(viewedHtml, /turn-search/);
-  assert.match(viewedHtml, /status-icon/);
-  assert.match(viewedHtml, /role-icon/);
-  assert.ok(
-    viewedHtml.indexOf("Messages in current context") <
-      viewedHtml.indexOf("All model requests in this turn"),
+  const viewData = view.body.data as Record<string, unknown>;
+  assert.equal(
+    (viewData.session as Record<string, unknown>).manifest &&
+      ((viewData.session as Record<string, unknown>).manifest as Record<string, unknown>).sessionId,
+    "../bad/session",
   );
-  assert.ok(
-    viewedHtml.indexOf("All model requests in this turn") <
-      viewedHtml.indexOf("Context diff"),
+  assert.equal(
+    (viewData.viewModel as Record<string, unknown>).turns instanceof Array,
+    true,
   );
-  assert.match(viewedHtml, /first turn/);
-  assert.match(viewedHtml, /second turn/);
-  assert.match(viewedHtml, /"captureCount":2/);
 
   const jsonView = await runtime.app.handle({
     method: "GET",
@@ -1552,19 +1534,13 @@ test("ai_novel trace console appends, filters, and renders session traces", asyn
   assert.equal(missingView.statusCode, 404);
   assert.equal(missingView.body.code, "TRACE_NOT_FOUND");
 
-  const console = await runtime.app.handle({
+  const standalonePage = await runtime.app.handle({
     method: "GET",
     path: "/api/v1/ai_novel/debug/traces",
     headers: { host: "localhost:3100" },
   });
-  let consoleHtml = "";
-  for await (const chunk of console.streamBody ?? []) consoleHtml += chunk;
-  assert.equal(console.statusCode, 200);
-  assert.match(consoleHtml, /AINovel Trace Console/);
-  assert.match(consoleHtml, /const root = '\/api\/v1\/ai_novel\/debug\/traces'/);
-  assert.match(consoleHtml, /name="uid"/);
-  assert.match(consoleHtml, /name="cid"/);
-  assert.match(consoleHtml, /fetch\(root \+ '\/data\?'/);
+  assert.equal(standalonePage.statusCode, 404);
+  assert.equal(standalonePage.body.code, "REQ_ROUTE_NOT_FOUND");
 });
 
 test("ai_novel trace storage does not merge ids with similar punctuation", async () => {

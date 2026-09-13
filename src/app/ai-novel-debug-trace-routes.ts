@@ -1,18 +1,12 @@
 import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
-import { getHeader } from "../shared/utils.ts";
 import {
   AI_NOVEL_TRACE_KINDS,
   AI_NOVEL_TRACE_STATUSES,
   type AiNovelDebugTraceFilter,
-  type AiNovelTraceKind,
   type AiNovelTraceStatus,
 } from "../modules/ai-novel/ai-novel-debug-trace.service.ts";
 import { buildAiNovelDebugTraceViewModel } from "../modules/ai-novel/ai-novel-debug-trace-view-model.ts";
-import {
-  renderAiNovelDebugTraceConsole,
-  renderAiNovelDebugTraceDetail,
-} from "../modules/ai-novel/ai-novel-debug-trace-console.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { shouldServeLocalDebugEndpoint } from "./encrypted-ai-routes.ts";
 
@@ -31,9 +25,6 @@ export async function tryHandleAiNovelDebugTraceRoutes(
   }
   if (request.method === "POST" && request.path === TRACE_ROOT) {
     return await writeTrace.call(this, request);
-  }
-  if (request.method === "GET" && request.path === TRACE_ROOT) {
-    return htmlResponse(renderAiNovelDebugTraceConsole(), request);
   }
   if (request.method === "GET" && request.path === `${TRACE_ROOT}/data`) {
     return await listTraces.call(this, request);
@@ -68,7 +59,6 @@ async function writeTrace(
   return this.ok(
     {
       ...manifest,
-      viewUrl: buildViewUrl(request, manifest.sessionId, manifest.kind),
     },
     request.requestId as string,
   );
@@ -104,50 +94,20 @@ async function viewTrace(
       optionalEnum(request.query?.kind, AI_NOVEL_TRACE_KINDS),
     );
     const sessions = await this.aiNovelDebugTraceService.list();
-    if (acceptsJson(request)) {
-      return this.ok(
-        {
-          session,
-          sessions,
-          viewModel: buildAiNovelDebugTraceViewModel(session),
-        },
-        request.requestId as string,
-      );
-    }
-    return htmlResponse(renderAiNovelDebugTraceDetail(session, sessions), request);
+    return this.ok(
+      {
+        session,
+        sessions,
+        viewModel: buildAiNovelDebugTraceViewModel(session),
+      },
+      request.requestId as string,
+    );
   } catch (error: unknown) {
     if (isMissingTrace(error)) {
       throw new ApplicationError(404, "TRACE_NOT_FOUND", "Trace session not found.");
     }
     throw error;
   }
-}
-
-function acceptsJson(request: HttpRequest): boolean {
-  return (getHeader(request.headers, "accept") ?? "")
-    .toLowerCase()
-    .split(",")
-    .some((value) => value.trim().startsWith("application/json"));
-}
-
-function htmlResponse(html: string, request: HttpRequest): HttpResponse<unknown> {
-  return {
-    statusCode: 200,
-    contentType: "text/html; charset=utf-8",
-    headers: { "Cache-Control": "no-store" },
-    body: { code: "OK", message: "success", data: null, requestId: request.requestId as string },
-    streamBody: (async function* () { yield html; })(),
-  };
-}
-
-function buildViewUrl(
-  request: HttpRequest,
-  sessionId: string,
-  kind: AiNovelTraceKind,
-): string {
-  const host = getHeader(request.headers, "x-forwarded-host") ?? getHeader(request.headers, "host") ?? "localhost";
-  const protocol = getHeader(request.headers, "x-forwarded-proto") ?? "http";
-  return `${protocol}://${host}${TRACE_ROOT}/${encodeURIComponent(sessionId)}?kind=${encodeURIComponent(kind)}`;
 }
 
 function requiredText(value: unknown, field: string): string {

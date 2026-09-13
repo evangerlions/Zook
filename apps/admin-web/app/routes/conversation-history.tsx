@@ -5,18 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
+import { sceneTagColor } from "../lib/scene-tag";
 import type {
   AdminAiNovelConversationRecord,
   AdminAiNovelConversationRecordDocument,
 } from "../lib/types";
 
 const AI_NOVEL_APP_ID = "ai_novel";
-const SCENE_TAG_COLORS: Record<string, string> = {
-  kickoff_turn: "blue",
-  kickoff_turn_imported_book: "purple",
-  write_turn: "green",
-  history_chapter_qa: "orange",
-};
 type QueryType = "uid" | "did";
 type ConversationQuery = Pick<AdminAiNovelConversationRecordDocument["query"], "uid" | "did">;
 
@@ -243,8 +238,4 @@ function queryLabel(query: ConversationQuery): string {
   if (query.uid) return `UID ${query.uid}`;
   if (query.did) return `DID ${query.did}`;
   return "全部用户";
-}
-
-function sceneTagColor(sceneKey: string): string {
-  return SCENE_TAG_COLORS[sceneKey] ?? "default";
 }

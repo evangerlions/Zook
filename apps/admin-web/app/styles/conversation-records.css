@@ -204,6 +204,12 @@
   white-space: nowrap;
 }
 
+.conversation-trace-scene-tag {
+  margin-inline-end: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
 .conversation-trace-status {
   display: inline-grid;
   width: 18px;
@@ -329,6 +335,56 @@
 
 .conversation-trace-detail-header > div {
   min-width: 0;
+}
+
+.conversation-trace-view-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0 3px;
+}
+
+.conversation-trace-changes-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  user-select: none;
+}
+
+.conversation-trace-changes-toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.conversation-trace-view-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(247, 249, 244, 0.72);
+}
+
+.conversation-trace-view-tab {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.conversation-trace-view-tab:hover,
+.conversation-trace-view-tab.is-active {
+  background: var(--surface-strong);
+  color: var(--text);
 }
 
 .conversation-trace-detail-section {
@@ -482,6 +538,14 @@
   color: #deebfa;
 }
 
+.conversation-trace-json .json-editor {
+  min-height: min(186vh, 1800px);
+}
+
+.conversation-trace-json .json-editor .cm-scroller {
+  min-height: min(186vh, 1800px);
+}
+
 .conversation-trace-diff {
   max-height: 360px;
   margin: 0;
@@ -510,6 +574,14 @@
 .conversation-trace-diff-line.is-added { background: rgba(61, 177, 112, 0.2); color: #caffdb; }
 .conversation-trace-diff-line.is-removed { background: rgba(220, 80, 90, 0.2); color: #ffd0d4; }
 .conversation-trace-diff-line.is-meta { color: #d2b5ff; font-style: italic; }
+.conversation-trace-diff-ellipsis {
+  display: block;
+  padding: 4px 9px;
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-style: italic;
+}
 .conversation-trace-muted { color: var(--text-soft); font-size: 0.78rem; }
 
 @media (max-width: 1100px) {
@@ -539,6 +611,11 @@
   .conversation-trace-detail {
     max-height: none;
     overflow: visible;
+  }
+
+  .conversation-trace-view-controls {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
