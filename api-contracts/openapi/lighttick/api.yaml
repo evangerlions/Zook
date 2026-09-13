@@ -194,6 +194,55 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LightTickPlanningContextRequest'
+    post:
+      operationId: updateLightTickPlanningContextViaPost
+      tags:
+      - lighttick-planning
+      summary: Compatibility alias for context PATCH
+      description: Registered LightTick membership required. Feature defaults off (LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1
+        enables it). Mutations require Idempotency-Key; stale versions require reload.
+        Drafts are new planning cycles and do not rewrite existing active cycles.
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - name: X-HTTP-Method-Override
+        in: header
+        required: true
+        schema:
+          type: string
+          enum:
+          - PATCH
+      responses:
+        '200':
+          description: Current planning state or accepted operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickPlanningMutationEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+        '503':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickPlanningContextRequest'
   /api/v1/lighttick/planning-sessions/{session_id}/drafts:
     post:
       operationId: generateLightTickPlanningDraft
