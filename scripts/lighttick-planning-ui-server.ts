@@ -9,7 +9,6 @@ seed.appUsers.push({id:"planning-ui-member",appId:"lighttick",userId:"user_alice
 const runtime=await createApplication({seed,lighttickEnabled:true});
 const lighttick=runtime.services.lighttickRuntime;lighttick.planningEnabled=true;
 const owner={appId:"lighttick" as const,userId:"user_alice"};
-const token=runtime.services.tokenService.issueAccessToken(owner.userId,"lighttick");
 lighttick.worker=new LightTickWorker(new LightTickAiRunner(lighttick.repository,{complete:async(input:any)=>{
   const clarify=input.messages[1].content.includes('"fields"');
   const adjusted=input.messages[1].content.includes("五分钟");
@@ -36,6 +35,7 @@ http.createServer(async(req,res)=>{
  if(url.pathname==="/__state"){res.setHeader("Content-Type","application/json");res.end(JSON.stringify({tasks:(await lighttick.repository.listTasks(owner)).length,plans:(await lighttick.repository.listPlans(owner)).length}));return;}
  if(offline){res.writeHead(503,{"Content-Type":"application/json"});res.end(JSON.stringify({code:"LIGHTTICK_AI_UNAVAILABLE",message:"Fixture service unavailable"}));return;}
  let body="";for await(const chunk of req)body+=chunk;
+ const token=runtime.services.tokenService.issueAccessToken(owner.userId,"lighttick");
  const response=await runtime.app.handle({method:req.method as any,path:url.pathname,query:Object.fromEntries(url.searchParams),headers:{...req.headers,authorization:"Bearer "+token} as any,body:body?JSON.parse(body):undefined});
  res.writeHead(response.statusCode,{"Content-Type":"application/json"});res.end(JSON.stringify(response.body));
  await runtime.queue.processDueJobs(job=>lighttick.worker!.process(job),new Date("2030-01-01"));
