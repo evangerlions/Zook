@@ -18,6 +18,11 @@ test("admin web history uses a dense two-line table with a detail drawer", async
   assert.ok(userMessageIndex < assistantMessageIndex);
   assert.match(route, /<Table<AdminAiNovelConversationRecord>/);
   assert.match(route, /<Drawer/);
+  assert.match(route, /kickoff_turn: "blue"/);
+  assert.match(route, /kickoff_turn_imported_book: "purple"/);
+  assert.match(route, /write_turn: "green"/);
+  assert.match(route, /history_chapter_qa: "orange"/);
+  assert.match(route, /color={sceneTagColor\(value\)}/);
   assert.match(styles, /-webkit-line-clamp: 2/);
   assert.match(styles, /\.conversation-history-message-preview/);
 });

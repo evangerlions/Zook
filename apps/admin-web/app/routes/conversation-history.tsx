@@ -11,6 +11,12 @@ import type {
 } from "../lib/types";
 
 const AI_NOVEL_APP_ID = "ai_novel";
+const SCENE_TAG_COLORS: Record<string, string> = {
+  kickoff_turn: "blue",
+  kickoff_turn_imported_book: "purple",
+  write_turn: "green",
+  history_chapter_qa: "orange",
+};
 type QueryType = "uid" | "did";
 type ConversationQuery = Pick<AdminAiNovelConversationRecordDocument["query"], "uid" | "did">;
 
@@ -159,7 +165,7 @@ function conversationHistoryColumns(
       title: "场景",
       dataIndex: "sceneKey",
       width: 150,
-      render: (value: string) => <Tag>{value}</Tag>,
+      render: (value: string) => <Tag color={sceneTagColor(value)}>{value}</Tag>,
     },
     {
       title: "用户消息",
@@ -209,7 +215,7 @@ function ConversationHistoryDetail({ record }: { record: AdminAiNovelConversatio
   return (
     <div className="conversation-history-detail">
       <Descriptions bordered column={1} size="small">
-        <Descriptions.Item label="场景"><Tag>{record.sceneKey}</Tag></Descriptions.Item>
+        <Descriptions.Item label="场景"><Tag color={sceneTagColor(record.sceneKey)}>{record.sceneKey}</Tag></Descriptions.Item>
         <Descriptions.Item label="用户">{record.userId}</Descriptions.Item>
         <Descriptions.Item label="DID">{record.did ?? "—"}</Descriptions.Item>
         <Descriptions.Item label="时间">{formatTimestamp(record.createdAt)}</Descriptions.Item>
@@ -237,4 +243,8 @@ function queryLabel(query: ConversationQuery): string {
   if (query.uid) return `UID ${query.uid}`;
   if (query.did) return `DID ${query.did}`;
   return "全部用户";
+}
+
+function sceneTagColor(sceneKey: string): string {
+  return SCENE_TAG_COLORS[sceneKey] ?? "default";
 }
