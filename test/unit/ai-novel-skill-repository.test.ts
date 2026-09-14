@@ -86,3 +86,25 @@ test("Skill repository never exposes non-Markdown or path-escape resources", asy
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("bundled AINovel Skills expose every readable Markdown file", async () => {
+  const repository = new AiNovelSkillRepository();
+  const manifest = await repository.queryManifest();
+  const result = await repository.fetchPackages({
+    skillSetVersion: manifest.skillSetVersion,
+    names: manifest.skills.map((skill) => skill.name),
+  });
+
+  assert.equal(result.skills.length, manifest.skills.length);
+  for (const skill of result.skills) {
+    assert.ok(skill.files.length > 0, `${skill.name} has no files`);
+    const skillFile = skill.files.find((file) => file.path.endsWith("/SKILL.md"));
+    assert.ok(skillFile, `${skill.name} is missing SKILL.md`);
+    assert.match(skillFile.content, /^---\r?\n/);
+    assert.match(skillFile.content, new RegExp(`name: ${skill.name}(?:\\r?\\n|$)`));
+    for (const file of skill.files) {
+      assert.ok(file.content.trim().length > 0, `${file.path} is empty`);
+      assert.match(file.path, new RegExp(`^/skills/ainovel/${skill.name}/`));
+    }
+  }
+});
