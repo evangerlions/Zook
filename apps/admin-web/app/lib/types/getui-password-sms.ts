@@ -1,10 +1,19 @@
 import type { AdminAppSummary, ConfigRevisionMeta } from "./core";
 
+export interface OhosGetuiGyPasswordKeys {
+  appKeyPasswordKey: string;
+  appSecretPasswordKey: string;
+  masterSecretPasswordKey: string;
+}
+
 export interface GetuiGyAppCredentials {
   appId: string;
   appKey: string;
   appSecret: string;
   masterSecret: string;
+  platforms?: {
+    ohos?: OhosGetuiGyPasswordKeys;
+  };
 }
 
 export interface GetuiGyServiceConfig {

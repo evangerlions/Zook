@@ -185,6 +185,13 @@ test("OHOS one-click login uses PASSWORDS credentials without changing legacy cr
           appKey: "legacy-app-key",
           appSecret: "legacy-app-secret",
           masterSecret: "legacy-master-secret",
+          platforms: {
+            ohos: {
+              appKeyPasswordKey: OHOS_GETUI_GY_APP_KEY_PASSWORD_KEY,
+              appSecretPasswordKey: OHOS_GETUI_GY_APP_SECRET_PASSWORD_KEY,
+              masterSecretPasswordKey: OHOS_GETUI_GY_MASTER_SECRET_PASSWORD_KEY,
+            },
+          },
         },
       },
     }),
@@ -241,6 +248,13 @@ test("OHOS one-click login exchanges the token with the OHOS Getui AppID", async
           appKey: "legacy-app-key",
           appSecret: "legacy-app-secret",
           masterSecret: "legacy-master-secret",
+          platforms: {
+            ohos: {
+              appKeyPasswordKey: OHOS_GETUI_GY_APP_KEY_PASSWORD_KEY,
+              appSecretPasswordKey: OHOS_GETUI_GY_APP_SECRET_PASSWORD_KEY,
+              masterSecretPasswordKey: OHOS_GETUI_GY_MASTER_SECRET_PASSWORD_KEY,
+            },
+          },
         },
       },
     }),

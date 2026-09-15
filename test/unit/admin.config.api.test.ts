@@ -2102,6 +2102,19 @@ test("admin Getui GeYan service API stores common one-click login config", async
           appSecret: "flutter-app-secret",
           masterSecret: "flutter-master-secret",
         },
+        ai_novel: {
+          appId: "getui-ai-novel",
+          appKey: "ai-novel-app-key",
+          appSecret: "ai-novel-app-secret",
+          masterSecret: "ai-novel-master-secret",
+          platforms: {
+            ohos: {
+              appKeyPasswordKey: "custom.getui.ohos.app_key",
+              appSecretPasswordKey: "custom.getui.ohos.app_secret",
+              masterSecretPasswordKey: "custom.getui.ohos.master_secret",
+            },
+          },
+        },
       },
       endpoint: "https://getui.example.test/gy_get_pn",
       timeoutMs: 1000,
@@ -2113,6 +2126,11 @@ test("admin Getui GeYan service API stores common one-click login config", async
   assert.equal(updateResponse.body.data.app.appId, "common");
   assert.equal(updateResponse.body.data.config.enabled, true);
   assert.equal(updateResponse.body.data.config.apps.app_a.appId, "getui-app-a");
+  assert.deepEqual(updateResponse.body.data.config.apps.ai_novel.platforms?.ohos, {
+    appKeyPasswordKey: "custom.getui.ohos.app_key",
+    appSecretPasswordKey: "custom.getui.ohos.app_secret",
+    masterSecretPasswordKey: "custom.getui.ohos.master_secret",
+  });
   assert.equal(
     updateResponse.body.data.config.apps.app_a.appSecret,
     maskSensitiveString("app-secret-a"),
@@ -2143,6 +2161,14 @@ test("admin Getui GeYan service API stores common one-click login config", async
     (await runtime.services.commonGetuiGyConfigService.getRuntimeConfig("app_a"))
       .masterSecret,
     "master-secret-a",
+  );
+  assert.deepEqual(
+    maskedReplayResponse.body.data.config.apps.ai_novel.platforms?.ohos,
+    {
+      appKeyPasswordKey: "custom.getui.ohos.app_key",
+      appSecretPasswordKey: "custom.getui.ohos.app_secret",
+      masterSecretPasswordKey: "custom.getui.ohos.master_secret",
+    },
   );
 
   const cookie = await loginAdmin(runtime);

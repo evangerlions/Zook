@@ -25,6 +25,7 @@ import type {
   AdminGetuiGyServiceDocument,
   GetuiGySensitiveCredentialField,
   GetuiGyServiceDraft,
+  OhosGetuiGyPasswordKeys,
 } from "../lib/types";
 
 const GETUI_GY_CREDENTIAL_READ_OPERATION = "getui_gy.credential.read";
@@ -108,7 +109,7 @@ export default function GetuiGyRoute() {
 
   function updateAppCredential(
     appId: string,
-    key: keyof GetuiGyServiceDraft["apps"][string],
+    key: "appId" | "appKey" | "appSecret" | "masterSecret",
     value: string,
   ) {
     setDraft((current) => ({
@@ -118,6 +119,33 @@ export default function GetuiGyRoute() {
         [appId]: {
           ...(current.apps[appId] ?? createEmptyGetuiGyCredentials(appId)),
           [key]: value,
+        },
+      },
+    }));
+  }
+
+  function updateOhosPasswordKey(
+    appId: string,
+    key: keyof OhosGetuiGyPasswordKeys,
+    value: string,
+  ) {
+    setDraft((current) => ({
+      ...current,
+      apps: {
+        ...current.apps,
+        [appId]: {
+          ...(current.apps[appId] ?? createEmptyGetuiGyCredentials(appId)),
+          platforms: {
+            ...(current.apps[appId]?.platforms ?? {}),
+            ohos: {
+              ...(current.apps[appId]?.platforms?.ohos ?? {
+                appKeyPasswordKey: "getui.gy.ohos.app_key",
+                appSecretPasswordKey: "getui.gy.ohos.app_secret",
+                masterSecretPasswordKey: "getui.gy.ohos.master_secret",
+              }),
+              [key]: value,
+            },
+          },
         },
       },
     }));
@@ -403,6 +431,36 @@ export default function GetuiGyRoute() {
                           </div>
                         </Field>
                       </div>
+                      {zookAppId === "ai_novel" ? (
+                        <div className="inline-panel">
+                          <div className="card-header">
+                            <div>
+                              <h4>鸿蒙平台 PASSWORD key</h4>
+                              <p>这里只保存 PASSWORD key 名；实际 secret 从 PASSWORDS 动态读取，不覆盖 Android / iOS 凭据。</p>
+                            </div>
+                          </div>
+                          <div className="form-grid">
+                            <Field label="AppKey PASSWORD key">
+                              <Input
+                                onChange={(event) => updateOhosPasswordKey(zookAppId, "appKeyPasswordKey", event.target.value)}
+                                value={credentials.platforms?.ohos?.appKeyPasswordKey ?? ""}
+                              />
+                            </Field>
+                            <Field label="AppSecret PASSWORD key">
+                              <Input
+                                onChange={(event) => updateOhosPasswordKey(zookAppId, "appSecretPasswordKey", event.target.value)}
+                                value={credentials.platforms?.ohos?.appSecretPasswordKey ?? ""}
+                              />
+                            </Field>
+                            <Field label="MasterSecret PASSWORD key">
+                              <Input
+                                onChange={(event) => updateOhosPasswordKey(zookAppId, "masterSecretPasswordKey", event.target.value)}
+                                value={credentials.platforms?.ohos?.masterSecretPasswordKey ?? ""}
+                              />
+                            </Field>
+                          </div>
+                        </div>
+                      ) : null}
                       <Button danger onClick={() => removeMappingRow(zookAppId)}>
                         删除
                       </Button>

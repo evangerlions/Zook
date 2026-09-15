@@ -3,10 +3,16 @@ import type {
   GetuiGyAppCredentials,
   GetuiGyServiceConfig,
   GetuiGyServiceDraft,
+  OhosGetuiGyPasswordKeys,
 } from "./types";
 
 const DEFAULT_ENDPOINT = "https://openapi-gy.getui.com/v2/gy/ct_login/gy_get_pn";
 const DEFAULT_TIMEOUT_MS = 8000;
+const DEFAULT_OHOS_PASSWORD_KEYS: OhosGetuiGyPasswordKeys = {
+  appKeyPasswordKey: "getui.gy.ohos.app_key",
+  appSecretPasswordKey: "getui.gy.ohos.app_secret",
+  masterSecretPasswordKey: "getui.gy.ohos.master_secret",
+};
 
 export function createDefaultGetuiGyConfig(): GetuiGyServiceDraft {
   return {
@@ -110,6 +116,10 @@ export function createEmptyGetuiGyCredentials(appId = ""): GetuiGyAppCredentials
     appKey: "",
     appSecret: "",
     masterSecret: "",
+    platforms:
+      appId === "ai_novel"
+        ? { ohos: { ...DEFAULT_OHOS_PASSWORD_KEYS } }
+        : undefined,
   };
 }
 
@@ -143,10 +153,48 @@ function normalizeAppCredentials(value: unknown): Record<string, GetuiGyAppCrede
           appKey: typeof credentials.appKey === "string" ? credentials.appKey.trim() : "",
           appSecret: typeof credentials.appSecret === "string" ? credentials.appSecret.trim() : "",
           masterSecret: typeof credentials.masterSecret === "string" ? credentials.masterSecret.trim() : "",
+          platforms:
+            key === "ai_novel"
+              ? {
+                  ohos: normalizeAppPlatforms(credentials.platforms)?.ohos ?? {
+                    ...DEFAULT_OHOS_PASSWORD_KEYS,
+                  },
+                }
+              : normalizeAppPlatforms(credentials.platforms),
         };
       }
     });
   }
 
   return result;
+}
+
+function normalizeAppPlatforms(
+  value: unknown,
+): GetuiGyAppCredentials["platforms"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const source = value as Record<string, unknown>;
+  const ohos = source.ohos;
+  if (!ohos || typeof ohos !== "object" || Array.isArray(ohos)) {
+    return undefined;
+  }
+  const keys = ohos as Record<string, unknown>;
+  return {
+    ohos: {
+      appKeyPasswordKey:
+        typeof keys.appKeyPasswordKey === "string"
+          ? keys.appKeyPasswordKey.trim()
+          : DEFAULT_OHOS_PASSWORD_KEYS.appKeyPasswordKey,
+      appSecretPasswordKey:
+        typeof keys.appSecretPasswordKey === "string"
+          ? keys.appSecretPasswordKey.trim()
+          : DEFAULT_OHOS_PASSWORD_KEYS.appSecretPasswordKey,
+      masterSecretPasswordKey:
+        typeof keys.masterSecretPasswordKey === "string"
+          ? keys.masterSecretPasswordKey.trim()
+          : DEFAULT_OHOS_PASSWORD_KEYS.masterSecretPasswordKey,
+    },
+  };
 }
