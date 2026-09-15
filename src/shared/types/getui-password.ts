@@ -6,6 +6,15 @@ export interface GetuiGyAppCredentials {
   appKey: string;
   appSecret: string;
   masterSecret: string;
+  platforms?: {
+    ohos?: OhosGetuiGyPasswordKeys;
+  };
+}
+
+export interface OhosGetuiGyPasswordKeys {
+  appKeyPasswordKey: string;
+  appSecretPasswordKey: string;
+  masterSecretPasswordKey: string;
 }
 
 export interface GetuiGyServiceConfig {
