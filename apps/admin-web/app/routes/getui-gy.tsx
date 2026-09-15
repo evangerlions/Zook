@@ -289,7 +289,7 @@ export default function GetuiGyRoute() {
           <div className="card-header">
             <div>
               <h2>服务配置</h2>
-              <p>每个 Zook AppID 绑定独立的 GeYan AppID、AppKey、AppSecret 和 MasterSecret。</p>
+              <p>每个 Zook AppID 绑定独立的 GeYan 凭据；AINovel 鸿蒙凭据使用 PASSWORDS 中的专用密钥，不覆盖 Android / iOS 配置。</p>
             </div>
             <span className="meta-chip">{document?.revision ? `R${document.revision}` : "未保存"}</span>
           </div>

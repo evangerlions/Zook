@@ -216,6 +216,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const commonGetuiGyConfigService = new CommonGetuiGyConfigService(
     appConfigService,
+    commonPasswordConfigService,
   );
   const commonLlmConfigService = new CommonLlmConfigService(
     appConfigService,
