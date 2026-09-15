@@ -1,3 +1,9 @@
+export interface AdminAiNovelConversationTool {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
 export interface AdminAiNovelConversationRecord {
   id: string;
   appId: "ai_novel";
@@ -10,6 +16,8 @@ export interface AdminAiNovelConversationRecord {
   sceneKey: string;
   userText: string;
   assistantText: string;
+  systemPrompt?: string;
+  tools?: AdminAiNovelConversationTool[];
   createdAt: string;
 }
 

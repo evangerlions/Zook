@@ -2,7 +2,10 @@ import { Empty, Spin, Tag } from "antd";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { JsonEditor } from "./json-editor";
+import { TraceJsonPreview, TraceMessageContent } from "./conversation-trace-content";
+import { ConversationTraceDebugContext } from "./conversation-trace-debug-context";
 import { sceneTagColor } from "../lib/scene-tag";
+import { resolveTraceToolName } from "../lib/trace-tool-name";
 import type {
   AiNovelTraceDiffLine,
   AiNovelTraceMessage,
@@ -26,11 +29,13 @@ export function DetailPane({
   previousTurn?: AiNovelTraceTurn;
 }) {
   const [viewMode, setViewMode] = useState<TraceViewMode>("rendered");
-  const [changesOnly, setChangesOnly] = useState(false);
+  const [changesOnly, setChangesOnly] = useState(true);
+  const [collapsedMessageIndexes, setCollapsedMessageIndexes] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     setViewMode("rendered");
-    setChangesOnly(false);
+    setChangesOnly(true);
+    setCollapsedMessageIndexes(new Set());
   }, [turn?.id]);
 
   if (loading && !turn) {
@@ -51,9 +56,15 @@ export function DetailPane({
     return <section className="conversation-trace-pane conversation-trace-detail"><Empty description="选择一个 Turn 查看详情" /></section>;
   }
 
-  const messages = changesOnly ? changedMessages(turn, previousTurn) : turn.messages;
+  const changedMessageEntries = changesOnly ? changedMessages(turn, previousTurn) : turn.messages.map((message, index) => ({ message, index }));
   const requests = changesOnly ? changedRequests(turn, previousTurn) : turn.requests.map((request, index) => ({ request, index }));
   const diff = changesOnly ? changedDiff(turn.contextDiff) : turn.contextDiff;
+  const allMessagesCollapsed = changedMessageEntries.length > 0 && changedMessageEntries.every(({ index }) => collapsedMessageIndexes.has(index));
+  const toggleAllMessages = () => {
+    setCollapsedMessageIndexes(allMessagesCollapsed
+      ? new Set()
+      : new Set(changedMessageEntries.map(({ index }) => index)));
+  };
   return (
     <section className="conversation-trace-pane conversation-trace-detail">
       <header className="conversation-trace-detail-header">
@@ -70,19 +81,31 @@ export function DetailPane({
         onChangesOnlyChange={setChangesOnly}
         onModeChange={setViewMode}
       />
+      <ConversationTraceDebugContext turn={turn} />
       {viewMode === "json" ? (
         <JsonTraceSection turn={turn} changesOnly={changesOnly} previousTurn={previousTurn} />
       ) : (
         <>
-          <DetailSection title="Messages in current context" meta={`${changesOnly ? messages.length + " changed / " + turn.messages.length : messages.length} messages`}>
+          <DetailSection
+            action={<button className="conversation-trace-section-action" disabled={changedMessageEntries.length === 0} onClick={toggleAllMessages} type="button">{allMessagesCollapsed ? "全部展开" : "全部折叠"}</button>}
+            meta={`${changesOnly ? changedMessageEntries.length + " changed / " + turn.messages.length : turn.messages.length} messages`}
+            title="Messages in current context"
+          >
             <div className="conversation-trace-message-list">
-              {messages.length > 0 ? messages.map((message, index) => <TraceMessage key={`${message.role}:${index}`} message={message} />) : <NoChanges label="消息" />}
+              {renderMessageTimeline(turn.messages, changedMessageEntries, changesOnly, collapsedMessageIndexes, (index, open) => {
+                setCollapsedMessageIndexes((current) => {
+                  const next = new Set(current);
+                  if (open) next.delete(index);
+                  else next.add(index);
+                  return next;
+                });
+              })}
             </div>
           </DetailSection>
           <DetailSection title="All model requests in this turn" meta={changesOnly ? `${requests.length} changed / ${turn.requests.length}` : "最新请求默认展开，历史请求可折叠"}>
             <div className="conversation-trace-request-list">
               {requests.length > 0 ? requests.map(({ request, index }) => (
-                <TraceRequest key={request.id} index={index} latest={index === turn.requests.length - 1} request={request} />
+                <TraceRequest key={request.id} index={index} request={request} />
               )) : <NoChanges label="请求" />}
             </div>
           </DetailSection>
@@ -146,7 +169,7 @@ function JsonTraceSection({
       status: turn.status,
       capturedAt: turn.capturedAt,
     },
-    messages: changedMessages(turn, previousTurn),
+    messages: changedMessages(turn, previousTurn).map(({ message }) => message),
     requests: changedRequests(turn, previousTurn).map(({ request }) => request),
     contextDiff: changedDiff(turn.contextDiff),
   } : {
@@ -174,28 +197,62 @@ function JsonTraceSection({
   );
 }
 
-function DetailSection({ title, meta, children }: { title: string; meta: string; children: ReactNode }) {
+function DetailSection({ title, meta, action, children }: { title: string; meta: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="conversation-trace-detail-section">
-      <header><strong>{title}</strong><span>{meta}</span></header>
+      <header><strong>{title}</strong><span className="conversation-trace-section-meta">{meta}</span>{action}</header>
       <div className="conversation-trace-section-body">{children}</div>
     </section>
   );
 }
 
-function TraceMessage({ message }: { message: AiNovelTraceMessage }) {
+function renderMessageTimeline(
+  allMessages: AiNovelTraceMessage[],
+  visibleEntries: Array<{ message: AiNovelTraceMessage; index: number }>,
+  changesOnly: boolean,
+  collapsedIndexes: Set<number>,
+  onToggle: (index: number, open: boolean) => void,
+): ReactNode[] {
+  if (!changesOnly) {
+    return visibleEntries.map(({ message, index }) => <TraceMessage allMessages={allMessages} collapsed={collapsedIndexes.has(index)} index={index} key={`${message.role}:${index}`} message={message} onToggle={(open) => onToggle(index, open)} />);
+  }
+  const changedIndexes = new Map(visibleEntries.map((entry) => [entry.index, entry.message]));
+  const rendered: ReactNode[] = [];
+  let omitted = 0;
+  const flushOmitted = () => {
+    if (omitted === 0) return;
+    rendered.push(<span className="conversation-trace-message-ellipsis" key={`omitted:${rendered.length}`}>…（省略 {omitted} 条对话）</span>);
+    omitted = 0;
+  };
+  allMessages.forEach((message, index) => {
+    const changed = changedIndexes.get(index);
+    if (!changed) {
+      omitted += 1;
+      return;
+    }
+    flushOmitted();
+    rendered.push(<TraceMessage allMessages={allMessages} collapsed={collapsedIndexes.has(index)} index={index} key={`${message.role}:${index}`} message={message} onToggle={(open) => onToggle(index, open)} />);
+  });
+  flushOmitted();
+  return rendered;
+}
+
+function TraceMessage({ allMessages = [], message, index, collapsed = false, onToggle }: { allMessages?: readonly AiNovelTraceMessage[]; message: AiNovelTraceMessage; index: number; collapsed?: boolean; onToggle?: (open: boolean) => void }) {
   const role = normalizedRole(message.role);
+  const toolName = role === "tool" ? resolveTraceToolName(message, allMessages) : undefined;
   return (
-    <article className={`conversation-trace-message is-${role}`}>
-      <div className="conversation-trace-message-role"><RoleIcon role={role} />{message.role}</div>
-      <pre>{messageText(message.content) || "（无正文）"}</pre>
-    </article>
+    <details className={`conversation-trace-message is-${role}`} onToggle={(event) => onToggle?.(event.currentTarget.open)} open={!collapsed}>
+      <summary className="conversation-trace-message-summary">
+        <span className="conversation-trace-message-role"><span className="conversation-trace-message-sequence">#{index + 1}</span><RoleIcon role={role} />{message.role}{toolName ? <span className="conversation-trace-tool-name">{toolName}</span> : null}</span>
+      </summary>
+      <TraceMessageContent content={message.content} />
+    </details>
   );
 }
 
-function TraceRequest({ request, index, latest }: { request: AiNovelTraceRequest; index: number; latest: boolean }) {
+function TraceRequest({ request, index }: { request: AiNovelTraceRequest; index: number }) {
   return (
-    <details className="conversation-trace-request" open={latest}>
+    <details className="conversation-trace-request">
       <summary>
         <span><strong>LLM request {index + 1}</strong><small>{request.sceneKey ? <SceneTag sceneKey={request.sceneKey} /> : "model call"} · {formatTimestamp(request.capturedAt)}</small></span>
         <StatusIcon status={request.status} />
@@ -214,11 +271,11 @@ function TraceRequest({ request, index, latest }: { request: AiNovelTraceRequest
           </div>
         ) : null}
         <div className="conversation-trace-message-list">
-          {request.messages.map((message, messageIndex) => <TraceMessage key={`${message.role}:${messageIndex}`} message={message} />)}
+          {request.messages.map((message, messageIndex) => <TraceMessage allMessages={request.messages} index={messageIndex} key={`${message.role}:${messageIndex}`} message={message} />)}
         </div>
         <details className="conversation-trace-raw">
           <summary>查看原始 JSON</summary>
-          <pre>{prettyJson(request.raw)}</pre>
+          <TraceJsonPreview value={request.raw} />
         </details>
       </div>
     </details>
@@ -268,8 +325,8 @@ function RoleIcon({ role }: { role: string }) {
   return <span aria-hidden="true" className="conversation-trace-role-icon">{icon}</span>;
 }
 
-function changedMessages(turn: AiNovelTraceTurn, previousTurn?: AiNovelTraceTurn): AiNovelTraceMessage[] {
-  return turn.messages.filter((message, index) => !previousTurn || !sameValue(message, previousTurn.messages[index]));
+function changedMessages(turn: AiNovelTraceTurn, previousTurn?: AiNovelTraceTurn): Array<{ message: AiNovelTraceMessage; index: number }> {
+  return turn.messages.flatMap((message, index) => !previousTurn || !sameValue(message, previousTurn.messages[index]) ? [{ message, index }] : []);
 }
 
 function changedRequests(turn: AiNovelTraceTurn, previousTurn?: AiNovelTraceTurn): Array<{ request: AiNovelTraceRequest; index: number }> {

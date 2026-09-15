@@ -176,16 +176,28 @@ export class BailianOpenAICompatibleStreamLogSession {
     const elapsedMs = Date.now() - this.input.startedAtMs;
     this.firstEventElapsedMs ??= elapsedMs;
     const event = summarizeStreamChunk(input.chunk);
+    const eventForLog =
+      event.kind === "reasoning_delta"
+        ? { kind: event.kind, deltaLength: event.deltaLength }
+        : event;
     this.lastStreamEvent = {
       modelKey: this.input.modelKey,
       providerModel: this.input.providerModel,
       provider: this.input.providerName,
       chunkIndex: this.streamChunkCount,
       elapsedMs,
-      ...event,
+      ...eventForLog,
     };
     this.updateSummary(event, elapsedMs);
 
+    if (event.kind === "reasoning_delta") {
+      this.input.logger.info("ai_novel local provider stream delta", {
+        provider: this.input.providerName,
+        kind: event.kind,
+        deltaLength: event.deltaLength,
+      });
+      return;
+    }
     if (isHighFrequencyDeltaEvent(event)) {
       this.input.logger.info("ai_novel local provider stream delta", {
         provider: this.input.providerName,

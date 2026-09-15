@@ -102,6 +102,111 @@
   overflow-wrap: anywhere;
 }
 
+.conversation-history-debug {
+  display: grid;
+  gap: 8px;
+}
+
+.conversation-history-debug-section {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.conversation-history-debug-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.conversation-history-debug-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.conversation-history-debug-section > summary > span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.conversation-history-debug-section > summary small {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+.conversation-history-debug-section[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.conversation-history-debug-chevron {
+  color: var(--text-soft);
+  font-size: 1rem;
+  transition: transform 120ms ease;
+}
+
+.conversation-history-debug-section[open] .conversation-history-debug-chevron {
+  transform: rotate(180deg);
+}
+
+.conversation-history-debug-prompt {
+  max-height: 460px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  color: var(--text);
+  font: 0.78rem/1.55 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.conversation-history-debug-empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.conversation-history-debug-tool-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.conversation-history-debug-tool {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+}
+
+.conversation-history-debug-tool > header {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(60, 157, 129, 0.08);
+}
+
+.conversation-history-debug-tool code {
+  color: #23755e;
+  font: 700 0.78rem var(--font-mono);
+}
+
+.conversation-history-debug-tool > p {
+  margin: 0;
+  padding: 8px 10px 0;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.conversation-history-debug-tool .conversation-trace-json-preview {
+  max-height: 280px;
+  margin: 8px 10px 10px;
+}
+
 @media (max-width: 700px) {
   .conversation-history-table-header {
     align-items: flex-start;

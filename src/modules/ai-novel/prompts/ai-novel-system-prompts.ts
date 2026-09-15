@@ -1,7 +1,6 @@
 import type { LLMToolDefinition } from "../../../services/llm-manager.ts";
 import type { AiNovelPromptProfile } from "./ai-novel-prompt-types.ts";
 import {
-  IMPORT_BOOK_AGENT_TOOLS,
   SUBMIT_CHAPTER_REVIEW_TOOL,
   SUBMIT_CHAPTER_SUMMARY_TOOL,
   SUBMIT_NEXT_CHAPTER_BRIEF_TOOL,
@@ -180,6 +179,7 @@ export const IMPORT_BOOK_AGENT_SYSTEM_PROMPT = [
   "- If full chapter text is absent, do not reconstruct it from memory; report the missing source through the required submit tool fields when possible.",
   "",
   "## Tool meanings",
+  "- read_imported_chapter_batch: reread the authoritative imported chapter batch attached to this step when needed; never request arbitrary files.",
   "- submit_import_plan_update: submit strict source-grounded BookContract, executable MainLine, and ImportEvidence from the current imported text plus previous artifacts.",
   "- submit_rolling_snapshot: compress cold imported chapters into writing-useful long-term memory through the chunk boundary.",
   "- submit_chapter_summaries: submit one per-chapter summary for each chapter in a recent batch.",
@@ -292,5 +292,3 @@ export const JOB_FORCED_TOOLS: Partial<
   snapshot_generation: SUBMIT_SNAPSHOT_TOOL,
   next_chapter_brief: SUBMIT_NEXT_CHAPTER_BRIEF_TOOL,
 };
-
-export const IMPORT_BOOK_AGENT_SUBMIT_TOOLS = IMPORT_BOOK_AGENT_TOOLS;

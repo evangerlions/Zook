@@ -178,7 +178,7 @@ Admin 查看接口：
 
 1. `uid` 和 `did` 均为可选，但不能同时携带；`page` 从 `0` 开始。两者都不传时按全部用户查询。
 2. 每页最多返回 100 个完整 Turn，即最多 200 条用户/AI 消息；默认页是最新记录，后续页按时间向前翻阅。
-3. 每个 Turn 仅保存最后一条用户正文和最终 AI 正文，不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload；如果客户端提供 `messageId`、`sessionId`、`turnId`，响应会原样返回这些关联 ID。
+3. 每个 Turn 保存最后一条用户正文和最终 AI 正文，不保存 Reasoning、Tool 调用参数或 Provider 原始 payload；local/dev 调试请求会额外保存服务端最终组装的 `systemPrompt` 与可用 `tools` 定义（名称、说明、输入 schema）。如果客户端提供 `messageId`、`sessionId`、`turnId`，响应会原样返回这些关联 ID。
 4. `messageId`、`sessionId`、`turnId` 均为可选字段。旧客户端没有这些字段时，服务端返回空缺字段，不会拒绝请求或抛出异常。
 5. 同一用户记录达到第 121 个 Turn 时，在写入事务中批量裁剪为最新 100 个 Turn；没有时间到期清理。用户注销时删除其对话记录。
 6. 读取需要 Admin 认证并写入 `admin.ai_novel_conversation.read` 审计；审计只记录查询类型和页码，不记录 UID、DID 或正文。

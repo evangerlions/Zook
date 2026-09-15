@@ -343,7 +343,16 @@ test("ai_novel encrypted Skill update endpoints expose only current named packag
   const skills = manifest.skills as Array<Record<string, unknown>>;
   assert.deepEqual(
     skills.map((skill) => skill.name),
-    ["chapter-continuity-review", "chapter-voice-review"],
+    [
+      "anti-ai-voice-review",
+      "chapter-continuity-review",
+      "chapter-ending-review",
+      "chapter-voice-review",
+      "character-voice-review",
+      "dialogue-review",
+      "opening-hook-review",
+      "transition-review",
+    ],
   );
   assert.ok(typeof manifest.skillSetVersion === "string");
 
@@ -931,6 +940,7 @@ test("ai_novel import_book_agent streams thinking tool calls with import progres
     idle_timeout_ms: 90000,
   });
   assert.deepEqual(toolNamesFromProviderOptions(providerOptions), [
+    "read_imported_chapter_batch",
     "submit_import_plan_update",
     "submit_rolling_snapshot",
     "submit_chapter_summaries",
@@ -1207,6 +1217,13 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
   assert.deepEqual(messages, providerMessages);
   assert.ok(Array.isArray(providerOptions.tools));
   assert.equal(decryptedEvents[1].type, "content_delta");
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  assert.equal(records.length, 1);
+  assert.match(records[0]?.systemPrompt ?? "", /write-mode AINovel agent/);
+  assert.ok(records[0]?.tools?.some((tool) => tool.name === "read_writing_context"));
 });
 
 test("ai_novel trace API is hidden outside local debug hosts", async () => {

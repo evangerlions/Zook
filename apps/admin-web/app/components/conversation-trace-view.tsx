@@ -131,7 +131,7 @@ function SessionsPane({
                   <StatusIcon status={session.status} />
                 </span>
                 <span className="conversation-trace-session-meta">
-                  <span className="trace-pill">{session.kind}</span>
+                  <SceneTag sceneKey={session.kind} />
                   <span>{formatTimestamp(session.updatedAt)}</span>
                 </span>
                 <span className="conversation-trace-session-meta">

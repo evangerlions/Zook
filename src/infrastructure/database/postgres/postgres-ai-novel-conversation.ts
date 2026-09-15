@@ -1,6 +1,9 @@
 import type { QueryResult, QueryResultRow } from "pg";
 
-import type { AiNovelConversationRecord } from "../../../shared/types.ts";
+import type {
+  AiNovelConversationRecord,
+  AiNovelConversationTool,
+} from "../../../shared/types.ts";
 import type { AiNovelConversationStore } from "../ai-novel-conversation-store.ts";
 import { toIsoString } from "./postgres-row-utils.ts";
 
@@ -18,10 +21,11 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
     const result = await this.query(
       `INSERT INTO zook_ai_novel_conversation_records (
          id, app_id, user_id, did, request_id, scene_key,
-         message_id, session_id, turn_id, user_text, assistant_text, created_at
+         message_id, session_id, turn_id, user_text, assistant_text,
+         system_prompt, tools_json, created_at
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9,
-         $10, $11, $12::timestamptz
+         $10, $11, $12, $13::jsonb, $14::timestamptz
        )
        ON CONFLICT (app_id, user_id, request_id) DO NOTHING
        RETURNING id`,
@@ -37,6 +41,8 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
         record.turnId ?? null,
         record.userText,
         record.assistantText,
+        record.systemPrompt ?? null,
+        record.tools ? JSON.stringify(record.tools) : null,
         record.createdAt,
       ],
     );
@@ -66,7 +72,7 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
     const result = await this.query(
       `SELECT id, app_id, user_id, did, request_id,
               message_id, session_id, turn_id, scene_key,
-              user_text, assistant_text, created_at
+              user_text, assistant_text, system_prompt, tools_json, created_at
        FROM zook_ai_novel_conversation_records
        WHERE ${clauses.join(" AND ")}
        ORDER BY created_at DESC, id DESC
@@ -115,6 +121,8 @@ function parseRecord(row: QueryResultRow): AiNovelConversationRecord {
     sceneKey: String(row.scene_key),
     userText: String(row.user_text),
     assistantText: String(row.assistant_text),
+    ...optionalRowText(row.system_prompt, "systemPrompt"),
+    ...optionalTools(row.tools_json),
     createdAt: toIsoString(row.created_at) as string,
   };
 }
@@ -125,6 +133,26 @@ function optionalRowText(
 ): Record<string, string> {
   const normalized = typeof value === "string" ? value.trim() : "";
   return normalized ? { [key]: normalized } : {};
+}
+
+function optionalTools(value: unknown): { tools: AiNovelConversationTool[] } | {} {
+  let parsed = value;
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed) as unknown;
+    } catch {
+      return {};
+    }
+  }
+  if (!Array.isArray(parsed)) return {};
+  const tools = parsed.filter((item): item is AiNovelConversationTool => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+    const record = item as Record<string, unknown>;
+    return typeof record.name === "string" &&
+      typeof record.description === "string" &&
+      Boolean(record.inputSchema && typeof record.inputSchema === "object" && !Array.isArray(record.inputSchema));
+  });
+  return tools.length > 0 || parsed.length === 0 ? { tools } : {};
 }
 
 function normalizeLimit(value?: number): number {

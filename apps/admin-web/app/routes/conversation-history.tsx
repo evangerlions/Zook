@@ -3,6 +3,7 @@ import type { ColumnsType } from "antd/es/table";
 import { useEffect, useRef, useState } from "react";
 
 import { adminApi } from "../lib/admin-api";
+import { ConversationHistoryDebugDetails } from "../components/conversation-history-debug";
 import { useAdminSession } from "../lib/admin-session";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import { sceneTagColor } from "../lib/scene-tag";
@@ -78,7 +79,7 @@ export default function ConversationHistoryRoute() {
       <header className="page-header">
         <div>
           <h1>历史聊天</h1>
-          <p>查询服务端保存的已完成聊天摘要；消息列表按高密度表格展示，点击详情查看完整内容。</p>
+          <p>查询服务端保存的已完成聊天摘要；消息列表按高密度表格展示，点击详情查看正文以及 dev/local 调试上下文。</p>
         </div>
         <Button loading={loading} onClick={() => void load(document?.page ?? 0, document?.query ?? inputQuery())}>刷新</Button>
       </header>
@@ -221,6 +222,7 @@ function ConversationHistoryDetail({ record }: { record: AdminAiNovelConversatio
       </Descriptions>
       <MessageDetail label="用户消息" content={record.userText} />
       <MessageDetail label="AI 回复" content={record.assistantText} />
+      <ConversationHistoryDebugDetails record={record} />
     </div>
   );
 }

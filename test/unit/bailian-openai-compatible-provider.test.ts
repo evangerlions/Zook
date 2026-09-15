@@ -997,6 +997,37 @@ test("bailian provider logs local provider request summary and tiny stream delta
   }
 });
 
+test("bailian provider never logs raw reasoning delta previews", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "local";
+  const logger = new StructuredLogger("api", { emitToConsole: false });
+  const hiddenReasoning = "internal prompt prefix that must stay hidden";
+
+  try {
+    const provider = new BailianOpenAICompatibleProvider({
+      logger,
+      fetchImplementation: async () =>
+        createSseResponse([
+          `data: {"choices":[{"delta":{"reasoning_content":${JSON.stringify(hiddenReasoning)},"content":""},"finish_reason":null}]}\n\n`,
+          "data: [DONE]\n\n",
+        ]),
+    });
+
+    await collectEvents(provider.stream(createResolvedRequest()));
+
+    const reasoningLog = logger.records.find(
+      (entry) => entry.message === "ai_novel local provider stream delta" &&
+        entry.kind === "reasoning_delta",
+    );
+    assert.ok(reasoningLog);
+    assert.equal(reasoningLog.preview, undefined);
+    assert.equal(reasoningLog.deltaLength, hiddenReasoning.length);
+    assert.doesNotMatch(JSON.stringify(reasoningLog), /internal prompt prefix/);
+  } finally {
+    process.env.APP_ENV = previousAppEnv;
+  }
+});
+
 test("bailian provider local request log uses the concrete model key", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "local";

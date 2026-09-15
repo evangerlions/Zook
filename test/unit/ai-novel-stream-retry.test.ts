@@ -223,6 +223,7 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
         requestId: "stream_request_1",
         userId: "uid_xyz",
         routingIdentity: { did: "did_abc", uid: "uid_xyz" },
+        captureConversationDebug: true,
       },
     ),
   );
@@ -248,6 +249,8 @@ test("AINovel stream service excludes the failed model on a pre-chunk retry", as
   assert.equal(document.items[0]?.messageId, "msg_stream");
   assert.equal(document.items[0]?.sessionId, "session_stream");
   assert.equal(document.items[0]?.turnId, "turn_stream");
+  assert.match(document.items[0]?.systemPrompt ?? "", /kickoff/);
+  assert.ok(document.items[0]?.tools?.some((tool) => tool.name === "ask_question"));
 });
 
 test("AINovel internal compaction completion is not recorded as a user conversation", async () => {
