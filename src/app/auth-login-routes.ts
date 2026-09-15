@@ -378,6 +378,7 @@ export async function handleLoginWithOneClick(this: BackendRouteContext,
       appId,
       token,
       gyuid,
+      sdkPlatform,
     });
     const phone = phoneResult.phone.replace(/^\+86/, "");
     const result = await this.authService.loginWithOneClickPhone({
@@ -447,8 +448,12 @@ export async function handleOneClickLoginStatus(this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const appId = this.appContextResolver.resolvePreAuth(request);
+  const sdkPlatform = getHeader(request.headers, "x-platform")?.trim();
   const config =
-    await this.commonGetuiGyConfigService.getRuntimeConfig(appId);
+    await this.commonGetuiGyConfigService.getRuntimeConfig(
+      appId,
+      sdkPlatform,
+    );
   return this.ok(
     {
       available: true,

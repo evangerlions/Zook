@@ -12,6 +12,12 @@ import {
   matchesMaskedSensitiveString,
 } from "../shared/utils.ts";
 import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
+import { CommonPasswordConfigService } from "./common-password-config.service.ts";
+import {
+  AI_NOVEL_ZOOK_APP_ID,
+  OHOS_SDK_PLATFORM,
+  resolveOhosGetuiGyCredentials,
+} from "./getui-gy-platform-credentials.ts";
 
 const COMMON_APP_ID = "common";
 export const GETUI_GY_CONFIG_KEY = "common.getui_gy_service";
@@ -51,6 +57,7 @@ export interface GetuiGyRuntimeConfig {
 export class CommonGetuiGyConfigService {
   constructor(
     private readonly appConfigService: VersionedAppConfigService,
+    private readonly commonPasswordConfigService: CommonPasswordConfigService,
   ) {}
 
   async getDocument(revision?: number): Promise<AdminGetuiGyServiceDocument> {
@@ -171,7 +178,10 @@ export class CommonGetuiGyConfigService {
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
-  async getRuntimeConfig(appId: string): Promise<GetuiGyRuntimeConfig> {
+  async getRuntimeConfig(
+    appId: string,
+    sdkPlatform?: string,
+  ): Promise<GetuiGyRuntimeConfig> {
     const config = await this.getCurrentConfig();
 
     if (!config.enabled) {
@@ -180,6 +190,18 @@ export class CommonGetuiGyConfigService {
         "ONE_CLICK_SERVICE_NOT_CONFIGURED",
         "Getui GeYan one-click login service is not enabled.",
       );
+    }
+
+    const normalizedPlatform = sdkPlatform?.trim().toLowerCase();
+    if (
+      appId === AI_NOVEL_ZOOK_APP_ID &&
+      normalizedPlatform === OHOS_SDK_PLATFORM
+    ) {
+      const credentials = await resolveOhosGetuiGyCredentials(
+        this.commonPasswordConfigService,
+      );
+      this.assertGetuiEndpoint(config.endpoint);
+      return this.toRuntimeConfig(appId, config, credentials);
     }
 
     this.assertRuntimeConfig(config);
@@ -193,16 +215,7 @@ export class CommonGetuiGyConfigService {
     }
     this.assertAppCredentials(appId, credentials);
 
-    return {
-      enabled: true,
-      endpoint: config.endpoint,
-      timeoutMs: config.timeoutMs,
-      appId: credentials.appId,
-      appKey: credentials.appKey,
-      appSecret: credentials.appSecret,
-      masterSecret: credentials.masterSecret,
-      zookAppId: appId,
-    };
+    return this.toRuntimeConfig(appId, config, credentials);
   }
 
   async initializeDefaultConfig(
@@ -272,8 +285,12 @@ export class CommonGetuiGyConfigService {
       this.assertAppCredentials(zookAppId, credentials);
     });
 
+    this.assertGetuiEndpoint(config.endpoint);
+  }
+
+  private assertGetuiEndpoint(endpoint: string): void {
     try {
-      const url = new URL(config.endpoint);
+      const url = new URL(endpoint);
       if (url.protocol !== "https:") {
         throw new Error("endpoint must use https");
       }
@@ -284,6 +301,23 @@ export class CommonGetuiGyConfigService {
         "Getui GeYan endpoint is invalid.",
       );
     }
+  }
+
+  private toRuntimeConfig(
+    appId: string,
+    config: GetuiGyServiceConfig,
+    credentials: GetuiGyAppCredentials,
+  ): GetuiGyRuntimeConfig {
+    return {
+      enabled: true,
+      endpoint: config.endpoint,
+      timeoutMs: config.timeoutMs,
+      appId: credentials.appId,
+      appKey: credentials.appKey,
+      appSecret: credentials.appSecret,
+      masterSecret: credentials.masterSecret,
+      zookAppId: appId,
+    };
   }
 
   private assertAppCredentials(
