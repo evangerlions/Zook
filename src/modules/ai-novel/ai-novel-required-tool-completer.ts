@@ -6,6 +6,10 @@ import type {
   LlmRoutingIdentity,
   LLMToolCall,
 } from "../../services/llm-manager.ts";
+import {
+  compactAiNovelContext,
+  latestUserMessageIndex,
+} from "./ai-novel-context-compaction.ts";
 
 const STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS = 20_000;
 const REQUIRED_TOOL_STREAM_ATTEMPTS = 2;
@@ -19,6 +23,7 @@ export async function completeRequiredToolViaStream(
     temperature: number;
     maxTokens: number;
     providerOptions?: Record<string, unknown>;
+    messagesAlreadyCompacted?: boolean;
     usageOwner?: { appId: string; userId: string };
     routingIdentity?: LlmRoutingIdentity;
     forcedToolName: string;
@@ -26,12 +31,28 @@ export async function completeRequiredToolViaStream(
 ): Promise<LLMCompletionResult> {
   let messages = input.messages;
   let lastResult: LLMCompletionResult | undefined;
+  let protectedRoundStartIndex: number | undefined;
 
   for (let attempt = 1; attempt <= REQUIRED_TOOL_STREAM_ATTEMPTS; attempt += 1) {
+    const providerMessages =
+      attempt === 1 && input.messagesAlreadyCompacted
+        ? messages
+        : compactAiNovelContext({
+            messages,
+            providerOptions: input.providerOptions,
+            maxTokens: input.maxTokens,
+            ...(protectedRoundStartIndex === undefined
+              ? {}
+              : { latestRoundStartIndex: protectedRoundStartIndex }),
+          }).messages;
+    if (protectedRoundStartIndex === undefined) {
+      const latestIndex = latestUserMessageIndex(providerMessages);
+      if (latestIndex >= 0) protectedRoundStartIndex = latestIndex;
+    }
     const result = await llmManager.completeViaStream(
       {
         modelKey: input.modelKey,
-        messages,
+        messages: providerMessages,
         temperature: input.temperature,
         maxTokens: input.maxTokens,
         ...(input.providerOptions ? { providerOptions: input.providerOptions } : {}),
@@ -48,7 +69,7 @@ export async function completeRequiredToolViaStream(
     }
 
     messages = [
-      ...messages,
+      ...providerMessages,
       {
         role: "assistant",
         content: result.text,

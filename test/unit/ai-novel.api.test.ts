@@ -3866,6 +3866,80 @@ test("ai_novel pi-v1 keeps raw context out of the provider request", async () =>
   );
 });
 
+test("ai_novel compacts oversized history before the provider while preserving the latest round", async () => {
+  let capturedMessages: LLMMessage[] | undefined;
+  const largeToolOutput = "x".repeat(900_000);
+  const messages: LLMMessage[] = [];
+  for (let index = 0; index < 4; index += 1) {
+    const toolCallId = `call_old_${index}`;
+    messages.push(
+      {
+        role: "user",
+        content: `old request ${index}`,
+      },
+      {
+        role: "assistant",
+        content: "",
+        toolCalls: [
+          {
+            id: toolCallId,
+            name: "read_writing_context",
+            input: {},
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: largeToolOutput,
+        toolCallId,
+      },
+    );
+  }
+  messages.push({ role: "user", content: "latest request" });
+
+  const { runtime } = await createAiNovelRuntime({
+    llmProvider: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("oversized history test should use stream");
+      },
+      async *stream(request): AsyncIterable<LLMStreamEvent> {
+        capturedMessages = request.messages;
+        yield { type: "content_delta", text: "ok" };
+        yield { type: "done", finishReason: "stop" };
+      },
+    },
+  });
+
+  const chunks: AiNovelChatStreamChunk[] = [];
+  for await (const chunk of runtime.services.aiNovelLlmService.createChatCompletionStream(
+    {
+      scene_key: "write_turn",
+      stream: true,
+      messages,
+    },
+    {
+      userId: "user_alice",
+      requestId: "oversized-history-request",
+    },
+  )) {
+    chunks.push(chunk);
+  }
+
+  assert.equal(chunks.at(-1)?.type, "done");
+  assert.ok(capturedMessages);
+  const toolMessages = capturedMessages!.filter((item) => item.role === "tool");
+  assert.equal(toolMessages.length, 4);
+  assert.equal(
+    toolMessages.filter(
+      (item) => item.content === "[Old tool result content cleared; re-run the tool if needed.]",
+    ).length,
+    3,
+  );
+  assert.equal(toolMessages.at(-1)?.content?.length, largeToolOutput.length);
+  assert.equal(capturedMessages!.at(-1)?.content, "latest request");
+  assert.equal(capturedMessages!.find((item) => item.role === "system")?.role, "system");
+});
+
 test("ai_novel pi-v1 kickoff keeps Meta out of the provider system prompt", async () => {
   let capturedMessages: Array<{ role: string; content?: string }> = [];
   const llmProvider: LLMProvider = {

@@ -44,6 +44,7 @@ import {
   normalizeAiNovelToolCallId,
 } from "./ai-novel-llm-tool-call-utils.ts";
 import { mapAndLogAiNovelUpstreamError } from "./ai-novel-upstream-errors.ts";
+import { compactAiNovelRequestPlan } from "./ai-novel-context-compaction.ts";
 import {
   completeRequiredToolViaStream,
   resolvePromptAssemblyCompletionText,
@@ -153,6 +154,12 @@ export class AiNovelLlmService {
     const maxTokens =
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
+    const providerRequestPlan = compactAiNovelRequestPlan(
+      requestPlan,
+      maxTokens,
+      this.logger,
+      { requestId: options.requestId, sceneKey: scene.sceneKey },
+    );
     const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
     const llmRequestContext: AiNovelLlmRequestContext = {
       ...aiNovelUsageOwner(options),
@@ -163,27 +170,28 @@ export class AiNovelLlmService {
     try {
       const llmRequest = {
         modelKey,
-        messages: requestPlan.messages,
+        messages: providerRequestPlan.messages,
         temperature,
         maxTokens,
-        ...(requestPlan.providerOptions
-          ? { providerOptions: requestPlan.providerOptions }
+        ...(providerRequestPlan.providerOptions
+          ? { providerOptions: providerRequestPlan.providerOptions }
           : {}),
         ...llmRequestContext,
       };
       const result: LLMCompletionResult =
-        shouldUseStreamedCompletion && requestPlan.forcedToolName
+        shouldUseStreamedCompletion && providerRequestPlan.forcedToolName
           ? await completeRequiredToolViaStream(this.llmManager, {
               sceneRouteKey,
               modelKey,
-              messages: requestPlan.messages,
+              messages: providerRequestPlan.messages,
               temperature,
               maxTokens,
-              ...(requestPlan.providerOptions
-                ? { providerOptions: requestPlan.providerOptions }
+              ...(providerRequestPlan.providerOptions
+                ? { providerOptions: providerRequestPlan.providerOptions }
                 : {}),
+              messagesAlreadyCompacted: true,
               ...llmRequestContext,
-              forcedToolName: requestPlan.forcedToolName,
+              forcedToolName: providerRequestPlan.forcedToolName,
             })
           : shouldUseStreamedCompletion
             ? await this.llmManager.completeViaStream(llmRequest, {
@@ -192,7 +200,7 @@ export class AiNovelLlmService {
               })
             : await this.llmManager.complete(llmRequest);
       const completionContent = resolvePromptAssemblyCompletionText(
-        requestPlan.forcedToolName,
+        providerRequestPlan.forcedToolName,
         result,
       );
 
@@ -217,11 +225,11 @@ export class AiNovelLlmService {
               localDebugLlmRequest: buildLocalDebugLlmRequestPayload({
                 sceneKey: scene.sceneKey,
                 sceneRouteKey,
-                messages: requestPlan.messages,
+                messages: providerRequestPlan.messages,
                 temperature,
                 maxTokens,
-                providerOptions: requestPlan.providerOptions,
-                profile: requestPlan.profile,
+                providerOptions: providerRequestPlan.providerOptions,
+                profile: providerRequestPlan.profile,
                 stream: shouldUseStreamedCompletion,
               }),
             }
@@ -285,6 +293,12 @@ export class AiNovelLlmService {
         messages,
         scene,
       });
+      const providerRequestPlan = compactAiNovelRequestPlan(
+        requestPlan,
+        maxTokens,
+        this.logger,
+        { requestId: options.requestId, sceneKey: scene.sceneKey },
+      );
       const conversationDebug = options.captureConversationDebug
         ? buildAiNovelConversationDebugMetadata(requestPlan)
         : undefined;
@@ -294,11 +308,11 @@ export class AiNovelLlmService {
         yield buildLocalDebugLlmRequestChunk({
           sceneKey: scene.sceneKey,
           sceneRouteKey,
-          messages: requestPlan.messages,
+          messages: providerRequestPlan.messages,
           temperature,
           maxTokens,
-          providerOptions: requestPlan.providerOptions,
-          profile: requestPlan.profile,
+          providerOptions: providerRequestPlan.providerOptions,
+          profile: providerRequestPlan.profile,
         });
       }
       const stream = streamWithAiNovelModelRetry({
@@ -311,7 +325,7 @@ export class AiNovelLlmService {
         run: (modelKey) =>
           this.runAiNovelStreamAttempt({
             modelKey,
-            requestPlan,
+            requestPlan: providerRequestPlan,
             sceneRouteKey,
             temperature,
             maxTokens,
