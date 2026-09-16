@@ -63,6 +63,10 @@ import {
   AiNovelConversationRecordService,
 } from "./ai-novel-conversation-record.service.ts";
 import {
+  buildAiNovelConversationDebugMetadata,
+  type AiNovelConversationDebugMetadata,
+} from "./ai-novel-conversation-debug.ts";
+import {
   extractAiNovelConversationRecordIds,
 } from "./ai-novel-conversation-record-ids.ts";
 import {
@@ -87,6 +91,7 @@ export type {
 
 interface AiNovelRequestOptions {
   exposeLocalDebug?: boolean;
+  captureConversationDebug?: boolean;
   requestId?: string;
   userId?: string;
   routingIdentity?: LlmRoutingIdentity;
@@ -139,6 +144,9 @@ export class AiNovelLlmService {
       messages,
       scene,
     });
+    const conversationDebug = options.captureConversationDebug
+      ? buildAiNovelConversationDebugMetadata(requestPlan)
+      : undefined;
     const temperature =
       optionalNumber(body.temperature, "temperature") ??
       scene.defaultTemperature;
@@ -225,6 +233,7 @@ export class AiNovelLlmService {
         conversationRecordIds,
         sceneKey: scene.sceneKey,
         assistantText: completionContent,
+        conversationDebug,
       });
       return response;
     } catch (error) {
@@ -276,6 +285,9 @@ export class AiNovelLlmService {
         messages,
         scene,
       });
+      const conversationDebug = options.captureConversationDebug
+        ? buildAiNovelConversationDebugMetadata(requestPlan)
+        : undefined;
       let initiallyYielded = false;
       if (options.exposeLocalDebug === true) {
         initiallyYielded = true;
@@ -322,6 +334,7 @@ export class AiNovelLlmService {
             conversationRecordIds,
             sceneKey: scene.sceneKey,
             assistantText: chunk.completion.content,
+            conversationDebug,
           });
         }
         yield chunk;
@@ -500,6 +513,7 @@ export class AiNovelLlmService {
     };
     sceneKey: string;
     assistantText: string;
+    conversationDebug?: AiNovelConversationDebugMetadata;
   }): Promise<void> {
     const userText = [...input.messages]
       .reverse()
@@ -519,6 +533,12 @@ export class AiNovelLlmService {
         sceneKey: input.sceneKey,
         userText,
         assistantText: input.assistantText,
+        ...(input.conversationDebug?.systemPrompt
+          ? { systemPrompt: input.conversationDebug.systemPrompt }
+          : {}),
+        ...(input.conversationDebug
+          ? { tools: input.conversationDebug.tools }
+          : {}),
       });
     } catch (error) {
       this.logger?.warn("AINovel completed conversation record write failed", {

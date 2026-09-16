@@ -1,0 +1,227 @@
+.conversation-history-page {
+  min-width: 0;
+}
+
+.conversation-history-search {
+  display: flex;
+  align-items: center;
+}
+
+.conversation-history-table-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.conversation-history-table-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.conversation-history-table-header h2,
+.conversation-history-table-header p {
+  margin: 0;
+}
+
+.conversation-history-table-header p {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.conversation-history-table .ant-table-cell {
+  vertical-align: top;
+}
+
+.conversation-history-table .ant-table-thead > tr > th {
+  white-space: nowrap;
+}
+
+.conversation-history-message-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.conversation-history-message-preview.is-empty {
+  color: var(--text-soft);
+}
+
+.conversation-history-user {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.conversation-history-user strong,
+.conversation-history-user small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-history-user small {
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.conversation-history-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.conversation-history-message-detail {
+  display: grid;
+  gap: 8px;
+}
+
+.conversation-history-message-detail h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.conversation-history-message-detail pre {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.conversation-history-debug {
+  display: grid;
+  gap: 8px;
+}
+
+.conversation-history-debug-section {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.conversation-history-debug-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.conversation-history-debug-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.conversation-history-debug-section > summary > span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.conversation-history-debug-section > summary small {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+.conversation-history-debug-section[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.conversation-history-debug-chevron {
+  color: var(--text-soft);
+  font-size: 1rem;
+  transition: transform 120ms ease;
+}
+
+.conversation-history-debug-section[open] .conversation-history-debug-chevron {
+  transform: rotate(180deg);
+}
+
+.conversation-history-debug-prompt {
+  max-height: 460px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  color: var(--text);
+  font: 0.78rem/1.55 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.conversation-history-debug-empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.conversation-history-debug-tool-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.conversation-history-debug-tool {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+}
+
+.conversation-history-debug-tool > header {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(60, 157, 129, 0.08);
+}
+
+.conversation-history-debug-tool code {
+  color: #23755e;
+  font: 700 0.78rem var(--font-mono);
+}
+
+.conversation-history-debug-tool > p {
+  margin: 0;
+  padding: 8px 10px 0;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.conversation-history-debug-tool .conversation-trace-json-preview {
+  max-height: 280px;
+  margin: 8px 10px 10px;
+}
+
+@media (max-width: 700px) {
+  .conversation-history-table-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .conversation-history-search {
+    align-items: stretch;
+  }
+
+  .conversation-history-search .ant-space {
+    width: 100%;
+  }
+
+  .conversation-history-search .ant-input-search {
+    width: 100% !important;
+  }
+}

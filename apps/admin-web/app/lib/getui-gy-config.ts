@@ -71,6 +71,14 @@ export function serializeGetuiGyDraft(draft: GetuiGyServiceDraft): GetuiGyServic
     if (incompleteAppId) {
       throw new Error(`启用 GeYan 前必须填写 ${incompleteAppId} 的 AppID、AppKey、AppSecret 和 MasterSecret。`);
     }
+
+    const incompletePlatform = Object.entries(config.apps).find(([, credentials]) => {
+      const ohos = credentials.platforms?.ohos;
+      return ohos && (!ohos.appId || !ohos.appKey || !ohos.appSecret || !ohos.masterSecret);
+    })?.[0];
+    if (incompletePlatform) {
+      throw new Error(`启用 GeYan 前必须完整填写 ${incompletePlatform} 的鸿蒙 OHOS 凭据。`);
+    }
   }
 
   return config;
@@ -143,10 +151,37 @@ function normalizeAppCredentials(value: unknown): Record<string, GetuiGyAppCrede
           appKey: typeof credentials.appKey === "string" ? credentials.appKey.trim() : "",
           appSecret: typeof credentials.appSecret === "string" ? credentials.appSecret.trim() : "",
           masterSecret: typeof credentials.masterSecret === "string" ? credentials.masterSecret.trim() : "",
+          platforms: normalizeAppPlatforms(credentials.platforms),
         };
       }
     });
   }
 
   return result;
+}
+
+function normalizeAppPlatforms(
+  value: unknown,
+): GetuiGyAppCredentials["platforms"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const source = value as Record<string, unknown>;
+  const ohos = source.ohos;
+  if (!ohos || typeof ohos !== "object" || Array.isArray(ohos)) {
+    return undefined;
+  }
+  const keys = ohos as Record<string, unknown>;
+  return {
+    ohos: {
+      appId: typeof keys.appId === "string" ? keys.appId.trim() : "",
+      appKey: typeof keys.appKey === "string" ? keys.appKey.trim() : "",
+      appSecret:
+        typeof keys.appSecret === "string" ? keys.appSecret.trim() : "",
+      masterSecret:
+        typeof keys.masterSecret === "string"
+          ? keys.masterSecret.trim()
+          : "",
+    },
+  };
 }

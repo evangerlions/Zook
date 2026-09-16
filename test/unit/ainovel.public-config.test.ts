@@ -76,6 +76,9 @@ test("AINovel public config remains locale-neutral and carries every prompt list
     assert.ok(prompts.every((prompt) => prompt.trim().length > 0));
   }
   assert.deepEqual(kickoff.recommendedPrompts, localizedPrompts["zh-CN"]);
+  assert.deepEqual(chineseResponse.body.data.config.reasoning, {
+    hiddenPrefixChars: 100,
+  });
   assert.deepEqual(
     localizedPrompts["ja-JP"],
     REVIEWED_JAPANESE_KICKOFF_PROMPTS,

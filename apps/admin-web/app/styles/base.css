@@ -1,30 +1,30 @@
 :root {
-  --bg: #edf0ea;
-  --surface: rgba(255, 255, 255, 0.92);
-  --surface-soft: #f6f7f1;
+  --bg: #eef2f6;
+  --surface: rgba(255, 255, 255, 0.96);
+  --surface-soft: #f6f8fb;
   --surface-strong: #ffffff;
-  --line: #d6ddd3;
-  --line-strong: #bcc7bb;
-  --text: #1f2721;
-  --text-soft: #6f7a72;
-  --primary: #d7725f;
-  --primary-soft: rgba(215, 114, 95, 0.12);
-  --primary-strong: #a44b3b;
-  --success: #4e8b68;
-  --danger: #c45757;
-  --sidebar: #55675c;
-  --sidebar-text: rgba(255, 255, 255, 0.88);
-  --sidebar-soft: rgba(237, 243, 236, 0.72);
-  --radius-xl: 24px;
-  --radius-lg: 18px;
-  --radius-md: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 26px 70px rgba(59, 79, 63, 0.08);
-  --shadow-strong: 0 28px 64px rgba(48, 64, 53, 0.22);
+  --line: #d8e0e9;
+  --line-strong: #c2cedb;
+  --text: #17212d;
+  --text-soft: #657386;
+  --primary: #356fe6;
+  --primary-soft: rgba(53, 111, 230, 0.1);
+  --primary-strong: #2457bd;
+  --success: #17866a;
+  --danger: #cc4f5b;
+  --sidebar: #162334;
+  --sidebar-text: rgba(245, 248, 252, 0.94);
+  --sidebar-soft: rgba(202, 215, 231, 0.72);
+  --radius-xl: 16px;
+  --radius-lg: 12px;
+  --radius-md: 9px;
+  --radius-sm: 7px;
+  --shadow: 0 12px 30px rgba(28, 47, 72, 0.06);
+  --shadow-strong: 0 16px 34px rgba(14, 30, 52, 0.18);
   --font-sans: "Manrope", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-display: "Outfit", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
-  --content-max-width: 1440px;
+  --content-max-width: 1600px;
 }
 
 * {
@@ -39,10 +39,7 @@ body {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(215, 114, 95, 0.16), transparent 24%),
-    radial-gradient(circle at 82% 8%, rgba(115, 150, 123, 0.12), transparent 22%),
-    linear-gradient(180deg, #edf0ea 0%, #fafaf6 46%, #eef2ec 100%);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
 }
@@ -66,7 +63,7 @@ button {
 button:focus-visible,
 a:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(215, 114, 95, 0.16);
+  box-shadow: 0 0 0 4px rgba(53, 111, 230, 0.18);
 }
 
 #app {

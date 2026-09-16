@@ -1,0 +1,105 @@
+.conversation-trace-debug-context {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.conversation-trace-debug-section {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #f7f9f4;
+}
+
+.conversation-trace-debug-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.conversation-trace-debug-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.conversation-trace-debug-section > summary > span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.conversation-trace-debug-section > summary small {
+  color: var(--text-soft);
+  font-size: 0.66rem;
+}
+
+.conversation-trace-debug-section[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.conversation-trace-debug-chevron {
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  transition: transform 120ms ease;
+}
+
+.conversation-trace-debug-section[open] .conversation-trace-debug-chevron {
+  transform: rotate(180deg);
+}
+
+.conversation-trace-debug-prompt {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  color: var(--text);
+  font: 0.7rem/1.5 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.conversation-trace-debug-empty {
+  margin: 0;
+  padding: 10px;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+}
+
+.conversation-trace-debug-tool-list {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+
+.conversation-trace-debug-tool {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.conversation-trace-debug-tool > header {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(60, 157, 129, 0.08);
+}
+
+.conversation-trace-debug-tool code {
+  color: #23755e;
+  font: 700 0.68rem var(--font-mono);
+}
+
+.conversation-trace-debug-tool > p {
+  margin: 0;
+  padding: 6px 8px 0;
+  color: var(--text-soft);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.conversation-trace-debug-tool .conversation-trace-json-preview {
+  max-height: 220px;
+  margin: 6px 8px 8px;
+}

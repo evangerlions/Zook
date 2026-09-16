@@ -238,6 +238,9 @@ export function buildDefaultSeed(
         configValue: JSON.stringify(
           {
             app: "ai_novel",
+            reasoning: {
+              hiddenPrefixChars: 100,
+            },
             kickoff: {
               recommendedPrompts:
                 defaultAiNovelLegacyRecommendedPrompts,

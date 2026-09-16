@@ -3,6 +3,8 @@ import type {
   AdminAppSummary,
   AdminGetuiGyCredentialRevealDocument,
   GetuiGyAppCredentials,
+  GetuiGyPlatform,
+  GetuiGyPlatformCredentials,
   GetuiGySensitiveCredentialField,
   AdminGetuiGyServiceDocument,
   GetuiGyServiceConfig,
@@ -49,9 +51,7 @@ export interface GetuiGyRuntimeConfig {
 }
 
 export class CommonGetuiGyConfigService {
-  constructor(
-    private readonly appConfigService: VersionedAppConfigService,
-  ) {}
+  constructor(private readonly appConfigService: VersionedAppConfigService) {}
 
   async getDocument(revision?: number): Promise<AdminGetuiGyServiceDocument> {
     const revisions = await this.appConfigService.listRevisions(
@@ -143,6 +143,7 @@ export class CommonGetuiGyConfigService {
   async revealCredentialValue(
     zookAppId: string,
     field: GetuiGySensitiveCredentialField,
+    platform?: GetuiGyPlatform,
   ): Promise<AdminGetuiGyCredentialRevealDocument> {
     const config = await this.getCurrentConfig();
     const credentials = config.apps[zookAppId];
@@ -154,12 +155,24 @@ export class CommonGetuiGyConfigService {
       );
     }
 
+    const target = platform
+      ? credentials.platforms?.[platform]
+      : credentials;
+    if (!target) {
+      throw new ApplicationError(
+        404,
+        "REQ_INVALID_QUERY",
+        `Getui GeYan ${platform} credentials are not configured for Zook app ${zookAppId}.`,
+      );
+    }
+
     return {
       app: COMMON_APP_SUMMARY,
       configKey: GETUI_GY_CONFIG_KEY,
       zookAppId,
       field,
-      value: credentials[field],
+      platform,
+      value: target[field],
     };
   }
 
@@ -171,7 +184,10 @@ export class CommonGetuiGyConfigService {
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
-  async getRuntimeConfig(appId: string): Promise<GetuiGyRuntimeConfig> {
+  async getRuntimeConfig(
+    appId: string,
+    sdkPlatform?: string,
+  ): Promise<GetuiGyRuntimeConfig> {
     const config = await this.getCurrentConfig();
 
     if (!config.enabled) {
@@ -191,18 +207,22 @@ export class CommonGetuiGyConfigService {
         `Getui GeYan credentials are not configured for Zook app ${appId}.`,
       );
     }
+    const normalizedPlatform = sdkPlatform?.trim().toLowerCase();
+    if (normalizedPlatform === "ohos") {
+      const platformCredentials = credentials.platforms?.ohos;
+      if (!platformCredentials) {
+        throw new ApplicationError(
+          503,
+          "ONE_CLICK_SERVICE_NOT_CONFIGURED",
+          `Getui GeYan OHOS credentials are not configured for Zook app ${appId}.`,
+        );
+      }
+      this.assertAppCredentials(`${appId}:ohos`, platformCredentials);
+      return this.toRuntimeConfig(appId, config, platformCredentials);
+    }
     this.assertAppCredentials(appId, credentials);
 
-    return {
-      enabled: true,
-      endpoint: config.endpoint,
-      timeoutMs: config.timeoutMs,
-      appId: credentials.appId,
-      appKey: credentials.appKey,
-      appSecret: credentials.appSecret,
-      masterSecret: credentials.masterSecret,
-      zookAppId: appId,
-    };
+    return this.toRuntimeConfig(appId, config, credentials);
   }
 
   async initializeDefaultConfig(
@@ -270,10 +290,17 @@ export class CommonGetuiGyConfigService {
 
     Object.entries(config.apps).forEach(([zookAppId, credentials]) => {
       this.assertAppCredentials(zookAppId, credentials);
+      if (credentials.platforms?.ohos) {
+        this.assertAppCredentials(`${zookAppId}:ohos`, credentials.platforms.ohos);
+      }
     });
 
+    this.assertGetuiEndpoint(config.endpoint);
+  }
+
+  private assertGetuiEndpoint(endpoint: string): void {
     try {
-      const url = new URL(config.endpoint);
+      const url = new URL(endpoint);
       if (url.protocol !== "https:") {
         throw new Error("endpoint must use https");
       }
@@ -284,6 +311,23 @@ export class CommonGetuiGyConfigService {
         "Getui GeYan endpoint is invalid.",
       );
     }
+  }
+
+  private toRuntimeConfig(
+    appId: string,
+    config: GetuiGyServiceConfig,
+    credentials: GetuiGyPlatformCredentials,
+  ): GetuiGyRuntimeConfig {
+    return {
+      enabled: true,
+      endpoint: config.endpoint,
+      timeoutMs: config.timeoutMs,
+      appId: credentials.appId,
+      appKey: credentials.appKey,
+      appSecret: credentials.appSecret,
+      masterSecret: credentials.masterSecret,
+      zookAppId: appId,
+    };
   }
 
   private assertAppCredentials(
@@ -315,6 +359,14 @@ export class CommonGetuiGyConfigService {
             appKey: maskSensitiveString(credentials.appKey),
             appSecret: maskSensitiveString(credentials.appSecret),
             masterSecret: maskSensitiveString(credentials.masterSecret),
+            platforms: credentials.platforms
+              ? {
+                  ...credentials.platforms,
+                  ohos: credentials.platforms.ohos
+                    ? this.maskPlatformCredentials(credentials.platforms.ohos)
+                    : undefined,
+                }
+              : undefined,
           },
         ]),
       ),
@@ -350,6 +402,10 @@ export class CommonGetuiGyConfigService {
                 credentials.masterSecret,
                 previousCredentials.masterSecret,
               ),
+              platforms: this.preservePlatformCredentials(
+                credentials.platforms,
+                previousCredentials.platforms,
+              ),
             },
           ];
         }),
@@ -361,6 +417,43 @@ export class CommonGetuiGyConfigService {
     return matchesMaskedSensitiveString(nextValue, previousValue)
       ? previousValue
       : nextValue;
+  }
+
+  private preservePlatformCredentials(
+    next: GetuiGyAppCredentials["platforms"],
+    previous: GetuiGyAppCredentials["platforms"],
+  ): GetuiGyAppCredentials["platforms"] {
+    const nextOhos = next?.ohos;
+    const previousOhos = previous?.ohos;
+    if (!nextOhos || !previousOhos) {
+      return next;
+    }
+    return {
+      ...next,
+      ohos: {
+        appId: this.preserveMaskedValue(nextOhos.appId, previousOhos.appId),
+        appKey: this.preserveMaskedValue(nextOhos.appKey, previousOhos.appKey),
+        appSecret: this.preserveMaskedValue(
+          nextOhos.appSecret,
+          previousOhos.appSecret,
+        ),
+        masterSecret: this.preserveMaskedValue(
+          nextOhos.masterSecret,
+          previousOhos.masterSecret,
+        ),
+      },
+    };
+  }
+
+  private maskPlatformCredentials(
+    credentials: GetuiGyPlatformCredentials,
+  ): GetuiGyPlatformCredentials {
+    return {
+      ...credentials,
+      appKey: maskSensitiveString(credentials.appKey),
+      appSecret: maskSensitiveString(credentials.appSecret),
+      masterSecret: maskSensitiveString(credentials.masterSecret),
+    };
   }
 
   private createDefaultConfig(): GetuiGyServiceConfig {
@@ -380,6 +473,21 @@ export class CommonGetuiGyConfigService {
     return typeof value === "number" && Number.isFinite(value) && value > 0
       ? Math.floor(value)
       : 0;
+  }
+
+  private normalizePlatformCredentials(
+    value: unknown,
+  ): GetuiGyPlatformCredentials | undefined {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return undefined;
+    }
+    const source = value as Record<string, unknown>;
+    return {
+      appId: this.optionalString(source.appId),
+      appKey: this.optionalString(source.appKey),
+      appSecret: this.optionalString(source.appSecret),
+      masterSecret: this.optionalString(source.masterSecret),
+    };
   }
 
   private normalizeAppCredentials(
@@ -403,6 +511,7 @@ export class CommonGetuiGyConfigService {
               appKey: this.optionalString(source.appKey),
               appSecret: this.optionalString(source.appSecret),
               masterSecret: this.optionalString(source.masterSecret),
+              platforms: this.normalizeAppPlatforms(source.platforms),
             };
           }
         },
@@ -410,5 +519,20 @@ export class CommonGetuiGyConfigService {
     }
 
     return result;
+  }
+
+  private normalizeAppPlatforms(
+    value: unknown,
+  ): GetuiGyAppCredentials["platforms"] {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return undefined;
+    }
+    const source = value as Record<string, unknown>;
+    if (!source.ohos) {
+      return undefined;
+    }
+    return {
+      ohos: this.normalizePlatformCredentials(source.ohos),
+    };
   }
 }

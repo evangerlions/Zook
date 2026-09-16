@@ -2102,6 +2102,20 @@ test("admin Getui GeYan service API stores common one-click login config", async
           appSecret: "flutter-app-secret",
           masterSecret: "flutter-master-secret",
         },
+        ai_novel: {
+          appId: "getui-ai-novel",
+          appKey: "ai-novel-app-key",
+          appSecret: "ai-novel-app-secret",
+          masterSecret: "ai-novel-master-secret",
+          platforms: {
+            ohos: {
+              appId: "getui-ai-novel-ohos",
+              appKey: "ai-novel-ohos-app-key",
+              appSecret: "ai-novel-ohos-app-secret",
+              masterSecret: "ai-novel-ohos-master-secret",
+            },
+          },
+        },
       },
       endpoint: "https://getui.example.test/gy_get_pn",
       timeoutMs: 1000,
@@ -2113,6 +2127,12 @@ test("admin Getui GeYan service API stores common one-click login config", async
   assert.equal(updateResponse.body.data.app.appId, "common");
   assert.equal(updateResponse.body.data.config.enabled, true);
   assert.equal(updateResponse.body.data.config.apps.app_a.appId, "getui-app-a");
+  assert.deepEqual(updateResponse.body.data.config.apps.ai_novel.platforms?.ohos, {
+    appId: "getui-ai-novel-ohos",
+    appKey: maskSensitiveString("ai-novel-ohos-app-key"),
+    appSecret: maskSensitiveString("ai-novel-ohos-app-secret"),
+    masterSecret: maskSensitiveString("ai-novel-ohos-master-secret"),
+  });
   assert.equal(
     updateResponse.body.data.config.apps.app_a.appSecret,
     maskSensitiveString("app-secret-a"),
@@ -2143,6 +2163,21 @@ test("admin Getui GeYan service API stores common one-click login config", async
     (await runtime.services.commonGetuiGyConfigService.getRuntimeConfig("app_a"))
       .masterSecret,
     "master-secret-a",
+  );
+  assert.deepEqual(
+    maskedReplayResponse.body.data.config.apps.ai_novel.platforms?.ohos,
+    {
+      appId: "getui-ai-novel-ohos",
+      appKey: maskSensitiveString("ai-novel-ohos-app-key"),
+      appSecret: maskSensitiveString("ai-novel-ohos-app-secret"),
+      masterSecret: maskSensitiveString("ai-novel-ohos-master-secret"),
+    },
+  );
+
+  assert.equal(
+    (await runtime.services.commonGetuiGyConfigService.getRuntimeConfig("ai_novel", "ohos"))
+      .masterSecret,
+    "ai-novel-ohos-master-secret",
   );
 
   const cookie = await loginAdmin(runtime);
@@ -2185,6 +2220,21 @@ test("admin Getui GeYan service API stores common one-click login config", async
 
   assert.equal(verifyResponse.statusCode, 200);
 
+  const platformRevealResponse = await runtime.app.handle({
+    method: "POST",
+    path: "/api/v1/admin/apps/common/getui-gy-service/apps/ai_novel/platforms/ohos/masterSecret/reveal",
+    headers: {
+      cookie,
+    },
+  });
+
+  assert.equal(platformRevealResponse.statusCode, 200);
+  assert.equal(platformRevealResponse.body.data.platform, "ohos");
+  assert.equal(
+    platformRevealResponse.body.data.value,
+    "ai-novel-ohos-master-secret",
+  );
+
   const revealResponse = await runtime.app.handle({
     method: "POST",
     path: "/api/v1/admin/apps/common/getui-gy-service/apps/app_a/masterSecret/reveal",
@@ -2218,6 +2268,32 @@ test("admin Getui GeYan service API stores common one-click login config", async
   assert.equal(restoreResponse.statusCode, 200);
   assert.equal(restoreResponse.body.data.revision, 4);
   assert.equal(restoreResponse.body.data.desc, "回滚到 GeYan R2");
+
+  const appsWithoutOhos = {
+    ...restoreResponse.body.data.config.apps,
+    ai_novel: {
+      ...restoreResponse.body.data.config.apps.ai_novel,
+      platforms: undefined,
+    },
+  };
+  const removePlatformResponse = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/getui-gy-service",
+    headers,
+    body: {
+      enabled: true,
+      apps: appsWithoutOhos,
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1000,
+      desc: "移除鸿蒙平台配置",
+    },
+  });
+
+  assert.equal(removePlatformResponse.statusCode, 200);
+  await assert.rejects(
+    () => runtime.services.commonGetuiGyConfigService.getRuntimeConfig("ai_novel", "ohos"),
+    /OHOS credentials are not configured/,
+  );
 
   const invalidResponse = await runtime.app.handle({
     method: "PUT",

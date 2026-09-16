@@ -1,11 +1,23 @@
 import type { ConfigRevisionMeta } from "./records.ts";
 import type { AdminAppSummary } from "./admin-core.ts";
 
+export type GetuiGyPlatform = "ohos";
+
+export interface GetuiGyPlatformCredentials {
+  appId: string;
+  appKey: string;
+  appSecret: string;
+  masterSecret: string;
+}
+
 export interface GetuiGyAppCredentials {
   appId: string;
   appKey: string;
   appSecret: string;
   masterSecret: string;
+  platforms?: {
+    ohos?: GetuiGyPlatformCredentials;
+  };
 }
 
 export interface GetuiGyServiceConfig {
@@ -36,6 +48,7 @@ export interface AdminGetuiGyCredentialRevealDocument {
   configKey: string;
   zookAppId: string;
   field: GetuiGySensitiveCredentialField;
+  platform?: GetuiGyPlatform;
   value: string;
 }
 

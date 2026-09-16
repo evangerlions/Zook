@@ -811,6 +811,11 @@ export const IMPORTED_BOOK_KICKOFF_TOOLS: LLMToolDefinition[] = [
 ];
 
 export const IMPORT_BOOK_AGENT_TOOLS: LLMToolDefinition[] = [
+  createTool(
+    "read_imported_chapter_batch",
+    "Read the authoritative imported chapter batch attached to the current import step.",
+    {},
+  ),
   SUBMIT_IMPORT_PLAN_UPDATE_TOOL,
   SUBMIT_ROLLING_SNAPSHOT_TOOL,
   SUBMIT_CHAPTER_SUMMARIES_TOOL,

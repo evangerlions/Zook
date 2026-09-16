@@ -39,8 +39,20 @@ export class LlmEmailAlertService {
   ) {}
 
   async runDueAlerts(now = new Date()): Promise<{ hourly: number; circuits: number }> {
+    let config: Awaited<ReturnType<CommonLlmConfigService["getRuntimeConfig"]>>;
+    try {
+      config = await this.commonLlmConfigService.getRuntimeConfig();
+    } catch (error) {
+      this.logger.warn("LLM email alert configuration lookup failed", {
+        errorCode: error instanceof Error ? error.name : "unknown",
+      });
+      return { hourly: 0, circuits: 0 };
+    }
+    if (config?.emailAlerts?.llmEnabled === false) {
+      return { hourly: 0, circuits: 0 };
+    }
     const hourly = await this.runBestEffort("hourly", () => this.sendHourlySuccessRateAlert(now));
-    const circuits = await this.runBestEffort("circuit", () => this.sendCircuitAlerts());
+    const circuits = await this.runBestEffort("circuit", () => this.sendCircuitAlerts(config));
     return { hourly, circuits };
   }
 
@@ -50,6 +62,8 @@ export class LlmEmailAlertService {
     message: string;
     createdAt: string;
   }): Promise<void> {
+    const config = await this.commonLlmConfigService.getRuntimeConfig();
+    if (config?.emailAlerts?.aiNovelFeedbackEnabled === false) return;
     await this.runBestEffort("ainovel_feedback", async () => {
       const day = toDateKey(input.createdAt);
       return await this.sendOnce(
@@ -84,8 +98,9 @@ export class LlmEmailAlertService {
     ) ? 1 : 0;
   }
 
-  private async sendCircuitAlerts(): Promise<number> {
-    const config = await this.commonLlmConfigService.getRuntimeConfig();
+  private async sendCircuitAlerts(
+    config: Awaited<ReturnType<CommonLlmConfigService["getRuntimeConfig"]>>,
+  ): Promise<number> {
     if (!config?.enabled || !config.routeCircuitBreaker?.enabled) return 0;
     let sent = 0;
     for (const model of config.models) {

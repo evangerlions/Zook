@@ -2,6 +2,8 @@ import { Button, Collapse, Input, Select } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { Field, ToggleField } from "../components/field";
+import { GetuiGyCredentialFields } from "../components/getui-gy-credential-fields";
+import { GetuiGyPlatformControl } from "../components/getui-gy-platform-control";
 import { JsonPreview } from "../components/json-preview";
 import { RevisionHistoryDock } from "../components/revision-history-dock";
 import { RevisionList } from "../components/revision-list";
@@ -23,6 +25,8 @@ import {
 } from "../lib/getui-gy-config";
 import type {
   AdminGetuiGyServiceDocument,
+  GetuiGyPlatform,
+  GetuiGyPlatformCredentials,
   GetuiGySensitiveCredentialField,
   GetuiGyServiceDraft,
 } from "../lib/types";
@@ -48,6 +52,7 @@ export default function GetuiGyRoute() {
   const [pendingReveal, setPendingReveal] = useState<{
     zookAppId: string;
     field: GetuiGySensitiveCredentialField;
+    platform?: GetuiGyPlatform;
   } | null>(null);
   const [revealingCredential, setRevealingCredential] = useState("");
   const validationError = useMemo(() => getGetuiGyDraftValidationError(draft), [draft]);
@@ -108,7 +113,7 @@ export default function GetuiGyRoute() {
 
   function updateAppCredential(
     appId: string,
-    key: keyof GetuiGyServiceDraft["apps"][string],
+    key: "appId" | "appKey" | "appSecret" | "masterSecret",
     value: string,
   ) {
     setDraft((current) => ({
@@ -121,6 +126,77 @@ export default function GetuiGyRoute() {
         },
       },
     }));
+  }
+
+  function updatePlatformCredential(
+    appId: string,
+    platform: GetuiGyPlatform,
+    key: "appId" | "appKey" | "appSecret" | "masterSecret",
+    value: string,
+  ) {
+    setDraft((current) => ({
+      ...current,
+      apps: {
+        ...current.apps,
+        [appId]: {
+          ...(current.apps[appId] ?? createEmptyGetuiGyCredentials(appId)),
+          platforms: {
+            ...(current.apps[appId]?.platforms ?? {}),
+            [platform]: {
+              ...(current.apps[appId]?.platforms?.[platform] ?? {
+                appId: "",
+                appKey: "",
+                appSecret: "",
+                masterSecret: "",
+              }),
+              [key]: value,
+            } as GetuiGyPlatformCredentials,
+          },
+        },
+      },
+    }));
+  }
+
+  function addPlatform(appId: string, platform: GetuiGyPlatform) {
+    setDraft((current) => ({
+      ...current,
+      apps: {
+        ...current.apps,
+        [appId]: {
+          ...(current.apps[appId] ?? createEmptyGetuiGyCredentials(appId)),
+          platforms: {
+            ...(current.apps[appId]?.platforms ?? {}),
+            [platform]: {
+              appId: "",
+              appKey: "",
+              appSecret: "",
+              masterSecret: "",
+            },
+          },
+        },
+      },
+    }));
+  }
+
+  function removePlatform(appId: string, platform: GetuiGyPlatform) {
+    setDraft((current) => {
+      const currentCredentials = current.apps[appId];
+      if (!currentCredentials?.platforms) {
+        return current;
+      }
+      const platforms = { ...currentCredentials.platforms };
+      delete platforms[platform];
+      return {
+        ...current,
+        apps: {
+          ...current.apps,
+          [appId]: {
+            ...currentCredentials,
+            platforms: Object.keys(platforms).length ? platforms : undefined,
+          },
+        },
+      };
+    });
   }
 
   function addMappingRow() {
@@ -154,14 +230,23 @@ export default function GetuiGyRoute() {
   async function revealCredentialValue(
     zookAppId: string,
     field: GetuiGySensitiveCredentialField,
+    platform?: GetuiGyPlatform,
     allowPrompt = true,
   ) {
-    const revealKey = `${zookAppId}:${field}`;
+    const revealKey = `${zookAppId}:${platform ?? "base"}:${field}`;
     setRevealingCredential(revealKey);
     clearNotice();
     try {
-      const payload = await adminApi.revealGetuiGyCredentialValue(zookAppId, field);
-      updateAppCredential(zookAppId, field, payload.value);
+      const payload = await adminApi.revealGetuiGyCredentialValue(
+        zookAppId,
+        field,
+        platform,
+      );
+      if (platform) {
+        updatePlatformCredential(zookAppId, platform, field, payload.value);
+      } else {
+        updateAppCredential(zookAppId, field, payload.value);
+      }
       setPendingReveal(null);
       setNotice(makeNotice("success", `${zookAppId} 的 ${field} 已显示明文，1 小时内无需再次验证。`));
     } catch (error) {
@@ -170,7 +255,7 @@ export default function GetuiGyRoute() {
         error instanceof ApiError &&
         error.code === "ADMIN_SENSITIVE_OPERATION_REQUIRED"
       ) {
-        setPendingReveal({ zookAppId, field });
+        setPendingReveal({ zookAppId, field, platform });
         return;
       }
 
@@ -289,7 +374,7 @@ export default function GetuiGyRoute() {
           <div className="card-header">
             <div>
               <h2>服务配置</h2>
-              <p>每个 Zook AppID 绑定独立的 GeYan AppID、AppKey、AppSecret 和 MasterSecret。</p>
+              <p>每个 Zook AppID 绑定独立的 GeYan 凭据；需要时可通过“+”为该应用增加 OHOS 凭据。</p>
             </div>
             <span className="meta-chip">{document?.revision ? `R${document.revision}` : "未保存"}</span>
           </div>
@@ -327,7 +412,9 @@ export default function GetuiGyRoute() {
 
               {appCredentialRows.length ? (
                 <div className="mapping-list">
-                  {appCredentialRows.map(([zookAppId, credentials]) => (
+                  {appCredentialRows.map(([zookAppId, credentials]) => {
+                    const ohosCredentials = credentials.platforms?.ohos;
+                    return (
                     <div className="mapping-row" key={zookAppId}>
                       <div className="mapping-key-column">
                         <span className="field-label">Zook AppID</span>
@@ -342,72 +429,28 @@ export default function GetuiGyRoute() {
                           value={zookAppId}
                         />
                       </div>
-                      <div className="mapping-value-grid">
-                        <Field label="GeYan AppID">
-                          <Input
-                            onChange={(event) => updateAppCredential(zookAppId, "appId", event.target.value)}
-                            placeholder="输入 GeYan AppID"
-                            size="large"
-                            value={credentials.appId}
-                          />
-                        </Field>
-                        <Field label="AppKey">
-                          <div className="credential-input-row">
-                            <Input.Password
-                              autoComplete="off"
-                              onChange={(event) => updateAppCredential(zookAppId, "appKey", event.target.value)}
-                              size="large"
-                              value={credentials.appKey}
-                            />
-                            <Button
-                              disabled={!credentials.appKey}
-                              loading={revealingCredential === `${zookAppId}:appKey`}
-                              onClick={() => void revealCredentialValue(zookAppId, "appKey")}
-                            >
-                              显示
-                            </Button>
-                          </div>
-                        </Field>
-                        <Field label="AppSecret">
-                          <div className="credential-input-row">
-                            <Input.Password
-                              autoComplete="off"
-                              onChange={(event) => updateAppCredential(zookAppId, "appSecret", event.target.value)}
-                              size="large"
-                              value={credentials.appSecret}
-                            />
-                            <Button
-                              disabled={!credentials.appSecret}
-                              loading={revealingCredential === `${zookAppId}:appSecret`}
-                              onClick={() => void revealCredentialValue(zookAppId, "appSecret")}
-                            >
-                              显示
-                            </Button>
-                          </div>
-                        </Field>
-                        <Field label="MasterSecret">
-                          <div className="credential-input-row">
-                            <Input.Password
-                              autoComplete="off"
-                              onChange={(event) => updateAppCredential(zookAppId, "masterSecret", event.target.value)}
-                              size="large"
-                              value={credentials.masterSecret}
-                            />
-                            <Button
-                              disabled={!credentials.masterSecret}
-                              loading={revealingCredential === `${zookAppId}:masterSecret`}
-                              onClick={() => void revealCredentialValue(zookAppId, "masterSecret")}
-                            >
-                              显示
-                            </Button>
-                          </div>
-                        </Field>
-                      </div>
+                      <GetuiGyCredentialFields
+                        appId={zookAppId}
+                        credentials={credentials}
+                        onChange={(field, value) => updateAppCredential(zookAppId, field, value)}
+                        onReveal={(field) => void revealCredentialValue(zookAppId, field)}
+                        revealingCredential={revealingCredential}
+                      />
+                      <GetuiGyPlatformControl
+                        appId={zookAppId}
+                        credentials={ohosCredentials}
+                        onAdd={() => addPlatform(zookAppId, "ohos")}
+                        onChange={(field, value) => updatePlatformCredential(zookAppId, "ohos", field, value)}
+                        onRemove={() => removePlatform(zookAppId, "ohos")}
+                        onReveal={(field) => void revealCredentialValue(zookAppId, field, "ohos")}
+                        revealingCredential={revealingCredential}
+                      />
                       <Button danger onClick={() => removeMappingRow(zookAppId)}>
                         删除
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="meta-text">还没有配置映射。启用前至少添加一条映射。</p>
@@ -504,7 +547,12 @@ export default function GetuiGyRoute() {
             return;
           }
 
-          await revealCredentialValue(pendingReveal.zookAppId, pendingReveal.field, false);
+          await revealCredentialValue(
+            pendingReveal.zookAppId,
+            pendingReveal.field,
+            pendingReveal.platform,
+            false,
+          );
         }}
         onClose={() => setPendingReveal(null)}
         open={Boolean(pendingReveal)}

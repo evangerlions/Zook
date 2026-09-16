@@ -11,28 +11,16 @@
     border-radius: 28px;
   }
 
+  .sidebar.is-collapsed {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+  }
+
   .sidebar-nav {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .sidebar.is-collapsed .nav-link {
-    justify-content: flex-start;
-    padding-inline: 1rem;
-  }
-
-  .sidebar.is-collapsed .brand-block span,
-  .sidebar.is-collapsed .workspace-panel span,
-  .sidebar.is-collapsed .workspace-panel small,
-  .sidebar.is-collapsed .workspace-panel p {
-    display: block;
-  }
-
-  .sidebar.is-collapsed .sidebar-toggle span:last-child {
-    display: inline;
-  }
-
-  .sidebar.is-collapsed .nav-copy {
-    display: grid;
   }
 
   .page-grid,

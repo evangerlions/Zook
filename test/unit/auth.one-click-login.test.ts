@@ -165,6 +165,169 @@ test("one-click login status reports backend readiness", async () => {
   );
 });
 
+test("OHOS one-click login uses app-specific platform credentials without changing legacy credentials", async () => {
+  const runtime = await createApplication();
+  await runtime.services.appConfigService.setValue(
+    "common",
+    "common.getui_gy_service",
+    JSON.stringify({
+      enabled: true,
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1000,
+      apps: {
+        ai_novel: {
+          appId: "getui-legacy",
+          appKey: "legacy-app-key",
+          appSecret: "legacy-app-secret",
+          masterSecret: "legacy-master-secret",
+          platforms: {
+            ohos: {
+              appId: "getui-ohos",
+              appKey: "ohos-app-key",
+              appSecret: "ohos-app-secret",
+              masterSecret: "ohos-master-secret",
+            },
+          },
+        },
+      },
+    }),
+  );
+  const ohos = await runtime.services.commonGetuiGyConfigService.getRuntimeConfig(
+    "ai_novel",
+    "ohos",
+  );
+  assert.equal(ohos.appId, "getui-ohos");
+  assert.equal(ohos.appKey, "ohos-app-key");
+  assert.equal(ohos.appSecret, "ohos-app-secret");
+  assert.equal(ohos.masterSecret, "ohos-master-secret");
+
+  const legacy = await runtime.services.commonGetuiGyConfigService.getRuntimeConfig(
+    "ai_novel",
+    "android",
+  );
+  assert.equal(legacy.appId, "getui-legacy");
+  assert.equal(legacy.appKey, "legacy-app-key");
+  assert.equal(legacy.appSecret, "legacy-app-secret");
+  assert.equal(legacy.masterSecret, "legacy-master-secret");
+});
+
+test("OHOS one-click login exchanges the token with the app-specific OHOS Getui AppID", async () => {
+  const previousAppEnv = process.env.APP_ENV;
+  process.env.APP_ENV = "dev";
+  const runtime = await createApplication();
+  await runtime.services.appConfigService.setValue(
+    "common",
+    "common.getui_gy_service",
+    JSON.stringify({
+      enabled: true,
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1000,
+      apps: {
+        ai_novel: {
+          appId: "getui-legacy",
+          appKey: "legacy-app-key",
+          appSecret: "legacy-app-secret",
+          masterSecret: "legacy-master-secret",
+          platforms: {
+            ohos: {
+              appId: "getui-ohos",
+              appKey: "ohos-app-key",
+              appSecret: "ohos-app-secret",
+              masterSecret: "ohos-master-secret",
+            },
+          },
+        },
+      },
+    }),
+  );
+  const originalFetch = globalThis.fetch;
+  let providerRequest: Record<string, unknown> | undefined;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    providerRequest = JSON.parse(String(init?.body ?? "{}")) as Record<
+      string,
+      unknown
+    >;
+    return new Response(
+      JSON.stringify({
+        errno: 0,
+        data: {
+          result: "20000",
+          msg: "OK",
+          data: {
+            pn: encryptPhone("18710100986", "ohos-master-secret"),
+          },
+        },
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }) as typeof fetch;
+
+  try {
+    const response = await runtime.app.handle({
+      method: "POST",
+      path: "/api/v1/auth/login/one-click",
+      headers: {
+        "x-platform": "ohos",
+        "x-app-region": "CN",
+      },
+      body: {
+        appId: "ai_novel",
+        token: "ohos-native-token",
+        gyuid: "ohos-gy-user",
+        operator: "CM",
+        sdkPlatform: "ohos",
+        clientType: "app",
+      },
+      ipAddress: "198.51.100.81",
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(providerRequest?.appId, "getui-ohos");
+    assert.equal(providerRequest?.token, "ohos-native-token");
+    assert.equal(response.body.data.user.phone, "+8618710100986");
+
+    const status = await runtime.app.handle({
+      method: "GET",
+      path: "/api/v1/auth/login/one-click/status",
+      headers: { "x-platform": "ohos" },
+      query: { appId: "ai_novel" },
+      body: null,
+      ipAddress: "198.51.100.81",
+    });
+    assert.equal(status.statusCode, 200);
+    assert.equal(status.body.data.providerAppId, "getui-ohos");
+  } finally {
+    globalThis.fetch = originalFetch;
+    restoreAppEnv(previousAppEnv);
+  }
+});
+
+test("OHOS one-click login does not fall back to the base app credentials", async () => {
+  const runtime = await createApplication();
+  await runtime.services.appConfigService.setValue(
+    "common",
+    "common.getui_gy_service",
+    JSON.stringify({
+      enabled: true,
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1000,
+      apps: {
+        app_a: {
+          appId: "getui-app-a",
+          appKey: "app-key",
+          appSecret: "app-secret",
+          masterSecret: "master-secret",
+        },
+      },
+    }),
+  );
+
+  await assert.rejects(
+    () => runtime.services.commonGetuiGyConfigService.getRuntimeConfig("app_a", "ohos"),
+    /OHOS credentials are not configured/,
+  );
+});
+
 test("one-click login reports missing Getui config", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "dev";

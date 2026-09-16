@@ -69,6 +69,10 @@ test("agent scenes expose only client-supplied tools including virtual read", ()
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
   assert.match(systemPrompt, /Skill discipline/);
   assert.match(systemPrompt, /call read with its listed location/);
+  assert.match(systemPrompt, /<available_skills>/);
+  assert.match(systemPrompt, /<name>chapter-continuity-review<\/name>/);
+  assert.match(systemPrompt, /<description>Review continuity\.<\/description>/);
+  assert.match(systemPrompt, /<location>\/skills\/ainovel\/chapter-continuity-review\/SKILL\.md<\/location>/);
   assert.equal(assembly.messages[1]?.content, "review continuity");
 });
 
@@ -125,7 +129,11 @@ test("pi-v1 keeps raw dynamic context out of provider messages", () => {
   assert.equal(assembly.messages[1]?.content, "review continuity");
   assert.doesNotMatch(
     assembly.messages.map((message) => message.content ?? "").join("\n"),
-    /must not enter the prompt|turn_should_not_enter_the_prompt|chapter-continuity-review/,
+    /must not enter the prompt|turn_should_not_enter_the_prompt/,
+  );
+  assert.match(
+    String(assembly.messages[0]?.content ?? ""),
+    /chapter-continuity-review/,
   );
 });
 
@@ -333,6 +341,7 @@ test("import_book_agent prompt explains import submit tools", () => {
   assert.deepEqual(
     assembly.tools.map((tool) => tool.name),
     [
+      "read_imported_chapter_batch",
       "submit_import_plan_update",
       "submit_rolling_snapshot",
       "submit_chapter_summaries",

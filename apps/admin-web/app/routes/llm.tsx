@@ -251,7 +251,7 @@ export default function LlmRoute() {
   }
 
   return (
-    <section className="stack">
+    <section className="stack llm-route-page">
       <header className="page-header">
         <div>
           <h1>LLM</h1>
