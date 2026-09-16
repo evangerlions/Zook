@@ -53,12 +53,18 @@ export interface LlmRouteCircuitBreakerConfig {
   enabled: boolean;
 }
 
+export interface LlmEmailAlertConfig {
+  llmEnabled: boolean;
+  aiNovelFeedbackEnabled: boolean;
+}
+
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
   openRouter: OpenRouterConfig;
   bai: BaiConfig;
   routeCircuitBreaker: LlmRouteCircuitBreakerConfig;
+  emailAlerts: LlmEmailAlertConfig;
   providers: LlmProviderConfig[];
   models: LlmModelConfig[];
 }

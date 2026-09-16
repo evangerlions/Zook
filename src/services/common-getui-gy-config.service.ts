@@ -6,12 +6,20 @@ import type {
   GetuiGySensitiveCredentialField,
   AdminGetuiGyServiceDocument,
   GetuiGyServiceConfig,
+  OhosGetuiGyPasswordKeys,
 } from "../shared/types.ts";
 import {
   maskSensitiveString,
   matchesMaskedSensitiveString,
 } from "../shared/utils.ts";
 import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
+import { CommonPasswordConfigService } from "./common-password-config.service.ts";
+import {
+  AI_NOVEL_ZOOK_APP_ID,
+  DEFAULT_OHOS_GETUI_GY_PASSWORD_KEYS,
+  OHOS_SDK_PLATFORM,
+  resolveOhosGetuiGyCredentials,
+} from "./getui-gy-platform-credentials.ts";
 
 const COMMON_APP_ID = "common";
 export const GETUI_GY_CONFIG_KEY = "common.getui_gy_service";
@@ -51,6 +59,7 @@ export interface GetuiGyRuntimeConfig {
 export class CommonGetuiGyConfigService {
   constructor(
     private readonly appConfigService: VersionedAppConfigService,
+    private readonly commonPasswordConfigService: CommonPasswordConfigService,
   ) {}
 
   async getDocument(revision?: number): Promise<AdminGetuiGyServiceDocument> {
@@ -171,7 +180,10 @@ export class CommonGetuiGyConfigService {
     return stored ? this.parseConfig(stored) : this.createDefaultConfig();
   }
 
-  async getRuntimeConfig(appId: string): Promise<GetuiGyRuntimeConfig> {
+  async getRuntimeConfig(
+    appId: string,
+    sdkPlatform?: string,
+  ): Promise<GetuiGyRuntimeConfig> {
     const config = await this.getCurrentConfig();
 
     if (!config.enabled) {
@@ -191,18 +203,20 @@ export class CommonGetuiGyConfigService {
         `Getui GeYan credentials are not configured for Zook app ${appId}.`,
       );
     }
+    const normalizedPlatform = sdkPlatform?.trim().toLowerCase();
+    if (
+      appId === AI_NOVEL_ZOOK_APP_ID &&
+      normalizedPlatform === OHOS_SDK_PLATFORM
+    ) {
+      const ohosCredentials = await resolveOhosGetuiGyCredentials(
+        this.commonPasswordConfigService,
+        credentials.platforms?.ohos,
+      );
+      return this.toRuntimeConfig(appId, config, ohosCredentials);
+    }
     this.assertAppCredentials(appId, credentials);
 
-    return {
-      enabled: true,
-      endpoint: config.endpoint,
-      timeoutMs: config.timeoutMs,
-      appId: credentials.appId,
-      appKey: credentials.appKey,
-      appSecret: credentials.appSecret,
-      masterSecret: credentials.masterSecret,
-      zookAppId: appId,
-    };
+    return this.toRuntimeConfig(appId, config, credentials);
   }
 
   async initializeDefaultConfig(
@@ -272,8 +286,12 @@ export class CommonGetuiGyConfigService {
       this.assertAppCredentials(zookAppId, credentials);
     });
 
+    this.assertGetuiEndpoint(config.endpoint);
+  }
+
+  private assertGetuiEndpoint(endpoint: string): void {
     try {
-      const url = new URL(config.endpoint);
+      const url = new URL(endpoint);
       if (url.protocol !== "https:") {
         throw new Error("endpoint must use https");
       }
@@ -284,6 +302,23 @@ export class CommonGetuiGyConfigService {
         "Getui GeYan endpoint is invalid.",
       );
     }
+  }
+
+  private toRuntimeConfig(
+    appId: string,
+    config: GetuiGyServiceConfig,
+    credentials: GetuiGyAppCredentials,
+  ): GetuiGyRuntimeConfig {
+    return {
+      enabled: true,
+      endpoint: config.endpoint,
+      timeoutMs: config.timeoutMs,
+      appId: credentials.appId,
+      appKey: credentials.appKey,
+      appSecret: credentials.appSecret,
+      masterSecret: credentials.masterSecret,
+      zookAppId: appId,
+    };
   }
 
   private assertAppCredentials(
@@ -350,6 +385,7 @@ export class CommonGetuiGyConfigService {
                 credentials.masterSecret,
                 previousCredentials.masterSecret,
               ),
+              platforms: credentials.platforms ?? previousCredentials.platforms,
             },
           ];
         }),
@@ -382,6 +418,26 @@ export class CommonGetuiGyConfigService {
       : 0;
   }
 
+  private normalizeOhosPasswordKeys(
+    value: unknown,
+  ): OhosGetuiGyPasswordKeys {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return DEFAULT_OHOS_GETUI_GY_PASSWORD_KEYS;
+    }
+    const source = value as Record<string, unknown>;
+    return {
+      appKeyPasswordKey:
+        this.optionalString(source.appKeyPasswordKey) ||
+        DEFAULT_OHOS_GETUI_GY_PASSWORD_KEYS.appKeyPasswordKey,
+      appSecretPasswordKey:
+        this.optionalString(source.appSecretPasswordKey) ||
+        DEFAULT_OHOS_GETUI_GY_PASSWORD_KEYS.appSecretPasswordKey,
+      masterSecretPasswordKey:
+        this.optionalString(source.masterSecretPasswordKey) ||
+        DEFAULT_OHOS_GETUI_GY_PASSWORD_KEYS.masterSecretPasswordKey,
+    };
+  }
+
   private normalizeAppCredentials(
     value: unknown,
   ): Record<string, GetuiGyAppCredentials> {
@@ -403,6 +459,7 @@ export class CommonGetuiGyConfigService {
               appKey: this.optionalString(source.appKey),
               appSecret: this.optionalString(source.appSecret),
               masterSecret: this.optionalString(source.masterSecret),
+              platforms: this.normalizeAppPlatforms(source.platforms),
             };
           }
         },
@@ -410,5 +467,20 @@ export class CommonGetuiGyConfigService {
     }
 
     return result;
+  }
+
+  private normalizeAppPlatforms(
+    value: unknown,
+  ): GetuiGyAppCredentials["platforms"] {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return undefined;
+    }
+    const source = value as Record<string, unknown>;
+    if (!source.ohos) {
+      return undefined;
+    }
+    return {
+      ohos: this.normalizeOhosPasswordKeys(source.ohos),
+    };
   }
 }

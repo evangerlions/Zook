@@ -11,6 +11,7 @@ import type { AiNovelAgentProtocol } from "./ai-novel-llm-request-validation.ts"
 import {
   CHAPTER_DRAFT_TOOLS,
   HISTORY_CHAPTER_QA_TOOLS,
+  IMPORT_BOOK_AGENT_TOOLS,
   IMPORTED_BOOK_KICKOFF_TOOLS,
   LEGACY_CHAPTER_DRAFT_TOOLS,
   WRITE_TURN_TOOLS,
@@ -19,7 +20,6 @@ import {
   CHAPTER_DRAFT_SYSTEM_PROMPT,
   HISTORY_CHAPTER_QA_SYSTEM_PROMPT,
   IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT,
-  IMPORT_BOOK_AGENT_SUBMIT_TOOLS,
   IMPORT_BOOK_AGENT_SYSTEM_PROMPT,
   JOB_FORCED_TOOLS,
   JOB_SYSTEM_PROMPTS,
@@ -65,7 +65,11 @@ export function buildAiNovelPromptAssembly(input: {
       messages: [
         {
           role: "system",
-          content: appendSkillSystemPrompt(WRITE_TURN_SYSTEM_PROMPT, skillsEnabled),
+          content: appendSkillSystemPrompt(
+            WRITE_TURN_SYSTEM_PROMPT,
+            skillsEnabled,
+            input.context,
+          ),
         },
         ...messagesWithContext,
       ],
@@ -139,7 +143,7 @@ export function buildAiNovelPromptAssembly(input: {
         ...messagesWithContext,
       ],
       tools: filterAiNovelAgentTools(
-        IMPORT_BOOK_AGENT_SUBMIT_TOOLS,
+        IMPORT_BOOK_AGENT_TOOLS,
         input.context,
         input.agentProtocol,
       ),
@@ -218,8 +222,50 @@ function isApprovedSkill(value: unknown): boolean {
   );
 }
 
-function appendSkillSystemPrompt(base: string, skillsEnabled: boolean): string {
-  return skillsEnabled ? [base, SKILL_SYSTEM_PROMPT].join("\n\n") : base;
+function appendSkillSystemPrompt(
+  base: string,
+  skillsEnabled: boolean,
+  context: unknown,
+): string {
+  if (!skillsEnabled) return base;
+  const catalog = formatSkillsForSystemPrompt(context);
+  return [base, SKILL_SYSTEM_PROMPT, catalog]
+    .filter((section) => section.length > 0)
+    .join("\n\n");
+}
+
+function formatSkillsForSystemPrompt(context: unknown): string {
+  if (context === null || typeof context !== "object") return "";
+  const rawSkills = (context as Record<string, unknown>).skills;
+  if (!Array.isArray(rawSkills)) return "";
+  const skills = rawSkills.filter(isApprovedSkill);
+  if (skills.length === 0) return "";
+  const lines = [
+    "The following skills provide specialized instructions for specific tasks.",
+    "Read the full skill file when the task matches its description.",
+    "When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
+    "",
+    "<available_skills>",
+  ];
+  for (const skill of skills) {
+    const item = skill as Record<string, unknown>;
+    lines.push("  <skill>");
+    lines.push(`    <name>${escapeXml(String(item.name))}</name>`);
+    lines.push(`    <description>${escapeXml(String(item.description))}</description>`);
+    lines.push(`    <location>${escapeXml(String(item.location))}</location>`);
+    lines.push("  </skill>");
+  }
+  lines.push("</available_skills>");
+  return lines.join("\n");
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
 export function toOpenAiToolDefinitions(

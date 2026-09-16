@@ -40,8 +40,12 @@ export class GetuiGyOneClickLoginService {
     appId: string;
     token: string;
     gyuid: string;
+    sdkPlatform?: string;
   }): Promise<GetuiGyPhoneResult> {
-    const config = await this.configService.getRuntimeConfig(command.appId);
+    const config = await this.configService.getRuntimeConfig(
+      command.appId,
+      command.sdkPlatform,
+    );
     const token = command.token.trim();
     const gyuid = command.gyuid.trim();
     if (!token || !gyuid) {

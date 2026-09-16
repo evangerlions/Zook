@@ -11,6 +11,7 @@ import {
   extractLocalAiDebugResponseText,
   handleEncryptedAiRequest,
   logEncryptedAiBusinessError,
+  shouldExposeLocalAiDebugFields,
   shouldExposeLocalAiRequestDebugFields,
 } from "./encrypted-ai-routes.ts";
 import { tryHandleAiNovelDebugTraceRoutes } from "./ai-novel-debug-trace-routes.ts";
@@ -104,6 +105,8 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
         this.aiNovelLlmService.createChatCompletionStream(body, {
           exposeLocalDebug:
             shouldExposeLocalAiRequestDebugFields.call(this, request),
+          captureConversationDebug:
+            shouldExposeLocalAiDebugFields.call(this, request),
           requestId: request.requestId as string,
           userId: auth.userId,
           routingIdentity,
@@ -116,6 +119,7 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
 
     const result = await this.aiNovelLlmService.createChatCompletion(body, {
       exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(this, request),
+      captureConversationDebug: shouldExposeLocalAiDebugFields.call(this, request),
       requestId: request.requestId as string,
       userId: auth.userId,
       routingIdentity,

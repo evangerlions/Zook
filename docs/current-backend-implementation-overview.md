@@ -228,7 +228,7 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 9. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
 10. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
 11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：2 分钟内至少两位用户累计四次连续失败先进入不中断用户流量的确认状态，服务端立即用同一冒烟请求最多探测两次；两次都失败才隔离 `routingModelKey × provider × providerModel`。worker 用同一冒烟请求两次连续成功恢复正式熔断；管理台 runtime route 状态展示确认、熔断和下次探测信息，并支持对当前配置中的单一路由手动解除，关闭开关会清除全部既有状态
-12. LLM 运营与 AINovel 反馈的低频内部告警直接复用 CI/CD 的 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` SMTP 契约；worker 对超过 20 次调用且成功率低于 90% 的完整小时、以及正式 route 熔断分别发送去重邮件
+12. LLM 运营与 AINovel 反馈的低频内部告警直接复用 CI/CD 的 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` SMTP 契约；`common.llm_service.emailAlerts` 在管理后台分别控制两类邮件，worker 对超过 20 次调用且成功率低于 90% 的完整小时、以及正式 route 熔断分别发送去重邮件
 13. AINovel 反馈持久化成功后通过同一 SMTP 告警路径发送反馈正文；同一用户按 Asia/Shanghai 自然日最多一封，投递失败不会影响用户反馈提交
 
 对应核心文件：
@@ -303,10 +303,10 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 6. `scene_key` / `sceneKey` 只选择 AINovel 的 Prompt、工具和响应工作流；客户端不允许直传底层 `model`、`modelKey`、`providerModel` 或 routing tier 字段。所有文本场景共用服务端 `ai_novel.model_selection.chat.default` 选出的模型
 7. 所有 Agent scene 都采用单轮 tool-calling HTTP/SSE 输出：Zook 注入唯一 system prompt，并按解密后 context 的 `suppliedTools` 过滤工具；AINovel 的 Pi Agent 负责工具执行、error tool result、interactive tool 暂停和下一轮回写。解密 inner body 的顶层 `agentProtocol = pi-v1` 启用按需上下文：Zook 不再把 raw context 拼入 system 或 user message，当前状态由客户端 Agent 的真实 read tool 返回；缺失该字段的旧客户端保持原有 context 组装。Zook 不修复 tool name 大小写，也不规范化或重写客户端工具 payload
 8. assistant 历史消息可携带 `reasoningContent`，Zook 在百炼/OpenAI-compatible provider 请求中转成 `reasoning_content`，保证深度思考模型的多轮 context/cache 连贯；该字段只用于 provider context replay，不作为普通用户可见内容展示
-9. AINovel 通过 AES-GCM 的 `agent-skills/query` / `agent-skills/fetch` 在每个 app 生命周期首次懒加载 Skill manifest 与仅有变更的 package，并固定本地 snapshot。只有 `agentProtocol = pi-v1` 的 interactive Write Agent，且 `suppliedTools` 声明 `read` 并提供非空批准 catalog 时才可使用虚拟 `read(path)`。Pi 客户端在每次 Agent run 开始时将 catalog 作为独立 bootstrap system-reminder 放入正常 transcript；Zook 仅用加密 context 过滤 schema，不向模型串行化 raw catalog。完整内容和 references 由 AINovel 的本地 allowlist snapshot 作为 normal tool result 返回，运行中不访问网络。旧客户端、其他 Agent scene 与 Generation Job scene 不提供 Skill
-10. local/dev 环境额外提供 AINovel Trace Console：客户端向 `POST /api/v1/ai_novel/debug/traces` 发送结构化 capture，Zook 用鉴权用户记录 `uid`，将 `sessionId` 作为 `cid`，按 `kind + sessionId` 追加保存；`/debug/traces/data` 默认按最近活动返回 sessions，并支持 uid/cid 过滤；`/debug/traces/{sessionId}` 默认渲染 Sessions → Turns → request details，带 `Accept: application/json` 时返回同一会话的结构化数据，由 Admin `/conversation-records` 直接呈现三栏 Sessions → Turns → Detail；按用户消息聚合 Pi/tool loop，展示相邻 turn 上下文 diff、彩色消息、折叠请求和 raw JSON。online/production 返回 404；shared dev 的 GET 需要 Admin 认证
+9. AINovel 通过 AES-GCM 的 `agent-skills/query` / `agent-skills/fetch` 在每个 app 生命周期首次懒加载 Skill manifest 与仅有变更的 package，并固定本地 snapshot。只有 `agentProtocol = pi-v1` 的 interactive Write Agent，且 `suppliedTools` 声明 `read` 并提供非空批准 catalog 时才可使用虚拟 `read(path)`。Zook 按 Pi 官方格式将 catalog 的 name、description、location 放进服务端 system prompt；完整内容和 references 由 AINovel 的本地 allowlist snapshot 作为 normal tool result 返回，运行中不访问网络。通用 system-reminder 扩展点不承载 Skill，内容为空时不进入 transcript。旧客户端、其他 Agent scene 与 Generation Job scene 不提供 Skill
+10. local/dev 环境额外提供 AINovel Trace 数据 API：客户端向 `POST /api/v1/ai_novel/debug/traces` 发送结构化 capture，Zook 用鉴权用户记录 `uid`，将 `sessionId` 作为 `cid`，按 `kind + sessionId` 追加保存；`/debug/traces/data` 默认按最近活动返回 sessions，并支持 uid/cid 过滤；`/debug/traces/{sessionId}` 返回结构化 session、turn 和上下文 diff 数据，由 Admin `/conversation-records` 统一呈现三栏 Sessions → Turns → Detail，并负责彩色场景标签、消息渲染、请求折叠、修改过滤和 JSON 查看。API 不再提供独立 HTML 页面；online/production 返回 404；shared dev 的 GET 需要 Admin 认证
 11. `POST /api/v1/ai_novel/ai-output-reports` 与 `POST /api/v1/ai_novel/ai-output-reactions` 提供独立的 AI 输出举报/点赞协议；举报正文加密落库，支持客户端幂等键、账号小时限流、Admin list/detail/status 与审计记录
-12. AINovel 已完成的 Chat 会保存最后一条用户正文和最终 AI 正文，并同时关联认证 UID、请求 `X-DID`、请求 ID 与 scene；每位用户在第 121 个 Turn 写入时裁剪为最新 100 个 Turn。Admin 可在 `ai_novel` 工作区按 UID 或 DID 查看，每页最多 100 个 Turn（200 条消息），不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload
+12. AINovel 已完成的 Chat 会保存最后一条用户正文和最终 AI 正文，并同时关联认证 UID、请求 `X-DID`、请求 ID 与 scene；每位用户在第 121 个 Turn 写入时裁剪为最新 100 个 Turn。Admin 可在 `ai_novel` 工作区按 UID 或 DID 查看，每页最多 100 个 Turn（200 条消息）。Reasoning 作为隐藏的 replay part 保存供下一轮模型上下文回放，客户端公开展示受 `admin.delivery_config.reasoning.hiddenPrefixChars` 控制，Tool 参数与 Provider 原始 payload 不保存
 
 对应核心文件：
 
@@ -424,7 +424,7 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 49. `GET /api/v1/{productKey}/public/config`
 50. `POST /api/v1/ai_novel/ai/chat-completions`
 51. `POST /api/v1/ai_novel/ai/embeddings`
-52. `POST/GET /api/v1/ai_novel/debug/traces` 与相关 data/session GET（local/dev only；shared dev GET 需 Admin 认证）
+52. `POST /api/v1/ai_novel/debug/traces`、`GET /api/v1/ai_novel/debug/traces/data` 与 `GET /api/v1/ai_novel/debug/traces/{sessionId}`（local/dev only；shared dev GET 需 Admin 认证；session GET 仅返回 JSON 数据）
 53. `POST /telemetry/ga4`
 54. `POST /telemetry/sentry/api/{projectId}/envelope/`
 
@@ -534,6 +534,7 @@ worker 会消费搭子 notification outbox，幂等生成站内 feed，并把只
   - `apps[appId].appKey`
   - `apps[appId].appSecret`
   - `apps[appId].masterSecret`
+- AINovel OHOS 一键登录是向后兼容的特殊路径：当 `appId=ai_novel` 且请求平台为 `ohos` 时，使用代码内置的鸿蒙 GeYan AppID，并按 `common.getui_gy_service.apps.ai_novel.platforms.ohos` 中配置的 PASSWORD key 名从 `common.passwords` 读取 secret；其他平台继续使用上述既有映射。
 - 后台读取配置时会对 `appKey`、`appSecret`、`masterSecret` 脱敏；需要输入二级密码后才能查看明文。
 
 ## 4. 当前目录结构

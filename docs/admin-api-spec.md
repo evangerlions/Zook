@@ -166,7 +166,7 @@ Admin 查看接口：
 
 ### 3.6.2 AINovel 对话记录
 
-后台 `/conversation-records` 页面现在直接使用 local/dev Trace Console 数据，展示 Sessions → Turns → Detail 三栏。Trace 数据接口不复用下列历史摘要接口，线上环境不发起 Trace 请求。
+后台现在有两个互不复用的 AINovel 入口：`/conversation-records` 是仅 local/dev 开放的 Trace Console，展示 Sessions → Turns → Detail；`/conversation-history` 是历史聊天 item，调用下列历史摘要接口查询已完成 Turn。Trace 数据接口不复用历史摘要接口，线上环境不发起 Trace 请求。
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
@@ -178,7 +178,7 @@ Admin 查看接口：
 
 1. `uid` 和 `did` 均为可选，但不能同时携带；`page` 从 `0` 开始。两者都不传时按全部用户查询。
 2. 每页最多返回 100 个完整 Turn，即最多 200 条用户/AI 消息；默认页是最新记录，后续页按时间向前翻阅。
-3. 每个 Turn 仅保存最后一条用户正文和最终 AI 正文，不保存 System Prompt、Reasoning、Tool 参数或 Provider 原始 payload；如果客户端提供 `messageId`、`sessionId`、`turnId`，响应会原样返回这些关联 ID。
+3. 每个 Turn 保存最后一条用户正文和最终 AI 正文，不保存 Reasoning、Tool 调用参数或 Provider 原始 payload；local/dev 调试请求会额外保存服务端最终组装的 `systemPrompt` 与可用 `tools` 定义（名称、说明、输入 schema）。如果客户端提供 `messageId`、`sessionId`、`turnId`，响应会原样返回这些关联 ID。
 4. `messageId`、`sessionId`、`turnId` 均为可选字段。旧客户端没有这些字段时，服务端返回空缺字段，不会拒绝请求或抛出异常。
 5. 同一用户记录达到第 121 个 Turn 时，在写入事务中批量裁剪为最新 100 个 Turn；没有时间到期清理。用户注销时删除其对话记录。
 6. 读取需要 Admin 认证并写入 `admin.ai_novel_conversation.read` 审计；审计只记录查询类型和页码，不记录 UID、DID 或正文。
@@ -295,6 +295,7 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 - `healthFailures` 返回当前筛选范围内 `health_impact = failure` 的 Top 100 错误组合，按发生次数排序。每项包含路由 Model、Provider、Provider Model、类型、错误码、可选脱敏错误信息、次数和最近发生时间；迁移前记录的 `errorMessage` 可能为空。客户端取消和健康中性事件不进入此列表。
 - `runtime` 直接返回路由 selector 使用的基础权重、健康分、动态分、真实选择概率和选择原因；前端不得重新实现公式。`fixed` 为 100/0，`auto` 健康分全零时回退基础权重。实际请求的 DID 与 UID 清洗后都至少包含 3 个字母数字字符时，Provider 使用两者末尾 3 个 base36 字符之和对 1,000 取模，按配置基础权重保持粘性；此时健康分继续用于运营观察，但不移动该身份的 Provider 分桶。任一入参不足 3 位时，该项由路由方法内部随机值替代。
 - `config.routeCircuitBreaker.enabled` 默认 `false`。开启后，仅 Chat 流式请求在首个有效 chunk（非空内容、非空 reasoning 或完整 tool call）前失败时才会计数；同一 `routingModelKey × provider × providerModel` 在 2 分钟内至少有 2 位用户、累计 4 次连续失败时先进入 `confirming`。确认期间该 route 继续参与 selector，后续同类失败不会重复启动确认；任意一次首个有效 chunk 会清除未正式熔断的失败窗口。用户取消、非流式调用和首个有效 chunk 后的失败不计入。
+- `config.emailAlerts.llmEnabled` 与 `config.emailAlerts.aiNovelFeedbackEnabled` 默认均为 `true`，分别控制 LLM 运营告警邮件和 AINovel 反馈邮件；关闭只停止邮件，不影响指标、熔断、反馈保存或后台列表。SMTP 凭据仍由运行环境中的 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` 提供。
 - 进入 `confirming` 后，当前 API 进程立即用与管理台相同的 64-token Chat 冒烟请求对同一 provider/model 进行最多两次后台探测；任一次成功即清除失败计数，只有两次都失败才转为正式 `open` 熔断。正式熔断初始持续 5 分钟。worker 到期后仍用同一冒烟请求探测；连续 2 次成功才恢复。探测失败的下一次间隔依次为 10、20、60、120 分钟，之后保持 120 分钟。关闭配置会立即清除既有熔断状态。`runtime.models[].routes[].circuit` 返回开关、`closed/confirming/open` 状态、失败/用户数、下次探测时间和连续探测成功数，供管理台直接展示。
 - `POST /api/v1/admin/apps/common/llm-service/circuits/reset` 使用管理台认证，body 必须为 `{ "modelKey", "provider", "providerModel" }`，且必须匹配当前配置中的 Chat route。它会清除对应 route 的 `confirming` 或 `open` 运行时状态，取消中的后台确认任务会安全退出；响应 `{ "cleared", "route" }`。不匹配当前 Chat route 时返回 `400 ADMIN_LLM_SERVICE_INVALID`。操作会记录审计日志。
 - 原始调用观察只保存脱敏维度、数值、稳定错误码及最多 300 字符的脱敏错误信息，不保存 prompt、response、userId、Authorization、Provider payload 或原始错误 body。

@@ -1,3 +1,4 @@
+import { RightOutlined } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, Select, type MenuProps } from "antd";
 import { useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
@@ -22,7 +23,8 @@ const APP_WORKSPACES = [
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Model", code: "AIM", description: "配置 AINovel 文本模型权重" },
   { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
-  { to: "/conversation-records", label: "对话记录", code: "MSG", description: "按 UID / CID 查看会话与上下文" },
+  { to: "/conversation-records", label: "对话追踪", code: "TRC", description: "local/dev 查看具体会话与上下文" },
+  { to: "/conversation-history", label: "历史聊天", code: "HST", description: "查询已完成的用户聊天记录" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
   { to: "/lighttick", label: "LightTick Ops", code: "LTK", description: "查看 LightTick 功能、AI 场景与隐私安全指标" },
 ];
@@ -56,6 +58,7 @@ function isAppProjectSpace(pathname: string) {
     || pathname === "/ai-routing"
     || pathname === "/feedback"
     || pathname === "/conversation-records"
+    || pathname === "/conversation-history"
     || pathname === "/lighttick"
     || pathname === "/remote-log-pull"
     || pathname.startsWith("/remote-log-pull/");
@@ -107,6 +110,7 @@ export function AppShell() {
     ? APP_WORKSPACES.filter((item) => item.to !== "/ai-routing" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/lighttick" || selectedApp?.appId === "lighttick")
     : SERVER_WORKSPACES;
   const currentProjectSpaceValue = appProjectSpace && selectedApp ? `app:${selectedApp.appId}` : "server";
@@ -184,7 +188,7 @@ export function AppShell() {
             onClick={handleToggleSidebar}
             type="text"
           >
-            <span aria-hidden="true">{sidebarCollapsed ? "»" : "«"}</span>
+            {sidebarCollapsed ? <RightOutlined aria-hidden="true" /> : <span aria-hidden="true">«</span>}
             <span>{sidebarCollapsed ? "展开" : "折叠"}</span>
           </Button>
         </div>
@@ -201,7 +205,7 @@ export function AppShell() {
               className={({ isActive }) => `nav-link${isActive ? " is-active" : ""}`}
               end
               key={item.to}
-              title={sidebarCollapsed ? `${item.label} · ${item.description}` : undefined}
+              title={`${item.label} · ${item.description}`}
               to={item.to}
             >
               <span aria-hidden="true" className="nav-code">
@@ -232,7 +236,7 @@ export function AppShell() {
                 onChange={handleProjectSpaceChange}
                 options={projectSpaceOptions}
                 popupMatchSelectWidth={false}
-                size="large"
+                size="middle"
                 value={currentProjectSpaceValue}
               />
             </div>

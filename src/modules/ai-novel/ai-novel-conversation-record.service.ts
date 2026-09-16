@@ -1,6 +1,7 @@
 import type { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import type {
   AdminAiNovelConversationRecordDocument,
+  AiNovelConversationTool,
 } from "../../shared/types.ts";
 import { badRequest } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
@@ -39,6 +40,8 @@ export class AiNovelConversationRecordService {
     sceneKey: string;
     userText: string;
     assistantText: string;
+    systemPrompt?: string;
+    tools?: AiNovelConversationTool[];
   }): Promise<void> {
     if (!isAiNovelUserConversationScene(input.sceneKey) || !input.userText.trim()) return;
     const messageId = normalizeOptionalId(input.messageId);
@@ -58,6 +61,10 @@ export class AiNovelConversationRecordService {
         sceneKey: input.sceneKey,
         userText: input.userText,
         assistantText: input.assistantText,
+        ...(input.systemPrompt?.trim()
+          ? { systemPrompt: input.systemPrompt.trim() }
+          : {}),
+        ...(input.tools ? { tools: input.tools } : {}),
         createdAt: this.now().toISOString(),
       });
       if (!inserted) return;

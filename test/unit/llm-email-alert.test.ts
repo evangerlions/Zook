@@ -74,6 +74,24 @@ test("LLM alert does nothing when SMTP environment is absent", async () => {
   assert.equal(sent.length, 0);
 });
 
+test("LLM and AINovel feedback email paths can be disabled independently", async () => {
+  const sent: Array<{ to: string; subject: string; text: string }> = [];
+  const service = await createService({
+    summary: { requestCount: 21, successCount: 18, failureCount: 3, timeoutCount: 0 },
+    sent,
+    llmAlertEnabled: false,
+    feedbackAlertEnabled: false,
+  });
+  assert.deepEqual(await service.runDueAlerts(new Date("2030-01-01T10:12:00.000Z")), { hourly: 0, circuits: 0 });
+  await service.sendAiNovelFeedbackAlert({
+    userId: "user-a",
+    feedbackId: "feedback-disabled",
+    message: "This feedback should not send an email while its toggle is disabled.",
+    createdAt: "2030-01-01T01:00:00.000Z",
+  });
+  assert.equal(sent.length, 0);
+});
+
 test("AINovel feedback alert includes content and only notifies once per user per day", async () => {
   const sent: Array<{ to: string; subject: string; text: string }> = [];
   const service = await createService({
@@ -116,6 +134,8 @@ async function createService(input: {
   failFirstDelivery?: boolean;
   throwMetrics?: boolean;
   smtpConfigured?: boolean;
+  llmAlertEnabled?: boolean;
+  feedbackAlertEnabled?: boolean;
 }) {
   let deliveryAttempts = 0;
   return new LlmEmailAlertService(
@@ -136,6 +156,10 @@ async function createService(input: {
         return {
           enabled: true,
           routeCircuitBreaker: { enabled: true },
+          emailAlerts: {
+            llmEnabled: input.llmAlertEnabled !== false,
+            aiNovelFeedbackEnabled: input.feedbackAlertEnabled !== false,
+          },
           models: [{
             key: "model-a",
             kind: "chat",

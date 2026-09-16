@@ -22,6 +22,8 @@ test("Postgres conversation records persist optional message ids without changin
           scene_key: "write_turn",
           user_text: "继续",
           assistant_text: "好的",
+          system_prompt: "write system",
+          tools_json: [{ name: "read_draft", description: "Read draft", inputSchema: {} }],
           created_at: "2026-09-11T00:00:00.000Z",
         },
         {
@@ -52,6 +54,8 @@ test("Postgres conversation records persist optional message ids without changin
     sceneKey: "write_turn",
     userText: "继续",
     assistantText: "好的",
+    systemPrompt: "write system",
+    tools: [{ name: "read_draft", description: "Read draft", inputSchema: {} }],
     createdAt: "2026-09-11T00:00:00.000Z",
   });
   assert.equal(inserted, true);
@@ -67,6 +71,8 @@ test("Postgres conversation records persist optional message ids without changin
     "turn_a",
     "继续",
     "好的",
+    "write system",
+    JSON.stringify([{ name: "read_draft", description: "Read draft", inputSchema: {} }]),
     "2026-09-11T00:00:00.000Z",
   ]);
 
@@ -74,6 +80,8 @@ test("Postgres conversation records persist optional message ids without changin
   assert.equal(records[0]?.messageId, "message_a");
   assert.equal(records[0]?.sessionId, "session_a");
   assert.equal(records[0]?.turnId, "turn_a");
+  assert.equal(records[0]?.systemPrompt, "write system");
+  assert.deepEqual(records[0]?.tools, [{ name: "read_draft", description: "Read draft", inputSchema: {} }]);
   assert.equal(records[1]?.messageId, undefined);
   assert.equal(records[1]?.sessionId, undefined);
   assert.equal(records[1]?.turnId, undefined);

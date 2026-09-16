@@ -398,6 +398,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 6. 一键登录接口：
    `POST /api/v1/auth/login/one-click` 请求体为 `{ "appId": "app_a", "token": "native-token", "gyuid": "gyuid", "clientType": "app", "operator": "CM", "sdkPlatform": "android" }`。
    服务端使用 `common.getui_gy_service.apps[appId]` 中直接保存的个验 AppID、AppKey、AppSecret、MasterSecret 调用个验服务端取号，不接受客户端直接传手机号；后台读取配置时会对 AppKey、AppSecret、MasterSecret 脱敏，需要二级密码验证后才能查看明文。
+   AINovel 的 OHOS 请求（`appId=ai_novel` 且 `sdkPlatform=ohos`）使用代码内置的鸿蒙 GeYan AppID，并按 `common.getui_gy_service.apps.ai_novel.platforms.ohos` 中配置的 PASSWORD key 名从 `common.passwords` 读取 secret；默认 key 为 `getui.gy.ohos.app_key`、`getui.gy.ohos.app_secret`、`getui.gy.ohos.master_secret`。Android/iOS 继续使用原有 `apps[appId]` 凭据。
    个验取号成功后会复用手机号登录语义：手机号不存在且 app 允许自动加入时创建 `sms-code-only` 账号并签发会话。
 7. 密码相关接口：
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`

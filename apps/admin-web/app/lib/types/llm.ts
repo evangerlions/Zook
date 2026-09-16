@@ -41,6 +41,7 @@ export interface OpenRouterConfig {
 export interface BaiConfig extends OpenRouterConfig {}
 
 export interface LlmRouteCircuitBreakerConfig { enabled: boolean }
+export interface LlmEmailAlertConfig { llmEnabled: boolean; aiNovelFeedbackEnabled: boolean }
 
 export interface LlmServiceConfig {
   enabled: boolean;
@@ -48,6 +49,7 @@ export interface LlmServiceConfig {
   openRouter: OpenRouterConfig;
   bai: BaiConfig;
   routeCircuitBreaker: LlmRouteCircuitBreakerConfig;
+  emailAlerts: LlmEmailAlertConfig;
   providers: LlmProviderConfig[];
   models: LlmModelConfig[];
 }
@@ -322,6 +324,7 @@ export interface LlmConfigDraft {
   openRouter: OpenRouterConfig;
   bai: BaiConfig;
   routeCircuitBreaker: LlmRouteCircuitBreakerConfig;
+  emailAlerts: LlmEmailAlertConfig;
   providers: LlmProviderDraft[];
   models: LlmModelDraft[];
 }

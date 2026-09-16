@@ -8,10 +8,12 @@ export function JsonEditor({
   value,
   onChange,
   readOnly = false,
+  height = "520px",
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
   readOnly?: boolean;
+  height?: string;
 }) {
   const extensions = useMemo(
     () => [
@@ -47,8 +49,8 @@ export function JsonEditor({
         }}
         editable={!readOnly}
         extensions={extensions}
-        height="520px"
-        onChange={onChange}
+        height={height}
+        onChange={onChange ?? (() => undefined)}
         readOnly={readOnly}
         theme={oneDark}
         value={value}
