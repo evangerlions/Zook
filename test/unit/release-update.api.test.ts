@@ -215,7 +215,7 @@ test("release update config rejects duplicate platform channels", async () => {
   assert.equal(response.body.code, "REQ_INVALID_BODY");
 });
 
-test("release update config rejects legacy Windows ZIP artifacts", async () => {
+test("release update config rejects non-setup Windows executables", async () => {
   const runtime = await createApplication({
     adminBasicAuth: { username: "admin", password: "AdminPass123!" },
   });
@@ -224,7 +224,7 @@ test("release update config rejects legacy Windows ZIP artifacts", async () => {
     (target: { id: string }) => target.id === "windows-direct",
   );
   windowsTarget.enabled = true;
-  windowsTarget.latest.fileName = "OrangeWrite-windows.zip";
+  windowsTarget.latest.fileName = "OrangeWrite-portable.exe";
 
   const response = await runtime.app.handle({
     method: "PUT",

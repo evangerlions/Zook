@@ -21,6 +21,7 @@ const SCHEMA_VERSION = 1;
 const VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
 const IDENTIFIER_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
+const WINDOWS_SETUP_FILENAME_PATTERN = /-windows-setup\.exe$/i;
 const DEFAULT_REMINDER_INTERVAL_SECONDS = 24 * 60 * 60;
 const DEFAULT_OPTIONAL_REMINDER_COUNT = 3;
 const SUPPORTED_PLATFORMS = new Set<ReleaseUpdatePlatform>([
@@ -303,7 +304,7 @@ export class CommonReleaseUpdateConfigService {
       badRequest("REQ_INVALID_BODY", `${path}.sha256 must be a 64-character hexadecimal digest.`);
     }
     if (platform === "windows" && delivery === "download") {
-      if (!fileName || !/\.exe$/i.test(fileName)) {
+      if (!fileName || !WINDOWS_SETUP_FILENAME_PATTERN.test(fileName)) {
         badRequest("REQ_INVALID_BODY", `${path}.fileName must be a modern setup.exe artifact.`);
       }
       if (!sha256) {
