@@ -31,6 +31,7 @@ import type {
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
   AdminSmsServiceDocument,
+  GetuiGyPlatform,
   GetuiGySensitiveCredentialField,
   LlmMetricsRange,
 } from "../../shared/types.ts";
@@ -124,8 +125,13 @@ export class AdminConsoleCommonConfig {
   async revealGetuiGyCredentialValue(
     zookAppId: string,
     field: GetuiGySensitiveCredentialField,
+    platform?: GetuiGyPlatform,
   ): Promise<AdminGetuiGyCredentialRevealDocument> {
-    return this.commonGetuiGyConfigService.revealCredentialValue(zookAppId, field);
+    return this.commonGetuiGyConfigService.revealCredentialValue(
+      zookAppId,
+      field,
+      platform,
+    );
   }
 
   async getPasswordConfig(): Promise<AdminPasswordDocument> {

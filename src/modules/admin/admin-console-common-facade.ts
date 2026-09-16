@@ -15,6 +15,7 @@ import type {
   AdminLlmSmokeTestRunRequest,
   AdminPasswordDocument,
   AdminSmsServiceDocument,
+  GetuiGyPlatform,
   GetuiGySensitiveCredentialField,
   LlmMetricsRange,
 } from "../../shared/types.ts";
@@ -78,8 +79,9 @@ export class AdminConsoleCommonFacade {
   async revealGetuiGyCredentialValue(
     zookAppId: string,
     field: GetuiGySensitiveCredentialField,
+    platform?: GetuiGyPlatform,
   ): Promise<AdminGetuiGyCredentialRevealDocument> {
-    return this.commonConfig.revealGetuiGyCredentialValue(zookAppId, field);
+    return this.commonConfig.revealGetuiGyCredentialValue(zookAppId, field, platform);
   }
 
   async getPasswordConfig(): Promise<AdminPasswordDocument> {

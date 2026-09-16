@@ -1,10 +1,13 @@
 import type { AdminAppSummary, ConfigRevisionMeta } from "./core";
 
-export interface OhosGetuiGyPasswordKeys {
-  appKeyPasswordKey: string;
-  appSecretPasswordKey: string;
-  masterSecretPasswordKey: string;
+export interface GetuiGyPlatformCredentials {
+  appId: string;
+  appKey: string;
+  appSecret: string;
+  masterSecret: string;
 }
+
+export type GetuiGyPlatform = "ohos";
 
 export interface GetuiGyAppCredentials {
   appId: string;
@@ -12,7 +15,7 @@ export interface GetuiGyAppCredentials {
   appSecret: string;
   masterSecret: string;
   platforms?: {
-    ohos?: OhosGetuiGyPasswordKeys;
+    ohos?: GetuiGyPlatformCredentials;
   };
 }
 
@@ -51,6 +54,7 @@ export interface AdminGetuiGyCredentialRevealDocument {
   configKey: string;
   zookAppId: string;
   field: GetuiGySensitiveCredentialField;
+  platform?: GetuiGyPlatform;
   value: string;
 }
 

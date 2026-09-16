@@ -23,6 +23,7 @@ import type {
   AdminEmailTestSendDocument,
   AdminGetuiGyCredentialRevealDocument,
   AdminGetuiGyServiceDocument,
+  GetuiGyPlatform,
   GetuiGySensitiveCredentialField,
   AdminRemoteLogPullSettingsDocument,
   AdminRemoteLogPullTaskDocument,
@@ -332,9 +333,13 @@ export const adminApi = {
   revealGetuiGyCredentialValue(
     zookAppId: string,
     field: GetuiGySensitiveCredentialField,
+    platform?: GetuiGyPlatform,
   ) {
+    const path = platform
+      ? `/apps/common/getui-gy-service/apps/${encodeURIComponent(zookAppId)}/platforms/${platform}/${field}/reveal`
+      : `/apps/common/getui-gy-service/apps/${encodeURIComponent(zookAppId)}/${field}/reveal`;
     return requestJson<AdminGetuiGyCredentialRevealDocument>(
-      adminPath(`/apps/common/getui-gy-service/apps/${encodeURIComponent(zookAppId)}/${field}/reveal`),
+      adminPath(path),
       {
         method: "POST",
       },

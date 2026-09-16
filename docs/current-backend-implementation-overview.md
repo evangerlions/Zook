@@ -534,7 +534,7 @@ worker 会消费搭子 notification outbox，幂等生成站内 feed，并把只
   - `apps[appId].appKey`
   - `apps[appId].appSecret`
   - `apps[appId].masterSecret`
-- AINovel OHOS 一键登录是向后兼容的特殊路径：当 `appId=ai_novel` 且请求平台为 `ohos` 时，使用代码内置的鸿蒙 GeYan AppID，并按 `common.getui_gy_service.apps.ai_novel.platforms.ohos` 中配置的 PASSWORD key 名从 `common.passwords` 读取 secret；其他平台继续使用上述既有映射。
+- OHOS 一键登录是按应用配置的可选平台路径：当请求平台为 `ohos` 时，使用对应 `common.getui_gy_service.apps[appId].platforms.ohos` 中独立保存的鸿蒙 GeYan AppID、AppKey、AppSecret、MasterSecret；未配置时不会回退到其他平台凭据。每个应用都可以按需添加自己的 OHOS 配置，其他平台继续使用 `apps[appId]` 的基础映射。
 - 后台读取配置时会对 `appKey`、`appSecret`、`masterSecret` 脱敏；需要输入二级密码后才能查看明文。
 
 ## 4. 当前目录结构

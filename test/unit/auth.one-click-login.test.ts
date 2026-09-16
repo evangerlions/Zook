@@ -2,11 +2,6 @@ import assert from "node:assert/strict";
 import { createCipheriv } from "node:crypto";
 import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
-import {
-  OHOS_GETUI_GY_APP_KEY_PASSWORD_KEY,
-  OHOS_GETUI_GY_APP_SECRET_PASSWORD_KEY,
-  OHOS_GETUI_GY_MASTER_SECRET_PASSWORD_KEY,
-} from "../../src/services/getui-gy-platform-credentials.ts";
 
 test("one-click login verifies provider token and persists session", async () => {
   const previousAppEnv = process.env.APP_ENV;
@@ -170,7 +165,7 @@ test("one-click login status reports backend readiness", async () => {
   );
 });
 
-test("OHOS one-click login uses PASSWORDS credentials without changing legacy credentials", async () => {
+test("OHOS one-click login uses app-specific platform credentials without changing legacy credentials", async () => {
   const runtime = await createApplication();
   await runtime.services.appConfigService.setValue(
     "common",
@@ -187,36 +182,21 @@ test("OHOS one-click login uses PASSWORDS credentials without changing legacy cr
           masterSecret: "legacy-master-secret",
           platforms: {
             ohos: {
-              appKeyPasswordKey: OHOS_GETUI_GY_APP_KEY_PASSWORD_KEY,
-              appSecretPasswordKey: OHOS_GETUI_GY_APP_SECRET_PASSWORD_KEY,
-              masterSecretPasswordKey: OHOS_GETUI_GY_MASTER_SECRET_PASSWORD_KEY,
+              appId: "getui-ohos",
+              appKey: "ohos-app-key",
+              appSecret: "ohos-app-secret",
+              masterSecret: "ohos-master-secret",
             },
           },
         },
       },
     }),
   );
-  await runtime.services.commonPasswordConfigService.set(
-    OHOS_GETUI_GY_APP_KEY_PASSWORD_KEY,
-    "OHOS Getui AppKey",
-    "ohos-app-key",
-  );
-  await runtime.services.commonPasswordConfigService.set(
-    OHOS_GETUI_GY_APP_SECRET_PASSWORD_KEY,
-    "OHOS Getui AppSecret",
-    "ohos-app-secret",
-  );
-  await runtime.services.commonPasswordConfigService.set(
-    OHOS_GETUI_GY_MASTER_SECRET_PASSWORD_KEY,
-    "OHOS Getui MasterSecret",
-    "ohos-master-secret",
-  );
-
   const ohos = await runtime.services.commonGetuiGyConfigService.getRuntimeConfig(
     "ai_novel",
     "ohos",
   );
-  assert.equal(ohos.appId, "d8A7QwzcfUAdNzXh4jEje4");
+  assert.equal(ohos.appId, "getui-ohos");
   assert.equal(ohos.appKey, "ohos-app-key");
   assert.equal(ohos.appSecret, "ohos-app-secret");
   assert.equal(ohos.masterSecret, "ohos-master-secret");
@@ -231,7 +211,7 @@ test("OHOS one-click login uses PASSWORDS credentials without changing legacy cr
   assert.equal(legacy.masterSecret, "legacy-master-secret");
 });
 
-test("OHOS one-click login exchanges the token with the OHOS Getui AppID", async () => {
+test("OHOS one-click login exchanges the token with the app-specific OHOS Getui AppID", async () => {
   const previousAppEnv = process.env.APP_ENV;
   process.env.APP_ENV = "dev";
   const runtime = await createApplication();
@@ -250,31 +230,16 @@ test("OHOS one-click login exchanges the token with the OHOS Getui AppID", async
           masterSecret: "legacy-master-secret",
           platforms: {
             ohos: {
-              appKeyPasswordKey: OHOS_GETUI_GY_APP_KEY_PASSWORD_KEY,
-              appSecretPasswordKey: OHOS_GETUI_GY_APP_SECRET_PASSWORD_KEY,
-              masterSecretPasswordKey: OHOS_GETUI_GY_MASTER_SECRET_PASSWORD_KEY,
+              appId: "getui-ohos",
+              appKey: "ohos-app-key",
+              appSecret: "ohos-app-secret",
+              masterSecret: "ohos-master-secret",
             },
           },
         },
       },
     }),
   );
-  await runtime.services.commonPasswordConfigService.set(
-    OHOS_GETUI_GY_APP_KEY_PASSWORD_KEY,
-    "OHOS Getui AppKey",
-    "ohos-app-key",
-  );
-  await runtime.services.commonPasswordConfigService.set(
-    OHOS_GETUI_GY_APP_SECRET_PASSWORD_KEY,
-    "OHOS Getui AppSecret",
-    "ohos-app-secret",
-  );
-  await runtime.services.commonPasswordConfigService.set(
-    OHOS_GETUI_GY_MASTER_SECRET_PASSWORD_KEY,
-    "OHOS Getui MasterSecret",
-    "ohos-master-secret",
-  );
-
   const originalFetch = globalThis.fetch;
   let providerRequest: Record<string, unknown> | undefined;
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -317,7 +282,7 @@ test("OHOS one-click login exchanges the token with the OHOS Getui AppID", async
     });
 
     assert.equal(response.statusCode, 200);
-    assert.equal(providerRequest?.appId, "d8A7QwzcfUAdNzXh4jEje4");
+    assert.equal(providerRequest?.appId, "getui-ohos");
     assert.equal(providerRequest?.token, "ohos-native-token");
     assert.equal(response.body.data.user.phone, "+8618710100986");
 
@@ -330,11 +295,37 @@ test("OHOS one-click login exchanges the token with the OHOS Getui AppID", async
       ipAddress: "198.51.100.81",
     });
     assert.equal(status.statusCode, 200);
-    assert.equal(status.body.data.providerAppId, "d8A7QwzcfUAdNzXh4jEje4");
+    assert.equal(status.body.data.providerAppId, "getui-ohos");
   } finally {
     globalThis.fetch = originalFetch;
     restoreAppEnv(previousAppEnv);
   }
+});
+
+test("OHOS one-click login does not fall back to the base app credentials", async () => {
+  const runtime = await createApplication();
+  await runtime.services.appConfigService.setValue(
+    "common",
+    "common.getui_gy_service",
+    JSON.stringify({
+      enabled: true,
+      endpoint: "https://getui.example.test/gy_get_pn",
+      timeoutMs: 1000,
+      apps: {
+        app_a: {
+          appId: "getui-app-a",
+          appKey: "app-key",
+          appSecret: "app-secret",
+          masterSecret: "master-secret",
+        },
+      },
+    }),
+  );
+
+  await assert.rejects(
+    () => runtime.services.commonGetuiGyConfigService.getRuntimeConfig("app_a", "ohos"),
+    /OHOS credentials are not configured/,
+  );
 });
 
 test("one-click login reports missing Getui config", async () => {
