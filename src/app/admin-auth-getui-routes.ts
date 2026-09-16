@@ -5,7 +5,10 @@ import { PublicContractValidator } from "../generated/openapi/public-contract-va
 import { GETUI_GY_CREDENTIAL_READ_OPERATION } from "../services/common-getui-gy-config.service.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 
-import type { GetuiGySensitiveCredentialField } from "../shared/types.ts";
+import type {
+  GetuiGyPlatform,
+  GetuiGySensitiveCredentialField,
+} from "../shared/types.ts";
 
 export async function tryHandleAdminAuthGetuiRoutes(
   this: BackendRouteContext,
@@ -23,6 +26,16 @@ export async function tryHandleAdminAuthGetuiRoutes(
   if (request.method === "GET" && adminGetuiGyRevisionMatch) return await handleAdminGetGetuiGyServiceRevision.call(this, request, Number(adminGetuiGyRevisionMatch[1]));
   const adminGetuiGyRestoreMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/getui-gy-service\/revisions\/(\d+)\/restore$/);
   if (request.method === "POST" && adminGetuiGyRestoreMatch) return await handleAdminRestoreGetuiGyServiceRevision.call(this, request, Number(adminGetuiGyRestoreMatch[1]));
+  const adminGetuiGyPlatformCredentialRevealMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/getui-gy-service\/apps\/([^/]+)\/platforms\/(ohos)\/(appKey|appSecret|masterSecret)\/reveal$/);
+  if (request.method === "POST" && adminGetuiGyPlatformCredentialRevealMatch) {
+    return await handleAdminRevealGetuiGyCredentialValue.call(
+      this,
+      request,
+      decodeURIComponent(adminGetuiGyPlatformCredentialRevealMatch[1]),
+      adminGetuiGyPlatformCredentialRevealMatch[3] as GetuiGySensitiveCredentialField,
+      adminGetuiGyPlatformCredentialRevealMatch[2] as GetuiGyPlatform,
+    );
+  }
   const adminGetuiGyCredentialRevealMatch = request.path.match(/^\/api\/v1\/admin\/apps\/common\/getui-gy-service\/apps\/([^/]+)\/(appKey|appSecret|masterSecret)\/reveal$/);
   if (request.method === "POST" && adminGetuiGyCredentialRevealMatch) {
     return await handleAdminRevealGetuiGyCredentialValue.call(this, request, decodeURIComponent(adminGetuiGyCredentialRevealMatch[1]), adminGetuiGyCredentialRevealMatch[2] as GetuiGySensitiveCredentialField);
@@ -216,6 +229,7 @@ export async function handleAdminRevealGetuiGyCredentialValue(this: BackendRoute
   request: HttpRequest,
   zookAppId: string,
   field: GetuiGySensitiveCredentialField,
+  platform?: GetuiGyPlatform,
 ): Promise<HttpResponse<AdminGetuiGyCredentialRevealDocument>> {
   const session = this.requireAdminSession(request);
   await this.adminSensitiveOperationService.assertGranted(
@@ -225,17 +239,19 @@ export async function handleAdminRevealGetuiGyCredentialValue(this: BackendRoute
   const result = await this.adminConsoleService.revealGetuiGyCredentialValue(
     zookAppId,
     field,
+    platform,
   );
 
   await this.auditInterceptor.record({
     appId: "common",
     action: "admin.getui_gy_service.credential.reveal",
     resourceType: "app_config",
-    resourceId: `${result.configKey}:${zookAppId}:${field}`,
+    resourceId: `${result.configKey}:${zookAppId}:${platform ? `${platform}:` : ""}${field}`,
     payload: {
       adminUser: session.username,
       zookAppId,
       field,
+      platform,
     },
   });
 

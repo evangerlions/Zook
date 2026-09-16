@@ -363,7 +363,8 @@ export async function handleLoginWithOneClick(this: BackendRouteContext,
   const clientType = this.getClientType(validated);
   const ipAddress = request.ipAddress ?? "unknown";
   const operator = validated.operator?.trim();
-  const sdkPlatform = validated.sdkPlatform?.trim();
+  const sdkPlatform =
+    validated.sdkPlatform?.trim() || getHeader(request.headers, "x-platform")?.trim();
   const replayRequest = buildOneClickLoginReplayRequest.call(this, {
     appId,
     token,
