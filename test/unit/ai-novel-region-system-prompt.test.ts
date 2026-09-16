@@ -7,7 +7,8 @@ import {
 } from "../../src/modules/ai-novel/ai-novel-region-system-prompt.ts";
 import type { LLMMessage } from "../../src/services/llm-manager.ts";
 
-const WORKFLOW_PROMPT = "You are the kickoff-mode novel setup assistant.";
+const WORKFLOW_PROMPT =
+  "You are the kickoff-mode novel setup assistant for OrangeWrite(zh: 橘子写作).";
 
 test("CN requests merge the OrangeWrite identity policy into the existing system prompt", () => {
   const messages: LLMMessage[] = [
@@ -19,7 +20,7 @@ test("CN requests merge the OrangeWrite identity policy into the existing system
   const systemMessages = result.filter((message) => message.role === "system");
 
   assert.equal(systemMessages.length, 1);
-  assert.match(String(systemMessages[0]?.content), new RegExp(WORKFLOW_PROMPT));
+  assert.ok(String(systemMessages[0]?.content).includes(WORKFLOW_PROMPT));
   assert.match(
     String(systemMessages[0]?.content),
     new RegExp(CN_AI_ASSISTANT_IDENTITY_RESPONSE),

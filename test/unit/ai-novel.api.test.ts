@@ -1206,7 +1206,9 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
   assert.equal("modelKey" in requestBody, false);
   assert.equal(messages[0].role, "system");
   assert.ok(
-    String(messages[0].content ?? "").includes("write-mode AINovel agent"),
+    String(messages[0].content ?? "").includes(
+      "writing assistant for OrangeWrite(zh: 橘子写作)",
+    ),
   );
   assert.ok(
     String(messages[0].content ?? "").includes(
@@ -1222,7 +1224,10 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
     userId: "user_alice",
   });
   assert.equal(records.length, 1);
-  assert.match(records[0]?.systemPrompt ?? "", /write-mode AINovel agent/);
+  assert.match(
+    records[0]?.systemPrompt ?? "",
+    /writing assistant for OrangeWrite\(zh: 橘子写作\)/,
+  );
   assert.ok(records[0]?.tools?.some((tool) => tool.name === "read_writing_context"));
 });
 
@@ -3154,7 +3159,11 @@ test("ai_novel GLOBAL kickoff request does not inject the CN identity policy", a
     .filter((message) => message.role === "system")
     .map((message) => message.content ?? "")
     .join("\n");
-  assert.match(systemPrompt, /kickoff-mode novel setup assistant/);
+  assert.match(
+    systemPrompt,
+    /kickoff-mode novel setup assistant for OrangeWrite\(zh: 橘子写作\)/,
+  );
+  assert.doesNotMatch(systemPrompt, /AINovel/);
   assert.doesNotMatch(systemPrompt, /CN assistant identity policy/);
   assert.doesNotMatch(
     systemPrompt,
@@ -3522,7 +3531,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
   assert.equal(capturedMessages![0].role, "system");
   assert.match(
     String(capturedMessages![0].content ?? ""),
-    /write-mode AINovel agent/,
+    /writing assistant for OrangeWrite\(zh: 橘子写作\)/,
   );
   assert.equal(capturedMessages![1].role, "user");
   assert.match(

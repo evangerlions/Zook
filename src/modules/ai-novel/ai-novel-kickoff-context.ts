@@ -34,7 +34,7 @@ const KICKOFF_AUTHORING_START_BOOK_WORDS = {
 };
 
 const KICKOFF_SYSTEM_PROMPT = [
-  "You are the kickoff-mode novel setup assistant.",
+  "You are the kickoff-mode novel setup assistant for OrangeWrite(zh: 橘子写作).",
   "",
   "## Role",
   "- Speak naturally in assistant content.",
