@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "precondition": "A ready session at version 2, context_revision 2, with a 30-minute budget and confirmed 2026-09-13..2026-09-19 dates. Replace {session_id} with the created session.",
+  "cases": [
+    {"name":"stale-device","method":"PATCH","suffix":"/context","body":{"base_version":1,"fields":{"available_minutes":{"value":20,"source":"user"}}},"status":409,"code":"LIGHTTICK_VERSION_CONFLICT"},
+    {"name":"zero-budget","method":"PATCH","suffix":"/context","body":{"base_version":2,"fields":{"available_minutes":{"value":0,"source":"user"}}},"status":400,"code":"REQ_FIELD_INVALID"},
+    {"name":"forged-source","method":"PATCH","suffix":"/context","body":{"base_version":2,"fields":{"outcome":{"value":"demo","source":"imported"}}},"status":400,"code":"REQ_FIELD_INVALID"},
+    {"name":"stale-summary","method":"POST","suffix":"/drafts","body":{"base_version":2,"context_revision":1,"deep_planning":true},"status":409,"code":"LIGHTTICK_VERSION_CONFLICT"},
+    {"name":"explicit-mode-required","method":"POST","suffix":"/drafts","body":{"base_version":2,"context_revision":2},"status":409,"code":"LIGHTTICK_STATE_TRANSITION_INVALID"}
+  ],
+  "concurrency": {
+    "same_key_same_body": "Replay the same response and create one run or one confirmed task set.",
+    "same_key_different_body": "409 LIGHTTICK_IDEMPOTENCY_MISMATCH",
+    "different_key_stale_version": "409 LIGHTTICK_VERSION_CONFLICT",
+    "different_key_current_version_while_running": "409 LIGHTTICK_PLANNING_BUSY",
+    "draft_after_context_change": "409 LIGHTTICK_PLANNING_STALE"
+  }
+}

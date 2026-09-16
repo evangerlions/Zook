@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LIGHTTICK_PROMPT_VERSION } from "../../src/modules/lighttick/ai/lighttick-ai-prompts.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import type { LightTickOwner } from "../../src/modules/lighttick/lighttick.types.ts";
 import { createApplication } from "../support/create-test-application.ts";
@@ -28,7 +29,7 @@ test("profile/onboarding API persists a replayable run and validates timezone", 
   assert.equal((accepted.body.data as any).status, "queued");
   assert.equal((accepted.body.data as any).scene, "lighttick.onboarding_plan.v1");
   const persistedRun = await runtime.services.lighttickRuntime.repository.getAiRun(owner, (accepted.body.data as any).id);
-  assert.equal(persistedRun?.promptVersion, "1.0.0");
+  assert.equal(persistedRun?.promptVersion, LIGHTTICK_PROMPT_VERSION);
   assert.equal(persistedRun?.schemaVersion, "1.0.0");
   const replay = await runtime.app.handle({ ...request, requestId: "onboarding-replay" });
   assert.deepEqual(replay.body.data, accepted.body.data);
@@ -163,7 +164,7 @@ test("LightTick Admin operations requires a session and exposes aggregates only"
     headers: { cookie }, requestId: "operations" });
   assert.equal(response.statusCode, 200); const data = response.body.data as any;
   assert.equal(data.app_id, "lighttick"); assert.equal(data.privacy.private_text_visible, false);
-  assert.equal(data.scenes.length, 9); assert.equal("users" in data, false);
+  assert.equal(data.scenes.length, 10); assert.equal("users" in data, false);
   assert.equal(data.metrics.ai_estimated_cost_upper_bound_usd, 0);
 
   const routing = await runtime.app.handle({ method: "GET", path: "/api/v1/admin/apps/lighttick/ai-routing",

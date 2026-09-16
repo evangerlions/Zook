@@ -39,11 +39,10 @@ test("LightTick PostgreSQL migrations, ownership indexes, transactions, and conc
         "032_lighttick_progressive_action_loop.sql", "033_lighttick_guest_identities.sql",
         "034_lighttick_account_upgrades.sql",
       ]);
-      const before = installed.rows.length;
+      const allBefore = await pool.query(`SELECT name FROM zook_schema_migrations ORDER BY name`);
       await runPostgresMigrations({ connectionString: databaseUrl, log: () => undefined });
-      const after = await pool.query(`SELECT COUNT(*)::int AS count FROM zook_schema_migrations
-        WHERE name LIKE '%lighttick%'`);
-      assert.equal(after.rows[0].count, before);
+      const allAfter = await pool.query(`SELECT name FROM zook_schema_migrations ORDER BY name`);
+      assert.deepEqual(allAfter.rows, allBefore.rows);
     });
 
     await suite.test("creates owner and sync indexes", async () => {

@@ -1,0 +1,146 @@
+[
+  {
+    "id": "planning_fixture",
+    "goal_id": "goal_fixture",
+    "thread_id": "thread_fixture",
+    "status": "ready",
+    "version": 2,
+    "context_revision": 2,
+    "context": {
+      "objective": {
+        "value": "运行一个小示例",
+        "source": "confirmed"
+      },
+      "available_minutes": {
+        "value": 30,
+        "source": "confirmed"
+      },
+      "period_start": {
+        "value": "2026-09-13",
+        "source": "confirmed"
+      },
+      "period_end": {
+        "value": "2026-09-19",
+        "source": "confirmed"
+      }
+    },
+    "questions": [],
+    "clarification_rounds": 0,
+    "active_run_id": null,
+    "draft_plan_id": null,
+    "draft_revision": null,
+    "draft_expires_at": null,
+    "last_error": null,
+    "can_generate": true,
+    "created_at": "2026-09-13T00:00:00Z",
+    "updated_at": "2026-09-13T00:00:00Z"
+  },
+  {
+    "id": "planning_fixture",
+    "goal_id": "goal_fixture",
+    "thread_id": "thread_fixture",
+    "status": "generating",
+    "version": 3,
+    "context_revision": 2,
+    "context": {
+      "objective": {
+        "value": "运行一个小示例",
+        "source": "confirmed"
+      },
+      "available_minutes": {
+        "value": 30,
+        "source": "confirmed"
+      },
+      "period_start": {
+        "value": "2026-09-13",
+        "source": "confirmed"
+      },
+      "period_end": {
+        "value": "2026-09-19",
+        "source": "confirmed"
+      }
+    },
+    "questions": [],
+    "clarification_rounds": 0,
+    "active_run_id": "run_fixture",
+    "draft_plan_id": null,
+    "draft_revision": null,
+    "draft_expires_at": null,
+    "last_error": null,
+    "can_generate": false,
+    "created_at": "2026-09-13T00:00:00Z",
+    "updated_at": "2026-09-13T00:00:00Z"
+  },
+  {
+    "id": "planning_fixture",
+    "goal_id": "goal_fixture",
+    "thread_id": "thread_fixture",
+    "status": "draft_ready",
+    "version": 4,
+    "context_revision": 2,
+    "context": {
+      "objective": {
+        "value": "运行一个小示例",
+        "source": "confirmed"
+      },
+      "available_minutes": {
+        "value": 30,
+        "source": "confirmed"
+      },
+      "period_start": {
+        "value": "2026-09-13",
+        "source": "confirmed"
+      },
+      "period_end": {
+        "value": "2026-09-19",
+        "source": "confirmed"
+      }
+    },
+    "questions": [],
+    "clarification_rounds": 0,
+    "active_run_id": null,
+    "draft_plan_id": "plan_fixture",
+    "draft_revision": 2,
+    "draft_expires_at": "2026-09-20T00:00:00Z",
+    "last_error": null,
+    "can_generate": true,
+    "created_at": "2026-09-13T00:00:00Z",
+    "updated_at": "2026-09-13T00:00:00Z"
+  },
+  {
+    "id": "planning_fixture",
+    "goal_id": "goal_fixture",
+    "thread_id": "thread_fixture",
+    "status": "confirmed",
+    "version": 5,
+    "context_revision": 2,
+    "context": {
+      "objective": {
+        "value": "运行一个小示例",
+        "source": "confirmed"
+      },
+      "available_minutes": {
+        "value": 30,
+        "source": "confirmed"
+      },
+      "period_start": {
+        "value": "2026-09-13",
+        "source": "confirmed"
+      },
+      "period_end": {
+        "value": "2026-09-19",
+        "source": "confirmed"
+      }
+    },
+    "questions": [],
+    "clarification_rounds": 0,
+    "active_run_id": null,
+    "draft_plan_id": "plan_fixture",
+    "draft_revision": 2,
+    "draft_expires_at": null,
+    "last_error": null,
+    "can_generate": false,
+    "created_at": "2026-09-13T00:00:00Z",
+    "updated_at": "2026-09-13T00:00:00Z"
+  }
+]

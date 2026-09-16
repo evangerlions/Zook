@@ -177,7 +177,7 @@ LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 | POST | `/dna/insights/{insightId}/feedback` | `action=confirm/deny/correct/dismiss`；correct 必须提供去空白后 2–500 字符 `correction`；返回洞察 |
 | POST | `/proposals/from-facts` | `{ goal_id }`；返回 `{ items, suppressed? }`，只生成待确认提案，不直接改计划 |
 | GET | `/reviews/{reviewId}/actions` | 返回 `{ review, recommendations, action_state }`，推荐包含稳定 id、证据及可选 proposedTasks |
-| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 必填 2–500 字符 `ignore_reason`；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
+| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 可选 `ignore_reason`（最多 500 字符，省略或空白按未提供处理，非空内容去除首尾空白后保存）；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
 | GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
 | POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
 
@@ -1058,3 +1058,36 @@ APNs / FCM 返回不可恢复的无效 token 错误时，服务端会仅将当�
 公开 handoff `GET /frogsleep/buddy-invitation?token=...` 返回 `no-store` 的安全页面，尝试打开 `frogsleep://buddy-invitation` 并提供手工码路径，不展示邮箱或用户资料。
 
 以下路径仅为兼容旧客户端的非 canonical 路径，新接入不得使用：`/api/v1/frogsleep/sleep-buddy/invites*`、`/api/v1/frogsleep/focus-buddy/invites*`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。
+
+### LightTick 周承诺状态
+
+`GET /api/v1/lighttick/onboarding/commitment` 返回当前鉴权账户的 `{ commitment_mode, valid_action_count, required_action_count: 2, eligible }`。未选择或无 profile 时 mode 为 null。模式为 recovery/light/standard/sprint；读取无副作用，访客可用，账户隔离。计数与 POST 使用相同有效行动规则，deep_planning 不改写 eligible。
+
+LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_planning）；无 profile 时返回 404，不再返回未实际保存的成功。客户端仅在写入成功后更新选择，失败保留原值；重启从 GET 恢复，不用当日完成项推算累计资格。新客户端应在此接口部署后启用；旧服务不支持 GET 时显示“暂时无法核对本周投入”并保留其他 Journey 能力。
+
+### 对话规划会话（P2，默认关闭）
+
+启用服务器环境变量 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 后可调用下列接口；仍需 LightTick 注册用户 token 和有效 app membership，游客不可使用。未启用返回 503 `LIGHTTICK_APP_DISABLED`。这些接口创建新的计划周期，调整的是本会话尚未确认的草案，确认不会自动撤销现有活跃计划。
+
+| 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
+| --- | --- |
+| POST /planning-sessions | `{goal_id}`，返回 201 `{session,run:null}`；thread_id 由服务器生成 |
+| GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
+| POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
+| PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
+| POST /planning-sessions/{id}/drafts | `{base_version,context_revision,instruction?,deep_planning?}`，返回 202；instruction 用于调整当前草案 |
+| POST /planning-sessions/{id}/confirm | `{base_version,context_revision,draft_plan_id,plan_version}`，原子生成执行任务并返回 confirmed session |
+
+所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
+
+摘要 context 允许 objective、outcome、experience、available_minutes、period_start、period_end、constraints。每项包含 value、source，可含服务器记录的 source_message_id。来源为 user / confirmed / imported / assumption；用户 PATCH 只允许 user 或 confirmed。模型仅填充缺失项或 assumption，不覆盖已确认和导入的信息。available_minutes 为周期总分钟数（1–10080）；objective/outcome 最多 200 字符，其他文本最多 1000；日期必须是合法 YYYY-MM-DD，周期有序且跨度不超过 90 天。
+
+状态为 collecting / ready / generating / draft_ready / confirmed。明确的 objective、available_minutes、起止日期全部具备才可生成；必要字段的 assumption 必须先显式确认。questions 最多两条，两轮澄清后留给客户端展示摘要编辑入口。can_generate 为服务器计算值。生成还需已有周承诺资格、已启用 commitment_mode，或本次明确选择 deep_planning:true；该选项不替用户保存周承诺。
+
+会话 version 用于 CAS，context_revision 用于草案有效性。生成中修改摘要可成功，但本次生成随后被判为失效；active_run_id 清除后才能再次生成。调整生成得到新的 draft_plan_id；旧草案不能通过通用计划确认接口绕过检查。草案有效期为生成后 7 天。确认时检查 owner、目标、摘要版本、草案、目标和活跃计划/任务版本；任何冲突都不产生执行任务。
+
+409 错误：LIGHTTICK_VERSION_CONFLICT（重读并重新预览）、LIGHTTICK_PLANNING_BUSY（等待当前 run）、LIGHTTICK_PLANNING_NOT_READY（补充并确认摘要）、LIGHTTICK_PLANNING_STALE（旧/过期草案，重新生成）、LIGHTTICK_STATE_TRANSITION_INVALID（解锁或目标状态不允许）。异步失败通过 session.last_error 和 run.error_code 返回 LIGHTTICK_AI_UNAVAILABLE 或 LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE；保留输入，不用通用模板伪造对话规划成功。客户端缩短摘要后以新 key 重试。
+
+Canonical OpenAPI 与生成模型已同步；跨端错误/并发样例见 `api-contracts/fixtures/lighttick/planning-errors.json`。本阶段尚未接入 iOS/Android 会话 UI。
+
+Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。

@@ -11,6 +11,8 @@ export function parseLightTickJson(text: string): Record<string, unknown> {
 }
 
 export function validatePlanOutput(output: Record<string, unknown>, constraints: { availableMinutes: number; periodStart: string; periodEnd: string }) {
+  if (!Number.isFinite(constraints.availableMinutes) || constraints.availableMinutes < 1)
+    throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan requires a positive time budget.");
   if (!Array.isArray(output.tasks) || output.tasks.length < 1 || output.tasks.length > 50)
     throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan task count is invalid.");
   let total = 0;
@@ -18,7 +20,11 @@ export function validatePlanOutput(output: Record<string, unknown>, constraints:
     if (!task || typeof task.title !== "string" || !task.title.trim() || task.title.length > 200 ||
       !Number.isInteger(task.estimated_minutes) || task.estimated_minutes < 1 || task.estimated_minutes > 1440)
       throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan contains an invalid task.");
-    if (task.scheduled_for && (task.scheduled_for.slice(0, 10) < constraints.periodStart || task.scheduled_for.slice(0, 10) > constraints.periodEnd))
+    if (task.scheduled_for !== undefined && (typeof task.scheduled_for !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(task.scheduled_for) ||
+      !Number.isFinite(Date.parse(task.scheduled_for)) ||
+      new Date(task.scheduled_for.slice(0, 10)).toISOString().slice(0, 10) !== task.scheduled_for.slice(0, 10) ||
+      task.scheduled_for.slice(0, 10) < constraints.periodStart || task.scheduled_for.slice(0, 10) > constraints.periodEnd))
       throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan task is outside the requested period.");
     total += task.estimated_minutes;
   }

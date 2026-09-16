@@ -59,15 +59,32 @@ test("accept_partial only applies selected recommendation ids", async () => {
   assert.equal(proposedTasks[0]!.title, "增加练习");
 });
 
-test("ignore requires a reason and does not create a plan", async () => {
+for (const reason of [undefined, "", "  ", "保留", "  这周先保持原计划  "]) {
+  test(`ignore accepts optional reason ${JSON.stringify(reason)} without creating a plan`, async () => {
+    const repository = new InMemoryLightTickRepository();
+    const { review } = await makeReview(repository, [{ id: "a", title: "调整节奏" }]);
+    const result = await new LightTickDeepReviewService(repository, clock).apply(owner, review.id, "ignore", [], reason);
+    assert.equal(result.review.output.action_state.status, "ignored");
+    assert.equal(result.review.output.action_state.ignore_reason, reason?.trim() || undefined);
+    assert.deepEqual(result.selectedRecommendationIds, []);
+    assert.equal((await repository.listPlans(owner)).length, 0);
+  });
+}
+
+test("oversized ignore reason does not persist a decision", async () => {
   const repository = new InMemoryLightTickRepository();
-  const { review } = await makeReview(repository, [{ id: "a", title: "调整节奏", action: "adjust_pace" }]);
-  const service = new LightTickDeepReviewService(repository, clock);
-  await assert.rejects(() => service.apply(owner, review.id, "ignore"),
+  const { review } = await makeReview(repository, [{ title: "调整节奏" }]);
+  await assert.rejects(new LightTickDeepReviewService(repository, clock).apply(owner, review.id, "ignore", [], "x".repeat(501)),
     (error: any) => error.code === "REQ_FIELD_INVALID");
-  const result = await service.apply(owner, review.id, "ignore", [], "这周先保持原计划");
-  assert.equal(result.review.output.action_state.status, "ignored");
-  assert.equal(result.proposedPlan, undefined);
+  assert.equal((await repository.listReviews(owner))[0]!.output.action_state, undefined);
+});
+
+test("failed ignore persistence leaves the decision available for retry", async () => {
+  const repository = new InMemoryLightTickRepository();
+  const { review } = await makeReview(repository, [{ title: "调整节奏" }]);
+  repository.saveReview = async () => { throw new Error("injected storage failure"); };
+  await assert.rejects(new LightTickDeepReviewService(repository, clock).apply(owner, review.id, "ignore"), /storage failure/);
+  assert.equal((await repository.listReviews(owner))[0]!.output.action_state, undefined);
 });
 
 test("partial selection rejects unknown or empty ids", async () => {
