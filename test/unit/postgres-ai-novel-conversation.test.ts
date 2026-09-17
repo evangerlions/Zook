@@ -26,6 +26,11 @@ test("Postgres conversation records persist optional message ids without changin
           error_code: null,
           error_message: null,
           server_compacted: false,
+          prompt_tokens: 12,
+          completion_tokens: 34,
+          total_tokens: 46,
+          reasoning_tokens: 4,
+          usage_source: "provider",
           system_prompt: "write system",
           tools_json: [{ name: "read_draft", description: "Read draft", inputSchema: {} }],
           created_at: "2026-09-11T00:00:00.000Z",
@@ -45,6 +50,11 @@ test("Postgres conversation records persist optional message ids without changin
           error_code: null,
           error_message: null,
           server_compacted: false,
+          prompt_tokens: -1,
+          completion_tokens: -1,
+          total_tokens: -1,
+          reasoning_tokens: -1,
+          usage_source: "missing",
           created_at: "2026-09-10T00:00:00.000Z",
         },
       ],
@@ -62,6 +72,11 @@ test("Postgres conversation records persist optional message ids without changin
     sceneKey: "write_turn",
     userText: "继续",
     assistantText: "好的",
+    promptTokens: 12,
+    completionTokens: 34,
+    totalTokens: 46,
+    reasoningTokens: 4,
+    usageSource: "provider",
     systemPrompt: "write system",
     tools: [{ name: "read_draft", description: "Read draft", inputSchema: {} }],
     createdAt: "2026-09-11T00:00:00.000Z",
@@ -83,6 +98,11 @@ test("Postgres conversation records persist optional message ids without changin
     null,
     null,
     false,
+    12,
+    34,
+    46,
+    4,
+    "provider",
     "write system",
     JSON.stringify([{ name: "read_draft", description: "Read draft", inputSchema: {} }]),
     "2026-09-11T00:00:00.000Z",
@@ -96,7 +116,17 @@ test("Postgres conversation records persist optional message ids without changin
   assert.deepEqual(records[0]?.tools, [{ name: "read_draft", description: "Read draft", inputSchema: {} }]);
   assert.equal(records[0]?.outcome, "success");
   assert.equal(records[0]?.serverCompacted, false);
+  assert.equal(records[0]?.promptTokens, 12);
+  assert.equal(records[0]?.completionTokens, 34);
+  assert.equal(records[0]?.totalTokens, 46);
+  assert.equal(records[0]?.reasoningTokens, 4);
+  assert.equal(records[0]?.usageSource, "provider");
   assert.equal(records[1]?.messageId, undefined);
   assert.equal(records[1]?.sessionId, undefined);
   assert.equal(records[1]?.turnId, undefined);
+  assert.equal(records[1]?.promptTokens, -1);
+  assert.equal(records[1]?.completionTokens, -1);
+  assert.equal(records[1]?.totalTokens, -1);
+  assert.equal(records[1]?.reasoningTokens, -1);
+  assert.equal(records[1]?.usageSource, "missing");
 });

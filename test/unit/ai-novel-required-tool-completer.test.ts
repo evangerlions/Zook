@@ -27,9 +27,17 @@ test("required-tool retry compacts old history before its second provider reques
       captured.push(request.messages);
       if (captured.length === 1) {
         yield { type: "content_delta", text: retryResponse };
+        yield {
+          type: "usage",
+          usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+        };
         yield { type: "done", finishReason: "stop" };
         return;
       }
+      yield {
+        type: "usage",
+        usage: { promptTokens: 20, completionTokens: 0, totalTokens: 20 },
+      };
       yield {
         type: "tool_call",
         toolCall: {
@@ -74,4 +82,51 @@ test("required-tool retry compacts old history before its second provider reques
   assert.equal(captured[0]?.find((item) => item.toolCallId === "call_old")?.content, largeToolOutput);
   assert.equal(captured[1]?.some((item) => item.toolCallId === "call_old"), false);
   assert.equal(captured[1]?.at(-1)?.content?.includes("must now call submit_result"), true);
+  assert.deepEqual(result.usage, {
+    promptTokens: 30,
+    completionTokens: 5,
+    totalTokens: 35,
+  });
+});
+
+test("required-tool failures carry aggregate provider usage for conversation records", async () => {
+  let attempts = 0;
+  const provider: LLMProvider = {
+    async complete(): Promise<LLMCompletionResult> {
+      throw new Error("complete should not be called");
+    },
+    async *stream(): AsyncIterable<LLMStreamEvent> {
+      attempts += 1;
+      yield { type: "content_delta", text: "retry" };
+      yield {
+        type: "usage",
+        usage: { promptTokens: attempts * 10, completionTokens: 5, totalTokens: attempts * 10 + 5 },
+      };
+      yield { type: "done", finishReason: "stop" };
+    },
+  };
+  const manager = new LLMManager(
+    { test: provider },
+    { "test-model": { provider: "test", providerModel: "test-provider-model" } },
+  );
+
+  await assert.rejects(
+    () => completeRequiredToolViaStream(manager, {
+      sceneRouteKey: "chapter_summary",
+      modelKey: "test-model",
+      messages: [{ role: "user", content: "latest request" }],
+      temperature: 0,
+      maxTokens: 0,
+      forcedToolName: "submit_result",
+    }),
+    (error: unknown) => {
+      const details = (error as { details?: { conversationUsage?: unknown } }).details;
+      assert.deepEqual(details?.conversationUsage, {
+        promptTokens: 30,
+        completionTokens: 10,
+        totalTokens: 40,
+      });
+      return true;
+    },
+  );
 });

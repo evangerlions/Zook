@@ -156,6 +156,36 @@ test("AINovel conversation records retain failed results and server compaction m
   assert.equal(document.items[0]?.errorCode, "AI_UPSTREAM_TIMEOUT");
   assert.equal(document.items[0]?.errorMessage, "Upstream model service timed out.");
   assert.equal(document.items[0]?.serverCompacted, true);
+  assert.equal(document.items[0]?.promptTokens, -1);
+  assert.equal(document.items[0]?.completionTokens, -1);
+  assert.equal(document.items[0]?.totalTokens, -1);
+  assert.equal(document.items[0]?.reasoningTokens, -1);
+  assert.equal(document.items[0]?.usageSource, "missing");
+});
+
+test("AINovel conversation records preserve provider usage including real zero values", async () => {
+  const database = new InMemoryDatabase();
+  const service = new AiNovelConversationRecordService(database);
+
+  await service.recordConversationResult({
+    userId: "user_usage",
+    requestId: "request_usage",
+    sceneKey: "write_turn",
+    userText: "继续",
+    assistantText: "完成",
+    promptTokens: 12,
+    completionTokens: 0,
+    totalTokens: 12,
+    reasoningTokens: 0,
+    usageSource: "provider",
+  });
+
+  const document = await service.listForAdmin({ uid: "user_usage" });
+  assert.equal(document.items[0]?.promptTokens, 12);
+  assert.equal(document.items[0]?.completionTokens, 0);
+  assert.equal(document.items[0]?.totalTokens, 12);
+  assert.equal(document.items[0]?.reasoningTokens, 0);
+  assert.equal(document.items[0]?.usageSource, "provider");
 });
 
 test("AINovel conversation record writes are idempotent and update the final result", async () => {

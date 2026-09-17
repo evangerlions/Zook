@@ -3365,6 +3365,15 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
         text: "我们先把主角和冲突钉稳。",
       };
       yield {
+        type: "usage",
+        usage: {
+          promptTokens: 12,
+          completionTokens: 0,
+          totalTokens: 12,
+          reasoningTokens: 0,
+        },
+      };
+      yield {
         type: "done",
         finishReason: "stop",
       };
@@ -3412,6 +3421,17 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
     ["reasoning_delta", "content_delta", "usage", "done"],
   );
   assert.equal(decryptedEvents[0].text, "先确认故事驱动力");
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.userText === "继续推进这个故事。");
+  assert.ok(record);
+  assert.equal(record?.promptTokens, 12);
+  assert.equal(record?.completionTokens, 0);
+  assert.equal(record?.totalTokens, 12);
+  assert.equal(record?.reasoningTokens, 0);
+  assert.equal(record?.usageSource, "provider");
 });
 
 test("ai_novel write_turn injects server prompt and documented write tools", async () => {
@@ -3947,6 +3967,11 @@ test("ai_novel compacts oversized history before the provider while preserving t
   assert.equal(record?.userText, "latest request");
   assert.equal(record?.outcome, "success");
   assert.equal(record?.serverCompacted, true);
+  assert.equal(record?.promptTokens, -1);
+  assert.equal(record?.completionTokens, -1);
+  assert.equal(record?.totalTokens, -1);
+  assert.equal(record?.reasoningTokens, -1);
+  assert.equal(record?.usageSource, "missing");
 });
 
 test("ai_novel pi-v1 kickoff keeps Meta out of the provider system prompt", async () => {

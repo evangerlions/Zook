@@ -2,6 +2,7 @@ import type { ApplicationDatabase } from "../../infrastructure/database/applicat
 import type {
   AdminAiNovelConversationRecordDocument,
   AiNovelConversationOutcome,
+  AiNovelConversationUsageSource,
   AiNovelConversationTool,
 } from "../../shared/types.ts";
 import { badRequest } from "../../shared/errors.ts";
@@ -45,6 +46,11 @@ export class AiNovelConversationRecordService {
     errorCode?: string;
     errorMessage?: string;
     serverCompacted?: boolean;
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+    reasoningTokens?: number;
+    usageSource?: AiNovelConversationUsageSource;
     systemPrompt?: string;
     tools?: AiNovelConversationTool[];
   }): Promise<void> {
@@ -52,6 +58,14 @@ export class AiNovelConversationRecordService {
     const messageId = normalizeOptionalId(input.messageId);
     const sessionId = normalizeOptionalId(input.sessionId);
     const turnId = normalizeOptionalId(input.turnId);
+    const promptTokens = normalizeTokenCount(input.promptTokens);
+    const completionTokens = normalizeTokenCount(input.completionTokens);
+    const totalTokens = normalizeTokenCount(input.totalTokens);
+    const reasoningTokens = normalizeTokenCount(input.reasoningTokens);
+    const usageSource = input.usageSource === "provider" &&
+        promptTokens >= 0 && completionTokens >= 0 && totalTokens >= 0
+      ? "provider"
+      : "missing";
 
     await this.database.withExclusiveSession(async () => {
       const inserted = await this.database.aiNovelConversationStore.insert({
@@ -72,6 +86,11 @@ export class AiNovelConversationRecordService {
           ? { errorMessage: input.errorMessage.trim().slice(0, 300) }
           : {}),
         serverCompacted: input.serverCompacted ?? false,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        reasoningTokens,
+        usageSource,
         ...(input.systemPrompt?.trim()
           ? { systemPrompt: input.systemPrompt.trim() }
           : {}),
@@ -118,6 +137,12 @@ export class AiNovelConversationRecordService {
       items: records.slice(0, PAGE_SIZE_TURNS),
     };
   }
+}
+
+function normalizeTokenCount(value: number | undefined): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : -1;
 }
 
 function normalizeOptionalDid(value?: string): string | undefined {

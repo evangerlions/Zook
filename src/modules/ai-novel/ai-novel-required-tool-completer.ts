@@ -3,6 +3,7 @@ import type {
   LLMCompletionResult,
   LLMManager,
   LLMMessage,
+  LLMUsage,
   LlmRoutingIdentity,
   LLMToolCall,
 } from "../../services/llm-manager.ts";
@@ -32,6 +33,8 @@ export async function completeRequiredToolViaStream(
 ): Promise<LLMCompletionResult> {
   let messages = input.messages;
   let lastResult: LLMCompletionResult | undefined;
+  let aggregatedUsage: LLMUsage | undefined;
+  let usageComplete = true;
   let protectedRoundStartIndex: number | undefined;
 
   for (let attempt = 1; attempt <= REQUIRED_TOOL_STREAM_ATTEMPTS; attempt += 1) {
@@ -69,8 +72,18 @@ export async function completeRequiredToolViaStream(
       { firstContentTimeoutMs: STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS },
     );
     lastResult = result;
+    if (!result.usage || result.usage.estimated) {
+      usageComplete = false;
+    } else {
+      aggregatedUsage = mergeUsage(aggregatedUsage, result.usage);
+    }
     if (findToolCall(result, input.forcedToolName)) {
-      return result;
+      return {
+        ...result,
+        ...(aggregatedUsage
+          ? { usage: usageComplete ? aggregatedUsage : { ...aggregatedUsage, estimated: true } }
+          : {}),
+      };
     }
 
     messages = [
@@ -96,8 +109,27 @@ export async function completeRequiredToolViaStream(
       requiredToolName: input.forcedToolName,
       attempts: REQUIRED_TOOL_STREAM_ATTEMPTS,
       finishReason: lastResult?.finishReason,
+      ...(aggregatedUsage
+        ? {
+            conversationUsage: usageComplete
+              ? aggregatedUsage
+              : { ...aggregatedUsage, estimated: true },
+          }
+        : {}),
     },
   );
+}
+
+function mergeUsage(current: LLMUsage | undefined, next: LLMUsage): LLMUsage {
+  if (!current) return { ...next };
+  return {
+    promptTokens: current.promptTokens + next.promptTokens,
+    completionTokens: current.completionTokens + next.completionTokens,
+    totalTokens: current.totalTokens + next.totalTokens,
+    ...(current.reasoningTokens !== undefined && next.reasoningTokens !== undefined
+      ? { reasoningTokens: current.reasoningTokens + next.reasoningTokens }
+      : {}),
+  };
 }
 
 export function resolvePromptAssemblyCompletionText(

@@ -5,6 +5,7 @@ export interface AiNovelConversationTool {
 }
 
 export type AiNovelConversationOutcome = "success" | "failure";
+export type AiNovelConversationUsageSource = "provider" | "missing";
 
 export interface AiNovelConversationRecord {
   id: string;
@@ -22,6 +23,11 @@ export interface AiNovelConversationRecord {
   errorCode?: string;
   errorMessage?: string;
   serverCompacted?: boolean;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  reasoningTokens: number;
+  usageSource: AiNovelConversationUsageSource;
   systemPrompt?: string;
   tools?: AiNovelConversationTool[];
   createdAt: string;

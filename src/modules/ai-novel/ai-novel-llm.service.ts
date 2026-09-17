@@ -3,6 +3,7 @@ import type {
   LLMMessage,
   LLMManager,
   LLMCompletionResult,
+  LLMUsage,
   LlmRoutingIdentity,
   LLMStreamEvent,
 } from "../../services/llm-manager.ts";
@@ -69,6 +70,7 @@ import {
 } from "./ai-novel-conversation-debug.ts";
 import {
   conversationFailureFields,
+  conversationUsageFromError,
   latestUserMessageText,
   recordAiNovelConversationResult,
 } from "./ai-novel-conversation-result.ts";
@@ -139,7 +141,7 @@ export class AiNovelLlmService {
     const userText = latestUserMessageText(messages);
     const conversationRecordIds = extractAiNovelConversationRecordIds(body);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
-    let serverCompacted = false;
+    let serverCompacted = false, usage: LLMUsage | undefined;
     let conversationDebug: AiNovelConversationDebugMetadata | undefined;
     const conversationContext = {
       recordService: this.conversationRecordService,
@@ -221,11 +223,11 @@ export class AiNovelLlmService {
                   AiNovelLlmService.STREAMED_COMPLETION_FIRST_CONTENT_TIMEOUT_MS,
               })
             : await this.llmManager.complete(llmRequest);
+      usage = result.usage;
       const completionContent = resolvePromptAssemblyCompletionText(
         providerRequestPlan.forcedToolName,
         result,
       );
-
       const response: AiNovelChatResponse = {
         sceneKey: scene.sceneKey,
         completion: {
@@ -262,6 +264,7 @@ export class AiNovelLlmService {
         assistantText: completionContent,
         outcome: "success",
         serverCompacted,
+        usage,
         conversationDebug,
       });
       return response;
@@ -273,19 +276,20 @@ export class AiNovelLlmService {
         sceneRouteKey,
         profile: scene.profile,
       });
+      usage ??= conversationUsageFromError(mappedError);
       const failure = conversationFailureFields(mappedError);
       await recordAiNovelConversationResult({
         ...conversationContext,
         assistantText: "",
         outcome: "failure",
         serverCompacted,
+        usage,
         ...failure,
         conversationDebug,
       });
       throw mappedError;
     }
   }
-
   async *createChatCompletionStream(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
@@ -309,7 +313,7 @@ export class AiNovelLlmService {
     const maxTokens =
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
-    let serverCompacted = false;
+    let serverCompacted = false, usage: LLMUsage | undefined;
     let didRecordConversation = false;
     let conversationDebug: AiNovelConversationDebugMetadata | undefined;
     const conversationContext = {
@@ -388,12 +392,14 @@ export class AiNovelLlmService {
         },
       });
       for await (const chunk of stream) {
+        if (chunk.type === "usage" || chunk.type === "done") usage = chunk.usage ?? usage;
         if (chunk.type === "done" && !didRecordConversation) {
           await recordAiNovelConversationResult({
             ...conversationContext,
             assistantText: chunk.completion.content,
             outcome: "success",
             serverCompacted,
+            usage,
             conversationDebug,
           });
           didRecordConversation = true;
@@ -414,6 +420,7 @@ export class AiNovelLlmService {
           assistantText: "",
           outcome: "failure",
           serverCompacted,
+          usage,
           ...conversationFailureFields(mappedError),
           conversationDebug,
         });
@@ -421,7 +428,6 @@ export class AiNovelLlmService {
       throw mappedError;
     }
   }
-
   private async *runAiNovelStreamAttempt(input: {
     modelKey: string;
     requestPlan: AiNovelStreamRequestPlan;
@@ -446,7 +452,6 @@ export class AiNovelLlmService {
       events,
     });
   }
-
   private adaptAiNovelStream(input: {
     sceneRouteKey: string;
     requestPlan: AiNovelStreamRequestPlan;
@@ -501,7 +506,6 @@ export class AiNovelLlmService {
         return assertNeverRequestPlan(input.requestPlan);
     }
   }
-
   async createEmbeddings(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
