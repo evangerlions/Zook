@@ -1,6 +1,7 @@
 import type { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import type {
   AdminAiNovelConversationRecordDocument,
+  AiNovelConversationOutcome,
   AiNovelConversationTool,
 } from "../../shared/types.ts";
 import { badRequest } from "../../shared/errors.ts";
@@ -30,7 +31,7 @@ export class AiNovelConversationRecordService {
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  async recordCompletedTurn(input: {
+  async recordConversationResult(input: {
     userId: string;
     did?: string;
     requestId: string;
@@ -40,6 +41,10 @@ export class AiNovelConversationRecordService {
     sceneKey: string;
     userText: string;
     assistantText: string;
+    outcome?: AiNovelConversationOutcome;
+    errorCode?: string;
+    errorMessage?: string;
+    serverCompacted?: boolean;
     systemPrompt?: string;
     tools?: AiNovelConversationTool[];
   }): Promise<void> {
@@ -61,6 +66,12 @@ export class AiNovelConversationRecordService {
         sceneKey: input.sceneKey,
         userText: input.userText,
         assistantText: input.assistantText,
+        outcome: input.outcome ?? "success",
+        ...(input.errorCode?.trim() ? { errorCode: input.errorCode.trim() } : {}),
+        ...(input.errorMessage?.trim()
+          ? { errorMessage: input.errorMessage.trim().slice(0, 300) }
+          : {}),
+        serverCompacted: input.serverCompacted ?? false,
         ...(input.systemPrompt?.trim()
           ? { systemPrompt: input.systemPrompt.trim() }
           : {}),

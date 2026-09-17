@@ -22,12 +22,29 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
       `INSERT INTO zook_ai_novel_conversation_records (
          id, app_id, user_id, did, request_id, scene_key,
          message_id, session_id, turn_id, user_text, assistant_text,
-         system_prompt, tools_json, created_at
+         outcome, error_code, error_message, server_compacted,
+         system_prompt, tools_json, created_at, updated_at
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9,
-         $10, $11, $12, $13::jsonb, $14::timestamptz
+         $10, $11, $12, $13, $14, $15, $16, $17::jsonb,
+         $18::timestamptz, $18::timestamptz
        )
-       ON CONFLICT (app_id, user_id, request_id) DO NOTHING
+       ON CONFLICT (app_id, user_id, request_id) DO UPDATE SET
+         message_id = EXCLUDED.message_id,
+         session_id = EXCLUDED.session_id,
+         turn_id = EXCLUDED.turn_id,
+         scene_key = EXCLUDED.scene_key,
+         user_text = EXCLUDED.user_text,
+         assistant_text = EXCLUDED.assistant_text,
+         outcome = EXCLUDED.outcome,
+         error_code = EXCLUDED.error_code,
+         error_message = EXCLUDED.error_message,
+         server_compacted = EXCLUDED.server_compacted,
+         system_prompt = EXCLUDED.system_prompt,
+         tools_json = EXCLUDED.tools_json,
+         updated_at = EXCLUDED.updated_at
+       WHERE zook_ai_novel_conversation_records.outcome <> 'success'
+          OR EXCLUDED.outcome = 'success'
        RETURNING id`,
       [
         record.id,
@@ -41,6 +58,10 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
         record.turnId ?? null,
         record.userText,
         record.assistantText,
+        record.outcome ?? "success",
+        record.errorCode ?? null,
+        record.errorMessage ?? null,
+        record.serverCompacted ?? false,
         record.systemPrompt ?? null,
         record.tools ? JSON.stringify(record.tools) : null,
         record.createdAt,
@@ -72,7 +93,8 @@ export class PostgresAiNovelConversationStore implements AiNovelConversationStor
     const result = await this.query(
       `SELECT id, app_id, user_id, did, request_id,
               message_id, session_id, turn_id, scene_key,
-              user_text, assistant_text, system_prompt, tools_json, created_at
+              user_text, assistant_text, outcome, error_code, error_message,
+              server_compacted, system_prompt, tools_json, created_at
        FROM zook_ai_novel_conversation_records
        WHERE ${clauses.join(" AND ")}
        ORDER BY created_at DESC, id DESC
@@ -121,6 +143,10 @@ function parseRecord(row: QueryResultRow): AiNovelConversationRecord {
     sceneKey: String(row.scene_key),
     userText: String(row.user_text),
     assistantText: String(row.assistant_text),
+    outcome: row.outcome === "failure" ? "failure" : "success",
+    ...optionalRowText(row.error_code, "errorCode"),
+    ...optionalRowText(row.error_message, "errorMessage"),
+    serverCompacted: row.server_compacted === true,
     ...optionalRowText(row.system_prompt, "systemPrompt"),
     ...optionalTools(row.tools_json),
     createdAt: toIsoString(row.created_at) as string,
@@ -129,7 +155,7 @@ function parseRecord(row: QueryResultRow): AiNovelConversationRecord {
 
 function optionalRowText(
   value: unknown,
-  key: "messageId" | "sessionId" | "turnId",
+  key: "messageId" | "sessionId" | "turnId" | "errorCode" | "errorMessage",
 ): Record<string, string> {
   const normalized = typeof value === "string" ? value.trim() : "";
   return normalized ? { [key]: normalized } : {};

@@ -68,6 +68,11 @@ import {
   type AiNovelConversationDebugMetadata,
 } from "./ai-novel-conversation-debug.ts";
 import {
+  conversationFailureFields,
+  latestUserMessageText,
+  recordAiNovelConversationResult,
+} from "./ai-novel-conversation-result.ts";
+import {
   extractAiNovelConversationRecordIds,
 } from "./ai-novel-conversation-record-ids.ts";
 import {
@@ -130,44 +135,58 @@ export class AiNovelLlmService {
     }
     const sceneRouteKey = scene.sceneKey;
     const agentProtocol = optionalAiNovelAgentProtocol(body.agentProtocol);
-    const modelKey =
-      await this.modelSelectionConfigService.resolveChatModelKey(
-        options.routingIdentity,
-      );
     const messages = normalizeMessages(body.messages);
+    const userText = latestUserMessageText(messages);
     const conversationRecordIds = extractAiNovelConversationRecordIds(body);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
-    const requestPlan = buildAiNovelCompletionRequestPlan({
-      accountRegion: options.accountRegion,
-      agentProtocol,
-      context: body.context,
-      locale: options.locale,
-      messages,
-      scene,
-    });
-    const conversationDebug = options.captureConversationDebug
-      ? buildAiNovelConversationDebugMetadata(requestPlan)
-      : undefined;
-    const temperature =
-      optionalNumber(body.temperature, "temperature") ??
-      scene.defaultTemperature;
-    const maxTokens =
-      optionalPositiveInteger(body.maxTokens, "maxTokens") ??
-      scene.defaultMaxTokens;
-    const providerRequestPlan = compactAiNovelRequestPlan(
-      requestPlan,
-      maxTokens,
-      this.logger,
-      { requestId: options.requestId, sceneKey: scene.sceneKey },
-    );
-    const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
-    const llmRequestContext: AiNovelLlmRequestContext = {
-      ...aiNovelUsageOwner(options),
-      ...(options.routingIdentity
-        ? { routingIdentity: options.routingIdentity }
-        : {}),
+    let serverCompacted = false;
+    let conversationDebug: AiNovelConversationDebugMetadata | undefined;
+    const conversationContext = {
+      recordService: this.conversationRecordService,
+      logger: this.logger,
+      userId: options.userId,
+      did: options.routingIdentity?.did,
+      requestId: options.requestId,
+      ...conversationRecordIds,
+      sceneKey: scene.sceneKey,
+      userText,
     };
     try {
+      const modelKey = await this.modelSelectionConfigService.resolveChatModelKey(
+        options.routingIdentity,
+      );
+      const requestPlan = buildAiNovelCompletionRequestPlan({
+        accountRegion: options.accountRegion,
+        agentProtocol,
+        context: body.context,
+        locale: options.locale,
+        messages,
+        scene,
+      });
+      conversationDebug = options.captureConversationDebug
+        ? buildAiNovelConversationDebugMetadata(requestPlan)
+        : undefined;
+      const temperature =
+        optionalNumber(body.temperature, "temperature") ??
+        scene.defaultTemperature;
+      const maxTokens =
+        optionalPositiveInteger(body.maxTokens, "maxTokens") ??
+        scene.defaultMaxTokens;
+      const compactedPlan = compactAiNovelRequestPlan(
+        requestPlan,
+        maxTokens,
+        this.logger,
+        { requestId: options.requestId, sceneKey: scene.sceneKey },
+      );
+      const providerRequestPlan = compactedPlan.plan;
+      serverCompacted = compactedPlan.compaction.didCompact;
+      const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
+      const llmRequestContext: AiNovelLlmRequestContext = {
+        ...aiNovelUsageOwner(options),
+        ...(options.routingIdentity
+          ? { routingIdentity: options.routingIdentity }
+          : {}),
+      };
       const llmRequest = {
         modelKey,
         messages: providerRequestPlan.messages,
@@ -190,6 +209,9 @@ export class AiNovelLlmService {
                 ? { providerOptions: providerRequestPlan.providerOptions }
                 : {}),
               messagesAlreadyCompacted: true,
+              onContextCompacted: () => {
+                serverCompacted = true;
+              },
               ...llmRequestContext,
               forcedToolName: providerRequestPlan.forcedToolName,
             })
@@ -235,23 +257,32 @@ export class AiNovelLlmService {
             }
           : {}),
       };
-      await this.recordCompletedConversation({
-        options,
-        messages,
-        conversationRecordIds,
-        sceneKey: scene.sceneKey,
+      await recordAiNovelConversationResult({
+        ...conversationContext,
         assistantText: completionContent,
+        outcome: "success",
+        serverCompacted,
         conversationDebug,
       });
       return response;
     } catch (error) {
-      throw this.mapAndLogUpstreamError(error, {
+      const mappedError = this.mapAndLogUpstreamError(error, {
         stage: "chat",
         requestId: options.requestId,
         sceneKey: scene.sceneKey,
         sceneRouteKey,
         profile: scene.profile,
       });
+      const failure = conversationFailureFields(mappedError);
+      await recordAiNovelConversationResult({
+        ...conversationContext,
+        assistantText: "",
+        outcome: "failure",
+        serverCompacted,
+        ...failure,
+        conversationDebug,
+      });
+      throw mappedError;
     }
   }
 
@@ -269,6 +300,7 @@ export class AiNovelLlmService {
     const sceneRouteKey = scene.sceneKey;
     const agentProtocol = optionalAiNovelAgentProtocol(body.agentProtocol);
     const messages = normalizeMessages(body.messages);
+    const userText = latestUserMessageText(messages);
     const conversationRecordIds = extractAiNovelConversationRecordIds(body);
     await this.assertLatestUserInputAllowed(body, messages, scene.sceneKey);
     const temperature =
@@ -277,6 +309,19 @@ export class AiNovelLlmService {
     const maxTokens =
       optionalPositiveInteger(body.maxTokens, "maxTokens") ??
       scene.defaultMaxTokens;
+    let serverCompacted = false;
+    let didRecordConversation = false;
+    let conversationDebug: AiNovelConversationDebugMetadata | undefined;
+    const conversationContext = {
+      recordService: this.conversationRecordService,
+      logger: this.logger,
+      userId: options.userId,
+      did: options.routingIdentity?.did,
+      requestId: options.requestId,
+      ...conversationRecordIds,
+      sceneKey: scene.sceneKey,
+      userText,
+    };
     const llmRequestContext: AiNovelLlmRequestContext = {
       ...aiNovelUsageOwner(options),
       ...(options.routingIdentity
@@ -293,13 +338,15 @@ export class AiNovelLlmService {
         messages,
         scene,
       });
-      const providerRequestPlan = compactAiNovelRequestPlan(
+      const compactedPlan = compactAiNovelRequestPlan(
         requestPlan,
         maxTokens,
         this.logger,
         { requestId: options.requestId, sceneKey: scene.sceneKey },
       );
-      const conversationDebug = options.captureConversationDebug
+      const providerRequestPlan = compactedPlan.plan;
+      serverCompacted = compactedPlan.compaction.didCompact;
+      conversationDebug = options.captureConversationDebug
         ? buildAiNovelConversationDebugMetadata(requestPlan)
         : undefined;
       let initiallyYielded = false;
@@ -341,26 +388,37 @@ export class AiNovelLlmService {
         },
       });
       for await (const chunk of stream) {
-        if (chunk.type === "done") {
-          await this.recordCompletedConversation({
-            options,
-            messages,
-            conversationRecordIds,
-            sceneKey: scene.sceneKey,
+        if (chunk.type === "done" && !didRecordConversation) {
+          await recordAiNovelConversationResult({
+            ...conversationContext,
             assistantText: chunk.completion.content,
+            outcome: "success",
+            serverCompacted,
             conversationDebug,
           });
+          didRecordConversation = true;
         }
         yield chunk;
       }
     } catch (error) {
-      throw this.mapAndLogUpstreamError(error, {
+      const mappedError = this.mapAndLogUpstreamError(error, {
         stage: "chat_stream",
         requestId: options.requestId,
         sceneKey: scene.sceneKey,
         sceneRouteKey,
         profile: scene.profile,
       });
+      if (!didRecordConversation) {
+        await recordAiNovelConversationResult({
+          ...conversationContext,
+          assistantText: "",
+          outcome: "failure",
+          serverCompacted,
+          ...conversationFailureFields(mappedError),
+          conversationDebug,
+        });
+      }
+      throw mappedError;
     }
   }
 
@@ -515,53 +573,6 @@ export class AiNovelLlmService {
       sceneKey,
       text: content,
     });
-  }
-
-  private async recordCompletedConversation(input: {
-    options: AiNovelRequestOptions;
-    messages: LLMMessage[];
-    conversationRecordIds: {
-      messageId?: string;
-      sessionId?: string;
-      turnId?: string;
-    };
-    sceneKey: string;
-    assistantText: string;
-    conversationDebug?: AiNovelConversationDebugMetadata;
-  }): Promise<void> {
-    const userText = [...input.messages]
-      .reverse()
-      .find((message) => message.role === "user")
-      ?.content
-      ?.trim();
-    if (!this.conversationRecordService || !input.options.userId ||
-        !input.options.requestId || !userText) {
-      return;
-    }
-    try {
-      await this.conversationRecordService.recordCompletedTurn({
-        userId: input.options.userId,
-        did: input.options.routingIdentity?.did,
-        requestId: input.options.requestId,
-        ...input.conversationRecordIds,
-        sceneKey: input.sceneKey,
-        userText,
-        assistantText: input.assistantText,
-        ...(input.conversationDebug?.systemPrompt
-          ? { systemPrompt: input.conversationDebug.systemPrompt }
-          : {}),
-        ...(input.conversationDebug
-          ? { tools: input.conversationDebug.tools }
-          : {}),
-      });
-    } catch (error) {
-      this.logger?.warn("AINovel completed conversation record write failed", {
-        requestId: input.options.requestId,
-        sceneKey: input.sceneKey,
-        userId: input.options.userId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
   }
 
   private mapAndLogUpstreamError(

@@ -4,6 +4,8 @@ export interface AiNovelConversationTool {
   inputSchema: Record<string, unknown>;
 }
 
+export type AiNovelConversationOutcome = "success" | "failure";
+
 export interface AiNovelConversationRecord {
   id: string;
   appId: "ai_novel";
@@ -16,6 +18,10 @@ export interface AiNovelConversationRecord {
   sceneKey: string;
   userText: string;
   assistantText: string;
+  outcome?: AiNovelConversationOutcome;
+  errorCode?: string;
+  errorMessage?: string;
+  serverCompacted?: boolean;
   systemPrompt?: string;
   tools?: AiNovelConversationTool[];
   createdAt: string;

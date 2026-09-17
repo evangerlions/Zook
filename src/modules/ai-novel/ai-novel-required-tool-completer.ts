@@ -24,6 +24,7 @@ export async function completeRequiredToolViaStream(
     maxTokens: number;
     providerOptions?: Record<string, unknown>;
     messagesAlreadyCompacted?: boolean;
+    onContextCompacted?: () => void;
     usageOwner?: { appId: string; userId: string };
     routingIdentity?: LlmRoutingIdentity;
     forcedToolName: string;
@@ -34,17 +35,21 @@ export async function completeRequiredToolViaStream(
   let protectedRoundStartIndex: number | undefined;
 
   for (let attempt = 1; attempt <= REQUIRED_TOOL_STREAM_ATTEMPTS; attempt += 1) {
-    const providerMessages =
-      attempt === 1 && input.messagesAlreadyCompacted
-        ? messages
-        : compactAiNovelContext({
-            messages,
-            providerOptions: input.providerOptions,
-            maxTokens: input.maxTokens,
-            ...(protectedRoundStartIndex === undefined
-              ? {}
-              : { latestRoundStartIndex: protectedRoundStartIndex }),
-          }).messages;
+    let providerMessages: LLMMessage[];
+    if (attempt === 1 && input.messagesAlreadyCompacted) {
+      providerMessages = messages;
+    } else {
+      const compaction = compactAiNovelContext({
+        messages,
+        providerOptions: input.providerOptions,
+        maxTokens: input.maxTokens,
+        ...(protectedRoundStartIndex === undefined
+          ? {}
+          : { latestRoundStartIndex: protectedRoundStartIndex }),
+      });
+      providerMessages = compaction.messages;
+      if (compaction.didCompact) input.onContextCompacted?.();
+    }
     if (protectedRoundStartIndex === undefined) {
       const latestIndex = latestUserMessageIndex(providerMessages);
       if (latestIndex >= 0) protectedRoundStartIndex = latestIndex;

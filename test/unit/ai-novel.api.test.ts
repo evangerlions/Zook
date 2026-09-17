@@ -3938,6 +3938,15 @@ test("ai_novel compacts oversized history before the provider while preserving t
   assert.equal(toolMessages.at(-1)?.content?.length, largeToolOutput.length);
   assert.equal(capturedMessages!.at(-1)?.content, "latest request");
   assert.equal(capturedMessages!.find((item) => item.role === "system")?.role, "system");
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.requestId === "oversized-history-request");
+  assert.ok(record);
+  assert.equal(record?.userText, "latest request");
+  assert.equal(record?.outcome, "success");
+  assert.equal(record?.serverCompacted, true);
 });
 
 test("ai_novel pi-v1 kickoff keeps Meta out of the provider system prompt", async () => {
@@ -4570,13 +4579,28 @@ test("ai_novel stream errors log upstream and encrypted business error details",
   assert.equal(encryptedLog.transport, "stream");
   assert.equal(encryptedLog.code, "AI_UPSTREAM_BAD_GATEWAY");
   assert.match(String(encryptedLog.detailsPreview), /dashscope_req_001/);
+
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.requestId === requestId);
+  assert.ok(record);
+  assert.equal(record?.userText, "hello");
+  assert.equal(record?.assistantText, "");
+  assert.equal(record?.outcome, "failure");
+  assert.equal(record?.errorCode, "AI_UPSTREAM_BAD_GATEWAY");
+  assert.equal(record?.serverCompacted, false);
 });
 
 test("ai_novel stream logs raw unknown upstream errors before generic wrapping", async () => {
   const requestId = "req_ai_stream_unknown_error_probe";
-  const streamError = new Error("stream reader aborted unexpectedly", {
-    cause: new Error("socket closed while reading SSE"),
-  });
+  const streamError = new Error(
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
+    {
+      cause: new Error("socket closed while reading SSE"),
+    },
+  );
   const llmProvider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
       throw new Error("stream probe should not use complete");
@@ -4629,7 +4653,10 @@ test("ai_novel stream logs raw unknown upstream errors before generic wrapping",
   assert.equal(upstreamLog.requestId, requestId);
   assert.equal(upstreamLog.stage, "chat_stream");
   assert.equal(upstreamLog.originalName, "Error");
-  assert.equal(upstreamLog.originalMessage, "stream reader aborted unexpectedly");
+  assert.equal(
+    upstreamLog.originalMessage,
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
+  );
   assert.match(
     String(upstreamLog.originalStack),
     /stream reader aborted unexpectedly/,
@@ -4645,7 +4672,10 @@ test("ai_novel stream logs raw unknown upstream errors before generic wrapping",
   assert.ok(unexpectedLog);
   assert.equal(unexpectedLog.requestId, requestId);
   assert.equal(unexpectedLog.errorName, "Error");
-  assert.equal(unexpectedLog.errorMessage, "stream reader aborted unexpectedly");
+  assert.equal(
+    unexpectedLog.errorMessage,
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
+  );
   assert.match(
     String(unexpectedLog.errorStack),
     /stream reader aborted unexpectedly/,
@@ -4653,6 +4683,17 @@ test("ai_novel stream logs raw unknown upstream errors before generic wrapping",
   assert.match(
     String(unexpectedLog.errorCausePreview),
     /socket closed while reading SSE/,
+  );
+
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.requestId === requestId);
+  assert.ok(record);
+  assert.equal(
+    record?.errorMessage,
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
   );
 });
 

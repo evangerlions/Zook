@@ -31,6 +31,11 @@ export interface AiNovelContextCompactionResult {
   withinBudget: boolean;
 }
 
+export interface AiNovelCompactedRequestPlan<T> {
+  plan: T;
+  compaction: AiNovelContextCompactionResult;
+}
+
 export function compactAiNovelRequestPlan<T extends {
   messages: LLMMessage[];
   providerOptions?: Record<string, unknown>;
@@ -39,7 +44,7 @@ export function compactAiNovelRequestPlan<T extends {
   maxTokens: number,
   logger?: StructuredLogger,
   context: { requestId?: string; sceneKey?: string } = {},
-): T {
+): AiNovelCompactedRequestPlan<T> {
   const compaction = compactAiNovelContext({
     messages: plan.messages,
     providerOptions: plan.providerOptions,
@@ -67,8 +72,11 @@ export function compactAiNovelRequestPlan<T extends {
     });
   }
   return {
-    ...plan,
-    messages: compaction.messages,
+    plan: {
+      ...plan,
+      messages: compaction.messages,
+    },
+    compaction,
   };
 }
 
