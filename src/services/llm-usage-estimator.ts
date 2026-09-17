@@ -13,11 +13,42 @@ function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil([...text].length / CHARS_PER_TOKEN));
 }
 
+export function estimateLlmContextTextTokens(text: string): number {
+  if (!text) return 0;
+  let estimatedTokens = 0;
+  for (const character of text) {
+    estimatedTokens += character.codePointAt(0)! <= 0x7f ? 1 / 3 : 1;
+  }
+  return Math.max(1, Math.ceil(estimatedTokens));
+}
+
 function serializeToolCall(toolCall: LLMToolCall): string {
   return JSON.stringify({
     name: toolCall.name,
     input: toolCall.input,
   });
+}
+
+export function estimateLlmRequestTokens(
+  request: Pick<LLMCompletionRequest, "messages" | "providerOptions">,
+): number {
+  return estimateTokens(
+    JSON.stringify({
+      messages: request.messages,
+      providerOptions: request.providerOptions,
+    }),
+  );
+}
+
+export function estimateLlmContextRequestTokens(
+  request: Pick<LLMCompletionRequest, "messages" | "providerOptions">,
+): number {
+  return estimateLlmContextTextTokens(
+    JSON.stringify({
+      messages: request.messages,
+      providerOptions: request.providerOptions,
+    }),
+  );
 }
 
 export class LLMUsageEstimateAccumulator {
@@ -81,10 +112,7 @@ export function estimateCompletionUsage(result: {
 export function createUsageEstimateAccumulator(
   request: Pick<LLMCompletionRequest, "messages" | "providerOptions">,
 ): LLMUsageEstimateAccumulator {
-  return new LLMUsageEstimateAccumulator(estimateTokens(JSON.stringify({
-    messages: request.messages,
-    providerOptions: request.providerOptions,
-  })));
+  return new LLMUsageEstimateAccumulator(estimateLlmRequestTokens(request));
 }
 
 export function estimateEmbeddingUsage(input: string[]): LLMUsage {

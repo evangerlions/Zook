@@ -1206,7 +1206,9 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
   assert.equal("modelKey" in requestBody, false);
   assert.equal(messages[0].role, "system");
   assert.ok(
-    String(messages[0].content ?? "").includes("write-mode AINovel agent"),
+    String(messages[0].content ?? "").includes(
+      "writing assistant for OrangeWrite(zh: 橘子写作)",
+    ),
   );
   assert.ok(
     String(messages[0].content ?? "").includes(
@@ -1222,7 +1224,10 @@ test("ai_novel local debug envelopes expose upstream LLM request body", async ()
     userId: "user_alice",
   });
   assert.equal(records.length, 1);
-  assert.match(records[0]?.systemPrompt ?? "", /write-mode AINovel agent/);
+  assert.match(
+    records[0]?.systemPrompt ?? "",
+    /writing assistant for OrangeWrite\(zh: 橘子写作\)/,
+  );
   assert.ok(records[0]?.tools?.some((tool) => tool.name === "read_writing_context"));
 });
 
@@ -3154,7 +3159,11 @@ test("ai_novel GLOBAL kickoff request does not inject the CN identity policy", a
     .filter((message) => message.role === "system")
     .map((message) => message.content ?? "")
     .join("\n");
-  assert.match(systemPrompt, /kickoff-mode novel setup assistant/);
+  assert.match(
+    systemPrompt,
+    /kickoff-mode novel setup assistant for OrangeWrite\(zh: 橘子写作\)/,
+  );
+  assert.doesNotMatch(systemPrompt, /AINovel/);
   assert.doesNotMatch(systemPrompt, /CN assistant identity policy/);
   assert.doesNotMatch(
     systemPrompt,
@@ -3356,6 +3365,15 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
         text: "我们先把主角和冲突钉稳。",
       };
       yield {
+        type: "usage",
+        usage: {
+          promptTokens: 12,
+          completionTokens: 0,
+          totalTokens: 12,
+          reasoningTokens: 0,
+        },
+      };
+      yield {
         type: "done",
         finishReason: "stop",
       };
@@ -3403,6 +3421,17 @@ test("ai_novel kickoff_turn enables thinking and forwards reasoning deltas", asy
     ["reasoning_delta", "content_delta", "usage", "done"],
   );
   assert.equal(decryptedEvents[0].text, "先确认故事驱动力");
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.userText === "继续推进这个故事。");
+  assert.ok(record);
+  assert.equal(record?.promptTokens, 12);
+  assert.equal(record?.completionTokens, 0);
+  assert.equal(record?.totalTokens, 12);
+  assert.equal(record?.reasoningTokens, 0);
+  assert.equal(record?.usageSource, "provider");
 });
 
 test("ai_novel write_turn injects server prompt and documented write tools", async () => {
@@ -3522,7 +3551,7 @@ test("ai_novel write_turn injects server prompt and documented write tools", asy
   assert.equal(capturedMessages![0].role, "system");
   assert.match(
     String(capturedMessages![0].content ?? ""),
-    /write-mode AINovel agent/,
+    /writing assistant for OrangeWrite\(zh: 橘子写作\)/,
   );
   assert.equal(capturedMessages![1].role, "user");
   assert.match(
@@ -3855,6 +3884,94 @@ test("ai_novel pi-v1 keeps raw context out of the provider request", async () =>
     capturedMessages.map((message) => message.content ?? "").join("\n"),
     /must not enter provider messages|must_not_enter_provider_messages/,
   );
+});
+
+test("ai_novel compacts oversized history before the provider while preserving the latest round", async () => {
+  let capturedMessages: LLMMessage[] | undefined;
+  const largeToolOutput = "x".repeat(900_000);
+  const messages: LLMMessage[] = [];
+  for (let index = 0; index < 4; index += 1) {
+    const toolCallId = `call_old_${index}`;
+    messages.push(
+      {
+        role: "user",
+        content: `old request ${index}`,
+      },
+      {
+        role: "assistant",
+        content: "",
+        toolCalls: [
+          {
+            id: toolCallId,
+            name: "read_writing_context",
+            input: {},
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: largeToolOutput,
+        toolCallId,
+      },
+    );
+  }
+  messages.push({ role: "user", content: "latest request" });
+
+  const { runtime } = await createAiNovelRuntime({
+    llmProvider: {
+      async complete(): Promise<LLMCompletionResult> {
+        throw new Error("oversized history test should use stream");
+      },
+      async *stream(request): AsyncIterable<LLMStreamEvent> {
+        capturedMessages = request.messages;
+        yield { type: "content_delta", text: "ok" };
+        yield { type: "done", finishReason: "stop" };
+      },
+    },
+  });
+
+  const chunks: AiNovelChatStreamChunk[] = [];
+  for await (const chunk of runtime.services.aiNovelLlmService.createChatCompletionStream(
+    {
+      scene_key: "write_turn",
+      stream: true,
+      messages,
+    },
+    {
+      userId: "user_alice",
+      requestId: "oversized-history-request",
+    },
+  )) {
+    chunks.push(chunk);
+  }
+
+  assert.equal(chunks.at(-1)?.type, "done");
+  assert.ok(capturedMessages);
+  const toolMessages = capturedMessages!.filter((item) => item.role === "tool");
+  assert.equal(toolMessages.length, 4);
+  assert.equal(
+    toolMessages.filter(
+      (item) => item.content === "[Old tool result content cleared; re-run the tool if needed.]",
+    ).length,
+    3,
+  );
+  assert.equal(toolMessages.at(-1)?.content?.length, largeToolOutput.length);
+  assert.equal(capturedMessages!.at(-1)?.content, "latest request");
+  assert.equal(capturedMessages!.find((item) => item.role === "system")?.role, "system");
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.requestId === "oversized-history-request");
+  assert.ok(record);
+  assert.equal(record?.userText, "latest request");
+  assert.equal(record?.outcome, "success");
+  assert.equal(record?.serverCompacted, true);
+  assert.equal(record?.promptTokens, -1);
+  assert.equal(record?.completionTokens, -1);
+  assert.equal(record?.totalTokens, -1);
+  assert.equal(record?.reasoningTokens, -1);
+  assert.equal(record?.usageSource, "missing");
 });
 
 test("ai_novel pi-v1 kickoff keeps Meta out of the provider system prompt", async () => {
@@ -4487,13 +4604,28 @@ test("ai_novel stream errors log upstream and encrypted business error details",
   assert.equal(encryptedLog.transport, "stream");
   assert.equal(encryptedLog.code, "AI_UPSTREAM_BAD_GATEWAY");
   assert.match(String(encryptedLog.detailsPreview), /dashscope_req_001/);
+
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.requestId === requestId);
+  assert.ok(record);
+  assert.equal(record?.userText, "hello");
+  assert.equal(record?.assistantText, "");
+  assert.equal(record?.outcome, "failure");
+  assert.equal(record?.errorCode, "AI_UPSTREAM_BAD_GATEWAY");
+  assert.equal(record?.serverCompacted, false);
 });
 
 test("ai_novel stream logs raw unknown upstream errors before generic wrapping", async () => {
   const requestId = "req_ai_stream_unknown_error_probe";
-  const streamError = new Error("stream reader aborted unexpectedly", {
-    cause: new Error("socket closed while reading SSE"),
-  });
+  const streamError = new Error(
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
+    {
+      cause: new Error("socket closed while reading SSE"),
+    },
+  );
   const llmProvider: LLMProvider = {
     async complete(): Promise<LLMCompletionResult> {
       throw new Error("stream probe should not use complete");
@@ -4546,7 +4678,10 @@ test("ai_novel stream logs raw unknown upstream errors before generic wrapping",
   assert.equal(upstreamLog.requestId, requestId);
   assert.equal(upstreamLog.stage, "chat_stream");
   assert.equal(upstreamLog.originalName, "Error");
-  assert.equal(upstreamLog.originalMessage, "stream reader aborted unexpectedly");
+  assert.equal(
+    upstreamLog.originalMessage,
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
+  );
   assert.match(
     String(upstreamLog.originalStack),
     /stream reader aborted unexpectedly/,
@@ -4562,7 +4697,10 @@ test("ai_novel stream logs raw unknown upstream errors before generic wrapping",
   assert.ok(unexpectedLog);
   assert.equal(unexpectedLog.requestId, requestId);
   assert.equal(unexpectedLog.errorName, "Error");
-  assert.equal(unexpectedLog.errorMessage, "stream reader aborted unexpectedly");
+  assert.equal(
+    unexpectedLog.errorMessage,
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
+  );
   assert.match(
     String(unexpectedLog.errorStack),
     /stream reader aborted unexpectedly/,
@@ -4570,6 +4708,17 @@ test("ai_novel stream logs raw unknown upstream errors before generic wrapping",
   assert.match(
     String(unexpectedLog.errorCausePreview),
     /socket closed while reading SSE/,
+  );
+
+  const records = await runtime.database.aiNovelConversationStore.list({
+    appId: "ai_novel",
+    userId: "user_alice",
+  });
+  const record = records.find((item) => item.requestId === requestId);
+  assert.ok(record);
+  assert.equal(
+    record?.errorMessage,
+    "stream reader aborted unexpectedly: Authorization: Bearer test-provider-token",
   );
 });
 

@@ -9,12 +9,24 @@ export class InMemoryAiNovelConversationStore implements AiNovelConversationStor
 
   insert(record: AiNovelConversationRecord): boolean {
     const records = this.readRecords();
-    if (records.some((item) =>
+    const existingIndex = records.findIndex((item) =>
       item.appId === record.appId &&
       item.userId === record.userId &&
       item.requestId === record.requestId,
-    )) {
-      return false;
+    );
+    if (existingIndex >= 0) {
+      const existing = records[existingIndex]!;
+      if (existing.outcome === "success" && record.outcome === "failure") {
+        return false;
+      }
+      const updated = [...records];
+      updated[existingIndex] = {
+        ...structuredClone(record),
+        id: existing.id,
+        createdAt: existing.createdAt,
+      };
+      this.replaceRecords(updated);
+      return true;
     }
     this.replaceRecords([...records, structuredClone(record)]);
     return true;

@@ -8,7 +8,7 @@ import {
 } from "./ai-novel-prompt-tools.ts";
 
 export const WRITE_TURN_SYSTEM_PROMPT = [
-  "You are the write-mode AINovel agent.",
+  "You are the writing assistant for OrangeWrite(zh: 橘子写作).",
   "",
   "## Role",
   "- Help the user revise or continue the bound current chapter.",
@@ -42,7 +42,7 @@ export const WRITE_TURN_SYSTEM_PROMPT = [
 ].join("\n");
 
 export const HISTORY_CHAPTER_QA_SYSTEM_PROMPT = [
-  "You are the read-only HistoryChapterQaAgent for AINovel.",
+  "You are the read-only HistoryChapterQaAgent for OrangeWrite(zh: 橘子写作).",
   "",
   "## Role",
   "- Answer questions about the bound historical chapter and established story history.",
@@ -59,7 +59,7 @@ export const HISTORY_CHAPTER_QA_SYSTEM_PROMPT = [
 
 function buildChapterDraftSystemPrompt(contextOnDemand: boolean): string {
   return [
-  "You are the background ChapterDraftAgent for AINovel.",
+  "You are the background ChapterDraftAgent for OrangeWrite(zh: 橘子写作).",
   "",
   "## Role",
   "- Generate a complete draft for the bound target chapter.",
@@ -133,7 +133,7 @@ export const LEGACY_CHAPTER_DRAFT_SYSTEM_PROMPT =
   buildChapterDraftSystemPrompt(false);
 
 export const IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT = [
-  "You are the imported-book kickoff agent for AINovel.",
+  "You are the imported-book kickoff agent for OrangeWrite(zh: 橘子写作).",
   "",
   "## Role",
   "- Help the author review and adjust how an imported, already-written book should continue.",
@@ -169,7 +169,7 @@ export const IMPORTED_BOOK_KICKOFF_SYSTEM_PROMPT = [
 ].join("\n");
 
 export const IMPORT_BOOK_AGENT_SYSTEM_PROMPT = [
-  "You are the ImportBookAgent for AINovel.",
+  "You are the ImportBookAgent for OrangeWrite(zh: 橘子写作).",
   "",
   "## Role",
   "- Import an already-written manuscript into the same durable artifacts used by the normal writing engine.",
@@ -216,7 +216,7 @@ export const JOB_SYSTEM_PROMPTS: Record<
   string
 > = {
   chapter_summary: [
-    "You are the ChapterSummaryGenerationJob for AINovel.",
+    "You are the ChapterSummaryGenerationJob for OrangeWrite(zh: 橘子写作).",
     "Think through the supplied chapter text and source references, then call submit_chapter_summary exactly once. Do not put the summary JSON in final assistant text.",
     "Return facts as an object that may include actualEvents, coveredBeatIds, deviations, unresolvedQuestions, characterStateChanges, and objectStates. Do not create a separate outcome schema.",
     "Use objectStates for durable continuity facts about important items, clues, tokens, letters, weapons, documents, or hidden objects. Each entry should capture name, holder or owner, physical location, status, lastSeen, and brief evidence when known.",
@@ -225,7 +225,7 @@ export const JOB_SYSTEM_PROMPTS: Record<
     "Do not include markdown fences or prose outside the required tool call.",
   ].join("\n"),
   chapter_draft_review: [
-    "You are the ChapterDraftReviewJob for AINovel.",
+    "You are the ChapterDraftReviewJob for OrangeWrite(zh: 橘子写作).",
     "Review the supplied generated chapter draft against Contract.extras, plannedChecklist, story window, language, and continuity constraints.",
     "Think through the review carefully, then call submit_chapter_review exactly once with the structured result. Do not put the review JSON in final assistant text.",
     "Use context.draft.characterCount and context.draft.lengthGuidance when present; do not estimate length from the visible prompt text.",
@@ -250,12 +250,12 @@ export const JOB_SYSTEM_PROMPTS: Record<
     "Do not include markdown fences or prose outside the required tool call.",
   ].join("\n"),
   snapshot_generation: [
-    "You are the SnapshotGenerationJob for AINovel.",
+    "You are the SnapshotGenerationJob for OrangeWrite(zh: 橘子写作).",
     "Think through the supplied chapter range, then call submit_snapshot exactly once with the rolling long-term story snapshot.",
     "Do not include markdown fences or prose outside the required tool call.",
   ].join("\n"),
   next_chapter_brief: [
-    "You are the NextChapterBriefGenerationJob for AINovel.",
+    "You are the NextChapterBriefGenerationJob for OrangeWrite(zh: 橘子写作).",
     "Think through the next chapter task, then call submit_next_chapter_brief exactly once with a compact structured payload.",
     "The tool arguments must contain a string field named `brief` and, when useful, taskBook/required/strategy/contextRefs.",
     "`brief` must be a concise chapter task brief for the next ChapterDraftAgent, derived from MainLine.sourceBeat plus runtime state, not a new durable world rule.",

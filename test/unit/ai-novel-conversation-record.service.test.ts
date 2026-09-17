@@ -35,7 +35,7 @@ test("AINovel conversation records trim from 121 turns to the latest 100 turns",
 
   for (let index = 0; index < 121; index += 1) {
     currentTime = new Date(Date.parse("2026-09-07T00:00:00.000Z") + index * 1000);
-    await service.recordCompletedTurn({
+    await service.recordConversationResult({
       userId: "user_a",
       did: "did_a",
       requestId: `request_${index}`,
@@ -62,7 +62,7 @@ test("AINovel conversation records support DID lookup and page through older ran
 
   for (let index = 0; index < 102; index += 1) {
     currentTime = new Date(Date.parse("2026-09-07T00:00:00.000Z") + index * 1000);
-    await service.recordCompletedTurn({
+    await service.recordConversationResult({
       userId: `user_${index}`,
       did: "shared_did",
       requestId: "request_1",
@@ -89,7 +89,7 @@ test("AINovel conversation record lookup defaults to every user and pages older 
   const service = new AiNovelConversationRecordService(database, () => currentTime);
   for (let index = 0; index < 102; index += 1) {
     currentTime = new Date(Date.parse("2026-09-07T00:00:00.000Z") + index * 1000);
-    await service.recordCompletedTurn({
+    await service.recordConversationResult({
       userId: `user_${index % 2}`,
       requestId: `request_${index}`,
       sceneKey: "write_turn",
@@ -121,7 +121,7 @@ test("AINovel conversation record lookup rejects ambiguous identifiers", async (
 test("AINovel conversation records are removed with the user's app runtime data", async () => {
   const database = new InMemoryDatabase();
   const service = new AiNovelConversationRecordService(database);
-  await service.recordCompletedTurn({
+  await service.recordConversationResult({
     userId: "user_delete",
     requestId: "request_delete",
     sceneKey: "write_turn",
@@ -133,4 +133,119 @@ test("AINovel conversation records are removed with the user's app runtime data"
 
   const document = await service.listForAdmin({ uid: "user_delete" });
   assert.equal(document.items.length, 0);
+});
+
+test("AINovel conversation records retain failed results and server compaction metadata", async () => {
+  const database = new InMemoryDatabase();
+  const service = new AiNovelConversationRecordService(database);
+
+  await service.recordConversationResult({
+    userId: "user_failed",
+    requestId: "request_failed",
+    sceneKey: "write_turn",
+    userText: "继续写这一章",
+    assistantText: "",
+    outcome: "failure",
+    errorCode: "AI_UPSTREAM_TIMEOUT",
+    errorMessage: "Upstream model service timed out.",
+    serverCompacted: true,
+  });
+
+  const document = await service.listForAdmin({ uid: "user_failed" });
+  assert.equal(document.items[0]?.outcome, "failure");
+  assert.equal(document.items[0]?.errorCode, "AI_UPSTREAM_TIMEOUT");
+  assert.equal(document.items[0]?.errorMessage, "Upstream model service timed out.");
+  assert.equal(document.items[0]?.serverCompacted, true);
+  assert.equal(document.items[0]?.promptTokens, -1);
+  assert.equal(document.items[0]?.completionTokens, -1);
+  assert.equal(document.items[0]?.totalTokens, -1);
+  assert.equal(document.items[0]?.reasoningTokens, -1);
+  assert.equal(document.items[0]?.usageSource, "missing");
+});
+
+test("AINovel conversation records preserve provider usage including real zero values", async () => {
+  const database = new InMemoryDatabase();
+  const service = new AiNovelConversationRecordService(database);
+
+  await service.recordConversationResult({
+    userId: "user_usage",
+    requestId: "request_usage",
+    sceneKey: "write_turn",
+    userText: "继续",
+    assistantText: "完成",
+    promptTokens: 12,
+    completionTokens: 0,
+    totalTokens: 12,
+    reasoningTokens: 0,
+    usageSource: "provider",
+  });
+
+  const document = await service.listForAdmin({ uid: "user_usage" });
+  assert.equal(document.items[0]?.promptTokens, 12);
+  assert.equal(document.items[0]?.completionTokens, 0);
+  assert.equal(document.items[0]?.totalTokens, 12);
+  assert.equal(document.items[0]?.reasoningTokens, 0);
+  assert.equal(document.items[0]?.usageSource, "provider");
+});
+
+test("AINovel conversation record writes are idempotent and update the final result", async () => {
+  const database = new InMemoryDatabase();
+  const service = new AiNovelConversationRecordService(database);
+
+  await service.recordConversationResult({
+    userId: "user_retry",
+    requestId: "request_retry",
+    sceneKey: "write_turn",
+    userText: "继续",
+    assistantText: "",
+    outcome: "failure",
+    errorCode: "AI_UPSTREAM_TIMEOUT",
+    serverCompacted: false,
+  });
+  await service.recordConversationResult({
+    userId: "user_retry",
+    requestId: "request_retry",
+    sceneKey: "write_turn",
+    userText: "继续",
+    assistantText: "完成",
+    outcome: "success",
+    serverCompacted: true,
+  });
+
+  const document = await service.listForAdmin({ uid: "user_retry" });
+  assert.equal(document.items.length, 1);
+  assert.equal(document.items[0]?.assistantText, "完成");
+  assert.equal(document.items[0]?.outcome, "success");
+  assert.equal(document.items[0]?.errorCode, undefined);
+  assert.equal(document.items[0]?.serverCompacted, true);
+});
+
+test("AINovel conversation record keeps a completed result over a late failure", async () => {
+  const database = new InMemoryDatabase();
+  const service = new AiNovelConversationRecordService(database);
+
+  await service.recordConversationResult({
+    userId: "user_terminal",
+    requestId: "request_terminal",
+    sceneKey: "write_turn",
+    userText: "继续",
+    assistantText: "完成",
+    outcome: "success",
+    serverCompacted: false,
+  });
+  await service.recordConversationResult({
+    userId: "user_terminal",
+    requestId: "request_terminal",
+    sceneKey: "write_turn",
+    userText: "继续",
+    assistantText: "",
+    outcome: "failure",
+    errorCode: "LATE_FAILURE",
+    serverCompacted: true,
+  });
+
+  const document = await service.listForAdmin({ uid: "user_terminal" });
+  assert.equal(document.items[0]?.outcome, "success");
+  assert.equal(document.items[0]?.assistantText, "完成");
+  assert.equal(document.items[0]?.serverCompacted, false);
 });
