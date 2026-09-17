@@ -4,6 +4,8 @@ export interface AdminAiNovelConversationTool {
   inputSchema: Record<string, unknown>;
 }
 
+export type AdminAiNovelConversationUsageSource = "provider" | "missing";
+
 export interface AdminAiNovelConversationRecord {
   id: string;
   appId: "ai_novel";
@@ -18,6 +20,15 @@ export interface AdminAiNovelConversationRecord {
   assistantText: string;
   systemPrompt?: string;
   tools?: AdminAiNovelConversationTool[];
+  outcome?: "success" | "failure";
+  errorCode?: string;
+  errorMessage?: string;
+  serverCompacted?: boolean;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  reasoningTokens: number;
+  usageSource: AdminAiNovelConversationUsageSource;
   createdAt: string;
 }
 

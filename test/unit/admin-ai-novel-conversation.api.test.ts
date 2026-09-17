@@ -23,6 +23,11 @@ test("admin AINovel conversation records query accepts UID and DID pages", async
     sceneKey: "chapter_draft",
     userText: "用户正文",
     assistantText: "AI 正文",
+    promptTokens: -1,
+    completionTokens: -1,
+    totalTokens: -1,
+    reasoningTokens: -1,
+    usageSource: "missing",
     createdAt: "2026-09-07T00:00:00.000Z",
   });
 

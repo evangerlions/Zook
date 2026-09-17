@@ -11,6 +11,9 @@ test("write_turn prompt requires coordinated structural story changes", () => {
   });
 
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.match(systemPrompt, /writing assistant for OrangeWrite\(zh: 橘子写作\)/);
+  assert.doesNotMatch(systemPrompt, /write-mode AINovel agent/);
+  assert.doesNotMatch(systemPrompt, /never as AINovel/);
   assert.match(systemPrompt, /Structural-change protocol/);
   assert.match(systemPrompt, /central relationship\/romance/);
   assert.match(systemPrompt, /single Contract field/);
@@ -67,6 +70,7 @@ test("agent scenes expose only client-supplied tools including virtual read", ()
     ["read", "read_writing_context"],
   );
   const systemPrompt = String(assembly.messages[0]?.content ?? "");
+  assert.match(systemPrompt, /for OrangeWrite\(zh: 橘子写作\)/);
   assert.match(systemPrompt, /Skill discipline/);
   assert.match(systemPrompt, /call read with its listed location/);
   assert.match(systemPrompt, /<available_skills>/);
@@ -390,6 +394,7 @@ test("imported-book kickoff prompt uses continuation tools and ready checkpoint"
   );
   assert.equal(assembly.forcedToolName, undefined);
   assert.match(systemPrompt, /imported-book kickoff agent/);
+  assert.match(systemPrompt, /for OrangeWrite\(zh: 橘子写作\)/);
   assert.match(systemPrompt, /This is not a blank new-book kickoff/);
   assert.match(systemPrompt, /read_import_result/);
   assert.match(systemPrompt, /search_imported_book/);
