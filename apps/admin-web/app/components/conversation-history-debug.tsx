@@ -1,5 +1,6 @@
-import { TraceJsonPreview } from "./conversation-trace-content";
-import type { AdminAiNovelConversationRecord, AdminAiNovelConversationTool } from "../lib/types";
+import { ConversationDebugToolList } from "./conversation-debug-tool-list";
+import { TraceMarkdownContent } from "./conversation-trace-content";
+import type { AdminAiNovelConversationRecord } from "../lib/types";
 
 export function ConversationHistoryDebugDetails({
   record,
@@ -17,7 +18,9 @@ export function ConversationHistoryDebugDetails({
           <span className="conversation-history-debug-chevron" aria-hidden="true">⌄</span>
         </summary>
         {hasSystemPrompt ? (
-          <pre className="conversation-history-debug-prompt">{record.systemPrompt}</pre>
+          <div className="conversation-history-debug-prompt">
+            <TraceMarkdownContent text={record.systemPrompt!} />
+          </div>
         ) : (
           <p className="conversation-history-debug-empty">该记录生成时没有保存 system prompt。</p>
         )}
@@ -28,9 +31,7 @@ export function ConversationHistoryDebugDetails({
           <span className="conversation-history-debug-chevron" aria-hidden="true">⌄</span>
         </summary>
         {hasToolCapture && tools.length > 0 ? (
-          <div className="conversation-history-debug-tool-list">
-            {tools.map((tool, index) => <ConversationHistoryTool key={`${tool.name}:${index}`} tool={tool} />)}
-          </div>
+          <ConversationDebugToolList tools={tools} />
         ) : (
           <p className="conversation-history-debug-empty">
             {hasToolCapture ? "本轮没有可用工具。" : "该记录生成时没有保存工具定义。"}
@@ -38,15 +39,5 @@ export function ConversationHistoryDebugDetails({
         )}
       </details>
     </section>
-  );
-}
-
-function ConversationHistoryTool({ tool }: { tool: AdminAiNovelConversationTool }) {
-  return (
-    <article className="conversation-history-debug-tool">
-      <header><code>{tool.name}</code></header>
-      {tool.description ? <p>{tool.description}</p> : null}
-      <TraceJsonPreview value={tool.inputSchema} />
-    </article>
   );
 }

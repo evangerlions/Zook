@@ -25,8 +25,11 @@ export function collectTraceRequestDebugContext(
       const content = stringifyContent(message.content).trim();
       if (content) systemPrompts.add(content);
     }
+    for (const content of collectSystemPrompts(request.raw)) {
+      systemPrompts.add(content);
+    }
     for (const tool of collectTools(request.raw)) {
-      tools.set(tool.name, tool);
+      tools.set(tool.name, mergeTools(tools.get(tool.name), tool));
     }
   }
   return {
@@ -35,6 +38,16 @@ export function collectTraceRequestDebugContext(
       : {}),
     tools: [...tools.values()],
   };
+}
+
+function collectSystemPrompts(raw: unknown): string[] {
+  const prompts: string[] = [];
+  visit(raw, (value, key) => {
+    if (key !== "systemPrompt" && key !== "system_prompt") return;
+    const content = stringifyContent(value).trim();
+    if (content) prompts.push(content);
+  });
+  return prompts;
 }
 
 function collectMessages(raw: unknown): AiNovelTraceMessage[] {
@@ -55,7 +68,7 @@ function collectMessages(raw: unknown): AiNovelTraceMessage[] {
 function collectTools(raw: unknown): TraceDebugTool[] {
   const tools: TraceDebugTool[] = [];
   visit(raw, (value, key) => {
-    if (key !== "tools" || !Array.isArray(value)) return;
+    if ((key !== "tools" && key !== "suppliedTools") || !Array.isArray(value)) return;
     for (const item of value) {
       const tool = normalizeTool(item);
       if (tool) tools.push(tool);
@@ -65,17 +78,48 @@ function collectTools(raw: unknown): TraceDebugTool[] {
 }
 
 function normalizeTool(value: unknown): TraceDebugTool | undefined {
+  if (typeof value === "string") {
+    const name = readText(value);
+    return name ? { name, description: "", inputSchema: {} } : undefined;
+  }
   const outer = asRecord(value);
   if (!outer) return undefined;
-  const functionRecord = asRecord(outer.function) ?? outer;
-  const name = readText(functionRecord.name);
+  const functionRecord =
+    asRecord(outer.function) ??
+    asRecord(outer.tool) ??
+    asRecord(outer.definition) ??
+    outer;
+  const name = readText(functionRecord.name) ?? readText(functionRecord.toolName);
   if (!name) return undefined;
-  const parameters = functionRecord.parameters ?? functionRecord.inputSchema;
+  const parameters =
+    functionRecord.parameters ??
+    functionRecord.inputSchema ??
+    functionRecord.input_schema ??
+    functionRecord.schema ??
+    outer.parameters ??
+    outer.inputSchema ??
+    outer.input_schema;
   return {
     name,
-    description: readText(functionRecord.description) ?? "",
+    description:
+      readText(functionRecord.description) ?? readText(outer.description) ?? "",
     inputSchema: asRecord(parameters) ?? {},
   };
+}
+
+function mergeTools(
+  existing: TraceDebugTool | undefined,
+  candidate: TraceDebugTool,
+): TraceDebugTool {
+  if (!existing) return candidate;
+  const description = candidate.description.length >= existing.description.length
+    ? candidate.description
+    : existing.description;
+  const inputSchema = Object.keys(candidate.inputSchema).length >=
+      Object.keys(existing.inputSchema).length
+    ? candidate.inputSchema
+    : existing.inputSchema;
+  return { name: candidate.name, description, inputSchema };
 }
 
 function visit(value: unknown, callback: (value: unknown, key: string) => void, seen = new Set<object>(), key = ""): void {

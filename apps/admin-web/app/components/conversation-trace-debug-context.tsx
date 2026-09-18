@@ -1,4 +1,5 @@
-import { TraceJsonPreview } from "./conversation-trace-content";
+import { ConversationDebugToolList } from "./conversation-debug-tool-list";
+import { TraceMarkdownContent } from "./conversation-trace-content";
 import { collectTraceRequestDebugContext } from "../lib/trace-request-debug";
 import type { AiNovelTraceTurn } from "../lib/types";
 
@@ -12,7 +13,9 @@ export function ConversationTraceDebugContext({ turn }: { turn: AiNovelTraceTurn
           <span className="conversation-trace-debug-chevron" aria-hidden="true">⌄</span>
         </summary>
         {debug.systemPrompt ? (
-          <pre className="conversation-trace-debug-prompt">{debug.systemPrompt}</pre>
+          <div className="conversation-trace-debug-prompt">
+            <TraceMarkdownContent text={debug.systemPrompt} />
+          </div>
         ) : (
           <p className="conversation-trace-debug-empty">当前 Trace 没有保存 system prompt。</p>
         )}
@@ -23,15 +26,7 @@ export function ConversationTraceDebugContext({ turn }: { turn: AiNovelTraceTurn
           <span className="conversation-trace-debug-chevron" aria-hidden="true">⌄</span>
         </summary>
         {debug.tools.length > 0 ? (
-          <div className="conversation-trace-debug-tool-list">
-            {debug.tools.map((tool) => (
-              <article className="conversation-trace-debug-tool" key={tool.name}>
-                <header><code>{tool.name}</code></header>
-                {tool.description ? <p>{tool.description}</p> : null}
-                <TraceJsonPreview value={tool.inputSchema} />
-              </article>
-            ))}
-          </div>
+          <ConversationDebugToolList tools={debug.tools} />
         ) : (
           <p className="conversation-trace-debug-empty">当前 Trace 没有保存工具定义。</p>
         )}

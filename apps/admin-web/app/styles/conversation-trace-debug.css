@@ -49,14 +49,16 @@
   transform: rotate(180deg);
 }
 
-.conversation-trace-debug-prompt {
+.conversation-trace-debug-prompt,
+.conversation-history-debug-prompt {
   max-height: 360px;
   overflow: auto;
   margin: 0;
   padding: 10px;
   color: var(--text);
-  font: 0.7rem/1.5 var(--font-mono);
-  white-space: pre-wrap;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  line-height: 1.6;
   overflow-wrap: anywhere;
 }
 
@@ -67,39 +69,108 @@
   font-size: 0.72rem;
 }
 
-.conversation-trace-debug-tool-list {
+.conversation-trace-debug-tool-list,
+.conversation-debug-tool-list {
   display: grid;
   gap: 6px;
   padding: 8px;
 }
 
-.conversation-trace-debug-tool {
+.conversation-trace-debug-tool,
+.conversation-debug-tool {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: #fff;
 }
 
-.conversation-trace-debug-tool > header {
+.conversation-trace-debug-tool > header,
+.conversation-debug-tool > summary {
   padding: 6px 8px;
   border-bottom: 1px solid var(--line);
   background: rgba(60, 157, 129, 0.08);
 }
 
+.conversation-debug-tool > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.conversation-debug-tool > summary::-webkit-details-marker {
+  display: none;
+}
+
+.conversation-debug-tool > summary:hover {
+  background: rgba(60, 157, 129, 0.13);
+}
+
+.conversation-debug-tool[open] > summary {
+  border-bottom-color: var(--line);
+}
+
+.conversation-debug-tool-chevron {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  transition: transform 120ms ease;
+}
+
+.conversation-debug-tool[open] .conversation-debug-tool-chevron {
+  transform: rotate(180deg);
+}
+
+.conversation-debug-tool-body {
+  padding: 8px;
+}
+
+.conversation-debug-tool code,
 .conversation-trace-debug-tool code {
   color: #23755e;
   font: 700 0.68rem var(--font-mono);
 }
 
+.conversation-debug-tool-description,
+.conversation-debug-tool-description-empty,
 .conversation-trace-debug-tool > p {
   margin: 0;
-  padding: 6px 8px 0;
+  padding: 0;
   color: var(--text-soft);
   font-size: 0.7rem;
   line-height: 1.45;
 }
 
+.conversation-debug-tool-description-empty {
+  font-style: italic;
+}
+
+.conversation-debug-tool-description .conversation-trace-markdown {
+  color: var(--text-soft);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.conversation-debug-tool-schema-label {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-soft);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.conversation-debug-tool .conversation-trace-json-preview,
 .conversation-trace-debug-tool .conversation-trace-json-preview {
   max-height: 220px;
-  margin: 6px 8px 8px;
+  margin: 6px 0 0;
+}
+
+.conversation-trace-debug-prompt > .conversation-trace-markdown,
+.conversation-history-debug-prompt > .conversation-trace-markdown {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  line-height: 1.6;
 }
