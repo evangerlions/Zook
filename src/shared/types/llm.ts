@@ -61,7 +61,6 @@ export interface LlmEmailAlertConfig {
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
-  contextWindowTokens: number;
   openRouter: OpenRouterConfig;
   bai: BaiConfig;
   routeCircuitBreaker: LlmRouteCircuitBreakerConfig;

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  ZOOK_DEFAULT_CONTEXT_WINDOW_TOKENS,
   withContextUsage,
+  ZOOK_CONTEXT_WINDOW_TOKENS,
 } from "../../src/services/llm-context-window.ts";
 
 test("Zook emits the fixed context budget independently of the selected model", () => {
@@ -13,7 +13,7 @@ test("Zook emits the fixed context budget independently of the selected model", 
     totalTokens: 251_000,
   });
 
-  assert.equal(ZOOK_DEFAULT_CONTEXT_WINDOW_TOKENS, 256_000);
+  assert.equal(ZOOK_CONTEXT_WINDOW_TOKENS, 256_000);
   assert.equal(usage?.contextWindowTokens, 256_000);
   assert.equal(usage?.contextUsedRatio, 250_000 / 256_000);
 });

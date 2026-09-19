@@ -70,7 +70,6 @@ export class LLMManager {
       ].complete(resolution.request);
       const usage = withContextUsage(
         result.usage ?? estimateCompletionUsage(result, resolution.request),
-        resolution.contextWindowTokens,
       );
       const completedAt = this.getNow();
       await observation?.finalize({ usage, completedAt });
@@ -166,7 +165,7 @@ export class LLMManager {
             usageEstimate.addFinalToolCall(event.toolCall);
             break;
           case "usage":
-            usage = withContextUsage(event.usage, resolution.contextWindowTokens);
+            usage = withContextUsage(event.usage);
             break;
           case "done":
             finishReason = event.finishReason;
@@ -184,7 +183,6 @@ export class LLMManager {
       const completedAt = this.getNow();
       usage ??= withContextUsage(
         usageEstimate.toUsageFallback(),
-        resolution.contextWindowTokens,
       );
       await observation?.finalize({ usage, completedAt });
       await this.recordOwnedUsage(resolution.request.usageOwner, usage, completedAt);
@@ -248,7 +246,7 @@ export class LLMManager {
             yield event;
             break;
           case "usage":
-            usage = withContextUsage(event.usage, resolution.contextWindowTokens);
+            usage = withContextUsage(event.usage);
             yield {
               ...event,
               usage,
@@ -259,7 +257,6 @@ export class LLMManager {
             if (!usage) {
               usage = withContextUsage(
                 usageEstimate.toUsageFallback(),
-                resolution.contextWindowTokens,
               );
               if (usage) {
                 yield {

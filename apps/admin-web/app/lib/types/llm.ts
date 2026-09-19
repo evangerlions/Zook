@@ -46,7 +46,6 @@ export interface LlmEmailAlertConfig { llmEnabled: boolean; aiNovelFeedbackEnabl
 export interface LlmServiceConfig {
   enabled: boolean;
   defaultModelKey: string;
-  contextWindowTokens: number;
   openRouter: OpenRouterConfig;
   bai: BaiConfig;
   routeCircuitBreaker: LlmRouteCircuitBreakerConfig;
@@ -322,7 +321,6 @@ export interface LlmModelDraft {
 export interface LlmConfigDraft {
   enabled: boolean;
   defaultModelKey: string;
-  contextWindowTokens: string;
   openRouter: OpenRouterConfig;
   bai: BaiConfig;
   routeCircuitBreaker: LlmRouteCircuitBreakerConfig;

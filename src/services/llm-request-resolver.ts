@@ -1,5 +1,4 @@
 import type { LlmRouteRef } from "./llm-health.service.ts";
-import { ZOOK_DEFAULT_CONTEXT_WINDOW_TOKENS } from "./llm-context-window.ts";
 import type {
   LLMCompletionRequest,
   LLMManagerOptions,
@@ -33,7 +32,6 @@ export interface ResolvedLlmRequest {
   routeRef: LlmRouteRef;
   routingConfigRevision?: number;
   circuitBreakerEnabled: boolean;
-  contextWindowTokens: number;
 }
 
 interface LlmRequestResolverOptions {
@@ -173,10 +171,6 @@ export class LlmRequestResolver {
       routeRef: healthRouteRef,
       routingConfigRevision,
       circuitBreakerEnabled: Boolean(commonConfig.routeCircuitBreaker?.enabled),
-      contextWindowTokens:
-        commonConfig.contextWindowTokens > 0
-          ? commonConfig.contextWindowTokens
-          : ZOOK_DEFAULT_CONTEXT_WINDOW_TOKENS,
     };
   }
 
@@ -214,7 +208,6 @@ export class LlmRequestResolver {
         operation: "chat",
       },
       circuitBreakerEnabled: false,
-      contextWindowTokens: ZOOK_DEFAULT_CONTEXT_WINDOW_TOKENS,
     };
   }
 

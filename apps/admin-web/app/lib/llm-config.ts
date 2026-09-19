@@ -21,14 +21,12 @@ const VALID_ROUTING_STRATEGIES = new Set<LlmRoutingStrategy>(["auto", "fixed"]);
 const VALID_MODEL_KINDS = new Set<LlmModelKind>(["chat", "embedding"]);
 const DEFAULT_MODEL_KIND: LlmModelKind = "chat";
 const DEFAULT_PROVIDER_TIMEOUT_MS = 30000;
-const DEFAULT_CONTEXT_WINDOW_TOKENS = 256000;
 const WEIGHT_PRECISION = 100;
 
 export function createDefaultLlmConfig(): LlmConfigDraft {
   return {
     enabled: false,
     defaultModelKey: "",
-    contextWindowTokens: String(DEFAULT_CONTEXT_WINDOW_TOKENS),
     openRouter: createDefaultOpenRouterConfig(),
     bai: createDefaultBaiConfig(),
     routeCircuitBreaker: { enabled: false },
@@ -72,10 +70,6 @@ export function cloneLlmConfig(config: LlmConfigDraft | LlmServiceConfig = creat
   return {
     enabled: Boolean(config?.enabled),
     defaultModelKey: String(config?.defaultModelKey ?? ""),
-    contextWindowTokens:
-      config?.contextWindowTokens == null
-        ? String(DEFAULT_CONTEXT_WINDOW_TOKENS)
-        : String(config.contextWindowTokens),
     openRouter: normalizeOpenRouterConfigInput(config?.openRouter),
     bai: normalizeBaiConfigInput(config?.bai),
     routeCircuitBreaker: { enabled: Boolean(config?.routeCircuitBreaker?.enabled) },
@@ -146,10 +140,6 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
   return normalizeLlmConfigInput({
     enabled: Boolean(draft.enabled),
     defaultModelKey: String(draft.defaultModelKey ?? "").trim(),
-    contextWindowTokens: normalizeContextWindowTokensInput(
-      String(draft.contextWindowTokens ?? "").trim() ||
-        String(DEFAULT_CONTEXT_WINDOW_TOKENS),
-    ),
     openRouter: draft.openRouter,
     bai: draft.bai,
     routeCircuitBreaker: { enabled: Boolean(draft.routeCircuitBreaker?.enabled) },
@@ -187,7 +177,6 @@ export function serializeLlmDraftForPreview(draft: LlmConfigDraft) {
     return {
       enabled: Boolean(draft.enabled),
       defaultModelKey: String(draft.defaultModelKey ?? ""),
-      contextWindowTokens: draft.contextWindowTokens,
       openRouter: draft.openRouter,
       bai: draft.bai,
       routeCircuitBreaker: draft.routeCircuitBreaker,
@@ -229,7 +218,6 @@ export function safeSerializeLlmDraft(draft: LlmConfigDraft) {
     return {
       enabled: Boolean(draft.enabled),
       defaultModelKey: String(draft.defaultModelKey ?? ""),
-      contextWindowTokens: draft.contextWindowTokens,
       openRouter: draft.openRouter,
       bai: draft.bai,
       routeCircuitBreaker: draft.routeCircuitBreaker,
@@ -277,7 +265,6 @@ function normalizeLlmConfigInput(input: unknown): LlmServiceConfig {
   const config: LlmServiceConfig = {
     enabled: Boolean(source.enabled),
     defaultModelKey,
-    contextWindowTokens: normalizeContextWindowTokensInput(source.contextWindowTokens),
     openRouter: normalizeOpenRouterConfigInput(source.openRouter),
     bai: normalizeBaiConfigInput(source.bai),
     routeCircuitBreaker: { enabled: Boolean((source.routeCircuitBreaker as Record<string, unknown> | undefined)?.enabled) },
@@ -318,17 +305,6 @@ function normalizeLlmConfigInput(input: unknown): LlmServiceConfig {
   }
 
   return config;
-}
-
-function normalizeContextWindowTokensInput(value: unknown): number {
-  if (value === undefined || value === null || value === "") {
-    return DEFAULT_CONTEXT_WINDOW_TOKENS;
-  }
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error("contextWindowTokens 必须是正数。");
-  }
-  return Math.round(parsed);
 }
 
 function normalizeProviders(value: unknown) {
