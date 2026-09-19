@@ -30,6 +30,7 @@ import {
   isAbortError,
   isRecord,
   normalizeBaseUrl,
+  readReasoningDetailsText,
   readOptionalNonBlankString,
   readOptionalString,
   resolveStreamTimeouts,
@@ -143,7 +144,8 @@ export class BailianOpenAICompatibleProvider
       ...(toolCalls.length > 0 ? { toolCalls } : {}),
       reasoningText:
         readOptionalString(choice.message.reasoning) ??
-        readOptionalString(choice.message.reasoning_content),
+        readOptionalString(choice.message.reasoning_content) ??
+        readReasoningDetailsText(choice.message.reasoning_details),
       finishReason: readOptionalString(choice.finish_reason),
       usage: parseOpenAICompatibleChatUsage(payload.usage, this.providerName),
       providerRequestId:

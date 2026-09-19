@@ -7,11 +7,17 @@ export const DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS = 30_000;
 export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 20_000;
 export const ZOOK_LOG_BODY_MODE_OPTION = "zookLogBodyMode";
 
+export interface OpenAICompatibleReasoningDetail {
+  text?: string | null;
+  type?: string | null;
+}
+
 export interface OpenAICompatibleChoice {
   message?: {
     content?: string | null;
     reasoning_content?: string | null;
     reasoning?: string | null;
+    reasoning_details?: OpenAICompatibleReasoningDetail[] | null;
     tool_calls?: Array<{
       id?: string;
       type?: string;
@@ -25,6 +31,7 @@ export interface OpenAICompatibleChoice {
     content?: string | null;
     reasoning_content?: string | null;
     reasoning?: string | null;
+    reasoning_details?: OpenAICompatibleReasoningDetail[] | null;
     tool_calls?: Array<{
       index?: number;
       id?: string;

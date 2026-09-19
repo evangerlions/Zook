@@ -9,6 +9,7 @@ import type {
 } from "./bailian-openai-compatible-types.ts";
 import {
   buildFallbackToolCallId,
+  readReasoningDetailsText,
   readOptionalNonBlankString,
   readOptionalString,
   resolveStreamTimeouts,
@@ -124,7 +125,8 @@ async function* readStreamDeltaEvents(input: {
   }
 
   const reasoningDelta = readOptionalString(choice.delta?.reasoning) ??
-    readOptionalString(choice.delta?.reasoning_content);
+    readOptionalString(choice.delta?.reasoning_content) ??
+    readReasoningDetailsText(choice.delta?.reasoning_details);
   if (reasoningDelta) {
     yield {
       type: "reasoning_delta",
