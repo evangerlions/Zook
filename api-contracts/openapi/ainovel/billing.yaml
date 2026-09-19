@@ -1,0 +1,546 @@
+openapi: 3.2.0
+info:
+  title: AINovel Billing API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: |
+    MVP billing contract for AINovel. The client reads the canonical membership
+    state from Zook. RevenueCat and Alipay are provider adapters; their verified
+    events converge on the same Zook entitlement write path.
+
+    This contract intentionally excludes AI usage balances, product copy, and
+    provider-specific receipt payloads from the client API. AI usage is enforced
+    by Zook's AI service. Apple and Google purchases are initiated by the
+    RevenueCat SDK; Alipay checkouts are created by Zook.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+tags:
+  - name: ainovel-billing
+    description: Authenticated client billing and membership operations.
+paths:
+  /api/v1/ai_novel/billing/catalog:
+    get:
+      operationId: getAiNovelBillingCatalog
+      summary: Get the active AINovel billing products
+      description: |
+        Returns logical products and the payment providers currently available
+        to this authenticated AINovel account. Product display names and UI copy
+        remain client-owned. Prices are returned only for providers whose price
+        is controlled by Zook, such as Alipay; App Store and Google Play prices
+        are read from RevenueCat's native store products. If an active
+        entitlement is managed by another provider, that provider is returned as
+        the only available purchase path and the other providers are marked
+        unavailable.
+      tags: [ainovel-billing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - name: platform
+          in: query
+          required: true
+          description: Client surface requesting the catalog.
+          schema:
+            $ref: "#/components/schemas/BillingPlatform"
+        - name: distribution
+          in: query
+          required: true
+          description: Distribution channel of the running client.
+          schema:
+            $ref: "#/components/schemas/DistributionChannel"
+      responses:
+        "200":
+          description: Available billing catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogResponse"
+        "401":
+          description: Missing or invalid bearer authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: App scope or account region mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/ai_novel/billing/sync:
+    post:
+      operationId: syncAiNovelBillingState
+      summary: Refresh the signed-in user's RevenueCat membership state
+      description: |
+        Performs a best-effort provider refresh for the authenticated user's
+        RevenueCat customer and returns the current Zook membership state. The
+        server derives the RevenueCat customer ID from the authenticated Zook
+        account; the client must not submit a user ID, receipt, or entitlement.
+        A valid RevenueCat webhook may still arrive asynchronously after this
+        response. If the provider cannot be refreshed, Zook returns the last
+        committed state with syncStatus=pending.
+      tags: [ainovel-billing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
+      responses:
+        "200":
+          description: Current state after a best-effort synchronization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+        "401":
+          description: Missing or invalid bearer authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: App scope or account region mismatch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Provider synchronization is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+
+  /api/v1/ai_novel/billing/checkouts:
+    post:
+      operationId: createAiNovelBillingCheckout
+      summary: Create an Alipay checkout
+      description: |
+        Creates a server-owned Alipay order for a logical product. The server
+        resolves the product price from its catalog and binds the checkout to
+        the authenticated account. The client must never submit an amount,
+        currency, merchant ID, or provider order number.
+
+        China Android store/direct builds receive an Alipay native order string.
+        China Web and Windows receive a provider-generated HTML form. The
+        response uses one launch object so the client does not need to know
+        provider-specific response field names.
+      tags: [ainovel-billing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCheckoutRequest"
+      responses:
+        "201":
+          description: Alipay checkout created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+        "400":
+          description: Product or platform is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid bearer authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Alipay is unavailable for this account or product region
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Idempotency conflict or an active membership managed by another provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/ai_novel/billing/checkouts/{checkoutId}:
+    get:
+      operationId: getAiNovelBillingCheckout
+      summary: Get an Alipay checkout status
+      description: |
+        Returns the server-owned checkout state after the client returns from
+        Alipay. A processing checkout means payment confirmation or entitlement
+        delivery is still being completed; the client must poll briefly and then
+        fall back to the normal membership read path.
+      tags: [ainovel-billing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/CheckoutId"
+      responses:
+        "200":
+          description: Checkout status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutStatusResponse"
+        "401":
+          description: Missing or invalid bearer authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Checkout not found for this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/ai_novel/billing/checkouts/{checkoutId}/sync:
+    post:
+      operationId: syncAiNovelBillingCheckout
+      summary: Actively synchronize an Alipay checkout
+      description: |
+        Queries Alipay for the server-owned checkout and, when the payment is
+        final, runs the canonical entitlement write path. This is used after
+        the native Alipay SDK or browser return and may be retried with the
+        same checkout ID. It is idempotent. The browser return URL and the
+        native SDK result are never treated as payment proof by themselves.
+      tags: [ainovel-billing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - $ref: "#/components/parameters/CheckoutId"
+      responses:
+        "200":
+          description: Current checkout and VIP state after synchronization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutStatusResponse"
+        "401":
+          description: Missing or invalid bearer authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Checkout not found for this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    XAppId:
+      name: X-App-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        const: ai_novel
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated key reused only when retrying the same checkout request.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    CheckoutId:
+      name: checkoutId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  schemas:
+    AccountRegion:
+      type: string
+      enum: [CN, GLOBAL, UNKNOWN]
+    BillingPlatform:
+      type: string
+      enum: [ios, android, macos, web, windows]
+    DistributionChannel:
+      type: string
+      enum:
+        [
+          app_store,
+          google_play,
+          china_android_store,
+          direct_android,
+          web,
+          windows,
+        ]
+    AlipayCheckoutPlatform:
+      type: string
+      enum: [android, web, windows]
+    AlipayCheckoutDistribution:
+      type: string
+      enum: [china_android_store, direct_android, web, windows]
+    BillingProvider:
+      type: string
+      enum: [revenuecat, alipay]
+    BillingProductKey:
+      type: string
+      enum:
+        [
+          vip_monthly,
+          vip_quarterly,
+          vip_yearly,
+          svip_monthly,
+          svip_quarterly,
+          svip_yearly,
+        ]
+    BillingTier:
+      type: string
+      enum: [vip, svip]
+    CheckoutStatus:
+      type: string
+      enum: [pending, processing, completed, failed, expired]
+    SyncStatus:
+      type: string
+      enum: [synchronized, pending]
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amountMinor, currency]
+      properties:
+        amountMinor:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Amount in the smallest unit of the currency.
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+    BillingProduct:
+      type: object
+      additionalProperties: false
+      required: [productKey, tier, billingPeriod, providers]
+      properties:
+        productKey:
+          $ref: "#/components/schemas/BillingProductKey"
+        tier:
+          $ref: "#/components/schemas/BillingTier"
+        billingPeriod:
+          type: string
+          description: ISO 8601 duration, for example P1M or P1Y.
+          enum: [P1M, P3M, P1Y]
+        providers:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/BillingProductProvider"
+    BillingProductProvider:
+      type: object
+      additionalProperties: false
+      required: [provider, available, price]
+      properties:
+        provider:
+          $ref: "#/components/schemas/BillingProvider"
+        available:
+          type: boolean
+        blockedReason:
+          type: [string, "null"]
+          enum:
+            [
+              active_membership_managed_elsewhere,
+              unsupported_distribution,
+              provider_unavailable,
+              null,
+            ]
+        providerProductId:
+          type: [string, "null"]
+          description: Store or provider product identifier used by the client/provider adapter.
+        providerPackageId:
+          type: [string, "null"]
+          description: RevenueCat package identifier when the provider uses offerings.
+        providerEntitlementId:
+          type: [string, "null"]
+          description: RevenueCat entitlement identifier or equivalent provider entitlement key.
+        price:
+          description: Server-controlled price. Null means the native store supplies the price.
+          oneOf:
+            - $ref: "#/components/schemas/Money"
+            - type: "null"
+    CatalogData:
+      type: object
+      additionalProperties: false
+      required: [accountRegion, platform, distribution, products]
+      properties:
+        accountRegion:
+          $ref: "#/components/schemas/AccountRegion"
+        platform:
+          $ref: "#/components/schemas/BillingPlatform"
+        distribution:
+          $ref: "#/components/schemas/DistributionChannel"
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/BillingProduct"
+    CatalogResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/CatalogData"
+        requestId: { type: string }
+    SyncData:
+      type: object
+      additionalProperties: false
+      required: [syncStatus, vip]
+      properties:
+        syncStatus:
+          $ref: "#/components/schemas/SyncStatus"
+        vip:
+          $ref: "../common/users.yaml#/components/schemas/VipInfo"
+    SyncResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/SyncData"
+        requestId: { type: string }
+    SyncRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          enum: [purchase, restore, app_start, retry]
+          description: Non-authoritative client intent used for diagnostics only.
+    CreateCheckoutRequest:
+      type: object
+      additionalProperties: false
+      required: [productKey, provider, platform, distribution]
+      properties:
+        productKey:
+          $ref: "#/components/schemas/BillingProductKey"
+        provider:
+          type: string
+          const: alipay
+        platform:
+          $ref: "#/components/schemas/AlipayCheckoutPlatform"
+        distribution:
+          $ref: "#/components/schemas/AlipayCheckoutDistribution"
+    Checkout:
+      type: object
+      additionalProperties: false
+      required: [checkoutId, provider, productKey, status, launch, expiresAt]
+      properties:
+        checkoutId: { type: string, minLength: 1 }
+        provider:
+          type: string
+          const: alipay
+        productKey: { type: string, minLength: 1 }
+        status:
+          $ref: "#/components/schemas/CheckoutStatus"
+        launch:
+          $ref: "#/components/schemas/AlipayCheckoutLaunch"
+        expiresAt:
+          type: string
+          format: date-time
+    AlipayCheckoutLaunch:
+      type: object
+      additionalProperties: false
+      required: [mode, payload]
+      properties:
+        mode:
+          type: string
+          enum: [native_order, html_form]
+        payload:
+          type: string
+          minLength: 1
+          description: Alipay order string for native_order or provider-generated HTML form for html_form.
+    CheckoutResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/Checkout"
+        requestId: { type: string }
+    CheckoutStatusData:
+      type: object
+      additionalProperties: false
+      required: [checkoutId, status, vip]
+      properties:
+        checkoutId: { type: string, minLength: 1 }
+        status:
+          $ref: "#/components/schemas/CheckoutStatus"
+        vip:
+          $ref: "../common/users.yaml#/components/schemas/VipInfo"
+    CheckoutStatusResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/CheckoutStatusData"
+        requestId: { type: string }
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/BillingProviderConflictData"
+            - type: "null"
+        requestId: { type: string }
+    BillingProviderConflictData:
+      type: object
+      additionalProperties: false
+      required: [currentProvider, currentSource, expiresAt]
+      properties:
+        currentProvider:
+          $ref: "#/components/schemas/BillingProvider"
+        currentSource:
+          type: string
+          enum: [app_store, play_store, alipay, rc_web]
+        expiresAt:
+          type: string
+          format: date-time
+        managementUrl:
+          type: [string, "null"]
+          format: uri

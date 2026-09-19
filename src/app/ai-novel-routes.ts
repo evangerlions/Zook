@@ -14,22 +14,56 @@ import {
   shouldExposeLocalAiRequestDebugFields,
 } from "./encrypted-ai-routes.ts";
 import { tryHandleAiNovelDebugTraceRoutes } from "./ai-novel-debug-trace-routes.ts";
+import { tryHandleAiNovelBillingRoutes } from "./ainovel-billing-routes.ts";
 export async function tryHandleAiNovelRoutes(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
-  const traceResponse = await tryHandleAiNovelDebugTraceRoutes.call(this, request);
+  const billingResponse = await tryHandleAiNovelBillingRoutes.call(
+    this,
+    request,
+  );
+  if (billingResponse) return billingResponse;
+  const traceResponse = await tryHandleAiNovelDebugTraceRoutes.call(
+    this,
+    request,
+  );
   if (traceResponse) return traceResponse;
-  if (request.method === "GET" && request.path === "/api/v1/ai_novel/statistics") return await handleAiNovelStatistics.call(this, request);
-  if (request.method === "POST" && request.path === "/api/v1/ai_novel/statistics/snapshot") return await handleAiNovelStatisticsSnapshot.call(this, request);
-  if (request.method === "POST" && request.path === "/api/v1/ai_novel/agent-skills/query") return await handleAiNovelSkillQuery.call(this, request);
-  if (request.method === "POST" && request.path === "/api/v1/ai_novel/agent-skills/fetch") return await handleAiNovelSkillFetch.call(this, request);
-  if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/chat-completions") return await handleAiNovelChatCompletions.call(this, request);
-  if (request.method === "POST" && request.path === "/api/v1/ai_novel/ai/embeddings") return await handleAiNovelEmbeddings.call(this, request);
+  if (
+    request.method === "GET" &&
+    request.path === "/api/v1/ai_novel/statistics"
+  )
+    return await handleAiNovelStatistics.call(this, request);
+  if (
+    request.method === "POST" &&
+    request.path === "/api/v1/ai_novel/statistics/snapshot"
+  )
+    return await handleAiNovelStatisticsSnapshot.call(this, request);
+  if (
+    request.method === "POST" &&
+    request.path === "/api/v1/ai_novel/agent-skills/query"
+  )
+    return await handleAiNovelSkillQuery.call(this, request);
+  if (
+    request.method === "POST" &&
+    request.path === "/api/v1/ai_novel/agent-skills/fetch"
+  )
+    return await handleAiNovelSkillFetch.call(this, request);
+  if (
+    request.method === "POST" &&
+    request.path === "/api/v1/ai_novel/ai/chat-completions"
+  )
+    return await handleAiNovelChatCompletions.call(this, request);
+  if (
+    request.method === "POST" &&
+    request.path === "/api/v1/ai_novel/ai/embeddings"
+  )
+    return await handleAiNovelEmbeddings.call(this, request);
   return undefined;
 }
 
-export async function handleAiNovelStatistics(this: BackendRouteContext,
+export async function handleAiNovelStatistics(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticateProductRequest(request, "ai_novel");
@@ -39,7 +73,8 @@ export async function handleAiNovelStatistics(this: BackendRouteContext,
   );
 }
 
-export async function handleAiNovelStatisticsSnapshot(this: BackendRouteContext,
+export async function handleAiNovelStatisticsSnapshot(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticateProductRequest(request, "ai_novel");
@@ -54,7 +89,8 @@ export async function handleAiNovelStatisticsSnapshot(this: BackendRouteContext,
   );
 }
 
-export async function handleAiNovelSkillQuery(this: BackendRouteContext,
+export async function handleAiNovelSkillQuery(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   return handleEncryptedAiRequest.call(this, request, async () => {
@@ -62,7 +98,8 @@ export async function handleAiNovelSkillQuery(this: BackendRouteContext,
   });
 }
 
-export async function handleAiNovelSkillFetch(this: BackendRouteContext,
+export async function handleAiNovelSkillFetch(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   return handleEncryptedAiRequest.call(this, request, async (body) => {
@@ -70,7 +107,8 @@ export async function handleAiNovelSkillFetch(this: BackendRouteContext,
   });
 }
 
-export async function handleAiNovelChatCompletions(this: BackendRouteContext, 
+export async function handleAiNovelChatCompletions(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticateProductRequest(request, "ai_novel");
@@ -98,12 +136,15 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
     }
 
     if (stream) {
-      return encryptedAiStreamResponse.call(this, 
+      return encryptedAiStreamResponse.call(
+        this,
         request,
         keyId,
         this.aiNovelLlmService.createChatCompletionStream(body, {
-          exposeLocalDebug:
-            shouldExposeLocalAiRequestDebugFields.call(this, request),
+          exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(
+            this,
+            request,
+          ),
           requestId: request.requestId as string,
           userId: auth.userId,
           routingIdentity,
@@ -115,16 +156,22 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
     }
 
     const result = await this.aiNovelLlmService.createChatCompletion(body, {
-      exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(this, request),
+      exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(
+        this,
+        request,
+      ),
       requestId: request.requestId as string,
       userId: auth.userId,
       routingIdentity,
       locale: this.resolveRequestLocale(request),
       accountRegion,
     });
-    const localDebugResponseText =
-      extractLocalAiDebugResponseText.call(this, result);
-    return await encryptedAiResponse.call(this, 
+    const localDebugResponseText = extractLocalAiDebugResponseText.call(
+      this,
+      result,
+    );
+    return await encryptedAiResponse.call(
+      this,
       request,
       keyId,
       {
@@ -148,11 +195,18 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
       throw error;
     }
 
-    logEncryptedAiBusinessError.call(this, request, applicationError, "response");
-    return await encryptedAiResponse.call(this, 
+    logEncryptedAiBusinessError.call(
+      this,
+      request,
+      applicationError,
+      "response",
+    );
+    return await encryptedAiResponse.call(
+      this,
       request,
       keyId,
-      buildEncryptedAiErrorPayload.call(this, 
+      buildEncryptedAiErrorPayload.call(
+        this,
         request,
         applicationError,
         request.requestId as string,
@@ -161,7 +215,8 @@ export async function handleAiNovelChatCompletions(this: BackendRouteContext,
   }
 }
 
-export async function handleAiNovelEmbeddings(this: BackendRouteContext, 
+export async function handleAiNovelEmbeddings(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   return handleEncryptedAiRequest.call(this, request, async (body, auth) => {

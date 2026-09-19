@@ -1,0 +1,358 @@
+openapi: 3.1.1
+info:
+  title: AINovel Billing Admin API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: >
+    Admin-only read APIs for AINovel payment orders. This contract is separate
+    from the Flutter client bundle. Docker stdout logs remain the deep-dive
+    diagnostic source; these endpoints read the durable billing records.
+servers:
+  - url: https://api.zook.dev
+security:
+  - adminSession: []
+tags:
+  - name: admin-ainovel-billing
+    description: AINovel payment order investigation.
+paths:
+  /api/v1/admin/apps/ai_novel/billing/orders:
+    get:
+      operationId: listAiNovelBillingAdminOrders
+      summary: List AINovel billing orders
+      tags: [admin-ainovel-billing]
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/PaymentId"
+        - $ref: "#/components/parameters/CheckoutId"
+        - $ref: "#/components/parameters/ProviderTransactionId"
+        - $ref: "#/components/parameters/Provider"
+        - $ref: "#/components/parameters/Platform"
+        - $ref: "#/components/parameters/Distribution"
+        - $ref: "#/components/parameters/PaymentStatus"
+        - name: createdFrom
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: createdTo
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Paginated AINovel billing orders.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBillingOrderListResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/v1/admin/apps/ai_novel/billing/orders/{paymentId}:
+    get:
+      operationId: getAiNovelBillingAdminOrder
+      summary: Get an AINovel billing order detail
+      tags: [admin-ainovel-billing]
+      parameters:
+        - $ref: "#/components/parameters/PaymentIdPath"
+        - name: eventsCursor
+          in: query
+          required: false
+          schema: { type: string, minLength: 1, maxLength: 512 }
+        - name: eventsLimit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: AINOVEL billing order detail with bounded event history.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBillingOrderDetailResponse"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+components:
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: adminSession
+  parameters:
+    UserId:
+      name: userId
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 128 }
+    PaymentId:
+      name: paymentId
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 128 }
+    PaymentIdPath:
+      name: paymentId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 128 }
+    CheckoutId:
+      name: checkoutId
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 128 }
+    ProviderTransactionId:
+      name: providerTransactionId
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 256 }
+    Provider:
+      name: provider
+      in: query
+      required: false
+      schema: { type: string, enum: [revenuecat, alipay] }
+    Platform:
+      name: platform
+      in: query
+      required: false
+      schema: { type: string, enum: [ios, android, macos, web, windows] }
+    Distribution:
+      name: distribution
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          [
+            app_store,
+            google_play,
+            china_android_store,
+            direct_android,
+            web,
+            windows,
+          ]
+    PaymentStatus:
+      name: status
+      in: query
+      required: false
+      schema: { $ref: "#/components/schemas/AdminBillingStatus" }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string, minLength: 1, maxLength: 512 }
+  responses:
+    BadRequest:
+      description: Invalid filter or pagination parameter.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+    Unauthorized:
+      description: Admin session is missing or expired.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+    Forbidden:
+      description: Admin lacks AINOVEL billing read permission.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+    NotFound:
+      description: Billing order is not found in the authorized app scope.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/AdminErrorResponse" }
+  schemas:
+    AdminBillingStatus:
+      type: string
+      enum:
+        [
+          pending_payment,
+          provider_paid,
+          entitlement_active,
+          failed,
+          expired,
+          closed,
+          refunded,
+          revoked,
+          conflict,
+        ]
+    AdminBillingOrder:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          paymentId,
+          appId,
+          userId,
+          provider,
+          productKey,
+          paymentStatus,
+          entitlementStatus,
+          entitlementKey,
+          tier,
+          purchaseSource,
+          createdAt,
+          updatedAt,
+        ]
+      properties:
+        paymentId: { type: string }
+        appId: { type: string, const: ai_novel }
+        userId: { type: string }
+        accountRegion: { type: string, enum: [CN, GLOBAL, UNKNOWN] }
+        platform: { type: string }
+        distribution: { type: string }
+        provider: { type: string, enum: [revenuecat, alipay] }
+        productKey: { type: string }
+        entitlementKey: { type: string }
+        tier: { type: string, enum: [vip, svip] }
+        billingPeriod: { type: [string, "null"], enum: [P1M, P3M, P1Y, null] }
+        purchaseSource:
+          { type: string, enum: [app_store, play_store, alipay, rc_web] }
+        catalogRevision: { type: [string, "null"] }
+        providerProductId: { type: [string, "null"] }
+        providerPackageId: { type: [string, "null"] }
+        providerEntitlementId: { type: [string, "null"] }
+        durationSeconds: { type: [integer, "null"], minimum: 0 }
+        amountMinor: { type: [integer, "null"], minimum: 0 }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
+        paymentStatus: { $ref: "#/components/schemas/AdminBillingStatus" }
+        entitlementStatus: { type: string }
+        checkoutId: { type: [string, "null"] }
+        providerOrderId: { type: [string, "null"] }
+        providerTransactionId: { type: [string, "null"] }
+        environment:
+          { type: [string, "null"], enum: [PRODUCTION, SANDBOX, null] }
+        paidAt: { type: [string, "null"], format: date-time }
+        expiresAt: { type: [string, "null"], format: date-time }
+        deletedAt: { type: [string, "null"], format: date-time }
+        redactedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AdminBillingTransaction:
+      type: object
+      additionalProperties: false
+      required: [transactionId, provider, transactionKind, status, occurredAt]
+      properties:
+        transactionId: { type: string }
+        provider: { type: string, enum: [revenuecat, alipay] }
+        transactionKind:
+          { type: string, enum: [purchase, renewal, refund, revoke] }
+        providerOrderId: { type: [string, "null"] }
+        providerTransactionId: { type: [string, "null"] }
+        relatedTransactionId: { type: [string, "null"] }
+        providerRefundId: { type: [string, "null"] }
+        refundAmountMinor: { type: [integer, "null"], minimum: 0 }
+        refundReason: { type: [string, "null"] }
+        status: { type: string }
+        amountMinor: { type: [integer, "null"], minimum: 0 }
+        currency: { type: [string, "null"], pattern: "^[A-Z]{3}$" }
+        occurredAt: { type: string, format: date-time }
+    AdminBillingGrant:
+      type: object
+      additionalProperties: false
+      required:
+        [grantId, entitlementKey, provider, status, validFrom, validUntil]
+      properties:
+        grantId: { type: string }
+        entitlementKey: { type: string }
+        planKey: { type: [string, "null"] }
+        tier: { type: [string, "null"], enum: [vip, svip, null] }
+        provider: { type: string, enum: [revenuecat, alipay] }
+        providerEntitlementId: { type: [string, "null"] }
+        sourceTransactionId: { type: [string, "null"] }
+        status: { type: string }
+        validFrom: { type: string, format: date-time }
+        validUntil: { type: [string, "null"], format: date-time }
+        autoRenew: { type: [boolean, "null"] }
+    AdminBillingEvent:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          eventId,
+          appId,
+          provider,
+          eventType,
+          verificationResult,
+          processingStatus,
+          occurredAt,
+        ]
+      properties:
+        eventId: { type: string }
+        appId: { type: string, const: ai_novel }
+        provider: { type: string, enum: [revenuecat, alipay] }
+        source:
+          { type: string, enum: [client, webhook, provider_query, worker] }
+        eventType: { type: string }
+        providerEventId: { type: [string, "null"] }
+        verificationResult:
+          { type: string, enum: [verified, rejected, not_applicable] }
+        processingStatus:
+          {
+            type: string,
+            enum:
+              [received, processing, processed, retrying, dead_letter, ignored],
+          }
+        attempt: { type: integer, minimum: 0 }
+        errorCode: { type: [string, "null"] }
+        payloadHash: { type: [string, "null"] }
+        safeMetadata: { type: object, additionalProperties: true }
+        occurredAt: { type: string, format: date-time }
+        processedAt: { type: [string, "null"], format: date-time }
+    AdminBillingOrderListData:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBillingOrder" }
+        nextCursor: { type: [string, "null"] }
+    AdminBillingOrderDetailData:
+      type: object
+      additionalProperties: false
+      required:
+        [order, transactions, entitlementGrants, events, eventsNextCursor]
+      properties:
+        order: { $ref: "#/components/schemas/AdminBillingOrder" }
+        transactions:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBillingTransaction" }
+        entitlementGrants:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBillingGrant" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/AdminBillingEvent" }
+        eventsNextCursor: { type: [string, "null"] }
+    AdminBillingOrderListResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/AdminBillingOrderListData" }
+        requestId: { type: string }
+    AdminBillingOrderDetailResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/AdminBillingOrderDetailData" }
+        requestId: { type: string }
+    AdminErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }

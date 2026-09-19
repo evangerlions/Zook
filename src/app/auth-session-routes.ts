@@ -2,9 +2,11 @@ import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader, maskSensitiveString } from "../shared/utils.ts";
 import { PublicContractValidator } from "../generated/openapi/public-contract-validator.ts";
+import { buildEmptyVipInfo } from "../modules/billing/billing-membership.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 
-export async function handleCreateQrLogin(this: BackendRouteContext, 
+export async function handleCreateQrLogin(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const body = this.validationPipe.asObject(request.body);
@@ -35,23 +37,21 @@ export async function handleCreateQrLogin(this: BackendRouteContext,
       resourceType: "qr_login_session",
       payload: {
         errorCode:
-          error instanceof ApplicationError
-            ? error.code
-            : "SYS_INTERNAL_ERROR",
+          error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
       },
     });
     throw error;
   }
 }
 
-export async function handleConfirmQrLogin(this: BackendRouteContext, 
+export async function handleConfirmQrLogin(
+  this: BackendRouteContext,
   request: HttpRequest,
   loginId: string,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticate(request);
   const body = this.validationPipe.asObject(request.body);
-  const appId =
-    this.validationPipe.optionalString(body, "appId") ?? auth.appId;
+  const appId = this.validationPipe.optionalString(body, "appId") ?? auth.appId;
   const scanToken = this.validationPipe.requireString(body, "scanToken");
 
   try {
@@ -96,16 +96,15 @@ export async function handleConfirmQrLogin(this: BackendRouteContext,
       payload: {
         confirmed: false,
         errorCode:
-          error instanceof ApplicationError
-            ? error.code
-            : "SYS_INTERNAL_ERROR",
+          error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
       },
     });
     throw error;
   }
 }
 
-export async function handlePollQrLogin(this: BackendRouteContext, 
+export async function handlePollQrLogin(
+  this: BackendRouteContext,
   request: HttpRequest,
   loginId: string,
 ): Promise<HttpResponse<unknown>> {
@@ -152,16 +151,15 @@ export async function handlePollQrLogin(this: BackendRouteContext,
       resourceId: loginId,
       payload: {
         errorCode:
-          error instanceof ApplicationError
-            ? error.code
-            : "SYS_INTERNAL_ERROR",
+          error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
       },
     });
     throw error;
   }
 }
 
-export async function handleRefresh(this: BackendRouteContext, 
+export async function handleRefresh(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const body = this.validationPipe.asObject(request.body);
@@ -183,19 +181,17 @@ export async function handleRefresh(this: BackendRouteContext,
   );
 }
 
-export async function handleGetCurrentUser(this: BackendRouteContext, 
+export async function handleGetCurrentUser(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<CurrentUserDocument>> {
   const auth = await this.authenticate(request);
   const appId = this.appContextResolver.resolvePostAuth(request, auth.appId);
   const result: CurrentUserDocument = {
     appId,
-    accountRegion: await this.resolveAccountRegion(
-      request,
-      appId,
-      auth.userId,
-    ),
+    accountRegion: await this.resolveAccountRegion(request, appId, auth.userId),
     user: await this.userService.getProfile(auth.userId),
+    vip: buildEmptyVipInfo(),
   };
 
   await this.auditInterceptor.record({
@@ -213,7 +209,8 @@ export async function handleGetCurrentUser(this: BackendRouteContext,
   return this.ok(result, request.requestId as string);
 }
 
-export async function handleLogout(this: BackendRouteContext, 
+export async function handleLogout(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticate(request, {
@@ -255,16 +252,14 @@ export async function handleLogout(this: BackendRouteContext,
   });
 }
 
-export async function handleDeleteCurrentAppAccount(this: BackendRouteContext, 
+export async function handleDeleteCurrentAppAccount(
+  this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown>> {
   const auth = await this.authenticate(request);
   const body = this.validationPipe.asObject(request.body);
   const appId = this.validationPipe.requireString(body, "appId").trim();
-  const confirmation = this.validationPipe.requireString(
-    body,
-    "confirmation",
-  );
+  const confirmation = this.validationPipe.requireString(body, "confirmation");
   this.appAccessGuard.assertScope(appId, auth.appId);
 
   try {
@@ -299,9 +294,7 @@ export async function handleDeleteCurrentAppAccount(this: BackendRouteContext,
       payload: {
         deleted: false,
         errorCode:
-          error instanceof ApplicationError
-            ? error.code
-            : "SYS_INTERNAL_ERROR",
+          error instanceof ApplicationError ? error.code : "SYS_INTERNAL_ERROR",
       },
     });
     throw error;

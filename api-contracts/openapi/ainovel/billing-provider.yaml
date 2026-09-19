@@ -1,0 +1,197 @@
+openapi: 3.2.0
+info:
+  title: AINovel Billing Provider Callbacks
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: |
+    Provider-facing callbacks for AINovel billing. These endpoints are not
+    included in the Flutter client bundle. Each provider-specific payload is
+    verified and normalized into the internal BillingEvent before the single
+    Zook entitlement write path is called.
+servers:
+  - url: https://api.zook.dev
+security: []
+tags:
+  - name: ainovel-billing-provider
+    description: Provider callbacks consumed by Zook.
+paths:
+  /api/v1/ai_novel/billing/webhooks/revenuecat:
+    post:
+      operationId: receiveAiNovelRevenueCatWebhook
+      summary: Receive a RevenueCat subscription event
+      description: |
+        RevenueCat sends a JSON envelope containing api_version and event.
+        Zook verifies the configured RevenueCat webhook authentication or HMAC
+        signature over the raw request body before parsing JSON. It resolves the
+        authenticated Zook account from app_user_id, original_app_user_id, or
+        the aliases, validates the RevenueCat app ID and environment, then
+        normalizes the event into the internal BillingEvent contract.
+
+        Retries use the same event ID and must be idempotent. A valid event for
+        an account that is not yet known is recorded for reconciliation and
+        acknowledged without granting an unowned entitlement. Unknown event
+        types are recorded as ignored after authentication; they must not be
+        treated as successful purchases.
+      tags: [ainovel-billing-provider]
+      parameters:
+        - $ref: "#/components/parameters/RevenueCatSignature"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueCatWebhookRequest"
+      responses:
+        "200":
+          description: Event accepted, recorded, or safely ignored
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: OK
+        "400":
+          description: Invalid provider payload or signature
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: invalid
+        "500":
+          description: Temporary processing failure; provider may retry
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: retry
+
+  /api/v1/ai_novel/billing/webhooks/alipay:
+    post:
+      operationId: receiveAiNovelAlipayWebhook
+      summary: Receive an Alipay asynchronous payment notification
+      description: |
+        Alipay sends an application/x-www-form-urlencoded notification. Zook
+        verifies the RSA signature from the raw form fields, then validates the
+        merchant app, seller, out_trade_no, total_amount, and final trade
+        status against the server-created checkout. Only TRADE_SUCCESS or
+        TRADE_FINISHED can produce a successful payment event. Repeated
+        notifications are acknowledged idempotently.
+
+        The endpoint must return the exact text success after a valid
+        notification has been accepted. It must not grant an entitlement from
+        the browser return URL alone.
+      tags: [ainovel-billing-provider]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/AlipayNotification"
+      responses:
+        "200":
+          description: Notification accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: success
+        "400":
+          description: Invalid signature or notification payload
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: failure
+        "500":
+          description: Temporary processing failure; Alipay may retry
+          content:
+            text/plain:
+              schema:
+                type: string
+                const: failure
+
+components:
+  parameters:
+    RevenueCatSignature:
+      name: X-RevenueCat-Webhook-Signature
+      in: header
+      required: false
+      description: HMAC signature configured for the RevenueCat webhook. A configured authorization header may also be required by deployment policy.
+      schema:
+        type: string
+        minLength: 1
+  schemas:
+    RevenueCatWebhookRequest:
+      type: object
+      additionalProperties: true
+      required: [api_version, event]
+      properties:
+        api_version:
+          type: string
+          minLength: 1
+        event:
+          $ref: "#/components/schemas/RevenueCatEvent"
+    RevenueCatEvent:
+      type: object
+      additionalProperties: true
+      required: [id, type, app_user_id, store, environment]
+      properties:
+        id: { type: string, minLength: 1 }
+        type:
+          type: string
+          description: RevenueCat event type. Zook handles known types explicitly and records unknown types as ignored.
+        app_id: { type: string }
+        app_user_id: { type: string, minLength: 1 }
+        original_app_user_id: { type: string }
+        aliases:
+          type: array
+          items: { type: string, minLength: 1 }
+        store: { type: string, minLength: 1 }
+        environment:
+          type: string
+          enum: [PRODUCTION, SANDBOX]
+        product_id: { type: string }
+        transaction_id: { type: string }
+        original_transaction_id: { type: string }
+        purchased_at_ms: { type: integer, format: int64 }
+        expiration_at_ms:
+          type: [integer, "null"]
+          format: int64
+        entitlement_ids:
+          type: array
+          items: { type: string, minLength: 1 }
+        cancel_reason: { type: string }
+        expiration_reason: { type: string }
+    AlipayNotification:
+      type: object
+      additionalProperties: true
+      required:
+        [
+          app_id,
+          seller_id,
+          out_trade_no,
+          trade_no,
+          trade_status,
+          total_amount,
+          sign,
+          sign_type,
+        ]
+      properties:
+        app_id: { type: string, minLength: 1 }
+        seller_id: { type: string, minLength: 1 }
+        out_trade_no: { type: string, minLength: 1, maxLength: 64 }
+        trade_no: { type: string, minLength: 1 }
+        trade_status:
+          type: string
+          enum: [WAIT_BUYER_PAY, TRADE_SUCCESS, TRADE_FINISHED, TRADE_CLOSED]
+        total_amount:
+          type: string
+          pattern: "^[0-9]+(\\.[0-9]{1,2})?$"
+        sign: { type: string, minLength: 1 }
+        sign_type: { type: string, const: RSA2 }
+        notify_id: { type: string }
+        notify_time: { type: string }
+        notify_type: { type: string }
+        charset: { type: string }
+        version: { type: string }
