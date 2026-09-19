@@ -212,7 +212,7 @@ components:
         provider: { type: string, enum: [revenuecat, alipay] }
         productKey: { type: string }
         entitlementKey: { type: string }
-        tier: { type: string, enum: [vip, svip] }
+        tier: { type: string, enum: [plus, pro, max] }
         billingPeriod: { type: [string, "null"], enum: [P1M, P3M, P1Y, null] }
         purchaseSource:
           { type: string, enum: [app_store, play_store, alipay, rc_web] }
@@ -264,7 +264,7 @@ components:
         grantId: { type: string }
         entitlementKey: { type: string }
         planKey: { type: [string, "null"] }
-        tier: { type: [string, "null"], enum: [vip, svip, null] }
+        tier: { type: [string, "null"], enum: [plus, pro, max, null] }
         provider: { type: string, enum: [revenuecat, alipay] }
         providerEntitlementId: { type: [string, "null"] }
         sourceTransactionId: { type: [string, "null"] }

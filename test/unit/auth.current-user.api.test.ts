@@ -41,7 +41,7 @@ test("password login returns user profile, refresh keeps user profile, and users
 
   assert.equal(meResponse.statusCode, 200);
   assert.equal(meResponse.body.data.appId, "app_a");
-  assert.deepEqual(meResponse.body.data.vip, {
+  assert.deepEqual(meResponse.body.data.membership, {
     active: false,
     state: "free",
     tier: null,

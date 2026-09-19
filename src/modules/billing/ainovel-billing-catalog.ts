@@ -20,21 +20,27 @@ type ProductDefinition = Pick<
 type ProductProvider = BillingProduct["providers"][number];
 
 const PRODUCT_DEFINITIONS: readonly ProductDefinition[] = [
-  { productKey: "vip_monthly", tier: "vip", billingPeriod: "P1M" },
-  { productKey: "vip_quarterly", tier: "vip", billingPeriod: "P3M" },
-  { productKey: "vip_yearly", tier: "vip", billingPeriod: "P1Y" },
-  { productKey: "svip_monthly", tier: "svip", billingPeriod: "P1M" },
-  { productKey: "svip_quarterly", tier: "svip", billingPeriod: "P3M" },
-  { productKey: "svip_yearly", tier: "svip", billingPeriod: "P1Y" },
+  { productKey: "plus_monthly", tier: "plus", billingPeriod: "P1M" },
+  { productKey: "plus_quarterly", tier: "plus", billingPeriod: "P3M" },
+  { productKey: "plus_yearly", tier: "plus", billingPeriod: "P1Y" },
+  { productKey: "pro_monthly", tier: "pro", billingPeriod: "P1M" },
+  { productKey: "pro_quarterly", tier: "pro", billingPeriod: "P3M" },
+  { productKey: "pro_yearly", tier: "pro", billingPeriod: "P1Y" },
+  { productKey: "max_monthly", tier: "max", billingPeriod: "P1M" },
+  { productKey: "max_quarterly", tier: "max", billingPeriod: "P3M" },
+  { productKey: "max_yearly", tier: "max", billingPeriod: "P1Y" },
 ];
 
 const MOCK_ALIPAY_PRICES: Record<BillingProductKey, number> = {
-  vip_monthly: 990,
-  vip_quarterly: 2490,
-  vip_yearly: 7990,
-  svip_monthly: 1990,
-  svip_quarterly: 4990,
-  svip_yearly: 14990,
+  plus_monthly: 3990,
+  plus_quarterly: 9990,
+  plus_yearly: 29900,
+  pro_monthly: 10900,
+  pro_quarterly: 26900,
+  pro_yearly: 79900,
+  max_monthly: 19900,
+  max_quarterly: 49900,
+  max_yearly: 159900,
 };
 
 export function buildAiNovelBillingCatalog(

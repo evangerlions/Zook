@@ -94,7 +94,7 @@ components:
           $ref: "#/components/schemas/CurrentUserData"
     CurrentUserData:
       type: object
-      required: [appId, accountRegion, user, vip]
+      required: [appId, accountRegion, user, membership]
       properties:
         appId: { type: string }
         accountRegion:
@@ -102,9 +102,9 @@ components:
           enum: [CN, GLOBAL, UNKNOWN]
         user:
           $ref: "#/components/schemas/UserSummary"
-        vip:
-          $ref: "#/components/schemas/VipInfo"
-    VipInfo:
+        membership:
+          $ref: "#/components/schemas/MembershipInfo"
+    MembershipInfo:
       type: object
       additionalProperties: false
       required: [active, state, tier, planKey, expiresAt, autoRenew, source]
@@ -112,14 +112,14 @@ components:
       properties:
         active:
           type: boolean
-          description: Whether the account currently has access to the app's VIP benefits.
+          description: Whether the account currently has access to the app's membership benefits.
         state:
           type: string
           enum: [free, active, cancelled, grace_period, expired]
         tier:
           type: [string, "null"]
-          enum: [vip, svip, null]
-          description: Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP.
+          enum: [plus, pro, max, null]
+          description: Effective active membership tier for the app account.
         planKey:
           type: [string, "null"]
           minLength: 1
