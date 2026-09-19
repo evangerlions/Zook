@@ -1,3 +1,4 @@
+import { LightTickPlanningService } from "./modules/lighttick/planning/planning.service.ts";
 import type { ApplicationDatabase } from "./infrastructure/database/application-database.ts";
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import type { JobQueue } from "./infrastructure/queue/job-queue.ts";
@@ -45,7 +46,8 @@ export function attachApplicationLightTickWorkers(input: { runtime: LightTickRun
   queue: JobQueue; llmManager: LLMManager; notificationService: NotificationService; database: ApplicationDatabase;
   appAiRoutingConfigService: AppAiRoutingConfigService }) {
   input.runtime.worker = new LightTickWorker(new LightTickAiRunner(input.repository, input.llmManager, undefined,
-    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene)));
+    scene => input.appAiRoutingConfigService.resolveLightTickScene(scene)),
+    async job => await new LightTickPlanningService(input.repository).failRun({appId:"lighttick",userId:String(job.payload.user_id)},String(job.payload.run_id)));
   input.runtime.notifications = new LightTickNotificationService(input.repository, input.queue,
     { dispatch: async request => await input.notificationService.dispatchPush(request) },
     async (payload, error) => await input.database.insertFailedEvent({ id: randomId("failed_event"), appId: "lighttick",

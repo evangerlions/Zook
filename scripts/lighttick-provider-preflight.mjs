@@ -26,7 +26,7 @@ function inspectContainer(name) {
   if (!name) return {};
   try {
     const output = execFileSync("docker", ["inspect", "--format", "{{json .Config.Env}}", name], {
-      encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 5000,
     });
     return parseEnvironment(JSON.parse(output));
   } catch {
@@ -37,7 +37,7 @@ function inspectContainer(name) {
 function fileReadableInContainer(container, path) {
   if (!container || !path) return false;
   try {
-    execFileSync("docker", ["exec", container, "test", "-r", path], { stdio: "ignore" });
+    execFileSync("docker", ["exec", container, "test", "-r", path], { stdio: "ignore", timeout: 5000 });
     return true;
   } catch {
     return false;

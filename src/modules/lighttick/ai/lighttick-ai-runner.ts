@@ -1,3 +1,5 @@
+import { LightTickPlanningAiRunner } from "../planning/planning-ai-runner.ts";
+import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { randomId } from "../../../shared/utils.ts";
@@ -6,6 +8,7 @@ import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
 import { LightTickPlanService } from "../lighttick-plan.service.ts";
 import { assembleChatContext, assembleLightTickContext } from "./lighttick-ai-context.ts";
 import { LIGHTTICK_AI_SCENES, LIGHTTICK_OUTPUT_SCHEMAS, LIGHTTICK_SCENE_PROMPTS, LIGHTTICK_SYSTEM_PROMPT, type LightTickAiSceneName } from "./lighttick-ai-scenes.ts";
+import { LIGHTTICK_PROMPT_VERSION } from "./lighttick-ai-prompts.ts";
 import { parseLightTickJson, validatePlanOutput, validateProposalOutput, validateReviewOutput } from "./lighttick-ai-validation.ts";
 
 export class LightTickAiRunner {
@@ -14,14 +17,17 @@ export class LightTickAiRunner {
     private readonly resolveScene = async (name: LightTickAiSceneName) => LIGHTTICK_AI_SCENES[name]) {}
 
   async execute(owner: LightTickOwner, runId: string, sceneName: LightTickAiSceneName): Promise<LightTickAiRunRow> {
-    const run = await this.repository.getAiRun(owner, runId);
+    let run = await this.repository.getAiRun(owner, runId);
     if (!run) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "AI run was not found.");
+    if (run.inputContext.planning_session_id) return await new LightTickPlanningAiRunner(this.repository,this.llm,this.clock,this.resolveScene).execute(owner,runId);
     if (!["queued", "failed"].includes(run.status)) return run;
     const scene = await this.resolveScene(sceneName); const started = this.clock();
+    run = { ...run, promptVersion: LIGHTTICK_PROMPT_VERSION };
+    let context: any;
     await this.repository.saveAiRun({ ...run, status: "running", attemptCount: run.attemptCount + 1,
       startedAt: started.toISOString(), updatedAt: started.toISOString() });
     try {
-      const context = sceneName === "coach_chat"
+      context = sceneName === "coach_chat"
         ? await assembleChatContext(this.repository, owner, run.inputContext,
           String(run.inputContext.thread_id ?? run.inputContext.goal_id ?? "default"))
         : await assembleLightTickContext(this.repository, owner, run.inputContext);
@@ -44,7 +50,15 @@ export class LightTickAiRunner {
         latencyMs: completed.getTime() - started.getTime(), startedAt: started.toISOString(), completedAt: completed.toISOString(),
         updatedAt: completed.toISOString() });
     } catch (error) {
-      const completed = this.clock(); const fallback = this.fallback(scene.fallback, run.inputContext);
+      const completed = this.clock();
+      let fallback: Record<string, unknown> | undefined;
+      // Recovery must not bypass authorization or output constraints.
+      if (context) {
+        try {
+          const candidate = this.fallback(scene.fallback, run.inputContext, context);
+          if (candidate) fallback = this.validate(sceneName, candidate, context);
+        } catch { /* Preserve original failure; never materialize invalid fallback. */ }
+      }
       const materializedId = fallback ? await this.materializeOutput(owner, run, sceneName, fallback, "template") : undefined;
       return await this.repository.saveAiRun({ ...run, status: fallback ? "succeeded" : "failed", attemptCount: run.attemptCount + 1,
         resourceId: materializedId ?? run.resourceId, provider: fallback ? "deterministic_template" : run.provider, output: fallback,
@@ -58,11 +72,13 @@ export class LightTickAiRunner {
     output: Record<string, unknown>, source: "ai" | "template"): Promise<string | undefined> {
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
       return await this.materializePlan(owner, run, sceneName, output, source);
-    if (["weekly_review", "monthly_review"].includes(sceneName)) {
+    if (["daily_review", "weekly_review", "monthly_review"].includes(sceneName)) {
       const review = (await this.repository.listReviews(owner)).find(item => item.id === run.resourceId);
       if (!review) return undefined;
+      // A delayed run cannot erase an already decided review or reopen its actions.
+      if (review.output.action_state) return review.id;
       await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
-        status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() });
+        status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() }, review.version);
       return review.id;
     }
     if (sceneName === "change_proposal") {
@@ -106,7 +122,7 @@ export class LightTickAiRunner {
       periodStart: String(run.inputContext.period_start ?? this.clock().toISOString().slice(0, 10)),
       periodEnd: String(run.inputContext.period_end ?? run.inputContext.period_start ?? this.clock().toISOString().slice(0, 10)),
       source, tasks: rawTasks.map(task => ({ title: String(task.title), estimatedMinutes: Number(task.estimated_minutes),
-        priority: Number.isInteger(task.priority) ? task.priority : undefined, scheduledFor: task.scheduled_for })),
+        priority: Number.isInteger(task.priority) ? task.priority : undefined, scheduledFor: task.scheduled_for, ...taskDetailsFromOutput(task) })),
       metadata: { ai_run_id: run.id, assumptions: Array.isArray(output.assumptions) ? output.assumptions : [],
         summary: typeof output.summary === "string" ? output.summary : undefined },
     });
@@ -114,12 +130,13 @@ export class LightTickAiRunner {
   }
 
   private validate(scene: LightTickAiSceneName, output: Record<string, unknown>, context: any) {
-    if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return validatePlanOutput(output, {
-      availableMinutes: Number(context.request.available_minutes ?? context.goal?.constraints?.weekly_available_minutes ?? 300),
-      periodStart: String(context.request.period_start ?? new Date().toISOString().slice(0, 10)),
-      periodEnd: String(context.request.period_end ?? context.request.period_start ?? new Date().toISOString().slice(0, 10)),
-    });
-    if (["weekly_review", "monthly_review"].includes(scene)) return validateReviewOutput(output);
+    if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) {
+      if ((!context.request.period_start || !context.request.period_end) &&
+        Array.isArray(output.tasks) && output.tasks.some((task: any) => task?.scheduled_for !== undefined))
+        throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Scheduling requires an explicit period.");
+      return validatePlanOutput(output, this.planConstraints(context));
+    }
+    if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return validateReviewOutput(output);
     if (scene === "change_proposal") return validateProposalOutput(output, new Set(context.tasks.map((task: any) => task.id)));
     if (typeof output.message !== "string" || output.message.length > 2000)
       throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "Coach output does not match its schema.");
@@ -128,7 +145,7 @@ export class LightTickAiRunner {
 
   private outputSchema(scene: LightTickAiSceneName) {
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.plan;
-    if (["weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
+    if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
     if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;
     return LIGHTTICK_OUTPUT_SCHEMAS.coach_reply;
   }
@@ -136,8 +153,7 @@ export class LightTickAiRunner {
   private constraintInstructions(scene: LightTickAiSceneName, context: any): string {
     if (!["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene))
       return "Use only IDs and facts present in INPUT_JSON.";
-    const availableMinutes = Number(context.request.available_minutes ?? context.request.weekly_available_minutes ??
-      context.goal?.constraints?.weekly_available_minutes ?? 300);
+    const { availableMinutes } = this.planConstraints(context);
     const periodStart = typeof context.request.period_start === "string" ? context.request.period_start : undefined;
     const periodEnd = typeof context.request.period_end === "string" ? context.request.period_end : undefined;
     const scheduling = periodStart && periodEnd
@@ -146,14 +162,36 @@ export class LightTickAiRunner {
     return `PLAN_CONSTRAINTS: The sum of estimated_minutes must be at most ${availableMinutes}. ${scheduling}`;
   }
 
-  private fallback(policy: string, input: Record<string, unknown>) {
+  private planConstraints(context: any) {
+    const availableMinutes = this.availableMinutes(context);
+    const periodStart = String(context.request.period_start ?? this.clock().toISOString().slice(0, 10));
+    const periodEnd = String(context.request.period_end ?? periodStart);
+    for (const date of [periodStart, periodEnd]) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) ||
+        new Date(date).toISOString().slice(0, 10) !== date)
+        throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "A valid planning period is required.");
+    }
+    if (periodEnd < periodStart)
+      throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Planning period ends before it starts.");
+    return { availableMinutes, periodStart, periodEnd };
+  }
+
+  private availableMinutes(context: any): number {
+    const minutes = Number(context.request.available_minutes ?? context.request.weekly_available_minutes ??
+      context.goal?.constraints?.weekly_available_minutes ?? 300);
+    if (!Number.isFinite(minutes) || minutes < 1)
+      throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "A positive available time budget is required.");
+    return minutes;
+  }
+
+  private fallback(policy: string, input: Record<string, unknown>, context: any) {
     if (policy === "facts_only" && input.coach_scene) return {
       message: "AI 暂时不可用。你可以先查看当前目标、计划和执行事实，稍后安全重试。",
       source: "facts_only", scene: input.coach_scene,
     };
     if (policy === "facts_only") return { insights: [], recommendations: [], source: "facts_only" };
     if (policy === "template") return { tasks: [{ title: "Review goal and choose the next smallest step",
-      estimated_minutes: Math.min(30, Number(input.available_minutes ?? 30)), priority: 100 }], source: "deterministic_template" };
+      estimated_minutes: Math.min(30, Math.floor(this.availableMinutes(context))), priority: 100 }], source: "deterministic_template" };
     return undefined;
   }
 }

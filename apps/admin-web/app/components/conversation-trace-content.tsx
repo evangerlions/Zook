@@ -18,7 +18,7 @@ export function TraceMessageContent({ content }: { content: unknown }) {
   }
   if (typeof content === "string") {
     const parsed = parseJson(content);
-    return parsed === undefined ? <MarkdownContent text={content} /> : <TraceJsonPreview value={parsed} />;
+    return parsed === undefined ? <TraceMarkdownContent text={content} /> : <TraceJsonPreview value={parsed} />;
   }
   return <TraceJsonPreview value={content} />;
 }
@@ -27,7 +27,7 @@ export function TraceJsonPreview({ value }: { value: unknown }) {
   return <div className="conversation-trace-json-preview">{renderJsonValue(value, 0)}</div>;
 }
 
-function MarkdownContent({ text }: { text: string }) {
+export function TraceMarkdownContent({ text }: { text: string }) {
   const lines = text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
   const blocks: ReactNode[] = [];
   let codeLines: string[] | undefined;
@@ -139,7 +139,7 @@ function isRenderedTextField(fieldName?: string): boolean {
 }
 
 function JsonTextValue({ text }: { text: string }) {
-  return <div className="conversation-trace-json-text-value"><MarkdownContent text={text} /></div>;
+    return <div className="conversation-trace-json-text-value"><TraceMarkdownContent text={text} /></div>;
 }
 
 function parseJson(value: string): unknown {

@@ -1,3 +1,4 @@
+import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
@@ -315,6 +316,8 @@ export class BackendApplication extends BackendRouteContext {
       }
     }
 
+    const planningResponse = await tryHandleLightTickPlanningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if (planningResponse) return planningResponse;
     const lightTickResponse = await tryHandleLightTickV1Routes(
       this,
       this.lighttickEnabled,
