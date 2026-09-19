@@ -287,6 +287,18 @@ function LlmFormConfigEditor({
             value={draft.defaultModelKey}
           />
         </Field>
+
+        <Field hint="影响 usage.contextWindowTokens 与 AINovel 客户端压缩阈值。" label="上下文窗口 tokens">
+          <Input
+            inputMode="numeric"
+            onChange={(event) => onDraftChange((current) => ({
+              ...current,
+              contextWindowTokens: event.target.value,
+            }))}
+            placeholder="256000"
+            value={draft.contextWindowTokens}
+          />
+        </Field>
       </div>
 
       <section className="config-item llm-proxy-config">

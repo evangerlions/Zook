@@ -646,7 +646,7 @@ components:
         contextWindowTokens:
           type: integer
           minimum: 1
-          description: Zook's fixed 256,000-token Agent operating budget.
+          description: Zook's configured Agent operating budget (default 256,000 tokens).
         contextUsedRatio:
           type: number
           minimum: 0
