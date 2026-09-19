@@ -1,3 +1,5 @@
+import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
+import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
 import type { PlanningSession } from "../../../modules/lighttick/planning/planning.types.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
@@ -134,7 +136,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
           AND (target.id=guest.id OR (target.push_provider=guest.push_provider AND target.push_token=guest.push_token))`,
         [command.appId, command.guestUserId, command.targetUserId]);
       const ownerTables = ["zook_lighttick_goals", "zook_lighttick_plan_cycles", "zook_lighttick_tasks",
-        "zook_lighttick_task_steps", "zook_lighttick_execution_events", "zook_lighttick_reviews",
+        "zook_lighttick_task_steps", "zook_lighttick_execution_events", "zook_lighttick_reflections", "zook_lighttick_reviews",
         "zook_lighttick_change_proposals", "zook_lighttick_ai_runs", "zook_lighttick_change_log",
         "zook_lighttick_sync_cursors", "zook_lighttick_devices", "zook_lighttick_insight_audits", "zook_lighttick_chat_messages", "zook_lighttick_dna_insights"];
       for (const table of ownerTables) await this.query(
@@ -438,6 +440,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
       change.entityVersion,change.operation,JSON.stringify(change.snapshot ?? null),change.changedAt]);
   }
 
+  async listReflections(owner: LightTickOwner): Promise<LightTickReflectionRow[]> {
+    return new PostgresReflectionStore(this.query.bind(this), mapRow).listReflections(owner);
+  }
+  async saveReflection(row: LightTickReflectionRow, expectedVersion?: number): Promise<LightTickReflectionRow> {
+    return new PostgresReflectionStore(this.query.bind(this), mapRow).saveReflection(row, expectedVersion);
+  }
   async listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]> {
     const result = await this.query("SELECT * FROM zook_lighttick_reviews WHERE app_id=$1 AND user_id=$2 ORDER BY period_start DESC", [owner.appId, owner.userId]);
     return result.rows.map(mapRow<LightTickReviewRow>);
@@ -548,7 +556,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
+    const tables = ["reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1

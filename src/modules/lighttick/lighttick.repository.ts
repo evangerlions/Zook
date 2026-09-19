@@ -1,3 +1,4 @@
+import type { LightTickReflectionRow } from "./lighttick-reflection.service.ts";
 import type { PlanningSession } from "./planning/planning.types.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow,
@@ -46,6 +47,8 @@ export interface LightTickRepository {
   getDnaInsight(owner: LightTickOwner, id: string): Promise<LightTickDnaInsightRow | undefined>;
   listDnaInsights(owner: LightTickOwner, goalId?: string): Promise<LightTickDnaInsightRow[]>;
   saveDnaInsight(row: LightTickDnaInsightRow, expectedVersion?: number): Promise<LightTickDnaInsightRow>;
+  listReflections(owner: LightTickOwner): Promise<LightTickReflectionRow[]>;
+  saveReflection(row: LightTickReflectionRow, expectedVersion?: number): Promise<LightTickReflectionRow>;
   listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]>;
   saveReview(row: LightTickReviewRow, expectedVersion?: number): Promise<LightTickReviewRow>;
   getProposal(owner: LightTickOwner, id: string): Promise<LightTickChangeProposalRow | undefined>;

@@ -1209,11 +1209,68 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/LightTickTaskStepCommandRequest" }
       responses: *taskCommandResponses
+  /api/v1/lighttick/reflections:
+    get:
+      operationId: listLightTickReflections
+      tags: [lighttick-reviews]
+      summary: List saved personal reflections for one goal without invoking AI
+      description: Registered account required. Owner-scoped journal; content is never implicitly included in AI context.
+      parameters:
+        - name: goal_id
+          in: query
+          required: true
+          schema: { $ref: "#/components/schemas/LightTickId" }
+      responses:
+        "200":
+          description: Saved reflections, newest edits first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items: { type: array, items: { $ref: "#/components/schemas/LightTickReflectionData" } }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+  /api/v1/lighttick/reflections/{reflectionId}:
+    put:
+      operationId: saveLightTickReflection
+      tags: [lighttick-reviews]
+      summary: Create or edit a user-authored reflection with optimistic versioning
+      description: Registered account required. Client-generated stable ID. base_version=0 creates; edits require current version. Identical lost-response replay returns saved version; stale edits return 409. Does not invoke AI or change tasks.
+      parameters:
+        - name: reflectionId
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-zA-Z0-9_-]{8,128}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LightTickReflectionSaveRequest" }
+      responses:
+        "200":
+          description: Saved original user content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/LightTickReflectionData" }
+        "400": { $ref: "#/components/responses/LightTickError" }
+        "403": { $ref: "#/components/responses/LightTickError" }
+        "404": { $ref: "#/components/responses/LightTickError" }
+        "409": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/review-runs:
     post:
       operationId: createLightTickReviewRun
       tags: [lighttick-reviews, lighttick-ai]
-      summary: Create a server-derived weekly or monthly review run
+      summary: Create a fresh daily, weekly or monthly review for selected dates or a whole plan
+      description: Optional plan_id restricts facts to that plan and requires its exact dates. Without it, dates select this goal. Each new idempotency key creates an independent analysis; replay returns the same run. Private journal content is not loaded automatically.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -3021,6 +3078,32 @@ components:
         plan_b_available: { type: boolean }
         empty_state_action: { enum: [create_goal, generate_plan, resume_goal, rest, none] }
         snapshot_version: { type: integer, minimum: 0 }
+    LightTickReflectionSaveRequest:
+      type: object
+      required: [goal_id, period_start, period_end, content, base_version]
+      properties:
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        plan_id: { $ref: "#/components/schemas/LightTickId" }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        content: { type: string, minLength: 1, maxLength: 4000 }
+        next_action: { type: string, maxLength: 1000 }
+        base_version: { type: integer, minimum: 0 }
+      additionalProperties: false
+    LightTickReflectionData:
+      type: object
+      required: [id, goal_id, period_start, period_end, content, next_action, version, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/LightTickId" }
+        goal_id: { $ref: "#/components/schemas/LightTickId" }
+        plan_id: { $ref: "#/components/schemas/LightTickId" }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        content: { type: string }
+        next_action: { type: string }
+        version: { $ref: "#/components/schemas/LightTickVersion" }
+        created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
     LightTickReviewPeriod:
       type: string
       enum: [daily, weekly, monthly]
@@ -3031,11 +3114,13 @@ components:
       type: object
       required: [goal_id, period, period_start, period_end]
       properties:
+        plan_id: { $ref: "#/components/schemas/LightTickId", description: Optional whole-plan scope; must belong to goal and match both dates. }
         goal_id: { $ref: "#/components/schemas/LightTickId" }
         period: { $ref: "#/components/schemas/LightTickReviewPeriod" }
         period_start: { type: string, format: date }
         period_end: { type: string, format: date }
         mood: { type: string, maxLength: 100 }
+        next_action: { type: string, maxLength: 1000, description: User explicitly supplied intended next action; not an instruction to mutate tasks. }
         self_reflection: { type: string, maxLength: 4000 }
       additionalProperties: false
     LightTickReviewData:

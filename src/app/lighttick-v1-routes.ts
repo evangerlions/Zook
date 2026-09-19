@@ -1,3 +1,4 @@
+import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
@@ -448,6 +449,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, data);
   }
 
+  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request);
+  if (reflectionResult) return response(context, request, reflectionResult);
+
   if (request.path === `${PREFIX}review-runs` && request.method === "POST") {
     const body = bodyOf(request); const period = stringOf(body.period, "period");
     if (!["daily", "weekly", "monthly"].includes(period))
@@ -455,7 +459,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const reviewScene = period === "daily" ? "daily_review" : period === "monthly" ? "monthly_review" : "weekly_review";
     const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
       const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "daily" ? "day" : period === "monthly" ? "month" : "week",
-        stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"));
+        stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"),
+        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true });
       const run = await createRun(runtime, owner, "review", reviewScene, review.id, { ...body, review_id: review.id });
       return runData(run);
     });
@@ -478,7 +483,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "coach_reply"); return response(context, request, data, 202);
   }
   if (request.path === `${PREFIX}reviews` && request.method === "GET")
-    return response(context, request, { items: (await runtime.repository.listReviews(owner)).map(reviewData), next_cursor: null });
+    return response(context, request, { items: (await runtime.repository.listReviews(owner)).sort((a,b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id)).map(reviewData), next_cursor: null });
   const reviewMatch = request.path.match(/^\/api\/v1\/lighttick\/reviews\/([^/]+)$/);
   if (reviewMatch && request.method === "GET") {
     const review = (await runtime.repository.listReviews(owner)).find(item => item.id === reviewMatch[1]);

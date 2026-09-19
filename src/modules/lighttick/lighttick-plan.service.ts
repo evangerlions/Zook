@@ -2,6 +2,7 @@ import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
 import { transitionGoal, transitionPlan } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
+import { businessDateAt } from "./lighttick-today.service.ts";
 import { randomId } from "../../shared/utils.ts";
 
 import { validateTaskDetails, type TaskDetails } from "./lighttick-task-details.ts";
@@ -39,6 +40,19 @@ export class LightTickPlanService {
     const taskInputs = Array.isArray(current.proposal.tasks) ? current.proposal.tasks as unknown as ProposedTaskInput[] : [];
     this.validateTasks(taskInputs); const timestamp = this.clock().toISOString();
     return await this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
+      const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+      const key = (title: string, date?: string, fallback = current.periodStart) => `${title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase()}|${
+        date ? (date.length === 10 ? date : businessDateAt(new Date(date), timezone)) : fallback}`;
+      const existing = (await this.repository.listTasks(owner)).filter(t => t.goalId === current.goalId && t.status !== "cancelled");
+      const planDates = new Map((await this.repository.listPlans(owner, current.goalId)).map(p => [p.id, p.periodStart]));
+      const seen = new Set(existing.map(t => key(t.title, t.scheduledFor, planDates.get(t.planId))));
+      for (const input of taskInputs) {
+        const identity = key(input.title, input.scheduledFor);
+        if (seen.has(identity)) throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+          "This goal already has the same task on this date. Edit the draft or adjust the existing task.");
+        seen.add(identity);
+      }
       const goal = await this.requireGoal(owner, current.goalId);
       if (goal.status === "draft") {
         const nextGoal = { ...goal, status: transitionGoal("draft", "active"), updatedAt: timestamp };

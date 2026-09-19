@@ -41,11 +41,13 @@ export class LightTickPlanningAiRunner {
     try {
       const scene = await this.resolveScene(name);
       const input = structuredClone(run.inputContext) as any;
+      input.existing_tasks = (await this.repository.listTasks(owner)).filter(t => t.goalId === input.goal_id && t.status !== "cancelled")
+        .slice(-100).map(t => ({ title: t.title, date: t.scheduledFor, status: t.status, estimated_minutes: t.estimatedMinutes }));
       delete input.planning_session_id; delete input.snapshot;
       const context = input.context as PlanningSession["context"];
       const schema = clarify ? CLARIFY_SCHEMA : LIGHTTICK_OUTPUT_SCHEMAS.plan;
       const constraints = clarify ? "Fields are candidate assumptions requiring user review; message must ask at most two questions."
-        : `PLAN_CONSTRAINTS: total estimated_minutes at most ${context.available_minutes!.value}; scheduled_for must be from ${context.period_start!.value} through ${context.period_end!.value}.`;
+        : `PLAN_CONSTRAINTS: Existing tasks remain active; do not duplicate them. total estimated_minutes at most ${context.available_minutes!.value}; scheduled_for must be from ${context.period_start!.value} through ${context.period_end!.value}.`;
       const prefix = `${LIGHTTICK_SCENE_PROMPTS[name]}\nOUTPUT_JSON_SCHEMA=${JSON.stringify(schema)}\n${constraints}\nINPUT_JSON=`;
       while (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + prefix + JSON.stringify(input)) > scene.maxContextTokens && input.conversation?.length) input.conversation.shift();
       if (Buffer.byteLength(LIGHTTICK_SYSTEM_PROMPT + prefix + JSON.stringify(input)) > scene.maxContextTokens)

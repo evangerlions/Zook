@@ -1104,3 +1104,13 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - `POST /change-proposal-runs` 可传 `review_id` 让调整引用该复盘，引用必须属于计划的目标；可选 `goal_id` 也须匹配。跨目标引用返回 422 `LIGHTTICK_PLAN_CONSTRAINT_FAILED`，找不到复盘返回 404。
 - 接受 `/reviews/{id}/actions` 的建议只创建 `proposed_plan`，响应和 `action_state.proposed_plan_id` 可用于重新打开草案。新周期从用户本地今日与复盘结束次日的较晚者起算，不把任务排回已结束窗口；仍须用户显式确认后才进入 Today。原任务完成事实保持不变。
 - 本轮未改变鉴权、app scope 和公共路径；指导字段存储依赖增量迁移 `064_lighttick_task_guidance.sql`。部署迁移及后端后再启用新客户端能力。完整顺序和验证边界见 `docs/lighttick/app-loop-integration.md`。
+
+
+### LightTick 通用规划与个人复盘（2026-09-19）
+
+- `GET /api/v1/lighttick/reflections?goal_id=...`：返回该目标已保存个人复盘，`data.items` 按更新时间倒序。需要注册 LightTick membership，与其他产品/用户隔离。
+- `PUT /api/v1/lighttick/reflections/{reflectionId}`：客户端生成8–128字符字母/数字/下划线/连字符ID；body 为 `goal_id, period_start, period_end, content, base_version`，可选 `plan_id, next_action`。正文1–4000字符（不可纯空白），下一步最多1000字符；日期为有效 YYYY-MM-DD 且起止有序。`base_version=0`新建，后续使用服务端版本；相同请求响应丢失重放返回已保存版本，其他旧版本写入409。返回 `data` 包含id、原文、下一步、范围、version、created_at、updated_at。goal不可跨记录改绑，plan必须属于同目标。保存不调用AI、不创建待办。删除LightTick账户同时删除这些记录。
+- `POST /api/v1/lighttick/review-runs`：原有daily/weekly/monthly兼容；新增可选 `plan_id`，要求属于goal且起止日期与计划一致，只聚合此计划。省略时按目标与日期聚合；过去七天由客户端明确提交滚动日期，不等于自然周。新增可选`next_action`（最多1000字符），与显式`self_reflection`一起分析，但不会直接执行。每个新Idempotency-Key生成独立review；重放同key返回同run。已保存笔记和私人任务备注不会被自动读取给模型。
+- review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
+- 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
+- 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。

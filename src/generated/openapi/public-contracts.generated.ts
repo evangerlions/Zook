@@ -13622,6 +13622,12 @@ export const LightTickReviewRunRequestSchema = {
     "period_end"
   ],
   "properties": {
+    "plan_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]+$"
+    },
     "goal_id": {
       "type": "string",
       "minLength": 8,
@@ -13648,6 +13654,11 @@ export const LightTickReviewRunRequestSchema = {
       "type": "string",
       "maxLength": 100
     },
+    "next_action": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "User explicitly supplied intended next action; not an instruction to mutate tasks."
+    },
     "self_reflection": {
       "type": "string",
       "maxLength": 4000
@@ -13657,11 +13668,13 @@ export const LightTickReviewRunRequestSchema = {
 } as const;
 
 export type LightTickReviewRunRequest = {
+  "plan_id"?: string;
   "goal_id": string;
   "period": "daily" | "weekly" | "monthly";
   "period_start": string;
   "period_end": string;
   "mood"?: string;
+  "next_action"?: string;
   "self_reflection"?: string;
 };
 
