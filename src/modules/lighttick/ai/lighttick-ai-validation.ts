@@ -1,6 +1,9 @@
 import { ApplicationError } from "../../../shared/errors.ts";
 
-type TaskOutput = { title: string; estimated_minutes: number; priority?: number; scheduled_for?: string };
+import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
+import type { LightTickTaskGuidance } from "../lighttick.types.ts";
+
+type TaskOutput = { title: string; estimated_minutes: number; priority?: number; scheduled_for?: string; completion_criteria?: string; steps?: string[]; guidance?: LightTickTaskGuidance };
 
 export function parseLightTickJson(text: string): Record<string, unknown> {
   let value: unknown;
@@ -15,6 +18,10 @@ export function validatePlanOutput(output: Record<string, unknown>, constraints:
     throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan requires a positive time budget.");
   if (!Array.isArray(output.tasks) || output.tasks.length < 1 || output.tasks.length > 50)
     throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan task count is invalid.");
+  if ((output.summary !== undefined && (typeof output.summary !== "string" || output.summary.length > 2000)) ||
+    (output.assumptions !== undefined && (!Array.isArray(output.assumptions) || output.assumptions.length > 10 ||
+      output.assumptions.some(item => typeof item !== "string" || item.length > 500))))
+    throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Plan summary or assumptions are invalid.");
   let total = 0;
   for (const task of output.tasks as TaskOutput[]) {
     if (!task || typeof task.title !== "string" || !task.title.trim() || task.title.length > 200 ||
@@ -26,6 +33,7 @@ export function validatePlanOutput(output: Record<string, unknown>, constraints:
       new Date(task.scheduled_for.slice(0, 10)).toISOString().slice(0, 10) !== task.scheduled_for.slice(0, 10) ||
       task.scheduled_for.slice(0, 10) < constraints.periodStart || task.scheduled_for.slice(0, 10) > constraints.periodEnd))
       throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "AI plan task is outside the requested period.");
+    taskDetailsFromOutput(task);
     total += task.estimated_minutes;
   }
   if (total > constraints.availableMinutes)

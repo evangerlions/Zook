@@ -669,3 +669,6 @@ PostgreSQL migration 017 增加 app-scoped code/token 唯一约束、recipient b
 
 ### LightTick 对话规划 P2（2026-09-13）
 新增 PlanningSession 六个公共接口、摘要来源合并、异步澄清/草案调整、版本失效与原子确认；默认由 LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED 关闭。迁移 060 为独立增量表，支持 owner 删除。新草案复用现有计划/任务，旧客户端无需修改；原生入口和真实 provider 质量验收属于 P3。接入协议见 README_API.md；契约位于 api-contracts/openapi/lighttick/api.yaml。
+
+
+LightTick App 闭环增量：计划确认已原子保存 guidance、完成标准与步骤；Today 按用户业务日聚合活跃计划并排除完成目标；复盘支持日/周/月且按目标、时区收集执行事实，run 携带 review_id；调整可引用同目标复盘，复盘建议生成未来可审阅周期。迁移 064 新增任务 guidance。上述为候选实现能力，不等于真实 provider 质量、真机推送或 Online 发布已验收；见 `docs/lighttick/app-loop-integration.md`。

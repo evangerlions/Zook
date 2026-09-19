@@ -16,13 +16,16 @@ export async function assembleLightTickContext(repository: LightTickRepository, 
   const reviewId = typeof input.review_id === "string" ? input.review_id : undefined;
   const review = reviewId ? (await repository.listReviews(owner)).find(item => item.id === reviewId) : undefined;
   if (reviewId && !review) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Review was not found.");
+  if ((goalId && plan && plan.goalId !== goalId) || (review && goalId && review.goalId !== goalId) ||
+    (review && plan && review.goalId !== plan.goalId))
+    throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Context resources must belong to the same goal.");
   return {
     request: input,
     profile: await repository.getProfile(owner).then(value => value ? ({ timezone: value.timezone, pace: value.pace }) : undefined),
     goal: goal ? { id: goal.id, title: goal.title, status: goal.status, target_date: goal.targetDate, constraints: goal.constraints } : undefined,
     plan: plan ? { id: plan.id, status: plan.status, version: plan.version, period_start: plan.periodStart, period_end: plan.periodEnd } : undefined,
     tasks: tasks.map(task => ({ id: task.id, title: task.title, status: task.status, estimated_minutes: task.estimatedMinutes,
-      priority: task.priority, scheduled_for: task.scheduledFor })),
+      priority: task.priority, scheduled_for: task.scheduledFor, completion_criteria: task.completionCriteria, guidance: task.guidance })),
     review: review ? { id: review.id, period: review.period, facts: review.facts, insights: review.output.insights ?? [],
       recommendations: review.output.recommendations ?? [], data_sufficiency: review.dataSufficiency } : undefined,
   };
@@ -40,6 +43,9 @@ export async function assembleChatContext(repository: LightTickRepository, owner
   const reviewId = typeof input.review_id === "string" ? input.review_id : undefined;
   const review = reviewId ? (await repository.listReviews(owner)).find(item => item.id === reviewId) : undefined;
   if (reviewId && !review) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Review was not found.");
+  if ((goalId && plan && plan.goalId !== goalId) || (review && goalId && review.goalId !== goalId) ||
+    (review && plan && review.goalId !== plan.goalId))
+    throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Context resources must belong to the same goal.");
   const taskId = typeof input.task_id === "string" ? input.task_id : undefined;
   const task = taskId ? await repository.getTask(owner, taskId) : undefined;
   if (taskId && !task) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");

@@ -18,9 +18,19 @@ function snakeToCamel(key: string): string {
 }
 
 function mapRow<T>(row: Record<string, unknown>): T {
-  return Object.fromEntries(Object.entries(row).map(([key, value]) => [
+  const mapped = Object.fromEntries(Object.entries(row).map(([key, value]) => [
     snakeToCamel(key), value instanceof Date ? value.toISOString() : value,
-  ])) as T;
+  ]));
+  // pg decodes PostgreSQL DATE as local midnight, not an instant in UTC.
+  for (const key of ["period_start", "period_end", "target_date"]) {
+    const value = row[key];
+    if (value instanceof Date) mapped[snakeToCamel(key)] =
+      `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+    else if (typeof value === "string") mapped[snakeToCamel(key)] = value.slice(0, 10);
+  }
+  if (row.scheduled_business_date) mapped.scheduledFor = String(row.scheduled_business_date);
+  delete mapped.scheduledBusinessDate;
+  return mapped as T;
 }
 
 function timestampString(value: unknown): string {
@@ -293,11 +303,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
   async saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickTaskRow> {
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_tasks",
       ["goal_id", "plan_id", "title", "status", "priority", "estimated_minutes", "scheduled_for", "started_at", "completed_at", "notes",
-        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied"],
+        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date"],
       [row.goalId, row.planId, row.title, row.status, row.priority, row.estimatedMinutes, row.scheduledFor ?? null,
         row.startedAt ?? null, row.completedAt ?? null, row.notes ?? null, row.lineageId ?? row.id,
         row.selectedVariant ?? "standard", JSON.stringify(row.variantDefinitions ?? {}), row.completionCriteria ?? null,
-        row.actualMinutes ?? null, row.commitmentSatisfied ?? null]);
+        row.actualMinutes ?? null, row.commitmentSatisfied ?? null, JSON.stringify(row.guidance ?? {}),
+        /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null]);
   }
   async listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]> {
     const result = await this.query(`SELECT * FROM zook_lighttick_task_steps

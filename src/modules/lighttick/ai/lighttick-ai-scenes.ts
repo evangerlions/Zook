@@ -14,6 +14,9 @@ export const LIGHTTICK_AI_SCENES = {
   day_plan: { key: "lighttick.day_plan.v1", kind: "plan", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 6_000,
     maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.05, fallback: "template" },
+  daily_review: { key: "lighttick.daily_review.v1", kind: "review", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
+    modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 8_000,
+    maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.05, fallback: "facts_only" },
   weekly_review: { key: "lighttick.weekly_review.v1", kind: "review", promptVersion: LIGHTTICK_PROMPT_VERSION, schemaVersion: "1.0.0",
     modelAlias: "novel-structured", tiers: ["free", "plus", "super_plus"], timeoutMs: 20_000, maxContextTokens: 8_000,
     maxOutputTokens: 2_000, maxEstimatedCostUsd: 0.05, fallback: "facts_only" },
@@ -37,9 +40,14 @@ export const LIGHTTICK_AI_SCENES = {
 export type LightTickAiSceneName = keyof typeof LIGHTTICK_AI_SCENES;
 
 export const LIGHTTICK_OUTPUT_SCHEMAS = {
-  plan: { type: "object", required: ["tasks"], properties: { tasks: { type: "array", minItems: 1, maxItems: 50,
+  plan: { type: "object", required: ["tasks"], properties: { summary: {type:"string",maxLength:2000}, assumptions:{type:"array",maxItems:10,items:{type:"string",maxLength:500}}, tasks: { type: "array", minItems: 1, maxItems: 50,
     items: { type: "object", required: ["title", "estimated_minutes"], properties: { title: { type: "string" },
-      estimated_minutes: { type: "integer", minimum: 1, maximum: 1440 }, priority: { type: "integer" }, scheduled_for: { type: "string" } } } } } },
+      estimated_minutes: { type: "integer", minimum: 1, maximum: 1440 }, priority: { type: "integer" }, scheduled_for: { type: "string" },
+      completion_criteria: { type: "string", maxLength: 1000 },
+      steps: { type: "array", maxItems: 12, items: { type: "string", maxLength: 1000 } },
+      guidance: { type: "object", additionalProperties: false, properties: {
+        purpose: { type: "string", maxLength: 1000 }, expected_output: { type: "string", maxLength: 1000 },
+        materials: { type: "array", maxItems: 10, items: { type: "string", maxLength: 1000 } } } } } } } } },
   review: { type: "object", required: ["insights", "recommendations"], properties: { insights: { type: "array", maxItems: 10 },
     recommendations: { type: "array", maxItems: 10 } } },
   change_proposal: { type: "object", required: ["diff", "impact"], properties: { diff: { type: "array", maxItems: 50 }, impact: { type: "object" } } },

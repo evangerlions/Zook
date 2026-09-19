@@ -2797,7 +2797,7 @@ components:
         updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
     LightTickGoalConstraints:
       type: object
-      required: [weekly_available_minutes, pace]
+      description: Known constraints only; an empty object is valid before planning clarification.
       properties:
         current_level: { type: string, maxLength: 500 }
         weekly_available_minutes: { type: integer, minimum: 30, maximum: 10080 }
@@ -2871,10 +2871,14 @@ components:
         period_end: { type: string, format: date }
         title: { type: string }
         summary: { type: string }
-        source: { enum: [ai, template, manual] }
+        source: { type: string, description: "ai, template, manual, or a provenance reference such as review:<id> or proposal:<id>." }
         proposal:
           type: object
-          description: Persisted plan preview including proposed tasks and non-secret planning assumptions.
+          description: Persisted plan preview including proposed tasks and non-secret planning assumptions. Proposed tasks use camelCase fields; confirmed task responses use snake_case.
+          properties:
+            summary: { type: string }
+            assumptions: { type: array, items: { type: string } }
+            tasks: { type: array, items: { $ref: "#/components/schemas/LightTickProposedTask" } }
           additionalProperties: true
         tasks: { type: array, items: { $ref: "#/components/schemas/LightTickTaskData" } }
         version: { $ref: "#/components/schemas/LightTickVersion" }
@@ -2886,6 +2890,24 @@ components:
     LightTickTaskDifficulty:
       type: string
       enum: [low, medium, high]
+    LightTickTaskGuidance:
+      type: object
+      additionalProperties: false
+      properties:
+        purpose: { type: string, minLength: 1, maxLength: 1000 }
+        expected_output: { type: string, minLength: 1, maxLength: 1000 }
+        materials: { type: array, maxItems: 10, items: { type: string, minLength: 1, maxLength: 1000 } }
+    LightTickProposedTask:
+      type: object
+      required: [title, estimatedMinutes]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        estimatedMinutes: { type: integer, minimum: 1, maximum: 1440 }
+        priority: { type: integer }
+        scheduledFor: { type: string, description: "Business date YYYY-MM-DD or an ISO timestamp." }
+        completionCriteria: { type: string, minLength: 1, maxLength: 1000 }
+        steps: { type: array, maxItems: 12, items: { type: string, minLength: 1, maxLength: 1000 } }
+        guidance: { $ref: "#/components/schemas/LightTickTaskGuidance" }
     LightTickTaskData:
       type: object
       required: [id, plan_id, title, status, scheduled_date, estimated_duration_minutes, priority, version, created_at, updated_at]
@@ -2897,6 +2919,7 @@ components:
         plan_id: { $ref: "#/components/schemas/LightTickId" }
         title: { type: string }
         completion_criteria: { type: string }
+        guidance: { $ref: "#/components/schemas/LightTickTaskGuidance" }
         selected_variant: { $ref: "#/components/schemas/LightTickTaskVariant" }
         variants:
           type: object
@@ -3000,7 +3023,7 @@ components:
         snapshot_version: { type: integer, minimum: 0 }
     LightTickReviewPeriod:
       type: string
-      enum: [weekly, monthly]
+      enum: [daily, weekly, monthly]
     LightTickReviewStatus:
       type: string
       enum: [generating, ready, acknowledged, failed]
@@ -3059,6 +3082,8 @@ components:
       type: object
       required: [plan_id, base_version, reason]
       properties:
+        review_id: { $ref: "#/components/schemas/LightTickId", description: Optional review evidence; must belong to the plan goal. }
+        goal_id: { $ref: "#/components/schemas/LightTickId", description: Optional goal; must match the plan. }
         plan_id: { $ref: "#/components/schemas/LightTickId" }
         base_version: { $ref: "#/components/schemas/LightTickVersion" }
         reason: { enum: [user_request, low_completion, return_after_break, low_energy, schedule_change] }
@@ -3141,7 +3166,7 @@ components:
         message_id: { type: string, description: Persisted user message ID on chat creation. }
         result_resource_type: { enum: [goal, plan, review, change_proposal, coach_message] }
         result_resource_id: { $ref: "#/components/schemas/LightTickId" }
-        source: { enum: [ai, template, manual] }
+        source: { type: string, description: "ai, template, manual, or a provenance reference such as review:<id> or proposal:<id>." }
         error_code: { $ref: "#/components/schemas/LightTickErrorCode" }
         result: { type: object, additionalProperties: true }
         created_at: { $ref: "#/components/schemas/LightTickTimestamp" }

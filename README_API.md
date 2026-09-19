@@ -1091,3 +1091,16 @@ LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_plan
 Canonical OpenAPI 与生成模型已同步；跨端错误/并发样例见 `api-contracts/fixtures/lighttick/planning-errors.json`。本阶段尚未接入 iOS/Android 会话 UI。
 
 Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。
+
+
+### LightTick App 规划、执行与复盘闭环
+
+- 注册用户可先 `POST /api/v1/lighttick/goals`，提交 `title` 与 `constraints: {}` 保存草稿目标，再创建 PlanningSession；无需先生成或完成启动任务。预算、日期仍须在规划会话内明确，未知不填默认事实。游客升级与对话规划开关约束保持不变。
+- `GET /plans`、`GET /plans/{id}` 的 `proposal.tasks[]` 保留内部字段 `title/estimatedMinutes/priority/scheduledFor`，新增可选 `completionCriteria`、`steps: string[]` 与 `guidance`。`guidance` 包含可选 `purpose`、`materials: string[]`、`expected_output`。草案同时保留 `summary` 与 `assumptions`。
+- 确认仍需版本与幂等保护。确认事务把完成标准、指导材料和有序步骤保存到任务；`GET /today` 与任务读取返回 `completion_criteria`、`guidance`、已有的 `steps` 对象数组。指导文本和步骤单项最长 1000 字符，步骤最多 12 项，材料最多 10 项。旧草案可缺省这些字段。
+- Today 汇总各活跃计划中属于用户业务日的任务；确认未来周期不会隐藏今天任务。`YYYY-MM-DD` 排期按业务日期比较，带时区时间戳按 profile 时区转换。无排期任务只在所属计划周期内展示；已完成/归档目标不再出现可执行任务。
+- `POST /api/v1/lighttick/review-runs` 的 `period` 支持 `daily/weekly/monthly`。日期必须真实有效，daily 要求 `period_start == period_end`。日期窗口按 profile 的 IANA 时区解释。复盘只使用当前目标的执行事件，创建目标/编辑目标不计作执行样本；日复盘至少一个完成/跳过/延期/取消事实，周/月至少三个，此充分性仅指执行回顾，不代表能力或成果达标。
+- Review `facts` 包含 `timezone/goal_id/event_counts/tasks/source_event_ids/outcome_status`。未知实际时长为 null，`outcome_status` 为 unverified；私人任务备注不会隐式送入 AI。用户可通过既有 `self_reflection`（最多 4000 字符）主动补充愿意用于 AI 复盘的信息。生成 run 显式关联 review_id。窗口中事实新增后会生成新复盘快照，旧结果保留；同一 Idempotency-Key 重放仍返回原操作。
+- `POST /change-proposal-runs` 可传 `review_id` 让调整引用该复盘，引用必须属于计划的目标；可选 `goal_id` 也须匹配。跨目标引用返回 422 `LIGHTTICK_PLAN_CONSTRAINT_FAILED`，找不到复盘返回 404。
+- 接受 `/reviews/{id}/actions` 的建议只创建 `proposed_plan`，响应和 `action_state.proposed_plan_id` 可用于重新打开草案。新周期从用户本地今日与复盘结束次日的较晚者起算，不把任务排回已结束窗口；仍须用户显式确认后才进入 Today。原任务完成事实保持不变。
+- 本轮未改变鉴权、app scope 和公共路径；指导字段存储依赖增量迁移 `064_lighttick_task_guidance.sql`。部署迁移及后端后再启用新客户端能力。完整顺序和验证边界见 `docs/lighttick/app-loop-integration.md`。

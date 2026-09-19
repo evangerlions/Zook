@@ -18,7 +18,7 @@ export class LightTickJobService {
   async enqueueAiRun(owner: LightTickOwner, runId: string, scene: LightTickAiSceneName) {
     return await this.enqueueOnce(owner, `ai:${runId}`, LIGHTTICK_JOB_NAMES.aiRun, { app_id: owner.appId, user_id: owner.userId, run_id: runId, scene });
   }
-  async enqueueReview(owner: LightTickOwner, runId: string, scene: "weekly_review" | "monthly_review") {
+  async enqueueReview(owner: LightTickOwner, runId: string, scene: "daily_review" | "weekly_review" | "monthly_review") {
     return await this.enqueueAiRun(owner, runId, scene);
   }
   async enqueueNotification(owner: LightTickOwner, notificationKey: string, businessDate: string) {

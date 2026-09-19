@@ -1,4 +1,5 @@
 import { LightTickPlanningAiRunner } from "../planning/planning-ai-runner.ts";
+import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
 import { randomId } from "../../../shared/utils.ts";
@@ -71,11 +72,13 @@ export class LightTickAiRunner {
     output: Record<string, unknown>, source: "ai" | "template"): Promise<string | undefined> {
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
       return await this.materializePlan(owner, run, sceneName, output, source);
-    if (["weekly_review", "monthly_review"].includes(sceneName)) {
+    if (["daily_review", "weekly_review", "monthly_review"].includes(sceneName)) {
       const review = (await this.repository.listReviews(owner)).find(item => item.id === run.resourceId);
       if (!review) return undefined;
+      // A delayed run cannot erase an already decided review or reopen its actions.
+      if (review.output.action_state) return review.id;
       await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
-        status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() });
+        status: "ready", version: review.version + 1, updatedAt: this.clock().toISOString() }, review.version);
       return review.id;
     }
     if (sceneName === "change_proposal") {
@@ -119,7 +122,7 @@ export class LightTickAiRunner {
       periodStart: String(run.inputContext.period_start ?? this.clock().toISOString().slice(0, 10)),
       periodEnd: String(run.inputContext.period_end ?? run.inputContext.period_start ?? this.clock().toISOString().slice(0, 10)),
       source, tasks: rawTasks.map(task => ({ title: String(task.title), estimatedMinutes: Number(task.estimated_minutes),
-        priority: Number.isInteger(task.priority) ? task.priority : undefined, scheduledFor: task.scheduled_for })),
+        priority: Number.isInteger(task.priority) ? task.priority : undefined, scheduledFor: task.scheduled_for, ...taskDetailsFromOutput(task) })),
       metadata: { ai_run_id: run.id, assumptions: Array.isArray(output.assumptions) ? output.assumptions : [],
         summary: typeof output.summary === "string" ? output.summary : undefined },
     });
@@ -133,7 +136,7 @@ export class LightTickAiRunner {
         throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Scheduling requires an explicit period.");
       return validatePlanOutput(output, this.planConstraints(context));
     }
-    if (["weekly_review", "monthly_review"].includes(scene)) return validateReviewOutput(output);
+    if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return validateReviewOutput(output);
     if (scene === "change_proposal") return validateProposalOutput(output, new Set(context.tasks.map((task: any) => task.id)));
     if (typeof output.message !== "string" || output.message.length > 2000)
       throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "Coach output does not match its schema.");
@@ -142,7 +145,7 @@ export class LightTickAiRunner {
 
   private outputSchema(scene: LightTickAiSceneName) {
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.plan;
-    if (["weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
+    if (["daily_review", "weekly_review", "monthly_review"].includes(scene)) return LIGHTTICK_OUTPUT_SCHEMAS.review;
     if (scene === "change_proposal") return LIGHTTICK_OUTPUT_SCHEMAS.change_proposal;
     return LIGHTTICK_OUTPUT_SCHEMAS.coach_reply;
   }

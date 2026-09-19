@@ -1,3 +1,4 @@
+import { taskDetailsFromOutput } from "../lighttick-task-details.ts";
 import type { LLMManager } from "../../../services/llm-manager.ts";
 import type { LightTickRepository } from "../lighttick.repository.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../lighttick.types.ts";
@@ -89,8 +90,8 @@ export class LightTickPlanningAiRunner {
         } else {
           const plan = await new LightTickPlanService(this.repository,this.clock).createProposed(owner,{ goalId:session.goalId,granularity:"week",
             periodStart:String(session.context.period_start!.value),periodEnd:String(session.context.period_end!.value),source:"ai",
-            tasks:output.tasks.map((task:any)=>({title:task.title,estimatedMinutes:task.estimated_minutes,priority:task.priority,scheduledFor:task.scheduled_for})),
-            metadata:{planning_session_id:session.id,context_revision:session.contextRevision,ai_run_id:runId,prompt_version:run.promptVersion} });
+            tasks:output.tasks.map((task:any)=>({title:task.title,estimatedMinutes:task.estimated_minutes,priority:task.priority,scheduledFor:task.scheduled_for,...taskDetailsFromOutput(task)})),
+            metadata:{summary:typeof output.summary === "string" ? output.summary : undefined, assumptions:Array.isArray(output.assumptions)?output.assumptions:[], planning_session_id:session.id,context_revision:session.contextRevision,ai_run_id:runId,prompt_version:run.promptVersion} });
           resourceId=plan.id;
           session={ ...session,status:"draft_ready",draftPlanId:plan.id,draftRevision:session.contextRevision,
             draftExpiresAt:new Date(this.clock().getTime()+7*86400000).toISOString(),baseSnapshot:String(run.inputContext.snapshot) };

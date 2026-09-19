@@ -4,7 +4,9 @@ import { transitionGoal, transitionPlan } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 
-export interface ProposedTaskInput { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
+import { validateTaskDetails, type TaskDetails } from "./lighttick-task-details.ts";
+
+export interface ProposedTaskInput extends TaskDetails { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
 export interface ProposedPlanInput {
   goalId: string; granularity: LightTickPlanRow["granularity"]; periodStart: string; periodEnd: string;
   source: string; tasks: ProposedTaskInput[]; metadata?: Record<string, unknown>;
@@ -54,6 +56,7 @@ export class LightTickPlanService {
         const task: LightTickTaskRow = { ...owner, id: randomId("lighttick_task"), goalId: current.goalId,
           planId: current.id, title: input.title.trim(), status: "pending", priority: input.priority ?? 0,
           estimatedMinutes: input.estimatedMinutes, scheduledFor: input.scheduledFor,
+          completionCriteria: input.completionCriteria, guidance: input.guidance,
           version: 1, createdAt: timestamp, updatedAt: timestamp };
         tasks.push(await this.repository.saveTask(task, {
           event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: task.id,
@@ -61,6 +64,10 @@ export class LightTickPlanService {
           change: { ...owner, entityType: "task", entityId: task.id, entityVersion: 1,
             operation: "upsert", snapshot: { title: task.title, status: task.status }, changedAt: timestamp },
         }));
+        for (const [position, title] of (input.steps ?? []).entries()) {
+          await this.repository.saveTaskStep({ ...owner, id: randomId("lighttick_step"), taskId: task.id,
+            title: title.trim(), position, completed: false, version: 1, createdAt: timestamp, updatedAt: timestamp });
+        }
       }
       return { plan: active, tasks };
     });
@@ -72,6 +79,7 @@ export class LightTickPlanService {
     return goal;
   }
   private validateTasks(tasks: ProposedTaskInput[]) {
+    tasks.forEach(validateTaskDetails);
     if (!tasks.length || tasks.length > 50 || tasks.some(task => !task.title?.trim() || task.title.trim().length > 200 ||
       !Number.isInteger(task.estimatedMinutes) || task.estimatedMinutes < 1 || task.estimatedMinutes > 1440)) {
       throw new ApplicationError(400, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Proposed tasks violate plan constraints.");
