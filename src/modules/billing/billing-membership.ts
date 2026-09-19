@@ -1,6 +1,6 @@
-import type { VipInfo } from "../../generated/openapi/public-contracts.generated.ts";
+import type { MembershipInfo } from "../../generated/openapi/public-contracts.generated.ts";
 
-export function buildEmptyVipInfo(): VipInfo {
+export function buildEmptyMembershipInfo(): MembershipInfo {
   return {
     active: false,
     state: "free",

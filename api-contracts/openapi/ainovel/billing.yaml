@@ -232,7 +232,7 @@ paths:
         - $ref: "#/components/parameters/CheckoutId"
       responses:
         "200":
-          description: Current checkout and VIP state after synchronization
+          description: Current checkout and membership state after synchronization
           content:
             application/json:
               schema:
@@ -311,16 +311,19 @@ components:
       type: string
       enum:
         [
-          vip_monthly,
-          vip_quarterly,
-          vip_yearly,
-          svip_monthly,
-          svip_quarterly,
-          svip_yearly,
+          plus_monthly,
+          plus_quarterly,
+          plus_yearly,
+          pro_monthly,
+          pro_quarterly,
+          pro_yearly,
+          max_monthly,
+          max_quarterly,
+          max_yearly,
         ]
     BillingTier:
       type: string
-      enum: [vip, svip]
+      enum: [plus, pro, max]
     CheckoutStatus:
       type: string
       enum: [pending, processing, completed, failed, expired]
@@ -419,12 +422,12 @@ components:
     SyncData:
       type: object
       additionalProperties: false
-      required: [syncStatus, vip]
+      required: [syncStatus, membership]
       properties:
         syncStatus:
           $ref: "#/components/schemas/SyncStatus"
-        vip:
-          $ref: "../common/users.yaml#/components/schemas/VipInfo"
+        membership:
+          $ref: "../common/users.yaml#/components/schemas/MembershipInfo"
     SyncResponse:
       type: object
       additionalProperties: false
@@ -499,13 +502,13 @@ components:
     CheckoutStatusData:
       type: object
       additionalProperties: false
-      required: [checkoutId, status, vip]
+      required: [checkoutId, status, membership]
       properties:
         checkoutId: { type: string, minLength: 1 }
         status:
           $ref: "#/components/schemas/CheckoutStatus"
-        vip:
-          $ref: "../common/users.yaml#/components/schemas/VipInfo"
+        membership:
+          $ref: "../common/users.yaml#/components/schemas/MembershipInfo"
     CheckoutStatusResponse:
       type: object
       additionalProperties: false

@@ -2,7 +2,7 @@ import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader, maskSensitiveString } from "../shared/utils.ts";
 import { PublicContractValidator } from "../generated/openapi/public-contract-validator.ts";
-import { buildEmptyVipInfo } from "../modules/billing/billing-membership.ts";
+import { buildEmptyMembershipInfo } from "../modules/billing/billing-membership.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 
 export async function handleCreateQrLogin(
@@ -191,7 +191,7 @@ export async function handleGetCurrentUser(
     appId,
     accountRegion: await this.resolveAccountRegion(request, appId, auth.userId),
     user: await this.userService.getProfile(auth.userId),
-    vip: buildEmptyVipInfo(),
+    membership: buildEmptyMembershipInfo(),
   };
 
   await this.auditInterceptor.record({

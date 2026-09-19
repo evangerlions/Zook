@@ -927,7 +927,7 @@ export const CurrentUserDataSchema = {
     "appId",
     "accountRegion",
     "user",
-    "vip"
+    "membership"
   ],
   "properties": {
     "appId": {
@@ -976,7 +976,7 @@ export const CurrentUserDataSchema = {
         }
       }
     },
-    "vip": {
+    "membership": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -992,7 +992,7 @@ export const CurrentUserDataSchema = {
       "properties": {
         "active": {
           "type": "boolean",
-          "description": "Whether the account currently has access to the app's VIP benefits."
+          "description": "Whether the account currently has access to the app's membership benefits."
         },
         "state": {
           "type": "string",
@@ -1010,11 +1010,12 @@ export const CurrentUserDataSchema = {
             "null"
           ],
           "enum": [
-            "vip",
-            "svip",
+            "plus",
+            "pro",
+            "max",
             null
           ],
-          "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+          "description": "Effective active membership tier for the app account."
         },
         "planKey": {
           "type": [
@@ -1072,10 +1073,10 @@ export type CurrentUserData = {
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
 };
-  "vip": {
+  "membership": {
   "active": boolean;
   "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
-  "tier": "vip" | "svip" | null;
+  "tier": "plus" | "pro" | "max" | null;
   "planKey": string | null;
   "expiresAt": string | null;
   "autoRenew": boolean | null;
@@ -1084,7 +1085,7 @@ export type CurrentUserData = {
 };
 };
 
-export const VipInfoSchema = {
+export const MembershipInfoSchema = {
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -1100,7 +1101,7 @@ export const VipInfoSchema = {
   "properties": {
     "active": {
       "type": "boolean",
-      "description": "Whether the account currently has access to the app's VIP benefits."
+      "description": "Whether the account currently has access to the app's membership benefits."
     },
     "state": {
       "type": "string",
@@ -1118,11 +1119,12 @@ export const VipInfoSchema = {
         "null"
       ],
       "enum": [
-        "vip",
-        "svip",
+        "plus",
+        "pro",
+        "max",
         null
       ],
-      "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+      "description": "Effective active membership tier for the app account."
     },
     "planKey": {
       "type": [
@@ -1167,10 +1169,10 @@ export const VipInfoSchema = {
   }
 } as const;
 
-export type VipInfo = {
+export type MembershipInfo = {
   "active": boolean;
   "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
-  "tier": "vip" | "svip" | null;
+  "tier": "plus" | "pro" | "max" | null;
   "planKey": string | null;
   "expiresAt": string | null;
   "autoRenew": boolean | null;
@@ -2780,26 +2782,30 @@ export type BillingProvider = "revenuecat" | "alipay";
 export const BillingProductKeySchema = {
   "type": "string",
   "enum": [
-    "vip_monthly",
-    "vip_quarterly",
-    "vip_yearly",
-    "svip_monthly",
-    "svip_quarterly",
-    "svip_yearly"
+    "plus_monthly",
+    "plus_quarterly",
+    "plus_yearly",
+    "pro_monthly",
+    "pro_quarterly",
+    "pro_yearly",
+    "max_monthly",
+    "max_quarterly",
+    "max_yearly"
   ]
 } as const;
 
-export type BillingProductKey = "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
+export type BillingProductKey = "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
 
 export const BillingTierSchema = {
   "type": "string",
   "enum": [
-    "vip",
-    "svip"
+    "plus",
+    "pro",
+    "max"
   ]
 } as const;
 
-export type BillingTier = "vip" | "svip";
+export type BillingTier = "plus" | "pro" | "max";
 
 export const CheckoutStatusSchema = {
   "type": "string",
@@ -2863,19 +2869,23 @@ export const BillingProductSchema = {
     "productKey": {
       "type": "string",
       "enum": [
-        "vip_monthly",
-        "vip_quarterly",
-        "vip_yearly",
-        "svip_monthly",
-        "svip_quarterly",
-        "svip_yearly"
+        "plus_monthly",
+        "plus_quarterly",
+        "plus_yearly",
+        "pro_monthly",
+        "pro_quarterly",
+        "pro_yearly",
+        "max_monthly",
+        "max_quarterly",
+        "max_yearly"
       ]
     },
     "tier": {
       "type": "string",
       "enum": [
-        "vip",
-        "svip"
+        "plus",
+        "pro",
+        "max"
       ]
     },
     "billingPeriod": {
@@ -2978,8 +2988,8 @@ export const BillingProductSchema = {
 } as const;
 
 export type BillingProduct = {
-  "productKey": "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
-  "tier": "vip" | "svip";
+  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
+  "tier": "plus" | "pro" | "max";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
   "providers": (
 {
@@ -3147,19 +3157,23 @@ export const CatalogDataSchema = {
           "productKey": {
             "type": "string",
             "enum": [
-              "vip_monthly",
-              "vip_quarterly",
-              "vip_yearly",
-              "svip_monthly",
-              "svip_quarterly",
-              "svip_yearly"
+              "plus_monthly",
+              "plus_quarterly",
+              "plus_yearly",
+              "pro_monthly",
+              "pro_quarterly",
+              "pro_yearly",
+              "max_monthly",
+              "max_quarterly",
+              "max_yearly"
             ]
           },
           "tier": {
             "type": "string",
             "enum": [
-              "vip",
-              "svip"
+              "plus",
+              "pro",
+              "max"
             ]
           },
           "billingPeriod": {
@@ -3270,8 +3284,8 @@ export type CatalogData = {
   "distribution": "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
   "products": (
 {
-  "productKey": "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
-  "tier": "vip" | "svip";
+  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
+  "tier": "plus" | "pro" | "max";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
   "providers": (
 {
@@ -3296,7 +3310,7 @@ export const SyncDataSchema = {
   "additionalProperties": false,
   "required": [
     "syncStatus",
-    "vip"
+    "membership"
   ],
   "properties": {
     "syncStatus": {
@@ -3306,7 +3320,7 @@ export const SyncDataSchema = {
         "pending"
       ]
     },
-    "vip": {
+    "membership": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -3322,7 +3336,7 @@ export const SyncDataSchema = {
       "properties": {
         "active": {
           "type": "boolean",
-          "description": "Whether the account currently has access to the app's VIP benefits."
+          "description": "Whether the account currently has access to the app's membership benefits."
         },
         "state": {
           "type": "string",
@@ -3340,11 +3354,12 @@ export const SyncDataSchema = {
             "null"
           ],
           "enum": [
-            "vip",
-            "svip",
+            "plus",
+            "pro",
+            "max",
             null
           ],
-          "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+          "description": "Effective active membership tier for the app account."
         },
         "planKey": {
           "type": [
@@ -3393,10 +3408,10 @@ export const SyncDataSchema = {
 
 export type SyncData = {
   "syncStatus": "synchronized" | "pending";
-  "vip": {
+  "membership": {
   "active": boolean;
   "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
-  "tier": "vip" | "svip" | null;
+  "tier": "plus" | "pro" | "max" | null;
   "planKey": string | null;
   "expiresAt": string | null;
   "autoRenew": boolean | null;
@@ -3439,12 +3454,15 @@ export const CreateCheckoutRequestSchema = {
     "productKey": {
       "type": "string",
       "enum": [
-        "vip_monthly",
-        "vip_quarterly",
-        "vip_yearly",
-        "svip_monthly",
-        "svip_quarterly",
-        "svip_yearly"
+        "plus_monthly",
+        "plus_quarterly",
+        "plus_yearly",
+        "pro_monthly",
+        "pro_quarterly",
+        "pro_yearly",
+        "max_monthly",
+        "max_quarterly",
+        "max_yearly"
       ]
     },
     "provider": {
@@ -3472,7 +3490,7 @@ export const CreateCheckoutRequestSchema = {
 } as const;
 
 export type CreateCheckoutRequest = {
-  "productKey": "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
+  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
   "provider": string;
   "platform": "android" | "web" | "windows";
   "distribution": "china_android_store" | "direct_android" | "web" | "windows";
@@ -3587,7 +3605,7 @@ export const CheckoutStatusDataSchema = {
   "required": [
     "checkoutId",
     "status",
-    "vip"
+    "membership"
   ],
   "properties": {
     "checkoutId": {
@@ -3604,7 +3622,7 @@ export const CheckoutStatusDataSchema = {
         "expired"
       ]
     },
-    "vip": {
+    "membership": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -3620,7 +3638,7 @@ export const CheckoutStatusDataSchema = {
       "properties": {
         "active": {
           "type": "boolean",
-          "description": "Whether the account currently has access to the app's VIP benefits."
+          "description": "Whether the account currently has access to the app's membership benefits."
         },
         "state": {
           "type": "string",
@@ -3638,11 +3656,12 @@ export const CheckoutStatusDataSchema = {
             "null"
           ],
           "enum": [
-            "vip",
-            "svip",
+            "plus",
+            "pro",
+            "max",
             null
           ],
-          "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+          "description": "Effective active membership tier for the app account."
         },
         "planKey": {
           "type": [
@@ -3692,10 +3711,10 @@ export const CheckoutStatusDataSchema = {
 export type CheckoutStatusData = {
   "checkoutId": string;
   "status": "pending" | "processing" | "completed" | "failed" | "expired";
-  "vip": {
+  "membership": {
   "active": boolean;
   "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
-  "tier": "vip" | "svip" | null;
+  "tier": "plus" | "pro" | "max" | null;
   "planKey": string | null;
   "expiresAt": string | null;
   "autoRenew": boolean | null;
@@ -3773,7 +3792,7 @@ export const CheckoutStatusResponseSchema = {
       "required": [
         "checkoutId",
         "status",
-        "vip"
+        "membership"
       ],
       "properties": {
         "checkoutId": {
@@ -3790,7 +3809,7 @@ export const CheckoutStatusResponseSchema = {
             "expired"
           ]
         },
-        "vip": {
+        "membership": {
           "type": "object",
           "additionalProperties": false,
           "required": [
@@ -3806,7 +3825,7 @@ export const CheckoutStatusResponseSchema = {
           "properties": {
             "active": {
               "type": "boolean",
-              "description": "Whether the account currently has access to the app's VIP benefits."
+              "description": "Whether the account currently has access to the app's membership benefits."
             },
             "state": {
               "type": "string",
@@ -3824,11 +3843,12 @@ export const CheckoutStatusResponseSchema = {
                 "null"
               ],
               "enum": [
-                "vip",
-                "svip",
+                "plus",
+                "pro",
+                "max",
                 null
               ],
-              "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+              "description": "Effective active membership tier for the app account."
             },
             "planKey": {
               "type": [
@@ -3886,10 +3906,10 @@ export type CheckoutStatusResponse = {
   "data": {
   "checkoutId": string;
   "status": "pending" | "processing" | "completed" | "failed" | "expired";
-  "vip": {
+  "membership": {
   "active": boolean;
   "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
-  "tier": "vip" | "svip" | null;
+  "tier": "plus" | "pro" | "max" | null;
   "planKey": string | null;
   "expiresAt": string | null;
   "autoRenew": boolean | null;
@@ -17989,6 +18009,7 @@ export const GeneratedPublicContractNames = [
   "LogPullTaskData",
   "LogUploadData",
   "LogoutRequest",
+  "MembershipInfo",
   "Money",
   "NotificationQueuedData",
   "NotificationSendRequest",
@@ -18012,6 +18033,5 @@ export const GeneratedPublicContractNames = [
   "SyncData",
   "SyncRequest",
   "SyncStatus",
-  "UserSummary",
-  "VipInfo"
+  "UserSummary"
 ] as const;

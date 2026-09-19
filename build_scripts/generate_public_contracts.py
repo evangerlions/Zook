@@ -38,7 +38,7 @@ SPECS: dict[str, list[str]] = {
         "AccountDeletionRequest",
         "AccountDeletionData",
         "CurrentUserData",
-        "VipInfo",
+        "MembershipInfo",
     ],
     "common/analytics.yaml": [
         "AnalyticsEventInput",

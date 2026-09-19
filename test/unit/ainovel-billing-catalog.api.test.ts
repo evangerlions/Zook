@@ -17,7 +17,7 @@ function buildAiNovelSeed() {
   return seed;
 }
 
-test("AINovel billing catalog returns six mock-priced Alipay products for CN Android", async () => {
+test("AINovel billing catalog returns nine mock-priced Alipay products for CN Android", async () => {
   const runtime = await createApplication({ seed: buildAiNovelSeed() });
   const accessToken = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -41,33 +41,36 @@ test("AINovel billing catalog returns six mock-priced Alipay products for CN And
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.accountRegion, "CN");
-  assert.equal(response.body.data.products.length, 6);
+  assert.equal(response.body.data.products.length, 9);
   assert.deepEqual(
     response.body.data.products.map(
       (product: { productKey: string }) => product.productKey,
     ),
     [
-      "vip_monthly",
-      "vip_quarterly",
-      "vip_yearly",
-      "svip_monthly",
-      "svip_quarterly",
-      "svip_yearly",
+      "plus_monthly",
+      "plus_quarterly",
+      "plus_yearly",
+      "pro_monthly",
+      "pro_quarterly",
+      "pro_yearly",
+      "max_monthly",
+      "max_quarterly",
+      "max_yearly",
     ],
   );
   assert.deepEqual(response.body.data.products[0], {
-    productKey: "vip_monthly",
-    tier: "vip",
+    productKey: "plus_monthly",
+    tier: "plus",
     billingPeriod: "P1M",
     providers: [
       {
         provider: "alipay",
         available: true,
         blockedReason: null,
-        providerProductId: "mock_alipay_vip_monthly",
+        providerProductId: "mock_alipay_plus_monthly",
         providerPackageId: null,
-        providerEntitlementId: "vip",
-        price: { amountMinor: 990, currency: "CNY" },
+        providerEntitlementId: "plus",
+        price: { amountMinor: 3990, currency: "CNY" },
       },
     ],
   });
@@ -100,7 +103,7 @@ test("AINovel billing catalog keeps global Web unavailable until RC Web is enabl
     blockedReason: "provider_unavailable",
     providerProductId: null,
     providerPackageId: null,
-    providerEntitlementId: "vip",
+            providerEntitlementId: "plus",
     price: null,
   });
 });
