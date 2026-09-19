@@ -82,10 +82,10 @@ export class LightTickDeepReviewService {
     const timestamp = this.clock().toISOString();
     if (action === "ignore") {
       const reason = text(ignoreReason);
-      if (reason.length < 2 || reason.length > 500)
-        throw new ApplicationError(400, "REQ_FIELD_INVALID", "ignore_reason is required.");
+      if (reason.length > 500)
+        throw new ApplicationError(400, "REQ_FIELD_INVALID", "ignore_reason must be at most 500 characters.");
       const saved = await this.saveState(review, { status: "ignored", action, selected_ids: [],
-        ignore_reason: reason, decided_at: timestamp }, timestamp);
+        ...(reason ? { ignore_reason: reason } : {}), decided_at: timestamp }, timestamp);
       return { review: saved, action, selectedRecommendationIds: [], recommendations };
     }
     const selected = recommendations.filter(item => selectedRecommendationIds.includes(item.id));

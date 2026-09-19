@@ -1,3 +1,4 @@
+import type { PlanningSession } from "./planning/planning.types.ts";
 import type {
   LightTickAiRunRow, LightTickChangeProposalRow, LightTickChangeRow, LightTickChatMessageRow, LightTickDnaInsightRow,
   LightTickDeviceRow, LightTickExecutionEventRow, LightTickGoalRow, LightTickGuestIdentityRow,
@@ -14,6 +15,9 @@ export interface LightTickAtomicWrite {
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
 export interface LightTickRepository {
+  lockPlanningOwner(owner: LightTickOwner): Promise<void>;
+  getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined>;
+  savePlanningSession(row: PlanningSession, expectedVersion?: number): Promise<PlanningSession>;
   transaction<T>(owner: LightTickOwner, operation: () => Promise<T>): Promise<T>;
   getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined>;
   getGuestIdentityByDevice(deviceId: string): Promise<LightTickGuestIdentityRow | undefined>;

@@ -289,6 +289,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       { operation_id: operationId, resource_id: taskId, result: "returned" });
     return response(context, request, data);
   }
+  if (request.path === `${PREFIX}onboarding/commitment` && request.method === "GET") {
+    return response(context, request, await runtime.progressive.commitmentState(owner));
+  }
   if (request.path === `${PREFIX}onboarding/commitment` && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
     const data = await idempotent(runtime, owner, request, "goal",

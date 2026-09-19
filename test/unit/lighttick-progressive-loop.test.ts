@@ -129,3 +129,76 @@ test("legacy plan-first onboarding remains available", async () => {
       current_level: "beginner", weekly_available_minutes: 120, pace: "balanced", timezone: "UTC" }, requestId: "legacy" });
   assert.equal(response.statusCode, 202);
 });
+
+test("commitment read is side-effect free, nullable and authenticated", async () => {
+  const { runtime, headers, owner } = await setup();
+  const repository = runtime.services.lighttickRuntime.repository;
+  const before = await repository.getProfile(owner);
+  const result = await runtime.app.handle({ method: "GET", path: "/api/v1/lighttick/onboarding/commitment", headers, requestId: "read-commitment" });
+  assert.equal(result.statusCode, 200);
+  assert.deepEqual(result.body.data, { commitment_mode: null, valid_action_count: 0, required_action_count: 2, eligible: false });
+  assert.deepEqual(await repository.getProfile(owner), before);
+  assert.equal((await repository.listExecutionEvents(owner)).length, 0);
+  const denied = await runtime.app.handle({ method: "GET", path: "/api/v1/lighttick/onboarding/commitment", headers: {}, requestId: "read-denied" });
+  assert.equal(denied.statusCode, 401);
+  const goal = await runtime.services.lighttickRuntime.goals.create(owner, { title: "No profile", constraints: {} });
+  const missing = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/onboarding/commitment",
+    headers: { ...headers, "idempotency-key": "missing-profile-save" },
+    body: { goal_id: goal.id, mode: "light", deep_planning: true }, requestId: "missing-profile" });
+  assert.equal(missing.statusCode, 404);
+  assert.equal(await repository.getProfile(owner), undefined);
+});
+
+test("live commitment eligibility and four saved modes survive fresh reads without bypass", async () => {
+  const { runtime, headers, owner } = await setup();
+  const call = (method: string, suffix: string, key: string, body?: any) => runtime.app.handle({ method: method as any,
+    path: `/api/v1/lighttick/onboarding/${suffix}`, headers: { ...headers, "idempotency-key": key }, requestId: key, body });
+  let goalId = "";
+  for (let i = 0; i < 2; i++) {
+    const starter = await call("POST", "starter", `commitment-starter-${i}`, { wish: "开始跑步", timezone: "UTC" });
+    const task = (starter.body.data as any).recommended;
+    goalId = (starter.body.data as any).goal.id;
+    const completed = await call("POST", "first-action", `commitment-action-${i}`, {
+      task_id: task.id, base_version: task.version, selected_variant: "minimum", actual_duration_minutes: 4, difficulty: "easy" });
+    assert.equal(completed.statusCode, 200);
+    const state = (await call("GET", "commitment", `commitment-read-${i}`)).body.data as any;
+    assert.equal(state.valid_action_count, i + 1);
+    assert.equal(state.eligible, i === 1);
+    if (i === 0) {
+      const blocked = await call("POST", "commitment", "commitment-locked", { goal_id: goalId, mode: "light", deep_planning: false });
+      assert.equal(blocked.statusCode, 409);
+      assert.equal(((await call("GET", "commitment", "commitment-still-null")).body.data as any).commitment_mode, null);
+    }
+  }
+  for (const mode of ["recovery", "light", "standard", "sprint"]) {
+    const body = { goal_id: goalId, mode, deep_planning: false };
+    const saved = await call("POST", "commitment", `commitment-mode-${mode}`, body);
+    assert.equal(saved.statusCode, 200);
+    const again = await call("POST", "commitment", `commitment-mode-${mode}`, body);
+    assert.deepEqual(again.body.data, saved.body.data);
+    const state = (await call("GET", "commitment", `commitment-read-${mode}`)).body.data;
+    assert.deepEqual(state, { commitment_mode: mode, valid_action_count: 2, required_action_count: 2, eligible: true });
+  }
+  const repository = runtime.services.lighttickRuntime.repository;
+  const profile = (await repository.getProfile(owner))!;
+  await repository.saveProfile({ ...profile, onboardingDraft: { ...profile.onboardingDraft, valid_action_count: 999 } }, profile.version);
+  assert.equal(((await call("GET", "commitment", "live-not-cached")).body.data as any).valid_action_count, 2);
+  repository.saveProfile = async () => { throw new Error("injected write failure"); };
+  const failed = await call("POST", "commitment", "commitment-save-failed", { goal_id: goalId, mode: "recovery", deep_planning: false });
+  assert.equal(failed.statusCode, 500);
+  assert.equal(((await call("GET", "commitment", "commitment-after-failure")).body.data as any).commitment_mode, "sprint");
+  const other = await runtime.services.lighttickRuntime.progressive.commitmentState({ ...owner, userId: "other-user" });
+  assert.deepEqual(other, { commitment_mode: null, valid_action_count: 0, required_action_count: 2, eligible: false });
+});
+
+test("explicit deep planning saves a mode without falsifying normal eligibility", async () => {
+  const { runtime, headers } = await setup();
+  const starter = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/onboarding/starter",
+    headers: { ...headers, "idempotency-key": "deep-planning-starter" }, body: { wish: "编程", timezone: "UTC" }, requestId: "starter-deep" });
+  const selected = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/onboarding/commitment",
+    headers: { ...headers, "idempotency-key": "deep-planning-explicit" },
+    body: { goal_id: (starter.body.data as any).goal.id, mode: "standard", deep_planning: true }, requestId: "explicit-deep" });
+  assert.equal(selected.statusCode, 200);
+  const state = await runtime.app.handle({ method: "GET", path: "/api/v1/lighttick/onboarding/commitment", headers, requestId: "read-deep" });
+  assert.deepEqual(state.body.data, { commitment_mode: "standard", valid_action_count: 0, required_action_count: 2, eligible: false });
+});

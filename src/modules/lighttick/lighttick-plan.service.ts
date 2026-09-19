@@ -28,9 +28,11 @@ export class LightTickPlanService {
     return await this.repository.savePlan(plan, this.write(plan, "plan_proposed", 1, timestamp));
   }
 
-  async confirm(owner: LightTickOwner, planId: string, baseVersion: number): Promise<{ plan: LightTickPlanRow; tasks: LightTickTaskRow[] }> {
+  async confirm(owner: LightTickOwner, planId: string, baseVersion: number, planningSessionId?: string): Promise<{ plan: LightTickPlanRow; tasks: LightTickTaskRow[] }> {
     const current = await this.repository.getPlan(owner, planId);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
+    if (current.proposal.planning_session_id && current.proposal.planning_session_id !== planningSessionId)
+      throw new ApplicationError(409, "LIGHTTICK_PLANNING_STALE", "Session drafts must be confirmed through their planning session.");
     transitionPlan(current.status as "proposed", "active");
     const taskInputs = Array.isArray(current.proposal.tasks) ? current.proposal.tasks as unknown as ProposedTaskInput[] : [];
     this.validateTasks(taskInputs); const timestamp = this.clock().toISOString();

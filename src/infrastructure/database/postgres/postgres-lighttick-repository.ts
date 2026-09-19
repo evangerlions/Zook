@@ -1,3 +1,4 @@
+import type { PlanningSession } from "../../../modules/lighttick/planning/planning.types.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
 import type {
@@ -39,6 +40,27 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return await (this.session.getStore() ?? this.connector).query(sql, values);
   }
 
+  async lockPlanningOwner(owner: LightTickOwner) {
+    await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`planning:${owner.appId}:${owner.userId}`]);
+    // Existing non-session mutations lock these same rows on write.
+    for (const table of ["goals", "plan_cycles", "tasks"])
+      await this.query(`SELECT id FROM zook_lighttick_${table} WHERE app_id=$1 AND user_id=$2 ORDER BY id FOR UPDATE`, [owner.appId, owner.userId]);
+  }
+  async getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined> {
+    const result = await this.query("SELECT payload,version FROM zook_lighttick_planning_sessions WHERE app_id=$1 AND user_id=$2 AND id=$3", [owner.appId,owner.userId,id]);
+    return result.rows[0] ? { ...(result.rows[0].payload as PlanningSession), version: Number(result.rows[0].version) } : undefined;
+  }
+  async savePlanningSession(row: PlanningSession, expectedVersion?: number): Promise<PlanningSession> {
+    const result = expectedVersion === undefined
+      ? await this.query(`INSERT INTO zook_lighttick_planning_sessions (id,app_id,user_id,goal_id,thread_id,payload,version,created_at,updated_at)
+          VALUES ($1,$2,$3,$4,$5,$6::jsonb,1,$7,$8) ON CONFLICT DO NOTHING RETURNING version`,
+          [row.id,row.appId,row.userId,row.goalId,row.threadId,JSON.stringify(row),row.createdAt,row.updatedAt])
+      : await this.query(`UPDATE zook_lighttick_planning_sessions SET payload=$1::jsonb,version=version+1,updated_at=$2
+          WHERE app_id=$3 AND user_id=$4 AND id=$5 AND version=$6 RETURNING version`,
+          [JSON.stringify(row),row.updatedAt,row.appId,row.userId,row.id,expectedVersion]);
+    if (!result.rows[0]) versionConflict(row.id);
+    return { ...row, version: Number(result.rows[0]!.version) };
+  }
   async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
     const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);
     return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
@@ -515,7 +537,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
+    const tables = ["planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1
