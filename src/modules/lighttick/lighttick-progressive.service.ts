@@ -147,18 +147,33 @@ export class LightTickProgressiveService {
     });
   }
 
+  private async validActionCount(owner: LightTickOwner): Promise<number> {
+    const events = await this.repository.listExecutionEvents(owner);
+    return events.filter(event => event.eventType === "task_complete" && event.payload.valid_action === true).length;
+  }
+
+  /** Account-wide preference and live eligibility; reading never creates a profile. */
+  async commitmentState(owner: LightTickOwner) {
+    const profile = await this.repository.getProfile(owner);
+    const mode = profile?.onboardingDraft.commitment_mode;
+    const count = await this.validActionCount(owner);
+    return { commitment_mode: typeof mode === "string" && ["recovery", "light", "standard", "sprint"].includes(mode)
+      ? mode as LightTickCommitmentMode : null,
+      valid_action_count: count, required_action_count: 2, eligible: count >= 2 };
+  }
+
   async selectCommitment(owner: LightTickOwner, input: { goalId: string; mode: LightTickCommitmentMode; deepPlanning?: boolean }) {
     if (!["recovery", "light", "standard", "sprint"].includes(input.mode))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "Commitment mode is invalid.");
     const goal = await this.repository.getGoal(owner, input.goalId);
     if (!goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
-    const events = await this.repository.listExecutionEvents(owner);
-    const actionCount = events.filter(event => event.eventType === "task_complete" && event.payload.valid_action === true).length;
+    const actionCount = await this.validActionCount(owner);
     if (actionCount < 2 && input.deepPlanning !== true)
       throw new ApplicationError(409, "LIGHTTICK_STATE_TRANSITION_INVALID", "Weekly commitment is not eligible yet.",
         { validActionCount: actionCount, requiredActionCount: 2 });
     const profile = await this.repository.getProfile(owner); const timestamp = this.clock().toISOString();
-    if (profile) await this.repository.saveProfile({ ...profile, onboardingState: "completed",
+    if (!profile) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Profile was not found.");
+    await this.repository.saveProfile({ ...profile, onboardingState: "completed",
       onboardingDraft: { ...profile.onboardingDraft, progressive_stage: "committed", commitment_mode: input.mode,
         valid_action_count: actionCount }, updatedAt: timestamp }, profile.version);
     return { goalId: goal.id, status: goal.status, commitmentMode: input.mode, validActionCount: actionCount };

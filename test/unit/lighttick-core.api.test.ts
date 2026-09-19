@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LIGHTTICK_PROMPT_VERSION } from "../../src/modules/lighttick/ai/lighttick-ai-prompts.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import type { LightTickOwner } from "../../src/modules/lighttick/lighttick.types.ts";
 import { createApplication } from "../support/create-test-application.ts";
@@ -28,7 +29,7 @@ test("profile/onboarding API persists a replayable run and validates timezone", 
   assert.equal((accepted.body.data as any).status, "queued");
   assert.equal((accepted.body.data as any).scene, "lighttick.onboarding_plan.v1");
   const persistedRun = await runtime.services.lighttickRuntime.repository.getAiRun(owner, (accepted.body.data as any).id);
-  assert.equal(persistedRun?.promptVersion, "1.0.0");
+  assert.equal(persistedRun?.promptVersion, LIGHTTICK_PROMPT_VERSION);
   assert.equal(persistedRun?.schemaVersion, "1.0.0");
   const replay = await runtime.app.handle({ ...request, requestId: "onboarding-replay" });
   assert.deepEqual(replay.body.data, accepted.body.data);
@@ -113,7 +114,7 @@ test("plan confirmation, Today, and task commands expose deterministic state cha
     pace: "balanced", timezone: "UTC" });
   const goal = (await services.goals.list(owner))[0]!;
   const plan = await services.plans.createProposed(owner, { goalId: goal.id, granularity: "week",
-    periodStart: "2026-08-17", periodEnd: "2026-08-23", source: "template",
+    periodStart: new Date().toISOString().slice(0, 10), periodEnd: new Date().toISOString().slice(0, 10), source: "template",
     tasks: [{ title: "Primary", estimatedMinutes: 90, priority: 10 }, { title: "Backup", estimatedMinutes: 30, priority: 5 }] });
   const confirmed = await runtime.app.handle({ method: "POST", path: `/api/v1/lighttick/plans/${plan.id}/confirm`,
     headers: { ...headers, "idempotency-key": "plan-confirm-001" }, body: { base_version: 1 }, requestId: "confirm" });
@@ -163,7 +164,7 @@ test("LightTick Admin operations requires a session and exposes aggregates only"
     headers: { cookie }, requestId: "operations" });
   assert.equal(response.statusCode, 200); const data = response.body.data as any;
   assert.equal(data.app_id, "lighttick"); assert.equal(data.privacy.private_text_visible, false);
-  assert.equal(data.scenes.length, 9); assert.equal("users" in data, false);
+  assert.equal(data.scenes.length, 11); assert.equal("users" in data, false);
   assert.equal(data.metrics.ai_estimated_cost_upper_bound_usd, 0);
 
   const routing = await runtime.app.handle({ method: "GET", path: "/api/v1/admin/apps/lighttick/ai-routing",
@@ -211,7 +212,7 @@ test("AI run APIs reject unknown plan granularities and review periods before en
   assert.equal(invalidPlan.statusCode, 400); assert.equal(invalidPlan.body.code, "REQ_FIELD_INVALID");
   const invalidReview = await runtime.app.handle({ method: "POST", path: "/api/v1/lighttick/review-runs",
     headers: { ...headers, "idempotency-key": "invalid-review-scene-001" },
-    body: { goal_id: "goal_missing", period: "daily", period_start: "2026-08-20", period_end: "2026-08-20" },
+    body: { goal_id: "goal_missing", period: "quarterly", period_start: "2026-08-20", period_end: "2026-08-20" },
     requestId: "invalid-review-scene" });
   assert.equal(invalidReview.statusCode, 400); assert.equal(invalidReview.body.code, "REQ_FIELD_INVALID");
   assert.equal((runtime.queue as any).jobs.length, 0);

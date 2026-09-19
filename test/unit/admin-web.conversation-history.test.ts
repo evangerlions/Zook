@@ -9,6 +9,7 @@ const historyDebugPath = new URL("../../apps/admin-web/app/components/conversati
 const traceViewPath = new URL("../../apps/admin-web/app/components/conversation-trace-view.tsx", import.meta.url);
 const traceDetailPath = new URL("../../apps/admin-web/app/components/conversation-trace-detail.tsx", import.meta.url);
 const traceContentPath = new URL("../../apps/admin-web/app/components/conversation-trace-content.tsx", import.meta.url);
+const debugToolListPath = new URL("../../apps/admin-web/app/components/conversation-debug-tool-list.tsx", import.meta.url);
 const traceDebugContextPath = new URL("../../apps/admin-web/app/components/conversation-trace-debug-context.tsx", import.meta.url);
 const traceRequestDebugPath = new URL("../../apps/admin-web/app/lib/trace-request-debug.ts", import.meta.url);
 const traceToolNamePath = new URL("../../apps/admin-web/app/lib/trace-tool-name.ts", import.meta.url);
@@ -16,11 +17,12 @@ const traceStylesPath = new URL("../../apps/admin-web/app/styles/conversation-re
 const sceneTagPath = new URL("../../apps/admin-web/app/lib/scene-tag.ts", import.meta.url);
 
 test("admin web keeps historical chat lookup separate from the trace console", async () => {
-  const [shell, routes, historyRoute, historyDebug] = await Promise.all([
+  const [shell, routes, historyRoute, historyDebug, debugToolList] = await Promise.all([
     readFile(shellPath, "utf8"),
     readFile(routesPath, "utf8"),
     readFile(historyRoutePath, "utf8"),
     readFile(historyDebugPath, "utf8"),
+    readFile(debugToolListPath, "utf8"),
   ]);
 
   assert.match(shell, /to: "\/conversation-records", label: "对话追踪", code: "TRC"/);
@@ -32,7 +34,13 @@ test("admin web keeps historical chat lookup separate from the trace console", a
   assert.match(historyRoute, /ConversationHistoryDebugDetails/);
   assert.match(historyDebug, /System prompt/);
   assert.match(historyDebug, /Available tools/);
+  assert.match(historyDebug, /ConversationDebugToolList/);
+  assert.match(historyDebug, /TraceMarkdownContent/);
   assert.match(historyDebug, /<details className="conversation-history-debug-section">/g);
+  assert.match(debugToolList, /<details className="conversation-debug-tool"/);
+  assert.match(debugToolList, /TraceMarkdownContent/);
+  assert.match(debugToolList, /Input schema/);
+  assert.doesNotMatch(debugToolList, /open=/);
 });
 
 test("admin trace detail supports change filtering, rendered and highlighted JSON views", async () => {
@@ -74,7 +82,11 @@ test("admin trace detail supports change filtering, rendered and highlighted JSO
   assert.match(traceToolName, /toolCalls/);
   assert.match(traceDebugContext, /System prompt/);
   assert.match(traceDebugContext, /Available tools/);
+  assert.match(traceDebugContext, /ConversationDebugToolList/);
+  assert.match(traceDebugContext, /TraceMarkdownContent/);
   assert.match(traceRequestDebug, /collectTraceRequestDebugContext/);
+  assert.match(traceRequestDebug, /suppliedTools/);
+  assert.match(traceContent, /export function TraceMarkdownContent/);
   assert.match(traceView, /SceneTag/);
   assert.match(traceDetail, /sceneTagColor/);
   assert.match(sceneTag, /kickoff_turn: "blue"/);

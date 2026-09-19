@@ -28,6 +28,19 @@ export function readOptionalString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+export function readReasoningDetailsText(value: unknown): string | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const text = value
+    .filter(isRecord)
+    .map((detail) => readOptionalString(detail.text))
+    .filter((item): item is string => item !== undefined)
+    .join("");
+  return text.length > 0 ? text : undefined;
+}
+
 export function readOptionalNonBlankString(value: unknown): string | undefined {
   if (typeof value !== "string") {
     return undefined;

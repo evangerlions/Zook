@@ -158,8 +158,9 @@
   margin: 0;
   padding: 12px;
   color: var(--text);
-  font: 0.78rem/1.55 var(--font-mono);
-  white-space: pre-wrap;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  line-height: 1.6;
   overflow-wrap: anywhere;
 }
 

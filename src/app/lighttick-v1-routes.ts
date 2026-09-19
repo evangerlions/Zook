@@ -1,3 +1,4 @@
+import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
@@ -90,7 +91,7 @@ function variantsData(definitions: any) { return definitions ? Object.fromEntrie
 function taskData(row: any, steps: any[] = []) { return { id: row.id, goal_id: row.goalId, plan_id: row.planId, title: row.title,
   status: row.status, scheduled_date: row.scheduledFor?.slice(0, 10), estimated_duration_minutes: row.estimatedMinutes,
   lineage_id: row.lineageId ?? row.id, selected_variant: row.selectedVariant ?? "standard",
-  variants: variantsData(row.variantDefinitions), completion_criteria: row.completionCriteria,
+  variants: variantsData(row.variantDefinitions), completion_criteria: row.completionCriteria, guidance: row.guidance,
   actual_duration_minutes: row.actualMinutes, commitment_satisfied: row.commitmentSatisfied,
   priority: row.priority, steps: steps.map(step => ({ id: step.id, title: step.title,
     completed: step.completed, position: step.position })), completed_at: row.completedAt, note: row.notes, version: row.version,
@@ -99,7 +100,7 @@ function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id: row.g
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, source: row.source,
   proposal: row.proposal,
   ...(tasks ? { tasks: tasks.map(task => taskData(task, task.steps)) } : {}), version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
-function reviewData(row: any) { return { id: row.id, goal_id: row.goalId, period: row.period === "week" ? "weekly" : "monthly",
+function reviewData(row: any) { return { id: row.id, goal_id: row.goalId, period: row.period === "day" ? "daily" : row.period === "week" ? "weekly" : "monthly",
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, facts: row.facts,
   insights: row.output?.insights ?? [], recommendations: row.output?.recommendations ?? [], data_sufficiency: row.dataSufficiency,
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
@@ -289,6 +290,9 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       { operation_id: operationId, resource_id: taskId, result: "returned" });
     return response(context, request, data);
   }
+  if (request.path === `${PREFIX}onboarding/commitment` && request.method === "GET") {
+    return response(context, request, await runtime.progressive.commitmentState(owner));
+  }
   if (request.path === `${PREFIX}onboarding/commitment` && request.method === "POST") {
     const body = bodyOf(request); const operationId = idempotencyKeyOf(request);
     const data = await idempotent(runtime, owner, request, "goal",
@@ -445,15 +449,19 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     return response(context, request, data);
   }
 
+  const reflectionResult = await handleReflectionRequest(runtime.repository, owner, request);
+  if (reflectionResult) return response(context, request, reflectionResult);
+
   if (request.path === `${PREFIX}review-runs` && request.method === "POST") {
     const body = bodyOf(request); const period = stringOf(body.period, "period");
-    if (!["weekly", "monthly"].includes(period))
+    if (!["daily", "weekly", "monthly"].includes(period))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "period is invalid.");
-    const reviewScene = period === "monthly" ? "monthly_review" : "weekly_review";
+    const reviewScene = period === "daily" ? "daily_review" : period === "monthly" ? "monthly_review" : "weekly_review";
     const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
-      const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "monthly" ? "month" : "week",
-        stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"));
-      const run = await createRun(runtime, owner, "review", reviewScene, review.id, body);
+      const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "daily" ? "day" : period === "monthly" ? "month" : "week",
+        stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"),
+        { planId: body.plan_id === undefined ? undefined : stringOf(body.plan_id, "plan_id"), fresh: true });
+      const run = await createRun(runtime, owner, "review", reviewScene, review.id, { ...body, review_id: review.id });
       return runData(run);
     });
     await runtime.jobs?.enqueueReview(owner, (data as any).id, reviewScene);
@@ -475,7 +483,7 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "coach_reply"); return response(context, request, data, 202);
   }
   if (request.path === `${PREFIX}reviews` && request.method === "GET")
-    return response(context, request, { items: (await runtime.repository.listReviews(owner)).map(reviewData), next_cursor: null });
+    return response(context, request, { items: (await runtime.repository.listReviews(owner)).sort((a,b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id)).map(reviewData), next_cursor: null });
   const reviewMatch = request.path.match(/^\/api\/v1\/lighttick\/reviews\/([^/]+)$/);
   if (reviewMatch && request.method === "GET") {
     const review = (await runtime.repository.listReviews(owner)).find(item => item.id === reviewMatch[1]);
@@ -489,7 +497,13 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
       const plan = await runtime.repository.getPlan(owner, stringOf(body.plan_id, "plan_id"));
       if (!plan) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
       if (plan.version !== numberOf(body.base_version, "base_version")) throw new ApplicationError(409, "LIGHTTICK_VERSION_CONFLICT", "Plan version is stale.");
-      return runData(await createRun(runtime, owner, "change_proposal", "change_proposal", plan.id, body));
+      if (body.goal_id && body.goal_id !== plan.goalId) throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Plan belongs to another goal.");
+      if (body.review_id) {
+        const review = (await runtime.repository.listReviews(owner)).find(item => item.id === body.review_id);
+        if (!review) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Review was not found.");
+        if (review.goalId !== plan.goalId) throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Review belongs to another goal.");
+      }
+      return runData(await createRun(runtime, owner, "change_proposal", "change_proposal", plan.id, { ...body, goal_id: plan.goalId }));
     }); await runtime.jobs?.enqueueAiRun(owner, (data as any).id, "change_proposal"); return response(context, request, data, 202);
   }
   if (request.path === `${PREFIX}change-proposals` && request.method === "GET") {

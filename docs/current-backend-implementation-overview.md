@@ -34,6 +34,7 @@ LightTick 独立公开配置在产品关闭时仍可读取，并以固定白名�
 LightTick 通知已复用公共 APNs/FCM 适配器，但使用产品自有安全载荷、APNs topic 和可选独立
 Firebase 项目；调度按业务日期幂等，遵守 profile timezone、安静时段、分类偏好和暂停目标，
 不可恢复 token 只失活匹配的 LightTick device，日志不记录 token 或 provider 凭据。
+周承诺新增账户隔离的只读状态接口，返回已保存档位与实时有效行动资格；读取无副作用，缺资料的保存明确失败，避免未持久化的假成功。
 Phase 2 已实现执行事实与审计、Coach chat 消息存储、DNA 用户反馈、事实驱动提案、复盘决策和 Today 节奏建议。复盘采纳使用数据库事务及版本 CAS，失败整体回滚；有效完成会中断连续跳过。DNA 通过 additive evidence JSONB 迁移保留数值偏差，零偏差或无证据不输出方向建议。公开协议统一维护于 README_API.md 与 LightTick OpenAPI，生成快照供运行时使用；这些能力只对正式账号开放。
 能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
@@ -665,3 +666,11 @@ Admin Web 默认端口当前为 `3110`。
 PostgreSQL migration 017 增加 app-scoped code/token 唯一约束、recipient binding、邮件 delivery/attempt outbox，并非破坏性投影仍存活的 sleep/focus 旧邀请。邮件 worker 使用公共腾讯云 SES 配置，支持 provider correlation、指数退避、最多五次、永久配置错误直接死信及 callback 状态回写。Admin 只读诊断接口只返回掩码邮箱和投递元数据。
 
 能力开关依赖 `FROGSLEEP_BUDDY_INBOX_ENABLED`、`FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED` 和 `FROGSLEEP_BUDDY_EMAIL_ENABLED`；handoff base URL 使用 `FROGSLEEP_BUDDY_HANDOFF_BASE_URL` 或 app delivery config。生产可用仍以 migration、API/worker 同版本、SES sender/template/callback、真实邮箱与两账号验收全部通过为前提。
+
+### LightTick 对话规划 P2（2026-09-13）
+新增 PlanningSession 六个公共接口、摘要来源合并、异步澄清/草案调整、版本失效与原子确认；默认由 LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED 关闭。迁移 060 为独立增量表，支持 owner 删除。新草案复用现有计划/任务，旧客户端无需修改；原生入口和真实 provider 质量验收属于 P3。接入协议见 README_API.md；契约位于 api-contracts/openapi/lighttick/api.yaml。
+
+
+LightTick App 闭环增量：计划确认已原子保存 guidance、完成标准与步骤；Today 按用户业务日聚合活跃计划并排除完成目标；复盘支持日/周/月且按目标、时区收集执行事实，run 携带 review_id；调整可引用同目标复盘，复盘建议生成未来可审阅周期。迁移 064 新增任务 guidance。上述为候选实现能力，不等于真实 provider 质量、真机推送或 Online 发布已验收；见 `docs/lighttick/app-loop-integration.md`。
+
+LightTick 通用规划增量：独立个人复盘（无需AI保存、版本冲突保护）、整个计划/日期范围复盘、独立AI分析记录及计划重复任务确认保护；见 README_API.md。真实模型质量与设备发布门禁仍需独立验收。

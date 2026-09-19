@@ -31,6 +31,10 @@ public enum LightTickErrorCode: String, Codable, Sendable {
     case invalidStateTransition = "LIGHTTICK_STATE_TRANSITION_INVALID"
     case versionConflict = "LIGHTTICK_VERSION_CONFLICT"
     case idempotencyMismatch = "LIGHTTICK_IDEMPOTENCY_MISMATCH"
+    case planningBusy = "LIGHTTICK_PLANNING_BUSY"
+    case planningNotReady = "LIGHTTICK_PLANNING_NOT_READY"
+    case planningStale = "LIGHTTICK_PLANNING_STALE"
+    case planningContextTooLarge = "LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE"
     case planConstraintFailed = "LIGHTTICK_PLAN_CONSTRAINT_FAILED"
     case aiRunFailed = "LIGHTTICK_AI_RUN_FAILED"
     case aiUnavailable = "LIGHTTICK_AI_UNAVAILABLE"
@@ -370,3 +374,57 @@ public enum LightTickContractDecoder {
         return decoder
     }
 }
+
+
+/// GET /api/v1/lighttick/onboarding/commitment (account-scoped, read-only).
+public struct LightTickCommitmentState: Codable, Equatable, Sendable {
+    public let commitmentMode: String?
+    public let validActionCount: Int
+    public let requiredActionCount: Int
+    public let eligible: Bool
+    enum CodingKeys: String, CodingKey {
+        case commitmentMode = "commitment_mode", validActionCount = "valid_action_count"
+        case requiredActionCount = "required_action_count", eligible
+    }
+}
+
+// BEGIN GENERATED PLANNING SESSION
+
+public enum PlanningScalar: Codable, Equatable, Sendable {
+    case text(String), minutes(Int)
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if let n = try? c.decode(Int.self) { self = .minutes(n) } else { self = .text(try c.decode(String.self)) }
+    }
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        switch self { case .text(let s): try c.encode(s); case .minutes(let n): try c.encode(n) }
+    }
+    public var display: String { switch self { case .text(let s): s; case .minutes(let n): String(n) } }
+}
+public struct PlanningValue: Codable, Equatable, Sendable {
+    public let value: PlanningScalar
+    public let source: String
+    public let source_message_id: String?
+}
+public struct PlanningSession: Codable, Equatable, Sendable {
+
+    public let id: String
+    public let goal_id: String
+    public let thread_id: String
+    public let status: String
+    public let version: Int
+    public let context_revision: Int
+    public let context: [String: PlanningValue]
+    public let questions: [String]
+    public let clarification_rounds: Int
+    public let active_run_id: String?
+    public let draft_plan_id: String?
+    public let draft_revision: Int?
+    public let draft_expires_at: String?
+    public let last_error: String?
+    public let can_generate: Bool
+    public let created_at: String
+    public let updated_at: String
+}
+// END GENERATED PLANNING SESSION

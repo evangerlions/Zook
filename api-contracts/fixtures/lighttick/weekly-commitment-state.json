@@ -1,0 +1,11 @@
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "commitment_mode": "light",
+    "valid_action_count": 2,
+    "required_action_count": 2,
+    "eligible": true
+  },
+  "requestId": "commitment-fixture"
+}

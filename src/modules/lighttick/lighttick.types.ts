@@ -48,12 +48,15 @@ export interface LightTickPlanRow extends LightTickOwner, LightTickVersioned {
   proposal: Record<string, unknown>;
 }
 
+export interface LightTickTaskGuidance { purpose?: string; materials?: string[]; expected_output?: string; }
+
 export interface LightTickTaskRow extends LightTickOwner, LightTickVersioned {
   id: string; goalId: string; planId: string; title: string; status: string;
   priority: number; estimatedMinutes: number; scheduledFor?: string;
   startedAt?: string; completedAt?: string; notes?: string;
   lineageId?: string; selectedVariant?: LightTickTaskVariant;
   variantDefinitions?: Record<LightTickTaskVariant, LightTickTaskVariantDefinition>;
+  guidance?: LightTickTaskGuidance;
   completionCriteria?: string; actualMinutes?: number; commitmentSatisfied?: boolean;
 }
 
@@ -89,7 +92,7 @@ export interface LightTickDnaInsightRow extends LightTickOwner, LightTickVersion
 }
 
 export interface LightTickReviewRow extends LightTickOwner, LightTickVersioned {
-  id: string; goalId: string; period: "week" | "month"; status: string;
+  id: string; goalId: string; period: "day" | "week" | "month"; status: string;
   periodStart: string; periodEnd: string; facts: Record<string, unknown>;
   output: Record<string, unknown>; dataSufficiency: string;
 }

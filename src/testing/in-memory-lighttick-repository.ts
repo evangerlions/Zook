@@ -1,3 +1,5 @@
+import type { LightTickReflectionRow } from "../modules/lighttick/lighttick-reflection.service.ts";
+import type { PlanningSession } from "../modules/lighttick/planning/planning.types.ts";
 import type { LightTickAtomicWrite, LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
@@ -14,11 +16,13 @@ const ownerKey = (owner: LightTickOwner) => `${owner.appId}:${owner.userId}`;
 const rowKey = (row: LightTickOwner & { id: string }) => `${ownerKey(row)}:${row.id}`;
 
 export class InMemoryLightTickRepository implements LightTickRepository {
+  private planningSessions = new Map<string, PlanningSession>();
   private profiles = new Map<string, LightTickProfileRow>();
   private goals = new Map<string, LightTickGoalRow>();
   private plans = new Map<string, LightTickPlanRow>();
   private tasks = new Map<string, LightTickTaskRow>();
   private taskSteps = new Map<string, LightTickTaskStepRow>();
+  private reflections = new Map<string, LightTickReflectionRow>();
   private reviews = new Map<string, LightTickReviewRow>();
   private proposals = new Map<string, LightTickChangeProposalRow>();
   private aiRuns = new Map<string, LightTickAiRunRow>();
@@ -48,14 +52,16 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
-      tasks: [...this.tasks], taskSteps: [...this.taskSteps], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
+    const snapshot = clone({ planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+      tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
       events: this.events, insightAudits: this.insightAudits, chatMessages: this.chatMessages, dnaInsights: this.dnaInsights,
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.reflections = new Map(snapshot.reflections);
+      this.planningSessions = new Map(snapshot.planningSessions);
       this.profiles = new Map(snapshot.profiles); this.goals = new Map(snapshot.goals); this.plans = new Map(snapshot.plans);
       this.tasks = new Map(snapshot.tasks); this.taskSteps = new Map(snapshot.taskSteps); this.reviews = new Map(snapshot.reviews); this.proposals = new Map(snapshot.proposals);
       this.aiRuns = new Map(snapshot.aiRuns); this.operations = new Map(snapshot.operations); this.devices = new Map(snapshot.devices);
@@ -86,6 +92,14 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.changes.push(clone({ ...write.change, sequence: ++this.sequence }));
   }
 
+  async lockPlanningOwner(owner: LightTickOwner) { this.assertOwner(owner); }
+  async getPlanningSession(owner: LightTickOwner, id: string) {
+    this.assertOwner(owner); return clone(this.planningSessions.get(rowKey({ ...owner, id })));
+  }
+  async savePlanningSession(row: PlanningSession, expectedVersion?: number) {
+    const key = rowKey(row); const saved = this.versioned(this.planningSessions.get(key), row, expectedVersion);
+    this.planningSessions.set(key, saved); return clone(saved);
+  }
   async getGuestIdentity(owner: LightTickOwner) { return clone(this.guestIdentities.get(ownerKey(owner))); }
   async getGuestIdentityByDevice(deviceId: string) {
     return clone([...this.guestIdentities.values()].find(row => row.deviceId === deviceId));
@@ -120,7 +134,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
         tasks: this.countOwner(this.tasks, guestKey), reviews: this.countOwner(this.reviews, guestKey),
         proposals: this.countOwner(this.proposals, guestKey) };
       this.mergeProfile(guestKey, targetKey, command.targetUserId);
-      for (const store of [this.goals, this.plans, this.tasks, this.taskSteps, this.reviews, this.proposals, this.aiRuns] as Map<string, any>[])
+      for (const store of [this.goals, this.plans, this.tasks, this.taskSteps, this.reflections, this.reviews, this.proposals, this.aiRuns] as Map<string, any>[])
         this.moveOwnedRows(store, guestKey, targetKey, command.targetUserId);
       this.moveOwnedRows(this.operations as Map<string, any>, guestKey, targetKey, command.targetUserId, true);
       this.mergeDevices(guestKey, targetKey, command.targetUserId);
@@ -258,6 +272,15 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     });
   }
 
+  async listReflections(owner: LightTickOwner) {
+    this.assertOwner(owner);
+    return clone([...this.reflections.values()].filter(row => ownerKey(row) === ownerKey(owner))
+      .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)));
+  }
+  async saveReflection(row: LightTickReflectionRow, expectedVersion?: number) {
+    const saved = this.versioned(this.reflections.get(rowKey(row)), row, expectedVersion);
+    this.reflections.set(rowKey(row), saved); return clone(saved);
+  }
   async listReviews(owner: LightTickOwner) { return clone([...this.reviews.values()].filter(row => ownerKey(row) === ownerKey(owner))); }
   async saveReview(row: LightTickReviewRow, expectedVersion?: number) {
     this.assertOwner(row);
@@ -299,7 +322,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     for (const [key, operation] of this.upgradeOperations)
       if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)
         this.upgradeOperations.delete(key);
-    for (const store of [this.goals,this.plans,this.tasks,this.taskSteps,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
+    for (const store of [this.planningSessions,this.goals,this.plans,this.tasks,this.taskSteps,this.reflections,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
       for (const key of store.keys()) if (key.startsWith(prefix)) store.delete(key);
     }
     this.events = this.events.filter(row => ownerKey(row) !== ownerKey(owner));
