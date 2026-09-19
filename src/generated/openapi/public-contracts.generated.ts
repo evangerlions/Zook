@@ -926,7 +926,8 @@ export const CurrentUserDataSchema = {
   "required": [
     "appId",
     "accountRegion",
-    "user"
+    "user",
+    "vip"
   ],
   "properties": {
     "appId": {
@@ -974,6 +975,88 @@ export const CurrentUserDataSchema = {
           "type": "boolean"
         }
       }
+    },
+    "vip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active",
+        "state",
+        "tier",
+        "planKey",
+        "expiresAt",
+        "autoRenew",
+        "source"
+      ],
+      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Whether the account currently has access to the app's VIP benefits."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "free",
+            "active",
+            "cancelled",
+            "grace_period",
+            "expired"
+          ]
+        },
+        "tier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "vip",
+            "svip",
+            null
+          ],
+          "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+        },
+        "planKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "autoRenew": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "app_store",
+            "play_store",
+            "alipay",
+            "rc_web",
+            null
+          ]
+        },
+        "managementUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
     }
   }
 } as const;
@@ -989,6 +1072,110 @@ export type CurrentUserData = {
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
 };
+  "vip": {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "vip" | "svip" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
+};
+};
+
+export const VipInfoSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "active",
+    "state",
+    "tier",
+    "planKey",
+    "expiresAt",
+    "autoRenew",
+    "source"
+  ],
+  "description": "App-scoped entitlement summary for the authenticated product account.",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "description": "Whether the account currently has access to the app's VIP benefits."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "free",
+        "active",
+        "cancelled",
+        "grace_period",
+        "expired"
+      ]
+    },
+    "tier": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "vip",
+        "svip",
+        null
+      ],
+      "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+    },
+    "planKey": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "expiresAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "autoRenew": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "source": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "app_store",
+        "play_store",
+        "alipay",
+        "rc_web",
+        null
+      ]
+    },
+    "managementUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    }
+  }
+} as const;
+
+export type VipInfo = {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "vip" | "svip" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
 };
 
 export const AnalyticsEventInputSchema = {
@@ -2168,6 +2355,71 @@ export const AINovelPublicConfigSchema = {
           }
         }
       }
+    },
+    "billing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "revenueCat": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "configVersion",
+            "proxyUrl",
+            "publicSdkKeys"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "configVersion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "proxyUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri",
+              "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+            },
+            "publicSdkKeys": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "ios",
+                "android",
+                "web"
+              ],
+              "properties": {
+                "ios": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1
+                },
+                "android": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1
+                },
+                "web": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -2253,6 +2505,18 @@ export type AINovelPublicConfig = {
 )[];
 }
 )[];
+};
+  "billing"?: {
+  "revenueCat"?: {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
 };
   [key: string]: unknown;
 };
@@ -2688,6 +2952,71 @@ export const PublicConfigDataSchema = {
               }
             }
           }
+        },
+        "billing": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "revenueCat": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "enabled",
+                "configVersion",
+                "proxyUrl",
+                "publicSdkKeys"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "configVersion": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "proxyUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri",
+                  "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+                },
+                "publicSdkKeys": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "ios",
+                    "android",
+                    "web"
+                  ],
+                  "properties": {
+                    "ios": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "android": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "web": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2781,6 +3110,18 @@ export type PublicConfigData = {
 )[];
 }
 )[];
+};
+  "billing"?: {
+  "revenueCat"?: {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
 };
   [key: string]: unknown;
 };
@@ -3858,6 +4199,1428 @@ export type PublicReleaseUpdateData = {
 )[];
 };
   "updatedAt"?: string;
+};
+
+export const BillingPublicConfigSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "revenueCat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "configVersion",
+        "proxyUrl",
+        "publicSdkKeys"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "configVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "proxyUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri",
+          "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+        },
+        "publicSdkKeys": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ios",
+            "android",
+            "web"
+          ],
+          "properties": {
+            "ios": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "android": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "web": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BillingPublicConfig = {
+  "revenueCat"?: {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
+};
+
+export const RevenueCatPublicConfigSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "configVersion",
+    "proxyUrl",
+    "publicSdkKeys"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "configVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proxyUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+    },
+    "publicSdkKeys": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "properties": {
+        "ios": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "android": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "web": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type RevenueCatPublicConfig = {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
+
+export const AccountRegionSchema = {
+  "type": "string",
+  "enum": [
+    "CN",
+    "GLOBAL",
+    "UNKNOWN"
+  ]
+} as const;
+
+export type AccountRegion = "CN" | "GLOBAL" | "UNKNOWN";
+
+export const BillingPlatformSchema = {
+  "type": "string",
+  "enum": [
+    "ios",
+    "android",
+    "macos",
+    "web",
+    "windows"
+  ]
+} as const;
+
+export type BillingPlatform = "ios" | "android" | "macos" | "web" | "windows";
+
+export const DistributionChannelSchema = {
+  "type": "string",
+  "enum": [
+    "app_store",
+    "google_play",
+    "china_android_store",
+    "direct_android",
+    "web",
+    "windows"
+  ]
+} as const;
+
+export type DistributionChannel = "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
+
+export const AlipayCheckoutPlatformSchema = {
+  "type": "string",
+  "enum": [
+    "android",
+    "web",
+    "windows"
+  ]
+} as const;
+
+export type AlipayCheckoutPlatform = "android" | "web" | "windows";
+
+export const AlipayCheckoutDistributionSchema = {
+  "type": "string",
+  "enum": [
+    "china_android_store",
+    "direct_android",
+    "web",
+    "windows"
+  ]
+} as const;
+
+export type AlipayCheckoutDistribution = "china_android_store" | "direct_android" | "web" | "windows";
+
+export const BillingProviderSchema = {
+  "type": "string",
+  "enum": [
+    "revenuecat",
+    "alipay"
+  ]
+} as const;
+
+export type BillingProvider = "revenuecat" | "alipay";
+
+export const BillingProductKeySchema = {
+  "type": "string",
+  "enum": [
+    "vip_monthly",
+    "vip_quarterly",
+    "vip_yearly",
+    "svip_monthly",
+    "svip_quarterly",
+    "svip_yearly"
+  ]
+} as const;
+
+export type BillingProductKey = "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
+
+export const BillingTierSchema = {
+  "type": "string",
+  "enum": [
+    "vip",
+    "svip"
+  ]
+} as const;
+
+export type BillingTier = "vip" | "svip";
+
+export const CheckoutStatusSchema = {
+  "type": "string",
+  "enum": [
+    "pending",
+    "processing",
+    "completed",
+    "failed",
+    "expired"
+  ]
+} as const;
+
+export type CheckoutStatus = "pending" | "processing" | "completed" | "failed" | "expired";
+
+export const SyncStatusSchema = {
+  "type": "string",
+  "enum": [
+    "synchronized",
+    "pending"
+  ]
+} as const;
+
+export type SyncStatus = "synchronized" | "pending";
+
+export const MoneySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "amountMinor",
+    "currency"
+  ],
+  "properties": {
+    "amountMinor": {
+      "type": "integer",
+      "format": "int64",
+      "minimum": 0,
+      "description": "Amount in the smallest unit of the currency."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    }
+  }
+} as const;
+
+export type Money = {
+  "amountMinor": number;
+  "currency": string;
+};
+
+export const BillingProductSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "productKey",
+    "tier",
+    "billingPeriod",
+    "providers"
+  ],
+  "properties": {
+    "productKey": {
+      "type": "string",
+      "enum": [
+        "vip_monthly",
+        "vip_quarterly",
+        "vip_yearly",
+        "svip_monthly",
+        "svip_quarterly",
+        "svip_yearly"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "vip",
+        "svip"
+      ]
+    },
+    "billingPeriod": {
+      "type": "string",
+      "description": "ISO 8601 duration, for example P1M or P1Y.",
+      "enum": [
+        "P1M",
+        "P3M",
+        "P1Y"
+      ]
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider",
+          "available",
+          "price"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "revenuecat",
+              "alipay"
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "active_membership_managed_elsewhere",
+              "unsupported_distribution",
+              "provider_unavailable",
+              null
+            ]
+          },
+          "providerProductId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Store or provider product identifier used by the client/provider adapter."
+          },
+          "providerPackageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "RevenueCat package identifier when the provider uses offerings."
+          },
+          "providerEntitlementId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "RevenueCat entitlement identifier or equivalent provider entitlement key."
+          },
+          "price": {
+            "description": "Server-controlled price. Null means the native store supplies the price.",
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "amountMinor",
+                  "currency"
+                ],
+                "properties": {
+                  "amountMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "description": "Amount in the smallest unit of the currency."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BillingProduct = {
+  "productKey": "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
+  "tier": "vip" | "svip";
+  "billingPeriod": "P1M" | "P3M" | "P1Y";
+  "providers": (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+)[];
+};
+
+export const BillingProductProviderSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "provider",
+    "available",
+    "price"
+  ],
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "revenuecat",
+        "alipay"
+      ]
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "blockedReason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "active_membership_managed_elsewhere",
+        "unsupported_distribution",
+        "provider_unavailable",
+        null
+      ]
+    },
+    "providerProductId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Store or provider product identifier used by the client/provider adapter."
+    },
+    "providerPackageId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "RevenueCat package identifier when the provider uses offerings."
+    },
+    "providerEntitlementId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "RevenueCat entitlement identifier or equivalent provider entitlement key."
+    },
+    "price": {
+      "description": "Server-controlled price. Null means the native store supplies the price.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amountMinor",
+            "currency"
+          ],
+          "properties": {
+            "amountMinor": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "description": "Amount in the smallest unit of the currency."
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+} as const;
+
+export type BillingProductProvider = {
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+};
+
+export const CatalogDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "accountRegion",
+    "platform",
+    "distribution",
+    "products"
+  ],
+  "properties": {
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android",
+        "macos",
+        "web",
+        "windows"
+      ]
+    },
+    "distribution": {
+      "type": "string",
+      "enum": [
+        "app_store",
+        "google_play",
+        "china_android_store",
+        "direct_android",
+        "web",
+        "windows"
+      ]
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "productKey",
+          "tier",
+          "billingPeriod",
+          "providers"
+        ],
+        "properties": {
+          "productKey": {
+            "type": "string",
+            "enum": [
+              "vip_monthly",
+              "vip_quarterly",
+              "vip_yearly",
+              "svip_monthly",
+              "svip_quarterly",
+              "svip_yearly"
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "vip",
+              "svip"
+            ]
+          },
+          "billingPeriod": {
+            "type": "string",
+            "description": "ISO 8601 duration, for example P1M or P1Y.",
+            "enum": [
+              "P1M",
+              "P3M",
+              "P1Y"
+            ]
+          },
+          "providers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "available",
+                "price"
+              ],
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "revenuecat",
+                    "alipay"
+                  ]
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "blockedReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "active_membership_managed_elsewhere",
+                    "unsupported_distribution",
+                    "provider_unavailable",
+                    null
+                  ]
+                },
+                "providerProductId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Store or provider product identifier used by the client/provider adapter."
+                },
+                "providerPackageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "RevenueCat package identifier when the provider uses offerings."
+                },
+                "providerEntitlementId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "RevenueCat entitlement identifier or equivalent provider entitlement key."
+                },
+                "price": {
+                  "description": "Server-controlled price. Null means the native store supplies the price.",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "amountMinor",
+                        "currency"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "integer",
+                          "format": "int64",
+                          "minimum": 0,
+                          "description": "Amount in the smallest unit of the currency."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{3}$"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type CatalogData = {
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
+  "platform": "ios" | "android" | "macos" | "web" | "windows";
+  "distribution": "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
+  "products": (
+{
+  "productKey": "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
+  "tier": "vip" | "svip";
+  "billingPeriod": "P1M" | "P3M" | "P1Y";
+  "providers": (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+)[];
+}
+)[];
+};
+
+export const SyncDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "syncStatus",
+    "vip"
+  ],
+  "properties": {
+    "syncStatus": {
+      "type": "string",
+      "enum": [
+        "synchronized",
+        "pending"
+      ]
+    },
+    "vip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active",
+        "state",
+        "tier",
+        "planKey",
+        "expiresAt",
+        "autoRenew",
+        "source"
+      ],
+      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Whether the account currently has access to the app's VIP benefits."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "free",
+            "active",
+            "cancelled",
+            "grace_period",
+            "expired"
+          ]
+        },
+        "tier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "vip",
+            "svip",
+            null
+          ],
+          "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+        },
+        "planKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "autoRenew": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "app_store",
+            "play_store",
+            "alipay",
+            "rc_web",
+            null
+          ]
+        },
+        "managementUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
+    }
+  }
+} as const;
+
+export type SyncData = {
+  "syncStatus": "synchronized" | "pending";
+  "vip": {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "vip" | "svip" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
+};
+};
+
+export const SyncRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "type": "string",
+      "enum": [
+        "purchase",
+        "restore",
+        "app_start",
+        "retry"
+      ],
+      "description": "Non-authoritative client intent used for diagnostics only."
+    }
+  }
+} as const;
+
+export type SyncRequest = {
+  "reason"?: "purchase" | "restore" | "app_start" | "retry";
+};
+
+export const CreateCheckoutRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "productKey",
+    "provider",
+    "platform",
+    "distribution"
+  ],
+  "properties": {
+    "productKey": {
+      "type": "string",
+      "enum": [
+        "vip_monthly",
+        "vip_quarterly",
+        "vip_yearly",
+        "svip_monthly",
+        "svip_quarterly",
+        "svip_yearly"
+      ]
+    },
+    "provider": {
+      "type": "string",
+      "const": "alipay"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "android",
+        "web",
+        "windows"
+      ]
+    },
+    "distribution": {
+      "type": "string",
+      "enum": [
+        "china_android_store",
+        "direct_android",
+        "web",
+        "windows"
+      ]
+    }
+  }
+} as const;
+
+export type CreateCheckoutRequest = {
+  "productKey": "vip_monthly" | "vip_quarterly" | "vip_yearly" | "svip_monthly" | "svip_quarterly" | "svip_yearly";
+  "provider": string;
+  "platform": "android" | "web" | "windows";
+  "distribution": "china_android_store" | "direct_android" | "web" | "windows";
+};
+
+export const CheckoutSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "checkoutId",
+    "provider",
+    "productKey",
+    "status",
+    "launch",
+    "expiresAt"
+  ],
+  "properties": {
+    "checkoutId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider": {
+      "type": "string",
+      "const": "alipay"
+    },
+    "productKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "expired"
+      ]
+    },
+    "launch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "payload"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "native_order",
+            "html_form"
+          ]
+        },
+        "payload": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Alipay order string for native_order or provider-generated HTML form for html_form."
+        }
+      }
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type Checkout = {
+  "checkoutId": string;
+  "provider": string;
+  "productKey": string;
+  "status": "pending" | "processing" | "completed" | "failed" | "expired";
+  "launch": {
+  "mode": "native_order" | "html_form";
+  "payload": string;
+};
+  "expiresAt": string;
+};
+
+export const AlipayCheckoutLaunchSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mode",
+    "payload"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "native_order",
+        "html_form"
+      ]
+    },
+    "payload": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Alipay order string for native_order or provider-generated HTML form for html_form."
+    }
+  }
+} as const;
+
+export type AlipayCheckoutLaunch = {
+  "mode": "native_order" | "html_form";
+  "payload": string;
+};
+
+export const CheckoutStatusDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "checkoutId",
+    "status",
+    "vip"
+  ],
+  "properties": {
+    "checkoutId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "expired"
+      ]
+    },
+    "vip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active",
+        "state",
+        "tier",
+        "planKey",
+        "expiresAt",
+        "autoRenew",
+        "source"
+      ],
+      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Whether the account currently has access to the app's VIP benefits."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "free",
+            "active",
+            "cancelled",
+            "grace_period",
+            "expired"
+          ]
+        },
+        "tier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "vip",
+            "svip",
+            null
+          ],
+          "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+        },
+        "planKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "autoRenew": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "app_store",
+            "play_store",
+            "alipay",
+            "rc_web",
+            null
+          ]
+        },
+        "managementUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
+    }
+  }
+} as const;
+
+export type CheckoutStatusData = {
+  "checkoutId": string;
+  "status": "pending" | "processing" | "completed" | "failed" | "expired";
+  "vip": {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "vip" | "svip" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
+};
+};
+
+export const BillingProviderConflictDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "currentProvider",
+    "currentSource",
+    "expiresAt"
+  ],
+  "properties": {
+    "currentProvider": {
+      "type": "string",
+      "enum": [
+        "revenuecat",
+        "alipay"
+      ]
+    },
+    "currentSource": {
+      "type": "string",
+      "enum": [
+        "app_store",
+        "play_store",
+        "alipay",
+        "rc_web"
+      ]
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "managementUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    }
+  }
+} as const;
+
+export type BillingProviderConflictData = {
+  "currentProvider": "revenuecat" | "alipay";
+  "currentSource": "app_store" | "play_store" | "alipay" | "rc_web";
+  "expiresAt": string;
+  "managementUrl"?: string | null;
+};
+
+export const CheckoutStatusResponseSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "const": "OK"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkoutId",
+        "status",
+        "vip"
+      ],
+      "properties": {
+        "checkoutId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "processing",
+            "completed",
+            "failed",
+            "expired"
+          ]
+        },
+        "vip": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "active",
+            "state",
+            "tier",
+            "planKey",
+            "expiresAt",
+            "autoRenew",
+            "source"
+          ],
+          "description": "App-scoped entitlement summary for the authenticated product account.",
+          "properties": {
+            "active": {
+              "type": "boolean",
+              "description": "Whether the account currently has access to the app's VIP benefits."
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "free",
+                "active",
+                "cancelled",
+                "grace_period",
+                "expired"
+              ]
+            },
+            "tier": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "vip",
+                "svip",
+                null
+              ],
+              "description": "Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP."
+            },
+            "planKey": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "expiresAt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "autoRenew": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "app_store",
+                "play_store",
+                "alipay",
+                "rc_web",
+                null
+              ]
+            },
+            "managementUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri"
+            }
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type CheckoutStatusResponse = {
+  "code": string;
+  "message": string;
+  "data": {
+  "checkoutId": string;
+  "status": "pending" | "processing" | "completed" | "failed" | "expired";
+  "vip": {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "vip" | "svip" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
+};
+};
+  "requestId": string;
+};
+
+export const ErrorResponseSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "currentProvider",
+            "currentSource",
+            "expiresAt"
+          ],
+          "properties": {
+            "currentProvider": {
+              "type": "string",
+              "enum": [
+                "revenuecat",
+                "alipay"
+              ]
+            },
+            "currentSource": {
+              "type": "string",
+              "enum": [
+                "app_store",
+                "play_store",
+                "alipay",
+                "rc_web"
+              ]
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "managementUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type ErrorResponse = {
+  "code": string;
+  "message": string;
+  "data"?: {
+  "currentProvider": "revenuecat" | "alipay";
+  "currentSource": "app_store" | "play_store" | "alipay" | "rc_web";
+  "expiresAt": string;
+  "managementUrl"?: string | null;
+} | unknown;
+  "requestId": string;
 };
 
 export const AiNovelStatisticsDataSchema = {
@@ -20634,14 +22397,26 @@ export const GeneratedPublicContractNames = [
   "AINovelPublicConfig",
   "AccountDeletionData",
   "AccountDeletionRequest",
+  "AccountRegion",
   "AiNovelStatisticsData",
   "AiNovelStatisticsSnapshotRequest",
   "AiNovelStatisticsSnapshotResponse",
+  "AlipayCheckoutDistribution",
+  "AlipayCheckoutLaunch",
+  "AlipayCheckoutPlatform",
   "AnalyticsAcceptedData",
   "AnalyticsBatchRequest",
   "AnalyticsEventInput",
   "AuthAcceptedData",
   "AuthSessionData",
+  "BillingPlatform",
+  "BillingProduct",
+  "BillingProductKey",
+  "BillingProductProvider",
+  "BillingProvider",
+  "BillingProviderConflictData",
+  "BillingPublicConfig",
+  "BillingTier",
   "BodyLogAvatarKey",
   "BodyLogBlockListItem",
   "BodyLogChallengeCreateRequest",
@@ -20689,10 +22464,18 @@ export const GeneratedPublicContractNames = [
   "BuddyNotificationPreferencesRequest",
   "BuddySharingGrantUpdateRequest",
   "BuddyStructuredShareRequest",
+  "CatalogData",
   "ChangePasswordRequest",
+  "Checkout",
+  "CheckoutStatus",
+  "CheckoutStatusData",
+  "CheckoutStatusResponse",
+  "CreateCheckoutRequest",
   "CurrentUserData",
+  "DistributionChannel",
   "EmailCodeRequest",
   "EmailLoginRequest",
+  "ErrorResponse",
   "FileConfirmData",
   "FileConfirmRequest",
   "FilePresignData",
@@ -20856,6 +22639,7 @@ export const GeneratedPublicContractNames = [
   "LogPullTaskData",
   "LogUploadData",
   "LogoutRequest",
+  "Money",
   "NotificationQueuedData",
   "NotificationSendRequest",
   "OneClickLoginRequest",
@@ -20878,8 +22662,13 @@ export const GeneratedPublicContractNames = [
   "ReleaseVersion",
   "ResetPasswordBySmsRequest",
   "ResetPasswordRequest",
+  "RevenueCatPublicConfig",
   "SetPasswordRequest",
   "SmsCodeRequest",
   "SmsLoginRequest",
-  "UserSummary"
+  "SyncData",
+  "SyncRequest",
+  "SyncStatus",
+  "UserSummary",
+  "VipInfo"
 ] as const;

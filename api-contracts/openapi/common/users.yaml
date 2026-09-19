@@ -94,7 +94,7 @@ components:
           $ref: "#/components/schemas/CurrentUserData"
     CurrentUserData:
       type: object
-      required: [appId, accountRegion, user]
+      required: [appId, accountRegion, user, vip]
       properties:
         appId: { type: string }
         accountRegion:
@@ -102,6 +102,38 @@ components:
           enum: [CN, GLOBAL, UNKNOWN]
         user:
           $ref: "#/components/schemas/UserSummary"
+        vip:
+          $ref: "#/components/schemas/VipInfo"
+    VipInfo:
+      type: object
+      additionalProperties: false
+      required: [active, state, tier, planKey, expiresAt, autoRenew, source]
+      description: App-scoped entitlement summary for the authenticated product account.
+      properties:
+        active:
+          type: boolean
+          description: Whether the account currently has access to the app's VIP benefits.
+        state:
+          type: string
+          enum: [free, active, cancelled, grace_period, expired]
+        tier:
+          type: [string, "null"]
+          enum: [vip, svip, null]
+          description: Effective active tier for the app account; SVIP wins when both VIP and SVIP grants are active in the MVP.
+        planKey:
+          type: [string, "null"]
+          minLength: 1
+        expiresAt:
+          type: [string, "null"]
+          format: date-time
+        autoRenew:
+          type: [boolean, "null"]
+        source:
+          type: [string, "null"]
+          enum: [app_store, play_store, alipay, rc_web, null]
+        managementUrl:
+          type: [string, "null"]
+          format: uri
     AccountDeletionRequest:
       type: object
       required: [appId, confirmation]

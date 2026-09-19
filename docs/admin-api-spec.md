@@ -395,6 +395,16 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 需要 Admin 会话。可选 query：`invitation_id`、`status`、`limit`；`status` 仅接受 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed`、`dead_letter`。响应只包含 `invitation_id`、`recipient_masked`、投递/尝试状态、provider correlation ID、稳定错误码和时间戳，不返回完整邮箱、邀请码、token 或模板参数。每次读取都会写入 admin audit。
 
+### 3.14 AINovel Billing 订单
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/ai_novel/billing/orders` | 按用户、支付订单、checkout、provider 交易号、provider、平台、渠道、状态和时间范围分页查询 AINovel 支付订单 |
+| `GET` | `/api/v1/admin/apps/ai_novel/billing/orders/{paymentId}` | 查看订单、交易、权益 grant 和支付事件时间线 |
+
+Billing 管理接口只读取 Zook 持久化支付记录，不读取 Docker stdout。需要 Admin 会话和 AINOVEL app scope 下的 `billing:read` 权限；每次读取写入 admin audit。列表使用固定上限和稳定 cursor 排序，详情的事件时间线也必须分页。订单、交易和权益记录展示脱敏后的 provider 标识、状态、金额快照、时间戳、错误码和重试信息，不返回 receipt、access token、签名、私钥、webhook 原文或其他 provider secret。
+
+支付深度排查使用 API / Worker 的 Docker 结构化日志，通过 `appId`、`userId`、`paymentId`、`checkoutId`、`providerEventId`、`requestId` 和 `correlationId` 串联完整流程；日志不作为订单事实来源。
 ## 4. 关联文档
 
 - [admin-web-design.md](admin-web-design.md)
