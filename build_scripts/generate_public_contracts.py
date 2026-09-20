@@ -67,6 +67,13 @@ SPECS: dict[str, list[str]] = {
         "KickoffPublicConfig",
         "AINovelPublicConfig",
         "PublicConfigData",
+        "ReleaseVersion",
+        "ReleaseUpdateArtifact",
+        "ReleaseUpdateExperiment",
+        "ReleaseUpdateReminderPolicy",
+        "ReleaseUpdateTarget",
+        "PublicReleaseUpdateConfig",
+        "PublicReleaseUpdateData",
     ],
     "ainovel/statistics.yaml": [
         "AiNovelStatisticsData",

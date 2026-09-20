@@ -17,6 +17,7 @@ const SERVER_WORKSPACES = [
   { to: "/content-safety", label: "Content Safety", code: "CSF", description: "配置用户输入内容安全与敏感词" },
   { to: "/getui-gy", label: "GeYan", code: "GY", description: "配置运营商一键登录能力" },
   { to: "/llm", label: "LLM", code: "LLM", description: "配置模型、路由与监控能力" },
+  { to: "/release-updates", label: "应用更新", code: "UPD", description: "维护各产品平台与商店的最新版本" },
 ];
 
 const APP_WORKSPACES = [

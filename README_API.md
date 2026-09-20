@@ -242,6 +242,17 @@ GET  /api/v1/my-todo/callbacks/oauth/google
 3. 这条接口当前返回的是后台 `admin.delivery_config` 中维护的 app 级公共配置
 4. 其他 `/public/*` 模板接口仍需按产品需要补齐
 
+升级提醒使用独立的 `GET /api/v1/{productKey}/public/update`。它从公共
+`common.release_updates` 目录按产品 key 投影，只返回当前产品启用的 target；target
+用 `platform + channel` 区分平台和商店，`delivery=download` 提供包下载地址，
+`delivery=store` 提供商店地址。该接口不负责比较客户端版本、下载、安装或提交商店审核，
+这些动作由产品客户端完成。target 的 `reminder.maxCount`（0 表示不限）和
+`reminder.intervalSeconds` 提供可选升级提醒的次数与最小间隔；`mandatory` 强制升级不受
+提醒次数限制。产物可选提供 `messageI18n`（locale 到文本的映射），客户端只在存在当前
+语言文本时显示；未配置时不显示客户端内置的替代更新消息。
+AINovel 读取既有 `GET /api/v1/ai_novel/public/config` 时，也会在 `config.releaseUpdate`
+中收到同一份 AINovel 专属投影，便于客户端减少一次请求。
+
 当前返回示例：
 
 ```json
@@ -346,6 +357,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
 | `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
 | `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`；`bodylog` 与 `lighttick` 为产品专属实现（见各产品章节）                                                                 |
+| `GET`  | `/api/v1/{productKey}/public/update`      | 获取产品自己的平台 / 商店升级目录；匿名可读，`download` 目标提供下载地址，`store` 目标提供商店地址                                                                                         |
 | `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
 | `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
 | `GET` / `POST` | `/api/v1/bodylog/friend-requests` | 查询或发起 BodyLog 好友申请                                                                                                        |

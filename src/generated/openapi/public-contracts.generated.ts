@@ -1936,6 +1936,238 @@ export const AINovelPublicConfigSchema = {
           }
         }
       }
+    },
+    "releaseUpdate": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "targets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "platform",
+              "channel",
+              "delivery",
+              "enabled",
+              "mandatory",
+              "latest",
+              "reminder",
+              "experiments"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]*$"
+              },
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "ohos",
+                  "windows",
+                  "web"
+                ]
+              },
+              "channel": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                "description": "Direct distribution or store identifier, such as direct, google-play, app-store, huawei, honor, vivo, oppo, or xiaomi."
+              },
+              "delivery": {
+                "type": "string",
+                "enum": [
+                  "download",
+                  "store"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "mandatory": {
+                "type": "boolean",
+                "description": "Whether a client below latest must block normal use until it upgrades."
+              },
+              "latest": {
+                "type": "object",
+                "required": [
+                  "version",
+                  "buildNumber"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                  },
+                  "buildNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "packageName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fileName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "downloadUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "storeUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-fA-F0-9]{64}$"
+                  },
+                  "sizeBytes": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "messageI18n": {
+                    "type": "object",
+                    "description": "Optional per-locale message shown in the client update dialog.",
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "minimumSupported": {
+                "type": "object",
+                "required": [
+                  "version",
+                  "buildNumber"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                  },
+                  "buildNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              "reminder": {
+                "type": "object",
+                "required": [
+                  "maxCount",
+                  "intervalSeconds"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "maxCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Maximum optional prompts for the same installed build; 0 means unlimited. Mandatory upgrades remain blocking regardless of this count."
+                  },
+                  "intervalSeconds": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Minimum interval between two prompts for the same installed build."
+                  }
+                }
+              },
+              "experiments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "enabled",
+                    "rolloutPercent",
+                    "artifact"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "rolloutPercent": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "artifact": {
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "buildNumber"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "version": {
+                          "type": "string",
+                          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                        },
+                        "buildNumber": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "packageName": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileName": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "downloadUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "storeUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{64}$"
+                        },
+                        "sizeBytes": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "messageI18n": {
+                          "type": "object",
+                          "description": "Optional per-locale message shown in the client update dialog.",
+                          "additionalProperties": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -1967,6 +2199,60 @@ export type AINovelPublicConfig = {
   "sw-KE"?: string[];
 };
   [key: string]: unknown;
+};
+  "releaseUpdate"?: {
+  "schemaVersion": number;
+  "targets": (
+{
+  "id": string;
+  "platform": "android" | "ios" | "ohos" | "windows" | "web";
+  "channel": string;
+  "delivery": "download" | "store";
+  "enabled": boolean;
+  "mandatory": boolean;
+  "latest": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+  "minimumSupported"?: {
+  "version": string;
+  "buildNumber": number;
+};
+  "reminder": {
+  "maxCount": number;
+  "intervalSeconds": number;
+};
+  "experiments": (
+{
+  "id": string;
+  "enabled": boolean;
+  "rolloutPercent": number;
+  "artifact": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+}
+)[];
+}
+)[];
 };
   [key: string]: unknown;
 };
@@ -2170,6 +2456,238 @@ export const PublicConfigDataSchema = {
               }
             }
           }
+        },
+        "releaseUpdate": {
+          "type": "object",
+          "required": [
+            "schemaVersion",
+            "targets"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {
+              "type": "integer",
+              "const": 1
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "platform",
+                  "channel",
+                  "delivery",
+                  "enabled",
+                  "mandatory",
+                  "latest",
+                  "reminder",
+                  "experiments"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]*$"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "android",
+                      "ios",
+                      "ohos",
+                      "windows",
+                      "web"
+                    ]
+                  },
+                  "channel": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                    "description": "Direct distribution or store identifier, such as direct, google-play, app-store, huawei, honor, vivo, oppo, or xiaomi."
+                  },
+                  "delivery": {
+                    "type": "string",
+                    "enum": [
+                      "download",
+                      "store"
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "mandatory": {
+                    "type": "boolean",
+                    "description": "Whether a client below latest must block normal use until it upgrades."
+                  },
+                  "latest": {
+                    "type": "object",
+                    "required": [
+                      "version",
+                      "buildNumber"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "version": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      },
+                      "buildNumber": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "packageName": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "fileName": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "downloadUrl": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "storeUrl": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[a-fA-F0-9]{64}$"
+                      },
+                      "sizeBytes": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "messageI18n": {
+                        "type": "object",
+                        "description": "Optional per-locale message shown in the client update dialog.",
+                        "additionalProperties": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  },
+                  "minimumSupported": {
+                    "type": "object",
+                    "required": [
+                      "version",
+                      "buildNumber"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "version": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      },
+                      "buildNumber": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    }
+                  },
+                  "reminder": {
+                    "type": "object",
+                    "required": [
+                      "maxCount",
+                      "intervalSeconds"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "maxCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Maximum optional prompts for the same installed build; 0 means unlimited. Mandatory upgrades remain blocking regardless of this count."
+                      },
+                      "intervalSeconds": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Minimum interval between two prompts for the same installed build."
+                      }
+                    }
+                  },
+                  "experiments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "enabled",
+                        "rolloutPercent",
+                        "artifact"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+                        },
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "rolloutPercent": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "artifact": {
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "buildNumber"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "version": {
+                              "type": "string",
+                              "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                            },
+                            "buildNumber": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "packageName": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileName": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "downloadUrl": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "storeUrl": {
+                              "type": "string",
+                              "format": "uri"
+                            },
+                            "sha256": {
+                              "type": "string",
+                              "pattern": "^[a-fA-F0-9]{64}$"
+                            },
+                            "sizeBytes": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "messageI18n": {
+                              "type": "object",
+                              "description": "Optional per-locale message shown in the client update dialog.",
+                              "additionalProperties": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2210,7 +2728,1134 @@ export type PublicConfigData = {
 };
   [key: string]: unknown;
 };
+  "releaseUpdate"?: {
+  "schemaVersion": number;
+  "targets": (
+{
+  "id": string;
+  "platform": "android" | "ios" | "ohos" | "windows" | "web";
+  "channel": string;
+  "delivery": "download" | "store";
+  "enabled": boolean;
+  "mandatory": boolean;
+  "latest": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+  "minimumSupported"?: {
+  "version": string;
+  "buildNumber": number;
+};
+  "reminder": {
+  "maxCount": number;
+  "intervalSeconds": number;
+};
+  "experiments": (
+{
+  "id": string;
+  "enabled": boolean;
+  "rolloutPercent": number;
+  "artifact": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+}
+)[];
+}
+)[];
+};
   [key: string]: unknown;
+};
+  "updatedAt"?: string;
+};
+
+export const ReleaseVersionSchema = {
+  "type": "object",
+  "required": [
+    "version",
+    "buildNumber"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "buildNumber": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type ReleaseVersion = {
+  "version": string;
+  "buildNumber": number;
+};
+
+export const ReleaseUpdateArtifactSchema = {
+  "type": "object",
+  "required": [
+    "version",
+    "buildNumber"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "buildNumber": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "packageName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fileName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "downloadUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "storeUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "sizeBytes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "messageI18n": {
+      "type": "object",
+      "description": "Optional per-locale message shown in the client update dialog.",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+} as const;
+
+export type ReleaseUpdateArtifact = {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+
+export const ReleaseUpdateExperimentSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "enabled",
+    "rolloutPercent",
+    "artifact"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "rolloutPercent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "version",
+        "buildNumber"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "buildNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "packageName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "downloadUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "storeUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "messageI18n": {
+          "type": "object",
+          "description": "Optional per-locale message shown in the client update dialog.",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type ReleaseUpdateExperiment = {
+  "id": string;
+  "enabled": boolean;
+  "rolloutPercent": number;
+  "artifact": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+};
+
+export const ReleaseUpdateReminderPolicySchema = {
+  "type": "object",
+  "required": [
+    "maxCount",
+    "intervalSeconds"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "maxCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum optional prompts for the same installed build; 0 means unlimited. Mandatory upgrades remain blocking regardless of this count."
+    },
+    "intervalSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Minimum interval between two prompts for the same installed build."
+    }
+  }
+} as const;
+
+export type ReleaseUpdateReminderPolicy = {
+  "maxCount": number;
+  "intervalSeconds": number;
+};
+
+export const ReleaseUpdateTargetSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "platform",
+    "channel",
+    "delivery",
+    "enabled",
+    "mandatory",
+    "latest",
+    "reminder",
+    "experiments"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "android",
+        "ios",
+        "ohos",
+        "windows",
+        "web"
+      ]
+    },
+    "channel": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Direct distribution or store identifier, such as direct, google-play, app-store, huawei, honor, vivo, oppo, or xiaomi."
+    },
+    "delivery": {
+      "type": "string",
+      "enum": [
+        "download",
+        "store"
+      ]
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "mandatory": {
+      "type": "boolean",
+      "description": "Whether a client below latest must block normal use until it upgrades."
+    },
+    "latest": {
+      "type": "object",
+      "required": [
+        "version",
+        "buildNumber"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "buildNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "packageName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "downloadUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "storeUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "messageI18n": {
+          "type": "object",
+          "description": "Optional per-locale message shown in the client update dialog.",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "minimumSupported": {
+      "type": "object",
+      "required": [
+        "version",
+        "buildNumber"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "buildNumber": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "reminder": {
+      "type": "object",
+      "required": [
+        "maxCount",
+        "intervalSeconds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "maxCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum optional prompts for the same installed build; 0 means unlimited. Mandatory upgrades remain blocking regardless of this count."
+        },
+        "intervalSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum interval between two prompts for the same installed build."
+        }
+      }
+    },
+    "experiments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "enabled",
+          "rolloutPercent",
+          "artifact"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]*$"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "rolloutPercent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "artifact": {
+            "type": "object",
+            "required": [
+              "version",
+              "buildNumber"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "version": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+$"
+              },
+              "buildNumber": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "packageName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fileName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "downloadUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "storeUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "messageI18n": {
+                "type": "object",
+                "description": "Optional per-locale message shown in the client update dialog.",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type ReleaseUpdateTarget = {
+  "id": string;
+  "platform": "android" | "ios" | "ohos" | "windows" | "web";
+  "channel": string;
+  "delivery": "download" | "store";
+  "enabled": boolean;
+  "mandatory": boolean;
+  "latest": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+  "minimumSupported"?: {
+  "version": string;
+  "buildNumber": number;
+};
+  "reminder": {
+  "maxCount": number;
+  "intervalSeconds": number;
+};
+  "experiments": (
+{
+  "id": string;
+  "enabled": boolean;
+  "rolloutPercent": number;
+  "artifact": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+}
+)[];
+};
+
+export const PublicReleaseUpdateConfigSchema = {
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "targets"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "platform",
+          "channel",
+          "delivery",
+          "enabled",
+          "mandatory",
+          "latest",
+          "reminder",
+          "experiments"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]*$"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "android",
+              "ios",
+              "ohos",
+              "windows",
+              "web"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "description": "Direct distribution or store identifier, such as direct, google-play, app-store, huawei, honor, vivo, oppo, or xiaomi."
+          },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "download",
+              "store"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "mandatory": {
+            "type": "boolean",
+            "description": "Whether a client below latest must block normal use until it upgrades."
+          },
+          "latest": {
+            "type": "object",
+            "required": [
+              "version",
+              "buildNumber"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "version": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+$"
+              },
+              "buildNumber": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "packageName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fileName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "downloadUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "storeUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "messageI18n": {
+                "type": "object",
+                "description": "Optional per-locale message shown in the client update dialog.",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "minimumSupported": {
+            "type": "object",
+            "required": [
+              "version",
+              "buildNumber"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "version": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+$"
+              },
+              "buildNumber": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          },
+          "reminder": {
+            "type": "object",
+            "required": [
+              "maxCount",
+              "intervalSeconds"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "maxCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Maximum optional prompts for the same installed build; 0 means unlimited. Mandatory upgrades remain blocking regardless of this count."
+              },
+              "intervalSeconds": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Minimum interval between two prompts for the same installed build."
+              }
+            }
+          },
+          "experiments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "enabled",
+                "rolloutPercent",
+                "artifact"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9_-]*$"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "rolloutPercent": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "artifact": {
+                  "type": "object",
+                  "required": [
+                    "version",
+                    "buildNumber"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "version": {
+                      "type": "string",
+                      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                    },
+                    "buildNumber": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "packageName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "fileName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "downloadUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "storeUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-fA-F0-9]{64}$"
+                    },
+                    "sizeBytes": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "messageI18n": {
+                      "type": "object",
+                      "description": "Optional per-locale message shown in the client update dialog.",
+                      "additionalProperties": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type PublicReleaseUpdateConfig = {
+  "schemaVersion": number;
+  "targets": (
+{
+  "id": string;
+  "platform": "android" | "ios" | "ohos" | "windows" | "web";
+  "channel": string;
+  "delivery": "download" | "store";
+  "enabled": boolean;
+  "mandatory": boolean;
+  "latest": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+  "minimumSupported"?: {
+  "version": string;
+  "buildNumber": number;
+};
+  "reminder": {
+  "maxCount": number;
+  "intervalSeconds": number;
+};
+  "experiments": (
+{
+  "id": string;
+  "enabled": boolean;
+  "rolloutPercent": number;
+  "artifact": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+}
+)[];
+}
+)[];
+};
+
+export const PublicReleaseUpdateDataSchema = {
+  "type": "object",
+  "required": [
+    "appId",
+    "config"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "appId": {
+      "type": "string",
+      "example": "ai_novel"
+    },
+    "config": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "targets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "platform",
+              "channel",
+              "delivery",
+              "enabled",
+              "mandatory",
+              "latest",
+              "reminder",
+              "experiments"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]*$"
+              },
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "android",
+                  "ios",
+                  "ohos",
+                  "windows",
+                  "web"
+                ]
+              },
+              "channel": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                "description": "Direct distribution or store identifier, such as direct, google-play, app-store, huawei, honor, vivo, oppo, or xiaomi."
+              },
+              "delivery": {
+                "type": "string",
+                "enum": [
+                  "download",
+                  "store"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "mandatory": {
+                "type": "boolean",
+                "description": "Whether a client below latest must block normal use until it upgrades."
+              },
+              "latest": {
+                "type": "object",
+                "required": [
+                  "version",
+                  "buildNumber"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                  },
+                  "buildNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "packageName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fileName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "downloadUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "storeUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-fA-F0-9]{64}$"
+                  },
+                  "sizeBytes": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "messageI18n": {
+                    "type": "object",
+                    "description": "Optional per-locale message shown in the client update dialog.",
+                    "additionalProperties": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "minimumSupported": {
+                "type": "object",
+                "required": [
+                  "version",
+                  "buildNumber"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                  },
+                  "buildNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              "reminder": {
+                "type": "object",
+                "required": [
+                  "maxCount",
+                  "intervalSeconds"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "maxCount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Maximum optional prompts for the same installed build; 0 means unlimited. Mandatory upgrades remain blocking regardless of this count."
+                  },
+                  "intervalSeconds": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Minimum interval between two prompts for the same installed build."
+                  }
+                }
+              },
+              "experiments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "enabled",
+                    "rolloutPercent",
+                    "artifact"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "rolloutPercent": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "artifact": {
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "buildNumber"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "version": {
+                          "type": "string",
+                          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                        },
+                        "buildNumber": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "packageName": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileName": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "downloadUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "storeUrl": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[a-fA-F0-9]{64}$"
+                        },
+                        "sizeBytes": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "messageI18n": {
+                          "type": "object",
+                          "description": "Optional per-locale message shown in the client update dialog.",
+                          "additionalProperties": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type PublicReleaseUpdateData = {
+  "appId": string;
+  "config": {
+  "schemaVersion": number;
+  "targets": (
+{
+  "id": string;
+  "platform": "android" | "ios" | "ohos" | "windows" | "web";
+  "channel": string;
+  "delivery": "download" | "store";
+  "enabled": boolean;
+  "mandatory": boolean;
+  "latest": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+  "minimumSupported"?: {
+  "version": string;
+  "buildNumber": number;
+};
+  "reminder": {
+  "maxCount": number;
+  "intervalSeconds": number;
+};
+  "experiments": (
+{
+  "id": string;
+  "enabled": boolean;
+  "rolloutPercent": number;
+  "artifact": {
+  "version": string;
+  "buildNumber": number;
+  "packageName"?: string;
+  "fileName"?: string;
+  "downloadUrl"?: string;
+  "storeUrl"?: string;
+  "sha256"?: string;
+  "sizeBytes"?: number;
+  "messageI18n"?: {
+  [key: string]: string;
+};
+};
+}
+)[];
+}
+)[];
 };
   "updatedAt"?: string;
 };
@@ -16212,6 +17857,8 @@ export const GeneratedPublicContractNames = [
   "PasswordLoginRequest",
   "PasswordSmsCodeRequest",
   "PublicConfigData",
+  "PublicReleaseUpdateConfig",
+  "PublicReleaseUpdateData",
   "QrLoginConfirmData",
   "QrLoginCreateData",
   "QrLoginCreateRequest",
@@ -16219,6 +17866,11 @@ export const GeneratedPublicContractNames = [
   "RefreshRequest",
   "RegisterBySmsRequest",
   "RegisterRequest",
+  "ReleaseUpdateArtifact",
+  "ReleaseUpdateExperiment",
+  "ReleaseUpdateReminderPolicy",
+  "ReleaseUpdateTarget",
+  "ReleaseVersion",
   "ResetPasswordBySmsRequest",
   "ResetPasswordRequest",
   "SetPasswordRequest",

@@ -13,6 +13,7 @@ import { CommonGetuiGyConfigService } from "../../services/common-getui-gy-confi
 import { CommonLlmConfigService } from "../../services/common-llm-config.service.ts";
 import { CommonContentSafetyConfigService } from "../../services/common-content-safety-config.service.ts";
 import { CommonPasswordConfigService } from "../../services/common-password-config.service.ts";
+import { CommonReleaseUpdateConfigService } from "../../services/common-release-update-config.service.ts";
 import { EmailTestSendService } from "../../services/email-test-send.service.ts";
 import { LlmHealthService } from "../../services/llm-health.service.ts";
 import { LlmMetricsService } from "../../services/llm-metrics.service.ts";
@@ -36,10 +37,12 @@ import type {
   AdminConfigDocument,
   AdminDeleteAppResult,
   AdminPasswordRevealDocument,
+  AdminReleaseUpdateDocument,
   AdminSmsVerificationListDocument,
   AdminSmsVerificationRevealDocument,
   AppRecord,
   PublicAppConfigDocument,
+  PublicReleaseUpdateDocument,
 } from "../../shared/types.ts";
 import { AdminConsoleCommonConfig } from "./admin-console-common-config.ts";
 import { AdminConsoleCommonFacade } from "./admin-console-common-facade.ts";
@@ -72,6 +75,7 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     private readonly commonGetuiGyConfigService: CommonGetuiGyConfigService,
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly commonContentSafetyConfigService: CommonContentSafetyConfigService,
+    private readonly commonReleaseUpdateConfigService: CommonReleaseUpdateConfigService,
     private readonly commonPasswordConfigService: CommonPasswordConfigService,
     private readonly emailTestSendService: EmailTestSendService,
     private readonly llmHealthService: LlmHealthService,
@@ -167,12 +171,56 @@ export class AdminConsoleService extends AdminConsoleCommonFacade {
     }
 
     const rawJson = await this.readNormalizedConfig(app.id);
+    const appConfig = JSON.parse(rawJson) as Record<string, unknown>;
+    const releaseUpdate = app.id === "ai_novel"
+      ? await this.commonReleaseUpdateConfigService.getPublicConfig(app.id)
+      : undefined;
+    const appUpdatedAt = await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY);
 
     return {
       appId: app.id,
-      config: JSON.parse(rawJson) as Record<string, unknown>,
-      updatedAt: await this.appConfigService.getUpdatedAt(app.id, ADMIN_CONFIG_KEY),
+      config: releaseUpdate
+        ? { ...appConfig, releaseUpdate: releaseUpdate.config }
+        : appConfig,
+      updatedAt: [appUpdatedAt, releaseUpdate?.updatedAt]
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .at(-1),
     };
+  }
+
+  async getPublicReleaseUpdate(appId: string): Promise<PublicReleaseUpdateDocument> {
+    const app = await this.requireApp(appId);
+    if (app.id === COMMON_APP_ID) {
+      throw new ApplicationError(404, "APP_NOT_FOUND", "App common does not expose public release updates.");
+    }
+
+    if (app.status === "BLOCKED") {
+      throw new ApplicationError(403, "APP_BLOCKED", "The app is blocked.");
+    }
+
+    const update = await this.commonReleaseUpdateConfigService.getPublicConfig(app.id);
+    return {
+      appId: app.id,
+      config: update.config,
+      updatedAt: update.updatedAt,
+    };
+  }
+
+  async getReleaseUpdateConfig(revision?: number): Promise<AdminReleaseUpdateDocument> {
+    return this.commonReleaseUpdateConfigService.getDocument(revision);
+  }
+
+  async updateReleaseUpdateConfig(input: unknown, desc?: string): Promise<AdminReleaseUpdateDocument> {
+    const document = await this.commonReleaseUpdateConfigService.updateConfig(input, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
+  }
+
+  async restoreReleaseUpdateConfig(revision: number, desc?: string): Promise<AdminReleaseUpdateDocument> {
+    const document = await this.commonReleaseUpdateConfigService.restoreConfig(revision, desc);
+    await this.managedStateStore.save(this.database);
+    return document;
   }
 
   async updateConfig(appId: string, rawJson: string, desc?: string): Promise<AdminConfigDocument> {

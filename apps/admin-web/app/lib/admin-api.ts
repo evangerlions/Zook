@@ -37,6 +37,7 @@ import type {
   AdminLlmSmokeTestRunRequest,
   AdminPasswordDocument,
   AdminPasswordRevealDocument,
+  AdminReleaseUpdateDocument,
   AdminSensitiveOperationCodeRequestDocument,
   AdminSmsServiceDocument,
   AdminSmsVerificationListDocument,
@@ -125,6 +126,26 @@ export const adminApi = {
   },
   getConfig(appId: string) {
     return requestJson<AdminConfigDocument>(adminPath(`/apps/${encodeURIComponent(appId)}/config`));
+  },
+  getReleaseUpdates() {
+    return requestJson<AdminReleaseUpdateDocument>(adminPath("/apps/common/release-updates"));
+  },
+  getReleaseUpdatesRevision(revision: number) {
+    return requestJson<AdminReleaseUpdateDocument>(
+      adminPath(`/apps/common/release-updates/revisions/${revision}`),
+    );
+  },
+  updateReleaseUpdates(config: unknown, desc?: string) {
+    return requestJson<AdminReleaseUpdateDocument>(adminPath("/apps/common/release-updates"), {
+      method: "PUT",
+      body: { config, desc: desc || undefined },
+    });
+  },
+  restoreReleaseUpdates(revision: number, desc?: string) {
+    return requestJson<AdminReleaseUpdateDocument>(
+      adminPath(`/apps/common/release-updates/revisions/${revision}/restore`),
+      { method: "POST", body: { desc: desc || undefined } },
+    );
   },
   getAiRouting(appId: string) {
     return requestJson<AdminAiRoutingDocument>(adminPath(`/apps/${encodeURIComponent(appId)}/ai-routing`));
