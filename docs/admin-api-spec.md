@@ -85,6 +85,78 @@
 admin.delivery_config
 ```
 
+### 3.4.1 全局应用升级目录
+
+升级目录位于 `common` 工作区，使用版本化配置键 `common.release_updates`。它可以
+同时维护多个产品、平台和商店的最新产物；公开读取时 Zook 只投影请求产品自己的
+启用 target。
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/common/release-updates` | 获取全局升级目录与版本历史 |
+| `PUT` | `/api/v1/admin/apps/common/release-updates` | 校验并保存全局升级目录 |
+| `GET` | `/api/v1/admin/apps/common/release-updates/revisions/{revision}` | 获取指定历史版本 |
+| `POST` | `/api/v1/admin/apps/common/release-updates/revisions/{revision}/restore` | 恢复指定历史版本 |
+
+配置骨架：
+
+```json
+{
+  "schemaVersion": 1,
+  "products": {
+    "ai_novel": {
+      "targets": [
+        {
+          "id": "android-direct",
+          "platform": "android",
+          "channel": "direct",
+          "delivery": "download",
+          "enabled": true,
+          "mandatory": false,
+          "latest": {
+            "version": "1.5.0",
+            "buildNumber": 1040101,
+            "fileName": "OrangeWrite-1.5.0+1040101-cn.apk",
+            "downloadUrl": "https://cdn.example.com/OrangeWrite.apk",
+            "sha256": "<64 hex characters>",
+            "messageI18n": {
+              "zh-CN": "本次更新优化了章节编辑体验。",
+              "en-US": "This update improves the chapter editing experience."
+            }
+          },
+          "minimumSupported": { "version": "1.4.0", "buildNumber": 1040000 },
+          "reminder": { "maxCount": 3, "intervalSeconds": 86400 },
+          "experiments": []
+        },
+        {
+          "id": "ios-app-store",
+          "platform": "ios",
+          "channel": "app-store",
+          "delivery": "store",
+          "enabled": true,
+          "mandatory": false,
+          "latest": {
+            "version": "1.5.0",
+            "buildNumber": 1040101,
+            "storeUrl": "https://apps.apple.com/app/id123456789"
+          },
+          "experiments": []
+        }
+      ]
+    }
+  }
+}
+```
+
+`platform + channel` 在同一产品内必须唯一。`download` target 必须有 HTTPS/HTTP
+下载地址，`store` target 必须有商店地址；版本号使用 `x.y.z`，build number 为正整数。
+`reminder.maxCount` 为同一已安装 build 的可选升级最多提醒次数，`0` 表示不限次数；
+`reminder.intervalSeconds` 为两次提醒的最小间隔。客户端可按本机平台 / 渠道选择 target，
+再按当前 build number 与 `mandatory` / `minimumSupported` 决定升级提示方式。强制升级仍
+必须阻止继续使用，提醒次数不能绕过强制策略。
+`latest.messageI18n`（实验包则填写在对应 `artifact.messageI18n`）为可选的更新提示文案，
+客户端只在存在当前语言文案时显示；未配置时不显示固定客户端替代文案。
+
 ### 3.5 AINovel 模型选择
 
 AINovel 所有文本场景共用同一组模型权重配置。客户端只提交 `scene_key` 来选择 Prompt/工具工作流，不提交模型键、Provider 或用户档位。

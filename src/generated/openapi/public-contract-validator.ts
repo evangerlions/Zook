@@ -38,6 +38,7 @@ import type {
   OneClickLoginRequest,
   PasswordLoginRequest,
   PublicConfigData,
+  PublicReleaseUpdateData,
   QrLoginCreateRequest,
   RegisterRequest,
   RefreshRequest,
@@ -86,6 +87,7 @@ import {
   OneClickLoginRequestSchema,
   PasswordLoginRequestSchema,
   PublicConfigDataSchema,
+  PublicReleaseUpdateDataSchema,
   QrLoginCreateRequestSchema,
   RefreshRequestSchema,
   RegisterRequestSchema,
@@ -164,6 +166,7 @@ const validators = {
   logFail: ajv.compile(LogFailRequestSchema),
   notificationSend: ajv.compile(NotificationSendRequestSchema),
   publicConfig: ajv.compile(PublicConfigDataSchema),
+  publicReleaseUpdate: ajv.compile(PublicReleaseUpdateDataSchema),
 } as const;
 
 export const PublicContractValidator = {
@@ -304,5 +307,8 @@ export const PublicContractValidator = {
   },
   validatePublicConfigData(input: unknown) {
     return validateWithSchema<PublicConfigData>(validators.publicConfig, input);
+  },
+  validatePublicReleaseUpdateData(input: unknown) {
+    return validateWithSchema<PublicReleaseUpdateData>(validators.publicReleaseUpdate, input);
   },
 };

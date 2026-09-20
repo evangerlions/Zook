@@ -20,5 +20,6 @@ export default [
     route("content-safety", "routes/content-safety.tsx"),
     route("getui-gy", "routes/getui-gy.tsx"),
     route("llm", "routes/llm.tsx"),
+    route("release-updates", "routes/release-updates.tsx"),
   ]),
 ] satisfies RouteConfig;

@@ -292,6 +292,23 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
    `config` 对象；它在业务关闭时仍提供安全启动元数据，且只有运行时与后台开关同时开启时
    才会把公开能力标记为启用
 
+### 2.12.1 产品升级目录
+
+统一升级目录由公共配置键 `common.release_updates` 管理。后台可以在一个版本化
+配置中登记多个产品、多个平台和多个分发渠道；同一产品的 Android 直下载包、Google
+Play、App Store、OpenHarmony、Windows 直下载包等使用独立 target，因此各平台的最新
+版本可以不同。每个 target 的 `delivery` 为 `download` 或 `store`，分别要求
+`latest.downloadUrl` 或 `latest.storeUrl`；`mandatory` 与 `minimumSupported` 供客户端
+决定普通升级还是强制升级，`reminder.maxCount` 与 `reminder.intervalSeconds` 控制同一
+已安装 build 的可选提醒次数和频率（`maxCount=0` 表示不限），`experiments` 用于配置可选实验包和灰度比例。产物可选提供 `messageI18n`，由客户端按当前语言显示更新消息；缺失时客户端不使用固定替代消息。
+
+公开接口为 `GET /api/v1/{productKey}/public/update`，无需登录。响应只包含该
+`productKey` 的启用 target 和启用中的实验包，不会把其他产品的产物目录下发给客户端。
+AINovel 的既有 `GET /api/v1/ai_novel/public/config` 也会带上同一份
+`config.releaseUpdate` 投影，方便客户端复用原有公开配置请求。
+当前客户端升级弹框与下载 / 商店跳转仍由 AINovel 实现，Zook 只负责版本化存储、校验和
+产品隔离投影。
+
 ### 2.13 AINovel 加密 AI 能力接口
 
 当前 `ai_novel` 已经补齐一版正式 AI 能力接口：
