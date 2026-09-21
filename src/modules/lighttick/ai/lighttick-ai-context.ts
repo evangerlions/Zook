@@ -31,9 +31,9 @@ export async function assembleLightTickContext(repository: LightTickRepository, 
   };
 }
 
-/** Multi-turn Coach context: goal + referenced resources + recent thread + execution facts. */
-export async function assembleChatContext(repository: LightTickRepository, owner: LightTickOwner,
-  input: Record<string, unknown>, threadId: string, historyLimit = 20) {
+/** Validate references both before enqueue and when a delayed run executes. */
+export async function loadChatResources(repository: LightTickRepository, owner: LightTickOwner,
+  input: Record<string, unknown>) {
   const goalId = typeof input.goal_id === "string" ? input.goal_id : undefined;
   const goal = goalId ? await repository.getGoal(owner, goalId) : undefined;
   if (!goalId || !goal) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Goal was not found.");
@@ -49,10 +49,23 @@ export async function assembleChatContext(repository: LightTickRepository, owner
   const taskId = typeof input.task_id === "string" ? input.task_id : undefined;
   const task = taskId ? await repository.getTask(owner, taskId) : undefined;
   if (taskId && !task) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Task was not found.");
+  if (task && (task.goalId !== goalId || (plan && task.planId !== plan.id)))
+    throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Task must belong to the requested goal and plan.");
+  return { goal, plan, review, task };
+}
+
+/** Multi-turn Coach context excludes other goals, including shared thread IDs. */
+export async function assembleChatContext(repository: LightTickRepository, owner: LightTickOwner,
+  input: Record<string, unknown>, threadId: string, historyLimit = 20) {
+  const { goal, plan, review, task } = await loadChatResources(repository, owner, input);
   const profile = await repository.getProfile(owner);
-  const events = await repository.listExecutionEvents(owner);
+  // Legacy events do not carry a trustworthy goal id; resolve through owner-scoped tasks.
+  // Orphaned task events are excluded rather than assigned from untrusted payload text.
+  const events = (await repository.listExecutionEvents(owner, undefined, undefined, goal.id))
+    .map(event => ({ ...event, eventType: event.eventType === "task_complete" ? "task_completed"
+      : event.eventType === "task_skip" ? "task_skipped" : event.eventType }));
   const facts = aggregateExecutionFacts(events, profile?.timezone ?? "Asia/Shanghai");
-  const history = (await repository.listChatMessages(owner, threadId, historyLimit))
+  const history = (await repository.listChatMessages(owner, threadId, historyLimit, goal.id))
     .filter(message => message.role === "user" || message.role === "assistant")
     .map(message => ({ role: message.role, content: message.content }));
   return {

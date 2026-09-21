@@ -331,9 +331,11 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.dnaInsights = this.dnaInsights.filter(row => ownerKey(row) !== ownerKey(owner));
     this.changes = this.changes.filter(row => ownerKey(row) !== ownerKey(owner));
   }
-  async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string) {
+  async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string, goalId?: string) {
     return clone(this.events.filter(row => ownerKey(row) === ownerKey(owner) &&
-      (!from || row.occurredAt >= from) && (!to || row.occurredAt < to)));
+      (!from || row.occurredAt >= from) && (!to || row.occurredAt < to) &&
+      (goalId === undefined || (row.aggregateType === "task" &&
+        this.tasks.get(rowKey({ ...owner, id: row.aggregateId }))?.goalId === goalId))));
   }
   async appendInsightAudit(row: LightTickInsightAuditRow): Promise<LightTickInsightAuditRow> {
     this.insightAudits.push(clone(row)); return clone(row);
@@ -346,10 +348,10 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   async saveChatMessage(row: LightTickChatMessageRow): Promise<LightTickChatMessageRow> {
     this.chatMessages.push(clone(row)); return clone(row);
   }
-  async listChatMessages(owner: LightTickOwner, threadId: string, limit: number): Promise<LightTickChatMessageRow[]> {
+  async listChatMessages(owner: LightTickOwner, threadId: string, limit: number, goalId?: string): Promise<LightTickChatMessageRow[]> {
     const bounded = Math.min(Math.max(limit, 1), 200);
-    return clone(this.chatMessages.filter(row => ownerKey(row) === ownerKey(owner) && row.threadId === threadId)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).slice(-bounded));
+    return clone(this.chatMessages.filter(row => ownerKey(row) === ownerKey(owner) && row.threadId === threadId && (goalId === undefined || row.goalId === goalId))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)).slice(-bounded));
   }
   async getDnaInsight(owner: LightTickOwner, id: string): Promise<LightTickDnaInsightRow | undefined> {
     return clone(this.dnaInsights.find(row => ownerKey(row) === ownerKey(owner) && row.id === id));

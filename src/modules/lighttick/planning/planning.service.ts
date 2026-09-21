@@ -92,7 +92,7 @@ export class LightTickPlanningService {
     }
     const name = action === "messages" ? "planning_clarify" : "week_plan";
     const scene = LIGHTTICK_AI_SCENES[name]; const now = this.clock().toISOString();
-    const history = (await this.repository.listChatMessages(session, session.threadId, 8)).map(m=>({ role:m.role, content:m.content.slice(0,1000) }));
+    const history = (await this.repository.listChatMessages(session, session.threadId, 8, session.goalId)).map(m=>({ role:m.role, content:m.content.slice(0,1000) }));
     const prior = session.draftPlanId ? await this.repository.getPlan(session, session.draftPlanId) : undefined;
     const run = await this.repository.saveAiRun({ appId: session.appId, userId: session.userId, id: randomId("lighttick_run"), kind: action === "messages" ? "coach_reply" : "plan",
       status: "queued", sceneKey: scene.key, promptVersion: scene.promptVersion, schemaVersion: scene.schemaVersion, attemptCount: 0,
