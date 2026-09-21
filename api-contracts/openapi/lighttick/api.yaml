@@ -383,8 +383,9 @@ paths:
         - lighttick-phase2
       summary: Read recent chat history
       description: Requires a registered LightTick membership; guest sessions receive
-        403. thread_id defaults to goal_id. Returns the latest bounded messages in
-        ascending time order.
+        403. thread_id defaults to goal_id. Messages are scoped by owner, goal_id and
+        thread_id before applying limit, even when goals reuse a thread_id. Returns
+        the latest bounded messages in ascending created_at and id order.
       parameters:
         - in: query
           name: goal_id
@@ -1288,7 +1289,7 @@ paths:
       operationId: createLightTickCoachRun
       tags: [lighttick-ai]
       summary: Create a recoverable bounded Coach or multi-turn chat run
-      description: For scene=chat, message is required (trimmed, 1–4000 characters); thread_id defaults to goal_id. The user message is persisted before queueing, and the response adds thread_id and message_id. Poll the run and read chat/messages for the assistant response. Registered accounts only; guests receive 403. Reusing Idempotency-Key with a different body returns 409.
+      description: For scene=chat, message is required (trimmed, 1–4000 characters); thread_id defaults to goal_id. All referenced resources must belong to the requested goal; a task must also belong to plan_id when supplied. Invalid or foreign-owner references return 404; same-owner goal or task-plan mismatches return 422 before saving messages or queueing. Conversation and execution facts are isolated by goal; thread_id may be reused across goals without sharing history. The user message is persisted before queueing, and the response adds thread_id and message_id. Poll the run and read chat/messages for the assistant response. Registered accounts only; guests receive 403. Reusing Idempotency-Key with a different body returns 409.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1300,6 +1301,7 @@ paths:
         "202": { $ref: "#/components/responses/LightTickAccepted" }
         "400": { $ref: "#/components/responses/LightTickError" }
         "404": { $ref: "#/components/responses/LightTickError" }
+        "422": { $ref: "#/components/responses/LightTickError" }
   /api/v1/lighttick/reviews:
     get:
       operationId: listLightTickReviews

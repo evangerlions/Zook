@@ -181,6 +181,8 @@ LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 | GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
 | POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
 
+Coach目标隔离：聊天历史按当前账户、`goal_id`和`thread_id`共同筛选后再取limit；同名thread不共享不同目标消息，同一时间按消息ID稳定排序。发送前校验plan/review/task的所有权与目标，另有plan_id时task必须属于该计划。资源不存在或跨账户返回404；同账户目标或任务/计划不匹配返回422，不保存消息或创建run。异步执行时再次校验引用；执行事实仅统计本目标现存任务事件，无法确定归属的历史事件排除。当前上下文未引入跨目标共享容量，不能将单目标统计解释为全人可用预算。
+
 - 以上能力仅限正式 LightTick membership 的 Bearer Token；游客返回 `403 APP_SCOPE_FORBIDDEN`，产品关闭返回 `503 LIGHTTICK_APP_DISABLED`。数据按 app/user 隔离。
 - chat 必须携带 8–128 字符 `Idempotency-Key`；消息发出即保存，异步结果通过 `/runs/{runId}` 和消息列表读取，同 key 不同内容返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`。其他 Phase 2 写接口不要求该 header。
 - 复盘采纳在同一事务中创建 proposed plan 并保存决策；仍须走计划确认流程才生效。重复决策返回 `409 LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED`，并发竞争也可能返回 `409 LIGHTTICK_VERSION_CONFLICT`；失败不遗留计划。无可操作推荐返回 `409 LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS`。

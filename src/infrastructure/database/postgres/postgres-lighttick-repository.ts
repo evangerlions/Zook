@@ -336,10 +336,18 @@ export class PostgresLightTickRepository implements LightTickRepository {
     [row.id,row.appId,row.userId,row.taskId,row.title,row.position,row.completed,row.createdAt,row.updatedAt]);
     return mapRow<LightTickTaskStepRow>(result.rows[0]!);
   }
-  async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string) {
-    const result = await this.query(`SELECT * FROM zook_lighttick_execution_events WHERE app_id=$1 AND user_id=$2
-      ${from ? "AND occurred_at >= $3" : ""} ${to ? `AND occurred_at < $${from ? 4 : 3}` : ""}
-      ORDER BY occurred_at ASC`, [owner.appId, owner.userId, ...(from ? [from] : []), ...(to ? [to] : [])]);
+  async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string, goalId?: string) {
+    const params: unknown[] = [owner.appId, owner.userId];
+    const conditions = ["e.app_id=$1", "e.user_id=$2"];
+    if (from) { params.push(from); conditions.push(`e.occurred_at >= $${params.length}`); }
+    if (to) { params.push(to); conditions.push(`e.occurred_at < $${params.length}`); }
+    if (goalId !== undefined) {
+      params.push(goalId);
+      conditions.push(`e.aggregate_type='task' AND EXISTS (SELECT 1 FROM zook_lighttick_tasks t
+        WHERE t.app_id=e.app_id AND t.user_id=e.user_id AND t.id=e.aggregate_id AND t.goal_id=$${params.length})`);
+    }
+    const result = await this.query(`SELECT e.* FROM zook_lighttick_execution_events e
+      WHERE ${conditions.join(" AND ")} ORDER BY e.occurred_at ASC, e.id ASC`, params);
     return result.rows.map(mapRow<import("../../../modules/lighttick/lighttick.types.ts").LightTickExecutionEventRow>);
   }
   async appendInsightAudit(row: LightTickInsightAuditRow): Promise<LightTickInsightAuditRow> {
@@ -363,11 +371,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
       [row.id,row.appId,row.userId,row.threadId,row.goalId,row.role,row.content,row.runId ?? null,row.createdAt]);
     return mapRow<LightTickChatMessageRow>(result.rows[0]!);
   }
-  async listChatMessages(owner: LightTickOwner, threadId: string, limit: number): Promise<LightTickChatMessageRow[]> {
+  async listChatMessages(owner: LightTickOwner, threadId: string, limit: number, goalId?: string): Promise<LightTickChatMessageRow[]> {
     const bounded = Math.min(Math.max(limit, 1), 200);
     const result = await this.query(`SELECT * FROM zook_lighttick_chat_messages
-      WHERE app_id=$1 AND user_id=$2 AND thread_id=$3 ORDER BY created_at DESC LIMIT $4`,
-      [owner.appId, owner.userId, threadId, bounded]);
+      WHERE app_id=$1 AND user_id=$2 AND thread_id=$3 ${goalId !== undefined ? "AND goal_id=$5" : ""}
+      ORDER BY created_at DESC, id DESC LIMIT $4`,
+      [owner.appId, owner.userId, threadId, bounded, ...(goalId !== undefined ? [goalId] : [])]);
     return result.rows.map(mapRow<LightTickChatMessageRow>).reverse();
   }
   async getDnaInsight(owner: LightTickOwner, id: string): Promise<LightTickDnaInsightRow | undefined> {
