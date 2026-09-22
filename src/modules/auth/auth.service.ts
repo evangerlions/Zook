@@ -42,7 +42,7 @@ import type { SmsVerificationSender } from "../../services/tencent-sms-verificat
 import { SmsVerificationRecordService } from "../../services/sms-verification-record.service.ts";
 import { AppRegistryService } from "../app-registry/app-registry.service.ts";
 import { UserService } from "../user/user.service.ts";
-import { DevelopmentPasswordHasher } from "./password-hasher.ts";
+import { PasswordHasher } from "./password-hasher.ts";
 import { TokenService } from "./token.service.ts";
 import { AuthEmailFlow } from "./auth-email-flow.ts";
 import { AuthSmsFlow } from "./auth-sms-flow.ts";
@@ -74,7 +74,7 @@ export class AuthService {
     private readonly kvManager: KVManager,
     private readonly userService: UserService,
     private readonly appRegistryService: AppRegistryService,
-    private readonly passwordHasher: DevelopmentPasswordHasher,
+    private readonly passwordHasher: PasswordHasher,
     private readonly tokenService: TokenService,
     private readonly refreshTokenStore: RefreshTokenStore,
     private readonly commonAuthRateLimitConfigService: CommonAuthRateLimitConfigService,
@@ -519,10 +519,7 @@ export class AuthService {
   }
 
   private canVerifyPassword(user: UserRecord): boolean {
-    return (
-      user.passwordAlgo === this.passwordHasher.algorithm ||
-      user.passwordAlgo === "argon2id-adapter"
-    );
+    return this.passwordHasher.canVerify(user.passwordAlgo);
   }
 
   private isPasswordNotSet(user: UserRecord): boolean {

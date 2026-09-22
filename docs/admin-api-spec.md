@@ -405,3 +405,22 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 ### LightTick 对话规划配置（2026-09-13）
 新增场景 planning_clarify（lighttick.planning_clarify.v1），沿用现有场景路由解析与逻辑模型配置，无新增管理接口。模板包版本 1.3.0；week_plan 可用于会话草案。入口由服务器环境变量 LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1 启用，默认关闭，关闭入口保留数据库记录和已排队任务。场景 tiers 仍为路由元数据，不能将其当作新增订阅计费校验。
+
+## BodyLog check-in operations
+
+BodyLog check-in administration uses the shared Admin session cookie. Aggregate endpoints write read audits; user-level endpoints additionally require a sensitive-operation grant.
+
+| Method | Path | Grant | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/bodylog/checkin/dashboard` | none | DAU, trend, completion rate, streak buckets, and habit distribution |
+| `GET` | `/api/v1/admin/apps/bodylog/checkin/records` | `bodylog.checkin-records.read` | Paginated user-level records; supports `query`, `user_id`, `group_id`, `from`, `to`, `page`, `limit` |
+| `GET` | `/api/v1/admin/apps/bodylog/checkin/records/export` | `bodylog.checkin-records.export` | Bounded CSV export of user-level records |
+| `GET` | `/api/v1/admin/apps/bodylog/groups` | none | Group health and aggregate activity |
+| `GET` | `/api/v1/admin/apps/bodylog/groups/{groupId}/members` | `bodylog.checkin-records.read` | Member contribution ranking |
+| `GET` | `/api/v1/admin/apps/bodylog/habit-templates` | none | List active and archived templates |
+| `POST` | `/api/v1/admin/apps/bodylog/habit-templates` | `bodylog.habit-templates.write` | Create a multilingual template |
+| `PUT` | `/api/v1/admin/apps/bodylog/habit-templates/{id}` | `bodylog.habit-templates.write` | Update a template |
+| `DELETE` | `/api/v1/admin/apps/bodylog/habit-templates/{id}` | `bodylog.habit-templates.write` | Soft-archive a template |
+| `GET` | `/api/v1/admin/apps/bodylog/habit-templates/usage` | none | Habit usage aggregate |
+
+The Dashboard is backed by `zook_bodylog_group_daily_records` and `zook_bodylog_group_activities`; user IDs are expanded from the daily record JSONB array. The template catalog is stored in `zook_bodylog_habit_templates`. CSV export is capped at 50,000 rows and all user-level access is auditable.

@@ -10,3 +10,4 @@ export type * from "./types/content-safety";
 export type * from "./types/getui-password-sms";
 export type * from "./types/llm";
 export type * from "./types/release-update";
+export type * from "./types/bodylog-admin";

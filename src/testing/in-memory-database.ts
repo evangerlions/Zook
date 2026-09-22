@@ -602,6 +602,22 @@ export class InMemoryDatabase extends ApplicationDatabase {
     );
   }
 
+  listBodyLogProfilesByIds(
+    appId: string,
+    userIds: string[],
+  ): Map<string, BodyLogProfileRecord> {
+    const result = new Map<string, BodyLogProfileRecord>();
+    for (const userId of userIds) {
+      const profile = this.bodyLogProfiles.find(
+        (item) => item.appId === appId && item.userId === userId,
+      );
+      if (profile) {
+        result.set(userId, structuredClone(profile));
+      }
+    }
+    return result;
+  }
+
   upsertBodyLogProfile(record: BodyLogProfileRecord): BodyLogProfileRecord {
     const index = this.bodyLogProfiles.findIndex(
       (item) => item.appId === record.appId && item.userId === record.userId,

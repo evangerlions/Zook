@@ -1,4 +1,6 @@
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
+import { BodyLogInvitationService } from "../bodylog/bodylog-invitation.service.ts";
+import { BODYLOG_APP_ID } from "../bodylog/bodylog-profile.types.ts";
 import {
   badRequest,
   conflict,
@@ -235,6 +237,20 @@ export class AuthEmailFlow {
         localTestAccount.accountRegion,
       );
     }
+
+    // 如果是新注册用户且有邀请码，绑定邀请关系
+    if (autoCreatedUser && command.inviteCode && app.id === BODYLOG_APP_ID) {
+      try {
+        const invitationService = new BodyLogInvitationService(this.database);
+        await invitationService.attributeByCode(user.id, {
+          code: command.inviteCode,
+          installId: command.ipAddress,
+        });
+      } catch {
+        // 邀请绑定失败不阻塞登录流程
+      }
+    }
+
     return {
       session: await this.sessionManager.issueSession(user.id, app.id, now),
       autoCreatedUser,
