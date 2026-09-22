@@ -3,9 +3,9 @@
 ## 1. Purpose and source boundary
 
 This document records the complete migration decision for the legacy backend in
-`/Users/hao/Documents/project/plan/lighttick-backend`. It is an implementation
-input, not a public API contract. The canonical LightTick contract will live in
-`api-contracts/openapi/lighttick/**` and all runtime implementation will live in
+`/Users/hao/Documents/project/Zook/archive/lighttick-backend`. It is an implementation
+input, not a public API contract. The canonical LightTick contract lives in
+`api-contracts/openapi/lighttick/**` and all runtime implementation lives in
 Zook.
 
 Migration rules:

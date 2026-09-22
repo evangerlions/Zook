@@ -3,7 +3,7 @@ import type { ApplicationDatabase } from "../../infrastructure/database/applicat
 import { ApplicationError } from "../../shared/errors.ts";
 import { randomId } from "../../shared/utils.ts";
 import { BODYLOG_APP_ID } from "./bodylog-profile.types.ts";
-import type { BodyLogInvitationAttributionRecord } from "./bodylog-invitation.types.ts";
+import type { BodyLogInvitationAttributionRecord, BodyLogInvitationRecord } from "./bodylog-invitation.types.ts";
 
 const DAY_MS = 86_400_000;
 
@@ -15,11 +15,13 @@ export class BodyLogInvitationService {
       throw new ApplicationError(400, "BODYLOG_INVITATION_INVALID", "Installation identifier is required.");
     }
     const token = randomBytes(24).toString("base64url");
+    const code = this.generateInviteCode(); // 生成 6 位邀请码
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 14 * DAY_MS);
     const record = {
       id: randomId("bodylog_invitation"), appId: BODYLOG_APP_ID,
       inviterUserId, inviterInstallIdHash: hash(installId), tokenHash: hash(token),
+      code, // 保存 6 位邀请码
       intent: intent ?? "general",
       expiresAt: expiresAt.toISOString(), createdAt: now.toISOString(),
     };
@@ -28,11 +30,12 @@ export class BodyLogInvitationService {
     // 根据intent生成不同的URL路径
     const urlPath = intent === "buddy" ? "b" : intent === "group" ? "g" : "i";
     return {
-      token, url: `https://bodylog.app/${urlPath}/${token}`,
+      token,
+      code, // 返回 6 位邀请码
+      url: `https://bodylog.app/${urlPath}/${token}`,
       expiresAt: record.expiresAt,
     };
   }
-
   async list(userId: string) {
     const invitations = await this.database.listBodyLogInvitations(BODYLOG_APP_ID, userId);
     const invitationIds = new Set(invitations.map((item) => item.id));
@@ -70,11 +73,33 @@ export class BodyLogInvitationService {
     if (!invitation || Date.parse(invitation.expiresAt) <= Date.now()) {
       throw new ApplicationError(410, "BODYLOG_INVITATION_EXPIRED", "Invitation expired.");
     }
+    return this.validateAndBind(inviteeUserId, invitation, input.installId);
+  }
+
+  async attributeByCode(inviteeUserId: string, input: { code: unknown; installId: unknown }) {
+    if (typeof input.code !== "string" || input.code.length !== 6 ||
+        typeof input.installId !== "string" || input.installId.trim().length < 8) {
+      throw new ApplicationError(400, "BODYLOG_INVITATION_INVALID", "Invitation code is invalid.");
+    }
+    const invitation = await this.database.findBodyLogInvitationByCode(
+      BODYLOG_APP_ID, input.code.toUpperCase(),
+    );
+    if (!invitation || Date.parse(invitation.expiresAt) <= Date.now()) {
+      throw new ApplicationError(410, "BODYLOG_INVITATION_EXPIRED", "Invitation expired.");
+    }
+    return this.validateAndBind(inviteeUserId, invitation, input.installId);
+  }
+
+  private async validateAndBind(
+    inviteeUserId: string,
+    invitation: BodyLogInvitationRecord,
+    installId: string,
+  ) {
     if (invitation.inviterUserId === inviteeUserId) {
       throw new ApplicationError(409, "BODYLOG_INVITATION_INVALID", "Self invitation is not allowed.");
     }
     const all = await this.database.listBodyLogInvitationAttributions(BODYLOG_APP_ID);
-    const installIdHash = hash(input.installId);
+    const installIdHash = hash(installId);
     if (invitation.inviterInstallIdHash === installIdHash) {
       throw new ApplicationError(409, "BODYLOG_INVITATION_INVALID", "Same-device invitation is not allowed.");
     }
@@ -136,6 +161,18 @@ export class BodyLogInvitationService {
       qualified: Boolean(updated.qualifiedAt),
       premiumUntil: updated.inviteeRewardEndsAt ?? null,
     };
+  }
+
+  // 生成 6 位邀请码
+  private generateInviteCode(): string {
+    // 生成 6 位字母数字组合的邀请码
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 排除易混淆字符
+    const bytes = randomBytes(6); // 使用密码学安全的随机数
+    let code = "";
+    for (let i = 0; i < 6; i++) {
+      code += chars[bytes[i] % chars.length];
+    }
+    return code;
   }
 }
 

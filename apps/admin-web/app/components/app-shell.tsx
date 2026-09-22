@@ -28,6 +28,10 @@ const APP_WORKSPACES = [
   { to: "/conversation-history", label: "历史聊天", code: "HST", description: "查询已完成的用户聊天记录" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
   { to: "/lighttick", label: "LightTick Ops", code: "LTK", description: "查看 LightTick 功能、AI 场景与隐私安全指标" },
+  { to: "/bodylog", label: "BodyLog 打卡", code: "BLG", description: "查看打卡数据、群组活跃度与习惯模板" },
+  { to: "/bodylog/records", label: "打卡记录", code: "REC", description: "查询用户级打卡记录" },
+  { to: "/bodylog/groups", label: "群组监控", code: "GRP", description: "查看群组健康度与成员贡献" },
+  { to: "/bodylog/habit-templates", label: "习惯模板", code: "TPL", description: "维护 BodyLog 习惯模板" },
 ];
 
 function formatAdminVersion(rawVersion: string): string {
@@ -61,6 +65,8 @@ function isAppProjectSpace(pathname: string) {
     || pathname === "/conversation-records"
     || pathname === "/conversation-history"
     || pathname === "/lighttick"
+    || pathname === "/bodylog"
+    || pathname.startsWith("/bodylog/")
     || pathname === "/remote-log-pull"
     || pathname.startsWith("/remote-log-pull/");
 }
@@ -113,6 +119,7 @@ export function AppShell() {
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/lighttick" || selectedApp?.appId === "lighttick")
+      .filter((item) => !item.to.startsWith("/bodylog") || selectedApp?.appId === "bodylog")
     : SERVER_WORKSPACES;
   const currentProjectSpaceValue = appProjectSpace && selectedApp ? `app:${selectedApp.appId}` : "server";
   const projectSpaceOptions = useMemo(

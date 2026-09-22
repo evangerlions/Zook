@@ -77,6 +77,7 @@ import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../..
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { PostgresLightTickRepository } from "./postgres-lighttick-repository.ts";
 import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
+import { PostgresBodyLogAdminStore } from "./postgres-bodylog-admin.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
@@ -108,6 +109,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly lightTick: PostgresLightTickRepository;
   readonly llmObservabilityStore: PostgresLlmObservabilityStore;
   private readonly bodyLogStores: BodyLogStores;
+  private readonly bodyLogAdmin: PostgresBodyLogAdminStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -130,6 +132,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.lightTick = new PostgresLightTickRepository({ query: async (sql, values = []) => await this.query(sql, values), connect: async () => await this.pool.connect() }, async operation => await this.withExclusiveSession(operation));
     this.llmObservabilityStore = new PostgresLlmObservabilityStore(async (sql, values = []) => await this.query(sql, values), async () => await this.pool.connect());
     this.bodyLogStores = createBodyLogPostgresStores(async (sql, values = []) => await this.query(sql, values), operation => this.withExclusiveSession(operation));
+    this.bodyLogAdmin = new PostgresBodyLogAdminStore(async (sql, values = []) => await this.query(sql, values));
   }
   getLightTickRepository(): PostgresLightTickRepository { return this.lightTick; }
   getBodyLogBuddyStore(): BodyLogBuddyStore { return this.bodyLogStores.buddy; }
@@ -264,6 +267,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     );
   }
   override async findBodyLogProfile(appId: string, userId: string): Promise<BodyLogProfileRecord | undefined> { return await findPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), appId, userId); }
+  override async listBodyLogProfilesByIds(appId: string, userIds: string[]): Promise<Map<string, BodyLogProfileRecord>> { return await this.bodyLogSocial.listBodyLogProfilesByIds(appId, userIds); }
   override async upsertBodyLogProfile(record: BodyLogProfileRecord): Promise<BodyLogProfileRecord> { return await upsertPostgresBodyLogProfile(async (sql, values) => await this.query(sql, values), record); }
   override async listBodyLogFriendRequests(appId: string): Promise<BodyLogFriendRequestRecord[]> { return await this.bodyLogSocial.listFriendRequests(appId); }
   override async upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): Promise<BodyLogFriendRequestRecord> { return await this.bodyLogSocial.upsertFriendRequest(record); }
@@ -283,6 +287,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): Promise<BodyLogLeaderboardEntryRecord> { return await this.bodyLogLeaderboard.upsertEntry(record); }
   override async listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): Promise<BodyLogLeaderboardEntryRecord[]> { return await this.bodyLogLeaderboard.listEntries(appId, seasonLabel); }
   override async findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByTokenHash(appId, tokenHash); }
+  override async findBodyLogInvitationByCode(appId: string, code: string): Promise<BodyLogInvitationRecord | undefined> { return await this.bodyLogInvitations.findByCode(appId, code); }
   override async insertBodyLogInvitation(record: BodyLogInvitationRecord): Promise<void> { await this.bodyLogInvitations.insertInvitation(record); }
   override async listBodyLogInvitations(appId: string, inviterUserId: string): Promise<BodyLogInvitationRecord[]> { return await this.bodyLogInvitations.listInvitations(appId, inviterUserId); }
   override async insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): Promise<void> { await this.bodyLogInvitations.insertAttribution(record); }
@@ -639,6 +644,21 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async insertContentSafetyCheckRecord(record: ContentSafetyCheckRecord): Promise<void> { await this.operationalRecords.insertContentSafetyCheckRecord(record); }
   override async listContentSafetyCheckRecords(filter: { createdAtFromIso?: string; createdAtToIso?: string; appId?: string; source?: ContentSafetyCheckRecord["source"]; method?: ContentSafetyCheckRecord["method"]; taskType?: string; decision?: ContentSafetyCheckRecord["decision"]; limit?: number } = {}): Promise<ContentSafetyCheckRecord[]> { return await this.operationalRecords.listContentSafetyCheckRecords(filter); }
   override async deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): Promise<number> { return await this.operationalRecords.deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso); }
+
+  // BodyLog Admin Check-in Methods
+  override async getBodyLogCheckinDashboard(input: { appId: string; fromDate: string; toDate: string; timezone: string }) { return await this.bodyLogAdmin.getBodyLogCheckinDashboard(input); }
+  override async listBodyLogCheckinUserDates(input: { appId: string; fromDate: string; toDate: string }) { return await this.bodyLogAdmin.listBodyLogCheckinUserDates(input); }
+  override async searchBodyLogCheckinRecords(input: { appId: string; userId?: string; groupId?: string; fromDate?: string; toDate?: string; page: number; limit: number }) { return await this.bodyLogAdmin.searchBodyLogCheckinRecords(input); }
+  override async listBodyLogGroupHealth(input: { appId: string; status?: string; health?: "active" | "stale" | "dead"; fromDate: string; toDate: string; page: number; limit: number }) { return await this.bodyLogAdmin.listBodyLogGroupHealth(input); }
+  override async listBodyLogGroupMemberContributions(input: { groupId: string; fromDate: string; toDate: string }) { return await this.bodyLogAdmin.listBodyLogGroupMemberContributions(input); }
+  override async listBodyLogHabitUsage(input: { appId: string; fromDate: string; toDate: string }) { return await this.bodyLogAdmin.listBodyLogHabitUsage(input); }
+  override async listBodyLogHabitTemplates(appId: string) { return await this.bodyLogAdmin.listBodyLogHabitTemplates(appId); }
+  override async findBodyLogHabitTemplate(appId: string, id: string) { return await this.bodyLogAdmin.findBodyLogHabitTemplate(appId, id); }
+  override async findBodyLogHabitTemplateByKey(appId: string, key: string) { return await this.bodyLogAdmin.findBodyLogHabitTemplateByKey(appId, key); }
+  override async insertBodyLogHabitTemplate(record: { id: string; appId: string; templateKey: string; category: string; names: Record<string, string>; icon: string | null; defaultTargetCount: number; sortOrder: number; status: "active" | "archived"; createdAt: string; updatedAt: string }) { return await this.bodyLogAdmin.insertBodyLogHabitTemplate(record); }
+  override async updateBodyLogHabitTemplate(record: { id: string; appId: string; templateKey: string; category: string; names: Record<string, string>; icon: string | null; defaultTargetCount: number; sortOrder: number; status: "active" | "archived"; createdAt: string; updatedAt: string }) { return await this.bodyLogAdmin.updateBodyLogHabitTemplate(record); }
+  override async deleteBodyLogHabitTemplate(appId: string, id: string) { return await this.bodyLogAdmin.deleteBodyLogHabitTemplate(appId, id); }
+
   private async initialize(): Promise<void> {
     if (this.initialized) {
       return;

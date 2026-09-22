@@ -410,7 +410,6 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 6. 一键登录接口：
    `POST /api/v1/auth/login/one-click` 请求体为 `{ "appId": "app_a", "token": "native-token", "gyuid": "gyuid", "clientType": "app", "operator": "CM", "sdkPlatform": "android" }`。
    服务端使用 `common.getui_gy_service.apps[appId]` 中直接保存的个验 AppID、AppKey、AppSecret、MasterSecret 调用个验服务端取号，不接受客户端直接传手机号；后台读取配置时会对 AppKey、AppSecret、MasterSecret 脱敏，需要二级密码验证后才能查看明文。
-   当请求带 `sdkPlatform=ohos` 时，服务端使用该 Zook AppID 对应的 `common.getui_gy_service.apps[appId].platforms.ohos` 独立鸿蒙凭据；未配置时不会回退到 Android/iOS 凭据。其他平台继续使用原有 `apps[appId]` 凭据。每个应用都可以在管理后台按需添加自己的 OHOS 配置。
    个验取号成功后会复用手机号登录语义：手机号不存在且 app 允许自动加入时创建 `sms-code-only` 账号并签发会话。
 7. 密码相关接口：
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
@@ -528,11 +527,14 @@ POST /api/v1/auth/login/email
 | `POST` | `/api/v1/bodylog/buddies/checkin` | `{ "habitId": "...", "count"?: 1, "eventId"?: "local-log-id", "occurredAt"?: "ISO timestamp" }` | 记录搭子打卡同步 |
 | `POST` | `/api/v1/bodylog/groups` | `{ "name": "...", "icon"?, "sharedHabitIds": [...], "completionRule"?: "all\|majority", "maxMembers"? }` | 创建打卡小组 |
 | `GET` | `/api/v1/bodylog/groups` | 无 | 查询我所在的小组 |
-| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态；返回含 `isOwner`/`isAdmin` 权限标记，`invitationToken` 仅组长/管理员可见 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/invite` | `{ "userId": "..." }` | 邀请成员加入小组 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/accept` | `{ "token": "..." }` | 接受小组邀请 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/leave` | 无 | 退出小组 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/checkin` | `{ "habitId": "...", "count"? }` | 小组打卡 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}/leaderboard` | 无 | 小组排行榜（成员周统计与排名） |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/members/remove` | `{ "userId": "..." }` | 组长/管理员移除成员（组长可移除任意 member/admin，admin 仅可移除 member，不能移除 leader） |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/transfer` | `{ "userId": "..." }` | 组长转让（仅现任 leader；原组长降为 admin，新组长保持 active） |
 | `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
 | `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
 | `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |
