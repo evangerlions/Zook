@@ -238,14 +238,23 @@ export class AuthEmailFlow {
       );
     }
 
-    // 如果是新注册用户且有邀请码，绑定邀请关系
+    // 如果是新注册用户且有邀请码/令牌，绑定邀请关系
     if (autoCreatedUser && command.inviteCode && app.id === BODYLOG_APP_ID) {
       try {
         const invitationService = new BodyLogInvitationService(this.database);
-        await invitationService.attributeByCode(user.id, {
-          code: command.inviteCode,
-          installId: command.ipAddress,
-        });
+        const inviteValue = command.inviteCode.trim();
+        // 根据长度分流：6 位为邀请码，长字符串为令牌
+        if (inviteValue.length === 6) {
+          await invitationService.attributeByCode(user.id, {
+            code: inviteValue,
+            installId: command.ipAddress,
+          });
+        } else if (inviteValue.length >= 8) {
+          await invitationService.attribute(user.id, {
+            token: inviteValue,
+            installId: command.ipAddress,
+          });
+        }
       } catch {
         // 邀请绑定失败不阻塞登录流程
       }

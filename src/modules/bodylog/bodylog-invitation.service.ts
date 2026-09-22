@@ -15,13 +15,13 @@ export class BodyLogInvitationService {
       throw new ApplicationError(400, "BODYLOG_INVITATION_INVALID", "Installation identifier is required.");
     }
     const token = randomBytes(24).toString("base64url");
-    const code = this.generateInviteCode(); // 生成 6 位邀请码
+    const code = await this.generateUniqueInviteCode();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 14 * DAY_MS);
     const record = {
       id: randomId("bodylog_invitation"), appId: BODYLOG_APP_ID,
       inviterUserId, inviterInstallIdHash: hash(installId), tokenHash: hash(token),
-      code, // 保存 6 位邀请码
+      code,
       intent: intent ?? "general",
       expiresAt: expiresAt.toISOString(), createdAt: now.toISOString(),
     };
@@ -31,16 +31,16 @@ export class BodyLogInvitationService {
     const urlPath = intent === "buddy" ? "b" : intent === "group" ? "g" : "i";
     return {
       token,
-      code, // 返回 6 位邀请码
+      code,
       url: `https://bodylog.app/${urlPath}/${token}`,
       expiresAt: record.expiresAt,
     };
   }
   async list(userId: string) {
     const invitations = await this.database.listBodyLogInvitations(BODYLOG_APP_ID, userId);
-    const invitationIds = new Set(invitations.map((item) => item.id));
+    const invitationById = new Map(invitations.map((item) => [item.id, item]));
     const all = await this.database.listBodyLogInvitationAttributions(BODYLOG_APP_ID);
-    const invited = all.filter((item) => invitationIds.has(item.invitationId));
+    const invited = all.filter((item) => invitationById.has(item.invitationId));
     const ownAttribution = all.find((item) => item.inviteeUserId === userId);
     const rewardEnds = all.flatMap((item) => [
       item.inviterUserId === userId ? item.inviterRewardEndsAt : undefined,
@@ -53,12 +53,16 @@ export class BodyLogInvitationService {
       inviteeProgressDays: ownAttribution?.completedDates.length ?? 0,
       attributed: Boolean(ownAttribution),
       premiumUntil: rewardEnds.at(-1) ?? null,
-      invitations: invited.map((item) => ({
-        id: item.id,
-        status: item.rewardedAt ? "rewarded" : item.qualifiedAt ? "qualified" : "pending",
-        progressDays: item.completedDates.length,
-        attributedAt: item.attributedAt,
-      })),
+      invitations: invited.map((item) => {
+        const original = invitationById.get(item.invitationId);
+        return {
+          id: item.id,
+          code: original?.code ?? null,
+          status: item.rewardedAt ? "rewarded" : item.qualifiedAt ? "qualified" : "pending",
+          progressDays: item.completedDates.length,
+          attributedAt: item.attributedAt,
+        };
+      }),
     };
   }
 
@@ -161,6 +165,18 @@ export class BodyLogInvitationService {
       qualified: Boolean(updated.qualifiedAt),
       premiumUntil: updated.inviteeRewardEndsAt ?? null,
     };
+  }
+
+  // 生成唯一的 6 位邀请码（重试直到不冲突）
+  private async generateUniqueInviteCode(maxRetries = 10): Promise<string> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const code = this.generateInviteCode();
+      const existing = await this.database.findBodyLogInvitationByCode(BODYLOG_APP_ID, code);
+      if (!existing) {
+        return code;
+      }
+    }
+    throw new ApplicationError(500, "BODYLOG_INVITATION_CODE_GENERATION_FAILED", "Failed to generate a unique invite code.");
   }
 
   // 生成 6 位邀请码

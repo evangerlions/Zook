@@ -737,6 +737,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
       item.appId === appId && item.tokenHash === tokenHash));
   }
 
+  findBodyLogInvitationByCode(appId: string, code: string) {
+    return structuredClone(this.bodyLogInvitations.find((item) =>
+      item.appId === appId && item.code === code));
+  }
+
   insertBodyLogInvitation(record: BodyLogInvitationRecord): void {
     this.bodyLogInvitations.push(structuredClone(record));
   }
