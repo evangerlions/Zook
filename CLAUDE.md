@@ -1,3 +1,5 @@
+LightTick 后端开发必须在本仓库进行，首先阅读并遵循 [AGENTS.md](AGENTS.md)。客户端位于 `../plan/LightTick-iOS` 和 `../plan/LightTick-Android`；旧 Go 代码在 `archive/lighttick-backend`，仅供参考。
+
 # Project Guidelines
 
 ## Gstack

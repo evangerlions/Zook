@@ -103,6 +103,7 @@ export function createApplicationAiRuntime(
     options.commonLlmConfigService,
     options.llmRouteCircuitBreaker,
     llmProviders,
+    options.logger,
   );
   const managerOptions = {
     commonLlmConfigService: options.commonLlmConfigService,

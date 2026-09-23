@@ -116,6 +116,16 @@ export class InMemoryBodyLogGroupStore implements BodyLogGroupStore {
   listGroupMembers(groupId: string): GroupMemberRecord[] {
     return cloneList(this.members.filter((r) => r.groupId === groupId).sort((a, b) => a.joinedAt.localeCompare(b.joinedAt)));
   }
+  listGroupMembersByGroupIds(groupIds: string[]): Map<string, GroupMemberRecord[]> {
+    const result = new Map<string, GroupMemberRecord[]>();
+    for (const groupId of groupIds) {
+      const members = this.members
+        .filter((r) => r.groupId === groupId)
+        .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt));
+      result.set(groupId, cloneList(members));
+    }
+    return result;
+  }
   insertGroupDailyRecord(record: GroupDailyRecordRecord): void { this.dailyRecords.push(clone(record)); }
   findGroupDailyRecord(groupId: string, date: string): GroupDailyRecordRecord | undefined {
     const found = this.dailyRecords.find((r) => r.groupId === groupId && r.date === date);

@@ -146,6 +146,32 @@ export async function listGroupMembers(pool: Pool, groupId: string): Promise<Gro
   return result.rows.map(parseGroupMemberRow);
 }
 
+export async function listGroupMembersByGroupIds(
+  pool: Pool,
+  groupIds: string[],
+): Promise<Map<string, GroupMemberRecord[]>> {
+  if (groupIds.length === 0) {
+    return new Map();
+  }
+  
+  const result = await pool.query(
+    `SELECT * FROM zook_bodylog_group_members 
+     WHERE group_id = ANY($1) 
+     ORDER BY group_id, joined_at`,
+    [groupIds],
+  );
+  
+  const membersByGroup = new Map<string, GroupMemberRecord[]>();
+  for (const row of result.rows) {
+    const member = parseGroupMemberRow(row);
+    const existing = membersByGroup.get(member.groupId) || [];
+    existing.push(member);
+    membersByGroup.set(member.groupId, existing);
+  }
+  
+  return membersByGroup;
+}
+
 export async function insertGroupDailyRecord(pool: Pool, record: GroupDailyRecordRecord): Promise<void> {
   await pool.query(
     `INSERT INTO zook_bodylog_group_daily_records (
@@ -181,11 +207,13 @@ export async function findGroupDailyRecord(
 export async function updateGroupDailyRecord(pool: Pool, record: GroupDailyRecordRecord): Promise<void> {
   await pool.query(
     `UPDATE zook_bodylog_group_daily_records SET
-      completed_user_ids = $2::jsonb, completed_count = $3, completion_rate = $4
+      completed_user_ids = $2::jsonb, total_members = $3, completed_count = $4,
+      completion_rate = $5
     WHERE id = $1`,
     [
       record.id,
       JSON.stringify(record.completedUserIds),
+      record.totalMembers,
       record.completedCount,
       record.completionRate,
     ],

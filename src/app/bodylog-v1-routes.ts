@@ -324,6 +324,23 @@ export async function tryHandleBodyLogV1Routes(
     });
     return context.ok({ recorded: true }, request.requestId as string);
   }
+  const groupLeaderboardMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/leaderboard$/);
+  if (groupLeaderboardMatch && request.method === "GET") {
+    const leaderboard = await groupService.getGroupLeaderboard(auth.userId, groupLeaderboardMatch[1] as string);
+    return context.ok(leaderboard, request.requestId as string);
+  }
+  const groupRemoveMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/members\/remove$/);
+  if (groupRemoveMatch && request.method === "POST") {
+    const body = requestBody(request);
+    await groupService.removeGroupMember(auth.userId, groupRemoveMatch[1] as string, validation.requireString(body, "userId"));
+    return context.ok({ removed: true }, request.requestId as string);
+  }
+  const groupTransferMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/transfer$/);
+  if (groupTransferMatch && request.method === "POST") {
+    const body = requestBody(request);
+    await groupService.transferGroupOwnership(auth.userId, groupTransferMatch[1] as string, validation.requireString(body, "userId"));
+    return context.ok({ transferred: true }, request.requestId as string);
+  }
 
   // ===== Growth (7-day plan) routes =====
   if (request.path === "/api/v1/bodylog/seven-day-plan/enroll" && request.method === "POST") {

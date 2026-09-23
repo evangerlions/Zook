@@ -6,7 +6,9 @@ export type GroupNotificationType =
   | "group_streak_warning"
   | "group_streak_broken"
   | "group_member_joined"
-  | "group_member_left";
+  | "group_member_left"
+  | "group_member_removed"
+  | "group_leader_changed";
 
 export interface GroupNotificationPayload {
   app: "bodylog";
@@ -69,5 +71,9 @@ function defaultCopy(type: GroupNotificationType): { title: string; body: string
       return { title: "新成员加入", body: "有新成员加入了你们的小组！" };
     case "group_member_left":
       return { title: "成员离开", body: "有成员离开了你们的小组。" };
+    case "group_member_removed":
+      return { title: "已被移出小组", body: "你已被组长或管理员移出打卡小组。" };
+    case "group_leader_changed":
+      return { title: "组长变更", body: "你们的小组选出了新组长。" };
   }
 }

@@ -242,6 +242,17 @@ GET  /api/v1/my-todo/callbacks/oauth/google
 3. 这条接口当前返回的是后台 `admin.delivery_config` 中维护的 app 级公共配置
 4. 其他 `/public/*` 模板接口仍需按产品需要补齐
 
+升级提醒使用独立的 `GET /api/v1/{productKey}/public/update`。它从公共
+`common.release_updates` 目录按产品 key 投影，只返回当前产品启用的 target；target
+用 `platform + channel` 区分平台和商店，`delivery=download` 提供包下载地址，
+`delivery=store` 提供商店地址。该接口不负责比较客户端版本、下载、安装或提交商店审核，
+这些动作由产品客户端完成。target 的 `reminder.maxCount`（0 表示不限）和
+`reminder.intervalSeconds` 提供可选升级提醒的次数与最小间隔；`mandatory` 强制升级不受
+提醒次数限制。产物可选提供 `messageI18n`（locale 到文本的映射），客户端只在存在当前
+语言文本时显示；未配置时不显示客户端内置的替代更新消息。
+AINovel 读取既有 `GET /api/v1/ai_novel/public/config` 时，也会在 `config.releaseUpdate`
+中收到同一份 AINovel 专属投影，便于客户端减少一次请求。
+
 当前返回示例：
 
 ```json
@@ -346,6 +357,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
 | `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
 | `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`；`bodylog` 与 `lighttick` 为产品专属实现（见各产品章节）                                                                 |
+| `GET`  | `/api/v1/{productKey}/public/update`      | 获取产品自己的平台 / 商店升级目录；匿名可读，`download` 目标提供下载地址，`store` 目标提供商店地址                                                                                         |
 | `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
 | `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
 | `GET` / `POST` | `/api/v1/bodylog/friend-requests` | 查询或发起 BodyLog 好友申请                                                                                                        |
@@ -398,7 +410,6 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 6. 一键登录接口：
    `POST /api/v1/auth/login/one-click` 请求体为 `{ "appId": "app_a", "token": "native-token", "gyuid": "gyuid", "clientType": "app", "operator": "CM", "sdkPlatform": "android" }`。
    服务端使用 `common.getui_gy_service.apps[appId]` 中直接保存的个验 AppID、AppKey、AppSecret、MasterSecret 调用个验服务端取号，不接受客户端直接传手机号；后台读取配置时会对 AppKey、AppSecret、MasterSecret 脱敏，需要二级密码验证后才能查看明文。
-   当请求带 `sdkPlatform=ohos` 时，服务端使用该 Zook AppID 对应的 `common.getui_gy_service.apps[appId].platforms.ohos` 独立鸿蒙凭据；未配置时不会回退到 Android/iOS 凭据。其他平台继续使用原有 `apps[appId]` 凭据。每个应用都可以在管理后台按需添加自己的 OHOS 配置。
    个验取号成功后会复用手机号登录语义：手机号不存在且 app 允许自动加入时创建 `sms-code-only` 账号并签发会话。
 7. 密码相关接口：
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
@@ -516,11 +527,14 @@ POST /api/v1/auth/login/email
 | `POST` | `/api/v1/bodylog/buddies/checkin` | `{ "habitId": "...", "count"?: 1, "eventId"?: "local-log-id", "occurredAt"?: "ISO timestamp" }` | 记录搭子打卡同步 |
 | `POST` | `/api/v1/bodylog/groups` | `{ "name": "...", "icon"?, "sharedHabitIds": [...], "completionRule"?: "all\|majority", "maxMembers"? }` | 创建打卡小组 |
 | `GET` | `/api/v1/bodylog/groups` | 无 | 查询我所在的小组 |
-| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态；返回含 `isOwner`/`isAdmin` 权限标记，`invitationToken` 仅组长/管理员可见 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/invite` | `{ "userId": "..." }` | 邀请成员加入小组 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/accept` | `{ "token": "..." }` | 接受小组邀请 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/leave` | 无 | 退出小组 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/checkin` | `{ "habitId": "...", "count"? }` | 小组打卡 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}/leaderboard` | 无 | 小组排行榜（成员周统计与排名） |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/members/remove` | `{ "userId": "..." }` | 组长/管理员移除成员（组长可移除任意 member/admin，admin 仅可移除 member，不能移除 leader） |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/transfer` | `{ "userId": "..." }` | 组长转让（仅现任 leader；原组长降为 admin，新组长保持 active） |
 | `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
 | `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
 | `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |

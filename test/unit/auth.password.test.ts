@@ -69,7 +69,7 @@ test("register email verification codes survive runtime restarts when KV storage
   assert.equal(
     secondRuntime.database.findUserByAccount("persisted-register@example.com")
       ?.passwordAlgo,
-    "scrypt",
+    "argon2id",
   );
 });
 
@@ -207,7 +207,7 @@ test("password reset upgrades email-code-only accounts into password accounts", 
   assert.equal(
     runtime.database.findUserByAccount("setup-password@example.com")
       ?.passwordAlgo,
-    "scrypt",
+    "argon2id",
   );
 
   const passwordLoginResponse = await runtime.app.handle({
@@ -341,7 +341,7 @@ test("logged-in email-code-only users can set a password directly", async () => 
   assert.ok(typeof setPasswordResponse.body.data.refreshToken === "string");
   assert.equal(
     runtime.database.findUserByAccount("set-direct@example.com")?.passwordAlgo,
-    "scrypt",
+    "argon2id",
   );
 
   const staleMeResponse = await runtime.app.handle({

@@ -23,19 +23,25 @@ export interface AiNovelEmbeddingScene {
   responseMode: "embedding";
 }
 
+const KICKOFF_MAX_OUTPUT_TOKENS = 32_768;
+const LONG_FORM_MAX_OUTPUT_TOKENS = 65_536;
+const AGENT_MAX_OUTPUT_TOKENS = 32_768;
+const STRUCTURED_MAX_OUTPUT_TOKENS = 16_384;
+const COMPACTION_MAX_OUTPUT_TOKENS = 16_384;
+
 const CHAT_SCENES: Record<string, AiNovelChatScene> = {
   kickoff_turn: {
     sceneKey: "kickoff_turn",
     kind: "chat",
     defaultTemperature: 0.2,
-    defaultMaxTokens: 4000,
+    defaultMaxTokens: KICKOFF_MAX_OUTPUT_TOKENS,
     responseMode: "text",
   },
   kickoff_turn_imported_book: {
     sceneKey: "kickoff_turn_imported_book",
     kind: "chat",
     defaultTemperature: 0.25,
-    defaultMaxTokens: 5000,
+    defaultMaxTokens: KICKOFF_MAX_OUTPUT_TOKENS,
     responseMode: "text",
     profile: "kickoff_turn_imported_book",
     requiresStream: true,
@@ -44,7 +50,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "chat_compaction",
     kind: "chat",
     defaultTemperature: 0,
-    defaultMaxTokens: 3000,
+    defaultMaxTokens: COMPACTION_MAX_OUTPUT_TOKENS,
     responseMode: "text",
     supportsStream: true,
   },
@@ -52,7 +58,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "write_turn",
     kind: "chat",
     defaultTemperature: 0.55,
-    defaultMaxTokens: 8000,
+    defaultMaxTokens: LONG_FORM_MAX_OUTPUT_TOKENS,
     responseMode: "text",
     profile: "write_turn",
     requiresStream: true,
@@ -61,7 +67,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "history_chapter_qa",
     kind: "chat",
     defaultTemperature: 0.3,
-    defaultMaxTokens: 6000,
+    defaultMaxTokens: AGENT_MAX_OUTPUT_TOKENS,
     responseMode: "text",
     profile: "history_chapter_qa",
     requiresStream: true,
@@ -70,7 +76,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "chapter_draft",
     kind: "chat",
     defaultTemperature: 0.65,
-    defaultMaxTokens: 20000,
+    defaultMaxTokens: LONG_FORM_MAX_OUTPUT_TOKENS,
     responseMode: "text",
     profile: "chapter_draft",
     requiresStream: true,
@@ -79,7 +85,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "import_book_agent",
     kind: "chat",
     defaultTemperature: 0.2,
-    defaultMaxTokens: 6000,
+    defaultMaxTokens: AGENT_MAX_OUTPUT_TOKENS,
     responseMode: "text",
     profile: "import_book_agent",
     supportsStream: true,
@@ -89,7 +95,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "chapter_summary",
     kind: "chat",
     defaultTemperature: 0,
-    defaultMaxTokens: 3000,
+    defaultMaxTokens: STRUCTURED_MAX_OUTPUT_TOKENS,
     responseMode: "json",
     profile: "chapter_summary",
     supportsStream: true,
@@ -99,7 +105,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "chapter_draft_review",
     kind: "chat",
     defaultTemperature: 0,
-    defaultMaxTokens: 3000,
+    defaultMaxTokens: STRUCTURED_MAX_OUTPUT_TOKENS,
     responseMode: "json",
     profile: "chapter_draft_review",
     supportsStream: true,
@@ -109,7 +115,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "snapshot_generation",
     kind: "chat",
     defaultTemperature: 0,
-    defaultMaxTokens: 4000,
+    defaultMaxTokens: STRUCTURED_MAX_OUTPUT_TOKENS,
     responseMode: "json",
     profile: "snapshot_generation",
     supportsStream: true,
@@ -119,7 +125,7 @@ const CHAT_SCENES: Record<string, AiNovelChatScene> = {
     sceneKey: "next_chapter_brief",
     kind: "chat",
     defaultTemperature: 0.15,
-    defaultMaxTokens: 3000,
+    defaultMaxTokens: STRUCTURED_MAX_OUTPUT_TOKENS,
     responseMode: "json",
     profile: "next_chapter_brief",
     supportsStream: true,

@@ -2,6 +2,7 @@ import { Empty, Input, Spin } from "antd";
 import { useEffect, useMemo, useState } from "react";
 
 import { DetailPane, SceneTag, StatusIcon } from "./conversation-trace-detail";
+import { ConversationContextUsageBadge } from "./conversation-context-usage-badge";
 import type {
   AdminAiNovelDebugTraceDocument,
   AiNovelDebugTraceManifest,
@@ -171,6 +172,7 @@ function TurnCard({
           <span>{turn.requests.length} requests</span>
           {turn.tokenCount !== undefined ? <span className="is-token">{formatTokens(turn.tokenCount)}</span> : null}
           {turn.durationMs !== undefined ? <span className="is-duration">{formatDuration(turn.durationMs)}</span> : null}
+          <ConversationContextUsageBadge usage={turn.contextUsage} />
         </span>
         {turn.toolNames.length > 0 ? (
           <span className="conversation-trace-tool-list">
