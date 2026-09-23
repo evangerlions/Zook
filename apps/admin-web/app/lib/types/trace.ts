@@ -42,6 +42,12 @@ export interface AiNovelTraceMessage {
   [key: string]: unknown;
 }
 
+export interface AiNovelTraceContextUsage {
+  occupiedTokens: number;
+  contextWindowTokens: number;
+  source: "pi" | "provider";
+}
+
 export interface AiNovelTraceDiffLine {
   kind: "same" | "added" | "removed" | "meta";
   text: string;
@@ -58,6 +64,7 @@ export interface AiNovelTraceRequest {
   model?: string;
   transport?: string;
   tokenCount?: number;
+  contextUsage?: AiNovelTraceContextUsage;
   durationMs?: number;
   toolNames: string[];
   raw: Record<string, unknown>;
@@ -74,6 +81,7 @@ export interface AiNovelTraceTurn {
   model?: string;
   transport?: string;
   tokenCount?: number;
+  contextUsage?: AiNovelTraceContextUsage;
   durationMs?: number;
   toolNames: string[];
   contextDiff: AiNovelTraceDiffLine[];
