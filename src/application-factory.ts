@@ -255,7 +255,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonReleaseUpdateConfigService,
   });
   const runtimeLlmProviderKeys = resolveRuntimeLlmProviderKeys(options);
-  const llmRouteCircuitBreaker = new LlmRouteCircuitBreakerService(kvManager);
+  const llmRouteCircuitBreaker = new LlmRouteCircuitBreakerService(kvManager, { logger });
   const llmHealthService = new LlmHealthService(
     database.llmObservabilityStore,
     runtimeLlmProviderKeys,
