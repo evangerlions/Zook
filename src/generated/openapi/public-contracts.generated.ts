@@ -12844,6 +12844,25 @@ export const LightTickGoalDataSchema = {
       "type": "string",
       "format": "date-time"
     },
+    "review_cadence": {
+      "type": "object",
+      "required": [
+        "layers"
+      ],
+      "properties": {
+        "layers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "version": {
       "type": "integer",
       "minimum": 1
@@ -12886,6 +12905,11 @@ export type LightTickGoalData = {
   "notification_policy"?: "suppress" | "light_only";
 };
   "recovery_started_at"?: string;
+  "review_cadence"?: {
+  "layers": (
+"day" | "week" | "month"
+)[];
+};
   "version": number;
   "created_at": string;
   "updated_at": string;
@@ -13032,6 +13056,25 @@ export const LightTickGoalCreateRequestSchema = {
         }
       },
       "additionalProperties": false
+    },
+    "review_cadence": {
+      "type": "object",
+      "required": [
+        "layers"
+      ],
+      "properties": {
+        "layers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
@@ -13052,6 +13095,11 @@ export type LightTickGoalCreateRequest = {
   "start_time": string;
   "end_time": string;
 }
+)[];
+};
+  "review_cadence"?: {
+  "layers": (
+"day" | "week" | "month"
 )[];
 };
 };
@@ -13134,6 +13182,25 @@ export const LightTickGoalUpdateRequestSchema = {
         }
       },
       "additionalProperties": false
+    },
+    "review_cadence": {
+      "type": "object",
+      "required": [
+        "layers"
+      ],
+      "properties": {
+        "layers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
@@ -13155,6 +13222,11 @@ export type LightTickGoalUpdateRequest = {
   "start_time": string;
   "end_time": string;
 }
+)[];
+};
+  "review_cadence"?: {
+  "layers": (
+"day" | "week" | "month"
 )[];
 };
 };

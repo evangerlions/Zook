@@ -136,6 +136,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
           AND (target.id=guest.id OR (target.push_provider=guest.push_provider AND target.push_token=guest.push_token))`,
         [command.appId, command.guestUserId, command.targetUserId]);
       const ownerTables = ["zook_lighttick_goals", "zook_lighttick_plan_cycles", "zook_lighttick_tasks",
+        "zook_lighttick_goal_contexts", "zook_lighttick_milestones", "zook_lighttick_outcome_evidence", "zook_lighttick_task_families",
         "zook_lighttick_task_steps", "zook_lighttick_execution_events", "zook_lighttick_reflections", "zook_lighttick_reviews",
         "zook_lighttick_change_proposals", "zook_lighttick_ai_runs", "zook_lighttick_change_log",
         "zook_lighttick_sync_cursors", "zook_lighttick_devices", "zook_lighttick_insight_audits", "zook_lighttick_chat_messages", "zook_lighttick_dna_insights"];
@@ -160,6 +161,10 @@ export class PostgresLightTickRepository implements LightTickRepository {
 
   private async assertUpgradeRelationships(command: LightTickAccountUpgradeCommand) {
     const relations = [
+      ["zook_lighttick_goal_contexts", "goal_id", "zook_lighttick_goals", "goal_id"],
+      ["zook_lighttick_milestones", "goal_id", "zook_lighttick_goals", "id"],
+      ["zook_lighttick_outcome_evidence", "goal_id", "zook_lighttick_goals", "id"],
+      ["zook_lighttick_outcome_evidence", "milestone_id", "zook_lighttick_milestones", "id"],
       ["zook_lighttick_plan_cycles", "goal_id", "zook_lighttick_goals"],
       ["zook_lighttick_tasks", "goal_id", "zook_lighttick_goals"],
       ["zook_lighttick_tasks", "plan_id", "zook_lighttick_plan_cycles"],
@@ -167,8 +172,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
       ["zook_lighttick_reviews", "goal_id", "zook_lighttick_goals"],
       ["zook_lighttick_change_proposals", "plan_id", "zook_lighttick_plan_cycles"],
     ] as const;
-    for (const [childTable, foreignKey, parentTable] of relations) {
-      const mismatch = await this.query(`SELECT child.id FROM ${childTable} child
+    for (const [childTable, foreignKey, parentTable, childIdColumn = "id"] of relations) {
+      const mismatch = await this.query(`SELECT child.${childIdColumn} AS id FROM ${childTable} child
         LEFT JOIN ${parentTable} parent ON parent.id=child.${foreignKey}
         WHERE child.app_id=$1 AND child.user_id=$2
           AND (parent.id IS NULL OR parent.app_id<>$1 OR parent.user_id NOT IN ($2,$3)) LIMIT 1`,
@@ -267,9 +272,9 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
   async saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow> {
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_goals",
-      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at"],
+      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at", "review_cadence"],
       [row.title, row.description ?? null, row.status, JSON.stringify(row.constraints), row.targetDate ?? null,
-        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null]);
+        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null, row.reviewCadence ? JSON.stringify(row.reviewCadence) : null]);
   }
 
   async getPlan(owner: LightTickOwner, id: string): Promise<LightTickPlanRow | undefined> {
@@ -424,7 +429,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
         result = await this.query(`INSERT INTO ${table} (id,app_id,user_id,${columns.join(",")},version,created_at,updated_at)
           VALUES ($1,$2,$3,${placeholders},1,NOW(),NOW()) RETURNING *`, [row.id, row.appId, row.userId, ...values]);
       } else {
-        const assignments = columns.map((column, index) => `${column}=$${index + 1}${["constraints", "proposal", "pause_metadata", "variant_definitions"].includes(column) ? "::jsonb" : ""}`).join(",");
+        const assignments = columns.map((column, index) => `${column}=$${index + 1}${["constraints", "proposal", "pause_metadata", "variant_definitions", "review_cadence"].includes(column) ? "::jsonb" : ""}`).join(",");
         result = await this.query(`UPDATE ${table} SET ${assignments},version=version+1,updated_at=NOW()
           WHERE app_id=$${values.length + 1} AND user_id=$${values.length + 2} AND id=$${values.length + 3}
           AND version=$${values.length + 4} RETURNING *`, [...values, row.appId, row.userId, row.id, expectedVersion]);
@@ -565,7 +570,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
+    const tables = ["reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+      "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1

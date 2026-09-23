@@ -167,6 +167,11 @@ Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并�
 
 LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 
+目标创建和更新可选携带 `review_cadence: { layers: ["day", "week", "month"] }`。
+空数组表示关闭该目标的复盘；省略时默认每周复盘。目标响应会返回实际生效的
+复盘层级。`POST /review-runs` 的 `period` 支持 `daily/weekly/monthly`；daily
+复盘按单日任务执行事实生成，weekly 和 monthly 复盘保留既有的数据充分性门槛。
+
 | 方法 | 路径 | 请求与响应 `data` |
 | --- | --- | --- |
 | GET | `/execution-facts` | 可选 `from`（含）/`to`（不含）时间戳；返回 `window/completed_count/average_deviation_minutes/by_lineage/by_slot/consecutive_skips/feedback`，读取同时记录 insight audit |
