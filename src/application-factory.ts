@@ -50,6 +50,7 @@ import { CommonEmailConfigService } from "./services/common-email-config.service
 import { CommonGetuiGyConfigService } from "./services/common-getui-gy-config.service.ts";
 import { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import { CommonReleaseUpdateConfigService } from "./services/common-release-update-config.service.ts";
 import { CommonSmsConfigService } from "./services/common-sms-config.service.ts";
 import { CommonTestAccountService } from "./services/common-test-account.service.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
@@ -224,6 +225,9 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   const commonContentSafetyConfigService = new CommonContentSafetyConfigService(
     appConfigService,
   );
+  const commonReleaseUpdateConfigService = new CommonReleaseUpdateConfigService(
+    appConfigService,
+  );
   const appLogSecretService = new AppLogSecretService(database, kvManager);
   const logEncryptionKeyResolver =
     options.logEncryptionKeyResolver ??
@@ -248,9 +252,10 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonGetuiGyConfigService,
     commonLlmConfigService,
     commonPasswordConfigService,
+    commonReleaseUpdateConfigService,
   });
   const runtimeLlmProviderKeys = resolveRuntimeLlmProviderKeys(options);
-  const llmRouteCircuitBreaker = new LlmRouteCircuitBreakerService(kvManager);
+  const llmRouteCircuitBreaker = new LlmRouteCircuitBreakerService(kvManager, { logger });
   const llmHealthService = new LlmHealthService(
     database.llmObservabilityStore,
     runtimeLlmProviderKeys,
@@ -412,6 +417,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonGetuiGyConfigService,
     commonLlmConfigService,
     commonContentSafetyConfigService,
+    commonReleaseUpdateConfigService,
     commonPasswordConfigService,
     emailTestSendService,
     llmHealthService,
@@ -565,6 +571,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       commonGetuiGyConfigService,
       commonLlmConfigService,
       commonContentSafetyConfigService,
+      commonReleaseUpdateConfigService,
       appLogSecretService,
       adminSensitiveOperationService,
       appRegistryService,

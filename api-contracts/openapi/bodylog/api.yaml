@@ -24,7 +24,7 @@ tags:
   - name: bodylog-buddy
     description: Buddy pair creation, acceptance, encouragement, and check-in.
   - name: bodylog-group
-    description: Check-in group creation, invitation, acceptance, and check-in.
+    description: Check-in group creation, invitation, acceptance, check-in, membership management (remove/transfer), and leaderboard.
   - name: bodylog-growth
     description: Seven-day growth plan enrollment, missions, and rewards.
   - name: bodylog-notification
@@ -569,6 +569,51 @@ paths:
         "200": { $ref: "#/components/responses/Recorded" }
         "400": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}/leaderboard:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    get:
+      operationId: getBodyLogGroupLeaderboard
+      tags: [bodylog-group]
+      summary: Get group leaderboard with per-member weekly stats
+      responses:
+        "200": { $ref: "#/components/responses/GroupLeaderboard" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}/members/remove:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    post:
+      operationId: removeBodyLogGroupMember
+      tags: [bodylog-group]
+      summary: Leader or admin removes a member from the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogInviteGroupMemberRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/GroupMemberRemoved" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/groups/{groupId}/transfer:
+    parameters:
+      - $ref: "#/components/parameters/GroupId"
+    post:
+      operationId: transferBodyLogGroupOwnership
+      tags: [bodylog-group]
+      summary: Transfer group leadership from the current leader to another active member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogInviteGroupMemberRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/GroupTransferred" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/seven-day-plan/enroll:
     post:
       operationId: enrollBodyLogSevenDayPlan
@@ -955,6 +1000,21 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/BodyLogLeftResponse" }
+    GroupLeaderboard:
+      description: Group leaderboard with per-member weekly stats
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupLeaderboardResponse" }
+    GroupMemberRemoved:
+      description: Member removed from group
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupMemberRemovedResponse" }
+    GroupTransferred:
+      description: Group leadership transferred
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGroupTransferredResponse" }
     GrowthPlan:
       description: 7-day growth plan
       content:
@@ -1201,7 +1261,7 @@ components:
       enum: [checked_in, encouraged, viewed, reminded, milestone, revived]
     BodyLogGroupActivityType:
       type: string
-      enum: [joined, left, checked_in, encouraged, milestone]
+      enum: [joined, left, checked_in, encouraged, milestone, removed, leader_changed]
     BodyLogDate:
       type: string
       pattern: "^\\d{4}-\\d{2}-\\d{2}$"
@@ -1911,7 +1971,8 @@ components:
         message: { type: string }
         data:
           type: object
-          required: [group, members, recentActivities, weeklyRecords]
+          required:
+            [group, members, recentActivities, weeklyRecords, isOwner, isAdmin, invitationToken]
           properties:
             group: { $ref: "#/components/schemas/BodyLogCheckInGroupData" }
             members:
@@ -1923,6 +1984,10 @@ components:
             weeklyRecords:
               type: array
               items: { $ref: "#/components/schemas/BodyLogGroupDailyRecordData" }
+            isOwner: { type: boolean }
+            isAdmin: { type: boolean }
+            invitationToken:
+              { oneOf: [{ type: string }, { type: "null" }] }
         requestId: { type: string }
     BodyLogGroupInvitationResponse:
       type: object
@@ -1953,6 +2018,79 @@ components:
           type: object
           required: [left]
           properties: { left: { type: boolean, const: true } }
+        requestId: { type: string }
+    BodyLogGroupLeaderboardResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required:
+            [groupId, groupName, entries, stats, currentUserId, updatedAt]
+          properties:
+            groupId: { type: string }
+            groupName: { type: string }
+            entries:
+              type: array
+              items: { $ref: "#/components/schemas/BodyLogGroupLeaderboardEntryData" }
+            stats:
+              type: object
+              required:
+                [totalMembers, avgScore, totalStreakDays, weeklyCompletionRate]
+              properties:
+                totalMembers: { type: integer, minimum: 1 }
+                avgScore: { type: number, minimum: 0 }
+                totalStreakDays: { type: integer, minimum: 0 }
+                weeklyCompletionRate:
+                  { type: number, minimum: 0, maximum: 100 }
+            currentUserId: { type: string }
+            updatedAt: { type: string, format: date-time }
+        requestId: { type: string }
+    BodyLogGroupLeaderboardEntryData:
+      type: object
+      required:
+        [
+          rank,
+          userId,
+          nickname,
+          avatarKey,
+          score,
+          effectiveDays,
+          completedInstances,
+          streakDays,
+        ]
+      properties:
+        rank: { type: integer, minimum: 1 }
+        userId: { type: string }
+        nickname: { type: string }
+        avatarKey: { $ref: "#/components/schemas/BodyLogAvatarKey" }
+        score: { type: integer, minimum: 0 }
+        effectiveDays: { type: integer, minimum: 0 }
+        completedInstances: { type: integer, minimum: 0 }
+        streakDays: { type: integer, minimum: 0 }
+    BodyLogGroupMemberRemovedResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [removed]
+          properties: { removed: { type: boolean, const: true } }
+        requestId: { type: string }
+    BodyLogGroupTransferredResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          required: [transferred]
+          properties: { transferred: { type: boolean, const: true } }
         requestId: { type: string }
     BodyLogGrowthPlanResponse:
       type: object

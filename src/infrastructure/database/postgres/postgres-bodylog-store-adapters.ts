@@ -40,6 +40,7 @@ const groupStore = (pool: Pool): BodyLogGroupStore => ({
   findGroupMember: (groupId, userId) => groupSql.findGroupMember(pool, groupId, userId),
   updateGroupMember: (record) => groupSql.updateGroupMember(pool, record),
   listGroupMembers: (groupId) => groupSql.listGroupMembers(pool, groupId),
+  listGroupMembersByGroupIds: (groupIds) => groupSql.listGroupMembersByGroupIds(pool, groupIds),
   insertGroupDailyRecord: (record) => groupSql.insertGroupDailyRecord(pool, record),
   findGroupDailyRecord: (groupId, date) => groupSql.findGroupDailyRecord(pool, groupId, date),
   updateGroupDailyRecord: (record) => groupSql.updateGroupDailyRecord(pool, record),

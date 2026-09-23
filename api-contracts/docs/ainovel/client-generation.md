@@ -35,6 +35,7 @@ Do not add the Zook repository as a Node dependency or workspace. Consumer autom
 ## Current manual client exception
 
 - `POST /api/v1/ai_novel/feedback` is documented here because it is a product-external client contract.
+- `GET /api/v1/ai_novel/public/update` is part of the public contract and returns only AINovel's enabled platform/store update targets.
 - The AINovel app currently calls it through the shared `YouwoCore` business client (`postBusiness("feedback")`) rather than the generated `zook_api_client`.
 - When the consumer client is refreshed from a pinned Zook contract snapshot, this endpoint can be moved into the generated client path.
 

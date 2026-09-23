@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { KVManager } from "../infrastructure/kv/kv-manager.ts";
+import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import type { LlmRouteCircuitRuntimeStatus } from "../shared/types.ts";
 import type { LlmRouteRef } from "./llm-health.service.ts";
 
@@ -16,6 +17,8 @@ const LOCK_TTL_SECONDS = 10;
 const LOCK_RETRY_COUNT = 50;
 const LOCK_RETRY_DELAY_MS = 5;
 const PROBE_LEASE_MS = 2 * 60 * 1000;
+const DIAGNOSTIC_LOG_INTERVAL_MS = 60 * 1000;
+const MAX_DIAGNOSTIC_THROTTLE_KEYS = 512;
 
 interface CircuitFailure {
   userHash: string;
@@ -40,6 +43,7 @@ interface CircuitState {
 
 export interface LlmRouteCircuitBreakerOptions {
   now?: () => Date;
+  logger?: StructuredLogger;
 }
 
 export interface LlmRouteCircuitConfirmation {
@@ -53,6 +57,8 @@ export interface LlmRouteCircuitConfirmation {
  * effective chunk, and it never retries an end-user request.
  */
 export class LlmRouteCircuitBreakerService {
+  private readonly diagnosticLogTimes = new Map<string, number>();
+
   constructor(
     private readonly kvManager: KVManager,
     private readonly options: LlmRouteCircuitBreakerOptions = {},
@@ -60,7 +66,14 @@ export class LlmRouteCircuitBreakerService {
 
   async isOpen(ref: LlmRouteRef, enabled: boolean): Promise<boolean> {
     if (!enabled) return false;
-    return (await this.getState(ref))?.state === "open";
+    const state = await this.getState(ref);
+    if (state?.state !== "open") return false;
+    this.logOnce(ref, "route_skipped_while_open", "warn", "LLM route skipped because its circuit is open", {
+      blockedUntil: state.blockedUntil,
+      nextRecoveryAt: state.nextRecoveryAt,
+      recoveryFailureCount: state.recoveryFailureCount,
+    });
+    return true;
   }
 
   async getRuntimeStatus(
@@ -95,6 +108,13 @@ export class LlmRouteCircuitBreakerService {
       const current = await this.getState(ref);
       if (!current || current.state === "open") return;
       await this.clearRoute(ref);
+      if (current.failures.length > 0 || current.state === "confirming") {
+        this.logTransition(ref, "failure_window_cleared_by_success", "info", {
+          previousState: current.state,
+          failureCount: current.failures.length,
+          distinctUserCount: distinctUserCount(current.failures),
+        });
+      }
     });
   }
 
@@ -102,17 +122,37 @@ export class LlmRouteCircuitBreakerService {
     ref: LlmRouteRef,
     userId: string | undefined,
     enabled: boolean,
+    errorCode?: string,
   ): Promise<LlmRouteRef | undefined> {
-    if (!enabled || !userId?.trim()) return undefined;
+    if (!enabled) {
+      this.logIgnoredFailure(ref, "circuit_disabled", errorCode);
+      return undefined;
+    }
+    if (!userId?.trim()) {
+      this.logIgnoredFailure(ref, "missing_user_id", errorCode);
+      return undefined;
+    }
     return await this.withRouteLock(ref, async () => {
       const current = await this.getState(ref);
-      if (current?.state === "open" || current?.state === "confirming") return undefined;
+      if (current?.state === "open" || current?.state === "confirming") {
+        this.logIgnoredFailure(
+          ref,
+          current.state === "open" ? "circuit_open" : "confirmation_pending",
+          errorCode,
+        );
+        return undefined;
+      }
       const now = this.getNow();
       const failures = (current?.failures ?? [])
         .filter((failure) => now.getTime() - Date.parse(failure.occurredAt) < FAILURE_WINDOW_MS)
         .concat({ userHash: hashUserId(userId), occurredAt: now.toISOString() });
       const distinctUsers = new Set(failures.map((failure) => failure.userHash)).size;
       const shouldOpen = failures.length >= OPEN_AFTER_FAILURES && distinctUsers >= REQUIRED_DISTINCT_USERS;
+      const decision = shouldOpen
+        ? "threshold_reached"
+        : failures.length >= OPEN_AFTER_FAILURES
+          ? "distinct_user_quorum_not_met"
+          : "failure_count_below_threshold";
       const state: CircuitState = shouldOpen
         ? {
             ref: normalizeRef(ref),
@@ -130,7 +170,51 @@ export class LlmRouteCircuitBreakerService {
             recoveryFailureCount: 0,
       };
       await this.setState(ref, state);
+      if (shouldOpen) {
+        this.logTransition(ref, "confirmation_started", "warn", {
+          failureCount: failures.length,
+          distinctUserCount: distinctUsers,
+          failureThreshold: OPEN_AFTER_FAILURES,
+          distinctUserThreshold: REQUIRED_DISTINCT_USERS,
+          failureWindowMs: FAILURE_WINDOW_MS,
+          errorCode,
+        });
+      } else {
+        this.logOnce(ref, `failure_window_progress:${decision}`, "warn", "LLM route circuit failure window updated", {
+          decision,
+          failureCount: failures.length,
+          distinctUserCount: distinctUsers,
+          failureThreshold: OPEN_AFTER_FAILURES,
+          distinctUserThreshold: REQUIRED_DISTINCT_USERS,
+          failureWindowMs: FAILURE_WINDOW_MS,
+          errorCode,
+        });
+      }
       return shouldOpen ? normalizeRef(ref) : undefined;
+    });
+  }
+
+  logIgnoredFailure(
+    ref: LlmRouteRef,
+    reason:
+      | "non_stream_request"
+      | "failure_after_first_chunk"
+      | "circuit_disabled"
+      | "missing_user_id"
+      | "confirmation_pending"
+      | "circuit_open",
+    errorCode?: string,
+  ): void {
+    this.logOnce(ref, `ignored_failure:${reason}`, "warn", "LLM route circuit did not count failed request", {
+      reason,
+      errorCode,
+    });
+  }
+
+  logDiagnosticFailure(ref: LlmRouteRef, reason: string, errorCode?: string): void {
+    this.logOnce(ref, `diagnostic_failure:${reason}`, "error", "LLM route circuit diagnostic operation failed", {
+      reason,
+      errorCode,
     });
   }
 
@@ -182,6 +266,10 @@ export class LlmRouteCircuitBreakerService {
       ) return "skipped" as const;
       if (succeeded) {
         await this.clearRoute(current.ref);
+        this.logTransition(current.ref, "confirmation_probe_cleared", "info", {
+          failureCount: current.failures.length,
+          distinctUserCount: distinctUserCount(current.failures),
+        });
         return "cleared" as const;
       }
       const now = this.getNow();
@@ -193,6 +281,12 @@ export class LlmRouteCircuitBreakerService {
         openedAt: now.toISOString(),
         blockedUntil: addMilliseconds(now, INITIAL_RECOVERY_DELAY_MS).toISOString(),
         nextRecoveryAt: addMilliseconds(now, INITIAL_RECOVERY_DELAY_MS).toISOString(),
+      });
+      this.logTransition(current.ref, "circuit_opened", "error", {
+        failureCount: current.failures.length,
+        distinctUserCount: distinctUserCount(current.failures),
+        blockedUntil: addMilliseconds(now, INITIAL_RECOVERY_DELAY_MS).toISOString(),
+        reason: "confirmation_probes_failed",
       });
       return "opened" as const;
     })) ?? "skipped";
@@ -209,6 +303,10 @@ export class LlmRouteCircuitBreakerService {
       const current = await this.getState(ref);
       if (!current) return false;
       await this.clearRoute(ref);
+      this.logTransition(ref, "circuit_reset_manually", "info", {
+        previousState: current.state,
+        failureCount: current.failures.length,
+      });
       return true;
     })) ?? false;
   }
@@ -257,6 +355,9 @@ export class LlmRouteCircuitBreakerService {
         const now = this.getNow();
         if (success) {
           await this.clearRoute(current.ref);
+          this.logTransition(current.ref, "circuit_recovery_succeeded", "info", {
+            recoveryFailureCount: current.recoveryFailureCount,
+          });
           return "restored" as const;
         }
         const recoveryFailureCount = current.recoveryFailureCount + 1;
@@ -269,6 +370,11 @@ export class LlmRouteCircuitBreakerService {
           recoveryFailureCount,
           blockedUntil: addMilliseconds(now, delay).toISOString(),
           nextRecoveryAt: addMilliseconds(now, delay).toISOString(),
+        });
+        this.logTransition(current.ref, "circuit_recovery_failed", "warn", {
+          recoveryFailureCount,
+          nextRecoveryAt: addMilliseconds(now, delay).toISOString(),
+          reason: "recovery_probes_failed",
         });
         return "failed" as const;
       });
@@ -357,6 +463,42 @@ export class LlmRouteCircuitBreakerService {
   private getNow(): Date {
     return this.options.now?.() ?? new Date();
   }
+
+  private logOnce(
+    ref: LlmRouteRef,
+    event: string,
+    level: "warn" | "error",
+    message: string,
+    context: Record<string, unknown>,
+  ): void {
+    const logger = this.options.logger;
+    if (!logger) return;
+    const now = this.getNow().getTime();
+    const throttleKey = `${this.stateKey(ref)}:${event}`;
+    const previous = this.diagnosticLogTimes.get(throttleKey);
+    if (previous !== undefined && now - previous < DIAGNOSTIC_LOG_INTERVAL_MS) return;
+    this.diagnosticLogTimes.delete(throttleKey);
+    this.diagnosticLogTimes.set(throttleKey, now);
+    while (this.diagnosticLogTimes.size > MAX_DIAGNOSTIC_THROTTLE_KEYS) {
+      const oldestKey = this.diagnosticLogTimes.keys().next().value;
+      if (oldestKey === undefined) break;
+      this.diagnosticLogTimes.delete(oldestKey);
+    }
+    logger[level](message, { ...normalizeRef(ref), event, ...context });
+  }
+
+  private logTransition(
+    ref: LlmRouteRef,
+    event: string,
+    level: "info" | "warn" | "error",
+    context: Record<string, unknown>,
+  ): void {
+    this.options.logger?.[level]("LLM route circuit state changed", {
+      ...normalizeRef(ref),
+      event,
+      ...context,
+    });
+  }
 }
 
 function normalizeRef(ref: LlmRouteRef): Required<LlmRouteRef> {
@@ -370,6 +512,10 @@ function normalizeRef(ref: LlmRouteRef): Required<LlmRouteRef> {
 
 function hashUserId(userId: string): string {
   return createHash("sha256").update(userId.trim()).digest("base64url");
+}
+
+function distinctUserCount(failures: CircuitFailure[]): number {
+  return new Set(failures.map((failure) => failure.userHash)).size;
 }
 
 function addMilliseconds(value: Date, milliseconds: number): Date {

@@ -107,6 +107,38 @@ export async function requestJson<T>(
   return payload.data;
 }
 
+export async function requestBlob(path: string, options: {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string | undefined>;
+} = {}): Promise<Blob> {
+  const requestHeaders = new Headers({ Accept: "text/csv" });
+  Object.entries(options.headers ?? {}).forEach(([key, value]) => {
+    if (value) requestHeaders.set(key, value);
+  });
+  if (options.body !== undefined) requestHeaders.set("Content-Type", "application/json");
+
+  const response = await fetch(path, {
+    method: options.method ?? "GET",
+    headers: requestHeaders,
+    credentials: "include",
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
+  if (!response.ok) {
+    let message = await response.text();
+    try {
+      const payload = JSON.parse(message) as ApiEnvelope<unknown>;
+      if (shouldRedirectToLogin(response, payload)) dispatchAuthRequired(payload.message);
+      message = payload.message || message;
+      throw new ApiError(message, response.status, payload.code, payload.data);
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(message || `Request failed with status ${response.status}`, response.status);
+    }
+  }
+  return response.blob();
+}
+
 export function isAdminAuthError(error: unknown): boolean {
   return error instanceof ApiError && (
     error.statusCode === 401

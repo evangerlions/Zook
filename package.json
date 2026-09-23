@@ -33,6 +33,7 @@
     "@types/nodemailer": "^6.4.24"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.1",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "nodemailer": "^6.10.1",

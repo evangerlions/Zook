@@ -1,0 +1,2757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>轻刻 · AI Coach — Prototype v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #6366F1;
+  --primary-light: #818CF8;
+  --primary-dark: #4F46E5;
+  --primary-glow: rgba(99, 102, 241, 0.12);
+  --primary-ultra-light: rgba(99, 102, 241, 0.06);
+  --success: #10B981;
+  --success-light: #ECFDF5;
+  --warning: #F59E0B;
+  --warning-light: #FFFBEB;
+  --error: #EF4444;
+  --error-light: #FEF2F2;
+  --bg: #F8F9FC;
+  --bg-alt: #EEF0F6;
+  --surface: #FFFFFF;
+  --text: #1E293B;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --border: #E2E8F0;
+  --shadow-xs: 0 1px 2px rgba(30, 41, 59, 0.04);
+  --shadow-sm: 0 1px 3px rgba(30, 41, 59, 0.08), 0 1px 2px rgba(30, 41, 59, 0.04);
+  --shadow-md: 0 4px 12px rgba(30, 41, 59, 0.08), 0 2px 4px rgba(30, 41, 59, 0.04);
+  --shadow-lg: 0 12px 40px rgba(30, 41, 59, 0.12), 0 4px 12px rgba(30, 41, 59, 0.06);
+  --shadow-primary: 0 4px 16px rgba(99, 102, 241, 0.3);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --font-display: 'DM Serif Display', 'Noto Serif SC', serif;
+  --font-body: 'DM Sans', 'Noto Sans SC', sans-serif;
+  --font-mono: 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
+}
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background-image:
+    radial-gradient(ellipse at 30% 0%, rgba(99, 102, 241, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+}
+
+/* ── Phone Frame ── */
+.phone-frame {
+  width: 393px;
+  height: 852px;
+  background: var(--bg);
+  border-radius: 48px;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(30, 41, 59, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  position: relative;
+  border: 7px solid #1C1C1E;
+}
+
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 32px;
+  background: #1C1C1E;
+  border-radius: 0 0 20px 20px;
+  z-index: 100;
+}
+
+.screen-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 41px;
+}
+
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
+  opacity: 0;
+  transform: translateX(24px);
+  pointer-events: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 90px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: all;
+}
+
+.screen::-webkit-scrollbar { display: none; }
+
+/* ── Status Bar ── */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 26px 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: transparent;
+}
+
+.status-bar .time { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; }
+.status-bar .icons { display: flex; gap: 5px; align-items: center; }
+.status-bar .icons svg { width: 17px; height: 17px; }
+
+/* ── Navigation Header ── */
+.nav-header {
+  padding: 6px 22px 14px;
+  position: sticky;
+  top: 32px;
+  z-index: 50;
+  background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+}
+
+.nav-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.nav-header .subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.nav-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.nav-header-left { flex: 1; }
+
+.nav-header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  position: relative;
+}
+
+.icon-btn:hover { box-shadow: var(--shadow-sm); transform: scale(1.05); }
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn svg { width: 19px; height: 19px; }
+
+.icon-btn .badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: var(--error);
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+}
+
+/* ── Content Area ── */
+.content {
+  padding: 0 22px;
+}
+
+/* ── Greeting Card (Today) ── */
+.greeting-card {
+  background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-primary);
+}
+
+.greeting-card::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -20px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.greeting-card::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  right: 30px;
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+}
+
+.greeting-card .greeting-text {
+  font-size: 20px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.greeting-card .greeting-insight {
+  font-size: 13px;
+  opacity: 0.85;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+  font-weight: 300;
+}
+
+/* ── Current Task Card ── */
+.section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+
+.current-task-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1.5px solid var(--primary-light);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 20px;
+  transition: all 0.25s ease;
+}
+
+.current-task-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--primary), var(--primary-light));
+  border-radius: 4px 0 0 4px;
+}
+
+.current-task-card .task-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-ultra-light);
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+}
+
+.current-task-card .task-label .pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+.current-task-card .task-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.current-task-card .task-meta-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.current-task-card .task-meta-item {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.current-task-card .task-meta-item svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.6;
+}
+
+.difficulty-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.difficulty-tag.hard { background: var(--error-light); color: var(--error); }
+.difficulty-tag.medium { background: var(--warning-light); color: var(--warning); }
+.difficulty-tag.easy { background: var(--success-light); color: var(--success); }
+
+.start-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.start-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35); }
+.start-btn:active { transform: translateY(0) scale(0.98); }
+.start-btn svg { width: 20px; height: 20px; }
+
+/* ── Remaining Tasks ── */
+.remaining-section { margin-bottom: 20px; }
+
+.remaining-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.remaining-divider::before,
+.remaining-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.remaining-divider span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.remaining-task {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--bg-alt);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.remaining-task:last-child { border-bottom: none; }
+.remaining-task:active { opacity: 0.6; }
+
+.remaining-task .task-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remaining-task.completed .task-circle {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.remaining-task.completed .task-circle svg {
+  width: 13px;
+  height: 13px;
+  color: white;
+}
+
+.remaining-task .task-info { flex: 1; }
+
+.remaining-task .task-info h5 {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.remaining-task.completed .task-info h5 {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.remaining-task .task-info .meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Daily Progress ── */
+.daily-progress {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.daily-progress .progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.daily-progress .progress-header .label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.daily-progress .progress-header .value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.daily-progress .progress-track {
+  height: 6px;
+  background: var(--bg-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.daily-progress .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── Journey Tab Cards ── */
+.journey-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+.journey-card:hover { box-shadow: var(--shadow-sm); }
+
+.journey-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.journey-card-header h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.journey-card-header .icon {
+  font-size: 18px;
+}
+
+.journey-card-header .arrow {
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+/* ── Growth Tree ── */
+.growth-tree {
+  height: 180px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.tree-trunk {
+  width: 8px;
+  height: 80px;
+  background: linear-gradient(to top, #92400E, #B45309);
+  border-radius: 4px;
+  position: relative;
+}
+
+.tree-branch {
+  position: absolute;
+  width: 40px;
+  height: 4px;
+  background: #B45309;
+  border-radius: 2px;
+}
+
+.tree-branch.left {
+  left: -36px;
+  transform: rotate(-20deg);
+}
+
+.tree-branch.right {
+  right: -36px;
+  transform: rotate(20deg);
+}
+
+.tree-branch:nth-child(2) { bottom: 50px; }
+.tree-branch:nth-child(3) { bottom: 65px; }
+
+.tree-leaves {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.leaf {
+  width: 16px;
+  height: 20px;
+  background: var(--success);
+  border-radius: 50% 0 50% 0;
+  transform: rotate(-45deg);
+  opacity: 0.8;
+}
+
+.leaf:nth-child(2) { background: #059669; transform: rotate(-30deg); }
+.leaf:nth-child(3) { background: #34D399; transform: rotate(-50deg); }
+
+.tree-flower {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--warning);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.tree-flower:nth-child(4) { top: -10px; left: -25px; }
+.tree-flower:nth-child(5) { top: -15px; right: -20px; background: var(--primary-light); }
+
+/* ── Execution DNA ── */
+.dna-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bg-alt);
+}
+
+.dna-item:last-child { border-bottom: none; }
+
+.dna-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.dna-content .dna-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.dna-content .dna-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Study Circle ── */
+.circle-progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.circle-ring {
+  width: 64px;
+  height: 64px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.circle-ring svg {
+  transform: rotate(-90deg);
+}
+
+.circle-ring .ring-bg {
+  fill: none;
+  stroke: var(--bg-alt);
+  stroke-width: 6;
+}
+
+.circle-ring .ring-fill {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s ease;
+}
+
+.circle-ring .ring-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.circle-info { flex: 1; }
+
+.circle-info .circle-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.circle-info .circle-members {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.member-avatars {
+  display: flex;
+  gap: -4px;
+}
+
+.member-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: -6px;
+}
+
+.member-avatar:first-child { margin-left: 0; }
+
+/* ── Review Card ── */
+.review-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.review-stat .stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.review-stat .stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.review-stat .stat-change {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+  margin-left: 4px;
+}
+
+.review-stat .stat-change.negative { color: var(--error); }
+
+/* ── Onboarding (Conversational) ── */
+.onboarding-screen {
+  background: var(--bg);
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.onboarding-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 28px;
+}
+
+.onboarding-logo {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.onboarding-logo .logo-text {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -1px;
+}
+
+.onboarding-logo .logo-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: pulse-dot 2s ease infinite;
+}
+
+.onboarding-input-area {
+  text-align: center;
+}
+
+.onboarding-input-area .prompt {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.onboarding-input-area .sub-prompt {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.conversation-input {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 28px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 16px;
+  font-family: var(--font-body);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.conversation-input:focus { border-color: var(--primary); }
+.conversation-input::placeholder { color: var(--text-muted); }
+
+.voice-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px auto 0;
+  box-shadow: var(--shadow-primary);
+  transition: all 0.25s ease;
+}
+
+.voice-btn:hover { transform: scale(1.08); }
+.voice-btn:active { transform: scale(0.92); }
+.voice-btn svg { width: 24px; height: 24px; }
+
+.alt-entry-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 24px 0 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  position: relative;
+}
+.alt-entry-divider::before,
+.alt-entry-divider::after {
+  content: '';
+  flex: 1;
+  max-width: 80px;
+  height: 1px;
+  background: var(--border);
+}
+.alt-entry-divider span { padding: 0 12px; }
+
+.guided-entry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-xs);
+}
+.guided-entry-btn:hover { border-color: var(--primary); color: var(--primary); }
+.guided-entry-btn:active { transform: scale(0.97); }
+.guided-entry-btn svg { flex-shrink: 0; }
+
+/* AI Chat Bubbles */
+.chat-area {
+  flex: 1;
+  padding: 0 28px;
+  overflow-y: auto;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 14px 18px;
+  border-radius: 18px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: bubbleIn 0.3s ease both;
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.chat-bubble.ai {
+  background: var(--surface);
+  color: var(--text);
+  border-bottom-left-radius: 6px;
+  box-shadow: var(--shadow-xs);
+  align-self: flex-start;
+}
+
+.chat-bubble.user {
+  background: var(--primary);
+  color: white;
+  border-bottom-right-radius: 6px;
+  margin-left: auto;
+}
+
+.chat-bubble .typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 16px;
+  background: var(--text-muted);
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Plan Preview */
+.plan-preview {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin: 12px 0;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--border);
+}
+
+.plan-preview .plan-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.plan-preview .plan-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.plan-preview .plan-item .week-num {
+  font-weight: 600;
+  color: var(--primary);
+  min-width: 24px;
+}
+
+.confirm-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+  transition: all 0.25s ease;
+  margin-top: 16px;
+}
+
+.confirm-btn:hover { transform: translateY(-1px); }
+.confirm-btn:active { transform: scale(0.98); }
+
+/* Typing Dots */
+.typing-dots {
+  display: flex;
+  gap: 5px;
+  padding: 4px 0;
+}
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Clarify Options */
+.clarify-opt {
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.clarify-opt:hover { border-color: var(--primary); background: var(--primary-ultra-light); }
+.clarify-opt:active { transform: scale(0.95); }
+
+/* Plan Generating Card */
+.plan-generating {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  margin: 12px 0;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--border);
+  animation: bubbleIn 0.3s ease both;
+}
+.generating-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.generating-text {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.generating-stages { display: flex; flex-direction: column; gap: 8px; }
+.stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+}
+.stage.done { color: var(--success); }
+.stage.active { color: var(--primary); font-weight: 500; }
+.stage.active::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
+/* Milestone List in Plan Preview */
+.milestone-list { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.milestone-item:last-child { border-bottom: none; }
+.milestone-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+.milestone-badge.m1 { background: linear-gradient(135deg, #6366F1, #818CF8); }
+.milestone-badge.m2 { background: linear-gradient(135deg, #10B981, #34D399); }
+.milestone-badge.m3 { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
+.milestone-badge.m4 { background: linear-gradient(135deg, #EF4444, #F87171); }
+.milestone-info { flex: 1; }
+.ms-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.ms-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Plan Meta Row */
+.plan-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+/* Week Preview */
+.plan-week-preview {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-top: 14px;
+}
+.preview-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.preview-task {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text);
+  border-bottom: 1px dashed var(--border);
+}
+.preview-task:last-child { border-bottom: none; }
+.preview-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--surface);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Plan Action Buttons */
+.plan-action-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+.plan-action-btn.primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  box-shadow: var(--shadow-primary);
+}
+.plan-action-btn.primary:hover { transform: translateY(-1px); }
+.plan-action-btn.primary:active { transform: scale(0.97); }
+.plan-action-btn.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.plan-action-btn.secondary:hover { border-color: var(--primary); }
+.plan-action-btn.secondary:active { transform: scale(0.97); }
+
+/* ── Guided Onboarding Wizard Overlay ── */
+.guided-wizard-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  z-index: 80;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.guided-wizard-overlay.active { display: flex; }
+
+.wizard-progress-bar {
+  padding: 58px 28px 16px;
+}
+.wizard-progress-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.wizard-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.wizard-step-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.wizard-step {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  padding: 20px 28px 40px;
+  animation: slideInRight 0.35s ease both;
+}
+.wizard-step.active { display: flex; }
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.wizard-step h3 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.wizard-step .step-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.wizard-option-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wizard-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-xs);
+}
+.wizard-option:hover { border-color: var(--primary); background: var(--primary-ultra-light); }
+.wizard-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-glow);
+  box-shadow: var(--shadow-primary);
+  position: relative;
+}
+.wizard-option.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.wizard-option .opt-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+.wizard-option.selected .opt-icon { background: rgba(99,102,241,0.15); }
+.wizard-option .opt-text { flex: 1; }
+.wizard-option .opt-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.wizard-option .opt-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.wizard-free-input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease;
+  resize: none;
+  min-height: 80px;
+  box-shadow: var(--shadow-xs);
+}
+.wizard-free-input:focus { border-color: var(--primary); }
+
+.wizard-nav {
+  display: flex;
+  gap: 12px;
+  padding: 16px 28px 36px;
+  background: linear-gradient(to top, var(--bg) 80%, transparent);
+}
+.wizard-nav-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+.wizard-nav-btn.back {
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+}
+.wizard-nav-btn.next {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  box-shadow: var(--shadow-primary);
+}
+.wizard-nav-btn:active { transform: scale(0.97); }
+.wizard-nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.wizard-tag {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.wizard-tag:hover { border-color: var(--primary); }
+.wizard-tag.selected {
+  border-color: var(--primary);
+  background: var(--primary-glow);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* ── Global Chat Overlay ── */
+.chat-overlay {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 393px;
+  height: 852px;
+  background: rgba(30, 41, 59, 0.3);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.chat-overlay.active { opacity: 1; pointer-events: all; }
+
+.chat-panel {
+  width: 100%;
+  height: 75%;
+  background: var(--bg);
+  border-radius: 24px 24px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-overlay.active .chat-panel { transform: translateY(0); }
+
+.chat-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-panel-header h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.chat-panel-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-alt);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.chat-panel-close:hover { background: var(--border); }
+
+.chat-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-panel-input-area {
+  display: flex;
+  gap: 10px;
+  padding: 12px 22px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.chat-panel-input {
+  flex: 1;
+  padding: 12px 18px;
+  border-radius: 24px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 15px;
+  font-family: var(--font-body);
+  color: var(--text);
+  outline: none;
+}
+
+.chat-panel-input:focus { border-color: var(--primary); }
+
+.chat-send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chat-send-btn:hover { background: var(--primary-dark); }
+.chat-send-btn svg { width: 20px; height: 20px; }
+
+/* Quick Replies */
+.quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.quick-reply {
+  padding: 8px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.quick-reply:hover { border-color: var(--primary-light); color: var(--primary); }
+
+/* ── Tab Bar ── */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 393px;
+  height: 84px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 10px;
+  z-index: 100;
+}
+
+.tab-bar::before {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.94), transparent);
+  pointer-events: none;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 6px 20px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab-item svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.tab-item span {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.tab-item.active svg { color: var(--primary); }
+.tab-item.active span { color: var(--primary); font-weight: 600; }
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 0 0 3px 3px;
+}
+
+/* ── FAB (Chat) ── */
+.chat-fab {
+  position: fixed;
+  bottom: 96px;
+  right: calc(50% - 176px);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--primary), #7C3AED);
+  color: white;
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+}
+
+.chat-fab:hover { transform: scale(1.08); }
+.chat-fab:active { transform: scale(0.92); }
+.chat-fab svg { width: 24px; height: 24px; }
+
+/* ── Timer Overlay ── */
+.timer-overlay {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 393px;
+  height: 852px;
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(12px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.timer-overlay.active { opacity: 1; pointer-events: all; }
+
+.timer-card {
+  width: 320px;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.9);
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.timer-overlay.active .timer-card { transform: scale(1); }
+
+.timer-display {
+  font-family: var(--font-mono);
+  font-size: 56px;
+  font-weight: 300;
+  color: var(--text);
+  letter-spacing: 2px;
+  margin: 24px 0;
+}
+
+.timer-task-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.timer-task-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.timer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.timer-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timer-btn.primary {
+  background: var(--primary);
+  color: white;
+}
+
+.timer-btn.secondary {
+  background: var(--bg-alt);
+  color: var(--text-secondary);
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  z-index: 300;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.45s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-in:nth-child(1) { animation-delay: 0.05s; }
+.animate-in:nth-child(2) { animation-delay: 0.1s; }
+.animate-in:nth-child(3) { animation-delay: 0.15s; }
+.animate-in:nth-child(4) { animation-delay: 0.2s; }
+.animate-in:nth-child(5) { animation-delay: 0.25s; }
+.animate-in:nth-child(6) { animation-delay: 0.3s; }
+.animate-in:nth-child(7) { animation-delay: 0.35s; }
+
+/* ── Responsive ── */
+@media (max-width: 430px) {
+  body { padding: 0; align-items: stretch; }
+  .phone-frame {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    border: none;
+  }
+  .phone-frame::before { display: none; }
+  .tab-bar { width: 100%; }
+  .chat-overlay { width: 100%; }
+  .chat-fab { right: 20px; }
+  .timer-overlay { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="screen-container">
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- ONBOARDING — Conversational         -->
+    <!-- ═══════════════════════════════════ -->
+    <div class="screen onboarding-screen active" id="screen-onboarding">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="icons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+      </div>
+
+      <div class="onboarding-container" id="onboarding-step-1">
+        <div class="onboarding-logo">
+          <div class="logo-text">轻刻<span class="logo-dot"></span></div>
+        </div>
+        <div class="onboarding-input-area">
+          <div class="prompt">你想实现什么？</div>
+          <div class="sub-prompt">告诉我你的目标，AI 会为你定制专属计划</div>
+          <input class="conversation-input" id="goal-input" placeholder="例如：8个月内通过PMP考试" autofocus>
+          <button class="voice-btn" onclick="startVoiceInput()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <div class="alt-entry-divider">
+            <span>或者</span>
+          </div>
+          <button class="guided-entry-btn" onclick="openGuidedOnboarding()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            快速引导模式
+          </button>
+        </div>
+      </div>
+
+      <div class="chat-area" id="onboarding-chat" style="display:none; flex-direction: column;">
+        <!-- Dynamic chat bubbles inserted here by JS -->
+      </div>
+
+      <!-- Guided Wizard Overlay -->
+      <div class="guided-wizard-overlay" id="guided-wizard">
+        <div class="wizard-progress-bar">
+          <div class="wizard-progress-track">
+            <div class="wizard-progress-fill" id="wizard-progress-fill" style="width: 25%"></div>
+          </div>
+          <div class="wizard-step-label" id="wizard-step-label">第 1 步 / 共 4 步</div>
+        </div>
+
+        <!-- Step 1: Goal Type -->
+        <div class="wizard-step active" data-step="1">
+          <h3>你的目标属于哪类？</h3>
+          <div class="step-subtitle">选择一个最接近的类别，帮助 AI 更好理解你的方向</div>
+          <div class="wizard-option-grid">
+            <div class="wizard-option" onclick="selectWizardOption(this, 'exam')">
+              <div class="opt-icon">📝</div>
+              <div class="opt-text"><div class="opt-title">考试认证</div><div class="opt-desc">PMP、CFA、托福、考研等</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, 'skill')">
+              <div class="opt-icon">💡</div>
+              <div class="opt-text"><div class="opt-title">技能提升</div><div class="opt-desc">编程、设计、语言、乐器等</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, 'project')">
+              <div class="opt-icon">🚀</div>
+              <div class="opt-text"><div class="opt-title">项目/产品</div><div class="opt-desc">创业、副业、内部项目等</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, 'habit')">
+              <div class="opt-icon">🌱</div>
+              <div class="opt-text"><div class="opt-title">习惯养成</div><div class="opt-desc">运动、阅读、早起等</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Timeline -->
+        <div class="wizard-step" data-step="2">
+          <h3>你希望多久完成？</h3>
+          <div class="step-subtitle">设定一个合理的时间框架</div>
+          <div class="wizard-option-grid">
+            <div class="wizard-option" onclick="selectWizardOption(this, '1month')">
+              <div class="opt-icon">⚡</div>
+              <div class="opt-text"><div class="opt-title">1 个月内</div><div class="opt-desc">高强度冲刺型</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, '3months')">
+              <div class="opt-icon">📅</div>
+              <div class="opt-text"><div class="opt-title">1-3 个月</div><div class="opt-desc">中短期，节奏适中</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, '6months')">
+              <div class="opt-icon">🗓️</div>
+              <div class="opt-text"><div class="opt-title">3-6 个月</div><div class="opt-desc">稳步推进型</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, '12months')">
+              <div class="opt-icon">🌟</div>
+              <div class="opt-text"><div class="opt-title">6-12 个月</div><div class="opt-desc">长期规划，轻松节奏</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Availability -->
+        <div class="wizard-step" data-step="3">
+          <h3>每天能投入多少时间？</h3>
+          <div class="step-subtitle">这会影响 AI 分配的任务量</div>
+          <div class="wizard-option-grid">
+            <div class="wizard-option" onclick="selectWizardOption(this, '30min')">
+              <div class="opt-icon">☕</div>
+              <div class="opt-text"><div class="opt-title">30 分钟以内</div><div class="opt-desc">碎片化学习，微任务</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, '1hour')">
+              <div class="opt-icon">📖</div>
+              <div class="opt-text"><div class="opt-title">30-60 分钟</div><div class="opt-desc">标准节奏，大多数人</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, '2hours')">
+              <div class="opt-icon">🔥</div>
+              <div class="opt-text"><div class="opt-title">1-2 小时</div><div class="opt-desc">深度投入，进度更快</div></div>
+            </div>
+            <div class="wizard-option" onclick="selectWizardOption(this, '3hours+')">
+              <div class="opt-icon">💪</div>
+              <div class="opt-text"><div class="opt-title">2 小时以上</div><div class="opt-desc">全力冲刺，快速达成</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Details -->
+        <div class="wizard-step" data-step="4">
+          <h3>还有什么想补充的？</h3>
+          <div class="step-subtitle">可选 — 任何有助于 AI 理解你的信息</div>
+          <textarea class="wizard-free-input" id="wizard-details" placeholder="例如：我有编程基础、工作日晚上有空、想要一个轻松的节奏..."></textarea>
+          <div style="margin-top: 16px;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px;">常用标签</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <button class="wizard-tag" onclick="toggleTag(this)">零基础</button>
+              <button class="wizard-tag" onclick="toggleTag(this)">在职学习</button>
+              <button class="wizard-tag" onclick="toggleTag(this)">有截止日期</button>
+              <button class="wizard-tag" onclick="toggleTag(this)">需要灵活性</button>
+              <button class="wizard-tag" onclick="toggleTag(this)">希望有社群</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wizard Navigation -->
+        <div class="wizard-nav">
+          <button class="wizard-nav-btn back" id="wizard-back-btn" onclick="wizardBack()" disabled>上一步</button>
+          <button class="wizard-nav-btn next" id="wizard-next-btn" onclick="wizardNext()">下一步</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- TAB 1: 今日 (Today)                 -->
+    <div class="screen" id="screen-today">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="icons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+      </div>
+
+      <div class="nav-header">
+        <div class="nav-header-row">
+          <div class="nav-header-left">
+            <h1>今日</h1>
+            <div class="subtitle" id="today-date">4月17日 · 周四</div>
+          </div>
+          <div class="nav-header-right">
+            <button class="icon-btn" onclick="openChatOverlay()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <span class="badge"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Greeting -->
+        <div class="greeting-card animate-in">
+          <div class="greeting-text">Good Morning</div>
+          <div class="greeting-insight">今天是本周专注力最高的一天<br>你的大脑在上午9:30-11:00最清醒</div>
+        </div>
+
+        <!-- Current Task -->
+        <div class="section-label animate-in">当前任务</div>
+        <div class="current-task-card animate-in" id="today-current-task">
+          <div class="task-label">
+            <span class="pulse-dot"></span>
+            正在进行
+          </div>
+          <div class="task-title">理解闭包概念</div>
+          <div class="task-meta-row">
+            <span class="task-meta-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              预计 25 分钟
+            </span>
+            <span class="difficulty-tag medium">中等难度</span>
+          </div>
+          <button class="start-btn" onclick="openTimer()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            开始
+          </button>
+        </div>
+
+        <!-- Remaining -->
+        <div class="remaining-divider animate-in"><span>今日剩余</span></div>
+        <div class="remaining-section">
+          <div class="remaining-task animate-in" onclick="completeRemaining(this)">
+            <div class="task-circle"></div>
+            <div class="task-info">
+              <h5>练习闭包</h5>
+              <div class="meta">15min · 低难度</div>
+            </div>
+          </div>
+          <div class="remaining-task animate-in" onclick="completeRemaining(this)">
+            <div class="task-circle"></div>
+            <div class="task-info">
+              <h5>复习OOP设计模式</h5>
+              <div class="meta">20min · 中等难度</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Progress -->
+        <div class="daily-progress animate-in">
+          <div class="progress-header">
+            <span class="label">今日完成</span>
+            <span class="value" id="daily-progress-text">0/3 · 预计 60分钟</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="daily-progress-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════ -->
+    <!-- TAB 2: 旅程 (Journey)               -->
+    <!-- ═══════════════════════════════════ -->
+    <div class="screen" id="screen-journey">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="icons">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+      </div>
+
+      <div class="nav-header">
+        <div class="nav-header-row">
+          <div class="nav-header-left">
+            <h1>旅程</h1>
+            <div class="subtitle">通过PMP考试 · 第3周 / 共20周</div>
+          </div>
+          <div class="nav-header-right">
+            <button class="icon-btn" onclick="openChatOverlay()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Progress Bar -->
+        <div class="daily-progress animate-in" style="margin-bottom: 16px;">
+          <div class="progress-header">
+            <span class="label">总体进度</span>
+            <span class="value">15%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 15%"></div>
+          </div>
+        </div>
+
+        <!-- Growth Tree -->
+        <div class="journey-card animate-in">
+          <div class="journey-card-header">
+            <h4><span class="icon">🌳</span> 成长树</h4>
+            <span class="arrow">›</span>
+          </div>
+          <div class="growth-tree">
+            <div class="tree-trunk">
+              <div class="tree-branch left"></div>
+              <div class="tree-branch right"></div>
+            </div>
+            <div class="tree-leaves">
+              <div class="leaf"></div>
+              <div class="leaf"></div>
+              <div class="leaf"></div>
+              <div class="tree-flower"></div>
+              <div class="tree-flower"></div>
+            </div>
+          </div>
+          <div style="text-align: center; font-size: 12px; color: var(--text-muted);">
+            已长出 3 片叶子 · 2 朵花苞
+          </div>
+        </div>
+
+        <!-- Week Plan -->
+        <div class="journey-card animate-in">
+          <div class="journey-card-header">
+            <h4><span class="icon">📋</span> 本周计划</h4>
+            <span class="arrow">›</span>
+          </div>
+          <div style="font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px;">
+            目标：掌握项目范围管理
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">
+            完成 3/5 任务
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: 60%"></div>
+          </div>
+        </div>
+
+        <!-- Recent Review -->
+        <div class="journey-card animate-in">
+          <div class="journey-card-header">
+            <h4><span class="icon">📊</span> 最近复盘</h4>
+            <span class="arrow">›</span>
+          </div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px;">
+            第2周: 完成率 67%
+            <span class="stat-change">↑5%</span>
+          </div>
+          <div class="review-stat">
+            <span class="stat-label">时间偏差</span>
+            <span class="stat-value">预估 180min · 实际 210min</span>
+          </div>
+          <div class="review-stat">
+            <span class="stat-label">跳过任务</span>
+            <span class="stat-value">2个</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bg-alt);">
+            <strong>AI洞察：</strong>周三效率最低，建议把困难任务移到周二或周四
+          </div>
+        </div>
+
+        <!-- Execution DNA -->
+        <div class="journey-card animate-in">
+          <div class="journey-card-header">
+            <h4><span class="icon">🧬</span> 执行DNA</h4>
+            <span class="arrow">›</span>
+          </div>
+          <div class="dna-item">
+            <div class="dna-icon">⏰</div>
+            <div class="dna-content">
+              <div class="dna-label">最佳专注时段</div>
+              <div class="dna-detail">上午 9:30-11:00，完成率比平均高 42%</div>
+            </div>
+          </div>
+          <div class="dna-item">
+            <div class="dna-icon">📏</div>
+            <div class="dna-content">
+              <div class="dna-label">时间预估偏差</div>
+              <div class="dna-detail">实践类任务低估 35%，以为 20min 实际 27min</div>
+            </div>
+          </div>
+          <div class="dna-item">
+            <div class="dna-icon">📉</div>
+            <div class="dna-content">
+              <div class="dna-label">动力衰减点</div>
+              <div class="dna-detail">连续执行第 4 天，完成率下降 28%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Study Circle -->
+        <div class="journey-card animate-in">
+          <div class="journey-card-header">
+            <h4><span class="icon">👥</span> 学习圈</h4>
+            <span class="arrow">›</span>
+          </div>
+          <div class="circle-progress">
+            <div class="circle-ring">
+              <svg viewBox="0 0 64 64" width="64" height="64">
+                <circle class="ring-bg" cx="32" cy="32" r="28"/>
+                <circle class="ring-fill" cx="32" cy="32" r="28"
+                  stroke-dasharray="175.9"
+                  stroke-dashoffset="52.8"/>
+              </svg>
+              <div class="ring-text">70%</div>
+            </div>
+            <div class="circle-info">
+              <div class="circle-name">PMP备考小组</div>
+              <div class="circle-members">6人 · 本周目标 60小时</div>
+              <div class="member-avatars">
+                <div class="member-avatar" style="background: #DBEAFE; color: #3B82F6;">A</div>
+                <div class="member-avatar" style="background: #FEF3C7; color: #F59E0B;">M</div>
+                <div class="member-avatar" style="background: #D1FAE5; color: #10B981;">L</div>
+                <div class="member-avatar" style="background: #FCE7F3; color: #EC4899;">J</div>
+                <div class="member-avatar" style="background: #EDE9FE; color: #8B5CF6;">W</div>
+                <div class="member-avatar" style="background: var(--bg-alt); color: var(--text-muted);">+1</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Tab Bar ── -->
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="navigateTo('today')" id="tab-today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>今日</span>
+    </div>
+    <div class="tab-item" onclick="navigateTo('journey')" id="tab-journey">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+      <span>旅程</span>
+    </div>
+  </div>
+
+  <!-- ── Chat FAB ── -->
+  <button class="chat-fab" onclick="openChatOverlay()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </button>
+
+  <!-- ── Chat Overlay ── -->
+  <div class="chat-overlay" id="chat-overlay" onclick="closeChatOverlay(event)">
+    <div class="chat-panel">
+      <div class="chat-panel-header">
+        <h3>AI Coach</h3>
+        <button class="chat-panel-close" onclick="closeChatOverlay()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="chat-panel-body" id="chat-panel-body">
+        <div class="chat-bubble ai">
+          你好！我是你的 AI 教练。我注意到你最近在执行上有些波动，想聊聊吗？
+        </div>
+        <div class="quick-replies">
+          <button class="quick-reply" onclick="sendQuickReply('这周感觉压力很大')">这周感觉压力很大</button>
+          <button class="quick-reply" onclick="sendQuickReply('减少本周任务')">减少本周任务</button>
+          <button class="quick-reply" onclick="sendQuickReply('帮我分析一下效率')">帮我分析效率</button>
+          <button class="quick-reply" onclick="sendQuickReply('给我一个Plan B')">要一个 Plan B</button>
+        </div>
+        <div class="chat-bubble ai" style="display:none" id="chat-response">
+          我注意到几个情况：<br>
+          • 你昨晚只睡了5小时<br>
+          • 本周有3个会议<br>
+          • 昨天跳过了2个任务<br><br>
+          我建议：<br>
+          1. 减少2个任务，保留核心的<br>
+          2. 把困难任务移到上午<br>
+          3. 今天先完成1个简单任务找感觉<br><br>
+          要应用这个调整吗？
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="quick-reply" style="background: var(--primary); color: white; border-color: var(--primary);" onclick="showToast('已应用调整')">✅ 应用调整</button>
+            <button class="quick-reply" onclick="showToast('好的，你来改')">✏️ 我来改</button>
+          </div>
+        </div>
+      </div>
+      <div class="chat-panel-input-area">
+        <input class="chat-panel-input" id="chat-input" placeholder="输入消息...">
+        <button class="chat-send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Timer Overlay ── -->
+  <div class="timer-overlay" id="timer-overlay" onclick="closeTimer()">
+    <div class="timer-card" onclick="event.stopPropagation()">
+      <div style="font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">计时中</div>
+      <div class="timer-task-name">理解闭包概念</div>
+      <div class="timer-task-meta">预计 25 分钟 · 中等难度</div>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-actions">
+        <button class="timer-btn secondary" onclick="closeTimer()">暂停</button>
+        <button class="timer-btn primary" onclick="completeTaskFromTimer()">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast ── -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ── Navigation ──
+function navigateTo(tab) {
+  document.querySelectorAll('.screen:not(.onboarding-screen)').forEach(s => {
+    s.classList.remove('active');
+  });
+
+  const target = document.getElementById('screen-' + tab);
+  if (target) target.classList.add('active');
+
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ── Conversational Onboarding Flow ──
+let onboardingGoal = '';
+let onboardingPhase = 0; // 0=goal input, 1=clarifying Q, 2=user answered, 3=generating, 4=plan preview
+let clarifyingAnswers = 0;
+const clarifyingQuestions = [
+  '好的，我会为你制定一个系统性的计划。\n\n先确认几个关键信息 ——\n\n你是全职工作/学习，还是有其他时间限制？',
+  '明白了。第二个问题：\n\n你目前已经有一些基础了吗，还是从零开始？',
+  '最后一个问题：\n\n你期望每天投入多少时间？这会帮我合理分配任务量。'
+];
+const clarifyingAnswers_demo = ['全职工作，工作日晚上和周末有空', '有一定基础，但不够系统', '工作日每天1-2小时，周末3-4小时'];
+
+// Goal input handler
+const goalInput = document.getElementById('goal-input');
+goalInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && this.value.trim() && onboardingPhase === 0) {
+    onboardingGoal = this.value.trim();
+    onboardingPhase = 1;
+    startClarifyingFlow();
+  }
+});
+
+function startVoiceInput() {
+  const input = document.getElementById('goal-input');
+  if (onboardingPhase === 0 && !input.value) {
+    input.value = '8个月内通过PMP考试';
+    input.focus();
+    showToast('🎤 语音识别：8个月内通过PMP考试');
+  }
+}
+
+// Phase 1: AI asks clarifying questions with typing animation
+function startClarifyingFlow() {
+  // Hide goal input, show chat area
+  document.getElementById('onboarding-step-1').style.display = 'none';
+  const chatArea = document.getElementById('onboarding-chat');
+  chatArea.style.display = 'flex';
+
+  // Show user's goal as a bubble
+  appendBubble('user', onboardingGoal);
+
+  // Short pause, then first AI question
+  setTimeout(() => {
+    showTypingIndicator();
+    setTimeout(() => {
+      removeTypingIndicator();
+      typeText(clarifyingQuestions[0], () => {
+        // Show answer options or input
+        showAnswerOptions(0);
+      });
+    }, 1200);
+  }, 400);
+}
+
+function showAnswerOptions(index) {
+  const chatArea = document.getElementById('onboarding-chat');
+  const row = document.createElement('div');
+  row.className = 'clarify-options';
+  row.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; margin: 8px 0; animation: bubbleIn 0.3s ease both;';
+
+  if (index === 0) {
+    row.innerHTML = `
+      <button class="clarify-opt" onclick="answerClarify(0,'全职工作，晚上和周末有空')">全职工作</button>
+      <button class="clarify-opt" onclick="answerClarify(0,'时间比较自由')">时间自由</button>
+      <button class="clarify-opt" onclick="answerClarify(0,'学生，白天有课')">学生</button>
+    `;
+  } else if (index === 1) {
+    row.innerHTML = `
+      <button class="clarify-opt" onclick="answerClarify(1,'有一定基础但不系统')">有一定基础</button>
+      <button class="clarify-opt" onclick="answerClarify(1,'从零开始')">从零开始</button>
+      <button class="clarify-opt" onclick="answerClarify(1,'基础很好')">基础很好</button>
+    `;
+  } else {
+    row.innerHTML = `
+      <button class="clarify-opt" onclick="answerClarify(2,'每天1-2小时')">1-2小时/天</button>
+      <button class="clarify-opt" onclick="answerClarify(2,'每天3-4小时')">3-4小时/天</button>
+      <button class="clarify-opt" onclick="answerClarify(2,'周末集中学习')">周末集中</button>
+    `;
+  }
+
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function answerClarify(index, answer) {
+  // Remove options
+  const opts = document.querySelector('.clarify-options:last-of-type');
+  if (opts) opts.remove();
+
+  // Show user answer
+  appendBubble('user', answer);
+  clarifyingAnswers++;
+
+  if (clarifyingAnswers < 3) {
+    // Next question
+    setTimeout(() => {
+      showTypingIndicator();
+      setTimeout(() => {
+        removeTypingIndicator();
+        typeText(clarifyingQuestions[clarifyingAnswers], () => {
+          showAnswerOptions(clarifyingAnswers);
+        });
+      }, 1000);
+    }, 400);
+  } else {
+    // All questions answered → generate plan
+    setTimeout(() => {
+      showGeneratingPlan();
+    }, 600);
+  }
+}
+
+// Phase 3: Generating plan animation (SSE simulation)
+function showGeneratingPlan() {
+  onboardingPhase = 3;
+  const chatArea = document.getElementById('onboarding-chat');
+
+  const genCard = document.createElement('div');
+  genCard.id = 'generating-card';
+  genCard.className = 'plan-generating';
+  genCard.innerHTML = `
+    <div class="generating-spinner"></div>
+    <div class="generating-text" id="generating-text">正在分析目标...</div>
+    <div class="generating-stages" id="generating-stages">
+      <div class="stage done">✓ 理解目标</div>
+      <div class="stage active">分析约束条件</div>
+      <div class="stage">生成里程碑</div>
+      <div class="stage">制定周计划</div>
+    </div>
+  `;
+  chatArea.appendChild(genCard);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // Simulate SSE stages
+  const stages = [
+    { text: '理解你的目标...', stage: 0, delay: 1200 },
+    { text: '分析时间约束...', stage: 1, delay: 1000 },
+    { text: '生成里程碑计划...', stage: 2, delay: 1500 },
+    { text: '制定每周任务...', stage: 3, delay: 1500 },
+    { text: '优化计划结构...', stage: -1, delay: 800 },
+  ];
+
+  let elapsed = 0;
+  stages.forEach((s, i) => {
+    elapsed += s.delay;
+    setTimeout(() => {
+      const textEl = document.getElementById('generating-text');
+      if (textEl) textEl.textContent = s.text;
+
+      // Mark previous stages as done
+      const stageEls = document.querySelectorAll('#generating-stages .stage');
+      stageEls.forEach((el, j) => {
+        if (j < s.stage + 1) {
+          el.className = 'stage done';
+          el.textContent = '✓ ' + el.textContent.replace(/^[^ ]+ /, '');
+        } else if (j === s.stage + 1) {
+          el.className = 'stage active';
+        }
+      });
+    }, elapsed);
+  });
+
+  // Show plan preview
+  setTimeout(() => {
+    const card = document.getElementById('generating-card');
+    if (card) card.remove();
+    showPlanPreview();
+  }, elapsed + 500);
+}
+
+// Phase 4: Plan preview
+function showPlanPreview() {
+  onboardingPhase = 4;
+  const chatArea = document.getElementById('onboarding-chat');
+
+  // AI summary bubble
+  appendBubble('ai', '计划已生成 🎯\n\n基于你的目标「' + onboardingGoal + '」，我制定了以下执行方案。你可以确认后开始执行，也可以让我调整。');
+
+  setTimeout(() => {
+    const planCard = document.createElement('div');
+    planCard.className = 'plan-preview animate-in';
+    planCard.id = 'plan-preview-card';
+    planCard.innerHTML = `
+      <div class="plan-title">📋 PMP 考试通关计划</div>
+      <div class="plan-meta">
+        <span>📅 8个月 · 34周</span>
+        <span>🎯 共 4 个里程碑</span>
+      </div>
+
+      <div class="milestone-list">
+        <div class="milestone-item">
+          <div class="milestone-badge m1">M1</div>
+          <div class="milestone-info">
+            <div class="ms-title">基础知识体系</div>
+            <div class="ms-meta">第1-8周 · 建立PMBOK知识框架</div>
+          </div>
+        </div>
+        <div class="milestone-item">
+          <div class="milestone-badge m2">M2</div>
+          <div class="milestone-info">
+            <div class="ms-title">五大过程组深化</div>
+            <div class="ms-meta">第9-18周 · 重点攻克薄弱环节</div>
+          </div>
+        </div>
+        <div class="milestone-item">
+          <div class="milestone-badge m3">M3</div>
+          <div class="milestone-info">
+            <div class="ms-title">冲刺模考阶段</div>
+            <div class="ms-meta">第19-28周 · 真题 + 模拟考试</div>
+          </div>
+        </div>
+        <div class="milestone-item">
+          <div class="milestone-badge m4">M4</div>
+          <div class="milestone-info">
+            <div class="ms-title">考前最后冲刺</div>
+            <div class="ms-meta">第29-34周 · 错题回顾 + 押题</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plan-week-preview">
+        <div class="preview-label">第一周预览</div>
+        <div class="preview-task">📖 阅读 PMBOK 第1-3章 <span class="preview-time">45min</span></div>
+        <div class="preview-task">📝 完成知识卡片：项目整合管理 <span class="preview-time">20min</span></div>
+        <div class="preview-task">🧠 复习：项目管理基础概念 <span class="preview-time">15min</span></div>
+      </div>
+    `;
+    chatArea.appendChild(planCard);
+    chatArea.scrollTop = chatArea.scrollHeight;
+
+    // Action buttons
+    setTimeout(() => {
+      const actions = document.createElement('div');
+      actions.className = 'plan-actions';
+      actions.style.cssText = 'display:flex; gap:12px; margin-top:16px; animation: bubbleIn 0.3s ease both;';
+      actions.innerHTML = `
+        <button class="plan-action-btn secondary" onclick="adjustPlan()">帮我调整一下</button>
+        <button class="plan-action-btn primary" onclick="confirmPlan()">确认并开始执行</button>
+      `;
+      chatArea.appendChild(actions);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }, 300);
+  }, 600);
+}
+
+function adjustPlan() {
+  const chatArea = document.getElementById('onboarding-chat');
+  appendBubble('user', '帮我调整一下，希望每周任务量少一点，我工作日比较忙');
+
+  // Remove old action buttons
+  const oldActions = document.querySelector('.plan-actions');
+  if (oldActions) oldActions.remove();
+
+  setTimeout(() => {
+    showTypingIndicator();
+    setTimeout(() => {
+      removeTypingIndicator();
+      appendBubble('ai', '好的，我已经调整了计划。把每周的任务量从 5 个减少到 3 个，总周期延长到 10 个月。这样每周压力更小，你觉得如何？');
+
+      setTimeout(() => {
+        const actions = document.createElement('div');
+        actions.className = 'plan-actions';
+        actions.style.cssText = 'display:flex; gap:12px; margin-top:12px; animation: bubbleIn 0.3s ease both;';
+        actions.innerHTML = `
+          <button class="plan-action-btn secondary" onclick="adjustPlan()">继续调整</button>
+          <button class="plan-action-btn primary" onclick="confirmPlan()">就这样，开始执行</button>
+        `;
+        chatArea.appendChild(actions);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }, 400);
+    }, 1500);
+  }, 300);
+}
+
+function confirmPlan() {
+  document.getElementById('screen-onboarding').classList.remove('active');
+  // Show today screen
+  document.getElementById('screen-today').classList.add('active');
+  showToast('🎯 计划已确认，开始执行！');
+}
+
+// ── Chat Bubble Helpers ──
+function appendBubble(type, text) {
+  const chatArea = document.getElementById('onboarding-chat');
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ' + (type === 'user' ? 'user' : 'ai');
+  bubble.style.whiteSpace = 'pre-line';
+  bubble.textContent = text;
+  chatArea.appendChild(bubble);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function typeText(text, callback) {
+  const chatArea = document.getElementById('onboarding-chat');
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ai';
+  chatArea.appendChild(bubble);
+
+  let i = 0;
+  const cursor = document.createElement('span');
+  cursor.className = 'typing-cursor';
+  bubble.appendChild(cursor);
+
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      bubble.insertBefore(document.createTextNode(text[i]), cursor);
+      i++;
+      chatArea.scrollTop = chatArea.scrollHeight;
+    } else {
+      clearInterval(interval);
+      cursor.remove();
+      if (callback) callback();
+    }
+  }, 25);
+}
+
+function showTypingIndicator() {
+  const chatArea = document.getElementById('onboarding-chat');
+  const indicator = document.createElement('div');
+  indicator.className = 'chat-bubble ai';
+  indicator.id = 'typing-indicator';
+  indicator.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  chatArea.appendChild(indicator);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+function startVoiceInput() {
+  const input = document.getElementById('goal-input');
+  if (onboardingPhase === 0 && !input.value) {
+    input.value = '8个月内通过PMP考试';
+    input.focus();
+    showToast('🎤 语音识别：8个月内通过PMP考试');
+  }
+}
+
+// ── Chat Overlay ──
+function openChatOverlay() {
+  document.getElementById('chat-overlay').classList.add('active');
+}
+
+function closeChatOverlay(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById('chat-overlay').classList.remove('active');
+}
+
+function sendQuickReply(text) {
+  const body = document.getElementById('chat-panel-body');
+  const userBubble = document.createElement('div');
+  userBubble.className = 'chat-bubble user';
+  userBubble.textContent = text;
+  body.insertBefore(userBubble, body.querySelector('.quick-replies'));
+  body.querySelector('.quick-replies').style.display = 'none';
+
+  setTimeout(() => {
+    const response = document.getElementById('chat-response');
+    response.style.display = 'block';
+    response.classList.add('animate-in');
+  }, 800);
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  if (!input.value.trim()) return;
+  sendQuickReply(input.value.trim());
+  input.value = '';
+}
+
+document.getElementById('chat-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') sendMessage();
+});
+
+// ── Timer ──
+let timerInterval = null;
+let timerSeconds = 0;
+
+function openTimer() {
+  document.getElementById('timer-overlay').classList.add('active');
+  timerSeconds = 0;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function closeTimer() {
+  document.getElementById('timer-overlay').classList.remove('active');
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function updateTimerDisplay() {
+  const min = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+  const sec = String(timerSeconds % 60).padStart(2, '0');
+  document.getElementById('timer-display').textContent = min + ':' + sec;
+}
+
+function completeTaskFromTimer() {
+  closeTimer();
+  showToast('任务完成 ✓ 用时 ' + document.getElementById('timer-display').textContent);
+  completeRemaining(document.querySelector('.remaining-task'));
+}
+
+// ── Task Completion ──
+let completedCount = 0;
+const totalTasks = 3;
+
+function completeRemaining(el) {
+  if (el.classList.contains('completed')) return;
+  el.classList.add('completed');
+  el.querySelector('.task-circle').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+  completedCount++;
+  updateProgress();
+  showToast('任务完成 ✓');
+}
+
+function updateProgress() {
+  const pct = Math.round((completedCount / totalTasks) * 100);
+  const remaining = totalTasks - completedCount;
+  document.getElementById('daily-progress-fill').style.width = pct + '%';
+  document.getElementById('daily-progress-text').textContent =
+    completedCount + '/' + totalTasks + ' · 预计 60分钟';
+}
+
+// ── Toast ──
+let toastTimer = null;
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ── Guided Onboarding Wizard ──
+let wizardStep = 1;
+const wizardTotal = 4;
+const wizardData = {};
+
+function openGuidedOnboarding() {
+  document.getElementById('guided-wizard').classList.add('active');
+  wizardStep = 1;
+  updateWizardUI();
+}
+
+function closeGuidedOnboarding() {
+  document.getElementById('guided-wizard').classList.remove('active');
+}
+
+function selectWizardOption(el, value) {
+  const parent = el.closest('.wizard-option-grid');
+  parent.querySelectorAll('.wizard-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+
+  const step = el.closest('.wizard-step');
+  const stepNum = parseInt(step.dataset.step);
+  wizardData['step' + stepNum] = value;
+
+  setTimeout(() => {
+    if (wizardStep < wizardTotal) {
+      wizardStep++;
+      updateWizardUI();
+    }
+  }, 350);
+}
+
+function toggleTag(el) {
+  el.classList.toggle('selected');
+}
+
+function wizardNext() {
+  if (wizardStep === 4) {
+    wizardData.details = document.getElementById('wizard-details').value;
+    wizardData.tags = [];
+    document.querySelectorAll('.wizard-tag.selected').forEach(t => wizardData.tags.push(t.textContent));
+    closeGuidedOnboarding();
+    showGuidedPlanPreview();
+    return;
+  }
+  if (wizardStep < wizardTotal) {
+    wizardStep++;
+    updateWizardUI();
+  }
+}
+
+function wizardBack() {
+  if (wizardStep > 1) {
+    wizardStep--;
+    updateWizardUI();
+  }
+}
+
+function updateWizardUI() {
+  document.querySelectorAll('.wizard-step').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.step) === wizardStep);
+  });
+  const pct = Math.round((wizardStep / wizardTotal) * 100);
+  document.getElementById('wizard-progress-fill').style.width = pct + '%';
+  document.getElementById('wizard-step-label').textContent = '第 ' + wizardStep + ' 步 / 共 ' + wizardTotal + ' 步';
+
+  document.getElementById('wizard-back-btn').disabled = wizardStep === 1;
+  const nextBtn = document.getElementById('wizard-next-btn');
+  nextBtn.textContent = wizardStep === wizardTotal ? '生成计划' : '下一步';
+}
+
+function showGuidedPlanPreview() {
+  document.getElementById('screen-onboarding').classList.remove('active');
+  document.getElementById('screen-today').classList.add('active');
+  showToast('🎯 计划生成中...');
+  setTimeout(() => {
+    showToast('✓ 计划已就位，开始执行！');
+  }, 2000);
+}
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  // Stay on onboarding screen (it's already .active)
+});
+</script>
+</body>
+</html>

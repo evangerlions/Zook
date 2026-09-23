@@ -64,6 +64,7 @@ export interface BodyLogGroupStore {
   findGroupMember(groupId: string, userId: string): MaybePromise<GroupMemberRecord | undefined>;
   updateGroupMember(record: GroupMemberRecord): MaybePromise<void>;
   listGroupMembers(groupId: string): MaybePromise<GroupMemberRecord[]>;
+  listGroupMembersByGroupIds(groupIds: string[]): MaybePromise<Map<string, GroupMemberRecord[]>>;
   insertGroupDailyRecord(record: GroupDailyRecordRecord): MaybePromise<void>;
   findGroupDailyRecord(groupId: string, date: string): MaybePromise<GroupDailyRecordRecord | undefined>;
   updateGroupDailyRecord(record: GroupDailyRecordRecord): MaybePromise<void>;
@@ -123,6 +124,7 @@ export interface BodyLogFeatureFlagStore {
 /** Social lookups still owned by ApplicationDatabase, needed by buddy/group services. */
 export interface BodyLogSocialAccess {
   findBodyLogProfile(appId: string, userId: string): MaybePromise<BodyLogProfileRecord | undefined>;
+  listBodyLogProfilesByIds(appId: string, userIds: string[]): MaybePromise<Map<string, BodyLogProfileRecord>>;
   listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
 }
 
