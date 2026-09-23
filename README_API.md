@@ -167,6 +167,11 @@ Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并�
 
 LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 
+目标创建和更新可选携带 `review_cadence: { layers: ["day", "week", "month"] }`。
+空数组表示关闭该目标的复盘；省略时默认每周复盘。目标响应会返回实际生效的
+复盘层级。`POST /review-runs` 的 `period` 支持 `daily/weekly/monthly`；daily
+复盘按单日任务执行事实生成，weekly 和 monthly 复盘保留既有的数据充分性门槛。
+
 | 方法 | 路径 | 请求与响应 `data` |
 | --- | --- | --- |
 | GET | `/execution-facts` | 可选 `from`（含）/`to`（不含）时间戳；返回 `window/completed_count/average_deviation_minutes/by_lineage/by_slot/consecutive_skips/feedback`，读取同时记录 insight audit |
@@ -180,6 +185,8 @@ LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 | POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 可选 `ignore_reason`（最多 500 字符，省略或空白按未提供处理，非空内容去除首尾空白后保存）；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
 | GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
 | POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
+
+Coach目标隔离：聊天历史按当前账户、`goal_id`和`thread_id`共同筛选后再取limit；同名thread不共享不同目标消息，同一时间按消息ID稳定排序。发送前校验plan/review/task的所有权与目标，另有plan_id时task必须属于该计划。资源不存在或跨账户返回404；同账户目标或任务/计划不匹配返回422，不保存消息或创建run。异步执行时再次校验引用；执行事实仅统计本目标现存任务事件，无法确定归属的历史事件排除。当前上下文未引入跨目标共享容量，不能将单目标统计解释为全人可用预算。
 
 - 以上能力仅限正式 LightTick membership 的 Bearer Token；游客返回 `403 APP_SCOPE_FORBIDDEN`，产品关闭返回 `503 LIGHTTICK_APP_DISABLED`。数据按 app/user 隔离。
 - chat 必须携带 8–128 字符 `Idempotency-Key`；消息发出即保存，异步结果通过 `/runs/{runId}` 和消息列表读取，同 key 不同内容返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`。其他 Phase 2 写接口不要求该 header。

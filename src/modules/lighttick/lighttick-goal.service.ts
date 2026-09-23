@@ -1,5 +1,5 @@
 import type { LightTickRepository } from "./lighttick.repository.ts";
-import type { LightTickGoalRow, LightTickOwner } from "./lighttick.types.ts";
+import type { LightTickGoalRow, LightTickOwner, LightTickReviewCadencePreference } from "./lighttick.types.ts";
 import type { LightTickGoalStatus } from "./lighttick-state-machines.ts";
 import { transitionGoal } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
@@ -7,6 +7,7 @@ import { randomId } from "../../shared/utils.ts";
 
 export interface LightTickGoalInput {
   title: string; description?: string; targetDate?: string; constraints: Record<string, unknown>;
+  reviewCadence?: LightTickReviewCadencePreference;
 }
 
 export interface LightTickGoalLifecycleOptions {
@@ -28,7 +29,9 @@ export class LightTickGoalService {
     const timestamp = this.clock().toISOString(); const title = this.validateTitle(input.title);
     const row: LightTickGoalRow = { ...owner, id: randomId("lighttick_goal"), title,
       description: input.description?.trim() || undefined, targetDate: input.targetDate,
-      constraints: structuredClone(input.constraints), status: "draft", version: 1, createdAt: timestamp, updatedAt: timestamp };
+      constraints: structuredClone(input.constraints),
+      reviewCadence: input.reviewCadence ? structuredClone(input.reviewCadence) : undefined,
+      status: "draft", version: 1, createdAt: timestamp, updatedAt: timestamp };
     return await this.repository.saveGoal(row, this.write(row, "goal_created", 1, timestamp));
   }
   async update(owner: LightTickOwner, id: string, baseVersion: number, patch: Partial<LightTickGoalInput>): Promise<LightTickGoalRow> {
@@ -37,6 +40,7 @@ export class LightTickGoalService {
       description: patch.description === undefined ? current.description : patch.description.trim() || undefined,
       targetDate: patch.targetDate === undefined ? current.targetDate : patch.targetDate,
       constraints: patch.constraints === undefined ? current.constraints : structuredClone(patch.constraints),
+      reviewCadence: patch.reviewCadence === undefined ? current.reviewCadence : structuredClone(patch.reviewCadence),
       updatedAt: timestamp };
     return await this.repository.saveGoal(next, this.write(next, "goal_updated", baseVersion + 1, timestamp), baseVersion);
   }
@@ -77,7 +81,7 @@ export class LightTickGoalService {
       change: { appId: goal.appId, userId: goal.userId, entityType: "goal", entityId: goal.id,
         entityVersion: version, operation: "upsert" as const,
         snapshot: { id: goal.id, title: goal.title, status: goal.status, pause_metadata: goal.pauseMetadata,
-          recovery_started_at: goal.recoveryStartedAt, version }, changedAt: timestamp },
+          recovery_started_at: goal.recoveryStartedAt, review_cadence: goal.reviewCadence, version }, changedAt: timestamp },
     };
   }
 }

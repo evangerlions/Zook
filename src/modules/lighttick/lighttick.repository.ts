@@ -39,11 +39,11 @@ export interface LightTickRepository {
   listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]>;
   getTaskStep(owner: LightTickOwner, taskId: string, id: string): Promise<LightTickTaskStepRow | undefined>;
   saveTaskStep(row: LightTickTaskStepRow, expectedVersion?: number): Promise<LightTickTaskStepRow>;
-  listExecutionEvents(owner: LightTickOwner, from?: string, to?: string): Promise<LightTickExecutionEventRow[]>;
+  listExecutionEvents(owner: LightTickOwner, from?: string, to?: string, goalId?: string): Promise<LightTickExecutionEventRow[]>;
   appendInsightAudit(row: LightTickInsightAuditRow): Promise<LightTickInsightAuditRow>;
   listInsightAudits(owner: LightTickOwner, from?: string, to?: string): Promise<LightTickInsightAuditRow[]>;
   saveChatMessage(row: LightTickChatMessageRow): Promise<LightTickChatMessageRow>;
-  listChatMessages(owner: LightTickOwner, threadId: string, limit: number): Promise<LightTickChatMessageRow[]>;
+  listChatMessages(owner: LightTickOwner, threadId: string, limit: number, goalId?: string): Promise<LightTickChatMessageRow[]>;
   getDnaInsight(owner: LightTickOwner, id: string): Promise<LightTickDnaInsightRow | undefined>;
   listDnaInsights(owner: LightTickOwner, goalId?: string): Promise<LightTickDnaInsightRow[]>;
   saveDnaInsight(row: LightTickDnaInsightRow, expectedVersion?: number): Promise<LightTickDnaInsightRow>;
