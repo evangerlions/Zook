@@ -15,6 +15,8 @@ import { BodyLogFeatureFlagService } from "./modules/bodylog/bodylog-feature-fla
 import type { ContentSafetyService } from "./services/content-safety.service.ts";
 import type { NotificationService } from "./services/notification.service.ts";
 import { SubscriptionService } from "./services/subscription.service.ts";
+import { BodyLogPurchaseVerificationService } from "./modules/bodylog/bodylog-purchase-verification.service.ts";
+import { BodyLogStorePurchaseVerifier } from "./modules/bodylog/bodylog-store-purchase-verifier.ts";
 import { withBodyLogExecution } from "./modules/bodylog/bodylog-execution.ts";
 
 /**
@@ -41,7 +43,8 @@ export function createBodyLogServices(input: {
   const bodyLogNotificationService = withBodyLogExecution(new BodyLogNotificationService(stores.notification), execute);
   const bodyLogFeatureFlagService = new BodyLogFeatureFlagService(stores.flags);
   const subscriptionService = new SubscriptionService(stores.subscription);
-  const bodyLogBuddyService = withBodyLogExecution(new BodyLogBuddyService(stores.buddy, database, notificationService, subscriptionService), execute);
+  const purchaseVerificationService = new BodyLogPurchaseVerificationService(stores.subscription, new BodyLogStorePurchaseVerifier());
+  const bodyLogBuddyService = withBodyLogExecution(new BodyLogBuddyService(stores.buddy, database, notificationService, subscriptionService, purchaseVerificationService), execute);
   const bodyLogGroupService = withBodyLogExecution(new BodyLogGroupService(stores.group, database, notificationService, subscriptionService), execute);
   const bodyLogWorkerService = new BodyLogWorkerService(stores.jobs, bodyLogBuddyService, bodyLogGroupService, logger);
   return {

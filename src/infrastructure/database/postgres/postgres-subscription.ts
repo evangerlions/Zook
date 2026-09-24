@@ -1,5 +1,6 @@
 import type { UserSubscriptionRecord, SubscriptionEventRecord } from "../../../modules/bodylog/bodylog-subscription.types.ts";
 import type { SubscriptionTier } from "../../../services/subscription.service.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
 
 interface PostgresClient {
   query(sql: string, values?: unknown[]): Promise<{ rows: any[] }>;
@@ -22,14 +23,18 @@ export class PostgresSubscriptionStore {
   }
 
   async upsertUserSubscription(record: UserSubscriptionRecord): Promise<void> {
-    await this.query(
+    const result = await this.query(
       `INSERT INTO zook_user_subscriptions (id, app_id, user_id, tier, started_at, expires_at, original_transaction_id, auto_renew, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (id) DO UPDATE SET
          tier = EXCLUDED.tier,
          expires_at = EXCLUDED.expires_at,
          auto_renew = EXCLUDED.auto_renew,
-         updated_at = EXCLUDED.updated_at`,
+         updated_at = EXCLUDED.updated_at
+       WHERE zook_user_subscriptions.app_id = EXCLUDED.app_id
+         AND zook_user_subscriptions.user_id = EXCLUDED.user_id
+         AND zook_user_subscriptions.original_transaction_id IS NOT DISTINCT FROM EXCLUDED.original_transaction_id
+       RETURNING id`,
       [
         record.id,
         record.appId,
@@ -43,12 +48,16 @@ export class PostgresSubscriptionStore {
         record.updatedAt,
       ]
     );
+    if (result.rows.length === 0) {
+      throw new ApplicationError(409, "BODYLOG_PURCHASE_ALREADY_CLAIMED", "This store purchase is linked to another BodyLog account.");
+    }
   }
 
   async insertSubscriptionEvent(record: SubscriptionEventRecord): Promise<void> {
     await this.query(
       `INSERT INTO zook_subscription_events (id, subscription_id, event_type, tier, metadata, occurred_at)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO NOTHING`,
       [
         record.id,
         record.subscriptionId,

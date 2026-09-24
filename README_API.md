@@ -544,6 +544,7 @@ POST /api/v1/auth/login/email
 | `POST` | `/api/v1/bodylog/groups/{groupId}/transfer` | `{ "userId": "..." }` | 组长转让（仅现任 leader；原组长降为 admin，新组长保持 active） |
 | `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
 | `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
+| `POST` | `/api/v1/bodylog/subscription/purchases` | iOS `{platform:"ios", productId, signedTransaction}`；Android `{platform:"android", productId, purchaseToken}` | 服务端验签并同步云端权益；同一商店交易不能绑定到其他 BodyLog 账号 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |
 | `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
@@ -562,7 +563,7 @@ BodyLog 新增接口约定：
 - 新客户端在 `/buddies/checkin` 同时传 `eventId` 与 `occurredAt`。同一账号、同一配对、同一事件重复发送不增加活动或重复入队通知；改变习惯、次数或时间后复用事件 ID 返回 409 `BODYLOG_EVENT_CONFLICT`。缺一个字段、非法 ID/时间或超过服务器时间 5 分钟的未来时间返回 400。旧版不带这两个字段仍按原有非幂等方式处理。
 - `occurredAt` 使用带时区的 ISO 8601 时间；服务端按 UTC 归属活动日期。早于关系接受时间的本地记录不进入新关系；历史补报不会重新结算已结算的搭子日期。客户端只上传用户明确共享的非私密习惯。
 - `/leaderboards/current/snapshot` 只返回当前认证用户的目标快照；客户端使用其中的时区、habitId 和 scheduledDates 生成每日完整聚合。聚合为覆盖更新，空数组可反映撤销；它不是多设备日志合并协议。
-- `/subscription/status` 使用搭子/小组额度判断的同一份服务端权益，不接受客户端 premium 布尔值。此查询不代替 App Store / Google Play 购买凭证验签接口。
+- `/subscription/status` 使用搭子/小组额度判断的同一份服务端权益，不接受客户端 premium 布尔值。购买成功或恢复购买后，客户端应将 StoreKit 2 JWS / Google Play purchase token 提交到 `POST /subscription/purchases`，再读取该状态接口。无效凭证返回 `400 BODYLOG_PURCHASE_INVALID`，已绑定其他账号返回 `409 BODYLOG_PURCHASE_ALREADY_CLAIMED`，商店验签配置缺失返回 `503 BODYLOG_PURCHASE_VERIFICATION_UNAVAILABLE`。
 - BodyLog 推送从自己的设备表取 token，应用当前通知类别设置；`buddy_invite` 归 `friendRequest`，等级奖励归 `rewardArrived`，其他搭子动态归 `activity`。现有 quietHours 不含时区字段，按 UTC 小时判断；静默窗口内跳过本条通知。分发失败会标记 FAILED 并抛给任务队列重试。部署配置见 `docs/bodylog-client-cloud-integration.md`。
 
 

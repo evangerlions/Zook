@@ -1,4 +1,5 @@
 import { randomId } from "../../shared/utils.ts";
+import { ApplicationError } from "../../shared/errors.ts";
 import type {
   BodyLogBuddyStore,
   BodyLogFeatureFlagStore,
@@ -160,10 +161,18 @@ export class InMemoryBodyLogSubscriptionStore implements BodyLogSubscriptionStor
     return active[0] ? clone(active[0]) : null;
   }
   upsertUserSubscription(record: UserSubscriptionRecord): void {
+    const owner = record.originalTransactionId
+      ? this.subscriptions.find((r) => r.originalTransactionId === record.originalTransactionId)
+      : undefined;
+    if (owner && (owner.appId !== record.appId || owner.userId !== record.userId)) {
+      throw new ApplicationError(409, "BODYLOG_PURCHASE_ALREADY_CLAIMED", "This store purchase is linked to another BodyLog account.");
+    }
     const index = this.subscriptions.findIndex((r) => r.id === record.id);
     if (index >= 0) { this.subscriptions[index] = clone(record); } else { this.subscriptions.push(clone(record)); }
   }
-  insertSubscriptionEvent(record: SubscriptionEventRecord): void { this.events.push(clone(record)); }
+  insertSubscriptionEvent(record: SubscriptionEventRecord): void {
+    if (!this.events.some((event) => event.id === record.id)) this.events.push(clone(record));
+  }
 }
 
 export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {

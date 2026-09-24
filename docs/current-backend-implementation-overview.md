@@ -57,7 +57,7 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 
 新增搭子、小组、7 天成长计划、通知偏好和推送设备接口。PostgreSQL store 通过请求事务上下文执行，搭子接受需要接收者确认，小组成员变更与组长转让原子保存。小组新增排行榜（`GET /groups/{groupId}/leaderboard`）、移除成员（`POST /groups/{groupId}/members/remove`，组长/管理员可移除，组长可按角色边界移除任意成员，管理员仅能移除普通成员，不能移除组长）与组长转让（`POST /groups/{groupId}/transfer`，仅现任 leader）。小组详情新增 `isOwner`/`isAdmin` 权限标记，`invitationToken` 仅组长/管理员可见。列表与详情、排行榜均使用批量查询（`listGroupMembersByGroupIds`、`listBodyLogProfilesByIds`）避免 N+1。新增本地日志 eventId 去重、保留 occurredAt 的搭子补报、排行榜冻结快照读取、最近成长计划读取及产品内云端权益查询。BodyLog 推送已接入自己的设备表与通知偏好，实际使用 APNs/FCM dispatcher，缺少产品配置时明确失败。Growth 入口默认关闭；任务完成与计划计数在同一 SQL 内提交。订阅查询和里程碑奖励使用已有订阅记录；本次不包含 IAP 验证接口。
 
-搭子后台任务每天执行不活跃扫描：达到 7 个 UTC 日期时向双方排入连续打卡提醒，达到 14 天时解除关系；每日 job key 防止同一日期重复扫描。BodyLog 管理端打卡完成率按每日记录中的完成成员数 / 参与成员名额加权；贡献榜从 app-scoped BodyLog profile 读取昵称与头像。商店内购验签当前仍未实现，购买凭证尚未从 iOS/Android 客户端提交到后端。
+搭子后台任务每天执行不活跃扫描：达到 7 个 UTC 日期时向双方排入连续打卡提醒，达到 14 天时解除关系；每日 job key 防止同一日期重复扫描。BodyLog 管理端打卡完成率按每日记录中的完成成员数 / 参与成员名额加权；贡献榜从 app-scoped BodyLog profile 读取昵称与头像。商店购买可通过 `POST /api/v1/bodylog/subscription/purchases` 验证 StoreKit 2 JWS 或 Google Play token，按 app-scoped 账号写入云端权益；凭证归属以数据库原子唯一约束防止跨账号重复认领。验签依赖运行环境提供 Apple Root CA 与 Google Play 服务账号。
 
 BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周报表。任务领取标记与结算数据在同一 PostgreSQL 事务中提交，失败回滚后可重试；不依赖进程内时间戳或独立 KV 标记。真实数据库验证命令为 `BODYLOG_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/bodylog-postgres.test.ts`，使用独立临时 schema，覆盖迁移重放、多连接任务去重与回滚。发布前须在 dev 环境验证当前 main SHA；这些本地验证不表示已上线。
 

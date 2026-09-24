@@ -25,6 +25,8 @@ import {
 import { BodyLogBuddySettlement } from "./bodylog-buddy-settlement.ts";
 import type { NotificationService } from "../../services/notification.service.ts";
 import type { SubscriptionService } from "../../services/subscription.service.ts";
+import type { BodyLogPurchaseVerificationService } from "./bodylog-purchase-verification.service.ts";
+import type { BodyLogPurchaseProof } from "./bodylog-store-purchase-verifier.ts";
 
 const DAY_MS = 86_400_000;
 
@@ -36,6 +38,7 @@ export class BodyLogBuddyService {
     private readonly social: BodyLogSocialAccess,
     private readonly notificationService?: NotificationService,
     private readonly subscriptionService?: SubscriptionService,
+    private readonly purchaseVerificationService?: BodyLogPurchaseVerificationService,
   ) {
     this.settlement = new BodyLogBuddySettlement(store, notificationService, subscriptionService);
   }
@@ -44,6 +47,13 @@ export class BodyLogBuddyService {
   async subscriptionStatus(userId: string) {
     const subscription = await this.subscriptionService?.getActiveSubscription(BODYLOG_APP_ID, userId);
     return { tier: subscription?.tier ?? "free", expiresAt: subscription?.expiresAt ?? null, autoRenew: subscription?.autoRenew ?? false };
+  }
+
+  async verifyStorePurchase(userId: string, proof: BodyLogPurchaseProof) {
+    if (!this.purchaseVerificationService) {
+      throw new ApplicationError(503, "BODYLOG_PURCHASE_VERIFICATION_UNAVAILABLE", "Store purchase verification is not configured.");
+    }
+    return await this.purchaseVerificationService.verify(userId, proof);
   }
 
   /**

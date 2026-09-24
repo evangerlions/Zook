@@ -48,7 +48,7 @@
 - 后端专项覆盖邀请接收者确认、重复/冲突事件、最新计划恢复、账号隔离、推送偏好与设备失效等；另跑既有 BodyLog 和 APNs/FCM 回归。
 - iOS 已跑 Release 模拟器构建和账号、队列、邀请、API 路径及成长入口专项测试；Android 已跑静态分析、账号/队列/迁移/深链/权益测试和全量测试。具体最新结果以任务交付记录为准。
 - 原客户端工作区有大量未提交开发，已保留；本次不将用户原有代码混入 Zook 提交。
-- 商店购买凭证验签仍未接入。iOS StoreKit JWS 和 Google Play purchase token 目前都没有提交到 Zook；端上购买成功不能据此宣称已获得云端权益。只有已有云端订阅/奖励会体现在 `subscription/status`。因此“购买→服务端验签→云端授予→跨设备恢复”仍是端到端待办，需实现双商店验签接口并将两端购买/恢复流程接入，再配置商店服务凭证验收。
+- 后端新增 `POST /api/v1/bodylog/subscription/purchases`，验签通过后将 App Store / Google Play 权益同步到云端；购买和恢复流程由客户端提交 StoreKit 2 JWS / Google Play purchase token。服务端部署需配置 `BODYLOG_APPLE_ROOT_CA_PATHS`（Apple 根证书文件路径，逗号分隔）、`BODYLOG_APPLE_BUNDLE_ID`，生产环境还需配置数值型 `BODYLOG_APPLE_APP_ID`，以及 `BODYLOG_GOOGLE_PLAY_PACKAGE` 和 `BODYLOG_GOOGLE_PLAY_SERVICE_ACCOUNT_PATH`。未配置时接口明确返回 503，不授予权益。
 - 不包含全量健康记录云备份、多设备合并、小组 UI 从零建设；这些能力不能通过本次社交聚合接口推导为已实现。
 - 尚未运行发布脚本。应按仓库流程在 main 推送后发布 dev，完成真机账号、双账号搭子、离线重试、推送及领奖验收，再使用同一 SHA 发布 online。
 
