@@ -423,4 +423,4 @@ BodyLog check-in administration uses the shared Admin session cookie. Aggregate 
 | `DELETE` | `/api/v1/admin/apps/bodylog/habit-templates/{id}` | `bodylog.habit-templates.write` | Soft-archive a template |
 | `GET` | `/api/v1/admin/apps/bodylog/habit-templates/usage` | none | Habit usage aggregate |
 
-The Dashboard is backed by `zook_bodylog_group_daily_records` and `zook_bodylog_group_activities`; user IDs are expanded from the daily record JSONB array. The template catalog is stored in `zook_bodylog_habit_templates`. CSV export is capped at 50,000 rows and all user-level access is auditable.
+The Dashboard is backed by `zook_bodylog_group_daily_records` and `zook_bodylog_group_activities`; user IDs are expanded from the daily record JSONB array. Daily, weekly, and monthly completion rates are weighted by each group's recorded member count (completed members divided by eligible group-member slots). Member contribution rows include the BodyLog profile nickname and avatar when a profile exists. The template catalog is stored in `zook_bodylog_habit_templates`. CSV export is capped at 50,000 rows and all user-level access is auditable.

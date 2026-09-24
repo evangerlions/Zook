@@ -45,6 +45,24 @@ export class PostgresBodyLogAdminStore {
 
     const summary = summaryResult.rows[0] as Record<string, number>;
 
+    // The rates are weighted by each group-day's member count so a small
+    // group does not contribute as much as a large group in the dashboard.
+    const checkinRatesResult = await this.query(
+      `SELECT
+        COALESCE(ROUND(100.0 * SUM(CASE WHEN r.date = $2::date THEN r.completed_count ELSE 0 END)
+          / NULLIF(SUM(CASE WHEN r.date = $2::date THEN r.total_members ELSE 0 END), 0), 2), 0) as daily,
+        COALESCE(ROUND(100.0 * SUM(CASE WHEN r.date > $2::date - INTERVAL '7 days' THEN r.completed_count ELSE 0 END)
+          / NULLIF(SUM(CASE WHEN r.date > $2::date - INTERVAL '7 days' THEN r.total_members ELSE 0 END), 0), 2), 0) as weekly,
+        COALESCE(ROUND(100.0 * SUM(CASE WHEN r.date > $2::date - INTERVAL '30 days' THEN r.completed_count ELSE 0 END)
+          / NULLIF(SUM(CASE WHEN r.date > $2::date - INTERVAL '30 days' THEN r.total_members ELSE 0 END), 0), 2), 0) as monthly
+      FROM zook_bodylog_group_daily_records r
+      JOIN zook_bodylog_groups g ON r.group_id = g.id
+      WHERE g.app_id = $1 AND r.date <= $2::date
+        AND r.date >= LEAST($3::date, $2::date - INTERVAL '29 days')`,
+      [input.appId, input.toDate, input.fromDate]
+    );
+    const checkinRates = checkinRatesResult.rows[0] as Record<string, number> | undefined;
+
     // 2. 计算 DAU 和今日打卡数（从 JSONB 数组展开）
     const dailyStatsResult = await this.query(
       `SELECT
@@ -125,9 +143,9 @@ export class PostgresBodyLogAdminStore {
         active_groups: Number(summary.active_groups) || 0,
         total_groups: Number(summary.total_groups) || 0,
         total_members: Number(summary.total_members) || 0,
-        checkin_rate_daily: 0, // TODO: 计算
-        checkin_rate_weekly: 0, // TODO: 计算
-        checkin_rate_monthly: 0, // TODO: 计算
+        checkin_rate_daily: Number(checkinRates?.daily) || 0,
+        checkin_rate_weekly: Number(checkinRates?.weekly) || 0,
+        checkin_rate_monthly: Number(checkinRates?.monthly) || 0,
       },
       trend: trendResult.rows.map((row) => ({
         date: row.date as string,
@@ -417,24 +435,28 @@ export class PostgresBodyLogAdminStore {
         gm.user_id,
         gm.role,
         gm.status,
+        p.nickname,
+        p.avatar_key,
         COUNT(CASE WHEN a.type = 'checked_in' THEN 1 END) as checkin_count,
         MAX(CASE WHEN a.type = 'checked_in' THEN a.created_at END)::text as last_checkin_at
       FROM zook_bodylog_group_members gm
+      JOIN zook_bodylog_groups g ON g.id = gm.group_id
+      LEFT JOIN zook_bodylog_profiles p ON p.app_id = g.app_id AND p.user_id = gm.user_id
       LEFT JOIN zook_bodylog_group_activities a ON gm.group_id = a.group_id
         AND gm.user_id = a.actor_user_id
         AND a.type = 'checked_in'
         AND a.created_at >= $2::timestamptz
         AND a.created_at < ($3::date + INTERVAL '1 day')::timestamptz
       WHERE gm.group_id = $1 AND gm.status = 'active'
-      GROUP BY gm.user_id, gm.role, gm.status
+      GROUP BY gm.user_id, gm.role, gm.status, p.nickname, p.avatar_key
       ORDER BY checkin_count DESC`,
       [input.groupId, input.fromDate, input.toDate]
     );
 
     return result.rows.map((row) => ({
       userId: row.user_id as string,
-      nickname: "", // TODO: 从用户表获取
-      avatarKey: null, // TODO: 从用户表获取
+      nickname: (row.nickname || "") as string,
+      avatarKey: (row.avatar_key || null) as string | null,
       role: row.role as string,
       status: row.status as string,
       checkinCount: Number(row.checkin_count),

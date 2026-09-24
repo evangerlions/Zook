@@ -127,13 +127,29 @@ export class BodyLogBuddySettlement {
       if (!pair.lastActiveDate) continue;
 
       const lastActive = new Date(pair.lastActiveDate);
-      const daysSinceActive = (now.getTime() - lastActive.getTime()) / DAY_MS;
+      const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      const lastActiveUtc = Date.UTC(lastActive.getUTCFullYear(), lastActive.getUTCMonth(), lastActive.getUTCDate());
+      const daysSinceActive = Math.floor((todayUtc - lastActiveUtc) / DAY_MS);
 
       // 发送警告（7天未活跃）
-      if (daysSinceActive >= BUDDY_INACTIVITY_THRESHOLDS.WARNING_DAYS &&
-          daysSinceActive < BUDDY_INACTIVITY_THRESHOLDS.AUTO_DISSOLVE_DAYS) {
-        // TODO: 发送提醒通知
-        continue;
+      if (daysSinceActive === BUDDY_INACTIVITY_THRESHOLDS.WARNING_DAYS) {
+        const payload = buildBodyLogBuddyNotificationPayload({
+          type: "buddy_streak_warning",
+          pairId: pair.id,
+        });
+        for (const recipientUserId of [pair.userId, pair.partnerUserId]) {
+          try {
+            await this.notificationService?.queueNotification({
+              appId: BODYLOG_APP_ID,
+              recipientUserId,
+              channel: "push",
+              payload: payload as unknown as Record<string, unknown>,
+            });
+          } catch (error) {
+            // Keep the scheduled sweep moving if a notification cannot be queued.
+            console.error("Failed to queue buddy inactivity warning:", error);
+          }
+        }
       }
 
       // 自动解除（14天未活跃）

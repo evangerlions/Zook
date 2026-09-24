@@ -22,6 +22,7 @@ export class BodyLogWorkerService {
    */
   async processBatch(): Promise<{
     dailyBuddySettlement: boolean;
+    inactiveBuddyPairs: boolean;
     dailyGroupSettlement: boolean;
     weeklyGroupSettlement: boolean;
   }> {
@@ -32,6 +33,7 @@ export class BodyLogWorkerService {
 
     // Settle the completed UTC day on the first available tick.
     const dailyBuddySettlement = await this.runOnce(`daily-buddy:${today}`, "daily buddy settlement", () => this.buddyService.dailySettlement());
+    const inactiveBuddyPairs = await this.runOnce(`inactive-buddies:${today}`, "inactive buddy sweep", () => this.buddyService.autoDissolveInactivePairs());
     const dailyGroupSettlement = await this.runOnce(`daily-group:${today}`, "daily group settlement", () => this.groupService.dailySettlement());
 
     // On Monday, report the previous seven completed UTC days.
@@ -44,6 +46,7 @@ export class BodyLogWorkerService {
 
     return {
       dailyBuddySettlement,
+      inactiveBuddyPairs,
       dailyGroupSettlement,
       weeklyGroupSettlement,
     };
