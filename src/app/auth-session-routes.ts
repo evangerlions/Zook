@@ -191,7 +191,9 @@ export async function handleGetCurrentUser(
     appId,
     accountRegion: await this.resolveAccountRegion(request, appId, auth.userId),
     user: await this.userService.getProfile(auth.userId),
-    membership: buildEmptyMembershipInfo(),
+    membership: appId === "ai_novel"
+      ? await this.aiNovelBillingService.getMembership(auth.userId)
+      : buildEmptyMembershipInfo(),
   };
 
   await this.auditInterceptor.record({

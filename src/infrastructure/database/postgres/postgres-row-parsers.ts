@@ -50,6 +50,7 @@ export function parseAppUser(row: QueryResultRow): AppUserRecord {
     status: row.status as AppUserRecord["status"],
     accountRegion: row.account_region as AppUserRecord["accountRegion"],
     joinedAt: toIsoString(row.joined_at) as string,
+    updatedAt: toIsoString(row.updated_at) ?? undefined,
   };
 }
 

@@ -1,6 +1,7 @@
 import { ApplicationError } from "../shared/errors.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
+import { getHeader } from "../shared/utils.ts";
 import {
   buildAiNovelBillingCatalog,
   isAiNovelBillingChannelSupported,
@@ -8,11 +9,55 @@ import {
 } from "../modules/billing/ainovel-billing-catalog.ts";
 
 const BILLING_PATH = "/api/v1/ai_novel/billing/catalog";
+const BILLING_SYNC_PATH = "/api/v1/ai_novel/billing/sync";
+const REVENUECAT_WEBHOOK_PATH = "/api/v1/ai_novel/billing/webhooks/revenuecat";
 
 export async function tryHandleAiNovelBillingRoutes(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
+  if (request.method === "POST" && request.path === BILLING_SYNC_PATH) {
+    const auth = await this.authenticateProductRequest(request, "ai_novel");
+    const body = request.body === undefined ? {} : this.validationPipe.asObject(request.body);
+    const keys = Object.keys(body);
+    if (keys.some((key) => key !== "reason")) {
+      throw new ApplicationError(
+        400,
+        "REQ_INVALID_BODY",
+        "Only the optional reason field is accepted.",
+      );
+    }
+    const reason = body.reason;
+    if (
+      reason !== undefined && reason !== "purchase" && reason !== "restore" &&
+      reason !== "app_start" && reason !== "retry"
+    ) {
+      throw new ApplicationError(
+        400,
+        "REQ_INVALID_BODY",
+        "reason must be purchase, restore, app_start, or retry.",
+      );
+    }
+    return this.ok(
+      await this.aiNovelBillingService.sync({
+        userId: auth.userId,
+        requestId: request.requestId as string,
+        reason,
+        signal: request.signal,
+      }),
+      request.requestId as string,
+    );
+  }
+
+  if (request.method === "POST" && request.path === REVENUECAT_WEBHOOK_PATH) {
+    const result = await this.aiNovelBillingService.receiveWebhook({
+      request,
+      requestId: request.requestId as string,
+      authorization: getHeader(request.headers, "authorization"),
+    });
+    return this.ok({ received: true, status: result.status }, request.requestId as string);
+  }
+
   if (request.method !== "GET" || request.path !== BILLING_PATH) {
     return undefined;
   }

@@ -4391,31 +4391,9 @@ export const DistributionChannelSchema = {
 
 export type DistributionChannel = "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
 
-export const AlipayCheckoutPlatformSchema = {
-  "type": "string",
-  "enum": [
-    "android",
-    "web",
-    "windows"
-  ]
-} as const;
-
-export type AlipayCheckoutPlatform = "android" | "web" | "windows";
-
-export const AlipayCheckoutDistributionSchema = {
-  "type": "string",
-  "enum": [
-    "china_android_store",
-    "direct_android",
-    "web",
-    "windows"
-  ]
-} as const;
-
-export type AlipayCheckoutDistribution = "china_android_store" | "direct_android" | "web" | "windows";
-
 export const BillingProviderSchema = {
   "type": "string",
+  "description": "Historical payment provider identifiers used by membership conflict records.",
   "enum": [
     "revenuecat",
     "alipay"
@@ -4423,6 +4401,17 @@ export const BillingProviderSchema = {
 } as const;
 
 export type BillingProvider = "revenuecat" | "alipay";
+
+export const BillingCatalogProviderSchema = {
+  "type": "string",
+  "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
+  "enum": [
+    "revenuecat",
+    "alipay"
+  ]
+} as const;
+
+export type BillingCatalogProvider = "revenuecat" | "alipay";
 
 export const BillingProductKeySchema = {
   "type": "string",
@@ -4432,38 +4421,21 @@ export const BillingProductKeySchema = {
     "plus_yearly",
     "pro_monthly",
     "pro_quarterly",
-    "pro_yearly",
-    "max_monthly",
-    "max_quarterly",
-    "max_yearly"
+    "pro_yearly"
   ]
 } as const;
 
-export type BillingProductKey = "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
+export type BillingProductKey = "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
 
 export const BillingTierSchema = {
   "type": "string",
   "enum": [
     "plus",
-    "pro",
-    "max"
+    "pro"
   ]
 } as const;
 
-export type BillingTier = "plus" | "pro" | "max";
-
-export const CheckoutStatusSchema = {
-  "type": "string",
-  "enum": [
-    "pending",
-    "processing",
-    "completed",
-    "failed",
-    "expired"
-  ]
-} as const;
-
-export type CheckoutStatus = "pending" | "processing" | "completed" | "failed" | "expired";
+export type BillingTier = "plus" | "pro";
 
 export const SyncStatusSchema = {
   "type": "string",
@@ -4519,18 +4491,14 @@ export const BillingProductSchema = {
         "plus_yearly",
         "pro_monthly",
         "pro_quarterly",
-        "pro_yearly",
-        "max_monthly",
-        "max_quarterly",
-        "max_yearly"
+        "pro_yearly"
       ]
     },
     "tier": {
       "type": "string",
       "enum": [
         "plus",
-        "pro",
-        "max"
+        "pro"
       ]
     },
     "billingPeriod": {
@@ -4557,6 +4525,7 @@ export const BillingProductSchema = {
         "properties": {
           "provider": {
             "type": "string",
+            "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
             "enum": [
               "revenuecat",
               "alipay"
@@ -4626,17 +4595,42 @@ export const BillingProductSchema = {
               }
             ]
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "provider"
+              ],
+              "properties": {
+                "provider": {
+                  "const": "alipay"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "available": {
+                  "const": false
+                },
+                "price": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
       }
     }
   }
 } as const;
 
 export type BillingProduct = {
-  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
-  "tier": "plus" | "pro" | "max";
+  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
+  "tier": "plus" | "pro";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
   "providers": (
+(
 {
   "provider": "revenuecat" | "alipay";
   "available": boolean;
@@ -4649,6 +4643,20 @@ export type BillingProduct = {
   "currency": string;
 } | unknown;
 }
+) & (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+)
 )[];
 };
 
@@ -4663,6 +4671,7 @@ export const BillingProductProviderSchema = {
   "properties": {
     "provider": {
       "type": "string",
+      "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
       "enum": [
         "revenuecat",
         "alipay"
@@ -4732,10 +4741,35 @@ export const BillingProductProviderSchema = {
         }
       ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "const": "alipay"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "available": {
+            "const": false
+          },
+          "price": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
 } as const;
 
-export type BillingProductProvider = {
+export type BillingProductProvider = (
+{
   "provider": "revenuecat" | "alipay";
   "available": boolean;
   "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
@@ -4746,7 +4780,21 @@ export type BillingProductProvider = {
   "amountMinor": number;
   "currency": string;
 } | unknown;
-};
+}
+) & (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+);
 
 export const CatalogDataSchema = {
   "type": "object",
@@ -4807,18 +4855,14 @@ export const CatalogDataSchema = {
               "plus_yearly",
               "pro_monthly",
               "pro_quarterly",
-              "pro_yearly",
-              "max_monthly",
-              "max_quarterly",
-              "max_yearly"
+              "pro_yearly"
             ]
           },
           "tier": {
             "type": "string",
             "enum": [
               "plus",
-              "pro",
-              "max"
+              "pro"
             ]
           },
           "billingPeriod": {
@@ -4845,6 +4889,7 @@ export const CatalogDataSchema = {
               "properties": {
                 "provider": {
                   "type": "string",
+                  "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
                   "enum": [
                     "revenuecat",
                     "alipay"
@@ -4914,7 +4959,31 @@ export const CatalogDataSchema = {
                     }
                   ]
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "provider"
+                    ],
+                    "properties": {
+                      "provider": {
+                        "const": "alipay"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "available": {
+                        "const": false
+                      },
+                      "price": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              ]
             }
           }
         }
@@ -4929,10 +4998,11 @@ export type CatalogData = {
   "distribution": "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
   "products": (
 {
-  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
-  "tier": "plus" | "pro" | "max";
+  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
+  "tier": "plus" | "pro";
   "billingPeriod": "P1M" | "P3M" | "P1Y";
   "providers": (
+(
 {
   "provider": "revenuecat" | "alipay";
   "available": boolean;
@@ -4945,6 +5015,20 @@ export type CatalogData = {
   "currency": string;
 } | unknown;
 }
+) & (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+)
 )[];
 }
 )[];
@@ -5086,288 +5170,6 @@ export type SyncRequest = {
   "reason"?: "purchase" | "restore" | "app_start" | "retry";
 };
 
-export const CreateCheckoutRequestSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "productKey",
-    "provider",
-    "platform",
-    "distribution"
-  ],
-  "properties": {
-    "productKey": {
-      "type": "string",
-      "enum": [
-        "plus_monthly",
-        "plus_quarterly",
-        "plus_yearly",
-        "pro_monthly",
-        "pro_quarterly",
-        "pro_yearly",
-        "max_monthly",
-        "max_quarterly",
-        "max_yearly"
-      ]
-    },
-    "provider": {
-      "type": "string",
-      "const": "alipay"
-    },
-    "platform": {
-      "type": "string",
-      "enum": [
-        "android",
-        "web",
-        "windows"
-      ]
-    },
-    "distribution": {
-      "type": "string",
-      "enum": [
-        "china_android_store",
-        "direct_android",
-        "web",
-        "windows"
-      ]
-    }
-  }
-} as const;
-
-export type CreateCheckoutRequest = {
-  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly" | "max_monthly" | "max_quarterly" | "max_yearly";
-  "provider": string;
-  "platform": "android" | "web" | "windows";
-  "distribution": "china_android_store" | "direct_android" | "web" | "windows";
-};
-
-export const CheckoutSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "checkoutId",
-    "provider",
-    "productKey",
-    "status",
-    "launch",
-    "expiresAt"
-  ],
-  "properties": {
-    "checkoutId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "provider": {
-      "type": "string",
-      "const": "alipay"
-    },
-    "productKey": {
-      "type": "string",
-      "minLength": 1
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "pending",
-        "processing",
-        "completed",
-        "failed",
-        "expired"
-      ]
-    },
-    "launch": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "mode",
-        "payload"
-      ],
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": [
-            "native_order",
-            "html_form"
-          ]
-        },
-        "payload": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Alipay order string for native_order or provider-generated HTML form for html_form."
-        }
-      }
-    },
-    "expiresAt": {
-      "type": "string",
-      "format": "date-time"
-    }
-  }
-} as const;
-
-export type Checkout = {
-  "checkoutId": string;
-  "provider": string;
-  "productKey": string;
-  "status": "pending" | "processing" | "completed" | "failed" | "expired";
-  "launch": {
-  "mode": "native_order" | "html_form";
-  "payload": string;
-};
-  "expiresAt": string;
-};
-
-export const AlipayCheckoutLaunchSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "mode",
-    "payload"
-  ],
-  "properties": {
-    "mode": {
-      "type": "string",
-      "enum": [
-        "native_order",
-        "html_form"
-      ]
-    },
-    "payload": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Alipay order string for native_order or provider-generated HTML form for html_form."
-    }
-  }
-} as const;
-
-export type AlipayCheckoutLaunch = {
-  "mode": "native_order" | "html_form";
-  "payload": string;
-};
-
-export const CheckoutStatusDataSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "checkoutId",
-    "status",
-    "membership"
-  ],
-  "properties": {
-    "checkoutId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "pending",
-        "processing",
-        "completed",
-        "failed",
-        "expired"
-      ]
-    },
-    "membership": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "active",
-        "state",
-        "tier",
-        "planKey",
-        "expiresAt",
-        "autoRenew",
-        "source"
-      ],
-      "description": "App-scoped entitlement summary for the authenticated product account.",
-      "properties": {
-        "active": {
-          "type": "boolean",
-          "description": "Whether the account currently has access to the app's membership benefits."
-        },
-        "state": {
-          "type": "string",
-          "enum": [
-            "free",
-            "active",
-            "cancelled",
-            "grace_period",
-            "expired"
-          ]
-        },
-        "tier": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "enum": [
-            "plus",
-            "pro",
-            "max",
-            null
-          ],
-          "description": "Effective active membership tier for the app account."
-        },
-        "planKey": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "minLength": 1
-        },
-        "expiresAt": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "date-time"
-        },
-        "autoRenew": {
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
-        "source": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "enum": [
-            "app_store",
-            "play_store",
-            "alipay",
-            "rc_web",
-            null
-          ]
-        },
-        "managementUrl": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uri"
-        }
-      }
-    }
-  }
-} as const;
-
-export type CheckoutStatusData = {
-  "checkoutId": string;
-  "status": "pending" | "processing" | "completed" | "failed" | "expired";
-  "membership": {
-  "active": boolean;
-  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
-  "tier": "plus" | "pro" | "max" | null;
-  "planKey": string | null;
-  "expiresAt": string | null;
-  "autoRenew": boolean | null;
-  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
-  "managementUrl"?: string | null;
-};
-};
-
 export const BillingProviderConflictDataSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -5379,6 +5181,7 @@ export const BillingProviderConflictDataSchema = {
   "properties": {
     "currentProvider": {
       "type": "string",
+      "description": "Historical payment provider identifiers used by membership conflict records.",
       "enum": [
         "revenuecat",
         "alipay"
@@ -5414,157 +5217,6 @@ export type BillingProviderConflictData = {
   "managementUrl"?: string | null;
 };
 
-export const CheckoutStatusResponseSchema = {
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "code",
-    "message",
-    "data",
-    "requestId"
-  ],
-  "properties": {
-    "code": {
-      "type": "string",
-      "const": "OK"
-    },
-    "message": {
-      "type": "string"
-    },
-    "data": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "checkoutId",
-        "status",
-        "membership"
-      ],
-      "properties": {
-        "checkoutId": {
-          "type": "string",
-          "minLength": 1
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "pending",
-            "processing",
-            "completed",
-            "failed",
-            "expired"
-          ]
-        },
-        "membership": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "active",
-            "state",
-            "tier",
-            "planKey",
-            "expiresAt",
-            "autoRenew",
-            "source"
-          ],
-          "description": "App-scoped entitlement summary for the authenticated product account.",
-          "properties": {
-            "active": {
-              "type": "boolean",
-              "description": "Whether the account currently has access to the app's membership benefits."
-            },
-            "state": {
-              "type": "string",
-              "enum": [
-                "free",
-                "active",
-                "cancelled",
-                "grace_period",
-                "expired"
-              ]
-            },
-            "tier": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "enum": [
-                "plus",
-                "pro",
-                "max",
-                null
-              ],
-              "description": "Effective active membership tier for the app account."
-            },
-            "planKey": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "minLength": 1
-            },
-            "expiresAt": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "format": "date-time"
-            },
-            "autoRenew": {
-              "type": [
-                "boolean",
-                "null"
-              ]
-            },
-            "source": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "enum": [
-                "app_store",
-                "play_store",
-                "alipay",
-                "rc_web",
-                null
-              ]
-            },
-            "managementUrl": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "format": "uri"
-            }
-          }
-        }
-      }
-    },
-    "requestId": {
-      "type": "string"
-    }
-  }
-} as const;
-
-export type CheckoutStatusResponse = {
-  "code": string;
-  "message": string;
-  "data": {
-  "checkoutId": string;
-  "status": "pending" | "processing" | "completed" | "failed" | "expired";
-  "membership": {
-  "active": boolean;
-  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
-  "tier": "plus" | "pro" | "max" | null;
-  "planKey": string | null;
-  "expiresAt": string | null;
-  "autoRenew": boolean | null;
-  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
-  "managementUrl"?: string | null;
-};
-};
-  "requestId": string;
-};
-
 export const ErrorResponseSchema = {
   "type": "object",
   "additionalProperties": false,
@@ -5593,6 +5245,7 @@ export const ErrorResponseSchema = {
           "properties": {
             "currentProvider": {
               "type": "string",
+              "description": "Historical payment provider identifiers used by membership conflict records.",
               "enum": [
                 "revenuecat",
                 "alipay"
@@ -22421,14 +22074,12 @@ export const GeneratedPublicContractNames = [
   "AiNovelStatisticsData",
   "AiNovelStatisticsSnapshotRequest",
   "AiNovelStatisticsSnapshotResponse",
-  "AlipayCheckoutDistribution",
-  "AlipayCheckoutLaunch",
-  "AlipayCheckoutPlatform",
   "AnalyticsAcceptedData",
   "AnalyticsBatchRequest",
   "AnalyticsEventInput",
   "AuthAcceptedData",
   "AuthSessionData",
+  "BillingCatalogProvider",
   "BillingPlatform",
   "BillingProduct",
   "BillingProductKey",
@@ -22486,11 +22137,6 @@ export const GeneratedPublicContractNames = [
   "BuddyStructuredShareRequest",
   "CatalogData",
   "ChangePasswordRequest",
-  "Checkout",
-  "CheckoutStatus",
-  "CheckoutStatusData",
-  "CheckoutStatusResponse",
-  "CreateCheckoutRequest",
   "CurrentUserData",
   "DistributionChannel",
   "EmailCodeRequest",

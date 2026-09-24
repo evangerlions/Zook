@@ -116,6 +116,16 @@ BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周
 1. `src/modules/app-registry/app-registry.service.ts`
 2. `src/services/versioned-app-config.service.ts`
 
+### 2.3.1 AINovel RevenueCat 会员同步（支付测试准备）
+
+AINovel 的 App Store / Google Play 会员状态可通过 RevenueCat 与 Zook 同步：
+
+1. `POST /api/v1/ai_novel/billing/sync` 从 Bearer Token 解析 Zook 用户 ID，服务端查询 RevenueCat subscriber；客户端不能传 user ID、receipt、product 或 entitlement。
+2. 仅 `plus` / `pro` / `max` 对应的配置商品与同档 entitlement 可以更新 `ai_novel` 会员投影；`GET /api/v1/users/me` 返回该投影。重复同步按 provider transaction ID upsert。
+3. RevenueCat webhook 使用部署配置的静态 `Authorization` 和 app ID 校验，再查询 RevenueCat subscriber 作为权益依据；事件按 `app_id + event.id` 去重。
+4. RevenueCat 不可用时返回 pending 与现存状态，但有效期已过的会员不会继续被当作 active；grace period 使用其有效截止时间。账号删除与迟到的同步写入由同一数据库 session 顺序化，交易证据软脱敏保留。
+5. 当前实现覆盖 RevenueCat 同步、webhook、会员投影，以及 Admin 的只读订单列表 / 详情。经过授权的 webhook 会把交易 ID、商品、状态、平台、Sandbox 标记和可用的实付金额 / 币种写入同一交易表；数据库另存 webhook 事件 allowlist 字段，并以 `(app_id, event.id)` 幂等。Admin 查询支持稳定 cursor、订单详情、当前会员投影、事件分页和读取审计；账号删除仅标记交易行并保留财务证据。收入金额缺失时保持 `null`，不能由商品标价反推。当前尚无独立 checkout ID、provider order ID 或 entitlement-grant 台账；支付宝 checkout / webhook 明确未实现。订单记录和 Docker stdout 全流程日志是两个不同概念：后台订单页用于查询持久化事实，容器日志用于 deep-dive。接口合同见 `api-contracts/openapi/ainovel/billing.yaml`、`billing-provider.yaml` 与 `billing-admin.yaml`。
+
 ### 2.4 RBAC 权限模型
 
 已实现 app 作用域下的权限判断：

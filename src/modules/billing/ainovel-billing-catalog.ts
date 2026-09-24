@@ -1,11 +1,11 @@
 import type {
   BillingPlatform,
   BillingProduct,
-  BillingProductKey,
   CatalogData,
   DistributionChannel,
 } from "../../generated/openapi/public-contracts.generated.ts";
 import type { AccountRegion } from "../../shared/types.ts";
+import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
 
 export interface AiNovelBillingCatalogInput {
   accountRegion: AccountRegion;
@@ -26,22 +26,7 @@ const PRODUCT_DEFINITIONS: readonly ProductDefinition[] = [
   { productKey: "pro_monthly", tier: "pro", billingPeriod: "P1M" },
   { productKey: "pro_quarterly", tier: "pro", billingPeriod: "P3M" },
   { productKey: "pro_yearly", tier: "pro", billingPeriod: "P1Y" },
-  { productKey: "max_monthly", tier: "max", billingPeriod: "P1M" },
-  { productKey: "max_quarterly", tier: "max", billingPeriod: "P3M" },
-  { productKey: "max_yearly", tier: "max", billingPeriod: "P1Y" },
 ];
-
-const MOCK_ALIPAY_PRICES: Record<BillingProductKey, number> = {
-  plus_monthly: 3990,
-  plus_quarterly: 9990,
-  plus_yearly: 29900,
-  pro_monthly: 10900,
-  pro_quarterly: 26900,
-  pro_yearly: 79900,
-  max_monthly: 19900,
-  max_quarterly: 49900,
-  max_yearly: 159900,
-};
 
 export function buildAiNovelBillingCatalog(
   input: AiNovelBillingCatalogInput,
@@ -93,25 +78,10 @@ function resolveProvider(
       provider: "revenuecat",
       available: true,
       blockedReason: null,
-      providerProductId: `mock_${input.distribution}_${product.productKey}`,
+      providerProductId: product.productKey,
       providerPackageId: null,
-      providerEntitlementId: product.tier,
+      providerEntitlementId: REVENUECAT_ENTITLEMENT_IDS[product.tier],
       price: null,
-    };
-  }
-
-  if (isChinaAlipayDistribution(input)) {
-    return {
-      provider: "alipay",
-      available: true,
-      blockedReason: null,
-      providerProductId: `mock_alipay_${product.productKey}`,
-      providerPackageId: null,
-      providerEntitlementId: product.tier,
-      price: {
-        amountMinor: MOCK_ALIPAY_PRICES[product.productKey],
-        currency: "CNY",
-      },
     };
   }
 
@@ -121,7 +91,7 @@ function resolveProvider(
     blockedReason: "provider_unavailable",
     providerProductId: null,
     providerPackageId: null,
-    providerEntitlementId: product.tier,
+    providerEntitlementId: REVENUECAT_ENTITLEMENT_IDS[product.tier],
     price: null,
   };
 }
@@ -133,24 +103,5 @@ function isRevenueCatDistribution(input: AiNovelBillingCatalogInput): boolean {
     (input.accountRegion === "GLOBAL" &&
       input.platform === "android" &&
       input.distribution === "google_play")
-  );
-}
-
-function isChinaAlipayDistribution(input: AiNovelBillingCatalogInput): boolean {
-  if (input.accountRegion !== "CN") {
-    return false;
-  }
-
-  if (
-    input.platform === "android" &&
-    (input.distribution === "china_android_store" ||
-      input.distribution === "direct_android")
-  ) {
-    return true;
-  }
-
-  return (
-    (input.platform === "web" || input.platform === "windows") &&
-    (input.distribution === "web" || input.distribution === "windows")
   );
 }

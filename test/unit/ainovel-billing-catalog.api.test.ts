@@ -17,7 +17,7 @@ function buildAiNovelSeed() {
   return seed;
 }
 
-test("AINovel billing catalog returns nine mock-priced Alipay products for CN Android", async () => {
+test("AINovel billing catalog keeps the deferred Alipay products unavailable for CN Android", async () => {
   const runtime = await createApplication({ seed: buildAiNovelSeed() });
   const accessToken = runtime.services.tokenService.issueAccessToken(
     "user_alice",
@@ -41,7 +41,7 @@ test("AINovel billing catalog returns nine mock-priced Alipay products for CN An
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.accountRegion, "CN");
-  assert.equal(response.body.data.products.length, 9);
+  assert.equal(response.body.data.products.length, 6);
   assert.deepEqual(
     response.body.data.products.map(
       (product: { productKey: string }) => product.productKey,
@@ -53,9 +53,6 @@ test("AINovel billing catalog returns nine mock-priced Alipay products for CN An
       "pro_monthly",
       "pro_quarterly",
       "pro_yearly",
-      "max_monthly",
-      "max_quarterly",
-      "max_yearly",
     ],
   );
   assert.deepEqual(response.body.data.products[0], {
@@ -65,15 +62,60 @@ test("AINovel billing catalog returns nine mock-priced Alipay products for CN An
     providers: [
       {
         provider: "alipay",
-        available: true,
-        blockedReason: null,
-        providerProductId: "mock_alipay_plus_monthly",
+        available: false,
+        blockedReason: "provider_unavailable",
+        providerProductId: null,
         providerPackageId: null,
-        providerEntitlementId: "plus",
-        price: { amountMinor: 3990, currency: "CNY" },
+        providerEntitlementId: "orangewrite_plus",
+        price: null,
       },
     ],
   });
+});
+
+test("AINovel RevenueCat catalog exposes Store product IDs for all six products", async () => {
+  const runtime = await createApplication({ seed: buildAiNovelSeed() });
+  const accessToken = runtime.services.tokenService.issueAccessToken(
+    "user_alice",
+    "ai_novel",
+  );
+
+  const response = await runtime.app.handle({
+    method: "GET",
+    path: "/api/v1/ai_novel/billing/catalog",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+      "x-app-id": "ai_novel",
+      "x-platform": "ios",
+      "x-app-region": "GLOBAL",
+    },
+    query: { platform: "ios", distribution: "app_store" },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(
+    response.body.data.products.map(
+      (product: {
+        productKey: string;
+        providers: Array<{
+          providerProductId: string | null;
+          providerEntitlementId: string;
+        }>;
+      }) => [
+        product.productKey,
+        product.providers[0]?.providerProductId,
+        product.providers[0]?.providerEntitlementId,
+      ],
+    ),
+    [
+      ["plus_monthly", "plus_monthly", "orangewrite_plus"],
+      ["plus_quarterly", "plus_quarterly", "orangewrite_plus"],
+      ["plus_yearly", "plus_yearly", "orangewrite_plus"],
+      ["pro_monthly", "pro_monthly", "orangewrite_pro"],
+      ["pro_quarterly", "pro_quarterly", "orangewrite_pro"],
+      ["pro_yearly", "pro_yearly", "orangewrite_pro"],
+    ],
+  );
 });
 
 test("AINovel billing catalog keeps global Web unavailable until RC Web is enabled", async () => {
@@ -103,7 +145,7 @@ test("AINovel billing catalog keeps global Web unavailable until RC Web is enabl
     blockedReason: "provider_unavailable",
     providerProductId: null,
     providerPackageId: null,
-            providerEntitlementId: "plus",
+            providerEntitlementId: "orangewrite_plus",
     price: null,
   });
 });

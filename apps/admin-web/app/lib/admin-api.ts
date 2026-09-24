@@ -1,4 +1,7 @@
 import type {
+  AdminBillingOrderDetail,
+  AdminBillingOrderPage,
+  AiNovelBillingOrderStatus,
   AdminAppSummary,
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
@@ -408,6 +411,35 @@ export const adminApi = {
     const query = new URLSearchParams(cleanQuery({ limit: input.limit ? String(input.limit) : undefined, status }));
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
+  },
+  getAiNovelBillingOrders(input: {
+    userId?: string;
+    paymentId?: string;
+    providerTransactionId?: string;
+    platform?: string;
+    distribution?: string;
+    status?: AiNovelBillingOrderStatus;
+    createdFrom?: string;
+    createdTo?: string;
+    limit?: number;
+    cursor?: string;
+  } = {}) {
+    const query = new URLSearchParams(cleanQuery({
+      ...input,
+      limit: input.limit === undefined ? undefined : String(input.limit),
+    }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminBillingOrderPage>(adminPath(`/apps/ai_novel/billing/orders${suffix}`));
+  },
+  getAiNovelBillingOrder(paymentId: string, input: { eventsCursor?: string; eventsLimit?: number } = {}) {
+    const query = new URLSearchParams(cleanQuery({
+      eventsCursor: input.eventsCursor,
+      eventsLimit: input.eventsLimit === undefined ? undefined : String(input.eventsLimit),
+    }));
+    const suffix = query.toString() ? `?${query.toString()}` : "";
+    return requestJson<AdminBillingOrderDetail>(adminPath(
+      `/apps/ai_novel/billing/orders/${encodeURIComponent(paymentId)}${suffix}`,
+    ));
   },
   getAiNovelConversationRecords(input: { uid?: string; did?: string; page?: number }) {
     const query = new URLSearchParams(cleanQuery({

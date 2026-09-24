@@ -1,5 +1,12 @@
 import type {
   AnalyticsEventRecord,
+  AiNovelBillingMembershipRecord,
+  AiNovelBillingAdminEventFilter,
+  AiNovelBillingAdminEventPage,
+  AiNovelBillingAdminOrderDetailFilter,
+  AiNovelBillingAdminOrderFilter,
+  AiNovelBillingTransactionRecord,
+  AiNovelBillingWebhookEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
   AiOutputReactionRecord,
@@ -114,13 +121,18 @@ export abstract class ApplicationDatabase {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
+    updatedAt?: string,
   ): MaybePromise<AppUserRecord | undefined>;
   abstract finalizeAppUserAccountRegion(
     appId: string,
     userId: string,
     accountRegion: Exclude<AppUserRecord["accountRegion"], "UNKNOWN">,
   ): MaybePromise<AppUserRecord | undefined>;
-  abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
+  abstract deleteAppUserRuntimeData(
+    appId: string,
+    userId: string,
+    deletedAt?: string,
+  ): MaybePromise<void>;
 
   abstract findBodyLogProfile(
     appId: string,
@@ -536,6 +548,42 @@ export abstract class ApplicationDatabase {
     dateFrom?: string;
     dateTo?: string;
   }): MaybePromise<AiNovelDailyStatisticsRecord[]>;
+
+  abstract findAiNovelBillingMembership(
+    appId: "ai_novel",
+    userId: string,
+  ): MaybePromise<AiNovelBillingMembershipRecord | undefined>;
+  abstract upsertAiNovelBillingMembership(
+    record: AiNovelBillingMembershipRecord,
+  ): MaybePromise<void>;
+  abstract upsertAiNovelBillingTransaction(
+    record: AiNovelBillingTransactionRecord,
+  ): MaybePromise<void>;
+  abstract listAiNovelBillingTransactions(
+    appId: "ai_novel",
+    userId: string,
+  ): MaybePromise<AiNovelBillingTransactionRecord[]>;
+  abstract listAiNovelBillingAdminOrders(
+    filter: AiNovelBillingAdminOrderFilter,
+  ): MaybePromise<AiNovelBillingTransactionRecord[]>;
+  abstract findAiNovelBillingAdminOrder(
+    filter: AiNovelBillingAdminOrderDetailFilter,
+  ): MaybePromise<AiNovelBillingTransactionRecord | undefined>;
+  abstract listAiNovelBillingAdminEvents(
+    filter: AiNovelBillingAdminEventFilter,
+  ): MaybePromise<AiNovelBillingAdminEventPage>;
+  abstract findAiNovelBillingWebhookEvent(
+    appId: "ai_novel",
+    eventId: string,
+  ): MaybePromise<AiNovelBillingWebhookEventRecord | undefined>;
+  abstract insertAiNovelBillingWebhookEvent(
+    record: AiNovelBillingWebhookEventRecord,
+  ): MaybePromise<boolean>;
+  abstract softDeleteAiNovelBillingAccount(
+    appId: "ai_novel",
+    userId: string,
+    deletedAt: string,
+  ): MaybePromise<void>;
 
   // ─── BodyLog 后台打卡管理 ───
 

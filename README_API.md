@@ -369,11 +369,9 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
 | `POST` | `/api/v1/ai_novel/statistics/snapshot`     | 上报当前账号本地写作总量与权威每日字数快照，需要 Bearer 鉴权；服务端校验账号并保留自己的 Token 用量                                  |
-| `GET`  | `/api/v1/ai_novel/billing/catalog`        | 获取当前渠道可用的 Plus / Pro / Max 月度、季度、年度商品与支付方式；按 app scope 和账号当前权益返回可用性                         |
+| `GET`  | `/api/v1/ai_novel/billing/catalog`        | 获取当前渠道可用的 Plus / Pro 月度、季度、年度商品与支付方式；按 app scope 和账号当前权益返回可用性                              |
 | `POST` | `/api/v1/ai_novel/billing/sync`           | 主动同步 RevenueCat 购买或恢复购买状态；客户端不得提交 receipt、token 或用户 ID                                              |
-| `POST` | `/api/v1/ai_novel/billing/checkouts`      | 为中国 Android、Web、Windows 创建支付宝订单；金额和 provider 订单号由服务端决定                                      |
-| `GET`  | `/api/v1/ai_novel/billing/checkouts/{checkoutId}` | 查询支付宝 checkout 的服务端状态                                                                                 |
-| `POST` | `/api/v1/ai_novel/billing/checkouts/{checkoutId}/sync` | 支付宝返回后由服务端主动验单并同步权益                                                                     |
+| `POST` | `/api/v1/ai_novel/billing/webhooks/revenuecat` | 接收 RevenueCat 事件并重新读取服务端订阅快照；仅供 RevenueCat 调用                                                       |
 | `POST` | `/api/v1/ai_novel/ai-output-reports`      | 提交 AI 消息或章节 revision 举报；按客户端 `submissionId` 幂等，举报原文在服务端加密存储                                              |
 | `POST` | `/api/v1/ai_novel/ai-output-reactions`    | 提交最新生成章节的轻量 reaction；当前支持 `chapter_revision + like`                                                                |
 | `POST` | `/api/v1/frogsleep/auth/password/login`    | FrogSleep 密码登录，内部固定使用 `appId=frogsleep`                                                                                   |
@@ -465,9 +463,11 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 
 18. `POST /api/v1/auth/logout` 当 `scope = “all”` 时，会立即撤销当前 app 下该用户的全部 refresh token，并使现有 access token 立刻失效；客户端收到成功响应后应直接清理本地旧 token。
 19. `ai_novel` 的两个 AI 接口都要求 `Authorization: Bearer <access_token>` 与 `X-App-Id: ai_novel`；AINovel 还会发送持久设备标识 `X-Did`，Zook 将其与认证 UID 组合用于稳定的 Provider 分桶。DID 或 UID 任一清洗后不足 3 个字母数字字符时，该项使用内部随机值替代。未登录返回 `401 AUTH_BEARER_REQUIRED`，`app_id` 或 `X-App-Id` 不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`。
-19a. AINovel Billing 使用 `/api/v1/ai_novel/billing/...` 产品命名空间。`GET /api/v1/users/me` 的 `data.membership` 只表示当前 Bearer Token app scope 下的权益；同一用户在不同 app 的权益互不通用。App Store 与 Google Play 通过 RevenueCat 购买，国内 Android 应用商店、官网直装 Android、Web、Windows 通过支付宝购买。
-19b. AINovel 商品固定提供 `plus_monthly`、`plus_quarterly`、`plus_yearly`、`pro_monthly`、`pro_quarterly`、`pro_yearly`、`max_monthly`、`max_quarterly`、`max_yearly` 九个逻辑商品；价格和 provider ID 由服务端 app-scoped catalog 配置返回，客户端不得提交金额或 provider 订单号。若另一 provider 仍有有效会员，当前 provider 入口返回不可用并提示回到原平台管理。
-19c. App Store / Google Play 购买前必须登录 Zook 账号，RevenueCat `appUserID` 使用稳定 Zook user ID。会员页必须提供用户主动触发的 Restore Purchases；恢复结果还要调用 billing sync，最终以 `data.membership` 为准。支付宝购买通过同一 Zook 账号恢复，不接受客户端提交支付宝交易号作为恢复凭证。
+19a. AINovel Billing 使用 `/api/v1/ai_novel/billing/...` 产品命名空间。`GET /api/v1/users/me` 的 `data.membership` 只表示当前 Bearer Token app scope 下的权益；同一用户在不同 app 的权益互不通用。当前只开放 App Store 与 Google Play 的 RevenueCat 购买；中国 Android 应用商店、官网直装 Android、Web、Windows 暂不支持购买。全球 Web / Windows 用户引导至 iOS 或 Android 订阅。
+19b. AINovel 商品固定提供 `plus_monthly`、`plus_quarterly`、`plus_yearly`、`pro_monthly`、`pro_quarterly`、`pro_yearly` 六个逻辑商品；价格和 provider ID 由服务端 app-scoped catalog 配置返回，客户端不得提交金额或 provider 订单号。RevenueCat entitlement ID 与业务 tier 分开：`plus` 商品使用 `orangewrite_plus`，`pro` 商品使用 `orangewrite_pro`。若另一渠道仍有有效会员，当前渠道入口返回不可用并提示回到原平台管理。
+19c. App Store / Google Play 购买前必须登录 Zook 账号，RevenueCat `appUserID` 使用稳定 Zook user ID。会员页必须提供用户主动触发的 Restore Purchases；购买、恢复、启动时可调用 `POST /api/v1/ai_novel/billing/sync`，body 仅允许可选 `reason: purchase|restore|app_start|retry`。接口有 8 秒 provider 请求超时，可重复调用，以认证 token 中的 Zook user ID 查询 RevenueCat；客户端不得提交用户 ID、receipt、product 或 entitlement。仅允许已配置的 AINovel product ID 与同 tier entitlement 配对后授予会员；provider 不可用时返回 `syncStatus=pending` 和数据库现存状态。最终以 `GET /api/v1/users/me` 的 `data.membership` 为准。
+
+19d. RevenueCat webhook 地址为 `POST /api/v1/ai_novel/billing/webhooks/revenuecat`，按 `app_id + event.id` 幂等。部署端必须配置服务端密钥 `REVENUECAT_AI_NOVEL_SECRET_API_KEY`，以及 webhook 的 `REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION`（完整 Authorization header 值）和 `REVENUECAT_AI_NOVEL_APP_ID`。RC webhook 必须配置相同静态 Authorization header；当前 HTTP 入口 JSON 解析前不保留 raw body，因此不验证 RevenueCat HMAC 签名，不能使用 HMAC-only 部署。Webhook 只触发 RevenueCat customer API 重新读取，绝不单凭 webhook body 授权；未知事件和未知用户记录为 ignored。会员投影和交易证据存 PostgreSQL 的 `ai_novel` app scope；重复同步按 provider transaction ID upsert。账号删除时会员投影软失效，订单证据保留并标记 `account_deleted_at` 供财务审计。
 20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。`scene_key` 只选择 Prompt、工具与响应工作流；所有文本场景共用服务端版本化的 `ai_novel.model_selection.chat.default` 加权数组，并复用通用 LLM 的 `X-Did + auth UID` routing affinity。Provider 与上游模型路由仍统一归 `common.llm_service`。
 21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、可流式取消的 Pi context compaction 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
 22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。

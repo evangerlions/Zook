@@ -13,6 +13,8 @@ export type * from "./types/ai-config.ts";
 export type * from "./types/email.ts";
 export type * from "./types/feedback.ts";
 export type * from "./types/ai-novel-statistics.ts";
+export type * from "./types/ainovel-billing.ts";
+export type * from "./types/ainovel-billing-admin.ts";
 export type * from "./types/ai-novel-conversation.ts";
 export type * from "./types/auth-rate-limit.ts";
 export type * from "./types/content-safety.ts";
