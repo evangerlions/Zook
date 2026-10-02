@@ -75,13 +75,20 @@ test("OpenRouter fetch stays direct when the switch is off or HMAC Secret is emp
       const url = "https://openrouter.ai/api/v1/models";
 
       await proxyFetch(url, {
-        headers: { Authorization: "Bearer token2" },
+        headers: {
+          Authorization: "Bearer token2",
+          "x-zook-diagnostic-id": "9a1f0c10-88d2-4a1c-b5db-6d7963487bdf",
+        },
       });
 
       assert.equal(calls.length, 1);
       assert.equal(calls[0]?.input, url);
       assert.equal(
         new Headers(calls[0]?.init?.headers).has(OPENROUTER_PROXY_HEADERS.signature),
+        false,
+      );
+      assert.equal(
+        new Headers(calls[0]?.init?.headers).has("x-zook-diagnostic-id"),
         false,
       );
     });

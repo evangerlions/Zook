@@ -21,6 +21,7 @@ import type { LlmMetricsService } from "./services/llm-metrics.service.ts";
 import { LlmSmokeTestService } from "./services/llm-smoke-test.service.ts";
 import type { LlmRouteCircuitBreakerService } from "./services/llm-route-circuit-breaker.service.ts";
 import { LlmRouteCircuitRecoveryService } from "./services/llm-route-circuit-recovery.service.ts";
+import { LlmUpstreamDiagnosticsService } from "./services/llm-upstream-diagnostics.service.ts";
 import {
   LocalAiNovelE2eProvider,
   shouldUseLocalAiNovelE2eProvider,
@@ -51,24 +52,35 @@ export function createApplicationAiRuntime(
   const aiNovelStatisticsService = new AiNovelStatisticsService(
     options.database,
   );
+  const llmUpstreamDiagnostics = new LlmUpstreamDiagnosticsService(
+    options.commonLlmConfigService,
+    options.commonPasswordConfigService,
+    options.kvManager,
+    options.logger,
+  );
   const bailianProvider = new BailianOpenAICompatibleProvider({
     logger: options.logger,
+    diagnostics: llmUpstreamDiagnostics,
   });
   const baiProvider = createBaiAwareProvider(
     options.commonLlmConfigService,
     options.commonPasswordConfigService,
     options.logger,
+    llmUpstreamDiagnostics,
   );
   const aliyunTokenPlanProvider = new AliyunTokenPlanProvider({
     logger: options.logger,
+    diagnostics: llmUpstreamDiagnostics,
   });
   const openRouterProvider = createOpenRouterAwareProvider(
     options.commonLlmConfigService,
     options.commonPasswordConfigService,
     options.logger,
+    llmUpstreamDiagnostics,
   );
   const volcengineAgentPlanProvider = new VolcengineAgentPlanProvider({
     logger: options.logger,
+    diagnostics: llmUpstreamDiagnostics,
   });
   const localAiNovelE2eProvider = shouldUseLocalAiNovelE2eProvider()
     ? new LocalAiNovelE2eProvider()
