@@ -20,37 +20,7 @@ function buildAiNovelSeed() {
   return seed;
 }
 
-function snapshot(overrides: {
-  requestDate?: string;
-  entitlements?: Record<string, unknown>;
-  subscriptions?: Record<string, unknown>;
-} = {}) {
-  return {
-    request_date: overrides.requestDate ?? "2026-09-23T10:00:00Z",
-    subscriber: {
-      entitlements: overrides.entitlements ?? {
-        orangewrite_plus: {
-          product_identifier: "plus_monthly",
-          expires_date: "2026-10-23T10:00:00Z",
-          grace_period_expires_date: null,
-        },
-      },
-      subscriptions: overrides.subscriptions ?? {
-        plus_monthly: {
-          store: "app_store",
-          store_transaction_id: "tx_plus_001",
-          purchase_date: "2026-09-23T10:00:00Z",
-          original_purchase_date: "2026-09-23T10:00:00Z",
-          expires_date: "2026-10-23T10:00:00Z",
-          refunded_at: null,
-          unsubscribe_detected_at: null,
-          is_sandbox: true,
-        },
-      },
-      management_url: "https://apps.apple.com/account/subscriptions",
-    },
-  };
-}
+import { snapshot, fixtureFetcher } from "../support/revenuecat-v2-fixtures.ts";
 
 function webhookEvent(overrides: Record<string, unknown> = {}) {
   return {
@@ -82,7 +52,8 @@ function revenueCatOptions(
       webhookAuthorization: WEBHOOK_AUTH,
       appId: RC_APP_ID,
       allowSandbox,
-      fetcher,
+      fetcher: fixtureFetcher(fetcher, RC_APP_ID),
+      projectId: "proj_test",
       now,
     },
   };
@@ -144,8 +115,8 @@ test("production sync and webhook preserve membership for Sandbox or unknown env
   assert.equal(syncResponse.body.data.membership.active, true);
   assert.equal(syncResponse.body.data.membership.planKey, "plus_monthly");
 
-  const { is_sandbox: _isSandbox, ...subscriptionWithoutEnvironment } =
-    snapshot().subscriber.subscriptions.plus_monthly;
+  const { sandbox: _isSandbox, ...subscriptionWithoutEnvironment } =
+    snapshot().subscriptions.plus_monthly;
   providerSnapshot = snapshot({
     subscriptions: { plus_monthly: subscriptionWithoutEnvironment },
   });
@@ -250,21 +221,21 @@ test("purchase sync accepts the configured Pro entitlement identifier", async ()
   const proSnapshot = snapshot({
     entitlements: {
       orangewrite_pro: {
-        product_identifier: "pro_monthly",
-        expires_date: "2026-10-23T10:00:00Z",
-        grace_period_expires_date: null,
+        productKey: "pro_monthly",
+        expiresAt: "2026-10-23T10:00:00Z",
+        graceExpiresAt: null,
       },
     },
     subscriptions: {
       pro_monthly: {
         store: "app_store",
-        store_transaction_id: "tx_pro_001",
-        purchase_date: "2026-09-23T10:00:00Z",
-        original_purchase_date: "2026-09-23T10:00:00Z",
-        expires_date: "2026-10-23T10:00:00Z",
-        refunded_at: null,
-        unsubscribe_detected_at: null,
-        is_sandbox: true,
+        transactionId: "tx_pro_001",
+        purchasedAt: "2026-09-23T10:00:00Z",
+        originalPurchasedAt: "2026-09-23T10:00:00Z",
+        expiresAt: "2026-10-23T10:00:00Z",
+        refundAt: null,
+        cancelledAt: null,
+        sandbox: true,
       },
     },
   });
@@ -306,28 +277,28 @@ test("unknown product or mismatched entitlement never grants membership", async 
   const cases = [
     snapshot({
       entitlements: {
-        unknown_entitlement: { product_identifier: "plus_monthly", expires_date: "2026-10-23T10:00:00Z" },
+        unknown_entitlement: { productKey: "plus_monthly", expiresAt: "2026-10-23T10:00:00Z" },
       },
     }),
     snapshot({
       entitlements: {
-        orangewrite_plus: { product_identifier: "unlisted_monthly", expires_date: "2026-10-23T10:00:00Z" },
+        orangewrite_plus: { productKey: "unlisted_monthly", expiresAt: "2026-10-23T10:00:00Z" },
       },
       subscriptions: {
-        unlisted_monthly: { store: "app_store", expires_date: "2026-10-23T10:00:00Z" },
+        unlisted_monthly: { store: "app_store", expiresAt: "2026-10-23T10:00:00Z" },
       },
     }),
     snapshot({
       entitlements: {
-        orangewrite_pro: { product_identifier: "plus_monthly", expires_date: "2026-10-23T10:00:00Z" },
+        orangewrite_pro: { productKey: "plus_monthly", expiresAt: "2026-10-23T10:00:00Z" },
       },
     }),
     snapshot({
       entitlements: {
-        max: { product_identifier: "max_monthly", expires_date: "2026-10-23T10:00:00Z" },
+        max: { productKey: "max_monthly", expiresAt: "2026-10-23T10:00:00Z" },
       },
       subscriptions: {
-        max_monthly: { store: "app_store", expires_date: "2026-10-23T10:00:00Z" },
+        max_monthly: { store: "app_store", expiresAt: "2026-10-23T10:00:00Z" },
       },
     }),
   ];
@@ -348,7 +319,7 @@ test("unknown product or mismatched entitlement never grants membership", async 
   }
 });
 
-test("refunded/expired provider snapshot revokes previously active membership", async () => {
+test("expired provider access revokes membership without inventing a refund from revenue", async () => {
   let current = snapshot();
   const runtime = await createApplication(revenueCatOptions(async () =>
     new Response(JSON.stringify(current), { status: 200 })
@@ -366,13 +337,13 @@ test("refunded/expired provider snapshot revokes previously active membership", 
     subscriptions: {
       plus_monthly: {
         store: "app_store",
-        store_transaction_id: "tx_plus_001",
-        purchase_date: "2026-08-23T10:00:00Z",
-        original_purchase_date: "2026-08-23T10:00:00Z",
-        expires_date: "2026-09-01T10:00:00Z",
-        refunded_at: "2026-09-20T10:00:00Z",
-        unsubscribe_detected_at: "2026-08-25T10:00:00Z",
-        is_sandbox: true,
+        transactionId: "tx_plus_001",
+        purchasedAt: "2026-08-23T10:00:00Z",
+        originalPurchasedAt: "2026-08-23T10:00:00Z",
+        expiresAt: "2026-09-01T10:00:00Z",
+        refundAt: "2026-09-20T10:00:00Z",
+        cancelledAt: "2026-08-25T10:00:00Z",
+        sandbox: true,
       },
     },
   });
@@ -380,7 +351,8 @@ test("refunded/expired provider snapshot revokes previously active membership", 
   assert.equal(revoked.body.data.membership.active, false);
   const rows = await runtime.database.listAiNovelBillingTransactions("ai_novel", "user_alice");
   assert.equal(rows.length, 1);
-  assert.equal(rows[0]?.status, "refunded");
+  assert.equal(rows[0]?.status, "entitlement_active");
+  assert.equal(rows[0]?.refundAmountMinor, null);
 });
 
 test("provider outage returns pending and preserves last confirmed membership", async () => {
@@ -439,21 +411,21 @@ test("effective membership expiry preserves access through RevenueCat grace peri
   const customer = snapshot({
     entitlements: {
       orangewrite_plus: {
-        product_identifier: "plus_monthly",
-        expires_date: "2026-09-22T10:00:00Z",
-        grace_period_expires_date: "2026-09-24T10:00:00Z",
+        productKey: "plus_monthly",
+        expiresAt: "2026-09-22T10:00:00Z",
+        graceExpiresAt: "2026-09-24T10:00:00Z",
       },
     },
     subscriptions: {
       plus_monthly: {
         store: "app_store",
-        store_transaction_id: "tx_plus_grace",
-        purchase_date: "2026-08-23T10:00:00Z",
-        original_purchase_date: "2026-08-23T10:00:00Z",
-        expires_date: "2026-09-22T10:00:00Z",
-        refunded_at: null,
-        unsubscribe_detected_at: null,
-        is_sandbox: true,
+        transactionId: "tx_plus_grace",
+        purchasedAt: "2026-08-23T10:00:00Z",
+        originalPurchasedAt: "2026-08-23T10:00:00Z",
+        expiresAt: "2026-09-22T10:00:00Z",
+        refundAt: null,
+        cancelledAt: null,
+        sandbox: true,
       },
     },
   });
@@ -534,14 +506,14 @@ test("RevenueCat TRANSFER webhook reconciles every known source and destination 
   let aliceLookups = 0;
   const options = revenueCatOptions(async (input) => {
     const url = String(input);
-    if (url.endsWith("/user_alice")) {
+    if (url.includes("/customers/user_alice/")) {
       aliceLookups++;
       const data = aliceLookups === 1
         ? snapshot()
         : snapshot({ entitlements: {}, subscriptions: {} });
       return new Response(JSON.stringify(data), { status: 200 });
     }
-    if (url.endsWith("/user_bob")) {
+    if (url.includes("/customers/user_bob/")) {
       return new Response(JSON.stringify(snapshot()), { status: 200 });
     }
     throw new Error(`Unexpected RevenueCat customer URL: ${url}`);
@@ -625,7 +597,7 @@ test("RevenueCat TRANSFER audit records the linked deleted-account marker", asyn
   const options = revenueCatOptions(async (input) => {
     const url = String(input);
     customerLookups.push(url);
-    if (url.endsWith("/user_bob")) {
+    if (url.includes("/customers/user_bob/")) {
       return new Response(JSON.stringify(snapshot()), { status: 200 });
     }
     throw new Error("Deleted users must not be looked up during transfer.");
@@ -673,16 +645,15 @@ test("RevenueCat TRANSFER audit records the linked deleted-account marker", asyn
     "processed",
     `${JSON.stringify(response.body)}; customer lookups: ${customerLookups.join(",")}`,
   );
-  assert.deepEqual(customerLookups.map((url) => url.split("/").at(-1)), ["user_bob"]);
+  assert.deepEqual(customerLookups.map((url) => url.split("/customers/")[1]?.split("/")[0]), ["user_bob"]);
   assert.equal(event?.accountDeletedAt, "2026-09-20T12:00:00.000Z");
   assert.deepEqual(event?.affectedUserIds, ["user_alice", "user_bob"]);
 });
 
-test("older verified webhook backfills financial facts without regressing a newer snapshot", async () => {
-  const snapshotObservedAt = "2026-09-23T10:00:00.000Z";
+test("older verified webhook backfills payment evidence without regressing a newer membership snapshot", async () => {
   const webhookOccurredAt = "2026-09-22T10:00:00.000Z";
   const runtime = await createApplication(revenueCatOptions(async () =>
-    new Response(JSON.stringify(snapshot({ requestDate: snapshotObservedAt })), { status: 200 }),
+    new Response(JSON.stringify(snapshot()), { status: 200 }),
   () => new Date("2026-09-24T00:00:00.000Z")));
 
   const response = await runtime.app.handle({
@@ -702,8 +673,8 @@ test("older verified webhook backfills financial facts without regressing a newe
   const [transaction] = await runtime.database.listAiNovelBillingTransactions("ai_novel", "user_alice");
   assert.equal(transaction?.amountMinor, 999);
   assert.equal(transaction?.currency, "USD");
-  assert.equal(transaction?.observedAt, snapshotObservedAt);
-  assert.equal(transaction?.status, "entitlement_active");
+  assert.equal(transaction?.observedAt, "2026-09-23T10:00:00.000Z");
+  assert.equal(transaction?.status, "provider_paid");
 });
 
 test("snapshot can confirm membership without inventing a financial transaction ID", async () => {
@@ -711,13 +682,13 @@ test("snapshot can confirm membership without inventing a financial transaction 
     subscriptions: {
       plus_monthly: {
         store: "app_store",
-        store_transaction_id: null,
-        purchase_date: "2026-09-23T10:00:00Z",
-        original_purchase_date: "2026-09-23T10:00:00Z",
-        expires_date: "2026-10-23T10:00:00Z",
-        refunded_at: null,
-        unsubscribe_detected_at: null,
-        is_sandbox: true,
+        transactionId: null,
+        purchasedAt: "2026-09-23T10:00:00Z",
+        originalPurchasedAt: "2026-09-23T10:00:00Z",
+        expiresAt: "2026-10-23T10:00:00Z",
+        refundAt: null,
+        cancelledAt: null,
+        sandbox: true,
       },
     },
   });
@@ -770,21 +741,21 @@ test("subscription extension and pause events refresh authoritative access witho
     new Response(JSON.stringify(snapshot({
       entitlements: {
         orangewrite_plus: {
-          product_identifier: "plus_monthly",
-          expires_date: expiresAt,
-          grace_period_expires_date: null,
+          productKey: "plus_monthly",
+          expiresAt: expiresAt,
+          graceExpiresAt: null,
         },
       },
       subscriptions: {
         plus_monthly: {
           store: "play_store",
-          store_transaction_id: "tx_plus_001",
-          purchase_date: "2026-09-23T10:00:00Z",
-          original_purchase_date: "2026-09-23T10:00:00Z",
-          expires_date: expiresAt,
-          refunded_at: null,
-          unsubscribe_detected_at: null,
-          is_sandbox: true,
+          transactionId: "tx_plus_001",
+          purchasedAt: "2026-09-23T10:00:00Z",
+          originalPurchasedAt: "2026-09-23T10:00:00Z",
+          expiresAt: expiresAt,
+          refundAt: null,
+          cancelledAt: null,
+          sandbox: true,
         },
       },
     })), { status: 200 }),
@@ -857,7 +828,7 @@ test("RevenueCat trial purchase is not represented as a paid transaction", async
 
 test("RevenueCat webhook without provider timestamp does not create a synthetic transaction time", async () => {
   const snapshotWithoutTransaction = snapshot();
-  delete (snapshotWithoutTransaction.subscriber.subscriptions.plus_monthly as Record<string, unknown>).store_transaction_id;
+  delete (snapshotWithoutTransaction.subscriptions.plus_monthly as Record<string, unknown>).transactionId;
   const runtime = await createApplication(revenueCatOptions(async () =>
     new Response(JSON.stringify(snapshotWithoutTransaction), { status: 200 }),
   () => new Date("2026-09-24T00:00:00.000Z")));

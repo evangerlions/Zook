@@ -63,7 +63,7 @@ test("Postgres billing store upserts provider transaction evidence by stable ide
   await store.upsertTransaction(transaction);
 
   assert.match(queries[0]?.sql ?? "", /ON CONFLICT \(app_id, user_id, provider_transaction_id\) DO UPDATE/);
-  assert.match(queries[0]?.sql ?? "", /status = CASE WHEN zook_ai_novel_billing_transactions\.observed_at <= EXCLUDED\.observed_at/);
+  assert.match(queries[0]?.sql ?? "", /status = CASE WHEN .*EXCLUDED.status IN \('provider_paid', 'refunded', 'revoked'\).*observed_at <= EXCLUDED.observed_at/);
   assert.match(queries[0]?.sql ?? "", /amount_minor = CASE WHEN .* THEN COALESCE\(EXCLUDED\.amount_minor, .*\) ELSE COALESCE\(.*amount_minor, EXCLUDED\.amount_minor\) END/);
   assert.match(queries[0]?.sql ?? "", /refund_amount_minor = CASE WHEN .* THEN COALESCE\(EXCLUDED\.refund_amount_minor, .*\) ELSE COALESCE\(.*refund_amount_minor, EXCLUDED\.refund_amount_minor\) END/);
   assert.match(queries[0]?.sql ?? "", /currency = CASE WHEN .* THEN COALESCE\(EXCLUDED\.currency, .*\) ELSE COALESCE\(.*currency, EXCLUDED\.currency\) END/);

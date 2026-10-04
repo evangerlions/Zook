@@ -81,6 +81,7 @@ export interface CreateApplicationOptions {
   /** RevenueCat server credentials; never returned to clients or included in logs. */
   revenueCat?: {
     secretApiKey?: string;
+    projectId?: string;
     webhookAuthorization?: string;
     appId?: string;
     allowSandbox?: boolean;

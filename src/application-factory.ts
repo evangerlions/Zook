@@ -163,6 +163,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   });
   const aiNovelBillingService = new AiNovelBillingService(database, {
     secretApiKey: options.revenueCat?.secretApiKey ?? process.env.REVENUECAT_AI_NOVEL_SECRET_API_KEY,
+    revenueCatProjectId: options.revenueCat?.projectId ?? process.env.REVENUECAT_AI_NOVEL_PROJECT_ID,
     webhookAuthorization: options.revenueCat?.webhookAuthorization ?? process.env.REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION,
     revenueCatAppId: options.revenueCat?.appId ?? process.env.REVENUECAT_AI_NOVEL_APP_ID,
     allowSandbox: options.revenueCat?.allowSandbox ??

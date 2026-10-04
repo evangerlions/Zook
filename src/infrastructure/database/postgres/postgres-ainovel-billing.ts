@@ -133,6 +133,9 @@ export class PostgresAiNovelBillingStore {
   async upsertTransaction(record: AiNovelBillingTransactionRecord): Promise<void> {
     const isCurrentObservation =
       "zook_ai_novel_billing_transactions.observed_at <= EXCLUDED.observed_at";
+    const hasFinancialStatus = "EXCLUDED.status IN ('provider_paid', 'refunded', 'revoked')";
+    const existingFinancialStatus = "zook_ai_novel_billing_transactions.status IN ('provider_paid', 'refunded', 'revoked')";
+    const useIncomingStatus = `(${hasFinancialStatus} AND NOT ${existingFinancialStatus}) OR (${isCurrentObservation} AND (${hasFinancialStatus} OR NOT ${existingFinancialStatus}))`;
     await this.query(
       `INSERT INTO zook_ai_novel_billing_transactions (
          app_id, user_id, provider, provider_transaction_id, product_id,
@@ -145,11 +148,11 @@ export class PostgresAiNovelBillingStore {
          product_id = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.product_id ELSE zook_ai_novel_billing_transactions.product_id END,
          product_key = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.product_key ELSE zook_ai_novel_billing_transactions.product_key END,
          source = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.source ELSE zook_ai_novel_billing_transactions.source END,
-         status = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.status ELSE zook_ai_novel_billing_transactions.status END,
+         status = CASE WHEN ${useIncomingStatus} THEN EXCLUDED.status ELSE zook_ai_novel_billing_transactions.status END,
          purchased_at = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.purchased_at ELSE zook_ai_novel_billing_transactions.purchased_at END,
          original_purchase_date = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.original_purchase_date ELSE zook_ai_novel_billing_transactions.original_purchase_date END,
          expires_at = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.expires_at ELSE zook_ai_novel_billing_transactions.expires_at END,
-         refunded_at = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.refunded_at ELSE zook_ai_novel_billing_transactions.refunded_at END,
+         refunded_at = CASE WHEN ${useIncomingStatus} THEN EXCLUDED.refunded_at ELSE zook_ai_novel_billing_transactions.refunded_at END,
          auto_renew = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.auto_renew ELSE zook_ai_novel_billing_transactions.auto_renew END,
          is_sandbox = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.is_sandbox ELSE zook_ai_novel_billing_transactions.is_sandbox END,
          platform = COALESCE(EXCLUDED.platform, zook_ai_novel_billing_transactions.platform),

@@ -48,7 +48,7 @@ test("in-memory billing store deduplicates transaction and webhook IDs and ignor
   const database = new InMemoryDatabase();
   database.upsertAiNovelBillingMembership(membership);
   database.upsertAiNovelBillingMembership({ ...membership, active: false, state: "free", tier: null, planKey: null, lastSyncedAt: "2026-09-19T00:00:00.000Z" });
-  database.upsertAiNovelBillingTransaction(transaction);
+  database.upsertAiNovelBillingTransaction({ ...transaction, status: "provider_paid" });
   database.upsertAiNovelBillingTransaction({
     ...transaction,
     status: "refunded",
@@ -60,7 +60,7 @@ test("in-memory billing store deduplicates transaction and webhook IDs and ignor
   assert.equal((await database.findAiNovelBillingMembership("ai_novel", "user_a"))?.active, true);
   const [retainedTransaction] = await database.listAiNovelBillingTransactions("ai_novel", "user_a");
   assert.equal((await database.listAiNovelBillingTransactions("ai_novel", "user_a")).length, 1);
-  assert.equal(retainedTransaction?.status, "entitlement_active");
+  assert.equal(retainedTransaction?.status, "provider_paid");
   assert.equal(retainedTransaction?.amountMinor, 999);
   assert.equal(retainedTransaction?.refundAmountMinor, 200);
   assert.equal(retainedTransaction?.currency, "USD");
@@ -92,14 +92,14 @@ test("stale verified transaction facts backfill missing snapshot fields only", a
     ...transaction,
     amountMinor: 999,
     currency: "USD",
-    status: "purchased",
+    status: "provider_paid",
     observedAt: "2026-09-19T00:00:00.000Z",
   });
 
   const [merged] = await database.listAiNovelBillingTransactions("ai_novel", "user_a");
   assert.equal(merged?.amountMinor, 999);
   assert.equal(merged?.currency, "USD");
-  assert.equal(merged?.status, "entitlement_active");
+  assert.equal(merged?.status, "provider_paid");
   assert.equal(merged?.observedAt, "2026-09-20T00:00:00.000Z");
 });
 

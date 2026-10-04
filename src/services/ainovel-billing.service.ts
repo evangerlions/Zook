@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { runBillingSync, type BillingSyncInput } from "./ainovel-billing-sync.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type {
   AiNovelBillingMembershipInfo,
@@ -12,9 +13,9 @@ import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.t
 import { buildEmptyMembershipInfo } from "../modules/billing/billing-membership.ts";
 import {
   normalizeRevenueCatSnapshot,
-  normalizeRevenueCatWebhookTransaction,
   type NormalizedRevenueCatSnapshot,
 } from "../modules/billing/ainovel-revenuecat-normalizer.ts";
+import { normalizeRevenueCatWebhookTransaction } from "../modules/billing/ainovel-revenuecat-webhook.ts";
 import {
   RevenueCatApiError,
   RevenueCatCustomerApi,
@@ -42,6 +43,7 @@ const WEBHOOK_HANDLED_EVENTS = new Set([
 
 export interface AiNovelBillingServiceOptions {
   secretApiKey?: string;
+  revenueCatProjectId?: string;
   webhookAuthorization?: string;
   revenueCatAppId?: string;
   allowSandbox?: boolean;
@@ -66,8 +68,12 @@ export class AiNovelBillingService {
   ) {
     this.customerApi = new RevenueCatCustomerApi({
       secretApiKey: options.secretApiKey,
+      projectId: options.revenueCatProjectId,
+      appId: options.revenueCatAppId,
       fetcher: options.fetcher,
       timeoutMs: options.timeoutMs ?? REVENUECAT_SYNC_TIMEOUT_MS,
+      logger,
+      now: options.now,
     });
     this.webhookAuthorization = options.webhookAuthorization?.trim();
     this.revenueCatAppId = options.revenueCatAppId?.trim();
@@ -85,52 +91,13 @@ export class AiNovelBillingService {
     return toMembershipInfo(record, this.now());
   }
 
-  async sync(input: {
-    userId: string;
-    requestId: string;
-    reason?: "purchase" | "restore" | "app_start" | "retry";
-    signal?: AbortSignal;
-  }): Promise<AiNovelBillingSyncResult> {
-    const context = {
-      requestId: input.requestId,
-      appId: APP_ID,
-      userId: input.userId,
-      provider: "revenuecat",
-      reason: input.reason ?? "unspecified",
-    };
-    let snapshot: NormalizedRevenueCatSnapshot;
-    try {
-      snapshot = await this.fetchSnapshot(input.userId, input.signal);
-    } catch (error) {
-      const reason = error instanceof RevenueCatApiError ? error.reason : "normalization_failed";
-      const membership = await this.getMembership(input.userId);
-      this.logger.warn("ainovel billing sync pending", {
-        ...context,
-        status: "pending",
-        failureReason: reason,
-        membershipState: membership.state,
-      });
-      return { syncStatus: "pending", membership };
-    }
-    if (snapshot.hasActiveUnverifiedEnvironmentEntitlement) {
-      const membership = await this.getMembership(input.userId);
-      this.logger.warn("ainovel billing sync deferred unverified store environment", {
-        ...context,
-        status: "pending",
-        failureReason: "unverified_store_environment",
-        membershipState: membership.state,
-      });
-      return { syncStatus: "pending", membership };
-    }
-    await this.persistSnapshot(snapshot);
-    const membership = await this.getMembership(input.userId);
-    this.logger.info("ainovel billing sync completed", {
-      ...context,
-      status: "synchronized",
-      productKey: membership.planKey ?? undefined,
-      membershipState: membership.state,
+  async sync(input: BillingSyncInput): Promise<AiNovelBillingSyncResult> {
+    return runBillingSync(input, {
+      logger: this.logger,
+      fetchSnapshot: () => this.fetchSnapshot(input.userId, input.signal, input.requestId),
+      persistSnapshot: (snapshot) => this.persistSnapshot(snapshot),
+      getMembership: () => this.getMembership(input.userId),
     });
-    return { syncStatus: "synchronized", membership };
   }
 
   async receiveWebhook(input: {
@@ -150,7 +117,9 @@ export class AiNovelBillingService {
     }
 
     const event = readWebhookEvent(input.request.body);
+    this.logWebhook(input.requestId, event, "processing");
     if (event.appId !== this.revenueCatAppId) {
+      this.logWebhook(input.requestId, event, "app_mismatch");
       throw new ApplicationError(403, "BILLING_WEBHOOK_APP_MISMATCH", "Webhook app ID is not configured for AINovel.");
     }
     const existing = await this.database.findAiNovelBillingWebhookEvent(APP_ID, event.id);
@@ -166,7 +135,7 @@ export class AiNovelBillingService {
     }
 
     if (event.type === "TRANSFER") {
-      const status = await this.processTransferWebhook(event, input.request.signal);
+      const status = await this.processTransferWebhook(event, input.request.signal, input.requestId);
       this.logWebhook(input.requestId, event, status);
       return { status };
     }
@@ -202,7 +171,7 @@ export class AiNovelBillingService {
 
     let snapshot: NormalizedRevenueCatSnapshot;
     try {
-      snapshot = await this.fetchSnapshot(event.appUserId, input.request.signal);
+      snapshot = await this.fetchSnapshot(event.appUserId, input.request.signal, input.requestId);
     } catch {
       this.logger.warn("ainovel billing webhook sync pending", {
         requestId: input.requestId,
@@ -267,6 +236,7 @@ export class AiNovelBillingService {
   private async processTransferWebhook(
     event: ParsedWebhookEvent,
     signal?: AbortSignal,
+    requestId?: string,
   ): Promise<"processed" | "ignored" | "duplicate"> {
     const affectedUserIds = [...new Set([
       ...event.transferredFrom,
@@ -298,7 +268,7 @@ export class AiNovelBillingService {
     try {
       for (const user of knownUsers) {
         if (user.status === "ACTIVE") {
-          snapshots.push(await this.fetchSnapshot(user.userId, signal));
+          snapshots.push(await this.fetchSnapshot(user.userId, signal, requestId));
         }
       }
     } catch (error) {
@@ -375,8 +345,8 @@ export class AiNovelBillingService {
     return "processed";
   }
 
-  private async fetchSnapshot(userId: string, signal?: AbortSignal): Promise<NormalizedRevenueCatSnapshot> {
-    const payload = await this.customerApi.getSubscriber(userId, signal);
+  private async fetchSnapshot(userId: string, signal?: AbortSignal, requestId?: string): Promise<NormalizedRevenueCatSnapshot> {
+    const payload = await this.customerApi.getSnapshot(userId, signal, requestId);
     return normalizeRevenueCatSnapshot(payload, userId, this.now(), {
       allowSandbox: this.allowSandbox,
     });
@@ -452,6 +422,9 @@ export class AiNovelBillingService {
       productKey: productKey ?? event.productId ?? undefined,
       status,
       eventType: event.type,
+      providerEventId: event.id,
+      providerTransactionId: event.providerTransactionId,
+      environment: event.environment,
     });
   }
 }

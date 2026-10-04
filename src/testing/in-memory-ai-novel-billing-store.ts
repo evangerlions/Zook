@@ -77,6 +77,17 @@ export class InMemoryAiNovelBillingStore {
     const isCurrentObservation = !existing || existing.observedAt <= record.observedAt;
     const next = structuredClone(isCurrentObservation ? record : existing);
     if (existing) {
+      const financialStatuses = ["provider_paid", "refunded", "revoked"];
+      const existingFinancial = financialStatuses.includes(existing.status);
+      const incomingFinancial = financialStatuses.includes(record.status);
+      // Access observations are not evidence of a refund or its reversal.
+      if (existingFinancial && !incomingFinancial) {
+        next.status = existing.status;
+        next.refundedAt = existing.refundedAt;
+      } else if (!existingFinancial && incomingFinancial) {
+        next.status = record.status;
+        next.refundedAt = record.refundedAt;
+      }
       next.platform = preferCurrentOrBackfill(existing.platform, record.platform, isCurrentObservation);
       next.amountMinor = preferCurrentOrBackfill(existing.amountMinor, record.amountMinor, isCurrentObservation);
       next.refundAmountMinor = preferCurrentOrBackfill(existing.refundAmountMinor, record.refundAmountMinor, isCurrentObservation);

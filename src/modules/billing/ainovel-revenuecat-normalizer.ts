@@ -1,22 +1,7 @@
-import type {
-  AiNovelBillingMembershipInfo,
-  AiNovelBillingMembershipRecord,
-  AiNovelBillingSource,
-  AiNovelBillingTier,
-  AiNovelBillingTransactionRecord,
-  AiNovelBillingTransactionStatus,
-} from "../../shared/types.ts";
-import { isObject } from "../../services/ainovel-revenuecat-client.ts";
+import type { AiNovelBillingMembershipInfo, AiNovelBillingMembershipRecord, AiNovelBillingTransactionRecord } from "../../shared/types.ts";
+import { isObject, type RevenueCatSnapshot, type RevenueCatSubscriptionEvidence } from "../../services/ainovel-revenuecat-types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
-
-const PRODUCTS: Record<string, { tier: AiNovelBillingTier; rank: number }> = {
-  plus_monthly: { tier: "plus", rank: 1 },
-  plus_quarterly: { tier: "plus", rank: 1 },
-  plus_yearly: { tier: "plus", rank: 1 },
-  pro_monthly: { tier: "pro", rank: 2 },
-  pro_quarterly: { tier: "pro", rank: 2 },
-  pro_yearly: { tier: "pro", rank: 2 },
-};
+import { PRODUCTS, parseDate, nullableString, safeManagementUrl, sourceFromStore, platformFromStore, validCurrency, toMinorUnits } from "./ainovel-billing-values.ts";
 
 export interface NormalizedRevenueCatSnapshot {
   membership: AiNovelBillingMembershipRecord;
@@ -25,340 +10,116 @@ export interface NormalizedRevenueCatSnapshot {
   ignoredProductCount: number;
   hasActiveUnverifiedEnvironmentEntitlement: boolean;
 }
-
-interface ActiveCandidate {
-  info: AiNovelBillingMembershipInfo;
-  rank: number;
-}
-
-function parseDate(value: unknown): string | null | undefined {
-  if (value === null) return null;
-  if (typeof value !== "string" && typeof value !== "number") return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
-}
-
-function sourceFromStore(value: unknown): AiNovelBillingSource | undefined {
-  if (value === "app_store" || value === "mac_app_store") return "app_store";
-  if (value === "play_store") return "play_store";
-  return undefined;
-}
-
-function platformFromStore(value: unknown): AiNovelBillingTransactionRecord["platform"] {
-  if (value === "app_store") return "ios";
-  if (value === "mac_app_store") return "macos";
-  if (value === "play_store") return "android";
+const STATUSES = new Set(["trialing", "active", "expired", "in_grace_period", "in_billing_retry", "paused", "unknown", "incomplete"]);
+function autoRenew(value: unknown): boolean | null {
+  if (value === "will_renew") return true;
+  if (value === "will_not_renew") return false;
   return null;
 }
 
-function entitlementIsActive(
-  entitlement: Record<string, unknown>,
-  now: number,
-): { active: boolean; expiresAt: string | null; graceExpiresAt: string | null } {
-  const expiresAt = parseDate(entitlement.expires_date);
-  const graceExpiresAt = parseDate(entitlement.grace_period_expires_date);
-  if (expiresAt === undefined || graceExpiresAt === undefined) {
-    return { active: false, expiresAt: null, graceExpiresAt: null };
-  }
-  return {
-    active: expiresAt === null || Date.parse(expiresAt) > now ||
-      (graceExpiresAt !== null && Date.parse(graceExpiresAt) > now),
-    expiresAt,
-    graceExpiresAt,
-  };
-}
-
-function nullableString(value: unknown): string | null {
-  return typeof value === "string" || typeof value === "number"
-    ? String(value)
-    : null;
-}
-
-function safeManagementUrl(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
-function subscriptionIsAutoRenewing(subscription: Record<string, unknown>): boolean | null {
-  if (!Object.hasOwn(subscription, "unsubscribe_detected_at")) return null;
-  return subscription.unsubscribe_detected_at === null;
-}
-
-function transactionIdentifier(
-  subscription: Record<string, unknown>,
-): string | undefined {
-  return nullableString(subscription.store_transaction_id) ?? undefined;
-}
-
-function evidenceStatus(input: {
-  refundedAt: string | null;
-  expiresAt: string | null | undefined;
-  activeEntitlement: boolean;
-  now: number;
-}): AiNovelBillingTransactionStatus {
-  if (input.refundedAt) return "refunded";
-  if (input.activeEntitlement) return "entitlement_active";
-  if (input.expiresAt && Date.parse(input.expiresAt) <= input.now) return "expired";
-  // A subscriber snapshot proves membership dates, not that money was charged.
-  return "unknown";
-}
-
-export function normalizeRevenueCatSnapshot(
-  payload: unknown,
-  userId: string,
-  now = new Date(),
-  options: { allowSandbox?: boolean } = {},
-): NormalizedRevenueCatSnapshot {
-  if (!isObject(payload) || !isObject(payload.subscriber)) {
-    throw new Error("RevenueCat subscriber payload is invalid.");
-  }
-  const subscriber = payload.subscriber;
-  const allowSandbox = options.allowSandbox ?? false;
-  const entitlements = isObject(subscriber.entitlements) ? subscriber.entitlements : {};
-  const subscriptions = isObject(subscriber.subscriptions) ? subscriber.subscriptions : {};
-  const nowIso = now.toISOString();
-  const providerObservedAt = parseDate(payload.request_date_ms) ??
-    parseDate(payload.request_date) ?? nowIso;
-  const observedAt = typeof payload.request_date_ms === "number" ||
-      typeof payload.request_date === "string"
-    ? providerObservedAt
-    : nowIso;
-  const activeCandidates: ActiveCandidate[] = [];
-  const activeEntitlementProducts = new Set<string>();
-  const subscriptionSummaries: Array<Pick<AiNovelBillingTransactionRecord,
-    "productKey" | "source" | "expiresAt" | "refundedAt" | "autoRenew"
-  >> = [];
-  let ignoredEntitlementCount = 0;
-  let hasActiveUnverifiedEnvironmentEntitlement = false;
-
-  for (const [entitlementId, rawEntitlement] of Object.entries(entitlements)) {
-    if (!isObject(rawEntitlement)) {
-      ignoredEntitlementCount++;
-      continue;
-    }
-    const productId = nullableString(rawEntitlement.product_identifier);
-    const product = productId ? PRODUCTS[productId] : undefined;
-    const subscription = productId ? subscriptions[productId] : undefined;
-    const matchesProductEntitlement = product !== undefined &&
-      entitlementId === REVENUECAT_ENTITLEMENT_IDS[product.tier];
-    const subscriptionIsObject = isObject(subscription);
-    const source = subscriptionIsObject ? sourceFromStore(subscription.store) : undefined;
-    const dates = entitlementIsActive(rawEntitlement, now.getTime());
-    if (
-      !allowSandbox && matchesProductEntitlement && subscriptionIsObject &&
-      subscription.is_sandbox !== false && dates.active
-    ) {
-      hasActiveUnverifiedEnvironmentEntitlement = true;
-    }
-    const environmentAllowed = isObject(subscription) &&
-      (subscription.is_sandbox === false ||
-        (allowSandbox && subscription.is_sandbox === true));
-    if (!product || !matchesProductEntitlement ||
-        !isObject(subscription) || !environmentAllowed) {
-      ignoredEntitlementCount++;
-      continue;
-    }
-    if (!source || !dates.active) {
-      ignoredEntitlementCount++;
-      continue;
-    }
-    activeEntitlementProducts.add(productId as string);
-    const grace = dates.expiresAt !== null && Date.parse(dates.expiresAt) <= now.getTime() &&
-      dates.graceExpiresAt !== null && Date.parse(dates.graceExpiresAt) > now.getTime();
-    const cancelled = subscriptionIsAutoRenewing(subscription) === false;
-    activeCandidates.push({
-      rank: product.rank,
-      info: {
-        active: true,
-        state: grace ? "grace_period" : cancelled ? "cancelled" : "active",
-        tier: product.tier,
-        planKey: productId,
-        // In a grace period the effective entitlement deadline is the grace
-        // deadline, not the already elapsed renewal deadline.
-        expiresAt: grace ? dates.graceExpiresAt : dates.expiresAt,
-        autoRenew: subscriptionIsAutoRenewing(subscription),
-        source,
-        managementUrl: safeManagementUrl(subscriber.management_url),
-      },
-    });
-  }
-
-  let ignoredProductCount = 0;
+export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId: string,
+  now = new Date(), options: { allowSandbox?: boolean } = {}): NormalizedRevenueCatSnapshot {
+  const candidates: Array<{ rank: number; info: AiNovelBillingMembershipInfo }> = [];
+  const summaries: AiNovelBillingMembershipInfo[] = [];
   const transactions: AiNovelBillingTransactionRecord[] = [];
-  for (const [productId, rawSubscription] of Object.entries(subscriptions)) {
-    const product = PRODUCTS[productId];
-    if (!product || !isObject(rawSubscription)) {
-      ignoredProductCount++;
-      continue;
+  let ignoredEntitlementCount = 0;
+  let ignoredProductCount = 0;
+  let hasActiveUnverifiedEnvironmentEntitlement = false;
+  for (const evidence of payload.subscriptions) {
+    const { subscription: sub, product, entitlements } = evidence;
+    const productId = nullableString(product.store_identifier);
+    const definition = productId ? PRODUCTS[productId] : undefined;
+    const source = sourceFromStore(sub.store);
+    if (!definition || !source || !productId) { ignoredProductCount++; continue; }
+    const matches = entitlements.filter(e => e.lookup_key === REVENUECAT_ENTITLEMENT_IDS[definition.tier]);
+    const active = matches.map(e => payload.activeEntitlements.find(a => a.entitlement_id === e.id));
+    const hasActive = active.some(Boolean) && sub.gives_access === true;
+    const environmentKnown = sub.environment === "sandbox" || sub.environment === "production";
+    const allowed = sub.environment === "production" || (options.allowSandbox === true && sub.environment === "sandbox");
+    if (hasActive && !allowed) hasActiveUnverifiedEnvironmentEntitlement = true;
+    if (!environmentKnown || !allowed) { ignoredEntitlementCount++; continue; }
+    if (typeof sub.gives_access !== "boolean" || !STATUSES.has(String(sub.status))) {
+      throw new Error("RevenueCat subscription state is invalid.");
     }
-    const source = sourceFromStore(rawSubscription.store);
-    const isSandbox = typeof rawSubscription.is_sandbox === "boolean"
-      ? rawSubscription.is_sandbox
-      : null;
-    if (!source || (isSandbox !== false && !(allowSandbox && isSandbox === true))) {
-      ignoredProductCount++;
-      continue;
-    }
-    const purchasedAt = parseDate(rawSubscription.purchase_date);
-    const originalPurchaseDate = parseDate(rawSubscription.original_purchase_date);
-    const expiresAt = parseDate(rawSubscription.expires_date);
-    const refundedAt = parseDate(rawSubscription.refunded_at);
-    const entitlementActive = activeEntitlementProducts.has(productId);
-    const status = evidenceStatus({
-      refundedAt: refundedAt ?? null,
-      expiresAt,
-      activeEntitlement: entitlementActive,
-      now: now.getTime(),
-    });
-    subscriptionSummaries.push({
-      productKey: productId,
-      source,
-      expiresAt: expiresAt ?? null,
-      refundedAt: refundedAt ?? null,
-      autoRenew: subscriptionIsAutoRenewing(rawSubscription),
-    });
-    const providerTransactionId = transactionIdentifier(rawSubscription);
-    // A subscriber snapshot can confirm membership without giving us a payment
-    // transaction ID. Never turn that incomplete financial evidence into an
-    // order with an invented local identifier.
-    if (!providerTransactionId) continue;
-    transactions.push({
-      appId: "ai_novel",
-      userId,
-      provider: "revenuecat",
-      providerTransactionId,
-      productId,
-      productKey: productId,
-      source,
-      platform: platformFromStore(rawSubscription.store),
-      status,
-      purchasedAt: purchasedAt ?? null,
-      originalPurchaseDate: originalPurchaseDate ?? null,
-      expiresAt: expiresAt ?? null,
-      refundedAt: refundedAt ?? null,
-      autoRenew: subscriptionIsAutoRenewing(rawSubscription),
-      isSandbox,
-      amountMinor: null,
-      refundAmountMinor: null,
-      currency: null,
-      observedAt,
-      accountDeletedAt: null,
+    const currentEnd = parseDate(sub.current_period_ends_at);
+    const entitlementEnd = active.filter(isObject).map(a => parseDate(a.expires_at))
+      .filter((d): d is string | null => d !== undefined)
+      .sort((a,b) => (b ? Date.parse(b) : Infinity) - (a ? Date.parse(a) : Infinity))[0];
+    const subscriptionEnd = parseDate(sub.ends_at) ?? currentEnd;
+    const scopedEnd = sub.status === "in_grace_period"
+      ? graceEnd(subscriptionEnd, product.subscription) : subscriptionEnd;
+    const expiresAt = hasActive && typeof entitlementEnd === "string" && typeof scopedEnd === "string"
+      ? new Date(Math.min(Date.parse(entitlementEnd), Date.parse(scopedEnd))).toISOString() : scopedEnd;
+    if (hasActive && typeof expiresAt !== "string") throw new Error("RevenueCat subscription expiry is invalid.");
+    const renewable = autoRenew(sub.auto_renewal_status);
+    const info: AiNovelBillingMembershipInfo = {
+      active: hasActive && (expiresAt === null || (typeof expiresAt === "string" && Date.parse(expiresAt) > now.getTime())),
+      state: "expired", tier: null, planKey: null, expiresAt: expiresAt ?? null,
+      autoRenew: renewable, source, managementUrl: safeManagementUrl(sub.management_url),
+    };
+    if (info.active) {
+      info.state = sub.status === "in_grace_period" ? "grace_period" : renewable === false ? "cancelled" : "active";
+      info.tier = definition.tier;
+      info.planKey = productId;
+      candidates.push({ rank: definition.rank, info });
+    } else ignoredEntitlementCount++;
+    summaries.push(info);
+    transactions.push(...normalizeTransactions(evidence, userId, payload.observedAt));
+  }
+  candidates.sort((a,b) => b.rank-a.rank ||
+    (b.info.expiresAt ? Date.parse(b.info.expiresAt) : Infinity) -
+    (a.info.expiresAt ? Date.parse(a.info.expiresAt) : Infinity));
+  summaries.sort((a,b) => (b.expiresAt ? Date.parse(b.expiresAt) : 0) - (a.expiresAt ? Date.parse(a.expiresAt) : 0));
+  const current = candidates[0]?.info ?? summaries[0];
+  return {
+    membership: { appId: "ai_novel", userId, active: current?.active ?? false,
+      state: current?.state ?? "free", tier: current?.tier ?? null, planKey: current?.planKey ?? null,
+      expiresAt: current?.expiresAt ?? null, autoRenew: current?.autoRenew ?? null,
+      source: current?.source ?? null, managementUrl: current?.managementUrl ?? null,
+      lastSyncedAt: payload.observedAt, accountDeletedAt: null },
+    transactions, ignoredEntitlementCount, ignoredProductCount, hasActiveUnverifiedEnvironmentEntitlement,
+  };
+}
+
+function normalizeTransactions(evidence: RevenueCatSubscriptionEvidence,
+  userId: string, observedAt: string): AiNovelBillingTransactionRecord[] {
+  const sub = evidence.subscription;
+  const source = sourceFromStore(sub.store)!;
+  const records: AiNovelBillingTransactionRecord[] = [];
+  for (const tx of evidence.transactions) {
+    const productId = nullableString(tx.product_store_identifier);
+    const id = nullableString(tx.id);
+    if (!productId || !PRODUCTS[productId] || !id) continue;
+    const revenue = isObject(tx.revenue_in_local_currency) ? tx.revenue_in_local_currency : {};
+    const currency = validCurrency(revenue.currency);
+    const gross = typeof revenue.gross === "number" && Number.isFinite(revenue.gross) ? revenue.gross : undefined;
+    const amount = toMinorUnits(gross, currency);
+    records.push({
+      appId: "ai_novel", userId, provider: "revenuecat", providerTransactionId: id,
+      productId, productKey: productId, source, platform: platformFromStore(sub.store),
+      status: amount !== null && amount > 0 ? "provider_paid"
+        : sub.gives_access === true ? "entitlement_active" : "unknown",
+      purchasedAt: parseDate(tx.purchased_at) ?? null, originalPurchaseDate: parseDate(sub.starts_at) ?? null,
+      expiresAt: parseDate(tx.effective_expiration_date) ?? parseDate(tx.expiration_date) ?? null,
+      refundedAt: null, autoRenew: autoRenew(sub.auto_renewal_status), isSandbox: sub.environment === "sandbox",
+      // V2 transaction revenue has no refund-event time or reversal marker.
+      // Only explicit authenticated webhook events classify refunds/reversals.
+      amountMinor: amount, refundAmountMinor: null,
+      // A lookup is not a new payment or refund reversal. Keep financial
+      // evidence ordered by the transaction's provider timestamp.
+      currency, observedAt: parseDate(tx.purchased_at) ?? observedAt, accountDeletedAt: null,
     });
   }
-
-  activeCandidates.sort((left, right) => {
-    if (left.rank !== right.rank) return right.rank - left.rank;
-    const leftExpiry = left.info.expiresAt ? Date.parse(left.info.expiresAt) : Number.MAX_SAFE_INTEGER;
-    const rightExpiry = right.info.expiresAt ? Date.parse(right.info.expiresAt) : Number.MAX_SAFE_INTEGER;
-    return rightExpiry - leftExpiry;
-  });
-  const current = activeCandidates[0]?.info;
-  const lastKnown = [...subscriptionSummaries].sort((left, right) => {
-    const leftDate = left.expiresAt ? Date.parse(left.expiresAt) : 0;
-    const rightDate = right.expiresAt ? Date.parse(right.expiresAt) : 0;
-    return rightDate - leftDate;
-  })[0];
-  const membership: AiNovelBillingMembershipRecord = {
-    appId: "ai_novel",
-    userId,
-    active: current?.active ?? false,
-    state: current?.state ?? (lastKnown ? "expired" : "free"),
-    tier: current?.tier ?? null,
-    planKey: current?.planKey ?? null,
-    expiresAt: current?.expiresAt ?? lastKnown?.expiresAt ?? null,
-    autoRenew: current?.autoRenew ?? (lastKnown ? false : null),
-    source: current?.source ?? lastKnown?.source ?? null,
-    managementUrl: current?.managementUrl ?? safeManagementUrl(subscriber.management_url),
-    lastSyncedAt: observedAt,
-    accountDeletedAt: null,
-  };
-
-  return {
-    membership,
-    transactions,
-    ignoredEntitlementCount,
-    ignoredProductCount,
-    hasActiveUnverifiedEnvironmentEntitlement,
-  };
+  return records;
 }
 
-export function normalizeRevenueCatWebhookTransaction(input: {
-  event: Record<string, unknown>;
-  userId: string;
-  observedAt: string;
-}): AiNovelBillingTransactionRecord | undefined {
-  const productId = nullableString(input.event.product_id);
-  const product = productId ? PRODUCTS[productId] : undefined;
-  const source = sourceFromStore(String(input.event.store ?? "").toLowerCase());
-  const providerTransactionId = nullableString(input.event.transaction_id);
-  if (!product || !productId || !source || !providerTransactionId) return undefined;
-  const eventType = String(input.event.type ?? "");
-  const isCustomerSupportRefund = eventType === "CANCELLATION" &&
-    input.event.cancel_reason === "CUSTOMER_SUPPORT";
-  const currency = validCurrency(input.event.currency);
-  const rawAmount = input.event.price_in_purchased_currency;
-  const financialAmount = isCustomerSupportRefund && typeof rawAmount === "number"
-    ? Math.abs(rawAmount)
-    : rawAmount;
-  const eventAmount = toMinorUnits(financialAmount, currency);
-  const isTrial = String(input.event.period_type ?? "").toUpperCase() === "TRIAL";
-  const isPaidEvent = (eventType === "INITIAL_PURCHASE" || eventType === "RENEWAL" ||
-    eventType === "REFUND_REVERSED") && !isTrial && eventAmount !== null && eventAmount > 0;
-  const status: AiNovelBillingTransactionStatus | undefined = isCustomerSupportRefund
-    ? "refunded"
-    : eventType === "EXPIRATION"
-      ? "expired"
-      : eventType === "INITIAL_PURCHASE" || eventType === "RENEWAL"
-        ? isTrial ? "entitlement_active" : isPaidEvent ? "provider_paid" : "unknown"
-        : eventType === "REFUND_REVERSED"
-          ? isPaidEvent ? "provider_paid" : "unknown"
-          : undefined;
-  if (!status) return undefined;
-  const purchasedAt = parseDate(input.event.purchased_at_ms);
-  const expiresAt = parseDate(input.event.expiration_at_ms);
-  return {
-    appId: "ai_novel",
-    userId: input.userId,
-    provider: "revenuecat",
-    providerTransactionId,
-    productId,
-    productKey: productId,
-    source,
-    platform: platformFromStore(String(input.event.store ?? "").toLowerCase()),
-    status,
-    purchasedAt: purchasedAt ?? null,
-    originalPurchaseDate: parseDate(input.event.original_purchased_at_ms) ?? null,
-    expiresAt: expiresAt ?? null,
-    refundedAt: status === "refunded" ? input.observedAt : null,
-    autoRenew: eventType === "CANCELLATION" && !isCustomerSupportRefund ? false : null,
-    isSandbox: input.event.environment === "SANDBOX",
-    amountMinor: status === "refunded" || isTrial ? null : eventAmount,
-    refundAmountMinor: status === "refunded" ? eventAmount : eventType === "REFUND_REVERSED" ? 0 : null,
-    currency,
-    observedAt: input.observedAt,
-    accountDeletedAt: null,
-  };
-}
-
-function validCurrency(value: unknown): string | null {
-  return typeof value === "string" && /^[A-Z]{3}$/.test(value) ? value : null;
-}
-
-function toMinorUnits(value: unknown, currency: string | null): number | null {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || !currency) return null;
-  try {
-    const digits = new Intl.NumberFormat("en", {
-      style: "currency",
-      currency,
-    }).resolvedOptions().maximumFractionDigits;
-    const amount = Math.round(value * (10 ** digits));
-    return Number.isSafeInteger(amount) ? amount : null;
-  } catch {
-    return null;
-  }
+function graceEnd(end: string | null | undefined, details: unknown): string | undefined {
+  if (typeof end !== "string" || !isObject(details)) return undefined;
+  const duration = typeof details.grace_period_duration === "string"
+    ? details.grace_period_duration.match(/^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/) : null;
+  if (!duration) return undefined;
+  const seconds = Number(duration[1] ?? 0) * 604800 + Number(duration[2] ?? 0) * 86400 +
+    Number(duration[3] ?? 0) * 3600 + Number(duration[4] ?? 0) * 60 + Number(duration[5] ?? 0);
+  const timestamp = Date.parse(end) + seconds * 1000;
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : undefined;
 }
