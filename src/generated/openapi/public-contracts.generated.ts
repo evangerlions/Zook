@@ -926,7 +926,8 @@ export const CurrentUserDataSchema = {
   "required": [
     "appId",
     "accountRegion",
-    "user"
+    "user",
+    "membership"
   ],
   "properties": {
     "appId": {
@@ -974,6 +975,89 @@ export const CurrentUserDataSchema = {
           "type": "boolean"
         }
       }
+    },
+    "membership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active",
+        "state",
+        "tier",
+        "planKey",
+        "expiresAt",
+        "autoRenew",
+        "source"
+      ],
+      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Whether the account currently has access to the app's membership benefits."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "free",
+            "active",
+            "cancelled",
+            "grace_period",
+            "expired"
+          ]
+        },
+        "tier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "plus",
+            "pro",
+            "max",
+            null
+          ],
+          "description": "Effective active membership tier for the app account."
+        },
+        "planKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "autoRenew": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "app_store",
+            "play_store",
+            "alipay",
+            "rc_web",
+            null
+          ]
+        },
+        "managementUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
     }
   }
 } as const;
@@ -989,6 +1073,111 @@ export type CurrentUserData = {
   "avatarUrl"?: string | null;
   "hasPassword": boolean;
 };
+  "membership": {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "plus" | "pro" | "max" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
+};
+};
+
+export const MembershipInfoSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "active",
+    "state",
+    "tier",
+    "planKey",
+    "expiresAt",
+    "autoRenew",
+    "source"
+  ],
+  "description": "App-scoped entitlement summary for the authenticated product account.",
+  "properties": {
+    "active": {
+      "type": "boolean",
+      "description": "Whether the account currently has access to the app's membership benefits."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "free",
+        "active",
+        "cancelled",
+        "grace_period",
+        "expired"
+      ]
+    },
+    "tier": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "plus",
+        "pro",
+        "max",
+        null
+      ],
+      "description": "Effective active membership tier for the app account."
+    },
+    "planKey": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "expiresAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "autoRenew": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "source": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "app_store",
+        "play_store",
+        "alipay",
+        "rc_web",
+        null
+      ]
+    },
+    "managementUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    }
+  }
+} as const;
+
+export type MembershipInfo = {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "plus" | "pro" | "max" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
 };
 
 export const AnalyticsEventInputSchema = {
@@ -2168,6 +2357,71 @@ export const AINovelPublicConfigSchema = {
           }
         }
       }
+    },
+    "billing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "revenueCat": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "configVersion",
+            "proxyUrl",
+            "publicSdkKeys"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "configVersion": {
+              "type": "string",
+              "minLength": 1
+            },
+            "proxyUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri",
+              "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+            },
+            "publicSdkKeys": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "ios",
+                "android",
+                "web"
+              ],
+              "properties": {
+                "ios": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1
+                },
+                "android": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1
+                },
+                "web": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 } as const;
@@ -2253,6 +2507,18 @@ export type AINovelPublicConfig = {
 )[];
 }
 )[];
+};
+  "billing"?: {
+  "revenueCat"?: {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
 };
   [key: string]: unknown;
 };
@@ -2688,6 +2954,71 @@ export const PublicConfigDataSchema = {
               }
             }
           }
+        },
+        "billing": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "revenueCat": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "enabled",
+                "configVersion",
+                "proxyUrl",
+                "publicSdkKeys"
+              ],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "configVersion": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "proxyUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri",
+                  "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+                },
+                "publicSdkKeys": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "ios",
+                    "android",
+                    "web"
+                  ],
+                  "properties": {
+                    "ios": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "android": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    },
+                    "web": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2781,6 +3112,18 @@ export type PublicConfigData = {
 )[];
 }
 )[];
+};
+  "billing"?: {
+  "revenueCat"?: {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
 };
   [key: string]: unknown;
 };
@@ -3858,6 +4201,1099 @@ export type PublicReleaseUpdateData = {
 )[];
 };
   "updatedAt"?: string;
+};
+
+export const BillingPublicConfigSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "revenueCat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "configVersion",
+        "proxyUrl",
+        "publicSdkKeys"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "configVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "proxyUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri",
+          "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+        },
+        "publicSdkKeys": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ios",
+            "android",
+            "web"
+          ],
+          "properties": {
+            "ios": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "android": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "web": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type BillingPublicConfig = {
+  "revenueCat"?: {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
+};
+
+export const RevenueCatPublicConfigSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "configVersion",
+    "proxyUrl",
+    "publicSdkKeys"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "configVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proxyUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "description": "Optional RevenueCat SDK proxy URL. Must be applied before SDK setup."
+    },
+    "publicSdkKeys": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "properties": {
+        "ios": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "android": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "web": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    }
+  }
+} as const;
+
+export type RevenueCatPublicConfig = {
+  "enabled": boolean;
+  "configVersion": string;
+  "proxyUrl": string | null;
+  "publicSdkKeys": {
+  "ios": string | null;
+  "android": string | null;
+  "web": string | null;
+};
+};
+
+export const AccountRegionSchema = {
+  "type": "string",
+  "enum": [
+    "CN",
+    "GLOBAL",
+    "UNKNOWN"
+  ]
+} as const;
+
+export type AccountRegion = "CN" | "GLOBAL" | "UNKNOWN";
+
+export const BillingPlatformSchema = {
+  "type": "string",
+  "enum": [
+    "ios",
+    "android",
+    "macos",
+    "web",
+    "windows"
+  ]
+} as const;
+
+export type BillingPlatform = "ios" | "android" | "macos" | "web" | "windows";
+
+export const DistributionChannelSchema = {
+  "type": "string",
+  "enum": [
+    "app_store",
+    "google_play",
+    "china_android_store",
+    "direct_android",
+    "web",
+    "windows"
+  ]
+} as const;
+
+export type DistributionChannel = "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
+
+export const BillingProviderSchema = {
+  "type": "string",
+  "description": "Historical payment provider identifiers used by membership conflict records.",
+  "enum": [
+    "revenuecat",
+    "alipay"
+  ]
+} as const;
+
+export type BillingProvider = "revenuecat" | "alipay";
+
+export const BillingCatalogProviderSchema = {
+  "type": "string",
+  "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
+  "enum": [
+    "revenuecat",
+    "alipay"
+  ]
+} as const;
+
+export type BillingCatalogProvider = "revenuecat" | "alipay";
+
+export const BillingProductKeySchema = {
+  "type": "string",
+  "enum": [
+    "plus_monthly",
+    "plus_quarterly",
+    "plus_yearly",
+    "pro_monthly",
+    "pro_quarterly",
+    "pro_yearly"
+  ]
+} as const;
+
+export type BillingProductKey = "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
+
+export const BillingTierSchema = {
+  "type": "string",
+  "enum": [
+    "plus",
+    "pro"
+  ]
+} as const;
+
+export type BillingTier = "plus" | "pro";
+
+export const SyncStatusSchema = {
+  "type": "string",
+  "enum": [
+    "synchronized",
+    "pending"
+  ]
+} as const;
+
+export type SyncStatus = "synchronized" | "pending";
+
+export const MoneySchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "amountMinor",
+    "currency"
+  ],
+  "properties": {
+    "amountMinor": {
+      "type": "integer",
+      "format": "int64",
+      "minimum": 0,
+      "description": "Amount in the smallest unit of the currency."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    }
+  }
+} as const;
+
+export type Money = {
+  "amountMinor": number;
+  "currency": string;
+};
+
+export const BillingProductSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "productKey",
+    "tier",
+    "billingPeriod",
+    "providers"
+  ],
+  "properties": {
+    "productKey": {
+      "type": "string",
+      "enum": [
+        "plus_monthly",
+        "plus_quarterly",
+        "plus_yearly",
+        "pro_monthly",
+        "pro_quarterly",
+        "pro_yearly"
+      ]
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "plus",
+        "pro"
+      ]
+    },
+    "billingPeriod": {
+      "type": "string",
+      "description": "ISO 8601 duration, for example P1M or P1Y.",
+      "enum": [
+        "P1M",
+        "P3M",
+        "P1Y"
+      ]
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider",
+          "available",
+          "price"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
+            "enum": [
+              "revenuecat",
+              "alipay"
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "active_membership_managed_elsewhere",
+              "unsupported_distribution",
+              "provider_unavailable",
+              null
+            ]
+          },
+          "providerProductId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Store or provider product identifier used by the client/provider adapter."
+          },
+          "providerPackageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "RevenueCat package identifier when the provider uses offerings."
+          },
+          "providerEntitlementId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "RevenueCat entitlement identifier or equivalent provider entitlement key."
+          },
+          "price": {
+            "description": "Server-controlled price. Null means the native store supplies the price.",
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "amountMinor",
+                  "currency"
+                ],
+                "properties": {
+                  "amountMinor": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0,
+                    "description": "Amount in the smallest unit of the currency."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "provider"
+              ],
+              "properties": {
+                "provider": {
+                  "const": "alipay"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "available": {
+                  "const": false
+                },
+                "price": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+} as const;
+
+export type BillingProduct = {
+  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
+  "tier": "plus" | "pro";
+  "billingPeriod": "P1M" | "P3M" | "P1Y";
+  "providers": (
+(
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+) & (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+)
+)[];
+};
+
+export const BillingProductProviderSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "provider",
+    "available",
+    "price"
+  ],
+  "properties": {
+    "provider": {
+      "type": "string",
+      "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
+      "enum": [
+        "revenuecat",
+        "alipay"
+      ]
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "blockedReason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "active_membership_managed_elsewhere",
+        "unsupported_distribution",
+        "provider_unavailable",
+        null
+      ]
+    },
+    "providerProductId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Store or provider product identifier used by the client/provider adapter."
+    },
+    "providerPackageId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "RevenueCat package identifier when the provider uses offerings."
+    },
+    "providerEntitlementId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "RevenueCat entitlement identifier or equivalent provider entitlement key."
+    },
+    "price": {
+      "description": "Server-controlled price. Null means the native store supplies the price.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amountMinor",
+            "currency"
+          ],
+          "properties": {
+            "amountMinor": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "description": "Amount in the smallest unit of the currency."
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "const": "alipay"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "available": {
+            "const": false
+          },
+          "price": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+} as const;
+
+export type BillingProductProvider = (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+) & (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+);
+
+export const CatalogDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "accountRegion",
+    "platform",
+    "distribution",
+    "products"
+  ],
+  "properties": {
+    "accountRegion": {
+      "type": "string",
+      "enum": [
+        "CN",
+        "GLOBAL",
+        "UNKNOWN"
+      ]
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android",
+        "macos",
+        "web",
+        "windows"
+      ]
+    },
+    "distribution": {
+      "type": "string",
+      "enum": [
+        "app_store",
+        "google_play",
+        "china_android_store",
+        "direct_android",
+        "web",
+        "windows"
+      ]
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "productKey",
+          "tier",
+          "billingPeriod",
+          "providers"
+        ],
+        "properties": {
+          "productKey": {
+            "type": "string",
+            "enum": [
+              "plus_monthly",
+              "plus_quarterly",
+              "plus_yearly",
+              "pro_monthly",
+              "pro_quarterly",
+              "pro_yearly"
+            ]
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "plus",
+              "pro"
+            ]
+          },
+          "billingPeriod": {
+            "type": "string",
+            "description": "ISO 8601 duration, for example P1M or P1Y.",
+            "enum": [
+              "P1M",
+              "P3M",
+              "P1Y"
+            ]
+          },
+          "providers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "available",
+                "price"
+              ],
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "description": "Providers represented in catalog offers; deferred Alipay offers must stay unavailable.",
+                  "enum": [
+                    "revenuecat",
+                    "alipay"
+                  ]
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "blockedReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "active_membership_managed_elsewhere",
+                    "unsupported_distribution",
+                    "provider_unavailable",
+                    null
+                  ]
+                },
+                "providerProductId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Store or provider product identifier used by the client/provider adapter."
+                },
+                "providerPackageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "RevenueCat package identifier when the provider uses offerings."
+                },
+                "providerEntitlementId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "RevenueCat entitlement identifier or equivalent provider entitlement key."
+                },
+                "price": {
+                  "description": "Server-controlled price. Null means the native store supplies the price.",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "amountMinor",
+                        "currency"
+                      ],
+                      "properties": {
+                        "amountMinor": {
+                          "type": "integer",
+                          "format": "int64",
+                          "minimum": 0,
+                          "description": "Amount in the smallest unit of the currency."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{3}$"
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "provider"
+                    ],
+                    "properties": {
+                      "provider": {
+                        "const": "alipay"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "available": {
+                        "const": false
+                      },
+                      "price": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+export type CatalogData = {
+  "accountRegion": "CN" | "GLOBAL" | "UNKNOWN";
+  "platform": "ios" | "android" | "macos" | "web" | "windows";
+  "distribution": "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
+  "products": (
+{
+  "productKey": "plus_monthly" | "plus_quarterly" | "plus_yearly" | "pro_monthly" | "pro_quarterly" | "pro_yearly";
+  "tier": "plus" | "pro";
+  "billingPeriod": "P1M" | "P3M" | "P1Y";
+  "providers": (
+(
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+) & (
+{
+  "provider": "revenuecat" | "alipay";
+  "available": boolean;
+  "blockedReason"?: "active_membership_managed_elsewhere" | "unsupported_distribution" | "provider_unavailable" | null;
+  "providerProductId"?: string | null;
+  "providerPackageId"?: string | null;
+  "providerEntitlementId"?: string | null;
+  "price": {
+  "amountMinor": number;
+  "currency": string;
+} | unknown;
+}
+)
+)[];
+}
+)[];
+};
+
+export const SyncDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "syncStatus",
+    "membership"
+  ],
+  "properties": {
+    "syncStatus": {
+      "type": "string",
+      "enum": [
+        "synchronized",
+        "pending"
+      ]
+    },
+    "membership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active",
+        "state",
+        "tier",
+        "planKey",
+        "expiresAt",
+        "autoRenew",
+        "source"
+      ],
+      "description": "App-scoped entitlement summary for the authenticated product account.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Whether the account currently has access to the app's membership benefits."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "free",
+            "active",
+            "cancelled",
+            "grace_period",
+            "expired"
+          ]
+        },
+        "tier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "plus",
+            "pro",
+            "max",
+            null
+          ],
+          "description": "Effective active membership tier for the app account."
+        },
+        "planKey": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "autoRenew": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "app_store",
+            "play_store",
+            "alipay",
+            "rc_web",
+            null
+          ]
+        },
+        "managementUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
+    }
+  }
+} as const;
+
+export type SyncData = {
+  "syncStatus": "synchronized" | "pending";
+  "membership": {
+  "active": boolean;
+  "state": "free" | "active" | "cancelled" | "grace_period" | "expired";
+  "tier": "plus" | "pro" | "max" | null;
+  "planKey": string | null;
+  "expiresAt": string | null;
+  "autoRenew": boolean | null;
+  "source": "app_store" | "play_store" | "alipay" | "rc_web" | null;
+  "managementUrl"?: string | null;
+};
+};
+
+export const SyncRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "type": "string",
+      "enum": [
+        "purchase",
+        "restore",
+        "app_start",
+        "retry"
+      ],
+      "description": "Non-authoritative client intent used for diagnostics only."
+    }
+  }
+} as const;
+
+export type SyncRequest = {
+  "reason"?: "purchase" | "restore" | "app_start" | "retry";
+};
+
+export const BillingProviderConflictDataSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "currentProvider",
+    "currentSource",
+    "expiresAt"
+  ],
+  "properties": {
+    "currentProvider": {
+      "type": "string",
+      "description": "Historical payment provider identifiers used by membership conflict records.",
+      "enum": [
+        "revenuecat",
+        "alipay"
+      ]
+    },
+    "currentSource": {
+      "type": "string",
+      "enum": [
+        "app_store",
+        "play_store",
+        "alipay",
+        "rc_web"
+      ]
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "managementUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    }
+  }
+} as const;
+
+export type BillingProviderConflictData = {
+  "currentProvider": "revenuecat" | "alipay";
+  "currentSource": "app_store" | "play_store" | "alipay" | "rc_web";
+  "expiresAt": string;
+  "managementUrl"?: string | null;
+};
+
+export const ErrorResponseSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "message",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "currentProvider",
+            "currentSource",
+            "expiresAt"
+          ],
+          "properties": {
+            "currentProvider": {
+              "type": "string",
+              "description": "Historical payment provider identifiers used by membership conflict records.",
+              "enum": [
+                "revenuecat",
+                "alipay"
+              ]
+            },
+            "currentSource": {
+              "type": "string",
+              "enum": [
+                "app_store",
+                "play_store",
+                "alipay",
+                "rc_web"
+              ]
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "managementUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type ErrorResponse = {
+  "code": string;
+  "message": string;
+  "data"?: {
+  "currentProvider": "revenuecat" | "alipay";
+  "currentSource": "app_store" | "play_store" | "alipay" | "rc_web";
+  "expiresAt": string;
+  "managementUrl"?: string | null;
+} | unknown;
+  "requestId": string;
 };
 
 export const AiNovelStatisticsDataSchema = {
@@ -20706,6 +22142,7 @@ export const GeneratedPublicContractNames = [
   "AINovelPublicConfig",
   "AccountDeletionData",
   "AccountDeletionRequest",
+  "AccountRegion",
   "AiNovelStatisticsData",
   "AiNovelStatisticsSnapshotRequest",
   "AiNovelStatisticsSnapshotResponse",
@@ -20714,6 +22151,15 @@ export const GeneratedPublicContractNames = [
   "AnalyticsEventInput",
   "AuthAcceptedData",
   "AuthSessionData",
+  "BillingCatalogProvider",
+  "BillingPlatform",
+  "BillingProduct",
+  "BillingProductKey",
+  "BillingProductProvider",
+  "BillingProvider",
+  "BillingProviderConflictData",
+  "BillingPublicConfig",
+  "BillingTier",
   "BodyLogAvatarKey",
   "BodyLogBlockListItem",
   "BodyLogChallengeCreateRequest",
@@ -20761,10 +22207,13 @@ export const GeneratedPublicContractNames = [
   "BuddyNotificationPreferencesRequest",
   "BuddySharingGrantUpdateRequest",
   "BuddyStructuredShareRequest",
+  "CatalogData",
   "ChangePasswordRequest",
   "CurrentUserData",
+  "DistributionChannel",
   "EmailCodeRequest",
   "EmailLoginRequest",
+  "ErrorResponse",
   "FileConfirmData",
   "FileConfirmRequest",
   "FilePresignData",
@@ -20928,6 +22377,8 @@ export const GeneratedPublicContractNames = [
   "LogPullTaskData",
   "LogUploadData",
   "LogoutRequest",
+  "MembershipInfo",
+  "Money",
   "NotificationQueuedData",
   "NotificationSendRequest",
   "OneClickLoginRequest",
@@ -20950,8 +22401,12 @@ export const GeneratedPublicContractNames = [
   "ReleaseVersion",
   "ResetPasswordBySmsRequest",
   "ResetPasswordRequest",
+  "RevenueCatPublicConfig",
   "SetPasswordRequest",
   "SmsCodeRequest",
   "SmsLoginRequest",
+  "SyncData",
+  "SyncRequest",
+  "SyncStatus",
   "UserSummary"
 ] as const;

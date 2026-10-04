@@ -49,6 +49,7 @@ export interface AppUserRecord {
   status: AppUserStatus;
   accountRegion: AccountRegion;
   joinedAt: string;
+  updatedAt?: string;
 }
 
 export interface RoleRecord {

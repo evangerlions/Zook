@@ -94,7 +94,7 @@ components:
           $ref: "#/components/schemas/CurrentUserData"
     CurrentUserData:
       type: object
-      required: [appId, accountRegion, user]
+      required: [appId, accountRegion, user, membership]
       properties:
         appId: { type: string }
         accountRegion:
@@ -102,6 +102,38 @@ components:
           enum: [CN, GLOBAL, UNKNOWN]
         user:
           $ref: "#/components/schemas/UserSummary"
+        membership:
+          $ref: "#/components/schemas/MembershipInfo"
+    MembershipInfo:
+      type: object
+      additionalProperties: false
+      required: [active, state, tier, planKey, expiresAt, autoRenew, source]
+      description: App-scoped entitlement summary for the authenticated product account.
+      properties:
+        active:
+          type: boolean
+          description: Whether the account currently has access to the app's membership benefits.
+        state:
+          type: string
+          enum: [free, active, cancelled, grace_period, expired]
+        tier:
+          type: [string, "null"]
+          enum: [plus, pro, max, null]
+          description: Effective active membership tier for the app account.
+        planKey:
+          type: [string, "null"]
+          minLength: 1
+        expiresAt:
+          type: [string, "null"]
+          format: date-time
+        autoRenew:
+          type: [boolean, "null"]
+        source:
+          type: [string, "null"]
+          enum: [app_store, play_store, alipay, rc_web, null]
+        managementUrl:
+          type: [string, "null"]
+          format: uri
     AccountDeletionRequest:
       type: object
       required: [appId, confirmation]

@@ -78,4 +78,14 @@ export interface CreateApplicationOptions {
   lighttickSeedEnabled?: boolean;
   /** Optional product-owned persistence adapter, primarily for deterministic tests. */
   lighttickRepository?: LightTickRepository;
+  /** RevenueCat server credentials; never returned to clients or included in logs. */
+  revenueCat?: {
+    secretApiKey?: string;
+    webhookAuthorization?: string;
+    appId?: string;
+    allowSandbox?: boolean;
+    fetcher?: typeof fetch;
+    timeoutMs?: number;
+    now?: () => Date;
+  };
 }

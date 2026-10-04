@@ -1,6 +1,14 @@
 apis:
   ainovel-client:
     root: ./openapi/ainovel/client.yaml
+  ainovel-billing:
+    root: ./openapi/ainovel/billing.yaml
+  ainovel-billing-provider:
+    root: ./openapi/ainovel/billing-provider.yaml
+  ainovel-billing-admin:
+    root: ./openapi/ainovel/billing-admin.yaml
+  ainovel-public-config:
+    root: ./openapi/ainovel/public-config.yaml
   common-auth:
     root: ./openapi/common/auth.yaml
 extends:

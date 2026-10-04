@@ -395,6 +395,16 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 需要 Admin 会话。可选 query：`invitation_id`、`status`、`limit`；`status` 仅接受 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed`、`dead_letter`。响应只包含 `invitation_id`、`recipient_masked`、投递/尝试状态、provider correlation ID、稳定错误码和时间戳，不返回完整邮箱、邀请码、token 或模板参数。每次读取都会写入 admin audit。
 
+### 3.14 AINovel Billing 订单
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/ai_novel/billing/orders` | 按用户、支付记录 ID、RevenueCat 交易号、平台、商店、状态和时间范围分页查询 AINovel 订单 |
+| `GET` | `/api/v1/admin/apps/ai_novel/billing/orders/{paymentId}` | 查看订单、当前会员投影、RevenueCat 交易与已持久化 webhook 时间线 |
+
+Billing 管理接口只读取 Zook 持久化 RevenueCat 交易 / webhook 记录，不读取 Docker stdout；当前要求已登录的 Admin session。现有 Admin session 尚未实现 endpoint 级 `billing:read` RBAC，因此此接口不宣称该权限已生效。每次读取写入 admin audit。订单列表每页最多 100 条，使用稳定 cursor；事件时间线也分页。支付金额只在已验证 RevenueCat webhook 提供金额与币种时保存，否则返回 `null` 并在 UI 显示 `—`。目前没有单独的 checkout、provider-order、entitlement-grant 台账，详情相应返回 `null` / 空数组；不读取或实现支付宝订单。删除账号后保留交易行，并以 `deletedAt` 标记关联账号删除。
+
+支付深度排查使用 API / Worker 的 Docker 结构化日志，通过 `appId`、`userId`、`paymentId`、`providerEventId` 和 `requestId` 串联完整流程；日志不作为订单事实来源。
 ## 4. 关联文档
 
 - [admin-web-design.md](admin-web-design.md)

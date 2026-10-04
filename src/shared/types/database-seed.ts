@@ -36,6 +36,11 @@ import type {
   UserRoleRecord,
 } from "./records.ts";
 import type { AiNovelConversationRecord } from "./ai-novel-conversation.ts";
+import type {
+  AiNovelBillingMembershipRecord,
+  AiNovelBillingTransactionRecord,
+  AiNovelBillingWebhookEventRecord,
+} from "./ainovel-billing.ts";
 import type { SmsVerificationRecord } from "./sms-verification.ts";
 
 export interface DatabaseSeed {
@@ -72,4 +77,7 @@ export interface DatabaseSeed {
   aiNovelStatisticsSnapshots?: AiNovelStatisticsSnapshotRecord[];
   aiNovelDailyStatistics?: AiNovelDailyStatisticsRecord[];
   aiNovelConversationRecords?: AiNovelConversationRecord[];
+  aiNovelBillingMemberships?: AiNovelBillingMembershipRecord[];
+  aiNovelBillingTransactions?: AiNovelBillingTransactionRecord[];
+  aiNovelBillingWebhookEvents?: AiNovelBillingWebhookEventRecord[];
 }

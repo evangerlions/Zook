@@ -11,3 +11,4 @@ export type * from "./types/getui-password-sms";
 export type * from "./types/llm";
 export type * from "./types/release-update";
 export type * from "./types/bodylog-admin";
+export type * from "./types/ainovel-billing-admin";

@@ -328,6 +328,33 @@ components:
           $ref: "#/components/schemas/KickoffPublicConfig"
         releaseUpdate:
           $ref: "#/components/schemas/PublicReleaseUpdateConfig"
+        billing:
+          $ref: "#/components/schemas/BillingPublicConfig"
+    BillingPublicConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        revenueCat:
+          $ref: "#/components/schemas/RevenueCatPublicConfig"
+    RevenueCatPublicConfig:
+      type: object
+      additionalProperties: false
+      required: [enabled, configVersion, proxyUrl, publicSdkKeys]
+      properties:
+        enabled: { type: boolean }
+        configVersion: { type: string, minLength: 1 }
+        proxyUrl:
+          type: [string, "null"]
+          format: uri
+          description: Optional RevenueCat SDK proxy URL. Must be applied before SDK setup.
+        publicSdkKeys:
+          type: object
+          additionalProperties: false
+          required: [ios, android, web]
+          properties:
+            ios: { type: [string, "null"], minLength: 1 }
+            android: { type: [string, "null"], minLength: 1 }
+            web: { type: [string, "null"], minLength: 1 }
     PublicConfigData:
       type: object
       required: [appId, config]
@@ -344,11 +371,4 @@ components:
         message: { type: string, example: success }
         requestId: { type: string }
         data:
-          type: object
-          required: [appId, config]
-          properties:
-            appId: { type: string, example: ai_novel }
-            config:
-              type: object
-              additionalProperties: true
-            updatedAt: { type: string, format: date-time }
+          $ref: "#/components/schemas/PublicConfigData"

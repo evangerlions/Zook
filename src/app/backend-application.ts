@@ -73,12 +73,20 @@ import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
 import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
+import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
 function resolveRuntimeVersion(rawVersion = process.env.APP_VERSION): string {
   const normalized = rawVersion?.trim();
   return normalized || DEFAULT_RUNTIME_VERSION;
+}
+
+function isRevenueCatBillingRequest(method: string, path: string): boolean {
+  return method === "POST" && (
+    path === "/api/v1/ai_novel/billing/sync" ||
+    path === "/api/v1/ai_novel/billing/webhooks/revenuecat"
+  );
 }
 
 /**
@@ -141,6 +149,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly validationPipe: ValidationPipe,
     private readonly commonTestAccountService: CommonTestAccountService,
     private readonly kvManager: KVManager,
+    private readonly aiNovelBillingService: AiNovelBillingService,
     private readonly frogsleepEnabled = false,
     private readonly lighttickEnabled = false,
     private readonly lighttickRuntime?: LightTickRuntime,
@@ -166,6 +175,7 @@ export class BackendApplication extends BackendRouteContext {
       kvManager,
       auditInterceptor,
       adminSensitiveOperationService,
+      aiNovelBillingService,
     );
   }
 
@@ -200,9 +210,13 @@ export class BackendApplication extends BackendRouteContext {
       }
     };
 
-    if (request.method === "GET" && request.path === "/api/health") {
+    if (
+      request.method === "GET" && request.path === "/api/health"
+    ) {
       return execute();
     }
+
+    if (isRevenueCatBillingRequest(request.method, request.path)) return execute();
 
     return this.database.withExclusiveSession(execute);
   }

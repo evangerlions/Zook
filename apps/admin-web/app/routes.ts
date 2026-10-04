@@ -14,6 +14,7 @@ export default [
     route("bodylog/groups", "routes/bodylog-groups.tsx"),
     route("bodylog/habit-templates", "routes/bodylog-habit-templates.tsx"),
     route("feedback", "routes/feedback.tsx"),
+    route("billing-orders", "routes/ainovel-billing-orders.tsx"),
     route("conversation-records", "routes/conversation-records.tsx"),
     route("conversation-history", "routes/conversation-history.tsx"),
     route("remote-log-pull", "routes/remote-log-pull.tsx"),

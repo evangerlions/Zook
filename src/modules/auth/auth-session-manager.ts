@@ -146,11 +146,16 @@ export class AuthSessionManager {
       command.userId,
     );
     return await this.database.withExclusiveSession(async () => {
-      await this.database.deleteAppUserRuntimeData(app.id, command.userId);
+      await this.database.deleteAppUserRuntimeData(
+        app.id,
+        command.userId,
+        now.toISOString(),
+      );
       await this.database.updateAppUserStatus(
         app.id,
         command.userId,
         "DELETED",
+        now.toISOString(),
       );
       const revokedSessions = await this.revokeAllSessions(
         app.id,

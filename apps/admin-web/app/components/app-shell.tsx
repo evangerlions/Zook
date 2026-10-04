@@ -24,6 +24,7 @@ const APP_WORKSPACES = [
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Model", code: "AIM", description: "配置 AINovel 文本模型权重" },
   { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
+  { to: "/billing-orders", label: "支付订单", code: "BIL", description: "查询 RevenueCat 订单与 webhook 状态" },
   { to: "/conversation-records", label: "对话追踪", code: "TRC", description: "local/dev 查看具体会话与上下文" },
   { to: "/conversation-history", label: "历史聊天", code: "HST", description: "查询已完成的用户聊天记录" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
@@ -62,6 +63,7 @@ function isAppProjectSpace(pathname: string) {
   return pathname === "/config"
     || pathname === "/ai-routing"
     || pathname === "/feedback"
+    || pathname === "/billing-orders"
     || pathname === "/conversation-records"
     || pathname === "/conversation-history"
     || pathname === "/lighttick"
@@ -116,6 +118,7 @@ export function AppShell() {
   const workspaceItems = appProjectSpace
     ? APP_WORKSPACES.filter((item) => item.to !== "/ai-routing" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/billing-orders" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/lighttick" || selectedApp?.appId === "lighttick")

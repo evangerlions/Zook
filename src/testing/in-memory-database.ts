@@ -3,6 +3,13 @@ import type {
   AnalyticsEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
+  AiNovelBillingAdminEventFilter,
+  AiNovelBillingAdminEventPage,
+  AiNovelBillingAdminOrderDetailFilter,
+  AiNovelBillingAdminOrderFilter,
+  AiNovelBillingMembershipRecord,
+  AiNovelBillingTransactionRecord,
+  AiNovelBillingWebhookEventRecord,
   AiOutputReactionRecord,
   AiOutputReportRecord,
   AppConfigRecord,
@@ -46,6 +53,7 @@ import type {
   UserRoleRecord,
   SmsVerificationRecord,
 } from "../shared/types.ts";
+
 import { assertValidFrogSleepBuddyDomainSlot } from "../modules/frogsleep/buddy-growth/buddy-domain-slot-validation.ts";
 import {
   normalizeFrogSleepBuddyDomainRelationship,
@@ -68,6 +76,7 @@ import {
 } from "../infrastructure/database/application-database.ts";
 import { InMemoryAiNovelStatisticsStore } from "./in-memory-ai-novel-statistics-store.ts";
 import { InMemoryAiNovelConversationStore } from "./in-memory-ai-novel-conversation-store.ts";
+import { InMemoryAiNovelBillingStore } from "./in-memory-ai-novel-billing-store.ts";
 import { InMemoryLlmObservabilityStore } from "./in-memory-llm-observability-store.ts";
 import { conflict } from "../shared/errors.ts";
 import type { AiNovelConversationRecord } from "../shared/types/ai-novel-conversation.ts";
@@ -103,6 +112,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();
   private readonly aiNovelStatistics: InMemoryAiNovelStatisticsStore;
+  private readonly aiNovelBillingStore: InMemoryAiNovelBillingStore;
   private readonly buddyCommandContext = new AsyncLocalStorage<Set<string>>();
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
@@ -168,6 +178,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
       snapshots: seed.aiNovelStatisticsSnapshots,
       dailyStatistics: seed.aiNovelDailyStatistics,
     });
+    this.aiNovelBillingStore = new InMemoryAiNovelBillingStore(seed);
     this.apps = structuredClone(seed.apps ?? []);
     this.users = structuredClone(seed.users ?? []);
     this.appUsers = structuredClone(seed.appUsers ?? []);
@@ -443,12 +454,14 @@ export class InMemoryDatabase extends ApplicationDatabase {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
+    updatedAt = new Date().toISOString(),
   ): AppUserRecord | undefined {
     const membership = this.findAppUser(appId, userId);
     if (!membership) {
       return undefined;
     }
     membership.status = status;
+    membership.updatedAt = updatedAt;
     return structuredClone(membership);
   }
 
@@ -465,7 +478,18 @@ export class InMemoryDatabase extends ApplicationDatabase {
     return structuredClone(membership);
   }
 
-  deleteAppUserRuntimeData(appId: string, userId: string): void {
+  deleteAppUserRuntimeData(
+    appId: string,
+    userId: string,
+    deletedAt = new Date().toISOString(),
+  ): void {
+    if (appId === "ai_novel") {
+      this.softDeleteAiNovelBillingAccount(
+        "ai_novel",
+        userId,
+        deletedAt,
+      );
+    }
     const uploadIds = this.clientLogUploads
       .filter((item) => item.appId === appId && item.userId === userId)
       .map((item) => item.id);
@@ -2082,6 +2106,67 @@ export class InMemoryDatabase extends ApplicationDatabase {
     dateTo?: string;
   }): AiNovelDailyStatisticsRecord[] {
     return this.aiNovelStatistics.listDailyStatistics(filter);
+  }
+
+  findAiNovelBillingMembership(
+    appId: "ai_novel",
+    userId: string,
+  ): AiNovelBillingMembershipRecord | undefined {
+    return this.aiNovelBillingStore.findMembership(appId, userId);
+  }
+
+  upsertAiNovelBillingMembership(record: AiNovelBillingMembershipRecord): void {
+    this.aiNovelBillingStore.upsertMembership(record);
+  }
+
+  upsertAiNovelBillingTransaction(record: AiNovelBillingTransactionRecord): void {
+    this.aiNovelBillingStore.upsertTransaction(record);
+  }
+
+  listAiNovelBillingTransactions(
+    appId: "ai_novel",
+    userId: string,
+  ): AiNovelBillingTransactionRecord[] {
+    return this.aiNovelBillingStore.listTransactions(appId, userId);
+  }
+
+  listAiNovelBillingAdminOrders(
+    filter: AiNovelBillingAdminOrderFilter,
+  ): AiNovelBillingTransactionRecord[] {
+    return this.aiNovelBillingStore.listAdminOrders(filter);
+  }
+
+  findAiNovelBillingAdminOrder(
+    filter: AiNovelBillingAdminOrderDetailFilter,
+  ): AiNovelBillingTransactionRecord | undefined {
+    return this.aiNovelBillingStore.findAdminOrder(filter);
+  }
+
+  listAiNovelBillingAdminEvents(
+    filter: AiNovelBillingAdminEventFilter,
+  ): AiNovelBillingAdminEventPage {
+    return this.aiNovelBillingStore.listAdminEvents(filter);
+  }
+
+  findAiNovelBillingWebhookEvent(
+    appId: "ai_novel",
+    eventId: string,
+  ): AiNovelBillingWebhookEventRecord | undefined {
+    return this.aiNovelBillingStore.findWebhookEvent(appId, eventId);
+  }
+
+  insertAiNovelBillingWebhookEvent(
+    record: AiNovelBillingWebhookEventRecord,
+  ): boolean {
+    return this.aiNovelBillingStore.insertWebhookEvent(record);
+  }
+
+  softDeleteAiNovelBillingAccount(
+    appId: "ai_novel",
+    userId: string,
+    deletedAt: string,
+  ): void {
+    this.aiNovelBillingStore.softDeleteAccount(appId, userId, deletedAt);
   }
 
   get seedManagedState(): ManagedStateSnapshot {

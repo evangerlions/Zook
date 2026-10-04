@@ -1,0 +1,175 @@
+openapi: 3.2.0
+info:
+  title: AINovel Billing Provider Callbacks
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: |
+    Provider-facing callbacks for AINovel billing. These endpoints are not
+    included in the Flutter client bundle. RevenueCat webhook events are
+    authenticated with the configured static Authorization header. The current
+    HTTP parser does not retain raw request bytes, so HMAC signature validation
+    is not supported; deployments must configure Authorization and must not
+    rely on HMAC-only verification.
+servers:
+  - url: https://api.zook.dev
+security: []
+tags:
+  - name: ainovel-billing-provider
+    description: Provider callbacks consumed by Zook.
+paths:
+  /api/v1/ai_novel/billing/webhooks/revenuecat:
+    post:
+      operationId: receiveAiNovelRevenueCatWebhook
+      summary: Receive a RevenueCat subscription event
+      description: |
+        RevenueCat sends a JSON envelope containing api_version and event.
+        Zook requires the configured static Authorization header, exact
+        configured RevenueCat app_id. Normal events resolve a known AINovel
+        account by exact app_user_id. TRANSFER events resolve known accounts
+        from transferred_from and transferred_to instead. Active users' events
+        trigger a fresh RevenueCat customer API lookup; only that allowlisted
+        customer snapshot updates membership. For a deleted account, Zook
+        retains verified transaction facts for finance/support without
+        fetching a membership snapshot or reactivating access.
+
+        Retries use the same event ID and must be idempotent. Events for an
+        unknown or blocked account are recorded as ignored. Unknown event types
+        are recorded as ignored after authentication; they must not be treated
+        as successful purchases.
+      tags: [ainovel-billing-provider]
+      parameters:
+        - $ref: "#/components/parameters/RevenueCatAuthorization"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevenueCatWebhookRequest"
+      responses:
+        "200":
+          description: Event accepted, recorded, or safely ignored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueCatWebhookResponse"
+        "400":
+          description: Invalid provider payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderErrorResponse"
+        "401":
+          description: Missing or invalid webhook Authorization header
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderErrorResponse"
+        "403":
+          description: RevenueCat app ID does not match configured AINovel app
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderErrorResponse"
+        "503":
+          description: Webhook credentials missing or RevenueCat lookup temporarily unavailable; provider may retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderErrorResponse"
+
+components:
+  parameters:
+    RevenueCatAuthorization:
+      name: Authorization
+      in: header
+      required: true
+      description: Exact static Authorization value configured in RevenueCat and REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION. Do not use HMAC-only configuration; Zook does not currently validate raw-body HMAC signatures.
+      schema:
+        type: string
+        minLength: 1
+  schemas:
+    RevenueCatWebhookResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          additionalProperties: false
+          required: [received, status]
+          properties:
+            received: { type: boolean, const: true }
+            status:
+              type: string
+              enum: [processed, ignored, duplicate]
+    ProviderErrorResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+        data: {}
+    RevenueCatWebhookRequest:
+      type: object
+      additionalProperties: true
+      required: [api_version, event]
+      properties:
+        api_version:
+          type: string
+          minLength: 1
+        event:
+          $ref: "#/components/schemas/RevenueCatEvent"
+    RevenueCatEvent:
+      type: object
+      additionalProperties: true
+      required: [id, type, app_id]
+      allOf:
+        - if:
+            properties:
+              type: { const: TRANSFER }
+          then:
+            required: [transferred_from, transferred_to]
+          else:
+            required: [app_user_id, store, environment]
+      properties:
+        id: { type: string, minLength: 1 }
+        type:
+          type: string
+          description: RevenueCat event type. Zook handles known types explicitly and records unknown types as ignored.
+        app_id: { type: string }
+        app_user_id: { type: string, minLength: 1 }
+        original_app_user_id: { type: string }
+        aliases:
+          type: array
+          items: { type: string, minLength: 1 }
+        transferred_from:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1 }
+        transferred_to:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1 }
+        store: { type: string, minLength: 1 }
+        environment:
+          type: string
+          enum: [PRODUCTION, SANDBOX]
+        product_id: { type: string }
+        transaction_id: { type: string }
+        original_transaction_id: { type: string }
+        purchased_at_ms: { type: integer, format: int64 }
+        event_timestamp_ms: { type: integer, format: int64 }
+        expiration_at_ms:
+          type: [integer, "null"]
+          format: int64
+        entitlement_ids:
+          type: array
+          items: { type: string, minLength: 1 }
+        cancel_reason: { type: string }
+        expiration_reason: { type: string }

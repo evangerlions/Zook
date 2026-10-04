@@ -18,6 +18,7 @@
 3. AINovel AI Model `ai_novel.model_selection`
 4. AINovel Feedback 用户反馈观测
 5. AINovel 对话记录查询
+6. AINovel RevenueCat 支付订单查询
 
 ---
 
@@ -30,6 +31,7 @@ Admin Web
 │   ├── 配置
 │   ├── AI Model（仅 ai_novel）
 │   ├── Feedback（仅 ai_novel）
+│   ├── 支付订单（仅 ai_novel）
 │   ├── 对话记录（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
@@ -43,6 +45,7 @@ Admin Web
     ├── /config -> App JSON 配置页
     ├── /ai-routing -> AINovel 文本模型权重配置页
     ├── /feedback -> AINovel App 内反馈与截图观测页
+    ├── /billing-orders -> AINovel RevenueCat 订单与 webhook 事件查询页
     ├── /conversation-records -> AINovel 用户/AI 对话记录页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
@@ -72,6 +75,7 @@ Admin Web
 4. `/config` 只服务于普通 App
 5. `/ai-routing` 目前只在 `appId = ai_novel` 时显示
 6. `/feedback` 目前只在 `appId = ai_novel` 时显示
+7. `/billing-orders` 目前只在 `appId = ai_novel` 时显示
 
 ---
 
@@ -160,7 +164,20 @@ Feedback 页挂在 `ai_novel` 工作区下，用于查看 AINovel 用户在 App 
 6. 每个模型请求都提供“查看原始 JSON”，不保存或展示服务端密钥。
 7. 页面使用 Trace API 的 JSON 内容协商响应；Trace API 仍只在 local/dev 生效，online 不请求也不展示 Trace 数据。
 
-### 4.7 LLM 页
+### 4.7 AINovel 支付订单页
+
+支付订单页挂在 `ai_novel` 工作区下，供财务记录查询与客服排查使用，不代替 Docker stdout 日志。
+
+交互原则：
+
+1. 只读展示已持久化的 RevenueCat 交易记录；当前覆盖 App Store 与 Google Play，不提供支付宝入口或订单操作。
+2. 支持按用户 ID、RevenueCat 交易 ID、平台、商店、状态和时间范围筛选，并以稳定 cursor 加载更多。
+3. 详情展示交易快照、当前 Zook 会员投影、账号软删除标记，以及关联且已持久化的 RevenueCat webhook 时间线。
+4. 金额 / 币种仅在 RevenueCat webhook 明确提供时保存；未知金额显示 `—`，不从目录标价推算用户实付。
+5. 当前没有独立的 checkout、provider order 或 entitlement grant 台账；这些字段保持空 / 空数组，并明确说明。完整逐步诊断仍使用 Docker stdout 结构化日志。
+6. 查询均要求 Admin session，写入 admin audit；事件只暴露 allowlist 字段，不暴露 webhook 原文、凭据或 receipt。
+
+### 4.8 LLM 页
 
 LLM 页挂在 `common` 工作区下，分成三个标签：
 

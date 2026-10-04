@@ -2,6 +2,13 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { Pool, type PoolClient } from "pg";
 import type {
   AnalyticsEventRecord,
+  AiNovelBillingMembershipRecord,
+  AiNovelBillingAdminEventFilter,
+  AiNovelBillingAdminEventPage,
+  AiNovelBillingAdminOrderDetailFilter,
+  AiNovelBillingAdminOrderFilter,
+  AiNovelBillingTransactionRecord,
+  AiNovelBillingWebhookEventRecord,
   AiNovelDailyStatisticsRecord,
   AiNovelStatisticsSnapshotRecord,
   AiOutputReactionRecord,
@@ -52,6 +59,7 @@ import { runPostgresMigrations } from "./migrate.ts";
 import { deletePostgresApp } from "./postgres-app-delete.ts";
 import { deletePostgresAppUserRuntimeData } from "./postgres-app-user-delete.ts";
 import { PostgresAiNovelStatisticsStore } from "./postgres-ai-novel-statistics.ts";
+import { PostgresAiNovelBillingStore } from "./postgres-ainovel-billing.ts";
 import { PostgresAiNovelConversationStore } from "./postgres-ai-novel-conversation.ts";
 import { PostgresAiOutputReportingStore } from "./postgres-ai-output-reporting.ts";
 import { PostgresAppUserStore } from "./postgres-app-users.ts";
@@ -99,6 +107,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly buddyCommandTransaction: PostgresBuddyCommandTransaction<PoolClient>;
   private readonly buddyDecisionSafetyTransaction: PostgresBuddyDecisionSafetyTransaction<PoolClient>;
   private readonly aiNovelStatistics: PostgresAiNovelStatisticsStore;
+  private readonly aiNovelBilling: PostgresAiNovelBillingStore;
   readonly aiNovelConversationStore: PostgresAiNovelConversationStore;
   private readonly aiOutputReporting: PostgresAiOutputReportingStore;
   private readonly operationalRecords: PostgresOperationalRecordsStore;
@@ -122,6 +131,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.buddyCommandTransaction = new PostgresBuddyCommandTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.buddyDecisionSafetyTransaction = new PostgresBuddyDecisionSafetyTransaction({ connect: async () => await this.pool.connect(), runWithClient: async (client, fn) => await this.sessionContext.run(client, fn) });
     this.aiNovelStatistics = new PostgresAiNovelStatisticsStore(async (sql, values = []) => await this.query(sql, values));
+    this.aiNovelBilling = new PostgresAiNovelBillingStore(async (sql, values = []) => await this.query(sql, values));
     this.aiNovelConversationStore = new PostgresAiNovelConversationStore(async (sql, values = []) => await this.query(sql, values));
     this.aiOutputReporting = new PostgresAiOutputReportingStore(async (sql, values = []) => await this.query(sql, values));
     this.operationalRecords = new PostgresOperationalRecordsStore(async (sql, values = []) => await this.query(sql, values));
@@ -249,8 +259,9 @@ export class PostgresDatabase extends ApplicationDatabase {
     appId: string,
     userId: string,
     status: AppUserRecord["status"],
+    updatedAt?: string,
   ): Promise<AppUserRecord | undefined> {
-    return await this.appUsers.updateStatus(appId, userId, status);
+    return await this.appUsers.updateStatus(appId, userId, status, updatedAt);
   }
   override async finalizeAppUserAccountRegion(
     appId: string,
@@ -259,7 +270,14 @@ export class PostgresDatabase extends ApplicationDatabase {
   ): Promise<AppUserRecord | undefined> {
     return await this.appUsers.finalizeAccountRegion(appId, userId, accountRegion);
   }
-  override async deleteAppUserRuntimeData(appId: string, userId: string): Promise<void> {
+  override async deleteAppUserRuntimeData(
+    appId: string,
+    userId: string,
+    deletedAt = new Date().toISOString(),
+  ): Promise<void> {
+    if (appId === "ai_novel") {
+      await this.aiNovelBilling.softDeleteAccount("ai_novel", userId, deletedAt);
+    }
     await deletePostgresAppUserRuntimeData(
       async (sql, values = []) => await this.query(sql, values),
       appId,
@@ -583,6 +601,16 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listAiNovelDailyStatistics(filter: { appId: string; userId: string; dateFrom?: string; dateTo?: string }): Promise<AiNovelDailyStatisticsRecord[]> {
     return await this.aiNovelStatistics.listDailyStatistics(filter);
   }
+  override async findAiNovelBillingMembership(appId: "ai_novel", userId: string): Promise<AiNovelBillingMembershipRecord | undefined> { return await this.aiNovelBilling.findMembership(appId, userId); }
+  override async upsertAiNovelBillingMembership(record: AiNovelBillingMembershipRecord): Promise<void> { await this.aiNovelBilling.upsertMembership(record); }
+  override async upsertAiNovelBillingTransaction(record: AiNovelBillingTransactionRecord): Promise<void> { await this.aiNovelBilling.upsertTransaction(record); }
+  override async listAiNovelBillingTransactions(appId: "ai_novel", userId: string): Promise<AiNovelBillingTransactionRecord[]> { return await this.aiNovelBilling.listTransactions(appId, userId); }
+  override async listAiNovelBillingAdminOrders(filter: AiNovelBillingAdminOrderFilter): Promise<AiNovelBillingTransactionRecord[]> { return await this.aiNovelBilling.listAdminOrders(filter); }
+  override async findAiNovelBillingAdminOrder(filter: AiNovelBillingAdminOrderDetailFilter): Promise<AiNovelBillingTransactionRecord | undefined> { return await this.aiNovelBilling.findAdminOrder(filter); }
+  override async listAiNovelBillingAdminEvents(filter: AiNovelBillingAdminEventFilter): Promise<AiNovelBillingAdminEventPage> { return await this.aiNovelBilling.listAdminEvents(filter); }
+  override async findAiNovelBillingWebhookEvent(appId: "ai_novel", eventId: string): Promise<AiNovelBillingWebhookEventRecord | undefined> { return await this.aiNovelBilling.findWebhookEvent(appId, eventId); }
+  override async insertAiNovelBillingWebhookEvent(record: AiNovelBillingWebhookEventRecord): Promise<boolean> { return await this.aiNovelBilling.insertWebhookEvent(record); }
+  override async softDeleteAiNovelBillingAccount(appId: "ai_novel", userId: string, deletedAt: string): Promise<void> { await this.aiNovelBilling.softDeleteAccount(appId, userId, deletedAt); }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);
   }
