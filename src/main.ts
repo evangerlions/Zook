@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { buildCorsHeaders, buildCorsPreflightHeaders, resolveCorsDecision } from "./infrastructure/http/cors.ts";
 import { resolveClientAddress } from "./infrastructure/http/client-ip.ts";
 import { readRequestBody } from "./infrastructure/http/request-body.ts";
+import { encodeHttpResponseBody } from "./infrastructure/http/response-body.ts";
 import { init } from "./infrastructure/runtime/init.ts";
 import { isTelemetryPath } from "./modules/telemetry/telemetry-gateway.ts";
 import type { TelemetryGatewayResponse } from "./modules/telemetry/telemetry-gateway-types.ts";
@@ -110,6 +111,7 @@ const server = createServer(async (request, response) => {
         Array.isArray(request.headers["content-type"])
           ? request.headers["content-type"][0]
           : request.headers["content-type"],
+        url.pathname === "/api/v1/ai_novel/billing/webhooks/alipay" ? 16 * 1024 : undefined,
       ),
       hostname: request.headers.host?.split(":")[0],
       ipAddress,
@@ -153,7 +155,7 @@ const server = createServer(async (request, response) => {
     }
 
     if (!response.destroyed && !response.writableEnded) {
-      response.end(JSON.stringify(handled.body));
+      response.end(handled.rawBody ?? encodeHttpResponseBody(handled.body, handled.contentType));
     }
   } catch (error) {
     if (

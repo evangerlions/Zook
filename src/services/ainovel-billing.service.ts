@@ -1,4 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
+import { AiNovelAlipayService } from "./ainovel-alipay.service.ts";
+import { refreshAlipayMembership } from "./ainovel-alipay-projection.ts";
+import { selectStoreMembership, storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
+import type { AlipayOptions } from "../modules/billing/alipay-models.ts";
 import { runBillingSync, type BillingSyncInput } from "./ainovel-billing-sync.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type {
@@ -42,10 +46,12 @@ const WEBHOOK_HANDLED_EVENTS = new Set([
 ]);
 
 export interface AiNovelBillingServiceOptions {
+  alipay?: AlipayOptions;
   secretApiKey?: string;
   revenueCatProjectId?: string;
   webhookAuthorization?: string;
   revenueCatAppId?: string;
+  revenueCatGoogleAppId?: string;
   allowSandbox?: boolean;
   fetcher?: typeof fetch;
   timeoutMs?: number;
@@ -58,6 +64,7 @@ export interface AiNovelBillingSyncResult {
 }
 
 export class AiNovelBillingService {
+  readonly alipay: AiNovelAlipayService;
   private readonly customerApi: RevenueCatCustomerApi;
   private readonly now: () => Date;
 
@@ -70,6 +77,7 @@ export class AiNovelBillingService {
       secretApiKey: options.secretApiKey,
       projectId: options.revenueCatProjectId,
       appId: options.revenueCatAppId,
+      googleAppId: options.revenueCatGoogleAppId,
       fetcher: options.fetcher,
       timeoutMs: options.timeoutMs ?? REVENUECAT_SYNC_TIMEOUT_MS,
       logger,
@@ -77,16 +85,19 @@ export class AiNovelBillingService {
     });
     this.webhookAuthorization = options.webhookAuthorization?.trim();
     this.revenueCatAppId = options.revenueCatAppId?.trim();
+    this.revenueCatGoogleAppId = options.revenueCatGoogleAppId?.trim();
     this.allowSandbox = options.allowSandbox ?? false;
     this.now = options.now ?? (() => new Date());
+    this.alipay = new AiNovelAlipayService(database, options.alipay ?? {}, user => this.getMembership(user), logger);
   }
 
   private readonly webhookAuthorization: string | undefined;
   private readonly revenueCatAppId: string | undefined;
+  private readonly revenueCatGoogleAppId: string | undefined;
   private readonly allowSandbox: boolean;
 
   async getMembership(userId: string): Promise<AiNovelBillingMembershipInfo> {
-    const record = await this.database.findAiNovelBillingMembership(APP_ID, userId);
+    const record = await this.database.withExclusiveSession(() => refreshAlipayMembership(this.database, userId, this.now()));
     if (!record || record.accountDeletedAt) return buildEmptyMembershipInfo();
     return toMembershipInfo(record, this.now());
   }
@@ -118,7 +129,9 @@ export class AiNovelBillingService {
 
     const event = readWebhookEvent(input.request.body);
     this.logWebhook(input.requestId, event, "processing");
-    if (event.appId !== this.revenueCatAppId) {
+    const configuredApps = [this.revenueCatAppId, this.revenueCatGoogleAppId].filter(Boolean);
+    const expectedAppId = event.store === "PLAY_STORE" ? this.revenueCatGoogleAppId : this.revenueCatAppId;
+    if (!configuredApps.includes(event.appId) || (SUPPORTED_STORES.has(event.store) && event.appId !== expectedAppId)) {
       this.logWebhook(input.requestId, event, "app_mismatch");
       throw new ApplicationError(403, "BILLING_WEBHOOK_APP_MISMATCH", "Webhook app ID is not configured for AINovel.");
     }
@@ -311,7 +324,7 @@ export class AiNovelBillingService {
           snapshot.membership.userId,
         );
         if (currentUser?.status === "ACTIVE") {
-          await this.writeSnapshot(snapshot);
+          await this.writeSnapshot(snapshot, event.transferredFrom.includes(snapshot.membership.userId));
         }
       }
       return "processed";
@@ -360,7 +373,7 @@ export class AiNovelBillingService {
     });
   }
 
-  private async writeSnapshot(snapshot: NormalizedRevenueCatSnapshot): Promise<void> {
+  private async writeSnapshot(snapshot: NormalizedRevenueCatSnapshot, transferredAway = false): Promise<void> {
     if (snapshot.hasActiveUnverifiedEnvironmentEntitlement) {
       this.logger.warn("ainovel billing snapshot deferred for unverified store environment", {
         appId: APP_ID,
@@ -372,7 +385,13 @@ export class AiNovelBillingService {
     }
     const current = await this.database.findAiNovelBillingMembership(APP_ID, snapshot.membership.userId);
     if (current?.accountDeletedAt) return;
-    await this.database.upsertAiNovelBillingMembership(snapshot.membership);
+    const effective = current?.source === "alipay" ? await refreshAlipayMembership(this.database, snapshot.membership.userId, this.now()) : current;
+    const selected = selectStoreMembership(snapshot, effective, this.now(), transferredAway);
+    if (storeSnapshotConflicts(snapshot, selected)) this.logger.warn("ainovel billing cross-channel payment conflict", {
+      appId: APP_ID, userId: snapshot.membership.userId, provider: "revenuecat",
+      status: "provider_conflict", activeSource: selected.source, incomingSource: snapshot.membership.source,
+    });
+    if (selected !== effective) await this.database.upsertAiNovelBillingMembership(selected);
     for (const transaction of snapshot.transactions) {
       await this.database.upsertAiNovelBillingTransaction(transaction);
     }
@@ -403,7 +422,7 @@ export class AiNovelBillingService {
   }
 
   private assertWebhookConfigured(): void {
-    if (!this.webhookAuthorization || !this.revenueCatAppId) {
+    if (!this.webhookAuthorization || (!this.revenueCatAppId && !this.revenueCatGoogleAppId)) {
       throw new ApplicationError(503, "BILLING_WEBHOOK_NOT_CONFIGURED", "RevenueCat webhook is not configured.");
     }
   }

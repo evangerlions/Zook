@@ -1,4 +1,7 @@
-export type AiNovelBillingOrderStatus =
+export type BillingOrderStatus =
+  | "pending"
+  | "closed"
+  | "failed"
   | "provider_paid"
   | "entitlement_active"
   | "expired"
@@ -6,8 +9,8 @@ export type AiNovelBillingOrderStatus =
   | "revoked"
   | "unknown";
 
-export type AiNovelBillingPaymentStatus = "provider_paid" | "refunded" | "unknown";
-export type AiNovelBillingEntitlementStatus =
+export type BillingPaymentStatus = "provider_paid" | "refunded" | "unknown" | "pending" | "closed" | "failed";
+export type BillingEntitlementStatus =
   | "active"
   | "cancelled"
   | "grace_period"
@@ -17,12 +20,12 @@ export type AiNovelBillingEntitlementStatus =
 
 export interface AdminBillingOrder {
   paymentId: string;
-  appId: "ai_novel";
+  appId: string;
   userId: string;
-  accountRegion: "UNKNOWN";
-  platform: "ios" | "android" | "macos" | null;
-  distribution: "app_store" | "google_play";
-  provider: "revenuecat";
+  accountRegion: "UNKNOWN" | "CN";
+  platform: "ios" | "android" | "macos" | "web" | "windows" | null;
+  distribution: "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
+  provider: "revenuecat" | "alipay";
   productKey: string;
   entitlementKey: string;
   tier: string;
@@ -30,10 +33,12 @@ export interface AdminBillingOrder {
   purchaseSource: string;
   amountMinor: number | null;
   currency: string | null;
-  paymentStatus: AiNovelBillingPaymentStatus;
-  entitlementStatus: AiNovelBillingEntitlementStatus;
+  paymentStatus: BillingPaymentStatus;
+  entitlementStatus: BillingEntitlementStatus;
   providerProductId: string;
   providerTransactionId: string;
+  providerOrderId?: string | null;
+  checkoutId?: string | null;
   environment: "PRODUCTION" | "SANDBOX" | null;
   paidAt: string | null;
   expiresAt: string | null;
@@ -76,7 +81,7 @@ export interface AdminBillingOrderDetail {
     transactionId: string;
     transactionKind: "purchase" | "renewal" | "refund" | "revoke";
     providerTransactionId: string;
-  status: AiNovelBillingPaymentStatus;
+  status: BillingPaymentStatus;
     amountMinor: number | null;
     refundAmountMinor: number | null;
     currency: string | null;

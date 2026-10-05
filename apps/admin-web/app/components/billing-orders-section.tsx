@@ -15,7 +15,7 @@ import {
   Typography,
 } from "antd";
 import type { Dayjs } from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { adminApi } from "../lib/admin-api";
 import { useAdminSession } from "../lib/admin-session";
@@ -25,38 +25,38 @@ import {
   billingStatusLabel,
   BILLING_STATUS_OPTIONS,
   formatBillingMoney,
-} from "../lib/ainovel-billing";
+} from "../lib/billing-format";
 import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
 import type {
   AdminBillingEvent,
   AdminBillingOrder,
   AdminBillingOrderDetail,
   AdminBillingOrderPage,
-  AiNovelBillingOrderStatus,
+  BillingOrderStatus,
 } from "../lib/types";
 
-const AI_NOVEL_APP_ID = "ai_novel";
-
 interface BillingFilters {
+  provider?: "revenuecat" | "alipay";
   userId?: string;
   providerTransactionId?: string;
   platform?: string;
   distribution?: string;
-  status?: AiNovelBillingOrderStatus;
+  status?: BillingOrderStatus;
   createdFrom?: string;
   createdTo?: string;
 }
 
-export default function AiNovelBillingOrdersRoute() {
-  const { apps, selectedAppId, completeWorkspaceTransition, setNotice } = useAdminSession();
-  const aiNovelApp = apps.find((app) => app.appId === AI_NOVEL_APP_ID);
-  const selectedApp = apps.find((app) => app.appId === selectedAppId);
+export function BillingOrdersSection({ appId }: { appId: string }) {
+  const { setNotice } = useAdminSession();
+  const ordersRequest = useRef(0);
+  const detailRequest = useRef(0);
   const [filters, setFilters] = useState<BillingFilters>({});
   const [userId, setUserId] = useState("");
   const [transactionId, setTransactionId] = useState("");
+  const [provider, setProvider] = useState<"revenuecat" | "alipay">();
   const [platform, setPlatform] = useState<string>();
   const [distribution, setDistribution] = useState<string>();
-  const [status, setStatus] = useState<AiNovelBillingOrderStatus>();
+  const [status, setStatus] = useState<BillingOrderStatus>();
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [page, setPage] = useState<AdminBillingOrderPage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -66,38 +66,34 @@ export default function AiNovelBillingOrdersRoute() {
   const [eventsLoading, setEventsLoading] = useState(false);
 
   async function loadOrders(nextFilters: BillingFilters, append = false, cursor?: string) {
-    if (selectedAppId !== AI_NOVEL_APP_ID) {
-      setPage(null);
-      completeWorkspaceTransition();
-      return;
-    }
+    const request = ++ordersRequest.current;
+    // A replacement query must not retain rows or a cursor from the previous filters,
+    // including when the replacement request fails.
+    if (!append) setPage(null);
     setLoading(true);
     try {
-      const result = await adminApi.getAiNovelBillingOrders({ ...nextFilters, limit: 50, cursor });
+      const result = await adminApi.getBillingOrders({ ...nextFilters, appId, limit: 50, cursor });
+      if (request !== ordersRequest.current) return;
       setPage((current) => append && current
         ? { items: [...current.items, ...result.items], nextCursor: result.nextCursor }
         : result);
     } catch (error) {
-      setNotice(makeNotice("error", formatApiError(error)));
+      if (request === ordersRequest.current) setNotice(makeNotice("error", formatApiError(error)));
     } finally {
-      setLoading(false);
-      completeWorkspaceTransition();
+      if (request === ordersRequest.current) setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (selectedAppId !== AI_NOVEL_APP_ID) {
-      setPage(null);
-      completeWorkspaceTransition();
-      return;
-    }
     void loadOrders(filters);
-  }, [selectedAppId]);
+    return () => { ordersRequest.current++; detailRequest.current++; };
+  }, [appId]);
 
   function applyFilters() {
     const nextFilters: BillingFilters = {
       userId: userId.trim() || undefined,
       providerTransactionId: transactionId.trim() || undefined,
+      provider,
       platform,
       distribution,
       status,
@@ -111,6 +107,7 @@ export default function AiNovelBillingOrdersRoute() {
   function clearFilters() {
     setUserId("");
     setTransactionId("");
+    setProvider(undefined);
     setPlatform(undefined);
     setDistribution(undefined);
     setStatus(undefined);
@@ -120,43 +117,41 @@ export default function AiNovelBillingOrdersRoute() {
   }
 
   async function openOrder(order: AdminBillingOrder) {
+    const request = ++detailRequest.current;
     setSelectedOrder(order);
     setDetail(null);
     setDetailLoading(true);
     try {
-      setDetail(await adminApi.getAiNovelBillingOrder(order.paymentId, { eventsLimit: 50 }));
+      const result = await adminApi.getBillingOrder(order.paymentId, { appId: order.appId, eventsLimit: 50 });
+      if (request === detailRequest.current) setDetail(result);
     } catch (error) {
-      setNotice(makeNotice("error", formatApiError(error)));
+      if (request === detailRequest.current) setNotice(makeNotice("error", formatApiError(error)));
     } finally {
-      setDetailLoading(false);
+      if (request === detailRequest.current) setDetailLoading(false);
     }
   }
 
   async function loadOlderEvents() {
     if (!detail || !selectedOrder?.paymentId || !detail.eventsNextCursor) return;
     setEventsLoading(true);
+    const request = detailRequest.current;
     try {
-      const next = await adminApi.getAiNovelBillingOrder(selectedOrder.paymentId, {
+      const next = await adminApi.getBillingOrder(selectedOrder.paymentId, {
+        appId: selectedOrder.appId,
         eventsCursor: detail.eventsNextCursor,
         eventsLimit: 50,
       });
+      if (request !== detailRequest.current) return;
       setDetail((current) => current ? {
         ...current,
         events: [...current.events, ...next.events],
         eventsNextCursor: next.eventsNextCursor,
       } : current);
     } catch (error) {
-      setNotice(makeNotice("error", formatApiError(error)));
+      if (request === detailRequest.current) setNotice(makeNotice("error", formatApiError(error)));
     } finally {
-      setEventsLoading(false);
+      if (request === detailRequest.current) setEventsLoading(false);
     }
-  }
-
-  if (!aiNovelApp) {
-    return <section className="empty-state">当前工作区中还没有 `ai_novel` 项目，暂时无法查看支付订单。</section>;
-  }
-  if (selectedApp?.appId !== AI_NOVEL_APP_ID) {
-    return <section className="empty-state">支付订单仅适用于 `ai_novel`。请先切换到该项目空间。</section>;
   }
 
   return (
@@ -164,7 +159,7 @@ export default function AiNovelBillingOrdersRoute() {
       <header className="page-header">
         <div>
           <h1>支付订单</h1>
-          <p>查看 Zook 已持久化的 RevenueCat 交易快照与已验证 webhook 事件；Docker stdout 日志仍用于全流程 deep-dive。</p>
+          <p>查看 Zook 已持久化的商店交易、支付宝订单与已验证支付事件；Docker stdout 日志用于全流程排查。</p>
         </div>
         <Button icon={<ReloadOutlined />} loading={loading} onClick={() => void loadOrders(filters)}>刷新</Button>
       </header>
@@ -172,7 +167,7 @@ export default function AiNovelBillingOrdersRoute() {
       <Alert
         showIcon
         type="info"
-        message="当前只展示 App Store / Google Play 经 RevenueCat 记录的交易。缺少供应商金额时显示“—”；当前系统未持久化独立 checkout、支付宝或 grant ledger。"
+        message="商店支付展示 RevenueCat 交易，支付宝展示已创建的订单（包括未付款和关闭）。金额不明时显示“—”；订单金额不等于已收款金额，请结合支付状态查看。"
       />
 
       <section className="surface-card">
@@ -186,12 +181,21 @@ export default function AiNovelBillingOrdersRoute() {
             style={{ width: 190 }}
           />
           <Input
-            aria-label="RevenueCat 交易 ID"
+            aria-label="供应商交易 ID"
             onChange={(event) => setTransactionId(event.target.value)}
             onPressEnter={applyFilters}
-            placeholder="RevenueCat 交易 ID"
+            placeholder="供应商交易 ID"
             value={transactionId}
             style={{ width: 220 }}
+          />
+          <Select
+            allowClear
+            aria-label="支付渠道"
+            onChange={setProvider}
+            options={[{ value: "revenuecat", label: "RevenueCat" }, { value: "alipay", label: "支付宝" }]}
+            placeholder="支付渠道"
+            style={{ width: 150 }}
+            value={provider}
           />
           <Select
             allowClear
@@ -201,6 +205,8 @@ export default function AiNovelBillingOrdersRoute() {
               { value: "ios", label: "iOS" },
               { value: "android", label: "Android" },
               { value: "macos", label: "macOS" },
+              { value: "web", label: "Web" },
+              { value: "windows", label: "Windows" },
             ]}
             placeholder="平台"
             style={{ width: 130 }}
@@ -213,6 +219,10 @@ export default function AiNovelBillingOrdersRoute() {
             options={[
               { value: "app_store", label: "App Store" },
               { value: "google_play", label: "Google Play" },
+              { value: "china_android_store", label: "国内 Android 商店" },
+              { value: "direct_android", label: "Android 官方包" },
+              { value: "web", label: "Web" },
+              { value: "windows", label: "Windows" },
             ]}
             placeholder="商店"
             style={{ width: 150 }}
@@ -221,7 +231,7 @@ export default function AiNovelBillingOrdersRoute() {
           <Select
             allowClear
             aria-label="订单状态"
-            onChange={(value) => setStatus(value as AiNovelBillingOrderStatus | undefined)}
+            onChange={(value) => setStatus(value as BillingOrderStatus | undefined)}
             options={BILLING_STATUS_OPTIONS}
             placeholder="订单状态"
             style={{ width: 145 }}
@@ -244,6 +254,7 @@ export default function AiNovelBillingOrdersRoute() {
               render: (_, order) => <Space direction="vertical" size={0}><strong>{billingProductLabel(order)}</strong><Typography.Text type="secondary">{order.productKey}</Typography.Text></Space>,
             },
             { title: "平台", dataIndex: "platform", width: 100, render: (value) => value ?? "—" },
+            { title: "渠道", dataIndex: "provider", width: 115, render: (value) => value === "alipay" ? "支付宝" : "RevenueCat" },
             { title: "交易金额", width: 135, render: (_, order) => formatBillingMoney(order.amountMinor, order.currency) },
             {
               title: "状态",
@@ -275,7 +286,7 @@ export default function AiNovelBillingOrdersRoute() {
 
       <Drawer
         destroyOnClose
-        onClose={() => setSelectedOrder(null)}
+        onClose={() => { detailRequest.current++; setSelectedOrder(null); setEventsLoading(false); }}
         open={selectedOrder !== null}
         size="large"
         title="支付订单详情"
@@ -285,7 +296,7 @@ export default function AiNovelBillingOrdersRoute() {
             <Descriptions bordered column={2} size="small" title="订单">
               <Descriptions.Item label="支付记录 ID">{detail.order.paymentId}</Descriptions.Item>
               <Descriptions.Item label="用户 ID">{detail.order.userId}</Descriptions.Item>
-              <Descriptions.Item label="支付平台">RevenueCat · {detail.order.platform ?? "未知平台"}</Descriptions.Item>
+              <Descriptions.Item label="支付平台">{detail.order.provider === "alipay" ? "支付宝" : "RevenueCat"} · {detail.order.platform ?? "未知平台"}</Descriptions.Item>
               <Descriptions.Item label="商店">{detail.order.distribution}</Descriptions.Item>
               <Descriptions.Item label="商品">{detail.order.productKey}</Descriptions.Item>
               <Descriptions.Item label="金额">{formatBillingMoney(detail.order.amountMinor, detail.order.currency)}</Descriptions.Item>
@@ -295,7 +306,11 @@ export default function AiNovelBillingOrdersRoute() {
               <Descriptions.Item label="购买时间">{formatTimestamp(detail.order.paidAt ?? undefined)}</Descriptions.Item>
               <Descriptions.Item label="到期时间">{formatTimestamp(detail.order.expiresAt ?? undefined)}</Descriptions.Item>
               <Descriptions.Item label="账号删除标记">{formatTimestamp(detail.order.deletedAt ?? undefined)}</Descriptions.Item>
-              <Descriptions.Item label="RevenueCat 交易 ID" span={2}>{detail.order.providerTransactionId}</Descriptions.Item>
+              <Descriptions.Item label="供应商交易 ID" span={2}>{detail.order.providerTransactionId}</Descriptions.Item>
+              {detail.order.provider === "alipay" && <>
+                <Descriptions.Item label="支付宝交易号" span={2}>{detail.order.providerOrderId ?? "—"}</Descriptions.Item>
+                <Descriptions.Item label="支付订单 ID" span={2}>{detail.order.checkoutId ?? "—"}</Descriptions.Item>
+              </>}
             </Descriptions>
 
             <Descriptions bordered column={2} size="small" title="当前会员状态">
@@ -321,8 +336,8 @@ export default function AiNovelBillingOrdersRoute() {
             </section>
 
             <section>
-              <h3>RevenueCat Webhook 时间线</h3>
-              {detail.events.length ? <Timeline items={detail.events.map(eventTimelineItem)} /> : <Empty description="没有与此交易关联的 webhook 事件" />}
+              <h3>支付事件时间线</h3>
+              {detail.events.length ? <Timeline items={detail.events.map(eventTimelineItem)} /> : <Empty description="没有与此订单关联的支付事件" />}
               {detail.eventsNextCursor ? <Button loading={eventsLoading} onClick={() => void loadOlderEvents()}>加载更早事件</Button> : null}
             </section>
             <Alert showIcon type="info" message="权益当前以 Zook 会员状态快照为准；目前没有单独的 entitlement grant 台账。Webhook 时间线只显示已持久化的事件元数据，不包含原始 payload。" />

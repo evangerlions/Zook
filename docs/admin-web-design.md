@@ -31,7 +31,7 @@ Admin Web
 │   ├── 配置
 │   ├── AI Model（仅 ai_novel）
 │   ├── Feedback（仅 ai_novel）
-│   ├── 支付订单（仅 ai_novel）
+│   ├── 会员与支付（Server，页面内筛选 App）
 │   ├── 对话记录（仅 ai_novel）
 │   ├── 邮件服务
 │   └── LLM
@@ -45,7 +45,7 @@ Admin Web
     ├── /config -> App JSON 配置页
     ├── /ai-routing -> AINovel 文本模型权重配置页
     ├── /feedback -> AINovel App 内反馈与截图观测页
-    ├── /billing-orders -> AINovel RevenueCat 订单与 webhook 事件查询页
+    ├── /billing -> Server 会员、收入概览、支付记录与 webhook 事件查询页
     ├── /conversation-records -> AINovel 用户/AI 对话记录页
     ├── /mail   -> Common 邮件服务页
     └── /llm    -> Common LLM 配置与监控页
@@ -75,7 +75,7 @@ Admin Web
 4. `/config` 只服务于普通 App
 5. `/ai-routing` 目前只在 `appId = ai_novel` 时显示
 6. `/feedback` 目前只在 `appId = ai_novel` 时显示
-7. `/billing-orders` 目前只在 `appId = ai_novel` 时显示
+7. `/billing` 属于 Server，页面内可筛选全部已接入应用或指定 App；首期 AINovel 已接入，其余应用显示未接入
 
 ---
 

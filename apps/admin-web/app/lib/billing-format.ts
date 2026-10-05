@@ -1,6 +1,9 @@
-import type { AdminBillingOrder, AiNovelBillingOrderStatus } from "./types";
+import type { AdminBillingOrder, BillingOrderStatus } from "./types";
 
-export const BILLING_STATUS_OPTIONS: Array<{ value: AiNovelBillingOrderStatus; label: string }> = [
+export const BILLING_STATUS_OPTIONS: Array<{ value: BillingOrderStatus; label: string }> = [
+  { value: "pending", label: "待付款" },
+  { value: "closed", label: "已关闭" },
+  { value: "failed", label: "失败" },
   { value: "entitlement_active", label: "会员有效" },
   { value: "provider_paid", label: "已支付" },
   { value: "expired", label: "已过期" },

@@ -1,7 +1,7 @@
 export type AiNovelBillingState = "free" | "active" | "cancelled" | "grace_period" | "expired";
-export type AiNovelBillingSource = "app_store" | "play_store";
+export type AiNovelBillingSource = "app_store" | "play_store" | "alipay";
 export type AiNovelBillingTier = "plus" | "pro";
-export type AiNovelBillingPlatform = "ios" | "android" | "macos";
+export type AiNovelBillingPlatform = "ios" | "android" | "macos" | "web" | "windows";
 
 export interface AiNovelBillingMembershipInfo {
   active: boolean;
@@ -27,13 +27,20 @@ export type AiNovelBillingTransactionStatus =
   | "expired"
   | "refunded"
   | "revoked"
+  | "pending"
+  | "closed"
+  | "failed"
   | "unknown";
 
 export interface AiNovelBillingTransactionRecord {
   appId: "ai_novel";
   userId: string;
-  provider: "revenuecat";
+  provider: "revenuecat" | "alipay";
   providerTransactionId: string;
+  createdAt?: string;
+  providerOrderId?: string | null;
+  checkoutId?: string | null;
+  distribution?: "china_android_store" | "direct_android" | "web" | "windows" | null;
   productId: string;
   productKey: string;
   source: AiNovelBillingSource;

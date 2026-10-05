@@ -3,6 +3,7 @@ import type { NormalizedRevenueCatSnapshot } from "../modules/billing/ainovel-re
 import type { AiNovelBillingMembershipInfo } from "../shared/types.ts";
 import type { AiNovelBillingSyncResult } from "./ainovel-billing.service.ts";
 import { RevenueCatApiError } from "./ainovel-revenuecat-client.ts";
+import { storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
 
 export interface BillingSyncInput {
   userId: string;
@@ -61,12 +62,13 @@ export async function runBillingSync(input: BillingSyncInput,
       });
     }
     const membership = await getMembership();
+    const syncStatus = storeSnapshotConflicts(snapshot, membership) ? "pending" : "synchronized";
     logger.info("ainovel billing sync completed", {
-      ...context, status: "synchronized", durationMs: durationMs(),
+      ...context, status: syncStatus, durationMs: durationMs(),
       productKey: membership.planKey ?? undefined, membershipState: membership.state,
       transactionCount: snapshot.transactions.length,
     });
-    return { syncStatus: "synchronized", membership };
+    return { syncStatus, membership };
   } catch (error) {
     logger.error("ainovel billing persistence failed", {
       ...context, status: "failed", failureReason: "database_error", durationMs: durationMs(),

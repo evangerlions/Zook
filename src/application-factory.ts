@@ -80,6 +80,7 @@ import { NoopRegistrationEmailSender, TencentSesRegistrationEmailSender } from "
 import { NoopSmsVerificationSender, TencentSmsVerificationSender } from "./services/tencent-sms-verification.service.ts";
 import { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { AiNovelBillingService } from "./services/ainovel-billing.service.ts";
+import { alipayEnvironmentOptions } from "./services/ainovel-alipay-gateway.ts";
 import { BackendApplication } from "./app/backend-application.ts";
 import { createApplicationAiRuntime } from "./application-ai-runtime.ts";
 import { resolveRuntimeLlmProviderKeys } from "./application-llm-provider-keys.ts";
@@ -162,10 +163,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     sinks: localRunFileLogSink ? [localRunFileLogSink.sink] : [],
   });
   const aiNovelBillingService = new AiNovelBillingService(database, {
+    alipay: options.alipay ?? alipayEnvironmentOptions(),
     secretApiKey: options.revenueCat?.secretApiKey ?? process.env.REVENUECAT_AI_NOVEL_SECRET_API_KEY,
     revenueCatProjectId: options.revenueCat?.projectId ?? process.env.REVENUECAT_AI_NOVEL_PROJECT_ID,
     webhookAuthorization: options.revenueCat?.webhookAuthorization ?? process.env.REVENUECAT_AI_NOVEL_WEBHOOK_AUTHORIZATION,
     revenueCatAppId: options.revenueCat?.appId ?? process.env.REVENUECAT_AI_NOVEL_APP_ID,
+    revenueCatGoogleAppId: options.revenueCat?.googleAppId ?? process.env.REVENUECAT_AI_NOVEL_GOOGLE_APP_ID,
     allowSandbox: options.revenueCat?.allowSandbox ??
       process.env.REVENUECAT_AI_NOVEL_ALLOW_SANDBOX === "true",
     fetcher: options.revenueCat?.fetcher,

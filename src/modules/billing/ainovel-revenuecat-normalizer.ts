@@ -1,9 +1,12 @@
 import type { AiNovelBillingMembershipInfo, AiNovelBillingMembershipRecord, AiNovelBillingTransactionRecord } from "../../shared/types.ts";
 import { isObject, type RevenueCatSnapshot, type RevenueCatSubscriptionEvidence } from "../../services/ainovel-revenuecat-types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
+import { billingProductKey } from "./ainovel-store-products.ts";
 import { PRODUCTS, parseDate, nullableString, safeManagementUrl, sourceFromStore, platformFromStore, validCurrency, toMinorUnits } from "./ainovel-billing-values.ts";
 
 export interface NormalizedRevenueCatSnapshot {
+  activeMemberships?: AiNovelBillingMembershipInfo[];
+  observedMemberships?: AiNovelBillingMembershipInfo[];
   membership: AiNovelBillingMembershipRecord;
   transactions: AiNovelBillingTransactionRecord[];
   ignoredEntitlementCount: number;
@@ -28,7 +31,8 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
   for (const evidence of payload.subscriptions) {
     const { subscription: sub, product, entitlements } = evidence;
     const productId = nullableString(product.store_identifier);
-    const definition = productId ? PRODUCTS[productId] : undefined;
+    const productKey = billingProductKey(sub.store, productId);
+    const definition = productKey ? PRODUCTS[productKey] : undefined;
     const source = sourceFromStore(sub.store);
     if (!definition || !source || !productId) { ignoredProductCount++; continue; }
     const matches = entitlements.filter(e => e.lookup_key === REVENUECAT_ENTITLEMENT_IDS[definition.tier]);
@@ -60,7 +64,7 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
     if (info.active) {
       info.state = sub.status === "in_grace_period" ? "grace_period" : renewable === false ? "cancelled" : "active";
       info.tier = definition.tier;
-      info.planKey = productId;
+      info.planKey = productKey!;
       candidates.push({ rank: definition.rank, info });
     } else ignoredEntitlementCount++;
     summaries.push(info);
@@ -72,6 +76,8 @@ export function normalizeRevenueCatSnapshot(payload: RevenueCatSnapshot, userId:
   summaries.sort((a,b) => (b.expiresAt ? Date.parse(b.expiresAt) : 0) - (a.expiresAt ? Date.parse(a.expiresAt) : 0));
   const current = candidates[0]?.info ?? summaries[0];
   return {
+    activeMemberships: candidates.map(candidate => candidate.info),
+    observedMemberships: summaries,
     membership: { appId: "ai_novel", userId, active: current?.active ?? false,
       state: current?.state ?? "free", tier: current?.tier ?? null, planKey: current?.planKey ?? null,
       expiresAt: current?.expiresAt ?? null, autoRenew: current?.autoRenew ?? null,
@@ -89,14 +95,15 @@ function normalizeTransactions(evidence: RevenueCatSubscriptionEvidence,
   for (const tx of evidence.transactions) {
     const productId = nullableString(tx.product_store_identifier);
     const id = nullableString(tx.id);
-    if (!productId || !PRODUCTS[productId] || !id) continue;
+    const productKey = billingProductKey(sub.store, productId);
+    if (!productId || !productKey || !id) continue;
     const revenue = isObject(tx.revenue_in_local_currency) ? tx.revenue_in_local_currency : {};
     const currency = validCurrency(revenue.currency);
     const gross = typeof revenue.gross === "number" && Number.isFinite(revenue.gross) ? revenue.gross : undefined;
     const amount = toMinorUnits(gross, currency);
     records.push({
       appId: "ai_novel", userId, provider: "revenuecat", providerTransactionId: id,
-      productId, productKey: productId, source, platform: platformFromStore(sub.store),
+      productId, productKey, source, platform: platformFromStore(sub.store),
       status: amount !== null && amount > 0 ? "provider_paid"
         : sub.gives_access === true ? "entitlement_active" : "unknown",
       purchasedAt: parseDate(tx.purchased_at) ?? null, originalPurchaseDate: parseDate(sub.starts_at) ?? null,

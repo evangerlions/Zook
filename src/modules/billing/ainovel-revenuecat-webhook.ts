@@ -1,5 +1,6 @@
 import type { AiNovelBillingTransactionRecord, AiNovelBillingTransactionStatus } from "../../shared/types.ts";
-import { PRODUCTS, parseDate, nullableString, sourceFromStore, platformFromStore, validCurrency, toMinorUnits } from "./ainovel-billing-values.ts";
+import { parseDate, nullableString, sourceFromStore, platformFromStore, validCurrency, toMinorUnits } from "./ainovel-billing-values.ts";
+import { billingProductKey } from "./ainovel-store-products.ts";
 
 export function normalizeRevenueCatWebhookTransaction(input: {
   event: Record<string, unknown>;
@@ -7,10 +8,11 @@ export function normalizeRevenueCatWebhookTransaction(input: {
   observedAt: string;
 }): AiNovelBillingTransactionRecord | undefined {
   const productId = nullableString(input.event.product_id);
-  const product = productId ? PRODUCTS[productId] : undefined;
+  const store = String(input.event.store ?? "").toLowerCase();
+  const productKey = billingProductKey(store, productId);
   const source = sourceFromStore(String(input.event.store ?? "").toLowerCase());
   const providerTransactionId = nullableString(input.event.transaction_id);
-  if (!product || !productId || !source || !providerTransactionId) return undefined;
+  if (!productKey || !productId || !source || !providerTransactionId) return undefined;
   const eventType = String(input.event.type ?? "");
   const isCustomerSupportRefund = eventType === "CANCELLATION" &&
     input.event.cancel_reason === "CUSTOMER_SUPPORT";
@@ -41,7 +43,7 @@ export function normalizeRevenueCatWebhookTransaction(input: {
     provider: "revenuecat",
     providerTransactionId,
     productId,
-    productKey: productId,
+    productKey,
     source,
     platform: platformFromStore(String(input.event.store ?? "").toLowerCase()),
     status,

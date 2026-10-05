@@ -3,16 +3,20 @@ import type {
   AiNovelBillingWebhookEventRecord,
 } from "./ainovel-billing.ts";
 
-export type AiNovelBillingAdminProvider = "revenuecat";
+export type AiNovelBillingAdminProvider = "revenuecat" | "alipay";
 export type AiNovelBillingAdminStatus =
   | "provider_paid"
   | "entitlement_active"
   | "expired"
   | "refunded"
   | "revoked"
+  | "pending"
+  | "closed"
+  | "failed"
   | "unknown";
+export type AlipayAdminStatus = "pending" | "closed" | "failed";
 
-export type AiNovelBillingAdminPaymentStatus = "provider_paid" | "refunded" | "unknown";
+export type AiNovelBillingAdminPaymentStatus = "provider_paid" | "refunded" | "unknown" | AlipayAdminStatus;
 export type AiNovelBillingAdminEntitlementStatus =
   | "active"
   | "cancelled"
@@ -25,11 +29,12 @@ export interface AiNovelBillingAdminOrderFilter {
   appId: "ai_novel";
   userId?: string;
   paymentId?: string;
+  checkoutId?: string;
   providerTransactionId?: string;
   provider?: AiNovelBillingAdminProvider;
-  platform?: "ios" | "android" | "macos";
-  distribution?: "app_store" | "google_play";
-  status?: AiNovelBillingAdminStatus;
+  platform?: "ios" | "android" | "macos" | "web" | "windows";
+  distribution?: "app_store" | "google_play" | "china_android_store" | "direct_android" | "web" | "windows";
+  status?: AiNovelBillingAdminStatus | AlipayAdminStatus;
   createdFrom?: string;
   createdTo?: string;
   after?: { observedAt: string; providerTransactionId: string; userId: string };
@@ -56,7 +61,7 @@ export interface AiNovelBillingAdminOrder {
   accountRegion: "UNKNOWN";
   platform: string | null;
   distribution: string;
-  provider: "revenuecat";
+  provider: AiNovelBillingAdminProvider;
   productKey: string;
   entitlementKey: string;
   tier: string;
@@ -71,8 +76,8 @@ export interface AiNovelBillingAdminOrder {
   currency: string | null;
   paymentStatus: AiNovelBillingAdminPaymentStatus;
   entitlementStatus: AiNovelBillingAdminEntitlementStatus;
-  checkoutId: null;
-  providerOrderId: null;
+  checkoutId: string | null;
+  providerOrderId: string | null;
   providerTransactionId: string;
   environment: "PRODUCTION" | "SANDBOX" | null;
   paidAt: string | null;
@@ -85,9 +90,9 @@ export interface AiNovelBillingAdminOrder {
 
 export interface AiNovelBillingAdminTransaction {
   transactionId: string;
-  provider: "revenuecat";
+  provider: AiNovelBillingAdminProvider;
   transactionKind: "purchase" | "renewal" | "refund" | "revoke";
-  providerOrderId: null;
+  providerOrderId: string | null;
   providerTransactionId: string;
   relatedTransactionId: null;
   providerRefundId: null;
@@ -102,7 +107,7 @@ export interface AiNovelBillingAdminTransaction {
 export interface AiNovelBillingAdminEvent {
   eventId: string;
   appId: "ai_novel";
-  provider: "revenuecat";
+  provider: AiNovelBillingAdminProvider;
   source: "webhook";
   eventType: string;
   providerEventId: string;

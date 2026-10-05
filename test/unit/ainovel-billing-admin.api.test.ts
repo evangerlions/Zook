@@ -73,7 +73,7 @@ test("AINovel billing admin list is session protected, filterable and cursor-pag
 
   const unauthorized = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders",
+    path: "/api/v1/admin/billing/orders",
     headers: {},
   });
   assert.equal(unauthorized.statusCode, 401);
@@ -81,7 +81,7 @@ test("AINovel billing admin list is session protected, filterable and cursor-pag
   const cookie = await loginAdmin(runtime);
   const first = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders",
+    path: "/api/v1/admin/billing/orders",
     headers: { cookie },
     query: { limit: "1", status: "entitlement_active", platform: "ios" },
   });
@@ -94,7 +94,7 @@ test("AINovel billing admin list is session protected, filterable and cursor-pag
 
   const second = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders",
+    path: "/api/v1/admin/billing/orders",
     headers: { cookie },
     query: {
       limit: "1",
@@ -107,7 +107,7 @@ test("AINovel billing admin list is session protected, filterable and cursor-pag
   assert.equal(second.body.data.items[0].paymentId, "user_alice:tx_002");
   assert.equal(second.body.data.nextCursor, null);
   assert.equal(
-    runtime.database.auditLogs.filter((row) => row.action === "admin.ai_novel_billing.orders.list").length,
+    runtime.database.auditLogs.filter((row) => row.action === "admin.billing.orders.list").length,
     2,
   );
 });
@@ -123,7 +123,7 @@ test("AINovel billing admin reports entitlement-only snapshots as unknown paymen
 
   const response = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders",
+    path: "/api/v1/admin/billing/orders",
     headers: { cookie },
     query: { status: "entitlement_active" },
   });
@@ -132,7 +132,7 @@ test("AINovel billing admin reports entitlement-only snapshots as unknown paymen
 
   const unknownFilter = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders",
+    path: "/api/v1/admin/billing/orders",
     headers: { cookie },
     query: { status: "unknown" },
   });
@@ -153,7 +153,7 @@ test("AINovel billing admin provider_paid filter uses displayed payment evidence
 
   const response = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders",
+    path: "/api/v1/admin/billing/orders",
     headers: { cookie },
     query: { status: "provider_paid" },
   });
@@ -193,8 +193,9 @@ test("AINovel billing admin detail returns provider evidence and event timeline"
 
   const response = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders/user_alice%3Atx_001",
+    path: "/api/v1/admin/billing/orders/user_alice%3Atx_001",
     headers: { cookie },
+    query: { appId: "ai_novel" },
   });
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.data.order.paymentId, "user_alice:tx_001");
@@ -208,7 +209,7 @@ test("AINovel billing admin detail returns provider evidence and event timeline"
   assert.equal(response.body.data.events[0].accountDeletedAt, "2026-09-24T00:00:00.000Z");
   assert.ok(Array.isArray(response.body.data.entitlementGrants));
   assert.equal(
-    runtime.database.auditLogs.filter((row) => row.action === "admin.ai_novel_billing.orders.detail").length,
+    runtime.database.auditLogs.filter((row) => row.action === "admin.billing.orders.detail").length,
     1,
   );
 });
@@ -219,7 +220,7 @@ test("AINovel billing admin rejects malformed cursors and unknown order IDs", as
 
   const invalidCursor = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders",
+    path: "/api/v1/admin/billing/orders",
     headers: { cookie },
     query: { cursor: "not-a-cursor" },
   });
@@ -227,8 +228,9 @@ test("AINovel billing admin rejects malformed cursors and unknown order IDs", as
 
   const notFound = await runtime.app.handle({
     method: "GET",
-    path: "/api/v1/admin/apps/ai_novel/billing/orders/missing",
+    path: "/api/v1/admin/billing/orders/missing",
     headers: { cookie },
+    query: { appId: "ai_novel" },
   });
   assert.equal(notFound.statusCode, 404);
 });

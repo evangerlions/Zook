@@ -40,8 +40,12 @@ function parseTransaction(row: QueryResultRow): AiNovelBillingTransactionRecord 
   return {
     appId: "ai_novel",
     userId: String(row.user_id),
-    provider: "revenuecat",
+    provider: row.provider as AiNovelBillingTransactionRecord["provider"],
+    providerOrderId: row.provider_order_id == null ? null : String(row.provider_order_id),
+    checkoutId: row.checkout_id == null ? null : String(row.checkout_id),
+    distribution: (row.distribution ?? null) as AiNovelBillingTransactionRecord["distribution"],
     providerTransactionId: String(row.provider_transaction_id),
+    createdAt: toIsoString(row.created_at),
     productId: String(row.product_id),
     productKey: String(row.product_key),
     source: row.source as AiNovelBillingTransactionRecord["source"],
@@ -96,6 +100,14 @@ function parseWebhookEvent(row: QueryResultRow): AiNovelBillingWebhookEventRecor
 export class PostgresAiNovelBillingStore {
   constructor(private readonly query: PostgresQuery) {}
 
+  async listAdminMemberships(filter: import("../../../shared/types/billing-admin.ts").BillingMembershipFilter): Promise<AiNovelBillingMembershipRecord[]> {
+    const result = await this.query(`SELECT * FROM zook_ai_novel_billing_memberships
+      WHERE app_id = 'ai_novel' AND ($1::text IS NULL OR user_id = $1)
+        AND ($2::text IS NULL OR user_id > $2) ORDER BY user_id LIMIT $3`,
+    [filter.userId ?? null, filter.after ?? null, filter.limit]);
+    return result.rows.map(parseMembership);
+  }
+
   async findMembership(
     appId: "ai_novel",
     userId: string,
@@ -141,10 +153,14 @@ export class PostgresAiNovelBillingStore {
          app_id, user_id, provider, provider_transaction_id, product_id,
          product_key, source, status, purchased_at, original_purchase_date,
          expires_at, refunded_at, auto_renew, is_sandbox, platform, amount_minor,
-         refund_amount_minor, currency, observed_at, account_deleted_at
+         refund_amount_minor, currency, observed_at, account_deleted_at, provider_order_id, checkout_id, distribution, created_at
        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::timestamptz,$10::timestamptz,
-                 $11::timestamptz,$12::timestamptz,$13,$14,$15,$16,$17,$18,$19::timestamptz,$20::timestamptz)
+                 $11::timestamptz,$12::timestamptz,$13,$14,$15,$16,$17,$18,$19::timestamptz,$20::timestamptz,$21,$22,$23,$24::timestamptz)
        ON CONFLICT (app_id, user_id, provider_transaction_id) DO UPDATE SET
+         created_at = COALESCE(zook_ai_novel_billing_transactions.created_at, EXCLUDED.created_at),
+         provider_order_id = COALESCE(zook_ai_novel_billing_transactions.provider_order_id, EXCLUDED.provider_order_id),
+         checkout_id = COALESCE(zook_ai_novel_billing_transactions.checkout_id, EXCLUDED.checkout_id),
+         distribution = COALESCE(zook_ai_novel_billing_transactions.distribution, EXCLUDED.distribution),
          product_id = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.product_id ELSE zook_ai_novel_billing_transactions.product_id END,
          product_key = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.product_key ELSE zook_ai_novel_billing_transactions.product_key END,
          source = CASE WHEN ${isCurrentObservation} THEN EXCLUDED.source ELSE zook_ai_novel_billing_transactions.source END,
@@ -166,7 +182,7 @@ export class PostgresAiNovelBillingStore {
         record.purchasedAt, record.originalPurchaseDate, record.expiresAt,
         record.refundedAt, record.autoRenew, record.isSandbox, record.platform,
         record.amountMinor, record.refundAmountMinor, record.currency,
-        record.observedAt, record.accountDeletedAt],
+        record.observedAt, record.accountDeletedAt, record.providerOrderId ?? null, record.checkoutId ?? null, record.distribution ?? null, record.createdAt ?? null],
     );
   }
 
@@ -178,7 +194,7 @@ export class PostgresAiNovelBillingStore {
       `SELECT app_id, user_id, provider, provider_transaction_id, product_id,
               product_key, source, status, purchased_at, original_purchase_date,
               expires_at, refunded_at, auto_renew, is_sandbox, platform, amount_minor,
-              refund_amount_minor, currency, observed_at, account_deleted_at
+              refund_amount_minor, currency, observed_at, account_deleted_at, provider_order_id, checkout_id, distribution, created_at
        FROM zook_ai_novel_billing_transactions
        WHERE app_id = $1 AND user_id = $2
        ORDER BY observed_at DESC, provider_transaction_id ASC`,
@@ -190,7 +206,6 @@ export class PostgresAiNovelBillingStore {
   async listAdminOrders(
     filter: AiNovelBillingAdminOrderFilter,
   ): Promise<AiNovelBillingTransactionRecord[]> {
-    if (filter.provider && filter.provider !== "revenuecat") return [];
     const values: unknown[] = [filter.appId];
     const clauses = ["app_id = $1"];
     const add = (clause: (placeholder: string) => string, value: unknown) => {
@@ -198,23 +213,31 @@ export class PostgresAiNovelBillingStore {
       clauses.push(clause(`$${values.length}`));
     };
     if (filter.userId) add((p) => `user_id = ${p}`, filter.userId);
-    if (filter.providerTransactionId) add((p) => `provider_transaction_id = ${p}`, filter.providerTransactionId);
+    if (filter.provider) add((p) => `provider = ${p}`, filter.provider);
+    if (filter.checkoutId) add((p) => `checkout_id = ${p}`, filter.checkoutId);
+    if (filter.providerTransactionId) add((p) => `(provider_transaction_id = ${p} OR provider_order_id = ${p})`, filter.providerTransactionId);
     if (filter.paymentId) {
       const parsed = splitPaymentId(filter.paymentId);
       if (!parsed) return [];
       add((p) => `user_id || ':' || provider_transaction_id = ${p}`, filter.paymentId);
     }
     if (filter.platform) add((p) => `platform = ${p}`, filter.platform);
-    if (filter.distribution) add((p) => `source = ${p}`, filter.distribution === "google_play" ? "play_store" : "app_store");
+    if (filter.distribution) {
+      if (["app_store", "google_play"].includes(filter.distribution)) add((p) => `source = ${p}`, filter.distribution === "google_play" ? "play_store" : "app_store");
+      else add((p) => `distribution = ${p}`, filter.distribution);
+    }
     if (filter.status === "provider_paid") {
-      clauses.push("status <> 'refunded' AND amount_minor > 0");
+      clauses.push("status NOT IN ('refunded', 'pending', 'closed', 'failed') AND amount_minor > 0");
     } else if (filter.status === "unknown") {
-      clauses.push("status <> 'refunded' AND (amount_minor IS NULL OR amount_minor <= 0)");
+      clauses.push("status NOT IN ('refunded', 'pending', 'closed', 'failed') AND (amount_minor IS NULL OR amount_minor <= 0)");
+    } else if (filter.status === "entitlement_active" || filter.status === "expired") {
+      const comparison = filter.status === "entitlement_active" ? ">" : "<=";
+      add((p) => `(status = ${p} AND provider <> 'alipay' OR provider = 'alipay' AND expires_at ${comparison} CURRENT_TIMESTAMP)`, filter.status);
     } else if (filter.status) {
       add((p) => `status = ${p}`, filter.status);
     }
-    if (filter.createdFrom) add((p) => `COALESCE(purchased_at, observed_at) >= ${p}::timestamptz`, filter.createdFrom);
-    if (filter.createdTo) add((p) => `COALESCE(purchased_at, observed_at) <= ${p}::timestamptz`, filter.createdTo);
+    if (filter.createdFrom) add((p) => `COALESCE(created_at, purchased_at, observed_at) >= ${p}::timestamptz`, filter.createdFrom);
+    if (filter.createdTo) add((p) => `COALESCE(created_at, purchased_at, observed_at) <= ${p}::timestamptz`, filter.createdTo);
     if (filter.after) {
       values.push(filter.after.observedAt, filter.after.providerTransactionId, filter.after.userId);
       clauses.push(`(observed_at < $${values.length - 2}::timestamptz OR
@@ -227,7 +250,7 @@ export class PostgresAiNovelBillingStore {
       `SELECT app_id, user_id, provider, provider_transaction_id, product_id,
               product_key, source, status, purchased_at, original_purchase_date,
               expires_at, refunded_at, auto_renew, is_sandbox, platform, amount_minor,
-              refund_amount_minor, currency, observed_at, account_deleted_at
+              refund_amount_minor, currency, observed_at, account_deleted_at, provider_order_id, checkout_id, distribution, created_at
        FROM zook_ai_novel_billing_transactions
        WHERE ${clauses.join(" AND ")}
        ORDER BY observed_at DESC, provider_transaction_id ASC, user_id ASC
@@ -246,7 +269,7 @@ export class PostgresAiNovelBillingStore {
       `SELECT app_id, user_id, provider, provider_transaction_id, product_id,
               product_key, source, status, purchased_at, original_purchase_date,
               expires_at, refunded_at, auto_renew, is_sandbox, platform, amount_minor,
-              refund_amount_minor, currency, observed_at, account_deleted_at
+              refund_amount_minor, currency, observed_at, account_deleted_at, provider_order_id, checkout_id, distribution, created_at
        FROM zook_ai_novel_billing_transactions
        WHERE app_id = $1 AND user_id = $2 AND provider_transaction_id = $3
        LIMIT 1`,

@@ -28,12 +28,15 @@ function matchesAdminStatus(
   status: AiNovelBillingAdminOrderFilter["status"],
 ): boolean {
   if (!status) return true;
+  if (transaction.provider === "alipay" && (status === "entitlement_active" || status === "expired")) {
+    return !!transaction.expiresAt && (status === "entitlement_active" ? Date.parse(transaction.expiresAt) > Date.now() : Date.parse(transaction.expiresAt) <= Date.now());
+  }
   if (status === "provider_paid") {
-    return transaction.status !== "refunded" &&
+    return !["refunded", "pending", "closed", "failed"].includes(transaction.status) &&
       transaction.amountMinor !== null && transaction.amountMinor > 0;
   }
   if (status === "unknown") {
-    return transaction.status !== "refunded" &&
+    return !["refunded", "pending", "closed", "failed"].includes(transaction.status) &&
       (transaction.amountMinor === null || transaction.amountMinor <= 0);
   }
   return transaction.status === status;
@@ -55,6 +58,12 @@ export class InMemoryAiNovelBillingStore {
   findMembership(appId: "ai_novel", userId: string): AiNovelBillingMembershipRecord | undefined {
     const record = this.memberships.find((item) => item.appId === appId && item.userId === userId);
     return record ? structuredClone(record) : undefined;
+  }
+
+  listAdminMemberships(filter: import("../shared/types/billing-admin.ts").BillingMembershipFilter) {
+    return structuredClone(this.memberships
+      .filter((item) => (!filter.userId || item.userId === filter.userId) && (!filter.after || item.userId > filter.after))
+      .sort((a, b) => a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0).slice(0, filter.limit));
   }
 
   upsertMembership(record: AiNovelBillingMembershipRecord): void {
@@ -94,6 +103,10 @@ export class InMemoryAiNovelBillingStore {
       next.currency = preferCurrentOrBackfill(existing.currency, record.currency, isCurrentObservation);
       next.observedAt = isCurrentObservation ? record.observedAt : existing.observedAt;
       next.accountDeletedAt ??= existing.accountDeletedAt;
+      next.createdAt = existing.createdAt ?? record.createdAt;
+      next.providerOrderId = existing.providerOrderId ?? record.providerOrderId;
+      next.checkoutId = existing.checkoutId ?? record.checkoutId;
+      next.distribution = existing.distribution ?? record.distribution;
     }
     if (index < 0) this.transactions.push(next);
     else this.transactions[index] = next;
@@ -106,18 +119,20 @@ export class InMemoryAiNovelBillingStore {
   }
 
   listAdminOrders(filter: AiNovelBillingAdminOrderFilter): AiNovelBillingTransactionRecord[] {
-    if (filter.provider && filter.provider !== "revenuecat") return [];
     if (filter.paymentId && !filter.paymentId.includes(":")) return [];
     return structuredClone(this.transactions
       .filter((item) => item.appId === filter.appId)
+      .filter((item) => !filter.provider || item.provider === filter.provider)
+      .filter((item) => !filter.checkoutId || item.checkoutId === filter.checkoutId)
       .filter((item) => !filter.userId || item.userId === filter.userId)
-      .filter((item) => !filter.providerTransactionId || item.providerTransactionId === filter.providerTransactionId)
+      .filter((item) => !filter.providerTransactionId || item.providerTransactionId === filter.providerTransactionId || item.providerOrderId === filter.providerTransactionId)
       .filter((item) => !filter.paymentId || `${item.userId}:${item.providerTransactionId}` === filter.paymentId)
       .filter((item) => !filter.platform || item.platform === filter.platform)
-      .filter((item) => !filter.distribution || item.source === (filter.distribution === "google_play" ? "play_store" : "app_store"))
+      .filter((item) => !filter.distribution || (["app_store", "google_play"].includes(filter.distribution)
+        ? item.source === (filter.distribution === "google_play" ? "play_store" : "app_store") : item.distribution === filter.distribution))
       .filter((item) => matchesAdminStatus(item, filter.status))
-      .filter((item) => !filter.createdFrom || Date.parse(item.purchasedAt ?? item.observedAt) >= Date.parse(filter.createdFrom))
-      .filter((item) => !filter.createdTo || Date.parse(item.purchasedAt ?? item.observedAt) <= Date.parse(filter.createdTo))
+      .filter((item) => !filter.createdFrom || Date.parse(item.createdAt ?? item.purchasedAt ?? item.observedAt) >= Date.parse(filter.createdFrom))
+      .filter((item) => !filter.createdTo || Date.parse(item.createdAt ?? item.purchasedAt ?? item.observedAt) <= Date.parse(filter.createdTo))
       .filter((item) => !filter.after || Date.parse(item.observedAt) < Date.parse(filter.after.observedAt) ||
         (item.observedAt === filter.after.observedAt &&
           (item.providerTransactionId > filter.after.providerTransactionId ||

@@ -12,7 +12,7 @@ import { tryHandleAdminReleaseUpdateRoutes } from "./admin-release-update-routes
 import { tryHandleAdminSecurityRoutes } from "./admin-security-routes.ts";
 import { tryHandleAdminTestAccountRoutes } from "./admin-test-account-routes.ts";
 import { tryHandleBodyLogAdminRoutes } from "./bodylog-admin-routes.ts";
-import { tryHandleAdminAiNovelBillingRoutes } from "./admin-ainovel-billing-routes.ts";
+import { tryHandleAdminBillingRoutes } from "./admin-billing-routes.ts";
 
 const adminRouteHandlers = [
   tryHandleAdminCoreRoutes,
@@ -27,7 +27,7 @@ const adminRouteHandlers = [
   tryHandleAdminRemoteLogRoutes,
   tryHandleAdminReleaseUpdateRoutes,
   tryHandleBodyLogAdminRoutes,
-  tryHandleAdminAiNovelBillingRoutes,
+  tryHandleAdminBillingRoutes,
 ];
 
 export async function tryHandleAdminRoutes(

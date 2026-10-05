@@ -90,7 +90,7 @@ test("Postgres admin payment-status filters use the same evidence as the API", a
     status: "provider_paid",
     limit: 20,
   });
-  assert.match(queries[0]?.sql ?? "", /status <> 'refunded' AND amount_minor > 0/);
+  assert.match(queries[0]?.sql ?? "", /status NOT IN \('refunded', 'pending', 'closed', 'failed'\) AND amount_minor > 0/);
   assert.doesNotMatch(queries[0]?.sql ?? "", /status = \$2/);
 
   await store.listAdminOrders({
@@ -100,7 +100,7 @@ test("Postgres admin payment-status filters use the same evidence as the API", a
   });
   assert.match(
     queries[1]?.sql ?? "",
-    /status <> 'refunded' AND \(amount_minor IS NULL OR amount_minor <= 0\)/,
+    /status NOT IN \('refunded', 'pending', 'closed', 'failed'\) AND \(amount_minor IS NULL OR amount_minor <= 0\)/,
   );
 });
 

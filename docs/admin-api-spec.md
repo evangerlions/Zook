@@ -395,14 +395,23 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 需要 Admin 会话。可选 query：`invitation_id`、`status`、`limit`；`status` 仅接受 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed`、`dead_letter`。响应只包含 `invitation_id`、`recipient_masked`、投递/尝试状态、provider correlation ID、稳定错误码和时间戳，不返回完整邮箱、邀请码、token 或模板参数。每次读取都会写入 admin audit。
 
-### 3.14 AINovel Billing 订单
+### 3.14 Server 会员与支付（只读）
 
 | 方法 | Path | 说明 |
 | --- | --- | --- |
-| `GET` | `/api/v1/admin/apps/ai_novel/billing/orders` | 按用户、支付记录 ID、RevenueCat 交易号、平台、商店、状态和时间范围分页查询 AINovel 订单 |
-| `GET` | `/api/v1/admin/apps/ai_novel/billing/orders/{paymentId}` | 查看订单、当前会员投影、RevenueCat 交易与已持久化 webhook 时间线 |
+| `GET` | `/api/v1/admin/billing/apps` | 应用注册表与 `integrated` 标记 |
+| `GET` | `/api/v1/admin/billing/overview` | 按 UTC 日期、应用、渠道、币种统计购买数、购买金额和退款金额 |
+| `GET` | `/api/v1/admin/billing/memberships` | 按精确用户 ID 查询当前会员快照，包括没有订单的会员 |
+| `GET` | `/api/v1/admin/billing/orders` | 按用户、支付记录 ID、RevenueCat 交易号、平台、商店、状态和时间范围分页查询订单 |
+| `GET` | `/api/v1/admin/billing/orders/{paymentId}` | 查看订单、当前会员投影、RevenueCat 交易与已持久化 webhook 时间线；必须指定 `appId` |
 
-Billing 管理接口只读取 Zook 持久化 RevenueCat 交易 / webhook 记录，不读取 Docker stdout；当前要求已登录的 Admin session。现有 Admin session 尚未实现 endpoint 级 `billing:read` RBAC，因此此接口不宣称该权限已生效。每次读取写入 admin audit。订单列表每页最多 100 条，使用稳定 cursor；事件时间线也分页。支付金额只在已验证 RevenueCat webhook 提供金额与币种时保存，否则返回 `null` 并在 UI 显示 `—`。目前没有单独的 checkout、provider-order、entitlement-grant 台账，详情相应返回 `null` / 空数组；不读取或实现支付宝订单。删除账号后保留交易行，并以 `deletedAt` 标记关联账号删除。
+页面入口为 Server `/billing`，不再提供旧的 AINovel 订单页面或旧管理 API。查询接口可选 `appId`，省略或 `all` 表示全部已接入应用。首期仅接入 AINovel 的读取适配器；其他注册应用返回 `409 ADMIN_BILLING_NOT_INTEGRATED`，未知应用返回 `400`。未来产品必须接入独立适配器才会纳入列表与统计，会员身份仍是 `(appId, userId)`，不共享权益。
+
+收入概览默认正式环境 `PRODUCTION`、本月 UTC，允许显式 `SANDBOX`。可选 `from`（包含）与 `to`（不包含），最多 366 天。每行 `date` 为 `YYYY-MM-DD` UTC 日期，按日期倒序、应用/渠道/币种排序；无记录日期不补零行。金额单位是各币种的最小单位；购买按 `purchasedAt`，退款按 `refundedAt` 分别归入发生当天。不同币种不相加，不做汇率转换，不代表商店税费扣除后的到账收入。未知金额、币种、环境或发生时间不计入相应统计，软删除用户财务记录仍参与。同步过的交易按主键去重；不推测尚未保存的退款。
+
+会员列表每页默认 50、最多 100，`cursor` 为上页最后的 `userId`，翻页时保持应用和查询条件一致。它是全环境快照（会员表没有独立环境字段），不宣称是正式环境会员数。过期或软删除账号的会员 `active=false`。只读查询不刷新供应商状态、修改会员或发起退款。
+
+Billing 管理接口读取 Zook 持久化 RevenueCat / Alipay 共享订单与验证事件，不读取 Docker stdout；当前要求已登录的 Admin session。现有 Admin session 尚未实现 endpoint 级 `billing:read` RBAC，因此此接口不宣称该权限已生效。每次读取写入 admin audit。订单列表每页最多 100 条，事件时间线也分页。RC 金额来自交易/验证事件证据；不足时返回 `null`，不从商品目录推算。Alipay 在创建时即记录 pending 报价，failed/closed/pending 均可查询，但报价不是收入。Alipay checkoutId/canonical providerTransactionId 是稳定商户订单 ID，providerOrderId 是验证后的支付宝 trade_no；providerTransactionId 搜索兼容两者。createdAt 是不可变创建时间，updatedAt 是最新观察时间；Alipay active/expired 筛选按实际已应用权益到期时间。删除后保留财务行并标记 deletedAt。详情 grant 台账仍返回空数组，不提供编辑/退款/赠送能力。已付款 Alipay 不主动轮询外部退款；后续验证 TRADE_CLOSED 保留在事件历史，但不自动撤销金额/权益。
 
 支付深度排查使用 API / Worker 的 Docker 结构化日志，通过 `appId`、`userId`、`paymentId`、`providerEventId` 和 `requestId` 串联完整流程；日志不作为订单事实来源。
 ## 4. 关联文档

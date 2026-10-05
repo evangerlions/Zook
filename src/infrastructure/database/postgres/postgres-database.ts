@@ -1,4 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { PostgresAlipayOrders } from "./postgres-alipay-orders.ts";
+import type { AlipayOrder } from "../../../modules/billing/alipay-models.ts";
 import { Pool, type PoolClient } from "pg";
 import type {
   AnalyticsEventRecord,
@@ -97,6 +99,11 @@ import {
   parseUserRole,
 } from "./postgres-row-parsers.ts";
 export class PostgresDatabase extends ApplicationDatabase {
+  private get alipayOrders() { return new PostgresAlipayOrders((sql, values) => this.query(sql, values)); }
+  override findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
+  override findAiNovelAlipayIdempotency(user: string, key: string) { return this.alipayOrders.findIdempotency(user, key); }
+  override listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
+  override saveAiNovelAlipayOrder(order: AlipayOrder) { return this.alipayOrders.save(order); }
   private readonly sessionContext = new AsyncLocalStorage<PoolClient>();
   private readonly emailDeliveryEvents: PostgresEmailDeliveryEventStore;
   private readonly appUsers: PostgresAppUserStore;
@@ -602,6 +609,11 @@ export class PostgresDatabase extends ApplicationDatabase {
     return await this.aiNovelStatistics.listDailyStatistics(filter);
   }
   override async findAiNovelBillingMembership(appId: "ai_novel", userId: string): Promise<AiNovelBillingMembershipRecord | undefined> { return await this.aiNovelBilling.findMembership(appId, userId); }
+  override async listBillingAdminMemberships(filter: import("../../../shared/types/billing-admin.ts").BillingMembershipFilter) { return await this.aiNovelBilling.listAdminMemberships(filter); }
+  override async getBillingAdminRevenue(filter: import("../../../shared/types/billing-admin.ts").BillingSummaryFilter) {
+    const { queryBillingRevenue } = await import("./postgres-billing-admin.ts");
+    return await queryBillingRevenue(async (sql, values) => await this.query(sql, values), filter);
+  }
   override async upsertAiNovelBillingMembership(record: AiNovelBillingMembershipRecord): Promise<void> { await this.aiNovelBilling.upsertMembership(record); }
   override async upsertAiNovelBillingTransaction(record: AiNovelBillingTransactionRecord): Promise<void> { await this.aiNovelBilling.upsertTransaction(record); }
   override async listAiNovelBillingTransactions(appId: "ai_novel", userId: string): Promise<AiNovelBillingTransactionRecord[]> { return await this.aiNovelBilling.listTransactions(appId, userId); }
@@ -610,7 +622,10 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listAiNovelBillingAdminEvents(filter: AiNovelBillingAdminEventFilter): Promise<AiNovelBillingAdminEventPage> { return await this.aiNovelBilling.listAdminEvents(filter); }
   override async findAiNovelBillingWebhookEvent(appId: "ai_novel", eventId: string): Promise<AiNovelBillingWebhookEventRecord | undefined> { return await this.aiNovelBilling.findWebhookEvent(appId, eventId); }
   override async insertAiNovelBillingWebhookEvent(record: AiNovelBillingWebhookEventRecord): Promise<boolean> { return await this.aiNovelBilling.insertWebhookEvent(record); }
-  override async softDeleteAiNovelBillingAccount(appId: "ai_novel", userId: string, deletedAt: string): Promise<void> { await this.aiNovelBilling.softDeleteAccount(appId, userId, deletedAt); }
+  override async softDeleteAiNovelBillingAccount(appId: "ai_novel", userId: string, deletedAt: string): Promise<void> {
+    await this.aiNovelBilling.softDeleteAccount(appId, userId, deletedAt);
+    await this.query("UPDATE zook_ai_novel_alipay_orders SET record = jsonb_set(record, '{accountDeletedAt}', to_jsonb($2::text)) WHERE user_id = $1 AND record->>'accountDeletedAt' IS NULL", [userId, deletedAt]);
+  }
   override async insertNotificationJob(record: NotificationJobRecord): Promise<void> {
     await this.operationalRecords.insertNotificationJob(record);
   }

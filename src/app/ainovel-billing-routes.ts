@@ -1,4 +1,5 @@
 import { ApplicationError } from "../shared/errors.ts";
+import { tryHandleAlipayRoutes } from "./ainovel-alipay-routes.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -16,6 +17,8 @@ export async function tryHandleAiNovelBillingRoutes(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
+  const alipay = await tryHandleAlipayRoutes.call(this, request);
+  if (alipay) return alipay;
   if (request.method === "POST" && request.path === BILLING_SYNC_PATH) {
     const auth = await this.authenticateProductRequest(request, "ai_novel");
     const body = request.body === undefined ? {} : this.validationPipe.asObject(request.body);
@@ -63,7 +66,11 @@ export async function tryHandleAiNovelBillingRoutes(
   }
 
   const auth = await this.authenticateProductRequest(request, "ai_novel");
+  const membership = await this.aiNovelBillingService.getMembership(auth.userId);
   const input: AiNovelBillingCatalogInput = {
+    alipayAvailable: this.aiNovelBillingService.alipay.available,
+    alipayPrices: Object.fromEntries((["plus_monthly", "plus_quarterly", "plus_yearly", "pro_monthly", "pro_quarterly", "pro_yearly"] as const).map(key => [key, this.aiNovelBillingService.alipay.price(key)])),
+    activeMembershipSource: membership.active ? membership.source : null,
     accountRegion: await this.resolveAccountRegion(
       request,
       "ai_novel",

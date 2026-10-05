@@ -44,6 +44,7 @@ function revenueCatOptions(
   fetcher: typeof fetch,
   now?: () => Date,
   allowSandbox = true,
+  google = false,
 ) {
   return {
     seed: buildAiNovelSeed(),
@@ -51,6 +52,7 @@ function revenueCatOptions(
       secretApiKey: API_KEY,
       webhookAuthorization: WEBHOOK_AUTH,
       appId: RC_APP_ID,
+      googleAppId: google ? RC_APP_ID : undefined,
       allowSandbox,
       fetcher: fixtureFetcher(fetcher, RC_APP_ID),
       projectId: "proj_test",
@@ -741,13 +743,13 @@ test("subscription extension and pause events refresh authoritative access witho
     new Response(JSON.stringify(snapshot({
       entitlements: {
         orangewrite_plus: {
-          productKey: "plus_monthly",
+          productKey: "plus_monthly:auto-renew",
           expiresAt: expiresAt,
           graceExpiresAt: null,
         },
       },
       subscriptions: {
-        plus_monthly: {
+        "plus_monthly:auto-renew": {
           store: "play_store",
           transactionId: "tx_plus_001",
           purchasedAt: "2026-09-23T10:00:00Z",
@@ -759,12 +761,14 @@ test("subscription extension and pause events refresh authoritative access witho
         },
       },
     })), { status: 200 }),
-  () => new Date("2026-09-24T00:00:00Z")));
+  () => new Date("2026-09-24T00:00:00Z"), true, true));
+  // This test fixture uses one synthetic RC App ID for the Google-only scenario.
+  // Real-store isolation with distinct IDs is covered by the Google mapping tests.
   const request = (id: string, type: string) => runtime.app.handle({
     method: "POST",
     path: "/api/v1/ai_novel/billing/webhooks/revenuecat",
     headers: { authorization: WEBHOOK_AUTH },
-    body: webhookEvent({ id, type, store: "PLAY_STORE" }),
+    body: webhookEvent({ id, type, store: "PLAY_STORE", product_id: "plus_monthly:auto-renew" }),
   });
 
   expiresAt = "2026-11-23T10:00:00Z";

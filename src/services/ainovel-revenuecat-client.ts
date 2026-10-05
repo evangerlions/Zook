@@ -1,11 +1,13 @@
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
 import { RevenueCatV2ReadSession } from "./ainovel-revenuecat-read-session.ts";
 import { RevenueCatApiError, isObject, type RevenueCatSnapshot } from "./ainovel-revenuecat-types.ts";
+import { revenueCatAppForStore } from "../modules/billing/ainovel-store-products.ts";
 export { RevenueCatApiError, isObject } from "./ainovel-revenuecat-types.ts";
 export interface RevenueCatCustomerApiOptions {
   secretApiKey?: string;
   projectId?: string;
   appId?: string;
+  googleAppId?: string;
   fetcher?: typeof fetch;
   timeoutMs?: number;
   logger?: StructuredLogger;
@@ -29,7 +31,7 @@ export class RevenueCatCustomerApi {
       const key = this.options.secretApiKey?.trim();
       const projectId = this.options.projectId?.trim();
       const appId = this.options.appId?.trim();
-      if (!key || !projectId || !appId) throw new RevenueCatApiError("not_configured");
+      if (!key || !projectId || (!appId && !this.options.googleAppId?.trim())) throw new RevenueCatApiError("not_configured");
       const session = new RevenueCatV2ReadSession(projectId, key, this.options.fetcher ?? fetch, signal);
       const root = `/customers/${encodeURIComponent(userId)}`;
       const [subscriptions, activeEntitlements] = await Promise.all([
@@ -44,7 +46,8 @@ export class RevenueCatCustomerApi {
         const product = await session.object(`/products/${encodeURIComponent(subscription.product_id)}`);
         if (product.id !== subscription.product_id || typeof product.app_id !== "string" ||
           typeof product.store_identifier !== "string") throw new RevenueCatApiError("invalid_response");
-        if (product.app_id !== appId) continue;
+        const expectedAppId = revenueCatAppForStore(subscription.store, appId, this.options.googleAppId);
+        if (!expectedAppId || product.app_id !== expectedAppId) continue;
         const path = `/subscriptions/${encodeURIComponent(subscription.id)}`;
         const entitlements = isObject(subscription.entitlements) &&
           subscription.entitlements.next_page == null

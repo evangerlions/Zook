@@ -10,7 +10,7 @@
 - `openapi/lighttick/api.yaml` — LightTick app-scoped planning, execution, review, AI-run, sync, device, and deletion API
 - `openapi/ainovel/billing.yaml` — AINovel client billing and membership API
 - `openapi/ainovel/billing-provider.yaml` — AINovel RevenueCat and Alipay provider callbacks
-- `openapi/ainovel/billing-admin.yaml` — AINovel admin order and payment investigation API
+- `openapi/common/billing-admin.yaml` — Server-level membership, revenue and payment investigation API
 - `docs/` — protocol and consumer workflow notes
 - `package.json` and `package-lock.json` — reproducible, isolated OpenAPI lint tooling
 - `API.toml` and `_ACTIVE.md` — lightweight ownership metadata

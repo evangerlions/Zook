@@ -1,4 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { InMemoryAlipayOrders } from "./in-memory-alipay-orders.ts";
+import type { AlipayOrder } from "../modules/billing/alipay-models.ts";
 import type {
   AnalyticsEventRecord,
   AiNovelDailyStatisticsRecord,
@@ -109,6 +111,11 @@ function normalizeListLimit(limit?: number): number {
  * InMemoryDatabase is a test-only database double.
  */
 export class InMemoryDatabase extends ApplicationDatabase {
+  private readonly alipayOrders = new InMemoryAlipayOrders();
+  findAiNovelAlipayOrder(id: string) { return this.alipayOrders.findOrder(id); }
+  findAiNovelAlipayIdempotency(user: string, key: string) { const result = this.alipayOrders.findIdempotency(user, key); return result && structuredClone(result); }
+  listAiNovelAlipayAccess(user: string, now: string) { return this.alipayOrders.listAccess(user, now); }
+  saveAiNovelAlipayOrder(order: AlipayOrder) { this.alipayOrders.save(order); }
   private readonly exclusiveContext = new AsyncLocalStorage<boolean>();
   private exclusiveTail: Promise<void> = Promise.resolve();
   private readonly aiNovelStatistics: InMemoryAiNovelStatisticsStore;
@@ -360,6 +367,13 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   listApps(): AppRecord[] {
     return this.apps;
+  }
+  listBillingAdminMemberships(filter: import("../shared/types/billing-admin.ts").BillingMembershipFilter) {
+    return this.aiNovelBillingStore.listAdminMemberships(filter);
+  }
+  async getBillingAdminRevenue(filter: import("../shared/types/billing-admin.ts").BillingSummaryFilter) {
+    const { aggregateBillingRevenue } = await import("./in-memory-billing-admin.ts");
+    return aggregateBillingRevenue(this.aiNovelBillingStore.transactions, filter);
   }
 
   listAppIds(): string[] {
@@ -2167,6 +2181,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     deletedAt: string,
   ): void {
     this.aiNovelBillingStore.softDeleteAccount(appId, userId, deletedAt);
+    this.alipayOrders.softDelete(userId, deletedAt);
   }
 
   get seedManagedState(): ManagedStateSnapshot {

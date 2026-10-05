@@ -13,6 +13,7 @@ import type { DatabaseSeed } from "./shared/types.ts";
 import type { LightTickRepository } from "./modules/lighttick/lighttick.repository.ts";
 
 export interface CreateApplicationOptions {
+  alipay?: import("./modules/billing/alipay-models.ts").AlipayOptions;
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;
@@ -84,6 +85,7 @@ export interface CreateApplicationOptions {
     projectId?: string;
     webhookAuthorization?: string;
     appId?: string;
+    googleAppId?: string;
     allowSandbox?: boolean;
     fetcher?: typeof fetch;
     timeoutMs?: number;

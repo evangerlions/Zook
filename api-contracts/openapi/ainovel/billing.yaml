@@ -8,8 +8,8 @@ info:
   description: |
     Active billing contract for the AINovel App Store and Google Play MVP.
     The client reads canonical membership state from Zook and uses RevenueCat
-    for store purchases. Alipay remains deferred and is not an active endpoint
-    in this contract.
+    for store purchases. Explicitly configured Alipay supports CN one-off memberships.
+    Development CNY prices are placeholders, not approved production catalog prices.
 
     This contract intentionally excludes AI usage balances, product copy, and
     provider-specific receipt payloads from the client API. AI usage is enforced
@@ -23,6 +23,60 @@ tags:
   - name: ainovel-billing
     description: Authenticated client billing and membership operations.
 paths:
+  /api/v1/ai_novel/billing/alipay/orders:
+    post:
+      operationId: createAiNovelAlipayOrder
+      summary: Create or replay an owned CN one-off Alipay checkout
+      description: |
+        Persisted idempotency binds user, product, platform, distribution and merchant environment.
+        Only server prices apply. Active RevenueCat access returns 409. A new intent may coexist
+        with older pending checkouts after client cancellation; idempotency prevents retry duplicates.
+        Production requires explicit enablement, approved prices and complete merchant configuration.
+        payment is null for terminal or expired orders; clients must not relaunch checkout on recovery.
+      tags: [ainovel-billing]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AlipayCreateRequest" }
+      responses:
+        "200":
+          description: Persisted checkout identity and optional signed checkout payload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlipayCreateResponse" }
+        "403": { description: "Account region, channel or app scope rejected" }
+        "409": { description: Idempotency or active provider conflict }
+        "503": { description: "Provider disabled, incomplete configuration or signing unavailable" }
+  /api/v1/ai_novel/billing/alipay/orders/{orderId}:
+    get:
+      operationId: queryAiNovelAlipayOrder
+      summary: Query an owned order and converge verified payment evidence
+      description: |
+        No request body. Official SDK response signatures must be verified. Merchant app identity
+        is bound by the configured SDK. Response app_id, if supplied, must match;
+        seller_id is additionally checked only when a merchant override was configured for the order.
+        response order and amount must match. Applied Plus may coexist with effective Pro access:
+        confirmation uses this owned paid order's membershipApplied, not effective plan equality.
+        Paid conflicts remain unapplied with syncStatus pending. Failed/closed are terminal
+        unsuccessful checkout states. Unverified/unavailable queries never grant.
+        Paid orders are not polled for external refunds; external refund synchronization is outside MVP.
+      tags: [ainovel-billing]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, pattern: "^(ow_(and|web|win)_[ab](01|03|12)_[A-Za-z0-9_-]{1,6}_[a-f0-9]{16}|(ow|alp)_[a-f0-9]{32})$" }
+      responses:
+        "200":
+          description: Persisted settlement and effective highest-tier membership
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlipayQueryResponse" }
+        "404": { description: Missing or not-owned order }
   /api/v1/ai_novel/billing/catalog:
     get:
       operationId: getAiNovelBillingCatalog
@@ -88,6 +142,10 @@ paths:
         RevenueCat webhook may also trigger a provider refresh. If the provider
         cannot be refreshed, Zook returns the last committed state with
         syncStatus=pending; clients may retry with bounded attempts.
+        Apple App Store, Google Play and Alipay are pairwise exclusive while
+        membership is active and unexpired, including cancelled renewal.
+        Cross-channel active evidence is retained financially but does not replace
+        an established active channel; such confirmation returns pending.
       tags: [ainovel-billing]
       security:
         - bearerAuth: []
@@ -133,6 +191,80 @@ components:
         type: string
         const: ai_novel
   schemas:
+    AlipayCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [productKey, platform, distribution, idempotencyKey]
+      properties:
+        productKey: { $ref: "#/components/schemas/BillingProductKey" }
+        platform: { type: string, enum: [android, web, windows] }
+        distribution: { type: string, enum: [china_android_store, direct_android, web, windows] }
+        idempotencyKey: { type: string, pattern: "^[A-Za-z0-9_-]{8,128}$" }
+    AlipayOrder:
+      type: object
+      additionalProperties: false
+      required: [orderId, provider, environment, productKey, status, amountMinor, currency, createdAt, expiresAt, paidAt, membershipApplied, conflict]
+      properties:
+        orderId: { type: string, pattern: "^(ow_(and|web|win)_[ab](01|03|12)_[A-Za-z0-9_-]{1,6}_[a-f0-9]{16}|(ow|alp)_[a-f0-9]{32})$" }
+        provider: { type: string, const: alipay }
+        environment: { type: string, enum: [sandbox, production] }
+        productKey: { $ref: "#/components/schemas/BillingProductKey" }
+        status: { type: string, enum: [pending, paid, closed, failed] }
+        amountMinor: { type: integer, minimum: 1 }
+        currency: { type: string, const: CNY }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time, description: "Checkout expiry, not membership expiry" }
+        paidAt: { type: [string, "null"], format: date-time }
+        membershipApplied: { type: boolean }
+        conflict: { type: [string, "null"], enum: [provider_conflict, null] }
+    AlipayPayment:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [type, orderString]
+          properties:
+            type: { type: string, const: app }
+            orderString: { type: string }
+        - type: object
+          additionalProperties: false
+          required: [type, url]
+          properties:
+            type: { type: string, const: page }
+            url: { type: string, format: uri }
+    AlipayCreateData:
+      type: object
+      additionalProperties: false
+      required: [order, payment]
+      properties:
+        order: { $ref: "#/components/schemas/AlipayOrder" }
+        payment:
+          oneOf:
+            - $ref: "#/components/schemas/AlipayPayment"
+            - type: "null"
+    AlipayQueryData:
+      type: object
+      additionalProperties: false
+      required: [order, syncStatus, membership]
+      properties:
+        order: { $ref: "#/components/schemas/AlipayOrder" }
+        syncStatus: { $ref: "#/components/schemas/SyncStatus" }
+        membership: { $ref: "../common/users.yaml#/components/schemas/MembershipInfo" }
+    AlipayCreateResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/AlipayCreateData" }
+        requestId: { type: string }
+    AlipayQueryResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/AlipayQueryData" }
+        requestId: { type: string }
     AccountRegion:
       type: string
       enum: [CN, GLOBAL, UNKNOWN]
@@ -156,7 +288,7 @@ components:
       enum: [revenuecat, alipay]
     BillingCatalogProvider:
       type: string
-      description: Providers represented in catalog offers; deferred Alipay offers must stay unavailable.
+      description: Providers represented in catalog offers; Alipay requires explicit complete configuration.
       enum: [revenuecat, alipay]
     BillingProductKey:
       type: string
@@ -227,7 +359,7 @@ components:
             ]
         providerProductId:
           type: [string, "null"]
-          description: Store or provider product identifier used by the client/provider adapter.
+          description: Store product ID, distinct from logical productKey. Apple uses productKey; Google Play uses productKey:auto-renew (subscription ID and base plan ID).
         providerPackageId:
           type: [string, "null"]
           description: RevenueCat package identifier when the provider uses offerings.
@@ -239,18 +371,6 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Money"
             - type: "null"
-      allOf:
-        - if:
-            required: [provider]
-            properties:
-              provider:
-                const: alipay
-          then:
-            properties:
-              available:
-                const: false
-              price:
-                type: "null"
     CatalogData:
       type: object
       additionalProperties: false

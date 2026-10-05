@@ -19,6 +19,44 @@ tags:
   - name: ainovel-billing-provider
     description: Provider callbacks consumed by Zook.
 paths:
+  /api/v1/ai_novel/billing/webhooks/alipay:
+    post:
+      operationId: receiveAiNovelAlipayNotify
+      summary: Verify an Alipay RSA2 form notification and converge settlement
+      description: |
+        Maximum 16 KiB UTF-8 form with no duplicate fields. Official SDK checkNotifySignV2
+        validates RSA2. Persisted order ownership, merchant app, seller, amount, environment
+        and immutable trade identity must match. Only TRADE_SUCCESS/TRADE_FINISHED grants.
+        Paid conflicts/deleted accounts retain finance without granting access.
+        Duplicate/query+notify processing is idempotent. A later TRADE_CLOSED is retained
+        as verified event history, not automatic refund/revocation synchronization in this MVP.
+      tags: [ainovel-billing-provider]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [app_id, seller_id, out_trade_no, trade_no, trade_status, total_amount, sign, sign_type]
+              additionalProperties: { type: string }
+              properties:
+                app_id: { type: string }
+                seller_id: { type: string }
+                out_trade_no: { type: string }
+                trade_no: { type: string }
+                trade_status: { type: string }
+                total_amount: { type: string }
+                sign: { type: string }
+                sign_type: { type: string, const: RSA2 }
+      responses:
+        "200":
+          description: Durable processing completed; exactly success with no JSON quotes or newline
+          content:
+            text/plain:
+              schema: { type: string, const: success }
+        "400": { description: Invalid or mismatched settlement evidence }
+        "401": { description: Signature verification failed }
+        "503": { description: Merchant provider disabled or incomplete }
   /api/v1/ai_novel/billing/webhooks/revenuecat:
     post:
       operationId: receiveAiNovelRevenueCatWebhook

@@ -6,11 +6,16 @@ import type {
 } from "../../generated/openapi/public-contracts.generated.ts";
 import type { AccountRegion } from "../../shared/types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "./ainovel-revenuecat-entitlements.ts";
+import { billingStoreProductId } from "./ainovel-store-products.ts";
+import { billingChannelsConflict } from "./billing-channel-policy.ts";
 
 export interface AiNovelBillingCatalogInput {
   accountRegion: AccountRegion;
   platform: BillingPlatform;
   distribution: DistributionChannel;
+  alipayAvailable?: boolean;
+  alipayPrices?: Record<string, number>;
+  activeMembershipSource?: string | null;
 }
 
 type ProductDefinition = Pick<
@@ -74,15 +79,24 @@ function resolveProvider(
   product: ProductDefinition,
 ): ProductProvider {
   if (isRevenueCatDistribution(input)) {
+    const source = input.platform === "ios" || input.platform === "macos" ? "app_store" : "play_store";
+    const conflict = billingChannelsConflict(input.activeMembershipSource, source);
     return {
       provider: "revenuecat",
-      available: true,
-      blockedReason: null,
-      providerProductId: product.productKey,
+      available: !conflict,
+      blockedReason: conflict ? "active_membership_managed_elsewhere" : null,
+      providerProductId: billingStoreProductId(product.productKey, input.distribution === "google_play"),
       providerPackageId: null,
       providerEntitlementId: REVENUECAT_ENTITLEMENT_IDS[product.tier],
       price: null,
     };
+  }
+
+  if (input.accountRegion === "CN" && input.alipayAvailable) {
+    const conflict = billingChannelsConflict(input.activeMembershipSource, "alipay");
+    return { provider: "alipay", available: !conflict, blockedReason: conflict ? "active_membership_managed_elsewhere" : null,
+      providerProductId: product.productKey, providerPackageId: null, providerEntitlementId: product.tier,
+      price: { amountMinor: input.alipayPrices![product.productKey], currency: "CNY" } };
   }
 
   return {

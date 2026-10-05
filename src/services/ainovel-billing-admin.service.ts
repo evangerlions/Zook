@@ -1,4 +1,5 @@
 import { ApplicationError } from "../shared/errors.ts";
+import { effectiveBillingMembership } from "../modules/billing/billing-admin-membership.ts";
 import type { AiNovelBillingTier } from "../shared/types.ts";
 import { REVENUECAT_ENTITLEMENT_IDS } from "../modules/billing/ainovel-revenuecat-entitlements.ts";
 import type {
@@ -18,7 +19,8 @@ import { ApplicationDatabase } from "../infrastructure/database/application-data
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 const MAX_CURSOR_LENGTH = 512;
-const STATUSES = new Set<AiNovelBillingAdminStatus>([
+const STATUSES = new Set<string>([
+  "pending", "closed", "failed",
   "provider_paid",
   "entitlement_active",
   "expired",
@@ -83,15 +85,13 @@ export class AiNovelBillingAdminService {
       after: eventsAfter,
       limit: eventsLimit,
     });
-    const membership = await this.database.findAiNovelBillingMembership("ai_novel", transaction.userId);
-    const membershipExpired = membership?.active === true &&
-      membership.expiresAt !== null &&
-      Date.parse(membership.expiresAt) <= Date.now();
+    const persistedMembership = await this.database.findAiNovelBillingMembership("ai_novel", transaction.userId);
+    const membership = persistedMembership ? effectiveBillingMembership(persistedMembership) : undefined;
     return {
       order: toAdminOrder(transaction),
       currentMembership: membership ? {
-        active: membership.active && !membershipExpired,
-        state: membershipExpired ? "expired" : membership.state,
+        active: membership.active,
+        state: membership.state,
         tier: membership.tier,
         planKey: membership.planKey,
         expiresAt: membership.expiresAt,
@@ -112,14 +112,13 @@ function parseOrderFilter(query: Record<string, string | undefined>): AiNovelBil
   const limit = parseLimit(query.limit, DEFAULT_LIMIT);
   const cursor = query.cursor ? decodeOrderCursor(query.cursor) : undefined;
   const provider = query.provider;
-  if (provider && provider !== "revenuecat") invalidQuery("provider only supports revenuecat.");
-  if (query.checkoutId) invalidQuery("checkoutId is not available for RevenueCat orders.");
+  if (provider && !["revenuecat", "alipay"].includes(provider)) invalidQuery("provider must be revenuecat or alipay.");
   const platform = query.platform;
-  if (platform && !["ios", "android", "macos"].includes(platform)) {
+  if (platform && !["ios", "android", "macos", "web", "windows"].includes(platform)) {
     invalidQuery("platform must be ios, android, or macos.");
   }
   const distribution = query.distribution;
-  if (distribution && !["app_store", "google_play"].includes(distribution)) {
+  if (distribution && !["app_store", "google_play", "china_android_store", "direct_android", "web", "windows"].includes(distribution)) {
     invalidQuery("distribution must be app_store or google_play.");
   }
   const status = query.status;
@@ -135,11 +134,12 @@ function parseOrderFilter(query: Record<string, string | undefined>): AiNovelBil
     appId: "ai_novel",
     userId: optionalBoundedQueryString(query.userId, "userId", 128),
     paymentId: optionalBoundedQueryString(query.paymentId, "paymentId", 512),
+    checkoutId: optionalBoundedQueryString(query.checkoutId, "checkoutId", 128),
     providerTransactionId: optionalBoundedQueryString(query.providerTransactionId, "providerTransactionId", 256),
-    provider: provider as "revenuecat" | undefined,
-    platform: platform as "ios" | "android" | "macos" | undefined,
-    distribution: distribution as "app_store" | "google_play" | undefined,
-    status: status as AiNovelBillingAdminStatus | undefined,
+    provider: provider as AiNovelBillingAdminOrderFilter["provider"],
+    platform: platform as AiNovelBillingAdminOrderFilter["platform"],
+    distribution: distribution as AiNovelBillingAdminOrderFilter["distribution"],
+    status: status as AiNovelBillingAdminOrderFilter["status"],
     createdFrom,
     createdTo,
     after: cursor,
@@ -248,8 +248,8 @@ function toAdminOrder(record: AiNovelBillingTransactionRecord): AiNovelBillingAd
     userId: record.userId,
     accountRegion: "UNKNOWN",
     platform: record.platform,
-    distribution: record.source === "app_store" ? "app_store" : "google_play",
-    provider: "revenuecat",
+    distribution: record.distribution ?? (record.source === "app_store" ? "app_store" : "google_play"),
+    provider: record.provider,
     productKey: record.productKey,
     entitlementKey: tier,
     tier,
@@ -263,16 +263,16 @@ function toAdminOrder(record: AiNovelBillingTransactionRecord): AiNovelBillingAd
     amountMinor: record.amountMinor,
     currency: record.currency,
     paymentStatus: paymentStatusFrom(record),
-    entitlementStatus: entitlementStatusFrom(record.status),
-    checkoutId: null,
-    providerOrderId: null,
+    entitlementStatus: record.provider === "alipay" && record.expiresAt ? (Date.parse(record.expiresAt) > Date.now() ? "active" : "expired") : entitlementStatusFrom(record.status),
+    checkoutId: record.checkoutId ?? null,
+    providerOrderId: record.providerOrderId ?? null,
     providerTransactionId: record.providerTransactionId,
     environment: record.isSandbox === null ? null : record.isSandbox ? "SANDBOX" : "PRODUCTION",
     paidAt,
     expiresAt,
     deletedAt: record.accountDeletedAt,
     redactedAt: null,
-    createdAt: paidAt ?? record.observedAt,
+    createdAt: record.createdAt ?? paidAt ?? record.observedAt,
     updatedAt: record.observedAt,
   };
 }
@@ -287,9 +287,9 @@ function toAdminTransaction(record: AiNovelBillingTransactionRecord): AiNovelBil
         : "purchase";
   return {
     transactionId: record.providerTransactionId,
-    provider: "revenuecat",
+    provider: record.provider,
     transactionKind,
-    providerOrderId: null,
+    providerOrderId: record.providerOrderId ?? null,
     providerTransactionId: record.providerTransactionId,
     relatedTransactionId: null,
     providerRefundId: null,
@@ -306,6 +306,7 @@ function paymentStatusFrom(
   record: AiNovelBillingTransactionRecord,
 ): AiNovelBillingAdminOrder["paymentStatus"] {
   if (record.status === "refunded") return "refunded";
+  if (record.status === "pending" || record.status === "closed" || record.status === "failed") return record.status;
   // RC entitlement snapshots and trial events are not proof of a charge.
   return record.amountMinor !== null && record.amountMinor > 0 ? "provider_paid" : "unknown";
 }
@@ -323,7 +324,7 @@ function toAdminEvent(record: AiNovelBillingAdminEventPage["items"][number]): Ai
   return {
     eventId: `${record.userId ?? "unknown"}:${record.eventId}`,
     appId: "ai_novel",
-    provider: "revenuecat",
+    provider: record.eventType.startsWith("ALIPAY_") ? "alipay" : "revenuecat",
     source: "webhook",
     eventType: record.eventType,
     providerEventId: record.eventId,

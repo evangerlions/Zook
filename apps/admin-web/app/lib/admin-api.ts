@@ -1,7 +1,7 @@
 import type {
   AdminBillingOrderDetail,
   AdminBillingOrderPage,
-  AiNovelBillingOrderStatus,
+  BillingOrderStatus,
   AdminAppSummary,
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
@@ -412,13 +412,15 @@ export const adminApi = {
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
   },
-  getAiNovelBillingOrders(input: {
+  getBillingOrders(input: {
+    appId?: string;
+    provider?: "revenuecat" | "alipay";
     userId?: string;
     paymentId?: string;
     providerTransactionId?: string;
     platform?: string;
     distribution?: string;
-    status?: AiNovelBillingOrderStatus;
+    status?: BillingOrderStatus;
     createdFrom?: string;
     createdTo?: string;
     limit?: number;
@@ -429,16 +431,17 @@ export const adminApi = {
       limit: input.limit === undefined ? undefined : String(input.limit),
     }));
     const suffix = query.toString() ? `?${query.toString()}` : "";
-    return requestJson<AdminBillingOrderPage>(adminPath(`/apps/ai_novel/billing/orders${suffix}`));
+    return requestJson<AdminBillingOrderPage>(adminPath(`/billing/orders${suffix}`));
   },
-  getAiNovelBillingOrder(paymentId: string, input: { eventsCursor?: string; eventsLimit?: number } = {}) {
+  getBillingOrder(paymentId: string, input: { appId: string; eventsCursor?: string; eventsLimit?: number }) {
     const query = new URLSearchParams(cleanQuery({
       eventsCursor: input.eventsCursor,
+      appId: input.appId,
       eventsLimit: input.eventsLimit === undefined ? undefined : String(input.eventsLimit),
     }));
     const suffix = query.toString() ? `?${query.toString()}` : "";
     return requestJson<AdminBillingOrderDetail>(adminPath(
-      `/apps/ai_novel/billing/orders/${encodeURIComponent(paymentId)}${suffix}`,
+      `/billing/orders/${encodeURIComponent(paymentId)}${suffix}`,
     ));
   },
   getAiNovelConversationRecords(input: { uid?: string; did?: string; page?: number }) {

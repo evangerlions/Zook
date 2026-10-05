@@ -21,7 +21,7 @@ import { PublicApiMessageService } from "../services/public-api-message.service.
 import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-callback.service.ts";
 import { FeedbackService } from "../services/feedback.service.ts";
 import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
-import { AiNovelBillingAdminService } from "../services/ainovel-billing-admin.service.ts";
+import { BillingAdminService } from "../services/billing-admin.service.ts";
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
 import type { AccountRegion, AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -68,7 +68,7 @@ function parseBasicAuthorization(
 export class BackendRouteContext {
   /** Optional analytics service for emitting business events. Set after construction. */
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
-  public readonly aiNovelBillingAdminService: AiNovelBillingAdminService;
+  public readonly billingAdminService: BillingAdminService;
 
   constructor(
     protected readonly database: ApplicationDatabase,
@@ -93,7 +93,7 @@ export class BackendRouteContext {
     protected readonly adminSensitiveOperationService: AdminSensitiveOperationService,
     protected readonly aiNovelBillingService: AiNovelBillingService,
   ) {
-    this.aiNovelBillingAdminService = new AiNovelBillingAdminService(database);
+    this.billingAdminService = new BillingAdminService(database);
   }
 
   public async authenticate(
@@ -192,14 +192,15 @@ export class BackendRouteContext {
 
   public async recordAdminBillingReadAudit(input: {
     adminUser: string;
-    action: "admin.ai_novel_billing.orders.list" | "admin.ai_novel_billing.orders.detail";
+    action: string;
+    appId: string;
     resourceId: string;
     resourceOwnerUserId?: string;
     requestId?: string;
     filterNames?: string[];
   }): Promise<void> {
     await this.routeAuditInterceptor.record({
-      appId: "ai_novel",
+      appId: input.appId,
       actorUserId: input.adminUser,
       action: input.action,
       resourceType: "billing_order",

@@ -61,11 +61,11 @@ export function fixtureFetcher(scenario: typeof fetch, appId: string): typeof fe
       })));
     }
     const product = url.pathname.match(/\/products\/prod_(.+)$/);
-    if (product) return Response.json({ object: "product", id: "prod_"+product[1], app_id: appId,
-      store_identifier: product[1], subscription: { grace_period_duration: "P7D" } });
+    if (product) return Response.json({ object: "product", id: "prod_"+decodeURIComponent(product[1]), app_id: appId,
+      store_identifier: decodeURIComponent(product[1]), subscription: { grace_period_duration: "P7D" } });
     const tx = url.pathname.match(/\/subscriptions\/sub_(.+)\/transactions$/);
     if (tx && current) {
-      const key = tx[1], s = current.subscriptions[key];
+      const key = decodeURIComponent(tx[1]), s = current.subscriptions[key];
       return Response.json(list(s?.transactionId ? [{
         object: "subscription_transaction", id: s.transactionId, product_store_identifier: key,
         purchased_at: ms(s.purchasedAt), expiration_date: ms(s.expiresAt), effective_expiration_date: ms(s.expiresAt),

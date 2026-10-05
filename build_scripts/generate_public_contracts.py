@@ -79,6 +79,11 @@ SPECS: dict[str, list[str]] = {
         "RevenueCatPublicConfig",
     ],
     "ainovel/billing.yaml": [
+        "AlipayCreateRequest",
+        "AlipayOrder",
+        "AlipayPayment",
+        "AlipayCreateData",
+        "AlipayQueryData",
         "AccountRegion",
         "BillingPlatform",
         "DistributionChannel",
