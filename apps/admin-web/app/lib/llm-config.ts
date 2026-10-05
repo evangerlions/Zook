@@ -122,6 +122,8 @@ export function createEmptyLlmSummary() {
     providerUsageCount: 0,
     estimatedUsageCount: 0,
     missingUsageCount: 0,
+    pointPricedRequestCount: 0,
+    pointUnpricedRequestCount: 0,
   };
 }
 
@@ -156,17 +158,17 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
       timeoutMs: Number(String(item?.timeoutMs ?? "").trim() || "0"),
     })),
     models: draft.models.map((item) => ({
-      key: String(item?.key ?? "").trim(),
-      label: String(item?.label ?? "").trim(),
-      kind: item?.kind,
-      strategy: item?.strategy,
-      routes: item.routes.map((route) => ({
-        provider: String(route?.provider ?? "").trim(),
-        providerModel: String(route?.providerModel ?? "").trim(),
-        enabled: Boolean(route?.enabled),
-        weight: Number(String(route?.weight ?? "").trim()),
+        key: String(item?.key ?? "").trim(),
+        label: String(item?.label ?? "").trim(),
+        kind: item?.kind,
+        strategy: item?.strategy,
+        routes: item.routes.map((route) => ({
+          provider: String(route?.provider ?? "").trim(),
+          providerModel: String(route?.providerModel ?? "").trim(),
+          enabled: Boolean(route?.enabled),
+          weight: Number(String(route?.weight ?? "").trim()),
+        })),
       })),
-    })),
   });
 }
 

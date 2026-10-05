@@ -1,0 +1,93 @@
+openapi: 3.2.0
+info:
+  title: AINovel Writing Credits API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+  description: Integer-microcredit balance. Zook settles each successful provider call automatically.
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+tags:
+  - name: ainovel-credits
+    description: Authenticated writing credit operations.
+paths:
+  /api/v1/ai_novel/credits:
+    get:
+      operationId: getAiNovelCredits
+      summary: Get the signed-in user's exact credit balance
+      description: |
+        Every amount is a JSON integer in micros, not points or a numeric string.
+        One writing credit equals 1000000 micros. Clients retain raw micros and
+        use a shared formatter for integer-point display; display rounding must
+        never determine admission. enabled=false means enforcement is not live.
+      tags: [ainovel-credits]
+      parameters:
+        - $ref: "#/components/parameters/XAppId"
+      responses:
+        "200":
+          description: Exact balance after server-owned membership refresh
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditsBalanceResponse"
+        "401":
+          description: Missing or invalid authentication
+        "403":
+          description: Product scope mismatch
+        "503":
+          description: Credits service unavailable
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    XAppId:
+      name: X-App-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        const: ai_novel
+  schemas:
+    CreditMicros:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+      description: Exact integer micros; 1000000 micros equals one writing credit.
+      examples: [1000, 19999000]
+    CreditsBalanceData:
+      type: object
+      required: [enabled, tier, refreshAt, periodicMicros, periodicLimitMicros, giftMicros, remainingMicros]
+      properties:
+        enabled:
+          type: boolean
+        tier:
+          type: string
+          enum: [free, plus, pro]
+        refreshAt:
+          type: string
+          format: date-time
+        periodicMicros:
+          $ref: "#/components/schemas/CreditMicros"
+        periodicLimitMicros:
+          $ref: "#/components/schemas/CreditMicros"
+        giftMicros:
+          $ref: "#/components/schemas/CreditMicros"
+        remainingMicros:
+          $ref: "#/components/schemas/CreditMicros"
+    CreditsBalanceResponse:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: "#/components/schemas/CreditsBalanceData"

@@ -1,5 +1,6 @@
 import type { AiNovelModelSelectionConfig } from "./types";
 import { parseConfigText } from "./json.ts";
+import { parseModelCatalogPresentation } from "../../../../src/shared/model-catalog-presentation.ts";
 
 const WEIGHT_PRECISION = 100;
 
@@ -8,7 +9,7 @@ export function parseAiNovelModelSelectionText(
   availableModelKeys: Iterable<string>,
 ): AiNovelModelSelectionConfig {
   const root = parseConfigText(rawText);
-  assertKnownFields(root, ["schemaVersion", "chat"], "配置");
+  assertKnownFields(root, ["schemaVersion", "chat", "catalog"], "配置");
   if (root.schemaVersion !== 1) {
     throw new Error("schemaVersion 必须为 1。");
   }
@@ -49,9 +50,15 @@ export function parseAiNovelModelSelectionText(
     throw new Error(`所有 Weight 之和必须等于 100，当前为 ${totalWeight}。`);
   }
 
+  const catalog = root.catalog === undefined ? undefined : parseModelCatalogPresentation(root.catalog);
+  if (catalog?.some((item) => !available.has(item.modelKey))) {
+    throw new Error("catalog references a model outside the current LLM Chat directory.");
+  }
+
   return {
     schemaVersion: 1,
     chat: { default: models },
+    ...(catalog !== undefined ? { catalog } : {}),
   };
 }
 

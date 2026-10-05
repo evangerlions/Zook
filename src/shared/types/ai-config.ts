@@ -15,6 +15,7 @@ export interface AdminAiRoutingDocument {
 
 export interface AiNovelModelSelectionConfig {
   schemaVersion: 1;
+  catalog?: import("../model-catalog-presentation.ts").ModelCatalogPresentation[];
   chat: {
     default: AiNovelWeightedModel[];
   };
@@ -58,6 +59,53 @@ export interface AdminAiNovelModelSelectionDocument
   extends AiNovelModelSelectionDocument {
   app: AdminAppSummary;
   modelHealth: AiNovelModelHealth[];
+}
+
+export interface AiNovelModelPointPricing {
+  modelKey: string;
+  contextTiers?: Array<{ abovePromptTokens: number; inputPointsPerMillionTokens: number; outputPointsPerMillionTokens: number }>;
+  cachedInputPointsPerMillionTokens?: number;
+  inputPointsPerMillionTokens?: number;
+  outputPointsPerMillionTokens?: number;
+}
+
+export interface AiNovelModelPointPricingConfig {
+  schemaVersion: 1;
+  models: AiNovelModelPointPricing[];
+}
+
+export interface AiNovelModelPointPricingReference {
+  source: "openrouter" | "product";
+  modelId?: string;
+  inputUsdPerMillionTokens?: number;
+  outputUsdPerMillionTokens?: number;
+  match: "exact" | "approximate" | "unavailable";
+  note?: string;
+  url?: string;
+}
+
+export interface AiNovelPointPricingModelOption {
+  key: string;
+  label: string;
+  kind: "chat" | "embedding";
+  configuredAvailable: boolean;
+  reference: AiNovelModelPointPricingReference;
+}
+
+export interface AiNovelModelPointPricingDocument {
+  configKey: string;
+  config: AiNovelModelPointPricingConfig;
+  availableModels: AiNovelPointPricingModelOption[];
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AdminAiNovelModelPointPricingDocument
+  extends AiNovelModelPointPricingDocument {
+  app: AdminAppSummary;
 }
 
 export type PublicAppConfigDocument = GeneratedPublicConfigData;

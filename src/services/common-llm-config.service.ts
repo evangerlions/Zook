@@ -19,6 +19,7 @@ import {
   normalizeOpenRouterConfig,
 } from "./openrouter-config.ts";
 import { createDefaultBaiConfig, normalizeBaiConfig } from "./bai-transparent-proxy-config.ts";
+import { createDefaultLlmModels, DEFAULT_COMMON_LLM_MODEL_KEY } from "./common-llm-model-defaults.ts";
 
 const COMMON_APP_ID = "common";
 const LLM_SERVICE_CONFIG_KEY = "common.llm_service";
@@ -45,12 +46,8 @@ const VALID_ROUTING_STRATEGIES = new Set<LlmRoutingStrategy>(["auto", "fixed"]);
 const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WEIGHT_PRECISION = 100;
-const QWEN_FLASH_MODEL_KEY = "qwen3.5-flash";
-const QWEN_PLUS_MODEL_KEY = "qwen3.6-plus";
-const TEXT_EMBEDDING_MODEL_KEY = "text-embedding-v4";
 const DEFAULT_AINOVEL_BAILIAN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-const OPENROUTER_FREE_MODEL_KEY = "openrouter-free";
 
 export function createDefaultLlmRouteCircuitBreakerConfig(): LlmRouteCircuitBreakerConfig {
   return { enabled: false };
@@ -76,71 +73,6 @@ export function normalizeLlmEmailAlertConfig(value: unknown): {
   return {
     llmEnabled: source.llmEnabled !== false,
     aiNovelFeedbackEnabled: source.aiNovelFeedbackEnabled !== false,
-  };
-}
-
-function createDefaultModels(): LlmModelConfig[] {
-  return [
-    createQwenPlusModel(),
-    createTextEmbeddingModel(),
-    createQwenFlashModel(),
-    createOpenRouterFreeModel(),
-  ];
-}
-
-function createQwenPlusModel(): LlmModelConfig {
-  return createDefaultModel(QWEN_PLUS_MODEL_KEY, "Qwen 3.6 Plus 通用模型", "chat", QWEN_PLUS_MODEL_KEY);
-}
-
-function createTextEmbeddingModel(): LlmModelConfig {
-  return createDefaultModel(
-    TEXT_EMBEDDING_MODEL_KEY,
-    "Text Embedding v4 通用向量模型",
-    "embedding",
-    TEXT_EMBEDDING_MODEL_KEY,
-  );
-}
-
-function createQwenFlashModel(): LlmModelConfig {
-  return createDefaultModel(QWEN_FLASH_MODEL_KEY, "Qwen 3.5 Flash 通用低成本审核", "chat", QWEN_FLASH_MODEL_KEY);
-}
-
-function createOpenRouterFreeModel(): LlmModelConfig {
-  return {
-    key: OPENROUTER_FREE_MODEL_KEY,
-    label: "OpenRouter Free 测试模型",
-    kind: "chat",
-    strategy: "fixed",
-    routes: [
-      {
-        provider: "openrouter",
-        providerModel: "openrouter/free",
-        enabled: true,
-        weight: 100,
-      },
-    ],
-  };
-}
-
-function createDefaultModel(
-  key: string,
-  label: string,
-  kind: LlmModelKind,
-  providerModel: string,
-): LlmModelConfig {
-  return {
-    key,
-    label,
-    kind,
-    strategy: "fixed",
-    routes: [
-      {
-        provider: "bailian",
-        providerModel,
-        enabled: true,
-        weight: 100,
-      },
-    ],
   };
 }
 
@@ -335,7 +267,7 @@ export class CommonLlmConfigService {
   private createDefaultConfig(): LlmServiceConfig {
     return {
       enabled: false,
-      defaultModelKey: QWEN_PLUS_MODEL_KEY,
+      defaultModelKey: DEFAULT_COMMON_LLM_MODEL_KEY,
       openRouter: createDefaultOpenRouterConfig(),
       bai: createDefaultBaiConfig(),
       routeCircuitBreaker: createDefaultLlmRouteCircuitBreakerConfig(),
@@ -358,7 +290,7 @@ export class CommonLlmConfigService {
           timeoutMs: DEFAULT_PROVIDER_TIMEOUT_MS,
         },
       ],
-      models: createDefaultModels(),
+      models: createDefaultLlmModels(),
     };
   }
 

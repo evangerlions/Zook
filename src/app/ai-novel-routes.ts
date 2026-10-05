@@ -16,10 +16,17 @@ import {
 } from "./encrypted-ai-routes.ts";
 import { tryHandleAiNovelDebugTraceRoutes } from "./ai-novel-debug-trace-routes.ts";
 import { tryHandleAiNovelBillingRoutes } from "./ainovel-billing-routes.ts";
+import { tryHandleAiNovelCreditsRoutes } from "./ai-novel-credits-routes.ts";
 export async function tryHandleAiNovelRoutes(
   this: BackendRouteContext,
   request: HttpRequest,
 ): Promise<HttpResponse<unknown> | undefined> {
+  if (request.method === "GET" && request.path === "/api/v1/ai_novel/models") {
+    await this.authenticateProductRequest(request, "ai_novel");
+    return this.ok(await this.aiNovelLlmService.getPublicModels(), request.requestId as string);
+  }
+  const creditsResponse = await tryHandleAiNovelCreditsRoutes.call(this, request);
+  if (creditsResponse) return creditsResponse;
   const billingResponse = await tryHandleAiNovelBillingRoutes.call(
     this,
     request,
@@ -157,6 +164,7 @@ export async function handleAiNovelChatCompletions(
     }
 
     const result = await this.aiNovelLlmService.createChatCompletion(body, {
+      signal: request.signal,
       exposeLocalDebug: shouldExposeLocalAiRequestDebugFields.call(this, request),
       captureConversationDebug: shouldExposeLocalAiDebugFields.call(this, request),
       requestId: request.requestId as string,
@@ -220,6 +228,8 @@ export async function handleAiNovelEmbeddings(
 ): Promise<HttpResponse<unknown>> {
   return handleEncryptedAiRequest.call(this, request, async (body, auth) => {
     return await this.aiNovelLlmService.createEmbeddings(body, {
+      signal: request.signal,
+      locale: this.resolveRequestLocale(request),
       requestId: request.requestId as string,
       userId: auth.userId,
       routingIdentity: resolveAiNovelRoutingIdentity(

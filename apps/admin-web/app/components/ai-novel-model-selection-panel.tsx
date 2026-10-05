@@ -29,6 +29,7 @@ export function AiNovelModelSelectionPanel() {
   >([]);
   const [rawValue, setRawValue] = useState("");
   const [rawError, setRawError] = useState("");
+  const [catalog, setCatalog] = useState<AiNovelModelSelectionConfig["catalog"]>();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -47,16 +48,18 @@ export function AiNovelModelSelectionPanel() {
     }
     return {
       ...document.config,
+      catalog,
       chat: {
         default: weightedModels,
       },
     };
-  }, [document, weightedModels]);
+  }, [document, weightedModels, catalog]);
 
   function applyDocument(payload: AdminAiNovelModelSelectionDocument) {
     const value = configJson(payload.config);
     setDocument(payload);
     setWeightedModels(payload.config.chat.default.map((item) => ({ ...item })));
+    setCatalog(payload.config.catalog);
     setRawValue(value);
     try {
       parseAiNovelModelSelectionText(
@@ -80,7 +83,7 @@ export function AiNovelModelSelectionPanel() {
     items: AiNovelModelSelectionConfig["chat"]["default"],
   ) {
     setWeightedModels(items);
-    const value = configJson({ schemaVersion: 1, chat: { default: items } });
+    const value = configJson({ schemaVersion: 1, chat: { default: items }, ...(catalog !== undefined ? { catalog } : {}) });
     setRawValue(value);
     try {
       validateRawValue(value);
@@ -95,6 +98,7 @@ export function AiNovelModelSelectionPanel() {
     try {
       const config = validateRawValue(value);
       setWeightedModels(config.chat.default.map((item) => ({ ...item })));
+      setCatalog(config.catalog);
       setRawError("");
     } catch (error) {
       setRawError(formatApiError(error));

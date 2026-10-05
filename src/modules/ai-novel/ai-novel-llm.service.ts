@@ -1,4 +1,6 @@
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
+import { parseAiNovelClientModelSelection } from "./ai-novel-client-model-selection.ts";
+import type { AiNovelCreditsRequestFlow } from "./credits/ai-novel-credits-request-flow.ts";
 import type {
   LLMMessage,
   LLMManager,
@@ -85,6 +87,8 @@ import {
 type AiNovelStreamRequestPlan = ReturnType<typeof buildAiNovelStreamRequestPlan>;
 
 interface AiNovelLlmRequestContext {
+  onUsageFinalized?: import("../../services/llm-manager-types.ts").LLMCompletionRequest["onUsageFinalized"];
+  requirePointPricing?: boolean;
   usageOwner?: { appId: "ai_novel"; userId: string };
   routingIdentity?: LlmRoutingIdentity;
   signal?: AbortSignal;
@@ -98,6 +102,7 @@ export type {
 } from "./ai-novel-llm-types.ts";
 
 interface AiNovelRequestOptions {
+  onUsageFinalized?: import("../../services/llm-manager-types.ts").LLMCompletionRequest["onUsageFinalized"];
   exposeLocalDebug?: boolean;
   captureConversationDebug?: boolean;
   requestId?: string;
@@ -119,14 +124,28 @@ export class AiNovelLlmService {
     private readonly logger?: StructuredLogger,
     private readonly contentSafetyService?: ContentSafetyService,
     private readonly conversationRecordService?: AiNovelConversationRecordService,
+    readonly creditsFlow?: AiNovelCreditsRequestFlow,
   ) {}
 
   async createChatCompletion(
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): Promise<AiNovelChatResponse> {
-    assertNoClientModelSelection(body);
+    return this.creditsFlow
+      ? this.creditsFlow.complete(body, options, (measured) => this.executeChatCompletion(body, measured))
+      : this.executeChatCompletion(body, options);
+  }
 
+  async getPublicModels() {
+    return { models: await this.modelSelectionConfigService.getPublicModels() };
+  }
+
+  private async executeChatCompletion(
+    body: Record<string, unknown>,
+    options: AiNovelRequestOptions = {},
+  ): Promise<AiNovelChatResponse> {
+    assertNoClientModelSelection(body);
+    const modelSelection = parseAiNovelClientModelSelection(body.modelSelection);
     const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelChatScene(sceneKey);
     if (scene.sceneKey === "kickoff_turn") {
@@ -156,6 +175,7 @@ export class AiNovelLlmService {
     try {
       const modelKey = await this.modelSelectionConfigService.resolveChatModelKey(
         options.routingIdentity,
+        { selection: modelSelection },
       );
       const requestPlan = buildAiNovelCompletionRequestPlan({
         accountRegion: options.accountRegion,
@@ -184,6 +204,8 @@ export class AiNovelLlmService {
       serverCompacted = compactedPlan.compaction.didCompact;
       const shouldUseStreamedCompletion = Boolean(scene.completeViaStream);
       const llmRequestContext: AiNovelLlmRequestContext = {
+        onUsageFinalized: options.onUsageFinalized,
+        requirePointPricing: Boolean(options.onUsageFinalized),
         ...aiNovelUsageOwner(options),
         ...(options.routingIdentity
           ? { routingIdentity: options.routingIdentity }
@@ -294,8 +316,17 @@ export class AiNovelLlmService {
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): AsyncIterable<AiNovelChatStreamChunk> {
-    assertNoClientModelSelection(body);
+    yield* this.creditsFlow
+      ? this.creditsFlow.stream(body, options, (measured) => this.executeChatCompletionStream(body, measured))
+      : this.executeChatCompletionStream(body, options);
+  }
 
+  private async *executeChatCompletionStream(
+    body: Record<string, unknown>,
+    options: AiNovelRequestOptions = {},
+  ): AsyncIterable<AiNovelChatStreamChunk> {
+    assertNoClientModelSelection(body);
+    const modelSelection = parseAiNovelClientModelSelection(body.modelSelection);
     const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelChatScene(sceneKey);
     if (scene.supportsStream === false) {
@@ -327,6 +358,8 @@ export class AiNovelLlmService {
       userText,
     };
     const llmRequestContext: AiNovelLlmRequestContext = {
+      onUsageFinalized: options.onUsageFinalized,
+      requirePointPricing: Boolean(options.onUsageFinalized),
       ...aiNovelUsageOwner(options),
       ...(options.routingIdentity
         ? { routingIdentity: options.routingIdentity }
@@ -371,7 +404,7 @@ export class AiNovelLlmService {
         resolveModelKey: (excludedModelKeys) =>
           this.modelSelectionConfigService.resolveChatModelKey(
             options.routingIdentity,
-            { excludedModelKeys },
+            { excludedModelKeys, selection: modelSelection },
           ),
         run: (modelKey) =>
           this.runAiNovelStreamAttempt({
@@ -382,7 +415,7 @@ export class AiNovelLlmService {
             maxTokens,
             llmRequestContext,
           }),
-        shouldRetry: isRetryableAiNovelStreamError,
+        shouldRetry: (error) => modelSelection.mode === "auto" && isRetryableAiNovelStreamError(error),
         onRetry: (modelKey, error) => {
           this.logger?.warn("AINovel stream failed before first chunk; retrying with another model", {
             modelKey,
@@ -510,7 +543,19 @@ export class AiNovelLlmService {
     body: Record<string, unknown>,
     options: AiNovelRequestOptions = {},
   ): Promise<AiNovelEmbeddingsResponse> {
+    return this.creditsFlow
+      ? this.creditsFlow.embeddings(body, options, (measured) => this.executeEmbeddings(body, measured))
+      : this.executeEmbeddings(body, options);
+  }
+
+  private async executeEmbeddings(
+    body: Record<string, unknown>,
+    options: AiNovelRequestOptions = {},
+  ): Promise<AiNovelEmbeddingsResponse> {
     assertNoClientModelSelection(body);
+    if (body.modelSelection !== undefined) {
+      badRequest("REQ_INVALID_BODY", "Embedding uses its dedicated model; modelSelection is only allowed for chat.");
+    }
 
     const sceneKey = requireSceneKey(body);
     const scene = resolveAiNovelEmbeddingScene(sceneKey);
@@ -519,6 +564,9 @@ export class AiNovelLlmService {
 
     try {
       const result = await this.embeddingManager.embed({
+        signal: options.signal,
+        onUsageFinalized: options.onUsageFinalized,
+        requirePointPricing: Boolean(options.onUsageFinalized),
         modelKey: AiNovelLlmService.EMBEDDING_MODEL_KEY,
         input,
         ...aiNovelUsageOwner(options),

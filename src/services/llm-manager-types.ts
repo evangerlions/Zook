@@ -4,6 +4,8 @@ import type { LlmMetricsService } from "./llm-metrics.service.ts";
 import type { LlmCallObservationRecorder } from "./llm-call-observation.ts";
 import type { LlmRouteCircuitBreakerService } from "./llm-route-circuit-breaker.service.ts";
 import type { LlmRouteRef } from "./llm-health.service.ts";
+import type { LlmPointPricing } from "../shared/types.ts";
+import type { LlmCallObservationRecord } from "../infrastructure/database/llm-observability-store.ts";
 
 export type LLMProviderName = string;
 export type LLMRole = "system" | "user" | "assistant" | "tool";
@@ -22,6 +24,9 @@ export interface LlmRoutingIdentity {
 }
 
 export interface LLMCompletionRequest {
+  /** Internal per-request consumer of the same priced result persisted by Admin. */
+  onUsageFinalized?: (record: LlmCallObservationRecord) => Promise<void>;
+  requirePointPricing?: boolean;
   modelKey: string;
   messages: LLMMessage[];
   temperature?: number;
@@ -29,7 +34,7 @@ export interface LLMCompletionRequest {
   providerOptions?: Record<string, unknown>;
   usageOwner?: {
     appId: string;
-    userId: string;
+    userId?: string;
   };
   routingIdentity?: LlmRoutingIdentity;
   signal?: AbortSignal;
@@ -55,6 +60,8 @@ export interface LLMUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  /** Cache-read input tokens, already included in promptTokens. Unknown is not zero. */
+  cachedInputTokens?: number;
   reasoningTokens?: number;
   contextWindowTokens?: number;
   contextUsedRatio?: number;
@@ -95,6 +102,7 @@ export interface ResolvedLLMModel {
   modelKey: string;
   resolvedModelKey: string;
   providerModel: string;
+  pointPricing?: LlmPointPricing;
   providerConfig?: {
     baseUrl: string;
     apiKey: string;
@@ -124,6 +132,10 @@ export type LLMModelRegistry = Record<
 
 export interface LLMManagerOptions {
   commonLlmConfigService?: CommonLlmConfigService;
+  pointPricingResolver?: (input: {
+    appId?: string;
+    modelKey: string;
+  }) => Promise<LlmPointPricing | undefined>;
   llmHealthService?: LlmHealthService;
   llmMetricsService?: LlmMetricsService;
   llmCallObservationRecorder?: LlmCallObservationRecorder;

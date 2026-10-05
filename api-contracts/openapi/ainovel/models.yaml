@@ -1,0 +1,119 @@
+openapi: 3.2.0
+info:
+  title: OrangeWrite Model Selection API
+  version: 0.1.0
+  description: Product-eligible logical chat models and server-owned credit multipliers.
+  license:
+    name: Proprietary
+    url: https://docs.zook.dev/legal/api-license
+servers:
+  - url: https://api.zook.dev
+security:
+  - bearerAuth: []
+tags:
+  - name: ainovel-models
+    description: User model selection.
+paths:
+  /api/v1/ai_novel/models:
+    get:
+      operationId: getAiNovelModels
+      summary: List selectable OrangeWrite models
+      description: |
+        Only enabled common chat routes with complete AINovel point pricing are
+        selectable. Auto is a client preference, not a logical model or fixed
+        price. Model keys are provider-independent; no credentials or upstream
+        provider names are returned. Rates are the configured base rates; any
+        configured long-context pricing tiers still apply during settlement.
+      tags: [ainovel-models]
+      parameters:
+        - name: X-App-Id
+          in: header
+          required: true
+          schema: { type: string, const: ai_novel }
+      responses:
+        "200":
+          description: Available model catalog; models may be empty while disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiNovelModelCatalogResponse"
+        "401": { description: Missing or invalid authentication }
+        "403": { description: Product scope mismatch }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  schemas:
+    AiNovelModelSelection:
+      oneOf:
+        - type: object
+          required: [mode]
+          properties:
+            mode: { type: string, const: auto }
+          additionalProperties: false
+        - type: object
+          required: [mode, modelKey]
+          properties:
+            mode: { type: string, const: manual }
+            modelKey: { type: string, minLength: 1 }
+          additionalProperties: false
+      description: Optional decrypted chat payload property. Absent means Auto; manual never falls back to another logical model.
+    AiNovelPublicModel:
+      type: object
+      required: [key, label, localIcon, onlineIcon, inputMultiplier, cachedInputMultiplier, outputMultiplier, contextWindowTokens]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        localIcon:
+          type: string
+          enum: [generic, deepseek, kimi, qwen, doubao, minimax, gemini, claude, grok, zai, openai]
+          description: Bundled fallback icon selector. Old clients may ignore this field.
+        onlineIcon:
+          type: string
+          description: Public HTTPS raster image URL or empty string. Keep local icon until a remote frame loads; failures fall back locally.
+        description:
+          type: string
+          maxLength: 2000
+          description: Optional product-owned model introduction.
+        badge:
+          type: string
+          maxLength: 512
+          description: Optional product-owned model tag, never inferred from its price.
+        inputMultiplier: { type: number, minimum: 0 }
+        cachedInputMultiplier: { type: number, minimum: 0 }
+        outputMultiplier: { type: number, minimum: 0 }
+        contextWindowTokens:
+          type: integer
+          minimum: 1
+          description: Zook operating context budget, not an inferred physical upstream capability.
+        contextTiers:
+          type: array
+          description: Optional long-context pricing overrides; highest exceeded prompt threshold applies.
+          items:
+            type: object
+            required: [abovePromptTokens, inputMultiplier, cachedInputMultiplier, outputMultiplier]
+            properties:
+              abovePromptTokens: { type: integer, minimum: 0 }
+              inputMultiplier: { type: number, minimum: 0 }
+              cachedInputMultiplier: { type: number, minimum: 0 }
+              outputMultiplier: { type: number, minimum: 0 }
+            additionalProperties: false
+      additionalProperties: false
+    AiNovelModelCatalogData:
+      type: object
+      required: [models]
+      properties:
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiNovelPublicModel"
+      additionalProperties: false
+    AiNovelModelCatalogResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string, const: OK }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/AiNovelModelCatalogData"
+        requestId: { type: string }
+      additionalProperties: false

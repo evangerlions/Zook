@@ -14,6 +14,8 @@ import type { LightTickRepository } from "./modules/lighttick/lighttick.reposito
 
 export interface CreateApplicationOptions {
   alipay?: import("./modules/billing/alipay-models.ts").AlipayOptions;
+  /** Rollout gate: enable after pricing, migrations and server settlement validation. */
+  aiNovelCreditsEnabled?: boolean;
   seed?: DatabaseSeed;
   serviceName?: string;
   emitLogs?: boolean;

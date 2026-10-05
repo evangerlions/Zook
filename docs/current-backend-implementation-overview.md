@@ -359,6 +359,21 @@ AINovel 的既有 `GET /api/v1/ai_novel/public/config` 也会带上同一份
 5. Provider、上游 `providerModel`、密钥、Provider 路由权重和健康路由仍由 `common.llm_service` 负责
 6. Embedding 使用代码中固定的 `text-embedding-v4` common model key，其 Provider 路由仍归 `common.llm_service`
 
+### 2.14.1 AINovel 产品级模型点数费率
+
+AINovel 点数费率独立存放在版本化 App 配置 `ai_novel.model_point_pricing`，由 Admin Web 的 AINovel AI Model 页面维护，不混入 `common.llm_service`。配置按逻辑模型键分别保存输入和输出每百万 tokens 点数；后台同时展示 OpenRouter 美元/M token 参考价、匹配情况和备注。
+
+初始代码值按 OpenRouter 模型目录参考价乘以 `10,000 点/USD` 换算，仅是运营复核前的内部统计草案，不代表会员月额度或实际模型账单。当前包括 OrangeWrite 使用的 chat、embedding 和内容安全模型键；没有精确 OpenRouter 型号的 Doubao Seed / Text Embedding v4 标为近似参考。缺少费率表示未计价，0/0 才表示显式免费。
+
+LLM/Embedding 运行时只对 `usageOwner.appId = ai_novel` 的实际请求解析这份费率，使用同一 provider usage / 本地估算 pipeline 产生点数观测；其它产品不套用 AINovel 费率。该能力只供后台观测与未来结算复用，当前没有会员余额扣减。
+
+对应核心文件：
+
+1. `src/modules/ai-novel/ai-novel-model-point-pricing-config.service.ts`
+2. `src/modules/ai-novel/ai-novel-model-point-pricing-defaults.ts`
+3. `src/services/llm-point-pricing.ts`
+4. `src/app/admin-ai-novel-model-point-pricing-routes.ts`
+
 对应核心文件：
 
 1. `src/modules/ai-novel/ai-novel-model-selection-config.service.ts`

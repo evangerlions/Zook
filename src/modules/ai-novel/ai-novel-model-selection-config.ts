@@ -1,5 +1,6 @@
 import { ApplicationError, badRequest } from "../../shared/errors.ts";
 import type { AiNovelModelSelectionConfig } from "../../shared/types.ts";
+import { parseModelCatalogPresentation } from "../../shared/model-catalog-presentation.ts";
 
 export const AI_NOVEL_MODEL_SELECTION_CONFIG_KEY =
   "ai_novel.model_selection";
@@ -56,7 +57,7 @@ function normalizeConfig(
     "AINovel model selection must be a JSON object.",
     invalid,
   );
-  assertKnownFields(source, ["schemaVersion", "chat"], "config", invalid);
+  assertKnownFields(source, ["schemaVersion", "chat", "catalog"], "config", invalid);
   if (source.schemaVersion !== CONFIG_SCHEMA_VERSION) {
     invalid(`schemaVersion must be ${CONFIG_SCHEMA_VERSION}.`);
   }
@@ -68,10 +69,16 @@ function normalizeConfig(
   );
   assertKnownFields(chat, ["default"], "chat", invalid);
   const defaultModels = normalizeModels(chat.default, "chat.default", invalid);
+  let catalog: AiNovelModelSelectionConfig["catalog"];
+  if (source.catalog !== undefined) {
+    try { catalog = parseModelCatalogPresentation(source.catalog); }
+    catch (error) { invalid(error instanceof Error ? error.message : String(error)); }
+  }
 
   return {
     schemaVersion: CONFIG_SCHEMA_VERSION,
     chat: { default: defaultModels },
+    ...(catalog ? { catalog } : {}),
   };
 }
 

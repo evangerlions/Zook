@@ -54,6 +54,7 @@ import type {
 } from "../../shared/types.ts";
 import type { LlmObservabilityStore } from "./llm-observability-store.ts";
 import type { AiNovelConversationStore } from "./ai-novel-conversation-store.ts";
+import type { AiNovelCreditsStore } from "../../modules/ai-novel/credits/ai-novel-credits-model.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
 import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
@@ -94,6 +95,7 @@ export interface ManagedStateSnapshot {
 export abstract class ApplicationDatabase {
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract readonly aiNovelConversationStore: AiNovelConversationStore;
+  abstract readonly aiNovelCreditsStore: AiNovelCreditsStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],

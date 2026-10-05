@@ -3,6 +3,7 @@
 
 export const PublicApiMessages = {
   "en-US": {
+    "ai_novel.credits.exhausted": "Your Writing Credits are used up. View membership options, or wait for your quota to refresh to continue writing.",
     "common.success": "success",
     "error.req.invalid_body": "Request content is invalid. Please review it and try again.",
     "error.req.invalid_header": "Request headers are invalid. Please review them and try again.",
@@ -79,6 +80,7 @@ export const PublicApiMessages = {
     "error.system.internal": "An unexpected internal error occurred."
   },
   "zh-CN": {
+    "ai_novel.credits.exhausted": "创作点已用完。你可以查看会员方案，或等待额度刷新后继续创作。",
     "common.success": "成功",
     "error.req.invalid_body": "请求内容不合法，请检查后重试。",
     "error.req.invalid_header": "请求头不合法，请检查后重试。",
@@ -155,6 +157,7 @@ export const PublicApiMessages = {
     "error.system.internal": "系统出现异常，请稍后重试。"
   },
   "zh-TW": {
+    "ai_novel.credits.exhausted": "創作點已用完。你可以查看會員方案，或等待額度更新後繼續創作。",
     "common.success": "成功",
     "error.req.invalid_body": "請求內容無效。請檢查並重試。",
     "error.req.invalid_header": "請求標頭無效。請查看它們並重試。",
@@ -231,6 +234,7 @@ export const PublicApiMessages = {
     "error.system.internal": "發生意外的內部錯誤。"
   },
   "ja-JP": {
+    "ai_novel.credits.exhausted": "創作クレジットを使い切りました。会員プランを確認するか、利用枠の更新をお待ちください。",
     "common.success": "成功",
     "error.req.invalid_body": "リクエスト内容が不正です。内容を確認して、もう一度お試しください。",
     "error.req.invalid_header": "リクエストヘッダーが無効です。確認して、もう一度お試しください。",
@@ -307,6 +311,7 @@ export const PublicApiMessages = {
     "error.system.internal": "予期しない内部エラーが発生しました。"
   },
   "es-ES": {
+    "ai_novel.credits.exhausted": "Has agotado tus créditos de escritura. Consulta los planes o espera a que se renueve tu cuota.",
     "common.success": "Éxito",
     "error.req.invalid_body": "El contenido de la solicitud no es válido. Revísalo e inténtalo de nuevo.",
     "error.req.invalid_header": "Los encabezados de la solicitud no son válidos. Revísalos e inténtalo de nuevo.",
@@ -383,6 +388,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Se produjo un error interno inesperado."
   },
   "pt-BR": {
+    "ai_novel.credits.exhausted": "Seus créditos de escrita acabaram. Confira os planos ou aguarde a renovação da sua cota.",
     "common.success": "sucesso",
     "error.req.invalid_body": "O conteúdo da solicitação é inválido. Revise e tente novamente.",
     "error.req.invalid_header": "Os cabeçalhos da solicitação são inválidos. Revise e tente novamente.",
@@ -459,6 +465,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Ocorreu um erro interno inesperado."
   },
   "ko-KR": {
+    "ai_novel.credits.exhausted": "창작 크레딧을 모두 사용했어요. 멤버십 요금제를 확인하거나 이용 한도가 갱신될 때까지 기다려 주세요.",
     "common.success": "성공",
     "error.req.invalid_body": "요청 내용이 잘못되었습니다. 검토한 후 다시 시도해 주세요.",
     "error.req.invalid_header": "요청 헤더가 잘못되었습니다. 검토한 후 다시 시도해 주세요.",
@@ -535,6 +542,7 @@ export const PublicApiMessages = {
     "error.system.internal": "예상치 못한 내부 오류가 발생했습니다."
   },
   "de-DE": {
+    "ai_novel.credits.exhausted": "Deine Schreibcredits sind aufgebraucht. Sieh dir die Mitgliedschaft an oder warte, bis dein Kontingent erneuert wird.",
     "common.success": "Erfolg",
     "error.req.invalid_body": "Der Inhalt der Anfrage ist ungültig. Bitte überprüfen Sie ihn und versuchen Sie es erneut.",
     "error.req.invalid_header": "Anforderungsheader sind ungültig. Bitte überprüfen Sie sie und versuchen Sie es erneut.",
@@ -611,6 +619,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Es ist ein unerwarteter interner Fehler aufgetreten."
   },
   "fr-FR": {
+    "ai_novel.credits.exhausted": "Vos crédits d’écriture sont épuisés. Consultez les abonnements ou attendez le renouvellement de votre quota.",
     "common.success": "Succès",
     "error.req.invalid_body": "Le contenu de la requête est invalide. Vérifiez-le, puis réessayez.",
     "error.req.invalid_header": "Les en-têtes de la requête sont invalides. Vérifiez-les, puis réessayez.",
@@ -687,6 +696,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Une erreur interne inattendue s'est produite."
   },
   "hi-IN": {
+    "ai_novel.credits.exhausted": "आपके लेखन क्रेडिट खत्म हो गए हैं। सदस्यता के विकल्प देखें या कोटा रीसेट होने तक इंतज़ार करें।",
     "common.success": "सफलता",
     "error.req.invalid_body": "अनुरोध सामग्री अमान्य है. कृपया इसकी समीक्षा करें और पुनः प्रयास करें।",
     "error.req.invalid_header": "अनुरोध शीर्षलेख अमान्य हैं. कृपया उनकी समीक्षा करें और पुनः प्रयास करें।",
@@ -763,6 +773,7 @@ export const PublicApiMessages = {
     "error.system.internal": "एक अप्रत्याशित आंतरिक त्रुटि उत्पन्न हुई."
   },
   "id-ID": {
+    "ai_novel.credits.exhausted": "Kredit menulis Anda habis. Lihat pilihan keanggotaan atau tunggu kuota diperbarui.",
     "common.success": "Berhasil",
     "error.req.invalid_body": "Konten permintaan tidak valid. Harap tinjau dan coba lagi.",
     "error.req.invalid_header": "Header permintaan tidak valid. Harap tinjau dan coba lagi.",
@@ -839,6 +850,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Terjadi kesalahan internal yang tidak terduga."
   },
   "it-IT": {
+    "ai_novel.credits.exhausted": "Hai esaurito i crediti di scrittura. Consulta gli abbonamenti o attendi il rinnovo della quota.",
     "common.success": "Operazione riuscita",
     "error.req.invalid_body": "Il contenuto della richiesta non è valido. Controllalo e riprova.",
     "error.req.invalid_header": "Le intestazioni della richiesta non sono valide. Controllale e riprova.",
@@ -915,6 +927,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Si è verificato un errore interno imprevisto."
   },
   "tr-TR": {
+    "ai_novel.credits.exhausted": "Yazım kredileriniz tükendi. Üyelik seçeneklerine göz atın veya kotanızın yenilenmesini bekleyin.",
     "common.success": "Başarılı",
     "error.req.invalid_body": "İstek içeriği geçersiz. Lütfen inceleyip tekrar deneyin.",
     "error.req.invalid_header": "İstek başlıkları geçersiz. Lütfen bunları inceleyip tekrar deneyin.",
@@ -991,6 +1004,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Beklenmeyen bir dahili hata oluştu."
   },
   "vi-VN": {
+    "ai_novel.credits.exhausted": "Bạn đã dùng hết điểm sáng tác. Xem các gói thành viên hoặc chờ hạn mức được làm mới.",
     "common.success": "Thành công",
     "error.req.invalid_body": "Nội dung yêu cầu không hợp lệ. Vui lòng xem lại và thử lại.",
     "error.req.invalid_header": "Tiêu đề yêu cầu không hợp lệ. Vui lòng xem lại chúng và thử lại.",
@@ -1067,6 +1081,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Đã xảy ra lỗi nội bộ không mong muốn."
   },
   "th-TH": {
+    "ai_novel.credits.exhausted": "เครดิตการเขียนของคุณหมดแล้ว ดูแพ็กเกจสมาชิกหรือรอให้โควตารีเซ็ตเพื่อเขียนต่อ",
     "common.success": "สำเร็จ",
     "error.req.invalid_body": "เนื้อหาคำขอไม่ถูกต้อง โปรดตรวจสอบและลองอีกครั้ง",
     "error.req.invalid_header": "ส่วนหัวของคำขอไม่ถูกต้อง โปรดตรวจสอบและลองอีกครั้ง",
@@ -1143,6 +1158,7 @@ export const PublicApiMessages = {
     "error.system.internal": "เกิดข้อผิดพลาดภายในที่ไม่คาดคิด"
   },
   "pl-PL": {
+    "ai_novel.credits.exhausted": "Twoje kredyty na pisanie się wyczerpały. Sprawdź plany członkostwa lub poczekaj na odnowienie limitu.",
     "common.success": "Sukces",
     "error.req.invalid_body": "Treść żądania jest nieprawidłowa. Sprawdź ją i spróbuj ponownie.",
     "error.req.invalid_header": "Nagłówki żądań są nieprawidłowe. Przejrzyj je i spróbuj ponownie.",
@@ -1219,6 +1235,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Wystąpił nieoczekiwany błąd wewnętrzny."
   },
   "nl-NL": {
+    "ai_novel.credits.exhausted": "Je schrijfcredits zijn op. Bekijk de lidmaatschappen of wacht tot je tegoed wordt vernieuwd.",
     "common.success": "succes",
     "error.req.invalid_body": "De inhoud van het verzoek is ongeldig. Controleer deze en probeer het opnieuw.",
     "error.req.invalid_header": "De headers van het verzoek zijn ongeldig. Controleer ze en probeer het opnieuw.",
@@ -1295,6 +1312,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Er is een onverwachte interne fout opgetreden."
   },
   "sv-SE": {
+    "ai_novel.credits.exhausted": "Dina skrivkrediter är slut. Se medlemsalternativen eller vänta tills din kvot förnyas.",
     "common.success": "Lyckades",
     "error.req.invalid_body": "Begärans innehåll är ogiltigt. Kontrollera det och försök igen.",
     "error.req.invalid_header": "Begärans rubriker är ogiltiga. Granska dem och försök igen.",
@@ -1371,6 +1389,7 @@ export const PublicApiMessages = {
     "error.system.internal": "Ett oväntat internt fel inträffade."
   },
   "bn-BD": {
+    "ai_novel.credits.exhausted": "আপনার লেখার ক্রেডিট শেষ হয়েছে। সদস্যতার বিকল্প দেখুন অথবা কোটা রিসেট হওয়া পর্যন্ত অপেক্ষা করুন।",
     "common.success": "সাফল্য",
     "error.req.invalid_body": "অনুরোধের বিষয়বস্তু অবৈধ। এটি পর্যালোচনা করুন এবং আবার চেষ্টা করুন.",
     "error.req.invalid_header": "অনুরোধ শিরোনাম অবৈধ. অনুগ্রহ করে সেগুলি পর্যালোচনা করুন এবং আবার চেষ্টা করুন৷",
@@ -1447,6 +1466,7 @@ export const PublicApiMessages = {
     "error.system.internal": "একটি অপ্রত্যাশিত অভ্যন্তরীণ ত্রুটি ঘটেছে৷"
   },
   "sw-KE": {
+    "ai_novel.credits.exhausted": "Salio lako la uandishi limeisha. Angalia chaguo za uanachama au subiri kiwango chako kisasishwe.",
     "common.success": "Imefaulu",
     "error.req.invalid_body": "Maudhui ya ombi si sahihi. Yakague na ujaribu tena.",
     "error.req.invalid_header": "Vichwa vya ombi si sahihi. Vihakiki na ujaribu tena.",

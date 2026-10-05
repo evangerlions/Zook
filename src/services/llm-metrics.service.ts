@@ -16,6 +16,7 @@ import { toDateKey, toHourKey } from "../shared/utils.ts";
 import type { LlmHealthService } from "./llm-health.service.ts";
 import { LlmCallObservationRecorder } from "./llm-call-observation.ts";
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
+import { pointMicrosToPoints } from "./llm-point-pricing.ts";
 
 const DEFAULT_TIMEZONE = "Asia/Shanghai";
 
@@ -232,6 +233,9 @@ function toMetricsSummary(
     reasoningTokens: aggregate.reasoningTokens,
     unclassifiedTokens: aggregate.unclassifiedTokens,
     totalTokens: aggregate.totalTokens,
+    totalPoints: pointMicrosToPoints(aggregate.pointMicros),
+    pointPricedRequestCount: aggregate.pointPricedRequestCount ?? 0,
+    pointUnpricedRequestCount: aggregate.pointUnpricedRequestCount ?? 0,
     providerUsageCount: aggregate.providerUsageCount,
     estimatedUsageCount: aggregate.estimatedUsageCount,
     missingUsageCount: aggregate.missingUsageCount,
@@ -310,6 +314,8 @@ function emptyAggregate(): LlmObservationAggregate {
     providerUsageCount: 0,
     estimatedUsageCount: 0,
     missingUsageCount: 0,
+    pointPricedRequestCount: 0,
+    pointUnpricedRequestCount: 0,
   };
 }
 

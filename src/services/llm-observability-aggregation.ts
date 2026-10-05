@@ -2,6 +2,7 @@ import type {
   LlmCallObservationRecord,
   LlmObservationAggregate,
 } from "../infrastructure/database/llm-observability-store.ts";
+import { sumPointMicros } from "./llm-point-pricing.ts";
 
 export function aggregateLlmObservations(
   records: LlmCallObservationRecord[],
@@ -22,6 +23,7 @@ export function aggregateLlmObservations(
   const visibleOutputTokens = sumOptional((item) => visibleOutput(item));
   const reasoningTokens = sumOptional((item) => item.reasoningTokens);
   const totalTokens = sumOptional((item) => item.totalTokens);
+  const pointMicros = sumPointMicros(records.map((item) => item.pointMicros));
   const unclassifiedTokens = sumOptional((item) => unclassified(item));
 
   return {
@@ -43,6 +45,9 @@ export function aggregateLlmObservations(
     reasoningTokens,
     unclassifiedTokens,
     totalTokens,
+    pointMicros,
+    pointPricedRequestCount: records.filter((item) => item.pointMicros !== undefined).length,
+    pointUnpricedRequestCount: records.filter((item) => item.pointMicros === undefined).length,
     providerUsageCount: records.filter((item) => item.usageSource === "provider").length,
     estimatedUsageCount: records.filter((item) => item.usageSource === "estimated").length,
     missingUsageCount: records.filter((item) => item.usageSource === "missing").length,

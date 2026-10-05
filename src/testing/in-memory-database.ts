@@ -80,6 +80,7 @@ import { InMemoryAiNovelStatisticsStore } from "./in-memory-ai-novel-statistics-
 import { InMemoryAiNovelConversationStore } from "./in-memory-ai-novel-conversation-store.ts";
 import { InMemoryAiNovelBillingStore } from "./in-memory-ai-novel-billing-store.ts";
 import { InMemoryLlmObservabilityStore } from "./in-memory-llm-observability-store.ts";
+import { InMemoryAiNovelCreditsStore } from "./in-memory-ai-novel-credits-store.ts";
 import { conflict } from "../shared/errors.ts";
 import type { AiNovelConversationRecord } from "../shared/types/ai-novel-conversation.ts";
 import type { BodyLogProfileRecord } from "../modules/bodylog/bodylog-profile.types.ts";
@@ -124,6 +125,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   private buddyCommandTail: Promise<void> = Promise.resolve();
   private readonly buddyDecisionSafetyContext = new AsyncLocalStorage<string>();
   readonly llmObservabilityStore = new InMemoryLlmObservabilityStore();
+  readonly aiNovelCreditsStore = new InMemoryAiNovelCreditsStore();
   readonly aiNovelConversationStore: InMemoryAiNovelConversationStore;
 
   apps: AppRecord[];

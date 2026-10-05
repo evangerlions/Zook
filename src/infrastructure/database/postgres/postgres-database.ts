@@ -87,6 +87,7 @@ import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../..
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { PostgresLightTickRepository } from "./postgres-lighttick-repository.ts";
 import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
+import { PostgresAiNovelCreditsStore } from "./postgres-ai-novel-credits.ts";
 import { PostgresBodyLogAdminStore } from "./postgres-bodylog-admin.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
@@ -124,11 +125,13 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly bodyLogChallenges: PostgresBodyLogChallengeStore;
   private readonly lightTick: PostgresLightTickRepository;
   readonly llmObservabilityStore: PostgresLlmObservabilityStore;
+  readonly aiNovelCreditsStore: PostgresAiNovelCreditsStore;
   private readonly bodyLogStores: BodyLogStores;
   private readonly bodyLogAdmin: PostgresBodyLogAdminStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
+    this.aiNovelCreditsStore = new PostgresAiNovelCreditsStore(async () => this.pool.connect());
     this.appUsers = new PostgresAppUserStore(async (sql, values = []) => await this.query(sql, values));
     this.emailDeliveryEvents = new PostgresEmailDeliveryEventStore(async (sql, values = []) => await this.query(sql, values));
     this.feedback = new PostgresFeedbackStore(async (sql, values = []) => await this.query(sql, values));

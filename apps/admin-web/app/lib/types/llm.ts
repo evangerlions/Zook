@@ -145,6 +145,9 @@ export interface LlmMetricsSummary {
   reasoningTokens?: number;
   unclassifiedTokens?: number;
   totalTokens?: number;
+  totalPoints?: number;
+  pointPricedRequestCount: number;
+  pointUnpricedRequestCount: number;
   providerUsageCount: number;
   estimatedUsageCount: number;
   missingUsageCount: number;

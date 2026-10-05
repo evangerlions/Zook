@@ -121,7 +121,13 @@ export class LlmContentSafetyChecker {
     const startedAt = Date.now();
     const llmInput = buildLlmInput(config, text);
     try {
-      const result = await withContentSafetyTimeout(this.llmManager.complete(llmInput), config.llm.timeoutMs);
+      const result = await withContentSafetyTimeout(this.llmManager.complete({
+        ...llmInput,
+        usageOwner: {
+          appId: command.appId,
+          ...(command.userId ? { userId: command.userId } : {}),
+        },
+      }), config.llm.timeoutMs);
       return await this.handleLlmResult(command, config, text, startedAt, llmInput, result);
     } catch (error) {
       return await this.handleLlmError(command, config, text, startedAt, llmInput, error);

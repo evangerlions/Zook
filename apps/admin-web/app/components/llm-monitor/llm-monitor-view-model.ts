@@ -37,6 +37,18 @@ export function formatTokenNumber(value?: number): string {
   return `${scaled.toFixed(scaled >= 100 || unit[0] === 1 ? 0 : 1).replace(/\.0$/, "")}${unit[1]}`;
 }
 
+export function formatPointNumber(value?: number): string {
+  if (value === undefined) return "—";
+  return `${new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 6 }).format(value)} 点`;
+}
+
+export function pointCoverage(summary: LlmMetricsSummary): string {
+  const priced = summary.pointPricedRequestCount ?? 0;
+  const unpriced = summary.pointUnpricedRequestCount ?? 0;
+  if (!summary.requestCount) return "暂无调用";
+  return `已计价 ${priced} 次 · 未计价 ${unpriced} 次 · Token 来源 Provider ${summary.providerUsageCount} / 估算 ${summary.estimatedUsageCount} / 缺失 ${summary.missingUsageCount}`;
+}
+
 export function formatLatency(value?: number): string {
   if (value === undefined) return "—";
   return value >= 1000 ? `${(value / 1000).toFixed(value >= 10_000 ? 1 : 2)} s` : `${value} ms`;
@@ -143,6 +155,39 @@ export function buildTokenOption(items: LlmHourlySeriesItem[], width = 1000): EC
   };
 }
 
+export function buildPointOption(items: LlmHourlySeriesItem[], width = 1000): EChartsCoreOption {
+  const compact = width < 520;
+  const labels = items.map((item) => shortBucket(item.bucket));
+  return {
+    color: [COLORS.violet],
+    tooltip: {
+      trigger: "axis",
+      confine: true,
+      formatter: (params: Array<{ dataIndex: number }>) => {
+        const item = items[params[0]?.dataIndex ?? -1];
+        if (!item) return "无数据";
+        return [
+          item.bucket,
+          `消耗点数 ${formatPointNumber(item.totalPoints)}`,
+          `已计价 ${item.pointPricedRequestCount ?? 0} 次 · 未计价 ${item.pointUnpricedRequestCount ?? 0} 次`,
+        ].join("<br/>");
+      },
+    },
+    legend: { top: 0, data: ["消耗点数"], textStyle: { fontSize: compact ? 10 : 12 } },
+    grid: { top: 48, left: compact ? 42 : 66, right: compact ? 12 : 24, bottom: 42, containLabel: true },
+    xAxis: { type: "category", data: labels, axisLabel: { fontSize: compact ? 9 : 12, hideOverlap: true } },
+    yAxis: { type: "value", name: compact ? "" : "点", splitNumber: compact ? 2 : 5, axisLabel: { fontSize: compact ? 9 : 12 } },
+    series: [{
+      name: "消耗点数",
+      type: "line",
+      smooth: 0.2,
+      areaStyle: { opacity: 0.18 },
+      showSymbol: false,
+      data: items.map((item) => item.available ? item.totalPoints ?? null : null),
+    }],
+  };
+}
+
 export function buildLatencyOption(items: LlmHourlySeriesItem[], width = 1000): EChartsCoreOption {
   const compact = width < 520;
   return {
@@ -221,6 +266,45 @@ export function buildTokenRankingOption(
       barMaxWidth: 22,
       data: ranked.map((item) => item.summary[field] ?? 0),
     })),
+  };
+}
+
+export function buildPointRankingOption(
+  items: Array<{ label: string; summary: LlmMetricsSummary }>,
+): EChartsCoreOption {
+  const ranked = [...items]
+    .filter((item) => item.summary.totalPoints !== undefined)
+    .sort((left, right) => (right.summary.totalPoints ?? 0) - (left.summary.totalPoints ?? 0))
+    .slice(0, 10)
+    .reverse();
+  return {
+    color: [COLORS.violet],
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      formatter: (params: Array<{ dataIndex: number }>) => {
+        const item = ranked[params[0]?.dataIndex ?? -1];
+        return item ? `${item.label}<br/>消耗点数 ${formatPointNumber(item.summary.totalPoints)}` : "无数据";
+      },
+    },
+    grid: { top: 18, left: 112, right: 24, bottom: 30, containLabel: false },
+    xAxis: {
+      type: "value",
+      name: "点",
+      splitNumber: 2,
+      axisLabel: { fontSize: 10, formatter: (value: number) => formatPointNumber(value) },
+    },
+    yAxis: {
+      type: "category",
+      data: ranked.map((item) => item.label),
+      axisLabel: { fontSize: 10, formatter: (value: string) => value.length > 12 ? `${value.slice(0, 11)}…` : value },
+    },
+    series: [{
+      name: "消耗点数",
+      type: "bar",
+      barMaxWidth: 22,
+      data: ranked.map((item) => item.summary.totalPoints ?? 0),
+    }],
   };
 }
 

@@ -101,6 +101,15 @@ SPECS: dict[str, list[str]] = {
         "BillingProviderConflictData",
         "ErrorResponse",
     ],
+    "ainovel/credits.yaml": [
+        "CreditMicros",
+        "CreditsBalanceData",
+    ],
+    "ainovel/models.yaml": [
+        "AiNovelModelSelection",
+        "AiNovelPublicModel",
+        "AiNovelModelCatalogData",
+    ],
     "ainovel/statistics.yaml": [
         "AiNovelStatisticsData",
         "AiNovelStatisticsSnapshotRequest",

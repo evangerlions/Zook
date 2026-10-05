@@ -26,6 +26,16 @@ export interface LlmModelRouteConfig {
   weight: number;
 }
 
+export interface LlmPointPricing {
+  contextTiers?: Array<{ abovePromptTokens: number; inputPointsPerMillionTokens: number; outputPointsPerMillionTokens: number }>;
+  /** Optional cache-read rate; absent explicitly means no cache discount. */
+  cachedInputPointsPerMillionTokens?: number;
+  /** Integer points charged per one million prompt/input tokens. */
+  inputPointsPerMillionTokens: number;
+  /** Integer points charged per one million completion/output tokens. */
+  outputPointsPerMillionTokens: number;
+}
+
 export interface LlmModelConfig {
   key: string;
   label: string;
@@ -166,6 +176,9 @@ export interface LlmMetricsSummary {
   reasoningTokens?: number;
   unclassifiedTokens?: number;
   totalTokens?: number;
+  totalPoints?: number;
+  pointPricedRequestCount?: number;
+  pointUnpricedRequestCount?: number;
   providerUsageCount: number;
   estimatedUsageCount: number;
   missingUsageCount: number;

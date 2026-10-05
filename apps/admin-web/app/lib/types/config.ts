@@ -24,6 +24,7 @@ export interface AdminAiRoutingDocument {
 
 export interface AiNovelModelSelectionConfig {
   schemaVersion: 1;
+  catalog?: import("../../../../../src/shared/model-catalog-presentation.ts").ModelCatalogPresentation[];
   chat: {
     default: Array<{
       modelKey: string;
@@ -56,6 +57,53 @@ export interface AdminAiNovelModelSelectionDocument {
   config: AiNovelModelSelectionConfig;
   availableChatModels: AiNovelChatModelOption[];
   modelHealth: AiNovelModelHealth[];
+  updatedAt?: string;
+  revision?: number;
+  desc?: string;
+  isLatest: boolean;
+  revisions: ConfigRevisionMeta[];
+}
+
+export interface AiNovelModelPointPricing {
+  modelKey: string;
+  inputPointsPerMillionTokens?: number;
+  outputPointsPerMillionTokens?: number;
+  cachedInputPointsPerMillionTokens?: number;
+  contextTiers?: Array<{
+    abovePromptTokens: number;
+    inputPointsPerMillionTokens: number;
+    outputPointsPerMillionTokens: number;
+  }>;
+}
+
+export interface AiNovelModelPointPricingConfig {
+  schemaVersion: 1;
+  models: AiNovelModelPointPricing[];
+}
+
+export interface AiNovelModelPointPricingReference {
+  source: "openrouter" | "product";
+  modelId?: string;
+  inputUsdPerMillionTokens?: number;
+  outputUsdPerMillionTokens?: number;
+  match: "exact" | "approximate" | "unavailable";
+  note?: string;
+  url?: string;
+}
+
+export interface AiNovelPointPricingModelOption {
+  key: string;
+  label: string;
+  kind: "chat" | "embedding";
+  configuredAvailable: boolean;
+  reference: AiNovelModelPointPricingReference;
+}
+
+export interface AdminAiNovelModelPointPricingDocument {
+  app: AdminAppSummary;
+  configKey: string;
+  config: AiNovelModelPointPricingConfig;
+  availableModels: AiNovelPointPricingModelOption[];
   updatedAt?: string;
   revision?: number;
   desc?: string;

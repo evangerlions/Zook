@@ -372,6 +372,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `GET` / `POST` | `/api/v1/bodylog/invitations`     | 查询邀请奖励进度或创建邀请                                                                                                         |
 | `GET` / `POST` | `/api/v1/bodylog/challenges`      | 查询或创建 BodyLog 好友挑战                                                                                                        |
 | `POST` | `/api/v1/ai_novel/ai/chat-completions`     | AINovel chat 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene；解密后的 inner body 可用 `stream=true` 切到 SSE |
+| `GET` | `/api/v1/ai_novel/models` | Bearer + AINovel scope；返回可手动选择的逻辑模型及服务端三个消耗倍率 |
 | `POST` | `/api/v1/ai_novel/ai/embeddings`           | AINovel embeddings 能力接口，需要 Bearer 鉴权，按 `scene_key` / `sceneKey` 选择服务端 scene                                          |
 | `POST` | `/api/v1/ai_novel/feedback`                | AINovel 用户反馈提交接口，需要 Bearer 鉴权；正文 trim 后 30–10,000 字，最多 5 张压缩图片；可选内部 SMTP 提醒不会影响提交结果       |
 | `GET`  | `/api/v1/ai_novel/statistics`              | 获取当前 AINovel 登录用户的创作统计报告，需要 Bearer 鉴权                                                                           |
@@ -1153,6 +1154,12 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - 本轮未改变鉴权、app scope 和公共路径；指导字段存储依赖增量迁移 `064_lighttick_task_guidance.sql`。部署迁移及后端后再启用新客户端能力。完整顺序和验证边界见 `docs/lighttick/app-loop-integration.md`。
 
 
+### AINovel usage 校验与缓存输入（2026-10-04）
+
+- Chat usage 可兼容增加 `cachedInputTokens`，表示厂商返回、已包含在 `promptTokens` 中的缓存读取输入子集；不得再次加进 `totalTokens`。字段缺失表示未知，不是零；缓存写入量不能代替缓存读取量。
+- 有效厂商 usage 优先，包括真实的 0。计数必须为安全非负整数、总量等于输入加输出、缓存和 reasoning 不超过各自父项。缺失或异常 usage 不丢弃正文，走现有服务端估算兜底并标记 `estimated: true`；stream 在 done 前输出兜底 usage。异常厂商元数据产生 `invalid_usage_counters` 警告，不打印请求正文。
+- 此改动不启用会员扣点，不改变上下文预算、模型路由、正文/工具进度事件或失败/取消策略。三类倍率、缓存费率快照和余额结算仍为后续实现范围。
+
 ### LightTick 通用规划与个人复盘（2026-09-19）
 
 - `GET /api/v1/lighttick/reflections?goal_id=...`：返回该目标已保存个人复盘，`data.items` 按更新时间倒序。需要注册 LightTick membership，与其他产品/用户隔离。
@@ -1161,3 +1168,19 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
 - 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
 - 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。
+## AINovel 创作点整数单位
+
+- `GET /api/v1/ai_novel/credits`：返回 `enabled`、会员 `tier`、`refreshAt`，以及 `periodicMicros`、`periodicLimitMicros`、`giftMicros`、`remainingMicros`。
+- Zook 在每次 provider 调用正常完成后，使用服务端 usage（缺失时复用估算）和费率直接原子扣费；无客户端 finish 接口。多轮逐轮扣费，客户端取消、保存或显示失败不会退回已经成功调用的费用。
+- 余额接口需要产品鉴权。全部金额为非负 JSON 整数微点，**1 点 = 1,000,000 微点**，最大安全整数为 `9007199254740991`；不返回浮点点数或金额字符串。客户端公共逻辑保存原始整数，仅在显示时换算并向下取整，不以展示值判断是否有额度。
+- 精确合同见 `api-contracts/openapi/ainovel/credits.yaml`。额度功能默认关闭（`enabled=false`），部署迁移、核对费率和真实联调完成前不得开启真实扣费。
+
+## OrangeWrite 全局模型选择
+
+模型目录还返回 `localIcon`（本地图标选择器）和 `onlineIcon`（公共 HTTPS 图片 URL，可为空）；可选 `description` 和 `badge` 为产品配置的介绍与标签。客户端先显示本地资源，在线图片解码出第一帧后替换，加载中或失败继续使用本地资源；更换 URL 后不得暂留上一模型的图标。图片须为客户端可解码的光栅格式，不携带鉴权凭证。列表顺序及隐藏配置由服务端应用后返回，费率仍只从点数计价配置计算。
+
+- `GET /api/v1/ai_novel/models` 需要 Bearer 和 `X-App-Id: ai_novel`。标准 envelope 的 `data.models` 返回 `key`、`label`、`inputMultiplier`、`cachedInputMultiplier`、`outputMultiplier`、`contextWindowTokens`。只有 AINovel 已配置完整计价、且存在启用 provider route 的逻辑 chat 模型会列出；不返回 provider 身份、凭证或上游模型名称。
+- 加密 chat inner body 可选 `modelSelection: {"mode":"auto"}` 或 `{"mode":"manual","modelKey":"qwen3.6-plus"}`；缺省保持 Auto。`sceneKey` 只决定工作流。直接 `model` / `modelKey` / `providerModel` 等旧字段仍拒绝。不可用手动模型返回 `AI_MODEL_NOT_AVAILABLE`，不静默降级为其他模型。
+- Auto 保留现有健康度/权重和跨逻辑模型重试；手动仅允许同一逻辑模型内部的 provider 路由重试。客户端任务启动时固定选择快照，后端每次 HTTP 请求固定收到的选择。embedding 不接受模型选择，仍用专用 embedding 模型。
+- 三个倍率复用后台 AINovel 实际点数配置，费率除以 100 得到倍率（1 点=10000 加权 tokens）；缓存费率未配时等于普通输入费率。目录展示基础倍率，已配置的长上下文计价阶梯结算时仍生效。`contextWindowTokens` 为现有 Zook 256000 操作预算，不是假定的上游物理容量；目前无独立模型上下文/输出容量配置。
+- 精确合同见 `api-contracts/openapi/ainovel/models.yaml`。

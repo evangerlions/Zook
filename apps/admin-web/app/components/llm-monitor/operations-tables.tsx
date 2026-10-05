@@ -8,10 +8,11 @@ import type {
 } from "../../lib/types";
 import { LlmChart } from "./llm-chart";
 import {
-  buildTokenRankingOption,
+  buildPointRankingOption,
   formatLatency,
   formatMetricNumber,
   formatTokenNumber,
+  formatPointNumber,
   formatPercent,
 } from "./llm-monitor-view-model";
 import { SuccessRateBadge } from "./success-rate-badge";
@@ -32,16 +33,17 @@ export function OperationsTables({
   const models = metrics.models.items;
   const providers = metrics.providerMetrics.items;
   const totalTokens = metrics.summary.totalTokens ?? 0;
+  const totalPoints = metrics.summary.totalPoints ?? 0;
 
   return (
     <div className="llm-chart-grid llm-dashboard-section">
       <OperationsPanel
         chartItems={models.map((item) => ({ label: `${item.providerModel} · ${item.operation}`, summary: item.summary }))}
-        description="找出 Token 成本最高的实际 Provider Model，以及消耗来自高频调用还是单次上下文过大。"
-        title="Provider Model Token 排行"
+        description="按实际消耗点数排序，点数按请求发生时保存的模型积分单价计算；Token 明细仍保留用于排查。"
+        title="Provider Model 点数消耗排行"
       >
         <Table<LlmModelMetricsGroup>
-          columns={modelColumns(totalTokens, onSelectModel, selectedModel)}
+          columns={modelColumns(totalTokens, totalPoints, onSelectModel, selectedModel)}
           dataSource={models}
           locale={{ emptyText: "当前筛选范围暂无 Model 调用" }}
           pagination={{ pageSize: 8, hideOnSinglePage: true }}
@@ -53,11 +55,11 @@ export function OperationsTables({
 
       <OperationsPanel
         chartItems={providers.map((item) => ({ label: `${item.label} · ${item.operation}`, summary: item.summary }))}
-        description="比较供应商承载量、Token、可靠性和长尾延迟，为容量与额度决策提供依据。"
+        description="比较供应商的点数消耗、Token、可靠性和长尾延迟，为额度与容量决策提供依据。"
         title="Provider 运营表现"
       >
         <Table<LlmProviderMetricsGroup>
-          columns={providerColumns(totalTokens, onSelectProvider, selectedProvider)}
+          columns={providerColumns(totalTokens, totalPoints, onSelectProvider, selectedProvider)}
           dataSource={providers}
           locale={{ emptyText: "当前筛选范围暂无 Provider 调用" }}
           pagination={{ pageSize: 8, hideOnSinglePage: true }}
@@ -76,7 +78,7 @@ function OperationsPanel({
   description,
   title,
 }: {
-  chartItems: Parameters<typeof buildTokenRankingOption>[0];
+  chartItems: Parameters<typeof buildPointRankingOption>[0];
   children: React.ReactNode;
   description: string;
   title: string;
@@ -92,8 +94,8 @@ function OperationsPanel({
       {chartItems.length ? (
         <LlmChart
           height={Math.max(250, Math.min(360, chartItems.length * 34 + 84))}
-          option={buildTokenRankingOption(chartItems)}
-          summary={`${title}，展示 Prompt、可见输出、Reasoning 和未分类 Token`}
+          option={buildPointRankingOption(chartItems)}
+          summary={`${title}，按已计价请求的实际点数消耗排序`}
         />
       ) : <Empty description="当前筛选范围暂无可绘制数据" />}
       <div className="llm-table-block">{children}</div>
@@ -103,6 +105,7 @@ function OperationsPanel({
 
 function modelColumns(
   totalTokens: number,
+  totalPoints: number,
   onSelect: (model: string, operation: LlmModelMetricsGroup["operation"]) => void,
   selectedModel: string,
 ): ColumnsType<LlmModelMetricsGroup> {
@@ -111,6 +114,8 @@ function modelColumns(
     { title: "类型", dataIndex: "operation", width: 92, render: (value) => <Tag>{value}</Tag> },
     { title: "上游成功率", width: 112, render: (_, row) => <SuccessRateBadge value={row.summary.successRate} /> },
     { title: "调用", width: 88, sorter: (a, b) => a.summary.requestCount - b.summary.requestCount, render: (_, row) => formatMetricNumber(row.summary.requestCount) },
+    { title: "消耗点数", width: 124, sorter: (a, b) => (a.summary.totalPoints ?? -1) - (b.summary.totalPoints ?? -1), render: (_, row) => formatPointNumber(row.summary.totalPoints) },
+    { title: "点数占比", width: 104, render: (_, row) => formatPercent(totalPoints ? ((row.summary.totalPoints ?? 0) / totalPoints) * 100 : 0) },
     { title: "总 Token", width: 116, sorter: (a, b) => (a.summary.totalTokens ?? 0) - (b.summary.totalTokens ?? 0), render: (_, row) => formatTokenNumber(row.summary.totalTokens) },
     { title: "Prompt", width: 104, render: (_, row) => formatTokenNumber(row.summary.promptTokens) },
     { title: "可见输出", width: 104, render: (_, row) => formatTokenNumber(row.summary.visibleOutputTokens) },
@@ -125,6 +130,7 @@ function modelColumns(
 
 function providerColumns(
   totalTokens: number,
+  totalPoints: number,
   onSelect: (provider: string, operation: LlmProviderMetricsGroup["operation"]) => void,
   selectedProvider: string,
 ): ColumnsType<LlmProviderMetricsGroup> {
@@ -133,6 +139,8 @@ function providerColumns(
     { title: "类型", dataIndex: "operation", width: 92, render: (value) => <Tag>{value}</Tag> },
     { title: "上游成功率", width: 112, render: (_, row) => <SuccessRateBadge value={row.summary.successRate} /> },
     { title: "调用", width: 88, sorter: (a, b) => a.summary.requestCount - b.summary.requestCount, render: (_, row) => formatMetricNumber(row.summary.requestCount) },
+    { title: "消耗点数", width: 124, sorter: (a, b) => (a.summary.totalPoints ?? -1) - (b.summary.totalPoints ?? -1), render: (_, row) => formatPointNumber(row.summary.totalPoints) },
+    { title: "点数占比", width: 104, render: (_, row) => formatPercent(totalPoints ? ((row.summary.totalPoints ?? 0) / totalPoints) * 100 : 0) },
     { title: "总 Token", width: 116, sorter: (a, b) => (a.summary.totalTokens ?? 0) - (b.summary.totalTokens ?? 0), render: (_, row) => formatTokenNumber(row.summary.totalTokens) },
     { title: "Prompt", width: 104, render: (_, row) => formatTokenNumber(row.summary.promptTokens) },
     { title: "可见输出", width: 104, render: (_, row) => formatTokenNumber(row.summary.visibleOutputTokens) },

@@ -21,9 +21,19 @@ paths:
         `sceneKey + messages`. Clients must not send `model`,
         `modelKey`, `providerModel`, `tier`, `routingTier`, or `modelTier`;
         scene keys select only the Prompt/tool workflow, while all chat scenes
-        share the server-side AINovel default model selection. When `stream=true`
+        share the server-side AINovel default model selection in Auto mode.
+        Optional `modelSelection: {mode: auto}` retains automatic routing;
+        `{mode: manual, modelKey: <logical-key>}` selects an enabled product model
+        from `GET /api/v1/ai_novel/models`. Missing selection means Auto. Manual
+        never falls back to another logical model; same-model provider routing
+        remains server-owned. Selection is fixed for this request. When `stream=true`
         is present in the decrypted inner body, the same endpoint switches to
         `text/event-stream` SSE output instead of a single JSON response.
+
+        With Writing Credits enforcement enabled, Zook settles each successful
+        actual provider call using authoritative provider usage or the server
+        estimator. No client billing job id or finish acknowledgement is needed.
+        Enforcement defaults to off.
 
         An optional decrypted top-level `agentProtocol: "pi-v1"` selects the
         context-on-demand Agent contract. In that contract Zook does not embed
@@ -117,8 +127,17 @@ paths:
                   - `{ "type": "tool_call_delta", "text": "...", "toolCallId": "...", "toolCallName": "...", "toolArgumentPath": "..." }`
                   - `{ "type": "tool_call", "toolCall": { "id": "...", "name": "...", "input": { ... } } }`
                   - `{ "type": "usage", "usage": { ... } }`
+                  - `{ "type": "client_action", "action": { "id": "...", "name": "open_membership", "arguments": { "reason": "quota_insufficient" }, "trigger": "after_response_rendered" } }`
                   - `{ "type": "done", "completion": { "sceneRouteKey": "...", "content": "...", "reasoningText": "...", "finishReason": "..." }, "usage": { ... } }`
                   - `{ "type": "error", "payload": { "code": "...", "message": "...", "requestId": "..." } }`
+
+                  Exhausted Writing Credits emits localized content deltas,
+                  then client_action, then done with finishReason=quota_insufficient.
+                  This business denial has no provider/tool call or artificial
+                  usage, and is not successful generation. Execute only a
+                  registered action once after full done and visible rendering,
+                  never after disconnect/cancellation/disposal. Do not put the
+                  client_action in Pi's model-tool loop.
 
                   `usage` contains `promptTokens`, `completionTokens`, and
                   `totalTokens`; it may also include `reasoningTokens`,
@@ -639,6 +658,13 @@ components:
         promptTokens: { type: integer, minimum: 0 }
         completionTokens: { type: integer, minimum: 0 }
         totalTokens: { type: integer, minimum: 0 }
+        cachedInputTokens:
+          type: integer
+          minimum: 0
+          description: Provider cache-read input subset already included in promptTokens. Absent means unknown, not zero. Cache-write tokens are not cache-read tokens.
+        estimated:
+          type: boolean
+          description: True when missing or invalid provider usage was replaced by the server estimate. Otherwise valid provider counts take precedence, including zero.
         reasoningTokens:
           type: integer
           minimum: 0

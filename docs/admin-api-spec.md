@@ -175,6 +175,24 @@ appId = ai_novel
 configKey = ai_novel.model_selection
 ```
 
+可选 `catalog` 数组配置模型选择页展示，每项以逻辑 `modelKey` 标识：`label`、`description`、`badge`、`localIcon`、`onlineIcon`、`sortOrder`（整数，升序）、`enabled`（默认 true）。目录显示开关不修改 Auto 的 `chat.default` 权重池；隐藏后也不能通过手动选择绕过。未设置条目时兼容原目录：使用 common 模型名称、本地品牌图标，无在线图标、介绍或标签；费率仍由 `ai_novel.model_point_pricing` 管理，运行上下文预算仍由服务端固定策略决定。
+
+本地图标选择器：`generic / deepseek / kimi / qwen / doubao / minimax / gemini / claude / grok / zai / openai`，不是任意文件路径。在线图标必须是无 URL 用户名/密码的公共 HTTPS 光栅图片地址，空字符串表示不用在线图片。后台「配置 JSON」可编辑完整目录，权重表单修改和版本恢复会保留它。
+
+```json
+"catalog": [
+  {
+    "modelKey": "qwen3.6-plus",
+    "label": "Qwen 3.6 Plus",
+    "description": "模型介绍",
+    "localIcon": "qwen",
+    "onlineIcon": "",
+    "enabled": true,
+    "sortOrder": 10
+  }
+]
+```
+
 `PUT model-selection` 请求结构：
 
 ```json
@@ -195,6 +213,47 @@ configKey = ai_novel.model_selection
 `chat.default` 是唯一的 AINovel 文本模型路由。每个 `modelKey` 必须唯一，并引用 `common.llm_service.models` 中存在的 `chat` 模型；每项 `weight` 必须大于 0、最多两位小数，数组权重总和必须等于 100。Zook 复用通用 LLM routing affinity，以请求 `X-Did` 与认证 UID 计算 `[0,1)` routing unit，再按数组顺序累计权重选择模型；缺少合法 DID 或 UID 时沿用通用 affinity 的随机回退。当前不支持场景级覆盖。
 
 整条配置缺失时使用代码默认路由 `[{ "modelKey": "qwen3.6-plus", "weight": 100 }]`；已保存配置损坏或引用无效模型时，运行时返回 `AI_UPSTREAM_CONFIG_INVALID`，不会静默回退。Provider、`providerModel`、密钥和 Provider 路由权重仍只在 `common.llm_service` 中维护。Embedding 不读取这份配置，继续走既有 `text-embedding-v4` 路由。
+
+### 3.5.1 AINovel 模型点数单价
+
+模型点数单价属于 AINovel 产品配置，不放在 `common.llm_service`。后者继续只负责模型、Provider、上游模型和路由；AINovel 的点数单价单独存放并按逻辑 `modelKey` 版本管理。
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/ai_novel/model-point-pricing` | 获取 AINovel 模型点数单价、当前模型目录和版本历史 |
+| `PUT` | `/api/v1/admin/apps/ai_novel/model-point-pricing` | 更新 AINovel 模型点数单价 |
+| `GET` | `/api/v1/admin/apps/ai_novel/model-point-pricing/revisions/{revision}` | 获取指定历史版本 |
+| `POST` | `/api/v1/admin/apps/ai_novel/model-point-pricing/revisions/{revision}/restore` | 恢复指定历史版本 |
+
+版本化配置键：
+
+```text
+appId = ai_novel
+configKey = ai_novel.model_point_pricing
+```
+
+结构为 `schemaVersion + models[]`，每项按逻辑模型键配置缓存输入、未缓存输入、输出的每百万 tokens 点价。Admin 展示倍率（存储点价除以 100），1× 对应 1 点/10,000 tokens。例如：
+
+```json
+{
+  "config": {
+    "schemaVersion": 1,
+    "models": [
+      {
+        "modelKey": "qwen3.8-flash",
+        "cachedInputPointsPerMillionTokens": 10,
+        "inputPointsPerMillionTokens": 50,
+        "outputPointsPerMillionTokens": 150
+      }
+    ]
+  },
+  "desc": "按参考价格更新费率"
+}
+```
+
+默认费率采用产品确认的三倍率表，参考 OpenRouter 精确型号价格与厂商信息，不代表厂商实际账单。`availableModels[].reference` 标明参考来源和可用性。基础输入/输出同时配置或留空；缓存为空按普通输入费率计，显式 0 表示免费。`contextTiers` 保存长上下文阶梯，Admin 可展开编辑且保存不丢失。
+
+Zook 按可信 provider usage（缺失时复用本地估算）及此配置计算精确整数微点并保存价格快照。该配置仅作用于 ai_novel；Admin 与账户结算消费同一结果。余额见 Writing Credits API；每次成功 provider 调用由 Zook 立即结算；真实额度准入/扣费默认关闭，客户端、迁移和联调完成前不能启用。
 
 ### 3.6 AINovel Feedback
 

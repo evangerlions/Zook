@@ -20,6 +20,8 @@ import {
 import { selectAiNovelChatModelKey } from "./ai-novel-model-weight-selection.ts";
 import { buildAiNovelEffectiveModelWeights } from "./ai-novel-model-weight-selection.ts";
 import { AI_NOVEL_APP_ID } from "./ai-novel-constants.ts";
+import type { AiNovelModelPointPricingConfigService } from "./ai-novel-model-point-pricing-config.service.ts";
+import { buildAiNovelPublicModels, type AiNovelClientModelSelection, type AiNovelPublicModel } from "./ai-novel-client-model-selection.ts";
 
 export {
   AI_NOVEL_DEFAULT_CHAT_MODEL_KEY,
@@ -28,6 +30,7 @@ export {
 
 export interface AiNovelModelSelectionOptions {
   excludedModelKeys?: ReadonlySet<string>;
+  selection?: AiNovelClientModelSelection;
 }
 
 export class AiNovelModelSelectionConfigService {
@@ -36,6 +39,7 @@ export class AiNovelModelSelectionConfigService {
     private readonly commonLlmConfigService: CommonLlmConfigService,
     private readonly modelHealthReader: LlmModelHealthReader,
     private readonly logger?: StructuredLogger,
+    private readonly pointPricingService?: AiNovelModelPointPricingConfigService,
   ) {}
 
   async getDocument(revision?: number): Promise<AiNovelModelSelectionDocument> {
@@ -136,6 +140,12 @@ export class AiNovelModelSelectionConfigService {
     routingIdentity?: LlmRoutingIdentity,
     options: AiNovelModelSelectionOptions = {},
   ): Promise<string> {
+    if (options.selection?.mode === "manual") {
+      const modelKey = options.selection.modelKey;
+      const model = (await this.getPublicModels()).find((item) => item.key === modelKey);
+      if (!model) badRequest("AI_MODEL_NOT_AVAILABLE", "Selected model is not available for OrangeWrite.");
+      return model.key;
+    }
     const config = await this.getCurrentConfig();
     await this.assertConfiguredModels(config, "runtime");
     const llmConfig = await this.commonLlmConfigService.getCurrentConfig();
@@ -176,6 +186,15 @@ export class AiNovelModelSelectionConfigService {
 
   createDefaultConfig(): AiNovelModelSelectionConfig {
     return createDefaultAiNovelModelSelectionConfig();
+  }
+
+  async getPublicModels(): Promise<AiNovelPublicModel[]> {
+    if (!this.pointPricingService) return [];
+    const [common, pricing, selection] = await Promise.all([
+      this.commonLlmConfigService.getCurrentConfig(), this.pointPricingService.getCurrentConfig(),
+      this.getCurrentConfig(),
+    ]);
+    return buildAiNovelPublicModels(common, pricing, selection.catalog);
   }
 
   private async createDocument(
@@ -253,7 +272,10 @@ export class AiNovelModelSelectionConfigService {
     mode: "admin" | "runtime",
   ): Promise<void> {
     const llmConfig = await this.commonLlmConfigService.getCurrentConfig();
-    const modelKeys = new Set(selection.chat.default.map((item) => item.modelKey));
+    const modelKeys = new Set([
+      ...selection.chat.default.map((item) => item.modelKey),
+      ...(selection.catalog ?? []).map((item) => item.modelKey),
+    ]);
     for (const modelKey of modelKeys) {
       const model = llmConfig.models.find((item) => item.key === modelKey);
       if (!model || model.kind !== "chat") {

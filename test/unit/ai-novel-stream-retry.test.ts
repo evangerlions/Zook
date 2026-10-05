@@ -18,6 +18,29 @@ async function collect<T>(stream: AsyncIterable<T>): Promise<T[]> {
   return chunks;
 }
 
+test("manual chat preference reaches LLM and never retries a different logical model", async () => {
+  const calls: string[] = [];
+  const preferences: unknown[] = [];
+  const service = new AiNovelLlmService(
+    { stream: async function* ({ modelKey }: { modelKey: string }) {
+      calls.push(modelKey);
+      throw new ApplicationError(503, "LLM_PROVIDER_REQUEST_FAILED", "timeout", { reason: "timeout" });
+    } } as never,
+    {} as never,
+    { resolveChatModelKey: async (_identity: unknown, options: { selection: unknown }) => {
+      preferences.push(options.selection);
+      return "manual-model";
+    } } as never,
+  );
+  await assert.rejects(() => collect(service.createChatCompletionStream({
+    sceneKey: "write_turn", agentProtocol: "pi-v1",
+    modelSelection: { mode: "manual", modelKey: "manual-model" },
+    messages: [{ role: "user", content: "hello" }],
+  })), /timed out/);
+  assert.deepEqual(calls, ["manual-model"]);
+  assert.deepEqual(preferences, [{ mode: "manual", modelKey: "manual-model" }]);
+});
+
 test("AINovel stream retries once with an excluded model before the first chunk", async () => {
   const selectedModels: string[] = [];
   const result = await collect(

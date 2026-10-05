@@ -4,6 +4,7 @@ import { InMemoryCache } from "../../src/infrastructure/cache/redis/in-memory-ca
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
 import { VersionedAppConfigService } from "../../src/services/versioned-app-config.service.ts";
+import { AiNovelModelPointPricingConfigService } from "../../src/modules/ai-novel/ai-novel-model-point-pricing-config.service.ts";
 import { CommonLlmConfigService } from "../../src/services/common-llm-config.service.ts";
 import { CommonPasswordConfigService } from "../../src/services/common-password-config.service.ts";
 import { EmbeddingManager, type EmbeddingResult } from "../../src/services/embedding-manager.ts";
@@ -99,6 +100,87 @@ async function recordHealthResult(
     usageSource: "missing",
   });
 }
+
+test("LLM manager applies configured model point pricing to canonical request usage", async () => {
+  const fixture = await createLlmFixture();
+  const pointPricingConfigService = new AiNovelModelPointPricingConfigService(
+    fixture.appConfigService,
+    fixture.commonLlmConfigService,
+  );
+  await pointPricingConfigService.updateConfig({
+    schemaVersion: 1,
+    models: [{
+      modelKey: "priced-model",
+      inputPointsPerMillionTokens: 100,
+      outputPointsPerMillionTokens: 300,
+    }],
+  });
+  await fixture.commonLlmConfigService.updateConfig({
+    enabled: true,
+    defaultModelKey: "priced-model",
+    providers: [{
+      key: "provider-a",
+      label: "Provider A",
+      enabled: true,
+      baseUrl: "https://example.test/v1",
+      apiKey: "mock-provider-key",
+      timeoutMs: 30000,
+    }],
+    models: [{
+      key: "priced-model",
+      label: "Priced model",
+      strategy: "fixed",
+      routes: [{
+        provider: "provider-a",
+        providerModel: "upstream-model",
+        enabled: true,
+        weight: 100,
+      }],
+    }],
+  });
+  const manager = new LLMManager({
+    "provider-a": {
+      async complete(request) {
+        return {
+          provider: request.model.provider,
+          modelKey: request.model.modelKey,
+          providerModel: request.model.providerModel,
+          text: "done",
+          usage: { promptTokens: 1_000_000, completionTokens: 2_000_000, totalTokens: 3_000_000 },
+        };
+      },
+      async *stream() {
+        yield { type: "done" };
+      },
+    },
+  }, undefined, {
+    commonLlmConfigService: fixture.commonLlmConfigService,
+    pointPricingResolver: ({ appId, modelKey }) =>
+      pointPricingConfigService.resolveModelPointPricing(appId, modelKey),
+    llmHealthService: fixture.llmHealthService,
+    llmMetricsService: fixture.llmMetricsService,
+  });
+
+  await manager.complete({
+    modelKey: "priced-model",
+    messages: [{ role: "user", content: "hello" }],
+    usageOwner: { appId: "ai_novel", userId: "user_a" },
+  });
+
+  const observation = fixture.database.llmObservabilityStore.observations[0];
+  assert.equal(observation?.pointMicros, "700000000");
+  assert.equal(observation?.inputPointsPerMillionTokens, 100);
+  assert.equal(observation?.outputPointsPerMillionTokens, 300);
+
+  await manager.complete({
+    modelKey: "priced-model",
+    messages: [{ role: "user", content: "hello" }],
+    usageOwner: { appId: "another_app", userId: "user_b" },
+  });
+  const nonAiNovelObservation = fixture.database.llmObservabilityStore.observations[1];
+  assert.equal(nonAiNovelObservation?.pointMicros, undefined);
+  assert.equal(nonAiNovelObservation?.inputPointsPerMillionTokens, undefined);
+});
 
 function createMockProvider(name: string, calls: string[]): LLMProvider {
   return {
@@ -691,6 +773,7 @@ test("embedding manager records the concrete embedding model key", async () => {
             modelKey: request.model.modelKey,
             providerModel: request.model.providerModel,
             vectors: [{ index: 0, embedding: [0.1, 0.2] }],
+            usage: { promptTokens: 1_000_000, completionTokens: 0, totalTokens: 1_000_000 },
           };
         },
       },
@@ -698,6 +781,9 @@ test("embedding manager records the concrete embedding model key", async () => {
     undefined,
     {
       commonLlmConfigService: fixture.commonLlmConfigService,
+      pointPricingResolver: ({ appId, modelKey }) => appId === "ai_novel" && modelKey === "text-embedding-v4"
+        ? { inputPointsPerMillionTokens: 1000, outputPointsPerMillionTokens: 2000 }
+        : undefined,
       llmHealthService: fixture.llmHealthService,
       llmMetricsService: fixture.llmMetricsService,
       now: () => new Date("2026-03-24T10:20:00+08:00"),
@@ -707,7 +793,12 @@ test("embedding manager records the concrete embedding model key", async () => {
   await manager.embed({
     modelKey: "text-embedding-v4",
     input: ["hello"],
+    usageOwner: { appId: "ai_novel", userId: "user_embed" },
   });
+
+  const embeddingObservation = fixture.database.llmObservabilityStore.observations[0];
+  assert.equal(embeddingObservation?.pointMicros, "1000000000");
+  assert.equal(embeddingObservation?.inputPointsPerMillionTokens, 1000);
 
   const overview = await fixture.llmMetricsService.getOverview(
     await fixture.commonLlmConfigService.getCurrentConfig(),

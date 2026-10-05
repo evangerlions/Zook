@@ -8,8 +8,11 @@ import type { StructuredLogger } from "../infrastructure/logging/pino-logger.mod
 import { ApplicationError } from "../shared/errors.ts";
 import { randomId } from "../shared/utils.ts";
 import type { LLMUsage } from "./llm-manager-types.ts";
+import { calculateLlmPointMicros } from "./llm-point-pricing.ts";
+import type { LlmPointPricing } from "../shared/types/llm.ts";
 
 interface LlmCallObservationContext {
+  onUsageFinalized?: (record: LlmCallObservationRecord) => Promise<void>;
   appId?: string;
   routingModelKey: string;
   provider: string;
@@ -17,6 +20,7 @@ interface LlmCallObservationContext {
   operation: LlmOperation;
   responseMode: LlmResponseMode;
   routingConfigRevision?: number;
+  pointPricing?: LlmPointPricing;
   startedAt: Date;
   now?: () => Date;
 }
@@ -45,7 +49,7 @@ export class LlmCallObservationSession {
   private finalized = false;
 
   constructor(
-    private readonly store: LlmObservabilityStore,
+    private readonly store: LlmObservabilityStore | undefined,
     private readonly context: LlmCallObservationContext,
     private readonly logger?: StructuredLogger,
   ) {}
@@ -80,16 +84,22 @@ export class LlmCallObservationSession {
         : undefined,
       totalLatencyMs: elapsedMs(this.context.startedAt, completedAt),
       promptTokens: usage?.promptTokens,
+      cachedInputTokens: usage?.cachedInputTokens,
       completionTokens: usage?.completionTokens,
       reasoningTokens: usage?.reasoningTokens,
       totalTokens: usage?.totalTokens,
+      pointMicros: calculateLlmPointMicros(usage, this.context.pointPricing),
+      inputPointsPerMillionTokens: this.context.pointPricing?.inputPointsPerMillionTokens,
+      outputPointsPerMillionTokens: this.context.pointPricing?.outputPointsPerMillionTokens,
+      cachedInputPointsPerMillionTokens: this.context.pointPricing?.cachedInputPointsPerMillionTokens,
+      pointPricing: this.context.pointPricing,
       usageSource: usage ? usage.estimated ? "estimated" : "provider" : "missing",
       errorCode: classification.errorCode,
       errorMessage: classification.errorMessage,
       routingConfigRevision: this.context.routingConfigRevision,
     };
     try {
-      await this.store.recordObservation(record);
+      await this.store?.recordObservation(record);
     } catch (error) {
       this.logger?.warn("failed to persist LLM call observation", {
         callId: this.callId,
@@ -101,6 +111,7 @@ export class LlmCallObservationSession {
         error,
       });
     }
+    await this.context.onUsageFinalized?.(record);
   }
 
   private getNow(): Date {

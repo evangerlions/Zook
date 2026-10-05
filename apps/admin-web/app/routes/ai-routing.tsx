@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { AiNovelModelSelectionPanel } from "../components/ai-novel-model-selection-panel";
+import { AiNovelModelPointPricingPanel } from "../components/ai-novel-model-point-pricing-panel";
 import { useAdminSession } from "../lib/admin-session";
 
 const AI_NOVEL_APP_ID = "ai_novel";
@@ -39,11 +40,12 @@ export default function AiRoutingRoute() {
       <header className="page-header">
         <div>
           <h1>AI Model</h1>
-          <p>配置 AINovel 所有文本生成任务共用的模型权重。</p>
+          <p>配置 AINovel 模型权重，以及后台用量统计使用的模型点数费率。</p>
         </div>
       </header>
 
       <AiNovelModelSelectionPanel />
+      <AiNovelModelPointPricingPanel />
     </section>
   );
 }

@@ -24,9 +24,12 @@ import { AdminAiNovelModelHealthService } from "./modules/admin/admin-ai-novel-m
 import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trace.service.ts";
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
+import { AiNovelCreditsService } from "./modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { AiNovelCreditsRequestFlow } from "./modules/ai-novel/credits/ai-novel-credits-request-flow.ts";
 import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
 import { AiNovelSkillService } from "./modules/ai-novel/ai-novel-skill.service.ts";
 import { AiNovelModelSelectionConfigService } from "./modules/ai-novel/ai-novel-model-selection-config.service.ts";
+import { AiNovelModelPointPricingConfigService } from "./modules/ai-novel/ai-novel-model-point-pricing-config.service.ts";
 import { AnalyticsService } from "./modules/analytics/analytics.service.ts";
 import { AppRegistryService } from "./modules/app-registry/app-registry.service.ts";
 import { AuthService } from "./modules/auth/auth.service.ts";
@@ -278,11 +281,17 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   );
   const llmMetricsService = new LlmMetricsService(database.llmObservabilityStore, llmHealthService, logger);
   const llmModelHealthService = new LlmModelHealthService(commonLlmConfigService, llmHealthService);
+  const aiNovelModelPointPricingConfigService = new AiNovelModelPointPricingConfigService(
+    appConfigService,
+    commonLlmConfigService,
+    logger,
+  );
   const aiNovelModelSelectionConfigService = new AiNovelModelSelectionConfigService(
     appConfigService,
     commonLlmConfigService,
     llmModelHealthService,
     logger,
+    aiNovelModelPointPricingConfigService,
   );
   const llmObservabilityRetentionService = new LlmObservabilityRetentionService(database.llmObservabilityStore, kvManager);
   const appRegistryService = new AppRegistryService(database, appConfigService);
@@ -402,6 +411,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
   } = createApplicationAiRuntime({
     database,
     commonLlmConfigService,
+    aiNovelModelPointPricingConfigService,
     commonPasswordConfigService,
     llmHealthService,
     llmMetricsService,
@@ -418,12 +428,22 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     new AiNovelSkillRepository(options.aiNovelSkillRoot),
   );
   const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
+  const aiNovelCreditsService = new AiNovelCreditsService(database.aiNovelCreditsStore, async (userId) => {
+    const membership = await aiNovelBillingService.getMembership(userId);
+    return membership.active && membership.tier ? membership.tier : "free";
+  }, logger);
+  const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
+    aiNovelCreditsService,
+    options.aiNovelCreditsEnabled ?? process.env.AINOVEL_CREDITS_ENABLED === "true",
+    aiNovelConversationRecordService,
+  );
   const adminConsoleService = new AdminConsoleService(
     database,
     appConfigService,
     appI18nConfigService,
     appAiRoutingConfigService,
     aiNovelModelSelectionConfigService,
+    aiNovelModelPointPricingConfigService,
     appRemoteLogPullService,
     appLogSecretService,
     commonEmailConfigService,
@@ -460,6 +480,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     logger,
     contentSafetyService,
     aiNovelConversationRecordService,
+    aiNovelCreditsFlow,
   );
   const storageService = new StorageService(database);
   const persistentFileStore = new PersistentFileStore(options.fileStorageRoot);
@@ -595,6 +616,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
       userService,
       appAiRoutingConfigService,
       aiNovelModelSelectionConfigService,
+      aiNovelModelPointPricingConfigService,
       tokenService,
       authService,
       getuiGyOneClickLoginService,

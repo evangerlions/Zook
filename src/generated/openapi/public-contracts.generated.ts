@@ -5782,6 +5782,407 @@ export type ErrorResponse = {
   "requestId": string;
 };
 
+export const CreditMicrosSchema = {
+  "type": "integer",
+  "minimum": 0,
+  "maximum": 9007199254740991,
+  "description": "Exact integer micros; 1000000 micros equals one writing credit.",
+  "examples": [
+    1000,
+    19999000
+  ]
+} as const;
+
+export type CreditMicros = number;
+
+export const CreditsBalanceDataSchema = {
+  "type": "object",
+  "required": [
+    "enabled",
+    "tier",
+    "refreshAt",
+    "periodicMicros",
+    "periodicLimitMicros",
+    "giftMicros",
+    "remainingMicros"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "free",
+        "plus",
+        "pro"
+      ]
+    },
+    "refreshAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "periodicMicros": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "description": "Exact integer micros; 1000000 micros equals one writing credit.",
+      "examples": [
+        1000,
+        19999000
+      ]
+    },
+    "periodicLimitMicros": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "description": "Exact integer micros; 1000000 micros equals one writing credit.",
+      "examples": [
+        1000,
+        19999000
+      ]
+    },
+    "giftMicros": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "description": "Exact integer micros; 1000000 micros equals one writing credit.",
+      "examples": [
+        1000,
+        19999000
+      ]
+    },
+    "remainingMicros": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "description": "Exact integer micros; 1000000 micros equals one writing credit.",
+      "examples": [
+        1000,
+        19999000
+      ]
+    }
+  }
+} as const;
+
+export type CreditsBalanceData = {
+  "enabled": boolean;
+  "tier": "free" | "plus" | "pro";
+  "refreshAt": string;
+  "periodicMicros": number;
+  "periodicLimitMicros": number;
+  "giftMicros": number;
+  "remainingMicros": number;
+};
+
+export const AiNovelModelSelectionSchema = {
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "const": "auto"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "mode",
+        "modelKey"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "const": "manual"
+        },
+        "modelKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "description": "Optional decrypted chat payload property. Absent means Auto; manual never falls back to another logical model."
+} as const;
+
+export type AiNovelModelSelection = {
+  "mode": string;
+} | {
+  "mode": string;
+  "modelKey": string;
+};
+
+export const AiNovelPublicModelSchema = {
+  "type": "object",
+  "required": [
+    "key",
+    "label",
+    "localIcon",
+    "onlineIcon",
+    "inputMultiplier",
+    "cachedInputMultiplier",
+    "outputMultiplier",
+    "contextWindowTokens"
+  ],
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "localIcon": {
+      "type": "string",
+      "enum": [
+        "generic",
+        "deepseek",
+        "kimi",
+        "qwen",
+        "doubao",
+        "minimax",
+        "gemini",
+        "claude",
+        "grok",
+        "zai",
+        "openai"
+      ],
+      "description": "Bundled fallback icon selector. Old clients may ignore this field."
+    },
+    "onlineIcon": {
+      "type": "string",
+      "description": "Public HTTPS raster image URL or empty string. Keep local icon until a remote frame loads; failures fall back locally."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Optional product-owned model introduction."
+    },
+    "badge": {
+      "type": "string",
+      "maxLength": 512,
+      "description": "Optional product-owned model tag, never inferred from its price."
+    },
+    "inputMultiplier": {
+      "type": "number",
+      "minimum": 0
+    },
+    "cachedInputMultiplier": {
+      "type": "number",
+      "minimum": 0
+    },
+    "outputMultiplier": {
+      "type": "number",
+      "minimum": 0
+    },
+    "contextWindowTokens": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Zook operating context budget, not an inferred physical upstream capability."
+    },
+    "contextTiers": {
+      "type": "array",
+      "description": "Optional long-context pricing overrides; highest exceeded prompt threshold applies.",
+      "items": {
+        "type": "object",
+        "required": [
+          "abovePromptTokens",
+          "inputMultiplier",
+          "cachedInputMultiplier",
+          "outputMultiplier"
+        ],
+        "properties": {
+          "abovePromptTokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inputMultiplier": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cachedInputMultiplier": {
+            "type": "number",
+            "minimum": 0
+          },
+          "outputMultiplier": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type AiNovelPublicModel = {
+  "key": string;
+  "label": string;
+  "localIcon": "generic" | "deepseek" | "kimi" | "qwen" | "doubao" | "minimax" | "gemini" | "claude" | "grok" | "zai" | "openai";
+  "onlineIcon": string;
+  "description"?: string;
+  "badge"?: string;
+  "inputMultiplier": number;
+  "cachedInputMultiplier": number;
+  "outputMultiplier": number;
+  "contextWindowTokens": number;
+  "contextTiers"?: (
+{
+  "abovePromptTokens": number;
+  "inputMultiplier": number;
+  "cachedInputMultiplier": number;
+  "outputMultiplier": number;
+}
+)[];
+};
+
+export const AiNovelModelCatalogDataSchema = {
+  "type": "object",
+  "required": [
+    "models"
+  ],
+  "properties": {
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "localIcon",
+          "onlineIcon",
+          "inputMultiplier",
+          "cachedInputMultiplier",
+          "outputMultiplier",
+          "contextWindowTokens"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "localIcon": {
+            "type": "string",
+            "enum": [
+              "generic",
+              "deepseek",
+              "kimi",
+              "qwen",
+              "doubao",
+              "minimax",
+              "gemini",
+              "claude",
+              "grok",
+              "zai",
+              "openai"
+            ],
+            "description": "Bundled fallback icon selector. Old clients may ignore this field."
+          },
+          "onlineIcon": {
+            "type": "string",
+            "description": "Public HTTPS raster image URL or empty string. Keep local icon until a remote frame loads; failures fall back locally."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Optional product-owned model introduction."
+          },
+          "badge": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "Optional product-owned model tag, never inferred from its price."
+          },
+          "inputMultiplier": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cachedInputMultiplier": {
+            "type": "number",
+            "minimum": 0
+          },
+          "outputMultiplier": {
+            "type": "number",
+            "minimum": 0
+          },
+          "contextWindowTokens": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Zook operating context budget, not an inferred physical upstream capability."
+          },
+          "contextTiers": {
+            "type": "array",
+            "description": "Optional long-context pricing overrides; highest exceeded prompt threshold applies.",
+            "items": {
+              "type": "object",
+              "required": [
+                "abovePromptTokens",
+                "inputMultiplier",
+                "cachedInputMultiplier",
+                "outputMultiplier"
+              ],
+              "properties": {
+                "abovePromptTokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "inputMultiplier": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "cachedInputMultiplier": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "outputMultiplier": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+} as const;
+
+export type AiNovelModelCatalogData = {
+  "models": (
+{
+  "key": string;
+  "label": string;
+  "localIcon": "generic" | "deepseek" | "kimi" | "qwen" | "doubao" | "minimax" | "gemini" | "claude" | "grok" | "zai" | "openai";
+  "onlineIcon": string;
+  "description"?: string;
+  "badge"?: string;
+  "inputMultiplier": number;
+  "cachedInputMultiplier": number;
+  "outputMultiplier": number;
+  "contextWindowTokens": number;
+  "contextTiers"?: (
+{
+  "abovePromptTokens": number;
+  "inputMultiplier": number;
+  "cachedInputMultiplier": number;
+  "outputMultiplier": number;
+}
+)[];
+}
+)[];
+};
+
 export const AiNovelStatisticsDataSchema = {
   "type": "object",
   "required": [
@@ -22629,6 +23030,9 @@ export const GeneratedPublicContractNames = [
   "AccountDeletionData",
   "AccountDeletionRequest",
   "AccountRegion",
+  "AiNovelModelCatalogData",
+  "AiNovelModelSelection",
+  "AiNovelPublicModel",
   "AiNovelStatisticsData",
   "AiNovelStatisticsSnapshotRequest",
   "AiNovelStatisticsSnapshotResponse",
@@ -22700,6 +23104,8 @@ export const GeneratedPublicContractNames = [
   "BuddyStructuredShareRequest",
   "CatalogData",
   "ChangePasswordRequest",
+  "CreditMicros",
+  "CreditsBalanceData",
   "CurrentUserData",
   "DistributionChannel",
   "EmailCodeRequest",

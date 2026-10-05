@@ -11,6 +11,7 @@ import { BAI_PROVIDER_KEY } from "./services/bai-openai-compatible-provider.ts";
 import { createBaiAwareProvider } from "./services/bai-aware-provider.ts";
 import { BailianOpenAICompatibleProvider } from "./services/bailian-openai-compatible-provider.ts";
 import type { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
+import type { AiNovelModelPointPricingConfigService } from "./modules/ai-novel/ai-novel-model-point-pricing-config.service.ts";
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
 import {
   EmbeddingManager,
@@ -36,6 +37,7 @@ import {
 interface ApplicationAiRuntimeOptions {
   database: ApplicationDatabase;
   commonLlmConfigService: CommonLlmConfigService;
+  aiNovelModelPointPricingConfigService: AiNovelModelPointPricingConfigService;
   commonPasswordConfigService: CommonPasswordConfigService;
   llmHealthService: LlmHealthService;
   llmMetricsService: LlmMetricsService;
@@ -119,6 +121,8 @@ export function createApplicationAiRuntime(
   );
   const managerOptions = {
     commonLlmConfigService: options.commonLlmConfigService,
+    pointPricingResolver: ({ appId, modelKey }: { appId?: string; modelKey: string }) =>
+      options.aiNovelModelPointPricingConfigService.resolveModelPointPricing(appId, modelKey),
     llmHealthService: options.llmHealthService,
     llmMetricsService: options.llmMetricsService,
     llmRouteCircuitBreaker: options.llmRouteCircuitBreaker,

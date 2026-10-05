@@ -78,6 +78,65 @@ test("llm metrics keep canonical totals and do not double-count reasoning tokens
   assert.equal(allOperations.latencyByOperation.chat?.p50TotalLatencyMs, 200);
 });
 
+test("LLM observation snapshots pricing and aggregates exact points from canonical usage", async () => {
+  const store = new InMemoryLlmObservabilityStore();
+  const recorder = new LlmCallObservationRecorder(store);
+  const session = recorder.start({
+    routingModelKey: "model-a",
+    provider: "provider-a",
+    providerModel: "upstream-a",
+    operation: "chat",
+    responseMode: "non_stream",
+    pointPricing: {
+      inputPointsPerMillionTokens: 700,
+      outputPointsPerMillionTokens: 2800,
+    },
+    startedAt: new Date("2026-08-25T10:00:00.000Z"),
+    now: () => new Date("2026-08-25T10:00:01.000Z"),
+  });
+  await session.finalize({
+    usage: {
+      promptTokens: 1_000_000,
+      completionTokens: 2_000_000,
+      totalTokens: 3_000_000,
+      reasoningTokens: 500_000,
+      estimated: true,
+    },
+  });
+
+  assert.equal(store.observations[0]?.pointMicros, "6300000000");
+  assert.equal(store.observations[0]?.inputPointsPerMillionTokens, 700);
+  assert.equal(store.observations[0]?.outputPointsPerMillionTokens, 2800);
+  assert.equal(store.observations[0]?.usageSource, "estimated");
+
+  await store.recordObservation({
+    callId: "point_unpriced_missing_usage",
+    occurredAt: "2026-08-25T10:00:02.000Z",
+    routingModelKey: "model-a",
+    provider: "provider-a",
+    providerModel: "upstream-a",
+    operation: "chat",
+    responseMode: "non_stream",
+    outcome: "failure",
+    healthImpact: "failure",
+    totalLatencyMs: 50,
+    usageSource: "missing",
+  });
+
+  const metrics = new LlmMetricsService(store, new LlmHealthService(store));
+  const overview = await metrics.getOverview(
+    emptyConfig(),
+    "48h",
+    new Date("2026-08-25T11:00:00.000Z"),
+    { operation: "chat" },
+  );
+  assert.equal(overview.summary.totalPoints, 6300);
+  assert.equal(overview.summary.pointPricedRequestCount, 1);
+  assert.equal(overview.summary.pointUnpricedRequestCount, 1);
+  assert.equal(overview.summary.estimatedUsageCount, 1);
+  assert.equal(overview.summary.missingUsageCount, 1);
+});
+
 test("routing model request counts can be scoped to one application", async () => {
   const store = new InMemoryLlmObservabilityStore();
   const occurredAt = new Date("2026-08-25T10:00:00+08:00").toISOString();

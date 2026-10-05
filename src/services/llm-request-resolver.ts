@@ -152,6 +152,10 @@ export class LlmRequestResolver {
     };
     const { routingIdentity: _routingIdentity, ...providerRequest } = request;
     void _routingIdentity;
+    const pointPricing = await this.resolvePointPricing(
+      request.usageOwner?.appId,
+      modelKey,
+    );
     return {
       request: {
         ...providerRequest,
@@ -161,6 +165,7 @@ export class LlmRequestResolver {
           modelKey,
           resolvedModelKey: selection.routeModelKey,
           providerModel: selection.route.providerModel,
+          ...(pointPricing ? { pointPricing } : {}),
           providerConfig: {
             baseUrl: selection.provider.baseUrl,
             apiKey: selection.provider.apiKey,
@@ -174,11 +179,11 @@ export class LlmRequestResolver {
     };
   }
 
-  private resolveRegistryRequest(
+  private async resolveRegistryRequest(
     request: LLMCompletionRequest,
     messages: LLMMessage[],
     modelKey: string,
-  ): ResolvedLlmRequest {
+  ): Promise<ResolvedLlmRequest> {
     if (!modelKey || !this.options.modelRegistry[modelKey]) {
       badRequest("LLM_MODEL_NOT_FOUND", `Unknown LLM modelKey: ${request.modelKey}.`);
     }
@@ -190,6 +195,10 @@ export class LlmRequestResolver {
 
     const { routingIdentity: _routingIdentity, ...providerRequest } = request;
     void _routingIdentity;
+    const pointPricing = await this.resolvePointPricing(
+      request.usageOwner?.appId,
+      modelKey,
+    );
     return {
       request: {
         ...providerRequest,
@@ -199,6 +208,7 @@ export class LlmRequestResolver {
           modelKey,
           resolvedModelKey: modelKey,
           providerModel: resolvedModel.providerModel,
+          ...(pointPricing ? { pointPricing } : {}),
         },
       },
       routeRef: {
@@ -209,6 +219,10 @@ export class LlmRequestResolver {
       },
       circuitBreakerEnabled: false,
     };
+  }
+
+  private resolvePointPricing(appId: string | undefined, modelKey: string) {
+    return this.options.managerOptions.pointPricingResolver?.({ appId, modelKey });
   }
 
   private async resolveConfiguredModel(

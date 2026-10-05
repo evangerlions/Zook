@@ -5,12 +5,14 @@ import type {
   AdminAppSummary,
   AdminAiRoutingDocument,
   AdminAiNovelModelSelectionDocument,
+  AdminAiNovelModelPointPricingDocument,
   AdminAiNovelConversationRecordDocument,
   AdminAiNovelDebugTraceDocument,
   AdminAiNovelDebugTraceListDocument,
   AiNovelTraceKind,
   AiNovelTraceStatus,
   AiNovelModelSelectionConfig,
+  AiNovelModelPointPricingConfig,
   AdminAppLogSecretRevealDocument,
   AdminAuthRateLimitDocument,
   AdminBootstrapResult,
@@ -187,6 +189,31 @@ export const adminApi = {
         method: "POST",
         body: { desc: desc || undefined },
       },
+    );
+  },
+  getAiNovelModelPointPricing() {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath("/apps/ai_novel/model-point-pricing"),
+    );
+  },
+  getAiNovelModelPointPricingRevision(revision: number) {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath(`/apps/ai_novel/model-point-pricing/revisions/${revision}`),
+    );
+  },
+  updateAiNovelModelPointPricing(
+    config: AiNovelModelPointPricingConfig,
+    desc?: string,
+  ) {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath("/apps/ai_novel/model-point-pricing"),
+      { method: "PUT", body: { config, desc: desc || undefined } },
+    );
+  },
+  restoreAiNovelModelPointPricing(revision: number, desc?: string) {
+    return requestJson<AdminAiNovelModelPointPricingDocument>(
+      adminPath(`/apps/ai_novel/model-point-pricing/revisions/${revision}/restore`),
+      { method: "POST", body: { desc: desc || undefined } },
     );
   },
   getAiRoutingRevision(appId: string, revision: number) {

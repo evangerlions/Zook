@@ -57,6 +57,9 @@ const AGGREGATE_COLUMNS = `
     0
   )) FILTER (WHERE usage_source <> 'missing' AND total_tokens IS NOT NULL) AS unclassified_tokens,
   SUM(total_tokens) FILTER (WHERE usage_source <> 'missing') AS total_tokens,
+  SUM(point_micros) AS point_micros,
+  COUNT(*) FILTER (WHERE point_micros IS NOT NULL)::bigint AS point_priced_request_count,
+  COUNT(*) FILTER (WHERE point_micros IS NULL)::bigint AS point_unpriced_request_count,
   COUNT(*) FILTER (WHERE usage_source = 'provider')::bigint AS provider_usage_count,
   COUNT(*) FILTER (WHERE usage_source = 'estimated')::bigint AS estimated_usage_count,
   COUNT(*) FILTER (WHERE usage_source = 'missing')::bigint AS missing_usage_count`;
@@ -74,13 +77,16 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
            operation, response_mode, outcome, health_impact,
            first_response_latency_ms, total_latency_ms,
            prompt_tokens, completion_tokens, reasoning_tokens, total_tokens,
-           usage_source, error_code, error_message, routing_config_revision
+           point_micros, input_points_per_million_tokens, output_points_per_million_tokens,
+           usage_source, error_code, error_message, routing_config_revision,
+           cached_input_tokens, cached_input_points_per_million_tokens, point_pricing
          )
          VALUES (
            $1, $2::timestamptz, $3, $4, $5, $6,
            $7, $8, $9, $10,
            $11, $12, $13, $14, $15, $16,
-           $17, $18, $19, $20
+           $17::numeric, $18, $19,
+           $20, $21, $22, $23, $24, $25, $26::jsonb
          )
          ON CONFLICT (call_id) DO NOTHING
          RETURNING call_id`,
@@ -101,10 +107,16 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
         record.completionTokens ?? null,
         record.reasoningTokens ?? null,
         record.totalTokens ?? null,
+        record.pointMicros ?? null,
+        record.inputPointsPerMillionTokens ?? null,
+        record.outputPointsPerMillionTokens ?? null,
         record.usageSource,
         record.errorCode ?? null,
         record.errorMessage ?? null,
         record.routingConfigRevision ?? null,
+        record.cachedInputTokens ?? null,
+        record.cachedInputPointsPerMillionTokens ?? null,
+        record.pointPricing ? JSON.stringify(record.pointPricing) : null,
       ],
     );
     return Boolean(result.rows[0]?.call_id);
@@ -314,7 +326,7 @@ function buildGroupedSql(columns: string, where: string, limit: number): string 
       SELECT *, COUNT(*) OVER()::bigint AS total_count FROM grouped
     )
     SELECT * FROM counted
-    ORDER BY total_tokens DESC NULLS LAST, request_count DESC
+    ORDER BY point_micros DESC NULLS LAST, total_tokens DESC NULLS LAST, request_count DESC
     LIMIT ${limit}`;
 }
 
@@ -330,7 +342,7 @@ function buildProviderGroupedSql(where: string, limit: number): string {
       FROM grouped
     )
     SELECT * FROM counted
-    ORDER BY total_tokens DESC NULLS LAST, request_count DESC
+    ORDER BY point_micros DESC NULLS LAST, total_tokens DESC NULLS LAST, request_count DESC
     LIMIT ${limit}`;
 }
 
@@ -346,7 +358,7 @@ function buildRouteGroupedSql(where: string, limit: number): string {
       FROM grouped
     )
     SELECT * FROM counted
-    ORDER BY total_tokens DESC NULLS LAST, request_count DESC
+    ORDER BY point_micros DESC NULLS LAST, total_tokens DESC NULLS LAST, request_count DESC
     LIMIT ${limit}`;
 }
 
@@ -393,6 +405,9 @@ function parseAggregate(row: Record<string, unknown>): LlmObservationAggregate {
     reasoningTokens: optionalNumber(row.reasoning_tokens),
     unclassifiedTokens: optionalNumber(row.unclassified_tokens),
     totalTokens: optionalNumber(row.total_tokens),
+    pointMicros: optionalIntegerString(row.point_micros),
+    pointPricedRequestCount: numberValue(row.point_priced_request_count),
+    pointUnpricedRequestCount: numberValue(row.point_unpriced_request_count),
     providerUsageCount: numberValue(row.provider_usage_count),
     estimatedUsageCount: numberValue(row.estimated_usage_count),
     missingUsageCount: numberValue(row.missing_usage_count),
@@ -416,4 +431,10 @@ function numberValue(value: unknown): number {
 function optionalNumber(value: unknown): number | undefined {
   if (value === null || value === undefined) return undefined;
   return numberValue(value);
+}
+
+function optionalIntegerString(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const text = String(value);
+  return /^\d+$/.test(text) ? text : undefined;
 }
