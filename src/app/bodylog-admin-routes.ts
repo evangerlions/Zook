@@ -1,6 +1,7 @@
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { BodyLogAdminService } from "../modules/bodylog/bodylog-admin.service.ts";
+import type { AdminUserStatus } from "../modules/bodylog/bodylog-admin.types.ts";
 import { BODYLOG_APP_ID } from "../modules/bodylog/bodylog-profile.types.ts";
 import { ApplicationError } from "../shared/errors.ts";
 
@@ -211,6 +212,250 @@ export async function tryHandleBodyLogAdminRoutes(
     await context.recordAdminReadAudit(adminUser, "bodylog.growth.statistics", "growth_statistics", appId, request.requestId);
     const stats = await service.getGrowthStatistics();
     return context.ok({ app_id: appId, admin_user: adminUser, statistics: stats }, request.requestId as string);
+  }
+
+  const growthPlanMatch = relativePath.match(/^\/growth\/plans\/([^/]+)$/);
+  if (growthPlanMatch && request.method === "GET") {
+    const adminUser = context.authenticateAdmin(request);
+    const planId = decodeURIComponent(growthPlanMatch[1]);
+    await context.recordAdminReadAudit(adminUser, "bodylog.growth.plan.read", "growth_plan", planId, request.requestId);
+    const plan = await service.getGrowthPlanDetails(planId);
+    if (!plan) {
+      throw new ApplicationError(404, "BODYLOG_ADMIN_GROWTH_PLAN_NOT_FOUND", "Growth plan not found.");
+    }
+    return context.ok({ app_id: appId, admin_user: adminUser, ...plan }, request.requestId as string);
+  }
+
+  // ===== Reward Management: Manual Issue =====
+
+  if (request.method === "POST" && relativePath === "/rewards/manual-issue") {
+    const session = context.requireAdminSession(request);
+    const body = request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? request.body as Record<string, unknown>
+      : {};
+    const planId = typeof body.planId === "string" ? body.planId : undefined;
+    const userId = typeof body.userId === "string" ? body.userId : undefined;
+    const type = typeof body.type === "string" ? body.type : undefined;
+    const value = typeof body.value === "string" ? body.value : undefined;
+    if (!planId || !userId || !type || !value) {
+      throw new ApplicationError(400, "BODYLOG_ADMIN_INVALID_REWARD", "planId, userId, type, and value are required.");
+    }
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.reward.manual_issue",
+      resourceType: "reward",
+      resourceId: `${planId}:${userId}`,
+      payload: { adminUser: session.adminUser, planId, userId, type, value },
+    });
+    const reward = await service.manualIssueReward({ planId, userId, type, value });
+    return context.ok({ app_id: appId, admin_user: session.adminUser, ...reward }, request.requestId as string);
+  }
+
+  // ===== Challenge Details =====
+
+  const challengeMatch = relativePath.match(/^\/challenges\/([^/]+)$/);
+  if (challengeMatch && request.method === "GET") {
+    const adminUser = context.authenticateAdmin(request);
+    const challengeId = decodeURIComponent(challengeMatch[1]);
+    await context.recordAdminReadAudit(adminUser, "bodylog.challenge.read", "challenge", challengeId, request.requestId);
+    const challenge = await service.getChallengeDetails(appId, challengeId);
+    if (!challenge) {
+      throw new ApplicationError(404, "BODYLOG_ADMIN_CHALLENGE_NOT_FOUND", "Challenge not found.");
+    }
+    return context.ok({ app_id: appId, admin_user: adminUser, ...challenge }, request.requestId as string);
+  }
+
+  // ===== Report Resolution =====
+
+  const reportMatch = relativePath.match(/^\/reports\/([^/]+)\/resolve$/);
+  if (reportMatch && request.method === "POST") {
+    const session = context.requireAdminSession(request);
+    const reportId = decodeURIComponent(reportMatch[1]);
+    const body = request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? request.body as Record<string, unknown>
+      : {};
+    const resolution = typeof body.resolution === "string" ? body.resolution : undefined;
+    if (!resolution) {
+      throw new ApplicationError(400, "BODYLOG_ADMIN_INVALID_RESOLUTION", "resolution is required.");
+    }
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.report.resolve",
+      resourceType: "report",
+      resourceId: reportId,
+      payload: { adminUser: session.adminUser, reportId, resolution },
+    });
+    await service.resolveReport(reportId, session.adminUser, resolution);
+    return context.ok({ app_id: appId, admin_user: session.adminUser, resolved: true }, request.requestId as string);
+  }
+
+  // ===== User Details =====
+
+  const userMatch = relativePath.match(/^\/users\/([^/]+)$/);
+  if (userMatch && request.method === "GET") {
+    const adminUser = context.authenticateAdmin(request);
+    const userId = decodeURIComponent(userMatch[1]);
+    await context.recordAdminReadAudit(adminUser, "bodylog.user.read", "user", userId, request.requestId);
+    const user = await service.getUserDetails(appId, userId);
+    if (!user) {
+      throw new ApplicationError(404, "BODYLOG_ADMIN_USER_NOT_FOUND", "User not found.");
+    }
+    return context.ok({ app_id: appId, admin_user: adminUser, ...user }, request.requestId as string);
+  }
+
+  const userStatusMatch = relativePath.match(/^\/users\/([^/]+)\/status$/);
+  if (userStatusMatch && request.method === "PUT") {
+    const session = context.requireAdminSession(request);
+    const userId = decodeURIComponent(userStatusMatch[1]);
+    const body = request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? request.body as Record<string, unknown>
+      : {};
+    const status = typeof body.status === "string" ? body.status : undefined;
+    if (!status || !["active", "banned", "suspended"].includes(status)) {
+      throw new ApplicationError(400, "BODYLOG_ADMIN_INVALID_STATUS", "status must be active, banned, or suspended.");
+    }
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.user.status.update",
+      resourceType: "user",
+      resourceId: userId,
+      payload: { adminUser: session.adminUser, userId, status },
+    });
+    await service.updateUserStatus(appId, userId, status as AdminUserStatus);
+    return context.ok({ app_id: appId, admin_user: session.adminUser, updated: true }, request.requestId as string);
+  }
+
+  const userDataMatch = relativePath.match(/^\/users\/([^/]+)\/data$/);
+  if (userDataMatch && request.method === "DELETE") {
+    const session = context.requireAdminSession(request);
+    const userId = decodeURIComponent(userDataMatch[1]);
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.user.data.reset",
+      resourceType: "user",
+      resourceId: userId,
+      payload: { adminUser: session.adminUser, userId },
+    });
+    await service.resetUserData(appId, userId);
+    return context.ok({ app_id: appId, admin_user: session.adminUser, reset: true }, request.requestId as string);
+  }
+
+  // ===== Season Close =====
+
+  const seasonCloseMatch = relativePath.match(/^\/leaderboards\/seasons\/([^/]+)\/operations\/close$/);
+  if (seasonCloseMatch && request.method === "POST") {
+    const session = context.requireAdminSession(request);
+    const seasonLabel = decodeURIComponent(seasonCloseMatch[1]);
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.season.close",
+      resourceType: "season",
+      resourceId: seasonLabel,
+      payload: { adminUser: session.adminUser, seasonLabel },
+    });
+    await service.closeSeason(seasonLabel);
+    return context.ok({ app_id: appId, admin_user: session.adminUser, closed: true }, request.requestId as string);
+  }
+
+  // ===== System Configuration =====
+
+  if (request.method === "GET" && relativePath === "/config/notifications") {
+    const adminUser = context.authenticateAdmin(request);
+    await context.recordAdminReadAudit(adminUser, "bodylog.config.notifications.read", "config", "notifications", request.requestId);
+    const config = await service.getNotificationConfig();
+    return context.ok({ app_id: appId, admin_user: adminUser, ...config }, request.requestId as string);
+  }
+
+  if (request.method === "PUT" && relativePath === "/config/notifications") {
+    const session = context.requireAdminSession(request);
+    const body = request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? request.body as Record<string, unknown>
+      : {};
+    const pushDeliveryEnabled = typeof body.pushDeliveryEnabled === "boolean" ? body.pushDeliveryEnabled : undefined;
+    const defaultQuietHours = body.defaultQuietHours && typeof body.defaultQuietHours === "object" && !Array.isArray(body.defaultQuietHours)
+      ? body.defaultQuietHours as Record<string, unknown>
+      : undefined;
+    if (pushDeliveryEnabled === undefined || !defaultQuietHours) {
+      throw new ApplicationError(400, "BODYLOG_ADMIN_INVALID_CONFIG", "pushDeliveryEnabled and defaultQuietHours are required.");
+    }
+    const isEnabled = typeof defaultQuietHours.isEnabled === "boolean" ? defaultQuietHours.isEnabled : undefined;
+    const startHour = typeof defaultQuietHours.startHour === "number" ? defaultQuietHours.startHour : undefined;
+    const endHour = typeof defaultQuietHours.endHour === "number" ? defaultQuietHours.endHour : undefined;
+    if (isEnabled === undefined || startHour === undefined || endHour === undefined) {
+      throw new ApplicationError(400, "BODYLOG_ADMIN_INVALID_CONFIG", "defaultQuietHours must include isEnabled, startHour, and endHour.");
+    }
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.config.notifications.update",
+      resourceType: "config",
+      resourceId: "notifications",
+      payload: { adminUser: session.adminUser, config: { pushDeliveryEnabled, defaultQuietHours: { isEnabled, startHour, endHour } } },
+    });
+    await service.updateNotificationConfig({ pushDeliveryEnabled, defaultQuietHours: { isEnabled, startHour, endHour } });
+    return context.ok({ app_id: appId, admin_user: session.adminUser, updated: true }, request.requestId as string);
+  }
+
+  if (request.method === "GET" && relativePath === "/config/scoring") {
+    const adminUser = context.authenticateAdmin(request);
+    await context.recordAdminReadAudit(adminUser, "bodylog.config.scoring.read", "config", "scoring", request.requestId);
+    const config = await service.getScoringConfig();
+    return context.ok({ app_id: appId, admin_user: adminUser, ...config }, request.requestId as string);
+  }
+
+  if (request.method === "PUT" && relativePath === "/config/scoring") {
+    const session = context.requireAdminSession(request);
+    const body = request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? request.body as Record<string, unknown>
+      : {};
+    const buddyCheckinBaseScore = typeof body.buddyCheckinBaseScore === "number" ? body.buddyCheckinBaseScore : undefined;
+    const buddyEncouragementScore = typeof body.buddyEncouragementScore === "number" ? body.buddyEncouragementScore : undefined;
+    const groupCheckinBaseScore = typeof body.groupCheckinBaseScore === "number" ? body.groupCheckinBaseScore : undefined;
+    const challengeCompletionBonus = typeof body.challengeCompletionBonus === "number" ? body.challengeCompletionBonus : undefined;
+    const growthMissionScore = typeof body.growthMissionScore === "number" ? body.growthMissionScore : undefined;
+    if (buddyCheckinBaseScore === undefined || buddyEncouragementScore === undefined || groupCheckinBaseScore === undefined || challengeCompletionBonus === undefined || growthMissionScore === undefined) {
+      throw new ApplicationError(400, "BODYLOG_ADMIN_INVALID_CONFIG", "All scoring fields are required.");
+    }
+    const config = { buddyCheckinBaseScore, buddyEncouragementScore, groupCheckinBaseScore, challengeCompletionBonus, growthMissionScore };
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.config.scoring.update",
+      resourceType: "config",
+      resourceId: "scoring",
+      payload: { adminUser: session.adminUser, config },
+    });
+    await service.updateScoringConfig(config);
+    return context.ok({ app_id: appId, admin_user: session.adminUser, updated: true }, request.requestId as string);
+  }
+
+  if (request.method === "GET" && relativePath === "/config/seasons") {
+    const adminUser = context.authenticateAdmin(request);
+    await context.recordAdminReadAudit(adminUser, "bodylog.config.seasons.read", "config", "seasons", request.requestId);
+    const config = await service.getSeasonConfig();
+    return context.ok({ app_id: appId, admin_user: adminUser, ...config }, request.requestId as string);
+  }
+
+  if (request.method === "PUT" && relativePath === "/config/seasons") {
+    const session = context.requireAdminSession(request);
+    const body = request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? request.body as Record<string, unknown>
+      : {};
+    const defaultDurationDays = typeof body.defaultDurationDays === "number" ? body.defaultDurationDays : undefined;
+    const maxParticipantsPerSeason = typeof body.maxParticipantsPerSeason === "number" ? body.maxParticipantsPerSeason : undefined;
+    const allowAnonymousLeaderboard = typeof body.allowAnonymousLeaderboard === "boolean" ? body.allowAnonymousLeaderboard : undefined;
+    const autoCloseSeasons = typeof body.autoCloseSeasons === "boolean" ? body.autoCloseSeasons : undefined;
+    if (defaultDurationDays === undefined || maxParticipantsPerSeason === undefined || allowAnonymousLeaderboard === undefined || autoCloseSeasons === undefined) {
+      throw new ApplicationError(400, "BODYLOG_ADMIN_INVALID_CONFIG", "All season config fields are required.");
+    }
+    const config = { defaultDurationDays, maxParticipantsPerSeason, allowAnonymousLeaderboard, autoCloseSeasons };
+    await context.auditInterceptor.record({
+      appId,
+      action: "bodylog.config.seasons.update",
+      resourceType: "config",
+      resourceId: "seasons",
+      payload: { adminUser: session.adminUser, config },
+    });
+    await service.updateSeasonConfig(config);
+    return context.ok({ app_id: appId, admin_user: session.adminUser, updated: true }, request.requestId as string);
   }
 
   return undefined;

@@ -11,17 +11,23 @@ import type {
 import type {
   AdminBlock,
   AdminChallenge,
+  AdminChallengeDetails,
   AdminChallengeStatistics,
   AdminFeatureFlagAnalytics,
   AdminGrowthPlan,
+  AdminGrowthPlanDetails,
   AdminGrowthStatistics,
+  AdminNotificationConfig,
   AdminOperationsMetrics,
   AdminOperationsSummary,
   AdminReport,
   AdminReward,
   AdminRewardStatistics,
+  AdminScoringConfig,
   AdminSeason,
+  AdminSeasonConfig,
   AdminSeasonRanking,
+  AdminUserDetails,
   AdminUserProfile,
 } from "./bodylog-admin.types.ts";
 import type {
@@ -342,7 +348,7 @@ export class InMemoryBodyLogAdminStore implements BodyLogAdminStore {
   getOperationsSummary(): AdminOperationsSummary {
     return { overview: { totalUsers: 0, totalBuddyPairs: 0, totalGroups: 0, totalChallenges: 0, activeGrowthPlans: 0 }, subscriptions: { totalActive: 0, byTier: {} }, generatedAt: new Date().toISOString() };
   }
-  getOperationsMetrics(periodDays: number): AdminOperationsMetrics {
+  getOperationsMetrics(_appId: string, periodDays: number): AdminOperationsMetrics {
     return { period: periodDays === 7 ? "7d" : periodDays === 30 ? "30d" : "90d", newUsers: 0, activeUsers: 0, buddyCheckins: 0, groupCheckins: 0, challengesCompleted: 0, growthMissionsCompleted: 0, newSubscriptions: 0 };
   }
   listUserProfiles(): { users: AdminUserProfile[]; total: number } { return { users: [], total: 0 }; }
@@ -359,4 +365,26 @@ export class InMemoryBodyLogAdminStore implements BodyLogAdminStore {
   listRewardsPaginated(): { rewards: AdminReward[]; total: number } { return { rewards: [], total: 0 }; }
   getRewardStatistics(): AdminRewardStatistics { return { totalRewards: 0, claimedRewards: 0, claimRate: 0 }; }
   getFeatureFlagAnalytics(): AdminFeatureFlagAnalytics[] { return []; }
+  getUserDetails(): AdminUserDetails | null { return null; }
+  updateUserStatus(): void { /* no-op */ }
+  resetUserData(): void { /* no-op */ }
+  resolveReport(): void { /* no-op */ }
+  closeSeason(): void { /* no-op */ }
+  getChallengeDetails(): AdminChallengeDetails | null { return null; }
+  getGrowthPlanDetails(): AdminGrowthPlanDetails | null { return null; }
+  manualIssueReward(input: { planId: string; userId: string; type: string; value: string }): AdminReward {
+    return { rewardId: "reward_" + Date.now(), planId: input.planId, userId: input.userId, type: input.type, value: input.value, claimed: false, claimedAt: null, createdAt: new Date().toISOString() };
+  }
+  getNotificationConfig(): AdminNotificationConfig {
+    return { pushDeliveryEnabled: true, defaultQuietHours: { isEnabled: false, startHour: 22, endHour: 8 } };
+  }
+  updateNotificationConfig(): void { /* no-op */ }
+  getScoringConfig(): AdminScoringConfig {
+    return { buddyCheckinBaseScore: 10, buddyEncouragementScore: 2, groupCheckinBaseScore: 15, challengeCompletionBonus: 50, growthMissionScore: 5 };
+  }
+  updateScoringConfig(): void { /* no-op */ }
+  getSeasonConfig(): AdminSeasonConfig {
+    return { defaultDurationDays: 7, maxParticipantsPerSeason: 1000, allowAnonymousLeaderboard: false, autoCloseSeasons: true };
+  }
+  updateSeasonConfig(): void { /* no-op */ }
 }

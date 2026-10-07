@@ -18,7 +18,11 @@ import type {
   AdminRewardListResult,
   AdminRewardStatistics,
   AdminGrowthPlanListResult,
+  AdminScoringConfig,
+  AdminSeasonConfig,
+  AdminUserDetails,
   AdminUserListResult,
+  AdminUserStatus,
   AdminPagination,
 } from "./bodylog-admin.types.ts";
 
@@ -151,5 +155,75 @@ export class BodyLogAdminService {
 
   async getGrowthStatistics(): Promise<AdminGrowthStatistics> {
     return await this.adminStore.getGrowthStatistics();
+  }
+
+  // ===== User Details =====
+
+  async getUserDetails(appId: string, userId: string): Promise<AdminUserDetails | null> {
+    return await this.adminStore.getUserDetails(appId, userId);
+  }
+
+  async updateUserStatus(appId: string, userId: string, status: AdminUserStatus): Promise<void> {
+    await this.adminStore.updateUserStatus(appId, userId, status);
+  }
+
+  async resetUserData(appId: string, userId: string): Promise<void> {
+    await this.adminStore.resetUserData(appId, userId);
+  }
+
+  // ===== Report Resolution =====
+
+  async resolveReport(reportId: string, resolvedBy: string, resolution: string): Promise<void> {
+    await this.adminStore.resolveReport(reportId, resolvedBy, resolution);
+  }
+
+  // ===== Season Close =====
+
+  async closeSeason(seasonLabel: string): Promise<void> {
+    await this.adminStore.closeSeason(seasonLabel);
+  }
+
+  // ===== Challenge Details =====
+
+  async getChallengeDetails(appId: string, challengeId: string): Promise<AdminChallengeDetails | null> {
+    return await this.adminStore.getChallengeDetails(appId, challengeId);
+  }
+
+  // ===== Growth Plan Details =====
+
+  async getGrowthPlanDetails(planId: string): Promise<AdminGrowthPlanDetails | null> {
+    return await this.adminStore.getGrowthPlanDetails(planId);
+  }
+
+  // ===== Manual Reward Issuance =====
+
+  async manualIssueReward(input: { planId: string; userId: string; type: string; value: string }): Promise<import("./bodylog-admin.types.ts").AdminReward> {
+    return await this.adminStore.manualIssueReward(input);
+  }
+
+  // ===== System Configuration =====
+
+  async getNotificationConfig(): Promise<AdminNotificationConfig> {
+    return await this.adminStore.getNotificationConfig();
+  }
+
+  async updateNotificationConfig(config: AdminNotificationConfig): Promise<void> {
+    await this.adminStore.updateNotificationConfig(config);
+  }
+
+  async getScoringConfig(): Promise<AdminScoringConfig> {
+    return await this.adminStore.getScoringConfig();
+  }
+
+  async updateScoringConfig(config: AdminScoringConfig): Promise<void> {
+    await this.adminStore.updateScoringConfig(config);
+  }
+
+  async getSeasonConfig(): Promise<AdminSeasonConfig> {
+    return await this.adminStore.getSeasonConfig();
+  }
+
+  async updateSeasonConfig(config: AdminSeasonConfig): Promise<void> {
+    await this.adminStore.updateSeasonConfig(config);
   }
 }
