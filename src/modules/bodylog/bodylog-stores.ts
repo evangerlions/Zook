@@ -369,7 +369,6 @@ export class InMemoryBodyLogAdminStore implements BodyLogAdminStore {
   updateUserStatus(): void { /* no-op */ }
   resetUserData(): void { /* no-op */ }
   resolveReport(): void { /* no-op */ }
-  closeSeason(): void { /* no-op */ }
   getChallengeDetails(): AdminChallengeDetails | null { return null; }
   getGrowthPlanDetails(): AdminGrowthPlanDetails | null { return null; }
   manualIssueReward(input: { planId: string; userId: string; type: string; value: string }): AdminReward {

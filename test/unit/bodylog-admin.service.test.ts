@@ -93,7 +93,6 @@ describe("BodyLogAdminService", () => {
       listSeasons: mock.fn(async () => ({ seasons: [], total: 0 })),
       listSeasonRankings: mock.fn(async () => ({ rankings: [], total: 0 })),
       removeSeasonEntry: mock.fn(async () => {}),
-      closeSeason: mock.fn(async () => {}),
       listChallengesPaginated: mock.fn(async () => ({ challenges: [], total: 0 })),
       getChallengeDetails: mock.fn(async () => null),
       getChallengeStatistics: mock.fn(async () => ({
@@ -205,6 +204,13 @@ describe("BodyLogAdminService", () => {
       assert.equal(result.pagination.pageSize, 20);
     });
 
+    it("should fall back to safe defaults for invalid pagination values", async () => {
+      const result = await service.listUsers("bodylog", Number.NaN, Number.NaN);
+
+      assert.equal(result.pagination.page, 1);
+      assert.equal(result.pagination.pageSize, 20);
+    });
+
     it("should return user details", async () => {
       const result = await service.getUserDetails("bodylog", "user-1");
 
@@ -265,7 +271,7 @@ describe("BodyLogAdminService", () => {
 
   describe("Leaderboard Management", () => {
     it("should list seasons with pagination", async () => {
-      const result = await service.listSeasons(1, 20);
+      const result = await service.listSeasons("bodylog", 1, 20);
 
       assert.ok(result.seasons);
       assert.ok(result.pagination);
@@ -285,12 +291,6 @@ describe("BodyLogAdminService", () => {
       assert.equal(removeMock.mock.callCount(), 1);
     });
 
-    it("should close season", async () => {
-      await service.closeSeason("2026-W40");
-
-      const closeMock = mockAdminStore.closeSeason as ReturnType<typeof mock.fn>;
-      assert.equal(closeMock.mock.callCount(), 1);
-    });
   });
 
   describe("Challenge Management", () => {

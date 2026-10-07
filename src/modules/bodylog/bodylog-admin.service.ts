@@ -30,8 +30,10 @@ const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
 function resolvePagination(page?: number, pageSize?: number): { offset: number; limit: number; page: number; pageSize: number } {
-  const p = Math.max(1, page ?? 1);
-  const ps = Math.min(MAX_PAGE_SIZE, Math.max(1, pageSize ?? DEFAULT_PAGE_SIZE));
+  const p = Number.isSafeInteger(page) ? Math.max(1, page as number) : 1;
+  const ps = Number.isSafeInteger(pageSize)
+    ? Math.min(MAX_PAGE_SIZE, Math.max(1, pageSize as number))
+    : DEFAULT_PAGE_SIZE;
   return { offset: (p - 1) * ps, limit: ps, page: p, pageSize: ps };
 }
 
@@ -84,9 +86,9 @@ export class BodyLogAdminService {
 
   // ===== Leaderboard Management =====
 
-  async listSeasons(page?: number, pageSize?: number): Promise<AdminSeasonListResult> {
+  async listSeasons(appId: string, page?: number, pageSize?: number): Promise<AdminSeasonListResult> {
     const { offset, limit, page: p, pageSize: ps } = resolvePagination(page, pageSize);
-    const { seasons, total } = await this.adminStore.listSeasons(offset, limit);
+    const { seasons, total } = await this.adminStore.listSeasons(appId, offset, limit);
     return { seasons, pagination: buildPagination(p, ps, total) };
   }
 
@@ -175,12 +177,6 @@ export class BodyLogAdminService {
 
   async resolveReport(reportId: string, resolvedBy: string, resolution: string): Promise<void> {
     await this.adminStore.resolveReport(reportId, resolvedBy, resolution);
-  }
-
-  // ===== Season Close =====
-
-  async closeSeason(seasonLabel: string): Promise<void> {
-    await this.adminStore.closeSeason(seasonLabel);
   }
 
   // ===== Challenge Details =====

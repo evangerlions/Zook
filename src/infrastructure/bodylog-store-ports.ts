@@ -164,10 +164,9 @@ export interface BodyLogAdminStore {
   resolveReport(reportId: string, resolvedBy: string, resolution: string): MaybePromise<void>;
   listBlocksPaginated(appId: string, offset: number, limit: number): MaybePromise<{ blocks: AdminBlock[]; total: number }>;
   deleteBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
-  listSeasons(offset: number, limit: number): MaybePromise<{ seasons: AdminSeason[]; total: number }>;
+  listSeasons(appId: string, offset: number, limit: number): MaybePromise<{ seasons: AdminSeason[]; total: number }>;
   listSeasonRankings(appId: string, seasonLabel: string, offset: number, limit: number): MaybePromise<{ rankings: AdminSeasonRanking[]; total: number }>;
   removeSeasonEntry(appId: string, seasonLabel: string, userId: string): MaybePromise<void>;
-  closeSeason(seasonLabel: string): MaybePromise<void>;
   listChallengesPaginated(appId: string, offset: number, limit: number): MaybePromise<{ challenges: AdminChallenge[]; total: number }>;
   getChallengeDetails(appId: string, challengeId: string): MaybePromise<AdminChallengeDetails | null>;
   getChallengeStatistics(appId: string): MaybePromise<AdminChallengeStatistics>;

@@ -323,6 +323,46 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 需要 Admin 会话。可选 query：`invitation_id`、`status`、`limit`；`status` 仅接受 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed`、`dead_letter`。响应只包含 `invitation_id`、`recipient_masked`、投递/尝试状态、provider correlation ID、稳定错误码和时间戳，不返回完整邮箱、邀请码、token 或模板参数。每次读取都会写入 admin audit。
 
+### 3.14 BodyLog 管理接口
+
+所有接口都需要已认证的 Admin 会话。路径固定使用 BodyLog app workspace：`/api/v1/admin/apps/bodylog/...`。读取操作写入 Admin read audit；更改操作需要 Admin session 并写入操作审计。
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/bodylog/operations/summary` | 运营概览 |
+| `GET` | `/api/v1/admin/apps/bodylog/operations/metrics?period=7d\|30d\|90d` | 周期指标 |
+| `GET` | `/api/v1/admin/apps/bodylog/users?page=&pageSize=&search=` | 用户分页与搜索 |
+| `GET` | `/api/v1/admin/apps/bodylog/users/{userId}` | 用户详情 |
+| `PUT` | `/api/v1/admin/apps/bodylog/users/{userId}/status` | 设置用户状态，body `{ "status": "active\|banned\|suspended" }` |
+| `DELETE` | `/api/v1/admin/apps/bodylog/users/{userId}/data` | 删除部分 BodyLog 用户资料与关联数据 |
+| `GET` | `/api/v1/admin/apps/bodylog/reports?page=&pageSize=` | 举报列表 |
+| `POST` | `/api/v1/admin/apps/bodylog/reports/{reportId}/resolve` | 处理举报，body `{ "resolution": "..." }` |
+| `GET` | `/api/v1/admin/apps/bodylog/blocks?page=&pageSize=` | 屏蔽关系列表 |
+| `DELETE` | `/api/v1/admin/apps/bodylog/blocks/{blockerUserId}/{blockedUserId}` | 移除屏蔽关系 |
+| `GET` | `/api/v1/admin/apps/bodylog/leaderboards/seasons?page=&pageSize=` | 赛季列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/leaderboards/seasons/{seasonLabel}/rankings?page=&pageSize=` | 赛季排名 |
+| `DELETE` | `/api/v1/admin/apps/bodylog/leaderboards/seasons/{seasonLabel}/entries/{userId}` | 移除赛季排名条目 |
+| `GET` | `/api/v1/admin/apps/bodylog/challenges?page=&pageSize=` | 挑战列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/challenges/{challengeId}` | 挑战详情 |
+| `GET` | `/api/v1/admin/apps/bodylog/challenges/statistics` | 挑战统计 |
+| `GET` | `/api/v1/admin/apps/bodylog/rewards?page=&pageSize=` | 奖励列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/rewards/statistics` | 奖励统计 |
+| `POST` | `/api/v1/admin/apps/bodylog/rewards/manual-issue` | 为指定成长计划用户发放奖励 |
+| `GET` | `/api/v1/admin/apps/bodylog/feature-flags` | 功能开关列表 |
+| `PUT` | `/api/v1/admin/apps/bodylog/feature-flags/{key}` | 设置开关，body `{ "enabled": true }` |
+| `GET` | `/api/v1/admin/apps/bodylog/feature-flags/analytics` | 功能使用汇总 |
+| `GET` | `/api/v1/admin/apps/bodylog/growth/plans?page=&pageSize=` | 成长计划列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/growth/plans/{planId}` | 成长计划详情 |
+| `GET` | `/api/v1/admin/apps/bodylog/growth/statistics` | 成长计划统计 |
+| `GET` | `/api/v1/admin/apps/bodylog/config/notifications` | 获取通知配置 |
+| `PUT` | `/api/v1/admin/apps/bodylog/config/notifications` | 更新通知配置 |
+| `GET` | `/api/v1/admin/apps/bodylog/config/scoring` | 获取计分配置 |
+| `PUT` | `/api/v1/admin/apps/bodylog/config/scoring` | 更新计分配置 |
+| `GET` | `/api/v1/admin/apps/bodylog/config/seasons` | 获取赛季配置 |
+| `PUT` | `/api/v1/admin/apps/bodylog/config/seasons` | 更新赛季配置 |
+
+分页参数默认为 `page=1`、`pageSize=20`，页大小最大为 100。`period` 只接受 `7d`、`30d`、`90d`。`DELETE users/{userId}/data` 当前清除 BodyLog profile、搭子配对、群组成员、成长计划及其级联任务/奖励、排行榜条目和订阅；它不等同于删除用户账号或清除所有历史社交记录。用户状态目前保存在 BodyLog profile 上；状态本身不替代认证或请求拦截。通知、计分和赛季配置保存在 `zook_config`，当前尚未接入运行时行为。手动关闭赛季暂不提供接口。
+
 ## 4. 关联文档
 
 - [admin-web-design.md](admin-web-design.md)

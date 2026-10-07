@@ -100,7 +100,7 @@ export async function tryHandleBodyLogAdminRoutes(
     const adminUser = context.authenticateAdmin(request);
     const { page, pageSize } = pagination();
     await context.recordAdminReadAudit(adminUser, "bodylog.leaderboards.seasons.list", "season_list", appId, request.requestId);
-    const result = await service.listSeasons(page, pageSize);
+    const result = await service.listSeasons(appId, page, pageSize);
     return context.ok({ app_id: appId, admin_user: adminUser, ...result }, request.requestId as string);
   }
 
@@ -338,23 +338,6 @@ export async function tryHandleBodyLogAdminRoutes(
     });
     await service.resetUserData(appId, userId);
     return context.ok({ app_id: appId, admin_user: session.adminUser, reset: true }, request.requestId as string);
-  }
-
-  // ===== Season Close =====
-
-  const seasonCloseMatch = relativePath.match(/^\/leaderboards\/seasons\/([^/]+)\/operations\/close$/);
-  if (seasonCloseMatch && request.method === "POST") {
-    const session = context.requireAdminSession(request);
-    const seasonLabel = decodeURIComponent(seasonCloseMatch[1]);
-    await context.auditInterceptor.record({
-      appId,
-      action: "bodylog.season.close",
-      resourceType: "season",
-      resourceId: seasonLabel,
-      payload: { adminUser: session.adminUser, seasonLabel },
-    });
-    await service.closeSeason(seasonLabel);
-    return context.ok({ app_id: appId, admin_user: session.adminUser, closed: true }, request.requestId as string);
   }
 
   // ===== System Configuration =====

@@ -104,7 +104,7 @@ describe("BodyLog Admin Regression Tests", () => {
   describe("排行榜管理回归", () => {
     it("应该能够查看赛季列表（对应客户端排行榜功能）", async () => {
       // 客户端可以查看当前赛季，管理后台应该能够查看所有赛季
-      const result = await service.listSeasons(1, 20);
+      const result = await service.listSeasons("bodylog", 1, 20);
 
       assert.ok(result.seasons);
       assert.ok(result.pagination);
@@ -126,13 +126,6 @@ describe("BodyLog Admin Regression Tests", () => {
       assert.ok(true);
     });
 
-    it("应该能够关闭赛季（对应客户端赛季结束功能）", async () => {
-      // 管理后台应该能够手动关闭赛季
-      await service.closeSeason("2026-W40");
-
-      // 不应该抛出异常
-      assert.ok(true);
-    });
   });
 
   describe("挑战管理回归", () => {

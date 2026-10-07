@@ -227,18 +227,19 @@ export class PostgresBodyLogAdminStore {
 
   // ===== Leaderboard Management =====
 
-  async listSeasons(offset: number, limit: number): Promise<{ seasons: AdminSeason[]; total: number }> {
+  async listSeasons(appId: string, offset: number, limit: number): Promise<{ seasons: AdminSeason[]; total: number }> {
     const [entriesResult, countResult] = await Promise.all([
       this.query(
         `SELECT season_label, MIN(reached_at) AS start_date, MAX(reached_at) AS end_date,
                 COUNT(*)::int AS participant_count
          FROM zook_bodylog_leaderboard_entries
+         WHERE app_id = $1
          GROUP BY season_label
          ORDER BY season_label DESC
-         LIMIT $1 OFFSET $2`,
-        [limit, offset],
+         LIMIT $2 OFFSET $3`,
+        [appId, limit, offset],
       ),
-      this.query("SELECT COUNT(DISTINCT season_label)::int AS count FROM zook_bodylog_leaderboard_entries"),
+      this.query("SELECT COUNT(DISTINCT season_label)::int AS count FROM zook_bodylog_leaderboard_entries WHERE app_id = $1", [appId]),
     ]);
 
     const currentSeason = this.currentSeasonLabel();
@@ -610,15 +611,6 @@ export class PostgresBodyLogAdminStore {
     await this.query(
       `UPDATE zook_bodylog_reports SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP, resolved_by = $2, resolution = $3 WHERE id = $1`,
       [reportId, resolvedBy, resolution],
-    );
-  }
-
-  // ===== Season Close =====
-
-  async closeSeason(seasonLabel: string): Promise<void> {
-    await this.query(
-      `UPDATE zook_bodylog_leaderboard_entries SET season_label = $1 WHERE season_label = $1`,
-      [seasonLabel],
     );
   }
 
