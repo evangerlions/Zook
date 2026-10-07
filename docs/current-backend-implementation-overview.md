@@ -59,6 +59,8 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 
 搭子后台任务每天执行不活跃扫描：达到 7 个 UTC 日期时向双方排入连续打卡提醒，达到 14 天时解除关系；每日 job key 防止同一日期重复扫描。BodyLog 管理端打卡完成率按每日记录中的完成成员数 / 参与成员名额加权；贡献榜从 app-scoped BodyLog profile 读取昵称与头像。商店购买可通过 `POST /api/v1/bodylog/subscription/purchases` 验证 StoreKit 2 JWS 或 Google Play token，按 app-scoped 账号写入云端权益；凭证归属以数据库原子唯一约束防止跨账号重复认领。验签依赖运行环境提供 Apple Root CA 与 Google Play 服务账号。
 
+BodyLog Admin API 扩展了用户查询与状态、举报和屏蔽管理、排行榜条目、挑战、成长计划、奖励、功能开关、运营指标及系统配置，并为 profile 搜索、举报和后台列表增加 PostgreSQL 索引。接口定义见 [admin-api-spec.md](admin-api-spec.md#314-bodylog-管理接口)。当前用户状态仅作为 BodyLog profile 字段保存，不会自动阻止用户请求；通知、计分和赛季配置也只持久化在 `zook_config`，尚未驱动运行时。用户数据清理仅删除文档列出的部分 BodyLog 关联数据；手动关闭赛季接口已移除，因为当前数据模型无法正确执行该操作。
+
 BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周报表。任务领取标记与结算数据在同一 PostgreSQL 事务中提交，失败回滚后可重试；不依赖进程内时间戳或独立 KV 标记。真实数据库验证命令为 `BODYLOG_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/bodylog-postgres.test.ts`，使用独立临时 schema，覆盖迁移重放、多连接任务去重与回滚。发布前须在 dev 环境验证当前 main SHA；这些本地验证不表示已上线。
 
 对应核心文件：
