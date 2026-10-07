@@ -68,7 +68,7 @@ import { PostgresBodyLogSocialStore } from "./postgres-bodylog-social.ts";
 import { PostgresBodyLogLeaderboardStore } from "./postgres-bodylog-leaderboard.ts";
 import { PostgresBodyLogInvitationStore } from "./postgres-bodylog-invitations.ts";
 import { PostgresBodyLogChallengeStore } from "./postgres-bodylog-challenges.ts";
-import type { BodyLogBuddyStore, BodyLogFeatureFlagStore, BodyLogGroupStore, BodyLogGrowthStore, BodyLogNotificationStore, BodyLogStores, BodyLogSubscriptionStore } from "../../bodylog-store-ports.ts";
+import type { BodyLogAdminStore, BodyLogBuddyStore, BodyLogFeatureFlagStore, BodyLogGroupStore, BodyLogGrowthStore, BodyLogNotificationStore, BodyLogStores, BodyLogSubscriptionStore } from "../../bodylog-store-ports.ts";
 import { createBodyLogPostgresStores } from "./postgres-bodylog-store-adapters.ts";
 import type { BodyLogBlockRecord, BodyLogFriendRequestRecord, BodyLogFriendshipRecord, BodyLogReportRecord } from "../../../modules/bodylog/bodylog-social.types.ts";
 import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeeklyGoalSnapshot } from "../../../modules/bodylog/bodylog-scoring.types.ts";
@@ -139,6 +139,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   getBodyLogNotificationStore(): BodyLogNotificationStore { return this.bodyLogStores.notification; }
   getBodyLogFeatureFlagStore(): BodyLogFeatureFlagStore { return this.bodyLogStores.flags; }
   getBodyLogJobStore(): BodyLogStores['jobs'] { return this.bodyLogStores.jobs; }
+  getBodyLogAdminStore(): BodyLogAdminStore { return this.bodyLogStores.admin; }
   static async create(
     connectionString: string,
     seed: DatabaseSeed = {},

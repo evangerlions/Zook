@@ -31,6 +31,22 @@ import type {
   UpdateNotificationPreferencesInput,
   PushDeviceRecord,
 } from "../modules/bodylog/bodylog-notification.types.ts";
+import type {
+  AdminBlock,
+  AdminChallenge,
+  AdminChallengeStatistics,
+  AdminFeatureFlagAnalytics,
+  AdminGrowthPlan,
+  AdminGrowthStatistics,
+  AdminOperationsMetrics,
+  AdminOperationsSummary,
+  AdminReport,
+  AdminReward,
+  AdminRewardStatistics,
+  AdminSeason,
+  AdminSeasonRanking,
+  AdminUserProfile,
+} from "../modules/bodylog/bodylog-admin.types.ts";
 import type { FeatureFlagRecord } from "../modules/bodylog/bodylog-feature-flag.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
@@ -126,6 +142,29 @@ export interface BodyLogSocialAccess {
   listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
 }
 
+/**
+ * Admin-specific aggregate queries for the BodyLog operations dashboard.
+ * These cross-cutting queries don't belong to any single domain store.
+ */
+export interface BodyLogAdminStore {
+  getOperationsSummary(appId: string): MaybePromise<AdminOperationsSummary>;
+  getOperationsMetrics(appId: string, periodDays: number): MaybePromise<AdminOperationsMetrics>;
+  listUserProfiles(appId: string, offset: number, limit: number, search?: string): MaybePromise<{ users: AdminUserProfile[]; total: number }>;
+  listReportsPaginated(appId: string, offset: number, limit: number): MaybePromise<{ reports: AdminReport[]; total: number }>;
+  listBlocksPaginated(appId: string, offset: number, limit: number): MaybePromise<{ blocks: AdminBlock[]; total: number }>;
+  deleteBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
+  listSeasons(offset: number, limit: number): MaybePromise<{ seasons: AdminSeason[]; total: number }>;
+  listSeasonRankings(appId: string, seasonLabel: string, offset: number, limit: number): MaybePromise<{ rankings: AdminSeasonRanking[]; total: number }>;
+  removeSeasonEntry(appId: string, seasonLabel: string, userId: string): MaybePromise<void>;
+  listChallengesPaginated(appId: string, offset: number, limit: number): MaybePromise<{ challenges: AdminChallenge[]; total: number }>;
+  getChallengeStatistics(appId: string): MaybePromise<AdminChallengeStatistics>;
+  listGrowthPlansPaginated(offset: number, limit: number): MaybePromise<{ plans: AdminGrowthPlan[]; total: number }>;
+  getGrowthStatistics(): MaybePromise<AdminGrowthStatistics>;
+  listRewardsPaginated(offset: number, limit: number): MaybePromise<{ rewards: AdminReward[]; total: number }>;
+  getRewardStatistics(): MaybePromise<AdminRewardStatistics>;
+  getFeatureFlagAnalytics(): MaybePromise<AdminFeatureFlagAnalytics[]>;
+}
+
 export interface BodyLogStores {
   jobs: { runOnce(key: string, job: () => Promise<void>): Promise<boolean> };
   buddy: BodyLogBuddyStore;
@@ -134,4 +173,5 @@ export interface BodyLogStores {
   growth: BodyLogGrowthStore;
   notification: BodyLogNotificationStore;
   flags: BodyLogFeatureFlagStore;
+  admin: BodyLogAdminStore;
 }

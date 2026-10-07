@@ -1,5 +1,6 @@
 import { randomId } from "../../shared/utils.ts";
 import type {
+  BodyLogAdminStore,
   BodyLogBuddyStore,
   BodyLogFeatureFlagStore,
   BodyLogGroupStore,
@@ -7,6 +8,22 @@ import type {
   BodyLogNotificationStore,
   BodyLogSubscriptionStore,
 } from "../../infrastructure/bodylog-store-ports.ts";
+import type {
+  AdminBlock,
+  AdminChallenge,
+  AdminChallengeStatistics,
+  AdminFeatureFlagAnalytics,
+  AdminGrowthPlan,
+  AdminGrowthStatistics,
+  AdminOperationsMetrics,
+  AdminOperationsSummary,
+  AdminReport,
+  AdminReward,
+  AdminRewardStatistics,
+  AdminSeason,
+  AdminSeasonRanking,
+  AdminUserProfile,
+} from "./bodylog-admin.types.ts";
 import type {
   BuddyPairRecord,
   BuddyActivityRecord,
@@ -314,4 +331,32 @@ export class InMemoryBodyLogFeatureFlagStore implements BodyLogFeatureFlagStore 
     this.flags[this.flags.indexOf(existing)] = clone(updated);
     return updated;
   }
+}
+
+/**
+ * In-memory admin store returns empty/zero data for testing.
+ * Admin queries are read-only aggregates; the Postgres implementation
+ * provides real data.
+ */
+export class InMemoryBodyLogAdminStore implements BodyLogAdminStore {
+  getOperationsSummary(): AdminOperationsSummary {
+    return { overview: { totalUsers: 0, totalBuddyPairs: 0, totalGroups: 0, totalChallenges: 0, activeGrowthPlans: 0 }, subscriptions: { totalActive: 0, byTier: {} }, generatedAt: new Date().toISOString() };
+  }
+  getOperationsMetrics(periodDays: number): AdminOperationsMetrics {
+    return { period: periodDays === 7 ? "7d" : periodDays === 30 ? "30d" : "90d", newUsers: 0, activeUsers: 0, buddyCheckins: 0, groupCheckins: 0, challengesCompleted: 0, growthMissionsCompleted: 0, newSubscriptions: 0 };
+  }
+  listUserProfiles(): { users: AdminUserProfile[]; total: number } { return { users: [], total: 0 }; }
+  listReportsPaginated(): { reports: AdminReport[]; total: number } { return { reports: [], total: 0 }; }
+  listBlocksPaginated(): { blocks: AdminBlock[]; total: number } { return { blocks: [], total: 0 }; }
+  deleteBlock(): void { /* no-op */ }
+  listSeasons(): { seasons: AdminSeason[]; total: number } { return { seasons: [], total: 0 }; }
+  listSeasonRankings(): { rankings: AdminSeasonRanking[]; total: number } { return { rankings: [], total: 0 }; }
+  removeSeasonEntry(): void { /* no-op */ }
+  listChallengesPaginated(): { challenges: AdminChallenge[]; total: number } { return { challenges: [], total: 0 }; }
+  getChallengeStatistics(): AdminChallengeStatistics { return { totalChallenges: 0, activeChallenges: 0, completedChallenges: 0, avgMembersPerChallenge: 0 }; }
+  listGrowthPlansPaginated(): { plans: AdminGrowthPlan[]; total: number } { return { plans: [], total: 0 }; }
+  getGrowthStatistics(): AdminGrowthStatistics { return { totalPlans: 0, activePlans: 0, completedPlans: 0, avgCompletionRate: 0 }; }
+  listRewardsPaginated(): { rewards: AdminReward[]; total: number } { return { rewards: [], total: 0 }; }
+  getRewardStatistics(): AdminRewardStatistics { return { totalRewards: 0, claimedRewards: 0, claimRate: 0 }; }
+  getFeatureFlagAnalytics(): AdminFeatureFlagAnalytics[] { return []; }
 }

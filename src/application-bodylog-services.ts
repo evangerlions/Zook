@@ -12,6 +12,7 @@ import { BodyLogWorkerService } from "./modules/bodylog/bodylog-worker.service.t
 import { BodyLogGrowthService } from "./modules/bodylog/bodylog-growth.service.ts";
 import { BodyLogNotificationService } from "./modules/bodylog/bodylog-notification.service.ts";
 import { BodyLogFeatureFlagService } from "./modules/bodylog/bodylog-feature-flag.service.ts";
+import { BodyLogAdminService } from "./modules/bodylog/bodylog-admin.service.ts";
 import type { ContentSafetyService } from "./services/content-safety.service.ts";
 import type { NotificationService } from "./services/notification.service.ts";
 import { SubscriptionService } from "./services/subscription.service.ts";
@@ -40,6 +41,7 @@ export function createBodyLogServices(input: {
   const bodyLogGrowthService = withBodyLogExecution(new BodyLogGrowthService(stores.growth), execute);
   const bodyLogNotificationService = withBodyLogExecution(new BodyLogNotificationService(stores.notification), execute);
   const bodyLogFeatureFlagService = new BodyLogFeatureFlagService(stores.flags);
+  const bodyLogAdminService = new BodyLogAdminService(stores.admin, stores.flags);
   const subscriptionService = new SubscriptionService(stores.subscription);
   const bodyLogBuddyService = withBodyLogExecution(new BodyLogBuddyService(stores.buddy, database, notificationService, subscriptionService), execute);
   const bodyLogGroupService = withBodyLogExecution(new BodyLogGroupService(stores.group, database, notificationService, subscriptionService), execute);
@@ -56,5 +58,6 @@ export function createBodyLogServices(input: {
     bodyLogGrowthService,
     bodyLogNotificationService,
     bodyLogFeatureFlagService,
+    bodyLogAdminService,
   };
 }

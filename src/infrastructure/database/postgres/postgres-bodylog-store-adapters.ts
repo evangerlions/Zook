@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import type {
+  BodyLogAdminStore,
   BodyLogBuddyStore,
   BodyLogFeatureFlagStore,
   BodyLogGroupStore,
@@ -14,6 +15,7 @@ import * as growthSql from "./postgres-bodylog-growth.ts";
 import { PostgresBodyLogNotificationStore } from "./postgres-bodylog-notification.ts";
 import { PostgresBodyLogFeatureFlagStore } from "./postgres-bodylog-feature-flags.ts";
 import { PostgresSubscriptionStore } from "./postgres-subscription.ts";
+import { PostgresBodyLogAdminStore } from "./postgres-bodylog-admin.ts";
 
 type PostgresStoreQuery = (sql: string, values?: unknown[]) => Promise<{ rows: any[] }>;
 
@@ -109,5 +111,6 @@ export function createBodyLogPostgresStores(
     growth: growthStore(scopedPool),
     notification: notificationStore(new PostgresBodyLogNotificationStore(query)),
     flags: featureFlagStore(new PostgresBodyLogFeatureFlagStore(query)),
+    admin: new PostgresBodyLogAdminStore(query),
   };
 }
