@@ -1,10 +1,13 @@
 import type { LLMUsage } from "../../../services/llm-manager-types.ts";
 import type { LlmPointPricing } from "../../../shared/types/llm.ts";
+import { ApplicationError } from "../../../shared/errors.ts";
 
 export type CreditsTier = "free" | "plus" | "pro";
 export type CreditsOutcome = "success" | "failure" | "cancelled";
+export interface CreditsMembership { tier: CreditsTier; anchorAt?: string; expiresAt?: string | null; observedAt?: string }
 export const CREDIT_MICROS = 1_000_000n;
 export const LOCAL_CREDIT_QUOTAS = { free: 20, plus: 1000, pro: 4000 } as const;
+const CREDIT_WEEK_MS = 7 * 86400_000;
 
 export interface CreditsAccount {
   tier: CreditsTier;
@@ -12,6 +15,10 @@ export interface CreditsAccount {
   refreshAt: string;
   periodicMicros: string;
   giftMicros: string;
+  windowAnchorAt?: string;
+  membershipAnchorAt?: string;
+  spentMicros?: string;
+  entitlementObservedAt?: string;
   activeJobId?: string;
   activeJobExpiresAt?: string;
 }
@@ -48,29 +55,49 @@ export interface AiNovelCreditsStore {
   transact<T>(userId: string, jobId: string, work: (state: CreditsTransaction) => T): Promise<T>;
 }
 
-export function creditsPeriod(tier: CreditsTier, now: Date) {
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  let end: Date;
-  if (tier === "free") {
-    start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
-    end = new Date(start.getTime() + 7 * 86400_000);
-  } else {
-    start.setUTCDate(1);
-    end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1));
-  }
-  return { key: `${tier}:${start.toISOString()}`, refreshAt: end.toISOString() };
+/** Fixed elapsed-time weeks, independent of tier, calendar, timezone and DST. */
+export function creditsPeriod(anchorAt: string, now: Date) {
+  const anchor = Date.parse(anchorAt);
+  if (!Number.isFinite(anchor) || anchor > now.getTime()) throw new Error("Invalid credit window anchor.");
+  const index = Math.floor((now.getTime() - anchor) / CREDIT_WEEK_MS);
+  const start = anchor + index * CREDIT_WEEK_MS;
+  return { key: new Date(start).toISOString(), refreshAt: new Date(start + CREDIT_WEEK_MS).toISOString() };
 }
 
-export function refreshCreditsAccount(account: CreditsAccount | undefined, tier: CreditsTier, now: Date): CreditsAccount {
-  const period = creditsPeriod(tier, now);
+export function refreshCreditsAccount(account: CreditsAccount | undefined, value: CreditsTier | CreditsMembership, now: Date): CreditsAccount {
+  const rawMembership = typeof value === "string" ? { tier: value } : value;
+  // Re-evaluate within the account transaction, not only before acquiring its lock.
+  const membership = rawMembership.expiresAt && Date.parse(rawMembership.expiresAt) <= now.getTime()
+    ? { ...rawMembership, tier: "free" as const } : rawMembership;
+  if (membership.observedAt && account?.entitlementObservedAt &&
+    Date.parse(membership.observedAt) < Date.parse(account.entitlementObservedAt)) {
+    throw new ApplicationError(409, "AINOVEL_CREDITS_ENTITLEMENT_STALE", "Membership changed; retry with the current entitlement.");
+  }
+  const tier = membership.tier;
   const allowance = BigInt(LOCAL_CREDIT_QUOTAS[tier]) * CREDIT_MICROS;
-  if (!account) return { tier, periodKey: period.key, refreshAt: period.refreshAt, periodicMicros: String(allowance), giftMicros: "0" };
-  if (account.tier === tier && account.periodKey === period.key) return account;
+  const anchorChanged = tier !== "free" && membership.anchorAt !== undefined && account?.membershipAnchorAt !== membership.anchorAt;
+  const migratingPaid = account && account.tier !== "free" && !account.windowAnchorAt;
+  const newMembership = anchorChanged && !migratingPaid;
+  const anchorAt = anchorChanged ? membership.anchorAt! : account?.windowAnchorAt ?? membership.anchorAt ?? now.toISOString();
+  const period = creditsPeriod(anchorAt, now);
+  const base = { ...account, tier, windowAnchorAt: anchorAt, periodKey: period.key, refreshAt: period.refreshAt,
+    entitlementObservedAt: membership.observedAt ?? account?.entitlementObservedAt,
+    giftMicros: account?.giftMicros ?? "0",
+    membershipAnchorAt: tier === "free" ? account?.membershipAnchorAt : membership.anchorAt ?? account?.membershipAnchorAt };
+  if (!account || newMembership || (account.windowAnchorAt && account.periodKey !== period.key)) {
+    // Expiry first caps the old allowance even when a weekly boundary was missed.
+    const expired = account && account.tier !== "free" && tier === "free";
+    const remaining = expired ? min(BigInt(account.periodicMicros), allowance) : allowance;
+    return { ...base, periodicMicros: String(remaining), spentMicros: "0" };
+  }
   const old = BigInt(account.periodicMicros);
-  // Downgrades/expiry never replenish. Upgrade grants only the allowance difference.
-  const downgrade = LOCAL_CREDIT_QUOTAS[tier] < LOCAL_CREDIT_QUOTAS[account.tier];
-  const samePeriod = tier !== "free" && account.tier !== "free" && account.periodKey.split(":").slice(1).join(":") === period.key.split(":").slice(1).join(":");
-  const upgraded = old + allowance - BigInt(LOCAL_CREDIT_QUOTAS[account.tier]) * CREDIT_MICROS;
-  const remaining = downgrade ? (old < allowance ? old : allowance) : samePeriod ? upgraded : allowance;
-  return { ...account, tier, periodKey: period.key, refreshAt: period.refreshAt, periodicMicros: String(remaining) };
+  const previousLimit = BigInt(LOCAL_CREDIT_QUOTAS[account.tier]) * CREDIT_MICROS;
+  const inferredSpent = previousLimit - min(old, previousLimit);
+  const storedSpent = BigInt(account.spentMicros ?? "0");
+  const spent = storedSpent > inferredSpent ? storedSpent : inferredSpent;
+  const available = allowance > spent ? allowance - spent : 0n;
+  const remaining = allowance > previousLimit ? available : min(old, allowance);
+  return { ...base, periodicMicros: String(remaining), spentMicros: String(spent) };
 }
+
+function min(a: bigint, b: bigint) { return a < b ? a : b; }

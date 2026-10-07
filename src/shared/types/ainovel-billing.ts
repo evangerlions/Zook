@@ -15,6 +15,8 @@ export interface AiNovelBillingMembershipInfo {
 }
 
 export interface AiNovelBillingMembershipRecord extends AiNovelBillingMembershipInfo {
+  /** Internal continuous-membership start; never reset by renewal or upgrade. */
+  creditWindowAnchorAt?: string;
   appId: "ai_novel";
   userId: string;
   lastSyncedAt: string;

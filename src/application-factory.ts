@@ -25,6 +25,7 @@ import { AiNovelDebugTraceService } from "./modules/ai-novel/ai-novel-debug-trac
 import { AiNovelLlmService } from "./modules/ai-novel/ai-novel-llm.service.ts";
 import { AiNovelConversationRecordService } from "./modules/ai-novel/ai-novel-conversation-record.service.ts";
 import { AiNovelCreditsService } from "./modules/ai-novel/credits/ai-novel-credits.service.ts";
+import { createCreditsMembershipReader } from "./modules/ai-novel/credits/credits-membership-reader.ts";
 import { AiNovelCreditsRequestFlow } from "./modules/ai-novel/credits/ai-novel-credits-request-flow.ts";
 import { AiNovelSkillRepository } from "./modules/ai-novel/ai-novel-skill-repository.ts";
 import { AiNovelSkillService } from "./modules/ai-novel/ai-novel-skill.service.ts";
@@ -428,10 +429,8 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     new AiNovelSkillRepository(options.aiNovelSkillRoot),
   );
   const aiNovelConversationRecordService = new AiNovelConversationRecordService(database);
-  const aiNovelCreditsService = new AiNovelCreditsService(database.aiNovelCreditsStore, async (userId) => {
-    const membership = await aiNovelBillingService.getMembership(userId);
-    return membership.active && membership.tier ? membership.tier : "free";
-  }, logger);
+  const aiNovelCreditsService = new AiNovelCreditsService(database.aiNovelCreditsStore,
+    createCreditsMembershipReader(aiNovelBillingService), logger);
   const aiNovelCreditsFlow = new AiNovelCreditsRequestFlow(
     aiNovelCreditsService,
     options.aiNovelCreditsEnabled ?? process.env.AINOVEL_CREDITS_ENABLED === "true",

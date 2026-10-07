@@ -1,6 +1,7 @@
 import type { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import type { AiNovelBillingMembershipRecord, AiNovelBillingTransactionRecord } from "../shared/types.ts";
 import type { AlipayOrder } from "../modules/billing/alipay-models.ts";
+import { anchorMembershipCredits } from "../modules/billing/billing-credit-window.ts";
 
 export function alipayTransaction(order: AlipayOrder, now: string): AiNovelBillingTransactionRecord {
   return { appId: "ai_novel", userId: order.userId, provider: "alipay", providerTransactionId: order.orderId, createdAt: order.createdAt,
@@ -27,6 +28,7 @@ export async function refreshAlipayMembership(database: ApplicationDatabase, use
     tier: best.productKey.startsWith("pro_") ? "pro" : "plus", planKey: best.productKey,
     expiresAt: best.membershipExpiresAt, autoRenew: false, source: "alipay", managementUrl: null,
     lastSyncedAt: now.toISOString(), accountDeletedAt: null };
-  await database.upsertAiNovelBillingMembership(membership);
-  return membership;
+  const anchored = anchorMembershipCredits(current, membership, await database.listAiNovelBillingTransactions("ai_novel", userId));
+  await database.upsertAiNovelBillingMembership(anchored);
+  return anchored;
 }

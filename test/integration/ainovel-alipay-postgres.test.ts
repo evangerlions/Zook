@@ -27,7 +27,8 @@ test("Alipay migrations and repositories preserve checkout identity, access and 
       "069_ai_novel_billing_webhook_account_deleted_at", "070_ai_novel_billing_transfer_audit_users",
       "071_ai_novel_alipay_orders", "071_ai_novel_alipay_orders",
       "072_ai_novel_order_product_prefix", "072_ai_novel_order_product_prefix",
-      "073_ai_novel_order_business_identity", "073_ai_novel_order_business_identity"];
+      "073_ai_novel_order_business_identity", "073_ai_novel_order_business_identity",
+      "074_ai_novel_credit_window_anchor"];
     for (const name of migrations) {
       await client.query(await readFile(new URL(`../../src/infrastructure/database/postgres/migrations/${name}.sql`, import.meta.url), "utf8"));
     }

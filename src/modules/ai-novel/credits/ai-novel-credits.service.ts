@@ -3,7 +3,7 @@ import type { StructuredLogger } from "../../../infrastructure/logging/pino-logg
 import { pointMicrosToPoints } from "../../../services/llm-point-pricing.ts";
 import {
   CREDIT_MICROS, LOCAL_CREDIT_QUOTAS, refreshCreditsAccount,
-  type AiNovelCreditsStore, type CreditsOutcome, type CreditsReceipt, type CreditsTier,
+  type AiNovelCreditsStore, type CreditsOutcome, type CreditsReceipt, type CreditsTier, type CreditsMembership,
 } from "./ai-novel-credits-model.ts";
 
 const JOB_LEASE_MS = 30 * 60_000;
@@ -12,7 +12,7 @@ const MAX_RECEIPTS = 1024;
 export class AiNovelCreditsService {
   constructor(
     private readonly store: AiNovelCreditsStore,
-    private readonly membership: (userId: string) => Promise<CreditsTier>,
+    private readonly membership: (userId: string) => Promise<CreditsTier | CreditsMembership>,
     private readonly logger?: StructuredLogger,
     private readonly now: () => Date = () => new Date(),
   ) {}
@@ -27,12 +27,17 @@ export class AiNovelCreditsService {
   }
 
   async balanceMicros(userId: string) {
-    const tier = await this.membership(userId);
+    const membership = await this.membership(userId);
     return this.store.transact(userId, "", (state) => {
-      const account = state.account = refreshCreditsAccount(state.account, tier, this.now());
+      const previous = state.account;
+      const account = state.account = refreshCreditsAccount(state.account, membership, this.now());
+      if (previous?.periodKey !== account.periodKey || previous?.tier !== account.tier) {
+        this.logger?.info("AINovel credits window synchronized", { userId, tier: account.tier,
+          anchorAt: account.windowAnchorAt, refreshAt: account.refreshAt, previousTier: previous?.tier });
+      }
       return {
-        tier, periodicMicros: account.periodicMicros,
-        periodicLimitMicros: String(BigInt(LOCAL_CREDIT_QUOTAS[tier]) * CREDIT_MICROS),
+        tier: account.tier, periodicMicros: account.periodicMicros,
+        periodicLimitMicros: String(BigInt(LOCAL_CREDIT_QUOTAS[account.tier]) * CREDIT_MICROS),
         giftMicros: account.giftMicros,
         remainingMicros: String(BigInt(account.periodicMicros) + BigInt(account.giftMicros)),
         refreshAt: account.refreshAt,
@@ -43,10 +48,10 @@ export class AiNovelCreditsService {
   async begin(userId: string, jobId: string, requestId: string): Promise<"allowed" | "quota_insufficient"> {
     requireId(jobId); requireId(requestId);
     if (jobId.startsWith("gift:")) throw conflict("Reserved job ID namespace.");
-    const tier = await this.membership(userId);
+    const membership = await this.membership(userId);
     return this.store.transact(userId, jobId, (state) => {
       const now = this.now();
-      const account = state.account = refreshCreditsAccount(state.account, tier, now);
+      const account = state.account = refreshCreditsAccount(state.account, membership, now);
       if (account.activeJobExpiresAt && Date.parse(account.activeJobExpiresAt) <= now.getTime()) {
         delete account.activeJobId;
         delete account.activeJobExpiresAt;
@@ -72,7 +77,7 @@ export class AiNovelCreditsService {
   /** Successful provider callback: atomically persist receipt and debit now. */
   async record(userId: string, jobId: string, requestId: string, receipt: CreditsReceipt): Promise<void> {
     validateReceipt(receipt);
-    const tier = await this.membership(userId);
+    const membership = await this.membership(userId);
     await this.store.transact(userId, jobId, (state) => {
       const job = state.job;
       if (job?.receipts.some((item) => item.callId === receipt.callId)) return;
@@ -80,7 +85,7 @@ export class AiNovelCreditsService {
       if (state.account?.activeJobId !== jobId) throw conflict("AI request no longer owns account admission.");
       if (Date.parse(job.expiresAt) <= this.now().getTime()) throw conflict("AI job lease expired.");
       if (job.receipts.length >= MAX_RECEIPTS) throw conflict("AI job attempt limit exceeded.");
-      const account = state.account = refreshCreditsAccount(state.account, tier, this.now());
+      const account = state.account = refreshCreditsAccount(state.account, membership, this.now());
       const total = BigInt(receipt.pointMicros);
       const periodic = BigInt(account.periodicMicros), gifts = BigInt(account.giftMicros);
       const periodicDebit = total < periodic ? total : periodic;
@@ -88,6 +93,7 @@ export class AiNovelCreditsService {
       const giftDebit = rest < gifts ? rest : gifts;
       const charged = periodicDebit + giftDebit;
       account.periodicMicros = String(periodic - periodicDebit);
+      account.spentMicros = String(BigInt(account.spentMicros ?? "0") + periodicDebit);
       account.giftMicros = String(gifts - giftDebit);
       job.receipts.push({ ...structuredClone(receipt), requestId });
       job.chargedMicros = String(BigInt(job.chargedMicros ?? "0") + charged);
@@ -137,14 +143,14 @@ export class AiNovelCreditsService {
   async grant(userId: string, eventId: string, points: number): Promise<void> {
     requireId(eventId);
     if (!Number.isSafeInteger(points) || points <= 0) throw new ApplicationError(400, "AINOVEL_CREDITS_GRANT_INVALID", "Gift points must be a positive safe integer.");
-    const tier = await this.membership(userId);
+    const membership = await this.membership(userId);
     await this.store.transact(userId, `gift:${eventId}`, (state) => {
       const amount = String(BigInt(points) * CREDIT_MICROS);
       if (state.job) {
         if (state.job.grantedMicros !== amount) throw conflict("Gift event ID was reused with a different amount.");
         return;
       }
-      const account = state.account = refreshCreditsAccount(state.account, tier, this.now());
+      const account = state.account = refreshCreditsAccount(state.account, membership, this.now());
       const nextGift = BigInt(account.giftMicros) + BigInt(points) * CREDIT_MICROS;
       // Reserve room for the largest periodic allowance, including future upgrades.
       if (nextGift + BigInt(LOCAL_CREDIT_QUOTAS.pro) * CREDIT_MICROS > BigInt(Number.MAX_SAFE_INTEGER)) {

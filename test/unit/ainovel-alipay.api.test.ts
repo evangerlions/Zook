@@ -61,8 +61,10 @@ test("Alipay signed query and duplicate notify converge once; query needs no app
   f.setResponse({ ...query, code: "10000", send_pay_date: fields.gmt_payment });
   assert.equal((await f.query(id)).body.data.order.membershipApplied, true);
   const before = await f.database.findAiNovelBillingMembership("ai_novel", "user_alice");
+  assert.equal(before!.creditWindowAnchorAt, "2026-10-04T10:00:00.000Z");
   assert.equal((await f.notify(id)).rawBody, "success"); assert.equal((await f.notify(id)).rawBody, "success");
   assert.equal((await f.database.findAiNovelBillingMembership("ai_novel", "user_alice"))!.expiresAt, before!.expiresAt);
+  assert.equal((await f.database.findAiNovelBillingMembership("ai_novel", "user_alice"))!.creditWindowAnchorAt, before!.creditWindowAnchorAt);
   assert.equal((await f.database.listAiNovelBillingTransactions("ai_novel", "user_alice")).length, 1);
   assert.equal((await f.create()).body.data.payment, null);
 });

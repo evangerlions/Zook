@@ -5820,7 +5820,8 @@ export const CreditsBalanceDataSchema = {
     },
     "refreshAt": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Next reset of this account's independent seven-day quota window."
     },
     "periodicMicros": {
       "type": "integer",

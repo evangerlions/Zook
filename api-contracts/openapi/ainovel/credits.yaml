@@ -23,6 +23,10 @@ paths:
         One writing credit equals 1000000 micros. Clients retain raw micros and
         use a shared formatter for integer-point display; display rounding must
         never determine admission. enabled=false means enforcement is not live.
+        Periodic quota uses an account-specific 168-hour window. Paid membership
+        starts at its verified continuous activation anchor; renewal and upgrade
+        preserve that window. A purchase after expiry starts a new window.
+        Free starts at first credit-account creation. Gift credits do not expire.
       tags: [ainovel-credits]
       parameters:
         - $ref: "#/components/parameters/XAppId"
@@ -71,6 +75,7 @@ components:
         refreshAt:
           type: string
           format: date-time
+          description: Next reset of this account's independent seven-day quota window.
         periodicMicros:
           $ref: "#/components/schemas/CreditMicros"
         periodicLimitMicros:

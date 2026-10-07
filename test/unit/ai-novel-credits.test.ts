@@ -10,6 +10,17 @@ function fixture() {
   const service = new AiNovelCreditsService(store, async () => tier, undefined, () => now);
   return { service, store, tier: (value: CreditsTier) => { tier = value; }, time: (value: string) => { now = new Date(value); } };
 }
+
+test("expiry during balance transaction returns the effective Free tier and limit", async () => {
+  const now = new Date("2026-10-04T12:00:00Z");
+  const service = new AiNovelCreditsService(new InMemoryAiNovelCreditsStore(), async () => ({
+    tier: "plus", anchorAt: "2026-10-01T00:00:00Z", expiresAt: now.toISOString(),
+  }), undefined, () => now);
+  const balance = await service.balanceMicros("u");
+  assert.equal(balance.tier, "free");
+  assert.equal(balance.periodicLimitMicros, "20000000");
+  assert.equal(balance.periodicMicros, "20000000");
+});
 function receipt(id: string, points: number): CreditsReceipt {
   return { callId: id, modelKey: "minimax-m3", usage: { promptTokens: points * 10_000, completionTokens: 0, totalTokens: points * 10_000 }, pricing: { inputPointsPerMillionTokens: 100, outputPointsPerMillionTokens: 400 }, pointMicros: String(points * 1_000_000) };
 }
@@ -20,16 +31,16 @@ async function consume(f: ReturnType<typeof fixture>, id: string, points: number
   return f.store.transact("u", id, (state) => state.job!);
 }
 
-test("Free refresh is UTC Monday, monthly quotas are UTC calendar months", async () => {
+test("Free starts an independent week on first credit account access", async () => {
   const f = fixture();
-  assert.deepEqual(await f.service.balance("u"), { tier: "free", periodicPoints: 20, periodicLimit: 20, giftPoints: 0, remainingPoints: 20, refreshAt: "2026-10-05T00:00:00.000Z" });
+  assert.deepEqual(await f.service.balance("u"), { tier: "free", periodicPoints: 20, periodicLimit: 20, giftPoints: 0, remainingPoints: 20, refreshAt: "2026-10-11T12:00:00.000Z" });
   await consume(f, "job", 15);
-  f.time("2026-10-05T00:00:00Z");
+  f.time("2026-10-11T12:00:00Z");
   assert.equal((await f.service.balance("u")).periodicPoints, 20);
   assert.equal((await f.service.balance("u")).periodicPoints, 20);
   f.tier("plus");
   assert.equal((await f.service.balance("u")).periodicPoints, 1000);
-  assert.equal((await f.service.balance("u")).refreshAt, "2026-11-01T00:00:00.000Z");
+  assert.equal((await f.service.balance("u")).refreshAt, "2026-10-18T12:00:00.000Z");
 });
 
 test("spends periodic before permanent gifts and absorbs overage without debt", async () => {
@@ -173,7 +184,7 @@ test("expired request cannot renew over a newly admitted job", async () => {
   await assert.rejects(f.service.begin("u", "third", "r3"));
 });
 
-test("paid downgrade is capped and same-month upgrade only adds allowance difference", () => {
+test("paid downgrade is capped and same-week upgrade only adds allowance difference", () => {
   const now = new Date("2026-10-04T00:00:00Z");
   const account = refreshCreditsAccount(undefined, "plus", now);
   account.periodicMicros = "100000000";

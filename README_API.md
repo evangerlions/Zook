@@ -493,6 +493,7 @@ Apple App Store, Google Play and Alipay are pairwise exclusive while membership 
 19j. Configuration is `ALIPAY_AI_NOVEL_{ENABLED,ENVIRONMENT,APP_ID,SELLER_ID,PRIVATE_KEY_PATH,PUBLIC_KEY_PATH,NOTIFY_URL,RETURN_URL}`; enabled defaults false, environment must be explicit and URLs HTTPS. Keys are loaded from private files; do not commit key values. Development defaults CNY Plus 38/98/298 and Pro 88/228/598 are mock placeholders, not an approved production price list. Override all six minor-unit prices with `ALIPAY_AI_NOVEL_PRICES_JSON`. Production additionally requires that full explicit catalog and `ALIPAY_AI_NOVEL_PRICES_APPROVED=true`; key presence alone never enables checkout. Merchant seller ID/configuration and native payment validation remain external gates.
 
 19k. External Alipay refund synchronization and refund execution are not implemented. Paid orders are not polled for later refunds. Verified TRADE_CLOSED after payment is retained in notification history but does not undo the canonical paid amount or grant. Admin pending/closed/failed quoted amounts are not revenue. Docker billing logs contain identifiers/outcomes only, never signed checkout payloads, form fields or keys.
+19l. 创作点统一使用账号独立 7 天窗口，不按自然周/月刷新。Plus / Pro 的起点为服务端验证的连续会员期购买时间；连续续费只延长有效期，升级不移动窗口和已消耗量，中断后的重购开启新窗口。Free 以首次创建额度账户为起点。`GET /api/v1/ai_novel/credits` 返回精确整数微点、权威 tier 和 `refreshAt`；时区只影响客户端时间展示。旧会员缺少可信支付锚点时返回 `AINOVEL_CREDITS_MEMBERSHIP_ANCHOR_UNAVAILABLE`，应同步会员后重试，不伪造余额；过期的并发权益快照返回 `AINOVEL_CREDITS_ENTITLEMENT_STALE`，重试查询。旧测试余额迁移不额外补满。Free 20 / Plus 1,000 / Pro 4,000 仅为开发占位值，周额度成本需重新核定，`AINOVEL_CREDITS_ENABLED` 仍默认关闭；月付/季付/年付商品不受窗口规则影响。
 20. `ai_novel` 的两个 AI 接口都是 scene-first 协议：客户端必须传 `scene_key` 或 `sceneKey`；不得直传 `model`、`providerModel`、`modelKey` 这类底层选模字段。`scene_key` 只选择 Prompt、工具与响应工作流；所有文本场景共用服务端版本化的 `ai_novel.model_selection.chat.default` 加权数组，并复用通用 LLM 的 `X-Did + auth UID` routing affinity。Provider 与上游模型路由仍统一归 `common.llm_service`。
 21. `POST /api/v1/ai_novel/ai/chat-completions` 至少需要 `scene_key + messages`；`chat_compaction` 是无工具、可流式取消的 Pi context compaction 摘要 scene，不作为用户可见 AI 回复使用；`POST /api/v1/ai_novel/ai/embeddings` 至少需要 `scene_key + input`。
 22. `ai_novel` 的两个 AI 接口使用应用层 AES-256-GCM JSON 加密 envelope；只有鉴权失败、`appId` 不匹配、外层 envelope 非法、未知 `keyId`、算法不支持、或请求解密失败时才返回明文错误。
@@ -1174,6 +1175,7 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - Zook 在每次 provider 调用正常完成后，使用服务端 usage（缺失时复用估算）和费率直接原子扣费；无客户端 finish 接口。多轮逐轮扣费，客户端取消、保存或显示失败不会退回已经成功调用的费用。
 - 余额接口需要产品鉴权。全部金额为非负 JSON 整数微点，**1 点 = 1,000,000 微点**，最大安全整数为 `9007199254740991`；不返回浮点点数或金额字符串。客户端公共逻辑保存原始整数，仅在显示时换算并向下取整，不以展示值判断是否有额度。
 - 精确合同见 `api-contracts/openapi/ainovel/credits.yaml`。额度功能默认关闭（`enabled=false`），部署迁移、核对费率和真实联调完成前不得开启真实扣费。
+- 周额度为账户独立的 168 小时窗口，会员从可信连续激活起点计时；续费/升级保留窗口，断档重购开启新窗口。Free 暂从首次建立创作点账户计时。部署须执行 `074_ai_novel_credit_window_anchor.sql`。
 
 ## OrangeWrite 全局模型选择
 

@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { AiNovelAlipayService } from "./ainovel-alipay.service.ts";
 import { refreshAlipayMembership } from "./ainovel-alipay-projection.ts";
+import { anchorMembershipCredits } from "../modules/billing/billing-credit-window.ts";
 import { selectStoreMembership, storeSnapshotConflicts } from "../modules/billing/billing-channel-policy.ts";
 import type { AlipayOptions } from "../modules/billing/alipay-models.ts";
 import { runBillingSync, type BillingSyncInput } from "./ainovel-billing-sync.ts";
@@ -97,9 +98,23 @@ export class AiNovelBillingService {
   private readonly allowSandbox: boolean;
 
   async getMembership(userId: string): Promise<AiNovelBillingMembershipInfo> {
-    const record = await this.database.withExclusiveSession(() => refreshAlipayMembership(this.database, userId, this.now()));
+    const record = await this.getMembershipRecord(userId);
     if (!record || record.accountDeletedAt) return buildEmptyMembershipInfo();
     return toMembershipInfo(record, this.now());
+  }
+
+  /** Internal consistent entitlement snapshot, including billing-owned credit anchor. */
+  async getMembershipRecord(userId: string): Promise<AiNovelBillingMembershipRecord | undefined> {
+    return this.database.withExclusiveSession(async () => {
+      const record = await refreshAlipayMembership(this.database, userId, this.now());
+      if (!record?.active || record.accountDeletedAt || record.creditWindowAnchorAt) return record;
+      // Backfill existing members from persisted, financially merged evidence,
+      // not from this read's time. Public membership DTO stays unchanged.
+      const anchored = anchorMembershipCredits(record, record,
+        await this.database.listAiNovelBillingTransactions(APP_ID, userId));
+      if (anchored.creditWindowAnchorAt) await this.database.upsertAiNovelBillingMembership(anchored);
+      return anchored;
+    });
   }
 
   async sync(input: BillingSyncInput): Promise<AiNovelBillingSyncResult> {
@@ -217,7 +232,6 @@ export class AiNovelBillingService {
         toWebhookRecord(event, event.appUserId, "processed", processedAt),
       );
       if (!inserted) return "duplicate";
-      await this.writeSnapshot(snapshot);
       // Do not substitute receipt/processing time for a missing provider event
       // timestamp: it could make an old webhook overwrite a newer observation.
       if (event.occurredAt !== null) {
@@ -230,6 +244,7 @@ export class AiNovelBillingService {
           await this.database.upsertAiNovelBillingTransaction(webhookTransaction);
         }
       }
+      await this.writeSnapshot(snapshot);
       return "processed";
     });
     this.logWebhook(input.requestId, event, finalStatus, snapshot.membership.planKey);
@@ -391,10 +406,11 @@ export class AiNovelBillingService {
       appId: APP_ID, userId: snapshot.membership.userId, provider: "revenuecat",
       status: "provider_conflict", activeSource: selected.source, incomingSource: snapshot.membership.source,
     });
-    if (selected !== effective) await this.database.upsertAiNovelBillingMembership(selected);
     for (const transaction of snapshot.transactions) {
       await this.database.upsertAiNovelBillingTransaction(transaction);
     }
+    if (selected !== effective) await this.database.upsertAiNovelBillingMembership(
+      anchorMembershipCredits(effective, selected, await this.database.listAiNovelBillingTransactions(APP_ID, snapshot.membership.userId)));
   }
 
   private async persistWebhookOnly(

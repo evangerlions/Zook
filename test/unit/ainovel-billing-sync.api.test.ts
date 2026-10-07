@@ -434,6 +434,15 @@ test("effective membership expiry preserves access through RevenueCat grace peri
   const runtime = await createApplication(revenueCatOptions(async () =>
     new Response(JSON.stringify(customer), { status: 200 }),
   () => now));
+  await runtime.database.upsertAiNovelBillingMembership({ appId: "ai_novel", userId: "user_alice", active: true, state: "active",
+    tier: "plus", planKey: "plus_monthly", expiresAt: "2026-09-22T10:00:00Z", source: "app_store", autoRenew: true,
+    managementUrl: null, lastSyncedAt: "2026-08-23T10:00:00Z", accountDeletedAt: null,
+    creditWindowAnchorAt: "2026-08-23T10:00:00Z" });
+  await runtime.database.upsertAiNovelBillingTransaction({ appId: "ai_novel", userId: "user_alice", provider: "revenuecat",
+    providerTransactionId: "tx_plus_grace", productId: "plus_monthly", productKey: "plus_monthly", source: "app_store", platform: "ios",
+    status: "provider_paid", purchasedAt: "2026-08-23T10:00:00Z", originalPurchaseDate: "2026-08-23T10:00:00Z",
+    expiresAt: "2026-09-22T10:00:00Z", refundedAt: null, autoRenew: true, isSandbox: true, amountMinor: 999,
+    refundAmountMinor: null, currency: "USD", observedAt: "2026-08-23T10:00:00Z", accountDeletedAt: null });
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "ai_novel");
   const response = await runtime.app.handle({
     method: "POST",
@@ -444,6 +453,7 @@ test("effective membership expiry preserves access through RevenueCat grace peri
   assert.equal(response.body.data.membership.active, true);
   assert.equal(response.body.data.membership.state, "grace_period");
   assert.equal(response.body.data.membership.expiresAt, "2026-09-24T10:00:00.000Z");
+  assert.equal((await runtime.database.findAiNovelBillingMembership("ai_novel", "user_alice"))!.creditWindowAnchorAt, "2026-08-23T10:00:00Z");
 });
 
 test("sync finishing after account deletion does not recreate billing access", async () => {

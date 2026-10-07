@@ -33,6 +33,7 @@ function parseMembership(row: QueryResultRow): AiNovelBillingMembershipRecord {
     managementUrl: row.management_url == null ? null : String(row.management_url),
     lastSyncedAt: toIsoString(row.last_synced_at) as string,
     accountDeletedAt: nullableIso(row.account_deleted_at),
+    ...(row.credit_window_anchor_at == null ? {} : { creditWindowAnchorAt: toIsoString(row.credit_window_anchor_at) }),
   };
 }
 
@@ -114,7 +115,7 @@ export class PostgresAiNovelBillingStore {
   ): Promise<AiNovelBillingMembershipRecord | undefined> {
     const result = await this.query(
       `SELECT app_id, user_id, active, state, tier, plan_key, expires_at,
-              auto_renew, source, management_url, last_synced_at, account_deleted_at
+              auto_renew, source, management_url, last_synced_at, account_deleted_at, credit_window_anchor_at
        FROM zook_ai_novel_billing_memberships
        WHERE app_id = $1 AND user_id = $2`,
       [appId, userId],
@@ -126,19 +127,20 @@ export class PostgresAiNovelBillingStore {
     await this.query(
       `INSERT INTO zook_ai_novel_billing_memberships (
          app_id, user_id, active, state, tier, plan_key, expires_at,
-         auto_renew, source, management_url, last_synced_at, account_deleted_at
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7::timestamptz,$8,$9,$10,$11::timestamptz,$12::timestamptz)
+         auto_renew, source, management_url, last_synced_at, account_deleted_at, credit_window_anchor_at
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7::timestamptz,$8,$9,$10,$11::timestamptz,$12::timestamptz,$13::timestamptz)
        ON CONFLICT (app_id, user_id) DO UPDATE SET
          active = EXCLUDED.active, state = EXCLUDED.state, tier = EXCLUDED.tier,
          plan_key = EXCLUDED.plan_key, expires_at = EXCLUDED.expires_at,
          auto_renew = EXCLUDED.auto_renew, source = EXCLUDED.source,
          management_url = EXCLUDED.management_url,
          last_synced_at = EXCLUDED.last_synced_at,
-         account_deleted_at = EXCLUDED.account_deleted_at
+         account_deleted_at = EXCLUDED.account_deleted_at,
+         credit_window_anchor_at = EXCLUDED.credit_window_anchor_at
        WHERE zook_ai_novel_billing_memberships.last_synced_at <= EXCLUDED.last_synced_at`,
       [record.appId, record.userId, record.active, record.state, record.tier,
         record.planKey, record.expiresAt, record.autoRenew, record.source,
-        record.managementUrl, record.lastSyncedAt, record.accountDeletedAt],
+        record.managementUrl, record.lastSyncedAt, record.accountDeletedAt, record.creditWindowAnchorAt ?? null],
     );
   }
 
