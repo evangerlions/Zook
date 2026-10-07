@@ -24,6 +24,10 @@ export async function tryHandleAdminCoreRoutes(
     }
     return await handleGetPublicAppConfig.call(this, request, decodeURIComponent(productKey));
   }
+  const publicReleaseUpdateMatch = request.path.match(/^\/api\/v1\/([^/]+)\/public\/update$/);
+  if (request.method === "GET" && publicReleaseUpdateMatch) {
+    return await handleGetPublicReleaseUpdate.call(this, request, decodeURIComponent(publicReleaseUpdateMatch[1] as string));
+  }
   if (request.method === "POST" && request.path === "/api/v1/admin/auth/login") {
     return await handleAdminLogin.call(this, request);
   }
@@ -122,22 +126,7 @@ export async function handleGetPublicAppConfig(this: BackendRouteContext,
   request: HttpRequest,
   appId: string,
 ): Promise<HttpResponse<PublicAppConfigDocument>> {
-  const authorization = getHeader(request.headers, "authorization");
-  if (authorization) {
-    const auth = this.authGuard.canActivate(request);
-    this.appContextResolver.resolvePostAuth(request, auth.appId);
-    this.appAccessGuard.assertScope(appId, auth.appId);
-    await this.authService.assertAccessTokenActive(auth);
-  } else {
-    const requestAppId = getHeader(request.headers, "x-app-id");
-    if (requestAppId && requestAppId !== appId) {
-      throw new ApplicationError(
-        403,
-        "AUTH_APP_SCOPE_MISMATCH",
-        `X-App-Id must match ${appId}.`,
-      );
-    }
-  }
+  await assertPublicAppScope.call(this, request, appId);
 
   const result = await this.adminConsoleService.getPublicConfig(appId);
   this.requireValidPublicContract(
@@ -145,6 +134,44 @@ export async function handleGetPublicAppConfig(this: BackendRouteContext,
     request,
   );
   return this.ok(result, request.requestId as string);
+}
+
+export async function handleGetPublicReleaseUpdate(
+  this: BackendRouteContext,
+  request: HttpRequest,
+  appId: string,
+): Promise<HttpResponse<unknown>> {
+  await assertPublicAppScope.call(this, request, appId);
+  const result = await this.adminConsoleService.getPublicReleaseUpdate(appId);
+  this.requireValidPublicContract(
+    PublicContractValidator.validatePublicReleaseUpdateData(result),
+    request,
+  );
+  return this.ok(result, request.requestId as string, { "Cache-Control": "no-store" });
+}
+
+async function assertPublicAppScope(
+  this: BackendRouteContext,
+  request: HttpRequest,
+  appId: string,
+): Promise<void> {
+  const authorization = getHeader(request.headers, "authorization");
+  if (authorization) {
+    const auth = this.authGuard.canActivate(request);
+    this.appContextResolver.resolvePostAuth(request, auth.appId);
+    this.appAccessGuard.assertScope(appId, auth.appId);
+    await this.authService.assertAccessTokenActive(auth);
+    return;
+  }
+
+  const requestAppId = getHeader(request.headers, "x-app-id");
+  if (requestAppId && requestAppId !== appId) {
+    throw new ApplicationError(
+      403,
+      "AUTH_APP_SCOPE_MISMATCH",
+      `X-App-Id must match ${appId}.`,
+    );
+  }
 }
 
 export async function handleAdminRequestSensitiveOperationCode(this: BackendRouteContext, 

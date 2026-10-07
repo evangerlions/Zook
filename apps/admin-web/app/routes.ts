@@ -9,6 +9,10 @@ export default [
     route("config", "routes/config.tsx"),
     route("ai-routing", "routes/ai-routing.tsx"),
     route("lighttick", "routes/lighttick.tsx"),
+    route("bodylog", "routes/bodylog.tsx"),
+    route("bodylog/records", "routes/bodylog-records.tsx"),
+    route("bodylog/groups", "routes/bodylog-groups.tsx"),
+    route("bodylog/habit-templates", "routes/bodylog-habit-templates.tsx"),
     route("feedback", "routes/feedback.tsx"),
     route("conversation-records", "routes/conversation-records.tsx"),
     route("conversation-history", "routes/conversation-history.tsx"),
@@ -20,5 +24,6 @@ export default [
     route("content-safety", "routes/content-safety.tsx"),
     route("getui-gy", "routes/getui-gy.tsx"),
     route("llm", "routes/llm.tsx"),
+    route("release-updates", "routes/release-updates.tsx"),
   ]),
 ] satisfies RouteConfig;

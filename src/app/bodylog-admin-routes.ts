@@ -7,7 +7,7 @@ import { ApplicationError } from "../shared/errors.ts";
 
 const ADMIN_PATH_PREFIX = "/api/v1/admin/apps/bodylog";
 
-export async function tryHandleBodyLogAdminRoutes(
+export async function tryHandleBodyLogManagementRoutes(
   context: BackendRouteContext,
   enabled: boolean,
   adminService: BodyLogAdminService | undefined,

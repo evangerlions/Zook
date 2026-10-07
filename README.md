@@ -1,3 +1,5 @@
+> LightTick 后端统一在本仓库维护，遵循 [AGENTS.md](AGENTS.md)。原生客户端已归入 `../plan/LightTick-iOS` 和 `../plan/LightTick-Android`；旧 Go 参考代码位于 `archive/lighttick-backend`。
+
 # Zook Backend Scaffold
 
 这是一个基于 TypeScript 的后端 MVP 骨架项目，用来承接 `docs` 中定义的小中型 app 服务端设计。

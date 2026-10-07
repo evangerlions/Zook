@@ -5,6 +5,7 @@ import type { ResolvedLLMCompletionRequest } from "./llm-manager.ts";
 export const BAI_PROVIDER_KEY = "bai";
 export const DEFAULT_BAI_BASE_URL = "https://api.b.ai/v1";
 export const BAI_GLM_5_3_FLASH_MODEL = "glm-5.3-flash";
+export const BAI_MINIMAX_M3_MODEL = "minimax-m3";
 
 /**
  * B.AI's GLM-5.3-Flash keeps reasoning enabled and defaults it to `max`.
@@ -31,18 +32,24 @@ export class BaiOpenAICompatibleProvider extends BailianOpenAICompatibleProvider
   private applyModelDefaults(
     request: ResolvedLLMCompletionRequest,
   ): ResolvedLLMCompletionRequest {
-    if (
-      request.model.providerModel !== BAI_GLM_5_3_FLASH_MODEL ||
-      request.providerOptions?.reasoning_effort !== undefined
-    ) {
+    const providerOptions = request.providerOptions;
+    const needsGlmReasoningEffort =
+      request.model.providerModel === BAI_GLM_5_3_FLASH_MODEL &&
+      providerOptions?.reasoning_effort === undefined;
+    const needsMinimaxReasoningSplit =
+      request.model.providerModel === BAI_MINIMAX_M3_MODEL &&
+      providerOptions?.reasoning_split === undefined;
+
+    if (!needsGlmReasoningEffort && !needsMinimaxReasoningSplit) {
       return request;
     }
 
     return {
       ...request,
       providerOptions: {
-        ...request.providerOptions,
-        reasoning_effort: "low",
+        ...providerOptions,
+        ...(needsGlmReasoningEffort ? { reasoning_effort: "low" } : {}),
+        ...(needsMinimaxReasoningSplit ? { reasoning_split: true } : {}),
       },
     };
   }

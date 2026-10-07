@@ -1,3 +1,6 @@
+import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
+import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
+import type { PlanningSession } from "../../../modules/lighttick/planning/planning.types.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { LightTickRepository, LightTickAtomicWrite } from "../../../modules/lighttick/lighttick.repository.ts";
 import type {
@@ -17,9 +20,19 @@ function snakeToCamel(key: string): string {
 }
 
 function mapRow<T>(row: Record<string, unknown>): T {
-  return Object.fromEntries(Object.entries(row).map(([key, value]) => [
+  const mapped = Object.fromEntries(Object.entries(row).map(([key, value]) => [
     snakeToCamel(key), value instanceof Date ? value.toISOString() : value,
-  ])) as T;
+  ]));
+  // pg decodes PostgreSQL DATE as local midnight, not an instant in UTC.
+  for (const key of ["period_start", "period_end", "target_date"]) {
+    const value = row[key];
+    if (value instanceof Date) mapped[snakeToCamel(key)] =
+      `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+    else if (typeof value === "string") mapped[snakeToCamel(key)] = value.slice(0, 10);
+  }
+  if (row.scheduled_business_date) mapped.scheduledFor = String(row.scheduled_business_date);
+  delete mapped.scheduledBusinessDate;
+  return mapped as T;
 }
 
 function timestampString(value: unknown): string {
@@ -39,6 +52,27 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return await (this.session.getStore() ?? this.connector).query(sql, values);
   }
 
+  async lockPlanningOwner(owner: LightTickOwner) {
+    await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`planning:${owner.appId}:${owner.userId}`]);
+    // Existing non-session mutations lock these same rows on write.
+    for (const table of ["goals", "plan_cycles", "tasks"])
+      await this.query(`SELECT id FROM zook_lighttick_${table} WHERE app_id=$1 AND user_id=$2 ORDER BY id FOR UPDATE`, [owner.appId, owner.userId]);
+  }
+  async getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined> {
+    const result = await this.query("SELECT payload,version FROM zook_lighttick_planning_sessions WHERE app_id=$1 AND user_id=$2 AND id=$3", [owner.appId,owner.userId,id]);
+    return result.rows[0] ? { ...(result.rows[0].payload as PlanningSession), version: Number(result.rows[0].version) } : undefined;
+  }
+  async savePlanningSession(row: PlanningSession, expectedVersion?: number): Promise<PlanningSession> {
+    const result = expectedVersion === undefined
+      ? await this.query(`INSERT INTO zook_lighttick_planning_sessions (id,app_id,user_id,goal_id,thread_id,payload,version,created_at,updated_at)
+          VALUES ($1,$2,$3,$4,$5,$6::jsonb,1,$7,$8) ON CONFLICT DO NOTHING RETURNING version`,
+          [row.id,row.appId,row.userId,row.goalId,row.threadId,JSON.stringify(row),row.createdAt,row.updatedAt])
+      : await this.query(`UPDATE zook_lighttick_planning_sessions SET payload=$1::jsonb,version=version+1,updated_at=$2
+          WHERE app_id=$3 AND user_id=$4 AND id=$5 AND version=$6 RETURNING version`,
+          [JSON.stringify(row),row.updatedAt,row.appId,row.userId,row.id,expectedVersion]);
+    if (!result.rows[0]) versionConflict(row.id);
+    return { ...row, version: Number(result.rows[0]!.version) };
+  }
   async getGuestIdentity(owner: LightTickOwner): Promise<LightTickGuestIdentityRow | undefined> {
     const result = await this.query("SELECT * FROM zook_lighttick_guest_identities WHERE app_id=$1 AND user_id=$2", [owner.appId, owner.userId]);
     return result.rows[0] ? mapRow<LightTickGuestIdentityRow>(result.rows[0]) : undefined;
@@ -102,7 +136,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
           AND (target.id=guest.id OR (target.push_provider=guest.push_provider AND target.push_token=guest.push_token))`,
         [command.appId, command.guestUserId, command.targetUserId]);
       const ownerTables = ["zook_lighttick_goals", "zook_lighttick_plan_cycles", "zook_lighttick_tasks",
-        "zook_lighttick_task_steps", "zook_lighttick_execution_events", "zook_lighttick_reviews",
+        "zook_lighttick_goal_contexts", "zook_lighttick_milestones", "zook_lighttick_outcome_evidence", "zook_lighttick_task_families",
+        "zook_lighttick_task_steps", "zook_lighttick_execution_events", "zook_lighttick_reflections", "zook_lighttick_reviews",
         "zook_lighttick_change_proposals", "zook_lighttick_ai_runs", "zook_lighttick_change_log",
         "zook_lighttick_sync_cursors", "zook_lighttick_devices", "zook_lighttick_insight_audits", "zook_lighttick_chat_messages", "zook_lighttick_dna_insights"];
       for (const table of ownerTables) await this.query(
@@ -126,6 +161,10 @@ export class PostgresLightTickRepository implements LightTickRepository {
 
   private async assertUpgradeRelationships(command: LightTickAccountUpgradeCommand) {
     const relations = [
+      ["zook_lighttick_goal_contexts", "goal_id", "zook_lighttick_goals", "goal_id"],
+      ["zook_lighttick_milestones", "goal_id", "zook_lighttick_goals", "id"],
+      ["zook_lighttick_outcome_evidence", "goal_id", "zook_lighttick_goals", "id"],
+      ["zook_lighttick_outcome_evidence", "milestone_id", "zook_lighttick_milestones", "id"],
       ["zook_lighttick_plan_cycles", "goal_id", "zook_lighttick_goals"],
       ["zook_lighttick_tasks", "goal_id", "zook_lighttick_goals"],
       ["zook_lighttick_tasks", "plan_id", "zook_lighttick_plan_cycles"],
@@ -133,8 +172,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
       ["zook_lighttick_reviews", "goal_id", "zook_lighttick_goals"],
       ["zook_lighttick_change_proposals", "plan_id", "zook_lighttick_plan_cycles"],
     ] as const;
-    for (const [childTable, foreignKey, parentTable] of relations) {
-      const mismatch = await this.query(`SELECT child.id FROM ${childTable} child
+    for (const [childTable, foreignKey, parentTable, childIdColumn = "id"] of relations) {
+      const mismatch = await this.query(`SELECT child.${childIdColumn} AS id FROM ${childTable} child
         LEFT JOIN ${parentTable} parent ON parent.id=child.${foreignKey}
         WHERE child.app_id=$1 AND child.user_id=$2
           AND (parent.id IS NULL OR parent.app_id<>$1 OR parent.user_id NOT IN ($2,$3)) LIMIT 1`,
@@ -233,9 +272,9 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
   async saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow> {
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_goals",
-      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at"],
+      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at", "review_cadence"],
       [row.title, row.description ?? null, row.status, JSON.stringify(row.constraints), row.targetDate ?? null,
-        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null]);
+        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null, row.reviewCadence ? JSON.stringify(row.reviewCadence) : null]);
   }
 
   async getPlan(owner: LightTickOwner, id: string): Promise<LightTickPlanRow | undefined> {
@@ -271,11 +310,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
   async saveTask(row: LightTickTaskRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickTaskRow> {
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_tasks",
       ["goal_id", "plan_id", "title", "status", "priority", "estimated_minutes", "scheduled_for", "started_at", "completed_at", "notes",
-        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied"],
+        "lineage_id", "selected_variant", "variant_definitions", "completion_criteria", "actual_minutes", "commitment_satisfied", "guidance", "scheduled_business_date"],
       [row.goalId, row.planId, row.title, row.status, row.priority, row.estimatedMinutes, row.scheduledFor ?? null,
         row.startedAt ?? null, row.completedAt ?? null, row.notes ?? null, row.lineageId ?? row.id,
         row.selectedVariant ?? "standard", JSON.stringify(row.variantDefinitions ?? {}), row.completionCriteria ?? null,
-        row.actualMinutes ?? null, row.commitmentSatisfied ?? null]);
+        row.actualMinutes ?? null, row.commitmentSatisfied ?? null, JSON.stringify(row.guidance ?? {}),
+        /^\d{4}-\d{2}-\d{2}$/.test(row.scheduledFor ?? "") ? row.scheduledFor : null]);
   }
   async listTaskSteps(owner: LightTickOwner, taskId: string): Promise<LightTickTaskStepRow[]> {
     const result = await this.query(`SELECT * FROM zook_lighttick_task_steps
@@ -301,10 +341,18 @@ export class PostgresLightTickRepository implements LightTickRepository {
     [row.id,row.appId,row.userId,row.taskId,row.title,row.position,row.completed,row.createdAt,row.updatedAt]);
     return mapRow<LightTickTaskStepRow>(result.rows[0]!);
   }
-  async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string) {
-    const result = await this.query(`SELECT * FROM zook_lighttick_execution_events WHERE app_id=$1 AND user_id=$2
-      ${from ? "AND occurred_at >= $3" : ""} ${to ? `AND occurred_at < $${from ? 4 : 3}` : ""}
-      ORDER BY occurred_at ASC`, [owner.appId, owner.userId, ...(from ? [from] : []), ...(to ? [to] : [])]);
+  async listExecutionEvents(owner: LightTickOwner, from?: string, to?: string, goalId?: string) {
+    const params: unknown[] = [owner.appId, owner.userId];
+    const conditions = ["e.app_id=$1", "e.user_id=$2"];
+    if (from) { params.push(from); conditions.push(`e.occurred_at >= $${params.length}`); }
+    if (to) { params.push(to); conditions.push(`e.occurred_at < $${params.length}`); }
+    if (goalId !== undefined) {
+      params.push(goalId);
+      conditions.push(`e.aggregate_type='task' AND EXISTS (SELECT 1 FROM zook_lighttick_tasks t
+        WHERE t.app_id=e.app_id AND t.user_id=e.user_id AND t.id=e.aggregate_id AND t.goal_id=$${params.length})`);
+    }
+    const result = await this.query(`SELECT e.* FROM zook_lighttick_execution_events e
+      WHERE ${conditions.join(" AND ")} ORDER BY e.occurred_at ASC, e.id ASC`, params);
     return result.rows.map(mapRow<import("../../../modules/lighttick/lighttick.types.ts").LightTickExecutionEventRow>);
   }
   async appendInsightAudit(row: LightTickInsightAuditRow): Promise<LightTickInsightAuditRow> {
@@ -328,11 +376,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
       [row.id,row.appId,row.userId,row.threadId,row.goalId,row.role,row.content,row.runId ?? null,row.createdAt]);
     return mapRow<LightTickChatMessageRow>(result.rows[0]!);
   }
-  async listChatMessages(owner: LightTickOwner, threadId: string, limit: number): Promise<LightTickChatMessageRow[]> {
+  async listChatMessages(owner: LightTickOwner, threadId: string, limit: number, goalId?: string): Promise<LightTickChatMessageRow[]> {
     const bounded = Math.min(Math.max(limit, 1), 200);
     const result = await this.query(`SELECT * FROM zook_lighttick_chat_messages
-      WHERE app_id=$1 AND user_id=$2 AND thread_id=$3 ORDER BY created_at DESC LIMIT $4`,
-      [owner.appId, owner.userId, threadId, bounded]);
+      WHERE app_id=$1 AND user_id=$2 AND thread_id=$3 ${goalId !== undefined ? "AND goal_id=$5" : ""}
+      ORDER BY created_at DESC, id DESC LIMIT $4`,
+      [owner.appId, owner.userId, threadId, bounded, ...(goalId !== undefined ? [goalId] : [])]);
     return result.rows.map(mapRow<LightTickChatMessageRow>).reverse();
   }
   async getDnaInsight(owner: LightTickOwner, id: string): Promise<LightTickDnaInsightRow | undefined> {
@@ -380,7 +429,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
         result = await this.query(`INSERT INTO ${table} (id,app_id,user_id,${columns.join(",")},version,created_at,updated_at)
           VALUES ($1,$2,$3,${placeholders},1,NOW(),NOW()) RETURNING *`, [row.id, row.appId, row.userId, ...values]);
       } else {
-        const assignments = columns.map((column, index) => `${column}=$${index + 1}${["constraints", "proposal", "pause_metadata", "variant_definitions"].includes(column) ? "::jsonb" : ""}`).join(",");
+        const assignments = columns.map((column, index) => `${column}=$${index + 1}${["constraints", "proposal", "pause_metadata", "variant_definitions", "review_cadence"].includes(column) ? "::jsonb" : ""}`).join(",");
         result = await this.query(`UPDATE ${table} SET ${assignments},version=version+1,updated_at=NOW()
           WHERE app_id=$${values.length + 1} AND user_id=$${values.length + 2} AND id=$${values.length + 3}
           AND version=$${values.length + 4} RETURNING *`, [...values, row.appId, row.userId, row.id, expectedVersion]);
@@ -405,6 +454,12 @@ export class PostgresLightTickRepository implements LightTickRepository {
       change.entityVersion,change.operation,JSON.stringify(change.snapshot ?? null),change.changedAt]);
   }
 
+  async listReflections(owner: LightTickOwner): Promise<LightTickReflectionRow[]> {
+    return new PostgresReflectionStore(this.query.bind(this), mapRow).listReflections(owner);
+  }
+  async saveReflection(row: LightTickReflectionRow, expectedVersion?: number): Promise<LightTickReflectionRow> {
+    return new PostgresReflectionStore(this.query.bind(this), mapRow).saveReflection(row, expectedVersion);
+  }
   async listReviews(owner: LightTickOwner): Promise<LightTickReviewRow[]> {
     const result = await this.query("SELECT * FROM zook_lighttick_reviews WHERE app_id=$1 AND user_id=$2 ORDER BY period_start DESC", [owner.appId, owner.userId]);
     return result.rows.map(mapRow<LightTickReviewRow>);
@@ -515,7 +570,8 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["task_steps","tasks","change_proposals","reviews","plan_cycles","goals","execution_events",
+    const tables = ["reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+      "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1

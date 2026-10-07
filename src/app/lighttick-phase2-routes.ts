@@ -1,3 +1,4 @@
+import { loadChatResources } from "../modules/lighttick/ai/lighttick-ai-context.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import type { LightTickAiRunRow, LightTickOwner } from "../modules/lighttick/lighttick.types.ts";
@@ -93,15 +94,12 @@ export async function tryHandleLightTickPhase2Routes(context: BackendRouteContex
     const body = bodyOf(request); const scene = stringOf(body.scene, "scene");
     if (scene !== "chat") return undefined;
     const goalId = stringOf(body.goal_id, "goal_id"); await runtime.goals.get(owner, goalId);
-    if (body.plan_id && !await runtime.repository.getPlan(owner, String(body.plan_id)))
-      throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
-    if (body.review_id && !(await runtime.repository.listReviews(owner)).some(item => item.id === body.review_id))
-      throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Review was not found.");
     const message = stringOf(body.message, "message");
     if (message.length > 4000) throw new ApplicationError(400, "REQ_FIELD_INVALID", "message is too long.");
     const threadId = typeof body.thread_id === "string" && body.thread_id.trim() ? body.thread_id.trim().slice(0, 128) : goalId;
     const operationId = idempotencyKeyOf(request);
     const data = await idempotent(runtime, owner, request, "coach_reply", goalId, "chat", async () => {
+      await loadChatResources(runtime.repository, owner, { ...body, goal_id: goalId });
       const timestamp = new Date().toISOString();
       const userMessage = await runtime.repository.saveChatMessage({ ...owner, id: randomId("lighttick_chat"),
         threadId, goalId, role: "user", content: message, createdAt: timestamp });
@@ -121,7 +119,7 @@ export async function tryHandleLightTickPhase2Routes(context: BackendRouteContex
     const threadId = typeof request.query?.thread_id === "string" && request.query.thread_id.trim()
       ? request.query.thread_id.trim() : goalId;
     const limit = request.query?.limit === undefined ? 50 : Number(request.query.limit);
-    const messages = await runtime.repository.listChatMessages(owner, threadId, limit);
+    const messages = await runtime.repository.listChatMessages(owner, threadId, limit, goalId);
     return response(context, request, { thread_id: threadId, goal_id: goalId, items: messages.map(message => ({
       id: message.id, role: message.role, content: message.content, run_id: message.runId, created_at: message.createdAt })) });
   }

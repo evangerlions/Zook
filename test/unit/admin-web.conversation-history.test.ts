@@ -12,7 +12,10 @@ const traceContentPath = new URL("../../apps/admin-web/app/components/conversati
 const debugToolListPath = new URL("../../apps/admin-web/app/components/conversation-debug-tool-list.tsx", import.meta.url);
 const traceDebugContextPath = new URL("../../apps/admin-web/app/components/conversation-trace-debug-context.tsx", import.meta.url);
 const traceRequestDebugPath = new URL("../../apps/admin-web/app/lib/trace-request-debug.ts", import.meta.url);
+const traceMessageTurnPath = new URL("../../apps/admin-web/app/lib/trace-message-turn.ts", import.meta.url);
+const contextUsageBadgePath = new URL("../../apps/admin-web/app/components/conversation-context-usage-badge.tsx", import.meta.url);
 const traceToolNamePath = new URL("../../apps/admin-web/app/lib/trace-tool-name.ts", import.meta.url);
+const traceJsonProjectionPath = new URL("../../apps/admin-web/app/lib/trace-json-projection.ts", import.meta.url);
 const traceStylesPath = new URL("../../apps/admin-web/app/styles/conversation-records.css", import.meta.url);
 const sceneTagPath = new URL("../../apps/admin-web/app/lib/scene-tag.ts", import.meta.url);
 
@@ -44,15 +47,18 @@ test("admin web keeps historical chat lookup separate from the trace console", a
 });
 
 test("admin trace detail supports change filtering, rendered and highlighted JSON views", async () => {
-  const [traceView, traceDetail, traceContent, traceToolName, traceDebugContext, traceRequestDebug, traceStyles, sceneTag] = await Promise.all([
+  const [traceView, traceDetail, traceContent, traceToolName, traceDebugContext, traceRequestDebug, traceMessageTurn, contextUsageBadge, traceStyles, sceneTag, traceJsonProjection] = await Promise.all([
     readFile(traceViewPath, "utf8"),
     readFile(traceDetailPath, "utf8"),
     readFile(traceContentPath, "utf8"),
     readFile(traceToolNamePath, "utf8"),
     readFile(traceDebugContextPath, "utf8"),
     readFile(traceRequestDebugPath, "utf8"),
+    readFile(traceMessageTurnPath, "utf8"),
+    readFile(contextUsageBadgePath, "utf8"),
     readFile(traceStylesPath, "utf8"),
     readFile(sceneTagPath, "utf8"),
+    readFile(traceJsonProjectionPath, "utf8"),
   ]);
 
   assert.match(traceView, /conversation-trace-detail/);
@@ -72,6 +78,13 @@ test("admin trace detail supports change filtering, rendered and highlighted JSO
   assert.match(traceDetail, /TraceMessageContent/);
   assert.match(traceDetail, /TraceJsonPreview/);
   assert.match(traceDetail, /<details className="conversation-trace-request">/);
+  assert.match(traceDetail, /meta=\{`\$\{requests\.length\} requests`\}/);
+  assert.match(traceDetail, /compactTraceRequestForJson/);
+  assert.match(traceJsonProjection, /deltaSummary/);
+  assert.match(traceJsonProjection, /isStreamDelta/);
+  assert.doesNotMatch(traceDetail, /changedRequests/);
+  assert.match(traceDetail, /<strong>Req \{index \+ 1\}<\/strong>/);
+  assert.match(traceDetail, /conversation-trace-message-turn/);
   assert.match(traceContent, /conversation-trace-markdown-heading/);
   assert.match(traceContent, /conversation-trace-markdown-list-item-content/);
   assert.match(traceContent, /conversation-trace-json-text-value/);
@@ -97,4 +110,9 @@ test("admin trace detail supports change filtering, rendered and highlighted JSO
   assert.match(sceneTag, /SCENE_TAG_COLORS\[sceneKey\] \?\? "default"/);
   assert.match(traceStyles, /\.conversation-trace-view-controls/);
   assert.match(traceStyles, /min-height: min\(186vh, 1800px\)/);
+  assert.match(traceMessageTurn, /traceMessageTurnNumbers/);
+  assert.match(traceView, /ConversationContextUsageBadge/);
+  assert.match(traceDetail, /ConversationContextUsageBadge/);
+  assert.match(contextUsageBadge, /Context remaining/);
+  assert.match(contextUsageBadge, /provider fallback/);
 });

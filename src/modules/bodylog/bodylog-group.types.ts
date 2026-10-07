@@ -96,7 +96,7 @@ export interface GroupDailyRecord {
 
 // ===== 小组活动记录相关类型 =====
 
-export type GroupActivityType = "joined" | "left" | "checked_in" | "encouraged" | "milestone";
+export type GroupActivityType = "joined" | "left" | "checked_in" | "encouraged" | "milestone" | "removed" | "leader_changed";
 
 // 数据库记录类型
 export interface GroupActivityRecord {
@@ -170,6 +170,12 @@ export interface CheckInGroupDetailResponse {
   members: GroupMember[];
   recentActivities: GroupActivity[];
   weeklyRecords: GroupDailyRecord[];
+  /** 请求者是否为组长 */
+  isOwner: boolean;
+  /** 请求者是否为组长或管理员 */
+  isAdmin: boolean;
+  /** 共享邀请链接 token，仅组长/管理员可见 */
+  invitationToken: string | null;
 }
 
 export interface CreateCheckInGroupResponse {

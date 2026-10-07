@@ -2,6 +2,8 @@ import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickPlanRow, LightTickReviewRow } from "./lighttick.types.ts";
 import { LightTickPlanService, type ProposedTaskInput } from "./lighttick-plan.service.ts";
 import { ApplicationError } from "../../shared/errors.ts";
+import { businessDateAt } from "./lighttick-today.service.ts";
+import { taskDetailsFromOutput } from "./lighttick-task-details.ts";
 import { sha256 } from "../../shared/utils.ts";
 
 export type DeepReviewAction = "accept_all" | "accept_partial" | "ignore";
@@ -28,7 +30,7 @@ function taskInputs(value: unknown): ProposedTaskInput[] | undefined {
     const estimatedMinutes = Number(record.estimated_minutes ?? record.estimatedMinutes ?? 15);
     return title && Number.isInteger(estimatedMinutes) && estimatedMinutes >= 1 && estimatedMinutes <= 1440
       ? [{ title, estimatedMinutes, priority: Number.isInteger(record.priority) ? Number(record.priority) : undefined,
-        scheduledFor: text(record.scheduled_for) || undefined }] : [];
+        scheduledFor: text(record.scheduled_for) || undefined, ...taskDetailsFromOutput({ ...record, completion_criteria: record.completion_criteria ?? record.completionCriteria }) }] : [];
   });
   return tasks.length ? tasks : undefined;
 }
@@ -82,19 +84,27 @@ export class LightTickDeepReviewService {
     const timestamp = this.clock().toISOString();
     if (action === "ignore") {
       const reason = text(ignoreReason);
-      if (reason.length < 2 || reason.length > 500)
-        throw new ApplicationError(400, "REQ_FIELD_INVALID", "ignore_reason is required.");
+      if (reason.length > 500)
+        throw new ApplicationError(400, "REQ_FIELD_INVALID", "ignore_reason must be at most 500 characters.");
       const saved = await this.saveState(review, { status: "ignored", action, selected_ids: [],
-        ignore_reason: reason, decided_at: timestamp }, timestamp);
+        ...(reason ? { ignore_reason: reason } : {}), decided_at: timestamp }, timestamp);
       return { review: saved, action, selectedRecommendationIds: [], recommendations };
     }
     const selected = recommendations.filter(item => selectedRecommendationIds.includes(item.id));
-    const activePlan = (await this.repository.listPlans(owner, review.goalId)).find(plan => plan.status === "active");
-    const plan = activePlan ?? { granularity: "week" as const, periodStart: review.periodStart, periodEnd: review.periodEnd };
-    const tasks = selected.flatMap(item => item.proposedTasks ?? [{ title: item.title, estimatedMinutes: this.minutesFor(item.action), priority: 10 }]);
+    const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+    const today = businessDateAt(this.clock(), timezone);
+    const following = new Date(Date.parse(review.periodEnd) + 86400000).toISOString().slice(0, 10);
+    const periodStart = today > following ? today : following;
+    const end = new Date(`${periodStart}T00:00:00Z`);
+    if (review.period === "month") { end.setUTCMonth(end.getUTCMonth() + 1, 1); end.setUTCDate(0); }
+    else end.setUTCDate(end.getUTCDate() + (review.period === "day" ? 0 : 6));
+    const periodEnd = end.toISOString().slice(0, 10);
+    const tasks = selected.flatMap(item => item.proposedTasks ?? [{ title: item.title, estimatedMinutes: this.minutesFor(item.action), priority: 10 }])
+      .map(task => ({ ...task, scheduledFor: task.scheduledFor && task.scheduledFor.slice(0, 10) >= periodStart &&
+        task.scheduledFor.slice(0, 10) <= periodEnd ? task.scheduledFor : periodStart }));
     if (!tasks.length) throw new ApplicationError(409, "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS", "Review has no actionable recommendations.");
     const proposedPlan = await new LightTickPlanService(this.repository, this.clock).createProposed(owner, {
-      goalId: review.goalId, granularity: plan.granularity, periodStart: plan.periodStart, periodEnd: plan.periodEnd,
+      goalId: review.goalId, granularity: review.period, periodStart, periodEnd,
       source: `review:${review.id}`, tasks, metadata: { review_id: review.id, recommendation_ids: selectedRecommendationIds,
         evidence: selected.map(item => ({ id: item.id, evidence: item.evidence })) },
     });

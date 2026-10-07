@@ -6,6 +6,7 @@ import type { AppRemoteLogPullService } from "./services/app-remote-log-pull.ser
 import type { CommonGetuiGyConfigService } from "./services/common-getui-gy-config.service.ts";
 import type { CommonLlmConfigService } from "./services/common-llm-config.service.ts";
 import type { CommonPasswordConfigService } from "./services/common-password-config.service.ts";
+import type { CommonReleaseUpdateConfigService } from "./services/common-release-update-config.service.ts";
 import type { VersionedAppConfigService } from "./services/versioned-app-config.service.ts";
 import { importAliyunTokenPlanConfig } from "./services/aliyun-token-plan-config.ts";
 import { importBaiConfig } from "./services/bai-config.ts";
@@ -20,6 +21,7 @@ interface ApplicationStartupConfigOptions {
   commonGetuiGyConfigService: CommonGetuiGyConfigService;
   commonLlmConfigService: CommonLlmConfigService;
   commonPasswordConfigService: CommonPasswordConfigService;
+  commonReleaseUpdateConfigService: CommonReleaseUpdateConfigService;
 }
 
 export async function initializeApplicationConfigs(
@@ -52,6 +54,8 @@ export async function initializeApplicationConfigs(
       );
     const initializedGetuiGyConfig =
       await options.commonGetuiGyConfigService.initializeDefaultConfig();
+    const initializedReleaseUpdateConfig =
+      await options.commonReleaseUpdateConfigService.initializeDefaultConfig();
     const migratedAiNovelKickoffPrompts =
       await migrateAiNovelKickoffPromptConfig(options.appConfigService);
 
@@ -63,6 +67,7 @@ export async function initializeApplicationConfigs(
       initializedAppLogSecrets ||
       initializedRemoteLogPullConfigs ||
       initializedGetuiGyConfig ||
+      initializedReleaseUpdateConfig ||
       migratedAiNovelKickoffPrompts
     ) {
       await options.managedStateStore.save(options.database);

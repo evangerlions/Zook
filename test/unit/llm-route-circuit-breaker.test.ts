@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { InMemoryKVBackend, KVManager } from "../../src/infrastructure/kv/kv-manager.ts";
+import { StructuredLogger } from "../../src/infrastructure/logging/pino-logger.module.ts";
 import { LlmRouteCircuitBreakerService } from "../../src/services/llm-route-circuit-breaker.service.ts";
 import { LlmRouteCircuitRecoveryService } from "../../src/services/llm-route-circuit-recovery.service.ts";
 import { LLMManager, type LLMProvider, type LLMStreamEvent } from "../../src/services/llm-manager.ts";
@@ -88,11 +89,62 @@ test("route circuit uses 10 minute recovery delay after the first failed probe a
   assert.equal((await circuit.getRuntimeStatus(route, true)).state, "closed");
 });
 
-test("LLM manager only counts failures before a non-empty stream chunk", async () => {
+test("route circuit logs threshold decisions with bounded volume and no user identifiers", async () => {
+  let now = new Date("2030-01-01T00:00:00.000Z");
+  const logger = new StructuredLogger("test", { emitToConsole: false });
   const circuit = new LlmRouteCircuitBreakerService(
     await KVManager.create({ backend: new InMemoryKVBackend() }),
+    { now: () => now, logger },
   );
-  let mode: "empty" | "partial_tool" | "fail" | "success" = "empty";
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    await circuit.recordPreFirstChunkFailure(route, "private-user-id", true, "QUOTA_EXCEEDED");
+  }
+
+  const quorumLog = logger.records.find((record) =>
+    record.message === "LLM route circuit failure window updated" &&
+    record.decision === "distinct_user_quorum_not_met",
+  );
+  assert.ok(quorumLog);
+  assert.equal(quorumLog.failureCount, 4);
+  assert.equal(quorumLog.distinctUserCount, 1);
+  assert.equal(quorumLog.errorCode, "QUOTA_EXCEEDED");
+  assert.equal(JSON.stringify(quorumLog).includes("private-user-id"), false);
+  assert.equal((await circuit.getRuntimeStatus(route, true)).state, "closed");
+
+  await circuit.recordPreFirstChunkFailure(route, "private-user-id", true, "QUOTA_EXCEEDED");
+  assert.equal(logger.records.filter((record) => record.message === "LLM route circuit failure window updated").length, 2);
+
+  now = new Date("2030-01-01T00:01:01.000Z");
+  await circuit.recordPreFirstChunkFailure(route, "private-user-id", true, "QUOTA_EXCEEDED");
+  assert.equal(logger.records.filter((record) => record.message === "LLM route circuit failure window updated").length, 3);
+});
+
+test("route circuit logs why failures were excluded from circuit accounting", async () => {
+  const logger = new StructuredLogger("test", { emitToConsole: false });
+  const circuit = new LlmRouteCircuitBreakerService(
+    await KVManager.create({ backend: new InMemoryKVBackend() }),
+    { logger },
+  );
+
+  await circuit.recordPreFirstChunkFailure(route, "user-a", false, "UPSTREAM_DOWN");
+  await circuit.recordPreFirstChunkFailure(route, undefined, true, "UPSTREAM_DOWN");
+  circuit.logIgnoredFailure(route, "non_stream_request", "UPSTREAM_DOWN");
+
+  assert.deepEqual(
+    logger.records.map((record) => record.reason),
+    ["circuit_disabled", "missing_user_id", "non_stream_request"],
+  );
+  assert.equal((await circuit.getRuntimeStatus(route, true)).failureCount, 0);
+});
+
+test("LLM manager only counts failures before a non-empty stream chunk", async () => {
+  const logger = new StructuredLogger("test", { emitToConsole: false });
+  const circuit = new LlmRouteCircuitBreakerService(
+    await KVManager.create({ backend: new InMemoryKVBackend() }),
+    { logger },
+  );
+  let mode: "empty" | "partial_tool" | "content_then_fail" | "fail" | "success" = "empty";
   let streamCalls = 0;
   let confirmationRequests = 0;
   const provider: LLMProvider = {
@@ -103,6 +155,10 @@ test("LLM manager only counts failures before a non-empty stream chunk", async (
       streamCalls += 1;
       if (mode === "empty") yield { type: "content_delta", text: "" };
       if (mode === "partial_tool") yield { type: "tool_call_delta", text: "{\"draft\":" };
+      if (mode === "content_then_fail") {
+        yield { type: "content_delta", text: "partial" };
+        throw new Error("upstream failed after first chunk");
+      }
       if (mode === "success") {
         yield { type: "content_delta", text: "OK" };
         yield { type: "done" };
@@ -160,6 +216,24 @@ test("LLM manager only counts failures before a non-empty stream chunk", async (
   await call("user-a");
   assert.equal((await circuit.getRuntimeStatus(route, true)).failureCount, 0);
 
+  mode = "content_then_fail";
+  await call("user-a");
+  assert.equal((await circuit.getRuntimeStatus(route, true)).failureCount, 0);
+  assert.equal(
+    logger.records.find((record) => record.reason === "failure_after_first_chunk")?.errorCode,
+    "Error",
+  );
+
+  await assert.rejects(() => manager.complete({
+    modelKey: "model-a",
+    messages: [{ role: "user", content: "hello" }],
+    usageOwner: { appId: "app", userId: "user-a" },
+  }));
+  assert.equal(
+    logger.records.find((record) => record.reason === "non_stream_request")?.errorCode,
+    "Error",
+  );
+
   mode = "fail";
   await call("user-a");
   await call("user-b");
@@ -171,6 +245,10 @@ test("LLM manager only counts failures before a non-empty stream chunk", async (
   await call("user-c");
   assert.equal(streamCalls, callsBeforeConfirmation + 1);
   assert.equal(confirmationRequests, 1);
+  assert.equal(
+    logger.records.find((record) => record.reason === "confirmation_pending")?.errorCode,
+    "Error",
+  );
   const confirmation = await circuit.claimCircuitConfirmation(route);
   assert.ok(confirmation);
   assert.equal(await circuit.completeCircuitConfirmation(confirmation, false), "opened");
@@ -186,6 +264,7 @@ test("LLM manager only counts failures before a non-empty stream chunk", async (
     },
     (error: unknown) => error instanceof Error && "code" in error && error.code === "LLM_ROUTE_NOT_AVAILABLE",
   );
+  assert.ok(logger.records.some((record) => record.event === "route_skipped_while_open"));
 });
 
 test("concurrent pre-chunk failures serialize instead of dropping an outage burst", async () => {
@@ -219,6 +298,7 @@ test("confirmation retries only its route with the existing smoke request before
     await circuit.recordPreFirstChunkFailure(route, userId, true);
   }
   let attempts = 0;
+  const logger = new StructuredLogger("test", { emitToConsole: false });
   const recovery = new LlmRouteCircuitRecoveryService(
     {
       async getRuntimeConfig() {
@@ -245,9 +325,18 @@ test("confirmation retries only its route with the existing smoke request before
         },
       },
     },
+    logger,
   );
 
   await recovery.confirmRoute(route);
   assert.equal(attempts, 2);
   assert.equal((await circuit.getRuntimeStatus(route, true)).state, "closed");
+  assert.equal(
+    logger.records.filter((record) => record.message === "LLM route circuit probe failed").length,
+    1,
+  );
+  assert.equal(
+    logger.records.find((record) => record.message === "LLM route circuit probe failed")?.reason,
+    "probe_request_failed",
+  );
 });

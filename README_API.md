@@ -167,6 +167,11 @@ Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并�
 
 LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 
+目标创建和更新可选携带 `review_cadence: { layers: ["day", "week", "month"] }`。
+空数组表示关闭该目标的复盘；省略时默认每周复盘。目标响应会返回实际生效的
+复盘层级。`POST /review-runs` 的 `period` 支持 `daily/weekly/monthly`；daily
+复盘按单日任务执行事实生成，weekly 和 monthly 复盘保留既有的数据充分性门槛。
+
 | 方法 | 路径 | 请求与响应 `data` |
 | --- | --- | --- |
 | GET | `/execution-facts` | 可选 `from`（含）/`to`（不含）时间戳；返回 `window/completed_count/average_deviation_minutes/by_lineage/by_slot/consecutive_skips/feedback`，读取同时记录 insight audit |
@@ -177,9 +182,11 @@ LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 | POST | `/dna/insights/{insightId}/feedback` | `action=confirm/deny/correct/dismiss`；correct 必须提供去空白后 2–500 字符 `correction`；返回洞察 |
 | POST | `/proposals/from-facts` | `{ goal_id }`；返回 `{ items, suppressed? }`，只生成待确认提案，不直接改计划 |
 | GET | `/reviews/{reviewId}/actions` | 返回 `{ review, recommendations, action_state }`，推荐包含稳定 id、证据及可选 proposedTasks |
-| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 必填 2–500 字符 `ignore_reason`；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
+| POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 可选 `ignore_reason`（最多 500 字符，省略或空白按未提供处理，非空内容去除首尾空白后保存）；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
 | GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
 | POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
+
+Coach目标隔离：聊天历史按当前账户、`goal_id`和`thread_id`共同筛选后再取limit；同名thread不共享不同目标消息，同一时间按消息ID稳定排序。发送前校验plan/review/task的所有权与目标，另有plan_id时task必须属于该计划。资源不存在或跨账户返回404；同账户目标或任务/计划不匹配返回422，不保存消息或创建run。异步执行时再次校验引用；执行事实仅统计本目标现存任务事件，无法确定归属的历史事件排除。当前上下文未引入跨目标共享容量，不能将单目标统计解释为全人可用预算。
 
 - 以上能力仅限正式 LightTick membership 的 Bearer Token；游客返回 `403 APP_SCOPE_FORBIDDEN`，产品关闭返回 `503 LIGHTTICK_APP_DISABLED`。数据按 app/user 隔离。
 - chat 必须携带 8–128 字符 `Idempotency-Key`；消息发出即保存，异步结果通过 `/runs/{runId}` 和消息列表读取，同 key 不同内容返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`。其他 Phase 2 写接口不要求该 header。
@@ -241,6 +248,17 @@ GET  /api/v1/my-todo/callbacks/oauth/google
 2. 当前仓库已经提供通用的 `GET /api/v1/{productKey}/public/config` 实现
 3. 这条接口当前返回的是后台 `admin.delivery_config` 中维护的 app 级公共配置
 4. 其他 `/public/*` 模板接口仍需按产品需要补齐
+
+升级提醒使用独立的 `GET /api/v1/{productKey}/public/update`。它从公共
+`common.release_updates` 目录按产品 key 投影，只返回当前产品启用的 target；target
+用 `platform + channel` 区分平台和商店，`delivery=download` 提供包下载地址，
+`delivery=store` 提供商店地址。该接口不负责比较客户端版本、下载、安装或提交商店审核，
+这些动作由产品客户端完成。target 的 `reminder.maxCount`（0 表示不限）和
+`reminder.intervalSeconds` 提供可选升级提醒的次数与最小间隔；`mandatory` 强制升级不受
+提醒次数限制。产物可选提供 `messageI18n`（locale 到文本的映射），客户端只在存在当前
+语言文本时显示；未配置时不显示客户端内置的替代更新消息。
+AINovel 读取既有 `GET /api/v1/ai_novel/public/config` 时，也会在 `config.releaseUpdate`
+中收到同一份 AINovel 专属投影，便于客户端减少一次请求。
 
 当前返回示例：
 
@@ -346,6 +364,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 | `POST` | `/api/v1/logs/upload`                      | 上传 AES-GCM + gzip + NDJSON 客户端日志                                                                                             |
 | `POST` | `/api/v1/notifications/send`               | 发送通知任务                                                                                                                        |
 | `GET`  | `/api/v1/{productKey}/public/config`       | 获取产品公开配置，当前数据来源于后台维护的 `admin.delivery_config`；`bodylog` 与 `lighttick` 为产品专属实现（见各产品章节）                                                                 |
+| `GET`  | `/api/v1/{productKey}/public/update`      | 获取产品自己的平台 / 商店升级目录；匿名可读，`download` 目标提供下载地址，`store` 目标提供商店地址                                                                                         |
 | `GET`  | `/api/v1/bodylog/profile`                  | 获取或初始化当前 BodyLog 用户的 app-scoped 公开资料                                                                                 |
 | `PUT`  | `/api/v1/bodylog/profile`                  | 更新 BodyLog 昵称和预设头像；昵称会经过内容安全检查                                                                                 |
 | `GET` / `POST` | `/api/v1/bodylog/friend-requests` | 查询或发起 BodyLog 好友申请                                                                                                        |
@@ -398,7 +417,6 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
 6. 一键登录接口：
    `POST /api/v1/auth/login/one-click` 请求体为 `{ "appId": "app_a", "token": "native-token", "gyuid": "gyuid", "clientType": "app", "operator": "CM", "sdkPlatform": "android" }`。
    服务端使用 `common.getui_gy_service.apps[appId]` 中直接保存的个验 AppID、AppKey、AppSecret、MasterSecret 调用个验服务端取号，不接受客户端直接传手机号；后台读取配置时会对 AppKey、AppSecret、MasterSecret 脱敏，需要二级密码验证后才能查看明文。
-   当请求带 `sdkPlatform=ohos` 时，服务端使用该 Zook AppID 对应的 `common.getui_gy_service.apps[appId].platforms.ohos` 独立鸿蒙凭据；未配置时不会回退到 Android/iOS 凭据。其他平台继续使用原有 `apps[appId]` 凭据。每个应用都可以在管理后台按需添加自己的 OHOS 配置。
    个验取号成功后会复用手机号登录语义：手机号不存在且 app 允许自动加入时创建 `sms-code-only` 账号并签发会话。
 7. 密码相关接口：
    `POST /api/v1/auth/password/email-code` 请求体为 `{ "appId": "app_a", "email": "user@example.com" }`
@@ -516,13 +534,17 @@ POST /api/v1/auth/login/email
 | `POST` | `/api/v1/bodylog/buddies/checkin` | `{ "habitId": "...", "count"?: 1, "eventId"?: "local-log-id", "occurredAt"?: "ISO timestamp" }` | 记录搭子打卡同步 |
 | `POST` | `/api/v1/bodylog/groups` | `{ "name": "...", "icon"?, "sharedHabitIds": [...], "completionRule"?: "all\|majority", "maxMembers"? }` | 创建打卡小组 |
 | `GET` | `/api/v1/bodylog/groups` | 无 | 查询我所在的小组 |
-| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}` | 无 | 小组详情与成员状态；返回含 `isOwner`/`isAdmin` 权限标记，`invitationToken` 仅组长/管理员可见 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/invite` | `{ "userId": "..." }` | 邀请成员加入小组 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/accept` | `{ "token": "..." }` | 接受小组邀请 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/leave` | 无 | 退出小组 |
 | `POST` | `/api/v1/bodylog/groups/{groupId}/checkin` | `{ "habitId": "...", "count"? }` | 小组打卡 |
+| `GET` | `/api/v1/bodylog/groups/{groupId}/leaderboard` | 无 | 小组排行榜（成员周统计与排名） |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/members/remove` | `{ "userId": "..." }` | 组长/管理员移除成员（组长可移除任意 member/admin，admin 仅可移除 member，不能移除 leader） |
+| `POST` | `/api/v1/bodylog/groups/{groupId}/transfer` | `{ "userId": "..." }` | 组长转让（仅现任 leader；原组长降为 admin，新组长保持 active） |
 | `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
 | `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
+| `POST` | `/api/v1/bodylog/subscription/purchases` | iOS `{platform:"ios", productId, signedTransaction}`；Android `{platform:"android", productId, purchaseToken}` | 服务端验签并同步云端权益；同一商店交易不能绑定到其他 BodyLog 账号 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |
 | `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
@@ -541,7 +563,7 @@ BodyLog 新增接口约定：
 - 新客户端在 `/buddies/checkin` 同时传 `eventId` 与 `occurredAt`。同一账号、同一配对、同一事件重复发送不增加活动或重复入队通知；改变习惯、次数或时间后复用事件 ID 返回 409 `BODYLOG_EVENT_CONFLICT`。缺一个字段、非法 ID/时间或超过服务器时间 5 分钟的未来时间返回 400。旧版不带这两个字段仍按原有非幂等方式处理。
 - `occurredAt` 使用带时区的 ISO 8601 时间；服务端按 UTC 归属活动日期。早于关系接受时间的本地记录不进入新关系；历史补报不会重新结算已结算的搭子日期。客户端只上传用户明确共享的非私密习惯。
 - `/leaderboards/current/snapshot` 只返回当前认证用户的目标快照；客户端使用其中的时区、habitId 和 scheduledDates 生成每日完整聚合。聚合为覆盖更新，空数组可反映撤销；它不是多设备日志合并协议。
-- `/subscription/status` 使用搭子/小组额度判断的同一份服务端权益，不接受客户端 premium 布尔值。此查询不代替 App Store / Google Play 购买凭证验签接口。
+- `/subscription/status` 使用搭子/小组额度判断的同一份服务端权益，不接受客户端 premium 布尔值。购买成功或恢复购买后，客户端应将 StoreKit 2 JWS / Google Play purchase token 提交到 `POST /subscription/purchases`，再读取该状态接口。无效凭证返回 `400 BODYLOG_PURCHASE_INVALID`，已绑定其他账号返回 `409 BODYLOG_PURCHASE_ALREADY_CLAIMED`，商店验签配置缺失返回 `503 BODYLOG_PURCHASE_VERIFICATION_UNAVAILABLE`。
 - BodyLog 推送从自己的设备表取 token，应用当前通知类别设置；`buddy_invite` 归 `friendRequest`，等级奖励归 `rewardArrived`，其他搭子动态归 `activity`。现有 quietHours 不含时区字段，按 UTC 小时判断；静默窗口内跳过本条通知。分发失败会标记 FAILED 并抛给任务队列重试。部署配置见 `docs/bodylog-client-cloud-integration.md`。
 
 
@@ -1058,3 +1080,59 @@ APNs / FCM 返回不可恢复的无效 token 错误时，服务端会仅将当�
 公开 handoff `GET /frogsleep/buddy-invitation?token=...` 返回 `no-store` 的安全页面，尝试打开 `frogsleep://buddy-invitation` 并提供手工码路径，不展示邮箱或用户资料。
 
 以下路径仅为兼容旧客户端的非 canonical 路径，新接入不得使用：`/api/v1/frogsleep/sleep-buddy/invites*`、`/api/v1/frogsleep/focus-buddy/invites*`、`/frogsleep/sleep-buddy-invite`、`/frogsleep/focus-invite`。
+
+### LightTick 周承诺状态
+
+`GET /api/v1/lighttick/onboarding/commitment` 返回当前鉴权账户的 `{ commitment_mode, valid_action_count, required_action_count: 2, eligible }`。未选择或无 profile 时 mode 为 null。模式为 recovery/light/standard/sprint；读取无副作用，访客可用，账户隔离。计数与 POST 使用相同有效行动规则，deep_planning 不改写 eligible。
+
+LightTick 周承诺保存仍要求两次有效行动（或用户明确 deep_planning）；无 profile 时返回 404，不再返回未实际保存的成功。客户端仅在写入成功后更新选择，失败保留原值；重启从 GET 恢复，不用当日完成项推算累计资格。新客户端应在此接口部署后启用；旧服务不支持 GET 时显示“暂时无法核对本周投入”并保留其他 Journey 能力。
+
+### 对话规划会话（P2，默认关闭）
+
+启用服务器环境变量 `LIGHTTICK_CONVERSATIONAL_PLANNING_ENABLED=1` 后可调用下列接口；仍需 LightTick 注册用户 token 和有效 app membership，游客不可使用。未启用返回 503 `LIGHTTICK_APP_DISABLED`。这些接口创建新的计划周期，调整的是本会话尚未确认的草案，确认不会自动撤销现有活跃计划。
+
+| 方法与路径（前缀 /api/v1/lighttick） | 请求与结果 |
+| --- | --- |
+| POST /planning-sessions | `{goal_id}`，返回 201 `{session,run:null}`；thread_id 由服务器生成 |
+| GET /planning-sessions/{id} | 返回当前 session，供重启、跨设备恢复 |
+| POST /planning-sessions/{id}/messages | `{base_version,message}`，返回 202 `{session,run}` |
+| PATCH /planning-sessions/{id}/context | `{base_version,fields:{字段:{value,source}}}`，返回更新后的 session |
+| POST /planning-sessions/{id}/drafts | `{base_version,context_revision,instruction?,deep_planning?}`，返回 202；instruction 用于调整当前草案 |
+| POST /planning-sessions/{id}/confirm | `{base_version,context_revision,draft_plan_id,plan_version}`，原子生成执行任务并返回 confirmed session |
+
+所有写请求必须带 `Idempotency-Key`（非空，最多 128 字符）。同 key 同请求重放同一结果；不同请求返回 409 `LIGHTTICK_IDEMPOTENCY_MISMATCH`。读取最新版本后执行新操作应使用新 key。异步请求中的 run 包含 id/status/scene/prompt_version，可继续使用已有 GET /api/v1/lighttick/runs/{id} 查询；完成后重新读取 session，草案通过已有计划读取接口获取。消息保存到 session.thread_id 对应的已有聊天记录。
+
+摘要 context 允许 objective、outcome、experience、available_minutes、period_start、period_end、constraints。每项包含 value、source，可含服务器记录的 source_message_id。来源为 user / confirmed / imported / assumption；用户 PATCH 只允许 user 或 confirmed。模型仅填充缺失项或 assumption，不覆盖已确认和导入的信息。available_minutes 为周期总分钟数（1–10080）；objective/outcome 最多 200 字符，其他文本最多 1000；日期必须是合法 YYYY-MM-DD，周期有序且跨度不超过 90 天。
+
+状态为 collecting / ready / generating / draft_ready / confirmed。明确的 objective、available_minutes、起止日期全部具备才可生成；必要字段的 assumption 必须先显式确认。questions 最多两条，两轮澄清后留给客户端展示摘要编辑入口。can_generate 为服务器计算值。生成还需已有周承诺资格、已启用 commitment_mode，或本次明确选择 deep_planning:true；该选项不替用户保存周承诺。
+
+会话 version 用于 CAS，context_revision 用于草案有效性。生成中修改摘要可成功，但本次生成随后被判为失效；active_run_id 清除后才能再次生成。调整生成得到新的 draft_plan_id；旧草案不能通过通用计划确认接口绕过检查。草案有效期为生成后 7 天。确认时检查 owner、目标、摘要版本、草案、目标和活跃计划/任务版本；任何冲突都不产生执行任务。
+
+409 错误：LIGHTTICK_VERSION_CONFLICT（重读并重新预览）、LIGHTTICK_PLANNING_BUSY（等待当前 run）、LIGHTTICK_PLANNING_NOT_READY（补充并确认摘要）、LIGHTTICK_PLANNING_STALE（旧/过期草案，重新生成）、LIGHTTICK_STATE_TRANSITION_INVALID（解锁或目标状态不允许）。异步失败通过 session.last_error 和 run.error_code 返回 LIGHTTICK_AI_UNAVAILABLE 或 LIGHTTICK_PLANNING_CONTEXT_TOO_LARGE；保留输入，不用通用模板伪造对话规划成功。客户端缩短摘要后以新 key 重试。
+
+Canonical OpenAPI 与生成模型已同步；跨端错误/并发样例见 `api-contracts/fixtures/lighttick/planning-errors.json`。本阶段尚未接入 iOS/Android 会话 UI。
+
+Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Override: PATCH；其他会话操作不接受方法覆盖。
+
+
+### LightTick App 规划、执行与复盘闭环
+
+- 注册用户可先 `POST /api/v1/lighttick/goals`，提交 `title` 与 `constraints: {}` 保存草稿目标，再创建 PlanningSession；无需先生成或完成启动任务。预算、日期仍须在规划会话内明确，未知不填默认事实。游客升级与对话规划开关约束保持不变。
+- `GET /plans`、`GET /plans/{id}` 的 `proposal.tasks[]` 保留内部字段 `title/estimatedMinutes/priority/scheduledFor`，新增可选 `completionCriteria`、`steps: string[]` 与 `guidance`。`guidance` 包含可选 `purpose`、`materials: string[]`、`expected_output`。草案同时保留 `summary` 与 `assumptions`。
+- 确认仍需版本与幂等保护。确认事务把完成标准、指导材料和有序步骤保存到任务；`GET /today` 与任务读取返回 `completion_criteria`、`guidance`、已有的 `steps` 对象数组。指导文本和步骤单项最长 1000 字符，步骤最多 12 项，材料最多 10 项。旧草案可缺省这些字段。
+- Today 汇总各活跃计划中属于用户业务日的任务；确认未来周期不会隐藏今天任务。`YYYY-MM-DD` 排期按业务日期比较，带时区时间戳按 profile 时区转换。无排期任务只在所属计划周期内展示；已完成/归档目标不再出现可执行任务。
+- `POST /api/v1/lighttick/review-runs` 的 `period` 支持 `daily/weekly/monthly`。日期必须真实有效，daily 要求 `period_start == period_end`。日期窗口按 profile 的 IANA 时区解释。复盘只使用当前目标的执行事件，创建目标/编辑目标不计作执行样本；日复盘至少一个完成/跳过/延期/取消事实，周/月至少三个，此充分性仅指执行回顾，不代表能力或成果达标。
+- Review `facts` 包含 `timezone/goal_id/event_counts/tasks/source_event_ids/outcome_status`。未知实际时长为 null，`outcome_status` 为 unverified；私人任务备注不会隐式送入 AI。用户可通过既有 `self_reflection`（最多 4000 字符）主动补充愿意用于 AI 复盘的信息。生成 run 显式关联 review_id。窗口中事实新增后会生成新复盘快照，旧结果保留；同一 Idempotency-Key 重放仍返回原操作。
+- `POST /change-proposal-runs` 可传 `review_id` 让调整引用该复盘，引用必须属于计划的目标；可选 `goal_id` 也须匹配。跨目标引用返回 422 `LIGHTTICK_PLAN_CONSTRAINT_FAILED`，找不到复盘返回 404。
+- 接受 `/reviews/{id}/actions` 的建议只创建 `proposed_plan`，响应和 `action_state.proposed_plan_id` 可用于重新打开草案。新周期从用户本地今日与复盘结束次日的较晚者起算，不把任务排回已结束窗口；仍须用户显式确认后才进入 Today。原任务完成事实保持不变。
+- 本轮未改变鉴权、app scope 和公共路径；指导字段存储依赖增量迁移 `064_lighttick_task_guidance.sql`。部署迁移及后端后再启用新客户端能力。完整顺序和验证边界见 `docs/lighttick/app-loop-integration.md`。
+
+
+### LightTick 通用规划与个人复盘（2026-09-19）
+
+- `GET /api/v1/lighttick/reflections?goal_id=...`：返回该目标已保存个人复盘，`data.items` 按更新时间倒序。需要注册 LightTick membership，与其他产品/用户隔离。
+- `PUT /api/v1/lighttick/reflections/{reflectionId}`：客户端生成8–128字符字母/数字/下划线/连字符ID；body 为 `goal_id, period_start, period_end, content, base_version`，可选 `plan_id, next_action`。正文1–4000字符（不可纯空白），下一步最多1000字符；日期为有效 YYYY-MM-DD 且起止有序。`base_version=0`新建，后续使用服务端版本；相同请求响应丢失重放返回已保存版本，其他旧版本写入409。返回 `data` 包含id、原文、下一步、范围、version、created_at、updated_at。goal不可跨记录改绑，plan必须属于同目标。保存不调用AI、不创建待办。删除LightTick账户同时删除这些记录。
+- `POST /api/v1/lighttick/review-runs`：原有daily/weekly/monthly兼容；新增可选 `plan_id`，要求属于goal且起止日期与计划一致，只聚合此计划。省略时按目标与日期聚合；过去七天由客户端明确提交滚动日期，不等于自然周。新增可选`next_action`（最多1000字符），与显式`self_reflection`一起分析，但不会直接执行。每个新Idempotency-Key生成独立review；重放同key返回同run。已保存笔记和私人任务备注不会被自动读取给模型。
+- review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
+- 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
+- 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。

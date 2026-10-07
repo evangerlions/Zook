@@ -2,6 +2,7 @@ import { withContextUsage } from "./llm-context-window.ts";
 import { DEFAULT_LLM_MODEL_REGISTRY } from "./llm-manager-registry.ts";
 import { LlmRequestResolver, type ResolvedLlmRequest } from "./llm-request-resolver.ts";
 import { isLlmCallerCancelledError } from "./llm-caller-cancellation.ts";
+import { llmErrorDiagnosticCode } from "./llm-error-diagnostic-code.ts";
 import type {
   LLMCompleteViaStreamOptions,
   LLMCompletionRequest,
@@ -84,6 +85,13 @@ export class LLMManager {
     } catch (error) {
       const completedAt = this.getNow();
       await observation?.finalize({ error, completedAt });
+      if (!resolution.request.signal?.aborted && !isLlmCallerCancelledError(error)) {
+        this.options.llmRouteCircuitBreaker?.logIgnoredFailure(
+          resolution.routeRef,
+          "non_stream_request",
+          llmErrorDiagnosticCode(error),
+        );
+      }
       throw error;
     }
   }
@@ -204,7 +212,13 @@ export class LLMManager {
         !resolution.request.signal?.aborted &&
         !isLlmCallerCancelledError(error)
       ) {
-        await this.recordPreFirstChunkFailure(resolution);
+        await this.recordPreFirstChunkFailure(resolution, error);
+      } else if (!resolution.request.signal?.aborted && !isLlmCallerCancelledError(error)) {
+        this.options.llmRouteCircuitBreaker?.logIgnoredFailure(
+          resolution.routeRef,
+          "failure_after_first_chunk",
+          llmErrorDiagnosticCode(error),
+        );
       }
       await observation?.finalize({ error, usage, completedAt });
       throw error;
@@ -294,7 +308,13 @@ export class LLMManager {
       }
       const completedAt = this.getNow();
       if (!sawEffectiveChunk) {
-        await this.recordPreFirstChunkFailure(resolution);
+        await this.recordPreFirstChunkFailure(resolution, error);
+      } else {
+        this.options.llmRouteCircuitBreaker?.logIgnoredFailure(
+          resolution.routeRef,
+          "failure_after_first_chunk",
+          llmErrorDiagnosticCode(error),
+        );
       }
       await observation?.finalize({ error, usage, completedAt });
       throw error;
@@ -436,7 +456,10 @@ export class LLMManager {
     }
   }
 
-  private async recordPreFirstChunkFailure(resolution: ResolvedLlmRequest): Promise<void> {
+  private async recordPreFirstChunkFailure(
+    resolution: ResolvedLlmRequest,
+    error: unknown,
+  ): Promise<void> {
     const circuitBreaker = this.options.llmRouteCircuitBreaker;
     if (!circuitBreaker) return;
     try {
@@ -444,14 +467,26 @@ export class LLMManager {
         resolution.routeRef,
         resolution.request.usageOwner?.userId,
         resolution.circuitBreakerEnabled,
+        llmErrorDiagnosticCode(error),
       );
       if (confirmation) {
         void Promise.resolve(
           this.options.onLlmRouteCircuitConfirmation?.(confirmation),
-        ).catch(() => undefined);
+        ).catch((error: unknown) => {
+          circuitBreaker.logDiagnosticFailure(
+            resolution.routeRef,
+            "confirmation_dispatch_failed",
+            llmErrorDiagnosticCode(error),
+          );
+        });
       }
-    } catch {
+    } catch (error) {
       // Circuit bookkeeping must not alter the user-visible upstream failure.
+      circuitBreaker.logDiagnosticFailure(
+        resolution.routeRef,
+        "failure_recording_failed",
+        llmErrorDiagnosticCode(error),
+      );
     }
   }
 

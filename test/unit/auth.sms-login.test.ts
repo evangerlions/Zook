@@ -313,7 +313,7 @@ test("sms password code hides account existence and sms password reset upgrades 
 
   assert.equal(resetResponse.statusCode, 200);
   assert.equal(resetResponse.body.data.accountRegion, "CN");
-  assert.equal(runtime.database.findUserByPhone("+8618710100988")?.passwordAlgo, "scrypt");
+  assert.equal(runtime.database.findUserByPhone("+8618710100988")?.passwordAlgo, "argon2id");
 
   const passwordLoginResponse = await runtime.app.handle({
     method: "POST",

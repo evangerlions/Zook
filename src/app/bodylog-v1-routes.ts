@@ -15,6 +15,7 @@ import { ApplicationError } from "../shared/errors.ts";
 import { ValidationPipe } from "../core/pipes/validation.pipe.ts";
 import type { BuddyEncouragementEmoji } from "../modules/bodylog/bodylog-buddy.types.ts";
 import type { NotificationCategory } from "../modules/bodylog/bodylog-notification.types.ts";
+import type { BodyLogPurchaseProof } from "../modules/bodylog/bodylog-store-purchase-verifier.ts";
 
 const BODYLOG_PROFILE_PATH = "/api/v1/bodylog/profile";
 const validation = new ValidationPipe();
@@ -56,6 +57,23 @@ export async function tryHandleBodyLogV1Routes(
   }
   if (request.path === "/api/v1/bodylog/subscription/status" && request.method === "GET") {
     return context.ok(await buddyService.subscriptionStatus(auth.userId), request.requestId as string);
+  }
+  if (request.path === "/api/v1/bodylog/subscription/purchases" && request.method === "POST") {
+    const body = requestBody(request);
+    const platform = validation.requireString(body, "platform");
+    if (platform !== "ios" && platform !== "android") {
+      throw new ApplicationError(400, "BODYLOG_PURCHASE_INVALID", "platform must be ios or android.");
+    }
+    const proof: BodyLogPurchaseProof = {
+      platform,
+      productId: validation.requireString(body, "productId"),
+      ...(body.signedTransaction === undefined ? {} : { signedTransaction: validation.requireString(body, "signedTransaction") }),
+      ...(body.purchaseToken === undefined ? {} : { purchaseToken: validation.requireString(body, "purchaseToken") }),
+    };
+    if ((platform === "ios" && !proof.signedTransaction) || (platform === "android" && !proof.purchaseToken)) {
+      throw new ApplicationError(400, "BODYLOG_PURCHASE_INVALID", "A platform purchase proof is required.");
+    }
+    return context.ok(await buddyService.verifyStorePurchase(auth.userId, proof), request.requestId as string);
   }
   if (request.path === BODYLOG_PROFILE_PATH && request.method === "GET") {
     const profile = await profileService.getOrCreate(auth.userId);
@@ -323,6 +341,23 @@ export async function tryHandleBodyLogV1Routes(
       count: body.count as number | undefined,
     });
     return context.ok({ recorded: true }, request.requestId as string);
+  }
+  const groupLeaderboardMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/leaderboard$/);
+  if (groupLeaderboardMatch && request.method === "GET") {
+    const leaderboard = await groupService.getGroupLeaderboard(auth.userId, groupLeaderboardMatch[1] as string);
+    return context.ok(leaderboard, request.requestId as string);
+  }
+  const groupRemoveMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/members\/remove$/);
+  if (groupRemoveMatch && request.method === "POST") {
+    const body = requestBody(request);
+    await groupService.removeGroupMember(auth.userId, groupRemoveMatch[1] as string, validation.requireString(body, "userId"));
+    return context.ok({ removed: true }, request.requestId as string);
+  }
+  const groupTransferMatch = request.path.match(/^\/api\/v1\/bodylog\/groups\/([^/]+)\/transfer$/);
+  if (groupTransferMatch && request.method === "POST") {
+    const body = requestBody(request);
+    await groupService.transferGroupOwnership(auth.userId, groupTransferMatch[1] as string, validation.requireString(body, "userId"));
+    return context.ok({ transferred: true }, request.requestId as string);
   }
 
   // ===== Growth (7-day plan) routes =====

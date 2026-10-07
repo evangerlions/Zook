@@ -1,4 +1,5 @@
 import { randomId } from "../../shared/utils.ts";
+import { ApplicationError } from "../../shared/errors.ts";
 import type {
   BodyLogAdminStore,
   BodyLogBuddyStore,
@@ -139,6 +140,16 @@ export class InMemoryBodyLogGroupStore implements BodyLogGroupStore {
   listGroupMembers(groupId: string): GroupMemberRecord[] {
     return cloneList(this.members.filter((r) => r.groupId === groupId).sort((a, b) => a.joinedAt.localeCompare(b.joinedAt)));
   }
+  listGroupMembersByGroupIds(groupIds: string[]): Map<string, GroupMemberRecord[]> {
+    const result = new Map<string, GroupMemberRecord[]>();
+    for (const groupId of groupIds) {
+      const members = this.members
+        .filter((r) => r.groupId === groupId)
+        .sort((a, b) => a.joinedAt.localeCompare(b.joinedAt));
+      result.set(groupId, cloneList(members));
+    }
+    return result;
+  }
   insertGroupDailyRecord(record: GroupDailyRecordRecord): void { this.dailyRecords.push(clone(record)); }
   findGroupDailyRecord(groupId: string, date: string): GroupDailyRecordRecord | undefined {
     const found = this.dailyRecords.find((r) => r.groupId === groupId && r.date === date);
@@ -173,10 +184,18 @@ export class InMemoryBodyLogSubscriptionStore implements BodyLogSubscriptionStor
     return active[0] ? clone(active[0]) : null;
   }
   upsertUserSubscription(record: UserSubscriptionRecord): void {
+    const owner = record.originalTransactionId
+      ? this.subscriptions.find((r) => r.originalTransactionId === record.originalTransactionId)
+      : undefined;
+    if (owner && (owner.appId !== record.appId || owner.userId !== record.userId)) {
+      throw new ApplicationError(409, "BODYLOG_PURCHASE_ALREADY_CLAIMED", "This store purchase is linked to another BodyLog account.");
+    }
     const index = this.subscriptions.findIndex((r) => r.id === record.id);
     if (index >= 0) { this.subscriptions[index] = clone(record); } else { this.subscriptions.push(clone(record)); }
   }
-  insertSubscriptionEvent(record: SubscriptionEventRecord): void { this.events.push(clone(record)); }
+  insertSubscriptionEvent(record: SubscriptionEventRecord): void {
+    if (!this.events.some((event) => event.id === record.id)) this.events.push(clone(record));
+  }
 }
 
 export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {

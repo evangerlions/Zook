@@ -1,3 +1,4 @@
+import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
 import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
@@ -73,7 +74,7 @@ import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
 import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
-import { tryHandleBodyLogAdminRoutes } from "./bodylog-admin-routes.ts";
+import { tryHandleBodyLogManagementRoutes } from "./bodylog-admin-routes.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -252,7 +253,7 @@ export class BackendApplication extends BackendRouteContext {
 
     const lightTickAdminResponse = await tryHandleLightTickAdminRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
     if (lightTickAdminResponse) return lightTickAdminResponse;
-    const bodyLogAdminResponse = await tryHandleBodyLogAdminRoutes(this, true, this.bodyLogAdminService, request);
+    const bodyLogAdminResponse = await tryHandleBodyLogManagementRoutes(this, true, this.bodyLogAdminService, request);
     if (bodyLogAdminResponse) return bodyLogAdminResponse;
     const adminResponse = await tryHandleAdminRoutes.call(this, request);
     if (adminResponse) {
@@ -320,6 +321,8 @@ export class BackendApplication extends BackendRouteContext {
       }
     }
 
+    const planningResponse = await tryHandleLightTickPlanningRoutes(this,this.lighttickEnabled,this.lighttickRuntime,request);
+    if (planningResponse) return planningResponse;
     const lightTickResponse = await tryHandleLightTickV1Routes(
       this,
       this.lighttickEnabled,

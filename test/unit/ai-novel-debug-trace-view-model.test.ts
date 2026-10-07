@@ -144,3 +144,62 @@ test("trace view model keeps legacy top-level messages and runs visible as turns
   assert.equal(model.turns[0]?.userMessage?.content, "Legacy message");
   assert.equal(model.turns[1]?.userMessage?.content, "Legacy run");
 });
+
+test("trace view model prefers Pi context occupancy and keeps provider fallback explicit", () => {
+  const session = {
+    manifest: {
+      sessionId: "conversation-context",
+      kind: "writing" as const,
+      status: "completed" as const,
+      captureCount: 1,
+      createdAt: "2026-09-09T00:00:00.000Z",
+      updatedAt: "2026-09-09T00:00:01.000Z",
+    },
+    captures: [
+      {
+        capturedAt: "2026-09-09T00:00:00.000Z",
+        status: "completed" as const,
+        trace: {
+          modelRequests: [
+            {
+              requestIndex: 1,
+              messages: [{ role: "user", content: "Write." }],
+              usage: {
+                promptTokens: 900,
+                contextWindowTokens: 1000,
+                totalTokens: 1000,
+              },
+            },
+            {
+              requestIndex: 2,
+              messages: [{ role: "user", content: "Write." }],
+              contextUsage: {
+                occupiedTokens: 250,
+                contextWindowTokens: 1000,
+                source: "pi",
+              },
+              usage: { totalTokens: 1200 },
+            },
+          ],
+        },
+      },
+    ],
+  } satisfies AiNovelDebugTraceSession;
+
+  const model = buildAiNovelDebugTraceViewModel(session);
+  assert.deepEqual(model.turns[0]?.requests[0]?.contextUsage, {
+    occupiedTokens: 900,
+    contextWindowTokens: 1000,
+    source: "provider",
+  });
+  assert.deepEqual(model.turns[0]?.requests[1]?.contextUsage, {
+    occupiedTokens: 250,
+    contextWindowTokens: 1000,
+    source: "pi",
+  });
+  assert.deepEqual(model.turns[0]?.contextUsage, {
+    occupiedTokens: 250,
+    contextWindowTokens: 1000,
+    source: "pi",
+  });
+});

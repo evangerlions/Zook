@@ -10,11 +10,11 @@ owned by existing Zook Common modules.
 
 The repositories below are reference-only for the new runtime:
 
-- `/Users/hao/Documents/project/plan/lighttick-backend`: legacy Go endpoint,
+- `/Users/hao/Documents/project/Zook/archive/lighttick-backend`: legacy Go endpoint,
   prompt, schema, and fallback intent. It must not receive production writes.
 - `/Users/hao/Documents/project/plan/lighttick_flutter`: historical UI/mock
   prototype. It is not the production client implementation.
-- `/Users/hao/Documents/project/plan/lighttick-backend/prototype/index.html`:
+- `/Users/hao/Documents/project/Zook/archive/lighttick-backend/prototype/index.html`:
   interaction reference for the latest Today/Journey concept.
 
 Production clients are native SwiftUI and Jetpack Compose applications. They
@@ -125,16 +125,12 @@ and deterministic fixtures first.
 
 ## Branch and release discipline
 
-Implementation started from clean `origin/main` in the isolated worktree:
-
-```text
-/Users/hao/Documents/project/plan/.worktrees/lighttick-unified-backend
-branch: feature/lighttick-unified-backend
-```
-
-The original `/Users/hao/Documents/project/Zook` worktree contains user-owned
-BodyLog changes and must not be modified, stashed, reset, or merged as part of
-LightTick work.
+The canonical development entry is `Zook`; backend feature worktrees belong in
+`Zook/.worktrees/`. Existing unified, interaction and conversational worktrees
+were relocated there on 2026-09-19 with their branch state intact. Do not assume
+that a feature worktree is newer than main or merge unrelated product changes.
+Preserve user-owned modifications and follow `AGENTS.md` when selecting a clean
+worktree from current `origin/main`.
 
 The feature branch can merge only into `main`. Releases must follow Zook's
 `main -> release_dev.sh -> same-SHA validation -> release_online.sh` process.

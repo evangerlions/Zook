@@ -30,6 +30,7 @@ import {
   isAbortError,
   isRecord,
   normalizeBaseUrl,
+  readReasoningDetailsText,
   readOptionalNonBlankString,
   readOptionalString,
   resolveStreamTimeouts,
@@ -39,6 +40,10 @@ import {
   throwProviderResponseInvalid,
 } from "./bailian-openai-compatible-utils.ts";
 import { LlmCallerCancellationScope } from "./llm-caller-cancellation.ts";
+import {
+  buildUpstreamDiagnosticHeader,
+  createLlmUpstreamRequestDiagnostics,
+} from "./llm-upstream-request-diagnostics.ts";
 
 export type { BailianOpenAICompatibleProviderOptions } from "./bailian-openai-compatible-types.ts";
 
@@ -50,6 +55,7 @@ export class BailianOpenAICompatibleProvider
   private readonly providerName: string;
   private readonly fetchImplementation: typeof fetch;
   private readonly localLogger: BailianOpenAICompatibleLocalLogger;
+  private readonly diagnostics?: BailianOpenAICompatibleProviderOptions["diagnostics"];
 
   constructor(options: BailianOpenAICompatibleProviderOptions = {}) {
     this.providerName = options.providerName ?? "bailian";
@@ -61,6 +67,7 @@ export class BailianOpenAICompatibleProvider
     this.apiKey =
       options.apiKey ?? process.env.BAILIAN_API_KEY ?? DEFAULT_BAILIAN_API_KEY;
     this.fetchImplementation = options.fetchImplementation ?? globalThis.fetch;
+    this.diagnostics = options.diagnostics;
     this.localLogger = new BailianOpenAICompatibleLocalLogger(
       options.logger,
       this.providerName,
@@ -143,7 +150,8 @@ export class BailianOpenAICompatibleProvider
       ...(toolCalls.length > 0 ? { toolCalls } : {}),
       reasoningText:
         readOptionalString(choice.message.reasoning) ??
-        readOptionalString(choice.message.reasoning_content),
+        readOptionalString(choice.message.reasoning_content) ??
+        readReasoningDetailsText(choice.message.reasoning_details),
       finishReason: readOptionalString(choice.finish_reason),
       usage: parseOpenAICompatibleChatUsage(payload.usage, this.providerName),
       providerRequestId:
@@ -226,11 +234,10 @@ export class BailianOpenAICompatibleProvider
       },
     };
     const localLogModel = this.getLocalLogModel(request);
+    const requestUrl = this.buildChatUrl(request.model.providerConfig?.baseUrl ?? this.baseUrl);
     this.localLogger.chatRequest({
       mode: "stream",
-      url: this.buildChatUrl(
-        request.model.providerConfig?.baseUrl ?? this.baseUrl,
-      ),
+      url: requestUrl,
       ...localLogModel,
       providerModel: request.model.providerModel,
       body: requestBody,
@@ -241,6 +248,9 @@ export class BailianOpenAICompatibleProvider
     );
     const streamTimeouts = resolveStreamTimeouts(streamOptions);
     const cancellation = new LlmCallerCancellationScope(request.signal);
+    const requestDiagnostics = createLlmUpstreamRequestDiagnostics({
+      provider: this.providerName, modelKey: localLogModel.modelKey, providerModel: request.model.providerModel,
+      requestUrl, diagnostics: this.diagnostics});
     const firstEventTimeout = setTimeout(() => {
       cancellation.abort(
         new DOMException(
@@ -254,19 +264,17 @@ export class BailianOpenAICompatibleProvider
       let response: Response;
       try {
         response = await this.execute(
-          this.buildChatUrl(
-            request.model.providerConfig?.baseUrl ?? this.baseUrl,
-          ),
+          requestUrl,
           this.buildRequestInit(
-            request.model.providerConfig?.apiKey ?? this.apiKey,
-            requestBody,
-            cancellation.signal,
+            request.model.providerConfig?.apiKey ?? this.apiKey, requestBody,
+            cancellation.signal, requestDiagnostics.diagnosticId,
           ),
         );
       } catch (error) {
         cancellation.rethrow(error);
       }
       clearTimeout(firstEventTimeout);
+      requestDiagnostics.onResponse(response);
 
       if (!response.ok) {
         const payload = await this.readJsonPayload(response, true);
@@ -295,6 +303,8 @@ export class BailianOpenAICompatibleProvider
           parseChatUsage: (usage) =>
             parseOpenAICompatibleChatUsage(usage, this.providerName),
           logRawChunk: (chunk) => streamLog.rawStreamChunk({ chunk }),
+          onBodyBytes: requestDiagnostics.onBodyBytes,
+          onSseEvent: requestDiagnostics.onSseEvent,
           streamOptions,
         })) {
           yield event;
@@ -307,6 +317,9 @@ export class BailianOpenAICompatibleProvider
         streamLog.streamFailure({ error });
         throw error;
       }
+    } catch (error) {
+      if (!request.signal?.aborted) requestDiagnostics.reportFailure(error);
+      throw error;
     } finally {
       clearTimeout(firstEventTimeout);
       cancellation.dispose(
@@ -341,13 +354,15 @@ export class BailianOpenAICompatibleProvider
   }
 
   private buildRequestInit(
-    apiKey: string,
-    body: Record<string, unknown>,
-    signal?: AbortSignal,
+    apiKey: string, body: Record<string, unknown>, signal?: AbortSignal,
+    diagnosticId?: string,
   ): RequestInit {
     return {
       method: "POST",
-      headers: this.buildHeaders(apiKey),
+      headers: {
+        ...this.buildHeaders(apiKey),
+        ...(diagnosticId ? buildUpstreamDiagnosticHeader(this.providerName, diagnosticId) : {}),
+      },
       body: JSON.stringify(body),
       ...(signal ? { signal } : {}),
     };

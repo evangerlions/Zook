@@ -75,6 +75,24 @@ test("OpenRouter provider uses its endpoint, auth, reasoning, and generation id"
   }
 });
 
+test("OpenRouter provider maps reasoning details from a completion", async () => {
+  const provider = new OpenRouterOpenAICompatibleProvider({
+    apiKey: "openrouter-test-key",
+    fetchImplementation: async () => new Response(JSON.stringify({
+      choices: [{
+        message: {
+          content: "OK",
+          reasoning_details: [{ type: "reasoning.text", text: "brief thought" }],
+        },
+      }],
+    })),
+  });
+
+  const result = await provider.complete(createRequest());
+
+  assert.equal(result.reasoningText, "brief thought");
+});
+
 test("OpenRouter provider forwards streaming content, usage, and done", async () => {
   const provider = new OpenRouterOpenAICompatibleProvider({
     apiKey: "openrouter-test-key",
@@ -115,6 +133,21 @@ test("OpenRouter provider forwards reasoning and tool calls from SSE", async () 
     type: "done",
     finishReason: "tool_calls",
   });
+});
+
+test("OpenRouter provider maps reasoning details from SSE", async () => {
+  const provider = new OpenRouterOpenAICompatibleProvider({
+    apiKey: "openrouter-test-key",
+    fetchImplementation: async () => createSseResponse([
+      'data: {"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.text","text":"considering"}]}}]}\n\n',
+      "data: [DONE]\n\n",
+    ]),
+  });
+
+  const events = await collect(provider.stream(createRequest()));
+
+  assert.deepEqual(events.map((event) => event.type), ["reasoning_delta", "done"]);
+  assert.equal(events[0]?.type === "reasoning_delta" ? events[0].text : undefined, "considering");
 });
 
 test("OpenRouter provider tags upstream failures with the OpenRouter identity", async () => {

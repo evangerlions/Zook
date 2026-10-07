@@ -1,3 +1,10 @@
+## LightTick ownership（强制）
+
+- LightTick / plan 的唯一后端开发入口是本仓库；后续 AI 修改 LightTick 后端必须在 Zook 完成，并遵循本文件全部规范。
+- 原生客户端在 `../plan/LightTick-iOS`、`../plan/LightTick-Android`；产品资料在 `../plan/docs`。客户端需求涉及 API、AI、持久化时，先在 Zook 对齐实现与合同。
+- 历史 Go 代码完整保存在 `archive/lighttick-backend`，仅供追溯；不得作为运行时依赖、独立部署目标或新增功能入口。
+- LightTick 后端工作树位于 `.worktrees/lighttick-*-backend`，不能以旧的 `plan/.worktrees` 地址继续开发。
+
 # AGENTS
 
 ## Mandatory Development and Release Flow

@@ -4,12 +4,42 @@ import type {
   BodyLogFriendshipRecord,
   BodyLogReportRecord,
 } from "../../../modules/bodylog/bodylog-social.types.ts";
+import type { BodyLogProfileRecord } from "../../../modules/bodylog/bodylog-profile.types.ts";
 
 type Query = (sql: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
 const iso = (value: unknown) => value instanceof Date ? value.toISOString() : String(value);
 
 export class PostgresBodyLogSocialStore {
   constructor(private readonly query: Query) {}
+
+  async listBodyLogProfilesByIds(appId: string, userIds: string[]): Promise<Map<string, BodyLogProfileRecord>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+    
+    const result = await this.query(
+      `SELECT user_id, nickname, avatar_key, profile_completed, created_at, updated_at
+       FROM zook_bodylog_profiles 
+       WHERE app_id = $1 AND user_id = ANY($2)`,
+      [appId, userIds],
+    );
+    
+    const profiles = new Map<string, BodyLogProfileRecord>();
+    for (const row of result.rows) {
+      const userId = String(row.user_id);
+      profiles.set(userId, {
+        appId,
+        userId,
+        nickname: String(row.nickname),
+        avatarKey: String(row.avatar_key) as BodyLogProfileRecord["avatarKey"],
+        profileCompleted: Boolean(row.profile_completed),
+        createdAt: new Date(String(row.created_at)).toISOString(),
+        updatedAt: new Date(String(row.updated_at)).toISOString(),
+      });
+    }
+    
+    return profiles;
+  }
 
   async listFriendRequests(appId: string): Promise<BodyLogFriendRequestRecord[]> {
     const result = await this.query(

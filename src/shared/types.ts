@@ -19,4 +19,5 @@ export type * from "./types/content-safety.ts";
 export type * from "./types/getui-password.ts";
 export type * from "./types/test-account.ts";
 export type * from "./types/llm.ts";
+export type * from "./types/release-update.ts";
 export type * from "./types/results.ts";

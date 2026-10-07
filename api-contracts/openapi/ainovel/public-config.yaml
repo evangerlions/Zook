@@ -22,8 +22,166 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicConfigResponse"
+  /api/v1/ai_novel/public/update:
+    get:
+      operationId: getAiNovelPublicUpdate
+      summary: Get the AINovel product-filtered release update catalog
+      tags: [ainovel, public-config]
+      responses:
+        "200":
+          description: Product-filtered release update catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicReleaseUpdateResponse"
+        "403":
+          description: The product is blocked or the requested app scope does not match
+        "404":
+          description: The product does not exist
 components:
   schemas:
+    ReleaseVersion:
+      type: object
+      required: [version, buildNumber]
+      additionalProperties: false
+      properties:
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        buildNumber:
+          type: integer
+          minimum: 1
+    ReleaseUpdateArtifact:
+      type: object
+      required: [version, buildNumber]
+      additionalProperties: false
+      properties:
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        buildNumber:
+          type: integer
+          minimum: 1
+        packageName:
+          type: string
+          minLength: 1
+        fileName:
+          type: string
+          minLength: 1
+        downloadUrl:
+          type: string
+          format: uri
+        storeUrl:
+          type: string
+          format: uri
+        sha256:
+          type: string
+          pattern: '^[a-fA-F0-9]{64}$'
+        sizeBytes:
+          type: integer
+          minimum: 1
+        messageI18n:
+          type: object
+          description: Optional per-locale message shown in the client update dialog.
+          additionalProperties:
+            type: string
+            minLength: 1
+    ReleaseUpdateExperiment:
+      type: object
+      required: [id, enabled, rolloutPercent, artifact]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9_-]*$'
+        enabled:
+          type: boolean
+        rolloutPercent:
+          type: number
+          minimum: 0
+          maximum: 100
+        artifact:
+          $ref: "#/components/schemas/ReleaseUpdateArtifact"
+    ReleaseUpdateReminderPolicy:
+      type: object
+      required: [maxCount, intervalSeconds]
+      additionalProperties: false
+      properties:
+        maxCount:
+          type: integer
+          minimum: 0
+          description: Maximum optional prompts for the same installed build; 0 means unlimited. Mandatory upgrades remain blocking regardless of this count.
+        intervalSeconds:
+          type: integer
+          minimum: 1
+          description: Minimum interval between two prompts for the same installed build.
+    ReleaseUpdateTarget:
+      type: object
+      required: [id, platform, channel, delivery, enabled, mandatory, latest, reminder, experiments]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9_-]*$'
+        platform:
+          type: string
+          enum: [android, ios, ohos, windows, web]
+        channel:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9_-]*$'
+          description: Direct distribution or store identifier, such as direct, google-play, app-store, huawei, honor, vivo, oppo, or xiaomi.
+        delivery:
+          type: string
+          enum: [download, store]
+        enabled:
+          type: boolean
+        mandatory:
+          type: boolean
+          description: Whether a client below latest must block normal use until it upgrades.
+        latest:
+          $ref: "#/components/schemas/ReleaseUpdateArtifact"
+        minimumSupported:
+          $ref: "#/components/schemas/ReleaseVersion"
+        reminder:
+          $ref: "#/components/schemas/ReleaseUpdateReminderPolicy"
+        experiments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReleaseUpdateExperiment"
+    PublicReleaseUpdateConfig:
+      type: object
+      required: [schemaVersion, targets]
+      additionalProperties: false
+      properties:
+        schemaVersion:
+          type: integer
+          const: 1
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReleaseUpdateTarget"
+    PublicReleaseUpdateData:
+      type: object
+      required: [appId, config]
+      additionalProperties: false
+      properties:
+        appId:
+          type: string
+          example: ai_novel
+        config:
+          $ref: "#/components/schemas/PublicReleaseUpdateConfig"
+        updatedAt:
+          type: string
+          format: date-time
+    PublicReleaseUpdateResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string, example: OK }
+        message: { type: string, example: success }
+        requestId: { type: string }
+        data:
+          $ref: "#/components/schemas/PublicReleaseUpdateData"
     KickoffPublicConfig:
       type: object
       additionalProperties: true
@@ -168,6 +326,8 @@ components:
           example: make_ai_novel_great_again
         kickoff:
           $ref: "#/components/schemas/KickoffPublicConfig"
+        releaseUpdate:
+          $ref: "#/components/schemas/PublicReleaseUpdateConfig"
     PublicConfigData:
       type: object
       required: [appId, config]

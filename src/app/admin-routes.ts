@@ -8,8 +8,10 @@ import { tryHandleAdminCoreRoutes } from "./admin-core-routes.ts";
 import { tryHandleAdminEmailSmsRoutes } from "./admin-email-sms-routes.ts";
 import { tryHandleAdminLlmRoutes } from "./admin-llm-routes.ts";
 import { tryHandleAdminRemoteLogRoutes } from "./admin-remote-log-routes.ts";
+import { tryHandleAdminReleaseUpdateRoutes } from "./admin-release-update-routes.ts";
 import { tryHandleAdminSecurityRoutes } from "./admin-security-routes.ts";
 import { tryHandleAdminTestAccountRoutes } from "./admin-test-account-routes.ts";
+import { tryHandleBodyLogCheckinAdminRoutes } from "./bodylog-admin-checkin-routes.ts";
 
 const adminRouteHandlers = [
   tryHandleAdminCoreRoutes,
@@ -22,6 +24,8 @@ const adminRouteHandlers = [
   tryHandleAdminAiNovelConversationRoutes,
   tryHandleAdminAppSettingsRoutes,
   tryHandleAdminRemoteLogRoutes,
+  tryHandleAdminReleaseUpdateRoutes,
+  tryHandleBodyLogCheckinAdminRoutes,
 ];
 
 export async function tryHandleAdminRoutes(

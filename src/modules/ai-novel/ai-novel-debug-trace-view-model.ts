@@ -13,6 +13,12 @@ export interface AiNovelTraceMessage {
   [key: string]: unknown;
 }
 
+export interface AiNovelTraceContextUsage {
+  occupiedTokens: number;
+  contextWindowTokens: number;
+  source: "pi" | "provider";
+}
+
 export interface AiNovelTraceRequest {
   id: string;
   index: number;
@@ -24,6 +30,7 @@ export interface AiNovelTraceRequest {
   model?: string;
   transport?: string;
   tokenCount?: number;
+  contextUsage?: AiNovelTraceContextUsage;
   durationMs?: number;
   toolNames: string[];
   raw: Record<string, unknown>;
@@ -40,6 +47,7 @@ export interface AiNovelTraceTurn {
   model?: string;
   transport?: string;
   tokenCount?: number;
+  contextUsage?: AiNovelTraceContextUsage;
   durationMs?: number;
   toolNames: string[];
   contextDiff: AiNovelTraceDiffLine[];
@@ -82,6 +90,9 @@ export function buildAiNovelDebugTraceViewModel(
       normalizeRequest(request, requestIndex),
     );
     const latest = normalizedRequests.at(-1);
+    const contextUsage = [...normalizedRequests]
+      .reverse()
+      .find((request) => request.contextUsage)?.contextUsage;
     const previous = turns.at(-1);
     const toolNames = uniqueStrings(
       normalizedRequests.flatMap((request) => request.toolNames),
@@ -102,6 +113,7 @@ export function buildAiNovelDebugTraceViewModel(
       ...(sumNumbers(normalizedRequests.map((request) => request.durationMs))
         ? { durationMs: sumNumbers(normalizedRequests.map((request) => request.durationMs)) }
         : {}),
+      ...(contextUsage ? { contextUsage } : {}),
       toolNames,
       contextDiff: diffContext(previous?.requests.at(-1), latest),
       raw: {
@@ -200,7 +212,8 @@ function normalizeRequest(
     events,
     ...(asText(raw.providerModel) ? { model: asText(raw.providerModel) } : {}),
     ...(asText(raw.api) ? { transport: asText(raw.api) } : {}),
-    ...(usage !== undefined ? { tokenCount: usage } : {}),
+    ...(usage?.tokenCount !== undefined ? { tokenCount: usage.tokenCount } : {}),
+    ...(usage?.contextUsage ? { contextUsage: usage.contextUsage } : {}),
     ...(startedAt && endedAt
       ? { durationMs: Math.max(0, endedAt.getTime() - startedAt.getTime()) }
       : {}),
@@ -209,24 +222,105 @@ function normalizeRequest(
   };
 }
 
+interface NormalizedUsage {
+  tokenCount?: number;
+  contextUsage?: AiNovelTraceContextUsage;
+}
+
 function latestUsage(
   raw: Record<string, unknown>,
   events: Record<string, unknown>[],
-): number | undefined {
+): NormalizedUsage | undefined {
   const candidates = [
     raw.usage,
+    raw.contextUsage,
+    raw.piContextUsage,
+    raw,
     raw.completion && typeof raw.completion === "object" && !Array.isArray(raw.completion)
       ? (raw.completion as Record<string, unknown>).usage
       : undefined,
     ...events.map((event) => event.usage),
   ];
+  let tokenCount: number | undefined;
+  let providerContextUsage: AiNovelTraceContextUsage | undefined;
   for (const value of candidates.reverse()) {
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
     const usage = value as Record<string, unknown>;
-    for (const key of ["totalTokens", "total_tokens", "outputTokens", "output_tokens"]) {
-      if (typeof usage[key] === "number" && Number.isFinite(usage[key])) {
-        return usage[key] as number;
-      }
+    tokenCount ??= usageNumber(usage, [
+      "totalTokens",
+      "total_tokens",
+      "outputTokens",
+      "output_tokens",
+    ]);
+    const contextUsage = parseContextUsage(usage);
+    if (contextUsage?.source === "pi") {
+      return {
+        ...(tokenCount !== undefined ? { tokenCount } : {}),
+        contextUsage,
+      };
+    }
+    providerContextUsage ??= contextUsage;
+  }
+  if (tokenCount !== undefined || providerContextUsage) {
+    return {
+      ...(tokenCount !== undefined ? { tokenCount } : {}),
+      ...(providerContextUsage ? { contextUsage: providerContextUsage } : {}),
+    };
+  }
+  return undefined;
+}
+
+function parseContextUsage(
+  value: Record<string, unknown>,
+): AiNovelTraceContextUsage | undefined {
+  const explicit = [
+    value.contextUsage,
+    value.piContextUsage,
+    nestedValue(value, "context", "contextUsage"),
+    nestedValue(value, "requestContext", "contextUsage"),
+  ];
+  for (const candidate of explicit) {
+    const parsed = parseContextUsageObject(candidate, "pi");
+    if (parsed) return parsed;
+  }
+  const occupiedTokens = usageNumber(value, ["promptTokens", "prompt_tokens"]);
+  const contextWindowTokens = usageNumber(value, [
+    "contextWindowTokens",
+    "context_window_tokens",
+  ]);
+  if (occupiedTokens !== undefined && contextWindowTokens !== undefined) {
+    return { occupiedTokens, contextWindowTokens, source: "provider" };
+  }
+  return undefined;
+}
+
+function parseContextUsageObject(
+  value: unknown,
+  defaultSource: AiNovelTraceContextUsage["source"],
+): AiNovelTraceContextUsage | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const object = value as Record<string, unknown>;
+  const occupiedTokens = usageNumber(object, [
+    "occupiedTokens",
+    "contextOccupiedTokens",
+    "contextTokens",
+  ]);
+  const contextWindowTokens = usageNumber(object, [
+    "contextWindowTokens",
+    "contextWindow",
+  ]);
+  if (occupiedTokens === undefined || contextWindowTokens === undefined) return undefined;
+  return {
+    occupiedTokens,
+    contextWindowTokens,
+    source: object.source === "provider" ? "provider" : defaultSource,
+  };
+}
+
+function usageNumber(value: Record<string, unknown>, keys: string[]): number | undefined {
+  for (const key of keys) {
+    if (typeof value[key] === "number" && Number.isFinite(value[key])) {
+      return value[key] as number;
     }
   }
   return undefined;

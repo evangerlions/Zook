@@ -11,3 +11,6 @@ test
 README.md
 buid_readme.md
 npm-debug.log*
+
+# Historical LightTick Go reference is never a runtime build input.
+archive/

@@ -24,6 +24,7 @@ test("Phase 2 route responses conform to the generated public contracts", async 
   await lighttick.repository.saveReview({ ...review, output: { recommendations: [{ title: "Study less" }] } });
   for (const [path, schema] of [
     ["execution-facts", contracts.LightTickExecutionFactsDataSchema],
+    ["onboarding/commitment", contracts.LightTickCommitmentStateSchema],
     ["chat/intents", contracts.LightTickChatIntentsDataSchema],
     ["dna/insights", contracts.LightTickDnaInsightsDataSchema],
     ["today/rhythm-suggestion", contracts.LightTickRhythmDataSchema],

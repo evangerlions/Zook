@@ -2,9 +2,12 @@ import type { LightTickRepository } from "./lighttick.repository.ts";
 import type { LightTickOwner, LightTickPlanRow, LightTickTaskRow } from "./lighttick.types.ts";
 import { transitionGoal, transitionPlan } from "./lighttick-state-machines.ts";
 import { ApplicationError } from "../../shared/errors.ts";
+import { businessDateAt } from "./lighttick-today.service.ts";
 import { randomId } from "../../shared/utils.ts";
 
-export interface ProposedTaskInput { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
+import { validateTaskDetails, type TaskDetails } from "./lighttick-task-details.ts";
+
+export interface ProposedTaskInput extends TaskDetails { title: string; estimatedMinutes: number; priority?: number; scheduledFor?: string; }
 export interface ProposedPlanInput {
   goalId: string; granularity: LightTickPlanRow["granularity"]; periodStart: string; periodEnd: string;
   source: string; tasks: ProposedTaskInput[]; metadata?: Record<string, unknown>;
@@ -28,13 +31,28 @@ export class LightTickPlanService {
     return await this.repository.savePlan(plan, this.write(plan, "plan_proposed", 1, timestamp));
   }
 
-  async confirm(owner: LightTickOwner, planId: string, baseVersion: number): Promise<{ plan: LightTickPlanRow; tasks: LightTickTaskRow[] }> {
+  async confirm(owner: LightTickOwner, planId: string, baseVersion: number, planningSessionId?: string): Promise<{ plan: LightTickPlanRow; tasks: LightTickTaskRow[] }> {
     const current = await this.repository.getPlan(owner, planId);
     if (!current) throw new ApplicationError(404, "LIGHTTICK_RESOURCE_NOT_FOUND", "Plan was not found.");
+    if (current.proposal.planning_session_id && current.proposal.planning_session_id !== planningSessionId)
+      throw new ApplicationError(409, "LIGHTTICK_PLANNING_STALE", "Session drafts must be confirmed through their planning session.");
     transitionPlan(current.status as "proposed", "active");
     const taskInputs = Array.isArray(current.proposal.tasks) ? current.proposal.tasks as unknown as ProposedTaskInput[] : [];
     this.validateTasks(taskInputs); const timestamp = this.clock().toISOString();
     return await this.repository.transaction(owner, async () => {
+      await this.repository.lockPlanningOwner(owner);
+      const timezone = (await this.repository.getProfile(owner))?.timezone ?? "UTC";
+      const key = (title: string, date?: string, fallback = current.periodStart) => `${title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase()}|${
+        date ? (date.length === 10 ? date : businessDateAt(new Date(date), timezone)) : fallback}`;
+      const existing = (await this.repository.listTasks(owner)).filter(t => t.goalId === current.goalId && t.status !== "cancelled");
+      const planDates = new Map((await this.repository.listPlans(owner, current.goalId)).map(p => [p.id, p.periodStart]));
+      const seen = new Set(existing.map(t => key(t.title, t.scheduledFor, planDates.get(t.planId))));
+      for (const input of taskInputs) {
+        const identity = key(input.title, input.scheduledFor);
+        if (seen.has(identity)) throw new ApplicationError(409, "LIGHTTICK_PLAN_CONSTRAINT_FAILED",
+          "This goal already has the same task on this date. Edit the draft or adjust the existing task.");
+        seen.add(identity);
+      }
       const goal = await this.requireGoal(owner, current.goalId);
       if (goal.status === "draft") {
         const nextGoal = { ...goal, status: transitionGoal("draft", "active"), updatedAt: timestamp };
@@ -52,6 +70,7 @@ export class LightTickPlanService {
         const task: LightTickTaskRow = { ...owner, id: randomId("lighttick_task"), goalId: current.goalId,
           planId: current.id, title: input.title.trim(), status: "pending", priority: input.priority ?? 0,
           estimatedMinutes: input.estimatedMinutes, scheduledFor: input.scheduledFor,
+          completionCriteria: input.completionCriteria, guidance: input.guidance,
           version: 1, createdAt: timestamp, updatedAt: timestamp };
         tasks.push(await this.repository.saveTask(task, {
           event: { ...owner, id: randomId("lighttick_event"), aggregateType: "task", aggregateId: task.id,
@@ -59,6 +78,10 @@ export class LightTickPlanService {
           change: { ...owner, entityType: "task", entityId: task.id, entityVersion: 1,
             operation: "upsert", snapshot: { title: task.title, status: task.status }, changedAt: timestamp },
         }));
+        for (const [position, title] of (input.steps ?? []).entries()) {
+          await this.repository.saveTaskStep({ ...owner, id: randomId("lighttick_step"), taskId: task.id,
+            title: title.trim(), position, completed: false, version: 1, createdAt: timestamp, updatedAt: timestamp });
+        }
       }
       return { plan: active, tasks };
     });
@@ -70,6 +93,7 @@ export class LightTickPlanService {
     return goal;
   }
   private validateTasks(tasks: ProposedTaskInput[]) {
+    tasks.forEach(validateTaskDetails);
     if (!tasks.length || tasks.length > 50 || tasks.some(task => !task.title?.trim() || task.title.trim().length > 200 ||
       !Number.isInteger(task.estimatedMinutes) || task.estimatedMinutes < 1 || task.estimatedMinutes > 1440)) {
       throw new ApplicationError(400, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Proposed tasks violate plan constraints.");

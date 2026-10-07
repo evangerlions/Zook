@@ -18,14 +18,19 @@ export async function getBodyLogGroupDetail(store: BodyLogGroupStore, social: Bo
 
     const members = await store.listGroupMembers(groupId);
     const activeMembers = members.filter((m) => m.status === "active");
-    const leaderProfile = await social.findBodyLogProfile(BODYLOG_APP_ID, group.leaderUserId);
+    
+    // 批量查询所有成员的资料（包括群主）
+    const memberUserIds = members.map(m => m.userId);
+    const profilesById = await social.listBodyLogProfilesByIds(BODYLOG_APP_ID, memberUserIds);
+    
+    const leaderProfile = profilesById.get(group.leaderUserId);
     if (!leaderProfile) {
       throw new ApplicationError(404, "GROUP_LEADER_NOT_FOUND", "Group leader not found.");
     }
 
     const memberDocuments: GroupMember[] = [];
     for (const item of members) {
-      const profile = await social.findBodyLogProfile(BODYLOG_APP_ID, item.userId);
+      const profile = profilesById.get(item.userId);
       memberDocuments.push({
         userId: item.userId,
         nickname: profile?.nickname ?? "Unknown",
@@ -36,9 +41,14 @@ export async function getBodyLogGroupDetail(store: BodyLogGroupStore, social: Bo
       });
     }
 
+    const activities = await store.listGroupActivities(groupId, 50);
+    // 批量查询活动参与者的资料
+    const actorUserIds = [...new Set(activities.map(a => a.actorUserId))];
+    const actorProfilesById = await social.listBodyLogProfilesByIds(BODYLOG_APP_ID, actorUserIds);
+    
     const recentActivities: GroupActivity[] = [];
-    for (const item of await store.listGroupActivities(groupId, 50)) {
-      const profile = await social.findBodyLogProfile(BODYLOG_APP_ID, item.actorUserId);
+    for (const item of activities) {
+      const profile = actorProfilesById.get(item.actorUserId);
       recentActivities.push({
         ...item,
         actorNickname: profile?.nickname ?? "Unknown",
@@ -76,5 +86,16 @@ export async function getBodyLogGroupDetail(store: BodyLogGroupStore, social: Bo
       createdAt: group.createdAt,
     };
 
-    return { group: groupDocument, members: memberDocuments, recentActivities, weeklyRecords };
+    const isOwner = member.role === "leader";
+    const isAdmin = member.role === "leader" || member.role === "admin";
+
+    return {
+      group: groupDocument,
+      members: memberDocuments,
+      recentActivities,
+      weeklyRecords,
+      isOwner,
+      isAdmin,
+      invitationToken: isAdmin ? (group.invitationToken ?? null) : null,
+    };
 }

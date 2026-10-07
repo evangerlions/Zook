@@ -26,13 +26,15 @@
     "test:postgres:buddy": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-concurrency.test.ts",
     "test:postgres:buddy-migration": "node --experimental-transform-types --test test/integration/frogsleep-buddy-postgres-migration-upgrade.test.ts",
     "test:postgres:lighttick": "node --experimental-transform-types --test test/integration/lighttick-postgres.test.ts",
-    "test:lighttick-ai-evals": "node --experimental-transform-types --test test/unit/lighttick-ai-platform.test.ts"
+    "test:lighttick-ai-evals": "node --experimental-transform-types --test test/unit/lighttick-ai-platform.test.ts test/unit/lighttick-planning-prompts.test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",
     "@types/nodemailer": "^6.4.24"
   },
   "dependencies": {
+    "@apple/app-store-server-library": "^3.1.0",
+    "@node-rs/argon2": "^2.2.1",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "nodemailer": "^6.10.1",

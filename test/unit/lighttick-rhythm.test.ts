@@ -64,7 +64,7 @@ test("confirmed estimation insight yields exactly one suggestion for today", asy
   const repository = new InMemoryLightTickRepository();
   const { task } = await goalWithActivePlan(repository);
   await confirmedBiasInsight(repository, task.lineageId ?? task.id);
-  const result = await new LightTickRhythmSuggestionService(repository).suggest(owner);
+  const result = await new LightTickRhythmSuggestionService(repository, new LightTickDnaService(repository, clock), clock).suggest(owner);
   assert.ok(result.suggestion);
   assert.equal(result.suggestion.ruleId, "rule.time_estimation_bias");
   assert.equal(result.suggestion.task.id, task.id);
@@ -74,7 +74,7 @@ test("confirmed estimation insight yields exactly one suggestion for today", asy
 test("no confirmed insight yields no suggestion with a clear reason", async () => {
   const repository = new InMemoryLightTickRepository();
   await goalWithActivePlan(repository);
-  const result = await new LightTickRhythmSuggestionService(repository).suggest(owner);
+  const result = await new LightTickRhythmSuggestionService(repository, new LightTickDnaService(repository, clock), clock).suggest(owner);
   assert.equal(result.reason, "no_confirmed_insight");
   assert.equal(result.suggestion, undefined);
 });
@@ -86,7 +86,7 @@ test("unconfirmed (hypothesis-only) insights never speak into today", async () =
   for (let day = 29; day <= 31; day += 1) repository.events.push(completion(`2026-08-${day}T02:00:00.000Z`, 35, 20, "背单词", lineage));
   const dna = new LightTickDnaService(repository, clock);
   await dna.synchronize(owner);
-  const result = await new LightTickRhythmSuggestionService(repository).suggest(owner);
+  const result = await new LightTickRhythmSuggestionService(repository, new LightTickDnaService(repository, clock), clock).suggest(owner);
   assert.equal(result.suggestion, undefined);
   assert.equal(result.reason, "no_confirmed_insight");
 });
@@ -95,7 +95,7 @@ test("dismiss retires the suggestion without judging the insight", async () => {
   const repository = new InMemoryLightTickRepository();
   const { task } = await goalWithActivePlan(repository);
   const insight = await confirmedBiasInsight(repository, task.lineageId ?? task.id);
-  const service = new LightTickRhythmSuggestionService(repository);
+  const service = new LightTickRhythmSuggestionService(repository, new LightTickDnaService(repository, clock), clock);
   const dismissed = await service.feedback(owner, insight.id, "dismiss");
   assert.equal(dismissed.status, "dismissed");
   const after = await service.suggest(owner);
@@ -107,7 +107,7 @@ test("accept records intent and keeps the insight active", async () => {
   const repository = new InMemoryLightTickRepository();
   const { task } = await goalWithActivePlan(repository);
   const insight = await confirmedBiasInsight(repository, task.lineageId ?? task.id);
-  const service = new LightTickRhythmSuggestionService(repository);
+  const service = new LightTickRhythmSuggestionService(repository, new LightTickDnaService(repository, clock), clock);
   const accepted = await service.feedback(owner, insight.id, "accept");
   assert.equal(accepted.status, "confirmed");
   assert.equal(accepted.userFeedback, "accepted_for_today");
@@ -116,6 +116,6 @@ test("accept records intent and keeps the insight active", async () => {
 test("no executable tasks today yields no suggestion", async () => {
   const repository = new InMemoryLightTickRepository();
   const goal = await new LightTickGoalService(repository, clock).create(owner, { title: "考试", constraints: {} });
-  const result = await new LightTickRhythmSuggestionService(repository).suggest(owner);
+  const result = await new LightTickRhythmSuggestionService(repository, new LightTickDnaService(repository, clock), clock).suggest(owner);
   assert.equal(result.reason, "no_today_tasks");
 });

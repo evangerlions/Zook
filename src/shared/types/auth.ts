@@ -57,6 +57,7 @@ export interface EmailLoginCommand {
   email: string;
   emailCode: string;
   ipAddress: string;
+  inviteCode?: string; // 邀请码（可选）
 }
 
 export interface PasswordEmailCodeCommand {
