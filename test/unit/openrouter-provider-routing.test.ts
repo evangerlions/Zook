@@ -11,6 +11,7 @@ function createRequest(providerModel = "deepseek/deepseek-v4-flash"): ResolvedLL
       modelKey: "deepseek-v4-flash",
       resolvedModelKey: "deepseek-v4-flash",
       providerModel,
+      openRouter: { provider: { order: ["deepinfra", "gmicloud", "siliconflow"], allow_fallbacks: true } },
     },
     messages: [{ role: "user", content: "OK" }],
     maxTokens: 32768,
@@ -58,10 +59,11 @@ for (const mode of ["complete", "stream"] as const) {
     assert.deepEqual(request, before);
   });
 
-  test(`OpenRouter ${mode} preserves explicit caller routing including an empty policy`, async () => {
+  test(`OpenRouter ${mode} makes saved route policy authoritative, including an empty policy`, async () => {
     for (const policy of [{}, { order: ["gmicloud"], allow_fallbacks: false }]) {
       const request = createRequest();
-      request.providerOptions = { ...request.providerOptions, provider: policy };
+      request.model.openRouter = { provider: policy };
+      request.providerOptions = { ...request.providerOptions, provider: { order: ["relace"] } };
       const body = await captureBody(request);
       assert.deepEqual(body.provider, policy);
     }
@@ -70,6 +72,7 @@ for (const mode of ["complete", "stream"] as const) {
   test(`OpenRouter ${mode} applies routing to the shared smoke and circuit probe request`, async () => {
     const route = {
       provider: "openrouter", providerModel: "deepseek/deepseek-v4-flash", enabled: true, weight: 100,
+      openRouter: { provider: { order: ["deepinfra", "gmicloud", "siliconflow"], allow_fallbacks: true } },
     };
     const request = buildLlmSmokeChatRequest({
       provider: {
@@ -87,9 +90,11 @@ for (const mode of ["complete", "stream"] as const) {
     assert.deepEqual(request.providerOptions, {});
   });
 
-  test(`OpenRouter ${mode} leaves other models unchanged`, async () => {
-    for (const model of ["deepseek/deepseek-v4-pro", "openrouter/free"]) {
-      const body = await captureBody(createRequest(model));
+  test(`OpenRouter ${mode} does not inject a hardcoded policy without route config`, async () => {
+    for (const model of ["deepseek/deepseek-v4-flash", "deepseek/deepseek-v4-pro", "openrouter/free"]) {
+      const request = createRequest(model);
+      delete request.model.openRouter;
+      const body = await captureBody(request);
       assert.equal(body.provider, undefined);
     }
   });

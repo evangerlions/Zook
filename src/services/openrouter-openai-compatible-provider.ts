@@ -22,33 +22,24 @@ export class OpenRouterOpenAICompatibleProvider extends BailianOpenAICompatibleP
   }
 
   override async complete(request: ResolvedLLMCompletionRequest) {
-    return await super.complete(this.applyRoutingDefaults(request));
+    return await super.complete(this.applyRoutingConfig(request));
   }
 
   override async *stream(request: ResolvedLLMCompletionRequest) {
-    yield* super.stream(this.applyRoutingDefaults(request));
+    yield* super.stream(this.applyRoutingConfig(request));
   }
 
-  private applyRoutingDefaults(
+  private applyRoutingConfig(
     request: ResolvedLLMCompletionRequest,
   ): ResolvedLLMCompletionRequest {
-    if (
-      request.model.providerModel !== "deepseek/deepseek-v4-flash" ||
-      request.providerOptions?.provider !== undefined
-    ) {
-      return request;
-    }
+    const config = request.model.openRouter;
+    if (!config) return request;
 
-    // Prefer these endpoints; OpenRouter may recover through any other provider.
-    // An explicit caller policy, including {}, opts out of this model default.
     return {
       ...request,
       providerOptions: {
         ...request.providerOptions,
-        provider: {
-          order: ["deepinfra", "gmicloud", "siliconflow"],
-          allow_fallbacks: true,
-        },
+        provider: structuredClone(config.provider),
       },
     };
   }

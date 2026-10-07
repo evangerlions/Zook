@@ -301,7 +301,7 @@ export class LlmSmokeTestService {
           })),
           temperature: 0,
           maxTokens: SMOKE_CHAT_MAX_TOKENS,
-          providerOptions: {},
+          providerOptions: item.route.openRouter ? { provider: item.route.openRouter.provider } : {},
         };
   }
 
@@ -383,6 +383,7 @@ export function buildLlmSmokeChatRequest(item: LlmSmokeMatrixItem): ResolvedLLMC
       modelKey: item.model.key,
       resolvedModelKey: item.model.key,
       providerModel: item.route.providerModel,
+      ...(item.route.openRouter ? { openRouter: item.route.openRouter } : {}),
       providerConfig: {
         baseUrl: item.provider.baseUrl,
         apiKey: item.provider.apiKey,

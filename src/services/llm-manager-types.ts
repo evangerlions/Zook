@@ -1,3 +1,4 @@
+import type { OpenRouterRouteConfig } from "../shared/openrouter-route-config.ts";
 import type { CommonLlmConfigService } from "./common-llm-config.service.ts";
 import type { LlmHealthService } from "./llm-health.service.ts";
 import type { LlmMetricsService } from "./llm-metrics.service.ts";
@@ -91,6 +92,7 @@ export type LLMStreamEvent = (
 };
 
 export interface ResolvedLLMModel {
+  openRouter?: OpenRouterRouteConfig;
   provider: LLMProviderName;
   modelKey: string;
   resolvedModelKey: string;
