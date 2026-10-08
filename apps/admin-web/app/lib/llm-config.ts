@@ -1,3 +1,4 @@
+import { normalizeRoutes, parseOpenRouterRouteText } from "./llm-route-config.ts";
 import type {
   AdminLlmServiceDocument,
   LlmServiceConfig,
@@ -21,7 +22,6 @@ const VALID_ROUTING_STRATEGIES = new Set<LlmRoutingStrategy>(["auto", "fixed"]);
 const VALID_MODEL_KINDS = new Set<LlmModelKind>(["chat", "embedding"]);
 const DEFAULT_MODEL_KIND: LlmModelKind = "chat";
 const DEFAULT_PROVIDER_TIMEOUT_MS = 30000;
-const WEIGHT_PRECISION = 100;
 
 export function createDefaultLlmConfig(): LlmConfigDraft {
   return {
@@ -99,6 +99,9 @@ export function cloneLlmConfig(config: LlmConfigDraft | LlmServiceConfig = creat
                 providerModel: String(route?.providerModel ?? ""),
                 enabled: Boolean(route?.enabled),
                 weight: route?.weight == null ? "0" : String(route.weight),
+                ...("openRouter" in route && route.openRouter
+                  ? { openRouterText: JSON.stringify(route.openRouter, null, 2) }
+                  : "openRouterText" in route ? { openRouterText: route.openRouterText } : {}),
               }))
             : [],
         }))
@@ -165,6 +168,7 @@ export function serializeLlmDraft(draft: LlmConfigDraft) {
         providerModel: String(route?.providerModel ?? "").trim(),
         enabled: Boolean(route?.enabled),
         weight: Number(String(route?.weight ?? "").trim()),
+        ...(route.openRouterText?.trim() ? { openRouter: parseOpenRouterRouteText(route.openRouterText) } : {}),
       })),
     })),
   });
@@ -386,52 +390,6 @@ function normalizeModels(value: unknown, providers: LlmServiceConfig["providers"
   return models;
 }
 
-function normalizeRoutes(value: unknown, modelKey: string, providerKeys: Set<string>) {
-  if (!Array.isArray(value)) {
-    throw new Error(`模型 ${modelKey} 的 routes 必须是数组。`);
-  }
-
-  if (!value.length) {
-    throw new Error(`模型 ${modelKey} 至少要有一条 route。`);
-  }
-
-  const routes = value.map((item, index) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      throw new Error(`模型 ${modelKey} 的第 ${index + 1} 条 route 必须是 JSON object。`);
-    }
-
-    const source = item as Record<string, unknown>;
-    const provider = normalizeProviderKey(source.provider);
-    const providerModel = requireTrimmedString(
-      source.providerModel,
-      `模型 ${modelKey} 的第 ${index + 1} 条 route 必须填写 providerModel。`,
-    );
-    const enabled = Boolean(source.enabled);
-    const weight = normalizeWeight(source.weight, modelKey, index + 1);
-
-    if (!providerKeys.has(provider)) {
-      throw new Error(`模型 ${modelKey} 的第 ${index + 1} 条 route 引用了不存在的供应商 ${provider}。`);
-    }
-
-    return {
-      provider,
-      providerModel,
-      enabled,
-      weight,
-    };
-  });
-
-  const enabledRoutes = routes.filter((item) => item.enabled);
-  if (enabledRoutes.length) {
-    const totalWeight = enabledRoutes.reduce((sum, item) => sum + item.weight, 0);
-    if (Math.abs(totalWeight - 100) > 0.01) {
-      throw new Error(`模型 ${modelKey} 当前启用 route 的 weight 合计必须等于 100。`);
-    }
-  }
-
-  return routes;
-}
-
 function normalizeProviderKey(value: unknown) {
   const normalized = requireTrimmedString(value, "Provider key 不能为空。");
   if (!PROVIDER_KEY_PATTERN.test(normalized)) {
@@ -467,23 +425,6 @@ function normalizeKind(value: unknown): LlmModelKind {
   }
 
   return normalized as LlmModelKind;
-}
-
-function normalizeWeight(value: unknown, modelKey: string, routeIndex: number) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Error(`模型 ${modelKey} 的第 ${routeIndex} 条 route weight 必须是 number。`);
-  }
-
-  if (value <= 0) {
-    throw new Error(`模型 ${modelKey} 的第 ${routeIndex} 条 route weight 必须大于 0。`);
-  }
-
-  const normalized = Math.round(value * WEIGHT_PRECISION) / WEIGHT_PRECISION;
-  if (Math.abs(value - normalized) > 0.000001) {
-    throw new Error(`模型 ${modelKey} 的第 ${routeIndex} 条 route weight 最多保留两位小数。`);
-  }
-
-  return normalized;
 }
 
 function normalizeBaseUrl(value: unknown) {

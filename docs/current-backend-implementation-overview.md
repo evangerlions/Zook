@@ -35,7 +35,7 @@ LightTick 通知已复用公共 APNs/FCM 适配器，但使用产品自有安全
 Firebase 项目；调度按业务日期幂等，遵守 profile timezone、安静时段、分类偏好和暂停目标，
 不可恢复 token 只失活匹配的 LightTick device，日志不记录 token 或 provider 凭据。
 周承诺新增账户隔离的只读状态接口，返回已保存档位与实时有效行动资格；读取无副作用，缺资料的保存明确失败，避免未持久化的假成功。
-Phase 2 已实现执行事实与审计、Coach chat 消息存储、DNA 用户反馈、事实驱动提案、复盘决策和 Today 节奏建议。复盘采纳使用数据库事务及版本 CAS，失败整体回滚；有效完成会中断连续跳过。DNA 通过 additive evidence JSONB 迁移保留数值偏差，零偏差或无证据不输出方向建议。公开协议统一维护于 README_API.md 与 LightTick OpenAPI，生成快照供运行时使用；这些能力只对正式账号开放。
+Phase 2 已实现执行事实与审计、Coach chat 消息存储、DNA 用户反馈、事实驱动提案、复盘决策和 Today 节奏建议。复盘采纳使用数据库事务及版本 CAS，失败整体回滚；有效完成会中断连续跳过。DNA 通过 additive evidence JSONB 迁移保留数值偏差，零偏差或无证据不输出方向建议。目标支持按日、周、月配置复盘频率；goal context、milestone、outcome evidence 和 task family 为后续规划提供 owner-scoped 持久化基础。公开协议统一维护于 README_API.md 与 LightTick OpenAPI，生成快照供运行时使用；这些能力只对正式账号开放。
 能力仍受 `LIGHTTICK_ENABLED` 控制，完成 main 同步、真实 PostgreSQL 升级
 测试和 dev rollout 前不得视为线上开放。旧 Go 后端和 Flutter 客户端仅用于行为核对，
 不再拥有生产数据、合同或运行时。
@@ -56,6 +56,10 @@ BodyLog 复用共享邮箱验证码认证，并提供固定产品作用域 `body
 8. 完整外部契约位于 `api-contracts/openapi/bodylog/api.yaml`。
 
 新增搭子、小组、7 天成长计划、通知偏好和推送设备接口。PostgreSQL store 通过请求事务上下文执行，搭子接受需要接收者确认，小组成员变更与组长转让原子保存。小组新增排行榜（`GET /groups/{groupId}/leaderboard`）、移除成员（`POST /groups/{groupId}/members/remove`，组长/管理员可移除，组长可按角色边界移除任意成员，管理员仅能移除普通成员，不能移除组长）与组长转让（`POST /groups/{groupId}/transfer`，仅现任 leader）。小组详情新增 `isOwner`/`isAdmin` 权限标记，`invitationToken` 仅组长/管理员可见。列表与详情、排行榜均使用批量查询（`listGroupMembersByGroupIds`、`listBodyLogProfilesByIds`）避免 N+1。新增本地日志 eventId 去重、保留 occurredAt 的搭子补报、排行榜冻结快照读取、最近成长计划读取及产品内云端权益查询。BodyLog 推送已接入自己的设备表与通知偏好，实际使用 APNs/FCM dispatcher，缺少产品配置时明确失败。Growth 入口默认关闭；任务完成与计划计数在同一 SQL 内提交。订阅查询和里程碑奖励使用已有订阅记录；本次不包含 IAP 验证接口。
+
+搭子后台任务每天执行不活跃扫描：达到 7 个 UTC 日期时向双方排入连续打卡提醒，达到 14 天时解除关系；每日 job key 防止同一日期重复扫描。BodyLog 管理端打卡完成率按每日记录中的完成成员数 / 参与成员名额加权；贡献榜从 app-scoped BodyLog profile 读取昵称与头像。商店购买可通过 `POST /api/v1/bodylog/subscription/purchases` 验证 StoreKit 2 JWS 或 Google Play token，按 app-scoped 账号写入云端权益；凭证归属以数据库原子唯一约束防止跨账号重复认领。验签依赖运行环境提供 Apple Root CA 与 Google Play 服务账号。
+
+BodyLog Admin API 扩展了用户查询与状态、举报和屏蔽管理、排行榜条目、挑战、成长计划、奖励、功能开关、运营指标及系统配置，并为 profile 搜索、举报和后台列表增加 PostgreSQL 索引。接口定义见 [admin-api-spec.md](admin-api-spec.md#314-bodylog-管理接口)。当前用户状态仅作为 BodyLog profile 字段保存，不会自动阻止用户请求；通知、计分和赛季配置也只持久化在 `zook_config`，尚未驱动运行时。用户数据清理仅删除文档列出的部分 BodyLog 关联数据；手动关闭赛季接口已移除，因为当前数据模型无法正确执行该操作。
 
 BodyLog worker 以 UTC 日期结算已结束的前一天，周一生成上一周报表。任务领取标记与结算数据在同一 PostgreSQL 事务中提交，失败回滚后可重试；不依赖进程内时间戳或独立 KV 标记。真实数据库验证命令为 `BODYLOG_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/bodylog-postgres.test.ts`，使用独立临时 schema，覆盖迁移重放、多连接任务去重与回滚。发布前须在 dev 环境验证当前 main SHA；这些本地验证不表示已上线。
 

@@ -11,7 +11,7 @@ import { tryHandleAdminRemoteLogRoutes } from "./admin-remote-log-routes.ts";
 import { tryHandleAdminReleaseUpdateRoutes } from "./admin-release-update-routes.ts";
 import { tryHandleAdminSecurityRoutes } from "./admin-security-routes.ts";
 import { tryHandleAdminTestAccountRoutes } from "./admin-test-account-routes.ts";
-import { tryHandleBodyLogAdminRoutes } from "./bodylog-admin-routes.ts";
+import { tryHandleBodyLogCheckinAdminRoutes } from "./bodylog-admin-checkin-routes.ts";
 
 const adminRouteHandlers = [
   tryHandleAdminCoreRoutes,
@@ -25,7 +25,7 @@ const adminRouteHandlers = [
   tryHandleAdminAppSettingsRoutes,
   tryHandleAdminRemoteLogRoutes,
   tryHandleAdminReleaseUpdateRoutes,
-  tryHandleBodyLogAdminRoutes,
+  tryHandleBodyLogCheckinAdminRoutes,
 ];
 
 export async function tryHandleAdminRoutes(

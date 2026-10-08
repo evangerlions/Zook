@@ -167,6 +167,11 @@ Android 的原生 `HttpURLConnection` 可对该 profile 路由发送 `POST` 并�
 
 LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 
+目标创建和更新可选携带 `review_cadence: { layers: ["day", "week", "month"] }`。
+空数组表示关闭该目标的复盘；省略时默认每周复盘。目标响应会返回实际生效的
+复盘层级。`POST /review-runs` 的 `period` 支持 `daily/weekly/monthly`；daily
+复盘按单日任务执行事实生成，weekly 和 monthly 复盘保留既有的数据充分性门槛。
+
 | 方法 | 路径 | 请求与响应 `data` |
 | --- | --- | --- |
 | GET | `/execution-facts` | 可选 `from`（含）/`to`（不含）时间戳；返回 `window/completed_count/average_deviation_minutes/by_lineage/by_slot/consecutive_skips/feedback`，读取同时记录 insight audit |
@@ -180,6 +185,8 @@ LightTick Phase 2（以下路径均以 `/api/v1/lighttick` 为前缀）：
 | POST | `/reviews/{reviewId}/actions` | `action=accept_all/accept_partial/ignore`；partial 必填非空 `recommendation_ids`，ignore 可选 `ignore_reason`（最多 500 字符，省略或空白按未提供处理，非空内容去除首尾空白后保存）；返回 `{ review, action, selected_recommendation_ids, proposed_plan?, recommendations }` |
 | GET | `/today/rhythm-suggestion` | 返回 `{ suggestion }` 或 `{ reason }`；reason 为 `no_today_tasks/no_confirmed_insight/no_matching_task` |
 | POST | `/today/rhythm-suggestion/feedback` | `{ insight_id, action: accept/dismiss }`；返回 `{ id, rule_id, status, user_feedback?, updated_at }` |
+
+Coach目标隔离：聊天历史按当前账户、`goal_id`和`thread_id`共同筛选后再取limit；同名thread不共享不同目标消息，同一时间按消息ID稳定排序。发送前校验plan/review/task的所有权与目标，另有plan_id时task必须属于该计划。资源不存在或跨账户返回404；同账户目标或任务/计划不匹配返回422，不保存消息或创建run。异步执行时再次校验引用；执行事实仅统计本目标现存任务事件，无法确定归属的历史事件排除。当前上下文未引入跨目标共享容量，不能将单目标统计解释为全人可用预算。
 
 - 以上能力仅限正式 LightTick membership 的 Bearer Token；游客返回 `403 APP_SCOPE_FORBIDDEN`，产品关闭返回 `503 LIGHTTICK_APP_DISABLED`。数据按 app/user 隔离。
 - chat 必须携带 8–128 字符 `Idempotency-Key`；消息发出即保存，异步结果通过 `/runs/{runId}` 和消息列表读取，同 key 不同内容返回 `409 LIGHTTICK_IDEMPOTENCY_MISMATCH`。其他 Phase 2 写接口不要求该 header。
@@ -537,6 +544,7 @@ POST /api/v1/auth/login/email
 | `POST` | `/api/v1/bodylog/groups/{groupId}/transfer` | `{ "userId": "..." }` | 组长转让（仅现任 leader；原组长降为 admin，新组长保持 active） |
 | `POST` | `/api/v1/bodylog/seven-day-plan/enroll` | 无 | 报名 7 天成长计划（需 growth 功能开关） |
 | `GET` | `/api/v1/bodylog/subscription/status` | 无 | 云端有效权益 `{tier, expiresAt, autoRenew}`，无有效权益返回 free/null/false |
+| `POST` | `/api/v1/bodylog/subscription/purchases` | iOS `{platform:"ios", productId, signedTransaction}`；Android `{platform:"android", productId, purchaseToken}` | 服务端验签并同步云端权益；同一商店交易不能绑定到其他 BodyLog 账号 |
 | `GET` | `/api/v1/bodylog/seven-day-plan/latest` | 无 | 最近一次计划（含 completed）；支持重启后继续领奖，无计划为 null |
 | `GET` | `/api/v1/bodylog/seven-day-plan/active` | 无 | 查询进行中的计划，无则返回 `null` |
 | `GET` | `/api/v1/bodylog/seven-day-plan/{planId}` | 无 | 计划详情 |
@@ -555,7 +563,7 @@ BodyLog 新增接口约定：
 - 新客户端在 `/buddies/checkin` 同时传 `eventId` 与 `occurredAt`。同一账号、同一配对、同一事件重复发送不增加活动或重复入队通知；改变习惯、次数或时间后复用事件 ID 返回 409 `BODYLOG_EVENT_CONFLICT`。缺一个字段、非法 ID/时间或超过服务器时间 5 分钟的未来时间返回 400。旧版不带这两个字段仍按原有非幂等方式处理。
 - `occurredAt` 使用带时区的 ISO 8601 时间；服务端按 UTC 归属活动日期。早于关系接受时间的本地记录不进入新关系；历史补报不会重新结算已结算的搭子日期。客户端只上传用户明确共享的非私密习惯。
 - `/leaderboards/current/snapshot` 只返回当前认证用户的目标快照；客户端使用其中的时区、habitId 和 scheduledDates 生成每日完整聚合。聚合为覆盖更新，空数组可反映撤销；它不是多设备日志合并协议。
-- `/subscription/status` 使用搭子/小组额度判断的同一份服务端权益，不接受客户端 premium 布尔值。此查询不代替 App Store / Google Play 购买凭证验签接口。
+- `/subscription/status` 使用搭子/小组额度判断的同一份服务端权益，不接受客户端 premium 布尔值。购买成功或恢复购买后，客户端应将 StoreKit 2 JWS / Google Play purchase token 提交到 `POST /subscription/purchases`，再读取该状态接口。无效凭证返回 `400 BODYLOG_PURCHASE_INVALID`，已绑定其他账号返回 `409 BODYLOG_PURCHASE_ALREADY_CLAIMED`，商店验签配置缺失返回 `503 BODYLOG_PURCHASE_VERIFICATION_UNAVAILABLE`。
 - BodyLog 推送从自己的设备表取 token，应用当前通知类别设置；`buddy_invite` 归 `friendRequest`，等级奖励归 `rewardArrived`，其他搭子动态归 `activity`。现有 quietHours 不含时区字段，按 UTC 小时判断；静默窗口内跳过本条通知。分发失败会标记 FAILED 并抛给任务队列重试。部署配置见 `docs/bodylog-client-cloud-integration.md`。
 
 

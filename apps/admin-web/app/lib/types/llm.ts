@@ -1,3 +1,4 @@
+import type { OpenRouterRouteConfig } from "../../../../../src/shared/openrouter-route-config.ts";
 import type { AdminAppSummary, ConfigRevisionMeta } from "./core";
 
 export type LlmMetricsRange = "24h" | "48h" | "7d" | "30d";
@@ -17,6 +18,7 @@ export interface LlmProviderConfig {
 }
 
 export interface LlmModelRouteConfig {
+  openRouter?: OpenRouterRouteConfig;
   provider: string;
   providerModel: string;
   enabled: boolean;
@@ -304,6 +306,7 @@ export interface LlmProviderDraft {
 }
 
 export interface LlmRouteDraft {
+  openRouterText?: string;
   provider: string;
   providerModel: string;
   enabled: boolean;

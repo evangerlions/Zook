@@ -17,6 +17,7 @@ test("B.AI proxy config stays disabled until a proxy base URL and key id are sup
 test("B.AI transparent proxy preserves Authorization while signing the proxy request", async () => {
   let capturedInput: RequestInfo | URL | undefined;
   let capturedInit: RequestInit | undefined;
+  let capturedDiagnosticId: string | undefined;
   const proxyFetch = createBaiTransparentProxyFetch({
     resolveConfig: async () => ({
       useTransparentProxy: true,
@@ -27,6 +28,9 @@ test("B.AI transparent proxy preserves Authorization while signing the proxy req
     resolveSecret: async () => secret,
     nowSeconds: () => 1785856001,
     createNonce: () => "AAAAAAAAAAAAAAAAAAAAAA",
+    onProxyRequest: (details) => {
+      capturedDiagnosticId = details.diagnosticId;
+    },
     fetchImplementation: async (input, init) => {
       capturedInput = input;
       capturedInit = init;
@@ -36,7 +40,10 @@ test("B.AI transparent proxy preserves Authorization while signing the proxy req
 
   await proxyFetch("https://api.b.ai/v1/chat/completions?stream=true", {
     method: "POST",
-    headers: { Authorization: "Bearer caller-owned-bai-key" },
+    headers: {
+      Authorization: "Bearer caller-owned-bai-key",
+      "x-zook-diagnostic-id": "9a1f0c10-88d2-4a1c-b5db-6d7963487bdf",
+    },
     body: "{}",
   });
 
@@ -44,6 +51,8 @@ test("B.AI transparent proxy preserves Authorization while signing the proxy req
   assert.equal(capturedInit?.body, "{}");
   const headers = new Headers(capturedInit?.headers);
   assert.equal(headers.get("authorization"), "Bearer caller-owned-bai-key");
+  assert.equal(headers.get("x-zook-diagnostic-id"), "9a1f0c10-88d2-4a1c-b5db-6d7963487bdf");
+  assert.equal(capturedDiagnosticId, "9a1f0c10-88d2-4a1c-b5db-6d7963487bdf");
   assert.equal(headers.get(OPENROUTER_PROXY_HEADERS.keyId), "server-bai");
   assert.ok(headers.get(OPENROUTER_PROXY_HEADERS.signature));
 });

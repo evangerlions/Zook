@@ -377,6 +377,7 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 - 无论全量还是指定路由，冒烟测试共用 10 秒全局冷却；响应中始终包含本次 `target`、`summary` 与 `items`。
 - `config.openRouter.useTransparentProxy=true` 时，发往 `openrouter.ai` 的请求会在发送前动态读取 `common.passwords` 中由 `transparentProxyHmacSecretKey` 指定的 HMAC secret。只有 Key ID 和 secret 都存在时才改走 `transparentProxyBaseUrl`；Secret 缺失时保持直连，错误格式的非空 Secret 会拒绝请求而不会静默降级。
 - OpenRouter API Key 仍由 provider `apiKey` 提供并作为 `Authorization: Bearer ...` 透传。透明代理凭据使用 `oa-hmac-v1` 的 `X-Proxy-*` headers，不替代也不保存 OpenRouter API Key。
+- Chat route 可选 `openRouter: { provider: { order?, allow_fallbacks?, only?, ignore?, sort?, max_price? } }`，仅允许 `provider="openrouter"` 的 route 使用；其他供应商填写时返回 `ADMIN_LLM_SERVICE_INVALID`。字段使用 OpenRouter 原生名称；供应商列表必须为无重复的合法 slug 数组，`allow_fallbacks` 必须为 boolean，`sort` 为 price/throughput/latency，`max_price.prompt/completion` 为非负 USD / 百万 tokens。未知字段或错误类型拒绝保存。配置通过既有版本保存与运行时读取生效，普通、流式、冒烟和熔断探测均透传；保存的 route 配置优先于调用方 `providerOptions.provider`。未配置时不注入任何默认策略，`{ "provider": {} }` 显式使用 OpenRouter 默认路由；不存在写死的供应商名单，也不改变 Zook 各平台路由权重。管理台仅在 OpenRouter route 显示专属 JSON 输入，RAW JSON 与表单往返保留该字段；切换到其他供应商时清除该专属设置。
 - 阿里云百炼 Token Plan 使用独立 Provider key `bailian_token_plan` 和套餐专属 Base URL `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，不得复用 `bailian_coding`。在 PASSWORDS 中配置 `bailian.token_plan_api_key` 后，启动配置迁移会幂等加入该 Chat Provider 及 `tokenplan-*` 文本模型；不会加入 Embedding，也不会修改 `defaultModelKey` 或既有模型流量权重。当前接入范围仅为 OpenAI Chat Completions 与应用自定义 Function Calling，不使用 Anthropic 端点，也不启用依赖 Responses API 的 Token Plan 内置 Harness 工具。
 - B.AI 使用独立 Chat Provider key `bai` 和 Base URL `https://api.b.ai/v1`。在 PASSWORDS 中配置 `bai.api_key` 后，启动配置迁移会幂等加入 `bai-glm-5.3-flash`；密钥在 `common.llm_service` 中只以 `{{zook.ps.bai.api_key}}` 引用保存。该导入不会改变默认模型、AINovel 选模权重或 embedding 路由。GLM-5.3-Flash 默认使用 `reasoning_effort: "low"`，以为用户可见回复保留输出预算；显式指定的 reasoning effort 优先。`config.bai` 的透明代理使用与 OpenRouter 相同的 `oa-hmac-v1` 和 `X-Proxy-*` 签名信封，但有独立开关、Base URL、Key ID 与 `common.passwords` HMAC key；启用后请求只会发往该受控代理，Secret 缺失时保持直连。
 
@@ -394,6 +395,46 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 | `GET` | `/api/v1/admin/apps/frogsleep/buddy-invitation-deliveries` | 只读查询统一搭子邀请邮件投递 |
 
 需要 Admin 会话。可选 query：`invitation_id`、`status`、`limit`；`status` 仅接受 `queued`、`processing`、`provider_accepted`、`delivered`、`bounced`、`suppressed`、`retryable_failed`、`dead_letter`。响应只包含 `invitation_id`、`recipient_masked`、投递/尝试状态、provider correlation ID、稳定错误码和时间戳，不返回完整邮箱、邀请码、token 或模板参数。每次读取都会写入 admin audit。
+
+### 3.14 BodyLog 管理接口
+
+所有接口都需要已认证的 Admin 会话。路径固定使用 BodyLog app workspace：`/api/v1/admin/apps/bodylog/...`。读取操作写入 Admin read audit；更改操作需要 Admin session 并写入操作审计。
+
+| 方法 | Path | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/apps/bodylog/operations/summary` | 运营概览 |
+| `GET` | `/api/v1/admin/apps/bodylog/operations/metrics?period=7d\|30d\|90d` | 周期指标 |
+| `GET` | `/api/v1/admin/apps/bodylog/users?page=&pageSize=&search=` | 用户分页与搜索 |
+| `GET` | `/api/v1/admin/apps/bodylog/users/{userId}` | 用户详情 |
+| `PUT` | `/api/v1/admin/apps/bodylog/users/{userId}/status` | 设置用户状态，body `{ "status": "active\|banned\|suspended" }` |
+| `DELETE` | `/api/v1/admin/apps/bodylog/users/{userId}/data` | 删除部分 BodyLog 用户资料与关联数据 |
+| `GET` | `/api/v1/admin/apps/bodylog/reports?page=&pageSize=` | 举报列表 |
+| `POST` | `/api/v1/admin/apps/bodylog/reports/{reportId}/resolve` | 处理举报，body `{ "resolution": "..." }` |
+| `GET` | `/api/v1/admin/apps/bodylog/blocks?page=&pageSize=` | 屏蔽关系列表 |
+| `DELETE` | `/api/v1/admin/apps/bodylog/blocks/{blockerUserId}/{blockedUserId}` | 移除屏蔽关系 |
+| `GET` | `/api/v1/admin/apps/bodylog/leaderboards/seasons?page=&pageSize=` | 赛季列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/leaderboards/seasons/{seasonLabel}/rankings?page=&pageSize=` | 赛季排名 |
+| `DELETE` | `/api/v1/admin/apps/bodylog/leaderboards/seasons/{seasonLabel}/entries/{userId}` | 移除赛季排名条目 |
+| `GET` | `/api/v1/admin/apps/bodylog/challenges?page=&pageSize=` | 挑战列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/challenges/{challengeId}` | 挑战详情 |
+| `GET` | `/api/v1/admin/apps/bodylog/challenges/statistics` | 挑战统计 |
+| `GET` | `/api/v1/admin/apps/bodylog/rewards?page=&pageSize=` | 奖励列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/rewards/statistics` | 奖励统计 |
+| `POST` | `/api/v1/admin/apps/bodylog/rewards/manual-issue` | 为指定成长计划用户发放奖励 |
+| `GET` | `/api/v1/admin/apps/bodylog/feature-flags` | 功能开关列表 |
+| `PUT` | `/api/v1/admin/apps/bodylog/feature-flags/{key}` | 设置开关，body `{ "enabled": true }` |
+| `GET` | `/api/v1/admin/apps/bodylog/feature-flags/analytics` | 功能使用汇总 |
+| `GET` | `/api/v1/admin/apps/bodylog/growth/plans?page=&pageSize=` | 成长计划列表 |
+| `GET` | `/api/v1/admin/apps/bodylog/growth/plans/{planId}` | 成长计划详情 |
+| `GET` | `/api/v1/admin/apps/bodylog/growth/statistics` | 成长计划统计 |
+| `GET` | `/api/v1/admin/apps/bodylog/config/notifications` | 获取通知配置 |
+| `PUT` | `/api/v1/admin/apps/bodylog/config/notifications` | 更新通知配置 |
+| `GET` | `/api/v1/admin/apps/bodylog/config/scoring` | 获取计分配置 |
+| `PUT` | `/api/v1/admin/apps/bodylog/config/scoring` | 更新计分配置 |
+| `GET` | `/api/v1/admin/apps/bodylog/config/seasons` | 获取赛季配置 |
+| `PUT` | `/api/v1/admin/apps/bodylog/config/seasons` | 更新赛季配置 |
+
+分页参数默认为 `page=1`、`pageSize=20`，页大小最大为 100。`period` 只接受 `7d`、`30d`、`90d`。`DELETE users/{userId}/data` 当前清除 BodyLog profile、搭子配对、群组成员、成长计划及其级联任务/奖励、排行榜条目和订阅；它不等同于删除用户账号或清除所有历史社交记录。用户状态目前保存在 BodyLog profile 上；状态本身不替代认证或请求拦截。通知、计分和赛季配置保存在 `zook_config`，当前尚未接入运行时行为。手动关闭赛季暂不提供接口。
 
 ## 4. 关联文档
 
@@ -423,4 +464,4 @@ BodyLog check-in administration uses the shared Admin session cookie. Aggregate 
 | `DELETE` | `/api/v1/admin/apps/bodylog/habit-templates/{id}` | `bodylog.habit-templates.write` | Soft-archive a template |
 | `GET` | `/api/v1/admin/apps/bodylog/habit-templates/usage` | none | Habit usage aggregate |
 
-The Dashboard is backed by `zook_bodylog_group_daily_records` and `zook_bodylog_group_activities`; user IDs are expanded from the daily record JSONB array. The template catalog is stored in `zook_bodylog_habit_templates`. CSV export is capped at 50,000 rows and all user-level access is auditable.
+The Dashboard is backed by `zook_bodylog_group_daily_records` and `zook_bodylog_group_activities`; user IDs are expanded from the daily record JSONB array. Daily, weekly, and monthly completion rates are weighted by each group's recorded member count (completed members divided by eligible group-member slots). Member contribution rows include the BodyLog profile nickname and avatar when a profile exists. The template catalog is stored in `zook_bodylog_habit_templates`. CSV export is capped at 50,000 rows and all user-level access is auditable.

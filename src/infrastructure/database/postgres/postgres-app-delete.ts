@@ -25,6 +25,10 @@ export async function deletePostgresApp(query: QueryFn, appId: string): Promise<
 
   const tables = [
     "zook_lighttick_account_upgrades",
+    "zook_lighttick_goal_contexts",
+    "zook_lighttick_milestones",
+    "zook_lighttick_outcome_evidence",
+    "zook_lighttick_task_families",
     "zook_lighttick_task_steps",
     "zook_lighttick_tasks",
     "zook_lighttick_change_proposals",

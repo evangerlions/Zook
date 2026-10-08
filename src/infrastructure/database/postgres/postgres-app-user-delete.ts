@@ -29,6 +29,10 @@ const FROGSLEEP_USER_RUNTIME_TABLES = [
 ] as const;
 
 const LIGHTTICK_USER_RUNTIME_TABLES = [
+  "zook_lighttick_goal_contexts",
+  "zook_lighttick_milestones",
+  "zook_lighttick_outcome_evidence",
+  "zook_lighttick_task_families",
   "zook_lighttick_task_steps",
   "zook_lighttick_tasks",
   "zook_lighttick_change_proposals",

@@ -1,6 +1,7 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { ApplicationError } from "../shared/errors.ts";
 import type { TransparentProxyConfig } from "../shared/types.ts";
+import { LLM_UPSTREAM_DIAGNOSTIC_ID_HEADER } from "./llm-upstream-diagnostics-types.ts";
 
 export const OPENROUTER_HMAC_VERSION = "oa-hmac-v1";
 export const OPENROUTER_PROXY_HEADERS = Object.freeze({
@@ -21,6 +22,7 @@ export interface TransparentProxyFetchOptions {
     requestTarget: string;
     proxyHost: string;
     keyId: string;
+    diagnosticId?: string;
   }) => void;
 }
 
@@ -52,26 +54,28 @@ export function createTransparentProxyFetch(
 
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const sourceUrl = new URL(input instanceof Request ? input.url : String(input));
+    const sourceHeaders = mergeHeaders(input, init);
+    const diagnosticId = sourceHeaders.get(LLM_UPSTREAM_DIAGNOSTIC_ID_HEADER) ?? undefined;
     if (!shouldProxyUrl(sourceUrl)) {
-      return fetchImplementation(input, init);
+      return fetchDirect(fetchImplementation, input, init, sourceHeaders);
     }
 
     const config = await options.resolveConfig();
     if (!config.useTransparentProxy) {
-      return fetchImplementation(input, init);
+      return fetchDirect(fetchImplementation, input, init, sourceHeaders);
     }
 
     const encodedSecret = (
       await options.resolveSecret(config.transparentProxyHmacSecretKey)
     )?.trim();
     if (!encodedSecret) {
-      return fetchImplementation(input, init);
+      return fetchDirect(fetchImplementation, input, init, sourceHeaders);
     }
 
     assertValidHmacSecret(encodedSecret, providerLabel);
     const method = resolveMethod(input, init);
     const proxyUrl = buildProxyUrl(sourceUrl, config.transparentProxyBaseUrl);
-    const headers = mergeHeaders(input, init);
+    const headers = sourceHeaders;
     const timestamp = String(
       Math.floor(options.nowSeconds?.() ?? Date.now() / 1_000),
     );
@@ -95,12 +99,27 @@ export function createTransparentProxyFetch(
       requestTarget,
       proxyHost: proxyUrl.host,
       keyId: config.transparentProxyKeyId,
+      diagnosticId,
     });
     return fetchImplementation(
       proxyUrl,
       buildProxyRequestInit(input, init, method, headers),
     );
   }) as typeof fetch;
+}
+
+function fetchDirect(
+  fetchImplementation: typeof fetch,
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  headers: Headers,
+): Promise<Response> {
+  if (!headers.has(LLM_UPSTREAM_DIAGNOSTIC_ID_HEADER)) {
+    return fetchImplementation(input, init);
+  }
+  headers.delete(LLM_UPSTREAM_DIAGNOSTIC_ID_HEADER);
+  const method = resolveMethod(input, init);
+  return fetchImplementation(input, buildProxyRequestInit(input, init, method, headers));
 }
 
 export function createOpenRouterProxyHeaders(

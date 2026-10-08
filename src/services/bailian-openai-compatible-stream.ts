@@ -24,6 +24,8 @@ export interface BailianStreamContext {
   providerName?: string;
   parseChatUsage(usage: OpenAICompatibleResponsePayload["usage"]): LLMUsage | undefined;
   logRawChunk(chunk: string): void;
+  onBodyBytes?(byteCount: number): void;
+  onSseEvent?(): void;
   streamOptions?: Record<string, unknown>;
 }
 
@@ -37,7 +39,13 @@ export async function* parseBailianOpenAICompatibleStream(
     { id?: string; name?: string; args: string; progressText?: string }
   >();
 
-  for await (const eventData of readServerSentEvents(context.body, streamTimeouts, context.providerName)) {
+  for await (const eventData of readServerSentEvents(
+    context.body,
+    streamTimeouts,
+    context.providerName,
+    context.onBodyBytes,
+    context.onSseEvent,
+  )) {
     context.logRawChunk(eventData);
     if (eventData === "[DONE]") {
       yield {
@@ -219,6 +227,8 @@ async function* readServerSentEvents(
   body: ReadableStream<Uint8Array>,
   options: StreamTimeoutOptions = {},
   providerName?: string,
+  onBodyBytes?: (byteCount: number) => void,
+  onSseEvent?: () => void,
 ): AsyncIterable<string> {
   const firstEventTimeoutMs = options.firstEventTimeoutMs ?? 0;
   const idleTimeoutMs = options.idleTimeoutMs ?? 0;
@@ -236,12 +246,14 @@ async function* readServerSentEvents(
         break;
       }
 
+      observeBodyBytes(onBodyBytes, result.value.byteLength);
       buffer += decoder.decode(result.value, { stream: true });
       const parsed = readBufferedEventLines(buffer, eventDataLines);
       buffer = parsed.buffer;
       eventDataLines = parsed.eventDataLines;
       for (const event of parsed.events) {
         hasEvent = true;
+        observeSseEvent(onSseEvent);
         yield event;
       }
     }
@@ -252,7 +264,27 @@ async function* readServerSentEvents(
   buffer += decoder.decode();
   const trailingEvent = readTrailingEvent(buffer, eventDataLines);
   if (trailingEvent) {
+    observeSseEvent(onSseEvent);
     yield trailingEvent;
+  }
+}
+
+function observeBodyBytes(
+  callback: ((byteCount: number) => void) | undefined,
+  byteCount: number,
+): void {
+  try {
+    callback?.(byteCount);
+  } catch {
+    // Diagnostic observation must never affect stream parsing or delivery.
+  }
+}
+
+function observeSseEvent(callback: (() => void) | undefined): void {
+  try {
+    callback?.();
+  } catch {
+    // Diagnostic observation must never affect stream parsing or delivery.
   }
 }
 

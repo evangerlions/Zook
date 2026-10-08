@@ -2,6 +2,7 @@ import type { ApplicationDatabase } from "./infrastructure/database/application-
 import { PostgresDatabase } from "./infrastructure/database/postgres/postgres-database.ts";
 import type { BodyLogStores } from "./infrastructure/bodylog-store-ports.ts";
 import {
+  InMemoryBodyLogAdminStore,
   InMemoryBodyLogBuddyStore,
   InMemoryBodyLogFeatureFlagStore,
   InMemoryBodyLogGroupStore,
@@ -27,6 +28,7 @@ export function resolveBodyLogStores(database: ApplicationDatabase): BodyLogStor
       growth: database.getGrowthStore(),
       notification: database.getBodyLogNotificationStore(),
       flags: database.getBodyLogFeatureFlagStore(),
+      admin: database.getBodyLogAdminStore(),
     };
   }
   const existing = fallbackStores.get(database);
@@ -47,6 +49,7 @@ export function resolveBodyLogStores(database: ApplicationDatabase): BodyLogStor
     growth: new InMemoryBodyLogGrowthStore(),
     notification: new InMemoryBodyLogNotificationStore(),
     flags: new InMemoryBodyLogFeatureFlagStore(),
+    admin: new InMemoryBodyLogAdminStore(),
   };
   fallbackStores.set(database, stores);
   return stores;

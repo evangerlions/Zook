@@ -161,6 +161,7 @@ export class LlmRequestResolver {
           modelKey,
           resolvedModelKey: selection.routeModelKey,
           providerModel: selection.route.providerModel,
+          ...(selection.route.openRouter ? { openRouter: selection.route.openRouter } : {}),
           providerConfig: {
             baseUrl: selection.provider.baseUrl,
             apiKey: selection.provider.apiKey,

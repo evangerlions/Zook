@@ -1,4 +1,5 @@
 import type { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
+import type { LlmUpstreamDiagnostics } from "./llm-upstream-diagnostics-types.ts";
 
 export const DEFAULT_BAILIAN_BASE_URL =
   "https://dashscope.aliyuncs.com/compatible-mode/v1";
@@ -91,6 +92,7 @@ export interface BailianOpenAICompatibleProviderOptions {
   providerName?: string;
   fetchImplementation?: typeof fetch;
   logger?: StructuredLogger;
+  diagnostics?: LlmUpstreamDiagnostics;
 }
 
 export interface StreamTimeoutOptions {
