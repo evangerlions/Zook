@@ -68,11 +68,13 @@ import type { BodyLogWorkerService } from "../modules/bodylog/bodylog-worker.ser
 import type { BodyLogGrowthService } from "../modules/bodylog/bodylog-growth.service.ts";
 import type { BodyLogNotificationService } from "../modules/bodylog/bodylog-notification.service.ts";
 import type { BodyLogFeatureFlagService } from "../modules/bodylog/bodylog-feature-flag.service.ts";
+import type { BodyLogAdminService } from "../modules/bodylog/bodylog-admin.service.ts";
 import { tryHandleBodyLogAssociationRoutes } from "./bodylog-association-routes.ts";
 import { tryHandleLightTickV1Routes } from "./lighttick-v1-routes.ts";
 import { tryHandleLightTickPhase2Routes } from "./lighttick-phase2-routes.ts";
 import type { LightTickRuntime } from "../modules/lighttick/lighttick-runtime.ts";
 import { tryHandleLightTickAdminRoutes } from "./lighttick-admin-routes.ts";
+import { tryHandleBodyLogManagementRoutes } from "./bodylog-admin-routes.ts";
 
 const DEFAULT_RUNTIME_VERSION = "0.1.0";
 
@@ -114,6 +116,7 @@ export class BackendApplication extends BackendRouteContext {
     private readonly bodyLogGrowthService: BodyLogGrowthService,
     private readonly bodyLogNotificationService: BodyLogNotificationService,
     private readonly bodyLogFeatureFlagService: BodyLogFeatureFlagService,
+    private readonly bodyLogAdminService: BodyLogAdminService,
     private readonly llmSmokeTestService: LlmSmokeTestService,
     readonly aiNovelDebugTraceService: AiNovelDebugTraceService,
     private readonly aiNovelSkillService: AiNovelSkillService,
@@ -250,6 +253,8 @@ export class BackendApplication extends BackendRouteContext {
 
     const lightTickAdminResponse = await tryHandleLightTickAdminRoutes(this, this.lighttickEnabled, this.lighttickRuntime, request);
     if (lightTickAdminResponse) return lightTickAdminResponse;
+    const bodyLogAdminResponse = await tryHandleBodyLogManagementRoutes(this, true, this.bodyLogAdminService, request);
+    if (bodyLogAdminResponse) return bodyLogAdminResponse;
     const adminResponse = await tryHandleAdminRoutes.call(this, request);
     if (adminResponse) {
       return adminResponse;

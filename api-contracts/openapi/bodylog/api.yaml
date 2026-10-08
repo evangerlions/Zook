@@ -58,6 +58,48 @@ paths:
                       autoRenew: { type: boolean }
         "401": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/subscription/purchases:
+    post:
+      operationId: verifyBodyLogStorePurchase
+      tags: [bodylog-profile]
+      summary: Verify an App Store or Google Play purchase and grant cloud entitlement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, productId]
+              properties:
+                platform: { type: string, enum: [ios, android] }
+                productId: { type: string, minLength: 1, maxLength: 200 }
+                signedTransaction: { type: string, maxLength: 64000, description: Required for iOS StoreKit 2 purchases. }
+                purchaseToken: { type: string, maxLength: 8000, description: Required for Google Play purchases. }
+      responses:
+        "200":
+          description: Purchase verified and cloud entitlement synchronized
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, data]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  requestId: { type: string }
+                  data:
+                    type: object
+                    required: [verified, tier, expiresAt, autoRenew]
+                    properties:
+                      verified: { type: boolean, const: true }
+                      tier: { type: string, enum: [free, plus, pro] }
+                      expiresAt: { type: string, format: date-time }
+                      autoRenew: { type: boolean }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/profile:
     get:
       operationId: getBodyLogProfile

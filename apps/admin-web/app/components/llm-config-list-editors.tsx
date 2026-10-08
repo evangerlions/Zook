@@ -1,3 +1,4 @@
+import { updateLlmRouteDraft } from "../lib/llm-route-config.ts";
 import { CompressOutlined, ExpandOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 
@@ -189,7 +190,7 @@ function updateRoute(
         ? {
             ...model,
             routes: model.routes.map((route, currentRouteIndex) => (
-              currentRouteIndex === routeIndex ? { ...route, [key]: value } as LlmRouteDraft : route
+              currentRouteIndex === routeIndex ? updateLlmRouteDraft(route, key, value) : route
             )),
           }
         : model

@@ -1,622 +1,820 @@
-/**
- * BodyLog 后台管理数据存储
- *
- * 提供管理后台所需的打卡数据查询、群组监控、习惯模板管理等功能。
- */
-
 import type {
-  BodyLogCheckinDashboardAggregate,
-  BodyLogCheckinRecordRow,
-  BodyLogGroupHealthRow,
-  BodyLogGroupMemberContributionRow,
-  BodyLogHabitTemplateRecord,
-  BodyLogHabitUsageRow,
+  AdminBlock,
+  AdminChallenge,
+  AdminChallengeStatistics,
+  AdminFeatureFlag,
+  AdminFeatureFlagAnalytics,
+  AdminGrowthPlan,
+  AdminGrowthStatistics,
+  AdminOperationsMetrics,
+  AdminOperationsSummary,
+  AdminReport,
+  AdminReward,
+  AdminRewardStatistics,
+  AdminSeason,
+  AdminSeasonRanking,
+  AdminUserDetails,
+  AdminUserProfile,
+  AdminUserStatus,
 } from "../../../modules/bodylog/bodylog-admin.types.ts";
 
-type Query = (sql: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[]; rowCount?: number | null }>;
+type Query = (sql: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
+const iso = (value: unknown) => value instanceof Date ? value.toISOString() : String(value);
 
 export class PostgresBodyLogAdminStore {
   constructor(private readonly query: Query) {}
 
-  /**
-   * 获取打卡 Dashboard 聚合数据
-   */
-  async getBodyLogCheckinDashboard(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-    timezone: string;
-  }): Promise<BodyLogCheckinDashboardAggregate> {
-    // 1. 获取汇总统计
-    const summaryResult = await this.query(
-      `SELECT
-        COUNT(DISTINCT g.id) as total_groups,
-        COALESCE(SUM(gm_count.member_count), 0) as total_members,
-        COUNT(DISTINCT CASE WHEN g.last_active_date >= CURRENT_DATE - INTERVAL '7 days' THEN g.id END) as active_groups
-      FROM zook_bodylog_groups g
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*) as member_count
-        FROM zook_bodylog_group_members gm
-        WHERE gm.group_id = g.id AND gm.status = 'active'
-      ) gm_count ON true
-      WHERE g.app_id = $1`,
-      [input.appId]
-    );
+  // ===== Operations Dashboard =====
 
-    const summary = summaryResult.rows[0] as Record<string, number>;
+  async getOperationsSummary(appId: string): Promise<AdminOperationsSummary> {
+    const [profiles, buddyPairs, groups, challenges, growthPlans, subscriptions] = await Promise.all([
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_profiles WHERE app_id = $1", [appId]),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_buddy_pairs WHERE app_id = $1 AND status = 'active'", [appId]),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_groups WHERE app_id = $1", [appId]),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_challenges WHERE app_id = $1", [appId]),
+      this.query("SELECT COUNT(*)::int AS count FROM bodylog_seven_day_plans WHERE status = 'active'"),
+      this.query(
+        "SELECT tier, COUNT(*)::int AS count FROM zook_user_subscriptions WHERE app_id = $1 AND expires_at > NOW() GROUP BY tier",
+        [appId],
+      ),
+    ]);
 
-    // 2. 计算 DAU 和今日打卡数（从 JSONB 数组展开）
-    const dailyStatsResult = await this.query(
-      `SELECT
-        COUNT(DISTINCT uid) as dau,
-        COUNT(*) as total_checkins
-      FROM zook_bodylog_group_daily_records r
-      JOIN zook_bodylog_groups g ON r.group_id = g.id
-      CROSS JOIN LATERAL jsonb_array_elements_text(r.completed_user_ids) AS uid
-      WHERE g.app_id = $1
-        AND r.date >= $2::date
-        AND r.date <= $3::date`,
-      [input.appId, input.fromDate, input.toDate]
-    );
-
-    const dailyStats = dailyStatsResult.rows[0] as Record<string, number>;
-
-    // 3. 获取趋势数据
-    const trendResult = await this.query(
-      `SELECT
-        r.date::text as date,
-        COUNT(DISTINCT uid) as dau,
-        SUM(r.completed_count) as checkins,
-        ROUND(AVG(r.completion_rate)::numeric, 2) as completion_rate
-      FROM zook_bodylog_group_daily_records r
-      JOIN zook_bodylog_groups g ON r.group_id = g.id
-      CROSS JOIN LATERAL jsonb_array_elements_text(r.completed_user_ids) AS uid
-      WHERE g.app_id = $1
-        AND r.date >= $2::date
-        AND r.date <= $3::date
-      GROUP BY r.date
-      ORDER BY r.date ASC`,
-      [input.appId, input.fromDate, input.toDate]
-    );
-
-    // 4. 计算连续打卡分布（简化版：基于群组连续天数）
-    const consecutiveResult = await this.query(
-      `SELECT
-        CASE
-          WHEN consecutive_days = 0 THEN '0'
-          WHEN consecutive_days BETWEEN 1 AND 2 THEN '1-2'
-          WHEN consecutive_days BETWEEN 3 AND 6 THEN '3-6'
-          WHEN consecutive_days BETWEEN 7 AND 13 THEN '7-13'
-          WHEN consecutive_days BETWEEN 14 AND 29 THEN '14-29'
-          ELSE '30+'
-        END as bucket,
-        COUNT(*) as group_count
-      FROM zook_bodylog_groups
-      WHERE app_id = $1 AND status = 'active'
-      GROUP BY bucket
-      ORDER BY MIN(consecutive_days)`,
-      [input.appId]
-    );
-
-    // 5. 获取习惯分布
-    const habitResult = await this.query(
-      `SELECT
-        target_habit_id as habit_id,
-        COUNT(*) as checkins
-      FROM zook_bodylog_group_activities
-      JOIN zook_bodylog_groups g ON group_id = g.id
-      WHERE g.app_id = $1
-        AND type = 'checked_in'
-        AND created_at >= $2::timestamptz
-        AND created_at < ($3::date + INTERVAL '1 day')::timestamptz
-        AND target_habit_id IS NOT NULL
-      GROUP BY target_habit_id
-      ORDER BY checkins DESC
-      LIMIT 10`,
-      [input.appId, input.fromDate, input.toDate]
-    );
-
-    const totalCheckins = habitResult.rows.reduce((sum, row) => sum + Number(row.checkins), 0);
+    const byTier: Record<string, number> = {};
+    for (const row of subscriptions.rows) {
+      byTier[String(row.tier)] = Number(row.count);
+    }
+    const totalActive = Object.values(byTier).reduce((sum, v) => sum + v, 0);
 
     return {
-      summary: {
-        dau: Number(dailyStats.dau) || 0,
-        checkins_today: Number(dailyStats.total_checkins) || 0,
-        active_groups: Number(summary.active_groups) || 0,
-        total_groups: Number(summary.total_groups) || 0,
-        total_members: Number(summary.total_members) || 0,
-        checkin_rate_daily: 0, // TODO: 计算
-        checkin_rate_weekly: 0, // TODO: 计算
-        checkin_rate_monthly: 0, // TODO: 计算
+      overview: {
+        totalUsers: Number(profiles.rows[0]?.count ?? 0),
+        totalBuddyPairs: Number(buddyPairs.rows[0]?.count ?? 0),
+        totalGroups: Number(groups.rows[0]?.count ?? 0),
+        totalChallenges: Number(challenges.rows[0]?.count ?? 0),
+        activeGrowthPlans: Number(growthPlans.rows[0]?.count ?? 0),
       },
-      trend: trendResult.rows.map((row) => ({
-        date: row.date as string,
-        dau: Number(row.dau),
-        checkins: Number(row.checkins),
-        completion_rate: Number(row.completion_rate),
-      })),
-      consecutive_distribution: consecutiveResult.rows.map((row) => ({
-        bucket: row.bucket as string,
-        users: Number(row.group_count),
-      })),
-      habit_distribution: habitResult.rows.map((row) => ({
-        habit_id: row.habit_id as string,
-        checkins: Number(row.checkins),
-        share: totalCheckins > 0 ? Number(row.checkins) / totalCheckins : 0,
-      })),
+      subscriptions: { totalActive, byTier },
+      generatedAt: new Date().toISOString(),
     };
   }
 
-  /**
-   * 列出用户在指定日期范围内的打卡日期
-   */
-  async listBodyLogCheckinUserDates(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-  }): Promise<Array<{ userId: string; date: string }>> {
-    const result = await this.query(
-      `SELECT DISTINCT uid as user_id, r.date::text as date
-      FROM zook_bodylog_group_daily_records r
-      JOIN zook_bodylog_groups g ON r.group_id = g.id
-      CROSS JOIN LATERAL jsonb_array_elements_text(r.completed_user_ids) AS uid
-      WHERE g.app_id = $1
-        AND r.date >= $2::date
-        AND r.date <= $3::date
-      ORDER BY uid, r.date`,
-      [input.appId, input.fromDate, input.toDate]
-    );
+  async getOperationsMetrics(appId: string, periodDays: number): Promise<AdminOperationsMetrics> {
+    const since = new Date(Date.now() - periodDays * 86400000).toISOString();
+    const [newUsers, activeUsers, buddyCheckins, groupCheckins, challengesCompleted, growthMissions, newSubscriptions] = await Promise.all([
+      this.query("SELECT COUNT(DISTINCT user_id)::int AS count FROM zook_bodylog_profiles WHERE app_id = $1 AND created_at >= $2", [appId, since]),
+      this.query("SELECT COUNT(DISTINCT actor_user_id)::int AS count FROM zook_bodylog_buddy_activities WHERE created_at >= $1", [since]),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_buddy_activities WHERE type = 'checked_in' AND created_at >= $1", [since]),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_group_daily_records WHERE date >= $1", [since.slice(0, 10)]),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_challenges WHERE status = 'settled' AND updated_at >= $1", [since]),
+      this.query("SELECT COUNT(*)::int AS count FROM bodylog_missions WHERE completed = true AND completed_at >= $1", [since]),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_user_subscriptions WHERE app_id = $1 AND created_at >= $2", [appId, since]),
+    ]);
 
-    return result.rows.map((row) => ({
-      userId: row.user_id as string,
-      date: row.date as string,
+    return {
+      period: periodDays === 7 ? "7d" : periodDays === 30 ? "30d" : "90d",
+      newUsers: Number(newUsers.rows[0]?.count ?? 0),
+      activeUsers: Number(activeUsers.rows[0]?.count ?? 0),
+      buddyCheckins: Number(buddyCheckins.rows[0]?.count ?? 0),
+      groupCheckins: Number(groupCheckins.rows[0]?.count ?? 0),
+      challengesCompleted: Number(challengesCompleted.rows[0]?.count ?? 0),
+      growthMissionsCompleted: Number(growthMissions.rows[0]?.count ?? 0),
+      newSubscriptions: Number(newSubscriptions.rows[0]?.count ?? 0),
+    };
+  }
+
+  // ===== User Management =====
+
+  async listUserProfiles(
+    appId: string,
+    offset: number,
+    limit: number,
+    search?: string,
+  ): Promise<{ users: AdminUserProfile[]; total: number }> {
+    const searchClause = search
+      ? "AND (p.nickname ILIKE $4 OR p.user_id = $4)"
+      : "";
+    const params: unknown[] = search ? [appId, limit, offset, `%${search}%`] : [appId, limit, offset];
+
+    const [usersResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT p.user_id, p.nickname, p.avatar_key, p.status, p.created_at, p.updated_at,
+                COALESCE(s.tier, 'free') AS subscription_tier,
+                (SELECT COUNT(*)::int FROM zook_bodylog_friendships f WHERE f.app_id = p.app_id AND f.user_id = p.user_id) AS friend_count,
+                (SELECT COUNT(*)::int FROM zook_bodylog_buddy_pairs bp WHERE bp.app_id = p.app_id AND (bp.user_id = p.user_id OR bp.partner_user_id = p.user_id) AND bp.status = 'active') AS buddy_pair_count,
+                (SELECT COUNT(*)::int FROM zook_bodylog_group_members gm
+                 JOIN zook_bodylog_groups g ON g.id = gm.group_id AND g.app_id = p.app_id
+                 WHERE gm.user_id = p.user_id) AS group_count
+         FROM zook_bodylog_profiles p
+         LEFT JOIN LATERAL (
+           SELECT tier FROM zook_user_subscriptions
+           WHERE app_id = p.app_id AND user_id = p.user_id AND expires_at > NOW()
+           ORDER BY created_at DESC LIMIT 1
+         ) s ON true
+         WHERE p.app_id = $1 ${searchClause}
+         ORDER BY p.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        params,
+      ),
+      this.query(
+        `SELECT COUNT(*)::int AS count FROM zook_bodylog_profiles p WHERE p.app_id = $1 ${search ? "AND (p.nickname ILIKE $2 OR p.user_id = $2)" : ""}`,
+        search ? [appId, `%${search}%`] : [appId],
+      ),
+    ]);
+
+    const users: AdminUserProfile[] = usersResult.rows.map((row) => ({
+      userId: String(row.user_id),
+      nickname: String(row.nickname),
+      avatarKey: (row.avatar_key as string | null) ?? null,
+      status: String(row.status ?? "active") as AdminUserStatus,
+      createdAt: iso(row.created_at),
+      lastActiveAt: row.updated_at ? iso(row.updated_at) : null,
+      subscriptionTier: String(row.subscription_tier) as AdminUserProfile["subscriptionTier"],
+      friendCount: Number(row.friend_count),
+      buddyPairCount: Number(row.buddy_pair_count),
+      groupCount: Number(row.group_count),
     }));
+
+    return { users, total: Number(countResult.rows[0]?.count ?? 0) };
   }
 
-  /**
-   * 搜索打卡记录
-   */
-  async searchBodyLogCheckinRecords(input: {
-    appId: string;
-    userId?: string;
-    groupId?: string;
-    fromDate?: string;
-    toDate?: string;
-    page: number;
-    limit: number;
-  }): Promise<{ items: BodyLogCheckinRecordRow[]; total: number }> {
-    const conditions: string[] = ["g.app_id = $1"];
-    const params: unknown[] = [input.appId];
-    let paramIndex = 2;
-
-    if (input.groupId) {
-      conditions.push(`r.group_id = $${paramIndex}`);
-      params.push(input.groupId);
-      paramIndex++;
-    }
-
-    if (input.fromDate) {
-      conditions.push(`r.date >= $${paramIndex}::date`);
-      params.push(input.fromDate);
-      paramIndex++;
-    }
-
-    if (input.toDate) {
-      conditions.push(`r.date <= $${paramIndex}::date`);
-      params.push(input.toDate);
-      paramIndex++;
-    }
-
-    // 如果指定了 userId，需要展开 JSONB 数组
-    let joinClause = "";
-    if (input.userId) {
-      joinClause = "CROSS JOIN LATERAL jsonb_array_elements_text(r.completed_user_ids) AS uid";
-      conditions.push(`uid = $${paramIndex}`);
-      params.push(input.userId);
-      paramIndex++;
-    }
-
-    const whereClause = conditions.join(" AND ");
-
-    // 获取总数
-    const countResult = await this.query(
-      `SELECT COUNT(DISTINCT r.id) as total
-      FROM zook_bodylog_group_daily_records r
-      JOIN zook_bodylog_groups g ON r.group_id = g.id
-      ${joinClause}
-      WHERE ${whereClause}`,
-      params
-    );
-
-    const total = Number(countResult.rows[0]?.total) || 0;
-
-    // 获取分页数据
-    const offset = (input.page - 1) * input.limit;
-    params.push(input.limit, offset);
-
+  async countProfiles(appId: string): Promise<number> {
     const result = await this.query(
-      `SELECT
-        r.id as record_id,
-        r.date::text as date,
-        r.group_id,
-        g.name as group_name,
-        r.completed_user_ids,
-        r.completed_count,
-        r.total_members,
-        r.completion_rate,
-        r.created_at::text as created_at
-      FROM zook_bodylog_group_daily_records r
-      JOIN zook_bodylog_groups g ON r.group_id = g.id
-      ${joinClause}
-      WHERE ${whereClause}
-      GROUP BY r.id, r.date, r.group_id, g.name, r.completed_user_ids, r.completed_count, r.total_members, r.completion_rate, r.created_at
-      ORDER BY r.date DESC, r.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      params
+      "SELECT COUNT(*)::int AS count FROM zook_bodylog_profiles WHERE app_id = $1",
+      [appId],
     );
-
-    // 展开每条记录的用户列表
-    const items: BodyLogCheckinRecordRow[] = [];
-    for (const row of result.rows) {
-      const rawUserIds = row.completed_user_ids;
-      const userIds = Array.isArray(rawUserIds)
-        ? rawUserIds.map(value => String(value))
-        : typeof rawUserIds === "string"
-          ? JSON.parse(rawUserIds) as string[]
-          : [];
-      for (const userId of userIds) {
-        // 如果指定了 userId，只返回该用户的记录
-        if (input.userId && userId !== input.userId) continue;
-
-        items.push({
-          recordId: row.record_id as string,
-          date: row.date as string,
-          groupId: row.group_id as string,
-          groupName: row.group_name as string,
-          userId,
-          completedCount: Number(row.completed_count),
-          totalMembers: Number(row.total_members),
-          completionRate: Number(row.completion_rate),
-          createdAt: row.created_at as string,
-        });
-      }
-    }
-
-    return { items, total };
+    return Number(result.rows[0]?.count ?? 0);
   }
 
-  /**
-   * 列出群组健康度
-   */
-  async listBodyLogGroupHealth(input: {
-    appId: string;
-    status?: string;
-    health?: "active" | "stale" | "dead";
-    fromDate: string;
-    toDate: string;
-    page: number;
-    limit: number;
-  }): Promise<{ items: BodyLogGroupHealthRow[]; total: number }> {
-    const conditions: string[] = ["g.app_id = $1"];
-    const params: unknown[] = [input.appId];
-    let paramIndex = 2;
+  // ===== Social Moderation =====
 
-    if (input.status) {
-      conditions.push(`g.status = $${paramIndex}`);
-      params.push(input.status);
-      paramIndex++;
-    }
+  async listReportsPaginated(
+    appId: string,
+    offset: number,
+    limit: number,
+  ): Promise<{ reports: AdminReport[]; total: number }> {
+    const [reportsResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT r.id, r.reporter_user_id, r.reported_user_id, r.reason, r.status,
+                r.resolved_at, r.resolved_by, r.resolution, r.created_at,
+                rp.nickname AS reporter_nickname,
+                rp2.nickname AS reported_nickname
+         FROM zook_bodylog_reports r
+         LEFT JOIN zook_bodylog_profiles rp ON rp.app_id = r.app_id AND rp.user_id = r.reporter_user_id
+         LEFT JOIN zook_bodylog_profiles rp2 ON rp2.app_id = r.app_id AND rp2.user_id = r.reported_user_id
+         WHERE r.app_id = $1
+         ORDER BY r.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [appId, limit, offset],
+      ),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_reports WHERE app_id = $1", [appId]),
+    ]);
 
-    if (input.health) {
-      const now = new Date();
-      const daysAgo = (days: number) => {
-        const d = new Date(now);
-        d.setDate(d.getDate() - days);
-        return d.toISOString().split("T")[0];
+    const reports: AdminReport[] = reportsResult.rows.map((row) => ({
+      reportId: String(row.id),
+      reporterUserId: String(row.reporter_user_id),
+      reporterNickname: String(row.reporter_nickname ?? "unknown"),
+      reportedUserId: String(row.reported_user_id),
+      reportedNickname: String(row.reported_nickname ?? "unknown"),
+      reason: String(row.reason) as AdminReport["reason"],
+      status: String(row.status ?? "pending") as AdminReport["status"],
+      createdAt: iso(row.created_at),
+      resolvedAt: row.resolved_at ? iso(row.resolved_at) : null,
+      resolvedBy: (row.resolved_by as string | null) ?? null,
+      resolution: (row.resolution as string | null) ?? null,
+    }));
+
+    return { reports, total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async listBlocksPaginated(
+    appId: string,
+    offset: number,
+    limit: number,
+  ): Promise<{ blocks: AdminBlock[]; total: number }> {
+    const [blocksResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT b.blocker_user_id, b.blocked_user_id, b.created_at,
+                rp1.nickname AS blocker_nickname,
+                rp2.nickname AS blocked_nickname
+         FROM zook_bodylog_blocks b
+         LEFT JOIN zook_bodylog_profiles rp1 ON rp1.app_id = b.app_id AND rp1.user_id = b.blocker_user_id
+         LEFT JOIN zook_bodylog_profiles rp2 ON rp2.app_id = b.app_id AND rp2.user_id = b.blocked_user_id
+         WHERE b.app_id = $1
+         ORDER BY b.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [appId, limit, offset],
+      ),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_blocks WHERE app_id = $1", [appId]),
+    ]);
+
+    const blocks: AdminBlock[] = blocksResult.rows.map((row) => ({
+      blockerUserId: String(row.blocker_user_id),
+      blockerNickname: String(row.blocker_nickname ?? "unknown"),
+      blockedUserId: String(row.blocked_user_id),
+      blockedNickname: String(row.blocked_nickname ?? "unknown"),
+      createdAt: iso(row.created_at),
+    }));
+
+    return { blocks, total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async deleteBlock(appId: string, blockerUserId: string, blockedUserId: string): Promise<void> {
+    await this.query(
+      "DELETE FROM zook_bodylog_blocks WHERE app_id = $1 AND blocker_user_id = $2 AND blocked_user_id = $3",
+      [appId, blockerUserId, blockedUserId],
+    );
+  }
+
+  // ===== Leaderboard Management =====
+
+  async listSeasons(appId: string, offset: number, limit: number): Promise<{ seasons: AdminSeason[]; total: number }> {
+    const [entriesResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT season_label, MIN(reached_at) AS start_date, MAX(reached_at) AS end_date,
+                COUNT(*)::int AS participant_count
+         FROM zook_bodylog_leaderboard_entries
+         WHERE app_id = $1
+         GROUP BY season_label
+         ORDER BY season_label DESC
+         LIMIT $2 OFFSET $3`,
+        [appId, limit, offset],
+      ),
+      this.query("SELECT COUNT(DISTINCT season_label)::int AS count FROM zook_bodylog_leaderboard_entries WHERE app_id = $1", [appId]),
+    ]);
+
+    const currentSeason = this.currentSeasonLabel();
+    const seasons: AdminSeason[] = entriesResult.rows.map((row) => {
+      const label = String(row.season_label);
+      return {
+        seasonLabel: label,
+        startDate: iso(row.start_date),
+        endDate: iso(row.end_date),
+        participantCount: Number(row.participant_count),
+        status: label === currentSeason ? "active" as const : "completed" as const,
       };
+    });
 
-      switch (input.health) {
-        case "active":
-          conditions.push(`g.last_active_date >= $${paramIndex}::date`);
-          params.push(daysAgo(7));
-          paramIndex++;
+    return { seasons, total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async listSeasonRankings(
+    appId: string,
+    seasonLabel: string,
+    offset: number,
+    limit: number,
+  ): Promise<{ rankings: AdminSeasonRanking[]; total: number }> {
+    const [rankingsResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT e.user_id, e.score, e.reached_at,
+                p.nickname, p.avatar_key,
+                RANK() OVER (ORDER BY e.score DESC) AS rank
+         FROM zook_bodylog_leaderboard_entries e
+         LEFT JOIN zook_bodylog_profiles p ON p.app_id = e.app_id AND p.user_id = e.user_id
+         WHERE e.app_id = $1 AND e.season_label = $2
+         ORDER BY e.score DESC
+         LIMIT $3 OFFSET $4`,
+        [appId, seasonLabel, limit, offset],
+      ),
+      this.query(
+        "SELECT COUNT(*)::int AS count FROM zook_bodylog_leaderboard_entries WHERE app_id = $1 AND season_label = $2",
+        [appId, seasonLabel],
+      ),
+    ]);
+
+    const rankings: AdminSeasonRanking[] = rankingsResult.rows.map((row) => ({
+      rank: Number(row.rank),
+      userId: String(row.user_id),
+      nickname: String(row.nickname ?? "unknown"),
+      avatarKey: (row.avatar_key as string | null) ?? null,
+      score: Number(row.score),
+      completedDays: 0,
+      joinedAt: iso(row.reached_at),
+    }));
+
+    return { rankings, total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async removeSeasonEntry(appId: string, seasonLabel: string, userId: string): Promise<void> {
+    await this.query(
+      "DELETE FROM zook_bodylog_leaderboard_entries WHERE app_id = $1 AND season_label = $2 AND user_id = $3",
+      [appId, seasonLabel, userId],
+    );
+  }
+
+  // ===== Challenge Management =====
+
+  async listChallengesPaginated(
+    appId: string,
+    offset: number,
+    limit: number,
+  ): Promise<{ challenges: AdminChallenge[]; total: number }> {
+    const [challengesResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT c.id, c.creator_user_id, c.theme_key, c.status, c.created_at,
+                p.nickname AS creator_nickname,
+                (SELECT COUNT(*)::int FROM zook_bodylog_challenge_members cm WHERE cm.challenge_id = c.id) AS member_count
+         FROM zook_bodylog_challenges c
+         LEFT JOIN zook_bodylog_profiles p ON p.app_id = c.app_id AND p.user_id = c.creator_user_id
+         WHERE c.app_id = $1
+         ORDER BY c.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [appId, limit, offset],
+      ),
+      this.query("SELECT COUNT(*)::int AS count FROM zook_bodylog_challenges WHERE app_id = $1", [appId]),
+    ]);
+
+    const challenges: AdminChallenge[] = challengesResult.rows.map((row) => ({
+      challengeId: String(row.id),
+      creatorUserId: String(row.creator_user_id),
+      creatorNickname: String(row.creator_nickname ?? "unknown"),
+      themeKey: String(row.theme_key),
+      status: String(row.status),
+      memberCount: Number(row.member_count),
+      createdAt: iso(row.created_at),
+    }));
+
+    return { challenges, total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async getChallengeStatistics(appId: string): Promise<AdminChallengeStatistics> {
+    const result = await this.query(
+      `SELECT
+         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+         COUNT(*) FILTER (WHERE status = 'settled')::int AS completed
+       FROM zook_bodylog_challenges WHERE app_id = $1`,
+      [appId],
+    );
+    const row = result.rows[0];
+    const total = Number(row?.total ?? 0);
+    let avgMembers = 0;
+    if (total > 0) {
+      const avgResult = await this.query(
+        "SELECT AVG(cnt)::float AS avg FROM (SELECT COUNT(*)::int AS cnt FROM zook_bodylog_challenge_members cm JOIN zook_bodylog_challenges c ON c.id = cm.challenge_id WHERE c.app_id = $1 GROUP BY cm.challenge_id) sub",
+        [appId],
+      );
+      avgMembers = Number(avgResult.rows[0]?.avg ?? 0);
+    }
+    return {
+      totalChallenges: total,
+      activeChallenges: Number(row?.active ?? 0),
+      completedChallenges: Number(row?.completed ?? 0),
+      avgMembersPerChallenge: avgMembers,
+    };
+  }
+
+  // ===== Growth Plan Management =====
+
+  async listGrowthPlansPaginated(
+    offset: number,
+    limit: number,
+  ): Promise<{ plans: AdminGrowthPlan[]; total: number }> {
+    const [plansResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT gp.id, gp.user_id, gp.status, gp.start_date, gp.end_date,
+                gp.completed_missions, gp.total_missions,
+                p.nickname
+         FROM bodylog_seven_day_plans gp
+         LEFT JOIN zook_bodylog_profiles p ON p.app_id = 'bodylog' AND p.user_id = gp.user_id
+         ORDER BY gp.created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset],
+      ),
+      this.query("SELECT COUNT(*)::int AS count FROM bodylog_seven_day_plans"),
+    ]);
+
+    const plans: AdminGrowthPlan[] = plansResult.rows.map((row) => ({
+      planId: String(row.id),
+      userId: String(row.user_id),
+      nickname: String(row.nickname ?? "unknown"),
+      status: String(row.status) as AdminGrowthPlan["status"],
+      startDate: iso(row.start_date),
+      endDate: iso(row.end_date),
+      completedMissions: Number(row.completed_missions),
+      totalMissions: Number(row.total_missions),
+    }));
+
+    return { plans, total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async getGrowthStatistics(): Promise<AdminGrowthStatistics> {
+    const result = await this.query(
+      `SELECT
+         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+         COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+         AVG(CASE WHEN status = 'completed' THEN completed_missions::float / NULLIF(total_missions, 0) END) AS avg_rate
+       FROM bodylog_seven_day_plans`,
+    );
+    const row = result.rows[0];
+    return {
+      totalPlans: Number(row?.total ?? 0),
+      activePlans: Number(row?.active ?? 0),
+      completedPlans: Number(row?.completed ?? 0),
+      avgCompletionRate: Number(row?.avg_rate ?? 0),
+    };
+  }
+
+  // ===== Reward Management =====
+
+  async listRewardsPaginated(
+    offset: number,
+    limit: number,
+  ): Promise<{ rewards: AdminReward[]; total: number }> {
+    const [rewardsResult, countResult] = await Promise.all([
+      this.query(
+        `SELECT id, plan_id, type, value, claimed, claimed_at, created_at
+         FROM bodylog_rewards
+         ORDER BY created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset],
+      ),
+      this.query("SELECT COUNT(*)::int AS count FROM bodylog_rewards"),
+    ]);
+
+    const rewards: AdminReward[] = rewardsResult.rows.map((row) => ({
+      rewardId: String(row.id),
+      planId: String(row.plan_id),
+      userId: "",
+      type: String(row.type),
+      value: String(row.value),
+      claimed: Boolean(row.claimed),
+      claimedAt: row.claimed_at ? iso(row.claimed_at) : null,
+      createdAt: iso(row.created_at),
+    }));
+
+    return { rewards, total: Number(countResult.rows[0]?.count ?? 0) };
+  }
+
+  async getRewardStatistics(): Promise<AdminRewardStatistics> {
+    const result = await this.query(
+      `SELECT
+         COUNT(*)::int AS total,
+         COUNT(*) FILTER (WHERE claimed = true)::int AS claimed
+       FROM bodylog_rewards`,
+    );
+    const row = result.rows[0];
+    const total = Number(row?.total ?? 0);
+    const claimed = Number(row?.claimed ?? 0);
+    return {
+      totalRewards: total,
+      claimedRewards: claimed,
+      claimRate: total > 0 ? claimed / total : 0,
+    };
+  }
+
+  // ===== Feature Flag Analytics =====
+
+  async getFeatureFlagAnalytics(): Promise<AdminFeatureFlagAnalytics[]> {
+    const flags = await this.query("SELECT * FROM bodylog_feature_flags ORDER BY key ASC");
+    const analytics: AdminFeatureFlagAnalytics[] = [];
+    for (const flag of flags.rows) {
+      const key = String(flag.key);
+      let affectedUsers = 0;
+      let activeUsage = 0;
+      switch (key) {
+        case "growth":
+          affectedUsers = (await this.query("SELECT COUNT(*)::int AS c FROM bodylog_seven_day_plans")).rows[0]
+            ? Number((await this.query("SELECT COUNT(*)::int AS c FROM bodylog_seven_day_plans")).rows[0].c)
+            : 0;
+          activeUsage = (await this.query("SELECT COUNT(*)::int AS c FROM bodylog_seven_day_plans WHERE status = 'active'")).rows[0]
+            ? Number((await this.query("SELECT COUNT(*)::int AS c FROM bodylog_seven_day_plans WHERE status = 'active'")).rows[0].c)
+            : 0;
           break;
-        case "stale":
-          conditions.push(`g.last_active_date < $${paramIndex}::date`);
-          params.push(daysAgo(7));
-          paramIndex++;
-          conditions.push(`g.last_active_date >= $${paramIndex}::date`);
-          params.push(daysAgo(30));
-          paramIndex++;
+        case "friends":
+          affectedUsers = (await this.query("SELECT COUNT(DISTINCT user_id)::int AS c FROM zook_bodylog_friendships")).rows[0]
+            ? Number((await this.query("SELECT COUNT(DISTINCT user_id)::int AS c FROM zook_bodylog_friendships")).rows[0].c)
+            : 0;
+          activeUsage = affectedUsers;
           break;
-        case "dead":
-          conditions.push(`g.last_active_date < $${paramIndex}::date`);
-          params.push(daysAgo(30));
-          paramIndex++;
+        case "competition":
+          affectedUsers = (await this.query("SELECT COUNT(DISTINCT user_id)::int AS c FROM zook_bodylog_leaderboard_entries")).rows[0]
+            ? Number((await this.query("SELECT COUNT(DISTINCT user_id)::int AS c FROM zook_bodylog_leaderboard_entries")).rows[0].c)
+            : 0;
+          activeUsage = affectedUsers;
+          break;
+        case "challengeCreation":
+          affectedUsers = (await this.query("SELECT COUNT(DISTINCT creator_user_id)::int AS c FROM zook_bodylog_challenges")).rows[0]
+            ? Number((await this.query("SELECT COUNT(DISTINCT creator_user_id)::int AS c FROM zook_bodylog_challenges")).rows[0].c)
+            : 0;
+          activeUsage = (await this.query("SELECT COUNT(*)::int AS c FROM zook_bodylog_challenges WHERE status = 'active'")).rows[0]
+            ? Number((await this.query("SELECT COUNT(*)::int AS c FROM zook_bodylog_challenges WHERE status = 'active'")).rows[0].c)
+            : 0;
           break;
       }
+      analytics.push({ key, affectedUsers, activeUsage });
     }
+    return analytics;
+  }
 
-    const whereClause = conditions.join(" AND ");
+  // ===== User Details =====
 
-    // 获取总数
-    const countResult = await this.query(
-      `SELECT COUNT(*) as total FROM zook_bodylog_groups g WHERE ${whereClause}`,
-      params
+  async getUserDetails(appId: string, userId: string): Promise<AdminUserDetails | null> {
+    const profileResult = await this.query(
+      `SELECT p.*, u.email,
+              COALESCE((SELECT COUNT(*)::int FROM zook_bodylog_friendships WHERE app_id = $1 AND user_id = $2), 0) AS friend_count,
+              COALESCE((SELECT COUNT(*)::int FROM zook_bodylog_buddy_pairs WHERE app_id = $1 AND (user_id = $2 OR partner_user_id = $2)), 0) AS buddy_pair_count,
+              COALESCE((SELECT COUNT(*)::int FROM zook_bodylog_group_members gm
+                        JOIN zook_bodylog_groups g ON g.id = gm.group_id AND g.app_id = $1
+                        WHERE gm.user_id = $2), 0) AS group_count,
+              COALESCE((SELECT COUNT(*)::int FROM zook_bodylog_friend_requests WHERE app_id = $1 AND sender_user_id = $2 AND status = 'pending'), 0) AS pending_requests
+       FROM zook_bodylog_profiles p
+       LEFT JOIN zook_users u ON u.id = $2
+       WHERE p.app_id = $1 AND p.user_id = $2`,
+      [appId, userId],
     );
+    if (profileResult.rows.length === 0) return null;
+    const row = profileResult.rows[0];
 
-    const total = Number(countResult.rows[0]?.total) || 0;
+    const subscriptionResult = await this.query(
+      `SELECT * FROM zook_user_subscriptions WHERE app_id = $1 AND user_id = $2 ORDER BY expires_at DESC LIMIT 1`,
+      [appId, userId],
+    );
+    const subRow = subscriptionResult.rows[0];
 
-    // 获取分页数据
-    const offset = (input.page - 1) * input.limit;
-    params.push(input.limit, offset);
+    const growthPlanResult = await this.query(
+      `SELECT p.*,
+              COALESCE((SELECT COUNT(*)::int FROM bodylog_missions WHERE plan_id = p.id AND completed = true), 0) AS completed_missions,
+              COALESCE((SELECT COUNT(*)::int FROM bodylog_missions WHERE plan_id = p.id), 0) AS total_missions
+       FROM bodylog_seven_day_plans p
+       WHERE p.user_id = $1 AND p.status = 'active'
+       ORDER BY p.start_date DESC LIMIT 1`,
+      [userId],
+    );
+    const planRow = growthPlanResult.rows[0];
 
-    const result = await this.query(
+    const reportsResult = await this.query(
       `SELECT
-        g.id as group_id,
-        g.name,
-        g.status,
-        g.leader_user_id,
-        g.created_at::text as created_at,
-        g.last_active_date::text as last_active_date,
-        COALESCE(member_stats.member_count, 0) as member_count,
-        COALESCE(checkin_stats.checkins_7d, 0) as checkins_7d,
-        COALESCE(checkin_stats.checkins_30d, 0) as checkins_30d,
-        COALESCE(checkin_stats.active_members_7d, 0) as active_members_7d,
-        COALESCE(checkin_stats.completion_rate_7d, 0) as completion_rate_7d
-      FROM zook_bodylog_groups g
-      LEFT JOIN LATERAL (
-        SELECT COUNT(*) as member_count
-        FROM zook_bodylog_group_members gm
-        WHERE gm.group_id = g.id AND gm.status = 'active'
-      ) member_stats ON true
-      LEFT JOIN LATERAL (
-        SELECT
-          SUM(CASE WHEN r.date >= CURRENT_DATE - INTERVAL '7 days' THEN r.completed_count ELSE 0 END) as checkins_7d,
-          SUM(CASE WHEN r.date >= CURRENT_DATE - INTERVAL '30 days' THEN r.completed_count ELSE 0 END) as checkins_30d,
-          COUNT(DISTINCT CASE WHEN r.date >= CURRENT_DATE - INTERVAL '7 days' THEN uid END) as active_members_7d,
-          ROUND(AVG(CASE WHEN r.date >= CURRENT_DATE - INTERVAL '7 days' THEN r.completion_rate END)::numeric, 2) as completion_rate_7d
-        FROM zook_bodylog_group_daily_records r
-        CROSS JOIN LATERAL jsonb_array_elements_text(r.completed_user_ids) AS uid
-        WHERE r.group_id = g.id
-      ) checkin_stats ON true
-      WHERE ${whereClause}
-      ORDER BY g.last_active_date DESC NULLS LAST
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      params
+         COALESCE((SELECT COUNT(*)::int FROM zook_bodylog_reports WHERE app_id = $1 AND reporter_user_id = $2), 0) AS reports_made,
+         COALESCE((SELECT COUNT(*)::int FROM zook_bodylog_reports WHERE app_id = $1 AND reported_user_id = $2), 0) AS reports_received`,
+      [appId, userId],
+    );
+    const reportsRow = reportsResult.rows[0];
+
+    return {
+      userId: String(row.user_id),
+      nickname: String(row.nickname),
+      avatarKey: row.avatar_key ?? null,
+      status: (row.status ?? "active") as AdminUserStatus,
+      createdAt: String(row.created_at),
+      lastActiveAt: row.last_active_at ? String(row.last_active_at) : null,
+      subscriptionTier: (row.subscription_tier ?? "free") as SubscriptionTier,
+      friendCount: Number(row.friend_count ?? 0),
+      buddyPairCount: Number(row.buddy_pair_count ?? 0),
+      groupCount: Number(row.group_count ?? 0),
+      email: row.email ? String(row.email) : null,
+      subscription: subRow ? {
+        tier: String(subRow.tier) as SubscriptionTier,
+        expiresAt: subRow.expires_at ? String(subRow.expires_at) : null,
+        startedAt: String(subRow.started_at),
+      } : null,
+      social: {
+        friendsCount: Number(row.friend_count ?? 0),
+        buddyPairsCount: Number(row.buddy_pair_count ?? 0),
+        groupsCount: Number(row.group_count ?? 0),
+        friendRequestsPending: Number(row.pending_requests ?? 0),
+      },
+      growth: {
+        activePlan: planRow ? {
+          planId: String(planRow.id),
+          startDate: String(planRow.start_date),
+          completedMissions: Number(planRow.completed_missions ?? 0),
+          totalMissions: Number(planRow.total_missions ?? 0),
+        } : null,
+      },
+      reports: {
+        reportsMade: Number(reportsRow?.reports_made ?? 0),
+        reportsReceived: Number(reportsRow?.reports_received ?? 0),
+      },
+    };
+  }
+
+  async updateUserStatus(appId: string, userId: string, status: AdminUserStatus): Promise<void> {
+    await this.query(
+      `UPDATE zook_bodylog_profiles SET status = $3, updated_at = CURRENT_TIMESTAMP WHERE app_id = $1 AND user_id = $2`,
+      [appId, userId, status],
+    );
+  }
+
+  async resetUserData(appId: string, userId: string): Promise<void> {
+    await this.query(`DELETE FROM zook_bodylog_profiles WHERE app_id = $1 AND user_id = $2`, [appId, userId]);
+    await this.query(`DELETE FROM zook_bodylog_buddy_pairs WHERE app_id = $1 AND (user_id = $2 OR partner_user_id = $2)`, [appId, userId]);
+    await this.query(`DELETE FROM zook_bodylog_group_members WHERE user_id = $2`, [userId]);
+    await this.query(`DELETE FROM bodylog_seven_day_plans WHERE user_id = $2`, [userId]);
+    await this.query(`DELETE FROM zook_bodylog_leaderboard_entries WHERE app_id = $1 AND user_id = $2`, [appId, userId]);
+    await this.query(`DELETE FROM zook_user_subscriptions WHERE app_id = $1 AND user_id = $2`, [appId, userId]);
+  }
+
+  // ===== Report Resolution =====
+
+  async resolveReport(reportId: string, resolvedBy: string, resolution: string): Promise<void> {
+    await this.query(
+      `UPDATE zook_bodylog_reports SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP, resolved_by = $2, resolution = $3 WHERE id = $1`,
+      [reportId, resolvedBy, resolution],
+    );
+  }
+
+  // ===== Challenge Details =====
+
+  async getChallengeDetails(appId: string, challengeId: string): Promise<AdminChallengeDetails | null> {
+    const challengeResult = await this.query(
+      `SELECT c.*, u.nickname AS creator_nickname,
+              (SELECT COUNT(*)::int FROM zook_bodylog_challenge_members cm WHERE cm.challenge_id = c.id) AS member_count
+       FROM zook_bodylog_challenges c
+       LEFT JOIN zook_bodylog_profiles u ON u.user_id = c.creator_user_id AND u.app_id = c.app_id
+       WHERE c.id = $1 AND c.app_id = $2`,
+      [challengeId, appId],
+    );
+    if (challengeResult.rows.length === 0) return null;
+    const row = challengeResult.rows[0];
+
+    const membersResult = await this.query(
+      `SELECT m.*, p.nickname,
+              COALESCE(m.completed_dates::text, '[]') AS completed_dates
+       FROM zook_bodylog_challenge_members m
+       LEFT JOIN zook_bodylog_profiles p ON p.user_id = m.user_id AND p.app_id = $1
+       WHERE m.challenge_id = $2
+       ORDER BY m.joined_at ASC`,
+      [appId, challengeId],
     );
 
     return {
-      items: result.rows.map((row) => ({
-        groupId: row.group_id as string,
-        name: row.name as string,
-        status: row.status as string,
-        memberCount: Number(row.member_count),
-        leaderUserId: row.leader_user_id as string,
-        createdAt: row.created_at as string,
-        lastActiveDate: (row.last_active_date || "") as string,
-        checkins7d: Number(row.checkins_7d),
-        checkins30d: Number(row.checkins_30d),
-        activeMembers7d: Number(row.active_members_7d),
-        completionRate7d: Number(row.completion_rate_7d) || 0,
+      challengeId: String(row.id),
+      creatorUserId: String(row.creator_user_id),
+      creatorNickname: String(row.creator_nickname ?? "Unknown"),
+      themeKey: String(row.theme_key),
+      status: String(row.status),
+      memberCount: Number(row.member_count ?? 0),
+      createdAt: String(row.created_at),
+      members: membersResult.rows.map((m) => ({
+        userId: String(m.user_id),
+        nickname: String(m.nickname ?? "Unknown"),
+        status: String(m.status),
+        completedDates: JSON.parse(m.completed_dates ?? "[]"),
+        joinedAt: String(m.joined_at),
       })),
-      total,
     };
   }
 
-  /**
-   * 列出群组成员贡献
-   */
-  async listBodyLogGroupMemberContributions(input: {
-    groupId: string;
-    fromDate: string;
-    toDate: string;
-  }): Promise<BodyLogGroupMemberContributionRow[]> {
-    const result = await this.query(
-      `SELECT
-        gm.user_id,
-        gm.role,
-        gm.status,
-        COUNT(CASE WHEN a.type = 'checked_in' THEN 1 END) as checkin_count,
-        MAX(CASE WHEN a.type = 'checked_in' THEN a.created_at END)::text as last_checkin_at
-      FROM zook_bodylog_group_members gm
-      LEFT JOIN zook_bodylog_group_activities a ON gm.group_id = a.group_id
-        AND gm.user_id = a.actor_user_id
-        AND a.type = 'checked_in'
-        AND a.created_at >= $2::timestamptz
-        AND a.created_at < ($3::date + INTERVAL '1 day')::timestamptz
-      WHERE gm.group_id = $1 AND gm.status = 'active'
-      GROUP BY gm.user_id, gm.role, gm.status
-      ORDER BY checkin_count DESC`,
-      [input.groupId, input.fromDate, input.toDate]
+  // ===== Growth Plan Details =====
+
+  async getGrowthPlanDetails(planId: string): Promise<AdminGrowthPlanDetails | null> {
+    const planResult = await this.query(
+      `SELECT p.*, u.nickname
+       FROM bodylog_seven_day_plans p
+       LEFT JOIN zook_bodylog_profiles u ON u.user_id = p.user_id
+       WHERE p.id = $1`,
+      [planId],
+    );
+    if (planResult.rows.length === 0) return null;
+    const row = planResult.rows[0];
+
+    const missionsResult = await this.query(
+      `SELECT * FROM bodylog_missions WHERE plan_id = $1 ORDER BY day ASC`,
+      [planId],
     );
 
-    return result.rows.map((row) => ({
-      userId: row.user_id as string,
-      nickname: "", // TODO: 从用户表获取
-      avatarKey: null, // TODO: 从用户表获取
-      role: row.role as string,
-      status: row.status as string,
-      checkinCount: Number(row.checkin_count),
-      lastCheckinAt: (row.last_checkin_at || "") as string,
-    }));
+    const rewardsResult = await this.query(
+      `SELECT * FROM bodylog_rewards WHERE plan_id = $1 ORDER BY created_at ASC`,
+      [planId],
+    );
+
+    const completedMissions = missionsResult.rows.filter((m) => m.completed).length;
+    const totalMissions = missionsResult.rows.length;
+
+    return {
+      planId: String(row.id),
+      userId: String(row.user_id),
+      nickname: String(row.nickname ?? "Unknown"),
+      status: String(row.status) as GrowthPlanStatus,
+      startDate: String(row.start_date),
+      endDate: String(row.end_date),
+      completedMissions,
+      totalMissions,
+      missions: missionsResult.rows.map((m) => ({
+        missionId: String(m.id),
+        day: Number(m.day),
+        type: String(m.type),
+        target: Number(m.target),
+        completed: Boolean(m.completed),
+        completedAt: m.completed_at ? String(m.completed_at) : null,
+      })),
+      rewards: rewardsResult.rows.map((r) => ({
+        rewardId: String(r.id),
+        type: String(r.type),
+        value: String(r.value),
+        claimed: Boolean(r.claimed),
+        claimedAt: r.claimed_at ? String(r.claimed_at) : null,
+      })),
+    };
   }
 
-  /**
-   * 列出习惯使用情况
-   */
-  async listBodyLogHabitUsage(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-  }): Promise<BodyLogHabitUsageRow[]> {
-    const result = await this.query(
-      `SELECT
-        target_habit_id as habit_id,
-        COUNT(*) as checkins,
-        MAX(created_at)::text as last_checkin_at
-      FROM zook_bodylog_group_activities
-      JOIN zook_bodylog_groups g ON group_id = g.id
-      WHERE g.app_id = $1
-        AND type = 'checked_in'
-        AND created_at >= $2::timestamptz
-        AND created_at < ($3::date + INTERVAL '1 day')::timestamptz
-        AND target_habit_id IS NOT NULL
-      GROUP BY target_habit_id
-      ORDER BY checkins DESC`,
-      [input.appId, input.fromDate, input.toDate]
+  // ===== Manual Reward Issuance =====
+
+  async manualIssueReward(input: { planId: string; userId: string; type: string; value: string }): Promise<AdminReward> {
+    const planResult = await this.query(
+      "SELECT id FROM bodylog_seven_day_plans WHERE id = $1 AND user_id = $2",
+      [input.planId, input.userId],
     );
-
-    return result.rows.map((row) => ({
-      habitId: row.habit_id as string,
-      checkins: Number(row.checkins),
-      lastCheckinAt: row.last_checkin_at as string,
-    }));
-  }
-
-  /**
-   * 列出习惯模板
-   */
-  async listBodyLogHabitTemplates(appId: string): Promise<BodyLogHabitTemplateRecord[]> {
+    if (!planResult.rows.length) throw new Error("Growth plan not found for user.");
     const result = await this.query(
-      `SELECT * FROM zook_bodylog_habit_templates
-      WHERE app_id = $1
-      ORDER BY sort_order ASC, created_at ASC`,
-      [appId]
+      `INSERT INTO bodylog_rewards (plan_id, type, value, claimed, created_at)
+       VALUES ($1, $2, $3, false, CURRENT_TIMESTAMP)
+       RETURNING *`,
+      [input.planId, input.type, input.value],
     );
-
-    return result.rows.map((row) => ({
-      id: row.id as string,
-      appId: row.app_id as string,
-      templateKey: row.template_key as string,
-      category: row.category as string,
-      names: (row.names || {}) as Record<string, string>,
-      icon: (row.icon as string) || null,
-      defaultTargetCount: Number(row.default_target_count),
-      sortOrder: Number(row.sort_order),
-      status: row.status as "active" | "archived",
-      createdAt: row.created_at as string,
-      updatedAt: row.updated_at as string,
-    }));
-  }
-
-  /**
-   * 查找习惯模板
-   */
-  async findBodyLogHabitTemplate(appId: string, id: string): Promise<BodyLogHabitTemplateRecord | undefined> {
-    const result = await this.query(
-      `SELECT * FROM zook_bodylog_habit_templates WHERE app_id = $1 AND id = $2`,
-      [appId, id]
-    );
-
-    if (result.rows.length === 0) return undefined;
-
     const row = result.rows[0];
     return {
-      id: row.id as string,
-      appId: row.app_id as string,
-      templateKey: row.template_key as string,
-      category: row.category as string,
-      names: (row.names || {}) as Record<string, string>,
-      icon: (row.icon as string) || null,
-      defaultTargetCount: Number(row.default_target_count),
-      sortOrder: Number(row.sort_order),
-      status: row.status as "active" | "archived",
-      createdAt: row.created_at as string,
-      updatedAt: row.updated_at as string,
+      rewardId: String(row.id),
+      planId: String(row.plan_id),
+      userId: input.userId,
+      type: String(row.type),
+      value: String(row.value),
+      claimed: Boolean(row.claimed),
+      claimedAt: row.claimed_at ? String(row.claimed_at) : null,
+      createdAt: String(row.created_at),
     };
   }
 
-  /**
-   * 通过 key 查找习惯模板
-   */
-  async findBodyLogHabitTemplateByKey(appId: string, key: string): Promise<BodyLogHabitTemplateRecord | undefined> {
-    const result = await this.query(
-      `SELECT * FROM zook_bodylog_habit_templates WHERE app_id = $1 AND template_key = $2`,
-      [appId, key]
-    );
+  // ===== System Configuration =====
 
-    if (result.rows.length === 0) return undefined;
-
-    const row = result.rows[0];
-    return {
-      id: row.id as string,
-      appId: row.app_id as string,
-      templateKey: row.template_key as string,
-      category: row.category as string,
-      names: (row.names || {}) as Record<string, string>,
-      icon: (row.icon as string) || null,
-      defaultTargetCount: Number(row.default_target_count),
-      sortOrder: Number(row.sort_order),
-      status: row.status as "active" | "archived",
-      createdAt: row.created_at as string,
-      updatedAt: row.updated_at as string,
-    };
+  async getNotificationConfig(): Promise<AdminNotificationConfig> {
+    const result = await this.query("SELECT * FROM zook_config WHERE key = 'bodylog_notification_config' LIMIT 1");
+    if (result.rows.length === 0) {
+      return {
+        pushDeliveryEnabled: true,
+        defaultQuietHours: { isEnabled: false, startHour: 22, endHour: 8 },
+      };
+    }
+    const config = typeof result.rows[0].value === "string" ? JSON.parse(result.rows[0].value) : result.rows[0].value;
+    return config as AdminNotificationConfig;
   }
 
-  /**
-   * 插入习惯模板
-   */
-  async insertBodyLogHabitTemplate(record: BodyLogHabitTemplateRecord): Promise<void> {
+  async updateNotificationConfig(config: AdminNotificationConfig): Promise<void> {
     await this.query(
-      `INSERT INTO zook_bodylog_habit_templates (
-        id, app_id, template_key, category, names, icon,
-        default_target_count, sort_order, status, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10::timestamptz, $11::timestamptz)`,
-      [
-        record.id,
-        record.appId,
-        record.templateKey,
-        record.category,
-        JSON.stringify(record.names),
-        record.icon,
-        record.defaultTargetCount,
-        record.sortOrder,
-        record.status,
-        record.createdAt,
-        record.updatedAt,
-      ]
+      `INSERT INTO zook_config (key, value, created_at, updated_at)
+       VALUES ('bodylog_notification_config', $1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP`,
+      [JSON.stringify(config)],
     );
   }
 
-  /**
-   * 更新习惯模板
-   */
-  async updateBodyLogHabitTemplate(record: BodyLogHabitTemplateRecord): Promise<void> {
+  async getScoringConfig(): Promise<AdminScoringConfig> {
+    const result = await this.query("SELECT * FROM zook_config WHERE key = 'bodylog_scoring_config' LIMIT 1");
+    if (result.rows.length === 0) {
+      return {
+        buddyCheckinBaseScore: 10,
+        buddyEncouragementScore: 2,
+        groupCheckinBaseScore: 15,
+        challengeCompletionBonus: 50,
+        growthMissionScore: 5,
+      };
+    }
+    const config = typeof result.rows[0].value === "string" ? JSON.parse(result.rows[0].value) : result.rows[0].value;
+    return config as AdminScoringConfig;
+  }
+
+  async updateScoringConfig(config: AdminScoringConfig): Promise<void> {
     await this.query(
-      `UPDATE zook_bodylog_habit_templates SET
-        template_key = $3,
-        category = $4,
-        names = $5::jsonb,
-        icon = $6,
-        default_target_count = $7,
-        sort_order = $8,
-        status = $9,
-        updated_at = $10::timestamptz
-      WHERE app_id = $1 AND id = $2`,
-      [
-        record.appId,
-        record.id,
-        record.templateKey,
-        record.category,
-        JSON.stringify(record.names),
-        record.icon,
-        record.defaultTargetCount,
-        record.sortOrder,
-        record.status,
-        record.updatedAt,
-      ]
+      `INSERT INTO zook_config (key, value, created_at, updated_at)
+       VALUES ('bodylog_scoring_config', $1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP`,
+      [JSON.stringify(config)],
     );
   }
 
-  /**
-   * 删除习惯模板
-   */
-  async deleteBodyLogHabitTemplate(appId: string, id: string): Promise<boolean> {
-    const result = await this.query(
-      `DELETE FROM zook_bodylog_habit_templates WHERE app_id = $1 AND id = $2`,
-      [appId, id]
+  async getSeasonConfig(): Promise<AdminSeasonConfig> {
+    const result = await this.query("SELECT * FROM zook_config WHERE key = 'bodylog_season_config' LIMIT 1");
+    if (result.rows.length === 0) {
+      return {
+        defaultDurationDays: 7,
+        maxParticipantsPerSeason: 1000,
+        allowAnonymousLeaderboard: false,
+        autoCloseSeasons: true,
+      };
+    }
+    const config = typeof result.rows[0].value === "string" ? JSON.parse(result.rows[0].value) : result.rows[0].value;
+    return config as AdminSeasonConfig;
+  }
+
+  async updateSeasonConfig(config: AdminSeasonConfig): Promise<void> {
+    await this.query(
+      `INSERT INTO zook_config (key, value, created_at, updated_at)
+       VALUES ('bodylog_season_config', $1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP`,
+      [JSON.stringify(config)],
     );
-    return (result.rowCount || 0) > 0;
+  }
+
+  // ===== Helpers =====
+
+  private currentSeasonLabel(): string {
+    const now = new Date();
+    const day = now.getUTCDay() || 7;
+    const date = new Date(now.getTime());
+    date.setUTCDate(date.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
   }
 }

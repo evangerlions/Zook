@@ -51,6 +51,15 @@ function stringOf(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
   return value.trim();
 }
+function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", "review_cadence is invalid.");
+  const layers = (value as Json).layers;
+  if (!Array.isArray(layers) || layers.some(layer => !["day", "week", "month"].includes(layer as string)))
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", "review_cadence.layers is invalid.");
+  return { layers: [...new Set(layers as ("day" | "week" | "month")[])] };
+}
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value && typeof value === "object") return `{${Object.entries(value as Json).sort(([a], [b]) => a.localeCompare(b))
@@ -83,7 +92,8 @@ function goalData(row: any) { return { id: row.id, title: row.title, description
     reason: row.pauseMetadata.reason, paused_at: row.pauseMetadata.pausedAt,
     expected_resume_at: row.pauseMetadata.expectedResumeAt, keep_light_tasks: row.pauseMetadata.keepLightTasks,
     notification_policy: row.pauseMetadata.notificationPolicy } : undefined,
-  recovery_started_at: row.recoveryStartedAt, version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
+  recovery_started_at: row.recoveryStartedAt, review_cadence: row.reviewCadence ?? { layers: ["week"] },
+  version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 function variantData(definition: any) { return { title: definition.title,
   estimated_duration_minutes: definition.estimatedMinutes, completion_criteria: definition.completionCriteria }; }
 function variantsData(definitions: any) { return definitions ? Object.fromEntries(Object.entries(definitions)
@@ -316,9 +326,11 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
   if (request.path === `${PREFIX}goals` && request.method === "GET")
     return response(context, request, { items: (await runtime.goals.list(owner)).map(goalData), next_cursor: null });
   if (request.path === `${PREFIX}goals` && request.method === "POST") {
+    const body = bodyOf(request);
     const data = await idempotent(runtime, owner, request, "goal", "new", "create", async () => goalData(await runtime.goals.create(owner, {
-      title: stringOf(bodyOf(request).title, "title"), description: bodyOf(request).description as string | undefined,
-      targetDate: bodyOf(request).target_date as string | undefined, constraints: bodyOf(request).constraints as Json ?? {} })));
+      title: stringOf(body.title, "title"), description: body.description as string | undefined,
+      targetDate: body.target_date as string | undefined, constraints: body.constraints as Json ?? {},
+      reviewCadence: reviewCadenceOf(body.review_cadence) })));
     return response(context, request, data, 201);
   }
   const goalMatch = request.path.match(/^\/api\/v1\/lighttick\/goals\/([^/]+)$/);
@@ -327,7 +339,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "goal", goalMatch[1]!, "update", async () =>
       goalData(await runtime.goals.update(owner, goalMatch[1]!, numberOf(body.base_version, "base_version"), {
         title: body.title as string | undefined, description: body.description as string | undefined,
-        targetDate: body.target_date as string | undefined, constraints: body.constraints as Json | undefined })));
+        targetDate: body.target_date as string | undefined, constraints: body.constraints as Json | undefined,
+        reviewCadence: reviewCadenceOf(body.review_cadence) })));
     return response(context, request, data);
   }
   const lifecycleMatch = request.path.match(/^\/api\/v1\/lighttick\/goals\/([^/]+)\/lifecycle$/);

@@ -1,5 +1,7 @@
 import { randomId } from "../../shared/utils.ts";
+import { ApplicationError } from "../../shared/errors.ts";
 import type {
+  BodyLogAdminStore,
   BodyLogBuddyStore,
   BodyLogFeatureFlagStore,
   BodyLogGroupStore,
@@ -7,6 +9,28 @@ import type {
   BodyLogNotificationStore,
   BodyLogSubscriptionStore,
 } from "../../infrastructure/bodylog-store-ports.ts";
+import type {
+  AdminBlock,
+  AdminChallenge,
+  AdminChallengeDetails,
+  AdminChallengeStatistics,
+  AdminFeatureFlagAnalytics,
+  AdminGrowthPlan,
+  AdminGrowthPlanDetails,
+  AdminGrowthStatistics,
+  AdminNotificationConfig,
+  AdminOperationsMetrics,
+  AdminOperationsSummary,
+  AdminReport,
+  AdminReward,
+  AdminRewardStatistics,
+  AdminScoringConfig,
+  AdminSeason,
+  AdminSeasonConfig,
+  AdminSeasonRanking,
+  AdminUserDetails,
+  AdminUserProfile,
+} from "./bodylog-admin.types.ts";
 import type {
   BuddyPairRecord,
   BuddyActivityRecord,
@@ -160,10 +184,18 @@ export class InMemoryBodyLogSubscriptionStore implements BodyLogSubscriptionStor
     return active[0] ? clone(active[0]) : null;
   }
   upsertUserSubscription(record: UserSubscriptionRecord): void {
+    const owner = record.originalTransactionId
+      ? this.subscriptions.find((r) => r.originalTransactionId === record.originalTransactionId)
+      : undefined;
+    if (owner && (owner.appId !== record.appId || owner.userId !== record.userId)) {
+      throw new ApplicationError(409, "BODYLOG_PURCHASE_ALREADY_CLAIMED", "This store purchase is linked to another BodyLog account.");
+    }
     const index = this.subscriptions.findIndex((r) => r.id === record.id);
     if (index >= 0) { this.subscriptions[index] = clone(record); } else { this.subscriptions.push(clone(record)); }
   }
-  insertSubscriptionEvent(record: SubscriptionEventRecord): void { this.events.push(clone(record)); }
+  insertSubscriptionEvent(record: SubscriptionEventRecord): void {
+    if (!this.events.some((event) => event.id === record.id)) this.events.push(clone(record));
+  }
 }
 
 export class InMemoryBodyLogGrowthStore implements BodyLogGrowthStore {
@@ -324,4 +356,53 @@ export class InMemoryBodyLogFeatureFlagStore implements BodyLogFeatureFlagStore 
     this.flags[this.flags.indexOf(existing)] = clone(updated);
     return updated;
   }
+}
+
+/**
+ * In-memory admin store returns empty/zero data for testing.
+ * Admin queries are read-only aggregates; the Postgres implementation
+ * provides real data.
+ */
+export class InMemoryBodyLogAdminStore implements BodyLogAdminStore {
+  getOperationsSummary(): AdminOperationsSummary {
+    return { overview: { totalUsers: 0, totalBuddyPairs: 0, totalGroups: 0, totalChallenges: 0, activeGrowthPlans: 0 }, subscriptions: { totalActive: 0, byTier: {} }, generatedAt: new Date().toISOString() };
+  }
+  getOperationsMetrics(_appId: string, periodDays: number): AdminOperationsMetrics {
+    return { period: periodDays === 7 ? "7d" : periodDays === 30 ? "30d" : "90d", newUsers: 0, activeUsers: 0, buddyCheckins: 0, groupCheckins: 0, challengesCompleted: 0, growthMissionsCompleted: 0, newSubscriptions: 0 };
+  }
+  listUserProfiles(): { users: AdminUserProfile[]; total: number } { return { users: [], total: 0 }; }
+  listReportsPaginated(): { reports: AdminReport[]; total: number } { return { reports: [], total: 0 }; }
+  listBlocksPaginated(): { blocks: AdminBlock[]; total: number } { return { blocks: [], total: 0 }; }
+  deleteBlock(): void { /* no-op */ }
+  listSeasons(): { seasons: AdminSeason[]; total: number } { return { seasons: [], total: 0 }; }
+  listSeasonRankings(): { rankings: AdminSeasonRanking[]; total: number } { return { rankings: [], total: 0 }; }
+  removeSeasonEntry(): void { /* no-op */ }
+  listChallengesPaginated(): { challenges: AdminChallenge[]; total: number } { return { challenges: [], total: 0 }; }
+  getChallengeStatistics(): AdminChallengeStatistics { return { totalChallenges: 0, activeChallenges: 0, completedChallenges: 0, avgMembersPerChallenge: 0 }; }
+  listGrowthPlansPaginated(): { plans: AdminGrowthPlan[]; total: number } { return { plans: [], total: 0 }; }
+  getGrowthStatistics(): AdminGrowthStatistics { return { totalPlans: 0, activePlans: 0, completedPlans: 0, avgCompletionRate: 0 }; }
+  listRewardsPaginated(): { rewards: AdminReward[]; total: number } { return { rewards: [], total: 0 }; }
+  getRewardStatistics(): AdminRewardStatistics { return { totalRewards: 0, claimedRewards: 0, claimRate: 0 }; }
+  getFeatureFlagAnalytics(): AdminFeatureFlagAnalytics[] { return []; }
+  getUserDetails(): AdminUserDetails | null { return null; }
+  updateUserStatus(): void { /* no-op */ }
+  resetUserData(): void { /* no-op */ }
+  resolveReport(): void { /* no-op */ }
+  getChallengeDetails(): AdminChallengeDetails | null { return null; }
+  getGrowthPlanDetails(): AdminGrowthPlanDetails | null { return null; }
+  manualIssueReward(input: { planId: string; userId: string; type: string; value: string }): AdminReward {
+    return { rewardId: "reward_" + Date.now(), planId: input.planId, userId: input.userId, type: input.type, value: input.value, claimed: false, claimedAt: null, createdAt: new Date().toISOString() };
+  }
+  getNotificationConfig(): AdminNotificationConfig {
+    return { pushDeliveryEnabled: true, defaultQuietHours: { isEnabled: false, startHour: 22, endHour: 8 } };
+  }
+  updateNotificationConfig(): void { /* no-op */ }
+  getScoringConfig(): AdminScoringConfig {
+    return { buddyCheckinBaseScore: 10, buddyEncouragementScore: 2, groupCheckinBaseScore: 15, challengeCompletionBonus: 50, growthMissionScore: 5 };
+  }
+  updateScoringConfig(): void { /* no-op */ }
+  getSeasonConfig(): AdminSeasonConfig {
+    return { defaultDurationDays: 7, maxParticipantsPerSeason: 1000, allowAnonymousLeaderboard: false, autoCloseSeasons: true };
+  }
+  updateSeasonConfig(): void { /* no-op */ }
 }

@@ -31,6 +31,29 @@ import type {
   UpdateNotificationPreferencesInput,
   PushDeviceRecord,
 } from "../modules/bodylog/bodylog-notification.types.ts";
+import type {
+  AdminBlock,
+  AdminChallenge,
+  AdminChallengeDetails,
+  AdminChallengeStatistics,
+  AdminFeatureFlagAnalytics,
+  AdminGrowthPlan,
+  AdminGrowthPlanDetails,
+  AdminGrowthStatistics,
+  AdminNotificationConfig,
+  AdminOperationsMetrics,
+  AdminOperationsSummary,
+  AdminReport,
+  AdminReward,
+  AdminRewardStatistics,
+  AdminScoringConfig,
+  AdminSeason,
+  AdminSeasonConfig,
+  AdminSeasonRanking,
+  AdminUserDetails,
+  AdminUserProfile,
+  AdminUserStatus,
+} from "../modules/bodylog/bodylog-admin.types.ts";
 import type { FeatureFlagRecord } from "../modules/bodylog/bodylog-feature-flag.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
@@ -128,6 +151,42 @@ export interface BodyLogSocialAccess {
   listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
 }
 
+/**
+ * Admin-specific aggregate queries for the BodyLog operations dashboard.
+ * These cross-cutting queries don't belong to any single domain store.
+ */
+export interface BodyLogAdminStore {
+  getOperationsSummary(appId: string): MaybePromise<AdminOperationsSummary>;
+  getOperationsMetrics(appId: string, periodDays: number): MaybePromise<AdminOperationsMetrics>;
+  listUserProfiles(appId: string, offset: number, limit: number, search?: string): MaybePromise<{ users: AdminUserProfile[]; total: number }>;
+  getUserDetails(appId: string, userId: string): MaybePromise<AdminUserDetails | null>;
+  updateUserStatus(appId: string, userId: string, status: AdminUserStatus): MaybePromise<void>;
+  resetUserData(appId: string, userId: string): MaybePromise<void>;
+  listReportsPaginated(appId: string, offset: number, limit: number): MaybePromise<{ reports: AdminReport[]; total: number }>;
+  resolveReport(reportId: string, resolvedBy: string, resolution: string): MaybePromise<void>;
+  listBlocksPaginated(appId: string, offset: number, limit: number): MaybePromise<{ blocks: AdminBlock[]; total: number }>;
+  deleteBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
+  listSeasons(appId: string, offset: number, limit: number): MaybePromise<{ seasons: AdminSeason[]; total: number }>;
+  listSeasonRankings(appId: string, seasonLabel: string, offset: number, limit: number): MaybePromise<{ rankings: AdminSeasonRanking[]; total: number }>;
+  removeSeasonEntry(appId: string, seasonLabel: string, userId: string): MaybePromise<void>;
+  listChallengesPaginated(appId: string, offset: number, limit: number): MaybePromise<{ challenges: AdminChallenge[]; total: number }>;
+  getChallengeDetails(appId: string, challengeId: string): MaybePromise<AdminChallengeDetails | null>;
+  getChallengeStatistics(appId: string): MaybePromise<AdminChallengeStatistics>;
+  listGrowthPlansPaginated(offset: number, limit: number): MaybePromise<{ plans: AdminGrowthPlan[]; total: number }>;
+  getGrowthPlanDetails(planId: string): MaybePromise<AdminGrowthPlanDetails | null>;
+  getGrowthStatistics(): MaybePromise<AdminGrowthStatistics>;
+  listRewardsPaginated(offset: number, limit: number): MaybePromise<{ rewards: AdminReward[]; total: number }>;
+  manualIssueReward(input: { planId: string; userId: string; type: string; value: string }): MaybePromise<AdminReward>;
+  getRewardStatistics(): MaybePromise<AdminRewardStatistics>;
+  getFeatureFlagAnalytics(): MaybePromise<AdminFeatureFlagAnalytics[]>;
+  getNotificationConfig(): MaybePromise<AdminNotificationConfig>;
+  updateNotificationConfig(config: AdminNotificationConfig): MaybePromise<void>;
+  getScoringConfig(): MaybePromise<AdminScoringConfig>;
+  updateScoringConfig(config: AdminScoringConfig): MaybePromise<void>;
+  getSeasonConfig(): MaybePromise<AdminSeasonConfig>;
+  updateSeasonConfig(config: AdminSeasonConfig): MaybePromise<void>;
+}
+
 export interface BodyLogStores {
   jobs: { runOnce(key: string, job: () => Promise<void>): Promise<boolean> };
   buddy: BodyLogBuddyStore;
@@ -136,4 +195,5 @@ export interface BodyLogStores {
   growth: BodyLogGrowthStore;
   notification: BodyLogNotificationStore;
   flags: BodyLogFeatureFlagStore;
+  admin: BodyLogAdminStore;
 }

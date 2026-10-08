@@ -68,7 +68,7 @@ import { PostgresBodyLogSocialStore } from "./postgres-bodylog-social.ts";
 import { PostgresBodyLogLeaderboardStore } from "./postgres-bodylog-leaderboard.ts";
 import { PostgresBodyLogInvitationStore } from "./postgres-bodylog-invitations.ts";
 import { PostgresBodyLogChallengeStore } from "./postgres-bodylog-challenges.ts";
-import type { BodyLogBuddyStore, BodyLogFeatureFlagStore, BodyLogGroupStore, BodyLogGrowthStore, BodyLogNotificationStore, BodyLogStores, BodyLogSubscriptionStore } from "../../bodylog-store-ports.ts";
+import type { BodyLogAdminStore, BodyLogBuddyStore, BodyLogFeatureFlagStore, BodyLogGroupStore, BodyLogGrowthStore, BodyLogNotificationStore, BodyLogStores, BodyLogSubscriptionStore } from "../../bodylog-store-ports.ts";
 import { createBodyLogPostgresStores } from "./postgres-bodylog-store-adapters.ts";
 import type { BodyLogBlockRecord, BodyLogFriendRequestRecord, BodyLogFriendshipRecord, BodyLogReportRecord } from "../../../modules/bodylog/bodylog-social.types.ts";
 import type { BodyLogDailyAggregate, BodyLogLeaderboardEntryRecord, BodyLogWeeklyGoalSnapshot } from "../../../modules/bodylog/bodylog-scoring.types.ts";
@@ -77,7 +77,7 @@ import type { BodyLogChallengeMemberRecord, BodyLogChallengeRecord } from "../..
 import { PostgresOperationalRecordsStore } from "./postgres-operational-records.ts";
 import { PostgresLightTickRepository } from "./postgres-lighttick-repository.ts";
 import { PostgresLlmObservabilityStore } from "./postgres-llm-observability.ts";
-import { PostgresBodyLogAdminStore } from "./postgres-bodylog-admin.ts";
+import { PostgresBodyLogCheckinStore } from "./postgres-bodylog-checkin.ts";
 import { seedPostgresDefaults } from "./postgres-seed.ts";
 import {
   parseApp,
@@ -109,7 +109,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   private readonly lightTick: PostgresLightTickRepository;
   readonly llmObservabilityStore: PostgresLlmObservabilityStore;
   private readonly bodyLogStores: BodyLogStores;
-  private readonly bodyLogAdmin: PostgresBodyLogAdminStore;
+  private readonly bodyLogAdmin: PostgresBodyLogCheckinStore;
   private initialized = false;
   private constructor(private readonly pool: Pool, private readonly seed: DatabaseSeed) {
     super();
@@ -132,7 +132,7 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.lightTick = new PostgresLightTickRepository({ query: async (sql, values = []) => await this.query(sql, values), connect: async () => await this.pool.connect() }, async operation => await this.withExclusiveSession(operation));
     this.llmObservabilityStore = new PostgresLlmObservabilityStore(async (sql, values = []) => await this.query(sql, values), async () => await this.pool.connect());
     this.bodyLogStores = createBodyLogPostgresStores(async (sql, values = []) => await this.query(sql, values), operation => this.withExclusiveSession(operation));
-    this.bodyLogAdmin = new PostgresBodyLogAdminStore(async (sql, values = []) => await this.query(sql, values));
+    this.bodyLogAdmin = new PostgresBodyLogCheckinStore(async (sql, values = []) => await this.query(sql, values));
   }
   getLightTickRepository(): PostgresLightTickRepository { return this.lightTick; }
   getBodyLogBuddyStore(): BodyLogBuddyStore { return this.bodyLogStores.buddy; }
@@ -142,6 +142,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   getBodyLogNotificationStore(): BodyLogNotificationStore { return this.bodyLogStores.notification; }
   getBodyLogFeatureFlagStore(): BodyLogFeatureFlagStore { return this.bodyLogStores.flags; }
   getBodyLogJobStore(): BodyLogStores['jobs'] { return this.bodyLogStores.jobs; }
+  getBodyLogAdminStore(): BodyLogAdminStore { return this.bodyLogStores.admin; }
   static async create(
     connectionString: string,
     seed: DatabaseSeed = {},

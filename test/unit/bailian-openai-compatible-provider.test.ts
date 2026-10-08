@@ -69,6 +69,72 @@ test("bailian provider aborts upstream streaming when the caller cancels", async
   assert.equal(upstreamSignal?.aborted, true);
 });
 
+test("provider failure diagnostic records the pre-header stage and proxy correlation id", async () => {
+  const failures: Array<Record<string, unknown>> = [];
+  let diagnosticId: string | undefined;
+  const provider = new BailianOpenAICompatibleProvider({
+    providerName: "bai",
+    fetchImplementation: async (_input, init) => {
+      diagnosticId = new Headers(init?.headers).get("x-zook-diagnostic-id") ?? undefined;
+      throw Object.assign(new Error("socket timeout"), { code: "ETIMEDOUT" });
+    },
+    diagnostics: {
+      reportFailure: (input) => {
+        failures.push(input as unknown as Record<string, unknown>);
+      },
+    },
+  });
+
+  await assert.rejects(collectEvents(provider.stream(createResolvedRequest())));
+
+  assert.match(diagnosticId ?? "", /^[0-9a-f-]{36}$/i);
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0]?.diagnosticId, diagnosticId);
+  assert.equal(failures[0]?.lastCompletedStage, "request_started");
+  assert.equal(failures[0]?.responseStatus, undefined);
+  assert.equal(failures[0]?.errorReason, "network_error");
+  assert.equal(failures[0]?.bodyBytes, 0);
+});
+
+test("provider failure diagnostic records first response bytes and SSE progress", async () => {
+  const failures: Array<Record<string, unknown>> = [];
+  const event = 'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n';
+  const provider = new BailianOpenAICompatibleProvider({
+    providerName: "bai",
+    fetchImplementation: async () => {
+      let sentEvent = false;
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          pull(controller) {
+            if (!sentEvent) {
+              sentEvent = true;
+              controller.enqueue(new TextEncoder().encode(event));
+              return;
+            }
+            controller.error(Object.assign(new Error("socket timeout"), { code: "ETIMEDOUT" }));
+          },
+        }),
+        { status: 200 },
+      );
+    },
+    diagnostics: {
+      reportFailure: (input) => {
+        failures.push(input as unknown as Record<string, unknown>);
+      },
+    },
+  });
+
+  await assert.rejects(collectEvents(provider.stream(createResolvedRequest())));
+
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0]?.lastCompletedStage, "sse_event");
+  assert.equal(failures[0]?.sseEventCount, 1);
+  assert.equal(failures[0]?.bodyBytes, new TextEncoder().encode(event).byteLength);
+  assert.equal(typeof failures[0]?.responseHeadersMs, "number");
+  assert.equal(typeof failures[0]?.firstBodyByteMs, "number");
+  assert.equal(typeof failures[0]?.firstSseEventMs, "number");
+});
+
 function createResolvedEmbeddingRequest(
   providerOptions?: Record<string, unknown>,
 ): ResolvedEmbeddingRequest {

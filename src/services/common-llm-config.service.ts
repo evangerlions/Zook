@@ -1,3 +1,4 @@
+import { normalizeLlmModelRoutes } from "./llm-model-route-config.ts";
 import { VersionedAppConfigService } from "./versioned-app-config.service.ts";
 import { ApplicationError, badRequest } from "../shared/errors.ts";
 import { maskSensitiveString } from "../shared/utils.ts";
@@ -7,7 +8,6 @@ import type {
   AdminLlmServiceDocument,
   LlmModelConfig,
   LlmModelKind,
-  LlmModelRouteConfig,
   LlmRouteCircuitBreakerConfig,
   LlmProviderConfig,
   LlmRoutingStrategy,
@@ -44,7 +44,6 @@ const VALID_MODEL_KINDS = new Set<LlmModelKind>(["chat", "embedding"]);
 const VALID_ROUTING_STRATEGIES = new Set<LlmRoutingStrategy>(["auto", "fixed"]);
 const PROVIDER_KEY_PATTERN = /^[a-z0-9][a-z0-9_-]*$/;
 const MODEL_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-const WEIGHT_PRECISION = 100;
 const QWEN_FLASH_MODEL_KEY = "qwen3.5-flash";
 const QWEN_PLUS_MODEL_KEY = "qwen3.6-plus";
 const TEXT_EMBEDDING_MODEL_KEY = "text-embedding-v4";
@@ -420,7 +419,7 @@ export class CommonLlmConfigService {
       const label = this.requireTrimmedString(source.label, `Model ${key || `#${index + 1}`} label is required.`);
       const kind = this.normalizeKind(source.kind);
       const strategy = this.normalizeStrategy(source.strategy);
-      const routes = this.normalizeRoutes(source.routes, key, providerKeys);
+      const routes = normalizeLlmModelRoutes(source.routes, key, providerKeys);
 
       return {
         key,
@@ -433,62 +432,6 @@ export class CommonLlmConfigService {
 
     this.assertUnique(models.map((item) => item.key), "model key");
     return models;
-  }
-
-  private normalizeRoutes(
-    value: unknown,
-    modelKey: string,
-    providerKeys: Set<string>,
-  ): LlmModelRouteConfig[] {
-    if (!Array.isArray(value)) {
-      badRequest("ADMIN_LLM_SERVICE_INVALID", `Model ${modelKey} routes must be an array.`);
-    }
-
-    if (!value.length) {
-      badRequest("ADMIN_LLM_SERVICE_INVALID", `Model ${modelKey} must contain at least one route.`);
-    }
-
-    const routes = value.map((item, index) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) {
-        badRequest("ADMIN_LLM_SERVICE_INVALID", `Model ${modelKey} route #${index + 1} must be a JSON object.`);
-      }
-
-      const source = item as Record<string, unknown>;
-      const provider = this.normalizeProviderKey(source.provider);
-      const providerModel = this.requireTrimmedString(
-        source.providerModel,
-        `Model ${modelKey} route #${index + 1} providerModel is required.`,
-      );
-      const enabled = Boolean(source.enabled);
-      const weight = this.normalizeWeight(source.weight, modelKey, index + 1);
-
-      if (!providerKeys.has(provider)) {
-        badRequest(
-          "ADMIN_LLM_SERVICE_INVALID",
-          `Model ${modelKey} route #${index + 1} references unknown provider ${provider}.`,
-        );
-      }
-
-      return {
-        provider,
-        providerModel,
-        enabled,
-        weight,
-      } satisfies LlmModelRouteConfig;
-    });
-
-    const enabledRoutes = routes.filter((item) => item.enabled);
-    if (enabledRoutes.length) {
-      const totalWeight = enabledRoutes.reduce((sum, item) => sum + item.weight, 0);
-      if (Math.abs(totalWeight - 100) > 0.01) {
-        badRequest(
-          "ADMIN_LLM_SERVICE_INVALID",
-          `Enabled routes of model ${modelKey} must add up to 100, received ${totalWeight.toFixed(2)}.`,
-        );
-      }
-    }
-
-    return routes;
   }
 
   private normalizeProviderKey(value: unknown): string {
@@ -526,32 +469,6 @@ export class CommonLlmConfigService {
     }
 
     return normalized as LlmModelKind;
-  }
-
-  private normalizeWeight(value: unknown, modelKey: string, routeIndex: number): number {
-    if (typeof value !== "number" || !Number.isFinite(value)) {
-      badRequest(
-        "ADMIN_LLM_SERVICE_INVALID",
-        `Model ${modelKey} route #${routeIndex} weight must be a number.`,
-      );
-    }
-
-    if (value <= 0) {
-      badRequest(
-        "ADMIN_LLM_SERVICE_INVALID",
-        `Model ${modelKey} route #${routeIndex} weight must be greater than 0.`,
-      );
-    }
-
-    const normalized = Math.round(value * WEIGHT_PRECISION) / WEIGHT_PRECISION;
-    if (Math.abs(value - normalized) > 0.000001) {
-      badRequest(
-        "ADMIN_LLM_SERVICE_INVALID",
-        `Model ${modelKey} route #${routeIndex} weight must keep at most 2 decimals.`,
-      );
-    }
-
-    return normalized;
   }
 
   private normalizeBaseUrl(value: unknown): string {
