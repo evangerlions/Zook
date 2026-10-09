@@ -17,6 +17,7 @@ export interface ContentSafetyConfig {
   };
   llm: {
     enabled: boolean;
+    useJev?: boolean;
     modelKey: string;
     timeoutMs: number;
   };
@@ -118,36 +119,34 @@ export interface AdminContentSafetyBlockRecordsDocument {
 export interface AdminContentSafetyStatsBucket {
   key: string;
   count: number;
+  successful: number;
+  passed: number;
   blocked: number;
   failedOpen: number;
-  avgLatencyMs: number;
-  p95LatencyMs: number;
+}
+
+export interface AdminContentSafetyDailyStatsItem {
+  date: string;
+  total: number;
+  successful: number;
+  passed: number;
+  blocked: number;
+  failedOpen: number;
 }
 
 export interface AdminContentSafetyStatsDocument {
   timezone: string;
+  storage: "redis";
   summary: {
     total: number;
+    successful: number;
     passed: number;
     blocked: number;
     failedOpen: number;
     blockRate: number;
     failedOpenRate: number;
-    avgLatencyMs: number;
-    p95LatencyMs: number;
   };
-  daily: Array<{
-    date: string;
-    total: number;
-    passed: number;
-    blocked: number;
-    failedOpen: number;
-  }>;
-  byMethod: AdminContentSafetyStatsBucket[];
-  bySource: AdminContentSafetyStatsBucket[];
-  byApp: AdminContentSafetyStatsBucket[];
-  byTaskType: AdminContentSafetyStatsBucket[];
+  daily: AdminContentSafetyDailyStatsItem[];
   byCategory: AdminContentSafetyStatsBucket[];
-  byFailureReason: AdminContentSafetyStatsBucket[];
-  byLengthBucket: AdminContentSafetyStatsBucket[];
+  byModel: AdminContentSafetyStatsBucket[];
 }

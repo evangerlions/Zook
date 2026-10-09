@@ -1,5 +1,43 @@
 # Admin API Spec
 
+LLM monitoring aggregates (overview and model details) exclude upstream calls
+explicitly marked with internal `callPurpose: "content_safety"`. This applies to
+totals, rates, timelines and grouped denominators; normal calls to the same model
+remain included. Raw observations and route-health evaluation are unchanged.
+Migration 067 adds nullable `call_purpose`; deploy it with the backend. Historical
+unmarked records remain included because their purpose cannot be inferred safely.
+
+## Content Safety: Jev selection and Redis counters
+
+Existing content-safety endpoints keep their Admin session and
+`content_safety.sensitive_words.manage` verification requirements.
+
+- `PUT /api/v1/admin/apps/common/content-safety`: optional boolean
+  `llm.useJev` defaults to false. True selects `typesafe/jev-1.13` via
+  OpenRouter Decisions API; false preserves the original `llm.modelKey` path.
+  Credentials and transparent proxy are resolved from the existing LLM service
+  OpenRouter configuration. Provider failures remain fail-open; no automatic retry.
+- `GET /api/v1/admin/apps/common/content-safety/stats`: only `dateFrom` and
+  `dateTo` (real YYYY-MM-DD dates) are supported. Removed dimension filters
+  (`appId`, `source`, `method`, `taskType`) return 400. Dates are clamped to
+  the latest 30 Asia/Shanghai days. The response contains `storage: "redis"`,
+  `timezone`, `summary`, `daily`, `byCategory`, and `byModel`. Old latency,
+  source, app, task and length distributions are removed.
+- Summary counts: `total` = nonempty input checks started; `successful` =
+  pass + block decisions; `passed`, `blocked`, `failedOpen` are completed
+  outcomes. `blockRate` and `failedOpenRate` are fractions of total. Disabled
+  checks count as passes. In-flight checks may not yet have a completed outcome.
+- Daily rows contain date and counts. Category rows contain key and blocked count;
+  model/engine rows contain key, count and outcome counts. Model key is Jev/Qwen,
+  another configured logical model, or keyword/aliyun/disabled for non-model checks.
+- Each Redis hash expires in 35 days. This is operational counting, not a billing
+  ledger: Redis outages can lose increments but cannot alter moderation decisions.
+  Writes are bounded to 150ms; reads to 1.5s. Counter write warnings are throttled
+  to once per minute per process. Read failures return errors, not fake zero counts.
+- No historical backfill or PostgreSQL scan. Only blocked input records are
+  persisted; the existing block-record endpoint remains separate. Retention
+  deletion runs in the worker, bounded to 1,000 records per tick.
+
 ## 1. 文档目标
 
 本文档只描述 Zook 项目内部使用的后台与运营接口。

@@ -18,6 +18,7 @@ async function runTick(): Promise<void> {
   if (tickRunning) return;
   tickRunning = true;
   try {
+    await runtime.services.contentSafetyService.cleanupExpiredRecords();
     const replay = await runtime.services.failedEventRetryService.retryDueEvents();
     const smsCleanup = await runtime.services.smsVerificationCleanupService.runDailyCleanupIfDue();
     const llmCleanup = await runtime.services.llmObservabilityRetentionService.runDailyCleanupIfDue();
