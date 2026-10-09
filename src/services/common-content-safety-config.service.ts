@@ -118,6 +118,7 @@ export class CommonContentSafetyConfigService {
       },
       llm: {
         enabled: true,
+        useJev: false,
         modelKey: DEFAULT_LLM_MODEL_KEY,
         timeoutMs: DEFAULT_TIMEOUT_MS,
       },
@@ -211,8 +212,12 @@ export class CommonContentSafetyConfigService {
     const source = value && typeof value === "object" && !Array.isArray(value)
       ? value as Record<string, unknown>
       : {};
+    if (source.useJev !== undefined && typeof source.useJev !== "boolean") {
+      badRequest("REQ_INVALID_BODY", "llm.useJev must be a boolean.");
+    }
     return {
       enabled: source.enabled !== false,
+      useJev: source.useJev === true,
       modelKey: this.optionalString(source.modelKey) || DEFAULT_LLM_MODEL_KEY,
       timeoutMs: this.normalizePositiveInteger(source.timeoutMs, DEFAULT_TIMEOUT_MS, "llm.timeoutMs"),
     };

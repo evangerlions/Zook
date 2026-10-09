@@ -6,6 +6,7 @@ export type LlmUsageSource = "provider" | "estimated" | "missing";
 export type LlmMetricsGranularity = "hour" | "day";
 
 export interface LlmCallObservationRecord {
+  callPurpose?: "content_safety";
   callId: string;
   occurredAt: string;
   appId?: string;
@@ -43,6 +44,7 @@ export interface LlmRouteHealthRecord extends LlmRouteHealthKey {
 }
 
 export interface LlmObservabilityFilter {
+  excludeContentSafety?: boolean;
   occurredAtFrom: string;
   occurredAtTo: string;
   granularity: LlmMetricsGranularity;

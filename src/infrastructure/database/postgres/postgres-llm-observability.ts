@@ -74,13 +74,13 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
            operation, response_mode, outcome, health_impact,
            first_response_latency_ms, total_latency_ms,
            prompt_tokens, completion_tokens, reasoning_tokens, total_tokens,
-           usage_source, error_code, error_message, routing_config_revision
+           usage_source, error_code, error_message, routing_config_revision, call_purpose
          )
          VALUES (
            $1, $2::timestamptz, $3, $4, $5, $6,
            $7, $8, $9, $10,
            $11, $12, $13, $14, $15, $16,
-           $17, $18, $19, $20
+           $17, $18, $19, $20, $21
          )
          ON CONFLICT (call_id) DO NOTHING
          RETURNING call_id`,
@@ -105,6 +105,7 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
         record.errorCode ?? null,
         record.errorMessage ?? null,
         record.routingConfigRevision ?? null,
+        record.callPurpose ?? null,
       ],
     );
     return Boolean(result.rows[0]?.call_id);
@@ -203,7 +204,8 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
       buildHealthFailureGroupedSql(full.where, HEALTH_FAILURE_LIMIT),
       full.values,
     );
-    const availableResult = await query("SELECT MIN(occurred_at) AS data_available_since FROM zook_llm_call_observations");
+    const availableResult = await query("SELECT MIN(occurred_at) AS data_available_since FROM zook_llm_call_observations" +
+      (filter.excludeContentSafety ? " WHERE call_purpose IS DISTINCT FROM 'content_safety'" : ""));
     const revisionsResult = await query(
       `SELECT DISTINCT routing_config_revision
        FROM zook_llm_call_observations ${revisions.where}
@@ -281,6 +283,7 @@ export class PostgresLlmObservabilityStore implements LlmObservabilityStore {
 
 function buildWhere(filter: LlmObservabilityFilter): { where: string; values: unknown[] } {
   const clauses = ["occurred_at >= $1::timestamptz", "occurred_at < $2::timestamptz"];
+  if (filter.excludeContentSafety) clauses.push("call_purpose IS DISTINCT FROM 'content_safety'");
   const values: unknown[] = [filter.occurredAtFrom, filter.occurredAtTo];
   for (const [column, value] of [
     ["operation", filter.operation],

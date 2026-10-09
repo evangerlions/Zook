@@ -6,7 +6,6 @@ import test from "node:test";
 import { createApplication } from "../support/create-test-application.ts";
 import { InMemoryKVBackend } from "../../src/infrastructure/kv/kv-manager.ts";
 import { ApplicationError } from "../../src/shared/errors.ts";
-import { toDateKey } from "../../src/shared/utils.ts";
 import {
   TENCENT_SES_SECRET_ID_PASSWORD_KEY,
   TENCENT_SES_SECRET_KEY_PASSWORD_KEY,
@@ -1732,6 +1731,7 @@ test("admin content safety config requires sensitive verification and stores pas
   assert.equal(updateResponse.statusCode, 200);
   assert.equal(updateResponse.body.data.config.enabled, true);
   assert.equal(updateResponse.body.data.config.keyword.rules[0].term, "forbidden");
+  assert.equal(updateResponse.body.data.config.llm.useJev, false);
   assert.equal(
     updateResponse.body.data.config.aliyun.accessKeySecretPasswordKey,
     "aliyun.green.access_key_secret",
@@ -1784,7 +1784,7 @@ test("admin content safety config requires sensitive verification and stores pas
     },
   });
 
-  assert.equal(failedOpenResponse.statusCode, 200);
+  assert.equal(failedOpenResponse.statusCode, 200, JSON.stringify(failedOpenResponse.body));
   assert.equal(failedOpenResponse.body.data.allowed, true);
   assert.equal(failedOpenResponse.body.data.layer, "failed_open");
   assert.equal(typeof failedOpenResponse.body.data.elapsedMs, "number");
@@ -1820,108 +1820,44 @@ test("admin content safety config requires sensitive verification and stores pas
     ),
   );
 
+  runtime.database.listContentSafetyCheckRecords = () => {
+    throw new Error("Statistics must not scan PostgreSQL");
+  };
   const statsResponse = await runtime.app.handle({
     method: "GET",
     path: "/api/v1/admin/apps/common/content-safety/stats",
-    query: {
-      source: "admin_test",
-    },
-    headers: {
-      cookie,
-    },
+    headers: { cookie },
   });
-
-  assert.equal(statsResponse.statusCode, 200);
+  assert.equal(statsResponse.statusCode, 200, JSON.stringify(statsResponse.body));
+  assert.equal(statsResponse.body.data.storage, "redis");
   assert.equal(statsResponse.body.data.summary.total, 2);
+  assert.equal(statsResponse.body.data.summary.successful, 1);
   assert.equal(statsResponse.body.data.summary.blocked, 1);
   assert.equal(statsResponse.body.data.summary.failedOpen, 1);
-  assert.ok(
-    statsResponse.body.data.byMethod.some(
-      (item: { key: string; count: number }) => item.key === "keyword" && item.count === 1,
-    ),
-  );
-  assert.ok(
-    statsResponse.body.data.byMethod.some(
-      (item: { key: string; count: number }) => item.key === "failed_open" && item.count === 1,
-    ),
-  );
-  assert.ok(
-    runtime.database.auditLogs.some(
-      (item) =>
-        item.action === "admin.content_safety.stats.read" &&
-        item.payload.adminUser === "admin" &&
-        item.payload.total === 2 &&
-        item.payload.blocked === 1,
-    ),
-  );
-
-  for (let index = 0; index < 1005; index += 1) {
-    runtime.database.insertContentSafetyCheckRecord({
-      id: `csf_bulk_${index}`,
-      appId: "admin",
-      taskType: "bulk_stats_test",
-      source: "admin_test",
-      method: "llm",
-      decision: "pass",
-      textLength: 5,
-      textHash: `bulk_hash_${index}`,
-      metadata: {},
-      createdAt: new Date().toISOString(),
-    });
-  }
-
-  const unboundedStatsResponse = await runtime.app.handle({
+  assert.equal(statsResponse.body.data.byCategory[0].key, "policy");
+  const unsupportedFilter = await runtime.app.handle({
     method: "GET",
     path: "/api/v1/admin/apps/common/content-safety/stats",
-    query: {
-      source: "admin_test",
-      taskType: "bulk_stats_test",
-    },
-    headers: {
-      cookie,
-    },
+    query: { source: "admin_test" },
+    headers: { cookie },
   });
-
-  assert.equal(unboundedStatsResponse.statusCode, 200);
-  assert.equal(unboundedStatsResponse.body.data.summary.total, 1005);
-
-  const shanghaiDateKey = toDateKey(new Date());
-  const [shanghaiYear, shanghaiMonth, shanghaiDay] = shanghaiDateKey.split("-").map(Number);
-  const shanghai0030Iso = new Date(
-    Date.UTC(shanghaiYear, shanghaiMonth - 1, shanghaiDay, 0, 30) - 8 * 60 * 60 * 1000,
-  ).toISOString();
-
-  runtime.database.insertContentSafetyCheckRecord({
-    id: "csf_timezone_shanghai",
-    appId: "admin",
-    taskType: "timezone_stats_test",
-    source: "admin_test",
-    method: "disabled",
-    decision: "pass",
-    textLength: 2,
-    textHash: "timezone_hash",
-    metadata: {},
-    createdAt: shanghai0030Iso,
+  assert.equal(unsupportedFilter.statusCode, 400);
+  const switched = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/content-safety",
+    headers: { cookie },
+    body: { ...updateResponse.body.data.config, llm: { ...updateResponse.body.data.config.llm, useJev: true } },
   });
-
-  const shanghaiDateStatsResponse = await runtime.app.handle({
-    method: "GET",
-    path: "/api/v1/admin/apps/common/content-safety/stats",
-    query: {
-      dateFrom: shanghaiDateKey,
-      dateTo: shanghaiDateKey,
-      source: "admin_test",
-      taskType: "timezone_stats_test",
-    },
-    headers: {
-      cookie,
-    },
+  assert.equal(switched.statusCode, 200);
+  assert.equal(switched.body.data.config.llm.useJev, true);
+  assert.equal(switched.body.data.config.llm.modelKey, "qwen3.5-flash");
+  const invalid = await runtime.app.handle({
+    method: "PUT",
+    path: "/api/v1/admin/apps/common/content-safety",
+    headers: { cookie },
+    body: { ...updateResponse.body.data.config, llm: { ...updateResponse.body.data.config.llm, useJev: "true" } },
   });
-
-  assert.equal(shanghaiDateStatsResponse.statusCode, 200);
-  assert.equal(shanghaiDateStatsResponse.body.data.summary.total, 1);
-  assert.equal(shanghaiDateStatsResponse.body.data.daily[0].date, shanghaiDateKey);
-  assert.equal(shanghaiDateStatsResponse.body.data.daily[0].total, 1);
+  assert.equal(invalid.statusCode, 400);
 });
 
 test("admin auth rate limit API stores common config and auth runtime follows updated limits", async () => {
