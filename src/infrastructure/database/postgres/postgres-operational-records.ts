@@ -468,7 +468,7 @@ export class PostgresOperationalRecordsStore {
 
   async deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): Promise<number> {
     const result = await this.query(
-      "DELETE FROM zook_content_safety_checks WHERE created_at < $1::timestamptz",
+      "DELETE FROM zook_content_safety_checks WHERE id IN (SELECT id FROM zook_content_safety_checks WHERE created_at < $1::timestamptz ORDER BY created_at LIMIT 1000)",
       [cutoffIso],
     );
     return result.rowCount ?? 0;

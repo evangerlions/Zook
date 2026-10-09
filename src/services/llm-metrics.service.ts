@@ -50,6 +50,7 @@ export class LlmMetricsService {
     this.assertKnownProvider(config, query.provider);
     const window = buildMetricsWindow(range, now);
     const result = await this.store.queryMetrics({
+      excludeContentSafety: true,
       occurredAtFrom: window.from.toISOString(),
       occurredAtTo: window.to.toISOString(),
       granularity: window.granularity,

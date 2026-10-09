@@ -23,6 +23,7 @@ export interface LlmRoutingIdentity {
 }
 
 export interface LLMCompletionRequest {
+  callPurpose?: "content_safety";
   modelKey: string;
   messages: LLMMessage[];
   temperature?: number;
