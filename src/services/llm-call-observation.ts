@@ -10,6 +10,7 @@ import { randomId } from "../shared/utils.ts";
 import type { LLMUsage } from "./llm-manager-types.ts";
 
 interface LlmCallObservationContext {
+  callPurpose?: LlmCallObservationRecord["callPurpose"];
   appId?: string;
   routingModelKey: string;
   provider: string;
@@ -67,6 +68,7 @@ export class LlmCallObservationSession {
     const record: LlmCallObservationRecord = {
       callId: this.callId,
       occurredAt: completedAt.toISOString(),
+      ...(this.context.callPurpose ? { callPurpose: this.context.callPurpose } : {}),
       ...(this.context.appId ? { appId: this.context.appId } : {}),
       routingModelKey: this.context.routingModelKey,
       provider: this.context.provider,

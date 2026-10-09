@@ -31,7 +31,7 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
         <header className="card-header compact-card-header">
           <div>
             <h2>{metrics.range} 上游调用成功率</h2>
-            <p>先看成功、失败和超时。这里统计每一次上游调用，不等同于一次用户请求的最终结果。</p>
+            <p>先看成功、失败和超时。统计不包含已标记的内容审核调用，不等同于一次用户请求的最终结果。</p>
           </div>
         </header>
         <div className={`metric-grid llm-kpi-grid llm-kpi-grid--${successRateTone(summary.successRate)}`}>
@@ -73,7 +73,7 @@ export function OverviewSection({ metrics }: { metrics: AdminLlmMetricsDocument 
           <header className="card-header compact-card-header">
             <div>
               <h2>调用量与上游成功率</h2>
-              <p>每个时间桶都直接列出成功、失败和超时，避免把上游调用成功率误读为用户请求成功率。</p>
+              <p>不包含已标记的内容审核调用。每个时间桶列出成功、失败和超时，成功率不等同于用户请求成功率。</p>
             </div>
           </header>
           <LlmChart

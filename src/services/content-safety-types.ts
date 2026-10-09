@@ -13,6 +13,7 @@ export interface ContentSafetyCheckCommand {
   taskType?: string;
   source?: ContentSafetyCheckSource;
   text: string;
+  statsDate?: string;
 }
 
 export interface ContentSafetyCheckResult {

@@ -6,6 +6,8 @@ export interface KVBackend {
   setIfAbsent(key: string, value: string, ttlSeconds?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
   assertReady(): Promise<void>;
+  incrementCounters?(key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void>;
+  getCounters?(key: string): Promise<Record<string, number>>;
   disconnect?(): Promise<void>;
 }
 
@@ -53,6 +55,27 @@ class RedisKVBackend implements KVBackend {
   async delete(key: string): Promise<void> {
     await this.ensureConnected();
     await this.client.del(key);
+  }
+
+  async incrementCounters(key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void> {
+    const signal = AbortSignal.timeout(150);
+    await this.ensureConnected();
+    signal.throwIfAborted();
+    await this.client.withAbortSignal(signal).eval(`
+      for i = 2, #ARGV, 2 do
+        redis.call('HINCRBY', KEYS[1], ARGV[i], ARGV[i + 1])
+      end
+      redis.call('EXPIRE', KEYS[1], ARGV[1])
+      return 1
+    `, { keys: [key], arguments: [String(ttlSeconds), ...Object.entries(increments).flatMap(([field, count]) => [field, String(count)])] });
+  }
+
+  async getCounters(key: string): Promise<Record<string, number>> {
+    const signal = AbortSignal.timeout(1500);
+    await this.ensureConnected();
+    signal.throwIfAborted();
+    const fields = await this.client.withAbortSignal(signal).hGetAll(key);
+    return Object.fromEntries(Object.entries(fields).map(([field, count]) => [field, Number(count)]));
   }
 
   async assertReady(): Promise<void> {
@@ -121,6 +144,18 @@ export class InMemoryKVBackend implements KVBackend {
     this.store.delete(key);
   }
 
+  async incrementCounters(key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void> {
+    const current = this.store.get(key);
+    const counts: Record<string, number> = current && (!current.expiresAt || current.expiresAt > Date.now())
+      ? JSON.parse(current.value) : {};
+    for (const [field, value] of Object.entries(increments)) counts[field] = (counts[field] ?? 0) + value;
+    this.store.set(key, { value: JSON.stringify(counts), expiresAt: Date.now() + ttlSeconds * 1000 });
+  }
+
+  async getCounters(key: string): Promise<Record<string, number>> {
+    return JSON.parse(await this.get(key) ?? "{}");
+  }
+
   async assertReady(): Promise<void> {}
 }
 
@@ -165,6 +200,16 @@ export class KVManager {
 
   async setStringIfAbsent(scope: string, key: string, value: string, ttlSeconds?: number): Promise<boolean> {
     return await this.backend.setIfAbsent(this.buildStorageKey(scope, key), value, ttlSeconds);
+  }
+
+  async incrementCounters(scope: string, key: string, increments: Record<string, number>, ttlSeconds: number): Promise<void> {
+    if (!this.backend.incrementCounters) throw new Error("KV backend does not support atomic counters");
+    await this.backend.incrementCounters(this.buildStorageKey(scope, key), increments, ttlSeconds);
+  }
+
+  async getCounters(scope: string, key: string): Promise<Record<string, number>> {
+    if (!this.backend.getCounters) throw new Error("KV backend does not support atomic counters");
+    return this.backend.getCounters(this.buildStorageKey(scope, key));
   }
 
   async delete(scope: string, key: string): Promise<void> {

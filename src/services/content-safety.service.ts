@@ -1,3 +1,6 @@
+import type { JevContentSafetyClient } from "./jev-content-safety-client.ts";
+import { ContentSafetyCounters } from "./content-safety-counters.ts";
+import { toDateKey } from "../shared/utils.ts";
 import { ApplicationError } from "../shared/errors.ts";
 import type {
   AdminContentSafetyBlockRecordsDocument,
@@ -38,6 +41,7 @@ export const AI_INPUT_CONTENT_SENSITIVE_MESSAGE = "这段内容暂时无法发�
 
 export class ContentSafetyService {
   private readonly records: ContentSafetyRecordStore;
+  private readonly counters?: ContentSafetyCounters;
   private readonly llmChecker: LlmContentSafetyChecker;
 
   constructor(
@@ -47,15 +51,18 @@ export class ContentSafetyService {
     database: ApplicationDatabase,
     private readonly logger?: StructuredLogger,
     private readonly fetchImplementation: typeof fetch = fetch,
+    counters?: ContentSafetyCounters,
+    jevClient?: JevContentSafetyClient,
   ) {
-    this.records = new ContentSafetyRecordStore(database, logger);
+    this.counters = counters;
+    this.records = new ContentSafetyRecordStore(database, logger, undefined, this.counters);
     this.llmChecker = new LlmContentSafetyChecker(llmManager, {
       recordCheck: (command, config, input) => this.records.recordCheck(command, config, input),
       logDecision: (level, message, command, config, layer, context) =>
         this.logDecision(level, message, command, config, layer, context),
       throwSensitive: (layer, category, llmDebug, keywordId) =>
         this.throwSensitive(layer, category, llmDebug, keywordId),
-    });
+    }, jevClient);
   }
 
   async assertUserInputAllowed(command: ContentSafetyCheckCommand): Promise<ContentSafetyCheckResult> {
@@ -65,6 +72,8 @@ export class ContentSafetyService {
     }
 
     const config = await this.configService.getCurrentConfig();
+    command = { ...command, statsDate: toDateKey(new Date()) };
+    await this.counters?.started(command);
     if (!config.enabled) {
       await this.records.recordCheck(command, config, {
         method: "disabled",
@@ -338,8 +347,13 @@ export class ContentSafetyService {
     return this.records.listBlockRecords(filter);
   }
 
+  async cleanupExpiredRecords(): Promise<void> {
+    await this.records.cleanupExpiredRecords();
+  }
+
   async getStats(filter: ContentSafetyStatsFilter): Promise<AdminContentSafetyStatsDocument> {
-    return this.records.getStats(filter);
+    if (!this.counters) throw new ApplicationError(503, "SYS_INTERNAL_ERROR", "Safety counters are not configured.");
+    return this.counters.getStats(filter);
   }
 
   private logDecision(

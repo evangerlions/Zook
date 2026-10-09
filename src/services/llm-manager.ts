@@ -377,6 +377,7 @@ export class LLMManager {
     const route = resolution.routeRef;
     return recorder?.start({
       appId: resolution.request.usageOwner?.appId,
+      callPurpose: resolution.request.callPurpose,
       routingModelKey: route.modelKey,
       provider: route.provider,
       providerModel: route.providerModel,
