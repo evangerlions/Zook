@@ -1,11 +1,13 @@
-import { Button, Select, Table } from "antd";
-import { useRef, useState } from "react";
+import { Button, Select } from "antd";
+import { useEffect, useRef, useState } from "react";
 
 import { MetricCard } from "./metric-card";
+import { ContentSafetyStatsCharts } from "./content-safety-stats-charts";
+import { formatSafetyPercent } from "./content-safety-stats-view-model";
 import { adminApi } from "../lib/admin-api";
 import { formatApiError, makeNotice } from "../lib/format";
 import { useAdminSession } from "../lib/admin-session";
-import type { AdminContentSafetyStatsBucket, AdminContentSafetyStatsDocument } from "../lib/types";
+import type { AdminContentSafetyStatsDocument } from "../lib/types";
 
 function getDateRange(range: string) {
   const days = range === "7d" ? 7 : 30;
@@ -18,43 +20,17 @@ function getDateRange(range: string) {
   };
 }
 
-function formatPercent(value: number) {
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-function StatsBucketTable({
-  items,
-  title,
-}: {
-  items: AdminContentSafetyStatsBucket[];
-  title: string;
-}) {
-  return (
-    <div className="content-safety-stats-card">
-      <h4>{title}</h4>
-      <Table
-        columns={[
-          { title: "Key", dataIndex: "key" },
-          { title: "总量", dataIndex: "count", width: 70 },
-          { title: "拦截", dataIndex: "blocked", width: 70 },
-          { title: "Fail-open", dataIndex: "failedOpen", width: 90 },
-          { title: "成功判定", dataIndex: "successful", width: 90 },
-        ]}
-        dataSource={items}
-        pagination={false}
-        rowKey="key"
-        size="small"
-      />
-    </div>
-  );
-}
-
 export function ContentSafetyStatsTab() {
   const { clearNotice, setNotice } = useAdminSession();
   const [range, setRange] = useState("30d");
   const querying = useRef(false);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<AdminContentSafetyStatsDocument | null>(null);
+
+  // The parent mounts this component only when the statistics tab is selected.
+  useEffect(() => {
+    void loadStats();
+  }, []);
 
   async function loadStats() {
     if (querying.current) return;
@@ -96,35 +72,18 @@ export function ContentSafetyStatsTab() {
       </div>
       {stats ? (
         <div className="stack">
-          <div className="metrics-grid">
+          <div className="metric-grid">
             <MetricCard label="审核总量" value={stats.summary.total.toString()} />
             <MetricCard label="拦截次数" value={stats.summary.blocked.toString()} />
-            <MetricCard label="拦截率" value={formatPercent(stats.summary.blockRate)} />
-            <MetricCard label="Fail-open" value={formatPercent(stats.summary.failedOpenRate)} />
+            <MetricCard label="拦截率" value={formatSafetyPercent(stats.summary.blockRate)} />
+            <MetricCard label="失败默认放行率" value={formatSafetyPercent(stats.summary.failedOpenRate)} />
             <MetricCard label="成功判定" value={stats.summary.successful.toString()} />
             <MetricCard label="失败默认放行次数" value={stats.summary.failedOpen.toString()} />
           </div>
-          <Table
-            columns={[
-              { title: "日期", dataIndex: "date" },
-              { title: "发起", dataIndex: "total" },
-              { title: "成功判定", dataIndex: "successful" },
-              { title: "通过", dataIndex: "passed" },
-              { title: "拦截", dataIndex: "blocked" },
-              { title: "Fail-open", dataIndex: "failedOpen" },
-            ]}
-            dataSource={stats.daily}
-            pagination={false}
-            rowKey="date"
-            size="small"
-          />
-          <div className="content-safety-stats-grid">
-            <StatsBucketTable items={stats.byCategory} title="按拦截类别" />
-            <StatsBucketTable items={stats.byModel} title="按审核模型/方式" />
-          </div>
+          <ContentSafetyStatsCharts stats={stats} />
         </div>
       ) : (
-        <div className="empty-inline">点击查询后查看内容安全统计。</div>
+        <div className="empty-inline">{loading ? "正在查询内容安全统计…" : "暂无统计数据，请重试查询。"}</div>
       )}
     </section>
   );
