@@ -2,9 +2,10 @@ import { ApplicationError } from "../../../shared/errors.ts";
 import type { StructuredLogger } from "../../../infrastructure/logging/pino-logger.module.ts";
 import { pointMicrosToPoints } from "../../../services/llm-point-pricing.ts";
 import {
-  CREDIT_MICROS, LOCAL_CREDIT_QUOTAS, refreshCreditsAccount,
+  CREDIT_MICROS, LOCAL_CREDIT_QUOTAS,
   type AiNovelCreditsStore, type CreditsOutcome, type CreditsReceipt, type CreditsTier, type CreditsMembership,
 } from "./ai-novel-credits-model.ts";
+import { synchronizeReportedAccount, usageEvent } from "./credits-reporting.ts";
 
 const JOB_LEASE_MS = 30 * 60_000;
 const MAX_RECEIPTS = 1024;
@@ -30,7 +31,7 @@ export class AiNovelCreditsService {
     const membership = await this.membership(userId);
     return this.store.transact(userId, "", (state) => {
       const previous = state.account;
-      const account = state.account = refreshCreditsAccount(state.account, membership, this.now());
+      const account = synchronizeReportedAccount(state, membership, this.now());
       if (previous?.periodKey !== account.periodKey || previous?.tier !== account.tier) {
         this.logger?.info("AINovel credits window synchronized", { userId, tier: account.tier,
           anchorAt: account.windowAnchorAt, refreshAt: account.refreshAt, previousTier: previous?.tier });
@@ -51,7 +52,7 @@ export class AiNovelCreditsService {
     const membership = await this.membership(userId);
     return this.store.transact(userId, jobId, (state) => {
       const now = this.now();
-      const account = state.account = refreshCreditsAccount(state.account, membership, now);
+      const account = synchronizeReportedAccount(state, membership, now);
       if (account.activeJobExpiresAt && Date.parse(account.activeJobExpiresAt) <= now.getTime()) {
         delete account.activeJobId;
         delete account.activeJobExpiresAt;
@@ -60,6 +61,8 @@ export class AiNovelCreditsService {
       if (account.activeJobId && account.activeJobId !== jobId) throw conflict("Another AI job is active.");
       if (state.job?.requestId) throw conflict("Another request in this job is active.");
       if (BigInt(account.periodicMicros) + BigInt(account.giftMicros) <= 0n) {
+        usageEvent(state, { id: `denied:${requestId}`, kind: "denied", requestId,
+          periodicMicros: "0", giftMicros: "0", absorbedMicros: "0" });
         this.logger?.info("AINovel credits admission denied", { userId, jobId, requestId, reason: "quota_insufficient" });
         return "quota_insufficient";
       }
@@ -85,7 +88,7 @@ export class AiNovelCreditsService {
       if (state.account?.activeJobId !== jobId) throw conflict("AI request no longer owns account admission.");
       if (Date.parse(job.expiresAt) <= this.now().getTime()) throw conflict("AI job lease expired.");
       if (job.receipts.length >= MAX_RECEIPTS) throw conflict("AI job attempt limit exceeded.");
-      const account = state.account = refreshCreditsAccount(state.account, membership, this.now());
+      const account = synchronizeReportedAccount(state, membership, this.now());
       const total = BigInt(receipt.pointMicros);
       const periodic = BigInt(account.periodicMicros), gifts = BigInt(account.giftMicros);
       const periodicDebit = total < periodic ? total : periodic;
@@ -98,6 +101,9 @@ export class AiNovelCreditsService {
       job.receipts.push({ ...structuredClone(receipt), requestId });
       job.chargedMicros = String(BigInt(job.chargedMicros ?? "0") + charged);
       job.absorbedMicros = String(BigInt(job.absorbedMicros ?? "0") + total - charged);
+      usageEvent(state, { id: `debit:${receipt.callId}`, kind: "debit", callId: receipt.callId,
+        modelKey: receipt.modelKey, requestId, periodicMicros: String(periodicDebit),
+        giftMicros: String(giftDebit), absorbedMicros: String(total - charged) });
       this.logger?.info("AINovel credits call settled", {
         userId, requestId, callId: receipt.callId, modelKey: receipt.modelKey,
         chargedMicros: String(charged), absorbedMicros: String(total - charged),
@@ -150,7 +156,7 @@ export class AiNovelCreditsService {
         if (state.job.grantedMicros !== amount) throw conflict("Gift event ID was reused with a different amount.");
         return;
       }
-      const account = state.account = refreshCreditsAccount(state.account, membership, this.now());
+      const account = synchronizeReportedAccount(state, membership, this.now());
       const nextGift = BigInt(account.giftMicros) + BigInt(points) * CREDIT_MICROS;
       // Reserve room for the largest periodic allowance, including future upgrades.
       if (nextGift + BigInt(LOCAL_CREDIT_QUOTAS.pro) * CREDIT_MICROS > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -158,6 +164,7 @@ export class AiNovelCreditsService {
       }
       account.giftMicros = String(nextGift);
       state.job = { id: `gift:${eventId}`, status: "success", expiresAt: this.now().toISOString(), receipts: [], chargedMicros: "0", absorbedMicros: "0", grantedMicros: amount };
+      usageEvent(state, { id: `gift:${eventId}`, kind: "grant", periodicMicros: "0", giftMicros: amount, absorbedMicros: "0" });
       this.logger?.info("AINovel gift credits granted", { userId, eventId, points });
     });
   }

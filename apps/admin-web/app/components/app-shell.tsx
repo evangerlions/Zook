@@ -22,6 +22,7 @@ const SERVER_WORKSPACES = [
 ];
 
 const APP_WORKSPACES = [
+  { to: "/ainovel-usage", label: "付费与用量", code: "USG", description: "观察支付、创作点消耗与每周额度" },
   { to: "/config", label: "配置", code: "CFG", description: "编辑当前 App 的 JSON 配置" },
   { to: "/ai-routing", label: "AI Model", code: "AIM", description: "配置 AINovel 文本模型权重" },
   { to: "/feedback", label: "Feedback", code: "FDB", description: "查看 AINovel 用户反馈与截图" },
@@ -62,6 +63,7 @@ function formatAdminVersion(rawVersion: string): string {
 function isAppProjectSpace(pathname: string) {
   return pathname === "/config"
     || pathname === "/ai-routing"
+    || pathname === "/ainovel-usage"
     || pathname === "/feedback"
     || pathname === "/conversation-records"
     || pathname === "/conversation-history"
@@ -117,6 +119,7 @@ export function AppShell() {
   const workspaceItems = appProjectSpace
     ? APP_WORKSPACES.filter((item) => item.to !== "/ai-routing" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/ainovel-usage" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/lighttick" || selectedApp?.appId === "lighttick")

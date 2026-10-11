@@ -473,6 +473,16 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 Billing 管理接口读取 Zook 持久化 RevenueCat / Alipay 共享订单与验证事件，不读取 Docker stdout；当前要求已登录的 Admin session。现有 Admin session 尚未实现 endpoint 级 `billing:read` RBAC，因此此接口不宣称该权限已生效。每次读取写入 admin audit。订单列表每页最多 100 条，事件时间线也分页。RC 金额来自交易/验证事件证据；不足时返回 `null`，不从商品目录推算。Alipay 在创建时即记录 pending 报价，failed/closed/pending 均可查询，但报价不是收入。Alipay checkoutId/canonical providerTransactionId 是稳定商户订单 ID，providerOrderId 是验证后的支付宝 trade_no；providerTransactionId 搜索兼容两者。createdAt 是不可变创建时间，updatedAt 是最新观察时间；Alipay active/expired 筛选按实际已应用权益到期时间。删除后保留财务行并标记 deletedAt。详情 grant 台账仍返回空数组，不提供编辑/退款/赠送能力。已付款 Alipay 不主动轮询外部退款；后续验证 TRADE_CLOSED 保留在事件历史，但不自动撤销金额/权益。
 
 支付深度排查使用 API / Worker 的 Docker 结构化日志，通过 `appId`、`userId`、`paymentId`、`providerEventId` 和 `requestId` 串联完整流程；日志不作为订单事实来源。
+## 橘子写作付费与用量
+
+`GET /api/v1/admin/apps/ai_novel/usage`：必须有 Admin session；Basic Auth 不替代会话；每次读取审计，响应 `Cache-Control: no-store`。只读，不刷新余额或调用支付/模型供应商。
+
+参数：`days=7|30|90`（默认30）；`tier=all|free|plus|pro`（默认all，按消耗时/商品档位）；`environment=production|sandbox`（默认production，仅筛选支付）；可选精确 `userId`。UTC左闭右开，包括今日；窗口还须截至查询时已结束。错误：400非法查询，503不支持报告存储，413超过每类50,000条读取上限（缩短区间或指定用户）；不静默截断全局统计。
+
+返回 `filter`/`reportingSince`/`summary`/`money`/`daily`/`tiers`/`models`/`users`/`simulation`；精确用户查询另附最多100条 `detailEvents` 与 `detailPayments`。金额为分币种整数最小货币单位，points是微点证据换算的展示值（不用于重新扣费）；事件原始两池/平台承担为十进制字符串微点。`users` 是区间扣点前200位样本，不是全体用户分页；页面明确样本范围。余额只代表最后存储快照，含观察时间/刷新边界。消耗目前不按商店Sandbox分离，不计算利润/ROI，厂商金额成本不可统计。
+
+迁移075在现有余额/receipt事务里同时保存不可变扣减/赠送/拦截事件和窗口快照；失败或取消不生成新扣费，成功调用已扣点不回退。完整覆盖、档位稳定、已结束且活跃的七天窗口才参加分布、P50/P95、用尽率和重放。迁移前历史不回填；首个部分窗口、升级/到期变化窗口不伪装成完整数据。重放独立选择档位，只继承时间/用户过滤，使用已观察两池消耗，不预测未满足需求，无应用写接口。
+
 ## 4. 关联文档
 
 - [admin-web-design.md](admin-web-design.md)

@@ -21,7 +21,11 @@ test("credits PostgreSQL migration, locks, rollback, and exact settlement surviv
   try {
     const migration = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/072_ai_novel_credits.sql", import.meta.url), "utf8");
     const client = await connect();
-    try { await client.query(migration); await client.query(migration); } finally { client.release(); }
+    try {
+      await client.query(migration); await client.query(migration);
+      await client.query(await readFile(new URL("../../src/infrastructure/database/postgres/migrations/075_ai_novel_usage_reporting.sql", import.meta.url), "utf8"));
+      await client.query(await readFile(new URL("../../src/infrastructure/database/postgres/migrations/075_ai_novel_usage_reporting.sql", import.meta.url), "utf8"));
+    } finally { client.release(); }
     const store = new PostgresAiNovelCreditsStore(connect);
     const service = new AiNovelCreditsService(store, async () => "free");
     const contenders = await Promise.allSettled([service.begin("user", "job-a", "request-a"), service.begin("user", "job-b", "request-b")]);

@@ -19,6 +19,8 @@ export interface CreditsAccount {
   membershipAnchorAt?: string;
   spentMicros?: string;
   entitlementObservedAt?: string;
+  /** Earliest point from which every credit mutation has reporting coverage. */
+  reportingSince?: string;
   activeJobId?: string;
   activeJobExpiresAt?: string;
 }
@@ -48,11 +50,13 @@ export interface CreditsJob {
 export interface CreditsTransaction {
   account?: CreditsAccount;
   job?: CreditsJob;
+  reporting?: import("./credits-reporting.ts").CreditReportingWrite;
 }
 
 export interface AiNovelCreditsStore {
   /** Serializes this user's balance/job changes, commits both or neither. */
   transact<T>(userId: string, jobId: string, work: (state: CreditsTransaction) => T): Promise<T>;
+  readUsageReport?(filter: { from: string; to: string; userId?: string }): Promise<import("../../../shared/types/ai-novel-usage-admin.ts").UsageSource>;
 }
 
 /** Fixed elapsed-time weeks, independent of tier, calendar, timezone and DST. */

@@ -1,0 +1,75 @@
+.usage-page {
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Scope the grid min-content correction to this page, not every Admin route. */
+.page-shell:has(.usage-page) {
+  min-width: 0;
+  width: 100%;
+}
+.usage-page .stack {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+.usage-page > *,
+.usage-page .stack > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.usage-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.usage-tiers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.usage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.usage-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.usage-mini .ant-statistic-content {
+  font-size: 21px;
+}
+.usage-muted {
+  color: #738099;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.usage-grid > *,
+.usage-tiers > *,
+.usage-kpis > * {
+  min-width: 0;
+}
+@media (min-width: 1400px) {
+  .usage-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+@media (max-width: 950px) {
+  .usage-tiers,
+  .usage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .usage-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .usage-mini {
+    gap: 12px;
+  }
+}

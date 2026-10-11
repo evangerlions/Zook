@@ -22,6 +22,7 @@ import { TencentSesEmailCallbackService } from "../services/tencent-ses-email-ca
 import { FeedbackService } from "../services/feedback.service.ts";
 import { AiNovelBillingService } from "../services/ainovel-billing.service.ts";
 import { BillingAdminService } from "../services/billing-admin.service.ts";
+import { AiNovelUsageAdminService } from "../services/ai-novel-usage-admin.service.ts";
 import { ApplicationError, isApplicationError } from "../shared/errors.ts";
 import type { AccountRegion, AdminSessionRecord, AuthSuccessPayload, ClientType, HttpRequest, HttpResponse } from "../shared/types.ts";
 import { getHeader } from "../shared/utils.ts";
@@ -69,6 +70,7 @@ export class BackendRouteContext {
   /** Optional analytics service for emitting business events. Set after construction. */
   analyticsService?: import("../modules/analytics/analytics.service.ts").AnalyticsService;
   public readonly billingAdminService: BillingAdminService;
+  public readonly aiNovelUsageAdminService: AiNovelUsageAdminService;
 
   constructor(
     protected readonly database: ApplicationDatabase,
@@ -94,6 +96,7 @@ export class BackendRouteContext {
     protected readonly aiNovelBillingService: AiNovelBillingService,
   ) {
     this.billingAdminService = new BillingAdminService(database);
+    this.aiNovelUsageAdminService = new AiNovelUsageAdminService(database.aiNovelCreditsStore);
   }
 
   public async authenticate(

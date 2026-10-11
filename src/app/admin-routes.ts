@@ -14,6 +14,7 @@ import { tryHandleAdminSecurityRoutes } from "./admin-security-routes.ts";
 import { tryHandleAdminTestAccountRoutes } from "./admin-test-account-routes.ts";
 import { tryHandleBodyLogAdminRoutes } from "./bodylog-admin-routes.ts";
 import { tryHandleAdminBillingRoutes } from "./admin-billing-routes.ts";
+import { tryHandleAdminAiNovelUsageRoutes } from "./admin-ai-novel-usage-routes.ts";
 
 const adminRouteHandlers = [
   tryHandleAdminCoreRoutes,
@@ -30,6 +31,7 @@ const adminRouteHandlers = [
   tryHandleAdminReleaseUpdateRoutes,
   tryHandleBodyLogAdminRoutes,
   tryHandleAdminBillingRoutes,
+  tryHandleAdminAiNovelUsageRoutes,
 ];
 
 export async function tryHandleAdminRoutes(
