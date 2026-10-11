@@ -36,6 +36,19 @@ test("synthetic reply supports every locale, text then action then done; cancell
   assert.equal((await collect(iterator)).length, 0);
 });
 
+test("quota reply emphasizes membership without removing the refresh option", async () => {
+  const events = await collect(syntheticAiNovelReply({ locale: "zh-CN", sceneKey: "write_turn", actionId: "quota-copy" }));
+  const text = events.filter(e => e.type === "content_delta").map(e => e.type === "content_delta" ? e.text : "").join("");
+  assert.equal(text, "创作点已用完。开通或升级会员，获得更多创作额度；也可以等待额度刷新后继续创作。");
+  assert.equal(events.at(-2)?.type, "client_action");
+  const done = events.at(-1);
+  assert.equal(done?.type, "done");
+  if (done?.type === "done") {
+    assert.equal(done.completion.content, text);
+    assert.equal(done.completion.finishReason, "quota_insufficient");
+  }
+});
+
 test("enabled flow accepts old callers without any client billing protocol", async () => {
   const { flow } = fixture();
   assert.equal(await flow.complete({ ...request, context: {} }, opts, async () => response), response);
