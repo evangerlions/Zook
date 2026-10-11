@@ -52,7 +52,8 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
   }
 
   async queryMetrics(filter: LlmObservabilityFilter): Promise<LlmObservabilityQueryResult> {
-    const records = this.observations
+    const observations = this.observations.filter(item => !filter.excludeContentSafety || item.callPurpose !== "content_safety");
+    const records = observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
       .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
@@ -61,22 +62,22 @@ export class InMemoryLlmObservabilityStore implements LlmObservabilityStore {
     const rangeRecords = records.filter((item) => filter.routingModelKey
       ? item.routingModelKey === filter.routingModelKey
       : true);
-    const routingRecords = this.observations
+    const routingRecords = observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
       .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.routingModelKey ? item.routingModelKey === filter.routingModelKey : true);
-    const providerRecords = this.observations
+    const providerRecords = observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
       .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.providerModel ? item.providerModel === filter.providerModel : true)
       .filter((item) => filter.routingModelKey ? item.routingModelKey === filter.routingModelKey : true);
-    const revisionRecords = this.observations
+    const revisionRecords = observations
       .filter((item) => item.occurredAt >= filter.occurredAtFrom && item.occurredAt < filter.occurredAtTo)
       .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true);
-    const allFiltered = this.observations
+    const allFiltered = observations
       .filter((item) => filter.appId ? item.appId === filter.appId : true)
       .filter((item) => filter.operation ? item.operation === filter.operation : true)
       .filter((item) => filter.provider ? item.provider === filter.provider : true)

@@ -13,6 +13,7 @@ import type { LlmPointPricing } from "../shared/types/llm.ts";
 
 interface LlmCallObservationContext {
   onUsageFinalized?: (record: LlmCallObservationRecord) => Promise<void>;
+  callPurpose?: LlmCallObservationRecord["callPurpose"];
   appId?: string;
   routingModelKey: string;
   provider: string;
@@ -71,6 +72,7 @@ export class LlmCallObservationSession {
     const record: LlmCallObservationRecord = {
       callId: this.callId,
       occurredAt: completedAt.toISOString(),
+      ...(this.context.callPurpose ? { callPurpose: this.context.callPurpose } : {}),
       ...(this.context.appId ? { appId: this.context.appId } : {}),
       routingModelKey: this.context.routingModelKey,
       provider: this.context.provider,

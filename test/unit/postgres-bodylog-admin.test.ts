@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PostgresBodyLogAdminStore } from "../../src/infrastructure/database/postgres/postgres-bodylog-admin.ts";
+import { PostgresBodyLogCheckinStore } from "../../src/infrastructure/database/postgres/postgres-bodylog-checkin.ts";
 
 test("BodyLog admin dashboard calculates weighted check-in rates for day, week, and month", async () => {
   const statements: string[] = [];
-  const store = new PostgresBodyLogAdminStore(async (sql) => {
+  const store = new PostgresBodyLogCheckinStore(async (sql) => {
     statements.push(sql);
     if (sql.includes("COUNT(DISTINCT g.id) as total_groups")) {
       return { rows: [{ total_groups: 2, total_members: 5, active_groups: 1 }] };
@@ -31,7 +31,7 @@ test("BodyLog admin dashboard calculates weighted check-in rates for day, week, 
 
 test("BodyLog admin member contributions include app-scoped profile fields", async () => {
   let statement = "";
-  const store = new PostgresBodyLogAdminStore(async (sql) => {
+  const store = new PostgresBodyLogCheckinStore(async (sql) => {
     statement = sql;
     return { rows: [{
       user_id: "user-1", role: "member", status: "active", nickname: "Mina",

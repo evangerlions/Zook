@@ -57,6 +57,9 @@ import { CommonPasswordConfigService } from "./services/common-password-config.s
 import { CommonReleaseUpdateConfigService } from "./services/common-release-update-config.service.ts";
 import { CommonSmsConfigService } from "./services/common-sms-config.service.ts";
 import { CommonTestAccountService } from "./services/common-test-account.service.ts";
+import { JevContentSafetyClient } from "./services/jev-content-safety-client.ts";
+import { createOpenRouterTransparentProxyFetch } from "./services/openrouter-transparent-proxy.ts";
+import { ContentSafetyCounters } from "./services/content-safety-counters.ts";
 import { ContentSafetyService } from "./services/content-safety.service.ts";
 import { EmailTestSendService } from "./services/email-test-send.service.ts";
 import { FeedbackService } from "./services/feedback.service.ts";
@@ -471,6 +474,12 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     commonPasswordConfigService,
     database,
     logger,
+    undefined,
+    new ContentSafetyCounters(kvManager, logger),
+    new JevContentSafetyClient(commonLlmConfigService, createOpenRouterTransparentProxyFetch({
+      resolveConfig: async () => (await commonLlmConfigService.getCurrentConfig()).openRouter,
+      resolveSecret: async key => commonPasswordConfigService.getValue(key),
+    })),
   );
   const aiNovelLlmService = new AiNovelLlmService(
     llmManager,
@@ -511,7 +520,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     registrationEmailSender,
   });
   attachApplicationLightTickWorkers({ runtime: lighttickRuntime, repository: lighttickRepository, queue, llmManager, notificationService, database, appAiRoutingConfigService });
-  const { bodyLogProfileService, bodyLogSocialService, bodyLogLeaderboardService, bodyLogInvitationService, bodyLogChallengeService, bodyLogBuddyService, bodyLogGroupService, bodyLogWorkerService, bodyLogGrowthService, bodyLogNotificationService, bodyLogFeatureFlagService } = createBodyLogServices({ database, contentSafetyService, notificationService, logger });
+  const { bodyLogProfileService, bodyLogSocialService, bodyLogLeaderboardService, bodyLogInvitationService, bodyLogChallengeService, bodyLogBuddyService, bodyLogGroupService, bodyLogWorkerService, bodyLogGrowthService, bodyLogNotificationService, bodyLogFeatureFlagService, bodyLogAdminService } = createBodyLogServices({ database, contentSafetyService, notificationService, logger });
   const apps = await database.listApps();
   const appContextResolver = new AppContextResolver(new Map(apps.filter((item) => item.apiDomain).map((item) => [item.apiDomain as string, item.id])));
   const authGuard = new AuthGuard(tokenService);
@@ -551,6 +560,7 @@ export async function createApplication(options: CreateApplicationOptions = {}) 
     bodyLogGrowthService,
     bodyLogNotificationService,
     bodyLogFeatureFlagService,
+    bodyLogAdminService,
     llmSmokeTestService,
     aiNovelDebugTraceService,
     aiNovelSkillService,

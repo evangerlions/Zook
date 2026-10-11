@@ -9,7 +9,7 @@ import { createApplication } from "../../test/support/create-test-application.ts
 
 const purchase: VerifiedBodyLogPurchase = {
   platform: "ios", productId: "com.habitap.onemonth1", tier: "pro",
-  startedAt: "2026-09-01T00:00:00.000Z", expiresAt: "2026-10-01T00:00:00.000Z",
+  startedAt: "2026-09-01T00:00:00.000Z", expiresAt: "2099-10-01T00:00:00.000Z",
   autoRenew: false, transactionId: "tx-1", originalTransactionId: "original-1",
 };
 

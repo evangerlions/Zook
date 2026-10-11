@@ -88,6 +88,17 @@ export function LlmRouteCard({
           />
         </Field>
       </div>
+      {route.provider === "openrouter" ? (
+        <Field label="OpenRouter 上游路由" hint="仅用于 OpenRouter。留空使用默认路由；可设置供应商顺序与兜底。">
+          <Input.TextArea
+            aria-label="OpenRouter 上游路由 JSON"
+            autoSize={{ minRows: 3, maxRows: 10 }}
+            value={route.openRouterText ?? ""}
+            onChange={(event) => onChange("openRouterText", event.target.value)}
+            placeholder={'{"provider":{"order":["deepinfra","gmicloud","siliconflow"],"allow_fallbacks":true}}'}
+          />
+        </Field>
+      ) : null}
     </article>
   );
 }

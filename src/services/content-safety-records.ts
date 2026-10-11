@@ -3,14 +3,12 @@ import type { ApplicationDatabase } from "../infrastructure/database/application
 import type {
   AdminContentSafetyBlockRecordItem,
   AdminContentSafetyBlockRecordsDocument,
-  AdminContentSafetyStatsBucket,
-  AdminContentSafetyStatsDocument,
   ContentSafetyCheckMethod,
-  ContentSafetyCheckRecord,
   ContentSafetyCheckSource,
   ContentSafetyConfig,
 } from "../shared/types.ts";
-import { enumerateDateKeys, randomId, toDateKey } from "../shared/utils.ts";
+import { randomId, toDateKey } from "../shared/utils.ts";
+import type { ContentSafetyCounters } from "./content-safety-counters.ts";
 import { hashContentSafetyText } from "./content-safety-helpers.ts";
 import type {
   ContentSafetyCheckCommand,
@@ -23,6 +21,7 @@ export class ContentSafetyRecordStore {
     private readonly database: ApplicationDatabase,
     private readonly logger?: StructuredLogger,
     private readonly now: () => Date = () => new Date(),
+    private readonly counters?: ContentSafetyCounters,
   ) {}
 
   async recordCheck(
@@ -31,7 +30,8 @@ export class ContentSafetyRecordStore {
     input: ContentSafetyRecordInput,
   ): Promise<void> {
     const createdAt = this.now().toISOString();
-    await this.cleanupExpiredRecords();
+    await this.counters?.completed(command, config, input);
+    if (input.decision !== "block") return;
     try {
       await this.database.insertContentSafetyCheckRecord({
         id: randomId("csf"),
@@ -74,7 +74,6 @@ export class ContentSafetyRecordStore {
   async listBlockRecords(filter: ContentSafetyStatsFilter): Promise<AdminContentSafetyBlockRecordsDocument> {
     const range = normalizeStatsFilter(filter, this.now());
     const queryRange = toShanghaiIsoRange(range);
-    await this.cleanupExpiredRecords();
     const records = await this.database.listContentSafetyCheckRecords({
       ...queryRange,
       appId: filter.appId?.trim() || undefined,
@@ -109,57 +108,7 @@ export class ContentSafetyRecordStore {
     };
   }
 
-  async getStats(filter: ContentSafetyStatsFilter): Promise<AdminContentSafetyStatsDocument> {
-    const range = normalizeStatsFilter(filter, this.now());
-    const queryRange = toShanghaiIsoRange(range);
-    await this.cleanupExpiredRecords();
-    const records = await this.database.listContentSafetyCheckRecords({
-      ...queryRange,
-      appId: filter.appId?.trim() || undefined,
-      source: parseSource(filter.source),
-      method: parseMethod(filter.method),
-      taskType: filter.taskType?.trim() || undefined,
-    });
-    const total = records.length;
-    const blocked = records.filter((record) => record.decision === "block").length;
-    const failedOpen = records.filter((record) => record.decision === "failed_open").length;
-    const latencyValues = records
-      .map((record) => record.latencyMs)
-      .filter((value): value is number => typeof value === "number");
-
-    return {
-      timezone: "Asia/Shanghai",
-      summary: {
-        total,
-        passed: total - blocked - failedOpen,
-        blocked,
-        failedOpen,
-        blockRate: ratio(blocked, total),
-        failedOpenRate: ratio(failedOpen, total),
-        avgLatencyMs: average(latencyValues),
-        p95LatencyMs: percentile(latencyValues, 0.95),
-      },
-      daily: enumerateDateKeys(range.dateFrom, range.dateTo).map((date) => {
-        const dailyRecords = records.filter((record) => toDateKey(record.createdAt) === date);
-        return {
-          date,
-          total: dailyRecords.length,
-          passed: dailyRecords.filter((record) => record.decision === "pass").length,
-          blocked: dailyRecords.filter((record) => record.decision === "block").length,
-          failedOpen: dailyRecords.filter((record) => record.decision === "failed_open").length,
-        };
-      }),
-      byMethod: bucketRecords(records, (record) => record.method),
-      bySource: bucketRecords(records, (record) => record.source),
-      byApp: bucketRecords(records, (record) => record.appId),
-      byTaskType: bucketRecords(records, (record) => record.taskType ?? "unknown"),
-      byCategory: bucketRecords(records, (record) => record.category ?? "none"),
-      byFailureReason: bucketRecords(records, (record) => record.failureReason ?? "none"),
-      byLengthBucket: bucketRecords(records, (record) => lengthBucket(record.textLength)),
-    };
-  }
-
-  private async cleanupExpiredRecords(): Promise<void> {
+  async cleanupExpiredRecords(): Promise<void> {
     try {
       await this.database.deleteContentSafetyCheckRecordsCreatedBefore(
         new Date(this.now().getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -226,63 +175,4 @@ function parseMethod(value?: string): ContentSafetyCheckMethod | undefined {
       value === "failed_open"
     ? value
     : undefined;
-}
-
-function bucketRecords(
-  records: ContentSafetyCheckRecord[],
-  getKey: (record: ContentSafetyCheckRecord) => string,
-): AdminContentSafetyStatsBucket[] {
-  const groups = new Map<string, ContentSafetyCheckRecord[]>();
-  records.forEach((record) => {
-    const key = getKey(record);
-    groups.set(key, [...(groups.get(key) ?? []), record]);
-  });
-  return [...groups.entries()]
-    .map(([key, items]) => {
-      const latencies = items
-        .map((item) => item.latencyMs)
-        .filter((value): value is number => typeof value === "number");
-      return {
-        key,
-        count: items.length,
-        blocked: items.filter((item) => item.decision === "block").length,
-        failedOpen: items.filter((item) => item.decision === "failed_open").length,
-        avgLatencyMs: average(latencies),
-        p95LatencyMs: percentile(latencies, 0.95),
-      };
-    })
-    .sort((left, right) => right.count - left.count);
-}
-
-function average(values: number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-}
-
-function percentile(values: number[], percentileValue: number): number {
-  if (values.length === 0) {
-    return 0;
-  }
-  const sorted = [...values].sort((left, right) => left - right);
-  const index = Math.min(sorted.length - 1, Math.ceil(sorted.length * percentileValue) - 1);
-  return sorted[index];
-}
-
-function ratio(value: number, total: number): number {
-  return total === 0 ? 0 : Number((value / total).toFixed(4));
-}
-
-function lengthBucket(length: number): string {
-  if (length <= 100) {
-    return "0-100";
-  }
-  if (length <= 500) {
-    return "101-500";
-  }
-  if (length <= 2000) {
-    return "501-2000";
-  }
-  return "2000+";
 }

@@ -13,6 +13,8 @@ COPY apps/admin-web/package.json apps/admin-web/package-lock.json ./
 RUN npm ci --ignore-scripts
 
 COPY apps/admin-web ./
+# Browser-safe validator shared by the admin UI and backend route config.
+COPY src/shared/openrouter-route-config.ts /app/src/shared/openrouter-route-config.ts
 RUN npm run build
 
 FROM node:22-alpine AS runtime

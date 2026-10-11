@@ -20,8 +20,8 @@ export function ContentSafetyProvidersTab({
       <section className="content-safety-section">
         <div className="section-heading">
           <div>
-            <h3>qwen3.5-flash 审核</h3>
-            <p>短文本走低成本 LLM 审核，这里填写厂商原始模型名。</p>
+            <h3>模型审核</h3>
+            <p>短文本可选择现有 LLM 或 OpenRouter Jev；保存后生效，沿用同一套审核规则。</p>
           </div>
           <Switch
             checked={draft.llm.enabled}
@@ -32,8 +32,18 @@ export function ContentSafetyProvidersTab({
           />
         </div>
         <div className="content-safety-provider-grid">
-          <Field label="Model Key">
+          <Field label="使用 Jev 审核">
+            <Switch
+              checked={draft.llm.useJev === true}
+              onChange={(useJev) => onDraftChange(current => ({
+                ...current, llm: { ...current.llm, useJev },
+              }))}
+            />
+            <p>Jev 使用 Server → LLM 中的 OpenRouter provider 凭据，不另存密钥。</p>
+          </Field>
+          <Field label="原有 LLM Model Key">
             <Input
+              disabled={draft.llm.useJev === true}
               onChange={(event) => onDraftChange((current) => ({
                 ...current,
                 llm: { ...current.llm, modelKey: event.target.value },

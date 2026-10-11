@@ -386,6 +386,7 @@ export class LLMManager {
     const context = {
       onUsageFinalized: resolution.request.onUsageFinalized,
       appId: resolution.request.usageOwner?.appId,
+      callPurpose: resolution.request.callPurpose,
       routingModelKey: route.modelKey,
       provider: route.provider,
       providerModel: route.providerModel,

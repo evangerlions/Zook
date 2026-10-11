@@ -1,3 +1,4 @@
+import type { OpenRouterRouteConfig } from "../openrouter-route-config.ts";
 import type {
   LlmMetricsGranularity,
   LlmMetricsOperation,
@@ -20,6 +21,7 @@ export interface LlmProviderConfig {
 }
 
 export interface LlmModelRouteConfig {
+  openRouter?: OpenRouterRouteConfig;
   provider: string;
   providerModel: string;
   enabled: boolean;

@@ -9,6 +9,7 @@ export interface LlmCallObservationRecord {
   cachedInputTokens?: number;
   cachedInputPointsPerMillionTokens?: number;
   pointPricing?: import("../../shared/types/llm.ts").LlmPointPricing;
+  callPurpose?: "content_safety";
   callId: string;
   occurredAt: string;
   appId?: string;
@@ -49,6 +50,7 @@ export interface LlmRouteHealthRecord extends LlmRouteHealthKey {
 }
 
 export interface LlmObservabilityFilter {
+  excludeContentSafety?: boolean;
   occurredAtFrom: string;
   occurredAtTo: string;
   granularity: LlmMetricsGranularity;
