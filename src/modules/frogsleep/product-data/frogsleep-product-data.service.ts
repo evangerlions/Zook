@@ -77,13 +77,17 @@ export class FrogSleepProductDataService {
     return this.toSleepReport(record);
   }
 
-  async listSleepReports(userId: string, pagination?: PaginationParams) {
-    const records = await this.database.listFrogSleepEntities({
+  async listSleepReports(userId: string, pagination?: PaginationParams, since?: string) {
+    const filter: Parameters<ApplicationDatabase["listFrogSleepEntities"]>[0] = {
       appId: FROGSLEEP_APP_ID,
       kind: "sleep_report_snapshot",
       ownerUserId: userId,
       limit: 500,
-    });
+    };
+    if (since) {
+      filter.occurredAtFromIso = since;
+    }
+    const records = await this.database.listFrogSleepEntities(filter);
     const page = paginateRecords(records, pagination ?? { limit: 50 });
     return {
       sleep_reports: page.items.map((item) => this.toSleepReport(item)),
