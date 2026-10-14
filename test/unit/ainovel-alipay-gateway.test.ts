@@ -25,10 +25,12 @@ function order(platform: AlipayOrder["platform"]): AlipayOrder {
     membershipExpiresAt: null, conflict: null, accountDeletedAt: null };
 }
 
-for (const platform of ["android", "web", "windows"] as const) {
+for (const platform of ["android", "web"] as const) {
   test(`official SDK includes configured callback URLs in ${platform} checkout`, async () => {
-    const payment = await gateway.payment(order(platform));
-    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.url).searchParams;
+    const payment = await gateway.payment({ ...order(platform), checkoutMode: platform === "web" ? "mobile_web" : undefined });
+    assert.notEqual(payment.type, "qr");
+    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.type === "page" ? payment.url : "").searchParams;
+    assert.equal(params.get("method"), platform === "android" ? "alipay.trade.app.pay" : "alipay.trade.wap.pay");
     assert.equal(params.get("notify_url"), notifyUrl);
     assert.equal(params.get("return_url"), returnUrl);
     assert.equal(params.get("sign_type"), "RSA2");
@@ -53,10 +55,34 @@ test("official SDK verifies decoded callback values and rejects tampering", asyn
 });
 
 test("default signing merchant omits seller_id from every checkout platform", async () => {
-  for (const platform of ["android", "web", "windows"] as const) {
-    const payment = await gateway.payment({ ...order(platform), sellerId: "" });
-    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.url).searchParams;
+  for (const platform of ["android", "web"] as const) {
+    const payment = await gateway.payment({ ...order(platform), sellerId: "", checkoutMode: platform === "web" ? "mobile_web" : undefined });
+    const params = payment.type === "app" ? new URLSearchParams(payment.orderString) : new URL(payment.type === "page" ? payment.url : "").searchParams;
     assert.equal(Object.hasOwn(JSON.parse(params.get("biz_content")!), "seller_id"), false);
     assert.equal(params.get("notify_url"), notifyUrl);
+  }
+});
+
+test("desktop Web and Windows precreate a verified QR without an external page", async () => {
+  for (const platform of ["web", "windows"] as const) {
+    const client = { exec: async (method: string, params: any, options: any) => {
+      assert.equal(method, "alipay.trade.precreate");
+      assert.equal(options.validateSign, true);
+      assert.equal(params.notifyUrl, notifyUrl);
+      assert.equal(params.bizContent.total_amount, "38.00");
+      assert.equal(params.bizContent.out_trade_no, "alp_test");
+      assert.equal(params.bizContent.product_code, undefined);
+      return { code: "10000", out_trade_no: "alp_test", qr_code: "https://qr.alipay.com/test" };
+    }} as unknown as AlipaySdk;
+    const qrGateway = new OfficialAlipayGateway({ notifyUrl, returnUrl }, async () => client);
+    assert.deepEqual(await qrGateway.payment(order(platform)), { type: "qr", qrCode: "https://qr.alipay.com/test" });
+  }
+});
+
+test("precreate rejects wrong order identity and sanitizes provider exceptions", async () => {
+  for (const result of [{ code: "10000", out_trade_no: "other", qr_code: "opaque" }, { code: "40004" }]) {
+    const client = { exec: async () => result } as unknown as AlipaySdk;
+    const qrGateway = new OfficialAlipayGateway({}, async () => client);
+    await assert.rejects(qrGateway.payment(order("web")), /Alipay QR checkout unavailable/);
   }
 });

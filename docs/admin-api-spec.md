@@ -75,6 +75,12 @@ Existing content-safety endpoints keep their Admin session and
 
 ### 3.1 Admin 会话与启动
 
+Admin Web 的 `/_admin/runtime-config.js` 仅在显式 `APP_ENV=local` 且
+`NODE_ENV` 非 production 时提供 `localLoginDefaults`，从本地
+`ADMIN_BASIC_AUTH_USERNAME` / `ADMIN_BASIC_AUTH_PASSWORD` 读取，供表单预填，
+不自动登录。其他环境或配置不完整时省略该字段，前端账密留空；
+不得把本地测试账密硬编码进前端资产。此行为不改变下列认证接口。
+
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `POST` | `/api/v1/admin/auth/login` | 后台登录 |
@@ -495,6 +501,8 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 ### 3.14 Server 会员与支付（只读）
 
+订单列表可传 `environment=PRODUCTION|SANDBOX`，按环境筛选后分页，未知环境不匹配。省略参数保持全环境查询兼容性。后台顶部环境选择同时用于收入概览和订单列表；订单表不重复显示环境列，详情保留环境，会员列表仍为全环境快照。
+
 | 方法 | Path | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/v1/admin/billing/apps` | 应用注册表与 `integrated` 标记 |
@@ -507,7 +515,7 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 
 收入概览默认正式环境 `PRODUCTION`、本月 UTC，允许显式 `SANDBOX`。可选 `from`（包含）与 `to`（不包含），最多 366 天。每行 `date` 为 `YYYY-MM-DD` UTC 日期，按日期倒序、应用/渠道/币种排序；无记录日期不补零行。金额单位是各币种的最小单位；购买按 `purchasedAt`，退款按 `refundedAt` 分别归入发生当天。不同币种不相加，不做汇率转换，不代表商店税费扣除后的到账收入。未知金额、币种、环境或发生时间不计入相应统计，软删除用户财务记录仍参与。同步过的交易按主键去重；不推测尚未保存的退款。
 
-会员列表每页默认 50、最多 100，`cursor` 为上页最后的 `userId`，翻页时保持应用和查询条件一致。它是全环境快照（会员表没有独立环境字段），不宣称是正式环境会员数。过期或软删除账号的会员 `active=false`。只读查询不刷新供应商状态、修改会员或发起退款。
+会员列表每页默认 50、最多 100，`cursor` 为上页最后的 `userId`，翻页时保持应用和查询条件一致。可传 `expiry=expired`（到期时间不晚于查询时间）或 `expiry=not_expired`（到期时间晚于查询时间），数据库筛选后再分页；无到期时间的记录仅在未指定此筛选时返回。账号删除不改变到期时间筛选结果。它是全环境快照（会员表没有独立环境字段），不宣称是正式环境会员数。过期或软删除账号的会员 `active=false`。只读查询不刷新供应商状态、修改会员或发起退款。
 
 Billing 管理接口读取 Zook 持久化 RevenueCat / Alipay 共享订单与验证事件，不读取 Docker stdout；当前要求已登录的 Admin session。现有 Admin session 尚未实现 endpoint 级 `billing:read` RBAC，因此此接口不宣称该权限已生效。每次读取写入 admin audit。订单列表每页最多 100 条，事件时间线也分页。RC 金额来自交易/验证事件证据；不足时返回 `null`，不从商品目录推算。Alipay 在创建时即记录 pending 报价，failed/closed/pending 均可查询，但报价不是收入。Alipay checkoutId/canonical providerTransactionId 是稳定商户订单 ID，providerOrderId 是验证后的支付宝 trade_no；providerTransactionId 搜索兼容两者。createdAt 是不可变创建时间，updatedAt 是最新观察时间；Alipay active/expired 筛选按实际已应用权益到期时间。删除后保留财务行并标记 deletedAt。详情 grant 台账仍返回空数组，不提供编辑/退款/赠送能力。已付款 Alipay 不主动轮询外部退款；后续验证 TRADE_CLOSED 保留在事件历史，但不自动撤销金额/权益。
 

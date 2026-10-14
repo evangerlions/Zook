@@ -153,11 +153,27 @@ test("admin Alipay effective filters, real trade search and immutable createdAt 
   assert.equal((await admin.listOrders({ provider: "alipay", status: "entitlement_active" })).items.length, 0);
 });
 
-test("failed checkout preparation is visible and terminal without leaking SDK errors", async () => {
+test("failed native signing is terminal without leaking SDK errors", async () => {
   const gateway: AlipayGateway = { payment: async () => { throw new Error("SECRET_PROVIDER_PAYLOAD"); }, query: async () => { throw new Error("must_not_query"); }, verifyNotify: async () => false };
   const f = await fixture({ gateway }); assert.equal((await f.create()).statusCode, 503);
   const row = (await new AiNovelBillingAdminService(f.database).listOrders({ status: "failed" })).items[0];
   const query = await f.query(row.checkoutId!); assert.equal(query.body.data.order.status, "failed"); assert.equal(query.body.data.syncStatus, "synchronized");
+  assert.ok(!JSON.stringify(f.logger.records).includes("SECRET_PROVIDER_PAYLOAD"));
+});
+
+test("QR preparation timeout stays pending and mode belongs to idempotency identity", async () => {
+  const gateway: AlipayGateway = { payment: async () => { throw new Error("SECRET_PROVIDER_PAYLOAD"); },
+    query: async () => ({ code: "40004" }), verifyNotify: async () => false };
+  const f = await fixture({ gateway });
+  const body = { productKey: "plus_monthly", platform: "web", distribution: "web", idempotencyKey: "qr_network_timeout", checkoutMode: "qr" };
+  const create = (input: unknown) => f.app.handle({ method: "POST", path: ORDERS, headers: f.headers, body: input });
+  assert.equal((await create(body)).statusCode, 503);
+  const rows = (await new AiNovelBillingAdminService(f.database).listOrders({ provider: "alipay", status: "pending" })).items;
+  assert.equal(rows.length, 1);
+  assert.equal((await create(body)).statusCode, 503);
+  assert.equal((await create({ ...body, checkoutMode: "mobile_web" })).statusCode, 409);
+  assert.equal((await create({ ...body, platform: "windows", distribution: "windows", checkoutMode: "mobile_web" })).statusCode, 400);
+  assert.equal((await f.query(rows[0].checkoutId!)).body.data.order.status, "pending");
   assert.ok(!JSON.stringify(f.logger.records).includes("SECRET_PROVIDER_PAYLOAD"));
 });
 

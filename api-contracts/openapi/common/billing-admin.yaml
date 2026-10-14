@@ -65,6 +65,10 @@ paths:
         - $ref: "#/components/parameters/AppId"
         - $ref: "#/components/parameters/UserId"
         - $ref: "#/components/parameters/Limit"
+        - name: expiry
+          in: query
+          description: Filter by expiry timestamp before pagination. Missing expiry timestamps match neither option; account deletion does not change expiry.
+          schema: { type: string, enum: [expired, not_expired] }
         - name: cursor
           in: query
           description: Last userId from previous page; same app and filters.
@@ -85,6 +89,10 @@ paths:
       tags: [admin-billing]
       parameters:
         - $ref: "#/components/parameters/AppId"
+        - name: environment
+          in: query
+          description: Filter before pagination; unknown environments excluded when specified. Omission includes all environments.
+          schema: { type: string, enum: [PRODUCTION, SANDBOX] }
         - $ref: "#/components/parameters/UserId"
         - $ref: "#/components/parameters/PaymentId"
         - $ref: "#/components/parameters/ProviderTransactionId"

@@ -200,6 +200,7 @@ components:
         platform: { type: string, enum: [android, web, windows] }
         distribution: { type: string, enum: [china_android_store, direct_android, web, windows] }
         idempotencyKey: { type: string, pattern: "^[A-Za-z0-9_-]{8,128}$" }
+        checkoutMode: { type: string, enum: [mobile_web, qr], description: "Web mobile uses mobile_web; desktop Web and Windows use qr. Omit for native Android." }
     AlipayOrder:
       type: object
       additionalProperties: false
@@ -231,6 +232,12 @@ components:
           properties:
             type: { type: string, const: page }
             url: { type: string, format: uri }
+        - type: object
+          additionalProperties: false
+          required: [type, qrCode]
+          properties:
+            type: { type: string, const: qr }
+            qrCode: { type: string, minLength: 1 }
     AlipayCreateData:
       type: object
       additionalProperties: false

@@ -33,6 +33,7 @@ export class AiNovelAlipayService {
       if (existing) {
         log("create_replay", existing);
         if (existing.productKey !== input.productKey || existing.platform !== input.platform || existing.distribution !== input.distribution ||
+          (existing.checkoutMode ?? "qr") !== (input.checkoutMode ?? "qr") ||
           existing.merchantAppId !== this.options.appId || existing.sellerId !== (this.options.sellerId?.trim() || "") || existing.environment !== this.options.environment)
           throw new ApplicationError(409, "BILLING_IDEMPOTENCY_CONFLICT", "Idempotency key belongs to different order inputs.");
         return existing;
@@ -53,7 +54,10 @@ export class AiNovelAlipayService {
     if (order.status !== "pending" || order.expiresAt <= now.toISOString()) return { order: publicAlipayOrder(order), payment: null };
     try { const payment = await this.gateway.payment(order); log("checkout_prepared", order); return { order: publicAlipayOrder(order), payment }; }
     catch {
-      log("signing_failed", order);
+      log("checkout_preparation_failed", order);
+      // Network precreation can time out after the provider created the order.
+      // Retain identity and pending state for idempotent recovery and queries.
+      if (order.platform !== "android") throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay checkout could not be prepared.");
       await this.database.withExclusiveSession(async () => {
         const current = await this.database.findAiNovelAlipayOrder(order.orderId);
         if (current?.status === "pending") { current.status = "failed"; await this.database.saveAiNovelAlipayOrder(current);

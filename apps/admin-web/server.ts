@@ -3,6 +3,7 @@ import { stat } from "node:fs/promises";
 import { createReadStream, readFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { localLoginDefaults } from "./local-login-defaults.ts";
 
 interface AdminServerOptions {
   proxyTarget?: string;
@@ -68,6 +69,7 @@ function createRuntimeConfig(options: AdminServerOptions) {
     analyticsUrl: process.env.ADMIN_ANALYTICS_URL ?? "https://analytics.youwoai.net",
     logsUrl: process.env.ADMIN_LOG_URL ?? "https://logs.youwoai.net/",
     traceConsoleEnabled: !onlineOrProduction,
+    localLoginDefaults: localLoginDefaults(),
   };
 }
 

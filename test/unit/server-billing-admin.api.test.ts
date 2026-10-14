@@ -4,6 +4,7 @@ import { createApplication } from "../support/create-test-application.ts";
 import type { AiNovelBillingTransactionRecord } from "../../src/shared/types.ts";
 import { queryBillingRevenue } from "../../src/infrastructure/database/postgres/postgres-billing-admin.ts";
 import { aggregateBillingRevenue } from "../../src/testing/in-memory-billing-admin.ts";
+import { PostgresAiNovelBillingStore } from "../../src/infrastructure/database/postgres/postgres-ainovel-billing.ts";
 
 async function setup() {
   const runtime = await createApplication({ adminBasicAuth: { username: "admin", password: "AdminPass123!" } });
@@ -114,6 +115,7 @@ test("membership browsing includes members without orders, applies expiry/deleti
     ["member_a", "2099-01-01T00:00:00Z", null],
     ["member_b", "2020-01-01T00:00:00Z", null],
     ["member_c", "2099-01-01T00:00:00Z", "2026-09-01T00:00:00Z"],
+    ["member_d", null, null],
   ] as const) await runtime.database.upsertAiNovelBillingMembership({ appId: "ai_novel", userId,
     active: true, state: "active", tier: "plus", planKey: "plus_monthly", expiresAt,
     autoRenew: true, source: "app_store", managementUrl: null, lastSyncedAt: "2026-09-01T00:00:00Z", accountDeletedAt });
@@ -123,6 +125,14 @@ test("membership browsing includes members without orders, applies expiry/deleti
   assert.equal(next.body.data.items[0].userId, "member_b"); assert.equal(next.body.data.items[0].state, "expired");
   const deleted = await runtime.get("memberships", { userId: "member_c" });
   assert.equal(deleted.body.data.items[0].active, false);
+  const unexpired = await runtime.get("memberships", { expiry: "not_expired", limit: "1" });
+  assert.equal(unexpired.body.data.items[0].userId, "member_a");
+  const unexpiredNext = await runtime.get("memberships", { expiry: "not_expired", limit: "1", cursor: unexpired.body.data.nextCursor });
+  assert.equal(unexpiredNext.body.data.items[0].userId, "member_c");
+  assert.equal(unexpiredNext.body.data.nextCursor, null);
+  const expired = await runtime.get("memberships", { expiry: "expired" });
+  assert.deepEqual(expired.body.data.items.map((item: { userId: string }) => item.userId), ["member_b"]);
+  assert.equal((await runtime.get("memberships", { expiry: "invalid" })).statusCode, 400);
   await runtime.database.upsertAiNovelBillingTransaction(transaction("deleted-member", { userId: "member_c" }));
   const detail = await runtime.get("orders/member_c%3Adeleted-member", { appId: "ai_novel" });
   assert.equal(detail.statusCode, 200);
@@ -140,4 +150,18 @@ test("Postgres revenue aggregates in SQL with parameters, excludes unknown envir
   assert.match(sql, /AT TIME ZONE 'UTC'/); assert.match(sql, /UNION ALL/); assert.equal(rows[0].date, "2026-09-10");
   assert.match(sql, /refunded_at >= \$1/); assert.deepEqual(params, [window.from, window.to, false]); assert.equal(rows[0].grossMinor, 1998);
   await assert.rejects(queryBillingRevenue(async () => ({ rows: [{ purchase_count: "1", gross_minor: "9007199254740992", refund_minor: "0" }], rowCount: 1, command: "SELECT", oid: 0, fields: [] }), { ...window, sandbox: false }), /safe integer/);
+});
+
+test("Postgres membership expiry filtering occurs before LIMIT with parameterized cutoff", async () => {
+  let sql = "";
+  let params: unknown[] | undefined;
+  const store = new PostgresAiNovelBillingStore(async (text, values) => {
+    sql = text; params = values;
+    return { rows: [], rowCount: 0, command: "SELECT", oid: 0, fields: [] };
+  });
+  await store.listAdminMemberships({ expiry: "expired", now: "2026-10-11T12:00:00Z", limit: 2 });
+  assert.match(sql, /expires_at <= \$5::timestamptz/);
+  assert.match(sql, /expires_at > \$5::timestamptz/);
+  assert.ok(sql.indexOf("expires_at <=") < sql.indexOf("LIMIT"));
+  assert.deepEqual(params, [null, null, 2, "expired", "2026-10-11T12:00:00Z"]);
 });

@@ -104,8 +104,11 @@ export class PostgresAiNovelBillingStore {
   async listAdminMemberships(filter: import("../../../shared/types/billing-admin.ts").BillingMembershipFilter): Promise<AiNovelBillingMembershipRecord[]> {
     const result = await this.query(`SELECT * FROM zook_ai_novel_billing_memberships
       WHERE app_id = 'ai_novel' AND ($1::text IS NULL OR user_id = $1)
-        AND ($2::text IS NULL OR user_id > $2) ORDER BY user_id LIMIT $3`,
-    [filter.userId ?? null, filter.after ?? null, filter.limit]);
+        AND ($2::text IS NULL OR user_id > $2)
+        AND ($4::text IS NULL OR ($4 = 'expired' AND expires_at <= $5::timestamptz)
+          OR ($4 = 'not_expired' AND expires_at > $5::timestamptz))
+      ORDER BY user_id LIMIT $3`,
+    [filter.userId ?? null, filter.after ?? null, filter.limit, filter.expiry ?? null, filter.now ?? null]);
     return result.rows.map(parseMembership);
   }
 
@@ -215,6 +218,7 @@ export class PostgresAiNovelBillingStore {
       clauses.push(clause(`$${values.length}`));
     };
     if (filter.userId) add((p) => `user_id = ${p}`, filter.userId);
+    if (filter.environment) add((p) => `is_sandbox = ${p}`, filter.environment === "SANDBOX");
     if (filter.provider) add((p) => `provider = ${p}`, filter.provider);
     if (filter.checkoutId) add((p) => `checkout_id = ${p}`, filter.checkoutId);
     if (filter.providerTransactionId) add((p) => `(provider_transaction_id = ${p} OR provider_order_id = ${p})`, filter.providerTransactionId);

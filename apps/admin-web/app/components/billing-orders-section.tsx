@@ -26,7 +26,7 @@ import {
   BILLING_STATUS_OPTIONS,
   formatBillingMoney,
 } from "../lib/billing-format";
-import { formatApiError, formatTimestamp, makeNotice } from "../lib/format";
+import { formatApiError, formatTimestamp, formatTimestampSeconds, makeNotice } from "../lib/format";
 import type {
   AdminBillingEvent,
   AdminBillingOrder,
@@ -46,7 +46,7 @@ interface BillingFilters {
   createdTo?: string;
 }
 
-export function BillingOrdersSection({ appId }: { appId: string }) {
+export function BillingOrdersSection({ appId, environment }: { appId: string; environment: "PRODUCTION" | "SANDBOX" }) {
   const { setNotice } = useAdminSession();
   const ordersRequest = useRef(0);
   const detailRequest = useRef(0);
@@ -72,7 +72,7 @@ export function BillingOrdersSection({ appId }: { appId: string }) {
     if (!append) setPage(null);
     setLoading(true);
     try {
-      const result = await adminApi.getBillingOrders({ ...nextFilters, appId, limit: 50, cursor });
+      const result = await adminApi.getBillingOrders({ ...nextFilters, appId, environment, limit: 50, cursor });
       if (request !== ordersRequest.current) return;
       setPage((current) => append && current
         ? { items: [...current.items, ...result.items], nextCursor: result.nextCursor }
@@ -87,7 +87,7 @@ export function BillingOrdersSection({ appId }: { appId: string }) {
   useEffect(() => {
     void loadOrders(filters);
     return () => { ordersRequest.current++; detailRequest.current++; };
-  }, [appId]);
+  }, [appId, environment]);
 
   function applyFilters() {
     const nextFilters: BillingFilters = {
@@ -246,7 +246,7 @@ export function BillingOrdersSection({ appId }: { appId: string }) {
       <section className="surface-card">
         <Table<AdminBillingOrder>
           columns={[
-            { title: "下单时间", dataIndex: "createdAt", width: 175, render: formatTimestamp },
+            { title: "下单时间", dataIndex: "createdAt", width: 200, render: formatTimestampSeconds },
             { title: "用户 ID", dataIndex: "userId", width: 170, ellipsis: true },
             {
               title: "商品",
@@ -260,13 +260,9 @@ export function BillingOrdersSection({ appId }: { appId: string }) {
               title: "状态",
               width: 210,
               render: (_, order) => (
-                <Space wrap>
-                  <Tag color={billingStatusColor(order.paymentStatus)}>{billingStatusLabel(order.paymentStatus)}</Tag>
-                  <Tag color={billingStatusColor(order.entitlementStatus)}>{billingStatusLabel(order.entitlementStatus)}</Tag>
-                </Space>
+                <Tag color={billingStatusColor(order.paymentStatus)}>{billingStatusLabel(order.paymentStatus)}</Tag>
               ),
             },
-            { title: "环境", dataIndex: "environment", width: 115, render: (value) => value === "SANDBOX" ? <Tag color="blue">Sandbox</Tag> : value === "PRODUCTION" ? "Production" : "—" },
             { title: "交易 ID", dataIndex: "providerTransactionId", ellipsis: true },
             { title: "操作", width: 90, render: (_, order) => <Button size="small" onClick={() => void openOrder(order)}>详情</Button> },
           ]}
@@ -301,7 +297,6 @@ export function BillingOrdersSection({ appId }: { appId: string }) {
               <Descriptions.Item label="商品">{detail.order.productKey}</Descriptions.Item>
               <Descriptions.Item label="金额">{formatBillingMoney(detail.order.amountMinor, detail.order.currency)}</Descriptions.Item>
               <Descriptions.Item label="支付状态"><Tag color={billingStatusColor(detail.order.paymentStatus)}>{billingStatusLabel(detail.order.paymentStatus)}</Tag></Descriptions.Item>
-              <Descriptions.Item label="权益状态"><Tag color={billingStatusColor(detail.order.entitlementStatus)}>{billingStatusLabel(detail.order.entitlementStatus)}</Tag></Descriptions.Item>
               <Descriptions.Item label="环境">{detail.order.environment ?? "未知"}</Descriptions.Item>
               <Descriptions.Item label="购买时间">{formatTimestamp(detail.order.paidAt ?? undefined)}</Descriptions.Item>
               <Descriptions.Item label="到期时间">{formatTimestamp(detail.order.expiresAt ?? undefined)}</Descriptions.Item>
@@ -340,7 +335,7 @@ export function BillingOrdersSection({ appId }: { appId: string }) {
               {detail.events.length ? <Timeline items={detail.events.map(eventTimelineItem)} /> : <Empty description="没有与此订单关联的支付事件" />}
               {detail.eventsNextCursor ? <Button loading={eventsLoading} onClick={() => void loadOlderEvents()}>加载更早事件</Button> : null}
             </section>
-            <Alert showIcon type="info" message="权益当前以 Zook 会员状态快照为准；目前没有单独的 entitlement grant 台账。Webhook 时间线只显示已持久化的事件元数据，不包含原始 payload。" />
+            <Alert showIcon type="info" message="当前会员状态显示的是最近一次同步结果，不代表这笔订单购买时的状态。支付通知记录为空，不代表支付失败。" />
           </Space>
         ) : <Empty description="无法加载订单详情" />}
       </Drawer>

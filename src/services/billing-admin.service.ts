@@ -51,10 +51,12 @@ export class BillingAdminService {
     await this.assertScope(query.appId);
     const limit = query.limit === undefined ? 50 : Number(query.limit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) invalid("limit must be 1–100.");
+    if (query.expiry !== undefined && query.expiry !== "expired" && query.expiry !== "not_expired") invalid("Invalid membership expiry filter.");
     if (!(await this.hasIntegratedApp())) return { items: [], nextCursor: null };
-    const records = await this.database.listBillingAdminMemberships({ userId: boundedText(query.userId),
-      after: boundedText(query.cursor), limit: limit + 1 });
     const now = Date.now();
+    const records = await this.database.listBillingAdminMemberships({ userId: boundedText(query.userId),
+      after: boundedText(query.cursor), limit: limit + 1, expiry: query.expiry,
+      now: new Date(now).toISOString() });
     const items = records.slice(0, limit).map((item) => effectiveBillingMembership(item, now));
     return { items, nextCursor: records.length > limit ? items.at(-1)!.userId : null };
   }

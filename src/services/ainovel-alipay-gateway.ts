@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { AlipaySdk } from "alipay-sdk";
 import { ApplicationError } from "../shared/errors.ts";
+import { normalizeAlipayPrivateKey } from "../modules/billing/alipay-key-format.ts";
 import type { AlipayGateway, AlipayOptions, AlipayOrder, AlipayPayment } from "../modules/billing/alipay-models.ts";
 
 /** Official SDK only. Signed strings, private keys and provider payloads are never logged. */
@@ -12,8 +13,8 @@ export class OfficialAlipayGateway implements AlipayGateway {
     return this.sdk ??= Promise.all([readFile(this.options.privateKeyPath!, "utf8"), readFile(this.options.publicKeyPath!, "utf8")])
       .then(([privateKey, alipayPublicKey]) => {
         if (!privateKey.trim() || !alipayPublicKey.trim()) throw new Error("Alipay keys unavailable");
-        return new AlipaySdk({ appId: this.options.appId!, privateKey, alipayPublicKey,
-          keyType: privateKey.includes("BEGIN PRIVATE KEY") ? "PKCS8" : "PKCS1", signType: "RSA2", camelcase: false,
+        return new AlipaySdk({ appId: this.options.appId!, privateKey: normalizeAlipayPrivateKey(privateKey), alipayPublicKey,
+          keyType: "PKCS8", signType: "RSA2", camelcase: false,
           gateway: this.options.environment === "sandbox" ? "https://openapi-sandbox.dl.alipaydev.com/gateway.do" : "https://openapi.alipay.com/gateway.do",
           timeout: 8000 });
       });
@@ -23,11 +24,24 @@ export class OfficialAlipayGateway implements AlipayGateway {
     const bizContent = { out_trade_no: order.orderId, ...(order.sellerId ? { seller_id: order.sellerId } : {}),
       total_amount: (order.amountMinor / 100).toFixed(2), subject: `OrangeWrite ${order.productKey}`,
       time_expire: new Date(Date.parse(order.expiresAt) + 8 * 3600000).toISOString().slice(0, 19).replace("T", " "),
-      product_code: order.platform === "android" ? "QUICK_MSECURITY_PAY" : "FAST_INSTANT_TRADE_PAY" };
+      product_code: order.platform === "android" ? "QUICK_MSECURITY_PAY" : "QUICK_WAP_WAY" };
     const params = { bizContent, notifyUrl: this.options.notifyUrl, returnUrl: this.options.returnUrl };
-    return order.platform === "android"
-      ? { type: "app", orderString: sdk.sdkExecute("alipay.trade.app.pay", params) }
-      : { type: "page", url: sdk.pageExecute("alipay.trade.page.pay", "GET", params) };
+    if (order.platform === "android") return { type: "app", orderString: sdk.sdkExecute("alipay.trade.app.pay", params) };
+    if (order.platform === "web" && order.checkoutMode === "mobile_web") {
+      return { type: "page", url: sdk.pageExecute("alipay.trade.wap.pay", "GET", params) };
+    }
+    try {
+      const { product_code: _unused, ...qrContent } = bizContent;
+      const result = await sdk.exec("alipay.trade.precreate", {
+        bizContent: qrContent, notifyUrl: this.options.notifyUrl,
+      }, { validateSign: true });
+      if (result.code !== "10000" || result.out_trade_no !== order.orderId || typeof result.qr_code !== "string" || !result.qr_code.trim()) {
+        throw new Error("Invalid QR evidence");
+      }
+      return { type: "qr", qrCode: result.qr_code };
+    } catch {
+      throw new ApplicationError(503, "BILLING_PROVIDER_UNAVAILABLE", "Alipay QR checkout unavailable.");
+    }
   }
   async query(orderId: string): Promise<Record<string, unknown>> {
     try {

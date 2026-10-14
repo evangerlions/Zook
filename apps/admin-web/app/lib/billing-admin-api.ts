@@ -14,5 +14,5 @@ function path(resource: string, query: Record<string, string | undefined>) {
 export const billingAdminApi = {
   apps: () => requestJson<BillingApp[]>(adminPath("/billing/apps")),
   overview: (query: { appId: string; environment: string; from?: string; to?: string }) => requestJson<BillingOverview>(path("overview", query)),
-  memberships: (query: { appId: string; userId?: string; cursor?: string }) => requestJson<BillingMemberPage>(path("memberships", query)),
+  memberships: (query: { appId: string; userId?: string; cursor?: string; expiry?: "expired" | "not_expired" }) => requestJson<BillingMemberPage>(path("memberships", query)),
 };

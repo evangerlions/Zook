@@ -4394,6 +4394,14 @@ export const AlipayCreateRequestSchema = {
     "idempotencyKey": {
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{8,128}$"
+    },
+    "checkoutMode": {
+      "type": "string",
+      "enum": [
+        "mobile_web",
+        "qr"
+      ],
+      "description": "Web mobile uses mobile_web; desktop Web and Windows use qr. Omit for native Android."
     }
   }
 } as const;
@@ -4403,6 +4411,7 @@ export type AlipayCreateRequest = {
   "platform": "android" | "web" | "windows";
   "distribution": "china_android_store" | "direct_android" | "web" | "windows";
   "idempotencyKey": string;
+  "checkoutMode"?: "mobile_web" | "qr";
 };
 
 export const AlipayOrderSchema = {
@@ -4549,6 +4558,24 @@ export const AlipayPaymentSchema = {
           "format": "uri"
         }
       }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "qrCode"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "qr"
+        },
+        "qrCode": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   ]
 } as const;
@@ -4559,6 +4586,9 @@ export type AlipayPayment = {
 } | {
   "type": string;
   "url": string;
+} | {
+  "type": string;
+  "qrCode": string;
 };
 
 export const AlipayCreateDataSchema = {
@@ -4699,6 +4729,24 @@ export const AlipayCreateDataSchema = {
                   "format": "uri"
                 }
               }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type",
+                "qrCode"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "qr"
+                },
+                "qrCode": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
             }
           ]
         },
@@ -4731,6 +4779,9 @@ export type AlipayCreateData = {
 } | {
   "type": string;
   "url": string;
+} | {
+  "type": string;
+  "qrCode": string;
 } | unknown;
 };
 

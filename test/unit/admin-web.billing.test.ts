@@ -5,8 +5,50 @@ import { adminApi } from "../../apps/admin-web/app/lib/admin-api.ts";
 import { billingAdminApi } from "../../apps/admin-web/app/lib/billing-admin-api.ts";
 import { billingStatusLabel, formatBillingMoney } from "../../apps/admin-web/app/lib/billing-format.ts";
 import { billingOrdersViewHarness } from "../support/billing-orders-view-harness.ts";
+import { formatTimestamp, formatTimestampSeconds } from "../../apps/admin-web/app/lib/format.ts";
 
 const source = (path: string) => readFile(new URL(`../../apps/admin-web/app/${path}`, import.meta.url), "utf8");
+
+test("orders show only payment status and retain the separate current membership section", async () => {
+  const view = await billingOrdersViewHarness({ getBillingOrder: async () => ({
+    order: { paymentId: "alice:tx", entitlementStatus: "unknown", paymentStatus: "provider_paid" },
+    transactions: [], events: [], currentMembership: null,
+  }) });
+  const columns = view.find(view.render(), "Table")!.props.columns;
+  const cell = columns.find((column: { title: string }) => column.title === "状态").render(null, { paymentStatus: "provider_paid", entitlementStatus: "unknown" });
+  assert.ok(view.find(cell, "Tag"));
+  assert.equal(cell.type, "Tag");
+  columns.find((column: { title: string }) => column.title === "操作").render(null, { paymentId: "alice:tx" }).props.onClick();
+  await view.flush();
+  const tree = view.render();
+  assert.equal(view.find(tree, "DescriptionItem", (props) => props.label === "订单会员状态"), undefined);
+  assert.ok(view.find(tree, "DescriptionItem", (props) => props.label === "支付状态"));
+  assert.ok(view.find(tree, "DescriptionItem", (props) => props.label === "有效"));
+});
+
+test("order details explain membership sync and missing notifications in plain language", async () => {
+  const view = await billingOrdersViewHarness({ getBillingOrder: async () => ({
+    order: { paymentId: "alice:tx", userId: "alice", provider: "revenuecat" },
+    currentMembership: null, transactions: [], events: [], eventsNextCursor: null,
+  }) });
+  const table = view.find(view.render(), "Table")!;
+  const action = table.props.columns.find((column: { title: string }) => column.title === "操作");
+  action.render(null, { paymentId: "alice:tx" }).props.onClick();
+  await view.flush();
+  const alert = view.find(view.render(), "Alert", (props) => props.message === "当前会员状态显示的是最近一次同步结果，不代表这笔订单购买时的状态。支付通知记录为空，不代表支付失败。");
+  assert.ok(alert);
+});
+
+test("order creation time renders seconds without changing other timestamp precision", async () => {
+  const view = await billingOrdersViewHarness({ getBillingOrders: async () => ({ items: [], nextCursor: null }) });
+  const table = view.find(view.render(), "Table")!;
+  const createdAt = table.props.columns.find((column: { dataIndex: string }) => column.dataIndex === "createdAt");
+  const value = "2026-10-11T12:03:05.123Z";
+  assert.match(createdAt.render(value), /\d{2}:\d{2}:05$/);
+  assert.doesNotMatch(formatTimestamp(value), /:\d{2}:05$/);
+  assert.equal(formatTimestampSeconds(), "—");
+  assert.equal(formatTimestampSeconds("invalid"), "invalid");
+});
 
 test("billing orders offer Alipay provider and CN distribution filters", async () => {
   const queries: Array<Record<string, unknown>> = [];
@@ -99,7 +141,8 @@ test("billing UI guards stale reads and keeps revenue separate from membership e
   assert.match(orders, /detail\.order\.providerOrderId/);
   assert.match(orders, /detail\.order\.checkoutId/);
   const overview = await source("components/billing-overview-section.tsx");
-  assert.match(overview, /useState\("PRODUCTION"\)/); assert.match(overview, /不同|币种/);
+  assert.match(await source("routes/billing.tsx"), /useState<BillingEnvironment>\(loadBillingEnvironment\)/);
+  assert.match(overview, /environment: BillingEnvironment/); assert.match(overview, /不同|币种/);
   assert.match(await source("components/billing-memberships-section.tsx"), /此列表包含测试及正式会员/);
 });
 
@@ -121,12 +164,13 @@ test("billing API client uses shared routes and explicitly scopes order details"
   try {
     await billingAdminApi.apps();
     await billingAdminApi.overview({ appId: "all", environment: "PRODUCTION" });
-    await billingAdminApi.memberships({ appId: "ai_novel", userId: "user:with spaces" });
+    await billingAdminApi.memberships({ appId: "ai_novel", userId: "user:with spaces", expiry: "expired" });
     await adminApi.getBillingOrders({ appId: "all", limit: 50 });
     await adminApi.getBillingOrder("user:tx", { appId: "ai_novel", eventsLimit: 50 });
     assert.deepEqual(urls.map((url) => url.pathname), ["/api/v1/admin/billing/apps", "/api/v1/admin/billing/overview", "/api/v1/admin/billing/memberships", "/api/v1/admin/billing/orders", "/api/v1/admin/billing/orders/user%3Atx"]);
     assert.equal(urls[1].searchParams.get("environment"), "PRODUCTION");
     assert.equal(urls[2].searchParams.get("userId"), "user:with spaces");
+    assert.equal(urls[2].searchParams.get("expiry"), "expired");
     assert.equal(urls[4].searchParams.get("appId"), "ai_novel");
   } finally { globalThis.fetch = original; }
 });

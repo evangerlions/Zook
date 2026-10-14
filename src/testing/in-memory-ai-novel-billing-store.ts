@@ -63,6 +63,8 @@ export class InMemoryAiNovelBillingStore {
   listAdminMemberships(filter: import("../shared/types/billing-admin.ts").BillingMembershipFilter) {
     return structuredClone(this.memberships
       .filter((item) => (!filter.userId || item.userId === filter.userId) && (!filter.after || item.userId > filter.after))
+      .filter((item) => !filter.expiry || (item.expiresAt !== null &&
+        (filter.expiry === "expired" ? Date.parse(item.expiresAt) <= Date.parse(filter.now!) : Date.parse(item.expiresAt) > Date.parse(filter.now!))))
       .sort((a, b) => a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0).slice(0, filter.limit));
   }
 
@@ -122,6 +124,7 @@ export class InMemoryAiNovelBillingStore {
     if (filter.paymentId && !filter.paymentId.includes(":")) return [];
     return structuredClone(this.transactions
       .filter((item) => item.appId === filter.appId)
+      .filter((item) => !filter.environment || item.isSandbox === (filter.environment === "SANDBOX"))
       .filter((item) => !filter.provider || item.provider === filter.provider)
       .filter((item) => !filter.checkoutId || item.checkoutId === filter.checkoutId)
       .filter((item) => !filter.userId || item.userId === filter.userId)

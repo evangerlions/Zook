@@ -3,11 +3,12 @@ import { useState } from "react";
 import { Navigate } from "react-router";
 
 import { useAdminSession } from "../lib/admin-session";
+import { formatApiError } from "../lib/format";
 
 export default function LoginRoute() {
   const { adminUser, authenticating, login, runtimeConfig } = useAdminSession();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(runtimeConfig.localLoginDefaults?.username ?? "");
+  const [password, setPassword] = useState(runtimeConfig.localLoginDefaults?.password ?? "");
   const [error, setError] = useState("");
 
   if (adminUser) {
@@ -24,8 +25,8 @@ export default function LoginRoute() {
 
     try {
       await login(username.trim(), password);
-    } catch {
-      setError("用户名或密码错误。");
+    } catch (error) {
+      setError(formatApiError(error));
     }
   }
 

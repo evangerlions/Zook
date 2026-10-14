@@ -17,6 +17,8 @@ export interface BillingRevenueRow {
 }
 
 export interface BillingMembershipFilter {
+  expiry?: "expired" | "not_expired";
+  now?: string;
   userId?: string;
   after?: string;
   limit: number;

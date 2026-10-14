@@ -112,6 +112,7 @@ function parseOrderFilter(query: Record<string, string | undefined>): AiNovelBil
   const limit = parseLimit(query.limit, DEFAULT_LIMIT);
   const cursor = query.cursor ? decodeOrderCursor(query.cursor) : undefined;
   const provider = query.provider;
+  if (query.environment !== undefined && query.environment !== "PRODUCTION" && query.environment !== "SANDBOX") invalidQuery("environment must be PRODUCTION or SANDBOX.");
   if (provider && !["revenuecat", "alipay"].includes(provider)) invalidQuery("provider must be revenuecat or alipay.");
   const platform = query.platform;
   if (platform && !["ios", "android", "macos", "web", "windows"].includes(platform)) {
@@ -133,6 +134,7 @@ function parseOrderFilter(query: Record<string, string | undefined>): AiNovelBil
   return {
     appId: "ai_novel",
     userId: optionalBoundedQueryString(query.userId, "userId", 128),
+    environment: query.environment as AiNovelBillingAdminOrderFilter["environment"],
     paymentId: optionalBoundedQueryString(query.paymentId, "paymentId", 512),
     checkoutId: optionalBoundedQueryString(query.checkoutId, "checkoutId", 128),
     providerTransactionId: optionalBoundedQueryString(query.providerTransactionId, "providerTransactionId", 256),

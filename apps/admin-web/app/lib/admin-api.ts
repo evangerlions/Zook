@@ -440,6 +440,7 @@ export const adminApi = {
     return requestJson<AdminFeedbackListDocument>(adminPath(`/apps/ai_novel/feedback${suffix}`));
   },
   getBillingOrders(input: {
+    environment?: "PRODUCTION" | "SANDBOX";
     appId?: string;
     provider?: "revenuecat" | "alipay";
     userId?: string;

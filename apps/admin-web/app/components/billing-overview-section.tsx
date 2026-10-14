@@ -1,17 +1,17 @@
-import { Alert, Button, DatePicker, Select, Space, Table, Tag } from "antd";
+import { Alert, Button, DatePicker, Space, Table, Tag } from "antd";
 import type { Dayjs } from "dayjs";
 import { useState } from "react";
 import { billingAdminApi, type BillingRevenue } from "../lib/billing-admin-api";
 import { formatBillingMoney } from "../lib/billing-format";
 import { useBillingQuery } from "../lib/use-billing-query";
+import type { BillingEnvironment } from "../lib/billing-preferences";
 
-export function BillingOverviewSection({ appId }: { appId: string }) {
-  const [environment, setEnvironment] = useState("PRODUCTION");
+export function BillingOverviewSection({ appId, environment }: { appId: string; environment: BillingEnvironment }) {
   const [dates, setDates] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const query = { appId, environment, from: dates?.[0]?.startOf("day").toISOString(), to: dates?.[1]?.add(1, "day").startOf("day").toISOString() };
   const result = useBillingQuery(() => billingAdminApi.overview(query), JSON.stringify(query));
   return <section className="stack">
-    <Space wrap><Select aria-label="统计环境" value={environment} onChange={setEnvironment} style={{ width: 160 }} options={[{ value: "PRODUCTION", label: "正式支付" }, { value: "SANDBOX", label: "Sandbox 测试" }]} /><DatePicker.RangePicker value={dates} onChange={setDates} /><Button onClick={result.refresh}>刷新</Button></Space>
+    <Space wrap><DatePicker.RangePicker value={dates} onChange={setDates} /><Button onClick={result.refresh}>刷新</Button></Space>
     <Alert showIcon type="info" message="默认本月，最多 366 天。按 UTC 日期、币种和渠道分别统计已确认金额；不含未知金额、未知环境，不等于商店税费扣除后的实际结算收入。退款计入退款当天，购买计入购买当天；无记录的日期不展示。" />
     {result.error ? <Alert type="error" message={result.error} /> : null}
     {result.data ? <Space><Tag>{environment}</Tag><span>{result.data.from} — {result.data.to}（结束时间不含）</span></Space> : null}

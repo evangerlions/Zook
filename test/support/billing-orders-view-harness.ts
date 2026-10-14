@@ -1,12 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
+import { formatTimestampSeconds } from "../../apps/admin-web/app/lib/format.ts";
 
 interface ViewNode { type: string; props: Record<string, any> }
 type Node = ViewNode | string | number | null | undefined;
 
 /** Executes the real TSX handlers with minimal deterministic hooks, not a browser renderer. */
-export async function billingOrdersViewHarness(api: Record<string, unknown>) {
+export async function billingOrdersViewHarness(api: Record<string, unknown>, environment: "PRODUCTION" | "SANDBOX" = "PRODUCTION") {
   const requireAdmin = createRequire(new URL("../../apps/admin-web/package.json", import.meta.url));
   const ts = requireAdmin("typescript");
   const source = await readFile(new URL("../../apps/admin-web/app/components/billing-orders-section.tsx", import.meta.url), "utf8");
@@ -28,14 +29,14 @@ export async function billingOrdersViewHarness(api: Record<string, unknown>) {
     "../lib/admin-api": { adminApi: api },
     "../lib/admin-session": { useAdminSession: () => ({ setNotice: () => undefined }) },
     "../lib/billing-format": { BILLING_STATUS_OPTIONS: [], billingProductLabel: () => "", billingStatusColor: () => "", billingStatusLabel: () => "", formatBillingMoney: () => "" },
-    "../lib/format": { formatApiError: String, formatTimestamp: String, makeNotice: () => ({}) },
+    "../lib/format": { formatApiError: String, formatTimestamp: String, formatTimestampSeconds, makeNotice: () => ({}) },
   };
-  const exports: { BillingOrdersSection?: (props: { appId: string }) => ViewNode } = {};
+  const exports: { BillingOrdersSection?: (props: { appId: string; environment: "PRODUCTION" | "SANDBOX" }) => ViewNode } = {};
   runInNewContext(compiled, { exports, require: (name: string) => {
     if (!(name in modules)) throw new Error(`Unexpected view dependency ${name}`);
     return modules[name];
   } });
-  function render() { index = 0; return exports.BillingOrdersSection!({ appId: "ai_novel" }); }
+  function render() { index = 0; return exports.BillingOrdersSection!({ appId: "ai_novel", environment }); }
   function nodes(tree: Node | Node[]): ViewNode[] {
     if (Array.isArray(tree)) return tree.flatMap(nodes);
     if (!tree || typeof tree !== "object") return [];

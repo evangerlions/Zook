@@ -8,6 +8,7 @@ export interface AlipayCreateInput {
   platform: AlipayPlatform;
   distribution: AlipayDistribution;
   idempotencyKey: string;
+  checkoutMode?: "mobile_web" | "qr";
 }
 export interface AlipayOrder extends AlipayCreateInput {
   orderId: string;
@@ -31,7 +32,7 @@ export interface AlipayOrder extends AlipayCreateInput {
   accountDeletedAt: string | null;
 }
 export type AlipayPublicOrder = Pick<AlipayOrder, "orderId" | "provider" | "environment" | "productKey" | "status" | "amountMinor" | "currency" | "createdAt" | "expiresAt" | "paidAt" | "membershipApplied" | "conflict">;
-export type AlipayPayment = { type: "app"; orderString: string } | { type: "page"; url: string };
+export type AlipayPayment = { type: "app"; orderString: string } | { type: "page"; url: string } | { type: "qr"; qrCode: string };
 export interface AlipayQueryResult { order: AlipayPublicOrder; syncStatus: "synchronized" | "pending"; membership: AiNovelBillingMembershipInfo }
 export interface AlipayGateway {
   payment(order: AlipayOrder): Promise<AlipayPayment>;

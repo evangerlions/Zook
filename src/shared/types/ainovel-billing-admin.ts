@@ -26,6 +26,7 @@ export type AiNovelBillingAdminEntitlementStatus =
   | "unknown";
 
 export interface AiNovelBillingAdminOrderFilter {
+  environment?: "PRODUCTION" | "SANDBOX";
   appId: "ai_novel";
   userId?: string;
   paymentId?: string;
