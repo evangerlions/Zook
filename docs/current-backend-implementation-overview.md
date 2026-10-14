@@ -232,7 +232,7 @@ OrangeWrite telemetry 使用独立的 raw-body 网关，不进入 JSON 业务路
 8. 默认 48h 的 Admin LLM 运营看板：调用/Token/可靠性、P50/P95、Provider Model 和 Provider 汇总、动态路由分、独立 Provider × Model cross aggregate 矩阵与筛选下钻；一次响应的历史 aggregates 来自同一 repeatable-read snapshot
 9. LLM metrics 将路由 Model 与实际 Provider Model 分开：前者解释动态选择，后者用于 Token/延迟运营排行
 10. 调用观察不保存 prompt、response、userId、Authorization 或 Provider 原始 payload，并由 worker 清理 35 天前数据
-11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：2 分钟内至少两位用户累计四次连续失败先进入不中断用户流量的确认状态，服务端立即用同一冒烟请求最多探测两次；两次都失败才隔离 `routingModelKey × provider × providerModel`。worker 用同一冒烟请求两次连续成功恢复正式熔断；管理台 runtime route 状态展示确认、熔断和下次探测信息，并支持对当前配置中的单一路由手动解除，关闭开关会清除全部既有状态
+11. 可选的 route circuit breaker 只处理 Chat 流式首个有效 chunk 前失败：滚动 24 小时累计四次普通失败，或两次白名单余额错误（不限不同用户数）先进入确认状态。余额白名单为 BAI 的 `insufficient_user_quota`，以及 OpenRouter 的 402 + 明确 openrouter_credits 来源且无其他 reason。裸 402、Key 上限、临时并发预算、weight_exceeds_budget 和未知 reason 都走普通失败。普通确认最多两次；确认探测遇到一次白名单余额错误立即隔离当前 route。首个有效 chunk 清零未熔断计数，Redis 失败窗口保留 24 小时加 1 分钟。正式熔断沿用 worker 两次连续成功恢复及手动解除；管理台展示确认、熔断和下次探测信息。关闭开关清除全部既有状态。
 12. LLM 运营与 AINovel 反馈的低频内部告警直接复用 CI/CD 的 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` SMTP 契约；worker 对超过 20 次调用且成功率低于 90% 的完整小时、以及正式 route 熔断分别发送去重邮件
 13. AINovel 反馈持久化成功后通过同一 SMTP 告警路径发送反馈正文；同一用户按 Asia/Shanghai 自然日最多一封，投递失败不会影响用户反馈提交
 

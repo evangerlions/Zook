@@ -22,6 +22,7 @@ import {
   compareTimestamps,
 } from "./table-sorting";
 import { useMultiColumnSort, type MultiColumnSortController } from "./use-multi-column-sort";
+import { circuitRecoveryLabel } from "./circuit-recovery-presentation";
 
 interface RoutingRow extends LlmRouteRuntimeStatus {
   key: string;
@@ -188,7 +189,7 @@ function routingColumns(
       ...sort.column<RoutingRow>("circuitRecovery", compareCircuitRecovery),
       title: "熔断恢复",
       width: 190,
-      render: (_, row) => <span>{circuitRecoveryLabel(row)}</span>,
+      render: (_, row) => <span>{circuitRecoveryLabel(row.circuit)}</span>,
     },
     {
       ...sort.column<RoutingRow>("nextRecoveryAt", (left, right) => compareTimestamps(
@@ -286,15 +287,8 @@ function routingColumns(
   ];
 }
 
-function circuitRecoveryLabel(row: RoutingRow): string {
-  if (!row.circuit?.enabled) return "未启用";
-  if (row.circuit.state === "confirming") return "后台两次确认中";
-  if (row.circuit.state !== "open") return "正常";
-  return `失败 ${row.circuit.failureCount} · 用户 ${row.circuit.distinctUserCount} · 探测 ${row.circuit.recoverySuccessCount}/2`;
-}
-
 function compareCircuitRecovery(left: RoutingRow, right: RoutingRow): number {
-  const statusComparison = compareText(circuitRecoveryLabel(left), circuitRecoveryLabel(right));
+  const statusComparison = compareText(circuitRecoveryLabel(left.circuit), circuitRecoveryLabel(right.circuit));
   if (statusComparison !== 0) return statusComparison;
   return compareNumbers(left.circuit?.failureCount, right.circuit?.failureCount) ||
     compareNumbers(left.circuit?.distinctUserCount, right.circuit?.distinctUserCount) ||

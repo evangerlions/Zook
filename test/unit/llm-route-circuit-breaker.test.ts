@@ -14,7 +14,7 @@ const route = {
   operation: "chat" as const,
 };
 
-test("route circuit requires four pre-chunk failures from at least two users and success clears the window", async () => {
+test("route circuit requires four pre-chunk failures even from one user and success clears the window", async () => {
   let now = new Date("2030-01-01T00:00:00.000Z");
   const circuit = new LlmRouteCircuitBreakerService(
     await KVManager.create({ backend: new InMemoryKVBackend() }),
@@ -32,7 +32,8 @@ test("route circuit requires four pre-chunk failures from at least two users and
   for (const userId of ["user-a", "user-a", "user-a", "user-a"]) {
     await circuit.recordPreFirstChunkFailure(route, userId, true);
   }
-  assert.equal((await circuit.getRuntimeStatus(route, true)).state, "closed");
+  assert.equal((await circuit.getRuntimeStatus(route, true)).state, "confirming");
+  assert.equal((await circuit.getRuntimeStatus(route, true)).distinctUserCount, 1);
 
   await circuit.recordFirstEffectiveChunk(route, true);
   for (const userId of ["user-a", "user-b", "user-a", "user-b"]) {
@@ -101,23 +102,24 @@ test("route circuit logs threshold decisions with bounded volume and no user ide
     await circuit.recordPreFirstChunkFailure(route, "private-user-id", true, "QUOTA_EXCEEDED");
   }
 
-  const quorumLog = logger.records.find((record) =>
-    record.message === "LLM route circuit failure window updated" &&
-    record.decision === "distinct_user_quorum_not_met",
+  const confirmationLog = logger.records.find((record) =>
+    record.event === "confirmation_started",
   );
-  assert.ok(quorumLog);
-  assert.equal(quorumLog.failureCount, 4);
-  assert.equal(quorumLog.distinctUserCount, 1);
-  assert.equal(quorumLog.errorCode, "QUOTA_EXCEEDED");
-  assert.equal(JSON.stringify(quorumLog).includes("private-user-id"), false);
-  assert.equal((await circuit.getRuntimeStatus(route, true)).state, "closed");
+  assert.ok(confirmationLog);
+  assert.equal(confirmationLog.failureCount, 4);
+  assert.equal(confirmationLog.distinctUserCount, 1);
+  assert.equal(confirmationLog.errorCode, "QUOTA_EXCEEDED");
+  assert.equal(confirmationLog.failureWindowMs, 24 * 60 * 60 * 1000);
+  assert.equal(JSON.stringify(confirmationLog).includes("private-user-id"), false);
+  assert.equal((await circuit.getRuntimeStatus(route, true)).state, "confirming");
 
   await circuit.recordPreFirstChunkFailure(route, "private-user-id", true, "QUOTA_EXCEEDED");
-  assert.equal(logger.records.filter((record) => record.message === "LLM route circuit failure window updated").length, 2);
+  assert.equal(logger.records.filter((record) => record.event === "ignored_failure:confirmation_pending").length, 1);
 
   now = new Date("2030-01-01T00:01:01.000Z");
   await circuit.recordPreFirstChunkFailure(route, "private-user-id", true, "QUOTA_EXCEEDED");
-  assert.equal(logger.records.filter((record) => record.message === "LLM route circuit failure window updated").length, 3);
+  assert.equal(logger.records.filter((record) => record.event === "ignored_failure:confirmation_pending").length, 2);
+  assert.equal(logger.records.filter((record) => record.event === "confirmation_started").length, 1);
 });
 
 test("route circuit logs why failures were excluded from circuit accounting", async () => {
