@@ -68,7 +68,7 @@ test("domain accept atomically accepts only one decision, occupies both slots an
     assert.equal((await app.database.findFrogSleepBuddyDomainRelationship("frogsleep", relationshipId))?.status, "active");
     assert.equal(app.database.frogSleepBuddyNotificationOutbox.length, 1);
     assert.equal(app.database.frogSleepBuddyNotificationOutbox[0]?.recipientUserId, "user_alice");
-    assert.equal(app.database.frogSleepBuddySharingGrants.length, 0);
+    assert.equal(app.database.frogSleepBuddySharingGrants.length, 8);
     assert.equal(app.database.listFrogSleepEntities({ appId: "frogsleep", kind: "sleep_relationship" }).length, 0);
     assert.equal((await app.database.findFrogSleepBuddyInvitationBundle("frogsleep", "bundle_accept"))?.status, "pending");
   } finally { restore(); }
@@ -235,5 +235,82 @@ test("domain accept stays unreachable before authentication and writes while acc
     const response = await accept(app, "invalid-token");
     assert.equal(response.statusCode, 404);
     assert.equal((await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "bundle_accept", "sleep"))?.status, "pending");
+  } finally { restore(); }
+});
+
+for (const domain of ["sleep", "focus"] as const) {
+  test(`${domain} acceptance exposes independently revoked grants and preserves the other domain`, async () => {
+    const restore = preserveCapabilities();
+    process.env.FROGSLEEP_BUDDY_INBOX_ENABLED = "true";
+    process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED = "true";
+    try {
+      const app = await runtime();
+      const bob = await login(app, "bob@example.com");
+      const alice = await login(app, "alice@example.com");
+      await seedBundle(app);
+      const accepted = await accept(app, bob, domain, `consent-${domain}`);
+      const relationshipId = String(accepted.body.data.relationship_id);
+      const path = `/api/v1/frogsleep/buddy/relationships/${relationshipId}/grants`;
+      const listed = await app.app.handle({ method: "GET", path, headers: auth(bob) } as never);
+      assert.equal(listed.statusCode, 200);
+      const grants = listed.body.data.grants;
+      assert.equal(grants.length, 8);
+      assert.ok(grants.every((grant: any) => grant.state === "revoked" && grant.domain === domain));
+      const own = grants.find((grant: any) => grant.grantor_user_id === "user_bob" && grant.category === "daily_summary");
+      const updated = await app.app.handle({ method: "PATCH", path: `${path}/${own.id}`, headers: auth(bob),
+        body: { expected_version: 1, state: "granted" } } as never);
+      assert.equal(updated.statusCode, 200);
+      const forbidden = await app.app.handle({ method: "PATCH", path: `${path}/${own.id}`, headers: auth(alice),
+        body: { expected_version: 2, state: "revoked" } } as never);
+      assert.equal(forbidden.statusCode, 403);
+      const stale = await app.app.handle({ method: "PATCH", path: `${path}/${own.id}`, headers: auth(bob),
+        body: { expected_version: 1, state: "revoked" } } as never);
+      assert.equal(stale.statusCode, 409);
+      const before = structuredClone(app.database.frogSleepBuddySharingGrants);
+      assert.equal((await accept(app, bob, domain, `consent-${domain}`)).statusCode, 200);
+      assert.deepEqual(app.database.frogSleepBuddySharingGrants, before);
+      const other = domain === "sleep" ? "focus" : "sleep";
+      assert.equal((await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "bundle_accept", other))?.status, "pending");
+      assert.equal(app.database.frogSleepBuddyDomainRelationships.length, 1);
+    } finally { restore(); }
+  });
+}
+
+test("grant initialization failure rolls back the relationship, slots, decision and grants", async () => {
+  const restore = preserveCapabilities();
+  process.env.FROGSLEEP_BUDDY_INBOX_ENABLED = "true";
+  process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED = "true";
+  try {
+    const app = await runtime(); const bob = await login(app, "bob@example.com"); await seedBundle(app);
+    const original = app.database.upsertFrogSleepBuddySharingGrant.bind(app.database);
+    let writes = 0;
+    app.database.upsertFrogSleepBuddySharingGrant = (record) => {
+      if (++writes === 3) throw new Error("storage unavailable");
+      return original(record);
+    };
+    assert.equal((await accept(app, bob)).statusCode, 500);
+    assert.equal(app.database.frogSleepBuddyDomainRelationships.length, 0);
+    assert.equal(app.database.frogSleepBuddySharingGrants.length, 0);
+    assert.equal(app.database.frogSleepBuddyNotificationOutbox.length, 0);
+    assert.equal((await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", "bundle_accept", "sleep"))?.status, "pending");
+  } finally { restore(); }
+});
+
+test("preview retains the accepted domain version while the other domain is still pending", async () => {
+  const restore = preserveCapabilities();
+  process.env.FROGSLEEP_BUDDY_INBOX_ENABLED = "true";
+  process.env.FROGSLEEP_BUDDY_EXPLICIT_CONSENT_ENABLED = "true";
+  try {
+    const app = await runtime(); const bob = await login(app, "bob@example.com"); await seedBundle(app);
+    const accepted = await accept(app, bob);
+    const preview = await app.app.handle({ method: "GET", path: "/api/v1/frogsleep/buddy/invitations/bundle_accept", headers: auth(bob) } as never);
+    assert.equal(preview.statusCode, 200);
+    const sleep = preview.body.data.domain_results.find((result: any) => result.domain === "sleep");
+    assert.equal(sleep.status, "accepted");
+    assert.equal(sleep.decision_version, 2);
+    assert.equal(sleep.relationship_id, accepted.body.data.relationship_id);
+    const focus = preview.body.data.domain_results.find((result: any) => result.domain === "focus");
+    assert.equal(focus.status, "pending");
+    assert.equal(focus.decision_version, 1);
   } finally { restore(); }
 });

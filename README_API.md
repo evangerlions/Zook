@@ -850,7 +850,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 `POST /api/v1/frogsleep/buddy/invitation-receipts` 要求 FrogSleep Bearer 鉴权和普通 `create` 能力。请求体只接受邮箱语法合法的 `email` 与非空、不重复的 `domains`（`sleep`、`focus`）；邮箱会先 `trim().toLowerCase()`，服务端仅保存其 SHA-256 小写十六进制哈希。响应为标准 envelope，`data` 只含不透明 `receipt_id`、固定 `status: "recorded"` 和七天后过期的 ISO-8601 `expires_at`。同一邀请人、规范化邮箱和领域集合重复提交会返回原回执。已注册且合格的账户会在内部绑定不可变用户 ID；未注册、本人或不合格目标会记录同形 decoy 回执。该命令不泄露账户、投递或领域信息，当前只记录邀请回执，不代表已经投递、接受、创建邀请、关系、通知、定位器或分享链接。
 
-`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请创建时绑定的被邀请用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；不修改组合邀请、另一领域、旧子邀请或旧关系，也不会隐式开启任何分享授权。
+`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请创建时绑定的被邀请用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；不修改组合邀请、另一领域、旧子邀请或旧关系，也不会隐式开启任何分享授权。单域关系建立时在同一事务内初始化双方各四类、共八条 `revoked` grant；不会沿用旧关系的自动补授逻辑。随后可通过该 `relationship_id` 查询 grants，各用户仅可 PATCH 自己作为 grantor 的记录；授权失败只重试 grant 更新，不重新接受另一个域。Bundle 预览的 `domain_results` 按实际领域 decision 返回 `status`、`decision_version` 和匹配该次接受的 `relationship_id`，不能使用 Bundle 总版本代替领域 decision 版本。旧领域关系已不可用时返回空关系 ID 和 `BUDDY_RELATIONSHIP_UNAVAILABLE`，不会从新 slot 恢复旧关系。
 
 `POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/decline` 与 `/cancel` 是始终可用的安全命令：均要求 FrogSleep Bearer 鉴权，但不受普通搭子能力、邀请收件箱、显式同意或双向 block 影响。`domain` 仅支持 `sleep`、`focus`，请求体使用与单领域 accept 相同的正整数 JSON `expected_version` 和非空 `idempotency_key`。`decline` 仅允许邀请时绑定的被邀请用户，`cancel` 仅允许邀请人；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功时只更新指定领域 decision（分别为 `declined` 或 `cancelled`）并向对方写入一条去重 outbox 事件，不修改组合邀请、其它领域、slot、关系、授权、回执或旧邀请记录。相同行为和 idempotency key 可在组合邀请过期或终态后无写入重放；不同 key 或冲突版本返回现有 `409` 冲突响应。安全命令的成功响应 `data` **只**包含 `invitation_id`、`domain`、`decision_status`、`decision_version`。
 
@@ -1136,3 +1136,20 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
 - 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
 - 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。
+
+
+### FrogSleep 共享读取的身份与撤权边界
+
+`/api/v1/frogsleep/buddy/relationships/:id/grants` 与受保护摘要读取使用关系参与者、域和定向 grant 校验。共享读取在初次授权查询后重新检查关系仍 active/accepted、双方未屏蔽、授权仍 granted 且版本未变化；读取途中暂停、解除、撤权或撤权再授权，旧读取不得凭最初状态放行。使用现有 403/404 安全错误或摘要 redacted 占位，不新增对第三方可见的关系详情。
+
+本次校验不承诺撤回已发送的 HTTP 字节；客户端必须在 UI 和持久缓存提交前复核账号、关系/授权代次、请求序号及期限。A→B→A 或撤权→恢复均不能复用旧请求。新读取可使用新授权重新获取。客户端本地搭子开关关闭应取消同步并清共享缓存；服务端能力开关停用普通增长/通知路径时，暂停、撤销等安全命令仍应可用。单域接受与 grant 是独立协议动作，Bundle 不能隐式授予另一个域。
+
+### FrogSleep 二期：游客绑定上传及账号删除（A03/A10）
+
+沿用 `POST /api/v1/frogsleep/focus/sessions` 与 `POST /api/v1/frogsleep/product-data/sleep-reports`，不增加并行上传通道。上传 owner 始终来自 FrogSleep 会话；可选 `owner_user_id` / `ownerUserId` / `user_id` / `userId` 若与登录主体不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`，不能把旧账号作业改归当前账号。
+
+- 专注历史记录提供稳定 `session_id`（兼容 `sessionId`）；completed/abandoned/interrupted/cancelled 终态结果按账号+类型+记录 ID 去重。睡眠报告使用稳定 `snapshot_id`（兼容 report_id/id）。同 owner 的相同内容重试返回原结果；不同终态内容返回 `409 REQ_INVALID_BODY`，不覆盖已接受数据。不同账号的相同本机 ID 互不覆盖。查重也识别已有随机服务端 ID，不受列表分页限制。
+- 可选 `binding: {owner_user_id, job_id, confirmed_at}` 表示用户确认的导入作业。owner 必须等于当前主体；job_id 非空，confirmed_at 为 ISO 时间。更换作业 ID不会重复导入同一条记录。绑定专注记录必须是终态、有稳定 ID和原始开始/结束时间，否则返回400。客户端只发送用户确认的类别、日期与记录；设备状态、未完成锁定和运行中会话不迁移。服务端不能以这份 metadata 代替客户端的真实确认界面。
+- 旧专注调用未提供记录 ID 时保留 append 行为；运行中状态仍走原有通道，不以终态去重规则改变生命周期。绑定上传不得使用这个兼容分支。存量已重复的数据不在本次自动删除。
+- `DELETE /api/v1/frogsleep/me/account` 保持既有响应，清理 FrogSleep 数据并撤销其凭据，保留 Zook 全局身份和其他产品。新增清理规范化分域关系、双方授权、邀请决定/邮件任务、相关通知；释放搭子的领域占位并推进版本。清理与 membership 更新在事务内完成，数据库失败回滚。删除与领域命令使用同一 slot 锁边界；旧接受重放不能恢复已删除关系。
+- 删除成功后旧 token 再次请求返回401，不提供使用失效 token 的成功重放；数据清理可重复执行且无跨产品副作用。外部提供方已接收的邮件/推送不能撤回，待发送任务清理及发送前权限校验仍是边界。以上本地测试不等同于生产部署或双端整体联调。

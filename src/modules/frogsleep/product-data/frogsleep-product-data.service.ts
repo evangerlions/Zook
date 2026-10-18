@@ -1,3 +1,5 @@
+import { buildSleepReportUpload } from "./sleep-report-upload.ts";
+import { insertPersonalRecord } from "./personal-record-upload.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { badRequest } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -43,38 +45,9 @@ export class FrogSleepProductDataService {
   constructor(private readonly database: ApplicationDatabase) {}
 
   async createSleepReport(userId: string, input: Record<string, unknown>) {
-    const snapshotId = stringInput(input, "snapshot_id", "report_id", "id");
-    if (!snapshotId) {
-      badRequest("REQ_INVALID_BODY", "snapshot_id is required.");
-    }
-    const version = stringInput(input, "schema_version", "version");
-    if (!version) {
-      badRequest("REQ_INVALID_BODY", "schema_version is required.");
-    }
-    const recordedAt = parseIsoTimestamp(input.recorded_at ?? input.recordedAt, "recorded_at");
-    const payload = {
-      snapshot_id: snapshotId,
-      report_id: stringInput(input, "report_id") ?? snapshotId,
-      schema_version: version,
-      recorded_at: recordedAt,
-      date_anchor: stringInput(input, "date_anchor", "dateAnchor"),
-      report_type: stringInput(input, "report_type", "reportType") ?? "sleep_report",
-      data: requiredRecord(input.data ?? input.report ?? {}, "data"),
-    };
-    const createdAt = nowIso();
-    const record: FrogSleepEntityRecord = {
-      id: randomId("sleep_report_snapshot"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_report_snapshot",
-      ownerUserId: userId,
-      status: "active",
-      occurredAt: recordedAt,
-      payload,
-      createdAt,
-      updatedAt: createdAt,
-    };
-    await this.database.insertFrogSleepEntity(record);
-    return this.toSleepReport(record);
+    const record = buildSleepReportUpload(userId, input);
+    const saved = await insertPersonalRecord(this.database, record, record.payload.snapshot_id as string);
+    return this.toSleepReport(saved.record);
   }
 
   async listSleepReports(userId: string, pagination?: PaginationParams) {

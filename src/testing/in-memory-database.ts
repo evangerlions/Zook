@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { deleteInMemoryFrogSleepBuddyUserData } from "./in-memory-frogsleep-user-delete.ts";
 import type {
   AnalyticsEventRecord,
   AiNovelDailyStatisticsRecord,
@@ -224,6 +225,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogInvitationAttributions = [];
     this.bodyLogChallenges = [];
     this.bodyLogChallengeMembers = [];
+  }
+
+  async withAppUserDataTransaction<T>(_appId: string, _userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(fn);
   }
 
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
@@ -466,6 +471,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   deleteAppUserRuntimeData(appId: string, userId: string): void {
+    if (appId === "frogsleep") deleteInMemoryFrogSleepBuddyUserData(this, appId, userId);
     const uploadIds = this.clientLogUploads
       .filter((item) => item.appId === appId && item.userId === userId)
       .map((item) => item.id);
@@ -1076,6 +1082,14 @@ export class InMemoryDatabase extends ApplicationDatabase {
   insertFrogSleepEntity(record: FrogSleepEntityRecord): void {
     this.assertFrogSleepLiveRelationshipUnique(record);
     this.frogSleepEntities.push(structuredClone(record));
+  }
+
+  findFrogSleepPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): FrogSleepEntityRecord | undefined {
+    const key = kind === "focus_session" ? "client_session_id" : "snapshot_id";
+    return structuredClone(this.frogSleepEntities.find(item => item.appId === "frogsleep"
+      && item.kind === kind && item.ownerUserId === ownerUserId && !item.deletedAt
+      && item.payload[key] === clientId && (kind !== "focus_session"
+        || ["completed", "abandoned", "interrupted", "cancelled"].includes(item.status ?? ""))));
   }
 
   findFrogSleepEntity(

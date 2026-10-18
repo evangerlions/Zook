@@ -157,6 +157,12 @@ export class PostgresDatabase extends ApplicationDatabase {
     await database.initialize();
     return database;
   }
+  override async withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(async () => {
+      await this.query("SELECT id FROM zook_app_users WHERE app_id = $1 AND user_id = $2 FOR UPDATE", [appId, userId]);
+      return await fn();
+    });
+  }
   override async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
     const existingClient = this.sessionContext.getStore();
     if (existingClient) {
@@ -601,6 +607,7 @@ export class PostgresDatabase extends ApplicationDatabase {
   override async listFrogSleepDevices(filter: { appId: string; userId?: string; pushEnabled?: boolean; includeDeleted?: boolean }): Promise<FrogSleepDeviceRecord[]> { return await this.frogSleep.listDevices(filter); }
   override async insertFrogSleepEntity(record: FrogSleepEntityRecord): Promise<void> { await this.frogSleep.insertEntity(record); }
   override async findFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntity(kind, appId, id); }
+  override async findFrogSleepPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findPersonalRecord(kind, ownerUserId, clientId); }
   override async findFrogSleepEntityByCode(kind: FrogSleepEntityKind, appId: string, code: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntityByCode(kind, appId, code); }
   override async findFrogSleepEntityByToken(kind: FrogSleepEntityKind, appId: string, token: string): Promise<FrogSleepEntityRecord | undefined> { return await this.frogSleep.findEntityByToken(kind, appId, token); }
   override async listFrogSleepEntities(filter: FrogSleepEntityFilter): Promise<FrogSleepEntityRecord[]> { return await this.frogSleep.listEntities(filter); }

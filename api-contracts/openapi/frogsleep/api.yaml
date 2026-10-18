@@ -914,6 +914,23 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
       responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept:
+    post:
+      operationId: frogSleepAcceptBuddyInvitationDomain
+      tags: [frogsleep]
+      summary: Accept one domain with sharing initially revoked in both directions
+      description: Uses the domain decision version. Replays preserve grants and never accept the other domain. Grant selection is saved separately.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/InviteId" }
+        - { name: domain, in: path, required: true, schema: { type: string, enum: [sleep, focus] } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BuddyDomainAcceptRequest" } } }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "404": { description: Invitation unavailable to this viewer }
+        "409": { description: Decision version conflict or domain slot occupied }
   /api/v1/frogsleep/buddy/invitations/{inviteId}/decline:
     post:
       operationId: frogSleepDeclineBuddyInvitation
@@ -1460,6 +1477,13 @@ components:
     BuddyReportState:
       type: string
       enum: [pending, ready, redacted, expired]
+    BuddyDomainAcceptRequest:
+      type: object
+      required: [expected_version, idempotency_key]
+      additionalProperties: false
+      properties:
+        expected_version: { type: integer, minimum: 1 }
+        idempotency_key: { type: string, minLength: 1 }
     BuddyInvitationResponseRequest:
       type: object
       required: [expected_version, idempotency_key]
@@ -1860,8 +1884,14 @@ components:
         - required: [displayName]
     FrogSleepFocusSessionRequest:
       type: object
+      description: Terminal sessions with session_id replay once per authenticated owner; changed terminal content returns HTTP 409. Binding imports require stable ID and original start/end timestamps. Legacy requests without IDs retain append behavior.
       additionalProperties: true
       properties:
+        session_id: { type: string, minLength: 1, maxLength: 256 }
+        sessionId: { type: string, minLength: 1, maxLength: 256 }
+        owner_user_id: { type: string, description: Optional assertion; must match authenticated user. }
+        binding:
+          $ref: '#/components/schemas/FrogSleepBindingUploadContext'
         started_at: { type: string, format: date-time }
         startedAt: { type: string, format: date-time }
         start_time: { type: string, format: date-time }
@@ -1918,10 +1948,22 @@ components:
             - required: [templateKey]
             - required: [custom_text]
             - required: [customText]
+    FrogSleepBindingUploadContext:
+      type: object
+      description: Metadata of a user-confirmed import job. Send only explicitly selected completed records; device and active locking state are not imported. The server derives ownership from authentication.
+      required: [owner_user_id, job_id, confirmed_at]
+      properties:
+        owner_user_id: { type: string }
+        job_id: { type: string, minLength: 1 }
+        confirmed_at: { type: string, format: date-time }
     FrogSleepSleepReportRequest:
       type: object
+      description: Immutable snapshot_id is scoped to the authenticated owner. Identical retries return the original record; conflicting content returns HTTP 409.
       additionalProperties: true
       properties:
+        owner_user_id: { type: string, description: Optional assertion; must match authenticated user. }
+        binding:
+          $ref: '#/components/schemas/FrogSleepBindingUploadContext'
         snapshot_id: { type: string }
         report_id: { type: string }
         id: { type: string }

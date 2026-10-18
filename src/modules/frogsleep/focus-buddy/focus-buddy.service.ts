@@ -1,3 +1,5 @@
+import { buildFocusSessionUpload } from "./focus-session-upload.ts";
+import { insertPersonalRecord, personalRecordId } from "../product-data/personal-record-upload.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
 import { ContentSafetyService } from "../../../services/content-safety.service.ts";
@@ -13,7 +15,6 @@ import {
   optionalIsoTimestamp,
   paginateRecords,
   parseDateWindow,
-  parseFiniteNumber,
   parseIsoTimestamp,
   parseWeekStart,
   type PaginationParams,
@@ -60,13 +61,6 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function minutesBetween(startIso: string, endIso: string): number {
-  return Math.max(0, Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000));
-}
-
-const FOCUS_SESSION_STATUSES = new Set(["completed", "abandoned", "interrupted", "cancelled"]);
-const MAX_FOCUS_SESSION_MINUTES = 24 * 60;
-
 export class FrogSleepFocusBuddyService {
   constructor(
     private readonly database: ApplicationDatabase,
@@ -88,58 +82,19 @@ export class FrogSleepFocusBuddyService {
   }
 
   async reportSession(userId: string, input: Record<string, unknown>) {
-    const startedAt = parseIsoTimestamp(input.started_at ?? input.startedAt ?? input.start_time ?? input.startTime ?? nowIso(), "started_at");
-    const endedAt = parseIsoTimestamp(input.ended_at ?? input.endedAt ?? input.end_time ?? input.endTime ?? nowIso(), "ended_at");
-    if (new Date(endedAt).getTime() < new Date(startedAt).getTime()) {
-      badRequest("REQ_INVALID_BODY", "ended_at must be after started_at.");
-    }
-    const room = input.room ?? input.room_id ?? input.roomId;
-    const goal = input.goal ?? input.goal_tag ?? input.goalTag;
-    const plannedMinutes = parseFiniteNumber(input.planned_minutes ?? input.plannedMinutes ?? input.minutes ?? 0, "planned_minutes", {
-      min: 0,
-      max: MAX_FOCUS_SESSION_MINUTES,
+    return await this.database.withAppUserDataTransaction(FROGSLEEP_APP_ID, userId, async () => {
+      const clientId = isActiveFocusSessionStatus(String(input.status ?? "completed")) ? undefined
+        : personalRecordId(input.session_id ?? input.sessionId);
+      const previous = clientId
+        ? await this.database.findFrogSleepPersonalRecord("focus_session", userId, clientId) : undefined;
+      const session = buildFocusSessionUpload(userId, input, previous);
+      const saved = await insertPersonalRecord(this.database, session, clientId);
+      if (saved.created) {
+        await unlockFocusMilestone(this.database, userId, "first_session");
+        await this.detectSharedMoment(saved.record);
+      }
+      return toFocusSessionResponse(saved.record);
     });
-    const actualMinutes = parseFiniteNumber(input.actual_minutes ?? input.actualMinutes ?? input.minutes ?? minutesBetween(startedAt, endedAt), "actual_minutes", {
-      min: 0,
-      max: MAX_FOCUS_SESSION_MINUTES,
-    });
-    const interruptCount = parseFiniteNumber(input.interrupt_count ?? input.interruptCount ?? 0, "interrupt_count", {
-      min: 0,
-      max: 1000,
-    });
-    const status = String(input.status ?? "completed");
-    if (!FOCUS_SESSION_STATUSES.has(status) && !isActiveFocusSessionStatus(status)) {
-      badRequest("REQ_INVALID_BODY", "Unsupported focus session status.");
-    }
-    const createdAt = nowIso();
-    const session: FrogSleepEntityRecord = {
-      id: randomId("focus_session"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_session",
-      ownerUserId: userId,
-      status,
-      startsAt: startedAt,
-      endsAt: endedAt,
-      payload: {
-        client_session_id: input.session_id ?? input.sessionId,
-        room,
-        room_id: room,
-        goal,
-        goal_tag: goal,
-        planned_minutes: plannedMinutes,
-        actual_minutes: actualMinutes,
-        interrupt_count: interruptCount,
-        minutes: actualMinutes,
-        session_type: input.session_type ?? input.sessionType,
-        result: input.result,
-      },
-      createdAt,
-      updatedAt: createdAt,
-    };
-    await this.database.insertFrogSleepEntity(session);
-    await unlockFocusMilestone(this.database, userId, "first_session");
-    await this.detectSharedMoment(session);
-    return toFocusSessionResponse(session);
   }
 
   async sessions(userId: string, from?: string, to?: string, pagination?: PaginationParams) {

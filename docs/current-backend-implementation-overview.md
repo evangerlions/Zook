@@ -694,3 +694,9 @@ PostgreSQL migration 017 增加 app-scoped code/token 唯一约束、recipient b
 LightTick App 闭环增量：计划确认已原子保存 guidance、完成标准与步骤；Today 按用户业务日聚合活跃计划并排除完成目标；复盘支持日/周/月且按目标、时区收集执行事实，run 携带 review_id；调整可引用同目标复盘，复盘建议生成未来可审阅周期。迁移 064 新增任务 guidance。上述为候选实现能力，不等于真实 provider 质量、真机推送或 Online 发布已验收；见 `docs/lighttick/app-loop-integration.md`。
 
 LightTick 通用规划增量：独立个人复盘（无需AI保存、版本冲突保护）、整个计划/日期范围复盘、独立AI分析记录及计划重复任务确认保护；见 README_API.md。真实模型质量与设备发布门禁仍需独立验收。
+
+## FrogSleep 二期账号数据基础（2026-10-17，本地验收）
+
+A03/A10：复用 focus/sessions 和 product-data/sleep-reports 的上传链路，按真实账号及稳定客户端记录 ID 对终态结果去重，相同结果返回原记录、冲突内容返回409；绑定作业 owner 不匹配返回403。客户端确认和分类上传仍由后续双端任务落实。新增 membership 行锁协调上传与删除，删除提交后晚到上传不能重新写入。
+
+账号删除现补齐规范化领域关系、双方 grant、领域决定、邀请邮件任务及相关通知的清理，释放另一方领域占位。删除与接受使用相同 slot 锁，PostgreSQL 失败回滚；保留全局身份与其他 app 数据。本地专项225项单元/API回归和独立 PostgreSQL 4个业务场景通过；不代表代码已合并、部署或 staging 联调通过。

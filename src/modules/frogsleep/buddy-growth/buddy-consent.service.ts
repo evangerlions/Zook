@@ -8,6 +8,8 @@ import { assertBuddyPairNotBlocked } from "./buddy-safety.ts";
 import { buddySharingCategories, type BuddySharingCategory } from "./buddy-growth-contract.ts";
 import { limitBuddyUnauthorizedAccess } from "./buddy-rate-limit.ts";
 
+type ConsentRelationship = Pick<FrogSleepEntityRecord, "id" | "kind" | "ownerUserId" | "partnerUserId" | "status"> & { legacy: boolean };
+
 /** Owns directional buddy sharing grants and participant authorization. */
 export class BuddyConsentService {
   constructor(
@@ -29,6 +31,19 @@ export class BuddyConsentService {
     const grants = await Promise.all(records.map((record) => this.database.upsertFrogSleepBuddySharingGrant(record)));
     await Promise.all(grants.map((grant) => this.recordAudit(grant, "buddy_grant_created")));
     return grants;
+  }
+
+  async createIndependentGrants(input: {
+    relationshipId: string; domain: "sleep" | "focus"; inviterUserId: string; inviteeUserId: string;
+  }) {
+    const records = buddySharingCategories.flatMap((category) => [
+      this.newGrant(input, input.inviterUserId, input.inviteeUserId, category, "revoked"),
+      this.newGrant(input, input.inviteeUserId, input.inviterUserId, category, "revoked"),
+    ]);
+    for (const record of records) {
+      const grant = await this.database.upsertFrogSleepBuddySharingGrant(record);
+      await this.recordAudit(grant, "buddy_grant_created");
+    }
   }
 
   async list(userId: string, relationshipId: string) {
@@ -60,11 +75,17 @@ export class BuddyConsentService {
     const relationship = await this.authorizedRelationship(userId, relationshipId);
     const otherUserId = relationship.ownerUserId === userId ? relationship.partnerUserId : relationship.ownerUserId;
     let grants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
-    if (grants.length === 0) {
+    if (grants.length === 0 && relationship.legacy) {
       grants = await this.backfillLegacyRelationshipGrants(relationship);
     }
-    const allowed = grants.some((grant) => grant.grantorUserId === otherUserId && grant.granteeUserId === userId &&
-      grant.category === category && grant.state === "granted");
+    const current = await this.authorizedRelationship(userId, relationshipId);
+    const currentGrants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
+    const domain = current.kind === "focus_relationship" ? "focus" : "sleep";
+    const allowed = currentGrants.some((grant) => grant.appId === FROGSLEEP_APP_ID &&
+      grant.relationshipId === relationshipId && grant.domain === domain &&
+      grant.grantorUserId === otherUserId && grant.granteeUserId === userId &&
+      grant.category === category && grant.state === "granted" &&
+      grants.some((initial) => initial.id === grant.id && initial.version === grant.version && initial.state === "granted"));
     if (!allowed) {
       if (this.kvManager) {
         await limitBuddyUnauthorizedAccess(this.kvManager, userId);
@@ -74,7 +95,7 @@ export class BuddyConsentService {
   }
 
   private async backfillLegacyRelationshipGrants(
-    relationship: FrogSleepEntityRecord,
+    relationship: ConsentRelationship,
   ): Promise<FrogSleepBuddySharingGrantRecord[]> {
     const ownerUserId = relationship.ownerUserId as string;
     const partnerUserId = relationship.partnerUserId as string;
@@ -90,7 +111,7 @@ export class BuddyConsentService {
     return grants;
   }
 
-  private async authorizedRelationship(userId: string, relationshipId: string): Promise<FrogSleepEntityRecord> {
+  private async authorizedRelationship(userId: string, relationshipId: string): Promise<ConsentRelationship> {
     const relationship = await this.findRelationship(relationshipId);
     if (!relationship || !relationship.ownerUserId || !relationship.partnerUserId ||
         ![relationship.ownerUserId, relationship.partnerUserId].includes(userId)) throw unavailable();
@@ -99,9 +120,15 @@ export class BuddyConsentService {
     return relationship;
   }
 
-  private async findRelationship(relationshipId: string) {
-    return await this.database.findFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, relationshipId)
+  private async findRelationship(relationshipId: string): Promise<ConsentRelationship | undefined> {
+    const relationship = await this.database.findFrogSleepBuddyDomainRelationship(FROGSLEEP_APP_ID, relationshipId);
+    if (relationship) return { id: relationship.id,
+      kind: relationship.domain === "sleep" ? "sleep_relationship" : "focus_relationship",
+      ownerUserId: relationship.userIdLow, partnerUserId: relationship.userIdHigh,
+      status: relationship.status, legacy: false };
+    const legacy = await this.database.findFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, relationshipId)
       ?? await this.database.findFrogSleepEntity("focus_relationship", FROGSLEEP_APP_ID, relationshipId);
+    return legacy ? { ...legacy, legacy: true } : undefined;
   }
 
   private validCategories(values: string[]): BuddySharingCategory[] {

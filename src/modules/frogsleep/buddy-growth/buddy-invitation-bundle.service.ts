@@ -12,6 +12,8 @@ import { BuddyInvitationService } from "./buddy-invitation.service.ts";
 import { enqueueBuddyInvitationEvent } from "./buddy-invitation-events.ts";
 import { limitBuddyPreview, limitBuddyResponse } from "./buddy-rate-limit.ts";
 
+import { buddyDomainDecisionPayload } from "./buddy-domain-decision-payload.ts";
+
 type BundleDomain = "sleep" | "focus";
 type BundleAction = "accept" | "decline" | "cancel";
 
@@ -302,8 +304,7 @@ export class BuddyInvitationBundleService {
       delivery: bundle.inviterUserId === viewerUserId
         ? await this.deliveryPayload(bundle)
         : undefined,
-      domain_results: bundle.domains.map((domain) => ({ domain, relationship_id: null, status: bundle.status,
-        error_code: bundle.domainErrorCodes[domain] ?? null })) };
+      domain_results: await buddyDomainDecisionPayload(this.database, bundle) };
   }
 
   private async requireViewer(userId: string, bundleId: string) {
