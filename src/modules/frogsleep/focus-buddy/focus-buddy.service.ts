@@ -1,3 +1,6 @@
+import { allBuddyRecords } from "../buddy-growth/buddy-completion-facts.ts";
+import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.service.ts";
+import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
 import { ContentSafetyService } from "../../../services/content-safety.service.ts";
@@ -136,10 +139,20 @@ export class FrogSleepFocusBuddyService {
       createdAt,
       updatedAt: createdAt,
     };
-    await this.database.insertFrogSleepEntity(session);
+    const stored = await this.database.withExclusiveSession(async () => {
+      const clientId = session.payload.client_session_id;
+      if (typeof clientId === "string" && clientId) {
+        const previous = (await allBuddyRecords(this.database, { kind: "focus_session", ownerUserId: userId })).find(item => item.payload.client_session_id === clientId);
+        if (previous) return previous;
+      }
+      await this.database.insertFrogSleepEntity(session);
+      return session;
+    });
+    await new BuddyJointActivityService(this.database).refresh(userId);
+    await new BuddyJointGoalService(this.database).list(userId);
     await unlockFocusMilestone(this.database, userId, "first_session");
-    await this.detectSharedMoment(session);
-    return toFocusSessionResponse(session);
+    await this.detectSharedMoment(stored);
+    return toFocusSessionResponse(stored);
   }
 
   async sessions(userId: string, from?: string, to?: string, pagination?: PaginationParams) {

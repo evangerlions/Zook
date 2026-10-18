@@ -1,3 +1,4 @@
+import { buddyRelationships } from "./buddy-relationships.ts";
 import { createHash } from "node:crypto";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { forbidden } from "../../../shared/errors.ts";
@@ -152,13 +153,15 @@ export class BuddyMilestoneReportService {
   }
 
   private async activeRelationships() {
-    const records = (await Promise.all((["sleep_relationship", "focus_relationship"] as FrogSleepEntityKind[])
-      .map((kind) => this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind, limit: 500 })))).flat();
-    return records.filter((item) => ["active", "accepted"].includes(item.status ?? ""));
+    const users = await this.database.listAppUsers(FROGSLEEP_APP_ID);
+    const records = (await Promise.all(users.map(user => buddyRelationships(this.database, user.userId)))).flat();
+    return [...new Map(records.map(record => [record.id, record])).values()]
+      .filter(item => ["active", "accepted"].includes(item.status ?? ""));
   }
 
   private async viewerRelationships(userId: string, relationshipId?: string) {
-    const relationships = (await this.activeRelationships()).filter((item) =>
+    const relationships = (await buddyRelationships(this.database, userId)).filter((item) =>
+      ["active", "accepted"].includes(item.status ?? "") &&
       [item.ownerUserId, item.partnerUserId].includes(userId) && (!relationshipId || item.id === relationshipId));
     if (relationshipId && relationships.length === 0) unavailable(); return relationships;
   }

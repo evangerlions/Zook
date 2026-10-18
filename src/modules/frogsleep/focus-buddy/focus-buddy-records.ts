@@ -1,3 +1,4 @@
+import { buddyRelationships } from "../buddy-growth/buddy-relationships.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
@@ -7,19 +8,8 @@ export async function relationshipsForFocusUser(
   userId: string,
   statuses: string[],
 ) {
-  const owned = await database.listFrogSleepEntities({
-    appId: FROGSLEEP_APP_ID,
-    kind: "focus_relationship",
-    ownerUserId: userId,
-    limit: 100,
-  });
-  const partnered = await database.listFrogSleepEntities({
-    appId: FROGSLEEP_APP_ID,
-    kind: "focus_relationship",
-    partnerUserId: userId,
-    limit: 100,
-  });
-  return [...owned, ...partnered].filter((item) => item.status && statuses.includes(item.status));
+  return (await buddyRelationships(database, userId, "focus"))
+    .filter(item => statuses.includes(item.status ?? ""));
 }
 
 export function otherFocusUserId(record: FrogSleepEntityRecord, userId: string): string {
