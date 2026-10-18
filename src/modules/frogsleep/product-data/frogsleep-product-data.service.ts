@@ -53,8 +53,8 @@ export class FrogSleepProductDataService {
     return sleepReportDocument(row);
   }
 
-  async listSleepReports(userId: string, pagination: PaginationParams = { limit: 50 }) {
-    const page = await new PersonalSyncService(this.database.getPersonalSyncRepository()).browse(userId, pagination.limit, pagination.cursor);
+  async listSleepReports(userId: string, pagination: PaginationParams = { limit: 50 }, since?: string) {
+    const page = await new PersonalSyncService(this.database.getPersonalSyncRepository()).browse(userId, pagination.limit, pagination.cursor, since);
     const reports = page.items.filter(r => !r.deleted).map(r => sleepReportDocument({ ...r, sync_epoch: page.sync_epoch }));
     return { sleep_reports: reports, reports, pagination: page.pagination };
   }

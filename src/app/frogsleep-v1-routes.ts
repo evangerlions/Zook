@@ -114,10 +114,6 @@ function productDataService(context: BackendRouteContext): FrogSleepProductDataS
   return new FrogSleepProductDataService(context.database);
 }
 
-function guestUpgradeService(context: BackendRouteContext): FrogSleepGuestUpgradeService {
-  return new FrogSleepGuestUpgradeService(context.database);
-}
-
 async function trackInviteOpenBestEffort(track: () => Promise<void>): Promise<void> {
   try {
     await track();
@@ -125,7 +121,6 @@ async function trackInviteOpenBestEffort(track: () => Promise<void>): Promise<vo
     // Invite redirect tracking must not interrupt public deep-link redirects.
   }
 }
-
 
 export async function tryHandleFrogSleepV1Routes(
   this: BackendRouteContext,
@@ -363,7 +358,7 @@ export async function tryHandleFrogSleepV1Routes(
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/stats/week") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(this, await focusBuddyService(this).weekStats(auth.userId), routeRequest.requestId as string);
+    return frogSleepOk(this, await focusBuddyService(this).weekStats(auth.userId, routeRequest.query?.week_start ?? routeRequest.query?.weekStart), routeRequest.requestId as string);
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/focus/achievements") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
@@ -594,7 +589,7 @@ export async function tryHandleFrogSleepV1Routes(
     const guestDeviceId = typeof body.guest_device_id === "string" ? body.guest_device_id.trim() : "";
     return frogSleepOk(
       this,
-      await guestUpgradeService(this).upgradeGuestData(guestDeviceId, auth.userId),
+      await new FrogSleepGuestUpgradeService().upgradeGuestData(guestDeviceId, auth.userId),
       routeRequest.requestId as string,
     );
   }

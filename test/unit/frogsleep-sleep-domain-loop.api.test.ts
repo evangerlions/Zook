@@ -82,7 +82,7 @@ async function lifecycle(runtime: Runtime, alice: string, bob: string, id: strin
   assert.equal((await request(runtime, bob, "GET", "/sleep-buddy/shared-summaries/latest")).body.data.summary, null);
   assert.equal((await action(bob, "resume")).body.data.relationship.status, "active");
   assert.equal((await action(alice, "revoke")).body.data.relationship.status, "revoked");
-  assert.equal((await request(runtime, bob, "POST", `/sleep-buddy/shared-sessions/${sessionId}/events`, { event_type: "returned" })).statusCode, 403);
+  assert.equal((await request(runtime, bob, "POST", `/sleep-buddy/shared-sessions/${sessionId}/events`, { event_type: "returned" })).statusCode, 409);
   for (const userId of ["user_alice", "user_bob"]) {
     const slot = await runtime.database.findFrogSleepBuddyDomainSlot("frogsleep", userId, "sleep");
     assert.equal(slot?.state, "available");

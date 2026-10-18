@@ -44,6 +44,7 @@ test("live PostgreSQL private focus idempotency and migration gate", async suite
   const a = new FrogSleepFocusBuddyService(first), b = new FrogSleepFocusBuddyService(second);
   const migration = await readFile(migrationPath, "utf8");
   try {
+    for (const userId of ["user_alice", "user_bob"]) await first.insertAppUser({ id: `idempotency-${userId}`, appId: "frogsleep", userId, status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     await suite.test("replay across separate pools preserves server identity and statistics", async () => {
       await clean(sql);
       const original = await a.reportSession("user_alice", payload());
@@ -111,6 +112,14 @@ test("live PostgreSQL private focus idempotency and migration gate", async suite
       }
       const legacy = await sql.query("SELECT COUNT(*)::int AS count FROM zook_frogsleep_focus_sessions WHERE id LIKE 'phase2a-pg-legacy-%'");
       assert.equal(legacy.rows[0].count, 2);
+    });
+
+    await suite.test("confirming an existing result blocks corrections even when binding is omitted", async () => {
+      await clean(sql);
+      await a.reportSession("user_alice", payload());
+      await b.reportSession("user_alice", { ...payload(), binding: { owner_user_id: "user_alice", job_id: "pg-confirm", confirmed_at: "2026-10-16T00:00:00Z" } });
+      await assert.rejects(a.reportSession("user_alice", payload("phase2a-pg-focus", 10)), { code: "REQ_INVALID_BODY" });
+      await stats(a, "user_alice", 25);
     });
 
     await suite.test("upgrade rollback, consolidation, reference repair and rerun preserve history", async () => {

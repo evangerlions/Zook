@@ -11,6 +11,7 @@ import { DevelopmentPasswordHasher } from "../../src/modules/auth/password-hashe
 import { buildFrogSleepNotificationPayload } from "../../src/modules/frogsleep/frogsleep-notifications.ts";
 import { FrogSleepProductDataService } from "../../src/modules/frogsleep/product-data/frogsleep-product-data.service.ts";
 import { FrogSleepSleepBuddyService } from "../../src/modules/frogsleep/sleep-buddy/sleep-buddy.service.ts";
+import { BuddyNotificationPreferenceService } from "../../src/modules/frogsleep/buddy-growth/buddy-notification-preference.service.ts";
 import { NotificationService, type PushDispatchRequest } from "../../src/services/notification.service.ts";
 import { FailedEventRetryService } from "../../src/services/failed-event-retry.service.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
@@ -78,7 +79,12 @@ async function sessionMorning(context: Context, relationshipId: string) {
     const recorded = await request(runtime, alice.token, "POST", `/sleep-buddy/shared-sessions/${sessionId}/events`,
       { event_type: eventType });
     assert.equal(recorded.statusCode, 200);
+    assert.equal(recorded.body.data.status, "active", "one participant cannot finish the shared session for both");
   }
+  const partnerMorning = await request(runtime, bob.token, "POST", `/sleep-buddy/shared-sessions/${sessionId}/events`,
+    { event_type: "morning_completed" });
+  assert.equal(partnerMorning.statusCode, 200);
+  assert.equal(partnerMorning.body.data.status, "completed");
   const summary = await request(runtime, bob.token, "GET", "/sleep-buddy/shared-summaries/latest");
   assert.equal(summary.statusCode, 200);
   assert.equal(summary.body.data.summary.relationship_id, relationshipId);
@@ -158,13 +164,23 @@ async function rejectWrongDomain(context: Context) {
 }
 
 async function seedReports(sql: Client, owner: string, prefix: string, count: number, microseconds = false) {
-  await sql.query(`INSERT INTO zook_frogsleep_sleep_report_snapshots
-    (id,app_id,owner_user_id,status,occurred_at,payload,created_at,updated_at)
-    SELECT $1 || lpad(series::text,4,'0'),$2,$3,'active',
-      '2026-10-18T01:02:03.123000Z'::timestamptz +
-        (CASE WHEN $5::boolean THEN series ELSE 0 END) * interval '1 microsecond',
-      jsonb_build_object('snapshot_id',$1 || lpad(series::text,4,'0'),'schema_version','1','data',jsonb_build_object('night',series)),
-      NOW(),NOW() FROM generate_series(1,$4::int) AS series`, [prefix, appId, owner, count, microseconds]);
+  await sql.query(`INSERT INTO zook_frogsleep_personal_sync_state(app_id,user_id)
+    VALUES($1,$2) ON CONFLICT DO NOTHING`, [appId, owner]);
+  await sql.query(`WITH advanced AS (
+      UPDATE zook_frogsleep_personal_sync_state SET sequence=sequence+$4
+      WHERE app_id=$2 AND user_id=$3 RETURNING sequence-$4 AS base
+    ), reports AS (
+      SELECT $1 || lpad(series::text,4,'0') AS id, series, base+series AS sequence,
+        to_char(('2026-10-18T01:02:03.123000Z'::timestamptz +
+          (CASE WHEN $5::boolean THEN series ELSE 0 END) * interval '1 microsecond') AT TIME ZONE 'UTC',
+          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS recorded_at
+      FROM advanced, generate_series(1,$4::int) AS series
+    ) INSERT INTO zook_frogsleep_personal_versions(app_id,user_id,kind,resource_id,sequence,document)
+    SELECT $2,$3,'sleep_report',id,sequence,jsonb_build_object(
+      'kind','sleep_report','id',id,'revision',1,'sequence',sequence,'deleted',false,
+      'created_at',recorded_at,'updated_at',recorded_at,'data',jsonb_build_object(
+        'snapshot_id',id,'report_id',id,'schema_version','1','recorded_at',recorded_at,
+        'data',jsonb_build_object('night',series))) FROM reports`, [prefix, appId, owner, count, microseconds]);
 }
 
 async function allReports(service: FrogSleepProductDataService, owner: string) {
@@ -188,7 +204,7 @@ async function allReports(service: FrogSleepProductDataService, owner: string) {
 }
 
 async function completeHistory(context: Context) {
-  const { database, sql, alice, bob } = context;
+  const { database, sql, alice, bob, dana } = context;
   const prefix = `${runId}_report_`;
   await seedReports(sql, alice.id, prefix, 1100);
   const service = new FrogSleepProductDataService(database);
@@ -201,7 +217,8 @@ async function completeHistory(context: Context) {
   assert.equal(new Set(ids).size, 1100);
   assert.deepEqual(new Set(ids), new Set(expected));
   assert.deepEqual((await allReports(service, bob.id)).map((report) => report.snapshot_id), [`${runId}_private`]);
-  assert.deepEqual(await allReports(service, `${runId}_nobody`), []);
+  assert.deepEqual(await allReports(service, dana.id), []);
+  await assert.rejects(allReports(service, `${runId}_nobody`), { statusCode: 403 });
 }
 
 async function microsecondHistory(context: Context) {
@@ -212,6 +229,8 @@ async function microsecondHistory(context: Context) {
   assert.equal(reports.length, 301, "PostgreSQL submillisecond timestamps must not lose records at a JS millisecond cursor boundary");
   const expected = Array.from({ length: 301 }, (_, index) => `${prefix}${String(index + 1).padStart(4, "0")}`);
   assert.deepEqual(new Set(reports.map((report) => report.snapshot_id)), new Set(expected));
+  assert.equal(reports[0].recorded_at, "2026-10-18T01:02:03.123301Z");
+  assert.equal(reports.at(-1)?.recorded_at, "2026-10-18T01:02:03.123001Z");
 }
 
 async function notificationFixture(context: Context) {
@@ -219,6 +238,8 @@ async function notificationFixture(context: Context) {
   const relationshipId = await acceptedRelationship(runtime, charlie, dana);
   await enableSharing(runtime, relationshipId, charlie);
   await enableSharing(runtime, relationshipId, dana);
+  await new BuddyNotificationPreferenceService(database).update(dana.id,
+    { quiet_start_minute: 0, quiet_end_minute: 0, cooldown_minutes: 0, daily_budget: 100 });
   const queue = new InMemoryJobQueue(), delivered: PushDispatchRequest[] = [];
   const logger = new StructuredLogger("postgres-loop-test", { emitToConsole: false });
   const notifications = new NotificationService(database, queue, logger,
@@ -227,7 +248,12 @@ async function notificationFixture(context: Context) {
   const session = await sleep.beginSession(charlie.id, relationshipId);
   const sessionId = String(session.session_id);
   await sleep.acceptSession(dana.id, sessionId);
+  assert.equal(queue.jobs.length, 1);
+  const noDeviceJobId = String(queue.jobs[0].payload.notificationJobId);
   await queue.processDueJobs((job) => notifications.processQueueJob(job));
+  const noDeviceJob = await database.findNotificationJob(noDeviceJobId);
+  assert.equal(noDeviceJob?.status, "SENT");
+  assert.equal((noDeviceJob?.payload._frogsleep_delivery as { outcome: string }).outcome, "NO_ACTIVE_DEVICES");
   const now = new Date().toISOString();
   await database.upsertFrogSleepDevice({ id: `${dana.id}_device`, appId, userId: dana.id, platform: "ios",
     pushToken: "test-only-no-external-provider", pushEnabled: true, createdAt: now, updatedAt: now });
@@ -243,7 +269,9 @@ async function notificationPreferences(context: Context) {
   await fixture.sleep.updatePreferences(dana.id, fixture.relationshipId, { allow_recovery_nudges: false });
   await fixture.queue.processDueJobs((job) => fixture.notifications.processQueueJob(job));
   assert.equal(fixture.delivered.length, 0);
-  assert.equal((await database.findNotificationJob(queuedId))?.status, "SUPPRESSED");
+  const suppressed = await database.findNotificationJob(queuedId);
+  assert.equal(suppressed?.status, "SENT");
+  assert.equal((suppressed?.payload._frogsleep_delivery as { outcome: string }).outcome, "RECOVERY_PUSH_DISABLED");
   await fixture.sleep.updatePreferences(dana.id, fixture.relationshipId, { allow_recovery_nudges: true });
   await fixture.sleep.recordEvent(charlie.id, fixture.sessionId, "returned");
   await fixture.queue.processDueJobs((job) => fixture.notifications.processQueueJob(job));
@@ -257,10 +285,15 @@ async function notificationPreferences(context: Context) {
 async function unavailableProvider(context: Context, logger: StructuredLogger) {
   const queue = new InMemoryJobQueue();
   const service = new NotificationService(context.database, queue, logger);
+  const now = new Date().toISOString();
+  await context.database.insertFrogSleepEntity({ id: `${runId}_invite`, appId, kind: "sleep_invite",
+    ownerUserId: context.charlie.id, partnerUserId: context.dana.id, status: "pending", payload: {}, createdAt: now, updatedAt: now });
   const queued = await service.queueNotification({ appId, recipientUserId: context.dana.id, channel: "push",
     payload: buildFrogSleepNotificationPayload({ type: "sleep_buddy_invite", entityId: `${runId}_invite` }) });
   await queue.processDueJobs((job) => service.processQueueJob(job));
-  assert.equal((await context.database.findNotificationJob(queued.notificationJobId))?.status, "FAILED");
+  const failedJob = await context.database.findNotificationJob(queued.notificationJobId);
+  assert.equal(failedJob?.status, "FAILED");
+  assert.equal((failedJob?.payload._frogsleep_delivery as { outcome: string }).outcome, "retryable_failed");
   const failed = await context.database.listFailedEvents(appId);
   assert.ok(queue.jobs.length > 0 || failed.some((event) => event.payload.notificationJobId === queued.notificationJobId && event.nextRetryAt));
   await restoredProvider(context, queue, logger, queued.notificationJobId);
@@ -274,16 +307,20 @@ async function restoredProvider(context: Context, queue: InMemoryJobQueue, logge
   const recovered = new NotificationService(context.database, queue, logger,
     { async dispatch(request) { sent.push(request); } });
   await queue.processDueJobs((job) => recovered.processQueueJob(job));
-  assert.equal((await context.database.findNotificationJob(notificationJobId))?.status, "SENT");
+  const deliveredJob = await context.database.findNotificationJob(notificationJobId);
+  assert.equal(deliveredJob?.status, "SENT");
+  assert.equal((deliveredJob?.payload._frogsleep_delivery as { outcome: string }).outcome, "PROVIDER_ACCEPTED");
   assert.ok(sent.some((request) => request.userId === context.dana.id && request.pushToken === "test-only-no-external-provider"));
   assert.equal((await context.database.listFailedEvents(appId)).some((event) => event.payload.notificationJobId === notificationJobId), false);
 }
 
 async function queuedSharingRevocation(context: Context) {
-  const [charlie, dana] = await Promise.all([actor(context.runtime, "eric"), actor(context.runtime, "fiona")]);
-  const isolated = { ...context, charlie, dana };
-  const fixture = await notificationFixture(isolated);
   for (const scenario of [{ category: "shared_activity", event: "interrupted" }, { category: "daily_summary", event: "morning_completed" }]) {
+    const [charlie, dana] = await Promise.all([
+      actor(context.runtime, `eric_${scenario.category}`), actor(context.runtime, `fiona_${scenario.category}`),
+    ]);
+    const isolated = { ...context, charlie, dana };
+    const fixture = await notificationFixture(isolated);
     await suppressAfterGrantRevocation(isolated, fixture, scenario);
   }
 }
@@ -303,9 +340,16 @@ async function suppressAfterGrantRevocation(context: Context, fixture: Awaited<R
   assert.equal(revoked.statusCode, 200);
   await fixture.queue.processDueJobs((job) => fixture.notifications.processQueueJob(job));
   assert.equal(fixture.delivered.length, 0, `worker must honor the sender's latest ${scenario.category} sharing revocation`);
-  assert.equal((await database.findNotificationJob(id))?.status, "SUPPRESSED");
+  const suppressed = await database.findNotificationJob(id);
+  assert.equal(suppressed?.status, "SENT");
+  assert.equal((suppressed?.payload._frogsleep_delivery as { outcome: string }).outcome,
+    scenario.category === "shared_activity" ? "TARGET_UNAVAILABLE" : "TARGET_UNAUTHORIZED");
   const restored = await request(runtime, charlie.token, "PATCH", grantPath, { expected_version: grant.version + 1, state: "granted" });
   assert.equal(restored.statusCode, 200);
+  if (scenario.category === "shared_activity") {
+    assert.equal((await database.findFrogSleepEntity("sleep_session", appId, fixture.sessionId))?.status, "cancelled",
+      "restoring sharing must not reactivate the cancelled session");
+  }
 }
 
 async function waitForSlotWaiters(sql: Client, minimum: number) {

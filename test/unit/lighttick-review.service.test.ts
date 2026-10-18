@@ -77,39 +77,3 @@ test("goal carries an explicit review cadence with a weekly default fallback", a
   const off = await service.update(owner, dayFirst.id, 1, { reviewCadence: { layers: [] } });
   assert.deepEqual(off.reviewCadence, { layers: [] });
 });
-
-test("daily review is sufficient with a single fact but a quiet day stays insufficient", async () => {
-  const repository = new InMemoryLightTickRepository();
-  const goals = new LightTickGoalService(repository, clock);
-  const service = new LightTickReviewService(repository, clock);
-
-  // Any single fact from the day grounds a light-touch daily reflection.
-  const withFact = await goals.create(owner, { title: "有事实的目标", constraints: {} });
-  await goals.update(owner, withFact.id, 1, { description: "today's only fact" });
-  const daily = await service.create(owner, withFact.id, "day", "2026-08-20", "2026-08-20");
-  assert.equal(daily.period, "day");
-  assert.equal(daily.dataSufficiency, "sufficient");
-
-  // A day with zero facts is insufficient (day threshold is independent: ≥1).
-  const empty = await goals.create(owner, { title: "无事实的目标", constraints: {} });
-  const quiet = await service.create(owner, empty.id, "day", "2026-08-20", "2026-08-20");
-  assert.equal(quiet.period, "day");
-  assert.equal(quiet.facts.event_count, 0);
-  assert.equal(quiet.dataSufficiency, "insufficient");
-});
-
-test("goal carries an explicit review cadence with a weekly default fallback", async () => {
-  const repository = new InMemoryLightTickRepository();
-  const service = new LightTickGoalService(repository, clock);
-
-  const defaulted = await service.create(owner, { title: "默认节奏", constraints: {} });
-  assert.equal(defaulted.reviewCadence, undefined);
-
-  const dayFirst = await service.create(owner, {
-    title: "日复盘优先", constraints: {}, reviewCadence: { layers: ["day", "week"] },
-  });
-  assert.deepEqual(dayFirst.reviewCadence, { layers: ["day", "week"] });
-
-  const off = await service.update(owner, dayFirst.id, 1, { reviewCadence: { layers: [] } });
-  assert.deepEqual(off.reviewCadence, { layers: [] });
-});

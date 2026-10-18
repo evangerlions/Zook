@@ -952,7 +952,7 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 | `PUT/PATCH` | `/api/v1/frogsleep/product-data/progress/{namespace}` | upsert 当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/progress/{namespace}` | 查询当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/entitlements/current` | 查询当前 FrogSleep 权益状态 |
-| `POST` | `/api/v1/frogsleep/account/upgrade` | 游客数据升级到注册账号 |
+| `POST` | `/api/v1/frogsleep/account/upgrade` | 兼容保留；云端游客转移未开放，返回 409 |
 
 睡眠报告请求必须包含 `snapshot_id`（或 `report_id` / `id`）、`schema_version`（或 `version`）、`recorded_at` ISO 时间和对象型 `data`。响应会把报告内容放在 `snapshot_data`，避免覆盖 Zook envelope 的 `data`。列表响应返回 `sleep_reports`、兼容 alias `reports` 与 `pagination`。`GET` 支持 `limit`（1–100，默认50）和不透明 `cursor`；按报告时间的毫秒值、稳定记录ID倒序在数据库分页，持续使用 `pagination.next_cursor` 直到 `has_more=false`，可恢复超过500条的完整历史。游标不改变认证身份过滤，非法游标返回400。
 
@@ -963,7 +963,7 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 
 进度快照 `namespace` 当前支持 `habit_progress`、`companion_state`、`cat_state`、`onboarding`、`report_preferences`。请求必须包含 `schema_version`（或 `version`）和对象型 `state`（或 `data`）；未知 namespace 返回 `400 REQ_INVALID_BODY`。权益查询返回当前 app-scoped entitlement；无记录时返回 `{ state: "unknown", plan: "free", source: "none" }`。FrogSleep logout 只注销 App 登录态，不删除报告、进度、权益记录，也不删除 Zook 全局账号。
 
-游客数据升级请求必须包含 `guest_device_id`（设备唯一标识）。响应返回 `user_id`、`migrated_data_count`（迁移数据数量）和 `migrated_kinds`（迁移的数据类型列表）。升级后，游客数据的所有者从设备 ID 变为注册用户 ID。
+`POST /api/v1/frogsleep/account/upgrade` 仅保留兼容入口，要求 FrogSleep Bearer 鉴权和非空字符串 `guest_device_id`；缺失或类型错误返回 `400 REQ_INVALID_BODY`。FrogSleep 尚无云端游客身份及所有权证明协议，设备 ID 不能证明数据归属；有效请求返回 `409 FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，不会读取或转移任何游客云端记录，也不会返回迁移成功。客户端应在用户明确确认归属后，通过当前账号的 `POST /api/v1/frogsleep/product-data/sleep-reports` 和 `POST /api/v1/frogsleep/focus/sessions` 上报本地游客报告与已结束专注记录，携带稳定客户端 ID 与绑定信息；客户端负责展示确认，接口只校验账号归属。
 
 ### 9.5 FrogSleep 邀请链接与推送
 
@@ -1251,8 +1251,19 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 
 沿用 `POST /api/v1/frogsleep/focus/sessions` 与 `POST /api/v1/frogsleep/product-data/sleep-reports`，不增加并行上传通道。上传 owner 始终来自 FrogSleep 会话；可选 `owner_user_id` / `ownerUserId` / `user_id` / `userId` 若与登录主体不一致返回 `403 AUTH_APP_SCOPE_MISMATCH`，不能把旧账号作业改归当前账号。
 
-- 专注历史记录提供稳定 `session_id`（兼容 `sessionId`）；completed/abandoned/interrupted/cancelled 终态结果按账号+类型+记录 ID 去重。睡眠报告使用稳定 `snapshot_id`（兼容 report_id/id）。同 owner 的相同内容重试返回原结果；不同终态内容返回 `409 REQ_INVALID_BODY`，不覆盖已接受数据。不同账号的相同本机 ID 互不覆盖。查重也识别已有随机服务端 ID，不受列表分页限制。
+- 专注历史记录提供稳定 `session_id`（兼容 `sessionId`），按账号+类型+记录 ID 去重；相同内容重试返回原结果。带 `binding` 的 completed/abandoned/interrupted/cancelled 确认导入记录内容不可变，更换终态内容返回 `409 REQ_INVALID_BODY`；未带 `binding` 的既有专注上报仍支持同 ID 修正并保留服务端 ID 和创建时间。睡眠报告使用稳定 `snapshot_id`（兼容 report_id/id），统一保存在私人同步仓库；相同内容幂等重试，修正已有报告必须通过私人同步协议携带当前 revision，否则返回 `409 FROGSLEEP_SYNC_REVISION_CONFLICT`。不同账号的相同本机 ID 互不覆盖。查重不受列表分页限制。
 - 可选 `binding: {owner_user_id, job_id, confirmed_at}` 表示用户确认的导入作业。owner 必须等于当前主体；job_id 非空，confirmed_at 为 ISO 时间。更换作业 ID不会重复导入同一条记录。绑定专注记录必须是终态、有稳定 ID和原始开始/结束时间，否则返回400。客户端只发送用户确认的类别、日期与记录；设备状态、未完成锁定和运行中会话不迁移。服务端不能以这份 metadata 代替客户端的真实确认界面。
 - 旧专注调用未提供记录 ID 时保留 append 行为；运行中状态仍走原有通道，不以终态去重规则改变生命周期。绑定上传不得使用这个兼容分支。存量已重复的数据不在本次自动删除。
 - `DELETE /api/v1/frogsleep/me/account` 保持既有响应，清理 FrogSleep 数据并撤销其凭据，保留 Zook 全局身份和其他产品。新增清理规范化分域关系、双方授权、邀请决定/邮件任务、相关通知；释放搭子的领域占位并推进版本。清理与 membership 更新在事务内完成，数据库失败回滚。删除与领域命令使用同一 slot 锁边界；旧接受重放不能恢复已删除关系。
 - 删除成功后旧 token 再次请求返回401，不提供使用失效 token 的成功重放；数据清理可重复执行且无跨产品副作用。外部提供方已接收的邮件/推送不能撤回，待发送任务清理及发送前权限校验仍是边界。以上本地测试不等同于生产部署或双端整体联调。
+
+
+### 2026-10-18 整合后的 Sleep 边界补充
+
+- `GET /api/v1/frogsleep/focus-buddy/stats/week`（以及兼容 `/focus/stats/week`）支持 `week_start` / `weekStart`，按该周返回统计；非法日期返回400。
+- `GET /api/v1/frogsleep/product-data/sleep-reports` 的 `since` 严格筛选 `recorded_at > since`，游标绑定该筛选和固定读取边界；后续分页须重复同一时间（等价ISO表达可规范化）。筛选改变返回409，非法时间返回400。`since` 仅为报告时间筛选；修改/删除增量必须使用 `personal-sync/changes`。
+- canonical关系接受后会持久化双方共八条 `revoked/version=1` 授权。PUT前必须先GET本人当前grant版本，不能固定传0；仅尚不存在的只读默认项为version0。默认revoked不代表已共享。
+- 未授予共享时守护状态可显示关系，活动共享session为空；完成晨间确认的参与者不能重新accept覆盖终态。通知在入队和实际投递前重验接收方睡眠偏好。
+- 共同目标调整不能跨Sleep/Focus域；共同活动必须双方完成真实记录才计完成。周报进度来自终态专注和本人晨间确认，不采信客户端声明的累计贡献。撤权后目标列表省略不可访问项，活动命令仍拒绝。
+
+能力范围、分支整合及当前验证限制见 [Sleep审计](docs/sleep-api-capability-audit-2026-10-18.md)。

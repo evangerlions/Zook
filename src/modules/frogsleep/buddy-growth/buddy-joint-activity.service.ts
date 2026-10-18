@@ -1,3 +1,4 @@
+import { buddyRelationshipSlotKeys, findBuddyRelationship } from "./buddy-relationship-facts.ts";
 import { isBuddyAuthorizationDenied } from "./buddy-artifact-redaction.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -13,7 +14,10 @@ export class BuddyJointActivityService {
   constructor(private readonly database: ApplicationDatabase) {}
 
   async action(userId: string, id: string, action: string) {
-    return await this.database.withExclusiveSession(async () => {
+    const initial = await this.require(userId, id);
+    const relationship = await findBuddyRelationship(this.database, initial.relationshipId!);
+    if (!relationship) forbidden("AUTH_APP_SCOPE_MISMATCH", "Buddy relationship is unavailable.");
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
       let record = await this.require(userId, id);
       record = await this.reconcile(record);
       const owner = record.ownerUserId === userId;
@@ -34,7 +38,7 @@ export class BuddyJointActivityService {
     for (const relationship of relationships) {
       const records = await allBuddyRecords(this.database, { kind: "buddy_joint_activity", relationshipId: relationship.id });
       for (const record of records.filter(item => item.status === "accepted")) {
-        await this.database.withExclusiveSession(async () => {
+        await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
           try {
             const current = await this.require(userId, record.id);
             await this.reconcile(current);
@@ -88,7 +92,7 @@ export class BuddyJointActivityService {
     const relation = (await buddyRelationships(this.database, record.ownerUserId!)).find(item => item.id === record.relationshipId);
     if (!relation || !["active", "accepted"].includes(relation.status ?? "")) return record;
     const starts = record.payload.participant_started_at as Record<string, string> ?? {};
-    const progress: Record<string, unknown> = {};
+    const progress: Record<string, { status: string; completed_at?: string; minutes?: number }> = {};
     for (const userId of [record.ownerUserId!, record.partnerUserId!]) {
       const facts = await completionFacts(this.database, relation, userId);
       const fact = facts.find(fact => fact.kind === (record.payload.type === "joint_focus" ? "focus" : "sleep") &&
@@ -97,9 +101,11 @@ export class BuddyJointActivityService {
       progress[userId] = { status: fact ? "completed" : starts[userId] ? "started" : "pending",
         completed_at: fact?.occurredAt, minutes: fact?.minutes };
     }
-    const completed = Object.values(progress).every(value => (value as { status: string }).status === "completed");
+    const completed = Object.values(progress).every(value => value.status === "completed");
+    const completedAt = completed ? Object.values(progress).map(value => value.completed_at!).sort().at(-1) : undefined;
     const updated = await this.save(record, { status: completed ? "completed" : "accepted",
-      payload: { ...record.payload, participant_progress: progress, ...(completed ? { completed_at: new Date().toISOString() } : {}) } });
+      ...(completedAt ? { occurredAt: completedAt } : {}),
+      payload: { ...record.payload, participant_progress: progress, ...(completed ? { completed_at: completedAt } : {}) } });
     if (completed) await this.notifyCompleted(updated);
     return updated;
   }

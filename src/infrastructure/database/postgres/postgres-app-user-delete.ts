@@ -60,7 +60,7 @@ export async function deletePostgresAppUserRuntimeData(
   userId: string,
 ): Promise<void> {
   if (appId === 'bodylog') {
-    for (const table of ['bodylog_seven_day_plans', 'bodylog_daily_aggregates', 'bodylog_notification_preferences', 'bodylog_push_devices']) {
+    for (const table of ['bodylog_growth_daily_aggregates', 'bodylog_seven_day_plans', 'bodylog_daily_aggregates', 'bodylog_notification_preferences', 'bodylog_push_devices']) {
       await query(`DELETE FROM ${table} WHERE user_id = $1`, [userId]);
     }
   }

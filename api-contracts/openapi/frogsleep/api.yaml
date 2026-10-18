@@ -942,31 +942,6 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
       responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
-  /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept:
-    post:
-      operationId: frogSleepAcceptBuddyInvitationDomain
-      tags: [frogsleep]
-      summary: Accept one invitation domain without enabling sharing
-      description: Creates the domain relationship and eight revoked directional grants atomically. Sleep relationships are usable by the existing sleep runtime APIs after explicit grants. Same-key replay does not recreate grants or reset consent.
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: "#/components/parameters/InviteId"
-        - { name: domain, in: path, required: true, schema: { type: string, enum: [sleep, focus] } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [expected_version, idempotency_key]
-              properties:
-                expected_version: { type: integer, minimum: 1 }
-                idempotency_key: { type: string, minLength: 1 }
-      responses:
-        "200": { $ref: "#/components/responses/FrogSleepOk" }
-        "400": { description: Invalid version or idempotency key }
-        "404": { description: Invitation or domain unavailable to this actor }
-        "409": { description: Decision version conflict or occupied domain slot }
   /api/v1/frogsleep/buddy/invitations/{inviteId}/decline:
     post:
       operationId: frogSleepDeclineBuddyInvitation
@@ -1534,6 +1509,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/PersonalLimit"
         - $ref: "#/components/parameters/PersonalCursor"
+        - { name: since, in: query, required: false, description: Optional strict lower bound on report recorded_at; repeat the same value with its cursor, schema: { type: string, format: date-time } }
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
         "409": { $ref: "#/components/responses/PersonalSyncError" }
@@ -1718,8 +1694,14 @@ paths:
     post:
       operationId: frogSleepUpgradeGuestData
       tags: [frogsleep, frogsleep-account]
-      summary: Upgrade guest device data to registered account
-      description: "Migrates all data associated with a guest device ID to the authenticated user account"
+      summary: Reserved guest transfer compatibility endpoint
+      description: >-
+        Cloud guest transfer is unavailable because a device ID does not prove
+        ownership and FrogSleep has no cloud guest transfer credential protocol.
+        Valid authenticated requests return 409 without reading or moving guest
+        records. After user confirmation, upload local guest sleep reports and
+        completed focus sessions through the authenticated product-data/sleep-reports
+        and focus/sessions endpoints with stable client IDs and binding metadata.
       security:
         - bearerAuth: []
       requestBody:
@@ -1732,23 +1714,18 @@ paths:
               properties:
                 guest_device_id:
                   type: string
-                  description: "Device unique identifier for guest data"
+                  minLength: 1
+                  pattern: '\S'
+                  description: Device identifier; never an ownership credential.
       responses:
-        "200":
-          description: "Guest data successfully migrated"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user_id:
-                    type: string
-                  migrated_data_count:
-                    type: integer
-                  migrated_kinds:
-                    type: array
-                    items:
-                      type: string
+        "400":
+          description: REQ_INVALID_BODY; guest_device_id must be a non-empty string.
+        "401":
+          description: Missing or invalid FrogSleep bearer token.
+        "403":
+          description: Invalid app scope or inactive FrogSleep membership.
+        "409":
+          description: FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED; no guest records are read or transferred.
   /api/v1/frogsleep/buddy/users/{targetUserId}/block:
     post:
       operationId: frogSleepBlockBuddyUser
@@ -2477,9 +2454,8 @@ components:
         - required: [displayName]
     FrogSleepFocusSessionRequest:
       type: object
-      description: Terminal sessions with session_id replay once per authenticated owner; changed terminal content returns HTTP 409. Binding imports require stable ID and original start/end timestamps. Legacy requests without IDs retain append behavior.
       additionalProperties: true
-      description: Optional client ID enables per-app/per-user replay deduplication; the two ID aliases must match if both are present.
+      description: Optional client ID enables per-app/per-user replay deduplication; aliases must match. Normal unbound reports may correct the same record. Confirmed binding imports require stable ID and original timestamps, and changed content returns HTTP 409 even if a later request omits binding.
       properties:
         session_id: { type: string, minLength: 1, maxLength: 128, pattern: '\S' }
         sessionId: { type: string, minLength: 1, maxLength: 128, pattern: '\S' }

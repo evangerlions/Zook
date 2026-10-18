@@ -11,7 +11,8 @@ export function upsertMemoryFocusSession(record: FrogSleepEntityRecord, records:
   if (!key) throw new Error("Atomic focus writes require an owner and valid client session ID.");
   const existing = records.find(item => focusSessionKey(item) === key);
   if (!existing) { records.push(structuredClone(record)); return { record: structuredClone(record), inserted: true }; }
-  if (!record.payload._report_fingerprint || existing.payload._report_fingerprint !== record.payload._report_fingerprint) {
+  if (!record.payload._report_fingerprint || existing.payload._report_fingerprint !== record.payload._report_fingerprint
+    || record.payload._confirmed_import === true && existing.payload._confirmed_import !== true) {
     Object.assign(existing, structuredClone(record), { id: existing.id, createdAt: existing.createdAt });
   }
   return { record: structuredClone(existing), inserted: false };

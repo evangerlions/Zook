@@ -71,13 +71,15 @@ test("2A accounts remain real while every buddy capability is disabled", async (
   });
 });
 
-test("2A personal focus ignores claimed ownership and remains isolated without buddies", async () => {
+test("2A personal focus rejects mismatched ownership and remains isolated without buddies", async () => {
   await withoutBuddy(async () => {
     const app = await runtime();
     const alice = await login(app, "alice@example.com");
     const bob = await login(app, "bob@example.com");
-    await saveFocus(app, alice.access_token, "phase2a_alice_focus", "user_bob");
-    await saveFocus(app, bob.access_token, "phase2a_bob_focus", "user_alice");
+    const forged = await request(app, "POST", "/focus-buddy/sessions", alice.access_token, { session_id: "forged", owner_user_id: "user_bob", minutes: 25 });
+    assert.equal(forged.statusCode, 403);
+    await saveFocus(app, alice.access_token, "phase2a_alice_focus", "user_alice");
+    await saveFocus(app, bob.access_token, "phase2a_bob_focus", "user_bob");
     await assertFocusIDs(app, alice.access_token, ["phase2a_alice_focus"]);
     await assertFocusIDs(app, bob.access_token, ["phase2a_bob_focus"]);
   });

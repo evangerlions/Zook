@@ -44,12 +44,12 @@ class PostgresPersonalSyncTransaction implements PersonalSyncTransaction {
     await this.client.query("UPDATE zook_frogsleep_personal_sync_state SET sequence=$2 WHERE app_id='frogsleep' AND user_id=$1", [this.userId, version.sequence]);
     this.state.sequence = version.sequence;
   }
-  async browse(boundary: number, limit: number, after?: { time: string; id: string }) {
+  async browse(boundary: number, limit: number, after?: { time: string; id: string }, since?: string) {
     const result = await this.client.query(`SELECT document FROM (
       SELECT DISTINCT ON(resource_id) resource_id,document FROM zook_frogsleep_personal_versions
       WHERE app_id='frogsleep' AND user_id=$1 AND kind='sleep_report' AND sequence<=$2 ORDER BY resource_id,sequence DESC
-    ) v WHERE NOT (document->>'deleted')::boolean AND ($3::text IS NULL OR (COALESCE(document#>>'{data,recorded_at}','') COLLATE "C",resource_id COLLATE "C")<($3 COLLATE "C",$4::text COLLATE "C"))
-    ORDER BY COALESCE(document#>>'{data,recorded_at}','') COLLATE "C" DESC,resource_id COLLATE "C" DESC LIMIT $5`, [this.userId,boundary,after?.time ?? null,after?.id ?? null,limit]);
+    ) v WHERE NOT (document->>'deleted')::boolean AND ($6::timestamptz IS NULL OR (document#>>'{data,recorded_at}')::timestamptz > $6) AND ($3::text IS NULL OR (COALESCE(document#>>'{data,recorded_at}','') COLLATE "C",resource_id COLLATE "C")<($3 COLLATE "C",$4::text COLLATE "C"))
+    ORDER BY COALESCE(document#>>'{data,recorded_at}','') COLLATE "C" DESC,resource_id COLLATE "C" DESC LIMIT $5`, [this.userId,boundary,after?.time ?? null,after?.id ?? null,limit,since ?? null]);
     return result.rows.map(r=>r.document as PersonalVersion);
   }
   async page(mode: "restore" | "changes", boundary: number, after: number, limit: number, kind?: PersonalResourceKind) {

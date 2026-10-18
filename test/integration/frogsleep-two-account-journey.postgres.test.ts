@@ -25,8 +25,12 @@ async function connect(database: PostgresDatabase) {
     const receipt = await new BuddyDomainInvitationCommandService(database).accept("user_bob", "journey_invitation", domain,
       { expectedVersion: 1, idempotencyKey: `journey_${domain}` });
     relationships[domain] = receipt.relationship_id;
-    for (const user of ["user_alice", "user_bob"]) await new BuddyConsentService(database).replaceOwn(user, receipt.relationship_id, domain,
-      ["presence", "daily_summary", "weekly_trend", "shared_activity"], { presence: 0, daily_summary: 0, weekly_trend: 0, shared_activity: 0 });
+    for (const user of ["user_alice", "user_bob"]) {
+      const consent = new BuddyConsentService(database);
+      const current = await consent.list(user, receipt.relationship_id);
+      const versions = Object.fromEntries(current.grants.filter(g => g.grantor_user_id === user).map(g => [g.category, g.version]));
+      await consent.replaceOwn(user, receipt.relationship_id, domain, ["presence", "daily_summary", "weekly_trend", "shared_activity"], versions);
+    }
   }
   return relationships;
 }
@@ -37,6 +41,7 @@ test("live PG two-account canonical journeys and optional companion failure", as
   const seed = buildDefaultSeed(new DevelopmentPasswordHasher(), { includeFrogSleep: true });
   const a = await PostgresDatabase.create(url, seed), b = await PostgresDatabase.create(url, seed);
   try {
+    for (const userId of ["user_alice", "user_bob"]) await a.insertAppUser({ id: `journey-${userId}`, appId: "frogsleep", userId, status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: now(), updatedAt: now() });
     const rel = await connect(a), focusA = new FrogSleepFocusBuddyService(a), focusB = new FrogSleepFocusBuddyService(b);
     const sleepA = new FrogSleepSleepBuddyService(a), sleepB = new FrogSleepSleepBuddyService(b);
     await suite.test("simultaneous completions on independent connections produce one stable shared moment", async () => {

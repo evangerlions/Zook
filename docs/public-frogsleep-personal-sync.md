@@ -43,3 +43,8 @@ Canonical 合同：`api-contracts/openapi/frogsleep/api.yaml`；运行时只使�
 首代账号允许旧客户端不带 epoch；账号删除后此兼容永久关闭。既有修改遇409必须升级/处理冲突，不再随机插入重复快照。`FROGSLEEP_PERSONAL_SYNC_READ_ENABLED` 与 `FROGSLEEP_PERSONAL_SYNC_WRITE_ENABLED` 独立控制，缺省启用；置 `false` 关闭。回滚优先关闭写入，保留读取和墓碑；不得回滚到继续随机插入旧表的写端。先部署API/扩展迁移，再发布接入客户端，当前dev双设备/真实provider/上线仍是单独门槛。
 
 共享样本：`test/fixtures/frogsleep-personal-sync.json`，其中游标为不可执行的 wire 示例。生成 schema 验证真实响应和样本；客户端2B持久化恢复、游客显式绑定及两平台发布尚未由本批实现。
+
+
+## 2026-10-18 整合说明
+
+报告列表兼容 `since` ISO时间，严格筛选 `recorded_at > since`；分页继续使用相同筛选值，游标绑定规范化的时间和固定sequence边界。非法时间400，改变筛选的游标409。该参数不能追踪过去报告的修订和删除；请使用提交有序的changes及墓碑协议。绑定上传校验owner来自认证主体，其他账号owner返回403；app覆盖返回400。云游客转移缺少可信来源凭据，`account/upgrade`明确409，不使用设备ID推断归属；本地确认导入仍通过标准上传入口。

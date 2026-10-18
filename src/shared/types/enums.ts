@@ -90,6 +90,7 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED"
   | "FROGSLEEP_JOB_NOT_FOUND"
   | "FROGSLEEP_RETRY_NOT_ALLOWED"
   | "FROGSLEEP_SYNC_IDEMPOTENCY_CONFLICT"

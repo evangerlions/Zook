@@ -8,12 +8,20 @@ import { CompositePushDispatcher } from "../../src/services/composite-push-dispa
 import { NotificationService, type PushDispatcher } from "../../src/services/notification.service.ts";
 import { createPushDispatcher } from "../../src/services/push-dispatcher-factory.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
+import { BuddyNotificationPreferenceService } from "../../src/modules/frogsleep/buddy-growth/buddy-notification-preference.service.ts";
 
 async function processPush(platform: string, factory: (database: InMemoryDatabase, logger: StructuredLogger) => PushDispatcher | undefined) {
+  process.env.FROGSLEEP_BUDDY_PUSH_ENABLED = "true";
   const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger("test", { emitToConsole: false });
   const now = new Date().toISOString();
+  await database.insertAppUser({ id: "provider_alice", appId: "frogsleep", userId: "user_alice",
+    status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: now });
+  await database.insertFrogSleepEntity({ id: "invite_1", appId: "frogsleep", kind: "sleep_invite",
+    ownerUserId: "user_bob", partnerUserId: "user_alice", status: "pending", payload: {}, createdAt: now, updatedAt: now });
+  await new BuddyNotificationPreferenceService(database).update("user_alice",
+    { quiet_start_minute: 0, quiet_end_minute: 0, cooldown_minutes: 0, daily_budget: 100 });
   database.upsertFrogSleepDevice({ id: "active-device", appId: "frogsleep", userId: "user_alice",
     platform, pushToken: "test-token", pushEnabled: true, createdAt: now, updatedAt: now });
   const notifications = new NotificationService(database, queue, logger, factory(database, logger));
@@ -32,6 +40,7 @@ test("FrogSleep without configured providers records FAILED and leaves a retry p
     for (const key of keys) delete process.env[key];
     const result = await processPush("ios", (database, logger) => createPushDispatcher({ database, logger }));
     assert.equal(result.record?.status, "FAILED", "logging fallback is not successful provider delivery");
+    assert.equal((result.record?.payload._frogsleep_delivery as { outcome: string }).outcome, "retryable_failed");
     const failed = await result.database.listFailedEvents("frogsleep");
     assert.ok(result.queue.jobs.length > 0 || failed.some((event) => event.nextRetryAt), "delivery must remain retryable");
   } finally {
@@ -47,12 +56,14 @@ test("FrogSleep missing current platform dispatcher cannot become SENT", async (
     ios: { async dispatch() { throw new Error("iOS provider must not receive Android devices"); } },
   }));
   assert.equal(result.record?.status, "FAILED");
+  assert.equal((result.record?.payload._frogsleep_delivery as { outcome: string }).outcome, "retryable_failed");
   assert.ok((await result.database.listFailedEvents("frogsleep")).length > 0 || result.queue.jobs.length > 0);
 });
 
 test("FrogSleep default notification dispatcher cannot mistake logging for delivery", async () => {
   const result = await processPush("ios", () => undefined);
   assert.equal(result.record?.status, "FAILED");
+  assert.equal((result.record?.payload._frogsleep_delivery as { outcome: string }).outcome, "retryable_failed");
   assert.ok((await result.database.listFailedEvents("frogsleep")).length > 0 || result.queue.jobs.length > 0);
 });
 
@@ -62,6 +73,7 @@ test("FrogSleep configured platform reports SENT after actual provider success",
     android: { async dispatch(request) { accepted.push(request.pushToken); } },
   }));
   assert.equal(result.record?.status, "SENT");
+  assert.equal((result.record?.payload._frogsleep_delivery as { outcome: string }).outcome, "PROVIDER_ACCEPTED");
   assert.deepEqual(accepted, ["test-token"]);
   assert.equal((await result.database.listFailedEvents("frogsleep")).length, 0);
 });

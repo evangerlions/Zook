@@ -60,7 +60,8 @@ test("same client session ID remains independent across authenticated accounts",
   const app = await runtime(); const alice = await login(app); const bob = await login(app, "bob@example.com");
   const a = await request(app, "POST", "/sessions", alice, { ...payload(), owner_user_id: "user_bob", app_id: "ai_novel" });
   const b = await request(app, "POST", "/sessions", bob, { ...payload(undefined, 40), session_id: "stable-focus", owner_user_id: "user_alice" });
-  assert.notEqual(a.body.data.session_id, b.body.data.session_id);
+  assert.equal(a.statusCode, 403);
+  assert.equal(b.statusCode, 403);
   await request(app, "POST", "/sessions", alice, payload());
   await request(app, "POST", "/sessions", bob, { ...payload(), actual_minutes: 40 });
   await assertStats(app, alice, 1, 25); await assertStats(app, bob, 1, 40);

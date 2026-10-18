@@ -19,9 +19,12 @@ async function fixture() {
     const accepted = await request(b, "POST", `buddy/invitations/${invitation.data.invitation_id}/domains/${domain}/accept`, { expected_version: 1, idempotency_key: `journey_${domain}` });
     assert.equal(accepted.status, 200); relationships[domain] = accepted.data.relationship_id;
     for (const token of [a, b]) {
+      const current = await request(token, "GET", `buddy/relationships/${relationships[domain]}/grants`);
+      const viewer = token === a ? "user_alice" : "user_bob";
+      const versions = Object.fromEntries(current.data.grants.filter((g: any) => g.grantor_user_id === viewer).map((g: any) => [g.category, g.version]));
       const granted = await request(token, "PUT", `buddy/relationships/${relationships[domain]}/grants`, { domain,
         categories: ["presence", "daily_summary", "weekly_trend", "shared_activity"],
-        expected_versions: { presence: 0, daily_summary: 0, weekly_trend: 0, shared_activity: 0 } });
+        expected_versions: versions });
       assert.equal(granted.status, 200);
     }
   }

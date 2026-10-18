@@ -2,6 +2,7 @@ import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.
 import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
 import { createHash } from "node:crypto";
 import { generateSharedMorningArtifacts } from "./sleep-shared-morning.ts";
+import { sleepPushSuppression } from "./sleep-notification-policy.ts";
 import { isBuddyAuthorizationDenied } from "../buddy-growth/buddy-artifact-redaction.ts";
 import { buddyRelationshipMute } from "../buddy-growth/buddy-relationship-lifecycle.service.ts";
 import { buddyRelationshipSlotKeys, currentBuddyRelationships, findBuddyRelationship } from "../buddy-growth/buddy-relationship-facts.ts";
@@ -202,7 +203,8 @@ export class FrogSleepSleepBuddyService {
   async activeSession(userId: string) {
     const relationships = await this.relationshipsForUser(userId, ["active"]);
     for (const relationship of relationships) {
-      await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
+      try { await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity"); }
+      catch (error) { if (isBuddyAuthorizationDenied(error)) continue; throw error; }
       const sessions = await this.database.listFrogSleepEntities({
         appId: FROGSLEEP_APP_ID,
         kind: "sleep_session",
@@ -236,6 +238,9 @@ export class FrogSleepSleepBuddyService {
     if (!session.relationshipId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Session relationship is unavailable.");
     await assertBuddyDataAuthorized(this.database, userId, session.relationshipId, "shared_activity");
     if (!["pending", "active"].includes(session.status ?? "")) conflict("REQ_INVALID_BODY", "Shared session is terminal.");
+    if ((session.payload.participantStates as Record<string, string> | undefined)?.[userId] === "morning_completed") {
+      conflict("REQ_INVALID_BODY", "Shared participant is terminal.");
+    }
     const participantStates = {
       ...((session.payload.participantStates as Record<string, string> | undefined) ?? {}),
       [userId]: "accepted",
@@ -357,6 +362,7 @@ export class FrogSleepSleepBuddyService {
     if (!this.notificationService) {
       return;
     }
+    if (await sleepPushSuppression(this.database, userId, payload)) return;
     const relationshipId = typeof payload.relationshipId === "string" ? payload.relationshipId : undefined;
     if (relationshipId) {
       if ((await buddyRelationshipMute(this.database, userId, relationshipId))?.payload.muted === true) return;

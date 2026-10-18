@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { ApplicationError } from "../../../shared/errors.ts";
 import type { PersonalSyncState } from "./personal-sync.types.ts";
 
-export interface PersonalCursor { user: string; epoch: string; mode: "restore" | "changes" | "browse"; boundary: number; after: number; expires: number; kind?: string; reportAfter?: { time: string; id: string } }
+export interface PersonalCursor { user: string; epoch: string; mode: "restore" | "changes" | "browse"; boundary: number; after: number; expires: number; kind?: string; since?: string; reportAfter?: { time: string; id: string } }
 export function encodePersonalCursor(cursor: PersonalCursor, state: PersonalSyncState) {
   const body = Buffer.from(JSON.stringify(cursor)).toString("base64url");
   return `${body}.${createHmac("sha256", state.cursorSecret).update(body).digest("base64url")}`;

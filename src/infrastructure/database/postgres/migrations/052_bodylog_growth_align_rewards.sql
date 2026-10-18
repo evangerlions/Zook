@@ -8,24 +8,24 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bodylog_rewards' AND column_name = 'type'
+    WHERE table_schema = current_schema() AND table_name = 'bodylog_rewards' AND column_name = 'type'
   ) AND EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bodylog_rewards' AND column_name = 'reward_type'
+    WHERE table_schema = current_schema() AND table_name = 'bodylog_rewards' AND column_name = 'reward_type'
   ) THEN
     ALTER TABLE bodylog_rewards RENAME COLUMN reward_type TO type;
   END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bodylog_rewards' AND column_name = 'value'
+    WHERE table_schema = current_schema() AND table_name = 'bodylog_rewards' AND column_name = 'value'
   ) THEN
     ALTER TABLE bodylog_rewards ADD COLUMN value TEXT;
   END IF;
 
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bodylog_rewards' AND column_name = 'reward_value'
+    WHERE table_schema = current_schema() AND table_name = 'bodylog_rewards' AND column_name = 'reward_value'
   ) THEN
     UPDATE bodylog_rewards
     SET value = reward_value::text

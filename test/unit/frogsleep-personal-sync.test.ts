@@ -37,7 +37,7 @@ test("private API rejects forged owner and exposes typed recovery and report det
   const runtime = await fixture(); const login = await runtime.services.authService.login({ appId: "frogsleep", account: "alice@example.com", password: "Password1234" });
   const call = (method: string,path: string,body?: unknown,headers: Record<string,string> = {}) => runtime.app.handle({ method,path: `/api/v1/frogsleep/product-data${path}`,body,headers: { authorization: `Bearer ${login.accessToken}`, ...headers }, requestId: "personal-api" } as never);
   const report = { snapshot_id: "api-report",schema_version: "1",recorded_at: "2026-10-11T08:00:00Z",data: { minutes: 400 } };
-  assert.equal((await call("POST","/sleep-reports",{...report,owner_user_id:"user_bob"})).statusCode,400);
+  assert.equal((await call("POST","/sleep-reports",{...report,owner_user_id:"user_bob"})).statusCode,403);
   const created = await call("POST","/sleep-reports",report,{"idempotency-key":"api-create"}); assert.equal(created.statusCode,200);
   assert.equal((await call("GET","/sleep-reports/api-report")).body.data.revision,1);
   const restore = await call("GET","/personal-sync/restore"); assert.equal(restore.body.data.items.length,1);

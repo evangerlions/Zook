@@ -42,9 +42,6 @@ export class LightTickReviewService {
     if (existing) return existing;
     const counts = Object.fromEntries([...new Set(events.map(event => event.eventType))]
       .map(type => [type, events.filter(event => event.eventType === type).length]));
-    // Daily review uses a lower bar: any fact from the day is enough to ground a
-    // light-touch reflection. Weekly/monthly keep the ≥3 fact threshold.
-    const sufficient = period === "day" ? events.length >= 1 : events.length >= 3;
     const timestamp = this.clock().toISOString();
     const terminal = events.filter(event => ["task_complete", "task_skip", "task_defer", "task_cancel"].includes(event.eventType));
     const evidenceTasks = tasks.filter(task => events.some(event => event.aggregateId === task.id)).map(task => {

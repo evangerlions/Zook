@@ -68,7 +68,7 @@ test("email handoff hides wrong-account details, resumes after login and preserv
   assert.equal(finished.body.data.viewer_can_accept, false);
   assert.deepEqual((await request(app, alice, "GET", path(id))).body.data.viewer_actions, ["preview"]);
   assert.equal(app.database.frogSleepBuddyDomainRelationships.length, 1);
-  assert.equal(app.database.frogSleepBuddySharingGrants.length, 0);
+  assert.ok(app.database.frogSleepBuddySharingGrants.every(grant => grant.state === "revoked"));
   assert.equal(app.database.frogSleepBuddyNotificationOutbox.filter((r) => r.targetId === id).length, 2);
 });
 
@@ -100,7 +100,7 @@ test("concurrent accept/cancel decides once, and a terminal sibling cannot be ch
   const aggregate = await request(app, bob, "POST", `${path(id)}/accept`, { expected_version: 1, idempotency_key: "aggregate" });
   assert.equal(aggregate.statusCode, 409);
   assert.equal((await app.database.findFrogSleepBuddyInvitationDomainDecision("frogsleep", id, "focus"))?.status, "pending");
-  assert.equal(app.database.frogSleepBuddySharingGrants.length, 0);
+  assert.ok(app.database.frogSleepBuddySharingGrants.every(grant => grant.state === "revoked"));
 });
 
 test("accept replay returns the original receipt after slot changes and refuses same-key version changes", async () => {

@@ -35,7 +35,7 @@ function dateOrdinal(localDate: string): number {
 
 function validateDailyAggregate(input: UpsertGrowthDailyAggregateInput): void {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.localDate) ||
-      !Number.isFinite(dateOrdinal(input.localDate)) ||
+      !Number.isFinite(Date.parse(`${input.localDate}T00:00:00.000Z`)) ||
       new Date(`${input.localDate}T00:00:00.000Z`).toISOString().slice(0, 10) !== input.localDate) {
     throw new ApplicationError(400, "BODYLOG_GROWTH_AGGREGATE_INVALID", "localDate must be a valid YYYY-MM-DD date.");
   }

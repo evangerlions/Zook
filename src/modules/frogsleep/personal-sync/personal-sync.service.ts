@@ -1,3 +1,4 @@
+import { parseIsoTimestamp } from "../frogsleep-validation.ts";
 import { createHash } from "node:crypto";
 import { ApplicationError, badRequest, conflict } from "../../../shared/errors.ts";
 import type { PersonalResourceKind, PersonalSyncRepository, PersonalSyncTransaction, PersonalVersion } from "./personal-sync.types.ts";
@@ -77,12 +78,14 @@ export class PersonalSyncService {
         pagination: { limit, has_more: hasMore, next_cursor: hasMore ? next : null } };
     });
   }
-  async browse(user: string, limit: number, token?: string) {
+  async browse(user: string, limit: number, token?: string, since?: string) {
     this.assertEnabled("read");
+    const lowerBound = since === undefined ? undefined : parseIsoTimestamp(since, "since");
     return this.repository.run(user, async tx => {
       const cursor: PersonalCursor = token ? decodePersonalCursor(token,user,"browse",tx.state)
-        : { user,epoch:tx.state.epoch,mode:"browse",boundary:tx.state.sequence,after:0,expires:Date.now()+7*86400000 };
-      const rows=await tx.browse(cursor.boundary,limit+1,cursor.reportAfter),items=rows.slice(0,limit),hasMore=rows.length>limit;
+        : { user,epoch:tx.state.epoch,mode:"browse",boundary:tx.state.sequence,after:0,expires:Date.now()+7*86400000,since:lowerBound };
+      if (cursor.since !== lowerBound) conflict("FROGSLEEP_SYNC_CURSOR_INVALID", "Cursor belongs to a different report query.");
+      const rows=await tx.browse(cursor.boundary,limit+1,cursor.reportAfter,lowerBound),items=rows.slice(0,limit),hasMore=rows.length>limit;
       const last=items.at(-1),next=hasMore ? encodePersonalCursor({...cursor,reportAfter:{time:String(last!.data.recorded_at ?? ''),id:last!.id}},tx.state) : null;
       return {items,sync_epoch:tx.state.epoch,boundary:cursor.boundary,pagination:{limit,has_more:hasMore,next_cursor:next}};
     });

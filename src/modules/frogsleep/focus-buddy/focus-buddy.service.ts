@@ -3,7 +3,6 @@ import { findBuddyRelationship } from "../buddy-growth/buddy-relationship-facts.
 import { BuddyRelationshipLifecycleService } from "../buddy-growth/buddy-relationship-lifecycle.service.ts";
 import { buildFocusSessionReport } from "./focus-session-report.ts";
 import { buildFocusSessionUpload } from "./focus-session-upload.ts";
-import { insertPersonalRecord, personalRecordId } from "../product-data/personal-record-upload.ts";
 import { allBuddyRecords } from "../buddy-growth/buddy-completion-facts.ts";
 import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.service.ts";
 import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
@@ -11,7 +10,7 @@ import { ApplicationDatabase } from "../../../infrastructure/database/applicatio
 import { NotificationService } from "../../../services/notification.service.ts";
 import { ContentSafetyService } from "../../../services/content-safety.service.ts";
 import type { ContentSafetyCheckCommand } from "../../../services/content-safety-types.ts";
-import { badRequest, forbidden, tooManyRequests } from "../../../shared/errors.ts";
+import { badRequest, conflict, forbidden, tooManyRequests } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
@@ -88,18 +87,30 @@ export class FrogSleepFocusBuddyService {
   }
 
   async reportSession(userId: string, input: Record<string, unknown>) {
-    buildFocusSessionUpload(userId, input);
-    const candidate = buildFocusSessionReport(userId, input);
-    const result = candidate.payload.client_session_id === undefined
-      ? await this.insertLegacySession(candidate)
-      : await this.database.upsertFrogSleepFocusSession(candidate);
-    if (result.inserted) {
-      await unlockFocusMilestone(this.database, userId, "first_session");
-
-    }
+    const result = await this.database.withAppUserDataTransaction(FROGSLEEP_APP_ID, userId, async () => {
+      if ((await this.database.findAppUser(FROGSLEEP_APP_ID, userId))?.status !== "ACTIVE") {
+        forbidden("APP_MEMBER_DELETED", "The app membership is not active.");
+      }
+      buildFocusSessionUpload(userId, input);
+      const candidate = buildFocusSessionReport(userId, input);
+      const clientId = candidate.payload.client_session_id;
+      if (typeof clientId === "string") {
+        const previous = await this.database.findFrogSleepPersonalRecord("focus_session", userId, clientId);
+        if (previous && (input.binding !== undefined || previous.payload._confirmed_import === true)
+          && previous.payload._report_fingerprint !== candidate.payload._report_fingerprint) {
+          conflict("REQ_INVALID_BODY", "A confirmed imported result cannot be overwritten.");
+        }
+        if (input.binding !== undefined || previous?.payload._confirmed_import === true) candidate.payload._confirmed_import = true;
+      }
+      const saved = clientId === undefined
+        ? await this.insertLegacySession(candidate)
+        : await this.database.upsertFrogSleepFocusSession(candidate);
+      if (saved.inserted) await unlockFocusMilestone(this.database, userId, "first_session");
+      return saved;
+    });
     await recordFocusSharedMoment(this.database, result.record).catch(() => undefined);
-    await new BuddyJointActivityService(this.database).refresh(userId);
-    await new BuddyJointGoalService(this.database).list(userId);
+    await new BuddyJointActivityService(this.database).refresh(userId).catch(() => undefined);
+    await new BuddyJointGoalService(this.database).list(userId).catch(() => undefined);
     return toFocusSessionResponse(result.record);
   }
 
@@ -125,7 +136,7 @@ export class FrogSleepFocusBuddyService {
   }
 
   async weekStats(userId: string, weekStart?: string) {
-    const dateAnchor = weekStart ?? currentUtcWeekStart(this.clock());
+    const dateAnchor = parseWeekStart(weekStart) ?? currentUtcWeekStart(this.clock());
     const since = `${dateAnchor}T00:00:00.000Z`;
     const until = new Date(new Date(since).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const sessions = await this.database.listFrogSleepEntities({

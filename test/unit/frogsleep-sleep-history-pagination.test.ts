@@ -27,6 +27,7 @@ async function restoreEveryReport(service: FrogSleepProductDataService, userId: 
 for (const scenario of [{ count: 501, sameTimestamp: false }, { count: 1100, sameTimestamp: true }]) {
   test(`restores all ${scenario.count} sleep reports${scenario.sameTimestamp ? " across equal timestamp boundaries" : " beyond the legacy 500 cap"}`, async () => {
     const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+    for (const userId of ["user_alice", "user_bob", "user_without_reports"]) database.insertAppUser({ id: `history-${userId}`, appId: "frogsleep", userId, status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
     const service = new FrogSleepProductDataService(database);
     const expected = new Set<string>();
     for (let index = 0; index < scenario.count; index += 1) {
@@ -48,3 +49,21 @@ for (const scenario of [{ count: 501, sameTimestamp: false }, { count: 1100, sam
     assert.deepEqual(await restoreEveryReport(service, "user_without_reports"), []);
   });
 }
+
+test("incremental report history keeps strict boundaries, fixed pagination and query-bound cursors", async () => {
+  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  database.insertAppUser({ id: "incremental-alice", appId: "frogsleep", userId: "user_alice", status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  const service = new FrogSleepProductDataService(database);
+  for (let day = 1; day <= 7; day++) await service.createSleepReport("user_alice", { snapshot_id: `day-${day}`, schema_version: "1", recorded_at: `2026-10-0${day}T00:00:00Z`, data: { day } });
+  const since = "2026-10-03T00:00:00Z";
+  const first = await service.listSleepReports("user_alice", { limit: 2 }, since);
+  assert.deepEqual(first.sleep_reports.map(r => r.snapshot_id), ["day-7", "day-6"]);
+  assert.equal(first.pagination.has_more, true);
+  await service.createSleepReport("user_alice", { snapshot_id: "late", schema_version: "1", recorded_at: "2026-10-05T12:00:00Z", data: {} });
+  const cursor = first.pagination.next_cursor!;
+  const second = await service.listSleepReports("user_alice", { limit: 2, cursor }, since);
+  assert.deepEqual(second.sleep_reports.map(r => r.snapshot_id), ["day-5", "day-4"]);
+  assert.equal(second.pagination.has_more, false);
+  await assert.rejects(service.listSleepReports("user_alice", { limit: 2, cursor }, "2026-10-02T00:00:00Z"), { code: "FROGSLEEP_SYNC_CURSOR_INVALID" });
+  await assert.rejects(service.listSleepReports("user_alice", { limit: 2 }, "invalid"), { code: "REQ_INVALID_BODY" });
+});

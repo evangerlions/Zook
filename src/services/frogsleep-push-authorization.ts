@@ -7,6 +7,7 @@ import { resolveBuddyGrowthCapabilities } from "../modules/frogsleep/buddy-growt
 import { assertBuddyDataAuthorized } from "../modules/frogsleep/buddy-growth/buddy-protected-access.ts";
 import { buddyRelationshipMute } from "../modules/frogsleep/buddy-growth/buddy-relationship-lifecycle.service.ts";
 import { assertBuddyPairNotBlocked } from "../modules/frogsleep/buddy-growth/buddy-safety.ts";
+import { sleepPushSuppression } from "../modules/frogsleep/sleep-buddy/sleep-notification-policy.ts";
 
 /** Revalidates queued and replayed FrogSleep Push against current recipient, target, preferences and grants. */
 export async function frogSleepPushSuppression(database: ApplicationDatabase, record: NotificationJobRecord): Promise<string | undefined> {
@@ -56,6 +57,9 @@ async function legacySuppression(database: ApplicationDatabase, record: Notifica
   if (payload.relationshipId && payload.relationshipId !== session.relationshipId) return "TARGET_UNAVAILABLE";
   await assertBuddyDataAuthorized(database, record.recipientUserId, session.relationshipId, payload.type === "morning_summary" ? "daily_summary" : "shared_activity");
   if ((await buddyRelationshipMute(database, record.recipientUserId, session.relationshipId))?.payload.muted === true) return "RELATIONSHIP_MUTED";
+  const sleepSuppression = await sleepPushSuppression(database, record.recipientUserId,
+    { ...payload, relationshipId: session.relationshipId });
+  if (sleepSuppression) return sleepSuppression;
   const decision = await new BuddyNotificationPreferenceService(database).deliveryDecision(record.recipientUserId, "activity_updated", session.id);
   return decision.suppressAll ?? decision.suppressPush;
 }

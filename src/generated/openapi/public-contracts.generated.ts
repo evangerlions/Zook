@@ -20220,8 +20220,8 @@ export type FrogSleepFocusProfileRequest = (
 
 export const FrogSleepFocusSessionRequestSchema = {
   "type": "object",
-  "description": "Optional client ID enables per-app/per-user replay deduplication; the two ID aliases must match if both are present.",
   "additionalProperties": true,
+  "description": "Optional client ID enables per-app/per-user replay deduplication; aliases must match. Normal unbound reports may correct the same record. Confirmed binding imports require stable ID and original timestamps, and changed content returns HTTP 409 even if a later request omits binding.",
   "properties": {
     "session_id": {
       "type": "string",

@@ -16,7 +16,8 @@ test("Phase 2 PostgreSQL decisions are atomic and DNA evidence survives migratio
   try {
     await admin.query(`CREATE SCHEMA ${schema}`);
     const migrations = ["029_lighttick_core.sql", "030_lighttick_events_reviews_ai.sql", "031_lighttick_sync_devices.sql",
-      "032_lighttick_progressive_action_loop.sql", "037_lighttick_dna_insights.sql", "058_lighttick_dna_evidence.sql"];
+      "032_lighttick_progressive_action_loop.sql", "037_lighttick_dna_insights.sql", "058_lighttick_dna_evidence.sql", "063_lighttick_goal_context_outcomes.sql",
+      "064_lighttick_task_planning_columns.sql", "065_lighttick_review_cadence.sql"];
     for (const name of migrations) await pool.query(await readFile(new URL(`../../src/infrastructure/database/postgres/migrations/${name}`, import.meta.url), "utf8"));
     const repository = new PostgresLightTickRepository(pool);
     const goal = await new LightTickGoalService(repository).create(owner, { title: "Study", constraints: {} });

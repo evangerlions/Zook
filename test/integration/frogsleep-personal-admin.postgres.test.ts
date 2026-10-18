@@ -32,6 +32,16 @@ test("PostgreSQL private sync, migration, commit order and admin metadata", asyn
       }));
       const after = await new PersonalSyncService(b.getPersonalSyncRepository()).state("user_alice"); assert.equal(after.sequence,before.sequence);
     });
+    await suite.test("incremental browse excludes the exact timestamp and binds cursors to its filter", async () => {
+      const service = new PersonalSyncService(a.getPersonalSyncRepository());
+      for (const day of [1, 2, 3]) await service.write("user_bob", "sleep_report", `since-${day}`, { recorded_at: `2026-10-0${day}T00:00:00.000Z` }, false);
+      const first = await service.browse("user_bob", 1, undefined, "2026-10-01T00:00:00Z");
+      assert.deepEqual(first.items.map(r => r.id), ["since-3"]);
+      const cursor = first.pagination.next_cursor!;
+      const second = await service.browse("user_bob", 1, cursor, "2026-10-01T00:00:00.000Z");
+      assert.deepEqual(second.items.map(r => r.id), ["since-2"]); assert.equal(second.pagination.has_more, false);
+      await assert.rejects(service.browse("user_bob", 1, cursor, "2026-10-02T00:00:00Z"), { code: "FROGSLEEP_SYNC_CURSOR_INVALID" });
+    });
     await suite.test("account lock holds until commit so a later checkpoint cannot skip an uncommitted event", async () => {
       let locked!: () => void, release!: () => void;
       const ready = new Promise<void>(resolve => { locked=resolve; }), gate = new Promise<void>(resolve => { release=resolve; });

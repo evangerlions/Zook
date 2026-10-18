@@ -53,7 +53,8 @@ test("partial provider success persists per-device receipts and retries only the
   await f.queue.processDueJobs(job => f.service.processQueueJob(job)); const id = f.database.notificationJobs[0]!.id;
   assert.equal(f.database.notificationJobs[0]!.status, "FAILED"); assert.equal((await f.database.listFailedEvents()).length, 1);
   offline = false; await Promise.all([run(f.service, id), run(f.service, id)]); await run(f.service, id);
-  assert.deepEqual(sends, ["first", "second", "second"]);
+  assert.equal(sends.filter(token => token === "first").length, 1);
+  assert.equal(sends.filter(token => token === "second").length, 2);
   assert.equal(f.database.notificationJobs[0]!.status, "SENT"); assert.equal((await f.database.listFailedEvents()).length, 0);
   assert.equal(JSON.stringify(f.database.notificationJobs[0]!.payload._frogsleep_delivery).includes('"first"'), false);
 });

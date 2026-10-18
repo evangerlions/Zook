@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { Client } from "pg";
 import { PostgresDatabase } from "../../src/infrastructure/database/postgres/postgres-database.ts";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
@@ -8,6 +9,7 @@ import { FrogSleepProductDataService } from "../../src/modules/frogsleep/product
 import { FrogSleepFocusBuddyService } from "../../src/modules/frogsleep/focus-buddy/focus-buddy.service.ts";
 import { BuddyDomainInvitationCommandService } from "../../src/modules/frogsleep/buddy-growth/buddy-domain-invitation-command.service.ts";
 import { createApplication } from "../../src/app.module.ts";
+import { PersonalSyncService } from "../../src/modules/frogsleep/personal-sync/personal-sync.service.ts";
 
 const url = process.env.FROGSLEEP_TEST_DATABASE_URL?.trim();
 if (!url) throw new Error("FROGSLEEP_TEST_DATABASE_URL must reference a disposable PostgreSQL database.");
@@ -48,13 +50,24 @@ test("live PostgreSQL account ownership and deletion gate", async suite => {
       assert.equal(new Set(sessions.map(item => item.id)).size, 1);
       const snapshots = await Promise.all(Array.from({ length: 8 }, (_, i) => reports[i % 2].createSleepReport("user_alice", report)));
       assert.equal(new Set(snapshots.map(item => item.id)).size, 1);
+      assert.equal(snapshots[0].id, report.snapshot_id);
       const rows = await sql.query(`SELECT count(*)::int AS count FROM zook_frogsleep_focus_sessions
         WHERE owner_user_id='user_alice' AND payload->>'client_session_id'=$1`, [focus.session_id]);
       assert.equal(rows.rows[0].count, 1);
+      assert.equal((await sql.query(`SELECT count(*)::int AS count FROM zook_frogsleep_personal_versions
+        WHERE app_id='frogsleep' AND user_id='user_alice' AND kind='sleep_report' AND resource_id=$1`,
+      [report.snapshot_id])).rows[0].count, 1);
+      assert.equal((await first.listFrogSleepEntities({ appId: "frogsleep", kind: "sleep_report_snapshot",
+        ownerUserId: "user_alice" })).length, 0);
       await assert.rejects(reports[1].createSleepReport("user_alice", { ...report, data: { sleep_minutes: 9 } }),
         (error: any) => error.statusCode === 409);
       const other = await reports[1].createSleepReport("user_bob", report);
-      assert.notEqual(other.id, snapshots[0].id);
+      assert.equal(other.id, snapshots[0].id);
+      for (const userId of ["user_alice", "user_bob"]) {
+        const stored = await new PersonalSyncService(second.getPersonalSyncRepository()).get(userId, "sleep_report", report.snapshot_id);
+        assert.deepEqual(stored.data.data, report.data);
+        assert.equal(stored.revision, 1);
+      }
     });
 
     await suite.test("legacy IDs beyond the list page still replay without duplicating", async () => {
@@ -64,11 +77,25 @@ test("live PostgreSQL account ownership and deletion gate", async suite => {
           report_id: "old-report", report_type: "sleep_report" }, createdAt: now(), updatedAt: now() });
       await sql.query(`INSERT INTO zook_frogsleep_sleep_report_snapshots
         (id,app_id,owner_user_id,status,payload,occurred_at,created_at,updated_at)
-        SELECT 'account-data-page-' || n,'frogsleep','user_alice','active','{}'::jsonb,
+        SELECT 'account-data-page-' || n,'frogsleep','user_alice','active',
+        jsonb_build_object('snapshot_id','page-' || n,'schema_version','1','recorded_at','2026-10-17T08:00:00.000Z','data','{}'::jsonb),
         '2026-10-17T08:00:00Z'::timestamptz,NOW(),NOW() FROM generate_series(1,501) AS n`);
+      // Existing SQL rows enter the canonical repository through the migration,
+      // rather than a runtime fallback or a second write to legacy storage.
+      const backfill = await readFile(new URL("../../src/infrastructure/database/postgres/migrations/071_frogsleep_personal_sync_backfill.sql", import.meta.url), "utf8");
+      await sql.query("BEGIN");
+      try { await sql.query(backfill); await sql.query("COMMIT"); }
+      catch (error) { await sql.query("ROLLBACK"); throw error; }
       const saved = await new FrogSleepProductDataService(second).createSleepReport("user_alice", {
         ...report, snapshot_id: "old-report" });
-      assert.equal(saved.id, "account-data-old-report");
+      assert.equal(saved.id, "old-report");
+      assert.equal(saved.revision, 1);
+      const alias = await sql.query(`SELECT resource_id FROM zook_frogsleep_personal_legacy_aliases
+        WHERE app_id='frogsleep' AND user_id='user_alice' AND old_id='account-data-old-report'`);
+      assert.equal(alias.rows[0].resource_id, saved.id);
+      assert.equal((await sql.query(`SELECT count(*)::int AS count FROM zook_frogsleep_personal_versions
+        WHERE app_id='frogsleep' AND user_id='user_alice' AND kind='sleep_report' AND resource_id=$1`,
+      [saved.id])).rows[0].count, 1);
     });
 
     await seedInvitation(first);
@@ -81,6 +108,7 @@ test("live PostgreSQL account ownership and deletion gate", async suite => {
       { expectedVersion: 1, idempotencyKey: "account-data-sleep" });
 
     await suite.test("delete failure rolls back data, grants and membership", async () => {
+      const syncBefore = await new PersonalSyncService(second.getPersonalSyncRepository()).state("user_alice");
       await sql.query(`CREATE FUNCTION account_data_reject_delete() RETURNS trigger LANGUAGE plpgsql AS $$
         BEGIN RAISE EXCEPTION 'injected deletion failure'; END $$`);
       await sql.query(`CREATE TRIGGER account_data_reject_delete BEFORE DELETE ON zook_frogsleep_buddy_domain_relationships
@@ -90,7 +118,9 @@ test("live PostgreSQL account ownership and deletion gate", async suite => {
           userId: "user_alice", confirmation: "DELETE" }), /injected deletion failure/);
         assert.equal((await second.findAppUser("frogsleep", "user_alice"))?.status, "ACTIVE");
         assert.equal((await second.listFrogSleepBuddySharingGrants("frogsleep", accepted.relationship_id)).length, 8);
-        assert.ok(await second.findFrogSleepPersonalRecord("sleep_report_snapshot", "user_alice", report.snapshot_id));
+        const sync = new PersonalSyncService(second.getPersonalSyncRepository());
+        assert.deepEqual(await sync.state("user_alice"), syncBefore);
+        assert.deepEqual((await sync.get("user_alice", "sleep_report", report.snapshot_id)).data.data, report.data);
       } finally {
         await sql.query("DROP TRIGGER account_data_reject_delete ON zook_frogsleep_buddy_domain_relationships");
         await sql.query("DROP FUNCTION account_data_reject_delete()");
@@ -107,12 +137,15 @@ test("live PostgreSQL account ownership and deletion gate", async suite => {
       try {
         await waitForDeletingTransaction(sql);
         const late = assert.rejects(new FrogSleepProductDataService(second).createSleepReport("user_alice", {
-          ...report, snapshot_id: "late-after-delete" }), (error: any) => error.code === "APP_MEMBER_DELETED");
+          ...report, snapshot_id: "late-after-delete" }), (error: any) => error.code === "APP_MEMBERSHIP_REQUIRED");
         const lateAccept = assert.rejects(commands.accept("user_bob", "account-data-invitation", "focus", {
           expectedVersion: 1, idempotencyKey: "late-during-delete" }), (error: any) => error.statusCode === 404);
         const [result] = await Promise.all([deletion, late, lateAccept]);
         assert.equal(result.deleted, true);
-        assert.equal(await second.findFrogSleepPersonalRecord("sleep_report_snapshot", "user_alice", "late-after-delete"), undefined);
+        assert.equal((await sql.query(`SELECT count(*)::int AS count FROM zook_frogsleep_personal_versions
+          WHERE app_id='frogsleep' AND user_id='user_alice'`)).rows[0].count, 0);
+        assert.equal((await sql.query(`SELECT deleted FROM zook_frogsleep_personal_sync_state
+          WHERE app_id='frogsleep' AND user_id='user_alice'`)).rows[0].deleted, true);
       } finally {
         await deletion.catch(() => undefined);
         await sql.query("DROP TRIGGER account_data_delay_delete ON zook_frogsleep_buddy_domain_relationships");
@@ -125,11 +158,12 @@ test("live PostgreSQL account ownership and deletion gate", async suite => {
       assert.equal((await second.listFrogSleepBuddySharingGrants("frogsleep", accepted.relationship_id)).length, 0);
       assert.equal((await second.findFrogSleepBuddyDomainSlot("frogsleep", "user_bob", "sleep"))?.state, "available");
       assert.equal(await second.findFrogSleepBuddyInvitationBundle("frogsleep", "email-only-invitation"), undefined);
-      assert.ok(await second.findFrogSleepPersonalRecord("sleep_report_snapshot", "user_bob", report.snapshot_id));
+      assert.deepEqual((await new PersonalSyncService(second.getPersonalSyncRepository())
+        .get("user_bob", "sleep_report", report.snapshot_id)).data.data, report.data);
       await assert.rejects(commands.accept("user_bob", "account-data-invitation", "sleep",
         { expectedVersion: 1, idempotencyKey: "account-data-sleep" }));
       await assert.rejects(new FrogSleepProductDataService(second).createSleepReport("user_alice", report),
-        (error: any) => error.code === "APP_MEMBER_DELETED");
+        (error: any) => error.code === "APP_MEMBERSHIP_REQUIRED");
     });
   } finally {
     await Promise.all([first.close(), second.close(), sql.end()]);

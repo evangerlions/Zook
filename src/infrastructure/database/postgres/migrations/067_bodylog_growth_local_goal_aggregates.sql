@@ -5,7 +5,11 @@ ALTER TABLE bodylog_seven_day_plans
 -- without deleting their history; users can enroll in the verifiable definition.
 UPDATE bodylog_seven_day_plans
 SET status = 'cancelled', end_date = NOW(), updated_at = NOW()
-WHERE status = 'active';
+WHERE status = 'active'
+  AND NOT EXISTS (
+    SELECT 1 FROM bodylog_missions
+    WHERE plan_id = bodylog_seven_day_plans.id AND type = 'localGoal'
+  );
 
 CREATE TABLE IF NOT EXISTS bodylog_growth_daily_aggregates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

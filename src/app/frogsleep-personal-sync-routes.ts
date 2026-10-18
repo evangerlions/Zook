@@ -1,3 +1,4 @@
+import { validatePersonalRecordOwner } from "../modules/frogsleep/product-data/personal-record-upload.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import { asBody, authenticateFrogSleepRequest, frogSleepOk } from "./frogsleep-v1-common.ts";
@@ -15,8 +16,9 @@ function options(request: HttpRequest): PersonalWriteOptions {
   if (revision !== undefined && !Number.isSafeInteger(revision)) badRequest("REQ_INVALID_HEADER", "Invalid revision.");
   return { epoch: getHeader(request.headers, "x-sync-epoch"), operationKey: getHeader(request.headers, "idempotency-key"), expectedRevision: revision };
 }
-function rejectOwner(body: Record<string, unknown>) {
-  if (["owner", "owner_id", "owner_user_id", "ownerUserId", "user_id", "userId", "app_id", "appId"].some(k => k in body)) badRequest("REQ_INVALID_BODY", "Resource scope comes from the authenticated account.");
+function rejectOwner(body: Record<string, unknown>, userId: string) {
+  validatePersonalRecordOwner(body, userId);
+  if (["owner", "owner_id", "app_id", "appId"].some(k => k in body)) badRequest("REQ_INVALID_BODY", "Resource scope comes from the authenticated account.");
 }
 /** Canonical private sync endpoints; all resource and cursor operations bind to the authenticated user. */
 export async function tryHandlePersonalSyncRoutes(context: BackendRouteContext, request: HttpRequest): Promise<HttpResponse<unknown> | undefined> {
@@ -33,7 +35,7 @@ export async function tryHandlePersonalSyncRoutes(context: BackendRouteContext, 
   }
   if (request.method === "GET" && report && !report[1]) {
     const params = parsePaginationParams(request.query);
-    const page = await service.browse(auth.userId, params.limit, params.cursor);
+    const page = await service.browse(auth.userId, params.limit, params.cursor, request.query?.since);
     const rows = page.items.filter(r => !r.deleted).map(r => sleepReportDocument({ ...r, sync_epoch: page.sync_epoch }));
     return frogSleepOk(context, { ...page, items: undefined, sleep_reports: rows, reports: rows }, request.requestId!);
   }
@@ -50,7 +52,7 @@ export async function tryHandlePersonalSyncRoutes(context: BackendRouteContext, 
   }
   if (request.method === "DELETE" && id) return frogSleepOk(context, await service.write(auth.userId, kind, id, {}, true, options(request)), request.requestId!);
   if ((request.method === "POST" && report && !id) || (request.method === "PUT" || request.method === "PATCH") && id) {
-    const body = asBody(request); rejectOwner(body);
+    const body = asBody(request); rejectOwner(body, auth.userId);
     if (preferences) context.requireValidPublicContract(PublicContractValidator.validateFrogSleepProgressSnapshot(body), request);
     else context.requireValidPublicContract(PublicContractValidator.validateFrogSleepSleepReport(body), request);
     const payload: Record<string, unknown> = preferences ? { namespace: "report_preferences", schema_version: body.schema_version ?? body.version, state: body.state ?? body.data } : reportPayload(body);

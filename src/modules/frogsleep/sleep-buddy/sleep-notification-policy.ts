@@ -18,8 +18,9 @@ export async function sleepPushSuppression(database: ApplicationDatabase, userId
     if (error instanceof ApplicationError && [403, 404].includes(error.statusCode)) return "RELATIONSHIP_UNAVAILABLE";
     throw error;
   }
-  const [preference] = await database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID,
-    kind: "guardianship_preference", ownerUserId: userId, relationshipId: payload.relationshipId, limit: 1 });
+  const preference = (await database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID,
+    kind: "guardianship_preference", ownerUserId: userId, relationshipId: payload.relationshipId, limit: 100 }))
+    .find(row => row.status !== "buddy_relationship_notifications");
   const settings = preference?.payload ?? {};
   if (settings.mute_for_tonight === true) return "SLEEP_MUTED";
   if (payload.type === "morning_summary" && settings.allow_morning_summary_push === false) return "MORNING_PUSH_DISABLED";

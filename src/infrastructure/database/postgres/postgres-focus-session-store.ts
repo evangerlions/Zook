@@ -8,7 +8,7 @@ const predicate = `deleted_at IS NULL AND owner_user_id IS NOT NULL
   AND jsonb_typeof(payload->'client_session_id') = 'string'
   AND length(payload->>'client_session_id') BETWEEN 1 AND 128
   AND btrim(payload->>'client_session_id') <> ''`;
-const changed = `EXCLUDED.payload->>'_report_fingerprint' IS NULL OR existing.payload->>'_report_fingerprint' IS DISTINCT FROM EXCLUDED.payload->>'_report_fingerprint'`;
+const changed = `EXCLUDED.payload->>'_report_fingerprint' IS NULL OR existing.payload->>'_report_fingerprint' IS DISTINCT FROM EXCLUDED.payload->>'_report_fingerprint' OR (EXCLUDED.payload->>'_confirmed_import' = 'true' AND existing.payload->>'_confirmed_import' IS DISTINCT FROM 'true')`;
 const assignments = ["status", "starts_at", "ends_at", "payload", "updated_at"]
   .map(field => `${field} = CASE WHEN ${changed} THEN EXCLUDED.${field} ELSE existing.${field} END`).join(", ");
 

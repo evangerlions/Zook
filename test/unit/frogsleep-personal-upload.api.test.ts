@@ -29,6 +29,13 @@ const report = { snapshot_id: "guest-report-1", schema_version: "1",
   recorded_at: "2026-10-16T00:00:00Z", date_anchor: "2026-10-16",
   data: { sleep_minutes: 420, quality: "rested" } };
 
+async function storedPersonalRecords(database: Awaited<ReturnType<typeof fixture>>["runtime"]["database"],
+  kind: "focus_session" | "sleep_report_snapshot", ownerUserId: string) {
+  if (kind === "focus_session") return await database.listFrogSleepEntities({ appId: "frogsleep", kind, ownerUserId });
+  return await database.getPersonalSyncRepository().run(ownerUserId,
+    async tx => tx.page("restore", tx.state.sequence, 0, 100, "sleep_report"));
+}
+
 for (const [path, kind, body] of [
   ["focus/sessions", "focus_session", focus],
   ["product-data/sleep-reports", "sleep_report_snapshot", report],
@@ -38,8 +45,10 @@ for (const [path, kind, body] of [
     const results = await Promise.all(Array.from({ length: 6 }, () => upload(path, alice, body)));
     assert.deepEqual(results.map(result => result.statusCode), Array(6).fill(200));
     assert.equal(new Set(results.map(result => result.body.data.id)).size, 1);
-    assert.equal(runtime.database.listFrogSleepEntities({ appId: "frogsleep", kind,
-      ownerUserId: "user_alice" }).length, 1);
+    assert.equal((await storedPersonalRecords(runtime.database, kind, "user_alice")).length, 1);
+    if (kind === "sleep_report_snapshot") {
+      assert.equal((await runtime.database.listFrogSleepEntities({ appId: "frogsleep", kind })).length, 0);
+    }
   });
 
   test(`${kind}: owner is authenticated, matching client IDs in different accounts remain separate`, async () => {
@@ -49,16 +58,22 @@ for (const [path, kind, body] of [
     const second = await upload(path, bob, body);
     assert.equal(first.statusCode, 200);
     assert.equal(second.statusCode, 200);
-    assert.equal(runtime.database.listFrogSleepEntities({ appId: "frogsleep", kind }).length, 2);
+    assert.equal((await storedPersonalRecords(runtime.database, kind, "user_alice")).length, 1);
+    assert.equal((await storedPersonalRecords(runtime.database, kind, "user_bob")).length, 1);
   });
 
   test(`${kind}: changed terminal payload conflicts without overwriting accepted data`, async () => {
     const { alice, upload } = await fixture();
-    const first = await upload(path, alice, body);
-    const changed = kind === "focus_session" ? { ...body, actual_minutes: 19 }
+    const accepted = kind === "focus_session" ? { ...body, binding: { owner_user_id: "user_alice",
+      job_id: "confirmed-terminal", confirmed_at: "2026-10-16T08:00:00Z" } } : body;
+    const first = await upload(path, alice, accepted);
+    const changed = kind === "focus_session" ? { ...accepted, actual_minutes: 19 }
       : { ...body, data: { sleep_minutes: 123 } };
     assert.equal((await upload(path, alice, changed)).statusCode, 409);
-    const replay = await upload(path, alice, body);
+    if (kind === "focus_session") {
+      assert.equal((await upload(path, alice, { ...body, actual_minutes: 19 })).statusCode, 409);
+    }
+    const replay = await upload(path, alice, accepted);
     assert.equal(replay.statusCode, 200);
     assert.equal(replay.body.data.id, first.body.data.id);
   });
@@ -84,4 +99,11 @@ test("legacy terminal calls with stable IDs and omitted timestamps replay their 
   assert.deepEqual(responses.map(item => item.statusCode), Array(5).fill(200));
   assert.equal(new Set(responses.map(item => item.body.data.started_at)).size, 1);
   assert.equal(runtime.database.listFrogSleepEntities({ appId: "frogsleep", kind: "focus_session" }).length, 1);
+});
+
+test("confirming an existing focus import persists its immutable ownership marker", async () => {
+  const { alice, upload } = await fixture();
+  assert.equal((await upload("focus/sessions", alice, focus)).statusCode, 200);
+  assert.equal((await upload("focus/sessions", alice, { ...focus, binding: { owner_user_id: "user_alice", job_id: "confirm-existing", confirmed_at: "2026-10-16T08:00:00Z" } })).statusCode, 200);
+  assert.equal((await upload("focus/sessions", alice, { ...focus, actual_minutes: 19 })).statusCode, 409);
 });

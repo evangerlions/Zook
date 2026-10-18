@@ -19,7 +19,7 @@ export interface PersonalSyncTransaction {
   receipt(key: string): Promise<PersonalReceipt | undefined>;
   saveReceipt(key: string, digest: string, result: PersonalVersion): Promise<void>;
   commit(version: PersonalVersion, key: string, digest: string): Promise<void>;
-  browse(boundary: number, limit: number, after?: { time: string; id: string }): Promise<PersonalVersion[]>;
+  browse(boundary: number, limit: number, after?: { time: string; id: string }, since?: string): Promise<PersonalVersion[]>;
   page(mode: "restore" | "changes", boundary: number, after: number, limit: number, kind?: PersonalResourceKind): Promise<PersonalVersion[]>;
 }
 /** Account-scoped personal history; no buddy grants or private payload sharing. */

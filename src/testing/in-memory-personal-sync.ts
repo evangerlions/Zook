@@ -27,9 +27,9 @@ export class InMemoryPersonalSyncRepository implements PersonalSyncRepository {
         async receipt(key) { return account.receipts.get(key); },
         async saveReceipt(key, digest, result) { account.receipts.set(key, { digest, result: structuredClone(result) }); },
         async commit(version, key, digest) { account.versions.push(structuredClone(version)); account.receipts.set(key, { digest, result: structuredClone(version) }); account.state.sequence = version.sequence; },
-        async browse(boundary, limit, after) {
+        async browse(boundary, limit, after, since) {
           const latest=new Map(account.versions.filter(v=>v.kind==='sleep_report' && v.sequence<=boundary).map(v=>[v.id,v]));
-          return [...latest.values()].filter(v=>!v.deleted && (!after || String(v.data.recorded_at ?? '')<after.time || String(v.data.recorded_at ?? '')===after.time && Buffer.compare(Buffer.from(v.id),Buffer.from(after.id))<0))
+          return [...latest.values()].filter(v=>!v.deleted && (!since || Date.parse(String(v.data.recorded_at)) > Date.parse(since)) && (!after || String(v.data.recorded_at ?? '')<after.time || String(v.data.recorded_at ?? '')===after.time && Buffer.compare(Buffer.from(v.id),Buffer.from(after.id))<0))
             .sort((a,b)=>String(b.data.recorded_at ?? '').localeCompare(String(a.data.recorded_at ?? '')) || Buffer.compare(Buffer.from(b.id),Buffer.from(a.id))).slice(0,limit);
         },
         async page(mode, boundary, after, limit, kind) {

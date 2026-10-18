@@ -299,6 +299,49 @@ test("revoking shared activity consent denies goal and activity access immediate
   const revoked = await request(f.app, f.alice, "PATCH", `/buddy/relationships/${f.relationshipId}/grants/${grant.id}`,
     { expected_version: grant.version, state: "revoked" });
   assert.equal(revoked.statusCode, 200, JSON.stringify(revoked.body));
-  assert.equal((await request(f.app, f.bob, "GET", "/buddy/goals")).statusCode, 403);
+  const goals = await request(f.app, f.bob, "GET", "/buddy/goals");
+  assert.equal(goals.statusCode, 200);
+  assert.deepEqual(goals.body.data.goals, [], "revoked goals must be omitted from collections");
   assert.equal((await request(f.app, f.bob, "POST", `/buddy/joint-activities/${activityId}/start`)).statusCode, 403);
+});
+
+
+test("concurrent commands enforce goal versions after acquiring relationship slots", async () => {
+  const f = await fixture("focus"); const goal = await activeGoal(f, "focus_days", 2);
+  const results = await Promise.all([
+    request(f.app, f.alice, "POST", `/buddy/goals/${goal.id}/pause`,
+      { expected_version: goal.version, idempotency_key: "race_pause" }),
+    request(f.app, f.bob, "POST", `/buddy/goals/${goal.id}/adjust`,
+      { expected_version: goal.version, target: 3, idempotency_key: "race_adjust" }),
+  ]);
+  assert.deepEqual(results.map(result => result.statusCode).sort(), [200, 409]);
+});
+
+test("concurrent goal creation retries persist one proposal and one notification", async () => {
+  const f = await fixture("focus");
+  const body = { relationship_id: f.relationshipId, type: "focus_days", target: 2,
+    timezone: "UTC", idempotency_key: "concurrent_create" };
+  const results = await Promise.all(Array.from({ length: 3 }, () => request(f.app, f.alice, "POST", "/buddy/goals", body)));
+  assert.ok(results.every(result => result.statusCode === 200));
+  assert.equal(new Set(results.map(result => result.body.data.id)).size, 1);
+  assert.equal(f.app.database.frogSleepBuddyNotificationOutbox.filter(item => item.targetType === "buddy_joint_goal").length, 1);
+});
+
+test("joint activity rechecks sharing authorization inside the relationship transaction", async () => {
+  const f = await fixture("focus"); const activityId = await startedActivity(f, "joint_focus");
+  const grants = await f.app.database.listFrogSleepBuddySharingGrants("frogsleep", f.relationshipId);
+  const grant = grants.find(item => item.grantorUserId === "user_alice" && item.granteeUserId === "user_bob" && item.category === "shared_activity")!;
+  const database = f.app.database;
+  const transaction = database.withFrogSleepBuddyCommandTransaction.bind(database);
+  let revoked = false;
+  database.withFrogSleepBuddyCommandTransaction = async (keys, operation) => transaction(keys, async () => {
+    if (!revoked) {
+      revoked = true;
+      await database.updateFrogSleepBuddySharingGrant("frogsleep", grant.id, grant.version, "revoked");
+    }
+    return await operation();
+  });
+  const result = await request(f.app, f.bob, "POST", `/buddy/joint-activities/${activityId}/start`);
+  assert.equal(result.statusCode, 403);
+  assert.equal(revoked, true, "activity commands must acquire participant/domain slots");
 });
