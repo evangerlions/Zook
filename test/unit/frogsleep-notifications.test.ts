@@ -71,7 +71,7 @@ test("FrogSleep push notifications with no devices do not block worker processin
 
   await queue.processDueJobs((job) => service.processQueueJob(job));
 
-  assert.equal((await database.findNotificationJob(result.notificationJobId))?.status, "SENT");
+  assert.equal((await database.findNotificationJob(result.notificationJobId))?.status, "SUPPRESSED");
   assert.equal((await database.listFailedEvents("frogsleep")).length, 0);
 });
 

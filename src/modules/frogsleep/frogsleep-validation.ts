@@ -109,7 +109,7 @@ export function paginateRecords<T extends FrogSleepEntityRecord>(
   records: T[],
   params: PaginationParams,
 ): PaginatedResult<T> {
-  const cursor = decodeCursor(params.cursor);
+  const cursor = decodeFrogSleepCursor(params.cursor);
   const sorted = [...records].sort((left, right) => compareRecordTimeDesc(left, right));
   const filtered = cursor
     ? sorted.filter((item) => isRecordAfterCursor(item, cursor))
@@ -131,7 +131,7 @@ function compareRecordTimeDesc(left: FrogSleepEntityRecord, right: FrogSleepEnti
   const rightTime = recordSortTime(right);
   const leftTime = recordSortTime(left);
   const timeCompare = rightTime.localeCompare(leftTime);
-  return timeCompare === 0 ? right.id.localeCompare(left.id) : timeCompare;
+  return timeCompare === 0 ? (right.id > left.id ? 1 : right.id < left.id ? -1 : 0) : timeCompare;
 }
 
 function recordSortTime(record: FrogSleepEntityRecord): string {
@@ -145,14 +145,14 @@ function encodeCursor(record: FrogSleepEntityRecord): string {
   }), "utf8").toString("base64url");
 }
 
-function decodeCursor(cursor?: string): { t: string; id: string } | undefined {
+export function decodeFrogSleepCursor(cursor?: string): { t: string; id: string } | undefined {
   if (!cursor) {
     return undefined;
   }
   try {
     const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as { t?: unknown; id?: unknown };
-    if (typeof parsed.t === "string" && typeof parsed.id === "string") {
-      return { t: parsed.t, id: parsed.id };
+    if (typeof parsed.t === "string" && typeof parsed.id === "string" && parsed.id && !Number.isNaN(Date.parse(parsed.t))) {
+      return { t: new Date(parsed.t).toISOString(), id: parsed.id };
     }
   } catch {
     badRequest("REQ_INVALID_BODY", "cursor is invalid.");

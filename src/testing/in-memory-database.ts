@@ -1138,10 +1138,14 @@ export class InMemoryDatabase extends ApplicationDatabase {
       .filter((item) => filter.occurredAtFromIso ? (item.occurredAt ?? "") >= filter.occurredAtFromIso : true)
       .filter((item) => filter.occurredAtToIso ? (item.occurredAt ?? "") < filter.occurredAtToIso : true)
       .filter((item) => filter.includeDeleted ? true : !item.deletedAt)
+      .filter((item) => {
+        const time = item.occurredAt ?? item.startsAt ?? item.createdAt;
+        return !filter.before || time < filter.before.t || (time === filter.before.t && item.id < filter.before.id);
+      })
       .sort((left, right) => {
         const leftTime = left.occurredAt ?? left.startsAt ?? left.createdAt;
         const rightTime = right.occurredAt ?? right.startsAt ?? right.createdAt;
-        return rightTime.localeCompare(leftTime);
+        return rightTime.localeCompare(leftTime) || (right.id > left.id ? 1 : right.id < left.id ? -1 : 0);
       });
     return records.slice(0, normalizeListLimit(filter.limit));
   }

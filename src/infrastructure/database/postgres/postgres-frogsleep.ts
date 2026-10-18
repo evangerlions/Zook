@@ -5,6 +5,7 @@ import type {
   FrogSleepEntityKind,
   FrogSleepEntityRecord,
 } from "../../../shared/types.ts";
+import { buildFrogSleepEntityListQuery } from "./postgres-frogsleep-entity-query.ts";
 import { toIsoString } from "./postgres-row-utils.ts";
 
 type PostgresQuery = (sql: string, values?: unknown[]) => Promise<{ rows: QueryResultRow[] }>;
@@ -205,44 +206,8 @@ export class PostgresFrogSleepStore {
 
   async listEntities(filter: FrogSleepEntityFilter): Promise<FrogSleepEntityRecord[]> {
     const kind = filter.kind ?? "sleep_invite";
-    const clauses = ["app_id = $1"];
-    const values: unknown[] = [filter.appId];
-    const add = (column: string, value: unknown, operator = "=") => {
-      if (value === undefined) {
-        return;
-      }
-      values.push(value);
-      clauses.push(`${column} ${operator} $${values.length}`);
-    };
-
-    add("owner_user_id", filter.ownerUserId);
-    add("partner_user_id", filter.partnerUserId);
-    add("relationship_id", filter.relationshipId);
-    add("session_id", filter.sessionId);
-    add("status", filter.status);
-    add("code", filter.code);
-    add("token", filter.token);
-    add("starts_at", filter.startsAtFromIso, ">=");
-    add("starts_at", filter.startsAtToIso, "<");
-    add("occurred_at", filter.occurredAtFromIso, ">=");
-    add("occurred_at", filter.occurredAtToIso, "<");
-    if (!filter.includeDeleted) {
-      clauses.push("deleted_at IS NULL");
-    }
-
-    const limit = Number.isFinite(filter.limit)
-      ? Math.max(1, Math.min(Math.floor(filter.limit as number), 500))
-      : 100;
-    values.push(limit);
-
-    const result = await this.query(
-      `SELECT *
-       FROM ${tableFor(kind)}
-       WHERE ${clauses.join(" AND ")}
-       ORDER BY COALESCE(occurred_at, starts_at, created_at) DESC
-       LIMIT $${values.length}`,
-      values,
-    );
+    const query = buildFrogSleepEntityListQuery(filter, tableFor(kind));
+    const result = await this.query(query.sql, query.values);
     return result.rows.map((row) => parseEntity(kind, row));
   }
 

@@ -1,3 +1,4 @@
+import { sleepPushSuppression } from "../modules/frogsleep/sleep-buddy/sleep-notification-policy.ts";
 import { deliverBodyLogPush } from "./bodylog-push-delivery.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
@@ -33,6 +34,7 @@ class LoggingPushDispatcher implements PushDispatcher {
   constructor(private readonly logger: StructuredLogger) {}
 
   async dispatch(request: PushDispatchRequest): Promise<void> {
+    if (request.appId === FROGSLEEP_APP_ID) throw new Error("FrogSleep push provider is not configured");
     this.logger.info("push notification dispatched", {
       appId: request.appId,
       userId: request.userId,
@@ -173,6 +175,12 @@ export class NotificationService {
       retryCount: number;
     },
   ): Promise<void> {
+    const suppression = await sleepPushSuppression(this.database, record.recipientUserId, record.payload);
+    if (suppression) {
+      await this.database.updateNotificationJob(record.id, { status: "SUPPRESSED", retryCount: record.retryCount + 1 });
+      this.logger.info("frogsleep push suppressed", { appId: record.appId, jobId: job.id, reason: suppression });
+      return;
+    }
     const payload = record.payload as unknown as PushNotificationPayload;
     const devices = await this.database.listFrogSleepDevices({
       appId: record.appId,
@@ -182,7 +190,7 @@ export class NotificationService {
 
     if (devices.length === 0) {
       await this.database.updateNotificationJob(record.id, {
-        status: "SENT",
+        status: "SUPPRESSED",
         retryCount: record.retryCount + 1,
       });
       this.logger.info("frogsleep push skipped without active devices", {

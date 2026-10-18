@@ -914,6 +914,31 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/BuddyInvitationResponseRequest" } } }
       responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
+  /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept:
+    post:
+      operationId: frogSleepAcceptBuddyInvitationDomain
+      tags: [frogsleep]
+      summary: Accept one invitation domain without enabling sharing
+      description: Creates the domain relationship and eight revoked directional grants atomically. Sleep relationships are usable by the existing sleep runtime APIs after explicit grants. Same-key replay does not recreate grants or reset consent.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+        - { name: domain, in: path, required: true, schema: { type: string, enum: [sleep, focus] } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_version, idempotency_key]
+              properties:
+                expected_version: { type: integer, minimum: 1 }
+                idempotency_key: { type: string, minLength: 1 }
+      responses:
+        "200": { $ref: "#/components/responses/FrogSleepOk" }
+        "400": { description: Invalid version or idempotency key }
+        "404": { description: Invitation or domain unavailable to this actor }
+        "409": { description: Decision version conflict or occupied domain slot }
   /api/v1/frogsleep/buddy/invitations/{inviteId}/decline:
     post:
       operationId: frogSleepDeclineBuddyInvitation
@@ -1245,6 +1270,10 @@ paths:
       operationId: frogSleepListSleepReports
       tags: [frogsleep, frogsleep-product-data]
       summary: List sleep report snapshots
+      description: Returns all current-user history through database cursor pagination without a 500-record cap. Order is descending millisecond report time and stable record ID. Continue next_cursor until has_more is false.
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: cursor, in: query, required: false, description: Opaque next_cursor from the previous page, schema: { type: string } }
       security:
         - bearerAuth: []
       responses:
@@ -1798,11 +1827,11 @@ components:
         visibilityScope:
           type: string
           enum: [summary, detailed, private]
-        mute_for_tonight: { type: boolean }
+        mute_for_tonight: { type: boolean, description: Suppresses recipient sleep-session and morning push at enqueue and delivery time }
         muteForTonight: { type: boolean }
-        allow_morning_summary_push: { type: boolean }
+        allow_morning_summary_push: { type: boolean, description: Whether recipient morning summary push is allowed }
         allowMorningSummaryPush: { type: boolean }
-        allow_recovery_nudges: { type: boolean }
+        allow_recovery_nudges: { type: boolean, description: Whether recipient interrupted and returned push is allowed }
         allowRecoveryNudges: { type: boolean }
     FrogSleepSharedSleepSessionRequest:
       type: object

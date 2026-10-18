@@ -8,6 +8,8 @@ import { canonicalFrogSleepBuddyParticipants } from "./buddy-domain-relationship
 import { assertBuddyPairNotBlocked } from "./buddy-safety.ts";
 import { enqueueBuddyInvitationEvent } from "./buddy-invitation-events.ts";
 
+import { BuddyConsentService } from "./buddy-consent.service.ts";
+
 type Domain = FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
 
 /** Executes new-path invitation commands against per-domain relationship facts. */
@@ -45,6 +47,8 @@ export class BuddyDomainInvitationCommandService {
     const relationship = this.relationship(bundle, domain);
     await this.database.insertFrogSleepBuddyDomainRelationship(relationship);
     await this.occupySlots(slots, relationship.id);
+    await new BuddyConsentService(this.database).createIndependentGrants({ relationshipId: relationship.id,
+      domain, inviterUserId: bundle.inviterUserId, inviteeUserId: actorUserId });
     const accepted = await this.database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({
       appId: FROGSLEEP_APP_ID, invitationId, domain, expectedVersion: decision.version, status: "accepted",
       decidedByUserId: actorUserId, decidedAt: relationship.createdAt,
