@@ -41,6 +41,10 @@ For low energy choose a smaller observable result. Do not silently reschedule ot
 Summarize the supplied week with actual provided counts or outcomes and bounded next-week recommendations.`,
   monthly_review: `${REVIEW_RULES}
 Summarize the supplied month. Distinguish action counts from demonstrated outcomes; do not claim milestones without evidence.`,
+  daily_review: `${REVIEW_RULES}
+Give a short end-of-day reflection grounded only in supplied facts. Answer at most: what was actually pushed forward today,
+where it stalled (if anywhere), and one small next step for tomorrow. If the day has little or no data, state that plainly and
+do not fabricate progress or criticize the user; skipping a day is not a failure. Keep it brief and low-pressure.`,
   change_proposal: `Draft the smallest authorized task diff addressing the stated reason. Use only supplied task IDs and supported operations.
 Preserve completed outcomes and confirmed time boundaries. Describe the effect in impact using the required schema.
 Reduce or narrow work rather than promising identical work in implausibly less time. Never apply the diff or claim acceptance.`,

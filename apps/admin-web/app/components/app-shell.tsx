@@ -27,6 +27,7 @@ const APP_WORKSPACES = [
   { to: "/conversation-records", label: "对话追踪", code: "TRC", description: "local/dev 查看具体会话与上下文" },
   { to: "/conversation-history", label: "历史聊天", code: "HST", description: "查询已完成的用户聊天记录" },
   { to: "/remote-log-pull", label: "Remote Log Pull", code: "RLP", description: "管理当前 App 的日志回捞设置与任务" },
+  { to: "/frogsleep", label: "Sleep 运营", code: "SLP", description: "查看账号、邀请、方向授权与通知投递" },
   { to: "/lighttick", label: "LightTick Ops", code: "LTK", description: "查看 LightTick 功能、AI 场景与隐私安全指标" },
   { to: "/bodylog", label: "BodyLog 打卡", code: "BLG", description: "查看打卡数据、群组活跃度与习惯模板" },
   { to: "/bodylog/records", label: "打卡记录", code: "REC", description: "查询用户级打卡记录" },
@@ -64,6 +65,7 @@ function isAppProjectSpace(pathname: string) {
     || pathname === "/feedback"
     || pathname === "/conversation-records"
     || pathname === "/conversation-history"
+    || pathname === "/frogsleep"
     || pathname === "/lighttick"
     || pathname === "/bodylog"
     || pathname.startsWith("/bodylog/")
@@ -118,6 +120,7 @@ export function AppShell() {
       .filter((item) => item.to !== "/feedback" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-records" || selectedApp?.appId === "ai_novel")
       .filter((item) => item.to !== "/conversation-history" || selectedApp?.appId === "ai_novel")
+      .filter((item) => item.to !== "/frogsleep" || selectedApp?.appId === "frogsleep")
       .filter((item) => item.to !== "/lighttick" || selectedApp?.appId === "lighttick")
       .filter((item) => !item.to.startsWith("/bodylog") || selectedApp?.appId === "bodylog")
     : SERVER_WORKSPACES;
@@ -279,7 +282,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className={`page-shell${workspaceTransitionLabel ? " has-workspace-overlay" : ""}`}>
+        <main className={`page-shell${location.pathname === "/frogsleep" ? " frogsleep-page-shell" : ""}${workspaceTransitionLabel ? " has-workspace-overlay" : ""}`}>
           <NoticeBanner notice={notice} onDismiss={clearNotice} />
           <Outlet />
           {workspaceTransitionLabel ? (

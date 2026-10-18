@@ -51,7 +51,8 @@ const groupStore = (pool: Pool): BodyLogGroupStore => ({
   listGroupActivities: (groupId, limit) => groupSql.listGroupActivities(pool, groupId, limit),
 });
 
-const growthStore = (pool: Pool): BodyLogGrowthStore => ({
+const growthStore = (pool: Pool, execute: <T>(operation: () => Promise<T>) => Promise<T>): BodyLogGrowthStore => ({
+  applyGrowthDailyAggregate: (planId, day, input, completed, completedAt) => growthSql.applyPostgresGrowthDailyAggregate(pool, planId, day, input, completed, completedAt, execute),
   createGrowthPlan: (input) => growthSql.createPostgresGrowthPlan(pool, input),
   findGrowthPlanById: (planId) => growthSql.findPostgresGrowthPlanById(pool, planId),
   findLatestGrowthPlan: (userId) => growthSql.findPostgresLatestGrowthPlan(pool, userId),
@@ -67,7 +68,7 @@ const growthStore = (pool: Pool): BodyLogGrowthStore => ({
   findGrowthRewardById: (rewardId) => growthSql.findPostgresGrowthRewardById(pool, rewardId),
   findGrowthRewardsByPlanId: (planId) => growthSql.findPostgresGrowthRewardsByPlanId(pool, planId),
   updateGrowthReward: (rewardId, input) => growthSql.updatePostgresGrowthReward(pool, rewardId, input),
-  claimGrowthReward: (rewardId, claimedAt) => growthSql.claimPostgresGrowthReward(pool, rewardId, claimedAt),
+  claimGrowthReward: (rewardId, claimedAt) => growthSql.claimPostgresGrowthReward(pool, rewardId, claimedAt, execute),
 });
 
 const notificationStore = (store: PostgresBodyLogNotificationStore): BodyLogNotificationStore => ({
@@ -109,7 +110,7 @@ export function createBodyLogPostgresStores(
     buddy: buddyStore(scopedPool),
     group: groupStore(scopedPool),
     subscription: new PostgresSubscriptionStore(query),
-    growth: growthStore(scopedPool),
+    growth: growthStore(scopedPool, execute),
     notification: notificationStore(new PostgresBodyLogNotificationStore(query)),
     flags: featureFlagStore(new PostgresBodyLogFeatureFlagStore(query)),
     admin: new PostgresBodyLogAdminStore(query),

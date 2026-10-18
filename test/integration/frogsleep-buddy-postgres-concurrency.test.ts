@@ -191,6 +191,9 @@ test("live PostgreSQL buddy concurrency gate", async (suite) => {
       const relationships = await sql.query(`SELECT id FROM zook_frogsleep_buddy_domain_relationships
         WHERE user_id_low IN ('task18_charlie','user_alice','user_bob') AND user_id_high IN ('task18_charlie','user_alice','user_bob')`);
       assert.equal(relationships.rowCount, 1);
+      const grants = await first.listFrogSleepBuddySharingGrants(appId, relationships.rows[0].id);
+      assert.equal(grants.length, 8);
+      assert.ok(grants.every((grant) => grant.domain === "sleep" && grant.state === "revoked"));
       const slots = await sql.query(`SELECT user_id,state,relationship_id FROM zook_frogsleep_buddy_domain_slots
         WHERE domain='sleep' AND user_id IN ('task18_charlie','user_alice','user_bob') ORDER BY user_id`);
       assert.equal(slots.rows.filter((row) => row.state === "occupied").length, 2);

@@ -77,9 +77,9 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
     const auth = await authenticateFrogSleepRequest(context, request);
     const bundleService = new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager);
     const bundle = request.query?.token
-      ? await context.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, request.query.token)
+      ? await context.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, request.query.token.trim())
       : request.query?.code
-        ? await context.database.findFrogSleepBuddyInvitationBundleByCode(FROGSLEEP_APP_ID, request.query.code)
+        ? await context.database.findFrogSleepBuddyInvitationBundleByCode(FROGSLEEP_APP_ID, request.query.code.trim())
         : request.query?.invitation_id || request.query?.invitationId
           ? await context.database.findFrogSleepBuddyInvitationBundle(
             FROGSLEEP_APP_ID,
@@ -211,7 +211,7 @@ async function tryHandleBuddyHubRoutes(
     return frogSleepOk(context, await reportService.report(auth.userId, decodeURIComponent(reportMatch[1] as string)),
       request.requestId as string);
   }
-  const action = request.path.match(/^\/v1\/buddy\/joint-activities\/([^/]+)\/(accept|decline|cancel|complete)$/);
+  const action = request.path.match(/^\/v1\/buddy\/joint-activities\/([^/]+)\/(accept|decline|cancel|start|complete)$/);
   if (request.method === "POST" && action) {
     return frogSleepOk(context, await service.jointActivityAction(auth.userId,
       decodeURIComponent(action[1] as string), action[2] as string), request.requestId as string);

@@ -60,8 +60,9 @@ export interface OpenAICompatibleResponsePayload {
   } | null;
   error?: {
     message?: string;
-    code?: string;
+    code?: string | number;
     type?: string;
+    metadata?: { limit_source?: unknown; reason?: unknown };
   };
   message?: string;
 }

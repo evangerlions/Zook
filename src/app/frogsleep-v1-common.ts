@@ -149,7 +149,9 @@ export async function toFrogSleepMePayload(
   userId: string,
 ) {
   const user = await context.userService.getProfile(userId);
+  const guest = await context.database.getSleepGuestStore().find(userId);
   return {
+    ...(guest ? { is_guest: true, guest_expires_at: guest.expiresAt } : {}),
     app_id: FROGSLEEP_APP_ID,
     user_id: userId,
     verified_email: user.email ?? undefined,

@@ -1,3 +1,7 @@
+import { buddyRelationships } from "./buddy-relationships.ts";
+import { allBuddyRecords, completionFacts } from "./buddy-completion-facts.ts";
+import { buddyRelationshipSlotKeys, findBuddyRelationship, currentBuddyRelationships } from "./buddy-relationship-facts.ts";
+import { isBuddyAuthorizationDenied } from "./buddy-artifact-redaction.ts";
 import { createHash } from "node:crypto";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { forbidden } from "../../../shared/errors.ts";
@@ -9,8 +13,7 @@ import { enqueueBuddyGrowthEvent } from "./buddy-growth-events.ts";
 import { qualifyBuddyGrowthRecord, weeklyActiveGrowthRelationship, type BuddyQualifiedAction } from "./buddy-retention-qualification.ts";
 import { weeklyWindow } from "./buddy-joint-goal.service.ts";
 
-const sourceKinds: FrogSleepEntityKind[] = ["buddy_interaction", "buddy_joint_activity",
-  "buddy_goal_contribution", "buddy_joint_goal"];
+const sourceKinds: FrogSleepEntityKind[] = ["buddy_joint_activity", "buddy_joint_goal"];
 
 /** Generates deduplicated milestones and consent-filtered viewer-specific weekly reports. */
 export class BuddyMilestoneReportService {
@@ -20,21 +23,29 @@ export class BuddyMilestoneReportService {
     const relationships = await this.activeRelationships();
     let milestones = 0; let reports = 0;
     for (const relationship of relationships) {
-      const viewers = [relationship.ownerUserId, relationship.partnerUserId].filter(Boolean) as string[];
-      const timezoneByViewer = await this.timezones(viewers);
-      const actions = await this.actions(relationship.id);
-      milestones += await this.generateMilestones(relationship, actions, now);
-      for (const viewer of viewers) {
-        const generated = await this.generateReport(relationship, viewer, timezoneByViewer[viewer] ?? "UTC", actions, now);
-        if (generated) reports += 1;
-      }
+      await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+        const current = await findBuddyRelationship(this.database, relationship.id);
+        if (!current || !["active", "accepted"].includes(current.status ?? "")) return;
+        const viewers = [current.ownerUserId, current.partnerUserId].filter(Boolean) as string[];
+        const timezoneByViewer = await this.timezones(viewers);
+        const actions = await this.actions(current);
+        milestones += await this.generateMilestones(current, actions, now);
+        for (const viewer of viewers) {
+          const generated = await this.generateReport(current, viewer, timezoneByViewer[viewer] ?? "UTC", actions, now);
+          if (generated) reports += 1;
+        }
+      });
     }
     return { relationships: relationships.length, milestones, reports };
   }
 
   async listMilestones(userId: string, relationshipId?: string) {
     const relationships = await this.viewerRelationships(userId, relationshipId);
-    const ids = new Set(relationships.map((item) => item.id));
+    const ids = new Set<string>();
+    for (const row of relationships) {
+      try { await new BuddyConsentService(this.database).assertAuthorized(userId, row.id, "shared_activity"); ids.add(row.id); }
+      catch (error) { if (!isBuddyAuthorizationDenied(error)) throw error; }
+    }
     const records = await this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID,
       kind: "buddy_milestone", limit: 200 });
     return { milestones: records.filter((item) => item.relationshipId && ids.has(item.relationshipId))
@@ -98,7 +109,7 @@ export class BuddyMilestoneReportService {
   private async generateReport(relationship: FrogSleepEntityRecord, viewer: string, timezone: string,
     actions: BuddyQualifiedAction[], now: Date) {
     const current = weeklyWindow(now, timezone);
-    const start = new Date(new Date(current.start).getTime() - 7 * 86_400_000).toISOString();
+    const start = weeklyWindow(new Date(Date.parse(current.start) - 1), timezone).start;
     const end = current.start; const windowActions = actions.filter((item) => item.occurredAt >= start && item.occurredAt < end);
     const content = await this.reportContent(relationship, viewer, windowActions);
     const contentHash = hash(content);
@@ -145,21 +156,30 @@ export class BuddyMilestoneReportService {
     catch { return false; }
   }
 
-  private async actions(relationshipId: string) {
-    const records = (await Promise.all(sourceKinds.map((kind) => this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID, kind, relationshipId, limit: 500 })))).flat();
-    return records.map(qualifyBuddyGrowthRecord).filter((item): item is BuddyQualifiedAction => Boolean(item));
+  private async actions(relationship: FrogSleepEntityRecord): Promise<BuddyQualifiedAction[]> {
+    const records = (await Promise.all(sourceKinds.map(kind => allBuddyRecords(this.database,
+      { kind, relationshipId: relationship.id })))).flat();
+    const actions = records.map(qualifyBuddyGrowthRecord).filter((item): item is BuddyQualifiedAction => Boolean(item));
+    for (const userId of [relationship.ownerUserId!, relationship.partnerUserId!]) {
+      for (const fact of await completionFacts(this.database, relationship, userId)) {
+        if (fact.startsAt < relationship.createdAt) continue;
+        actions.push({ id: `${fact.kind}:${userId}:${fact.id}`, relationshipId: relationship.id, userId,
+          type: fact.kind === "encouragement" ? "interaction" : "verified_progress", occurredAt: fact.occurredAt });
+      }
+    }
+    return actions;
   }
 
   private async activeRelationships() {
-    const records = (await Promise.all((["sleep_relationship", "focus_relationship"] as FrogSleepEntityKind[])
-      .map((kind) => this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind, limit: 500 })))).flat();
-    return records.filter((item) => ["active", "accepted"].includes(item.status ?? ""));
+    const users = await this.database.listAppUsers(FROGSLEEP_APP_ID);
+    const records = (await Promise.all(users.map(user => buddyRelationships(this.database, user.userId)))).flat();
+    return [...new Map(records.map(record => [record.id, record])).values()]
+      .filter(item => ["active", "accepted"].includes(item.status ?? ""));
   }
 
   private async viewerRelationships(userId: string, relationshipId?: string) {
-    const relationships = (await this.activeRelationships()).filter((item) =>
-      [item.ownerUserId, item.partnerUserId].includes(userId) && (!relationshipId || item.id === relationshipId));
+    const relationships = (await currentBuddyRelationships(this.database, userId)).filter((item) =>
+      ["active", "accepted"].includes(item.status ?? "") && (!relationshipId || item.id === relationshipId));
     if (relationshipId && relationships.length === 0) unavailable(); return relationships;
   }
 

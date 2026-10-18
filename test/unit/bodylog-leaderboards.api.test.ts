@@ -4,6 +4,7 @@ import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/defau
 import { currentBodyLogSeasonLabel } from "../../src/modules/bodylog/bodylog-leaderboard.service.ts";
 import type { DatabaseSeed } from "../../src/shared/types.ts";
 import { createApplication } from "../support/create-test-application.ts";
+import { resolveBodyLogStores } from "../../src/application-bodylog-stores.ts";
 
 function seed(): DatabaseSeed {
   const value = buildDefaultSeed();
@@ -35,6 +36,9 @@ function weekDates(): string[] {
 
 test("public leaderboard defaults off, requires three days, ignores client score, and hides on exit", async () => {
   const runtime = await createApplication({ seed: seed() });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  await flags.updateBodyLogFeatureFlag("accountSocial", true);
+  await flags.updateBodyLogFeatureFlag("competition", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const bob = runtime.services.tokenService.issueAccessToken("user_bob", "bodylog");
   const headers = (token: string) => ({
@@ -104,6 +108,9 @@ test("public leaderboard defaults off, requires three days, ignores client score
 
 test("friend leaderboard excludes non-friends and blocked users", async () => {
   const runtime = await createApplication({ seed: seed() });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  await flags.updateBodyLogFeatureFlag("accountSocial", true);
+  await flags.updateBodyLogFeatureFlag("competition", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const headers = {
     authorization: `Bearer ${alice}`, "x-app-id": "bodylog", "x-time-zone": "UTC",

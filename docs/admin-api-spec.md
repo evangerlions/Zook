@@ -404,10 +404,11 @@ LLM 与 AINovel 反馈的内部小流量告警不依赖 `common.email_service_re
 - 响应包含 canonical total Token、Prompt、可见输出、Reasoning、未分类差额、Provider/估算/缺失 usage 数、上游调用成功率和 P50/P95。成功率为 `success / (success + failure + timeout)`，按每次上游调用计数，不代表一次用户请求的最终结果；客户端取消单独计数且不进入分母，没有可靠性样本时 `successRate` 省略。Chat 与 Embedding 不生成混合延迟百分位。
 - `healthFailures` 返回当前筛选范围内 `health_impact = failure` 的 Top 100 错误组合，按发生次数排序。每项包含路由 Model、Provider、Provider Model、类型、错误码、可选脱敏错误信息、次数和最近发生时间；迁移前记录的 `errorMessage` 可能为空。客户端取消和健康中性事件不进入此列表。
 - `runtime` 直接返回路由 selector 使用的基础权重、健康分、动态分、真实选择概率和选择原因；前端不得重新实现公式。`fixed` 为 100/0，`auto` 健康分全零时回退基础权重。实际请求的 DID 与 UID 清洗后都至少包含 3 个字母数字字符时，Provider 使用两者末尾 3 个 base36 字符之和对 1,000 取模，按配置基础权重保持粘性；此时健康分继续用于运营观察，但不移动该身份的 Provider 分桶。任一入参不足 3 位时，该项由路由方法内部随机值替代。
-- `config.routeCircuitBreaker.enabled` 默认 `false`。开启后，仅 Chat 流式请求在首个有效 chunk（非空内容、非空 reasoning 或完整 tool call）前失败时才会计数；同一 `routingModelKey × provider × providerModel` 在 2 分钟内至少有 2 位用户、累计 4 次连续失败时先进入 `confirming`。确认期间该 route 继续参与 selector，后续同类失败不会重复启动确认；任意一次首个有效 chunk 会清除未正式熔断的失败窗口。用户取消、非流式调用和首个有效 chunk 后的失败不计入。
+- `config.routeCircuitBreaker.enabled` 默认 `false`。开启后，仅 Chat 流式请求在首个有效 chunk（非空内容、非空 reasoning 或完整 tool call）前失败时才会计数；同一 `routingModelKey × provider × providerModel` 在滚动 24 小时内累计 4 次失败时先进入 `confirming`，不要求不同用户数，同一用户的重复失败也计入。恰好满 24 小时的旧失败不计入；未熔断计数的 Redis TTL 为 24 小时加 1 分钟，并在每次计数写入时刷新，避免稀疏失败提前丢失。确认期间该 route 继续参与 selector，后续同类失败不会重复启动确认；任意一次首个有效 chunk 会清除未正式熔断的失败窗口（不等待完整响应结束）。用户取消、非流式调用、缺少 usageOwner.userId 和首个有效 chunk 后的失败仍不计入。distinctUserCount 仅用于诊断展示，不再作为阈值。既有确认探测、正式熔断和恢复机制不变；不对部署前已过期的失败计数进行回填。
 - `config.emailAlerts.llmEnabled` 与 `config.emailAlerts.aiNovelFeedbackEnabled` 默认均为 `true`，分别控制 LLM 运营告警邮件和 AINovel 反馈邮件；关闭只停止邮件，不影响指标、熔断、反馈保存或后台列表。SMTP 凭据仍由运行环境中的 `EMAIL_USERNAME`、`EMAIL_PASSWORD`、`EMAIL_TO_ADDRESS` 提供。
 - 进入 `confirming` 后，当前 API 进程立即用与管理台相同的 64-token Chat 冒烟请求对同一 provider/model 进行最多两次后台探测；任一次成功即清除失败计数，只有两次都失败才转为正式 `open` 熔断。正式熔断初始持续 5 分钟。worker 到期后仍用同一冒烟请求探测；连续 2 次成功才恢复。探测失败的下一次间隔依次为 10、20、60、120 分钟，之后保持 120 分钟。关闭配置会立即清除既有熔断状态。`runtime.models[].routes[].circuit` 返回开关、`closed/confirming/open` 状态、失败/用户数、下次探测时间和连续探测成功数，供管理台直接展示。
 - `POST /api/v1/admin/apps/common/llm-service/circuits/reset` 使用管理台认证，body 必须为 `{ "modelKey", "provider", "providerModel" }`，且必须匹配当前配置中的 Chat route。它会清除对应 route 的 `confirming` 或 `open` 运行时状态，取消中的后台确认任务会安全退出；响应 `{ "cleared", "route" }`。不匹配当前 Chat route 时返回 `400 ADMIN_LLM_SERVICE_INVALID`。操作会记录审计日志。
+- 余额不足采用独立的两次门槛：同一路由滚动 24 小时内累计至少 2 次白名单余额错误进入 confirming，不在首次用户失败时熔断。BAI 精确识别结构化 `insufficient_user_quota`。OpenRouter 只认 HTTP/error.code 402 且 `error.metadata.limit_source = openrouter_credits`，同时要求未携带 reason；`weight_exceeds_budget`、其他未知/异常 reason、裸 402、Key 上限及临时并发预算均走普通失败流程，不按错误文案猜测。credits 来源也可能涉及单次请求超预算，因此这是用户选择的保守白名单，不声称证明账户余额为零，参见 https://github.com/OpenRouterTeam/docs/blob/main/api_reference/limits.mdx 。适配器只保留白名单来源及有界 reason 判别值，不保存原始 metadata。确认探测只要一次返回白名单余额错误，立即转 open，不再用第二次成功抵消。首个有效 chunk 清空两种计数，正式熔断后沿用自动恢复和手动解除。仅隔离当前 route，不暂停整个 Provider，不回填历史错误。日志沿用现有限频和 lease 去重。
 - 原始调用观察只保存脱敏维度、数值、稳定错误码及最多 300 字符的脱敏错误信息，不保存 prompt、response、userId、Authorization、Provider payload 或原始错误 body。
 - `POST /api/v1/admin/apps/common/llm-service/smoke-test` 不传 body（或传 `{ "mode": "matrix" }`）只执行当前生效配置中 Provider 与 route 都启用的模型路由；未配置、Provider 已禁用或 route 已禁用的组合不会进入执行计划、不会请求上游，也不会出现在响应 `items` 中。响应的 `target` 为 `{ "mode": "matrix" }`。
 - 指定路由时传 `{ "mode": "route", "modelKey": "<model>", "provider": "<provider>" }`。服务会验证模型、供应商及两者之间的 route 都存在；无效目标返回 `400 ADMIN_LLM_SERVICE_INVALID`，不会触发上游请求。
@@ -503,3 +504,19 @@ BodyLog check-in administration uses the shared Admin session cookie. Aggregate 
 | `GET` | `/api/v1/admin/apps/bodylog/habit-templates/usage` | none | Habit usage aggregate |
 
 The Dashboard is backed by `zook_bodylog_group_daily_records` and `zook_bodylog_group_activities`; user IDs are expanded from the daily record JSONB array. Daily, weekly, and monthly completion rates are weighted by each group's recorded member count (completed members divided by eligible group-member slots). Member contribution rows include the BodyLog profile nickname and avatar when a profile exists. The template catalog is stored in `zook_bodylog_habit_templates`. CSV export is capped at 50,000 rows and all user-level access is auditable.
+
+## FrogSleep / Sleep 运营管理（2026-10-11）
+
+Admin Web：选择 FrogSleep 项目空间 →「Sleep 运营」(`/frogsleep`)。复用现有 Ant Design、管理员 Cookie 会话与敏感操作授权；切换项目清理用户记录和待执行操作，丢弃旧响应。
+
+| 方法与路径（前缀 `/api/v1/admin/apps/frogsleep`） | 授权 | 数据/操作 |
+|---|---|---|
+| `GET /operations` | 管理员 session | 全状态总记录数（非活跃人数）、当前 Buddy/私人同步能力开关；聚合读取审计 |
+| `GET /records/{resource}` | session + `frogsleep.records.read` | 用户级元数据，`page` 正整数、`limit`1..100（默认25）、可选 `user_id/status` 精确筛选；数据库分页，读取审计 |
+| `POST /notifications/{id}/retry` | session + `frogsleep.notifications.retry` | body `{reason:string}` 必填且≤500字符；只重排原 Push job，不重置预算或设备回执，执行前写入审计 |
+
+resource 白名单：accounts、invitations、relationships、grants、sleep_sessions、focus_sessions、reports、devices、notifications、email_deliveries。每行仅 id/status/user_id/partner_user_id/domain/version/attempts/outcome/updated_at；不返回私人正文、邀请token/code、邮箱或设备pushToken。报告读取来自个人同步当前版本，含删除状态；相同逻辑 ID 的不同账号以 user_id+id 区分。
+
+未登录返回401，仅 Basic Auth 不能调用这些新增会话接口；缺二次授权返回403。非法资源或分页返回400；跨 App/不存在的 job 返回404 `FROGSLEEP_JOB_NOT_FOUND`。重试仅 FAILED/ENQUEUE_FAILED 且retryCount<5；SENT/预算耗尽、设备 processing/outcome_unknown 返回409 `FROGSLEEP_RETRY_NOT_ALLOWED`。已QUEUED重复请求返回当前排队事实、不再次入队。队列失败返回200 `{queued:false,notificationJobId}`，前端提示失败且保留恢复记录；成功后 worker 重新检查静默、撤权、关系、设备归属和能力开关。
+
+邮件provider_accepted不是delivered；未知邮件结果不提供重投入口。现有邀请邮件诊断接口保留原认证/掩码合同，不被新管理路由拦截。页面只读用户关系/方向授权，不替用户授权、解除或拉黑。

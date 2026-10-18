@@ -10,6 +10,10 @@ async function setup() {
   seed.apps!.push({ id: 'bodylog', code: 'bodylog', name: 'BodyLog', nameI18n: { 'zh-CN': 'BodyLog', 'en-US': 'BodyLog' }, status: 'ACTIVE', apiDomain: 'bodylog.example.com', joinMode: 'AUTO', createdAt: new Date().toISOString() });
   for (const userId of ['user_alice', 'user_bob']) seed.appUsers!.push({ id: `bodylog_${userId}`, appId: 'bodylog', userId, status: 'ACTIVE', joinedAt: new Date().toISOString() });
   const runtime = await createApplication({ seed });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  for (const feature of ['accountSocial', 'friends', 'competition', 'challengeCreation']) {
+    await flags.updateBodyLogFeatureFlag(feature, true);
+  }
   const call = (userId: string, method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown) => runtime.app.handle({ method, path: `/api/v1/bodylog/${path}`, body, headers: { authorization: `Bearer ${runtime.services.tokenService.issueAccessToken(userId, 'bodylog')}` } });
   for (const userId of ['user_alice', 'user_bob']) assert.equal((await call(userId, 'GET', 'profile')).statusCode, 200);
   return { runtime, call };

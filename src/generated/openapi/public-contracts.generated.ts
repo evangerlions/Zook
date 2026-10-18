@@ -18929,6 +18929,24 @@ export const BuddyInvitationDomainResultSchema = {
         "string",
         "null"
       ]
+    },
+    "decision_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Per-domain CAS version; absent for compatibility decisions. Never use aggregate version for domain commands."
+    },
+    "viewer_actions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "accept",
+          "decline",
+          "cancel"
+        ]
+      },
+      "description": "Empty after this domain becomes terminal, even when a sibling is pending."
     }
   }
 } as const;
@@ -18938,6 +18956,89 @@ export type BuddyInvitationDomainResult = {
   "relationship_id"?: string | null;
   "status": "pending" | "accepted" | "declined" | "cancelled" | "expired";
   "error_code"?: string | null;
+  "decision_version"?: number;
+  "viewer_actions"?: (
+"accept" | "decline" | "cancel"
+)[];
+};
+
+export const BuddyInvitationDomainCommandRequestSchema = {
+  "type": "object",
+  "required": [
+    "expected_version",
+    "idempotency_key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "expected_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nonblank opaque command identity, scoped to authenticated actor, invitation, domain and action; reuse on retry."
+    }
+  }
+} as const;
+
+export type BuddyInvitationDomainCommandRequest = {
+  "expected_version": number;
+  "idempotency_key": string;
+};
+
+export const BuddyInvitationDomainDecisionResponseSchema = {
+  "type": "object",
+  "required": [
+    "invitation_id",
+    "domain",
+    "decision_status",
+    "decision_version"
+  ],
+  "properties": {
+    "invitation_id": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "decision_status": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "declined",
+        "cancelled"
+      ]
+    },
+    "decision_version": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "relationship_id": {
+      "type": "string"
+    },
+    "relationship_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "revoked"
+      ]
+    }
+  }
+} as const;
+
+export type BuddyInvitationDomainDecisionResponse = {
+  "invitation_id": string;
+  "domain": "sleep" | "focus";
+  "decision_status": "accepted" | "declined" | "cancelled";
+  "decision_version": number;
+  "relationship_id"?: string;
+  "relationship_status"?: "active" | "paused" | "revoked";
 };
 
 export const BuddyInvitationDeliverySchema = {
@@ -19060,6 +19161,162 @@ export const BuddySharingGrantUpdateRequestSchema = {
 export type BuddySharingGrantUpdateRequest = {
   "state": "granted" | "revoked";
   "expected_version": number;
+};
+
+export const BuddyRelationshipSnapshotSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "viewer_user_id",
+    "partner_user_id",
+    "domain",
+    "status",
+    "version",
+    "paused_by_user_ids",
+    "is_muted"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "viewer_user_id": {
+      "type": "string"
+    },
+    "partner_user_id": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "revoked"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "paused_by_user_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_muted": {
+      "type": "boolean"
+    }
+  }
+} as const;
+
+export type BuddyRelationshipSnapshot = {
+  "id": string;
+  "viewer_user_id": string;
+  "partner_user_id": string;
+  "domain": "sleep" | "focus";
+  "status": "active" | "paused" | "revoked";
+  "version": number;
+  "paused_by_user_ids": string[];
+  "is_muted": boolean;
+};
+
+export const BuddyRelationshipCommandRequestSchema = {
+  "type": "object",
+  "required": [
+    "expected_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "expected_version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+} as const;
+
+export type BuddyRelationshipCommandRequest = {
+  "expected_version": number;
+};
+
+export const BuddySharingSelectionRequestSchema = {
+  "type": "object",
+  "required": [
+    "domain",
+    "categories",
+    "expected_versions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": [
+        "sleep",
+        "focus"
+      ]
+    },
+    "categories": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "presence",
+          "daily_summary",
+          "weekly_trend",
+          "shared_activity"
+        ]
+      }
+    },
+    "expected_versions": {
+      "type": "object",
+      "required": [
+        "presence",
+        "daily_summary",
+        "weekly_trend",
+        "shared_activity"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "presence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "daily_summary": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "weekly_trend": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shared_activity": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+} as const;
+
+export type BuddySharingSelectionRequest = {
+  "domain": "sleep" | "focus";
+  "categories": (
+"presence" | "daily_summary" | "weekly_trend" | "shared_activity"
+)[];
+  "expected_versions": {
+  "presence": number;
+  "daily_summary": number;
+  "weekly_trend": number;
+  "shared_activity": number;
+};
 };
 
 export const BuddyGroupCreateRequestSchema = {
@@ -19571,19 +19828,22 @@ export const FrogSleepSleepPreferencesRequestSchema = {
       ]
     },
     "mute_for_tonight": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Suppresses recipient sleep-session and morning push at enqueue and delivery time"
     },
     "muteForTonight": {
       "type": "boolean"
     },
     "allow_morning_summary_push": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Whether recipient morning summary push is allowed"
     },
     "allowMorningSummaryPush": {
       "type": "boolean"
     },
     "allow_recovery_nudges": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Whether recipient interrupted and returned push is allowed"
     },
     "allowRecoveryNudges": {
       "type": "boolean"
@@ -19663,6 +19923,8 @@ export const FrogSleepSharedSleepEventRequestSchema = {
     "event_type": {
       "type": "string",
       "enum": [
+        "sleep_started",
+        "ritual_completed",
         "interrupted",
         "returned",
         "paused_tonight",
@@ -19672,6 +19934,8 @@ export const FrogSleepSharedSleepEventRequestSchema = {
     "eventType": {
       "type": "string",
       "enum": [
+        "sleep_started",
+        "ritual_completed",
         "interrupted",
         "returned",
         "paused_tonight",
@@ -19707,8 +19971,8 @@ export const FrogSleepSharedSleepEventRequestSchema = {
 
 export type FrogSleepSharedSleepEventRequest = (
 {
-  "event_type": "interrupted" | "returned" | "paused_tonight" | "morning_completed";
-  "eventType"?: "interrupted" | "returned" | "paused_tonight" | "morning_completed";
+  "event_type": "sleep_started" | "ritual_completed" | "interrupted" | "returned" | "paused_tonight" | "morning_completed";
+  "eventType"?: "sleep_started" | "ritual_completed" | "interrupted" | "returned" | "paused_tonight" | "morning_completed";
   "occurred_at"?: string;
   "occurredAt"?: string;
   "metadata"?: {
@@ -19718,8 +19982,8 @@ export type FrogSleepSharedSleepEventRequest = (
 }
 ) | (
 {
-  "event_type"?: "interrupted" | "returned" | "paused_tonight" | "morning_completed";
-  "eventType": "interrupted" | "returned" | "paused_tonight" | "morning_completed";
+  "event_type"?: "sleep_started" | "ritual_completed" | "interrupted" | "returned" | "paused_tonight" | "morning_completed";
+  "eventType": "sleep_started" | "ritual_completed" | "interrupted" | "returned" | "paused_tonight" | "morning_completed";
   "occurred_at"?: string;
   "occurredAt"?: string;
   "metadata"?: {
@@ -19728,6 +19992,126 @@ export type FrogSleepSharedSleepEventRequest = (
   [key: string]: unknown;
 }
 );
+
+export const FrogSleepSharedFocusMomentSchema = {
+  "type": "object",
+  "properties": {
+    "moment_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "server_moment_id": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Legacy originating server session reference"
+    },
+    "buddy_session_id": {
+      "type": "string",
+      "description": "Legacy peer server session reference"
+    },
+    "my_session_id": {
+      "type": "string",
+      "description": "The authenticated viewer's original client session identifier"
+    },
+    "viewer_buddy_session_id": {
+      "type": "string",
+      "description": "The other participant's original client session identifier"
+    },
+    "overlap_minutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "room_id": {
+      "type": "string"
+    },
+    "room_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+} as const;
+
+export type FrogSleepSharedFocusMoment = {
+  "moment_id"?: string;
+  "server_moment_id"?: string;
+  "session_id"?: string;
+  "buddy_session_id"?: string;
+  "my_session_id"?: string;
+  "viewer_buddy_session_id"?: string;
+  "overlap_minutes"?: number;
+  "start_time"?: string;
+  "room_id"?: string;
+  "room_ids"?: string[];
+};
+
+export const FrogSleepBuddyNotificationSchema = {
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "is_read",
+    "created_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable opaque notification identity shared by feed and Push"
+    },
+    "type": {
+      "type": "string"
+    },
+    "target_type": {
+      "type": "string"
+    },
+    "target_id": {
+      "type": "string"
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Historical safe identifiers; current route authorization is still required"
+    },
+    "is_read": {
+      "type": "boolean"
+    },
+    "read_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type FrogSleepBuddyNotification = {
+  "id": string;
+  "type": string;
+  "target_type"?: string;
+  "target_id"?: string;
+  "route"?: {
+  [key: string]: string;
+};
+  "is_read": boolean;
+  "read_at"?: string;
+  "expires_at"?: string;
+  "created_at": string;
+};
 
 export const FrogSleepFocusProfileRequestSchema = {
   "type": "object",
@@ -19837,7 +20221,20 @@ export type FrogSleepFocusProfileRequest = (
 export const FrogSleepFocusSessionRequestSchema = {
   "type": "object",
   "additionalProperties": true,
+  "description": "Optional client ID enables per-app/per-user replay deduplication; aliases must match. Normal unbound reports may correct the same record. Confirmed binding imports require stable ID and original timestamps, and changed content returns HTTP 409 even if a later request omits binding.",
   "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "\\S"
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "\\S"
+    },
     "started_at": {
       "type": "string",
       "format": "date-time"
@@ -19926,6 +20323,8 @@ export const FrogSleepFocusSessionRequestSchema = {
 } as const;
 
 export type FrogSleepFocusSessionRequest = {
+  "session_id"?: string;
+  "sessionId"?: string;
   "started_at"?: string;
   "startedAt"?: string;
   "start_time"?: string;
@@ -20173,10 +20572,1000 @@ export type FrogSleepFocusMessageRequest = (
 )
 );
 
+export const FrogSleepPersonalVersionSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "id",
+    "revision",
+    "sequence",
+    "deleted",
+    "data",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "sleep_report",
+        "report_preferences",
+        "sleep_session"
+      ]
+    },
+    "sync_epoch": {
+      "type": "string",
+      "description": "Included on direct resource responses."
+    },
+    "id": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "deleted": {
+      "type": "boolean"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+} as const;
+
+export type FrogSleepPersonalVersion = {
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "deleted": boolean;
+  "data": {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+};
+
+export const FrogSleepPersonalSyncPageSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "items",
+    "sync_epoch",
+    "boundary",
+    "changes_cursor",
+    "pagination"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id",
+          "revision",
+          "sequence",
+          "deleted",
+          "data",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "sleep_report",
+              "report_preferences",
+              "sleep_session"
+            ]
+          },
+          "sync_epoch": {
+            "type": "string",
+            "description": "Included on direct resource responses."
+          },
+          "id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "sync_epoch": {
+      "type": "string"
+    },
+    "boundary": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "changes_cursor": {
+      "type": "string"
+    },
+    "pagination": {
+      "type": "object",
+      "required": [
+        "limit",
+        "has_more",
+        "next_cursor"
+      ],
+      "properties": {
+        "limit": {
+          "type": "integer"
+        },
+        "has_more": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+} as const;
+
+export type FrogSleepPersonalSyncPage = {
+  "items": (
+{
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "deleted": boolean;
+  "data": {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "sync_epoch": string;
+  "boundary": number;
+  "changes_cursor": string;
+  "pagination": {
+  "limit": number;
+  "has_more": boolean;
+  "next_cursor": string | null;
+};
+};
+
+export const FrogSleepPersonalSyncStateSchema = {
+  "type": "object",
+  "required": [
+    "sync_epoch",
+    "sequence",
+    "capabilities"
+  ],
+  "properties": {
+    "sync_epoch": {
+      "type": "string"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "read",
+        "write"
+      ],
+      "properties": {
+        "read": {
+          "type": "boolean"
+        },
+        "write": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+} as const;
+
+export type FrogSleepPersonalSyncState = {
+  "sync_epoch": string;
+  "sequence": number;
+  "capabilities": {
+  "read": boolean;
+  "write": boolean;
+};
+};
+
+export const FrogSleepPersonalSyncErrorSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "REQ_INVALID_BODY",
+        "REQ_INVALID_HEADER",
+        "FROGSLEEP_SYNC_IDEMPOTENCY_CONFLICT",
+        "FROGSLEEP_SYNC_REVISION_CONFLICT",
+        "FROGSLEEP_SYNC_EPOCH_MISMATCH",
+        "FROGSLEEP_SYNC_CURSOR_INVALID",
+        "FROGSLEEP_SYNC_RESOURCE_NOT_FOUND",
+        "FROGSLEEP_SYNC_RESOURCE_DELETED",
+        "FROGSLEEP_SYNC_DISABLED"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type FrogSleepPersonalSyncError = {
+  "code": "REQ_INVALID_BODY" | "REQ_INVALID_HEADER" | "FROGSLEEP_SYNC_IDEMPOTENCY_CONFLICT" | "FROGSLEEP_SYNC_REVISION_CONFLICT" | "FROGSLEEP_SYNC_EPOCH_MISMATCH" | "FROGSLEEP_SYNC_CURSOR_INVALID" | "FROGSLEEP_SYNC_RESOURCE_NOT_FOUND" | "FROGSLEEP_SYNC_RESOURCE_DELETED" | "FROGSLEEP_SYNC_DISABLED";
+  "message": string;
+  "requestId": string;
+};
+
+export const FrogSleepRawSleepEventSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "type",
+    "occurred_at",
+    "data"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+} as const;
+
+export type FrogSleepRawSleepEvent = {
+  "event_id": string;
+  "type": string;
+  "occurred_at": string;
+  "data": {
+  [key: string]: unknown;
+};
+};
+
+export const FrogSleepRawSleepSessionRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "schema_version",
+    "status",
+    "started_at",
+    "ended_at",
+    "sleep_intent",
+    "timezone",
+    "data"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": [
+        "1"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "cancelled",
+        "interrupted"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scheduled_wake_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sleep_intent": {
+      "type": "string",
+      "enum": [
+        "night_sleep",
+        "daytime_nap",
+        "catch_up_sleep"
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "type",
+          "occurred_at",
+          "data"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Optional authenticated-owner assertion."
+    },
+    "owner_user_id": {
+      "type": "string",
+      "description": "Optional authenticated-owner assertion."
+    }
+  },
+  "description": "Terminal history only; UTF-8 serialized request is at most 128 KiB, JSON nesting at most 32 levels and numbers must be finite. Event IDs must be unique and event times within started_at..ended_at. Server normalizes timestamps to UTC. Device lock/timer state inside data is history, never an instruction to resume a lock."
+} as const;
+
+export type FrogSleepRawSleepSessionRequest = {
+  "session_id": string;
+  "schema_version": "1";
+  "status": "completed" | "cancelled" | "interrupted";
+  "started_at": string;
+  "ended_at": string;
+  "scheduled_wake_at"?: string;
+  "sleep_intent": "night_sleep" | "daytime_nap" | "catch_up_sleep";
+  "timezone": string;
+  "data": {
+  [key: string]: unknown;
+};
+  "events"?: (
+{
+  "event_id": string;
+  "type": string;
+  "occurred_at": string;
+  "data": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "user_id"?: string;
+  "owner_user_id"?: string;
+};
+
+export const FrogSleepRawSleepResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sleep_session"
+      ],
+      "properties": {
+        "sleep_session": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "revision",
+            "sequence",
+            "deleted",
+            "data",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "sleep_report",
+                "report_preferences",
+                "sleep_session"
+              ]
+            },
+            "sync_epoch": {
+              "type": "string",
+              "description": "Included on direct resource responses."
+            },
+            "id": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "deleted": {
+              "type": "boolean"
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepRawSleepResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "sleep_session": {
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "deleted": boolean;
+  "data": {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+};
+};
+  [key: string]: unknown;
+};
+
+export const FrogSleepPersonalPageResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "sync_epoch",
+        "boundary",
+        "changes_cursor",
+        "pagination"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "revision",
+              "sequence",
+              "deleted",
+              "data",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "sleep_report",
+                  "report_preferences",
+                  "sleep_session"
+                ]
+              },
+              "sync_epoch": {
+                "type": "string",
+                "description": "Included on direct resource responses."
+              },
+              "id": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "deleted": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "sync_epoch": {
+          "type": "string"
+        },
+        "boundary": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "changes_cursor": {
+          "type": "string"
+        },
+        "pagination": {
+          "type": "object",
+          "required": [
+            "limit",
+            "has_more",
+            "next_cursor"
+          ],
+          "properties": {
+            "limit": {
+              "type": "integer"
+            },
+            "has_more": {
+              "type": "boolean"
+            },
+            "next_cursor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepPersonalPageResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "deleted": boolean;
+  "data": {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "sync_epoch": string;
+  "boundary": number;
+  "changes_cursor": string;
+  "pagination": {
+  "limit": number;
+  "has_more": boolean;
+  "next_cursor": string | null;
+};
+};
+  [key: string]: unknown;
+};
+
+export const FrogSleepGuestSessionRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "device_id",
+    "device_secret",
+    "platform"
+  ],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "device_secret": {
+      "type": "string",
+      "minLength": 43,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Client-generated cryptographically random secret of at least 32 bytes; keep in secure storage. Never use a hardware ID or password."
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android"
+      ]
+    }
+  }
+} as const;
+
+export type FrogSleepGuestSessionRequest = {
+  "device_id": string;
+  "device_secret": string;
+  "platform": "ios" | "android";
+};
+
+export const FrogSleepGuestUpgradeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "guest_user_id",
+    "guest_upgrade_token",
+    "device_id",
+    "confirmed"
+  ],
+  "properties": {
+    "guest_user_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "guest_upgrade_token": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 128
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "confirmed": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  }
+} as const;
+
+export type FrogSleepGuestUpgradeRequest = {
+  "guest_user_id": string;
+  "guest_upgrade_token": string;
+  "device_id": string;
+  "confirmed": true;
+};
+
+export const FrogSleepGuestUpgradeResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "user_id",
+    "previous_guest_user_id",
+    "migrated_data_count",
+    "deduplicated_data_count",
+    "sync_epoch"
+  ],
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "previous_guest_user_id": {
+      "type": "string"
+    },
+    "migrated_data_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deduplicated_data_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sync_epoch": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type FrogSleepGuestUpgradeResult = {
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "migrated_data_count": number;
+  "deduplicated_data_count": number;
+  "sync_epoch": string;
+};
+
+export const FrogSleepGuestUpgradeResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "user_id",
+        "previous_guest_user_id",
+        "migrated_data_count",
+        "deduplicated_data_count",
+        "sync_epoch"
+      ],
+      "properties": {
+        "user_id": {
+          "type": "string"
+        },
+        "previous_guest_user_id": {
+          "type": "string"
+        },
+        "migrated_data_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deduplicated_data_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sync_epoch": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepGuestUpgradeResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "migrated_data_count": number;
+  "deduplicated_data_count": number;
+  "sync_epoch": string;
+};
+  [key: string]: unknown;
+};
+
+export const FrogSleepGuestSessionResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "access_token",
+        "refresh_token",
+        "user_id",
+        "app_id",
+        "guest_user_id",
+        "guest_upgrade_token",
+        "guest_expires_at",
+        "is_guest"
+      ],
+      "properties": {
+        "access_token": {
+          "type": "string"
+        },
+        "refresh_token": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "app_id": {
+          "type": "string",
+          "enum": [
+            "frogsleep"
+          ]
+        },
+        "guest_user_id": {
+          "type": "string"
+        },
+        "guest_upgrade_token": {
+          "type": "string",
+          "description": "Independent upgrade credential; persist securely and send only to the upgrade endpoint."
+        },
+        "guest_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "is_guest": {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepGuestSessionResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "access_token": string;
+  "refresh_token": string;
+  "user_id": string;
+  "app_id": "frogsleep";
+  "guest_user_id": string;
+  "guest_upgrade_token": string;
+  "guest_expires_at": string;
+  "is_guest": true;
+  [key: string]: unknown;
+};
+  [key: string]: unknown;
+};
+
 export const FrogSleepSleepReportRequestSchema = {
   "type": "object",
+  "description": "Immutable snapshot_id is scoped to the authenticated owner. Identical retries return the original record; conflicting content returns HTTP 409.",
   "additionalProperties": true,
   "properties": {
+    "owner_user_id": {
+      "type": "string",
+      "description": "Optional assertion; must match authenticated user."
+    },
+    "binding": {
+      "type": "object",
+      "description": "Metadata of a user-confirmed import job. Send only explicitly selected completed records; device and active locking state are not imported. The server derives ownership from authentication.",
+      "required": [
+        "owner_user_id",
+        "job_id",
+        "confirmed_at"
+      ],
+      "properties": {
+        "owner_user_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
     "snapshot_id": {
       "type": "string"
     },
@@ -20290,6 +21679,12 @@ export const FrogSleepSleepReportRequestSchema = {
 
 export type FrogSleepSleepReportRequest = (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20312,6 +21707,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id": string;
   "report_id"?: string;
   "id"?: string;
@@ -20333,6 +21734,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id": string;
   "id"?: string;
@@ -20354,6 +21761,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id": string;
@@ -20377,6 +21790,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20398,6 +21817,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20421,6 +21846,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20442,6 +21873,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20465,6 +21902,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20486,6 +21929,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20754,12 +22203,17 @@ export const GeneratedPublicContractNames = [
   "BuddyInvitationCreateRequest",
   "BuddyInvitationDelivery",
   "BuddyInvitationDeliveryStatus",
+  "BuddyInvitationDomainCommandRequest",
+  "BuddyInvitationDomainDecisionResponse",
   "BuddyInvitationDomainResult",
   "BuddyInvitationResponseRequest",
   "BuddyInvitationTarget",
   "BuddyJointActivityRequest",
   "BuddyNotificationPreferencesRequest",
+  "BuddyRelationshipCommandRequest",
+  "BuddyRelationshipSnapshot",
   "BuddySharingGrantUpdateRequest",
+  "BuddySharingSelectionRequest",
   "BuddyStructuredShareRequest",
   "ChangePasswordRequest",
   "CurrentUserData",
@@ -20769,6 +22223,7 @@ export const GeneratedPublicContractNames = [
   "FileConfirmRequest",
   "FilePresignData",
   "FilePresignRequest",
+  "FrogSleepBuddyNotification",
   "FrogSleepDeviceRegisterRequest",
   "FrogSleepEmailCodeRequest",
   "FrogSleepEmailLoginRequest",
@@ -20779,13 +22234,27 @@ export const GeneratedPublicContractNames = [
   "FrogSleepFocusMessageRequest",
   "FrogSleepFocusProfileRequest",
   "FrogSleepFocusSessionRequest",
+  "FrogSleepGuestSessionRequest",
+  "FrogSleepGuestSessionResponse",
+  "FrogSleepGuestUpgradeRequest",
+  "FrogSleepGuestUpgradeResponse",
+  "FrogSleepGuestUpgradeResult",
   "FrogSleepInviteAcceptRequest",
   "FrogSleepInviteCreateRequest",
   "FrogSleepPasswordChangeRequest",
   "FrogSleepPasswordLoginRequest",
   "FrogSleepPasswordResetConfirmRequest",
   "FrogSleepPasswordResetRequest",
+  "FrogSleepPersonalPageResponse",
+  "FrogSleepPersonalSyncError",
+  "FrogSleepPersonalSyncPage",
+  "FrogSleepPersonalSyncState",
+  "FrogSleepPersonalVersion",
   "FrogSleepProgressSnapshotRequest",
+  "FrogSleepRawSleepEvent",
+  "FrogSleepRawSleepResponse",
+  "FrogSleepRawSleepSessionRequest",
+  "FrogSleepSharedFocusMoment",
   "FrogSleepSharedSleepEventRequest",
   "FrogSleepSharedSleepSessionRequest",
   "FrogSleepSleepPreferencesRequest",

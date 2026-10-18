@@ -1,4 +1,9 @@
+import { InMemorySleepGuestStore } from "./in-memory-sleep-guest.ts";
+import { InMemoryPersonalSyncRepository } from "./in-memory-personal-sync.ts";
+import { InMemoryFrogSleepAdminStore } from "./in-memory-frogsleep-admin.ts";
+import { assertUniqueFocusSession, upsertMemoryFocusSession } from "./in-memory-focus-sessions.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { deleteInMemoryFrogSleepBuddyUserData } from "./in-memory-frogsleep-user-delete.ts";
 import type {
   AnalyticsEventRecord,
   AiNovelDailyStatisticsRecord,
@@ -226,22 +231,28 @@ export class InMemoryDatabase extends ApplicationDatabase {
     this.bodyLogChallengeMembers = [];
   }
 
+  private readonly personalSync = new InMemoryPersonalSyncRepository(this);
+  private readonly sleepGuest = new InMemorySleepGuestStore(this, this.personalSync);
+  getSleepGuestStore() { return this.sleepGuest; }
+  getPersonalSyncRepository() { return this.personalSync; }
+  getFrogSleepAdminStore() { return new InMemoryFrogSleepAdminStore(this); }
+  async withAppUserDataTransaction<T>(_appId: string, _userId: string, fn: () => Promise<T> | T): Promise<T> {
+    return await this.withExclusiveSession(fn);
+  }
+
   async withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T> {
     if (this.exclusiveContext.getStore()) {
       return await fn();
     }
 
-    let release = () => undefined;
-    const previous = this.exclusiveTail;
-    this.exclusiveTail = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    await previous;
+    if (this.buddyCommandContext.getStore() || this.buddyDecisionSafetyContext.getStore()) return await fn();
+    const turn = this.reserveBuddyCommandTurn();
+    await turn.previous;
     return await this.exclusiveContext.run(true, async () => {
       try {
         return await fn();
       } finally {
-        release();
+        turn.current();
       }
     });
   }
@@ -314,6 +325,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   private reserveBuddyCommandTurn(): { previous: Promise<void>; current: () => void } {
+    if (this.exclusiveContext.getStore()) return { previous: Promise.resolve(), current: () => undefined };
     const previous = this.buddyCommandTail;
     let current = () => undefined;
     this.buddyCommandTail = new Promise<void>((resolve) => { current = resolve; });
@@ -466,6 +478,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   deleteAppUserRuntimeData(appId: string, userId: string): void {
+    if (appId === "frogsleep") this.personalSync.invalidate(userId);
+    if (appId === "frogsleep") deleteInMemoryFrogSleepBuddyUserData(this, appId, userId);
     const uploadIds = this.clientLogUploads
       .filter((item) => item.appId === appId && item.userId === userId)
       .map((item) => item.id);
@@ -994,6 +1008,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
       .slice(0, limit);
   }
 
+  async withFrogSleepNotificationLock<T>(_key: string, operation: () => Promise<T> | T): Promise<T> { return await this.withExclusiveSession(operation); }
+
   insertNotificationJob(record: NotificationJobRecord): void {
     this.notificationJobs.push(structuredClone(record));
   }
@@ -1004,13 +1020,14 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   updateNotificationJob(
     jobId: string,
-    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount">>,
+    patch: Partial<Pick<NotificationJobRecord, "status" | "retryCount" | "payload">>,
   ): NotificationJobRecord | undefined {
     const job = this.findNotificationJob(jobId);
     if (!job) {
       return undefined;
     }
 
+    if (patch.payload !== undefined) job.payload = structuredClone(patch.payload);
     if (patch.status) {
       job.status = patch.status;
     }
@@ -1024,10 +1041,11 @@ export class InMemoryDatabase extends ApplicationDatabase {
     const existing = this.frogSleepDevices.find(
       (item) =>
         item.appId === record.appId &&
-        item.userId === record.userId &&
+        (record.appId === "frogsleep" ? item.platform === record.platform && !item.deletedAt : item.userId === record.userId) &&
         item.pushToken === record.pushToken,
     );
     if (existing) {
+      existing.userId = record.userId;
       existing.platform = record.platform;
       existing.appVersion = record.appVersion;
       existing.timezone = record.timezone;
@@ -1073,9 +1091,20 @@ export class InMemoryDatabase extends ApplicationDatabase {
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
+  upsertFrogSleepFocusSession(record: FrogSleepEntityRecord) { return upsertMemoryFocusSession(record, this.frogSleepEntities); }
+
   insertFrogSleepEntity(record: FrogSleepEntityRecord): void {
+    assertUniqueFocusSession(record, this.frogSleepEntities);
     this.assertFrogSleepLiveRelationshipUnique(record);
     this.frogSleepEntities.push(structuredClone(record));
+  }
+
+  findFrogSleepPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): FrogSleepEntityRecord | undefined {
+    const key = kind === "focus_session" ? "client_session_id" : "snapshot_id";
+    return structuredClone(this.frogSleepEntities.find(item => item.appId === "frogsleep"
+      && item.kind === kind && item.ownerUserId === ownerUserId && !item.deletedAt
+      && item.payload[key] === clientId && (kind !== "focus_session"
+        || ["completed", "abandoned", "interrupted", "cancelled"].includes(item.status ?? ""))));
   }
 
   findFrogSleepEntity(
@@ -1138,10 +1167,14 @@ export class InMemoryDatabase extends ApplicationDatabase {
       .filter((item) => filter.occurredAtFromIso ? (item.occurredAt ?? "") >= filter.occurredAtFromIso : true)
       .filter((item) => filter.occurredAtToIso ? (item.occurredAt ?? "") < filter.occurredAtToIso : true)
       .filter((item) => filter.includeDeleted ? true : !item.deletedAt)
+      .filter((item) => {
+        const time = item.occurredAt ?? item.startsAt ?? item.createdAt;
+        return !filter.before || time < filter.before.t || (time === filter.before.t && item.id < filter.before.id);
+      })
       .sort((left, right) => {
         const leftTime = left.occurredAt ?? left.startsAt ?? left.createdAt;
         const rightTime = right.occurredAt ?? right.startsAt ?? right.createdAt;
-        return rightTime.localeCompare(leftTime);
+        return rightTime.localeCompare(leftTime) || (right.id > left.id ? 1 : right.id < left.id ? -1 : 0);
       });
     return records.slice(0, normalizeListLimit(filter.limit));
   }
@@ -1296,10 +1329,12 @@ export class InMemoryDatabase extends ApplicationDatabase {
     limit: number,
   ): FrogSleepBuddyInvitationEmailDeliveryRecord[] {
     const staleProcessingCutoff = new Date(new Date(nowIso).getTime() - 15 * 60 * 1000).toISOString();
+    for (const value of this.frogSleepBuddyInvitationEmailDeliveries) if (value.status === "processing" && value.updatedAt <= staleProcessingCutoff) {
+      Object.assign(value, { status: "dead_letter", lastErrorCode: "PROVIDER_OUTCOME_UNKNOWN", deadLetteredAt: nowIso, updatedAt: nowIso });
+    }
     const claimed = this.frogSleepBuddyInvitationEmailDeliveries
       .filter((item) =>
         (["queued", "retryable_failed"].includes(item.status) && item.availableAt <= nowIso)
-        || (item.status === "processing" && item.updatedAt <= staleProcessingCutoff)
       )
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
       .slice(0, limit);
@@ -1345,6 +1380,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
       .sort((left, right) => left.attempt - right.attempt);
   }
 
+  override lockFrogSleepBuddyDomainSlots(keys: FrogSleepBuddyCommandSlotKey[]): void {
+    for (const key of keys) this.ensureFrogSleepBuddyDomainSlot({ ...key, now: new Date().toISOString() });
+  }
+
   upsertFrogSleepBuddyInvitationDomainDecision(
     record: FrogSleepBuddyInvitationDomainDecisionRecord,
   ): FrogSleepBuddyInvitationDomainDecisionRecord {
@@ -1382,7 +1421,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
   compareAndUpdateFrogSleepBuddyInvitationDomainDecision(input: {
     appId: string; invitationId: string; domain: FrogSleepBuddyInvitationDomainDecisionRecord["domain"];
     expectedVersion: number; status: FrogSleepBuddyInvitationDomainDecisionRecord["status"];
-    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; terminalReason?: string; updatedAt: string;
+    decidedByUserId: string; decidedAt: string; idempotencyKeyHash: string; relationshipId?: string; terminalReason?: string; updatedAt: string;
   }): FrogSleepBuddyInvitationDomainDecisionRecord | undefined {
     const decision = this.frogSleepBuddyInvitationDomainDecisions.find((item) =>
       item.appId === input.appId && item.invitationId === input.invitationId && item.domain === input.domain
@@ -1390,7 +1429,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
     if (!decision || decision.status !== "pending" || decision.version !== input.expectedVersion) return undefined;
     Object.assign(decision, { status: input.status, version: decision.version + 1,
       decidedByUserId: input.decidedByUserId, decidedAt: input.decidedAt,
-      idempotencyKeyHash: input.idempotencyKeyHash, terminalReason: input.terminalReason, updatedAt: input.updatedAt });
+      idempotencyKeyHash: input.idempotencyKeyHash, relationshipId: input.relationshipId, terminalReason: input.terminalReason, updatedAt: input.updatedAt });
     return structuredClone(decision);
   }
 
@@ -1463,10 +1502,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   listCurrentFrogSleepBuddyDomainRelationships(
-    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"], includeRevoked = false,
   ): FrogSleepBuddyDomainRelationshipRecord[] {
     return structuredClone(this.frogSleepBuddyDomainRelationships.filter((item) =>
-      item.appId === appId && item.domain === domain && item.status !== "revoked" &&
+      item.appId === appId && item.domain === domain && (includeRevoked || item.status !== "revoked") &&
       (item.userIdLow === userId || item.userIdHigh === userId),
     ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)));
   }
@@ -1656,7 +1695,7 @@ export class InMemoryDatabase extends ApplicationDatabase {
 
   listReadyFrogSleepBuddyNotificationOutbox(nowIso: string, limit: number): FrogSleepBuddyNotificationOutboxRecord[] {
     return structuredClone(this.frogSleepBuddyNotificationOutbox)
-      .filter((item) => ["pending", "failed"].includes(item.status) && item.availableAt <= nowIso)
+      .filter((item) => ["pending", "failed", "processing"].includes(item.status) && item.availableAt <= nowIso)
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt)).slice(0, limit);
   }
 
@@ -1712,7 +1751,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
   insertFrogSleepBuddyNotificationDelivery(record: FrogSleepBuddyNotificationDeliveryRecord) {
     const existing = this.frogSleepBuddyNotificationDeliveries.find((item) => item.notificationId === record.notificationId &&
       item.channel === record.channel && item.attempt === record.attempt);
-    if (existing) return structuredClone(existing);
+    if (existing) {
+      if (!(record.status === "pending" && ["provider_accepted", "delivered", "suppressed"].includes(existing.status))) Object.assign(existing, record, { id: existing.id, createdAt: existing.createdAt });
+      return structuredClone(existing);
+    }
     this.frogSleepBuddyNotificationDeliveries.push(structuredClone(record));
     return structuredClone(record);
   }

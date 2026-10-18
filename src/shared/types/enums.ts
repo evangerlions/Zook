@@ -13,7 +13,8 @@ export type NotificationStatus =
   | "QUEUED"
   | "SENT"
   | "FAILED"
-  | "ENQUEUE_FAILED";
+  | "ENQUEUE_FAILED"
+  | "SUPPRESSED";
 export type ClientType = "web" | "app";
 export type EventName =
   | "page_view"
@@ -89,6 +90,17 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED"
+  | "FROGSLEEP_JOB_NOT_FOUND"
+  | "FROGSLEEP_RETRY_NOT_ALLOWED"
+  | "FROGSLEEP_SYNC_IDEMPOTENCY_CONFLICT"
+  | "FROGSLEEP_SYNC_REVISION_CONFLICT"
+  | "FROGSLEEP_SYNC_EPOCH_MISMATCH"
+  | "FROGSLEEP_SYNC_CURSOR_INVALID"
+  | "FROGSLEEP_SYNC_RESOURCE_NOT_FOUND"
+  | "FROGSLEEP_SYNC_RESOURCE_DELETED"
+  | "FROGSLEEP_SYNC_DISABLED"
+  | "APP_MEMBERSHIP_REQUIRED"
   | "LIGHTTICK_REVIEW_ACTION_ALREADY_DECIDED"
   | "LIGHTTICK_REVIEW_NO_ACTIONABLE_RECOMMENDATIONS"
   | "LIGHTTICK_INSIGHT_NOT_ACTIONABLE"

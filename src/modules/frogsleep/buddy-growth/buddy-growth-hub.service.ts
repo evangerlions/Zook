@@ -1,6 +1,9 @@
+import { buddyRelationshipSlotKeys, currentBuddyRelationships } from "./buddy-relationship-facts.ts";
+import { BuddyJointActivityService } from "./buddy-joint-activity.service.ts";
+import { buddyRelationships } from "./buddy-relationships.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
-import { badRequest, forbidden } from "../../../shared/errors.ts";
+import { badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityKind, FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
@@ -45,6 +48,7 @@ export class BuddyGrowthHubService {
   }
 
   async activity(userId: string, limit = 30, cursor?: string) {
+    await new BuddyJointActivityService(this.database).refresh(userId);
     const relationships = await this.relationships(userId);
     const ids = new Set(relationships.map((item) => item.id));
     const records = (await Promise.all(activityKinds.map((kind) => this.database.listFrogSleepEntities({
@@ -61,11 +65,12 @@ export class BuddyGrowthHubService {
     const type = String(input.type ?? "") as typeof shareTypes[number];
     if (!shareTypes.includes(type)) badRequest("REQ_INVALID_BODY", "Unsupported buddy share type.");
     const relationship = await this.authorizedRelationship(userId, String(input.relationship_id ?? ""),
-      type === "weekly_progress" ? "weekly_trend" : "daily_summary");
+      type === "weekly_progress" ? "weekly_trend" : "daily_summary", true);
     const snapshot = minimalSnapshot(type, input.snapshot);
     const expiresAt = expiry(input.expires_at);
     const idempotencyKey = requiredIdempotencyKey(input.idempotency_key);
-    return await this.database.withExclusiveSession(async () => {
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+      await this.authorizedRelationship(userId, relationship.id, type === "weekly_progress" ? "weekly_trend" : "daily_summary", true);
       const existing = await this.existingByKey("buddy_share", userId, relationship.id, idempotencyKey);
       if (existing) return toActivity(existing);
       const now = new Date().toISOString();
@@ -92,7 +97,8 @@ export class BuddyGrowthHubService {
     }
     const relationship = await this.authorizedRelationship(userId, String(input.relationship_id ?? ""), "shared_activity");
     const idempotencyKey = requiredIdempotencyKey(input.idempotency_key);
-    return await this.database.withExclusiveSession(async () => {
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+      await this.authorizedRelationship(userId, relationship.id, "shared_activity", false);
       const existing = await this.existingByKey("buddy_interaction", userId, relationship.id, idempotencyKey);
       if (existing) return toActivity(existing);
       const now = new Date().toISOString();
@@ -113,8 +119,12 @@ export class BuddyGrowthHubService {
     const type = String(input.type ?? "");
     if (!["joint_focus", "tonight_together"].includes(type)) badRequest("REQ_INVALID_BODY", "Unsupported joint activity type.");
     const relationship = await this.authorizedRelationship(userId, String(input.relationship_id ?? ""), "shared_activity");
+    if ((type === "joint_focus") !== (relationship.kind === "focus_relationship")) {
+      badRequest("REQ_INVALID_BODY", "Activity type must match the relationship domain.");
+    }
     const idempotencyKey = requiredIdempotencyKey(input.idempotency_key);
-    return await this.database.withExclusiveSession(async () => {
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+      await this.authorizedRelationship(userId, relationship.id, "shared_activity", false);
       const existing = await this.existingByKey("buddy_joint_activity", userId, relationship.id, idempotencyKey);
       if (existing) return toActivity(existing);
       const now = new Date().toISOString();
@@ -132,32 +142,12 @@ export class BuddyGrowthHubService {
   }
 
   async jointActivityAction(userId: string, activityId: string, action: string) {
-    const record = await this.database.findFrogSleepEntity("buddy_joint_activity", FROGSLEEP_APP_ID, activityId);
-    if (!record || !record.relationshipId || ![record.ownerUserId, record.partnerUserId].includes(userId)) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Joint activity is unavailable.");
-    }
-    await this.authorizedRelationship(userId, record.relationshipId, "shared_activity");
-    const allowed = record.ownerUserId === userId ? ["cancel", "complete"] : ["accept", "decline", "complete"];
-    if (!allowed.includes(action)) forbidden("AUTH_APP_SCOPE_MISMATCH", "Joint activity action is unavailable.");
-    const status = { accept: "accepted", decline: "declined", cancel: "cancelled", complete: "completed" }[action];
-    return await this.database.withExclusiveSession(async () => {
-      const updated = await this.database.updateFrogSleepEntity("buddy_joint_activity", FROGSLEEP_APP_ID,
-        record.id, { status, updatedAt: new Date().toISOString() });
-      await enqueueBuddyGrowthEvent(this.database, {
-        recipientUserId: record.ownerUserId === userId ? record.partnerUserId! : record.ownerUserId!,
-        eventType: "interaction_received", targetType: "buddy_joint_activity", targetId: record.id,
-        relationshipId: record.relationshipId!, deduplicationKey: `joint-activity:${record.id}:${action}`,
-      });
-      return toActivity(updated as FrogSleepEntityRecord);
-    });
+    return toActivity(await new BuddyJointActivityService(this.database).action(userId, activityId, action));
   }
 
   private async relationships(userId: string): Promise<FrogSleepEntityRecord[]> {
-    const values = await Promise.all((["sleep_relationship", "focus_relationship"] as FrogSleepEntityKind[]).map(async (kind) => [
-      ...await this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind, ownerUserId: userId, limit: 50 }),
-      ...await this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind, partnerUserId: userId, limit: 50 }),
-    ]));
-    return values.flat().filter((item) => ["active", "accepted"].includes(item.status ?? ""));
+    return (await currentBuddyRelationships(this.database, userId))
+      .filter(item => ["active", "accepted"].includes(item.status ?? ""));
   }
 
   private async existingByKey(
@@ -169,10 +159,10 @@ export class BuddyGrowthHubService {
       .find((item) => item.payload.idempotency_key === idempotencyKey);
   }
 
-  private async authorizedRelationship(userId: string, relationshipId: string, category: "daily_summary" | "weekly_trend" | "shared_activity") {
+  private async authorizedRelationship(userId: string, relationshipId: string, category: "daily_summary" | "weekly_trend" | "shared_activity", ownSharing = false) {
     const relationship = (await this.relationships(userId)).find((item) => item.id === relationshipId);
     if (!relationship) forbidden("AUTH_APP_SCOPE_MISMATCH", "Buddy relationship is unavailable.");
-    await assertBuddyDataAuthorized(this.database, userId, relationship.id, category);
+    await assertBuddyDataAuthorized(this.database, ownSharing ? this.otherUserId(relationship, userId) : userId, relationship.id, category);
     return relationship;
   }
 
