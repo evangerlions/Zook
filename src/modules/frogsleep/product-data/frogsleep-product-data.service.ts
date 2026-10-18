@@ -1,10 +1,11 @@
+import { PersonalSyncService } from "../personal-sync/personal-sync.service.ts";
+import { reportPayload, sleepReportDocument } from "../personal-sync/personal-report.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { badRequest } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import {
-  paginateRecords,
   parseIsoTimestamp,
   type PaginationParams,
 } from "../frogsleep-validation.ts";
@@ -43,53 +44,17 @@ export class FrogSleepProductDataService {
   constructor(private readonly database: ApplicationDatabase) {}
 
   async createSleepReport(userId: string, input: Record<string, unknown>) {
-    const snapshotId = stringInput(input, "snapshot_id", "report_id", "id");
-    if (!snapshotId) {
-      badRequest("REQ_INVALID_BODY", "snapshot_id is required.");
-    }
-    const version = stringInput(input, "schema_version", "version");
-    if (!version) {
-      badRequest("REQ_INVALID_BODY", "schema_version is required.");
-    }
-    const recordedAt = parseIsoTimestamp(input.recorded_at ?? input.recordedAt, "recorded_at");
-    const payload = {
-      snapshot_id: snapshotId,
-      report_id: stringInput(input, "report_id") ?? snapshotId,
-      schema_version: version,
-      recorded_at: recordedAt,
-      date_anchor: stringInput(input, "date_anchor", "dateAnchor"),
-      report_type: stringInput(input, "report_type", "reportType") ?? "sleep_report",
-      data: requiredRecord(input.data ?? input.report ?? {}, "data"),
-    };
-    const createdAt = nowIso();
-    const record: FrogSleepEntityRecord = {
-      id: randomId("sleep_report_snapshot"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_report_snapshot",
-      ownerUserId: userId,
-      status: "active",
-      occurredAt: recordedAt,
-      payload,
-      createdAt,
-      updatedAt: createdAt,
-    };
-    await this.database.insertFrogSleepEntity(record);
-    return this.toSleepReport(record);
+    const payload = reportPayload(input);
+    if (!payload.snapshot_id || !payload.schema_version) badRequest("REQ_INVALID_BODY", "snapshot_id and schema_version are required.");
+    requiredRecord(payload.data, "data");
+    const row = await new PersonalSyncService(this.database.getPersonalSyncRepository()).write(userId, "sleep_report", String(payload.snapshot_id), payload, false);
+    return sleepReportDocument(row);
   }
 
-  async listSleepReports(userId: string, pagination?: PaginationParams) {
-    const records = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "sleep_report_snapshot",
-      ownerUserId: userId,
-      limit: 500,
-    });
-    const page = paginateRecords(records, pagination ?? { limit: 50 });
-    return {
-      sleep_reports: page.items.map((item) => this.toSleepReport(item)),
-      reports: page.items.map((item) => this.toSleepReport(item)),
-      pagination: page.pagination,
-    };
+  async listSleepReports(userId: string, pagination: PaginationParams = { limit: 50 }) {
+    const page = await new PersonalSyncService(this.database.getPersonalSyncRepository()).browse(userId, pagination.limit, pagination.cursor);
+    const reports = page.items.filter(r => !r.deleted).map(r => sleepReportDocument({ ...r, sync_epoch: page.sync_epoch }));
+    return { sleep_reports: reports, reports, pagination: page.pagination };
   }
 
   async upsertProgress(userId: string, namespace: string, input: Record<string, unknown>) {
@@ -202,17 +167,6 @@ export class FrogSleepProductDataService {
     if (!PROGRESS_NAMESPACES.has(namespace)) {
       badRequest("REQ_INVALID_BODY", "Unsupported progress namespace.");
     }
-  }
-
-  private toSleepReport(record: FrogSleepEntityRecord) {
-    const { data, ...payload } = record.payload;
-    return {
-      id: record.id,
-      created_at: record.createdAt,
-      updated_at: record.updatedAt,
-      ...payload,
-      snapshot_data: data,
-    };
   }
 
   private toProgress(record: FrogSleepEntityRecord) {

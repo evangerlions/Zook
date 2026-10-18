@@ -28,6 +28,7 @@ export class CompositePushDispatcher implements PushDispatcher {
   async dispatch(request: PushDispatchRequest): Promise<void> {
     const dispatcher = this.dispatchers.get(`${request.appId}:${request.platform}`) ?? this.dispatchers.get(request.platform);
     if (!dispatcher) {
+      if (request.appId === "frogsleep") throw new Error("FrogSleep push provider is not configured for platform");
       this.logger?.warn("no push dispatcher configured for platform", {
         appId: request.appId,
         userId: request.userId,

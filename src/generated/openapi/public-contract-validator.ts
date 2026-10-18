@@ -69,6 +69,8 @@ import {
   BuddyInvitationCreateRequestSchema,
   BuddyInvitationResponseRequestSchema,
   BuddySharingGrantUpdateRequestSchema,
+  BuddyRelationshipCommandRequestSchema,
+  BuddySharingSelectionRequestSchema,
   FrogSleepInviteCreateRequestSchema,
   FrogSleepPasswordChangeRequestSchema,
   FrogSleepPasswordLoginRequestSchema,
@@ -152,6 +154,8 @@ const validators = {
   buddyInvitationCreate: ajv.compile(BuddyInvitationCreateRequestSchema),
   buddyInvitationResponse: ajv.compile(BuddyInvitationResponseRequestSchema),
   buddySharingGrantUpdate: ajv.compile(BuddySharingGrantUpdateRequestSchema),
+  buddyRelationshipCommand: ajv.compile(BuddyRelationshipCommandRequestSchema),
+  buddySharingSelection: ajv.compile(BuddySharingSelectionRequestSchema),
   frogSleepSleepPreferences: ajv.compile(FrogSleepSleepPreferencesRequestSchema),
   frogSleepSharedSleepSession: ajv.compile(FrogSleepSharedSleepSessionRequestSchema),
   frogSleepSharedSleepEvent: ajv.compile(FrogSleepSharedSleepEventRequestSchema),
@@ -262,6 +266,12 @@ export const PublicContractValidator = {
   },
   validateBuddyInvitationResponse(input: unknown) {
     return validateWithSchema<BuddyInvitationResponseRequest>(validators.buddyInvitationResponse, input);
+  },
+  validateBuddyRelationshipCommand(input: unknown) {
+    return validateWithSchema(validators.buddyRelationshipCommand, input);
+  },
+  validateBuddySharingSelection(input: unknown) {
+    return validateWithSchema(validators.buddySharingSelection, input);
   },
   validateBuddySharingGrantUpdate(input: unknown) {
     return validateWithSchema<BuddySharingGrantUpdateRequest>(validators.buddySharingGrantUpdate, input);

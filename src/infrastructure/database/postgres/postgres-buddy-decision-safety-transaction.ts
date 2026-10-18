@@ -44,6 +44,8 @@ export class PostgresBuddyDecisionSafetyTransaction<Client extends DecisionSafet
   ): Promise<T> {
     try {
       await client.query("BEGIN");
+      await client.query("SELECT id FROM zook_frogsleep_buddy_invitation_bundles WHERE app_id=$1 AND id=$2 FOR UPDATE",
+        [key.appId, key.invitationId]);
       await this.lockDecision(client, key);
       const result = await this.context.run({ client, key: serialized }, async () =>
         await this.dependencies.runWithClient(client, async () => await fn()));

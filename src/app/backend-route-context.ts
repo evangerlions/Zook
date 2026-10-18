@@ -1,3 +1,4 @@
+import { retryFrogSleepAdminNotification, type FrogSleepAdminRetryCommand } from "../modules/frogsleep/admin/frogsleep-admin-retry.ts";
 import { timingSafeEqual } from "node:crypto";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { AppAccessGuard } from "../core/guards/app-access.guard.ts";
@@ -174,14 +175,20 @@ export class BackendRouteContext {
     return request.adminSession;
   }
 
+  public getFrogSleepAdminStore() { return this.database.getFrogSleepAdminStore(); }
+  public getPersonalSyncRepository() { return this.database.getPersonalSyncRepository(); }
+  public retryFrogSleepAdminNotification(command: FrogSleepAdminRetryCommand) {
+    return retryFrogSleepAdminNotification(this.database, this.notificationService, command);
+  }
+
   public async assertAdminSensitiveOperation(session: AdminSessionRecord, operation: string): Promise<void> {
     await this.adminSensitiveOperationService.assertGranted(session, operation);
   }
 
   public async recordAdminReadAudit(adminUser: string, action: string, resourceType: string,
-    resourceId: string, requestId?: string): Promise<void> {
+    resourceId: string, requestId?: string, privacy: "aggregates_only" | "metadata_only" = "aggregates_only"): Promise<void> {
     await this.routeAuditInterceptor.record({ appId: resourceId, actorUserId: adminUser, action, resourceType,
-      resourceId, payload: { requestId, privacy: "aggregates_only" } });
+      resourceId, payload: { requestId, privacy } });
   }
 
   public validateAdminCredentials(username: string, password: string): string {

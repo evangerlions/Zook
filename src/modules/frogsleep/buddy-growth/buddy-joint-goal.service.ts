@@ -1,3 +1,5 @@
+import { findBuddyRelationship } from "./buddy-relationship-facts.ts";
+import { isBuddyAuthorizationDenied } from "./buddy-artifact-redaction.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityKind, FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -20,7 +22,12 @@ export class BuddyJointGoalService {
 
   async list(userId: string, relationshipId?: string) {
     const records = await this.repository.listGoals(userId, relationshipId);
-    return { goals: await Promise.all(records.map((item) => this.toGoal(userId, item))) };
+    const goals = [];
+    for (const item of records) {
+      try { await this.relationship(userId, item.relationshipId!); goals.push(await this.toGoal(userId, item)); }
+      catch (error) { if (!isBuddyAuthorizationDenied(error)) throw error; }
+    }
+    return { goals };
   }
 
   async create(userId: string, input: Record<string, unknown>) {
@@ -91,11 +98,9 @@ export class BuddyJointGoalService {
   }
 
   private async relationship(userId: string, relationshipId: string) {
-    const kinds: FrogSleepEntityKind[] = ["sleep_relationship", "focus_relationship"];
-    const values = await Promise.all(kinds.map((kind) =>
-      this.database.findFrogSleepEntity(kind, FROGSLEEP_APP_ID, relationshipId)));
-    const relationship = values.find((item) => item && [item.ownerUserId, item.partnerUserId].includes(userId) &&
-      ["active", "accepted"].includes(item.status ?? ""));
+    const row = await findBuddyRelationship(this.database, relationshipId);
+    const relationship = row && [row.ownerUserId, row.partnerUserId].includes(userId)
+      && ["active", "accepted"].includes(row.status ?? "") ? row : undefined;
     if (!relationship) forbidden("AUTH_APP_SCOPE_MISMATCH", "Buddy relationship is unavailable.");
     await assertBuddyDataAuthorized(this.database, userId, relationshipId, "shared_activity");
     return relationship;

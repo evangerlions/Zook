@@ -503,3 +503,19 @@ BodyLog check-in administration uses the shared Admin session cookie. Aggregate 
 | `GET` | `/api/v1/admin/apps/bodylog/habit-templates/usage` | none | Habit usage aggregate |
 
 The Dashboard is backed by `zook_bodylog_group_daily_records` and `zook_bodylog_group_activities`; user IDs are expanded from the daily record JSONB array. Daily, weekly, and monthly completion rates are weighted by each group's recorded member count (completed members divided by eligible group-member slots). Member contribution rows include the BodyLog profile nickname and avatar when a profile exists. The template catalog is stored in `zook_bodylog_habit_templates`. CSV export is capped at 50,000 rows and all user-level access is auditable.
+
+## FrogSleep / Sleep 运营管理（2026-10-11）
+
+Admin Web：选择 FrogSleep 项目空间 →「Sleep 运营」(`/frogsleep`)。复用现有 Ant Design、管理员 Cookie 会话与敏感操作授权；切换项目清理用户记录和待执行操作，丢弃旧响应。
+
+| 方法与路径（前缀 `/api/v1/admin/apps/frogsleep`） | 授权 | 数据/操作 |
+|---|---|---|
+| `GET /operations` | 管理员 session | 全状态总记录数（非活跃人数）、当前 Buddy/私人同步能力开关；聚合读取审计 |
+| `GET /records/{resource}` | session + `frogsleep.records.read` | 用户级元数据，`page` 正整数、`limit`1..100（默认25）、可选 `user_id/status` 精确筛选；数据库分页，读取审计 |
+| `POST /notifications/{id}/retry` | session + `frogsleep.notifications.retry` | body `{reason:string}` 必填且≤500字符；只重排原 Push job，不重置预算或设备回执，执行前写入审计 |
+
+resource 白名单：accounts、invitations、relationships、grants、sleep_sessions、focus_sessions、reports、devices、notifications、email_deliveries。每行仅 id/status/user_id/partner_user_id/domain/version/attempts/outcome/updated_at；不返回私人正文、邀请token/code、邮箱或设备pushToken。报告读取来自个人同步当前版本，含删除状态；相同逻辑 ID 的不同账号以 user_id+id 区分。
+
+未登录返回401，仅 Basic Auth 不能调用这些新增会话接口；缺二次授权返回403。非法资源或分页返回400；跨 App/不存在的 job 返回404 `FROGSLEEP_JOB_NOT_FOUND`。重试仅 FAILED/ENQUEUE_FAILED 且retryCount<5；SENT/预算耗尽、设备 processing/outcome_unknown 返回409 `FROGSLEEP_RETRY_NOT_ALLOWED`。已QUEUED重复请求返回当前排队事实、不再次入队。队列失败返回200 `{queued:false,notificationJobId}`，前端提示失败且保留恢复记录；成功后 worker 重新检查静默、撤权、关系、设备归属和能力开关。
+
+邮件provider_accepted不是delivered；未知邮件结果不提供重投入口。现有邀请邮件诊断接口保留原认证/掩码合同，不被新管理路由拦截。页面只读用户关系/方向授权，不替用户授权、解除或拉黑。

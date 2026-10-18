@@ -1,3 +1,5 @@
+import { currentBuddyRelationships } from "./buddy-relationship-facts.ts";
+import { isBuddyAuthorizationDenied } from "./buddy-artifact-redaction.ts";
 import { createHash } from "node:crypto";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { forbidden } from "../../../shared/errors.ts";
@@ -34,7 +36,11 @@ export class BuddyMilestoneReportService {
 
   async listMilestones(userId: string, relationshipId?: string) {
     const relationships = await this.viewerRelationships(userId, relationshipId);
-    const ids = new Set(relationships.map((item) => item.id));
+    const ids = new Set<string>();
+    for (const row of relationships) {
+      try { await new BuddyConsentService(this.database).assertAuthorized(userId, row.id, "shared_activity"); ids.add(row.id); }
+      catch (error) { if (!isBuddyAuthorizationDenied(error)) throw error; }
+    }
     const records = await this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID,
       kind: "buddy_milestone", limit: 200 });
     return { milestones: records.filter((item) => item.relationshipId && ids.has(item.relationshipId))
@@ -158,8 +164,8 @@ export class BuddyMilestoneReportService {
   }
 
   private async viewerRelationships(userId: string, relationshipId?: string) {
-    const relationships = (await this.activeRelationships()).filter((item) =>
-      [item.ownerUserId, item.partnerUserId].includes(userId) && (!relationshipId || item.id === relationshipId));
+    const relationships = (await currentBuddyRelationships(this.database, userId)).filter((item) =>
+      ["active", "accepted"].includes(item.status ?? "") && (!relationshipId || item.id === relationshipId));
     if (relationshipId && relationships.length === 0) unavailable(); return relationships;
   }
 

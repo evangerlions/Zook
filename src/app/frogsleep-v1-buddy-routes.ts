@@ -77,9 +77,9 @@ export async function tryHandleBuddyGrowthRoutes(context: BackendRouteContext, r
     const auth = await authenticateFrogSleepRequest(context, request);
     const bundleService = new BuddyInvitationBundleService(context.database, context.notificationService, context.contentSafetyService, context.kvManager);
     const bundle = request.query?.token
-      ? await context.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, request.query.token)
+      ? await context.database.findFrogSleepBuddyInvitationBundleByToken(FROGSLEEP_APP_ID, request.query.token.trim())
       : request.query?.code
-        ? await context.database.findFrogSleepBuddyInvitationBundleByCode(FROGSLEEP_APP_ID, request.query.code)
+        ? await context.database.findFrogSleepBuddyInvitationBundleByCode(FROGSLEEP_APP_ID, request.query.code.trim())
         : request.query?.invitation_id || request.query?.invitationId
           ? await context.database.findFrogSleepBuddyInvitationBundle(
             FROGSLEEP_APP_ID,

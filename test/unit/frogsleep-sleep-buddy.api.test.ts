@@ -170,7 +170,12 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
     requestId: "req_sleep_session_event",
   } as never);
   assert.equal(eventResponse.statusCode, 200);
-  assert.equal(eventResponse.body.data.status, "completed");
+  assert.equal(eventResponse.body.data.status, "active");
+  const partnerCompleted = await runtime.app.handle({ method: "POST",
+    path: `/api/v1/frogsleep/sleep-buddy/shared-sessions/${sessionId}/events`, headers: { authorization: `Bearer ${bobToken}` },
+    body: { event_type: "morning_completed" }, requestId: "req_sleep_partner_morning" } as never);
+  assert.equal(partnerCompleted.statusCode, 200);
+  assert.equal(partnerCompleted.body.data.status, "completed");
 
   const summaryResponse = await runtime.app.handle({
     method: "GET",
@@ -299,7 +304,12 @@ test("FrogSleep sleep buddy prevents duplicate active relationships and supports
     requestId: "req_sleep_relationship_resume",
   } as never);
   assert.equal(resumeResponse.statusCode, 200);
-  assert.equal(resumeResponse.body.data.status, "active");
+  assert.equal(resumeResponse.body.data.status, "paused");
+  const ownerResume = await runtime.app.handle({ method: "POST",
+    path: `/api/v1/frogsleep/sleep-buddy/relationships/${relationshipId}/resume`,
+    headers: { authorization: `Bearer ${aliceToken}` }, requestId: "req_sleep_owner_resume" } as never);
+  assert.equal(ownerResume.statusCode, 200);
+  assert.equal(ownerResume.body.data.status, "active");
 
   const revokeResponse = await runtime.app.handle({
     method: "POST",
