@@ -20590,8 +20590,13 @@ export const FrogSleepPersonalVersionSchema = {
       "type": "string",
       "enum": [
         "sleep_report",
-        "report_preferences"
+        "report_preferences",
+        "sleep_session"
       ]
+    },
+    "sync_epoch": {
+      "type": "string",
+      "description": "Included on direct resource responses."
     },
     "id": {
       "type": "string"
@@ -20623,7 +20628,8 @@ export const FrogSleepPersonalVersionSchema = {
 } as const;
 
 export type FrogSleepPersonalVersion = {
-  "kind": "sleep_report" | "report_preferences";
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
   "id": string;
   "revision": number;
   "sequence": number;
@@ -20666,8 +20672,13 @@ export const FrogSleepPersonalSyncPageSchema = {
             "type": "string",
             "enum": [
               "sleep_report",
-              "report_preferences"
+              "report_preferences",
+              "sleep_session"
             ]
+          },
+          "sync_epoch": {
+            "type": "string",
+            "description": "Included on direct resource responses."
           },
           "id": {
             "type": "string"
@@ -20736,7 +20747,8 @@ export const FrogSleepPersonalSyncPageSchema = {
 export type FrogSleepPersonalSyncPage = {
   "items": (
 {
-  "kind": "sleep_report" | "report_preferences";
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
   "id": string;
   "revision": number;
   "sequence": number;
@@ -20835,6 +20847,692 @@ export type FrogSleepPersonalSyncError = {
   "code": "REQ_INVALID_BODY" | "REQ_INVALID_HEADER" | "FROGSLEEP_SYNC_IDEMPOTENCY_CONFLICT" | "FROGSLEEP_SYNC_REVISION_CONFLICT" | "FROGSLEEP_SYNC_EPOCH_MISMATCH" | "FROGSLEEP_SYNC_CURSOR_INVALID" | "FROGSLEEP_SYNC_RESOURCE_NOT_FOUND" | "FROGSLEEP_SYNC_RESOURCE_DELETED" | "FROGSLEEP_SYNC_DISABLED";
   "message": string;
   "requestId": string;
+};
+
+export const FrogSleepRawSleepEventSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "type",
+    "occurred_at",
+    "data"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+} as const;
+
+export type FrogSleepRawSleepEvent = {
+  "event_id": string;
+  "type": string;
+  "occurred_at": string;
+  "data": {
+  [key: string]: unknown;
+};
+};
+
+export const FrogSleepRawSleepSessionRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "schema_version",
+    "status",
+    "started_at",
+    "ended_at",
+    "sleep_intent",
+    "timezone",
+    "data"
+  ],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": [
+        "1"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "cancelled",
+        "interrupted"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scheduled_wake_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sleep_intent": {
+      "type": "string",
+      "enum": [
+        "night_sleep",
+        "daytime_nap",
+        "catch_up_sleep"
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "type",
+          "occurred_at",
+          "data"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Optional authenticated-owner assertion."
+    },
+    "owner_user_id": {
+      "type": "string",
+      "description": "Optional authenticated-owner assertion."
+    }
+  },
+  "description": "Terminal history only; UTF-8 serialized request is at most 128 KiB, JSON nesting at most 32 levels and numbers must be finite. Event IDs must be unique and event times within started_at..ended_at. Server normalizes timestamps to UTC. Device lock/timer state inside data is history, never an instruction to resume a lock."
+} as const;
+
+export type FrogSleepRawSleepSessionRequest = {
+  "session_id": string;
+  "schema_version": "1";
+  "status": "completed" | "cancelled" | "interrupted";
+  "started_at": string;
+  "ended_at": string;
+  "scheduled_wake_at"?: string;
+  "sleep_intent": "night_sleep" | "daytime_nap" | "catch_up_sleep";
+  "timezone": string;
+  "data": {
+  [key: string]: unknown;
+};
+  "events"?: (
+{
+  "event_id": string;
+  "type": string;
+  "occurred_at": string;
+  "data": {
+  [key: string]: unknown;
+};
+}
+)[];
+  "user_id"?: string;
+  "owner_user_id"?: string;
+};
+
+export const FrogSleepRawSleepResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sleep_session"
+      ],
+      "properties": {
+        "sleep_session": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id",
+            "revision",
+            "sequence",
+            "deleted",
+            "data",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "sleep_report",
+                "report_preferences",
+                "sleep_session"
+              ]
+            },
+            "sync_epoch": {
+              "type": "string",
+              "description": "Included on direct resource responses."
+            },
+            "id": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "deleted": {
+              "type": "boolean"
+            },
+            "data": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepRawSleepResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "sleep_session": {
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "deleted": boolean;
+  "data": {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+};
+};
+  [key: string]: unknown;
+};
+
+export const FrogSleepPersonalPageResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "sync_epoch",
+        "boundary",
+        "changes_cursor",
+        "pagination"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "id",
+              "revision",
+              "sequence",
+              "deleted",
+              "data",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "sleep_report",
+                  "report_preferences",
+                  "sleep_session"
+                ]
+              },
+              "sync_epoch": {
+                "type": "string",
+                "description": "Included on direct resource responses."
+              },
+              "id": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "sequence": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "deleted": {
+                "type": "boolean"
+              },
+              "data": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updated_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "sync_epoch": {
+          "type": "string"
+        },
+        "boundary": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "changes_cursor": {
+          "type": "string"
+        },
+        "pagination": {
+          "type": "object",
+          "required": [
+            "limit",
+            "has_more",
+            "next_cursor"
+          ],
+          "properties": {
+            "limit": {
+              "type": "integer"
+            },
+            "has_more": {
+              "type": "boolean"
+            },
+            "next_cursor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepPersonalPageResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "items": (
+{
+  "kind": "sleep_report" | "report_preferences" | "sleep_session";
+  "sync_epoch"?: string;
+  "id": string;
+  "revision": number;
+  "sequence": number;
+  "deleted": boolean;
+  "data": {
+  [key: string]: unknown;
+};
+  "created_at": string;
+  "updated_at": string;
+}
+)[];
+  "sync_epoch": string;
+  "boundary": number;
+  "changes_cursor": string;
+  "pagination": {
+  "limit": number;
+  "has_more": boolean;
+  "next_cursor": string | null;
+};
+};
+  [key: string]: unknown;
+};
+
+export const FrogSleepGuestSessionRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "device_id",
+    "device_secret",
+    "platform"
+  ],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "device_secret": {
+      "type": "string",
+      "minLength": 43,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Client-generated cryptographically random secret of at least 32 bytes; keep in secure storage. Never use a hardware ID or password."
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android"
+      ]
+    }
+  }
+} as const;
+
+export type FrogSleepGuestSessionRequest = {
+  "device_id": string;
+  "device_secret": string;
+  "platform": "ios" | "android";
+};
+
+export const FrogSleepGuestUpgradeRequestSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "guest_user_id",
+    "guest_upgrade_token",
+    "device_id",
+    "confirmed"
+  ],
+  "properties": {
+    "guest_user_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "guest_upgrade_token": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 128
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "confirmed": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    }
+  }
+} as const;
+
+export type FrogSleepGuestUpgradeRequest = {
+  "guest_user_id": string;
+  "guest_upgrade_token": string;
+  "device_id": string;
+  "confirmed": true;
+};
+
+export const FrogSleepGuestUpgradeResultSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "user_id",
+    "previous_guest_user_id",
+    "migrated_data_count",
+    "deduplicated_data_count",
+    "sync_epoch"
+  ],
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "previous_guest_user_id": {
+      "type": "string"
+    },
+    "migrated_data_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deduplicated_data_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sync_epoch": {
+      "type": "string"
+    }
+  }
+} as const;
+
+export type FrogSleepGuestUpgradeResult = {
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "migrated_data_count": number;
+  "deduplicated_data_count": number;
+  "sync_epoch": string;
+};
+
+export const FrogSleepGuestUpgradeResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "user_id",
+        "previous_guest_user_id",
+        "migrated_data_count",
+        "deduplicated_data_count",
+        "sync_epoch"
+      ],
+      "properties": {
+        "user_id": {
+          "type": "string"
+        },
+        "previous_guest_user_id": {
+          "type": "string"
+        },
+        "migrated_data_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deduplicated_data_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sync_epoch": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepGuestUpgradeResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "user_id": string;
+  "previous_guest_user_id": string;
+  "migrated_data_count": number;
+  "deduplicated_data_count": number;
+  "sync_epoch": string;
+};
+  [key: string]: unknown;
+};
+
+export const FrogSleepGuestSessionResponseSchema = {
+  "type": "object",
+  "required": [
+    "code",
+    "data",
+    "requestId"
+  ],
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "access_token",
+        "refresh_token",
+        "user_id",
+        "app_id",
+        "guest_user_id",
+        "guest_upgrade_token",
+        "guest_expires_at",
+        "is_guest"
+      ],
+      "properties": {
+        "access_token": {
+          "type": "string"
+        },
+        "refresh_token": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "app_id": {
+          "type": "string",
+          "enum": [
+            "frogsleep"
+          ]
+        },
+        "guest_user_id": {
+          "type": "string"
+        },
+        "guest_upgrade_token": {
+          "type": "string",
+          "description": "Independent upgrade credential; persist securely and send only to the upgrade endpoint."
+        },
+        "guest_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "is_guest": {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+} as const;
+
+export type FrogSleepGuestSessionResponse = {
+  "code": string;
+  "requestId": string;
+  "data": {
+  "access_token": string;
+  "refresh_token": string;
+  "user_id": string;
+  "app_id": "frogsleep";
+  "guest_user_id": string;
+  "guest_upgrade_token": string;
+  "guest_expires_at": string;
+  "is_guest": true;
+  [key: string]: unknown;
+};
+  [key: string]: unknown;
 };
 
 export const FrogSleepSleepReportRequestSchema = {
@@ -21536,17 +22234,26 @@ export const GeneratedPublicContractNames = [
   "FrogSleepFocusMessageRequest",
   "FrogSleepFocusProfileRequest",
   "FrogSleepFocusSessionRequest",
+  "FrogSleepGuestSessionRequest",
+  "FrogSleepGuestSessionResponse",
+  "FrogSleepGuestUpgradeRequest",
+  "FrogSleepGuestUpgradeResponse",
+  "FrogSleepGuestUpgradeResult",
   "FrogSleepInviteAcceptRequest",
   "FrogSleepInviteCreateRequest",
   "FrogSleepPasswordChangeRequest",
   "FrogSleepPasswordLoginRequest",
   "FrogSleepPasswordResetConfirmRequest",
   "FrogSleepPasswordResetRequest",
+  "FrogSleepPersonalPageResponse",
   "FrogSleepPersonalSyncError",
   "FrogSleepPersonalSyncPage",
   "FrogSleepPersonalSyncState",
   "FrogSleepPersonalVersion",
   "FrogSleepProgressSnapshotRequest",
+  "FrogSleepRawSleepEvent",
+  "FrogSleepRawSleepResponse",
+  "FrogSleepRawSleepSessionRequest",
   "FrogSleepSharedFocusMoment",
   "FrogSleepSharedSleepEventRequest",
   "FrogSleepSharedSleepSessionRequest",

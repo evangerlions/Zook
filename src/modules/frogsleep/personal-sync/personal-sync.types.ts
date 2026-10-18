@@ -1,4 +1,4 @@
-export type PersonalResourceKind = "sleep_report" | "report_preferences";
+export type PersonalResourceKind = "sleep_report" | "report_preferences" | "sleep_session";
 /** An immutable resource revision doubles as a committed change and restore history. */
 export interface PersonalVersion {
   kind: PersonalResourceKind;
@@ -15,6 +15,7 @@ export interface PersonalReceipt { digest: string; result: PersonalVersion }
 /** Scoped unit of work; its account lock is held through database commit. */
 export interface PersonalSyncTransaction {
   state: PersonalSyncState;
+  reset(): Promise<void>;
   current(kind: PersonalResourceKind, id: string): Promise<PersonalVersion | undefined>;
   receipt(key: string): Promise<PersonalReceipt | undefined>;
   saveReceipt(key: string, digest: string, result: PersonalVersion): Promise<void>;

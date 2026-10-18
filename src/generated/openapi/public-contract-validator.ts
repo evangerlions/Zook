@@ -30,6 +30,9 @@ import type {
   FrogSleepSharedSleepEventRequest,
   FrogSleepSharedSleepSessionRequest,
   FrogSleepSleepPreferencesRequest,
+  FrogSleepRawSleepSessionRequest,
+  FrogSleepGuestSessionRequest,
+  FrogSleepGuestUpgradeRequest,
   FrogSleepSleepReportRequest,
   FrogSleepTokenRefreshRequest,
   LogAckRequest,
@@ -80,6 +83,9 @@ import {
   FrogSleepSharedSleepEventRequestSchema,
   FrogSleepSharedSleepSessionRequestSchema,
   FrogSleepSleepPreferencesRequestSchema,
+  FrogSleepRawSleepSessionRequestSchema,
+  FrogSleepGuestSessionRequestSchema,
+  FrogSleepGuestUpgradeRequestSchema,
   FrogSleepSleepReportRequestSchema,
   FrogSleepTokenRefreshRequestSchema,
   LogAckRequestSchema,
@@ -163,6 +169,9 @@ const validators = {
   frogSleepFocusSession: ajv.compile(FrogSleepFocusSessionRequestSchema),
   frogSleepFocusAchievementNotify: ajv.compile(FrogSleepFocusAchievementNotifyRequestSchema),
   frogSleepFocusMessage: ajv.compile(FrogSleepFocusMessageRequestSchema),
+  FrogSleepRawSleepSessionRequest: ajv.compile(FrogSleepRawSleepSessionRequestSchema),
+  FrogSleepGuestSessionRequest: ajv.compile(FrogSleepGuestSessionRequestSchema),
+  FrogSleepGuestUpgradeRequest: ajv.compile(FrogSleepGuestUpgradeRequestSchema),
   frogSleepSleepReport: ajv.compile(FrogSleepSleepReportRequestSchema),
   frogSleepProgressSnapshot: ajv.compile(FrogSleepProgressSnapshotRequestSchema),
   frogSleepEntitlement: ajv.compile(FrogSleepEntitlementDataSchema),
@@ -297,6 +306,9 @@ export const PublicContractValidator = {
   validateFrogSleepFocusMessage(input: unknown) {
     return validateWithSchema<FrogSleepFocusMessageRequest>(validators.frogSleepFocusMessage, input);
   },
+  validateFrogSleepRawSleepSessionRequest(input: unknown) { return validateWithSchema<FrogSleepRawSleepSessionRequest>(validators.FrogSleepRawSleepSessionRequest,input); },
+  validateFrogSleepGuestSessionRequest(input: unknown) { return validateWithSchema<FrogSleepGuestSessionRequest>(validators.FrogSleepGuestSessionRequest,input); },
+  validateFrogSleepGuestUpgradeRequest(input: unknown) { return validateWithSchema<FrogSleepGuestUpgradeRequest>(validators.FrogSleepGuestUpgradeRequest,input); },
   validateFrogSleepSleepReport(input: unknown) {
     return validateWithSchema<FrogSleepSleepReportRequest>(validators.frogSleepSleepReport, input);
   },

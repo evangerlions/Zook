@@ -1,3 +1,4 @@
+import { assertSleepGuestRequest } from "../modules/frogsleep/guest/guest-access.ts";
 import { retryFrogSleepAdminNotification, type FrogSleepAdminRetryCommand } from "../modules/frogsleep/admin/frogsleep-admin-retry.ts";
 import { timingSafeEqual } from "node:crypto";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
@@ -103,9 +104,10 @@ export class BackendRouteContext {
     }
 
     await this.authService.assertAccessTokenActive(auth);
+    const user = await this.userService.getById(auth.userId);
+    await assertSleepGuestRequest(this.database, user, auth.appId, request);
 
     if (options.requireActiveMembership !== false) {
-      await this.userService.getById(auth.userId);
       await this.appRegistryService.getAppOrThrow(auth.appId);
       await this.appRegistryService.ensureExistingMembership(
         auth.appId,
@@ -125,7 +127,8 @@ export class BackendRouteContext {
     this.appContextResolver.resolvePostAuth(request, auth.appId);
     this.appAccessGuard.assertScope(appId, auth.appId);
     await this.authService.assertAccessTokenActive(auth);
-    await this.userService.getById(auth.userId);
+    const user = await this.userService.getById(auth.userId);
+    await assertSleepGuestRequest(this.database, user, auth.appId, request);
     await this.appRegistryService.getAppOrThrow(appId);
     await this.appRegistryService.ensureExistingMembership(appId, auth.userId);
     return auth;

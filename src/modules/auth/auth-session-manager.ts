@@ -1,3 +1,4 @@
+import { assertSleepGuestActive } from "../frogsleep/guest/guest-access.ts";
 import { ApplicationDatabase } from "../../infrastructure/database/application-database.ts";
 import {
   badRequest,
@@ -59,6 +60,7 @@ export class AuthSessionManager {
       unauthorized("AUTH_REFRESH_TOKEN_REVOKED", "Refresh token is revoked.");
     }
     const user = await this.userService.getById(existingRecord.userId);
+    await assertSleepGuestActive(this.database,user,existingRecord.appId,now);
     await this.appRegistryService.getAppOrThrow(existingRecord.appId);
     await this.appRegistryService.ensureExistingMembership(
       existingRecord.appId,

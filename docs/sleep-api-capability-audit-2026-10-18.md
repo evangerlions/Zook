@@ -2,19 +2,21 @@
 
 ## 结论
 
-FrogSleep后端的账号、个人报告同步、私人专注、搭子邀请/方向授权、共同守护、成长与通知、运营后台均有实际实现和自动化验证。不能据此声明整个Sleep产品或线上能力已全部完善：真实提供方/真机/dev验收、完整原始睡眠历史同步、客户端二期恢复仍未完成；设备ID云游客转移没有可信身份协议，明确拒绝，禁止猜设备ID转移数据。
+FrogSleep后端的账号、个人报告同步、私人专注、搭子邀请/方向授权、共同守护、成长与通知、运营后台均有实际实现和自动化验证。续作已补原始终态睡眠同步与独立凭据的云游客升级，设备ID单独仍不能认领数据。真实提供方/真机/dev验收和客户端二期恢复仍未完成，不能据此声明整个Sleep产品或线上能力已全部完善。
 
 审计基线为 `origin/main` 的 `35ad30a`。开始时当前分支 `feature/frogsleep-data-ownership` 与远端main各有独立提交，多个工作树仍有未提交工作，答案是“当时尚未全部合并”。本轮按用户确认将未提交内容一起保存为快照后整合，不丢弃原工作树文件或暂存区。最终核对发现搭子工作树在任务期间仍有并行写入，额外冻结 `7dfbedd`（`feature/integration-snapshot-buddy-completion-late`）作为本轮追加整合边界；其后最后一次同类旧ID防绕过补丁另保存为 `598230d`，由主线统一关系解析器覆盖并补齐兼容helper防护；涉及完成时间边界、旧关系遮蔽、查询提取和双人晨间终态。
 
 ## API覆盖
 
-canonical OpenAPI为 `api-contracts/openapi/frogsleep/api.yaml`；统计121条路径、139个方法操作，不含admin与代码提供的兼容别名。实际HTTP主路径统一 `/api/v1/frogsleep/...`，下表省略该前缀。
+canonical OpenAPI为 `api-contracts/openapi/frogsleep/api.yaml`；统计126条路径、146个方法操作，不含admin与代码提供的兼容别名。实际HTTP主路径统一 `/api/v1/frogsleep/...`，下表省略该前缀。
 
 | 能力 | 代表路径 | 完整性与边界 |
 | --- | --- | --- |
 | 账号/会话/设备 | `auth/*`、`me`、`me/account`、`devices` | app membership隔离，刷新/登出/删号、设备当前归属和旧token拒绝；删号保留全局身份及其他产品 |
 | 私人报告和偏好 | `product-data/sleep-reports`及`/{id}`、`progress/report_preferences` | 稳定逻辑ID、账号内幂等、revision/If-Match、epoch、墓碑，完整分页无500条截断 |
-| 多设备报告恢复 | `product-data/personal-sync/{state,restore,changes}` | 固定边界restore、提交有序changes、签名/账号/epoch/查询绑定游标；仅报告摘要与报告偏好 |
+| 原始终态睡眠 | `product-data/sleep-sessions`及`/{id}` | 有界原始JSON与事件、终态/时间校验、完整修订及墓碑，禁止恢复活动设备锁 |
+| 可信云游客升级 | `account/guest-sessions`、`account/upgrade` | 独立密钥、受限身份、正式目标证明、确认/epoch/幂等、原子迁移与会话撤销 |
+| 多设备私人恢复 | `product-data/personal-sync/{state,restore,changes}` | 固定边界restore、提交有序changes、签名/账号/epoch/查询绑定游标；原始终态睡眠、报告摘要与报告偏好 |
 | 私人专注 | `focus-buddy/sessions`、`stats/week`、`achievements` | 同账号ID并发去重、相同重放不重复统计、跨账号隔离；正常上报保留修正能力，确认导入不可变 |
 | 搭子邀请 | `buddy/invitations`、`preview`、`/{id}/domains/{domain}/{accept,decline,cancel}` | 邮箱正确账号认领、独立域CAS/幂等、原关系回执、slot并发、终态重放；接受不授予共享 |
 | 方向授权/安全 | `buddy/relationships`、`/{id}/grants`及生命周期命令、blocks/reports | 双方独立授权，暂停/恢复/解除/静默，撤权/拉黑关闭共享协调与旧通知访问 |
@@ -58,8 +60,8 @@ canonical OpenAPI为 `api-contracts/openapi/frogsleep/api.yaml`；统计121条�
 
 ## 尚未完成的产品/环境能力
 
-1. 完整个人睡眠原始记录、运行中状态及客户端二期持久恢复/离线多设备冲突流程；现有同步范围不能扩写成“全部睡眠历史”。
-2. 云游客身份创建、持有凭据和安全转移协议；目前支持的是用户确认后的本地上传。
+1. 运行中设备状态及客户端二期持久恢复/离线多设备冲突流程；后端已支持原始终态历史，但双端仍需接入与验收。
+2. 客户端云游客安全凭据存储、明确确认与升级后的恢复接入；后端凭据创建/恢复/原子转移协议已在续作实现。
 3. 当前dev多账号/双设备/删号旅程，SES真实delivered回调、APNs/FCM真机deep link与系统通知无权限回退。测试中的provider替身不等同于这些证据。
 4. 二期灰度与回滚负责人、同一main SHA先dev后online的发布门槛。OpenSpec 2A §3与2B 4.5仍未完成，不能自动勾选上线。
 5. `../sleep/docs`最新搭子中心设计中的二维码/系统分享包含客户端工作和草案路径；当前可复用统一邀请的share_link/code及结构化shares，草案 `/v1/buddy/...`不是新增后端合同或可宣称已上线的接口。
@@ -89,3 +91,9 @@ PG共19套文件，累计TAP统计97项（含父测试），无失败/跳过。�
 
 
 最终整合边界：末次原工作树快照 `598230d` 的旧ID授权补丁在main通过统一关系解析器实现，兼容SleepRelationshipService也补齐同一拒绝规则；避免重复维护两套授权真值。原工作树文件与index保持原样，快照及合并记录可追溯，不代表原工作树变成干净状态。主工作区已切到main；发布分支未修改。本次生成的一次性数据库已清理。
+
+## 原始同步与游客升级续作
+
+在已整合main基础上补齐终态原始sleep_session资源和独立密钥云游客。原始数据支持统一修订/固定恢复/changes/墓碑；游客身份30天、仅私人数据权限，正式账号凭独立证明/确认/epoch/idempotency key原子升级，相同数据去重、冲突全回滚，来源失效。迁移072/073可重放，公共合同与专题同步。上文设备ID拒绝仍适用于旧兼容请求，不再代表所有云游客升级均未提供。
+
+feature验证：首轮全量1463项通过，随后新增/修正的原始、游客、合同及个人同步专项17项通过；原始JSON深度/非有限数与时间精度再补2项验证通过。三套独立一次性PostgreSQL数据库测试共24项通过（新增10项、个人同步9项、账号删除5项，含父测试），覆盖505条原始分页、双连接并发/回滚、上传与删号竞争、来源封禁、迁移重放。独立复核发现的数组枚举、封禁来源、时间精度和删除envelope问题均修复；合同生成一致、lint零错误194条警告。行数门禁仍为相同9个既有超限文件，未新增超限文件或放宽限制。最终main验证另记。

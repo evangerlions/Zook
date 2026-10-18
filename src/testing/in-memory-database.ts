@@ -1,3 +1,4 @@
+import { InMemorySleepGuestStore } from "./in-memory-sleep-guest.ts";
 import { InMemoryPersonalSyncRepository } from "./in-memory-personal-sync.ts";
 import { InMemoryFrogSleepAdminStore } from "./in-memory-frogsleep-admin.ts";
 import { assertUniqueFocusSession, upsertMemoryFocusSession } from "./in-memory-focus-sessions.ts";
@@ -231,6 +232,8 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   private readonly personalSync = new InMemoryPersonalSyncRepository(this);
+  private readonly sleepGuest = new InMemorySleepGuestStore(this, this.personalSync);
+  getSleepGuestStore() { return this.sleepGuest; }
   getPersonalSyncRepository() { return this.personalSync; }
   getFrogSleepAdminStore() { return new InMemoryFrogSleepAdminStore(this); }
   async withAppUserDataTransaction<T>(_appId: string, _userId: string, fn: () => Promise<T> | T): Promise<T> {

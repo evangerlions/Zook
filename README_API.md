@@ -952,7 +952,10 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 | `PUT/PATCH` | `/api/v1/frogsleep/product-data/progress/{namespace}` | upsert 当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/progress/{namespace}` | 查询当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/entitlements/current` | 查询当前 FrogSleep 权益状态 |
-| `POST` | `/api/v1/frogsleep/account/upgrade` | 兼容保留；云端游客转移未开放，返回 409 |
+| `POST` | `/api/v1/frogsleep/account/guest-sessions` | 创建/恢复受限云游客；独立设备密钥与幂等 key |
+| `POST` | `/api/v1/frogsleep/account/upgrade` | 正式账号凭据升级游客；旧设备ID正文仍409 |
+| `POST/GET` | `/api/v1/frogsleep/product-data/sleep-sessions` | 原始终态睡眠创建/固定边界恢复，含墓碑 |
+| `GET/PUT/PATCH/DELETE` | `/api/v1/frogsleep/product-data/sleep-sessions/{sessionId}` | 本人原始历史读取、修正和墓碑删除 |
 
 睡眠报告请求必须包含 `snapshot_id`（或 `report_id` / `id`）、`schema_version`（或 `version`）、`recorded_at` ISO 时间和对象型 `data`。响应会把报告内容放在 `snapshot_data`，避免覆盖 Zook envelope 的 `data`。列表响应返回 `sleep_reports`、兼容 alias `reports` 与 `pagination`。`GET` 支持 `limit`（1–100，默认50）和不透明 `cursor`；按规范报告时间、稳定资源ID倒序在数据库分页，持续使用 `pagination.next_cursor` 直到 `has_more=false`，可恢复超过500条的完整历史。游标绑定认证身份和固定恢复边界，非法游标返回409 `FROGSLEEP_SYNC_CURSOR_INVALID`。
 
@@ -963,7 +966,7 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 
 进度快照 `namespace` 当前支持 `habit_progress`、`companion_state`、`cat_state`、`onboarding`、`report_preferences`。请求必须包含 `schema_version`（或 `version`）和对象型 `state`（或 `data`）；未知 namespace 返回 `400 REQ_INVALID_BODY`。权益查询返回当前 app-scoped entitlement；无记录时返回 `{ state: "unknown", plan: "free", source: "none" }`。FrogSleep logout 只注销 App 登录态，不删除报告、进度、权益记录，也不删除 Zook 全局账号。
 
-`POST /api/v1/frogsleep/account/upgrade` 仅保留兼容入口，要求 FrogSleep Bearer 鉴权和非空字符串 `guest_device_id`；缺失或类型错误返回 `400 REQ_INVALID_BODY`。FrogSleep 尚无云端游客身份及所有权证明协议，设备 ID 不能证明数据归属；有效请求返回 `409 FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，不会读取或转移任何游客云端记录，也不会返回迁移成功。客户端应在用户明确确认归属后，通过当前账号的 `POST /api/v1/frogsleep/product-data/sleep-reports` 和 `POST /api/v1/frogsleep/focus/sessions` 上报本地游客报告与已结束专注记录，携带稳定客户端 ID 与绑定信息；客户端负责展示确认，接口只校验账号归属。
+`POST /api/v1/frogsleep/account/guest-sessions` 接收安全随机 `device_secret`、`device_id`、`platform`，必填 `Idempotency-Key`；返回受限 Bearer/refresh 和独立升级凭据，身份有效期30天。正式账号以自己的 Bearer、当前 `X-Sync-Epoch`、`Idempotency-Key`、来源 `guest_user_id/guest_upgrade_token/device_id` 及 `confirmed:true` 原子升级私人原始睡眠、报告和偏好。目标相同数据去重，不同正文或墓碑冲突整次回滚；成功撤销来源访问，原请求可重放确认。游客只能访问私人同步和本人会话，不能使用公共平台、搭子、专注或设备管理。旧 `guest_device_id` 单字段请求仍409 `FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，设备ID不证明归属。完整请求、错误、限额与重试见 [游客升级专题](docs/public-frogsleep-guest-upgrade.md)。
 
 ### 9.5 FrogSleep 邀请链接与推送
 
@@ -1239,7 +1242,7 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 
 ### Sleep 私人报告同步（2026-10-11）
 
-个人报告 API 以稳定 snapshot_id 幂等保存；新增本人 detail/PUT/DELETE、personal-sync/state、固定边界 restore、提交有序 changes，并将 report_preferences 接入相同修订协议。历史 GET 使用完整数据库分页，无前500条截断。写入支持 X-Sync-Epoch、Idempotency-Key、If-Match，409冲突/410墓碑不可盲目覆盖或复活。旧无epoch兼容仅限未重建的账号。范围是报告摘要与报告偏好，完整睡眠原始历史、游客云升级和客户端2B恢复不属于已完成能力。接入细则、保留策略、开关和回滚见 [私人同步专题](docs/public-frogsleep-personal-sync.md)。
+个人报告 API 以稳定 snapshot_id 幂等保存；新增本人 detail/PUT/DELETE、personal-sync/state、固定边界 restore、提交有序 changes，并将 report_preferences 接入相同修订协议。历史 GET 使用完整数据库分页，无前500条截断。写入支持 X-Sync-Epoch、Idempotency-Key、If-Match，409冲突/410墓碑不可盲目覆盖或复活。旧无epoch兼容仅限未重建的账号。范围已扩展到原始终态睡眠、报告和报告偏好，并支持独立凭据的游客云升级；客户端2B恢复仍需双端验收。接入细则、保留策略、开关和回滚见 [私人同步专题](docs/public-frogsleep-personal-sync.md)。
 
 ### FrogSleep 共享读取的身份与撤权边界
 
@@ -1279,3 +1282,7 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 
 
 追加整合：共同目标从双方接受时开始计数，暂停后冻结进度；共同活动以真实完成时间归属周窗口，超过期限且未完成才失效。共同睡眠按每位参与者持久化的事件时间归属完成事实，之后另一人的事件不能改写先完成者的日期。canonical关系（包括已撤销关系）遮蔽同一参与者/域的旧兼容关系，避免旧记录重新显示或绕过撤权；解除/拉黑仍清理被遮蔽的旧事实。私人专注列表及周统计读取完整数据库记录，不因旧500/200条上限截断。
+
+### FrogSleep 原始睡眠同步与可信游客升级
+
+原始睡眠 `sleep-sessions` 支持 completed/cancelled/interrupted 终态、结构化事件和128 KiB以内私有历史；所有写入/删除必填 X-Sync-Epoch、Idempotency-Key，修正/删除要求 If-Match。单条响应为 data.sleep_session；分页和统一 restore/changes 包含 sleep_session 种类及墓碑，不能恢复为活动设备锁。详见 [私人同步协议](docs/public-frogsleep-personal-sync.md)。游客凭据只以哈希持久化，来源与目标锁定后一次迁移，最多10,000个最新资源/32 MiB，不截断。独立凭据、明确确认、回执重试及会话撤销见 [游客升级协议](docs/public-frogsleep-guest-upgrade.md)。
