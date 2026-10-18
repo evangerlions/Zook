@@ -1,3 +1,4 @@
+import { ownsPrivateSleepTransaction } from "./frogsleep-private-data-routes.ts";
 import { tryHandleLightTickPlanningRoutes } from "./lighttick-planning-routes.ts";
 import { AppContextResolver } from "../core/context/app-context.resolver.ts";
 import { HttpExceptionFilter } from "../core/filters/http-exception.filter.ts";
@@ -207,6 +208,8 @@ export class BackendApplication extends BackendRouteContext {
       return execute();
     }
 
+    // A swallowed HTTP error must not turn a resource transaction failure into a commit.
+    if (this.frogsleepEnabled && ownsPrivateSleepTransaction(request)) return execute();
     return this.database.withExclusiveSession(execute);
   }
 

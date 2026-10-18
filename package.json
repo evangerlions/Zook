@@ -16,6 +16,7 @@
     "admin:install": "npm --prefix apps/admin-web install --include=optional",
     "admin:typecheck": "npm --prefix apps/admin-web run typecheck",
     "check:line-count": "node scripts/check-source-line-count.mjs",
+    "acceptance:frogsleep-dev": "node scripts/frogsleep-dev-acceptance.mjs",
     "smoke:frogsleep-zook": "node scripts/frogsleep-zook-smoke.mjs",
     "smoke:frogsleep-buddy-invitation": "node scripts/frogsleep-buddy-invitation-smoke.mjs",
     "smoke:lighttick-dev": "node scripts/lighttick-dev-acceptance.mjs",
