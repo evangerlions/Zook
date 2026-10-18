@@ -375,7 +375,7 @@ FrogSleep `/api/v1/frogsleep/*` 成功响应采用迁移期双兼容格式：保
 3. `/api/v1/frogsleep/me`、当前 FrogSleep app 账号删除 `DELETE /api/v1/frogsleep/me/account`、邮箱 bind/change、`/api/v1/frogsleep/devices` app-scoped 设备注册与删除；FrogSleep 不提供删除共享 Zook 用户或其他 app membership 的接口，`DELETE /api/v1/frogsleep/me/account` 不要求 `confirmation`，会将当前用户的 FrogSleep membership 标记为 deleted、撤销 FrogSleep app session，并清理 FrogSleep app-scoped runtime data，包括睡眠报告快照、进度快照和权益记录。`/api/v1/frogsleep/auth/password/change` 修改共享 Zook 账号密码，会影响同一账号在其他 app 的密码登录；FrogSleep 专注匹配 `display_name` 等 profile 字段保存在 FrogSleep app-scoped entity payload，不写入共享 user。
 4. 睡眠搭子邀请、pending 查询、登录后 preview 恢复、code/token/id 接受、拒绝、取消、当前关系、暂停、恢复、解除、守护偏好、共同守护 session、事件、暂停今晚、最新 summary/recap；睡眠关系状态机显式限制 `revoked` 为终态，`shared-sessions` 按 `relationship_id + date_anchor` 幂等，事件只接受 `interrupted`、`returned`、`paused_tonight`、`morning_completed`，守护偏好只接受文档化字段。summary/recap 已从最小占位升级为基于共同守护 session 和事件派生的 `artifact_version`、`visible_state`、`had_recovery`、`combined_result_type`、`supporting_line`、`recommended_next_step` 等字段，但仍不声称提供睡眠阶段或医疗级评分。守护偏好响应带回 `relationship`，共同守护 session 响应带 iOS 可解的发起人、双方状态和日期锚点 alias。邀请接受会记录 `source_invite_id`、`accept_source`、`accepted_at`、`accepted_by_user_id`，用于邀请转化分析；无指定目标的公开/纸条邀请不能被任意登录用户 decline，只能由发起人 cancel。
 5. 专注搭子 session 上报、历史查询、周统计、成就、匹配资料、受控匹配搜索、候选邀请、直接邀请、登录后 preview 恢复、code/token 接受、关系动作、消息、presence、对比、共同专注时刻；session 上报校验 ISO 时间和非负有限时长，sessions / achievements / messages / shared 列表返回兼容容器字段并附加 `pagination` 元数据。presence 现在由 focus session、消息和共同专注时刻推导 `focusing`、`recently_active`、`idle`、`stale`，comparison 支持 `week_start`，messages 支持 `receiver_user_id` / `since`，shared 支持 `room_id` / `from` / `to` 并校验非法时间窗。匹配搜索会过滤未授权公开匹配、条件不兼容、已有关系、已被当前用户 dismiss/report 的候选人，并返回 `recommendation_type`、`privacy_note_key`、`why_recommended`、`invite_prompt_key` 等受控推荐解释字段；当前用户有未过期 outgoing pending 邀请时返回 `pending_invites` 空态，关联邀请过期时会先刷新 invite/relationship 状态再恢复搜索；dismiss/report 排除数据批量读取。专注关系动作仅允许 `accept`、`decline`、`revoke`，`revoked` 为终态且不能继续用于消息、presence、共同专注时刻；专注邀请、消息和成就响应同时提供 iOS 当前客户端读取的 alias。
-6. FrogSleep 云端产品数据：支持 app-scoped 睡眠报告快照、进度快照和当前权益查询。游客云端转移尚无身份所有权证明协议，`account/upgrade` 兼容入口明确返回 `409 FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，不能按设备 ID 认领数据；用户确认后的本地游客报告及已结束专注记录可通过登录账号的标准上传接口绑定。报告内容通过 `snapshot_data` 返回，避免和 Zook envelope 的 `data` 冲突；进度 namespace 采用 allowlist；权益无记录时返回 unknown/free。logout 只撤销 FrogSleep app 登录态；`DELETE /api/v1/frogsleep/me/account` 会清理当前用户的 FrogSleep app-scoped 产品数据，但保留共享账号和其他 app 数据。
+6. FrogSleep 云端产品数据：支持 app-scoped 原始终态睡眠、报告快照、进度快照和当前权益查询。受限云游客由独立设备密钥创建/恢复，凭升级证明和正式目标会话原子迁移私人数据；旧设备ID单字段入口仍返回 `409 FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，不能按设备 ID 认领数据。用户确认后的本地游客报告及已结束专注记录也可通过登录账号的标准上传接口绑定。报告内容通过 `snapshot_data` 返回，原始记录放在 `data.sleep_session`，避免覆盖 Zook envelope；进度 namespace 采用 allowlist；权益无记录时返回 unknown/free。logout 只撤销 FrogSleep app 登录态；`DELETE /api/v1/frogsleep/me/account` 清理当前用户的 FrogSleep 产品数据，保留共享账号和其他 app 数据。
 7. FrogSleep push payload 类型、通知入队、worker 设备分发、无设备成功收敛、provider 失败写入 failed event；APNs/FCM 对不可恢复无效 token 会仅清理当前 app/user/token 对应的 FrogSleep device，可重试 provider 错误继续走 failed event / retry 行为。
 8. 睡眠搭子和专注搭子邀请 HTTP 中转端点，302 跳转到 deep link；中转会尽力记录 `first_opened_at`、`last_opened_at`、`open_count` 等打开统计，统计失败不影响 302。
 9. PostgreSQL migration `006_frogsleep_app.sql` 新增 `zook_frogsleep_*` 表；内存数据库同步实现对应测试存储。
@@ -735,7 +735,7 @@ A03/A10：复用 focus/sessions 和 product-data/sleep-reports 的上传链路�
 
 ### 2026-10-18 本地分支整合后的 Sleep 能力
 
-已整合报告修订同步/固定恢复/提交增量/墓碑、账号数据清理及确认导入、统一领域邀请与方向授权、双人守护和真实完成事实、通知耐久回执和Sleep运营后台。新增修复：报告since保留完整DB分页，专注周统计消费week_start，确认导入标记持久化防止省略binding绕过，Sleep通知复核偏好，共同活动/目标/周报只计真实终态事实。云游客转移没有身份凭据，升级端点明确409；当前完整原始睡眠历史及客户端恢复和真实provider/dev/真机验收不属于已完成声明。详见 `docs/sleep-api-capability-audit-2026-10-18.md`。
+已整合报告修订同步/固定恢复/提交增量/墓碑、账号数据清理及确认导入、统一领域邀请与方向授权、双人守护和真实完成事实、通知耐久回执和Sleep运营后台。新增修复：报告since保留完整DB分页，专注周统计消费week_start，确认导入标记持久化防止省略binding绕过，Sleep通知复核偏好，共同活动/目标/周报只计真实终态事实。后续已补原始终态睡眠同步和独立凭据的安全游客升级；仅设备ID的升级仍409。活动设备状态、客户端恢复和真实provider/dev/真机验收仍需独立完成。详见 `docs/sleep-api-capability-audit-2026-10-18.md`。
 
 
 ### 2026-10-18 本地 P0 首次共同完成
@@ -744,3 +744,7 @@ A03/A10：复用 focus/sessions 和 product-data/sleep-reports 的上传链路�
 
 
 Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主线幂等/授权/通知与恢复协议，补齐目标接受/暂停进度边界、活动真实完成时间归属、每位晨间参与者独立完成时间与终态、canonical撤销遮蔽旧关系，以及私人专注完整历史/周统计。公开读端过滤和解除/拉黑清理分别验证，兼容事实不能绕过canonical撤权。
+
+## FrogSleep 原始睡眠与可信游客补齐（2026-10-18）
+
+新增 product-data/sleep-sessions 的创建、详情、完整修正、固定边界列表和墓碑删除，复用私有 versions/receipts/epoch/restore/changes；072扩展kind。原始记录只接受终态，含有界事件与客户端历史JSON，不恢复设备锁或自动诊断。073保存云游客凭据哈希及创建/升级回执；account/guest-sessions 返回30天受限身份，中央鉴权限制平台/其他产品能力，refresh不续游客有效期。account/upgrade 要求正式目标、独立来源证明、确认、epoch与幂等key；最新原始记录/报告/偏好含墓碑同事务迁移，相同去重、冲突回滚、来源失效，回执支持响应丢失后重试。PG复用ambient事务，memory适配器匹配回滚语义。公共接入详见 docs/public-frogsleep-personal-sync.md、docs/public-frogsleep-guest-upgrade.md；双端凭据存储/恢复/真机与dev发布未在本轮执行。

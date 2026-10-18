@@ -1,4 +1,4 @@
-import { tryHandlePersonalSyncRoutes } from "./frogsleep-personal-sync-routes.ts";
+import { tryHandlePrivateSleepData } from "./frogsleep-private-data-routes.ts";
 import { randomUUID } from "node:crypto";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -194,8 +194,8 @@ export async function tryHandleFrogSleepV1Routes(
   }
   const routePath = normalizeFrogSleepPath(request.path);
   const routeRequest = routePath === request.path ? request : { ...request, path: routePath };
-  const personalSync = await tryHandlePersonalSyncRoutes(this, routeRequest);
-  if (personalSync) return personalSync;
+  const privateData = await tryHandlePrivateSleepData(this, routeRequest);
+  if (privateData) return privateData;
 
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/auth/email/send-code") {
     return await handleFrogSleepEmailCode(this, routeRequest);

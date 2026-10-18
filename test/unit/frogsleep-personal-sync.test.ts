@@ -41,7 +41,11 @@ test("private API rejects forged owner and exposes typed recovery and report det
   const created = await call("POST","/sleep-reports",report,{"idempotency-key":"api-create"}); assert.equal(created.statusCode,200);
   assert.equal((await call("GET","/sleep-reports/api-report")).body.data.revision,1);
   const restore = await call("GET","/personal-sync/restore"); assert.equal(restore.body.data.items.length,1);
-  assert.equal((await call("DELETE","/sleep-reports/api-report",undefined,{"if-match":"1","idempotency-key":"api-delete"})).statusCode,200);
+  const removed = await call("DELETE","/sleep-reports/api-report",undefined,{"if-match":"1","idempotency-key":"api-delete"});
+  assert.equal(removed.statusCode,200);
+  assert.equal(removed.body.data.resource.deleted,true);
+  assert.equal(removed.body.data.resource.revision,2);
+  assert.equal(removed.body.data.resource.sync_epoch,removed.body.sync_epoch);
   assert.equal((await call("POST","/sleep-reports",report)).statusCode,410);
   assert.equal((await call("GET","/sleep-reports/api-report")).statusCode,404);
 });

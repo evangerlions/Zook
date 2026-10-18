@@ -8,6 +8,8 @@ import type { InMemoryDatabase } from "./in-memory-database.ts";
 export class InMemoryPersonalSyncRepository implements PersonalSyncRepository {
   private readonly accounts = new Map<string, { state: PersonalSyncState; versions: PersonalVersion[]; receipts: Map<string, PersonalReceipt> }>();
   constructor(private readonly db: InMemoryDatabase) {}
+  snapshot() { return structuredClone(this.accounts); }
+  restore(snapshot: ReturnType<InMemoryPersonalSyncRepository["snapshot"]>) { this.accounts.clear(); for (const [key,value] of snapshot) this.accounts.set(key,value); }
   metadata() {
     for (const membership of this.db.appUsers.filter(m => m.appId === "frogsleep" && m.status === "ACTIVE")) {
       if (!this.accounts.has(membership.userId)) this.accounts.set(membership.userId, backfillMemoryPersonalAccount(this.db.frogSleepEntities, membership.userId));
@@ -23,6 +25,7 @@ export class InMemoryPersonalSyncRepository implements PersonalSyncRepository {
       account.state.deleted = false;
       const tx: PersonalSyncTransaction = {
         state: account.state,
+        async reset() { account.versions=[];account.receipts.clear();Object.assign(account.state,{epoch:randomUUID(),cursorSecret:randomUUID(),sequence:0,legacyAllowed:false,deleted:true}); },
         async current(kind, id) { return account.versions.findLast(v => v.kind === kind && v.id === id); },
         async receipt(key) { return account.receipts.get(key); },
         async saveReceipt(key, digest, result) { account.receipts.set(key, { digest, result: structuredClone(result) }); },

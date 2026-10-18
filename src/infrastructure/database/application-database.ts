@@ -1,3 +1,4 @@
+import type { SleepGuestStore } from "../../modules/frogsleep/guest/guest-store.ts";
 import type { PersonalSyncRepository } from "../../modules/frogsleep/personal-sync/personal-sync.types.ts";
 import type { FrogSleepAdminStore } from "../../modules/frogsleep/admin/frogsleep-admin.types.ts";
 import type { FrogSleepFocusSessionWriteResult } from "../../shared/frogsleep-focus-session.ts";
@@ -90,6 +91,7 @@ export interface ManagedStateSnapshot {
 export abstract class ApplicationDatabase {
   abstract readonly llmObservabilityStore: LlmObservabilityStore;
   abstract readonly aiNovelConversationStore: AiNovelConversationStore;
+  abstract getSleepGuestStore(): SleepGuestStore;
   abstract getPersonalSyncRepository(): PersonalSyncRepository;
   abstract getFrogSleepAdminStore(): FrogSleepAdminStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;

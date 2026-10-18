@@ -1,3 +1,4 @@
+import { PostgresSleepGuestStore } from "./postgres-sleep-guest.ts";
 import { PostgresPersonalSyncRepository } from "./postgres-personal-sync.ts";
 import { PostgresFrogSleepAdminStore } from "./postgres-frogsleep-admin.ts";
 import { withPostgresNotificationLock } from "./postgres-notification-lock.ts";
@@ -139,7 +140,8 @@ export class PostgresDatabase extends ApplicationDatabase {
     this.bodyLogStores = createBodyLogPostgresStores(async (sql, values = []) => await this.query(sql, values), operation => this.withExclusiveSession(operation));
     this.bodyLogAdmin = new PostgresBodyLogCheckinStore(async (sql, values = []) => await this.query(sql, values));
   }
-  getPersonalSyncRepository() { return new PostgresPersonalSyncRepository(() => this.pool.connect()); }
+  getSleepGuestStore() { return new PostgresSleepGuestStore((sql,values) => this.query(sql,values), operation => this.withExclusiveSession(operation)); }
+  getPersonalSyncRepository() { return new PostgresPersonalSyncRepository(() => this.pool.connect(), () => this.sessionContext.getStore()); }
   getFrogSleepAdminStore() { return new PostgresFrogSleepAdminStore((sql, values) => this.query(sql, values)); }
   getLightTickRepository(): PostgresLightTickRepository { return this.lightTick; }
   getBodyLogBuddyStore(): BodyLogBuddyStore { return this.bodyLogStores.buddy; }

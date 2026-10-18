@@ -4,21 +4,22 @@ import { ApplicationError } from "../../../shared/errors.ts";
 
 /** Serializes private revisions per account and keeps events and idempotency receipts atomic. */
 export class PostgresPersonalSyncRepository implements PersonalSyncRepository {
-  constructor(private readonly connect: () => Promise<PoolClient>) {}
+  constructor(private readonly connect: () => Promise<PoolClient>, private readonly currentClient: () => PoolClient | undefined = () => undefined) {}
   async run<T>(userId: string, operation: (tx: PersonalSyncTransaction) => Promise<T>): Promise<T> {
-    const client = await this.connect();
+    const ambient = this.currentClient();
+    const client = ambient ?? await this.connect();
     try {
-      await client.query("BEGIN");
+      if (!ambient) await client.query("BEGIN");
       const membership = await client.query("SELECT id,status FROM zook_app_users WHERE app_id='frogsleep' AND user_id=$1 FOR SHARE", [userId]);
       if (membership.rows[0]?.status !== "ACTIVE") throw new ApplicationError(403, "APP_MEMBERSHIP_REQUIRED", "An active Sleep account is required.");
       await client.query("INSERT INTO zook_frogsleep_personal_sync_state(app_id,user_id) VALUES('frogsleep',$1) ON CONFLICT DO NOTHING", [userId]);
       const row = (await client.query("SELECT * FROM zook_frogsleep_personal_sync_state WHERE app_id='frogsleep' AND user_id=$1 FOR UPDATE", [userId])).rows[0];
       if (row.deleted) { await client.query("UPDATE zook_frogsleep_personal_sync_state SET deleted=FALSE WHERE app_id='frogsleep' AND user_id=$1", [userId]); row.deleted=false; }
       const result = await operation(new PostgresPersonalSyncTransaction(client, userId, row));
-      await client.query("COMMIT");
+      if (!ambient) await client.query("COMMIT");
       return result;
-    } catch (error) { await client.query("ROLLBACK").catch(() => undefined); throw error; }
-    finally { client.release(); }
+    } catch (error) { if (!ambient) await client.query("ROLLBACK").catch(() => undefined); throw error; }
+    finally { if (!ambient) client.release(); }
   }
 }
 /** One request-local transaction adapter; never stored on a singleton service. */
@@ -26,6 +27,12 @@ class PostgresPersonalSyncTransaction implements PersonalSyncTransaction {
   readonly state: PersonalSyncState;
   constructor(private readonly client: PoolClient, private readonly userId: string, row: QueryResultRow) {
     this.state = { epoch: String(row.epoch), cursorSecret: String(row.cursor_secret), sequence: Number(row.sequence), legacyAllowed: row.legacy_allowed, deleted: row.deleted };
+  }
+  async reset() {
+    await this.client.query("DELETE FROM zook_frogsleep_personal_versions WHERE app_id='frogsleep' AND user_id=$1", [this.userId]);
+    await this.client.query("DELETE FROM zook_frogsleep_personal_receipts WHERE app_id='frogsleep' AND user_id=$1", [this.userId]);
+    const row = (await this.client.query("UPDATE zook_frogsleep_personal_sync_state SET epoch=gen_random_uuid()::text,cursor_secret=gen_random_uuid()::text,sequence=0,legacy_allowed=FALSE,deleted=TRUE WHERE app_id='frogsleep' AND user_id=$1 RETURNING *", [this.userId])).rows[0];
+    Object.assign(this.state,{epoch:row.epoch,cursorSecret:row.cursor_secret,sequence:0,legacyAllowed:false,deleted:true});
   }
   async current(kind: PersonalResourceKind, id: string) {
     const result = await this.client.query("SELECT document FROM zook_frogsleep_personal_versions WHERE app_id='frogsleep' AND user_id=$1 AND kind=$2 AND resource_id=$3 ORDER BY sequence DESC LIMIT 1", [this.userId, kind, id]);

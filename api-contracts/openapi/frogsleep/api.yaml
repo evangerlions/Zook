@@ -16,6 +16,267 @@ tags:
   - name: frogsleep-focus-buddy
   - name: frogsleep-product-data
 paths:
+  /api/v1/frogsleep/product-data/sleep-sessions:
+    get:
+      operationId: frogSleepListRawSleepSessions
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Restore latest raw sessions including tombstones at a fixed boundary
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepPersonalPageResponse'
+        '400': &id001
+          description: Invalid body, required header or terminal session constraints.
+        '401': &id002
+          description: Invalid bearer or guest proof; expired/unavailable guest.
+        '403': &id003
+          description: App/owner scope, guest capability or registered target restriction.
+        '404': &id004
+          description: Private resource not found.
+        '409': &id005
+          description: Revision/epoch/idempotency mismatch, data collision, already upgraded or oversized transfer; no partial migration.
+        '410': &id006
+          description: Deleted resource cannot be recreated.
+        '503': &id007
+          description: Personal sync is disabled.
+      parameters:
+      - $ref: '#/components/parameters/PersonalLimit'
+      - $ref: '#/components/parameters/PersonalCursor'
+      description: Ascending committed sequence; follow next_cursor, then use changes_cursor on personal-sync/changes. Payloads are private
+        and scoped to the bearer account.
+    post:
+      operationId: frogSleepCreateRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Create a private terminal sleep session
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepRawSleepSessionRequest'
+      parameters: &id008
+      - $ref: '#/components/parameters/RequiredPersonalEpoch'
+      - $ref: '#/components/parameters/RequiredPersonalOperationKey'
+      - $ref: '#/components/parameters/PersonalRevision'
+  /api/v1/frogsleep/product-data/sleep-sessions/{sessionId}:
+    parameters:
+    - name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    get:
+      operationId: frogSleepGetRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Read private raw sleep session
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+    put:
+      operationId: frogSleepReplaceRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Replace terminal history with current If-Match revision
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepRawSleepSessionRequest'
+      parameters: *id008
+    patch:
+      operationId: frogSleepPatchRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Replace terminal history; full request required
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepRawSleepSessionRequest'
+      parameters: *id008
+    delete:
+      operationId: frogSleepDeleteRawSleepSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Tombstone terminal history using current revision
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepRawSleepResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      parameters: *id008
+  /api/v1/frogsleep/account/guest-sessions:
+    post:
+      operationId: frogSleepCreateGuestSession
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Create or recover a scoped Sleep guest session
+      security: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepGuestSessionResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '409': *id005
+        '429':
+          description: Anonymous guest session request rate exceeded.
+        '503': *id007
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrogSleepGuestSessionRequest'
+      parameters:
+      - $ref: '#/components/parameters/RequiredPersonalOperationKey'
+      description: 'Same device_id and device_secret recover the same unexpired identity and upgrade credential. Guest lifetime is 30
+        days. Only private raw sessions/reports/report_preferences/personal-sync and own me/logout/account-delete are allowed; platform/account
+        binding/buddy/focus/device APIs are forbidden. Refresh cannot extend guest lifetime. At most 30 requests per source IP per UTC
+        hour, including retries. Lost response: retry the same key and body. Keep both credentials in secure client storage; device_id
+        alone grants no ownership.'
+  /api/v1/frogsleep/account/upgrade:
+    post:
+      operationId: frogSleepUpgradeGuestData
+      tags:
+      - frogsleep
+      - frogsleep-product-data
+      summary: Atomically transfer proven guest history to a registered account
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful private Sleep response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrogSleepGuestUpgradeResponse'
+        '400': *id001
+        '401': *id002
+        '403': *id003
+        '404': *id004
+        '409': *id005
+        '410': *id006
+        '503': *id007
+      parameters:
+      - $ref: '#/components/parameters/PersonalEpoch'
+      - $ref: '#/components/parameters/PersonalOperationKey'
+      description: 'New proof-based requests require X-Sync-Epoch and Idempotency-Key, a registered target bearer and confirmed=true.
+        Latest private sessions/reports/preferences including tombstones move in one transaction. Equal target data deduplicates; differing
+        content or a live/tombstone mismatch conflicts without partial writes; two tombstones deduplicate. Limit: 10,000 resources and 32 MiB serialized versions; never truncated.
+        Source membership and epoch are revoked. Exact authenticated replay returns stored counts/epoch and retries session cleanup. Legacy
+        guest_device_id-only requests retain 409 FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED; device IDs alone never select data.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - $ref: '#/components/schemas/FrogSleepGuestUpgradeRequest'
+              - type: object
+                additionalProperties: false
+                required:
+                - guest_device_id
+                properties:
+                  guest_device_id:
+                    type: string
+                    minLength: 1
+                    description: Compatibility only; not proof of ownership.
   /api/v1/frogsleep/auth/email/send-code:
     post:
       operationId: frogSleepSendEmailCode
@@ -1586,6 +1847,7 @@ paths:
       operationId: frogSleepDeleteSleepReport
       tags: [frogsleep, frogsleep-product-data]
       summary: Atomically tombstone a private report; stale uploads cannot recreate it
+      description: data.resource contains the full tombstone and sync_epoch; metadata also retains top-level compatibility aliases.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/PersonalEpoch"
@@ -1687,6 +1949,7 @@ paths:
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
     delete:
+      description: For report_preferences, data.resource contains the full tombstone with revision and sync_epoch; top-level metadata aliases remain.
       operationId: frogSleepDeleteReportPreferences
       tags: [frogsleep, frogsleep-product-data]
       summary: Tombstone report_preferences (other namespaces cannot be deleted through this operation)
@@ -1708,42 +1971,6 @@ paths:
         - bearerAuth: []
       responses:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
-  /api/v1/frogsleep/account/upgrade:
-    post:
-      operationId: frogSleepUpgradeGuestData
-      tags: [frogsleep, frogsleep-account]
-      summary: Reserved guest transfer compatibility endpoint
-      description: >-
-        Cloud guest transfer is unavailable because a device ID does not prove
-        ownership and FrogSleep has no cloud guest transfer credential protocol.
-        Valid authenticated requests return 409 without reading or moving guest
-        records. After user confirmation, upload local guest sleep reports and
-        completed focus sessions through the authenticated product-data/sleep-reports
-        and focus/sessions endpoints with stable client IDs and binding metadata.
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [guest_device_id]
-              properties:
-                guest_device_id:
-                  type: string
-                  minLength: 1
-                  pattern: '\S'
-                  description: Device identifier; never an ownership credential.
-      responses:
-        "400":
-          description: REQ_INVALID_BODY; guest_device_id must be a non-empty string.
-        "401":
-          description: Missing or invalid FrogSleep bearer token.
-        "403":
-          description: Invalid app scope or inactive FrogSleep membership.
-        "409":
-          description: FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED; no guest records are read or transferred.
   /api/v1/frogsleep/buddy/users/{targetUserId}/block:
     post:
       operationId: frogSleepBlockBuddyUser
@@ -1804,6 +2031,25 @@ components:
       scheme: bearer
       bearerFormat: JWT
   parameters:
+    RequiredPersonalEpoch:
+      name: X-Sync-Epoch
+      in: header
+      required: true
+      description: Current authenticated account epoch from personal-sync/state.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    RequiredPersonalOperationKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable random command ID, max 200 characters. Reuse only with identical
+        content.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
     DeviceId:
       name: deviceId
       in: path
@@ -1893,12 +2139,263 @@ components:
           schema:
             $ref: "#/components/schemas/FrogSleepEnvelope"
   schemas:
+    FrogSleepRawSleepEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - event_id
+      - type
+      - occurred_at
+      - data
+      properties:
+        event_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        type:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{0,63}$
+        occurred_at:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+    FrogSleepRawSleepSessionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - session_id
+      - schema_version
+      - status
+      - started_at
+      - ended_at
+      - sleep_intent
+      - timezone
+      - data
+      properties:
+        session_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        schema_version:
+          type: string
+          enum:
+          - '1'
+        status:
+          type: string
+          enum:
+          - completed
+          - cancelled
+          - interrupted
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+        scheduled_wake_at:
+          type: string
+          format: date-time
+        sleep_intent:
+          type: string
+          enum:
+          - night_sleep
+          - daytime_nap
+          - catch_up_sleep
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        data:
+          type: object
+          additionalProperties: true
+        events:
+          type: array
+          maxItems: 512
+          items:
+            $ref: '#/components/schemas/FrogSleepRawSleepEvent'
+        user_id:
+          type: string
+          description: Optional authenticated-owner assertion.
+        owner_user_id:
+          type: string
+          description: Optional authenticated-owner assertion.
+      description: Terminal history only; UTF-8 serialized request is at most 128 KiB, JSON nesting at most 32 levels and numbers must be finite. Event IDs must be unique and event times within started_at..ended_at.
+        Server normalizes timestamps to UTC. Device lock/timer state inside data is history, never an instruction to resume a lock.
+    FrogSleepRawSleepResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          required:
+          - sleep_session
+          properties:
+            sleep_session:
+              $ref: '#/components/schemas/FrogSleepPersonalVersion'
+      additionalProperties: true
+    FrogSleepPersonalPageResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/FrogSleepPersonalSyncPage'
+      additionalProperties: true
+    FrogSleepGuestSessionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - device_id
+      - device_secret
+      - platform
+      properties:
+        device_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        device_secret:
+          type: string
+          minLength: 43
+          maxLength: 128
+          pattern: ^[A-Za-z0-9_-]+$
+          description: Client-generated cryptographically random secret of at least 32 bytes; keep in secure storage. Never use a hardware
+            ID or password.
+        platform:
+          type: string
+          enum:
+          - ios
+          - android
+    FrogSleepGuestUpgradeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - guest_user_id
+      - guest_upgrade_token
+      - device_id
+      - confirmed
+      properties:
+        guest_user_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        guest_upgrade_token:
+          type: string
+          minLength: 40
+          maxLength: 128
+        device_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        confirmed:
+          type: boolean
+          enum:
+          - true
+    FrogSleepGuestUpgradeResult:
+      type: object
+      additionalProperties: false
+      required:
+      - user_id
+      - previous_guest_user_id
+      - migrated_data_count
+      - deduplicated_data_count
+      - sync_epoch
+      properties:
+        user_id:
+          type: string
+        previous_guest_user_id:
+          type: string
+        migrated_data_count:
+          type: integer
+          minimum: 0
+        deduplicated_data_count:
+          type: integer
+          minimum: 0
+        sync_epoch:
+          type: string
+    FrogSleepGuestUpgradeResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          $ref: '#/components/schemas/FrogSleepGuestUpgradeResult'
+      additionalProperties: true
+    FrogSleepGuestSessionResponse:
+      type: object
+      required:
+      - code
+      - data
+      - requestId
+      properties:
+        code:
+          type: string
+        requestId:
+          type: string
+        data:
+          type: object
+          required:
+          - access_token
+          - refresh_token
+          - user_id
+          - app_id
+          - guest_user_id
+          - guest_upgrade_token
+          - guest_expires_at
+          - is_guest
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            user_id:
+              type: string
+            app_id:
+              type: string
+              enum:
+              - frogsleep
+            guest_user_id:
+              type: string
+            guest_upgrade_token:
+              type: string
+              description: Independent upgrade credential; persist securely and send only to the upgrade endpoint.
+            guest_expires_at:
+              type: string
+              format: date-time
+            is_guest:
+              type: boolean
+              enum:
+              - true
+          additionalProperties: true
+      additionalProperties: true
     FrogSleepPersonalVersion:
       type: object
       additionalProperties: false
       required: [kind, id, revision, sequence, deleted, data, created_at, updated_at]
       properties:
-        kind: { type: string, enum: [sleep_report, report_preferences] }
+        kind: { type: string, enum: [sleep_report, report_preferences, sleep_session] }
+        sync_epoch: { type: string, description: Included on direct resource responses. }
         id: { type: string }
         revision: { type: integer, minimum: 1 }
         sequence: { type: integer, minimum: 1 }
