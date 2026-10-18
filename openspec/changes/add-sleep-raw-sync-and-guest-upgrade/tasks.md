@@ -8,4 +8,4 @@
 ## 3. Contracts and verification
 - [x] 3.1 Update OpenAPI/generated contracts and public documentation/overview/audit.
 - [x] 3.2 Run memory and PostgreSQL tests, migration replay and contract lint.
-- [ ] 3.3 Resolve independent review findings, merge to main, retest and push.
+- [x] 3.3 Resolve independent review findings, merge to main, retest and push.

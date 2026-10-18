@@ -37,7 +37,7 @@ Canonical 前缀 `/api/v1/frogsleep`。仅用于新建的云游客；历史设�
 
 来源与目标 membership 行锁协调普通上传和删号，版本/回执/目标写入/来源清除/来源失效/审计同一数据库事务提交。来源旧 epoch 旋转，membership 标为删除；旧 access/refresh 随后撤销。KV 撤销暂时失败时，SQL membership 已阻断来源访问；请求可能返回5xx但迁移已提交，必须保留原请求并按原 key 重试，不能据此当作未迁移。
 
-重试同时校验正式目标认证、来源凭据、设备 ID、原 key、完整正文和目标 epoch；完全一致才返回原计数并重试会话清理。换目标或换 key 返回409 `FROGSLEEP_GUEST_ALREADY_UPGRADED`。错误证明/失效来源统一401 `FROGSLEEP_GUEST_PROOF_INVALID`；非正式目标403 `FROGSLEEP_REGISTERED_ACCOUNT_REQUIRED`；缺确认/正文/头400；目标重建导致 epoch 改变返回409。原子迁移最多10,000个最新资源和32 MiB序列化版本，超限409 `FROGSLEEP_GUEST_TRANSFER_TOO_LARGE`，不截断、不部分迁移。来源封禁/删除/到期后不能首次迁移；已提交回执可用于原请求确认，但不能重新认领数据。
+升级 key 以来源游客的这次转移为范围。重试同时校验正式目标认证、来源凭据、设备 ID、原 key、完整正文和目标 epoch；完全一致才返回原计数并重试会话清理。换目标或换 key 返回409 `FROGSLEEP_GUEST_ALREADY_UPGRADED`。错误证明/失效来源统一401 `FROGSLEEP_GUEST_PROOF_INVALID`；非正式目标403 `FROGSLEEP_REGISTERED_ACCOUNT_REQUIRED`；缺确认/正文/头400；目标重建导致 epoch 改变返回409。原子迁移最多10,000个最新资源和32 MiB序列化版本，超限409 `FROGSLEEP_GUEST_TRANSFER_TOO_LARGE`，不截断、不部分迁移。来源封禁/删除/到期后不能首次迁移；已提交回执可用于原请求确认，但不能重新认领数据。
 
 兼容旧正文 `{"guest_device_id":"..."}` 的升级请求仍在正式账号鉴权后返回409 `FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED`，不读取或迁移设备 ID 对应记录。历史本地游客可在真实用户确认后，通过标准登录账号上传报告、终态原始睡眠与终态专注记录；不要伪造云游客凭据。
 

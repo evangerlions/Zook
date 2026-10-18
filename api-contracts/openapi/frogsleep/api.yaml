@@ -254,8 +254,14 @@ paths:
         '410': *id006
         '503': *id007
       parameters:
-      - $ref: '#/components/parameters/PersonalEpoch'
-      - $ref: '#/components/parameters/PersonalOperationKey'
+      - name: X-Sync-Epoch
+        in: header
+        description: Required for credential-based upgrade; current target epoch. Legacy guest_device_id-only requests may omit it.
+        schema: { type: string, minLength: 1, maxLength: 200 }
+      - name: Idempotency-Key
+        in: header
+        description: Required for credential-based upgrade; scoped to this source guest transfer. Exact source/target/body replay reuses the original key. A different key after transfer conflicts. Legacy requests may omit it.
+        schema: { type: string, minLength: 1, maxLength: 200 }
       description: 'New proof-based requests require X-Sync-Epoch and Idempotency-Key, a registered target bearer and confirmed=true.
         Latest private sessions/reports/preferences including tombstones move in one transaction. Equal target data deduplicates; differing
         content or a live/tombstone mismatch conflicts without partial writes; two tombstones deduplicate. Limit: 10,000 resources and 32 MiB serialized versions; never truncated.

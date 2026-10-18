@@ -16,7 +16,7 @@ Canonical 合同：`api-contracts/openapi/frogsleep/api.yaml`；运行时只使�
 | `GET /personal-sync/restore` | 固定提交边界的本人原始睡眠/报告/偏好历史视图，含墓碑 |
 | `GET /personal-sync/changes` | 提交有序的本人变更（含墓碑），从 opaque cursor 继续 |
 
-写入头：`X-Sync-Epoch` 当前账号 epoch；`Idempotency-Key` 1..200字符稳定操作 ID；`If-Match` 裸数字或双引号数字的当前 revision。新资源支持缺省或0；修改、删除已有资源必须匹配。scope 仅来自 Bearer token，正文 owner/user/app 字段会拒绝。每账号、资源种类和逻辑 ID 独立；操作 key 在账号内唯一，重用不同正文返回409。相同正文的新 key 也保存回执，不增加 sequence。
+写入头：`X-Sync-Epoch` 当前账号 epoch；`Idempotency-Key` 1..200字符稳定操作 ID；`If-Match` 裸数字或双引号数字的当前 revision。新资源支持缺省或0；修改、删除已有资源必须匹配。scope 仅来自 Bearer token，不能用正文覆盖归属；用户断言必须匹配本人，owner/app 覆盖被拒绝。每账号、资源种类和逻辑 ID 独立；操作 key 在账号内唯一，重用不同正文返回409。相同正文的新 key 也保存回执，不增加 sequence。
 
 报告 wire 响应保留 `snapshot_id,report_id,schema_version,recorded_at,date_anchor,report_type,snapshot_data,created_at,updated_at`，新增稳定逻辑 `id,revision,sequence,sync_epoch`。`id` 是不透明字符串，客户端不得强制转 UUID 或将不同账号相同 ID 混为同一记录。
 
