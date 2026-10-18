@@ -8,10 +8,13 @@ const CORS_ALLOWLIST: Array<string | RegExp> = [
   "https://www.orangewrite.com",
 ];
 
-const CORS_ALLOWED_METHODS = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"];
+const CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
 const CORS_ALLOWED_HEADERS = [
   "Content-Type",
   "Authorization",
+  "X-Sync-Epoch",
+  "Idempotency-Key",
+  "If-Match",
   "X-App-Id",
   "X-Platform",
   "X-App-Version",
