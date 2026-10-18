@@ -42,6 +42,10 @@ async function insertAction(app: Awaited<ReturnType<typeof runtime>>, input: {
     payload: input.kind === "sleep_session"
       ? { participantStates: { [input.owner]: "morning_completed" } } : { amount: 1 },
     occurredAt: input.at, createdAt: input.at, updatedAt: input.at });
+  if (input.kind === "sleep_session") await app.database.insertFrogSleepEntity({
+    id: `${input.id}_morning`, appId: "frogsleep", kind: "sleep_event", sessionId: input.id,
+    relationshipId: input.relationshipId, ownerUserId: input.owner, status: "morning_completed",
+    occurredAt: input.at, payload: { event_type: "morning_completed" }, createdAt: input.at, updatedAt: input.at });
 }
 
 test("worker deduplicates milestones and weekly reports while measuring meaningful activity", async () => {
@@ -53,12 +57,16 @@ test("worker deduplicates milestones and weekly reports while measuring meaningf
   const completedAt = "2026-07-16T09:00:00.000Z";
   await app.database.insertFrogSleepEntity({ id: "joint_1", appId: "frogsleep", kind: "buddy_joint_activity",
     relationshipId, ownerUserId: "user_bob", partnerUserId: "user_alice", status: "accepted",
-    payload: { type: "tonight_together", expires_at: "2026-07-17T10:00:00.000Z",
+    payload: { type: "tonight_together", accepted_at: startedAt, expires_at: "2026-07-17T10:00:00.000Z",
       participant_started_at: { user_alice: startedAt, user_bob: startedAt } }, createdAt: startedAt, updatedAt: startedAt });
   await app.database.insertFrogSleepEntity({ id: "actual_morning", appId: "frogsleep", kind: "sleep_session",
     relationshipId, ownerUserId: "user_alice", partnerUserId: "user_bob", status: "completed",
     startsAt: startedAt, occurredAt: completedAt, payload: { participantStates: {
       user_alice: "morning_completed", user_bob: "morning_completed" } }, createdAt: startedAt, updatedAt: completedAt });
+  for (const userId of ["user_alice", "user_bob"]) await app.database.insertFrogSleepEntity({
+    id: `actual_morning_${userId}`, appId: "frogsleep", kind: "sleep_event", sessionId: "actual_morning",
+    relationshipId, ownerUserId: userId, status: "morning_completed", occurredAt: completedAt,
+    payload: { event_type: "morning_completed" }, createdAt: completedAt, updatedAt: completedAt });
   const completed = await new BuddyJointActivityService(app.database).action("user_alice", "joint_1", "complete");
   assert.equal(completed.status, "completed");
   assert.equal(completed.occurredAt, completedAt, "report attribution uses terminal facts, not the later reconciliation read");

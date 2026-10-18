@@ -1,3 +1,4 @@
+import { buddyRelationships } from "./buddy-relationships.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { ApplicationError } from "../../../shared/errors.ts";
@@ -11,8 +12,14 @@ export async function findBuddyRelationship(database: ApplicationDatabase, id: s
     ownerUserId: canonical.userIdLow, partnerUserId: canonical.userIdHigh, status: canonical.status,
     payload: { canonical: true, version: canonical.version, paused_by_user_ids: canonical.pausedByUserIds },
     createdAt: canonical.createdAt, updatedAt: canonical.updatedAt } satisfies FrogSleepEntityRecord;
-  return await database.findFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, id)
+  const legacy = await database.findFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, id)
     ?? await database.findFrogSleepEntity("focus_relationship", FROGSLEEP_APP_ID, id);
+  if (!legacy?.ownerUserId || !legacy.partnerUserId) return legacy;
+  const domain = legacy.kind === "sleep_relationship" ? "sleep" : "focus";
+  const history = await database.listCurrentFrogSleepBuddyDomainRelationships(FROGSLEEP_APP_ID, legacy.ownerUserId, domain, true);
+  // A canonical relationship remains authoritative after revocation, including direct legacy-ID requests.
+  if (history.some(row => [row.userIdLow, row.userIdHigh].includes(legacy.partnerUserId!))) return undefined;
+  return legacy;
 }
 
 /** Checks membership even for terminal relationship receipts. */
@@ -28,17 +35,14 @@ export async function requireBuddyRelationship(database: ApplicationDatabase, ac
 
 /** Lists only current canonical or compatibility relationships belonging to a viewer. */
 export async function currentBuddyRelationships(database: ApplicationDatabase, actor: string) {
+  const relationships = (await buddyRelationships(database, actor))
+    .filter(row => ["active", "accepted", "paused"].includes(row.status ?? ""));
   const result: FrogSleepEntityRecord[] = [];
-  for (const domain of ["sleep", "focus"] as const) {
-    const rows = await database.listCurrentFrogSleepBuddyDomainRelationships(FROGSLEEP_APP_ID, actor, domain);
-    for (const row of rows) result.push((await findBuddyRelationship(database, row.id))!);
-    for (const field of ["ownerUserId", "partnerUserId"] as const) {
-      const legacy = await database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID,
-        kind: domain === "sleep" ? "sleep_relationship" : "focus_relationship", [field]: actor, limit: 500 });
-      result.push(...legacy.filter((row) => ["active", "accepted", "paused"].includes(row.status ?? "")));
-    }
+  for (const row of relationships) {
+    const current = await findBuddyRelationship(database, row.id);
+    if (current && ["active", "accepted", "paused"].includes(current.status ?? "")) result.push(current);
   }
-  return [...new Map(result.map((row) => [row.id, row])).values()];
+  return result;
 }
 
 /** Uses the same participant/domain locks as invitation acceptance. */

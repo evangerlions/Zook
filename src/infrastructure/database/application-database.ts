@@ -349,7 +349,7 @@ export abstract class ApplicationDatabase {
     appId: string, relationshipId: string,
   ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord | undefined>;
   abstract listCurrentFrogSleepBuddyDomainRelationships(
-    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"], includeRevoked?: boolean,
   ): MaybePromise<FrogSleepBuddyDomainRelationshipRecord[]>;
   abstract compareAndUpdateFrogSleepBuddyDomainRelationship(input: {
     appId: string; id: string; expectedVersion: number;

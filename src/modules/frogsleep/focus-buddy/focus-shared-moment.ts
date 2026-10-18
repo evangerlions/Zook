@@ -1,3 +1,4 @@
+import { allBuddyRecords } from "../buddy-growth/buddy-completion-facts.ts";
 import { createHash } from "node:crypto";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -18,7 +19,7 @@ export async function recordFocusSharedMoment(database: ApplicationDatabase, ses
     const partner = otherFocusUserId(row, session.ownerUserId!);
     await assertBuddyDataAuthorized(database, session.ownerUserId!, row.id, "shared_activity");
     await assertBuddyDataAuthorized(database, partner, row.id, "shared_activity");
-    const candidates = await database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "focus_session", ownerUserId: partner, limit: 100 });
+    const candidates = await allBuddyRecords(database, { kind: "focus_session", ownerUserId: partner });
     for (const buddy of candidates.filter(value => value.status === "completed" && focusSessionsOverlap(session, value))) {
       await saveMoment(database, row, session, buddy);
     }
@@ -29,7 +30,7 @@ async function saveMoment(database: ApplicationDatabase, row: FrogSleepEntityRec
   const pair = [session.id, buddy.id].sort();
   const id = `focus_shared_moment_${createHash("sha256").update(JSON.stringify([FROGSLEEP_APP_ID, row.id, ...pair])).digest("hex")}`;
   if (await database.findFrogSleepEntity("focus_shared_moment", FROGSLEEP_APP_ID, id)) return;
-  const existing = await database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "focus_shared_moment", relationshipId: row.id, limit: 500 });
+  const existing = await allBuddyRecords(database, { kind: "focus_shared_moment", relationshipId: row.id });
   if (existing.some(value => JSON.stringify([value.payload.session_id, value.payload.buddy_session_id].sort()) === JSON.stringify(pair))) return;
   const timestamp = new Date().toISOString();
   await database.insertFrogSleepEntity({ id, appId: FROGSLEEP_APP_ID, kind: "focus_shared_moment",

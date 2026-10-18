@@ -106,7 +106,8 @@ test("relationship notification records cannot mask recipient sleep preferences"
 test("accept cannot reset a participant's terminal morning completion", async () => {
   const fixture = await sharedSleep();
   await fixture.sleep.recordEvent("user_alice", fixture.sessionId, "morning_completed");
-  await assert.rejects(fixture.sleep.acceptSession("user_alice", fixture.sessionId), { statusCode: 409 });
+  const replay = await fixture.sleep.acceptSession("user_alice", fixture.sessionId);
+  assert.equal(replay.participant_states.user_alice, "morning_completed");
   const completed = await fixture.sleep.recordEvent("user_bob", fixture.sessionId, "morning_completed");
   assert.equal(completed.status, "completed");
   assert.deepEqual(completed.participant_states, { user_alice: "morning_completed", user_bob: "morning_completed" });

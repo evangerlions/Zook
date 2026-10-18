@@ -389,14 +389,14 @@ export class PostgresBuddyGrowthRepository implements BuddyGrowthRepositoryProto
   }
 
   async listCurrentDomainRelationships(
-    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"], includeRevoked = false,
   ) {
     const result = await this.pool.query(
       `SELECT * FROM zook_frogsleep_buddy_domain_relationships
        WHERE app_id=$1 AND (user_id_low=$2 OR user_id_high=$2) AND domain=$3
-         AND status IN ('active','paused')
+         AND ($4::boolean OR status IN ('active','paused'))
        ORDER BY updated_at DESC, id DESC`,
-      [appId, userId, domain],
+      [appId, userId, domain, includeRevoked],
     );
     return result.rows.map(mapDomainRelationship);
   }

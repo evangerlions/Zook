@@ -17,7 +17,8 @@ export async function generateSharedMorningArtifacts(database: ApplicationDataba
     completed: eventTypes.includes("morning_completed") };
   for (const viewer of users) {
     const partner = users.find(value => value !== viewer);
-    const summary = buildSleepSummaryArtifact({ session, userId: viewer, partnerUserId: partner, ...common });
+    const summary = buildSleepSummaryArtifact({ session, userId: viewer, partnerUserId: partner, ...common,
+      completed: states[viewer] === "morning_completed", pausedTonight: states[viewer] === "paused_tonight" });
     await saveArtifact(database, session, viewer, partner, "sleep_summary", { ...basePayload(session),
       owner_user_id: viewer, participant_state: states[viewer] ?? null, partner_state: partner ? states[partner] ?? null : null,
       completed: states[viewer] === "morning_completed", interrupted_count: common.interruptedCount,

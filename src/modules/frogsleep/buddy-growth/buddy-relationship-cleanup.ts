@@ -56,7 +56,15 @@ export async function closeBuddySharedSessions(database: ApplicationDatabase, re
 /** Revokes every domain between a blocked pair inside the caller's two-domain transaction. */
 export async function revokeBlockedBuddyPair(database: ApplicationDatabase, actor: string, partner: string) {
   const relationships = await currentBuddyRelationships(database, actor);
-  for (const row of relationships.filter((value) => [value.ownerUserId, value.partnerUserId].includes(partner))) {
+  // Public listings hide compatibility rows shadowed by canonical facts; safety cleanup must close those rows too.
+  for (const kind of ["sleep_relationship", "focus_relationship"] as const) {
+    for (const field of ["ownerUserId", "partnerUserId"] as const) {
+      const legacy = await database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind, [field]: actor, limit: 500 });
+      relationships.push(...legacy.filter(row => ["active", "accepted", "paused"].includes(row.status ?? "")));
+    }
+  }
+  for (const row of [...new Map(relationships.map(value => [value.id, value])).values()]
+    .filter((value) => [value.ownerUserId, value.partnerUserId].includes(partner))) {
     await revokeBuddyRelationship(database, row);
   }
 }

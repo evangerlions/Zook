@@ -793,7 +793,7 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 }
 ```
 
-共同守护事件 `event_type` 仅支持 `interrupted`、`returned`、`paused_tonight`、`morning_completed`。未知事件、非法 `occurred_at` 或不可见 session 返回 `400/403`，不会写入事件。`morning_completed` 与 `paused_tonight` 会生成基于共同守护事件的 summary/recap。summary 保留 `completed`、`date_anchor`、`started_at`、`ended_at`、`interrupted_count`、`returned_count`、`paused_tonight`、`telemetry_level = "shared_session_events"`，并补充 iOS 可见字段 `artifact_version`、`visible_state`、`started_on_time`、`had_recovery`、`returned_after_recovery`、`completed_morning`、`headline`。recap 保留 `participant_states`、`event_types` 等字段，并补充 `artifact_version`、`combined_result_type`、`my_result_state`、`partner_result_state`、`headline`、`supporting_line`、`recommended_next_step`。这些字段来自共同守护 session 和事件，不是睡眠阶段或医疗级睡眠评分。
+共同守护事件 `event_type` 支持 `sleep_started`、`ritual_completed`、`interrupted`、`returned`、`paused_tonight`、`morning_completed`。未知事件、非法 `occurred_at` 或不可见 session 返回 `400/403`，不会写入事件。`morning_completed` 与 `paused_tonight` 会生成基于共同守护事件的 summary/recap。summary 保留 `completed`、`date_anchor`、`started_at`、`ended_at`、`interrupted_count`、`returned_count`、`paused_tonight`、`telemetry_level = "shared_session_events"`，并补充 iOS 可见字段 `artifact_version`、`visible_state`、`started_on_time`、`had_recovery`、`returned_after_recovery`、`completed_morning`、`headline`。recap 保留 `participant_states`、`event_types` 等字段，并补充 `artifact_version`、`combined_result_type`、`my_result_state`、`partner_result_state`、`headline`、`supporting_line`、`recommended_next_step`。这些字段来自共同守护 session 和事件，不是睡眠阶段或医疗级睡眠评分。
 
 ### 9.3 FrogSleep 专注搭子
 
@@ -1212,7 +1212,7 @@ PUT 授权示例：
 
 shared-moments 每项增加稳定UUID `moment_id`、`server_moment_id`、查看者自己的 `my_session_id` 与对方的 `viewer_buddy_session_id`，以及交叠 `start_time`/`overlap_minutes`。保留 `session_id`/`buddy_session_id` 原服务端引用。没有client ID时使用server ID；这些是兼容读取字段，不改变私人上报身份或承诺多设备版本冲突解决。
 
-共享 Sleep 事件增加 `sleep_started`、`ritual_completed`，兼容客户端个人开始/仪式完成的共享镜像。共享状态只描述双方协调：一个参与人 morning_completed 后 session 仍 active，双方均完成才 completed；paused_tonight 关闭当晚协调。terminal 不接受新流程事件；同参与人重复终态 acknowledgement 返回原状态，相同 actor/type/规范化 occurred_at 的非终态重试不增加事件。每个 session 每个查看者维护一个summary和一个recap，第二个人未确认不能显示晨间已完成。旧单主recap根据存储的participant_states重投影；缺少查看者上下文返回redacted。
+共享 Sleep 事件增加 `sleep_started`、`ritual_completed`，兼容客户端个人开始/仪式完成的共享镜像。共享状态只描述双方协调：一个参与人morning_completed或paused_tonight后session仍允许另一人独立完成；双方都进入morning_completed/paused_tonight终态后session才completed。单方暂停不覆盖另一人的晨间结果。terminal不接受新流程事件；重复accept及同参与人重复终态acknowledgement返回原状态、不重置完成标记，相同 actor/type/规范化 occurred_at 的非终态重试不增加事件。每个 session 每个查看者维护一个summary和一个recap，第二个人未确认不能显示晨间已完成。旧单主recap根据存储的participant_states重投影；缺少查看者上下文返回redacted。
 
 读取 status snapshot/latest summary/recap 每次验证当前 daily_summary，redacted 占位不应解码为普通晨报或完成。断网与401仅影响共享和该身份的网络同步；个人本地计时、历史与固定owner队列保留。客户端本次共享请求重试保留进程内原session/事件时间，重启后的共享持久化恢复属于2B，未在此承诺。
 
@@ -1267,3 +1267,15 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 - 共同目标调整不能跨Sleep/Focus域；共同活动必须双方完成真实记录才计完成。周报进度来自终态专注和本人晨间确认，不采信客户端声明的累计贡献。撤权后目标列表省略不可访问项，活动命令仍拒绝。
 
 能力范围、分支整合及当前验证限制见 [Sleep审计](docs/sleep-api-capability-audit-2026-10-18.md)。
+
+### FrogSleep 首次共同完成（P0，本地未发布）
+
+- 搭子中心、目标、专注与睡眠读取同一逐域关系事实；新关系默认关闭各类分享，显式授权后才可操作。活动/目标必须匹配关系域，`adjust` 也校验。
+- `POST /api/v1/frogsleep/buddy/joint-activities/{activityId}/start`：接受后参与者各自开始，开始时间持久化、重试不重置。接受后有效期36小时；先完成或由发起人取消当前活动，再开始新的同域活动。
+- `payload.participant_progress` 按用户 ID 返回 `status: pending|started|completed`、`completed_at`、`minutes`。只有双方实际完成才更新活动 `completed` 并产生去重通知。接受、点击完成或暂停今晚均不等于共同完成。
+- 专注按开始后真实 `completed` 会话且分钟达到 `planned_minutes`；`session_id` 是当前账号内稳定身份，重传返回已有记录，不重复计数。分钟上限取上报分钟与实际起止时长较小值，未来/未完成源不计。睡眠按本人 `morning_completed` 原始事件，不用对方摘要推定。
+- 目标只累计双方接受之后、目标时间窗内的对应域真实记录。分钟求和；天数以目标时区自然日去重；鼓励按发送自然日去重。`sleep_schedule_days` 当前表示完成共同睡眠的天数，不代表按时入睡，三端显示为共同睡眠天数。暂停后冻结截止时间，双方达标自动完成。
+- 共同活动读取与目标读取可修复离线重试后遗漏的衍生状态；真实会话写入同样触发刷新。撤权/解除后不返回受保护内容，个人专注保存不依赖共享权限。
+
+
+追加整合：共同目标从双方接受时开始计数，暂停后冻结进度；共同活动以真实完成时间归属周窗口，超过期限且未完成才失效。共同睡眠按每位参与者持久化的事件时间归属完成事实，之后另一人的事件不能改写先完成者的日期。canonical关系（包括已撤销关系）遮蔽同一参与者/域的旧兼容关系，避免旧记录重新显示或绕过撤权；解除/拉黑仍清理被遮蔽的旧事实。私人专注列表及周统计读取完整数据库记录，不因旧500/200条上限截断。

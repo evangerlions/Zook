@@ -100,6 +100,9 @@ test("PostgreSQL persists first bilateral completion and deduplicates concurrent
     assert.equal(partial.body.data.items.find((item: any) => item.id === activityId).status, "accepted");
     await concurrentRetries(app, bob, startedAt, endedAt);
     await assertPersistedCompletion(app, alice, bob, goalId, activityId);
+    await context.test("concurrent goal adjustments reject the losing expected version", async () => {
+      await concurrentGoalAdjustments(app, alice, bob, id);
+    });
   } finally {
     await app.close();
   }
@@ -120,4 +123,26 @@ async function assertPersistedCompletion(app: Runtime, alice: Actor, bob: Actor,
   const goal = await app.database.findFrogSleepEntity("buddy_joint_goal", "frogsleep", goalId);
   assert.equal(activity?.status, "completed");
   assert.equal(goal?.status, "completed");
+  const notifications = await app.database.listReadyFrogSleepBuddyNotificationOutbox(new Date().toISOString(), 500);
+  const completed = notifications.filter(item => item.targetId === goalId &&
+    item.deduplicationKey.startsWith("goal-completed:"));
+  assert.equal(completed.length, 2, "goal completion notifies each participant exactly once across reads and retries");
+  assert.deepEqual(completed.map(item => item.recipientUserId).sort(), [alice.id, bob.id].sort());
+}
+
+async function concurrentGoalAdjustments(app: Runtime, alice: Actor, bob: Actor, relationshipId: string) {
+  const created = await request(app, alice, "POST", "/buddy/goals", {
+    relationship_id: relationshipId, type: "focus_days", target: 1, timezone: "UTC", idempotency_key: `${runId}_race_goal` });
+  assert.equal(created.statusCode, 200);
+  const path = `/buddy/goals/${created.body.data.id}`;
+  const accepted = await request(app, bob, "POST", `${path}/accept`, {
+    expected_version: 1, idempotency_key: `${runId}_race_accept` });
+  assert.equal(accepted.statusCode, 200);
+  const results = await Promise.all([
+    request(app, alice, "POST", `${path}/adjust`, {
+      target: 2, expected_version: 2, idempotency_key: `${runId}_race_alice` }),
+    request(app, bob, "POST", `${path}/adjust`, {
+      target: 3, expected_version: 2, idempotency_key: `${runId}_race_bob` }),
+  ]);
+  assert.deepEqual(results.map(result => result.statusCode).sort(), [200, 409]);
 }

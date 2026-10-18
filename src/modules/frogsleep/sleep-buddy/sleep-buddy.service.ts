@@ -237,10 +237,11 @@ export class FrogSleepSleepBuddyService {
     const session = await this.requireSession(userId, sessionId);
     if (!session.relationshipId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Session relationship is unavailable.");
     await assertBuddyDataAuthorized(this.database, userId, session.relationshipId, "shared_activity");
-    if (!["pending", "active"].includes(session.status ?? "")) conflict("REQ_INVALID_BODY", "Shared session is terminal.");
-    if ((session.payload.participantStates as Record<string, string> | undefined)?.[userId] === "morning_completed") {
-      conflict("REQ_INVALID_BODY", "Shared participant is terminal.");
+    const ownState = (session.payload.participantStates as Record<string, string> | undefined)?.[userId];
+    if (session.status === "completed" || ownState === "accepted" || SLEEP_EVENT_TYPES.has(ownState ?? "")) {
+      return toSleepSessionResponse(session, userId);
     }
+    if (!["pending", "active"].includes(session.status ?? "")) conflict("REQ_INVALID_BODY", "Shared session is terminal.");
     const participantStates = {
       ...((session.payload.participantStates as Record<string, string> | undefined) ?? {}),
       [userId]: "accepted",
@@ -275,7 +276,7 @@ export class FrogSleepSleepBuddyService {
     await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
     const currentStates = (session.payload.participantStates as Record<string, string> | undefined) ?? {};
     if (currentStates[userId] === eventType && ["morning_completed", "paused_tonight"].includes(eventType)) return toSleepSessionResponse(session, userId);
-    if (session.status === "completed" || currentStates[userId] === "morning_completed") conflict("REQ_INVALID_BODY", "Shared participant is terminal.");
+    if (session.status === "completed" || ["morning_completed", "paused_tonight"].includes(currentStates[userId])) conflict("REQ_INVALID_BODY", "Shared participant is terminal.");
     const createdAt = nowIso();
     const eventId = `sleep_event_${createHash("sha256").update(JSON.stringify([sessionId, userId, eventType, normalizedOccurredAt])).digest("hex")}`;
     if (await this.database.findFrogSleepEntity("sleep_event", FROGSLEEP_APP_ID, eventId)) return toSleepSessionResponse(session, userId);
@@ -298,8 +299,9 @@ export class FrogSleepSleepBuddyService {
       ...((session.payload.participantStates as Record<string, string> | undefined) ?? {}),
       [userId]: eventType,
     };
-    const bothCompleted = [session.ownerUserId, session.partnerUserId].every(user => user && participantStates[user] === "morning_completed");
-    const nextStatus = eventType === "paused_tonight" || bothCompleted ? "completed" : "active";
+    const bothTerminal = [session.ownerUserId, session.partnerUserId]
+      .every(user => user && ["morning_completed", "paused_tonight"].includes(participantStates[user]));
+    const nextStatus = bothTerminal ? "completed" : "active";
     const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
       status: nextStatus,
       endsAt: nextStatus === "completed" ? normalizedOccurredAt : undefined,

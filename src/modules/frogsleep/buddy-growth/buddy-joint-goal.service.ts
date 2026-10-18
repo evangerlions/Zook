@@ -66,6 +66,8 @@ export class BuddyJointGoalService {
       if (Number(goal.payload.version) !== expectedVersion) conflict("REQ_INVALID_BODY", "Joint goal version conflict.");
       if (action === "adjust") assertGoalDomain(goalType(input.type ?? goal.payload.type), relationship);
       if (action === "complete") {
+        if (!["active", "completed"].includes(goal.status ?? "")) conflict("REQ_INVALID_BODY", "Only active goals can complete.");
+        if (goal.status === "completed") return await this.toGoal(userId, goal);
         const progress = await this.toGoal(userId, goal, false);
         if (!Object.values(progress.participant_progress).every(value => value >= Number(goal.payload.target))) {
           conflict("REQ_INVALID_BODY", "Both participants must reach the goal target.");
@@ -103,7 +105,8 @@ export class BuddyJointGoalService {
     if (!goal || !goal.relationshipId || ![goal.ownerUserId, goal.partnerUserId].includes(userId)) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Joint goal is unavailable.");
     }
-    await this.relationship(userId, goal.relationshipId);
+    const relationship = await this.relationship(userId, goal.relationshipId);
+    assertGoalDomain(goalType(goal.payload.type), relationship);
     return goal;
   }
 
@@ -122,15 +125,23 @@ export class BuddyJointGoalService {
       record = await this.authorizedGoal(userId, record.id);
       const participantProgress: Record<string, number> = {};
       const from = String(record.payload.accepted_at ?? record.payload.window_start);
+      const until = [record.payload.progress_until, record.payload.window_end].filter(Boolean).map(String).sort()[0]!;
       for (const id of [record.ownerUserId!, record.partnerUserId!]) {
         participantProgress[id] = record.status === "proposed" ? 0 : goalProgress(
           await completionFacts(this.database, relationship, id), String(record.payload.type),
-          String(record.payload.timezone), from, String(record.payload.window_end));
+          String(record.payload.timezone), from, until);
       }
       if (reconcile && record.status === "active" && Object.values(participantProgress).every(value => value >= Number(record.payload.target))) {
         const updated = await this.repository.updateGoal(record.id, { status: "completed",
           payload: { ...record.payload, version: Number(record.payload.version) + 1 }, updatedAt: new Date().toISOString() });
-        if (updated) record = updated;
+        if (updated) {
+          record = updated;
+          for (const recipientUserId of [record.ownerUserId!, record.partnerUserId!]) {
+            await enqueueBuddyGrowthEvent(this.database, { recipientUserId, eventType: "goal_updated",
+              targetType: "buddy_joint_goal", targetId: record.id, relationshipId: record.relationshipId!,
+              deduplicationKey: `goal-completed:${record.id}:${recipientUserId}` });
+          }
+        }
       }
       return { id: record.id, relationship_id: record.relationshipId, type: record.payload.type,
         target: record.payload.target, timezone: record.payload.timezone, window_start: record.payload.window_start,
@@ -165,6 +176,7 @@ function applyAction(goal: FrogSleepEntityRecord, userId: string, action: GoalAc
     if (goal.status !== "proposed" || consents[userId] !== "pending") conflict("REQ_INVALID_BODY", "Joint goal cannot be accepted.");
     consents[userId] = "accepted";
     goal.payload.accepted_at = new Date().toISOString();
+    delete goal.payload.progress_until;
   } else if (action === "adjust") {
     const type = goalType(input.type ?? goal.payload.type);
     goal.payload.type = type; goal.payload.target = goalTarget(type, input.target);
@@ -174,6 +186,7 @@ function applyAction(goal: FrogSleepEntityRecord, userId: string, action: GoalAc
   } else if (action === "complete" && !["active", "paused"].includes(goal.status ?? "")) {
     conflict("REQ_INVALID_BODY", "Joint goal cannot be completed.");
   }
+  if (action === "pause") goal.payload.progress_until = new Date().toISOString();
   const status = action === "accept" ? "active" : action === "adjust" ? "proposed" : action === "pause" ? "paused" : "completed";
   const actionKeys = objectValue(goal.payload.action_keys); actionKeys[idempotencyKey] = action;
   return { status, payload: { ...goal.payload, participant_consents: consents, action_keys: actionKeys, version },

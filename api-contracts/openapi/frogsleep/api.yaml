@@ -1406,17 +1406,31 @@ paths:
     post:
       operationId: frogSleepRespondBuddyJointActivity
       tags: [frogsleep]
-      summary: Accept, decline, cancel, or complete a joint activity
+      summary: Accept, decline, cancel, start, or verify completion of a joint activity
+      description: >-
+        start persists the participant start time and requires accepted status. Completion is derived
+        from both participants real completed focus sessions or their own morning_completed sleep events;
+        complete without both source proofs returns 409. Repeated starts preserve the original timestamp.
+        Acceptance expires after 36 hours. Cancelled or declined activities cannot restart.
+        payload.participant_progress maps participant IDs to status (pending/started/completed),
+        completed_at and minutes. joint_focus requires a focus relationship; tonight_together requires sleep.
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: activityId, in: path, required: true, schema: { type: string } }
-        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel, complete] } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [accept, decline, cancel, start, complete] } }
       responses: { "200": { $ref: "#/components/responses/FrogSleepOk" } }
   /api/v1/frogsleep/buddy/goals:
     get:
       operationId: frogSleepListBuddyJointGoals
       tags: [frogsleep]
       summary: List viewer-authorized joint goals and verified progress
+      description: >-
+        Only real sources starting after bilateral acceptance and ending inside the goal window count.
+        focus_minutes is capped by elapsed session time; focus_days and shared sleep completion days
+        are deduplicated by the proposer timezone. daily_encouragement counts distinct sent interaction
+        days. sleep_schedule_days denotes completed shared sleep days and does not assert schedule adherence.
+        Goals complete automatically when both participants reach the target. Unreached manual complete
+        returns 409. Paused goals stop counting at their pause time. No sharing grant is implied.
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: relationship_id, in: query, required: false, schema: { type: string } }

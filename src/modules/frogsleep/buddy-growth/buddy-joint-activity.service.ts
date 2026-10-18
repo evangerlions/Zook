@@ -74,8 +74,13 @@ export class BuddyJointActivityService {
       await this.assertNoOtherStartedActivity(record, userId);
       starts[userId] = now;
     }
-    return await this.save(record, { status, payload: { ...record.payload, participant_started_at: starts,
+    const updated = await this.save(record, { status, payload: { ...record.payload, participant_started_at: starts,
       ...(action === "accept" ? { accepted_at: now, expires_at: new Date(Date.now() + 36 * 3600_000).toISOString() } : {}) } });
+    if (action !== "start") await enqueueBuddyGrowthEvent(this.database, {
+      recipientUserId: record.ownerUserId === userId ? record.partnerUserId! : record.ownerUserId!,
+      eventType: "interaction_received", targetType: "buddy_joint_activity", targetId: record.id,
+      relationshipId: record.relationshipId!, deduplicationKey: `joint-activity:${record.id}:${action}` });
+    return updated;
   }
 
   private async assertNoOtherStartedActivity(record: FrogSleepEntityRecord, userId: string) {
@@ -96,14 +101,17 @@ export class BuddyJointActivityService {
     for (const userId of [record.ownerUserId!, record.partnerUserId!]) {
       const facts = await completionFacts(this.database, relation, userId);
       const fact = facts.find(fact => fact.kind === (record.payload.type === "joint_focus" ? "focus" : "sleep") &&
-        !!starts[userId] && fact.startsAt >= starts[userId] && fact.occurredAt <= String(record.payload.expires_at) &&
+        !!starts[userId] && (fact.kind === "sleep"
+          ? fact.startsAt >= String(record.payload.accepted_at) && fact.occurredAt >= starts[userId]
+          : fact.startsAt >= starts[userId]) && fact.occurredAt <= String(record.payload.expires_at) &&
         (fact.kind !== "focus" || fact.minutes >= Number(record.payload.planned_minutes ?? 1)));
       progress[userId] = { status: fact ? "completed" : starts[userId] ? "started" : "pending",
         completed_at: fact?.occurredAt, minutes: fact?.minutes };
     }
     const completed = Object.values(progress).every(value => value.status === "completed");
     const completedAt = completed ? Object.values(progress).map(value => value.completed_at!).sort().at(-1) : undefined;
-    const updated = await this.save(record, { status: completed ? "completed" : "accepted",
+    const expired = String(record.payload.expires_at ?? "") <= new Date().toISOString();
+    const updated = await this.save(record, { status: completed ? "completed" : expired ? "expired" : "accepted",
       ...(completedAt ? { occurredAt: completedAt } : {}),
       payload: { ...record.payload, participant_progress: progress, ...(completed ? { completed_at: completedAt } : {}) } });
     if (completed) await this.notifyCompleted(updated);
