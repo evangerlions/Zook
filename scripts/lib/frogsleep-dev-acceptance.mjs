@@ -164,6 +164,7 @@ export async function runSleepDevAcceptance({ baseUrl, account, deletionAccount,
         await call('disposable private raw record', '/product-data/sleep-sessions', { method: 'POST', token: disposable.access_token, body: raw(deleteId), headers: writeHeaders(oldEpoch, 'disposable-night') });
         await call('second disposable private raw record', '/product-data/sleep-sessions', { method: 'POST', token: disposable.access_token, body: raw(deleteId+'-second'), headers: writeHeaders(oldEpoch, 'disposable-second') });
         const oldRecovery = await call('disposable recovery checkpoint', '/product-data/personal-sync/restore?limit=1', { token: disposable.access_token });
+        ensure(oldRecovery.pagination.has_more === true && typeof oldRecovery.pagination.next_cursor === 'string' && oldRecovery.pagination.next_cursor.length > 0, 'Disposable recovery checkpoint did not return a real pagination cursor.');
         const preserved = await state(target, 'unrelated QA state before deletion');
         await call('disposable account deletion', '/me/account', { method: 'DELETE', token: disposable.access_token });
         for (const stale of [disposable.access_token, alternate.access_token]) await call('deleted account access rejected', '/product-data/personal-sync/restore', { token: stale, status: 401 });
@@ -184,11 +185,22 @@ export async function runSleepDevAcceptance({ baseUrl, account, deletionAccount,
     const deletedGuest = await createGuest('delete-guest'), deletedToken = deletedGuest.access_token;
     const deletedEpoch = (await state(deletedToken)).sync_epoch;
     await call('guest private data before deletion', '/product-data/sleep-sessions', { method: 'POST', token: deletedToken, body: raw(key('guest-delete-night')), headers: writeHeaders(deletedEpoch, 'guest-delete-night') });
+    await call('second guest record before deletion', '/product-data/sleep-sessions', { method: 'POST', token: deletedToken, body: raw(key('guest-delete-second')), headers: writeHeaders(deletedEpoch, 'guest-delete-second') });
+    const deletedRecovery = await call('guest checkpoint before deletion', '/product-data/personal-sync/restore?limit=1', { token: deletedToken });
+    ensure(deletedRecovery.pagination.has_more === true && typeof deletedRecovery.pagination.next_cursor === 'string' && deletedRecovery.pagination.next_cursor.length > 0, 'Guest recovery checkpoint did not return a real pagination cursor.');
     await deleteGuest(deletedGuest, 'own guest account deletion');
     await call('deleted guest access rejected', '/product-data/personal-sync/restore', { token: deletedToken, status: 401 });
     await call('deleted guest refresh rejected', '/auth/token/refresh', { method: 'POST', body: { refresh_token: deletedGuest.refresh_token }, status: 401 });
     await call('deleted guest proof cannot resurrect identity', '/account/guest-sessions', { method: 'POST', body: deletedGuest.deviceBody, headers: { 'idempotency-key': key('deleted-recover') }, status: 401 });
-    outcome = { complete: Boolean(account && deletionAccount), guest_sync: true, guest_upgrade: Boolean(account), registered_deletion: Boolean(account && deletionAccount) };
+    const freshGuest = await createGuest('fresh-guest-recovery'), newState = await state(freshGuest.access_token);
+    ensure(newState.sequence === 0 && newState.sync_epoch !== deletedEpoch && (await restore(freshGuest.access_token)).items.length === 0, 'Fresh guest inherited deleted account state.');
+    await call('deleted epoch cannot upload into new guest', '/product-data/sleep-sessions', { method: 'POST', token: freshGuest.access_token, body: raw(key('guest-delete-night')), headers: writeHeaders(deletedEpoch, 'guest-old-epoch'), status: 409, code: 'FROGSLEEP_SYNC_EPOCH_MISMATCH' });
+    await call('deleted restore cursor cannot enter new guest', '/product-data/personal-sync/restore?cursor='+encodeURIComponent(deletedRecovery.pagination.next_cursor), { token: freshGuest.access_token, status: 409, code: 'FROGSLEEP_SYNC_CURSOR_INVALID' });
+    const freshId = key('fresh-guest-night');
+    await call('new guest explicitly starts fresh history', '/product-data/sleep-sessions', { method: 'POST', token: freshGuest.access_token, body: raw(freshId), headers: writeHeaders(newState.sync_epoch, 'fresh-guest-save') });
+    const freshHistory = await restore(freshGuest.access_token);
+    ensure(freshHistory.items.length === 1 && freshHistory.items[0].id === freshId && freshHistory.items[0].revision === 1, 'Fresh guest recovery revived old resources.');
+    outcome = { complete: Boolean(account && deletionAccount), guest_sync: true, guest_deletion_recovery: true, guest_upgrade: Boolean(account), registered_deletion: Boolean(account && deletionAccount) };
   } catch (error) { failure = error instanceof Error ? error.message : 'Acceptance failed.'; }
   const cleanupFailures = [];
   for (const operation of cleanup) { try { await operation(); } catch (error) { cleanupFailures.push(error instanceof Error ? error.message : 'Resource cleanup failed.'); } }
