@@ -939,14 +939,22 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 | 方法 | Path | 说明 |
 | ---- | ---- | ---- |
 | `POST` | `/api/v1/frogsleep/product-data/sleep-reports` | 保存睡眠报告快照 |
-| `GET` | `/api/v1/frogsleep/product-data/sleep-reports` | 查询当前用户睡眠报告快照 |
+| `GET` | `/api/v1/frogsleep/product-data/sleep-reports?since={iso}&limit={n}&cursor={cursor}` | 查询当前用户睡眠报告快照（支持增量同步） |
 | `PUT/PATCH` | `/api/v1/frogsleep/product-data/progress/{namespace}` | upsert 当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/progress/{namespace}` | 查询当前用户进度快照 |
 | `GET` | `/api/v1/frogsleep/product-data/entitlements/current` | 查询当前 FrogSleep 权益状态 |
+| `POST` | `/api/v1/frogsleep/account/upgrade` | 游客数据升级到注册账号 |
 
 睡眠报告请求必须包含 `snapshot_id`（或 `report_id` / `id`）、`schema_version`（或 `version`）、`recorded_at` ISO 时间和对象型 `data`。响应会把报告内容放在 `snapshot_data`，避免覆盖 Zook envelope 的 `data`。列表响应返回 `sleep_reports`、兼容 alias `reports` 与 `pagination`。`GET` 支持 `limit`（1–100，默认50）和不透明 `cursor`；按报告时间的毫秒值、稳定记录ID倒序在数据库分页，持续使用 `pagination.next_cursor` 直到 `has_more=false`，可恢复超过500条的完整历史。游标不改变认证身份过滤，非法游标返回400。
 
+列表查询支持增量同步参数：
+- `since`: ISO 8601 时间戳，返回 `occurredAt > since` 的记录
+- `limit`: 最大返回记录数（默认 50，最大 500）
+- `cursor`: 分页游标
+
 进度快照 `namespace` 当前支持 `habit_progress`、`companion_state`、`cat_state`、`onboarding`、`report_preferences`。请求必须包含 `schema_version`（或 `version`）和对象型 `state`（或 `data`）；未知 namespace 返回 `400 REQ_INVALID_BODY`。权益查询返回当前 app-scoped entitlement；无记录时返回 `{ state: "unknown", plan: "free", source: "none" }`。FrogSleep logout 只注销 App 登录态，不删除报告、进度、权益记录，也不删除 Zook 全局账号。
+
+游客数据升级请求必须包含 `guest_device_id`（设备唯一标识）。响应返回 `user_id`、`migrated_data_count`（迁移数据数量）和 `migrated_kinds`（迁移的数据类型列表）。升级后，游客数据的所有者从设备 ID 变为注册用户 ID。
 
 ### 9.5 FrogSleep 邀请链接与推送
 

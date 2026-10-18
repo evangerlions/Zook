@@ -5,6 +5,7 @@ import { FROGSLEEP_APP_ID } from "../modules/frogsleep/frogsleep-app.ts";
 import { FrogSleepFocusBuddyService } from "../modules/frogsleep/focus-buddy/focus-buddy.service.ts";
 import { LegacyBuddyInvitationAdapter } from "../modules/frogsleep/buddy-growth/legacy-buddy-invitation-adapter.ts";
 import { FrogSleepProductDataService } from "../modules/frogsleep/product-data/frogsleep-product-data.service.ts";
+import { FrogSleepGuestUpgradeService } from "../modules/frogsleep/product-data/frogsleep-guest-upgrade.service.ts";
 import { emitFrogSleepAnalyticsEvent } from "../modules/frogsleep/frogsleep-analytics.ts";
 import { parsePaginationParams } from "../modules/frogsleep/frogsleep-validation.ts";
 import { FrogSleepSleepBuddyService } from "../modules/frogsleep/sleep-buddy/sleep-buddy.service.ts";
@@ -110,6 +111,10 @@ function focusBuddyService(context: BackendRouteContext): FrogSleepFocusBuddySer
 
 function productDataService(context: BackendRouteContext): FrogSleepProductDataService {
   return new FrogSleepProductDataService(context.database);
+}
+
+function guestUpgradeService(context: BackendRouteContext): FrogSleepGuestUpgradeService {
+  return new FrogSleepGuestUpgradeService(context.database);
 }
 
 async function trackInviteOpenBestEffort(track: () => Promise<void>): Promise<void> {
@@ -561,9 +566,11 @@ export async function tryHandleFrogSleepV1Routes(
   }
   if (routeRequest.method === "GET" && routeRequest.path === "/v1/product-data/sleep-reports") {
     const auth = await authenticateFrogSleepRequest(this, routeRequest);
+    const query = routeRequest.query as Record<string, unknown>;
+    const since = typeof query.since === "string" && query.since.trim() ? query.since.trim() : undefined;
     return frogSleepOk(
       this,
-      await productDataService(this).listSleepReports(auth.userId, parsePaginationParams(routeRequest.query)),
+      await productDataService(this).listSleepReports(auth.userId, parsePaginationParams(query), since),
       routeRequest.requestId as string,
     );
   }
@@ -589,6 +596,16 @@ export async function tryHandleFrogSleepV1Routes(
     return frogSleepOk(
       this,
       dualResourcePayload("entitlement", await productDataService(this).currentEntitlement(auth.userId)),
+      routeRequest.requestId as string,
+    );
+  }
+  if (routeRequest.method === "POST" && routeRequest.path === "/v1/account/upgrade") {
+    const auth = await authenticateFrogSleepRequest(this, routeRequest);
+    const body = asBody(routeRequest);
+    const guestDeviceId = typeof body.guest_device_id === "string" ? body.guest_device_id.trim() : "";
+    return frogSleepOk(
+      this,
+      await guestUpgradeService(this).upgradeGuestData(guestDeviceId, auth.userId),
       routeRequest.requestId as string,
     );
   }

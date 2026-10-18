@@ -78,13 +78,14 @@ export class FrogSleepProductDataService {
     return this.toSleepReport(record);
   }
 
-  async listSleepReports(userId: string, pagination: PaginationParams = { limit: 50 }) {
+  async listSleepReports(userId: string, pagination: PaginationParams = { limit: 50 }, since?: string) {
     const before = decodeFrogSleepCursor(pagination.cursor);
     const records = await this.database.listFrogSleepEntities({
       appId: FROGSLEEP_APP_ID,
       kind: "sleep_report_snapshot",
       ownerUserId: userId,
       before,
+      occurredAtFromIso: since ? parseIsoTimestamp(since, "since") : undefined,
       limit: pagination.limit + 1,
     });
     const page = paginateRecords(records, pagination);
