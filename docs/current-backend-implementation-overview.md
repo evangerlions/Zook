@@ -706,8 +706,8 @@ LightTick 通用规划增量：独立个人复盘（无需AI保存、版本冲�
 ### FrogSleep 后端四项闭环修复（2026-10-18，未发布）
 
 - 新 sleep 领域关系接入现有状态、session、偏好和晨报读取；接受时建立默认 revoked 的方向授权，显式开启后才允许共享。双方暂停独立记录，解除事务释放双方领域 slot。
-- 睡眠通知按接收方偏好在入队和投递前复核，关闭后已排队任务记 SUPPRESSED；个人流程及事件保存不被推送设置阻断。
-- 缺失 provider 或当前平台 dispatcher 明确 FAILED 并保留 failed-event 重投，日志不再伪装为 FrogSleep 成功发送；SENT 表示提供方接受，无设备为 SUPPRESSED。
+- 睡眠通知按接收方偏好在入队和投递前复核，关闭后已排队任务终结并记录抑制outcome；个人流程及事件保存不被推送设置阻断。
+- 缺失 provider 或当前平台 dispatcher 明确 FAILED 并保留 failed-event 重投，日志不再伪装为 FrogSleep 成功发送；SENT 表示任务终结，provider_accepted才表示提供方接受；无设备记录NO_ACTIVE_DEVICES。
 - 睡眠报告使用数据库游标分页，排序/边界与公开时间戳保持毫秒精度，稳定 ID 处理同时间戳；移除完整历史恢复的500条上限。
 - 专项验收入口：`test/unit/frogsleep-sleep-domain-loop.api.test.ts`、`frogsleep-sleep-notification-preferences.test.ts`、`frogsleep-push-provider-readiness.test.ts`、`frogsleep-sleep-history-pagination.test.ts`。真实 PostgreSQL 在一次性库运行 `FROGSLEEP_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/frogsleep-backend-loop-postgres.test.ts`；包含完整关系生命周期、1100条历史、微秒边界及投递补偿。本轮全量单元/API测试1331项通过；真实PostgreSQL七个子场景通过（TAP含父测试计8项），覆盖授权撤回后的通知抑制、错域/陌生人拒绝及会话与解除的真实锁竞争。OpenAPI生成一致性与lint通过。源码行数门禁仍有9个主线已存在的超限文件，本轮未修改这些文件。测试通过不代表真实邮件、设备推送或线上放行。
 FrogSleep 2A 统一邀请增量（2026-10-11）：预览返回独立域状态/CAS 版本/动作，正确邮箱账号可在显式命令中认领，accept/decline/cancel 同键同版本回放不重复关系、slot 或事件；accept 使用持久化原关系回执且不自动授予共享。新旧接受共用 slot 锁并重验既有关系，终态兼容 child 同步、错误角色回放拒绝。022 仅回填唯一可核实的旧关系。1306 项后端单测、10 项新增 PG 专项及既有 7 项 PG 回归通过；当前合同 lint 0 errors/194 warnings。仍缺 dev/provider/真机和完整方向授权发布证据；不表示线上已发布。详见 `docs/frogsleep-phase2a-invitation-closeout-verification-2026-10-11.md`。

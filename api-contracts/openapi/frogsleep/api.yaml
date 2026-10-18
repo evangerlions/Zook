@@ -973,7 +973,7 @@ paths:
         Authenticated app membership and the correct action actor are required, including replay.
         Use this domain's decision_version from preview as expected_version, and persist the opaque
         idempotency_key before sending. Retry the same action with the original key and version.
-        Accept creates one canonical relationship and two occupied slots with no implicit sharing grants.
+        Accept creates one canonical relationship, two occupied slots and eight revoked directional grant records; no sharing is enabled.
         Decline and cancel do not create relationships or slots and remain available when ordinary capabilities are disabled.
         A terminal sibling is unaffected. Unknown or wrong-account invitations return neutral 404;
         changed keys, stale versions, expired pending invitations or losing races return 409.
@@ -1005,7 +1005,7 @@ paths:
         Authenticated app membership and the correct action actor are required, including replay.
         Use this domain's decision_version from preview as expected_version, and persist the opaque
         idempotency_key before sending. Retry the same action with the original key and version.
-        Accept creates one canonical relationship and two occupied slots with no implicit sharing grants.
+        Accept creates one canonical relationship, two occupied slots and eight revoked directional grant records; no sharing is enabled.
         Decline and cancel do not create relationships or slots and remain available when ordinary capabilities are disabled.
         A terminal sibling is unaffected. Unknown or wrong-account invitations return neutral 404;
         changed keys, stale versions, expired pending invitations or losing races return 409.
@@ -1037,7 +1037,7 @@ paths:
         Authenticated app membership and the correct action actor are required, including replay.
         Use this domain's decision_version from preview as expected_version, and persist the opaque
         idempotency_key before sending. Retry the same action with the original key and version.
-        Accept creates one canonical relationship and two occupied slots with no implicit sharing grants.
+        Accept creates one canonical relationship, two occupied slots and eight revoked directional grant records; no sharing is enabled.
         Decline and cancel do not create relationships or slots and remain available when ordinary capabilities are disabled.
         A terminal sibling is unaffected. Unknown or wrong-account invitations return neutral 404;
         changed keys, stale versions, expired pending invitations or losing races return 409.

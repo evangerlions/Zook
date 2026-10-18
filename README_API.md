@@ -855,9 +855,9 @@ FrogSleep 成功响应在迁移期采用双兼容格式：保留 Zook 标准响�
 
 `POST /api/v1/frogsleep/buddy/invitation-receipts` 要求 FrogSleep Bearer 鉴权和普通 `create` 能力。请求体只接受邮箱语法合法的 `email` 与非空、不重复的 `domains`（`sleep`、`focus`）；邮箱会先 `trim().toLowerCase()`，服务端仅保存其 SHA-256 小写十六进制哈希。响应为标准 envelope，`data` 只含不透明 `receipt_id`、固定 `status: "recorded"` 和七天后过期的 ISO-8601 `expires_at`。同一邀请人、规范化邮箱和领域集合重复提交会返回原回执。已注册且合格的账户会在内部绑定不可变用户 ID；未注册、本人或不合格目标会记录同形 decoy 回执。该命令不泄露账户、投递或领域信息，当前只记录邀请回执，不代表已经投递、接受、创建邀请、关系、通知、定位器或分享链接。
 
-`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请创建时绑定的被邀请用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；不修改组合邀请、另一领域、旧子邀请或旧关系，也不会隐式开启任何分享授权。单域关系建立时在同一事务内初始化双方各四类、共八条 `revoked` grant；不会沿用旧关系的自动补授逻辑。随后可通过该 `relationship_id` 查询 grants，各用户仅可 PATCH 自己作为 grantor 的记录；授权失败只重试 grant 更新，不重新接受另一个域。Bundle 预览的 `domain_results` 按实际领域 decision 返回 `status`、`decision_version` 和匹配该次接受的 `relationship_id`，不能使用 Bundle 总版本代替领域 decision 版本。旧领域关系已不可用时返回空关系 ID 和 `BUDDY_RELATIONSHIP_UNAVAILABLE`，不会从新 slot 恢复旧关系。
+`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/accept` 要求 FrogSleep Bearer 鉴权和普通 `accept` 能力，`domain` 仅支持 `sleep`、`focus`。请求体必须包含 JSON number 类型的正整数 `expected_version` 和非空 `idempotency_key`；字符串或布尔型版本不会被转换。调用者必须是邀请绑定的收件用户，或当前邮箱与未认领邀请目标匹配的用户，且该领域必须属于邀请；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功只接受指定领域，在一个事务中创建该领域关系、占用双方领域 slot、递增该领域 decision 版本，并向邀请人写入一条去重 outbox 事件；同步该领域兼容子邀请的终态，保留另一领域及既有关系，不隐式开启任何分享授权。单域关系建立时在同一事务内初始化双方各四类、共八条 `revoked` grant；不会沿用旧关系的自动补授逻辑。随后可通过该 `relationship_id` 查询 grants，各用户仅可 PATCH 自己作为 grantor 的记录；授权失败只重试 grant 更新，不重新接受另一个域。Bundle 预览的 `domain_results` 按实际领域 decision 返回 `status`、`decision_version` 和匹配该次接受的 `relationship_id`，不能使用 Bundle 总版本代替领域 decision 版本。旧领域关系已不可用时返回空关系 ID 和 `BUDDY_RELATIONSHIP_UNAVAILABLE`，不会从新 slot 恢复旧关系。
 
-`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/decline` 与 `/cancel` 是始终可用的安全命令：均要求 FrogSleep Bearer 鉴权，但不受普通搭子能力、邀请收件箱、显式同意或双向 block 影响。`domain` 仅支持 `sleep`、`focus`，请求体使用与单领域 accept 相同的正整数 JSON `expected_version` 和非空 `idempotency_key`。`decline` 仅允许邀请时绑定的被邀请用户，`cancel` 仅允许邀请人；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功时只更新指定领域 decision（分别为 `declined` 或 `cancelled`）并向对方写入一条去重 outbox 事件，不修改组合邀请、其它领域、slot、关系、授权、回执或旧邀请记录。相同行为和 idempotency key 可在组合邀请过期或终态后无写入重放；不同 key 或冲突版本返回现有 `409` 冲突响应。安全命令的成功响应 `data` **只**包含 `invitation_id`、`domain`、`decision_status`、`decision_version`。
+`POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{domain}/decline` 与 `/cancel` 是始终可用的安全命令：均要求 FrogSleep Bearer 鉴权，但不受普通搭子能力、邀请收件箱、显式同意或双向 block 影响。`domain` 仅支持 `sleep`、`focus`，请求体使用与单领域 accept 相同的正整数 JSON `expected_version` 和非空 `idempotency_key`。`decline` 仅允许绑定收件用户或当前邮箱匹配的未认领邀请收件用户，`cancel` 仅允许邀请人；错误账户或不存在的邀请统一返回 `404 REQ_ROUTE_NOT_FOUND`。成功时只更新指定领域 decision（分别为 `declined` 或 `cancelled`）并向对方写入一条去重 outbox 事件，同步对应兼容子邀请的终态，保留其它领域、slot、关系和授权。相同行为和 idempotency key 可在组合邀请过期或终态后无写入重放；不同 key 或冲突版本返回现有 `409` 冲突响应。安全命令的成功响应 `data` **只**包含 `invitation_id`、`domain`、`decision_status`、`decision_version`。
 
 `accept` 成功响应的 `data` 仅包含 `invitation_id`、`domain`、`decision_status`、`decision_version`、`relationship_id`、`relationship_status`。相同 idempotency key 重放返回已有权威结果，即使旧 bundle 随后过期或进入旧终态也不增加版本或 outbox；重放仍校验不可变被邀请人和领域归属。不同 key 的终态重放或 `expected_version` 过期返回 `409 REQ_INVALID_BODY`。任一参与者的领域 slot 已占用时返回 `409 BUDDY_DOMAIN_SLOT_OCCUPIED`，且 decision、slot、关系和 outbox 均不产生部分写入。
 已生成的共享总结或联合回顾在授权移除后只返回 `redacted=true` 的稳定占位对象。运营元数据与 Push 路由仅允许不透明资源 ID 和路由枚举；邀请 token/code、私密总结、备注、自定义文本和原始记录会被丢弃，不进入日志、分析、Push 或错误轨迹。
@@ -954,11 +954,11 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 | `GET` | `/api/v1/frogsleep/product-data/entitlements/current` | 查询当前 FrogSleep 权益状态 |
 | `POST` | `/api/v1/frogsleep/account/upgrade` | 兼容保留；云端游客转移未开放，返回 409 |
 
-睡眠报告请求必须包含 `snapshot_id`（或 `report_id` / `id`）、`schema_version`（或 `version`）、`recorded_at` ISO 时间和对象型 `data`。响应会把报告内容放在 `snapshot_data`，避免覆盖 Zook envelope 的 `data`。列表响应返回 `sleep_reports`、兼容 alias `reports` 与 `pagination`。`GET` 支持 `limit`（1–100，默认50）和不透明 `cursor`；按报告时间的毫秒值、稳定记录ID倒序在数据库分页，持续使用 `pagination.next_cursor` 直到 `has_more=false`，可恢复超过500条的完整历史。游标不改变认证身份过滤，非法游标返回400。
+睡眠报告请求必须包含 `snapshot_id`（或 `report_id` / `id`）、`schema_version`（或 `version`）、`recorded_at` ISO 时间和对象型 `data`。响应会把报告内容放在 `snapshot_data`，避免覆盖 Zook envelope 的 `data`。列表响应返回 `sleep_reports`、兼容 alias `reports` 与 `pagination`。`GET` 支持 `limit`（1–100，默认50）和不透明 `cursor`；按规范报告时间、稳定资源ID倒序在数据库分页，持续使用 `pagination.next_cursor` 直到 `has_more=false`，可恢复超过500条的完整历史。游标绑定认证身份和固定恢复边界，非法游标返回409 `FROGSLEEP_SYNC_CURSOR_INVALID`。
 
 列表查询支持增量同步参数：
-- `since`: ISO 8601 时间戳，返回 `occurredAt > since` 的记录
-- `limit`: 最大返回记录数（默认 50，最大 500）
+- `since`: ISO 8601 时间戳，返回 `recorded_at > since` 的报告；修订和删除使用changes
+- `limit`: 最大返回记录数（默认 50，最大 100）
 - `cursor`: 分页游标
 
 进度快照 `namespace` 当前支持 `habit_progress`、`companion_state`、`cat_state`、`onboarding`、`report_preferences`。请求必须包含 `schema_version`（或 `version`）和对象型 `state`（或 `data`）；未知 namespace 返回 `400 REQ_INVALID_BODY`。权益查询返回当前 app-scoped entitlement；无记录时返回 `{ state: "unknown", plan: "free", source: "none" }`。FrogSleep logout 只注销 App 登录态，不删除报告、进度、权益记录，也不删除 Zook 全局账号。

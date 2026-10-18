@@ -66,6 +66,23 @@ canonical OpenAPI为 `api-contracts/openapi/frogsleep/api.yaml`；统计121条�
 
 ## 验证记录
 
-整合分支全量单元/API测试1433项通过；后续增加确认绑定升级和DST回归，合并后main将再执行最终全量验证。报告完整恢复、301条微秒边界、独立连接并发/删除/授权/通知专项均使用本机一次性PostgreSQL数据库，未连接线上数据。后台类型检查和生产构建通过，合同生成一致性与OpenAPI lint通过（196条警告）。最终主线复验结果在本节补记。
+代码整合提交 `8fad464` 已进入本地main并完成下列复验；其后的本轮收尾提交仅同步文档与OpenAPI说明，不改变运行代码。
+
+| 检查 | 合并后main结果 |
+| --- | --- |
+| `npm test` | 1434项通过，0失败/取消/跳过 |
+| FrogSleep真实PostgreSQL | 11套文件、69项（含父测试）通过 |
+| LightTick真实PostgreSQL | 6套文件、25项（含父测试）通过 |
+| BodyLog真实PostgreSQL | 2套文件、2项父测试通过；覆盖事务、并发、迁移重放 |
+| `npm run admin:typecheck` | 通过 |
+| `npm run admin:build` | 通过 |
+| `npm run check:api-contracts` | 通过，与生成物一致 |
+| `npm run lint:api-contracts` | 0错误、196条警告 |
+| `git diff --check` | 通过 |
+| `npm run check:line-count` | 未通过，见下方既有9项维护问题 |
+
+PG共19套文件，最终TAP统计96项（含父测试），无失败/跳过。分别给每套测试新建一次性数据库，避免跨套污染；报告完整恢复、301条微秒边界、独立连接并发/删除/授权/通知专项未连接线上数据。FrogSleep与LightTick分项数量以TAP清单为准。
+
+可复验入口：`test/integration/frogsleep-*.test.ts`、`test/integration/lighttick-*.test.ts`、`bodylog-growth.postgres.test.ts`和`bodylog-postgres.test.ts`。按产品设置各自 `FROGSLEEP_TEST_DATABASE_URL` / `LIGHTTICK_TEST_DATABASE_URL` / `BODYLOG_TEST_DATABASE_URL` 到独立一次性库，运行 `node --experimental-transform-types --test <file>`。不要把测试URL指向已有业务数据库。
 
 源码行数门禁未通过：原main基线已有9个超限文件，整合后仍为同9个，两个旧数据库汇总文件因新增委托继续增长；没有放宽门禁或新增allowlist。该维护项与功能测试结果分别记录，不把“功能已验证”写成“所有仓库门禁全绿”。
