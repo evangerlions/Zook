@@ -21,6 +21,10 @@ export class SleepRelationshipService {
     if (!relationship || relationship.deletedAt || ![relationship.ownerUserId, relationship.partnerUserId].includes(userId)) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Relationship is not visible to the current user.");
     }
+    if (!relationship.payload.domain_relationship &&
+      !(await buddyRelationships(this.database, userId, "sleep")).some(item => item.id === relationship.id)) {
+      forbidden("AUTH_APP_SCOPE_MISMATCH", "Relationship has been superseded by its domain record.");
+    }
     return relationship;
   }
 

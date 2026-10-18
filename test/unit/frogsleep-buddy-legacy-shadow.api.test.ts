@@ -69,6 +69,13 @@ for (const domain of ["focus", "sleep"] as const) {
       const current = await request(f.app, token, "GET", currentPath);
       assert.equal(current.statusCode, 200, JSON.stringify(current.body));
       assert.equal(current.body.data.relationship, null);
+      const oldGrants = await request(f.app, token, "GET", `/buddy/relationships/${f.legacyId}/grants`);
+      assert.ok([403, 404].includes(oldGrants.statusCode), "old legacy IDs must not bypass canonical revocation");
+      if (domain === "sleep") {
+        const oldSession = await request(f.app, token, "POST", "/sleep-buddy/shared-sessions",
+          { relationship_id: f.legacyId });
+        assert.equal(oldSession.statusCode, 403);
+      }
     }
   });
 }

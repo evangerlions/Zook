@@ -1,3 +1,4 @@
+import { buddyRelationships } from "./buddy-relationships.ts";
 import { randomUUID } from "node:crypto";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
@@ -110,6 +111,8 @@ export class BuddyConsentService {
     if (!relationship || !relationship.ownerUserId || !relationship.partnerUserId ||
         ![relationship.ownerUserId, relationship.partnerUserId].includes(userId)) throw unavailable();
     if (!["active", "accepted"].includes(relationship.status ?? "")) throw unavailable();
+    if (!relationship.payload.domain_relationship &&
+      !(await buddyRelationships(this.database, userId)).some(item => item.id === relationship.id)) throw unavailable();
     await assertBuddyPairNotBlocked(this.database, relationship.ownerUserId, relationship.partnerUserId);
     return relationship;
   }

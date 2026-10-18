@@ -476,6 +476,12 @@ paths:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
   /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/events:
     post:
+      description: >-
+        A participant morning_completed is terminal and retries do not regress its state.
+        One completed morning keeps the session active for the other participant. The shared
+        session ends only when both participants are morning_completed or paused_tonight.
+        Generated summaries expose only the corresponding participant completion fact;
+        accepting an ended session never reopens it.
       operationId: frogSleepRecordSharedSleepSessionEvent
       tags: [frogsleep, frogsleep-sleep-buddy]
       summary: Record an event on a shared sleep session
