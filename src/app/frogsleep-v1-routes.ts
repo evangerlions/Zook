@@ -1,3 +1,4 @@
+import { tryHandlePersonalSyncRoutes } from "./frogsleep-personal-sync-routes.ts";
 import { randomUUID } from "node:crypto";
 import type { HttpRequest, HttpResponse } from "../shared/types.ts";
 import type { BackendRouteContext } from "./backend-route-context.ts";
@@ -198,6 +199,8 @@ export async function tryHandleFrogSleepV1Routes(
   }
   const routePath = normalizeFrogSleepPath(request.path);
   const routeRequest = routePath === request.path ? request : { ...request, path: routePath };
+  const personalSync = await tryHandlePersonalSyncRoutes(this, routeRequest);
+  if (personalSync) return personalSync;
 
   if (routeRequest.method === "POST" && routeRequest.path === "/v1/auth/email/send-code") {
     return await handleFrogSleepEmailCode(this, routeRequest);
@@ -557,20 +560,6 @@ export async function tryHandleFrogSleepV1Routes(
         from: routeRequest.query?.from,
         to: routeRequest.query?.to,
       }),
-      routeRequest.requestId as string,
-    );
-  }
-  if (routeRequest.method === "POST" && routeRequest.path === "/v1/product-data/sleep-reports") {
-    const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    return frogSleepOk(this, await productDataService(this).createSleepReport(auth.userId, asBody(routeRequest)), routeRequest.requestId as string);
-  }
-  if (routeRequest.method === "GET" && routeRequest.path === "/v1/product-data/sleep-reports") {
-    const auth = await authenticateFrogSleepRequest(this, routeRequest);
-    const query = routeRequest.query as Record<string, unknown>;
-    const since = typeof query.since === "string" && query.since.trim() ? query.since.trim() : undefined;
-    return frogSleepOk(
-      this,
-      await productDataService(this).listSleepReports(auth.userId, parsePaginationParams(query), since),
       routeRequest.requestId as string,
     );
   }

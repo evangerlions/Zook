@@ -924,6 +924,10 @@ notification worker 每分钟幂等物化 outbox：站内通知按 `outbox_id` �
 }
 ```
 
+私人专注上报支持可选 `session_id`（兼容 `sessionId`）：1–128字符、至少包含一个非空白字符、大小写敏感，不自动trim或按UUID改写；两者都传时必须相同。幂等键为认证推导的 `(app_id, owner_user_id, client_session_id)`，请求体伪造owner/app不改变归属。相同内容重试返回相同的 `session_id`（服务端实体ID）、`id`（客户端ID）及创建时间，并保留首次省略时间字段时的服务端默认值；并发重复上报只产生一条有效记录。同键内容修正更新原记录，保留服务端ID/创建时间，周/日统计按最新内容计一次；按数据库最后接受的写入为准，尚无客户端revision排序。首次里程碑/共享检测仅在插入时触发，不因重试或私人修正重复创建。省略两个ID继续旧客户端每次新增行为；显式null、非字符串、全空白、超长或两个别名冲突返回 `400 REQ_INVALID_BODY`。
+
+迁移 `021_frogsleep_focus_session_idempotency.sql` 对既有同app/user/client ID重复行保留最早实体ID和created_at、采用最新updated_at内容，其余软删除，并重接历史共享时刻的session引用；无有效客户端ID的旧记录保持原状。唯一索引与整理同事务安装，需要先在dev验证迁移与候选版本；没有自动发布授权。请求分析事件仍记录上报请求次数，唯一session数量以历史/统计接口为准。
+
 专注 session 上报会校验 `started_at`、`ended_at` 为 ISO 时间，且 `ended_at >= started_at`；`planned_minutes`、`actual_minutes`、`interrupt_count` 必须是有限非负数，超出范围返回 `400 REQ_INVALID_BODY`。`status` 支持完成态 `completed`、`abandoned`、`interrupted`、`cancelled`，以及 presence 推导使用的进行态 `active`、`in_progress`、`focusing`。`GET /api/v1/frogsleep/focus-buddy/sessions`、`GET /api/v1/frogsleep/focus-buddy/achievements`、`GET /api/v1/frogsleep/focus-buddy/messages`、`GET /api/v1/frogsleep/focus-buddy/shared` 支持 `limit`、`cursor`，响应保留原列表容器字段并额外返回 `pagination = { limit, next_cursor, has_more }`。`limit` 默认 50，最大 100。
 
 专注匹配搜索只返回已开启 `matching_consent`、仍有公开资料、与当前用户匹配条件兼容、且未与当前用户存在 pending / accepted 专注关系的候选人。候选响应除 `score`、`matched_scenes`、`matched_study_types`、`explanation` 外，还会带 `recommendation_type = "controlled_focus_partner"`、`privacy_note_key = "buddy_match.privacy.summary_only"`、`why_recommended`、`invite_prompt_key = "buddy_match.invite.controlled_prompt"`，用于客户端展示受控推荐理由和隐私边界。如果当前用户已有未过期的 outgoing pending 专注邀请，`/api/v1/frogsleep/focus-buddy/matches/search` 会直接返回空候选，并在 `empty_state` 中给出 `reason = "pending_invites"`、`title_key`、`subtitle_key`、`pending_relationship_id`、`pending_user_id`，客户端应引导用户回到待处理邀请状态；如果关联邀请已过期，搜索会先刷新过期状态，不继续卡住匹配。`dismiss` 与 `report` 都是当前用户维度的匹配反馈：请求体可传 `reason`、`note`，成功后该候选人会从当前用户后续匹配搜索中排除；不能对自己执行 dismiss / report。搜索内部会批量读取当前用户的 dismiss/report 反馈，避免按候选逐个查询。
@@ -1148,3 +1152,86 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
 - 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
 - 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。
+
+### FrogSleep 2A：统一邀请分域决策（2026-10-11）
+
+`GET /api/v1/frogsleep/buddy/invitations/{inviteId}` 与 `.../preview` 的 `domain_results` 现在包含每个域自己的 `status`、`relationship_id`、`decision_version` 和 `viewer_actions`。预览只读，不绑定收件人或建立关系；不能用组合邀请的 `version/status` 代替某一域的决策。终态域没有接受/拒绝/取消动作，另一个 pending 域可以继续处理。旧兼容决策可能不含 `decision_version`。
+
+| 操作 | canonical 路径 | 操作者 |
+|---|---|---|
+| 接受单域 | `POST /api/v1/frogsleep/buddy/invitations/{inviteId}/domains/{sleep|focus}/accept` | 收件账号 |
+| 拒绝单域 | 同上末段 `/decline` | 收件账号 |
+| 取消单域 | 同上末段 `/cancel` | 邀请人，包括对方尚未注册的情况 |
+
+请求为 `{"expected_version":1,"idempotency_key":"persisted-command-key"}`。客户端在发送前保存请求身份；相同动作重试复用原 key 和原版本。成功回执含 `invitation_id/domain/decision_status/decision_version`，accept 另含原始 `relationship_id` 和其当前 `relationship_status`。相同 key 的回放不重复写关系、slot、授权或通知事件；错版本、不同 key 的终态写入及竞争失败为 409。接受回放读取决策保存的原关系，不读取当前 slot，关系被解除后也不会重新激活。
+
+未绑定的邮箱邀请只允许当前收件邮箱对应账号显式接受/拒绝时绑定。错误账号、错误角色和不存在的邀请统一返回中性的 `404 REQ_ROUTE_NOT_FOUND`，回放也重新检查角色和 active app membership；客户端保留 locator，登录正确账号后重新预览，不自动接受。code 支持首尾空白及大小写规范化。accept 仍受普通邀请 capability 控制，decline/cancel 保持能力关闭时可用。
+
+单域 accept 建立 canonical 域关系与两端 slot，**不隐含共享授权**；共享仍需后续独立授权。旧整单接口保留已发布客户端的授权语义，已由新协议决策的邀请禁止再用整单操作改变 sibling；新旧接受共用用户/域 slot 锁并检查既有旧关系，避免不同邀请重复建立同域关系。兼容回放必须由原操作角色执行。
+
+迁移 `022_frogsleep_invitation_relationship_receipt.sql` 持久化原始关系回执；历史回填仅匹配同 app、域、账号对和决定时间的唯一关系，无法确认时返回冲突，绝不猜测当前搭子。详情和本机证据见 [邀请专题](docs/public-frogsleep-invites.md) 与 [2A 验证记录](docs/frogsleep-phase2a-invitation-closeout-verification-2026-10-11.md)。
+
+
+### FrogSleep 2A 方向授权与关系生命周期（2026-10-11）
+
+新邀请建立的 canonical 关系和旧兼容关系共用以下入口，鉴权为 FrogSleep active membership，安全/撤权操作不依赖 discovery flags。pending Focus 邀请关系不能通过这些入口转换为 accepted，仍须走邀请决策。
+
+| Method | Canonical path | 行为 |
+| --- | --- | --- |
+| GET | `/api/v1/frogsleep/buddy/relationships` | 当前 active/paused 的 Sleep、Focus 关系元数据 |
+| GET | `/api/v1/frogsleep/buddy/relationships/{id}` | 本人关系快照及 terminal receipt |
+| POST | `/api/v1/frogsleep/buddy/relationships/{id}/{pause,resume,revoke,mute,unmute}` | body `{"expected_version":1}`；成功返回关系快照 |
+| GET | `/api/v1/frogsleep/buddy/relationships/{id}/grants` | `viewer_user_id` 与双方独立授权；允许 paused 状态读取授权元数据 |
+| PUT | `/api/v1/frogsleep/buddy/relationships/{id}/grants` | 原子替换当前 token 授权人向另一方的选择 |
+
+关系快照包含 `id/viewer_user_id/partner_user_id/domain/status/version/paused_by_user_ids/is_muted`。暂停按参与人分别记录；恢复只移除本人暂停，另一个参与人仍暂停时返回 paused。旧 Sleep resume 也遵循这一安全规则，不能替对方恢复。历史 paused 缺少操作人时按双方暂停保守处理。新统一端点重复已经生效的 pause/resume/revoke 不增加版本；旧 Focus revoke 保留既有重复请求 400 行为。终止关系不能恢复，需新邀请。解除只释放仍指向旧关系的 slot，旧回放不得触碰新搭子的 slot。
+
+PUT 授权示例：
+
+```json
+{"domain":"sleep","categories":["presence","daily_summary"],"expected_versions":{"presence":0,"daily_summary":0,"weekly_trend":0,"shared_activity":0}}
+```
+
+必须传全部四个类别的原版本。不存在的授权以 revoked/version 0 的只读默认项呈现，不在 GET 时写库；首次授予后为 version 1。当前服务端从 token 推导授权人，不接受外部指定 grantor，不能改变另一方向。批次在双方 domain slot 锁中重验关系及全部版本，再写授权/审计；冲突或审计失败整批回滚。授权变更不修改关系 version；paused 可撤销已有授权，新增授予需要 active。撤销 shared_activity 会关闭既有共享协调会话；daily_summary/weekly_trend 读时即时过滤。A→B 授权只允许 B 读取 A，不隐含 B→A；A 发布自己的摘要以 A→B 的授权为准。只有既有旧关系保留历史无 grant 记录的兼容回填，新关系永不隐式授予。
+
+静默是本人按关系的通知偏好，不撤销共享授权；不修改旧睡眠守护配置。Buddy worker 每次尝试（含 retry）重验真实目标类型/ID、收件人、过期、关系 active、当前方向类别和本人静默，再物化通知/入 Push 队列。旧共享睡眠通知入队前也重验相同权限和静默。通知 route 在每次打开时重新验权，GET 不以历史通知或仅 target 存在作为授权，撤权/暂停/解除/拉黑后的旧通知不会绕过保护。新报告/里程碑/目标路由键分别为 `report_id/milestone_id/goal_id`，旧 `interaction_id` 仅在指向同一个真实目标且类型一致时兼容。
+
+解除和双边拉黑会撤销该关系双方授权、结束共享 Sleep/joint activity 协调会话；拉黑覆盖同一参与人对的 Sleep/Focus 及兼容关系，解除拉黑不复活关系、授权或会话。私人 Sleep/Focus 历史不受影响。403/404 表示不可访问，409 为版本冲突或关系终态，客户端先清共享缓存再重新取数；网络失败不得显示操作成功。
+
+本机实现/测试证据见 [生命周期验证记录](docs/frogsleep-phase2a-lifecycle-closeout-verification-2026-10-11.md)。实际 provider 重试、已进入通用 Push 队列的投递门槛、dev/真机和发布仍属于未完成的 2.3/§3 验收。
+
+
+### 2A 双账号专注与共同守护旅程（2026-10-11）
+
+统一邀请产生的 canonical Focus 关系直接投影到旧 current-relationship、比较和 shared-moments 读端，兼容输出 accepted，但不写入另一份旧关系。所有共享读端继续按当前方向授权重新验权。私人专注原子上报先提交本人记录；共享派生失败不把个人成功变成错误。完成/回放时在关系双方 slot 锁中重验 active 与双向 shared_activity，按关系和两个服务端 session ID 生成唯一时刻，旧时刻也按原 pair 去重；回放可补派生，不能重复累计个人统计。
+
+shared-moments 每项增加稳定UUID `moment_id`、`server_moment_id`、查看者自己的 `my_session_id` 与对方的 `viewer_buddy_session_id`，以及交叠 `start_time`/`overlap_minutes`。保留 `session_id`/`buddy_session_id` 原服务端引用。没有client ID时使用server ID；这些是兼容读取字段，不改变私人上报身份或承诺多设备版本冲突解决。
+
+共享 Sleep 事件增加 `sleep_started`、`ritual_completed`，兼容客户端个人开始/仪式完成的共享镜像。共享状态只描述双方协调：一个参与人 morning_completed 后 session 仍 active，双方均完成才 completed；paused_tonight 关闭当晚协调。terminal 不接受新流程事件；同参与人重复终态 acknowledgement 返回原状态，相同 actor/type/规范化 occurred_at 的非终态重试不增加事件。每个 session 每个查看者维护一个summary和一个recap，第二个人未确认不能显示晨间已完成。旧单主recap根据存储的participant_states重投影；缺少查看者上下文返回redacted。
+
+读取 status snapshot/latest summary/recap 每次验证当前 daily_summary，redacted 占位不应解码为普通晨报或完成。断网与401仅影响共享和该身份的网络同步；个人本地计时、历史与固定owner队列保留。客户端本次共享请求重试保留进程内原session/事件时间，重启后的共享持久化恢复属于2B，未在此承诺。
+
+本机双账号真实HTTP、PG及iOS证据与复现步骤见 [旅程验证记录](docs/frogsleep-phase2a-two-account-journey-verification-2026-10-11.md)。当前dev/真机/provider发布验收仍未完成。
+
+
+### 2A 通知投递、重试与站内回退（2026-10-11）
+
+通知feed的`id`是站内列表、Push payload的`notification_id`及route/read使用的同一稳定身份。`GET /api/v1/frogsleep/buddy/notifications`提供当前登录人的分页元数据，不依赖设备或系统通知授权；不能把历史safe route当作当前授权，打开必须调用`.../{id}/route`。客户端已读后再次resolve，再检查账号/缓存代际，撤权或身份切换期间不得导航。重复read保留首次已读时间，重复打开不重复站内记录。
+
+Buddy outbox与通用Push job按稳定身份和跨进程session锁串行。outbox重放始终沿用同一逻辑job，只有一条in_app与逻辑Push记录；worker在重试时重新计算当前禁用类别、静默、静音时段、冷却/预算（排除自身通知），不以原attempt跳过。进入通用队列及failed_event之后，每次实际发送、每个设备发送前仍重验app membership、当前目标、关系/方向授权、静默、Push开关和设备归属。数据库故障不被当作授权拒绝而静默丢弃。
+
+设备确认成功、永久拒绝、processing及outcome_unknown回执写入原job的内部`_frogsleep_delivery` JSON，key只保存app/owner/platform/token哈希，不增加token明文副本。确认成功设备不会重发，失败设备继续按原job重试，provider attempt最多5次，每job至多一个待重放failed_event，已关闭或预算耗尽不会再重放。发送前先持久化processing，崩溃恢复或传输响应丢失变为`PROVIDER_OUTCOME_UNKNOWN`，停止自动重发并保留站内回退；不能把未知结果说成成功，也不保证外部provider物理恰好一次。
+
+outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`表示该任务停止自动处理，须结合内部outcome看provider接受、抑制、无设备或结果未知。逻辑Push delivery成功使用`provider_accepted`，不当作设备已展示；in_app `delivered`表示站内物化。无有效设备为`NO_ACTIVE_DEVICES`，不制造provider失败事件；无配置provider、可重试provider拒绝、永久设备错误与结果未知分别记录，不使用logging-only当成功。永久无效token只清当前app/owner/device，不清另一账号或app。
+
+`POST /api/v1/frogsleep/devices`按认证账号绑定(app_id,platform,push_token)唯一活跃身份；新账号注册同token会转移归属，旧账号不能删除新主记录。068迁移扩展逻辑delivery的provider_accepted状态，069迁移保留每app/platform/token最近注册，软删除旧活跃重复，建立partial unique index；不改其他app的设备归属，不猜测guest绑定。
+
+邮件worker每次claim/重试检查开关、有效邀请/邀请人及已绑定收件人的禁用类别/拉黑。已provider_accepted不再次投递，SES callback才更新delivered。过期processing及已发请求后响应未知进入`dead_letter/PROVIDER_OUTCOME_UNKNOWN`，等待核查，不盲目自动重发；已知可重试失败最多5次，配置/永久拒绝停止。静音时段是Push中断偏好，不自动静默异步邮件；总禁用/邀请类别禁用适用于已绑定收件人的邮件。
+
+本机测试/迁移/复现见[通知收口验证记录](docs/frogsleep-phase2a-notification-closeout-verification-2026-10-11.md)。邮件真实送达、APNs/FCM当前配置、真机deep link及dev/发布仍须单独验证。
+
+设备历史若最新注册时间并列，069停止这些冲突token的活跃绑定，等待当前账号显式重新注册；不通过随机ID猜当前使用人。PG已验证并列停用、重新注册与旧主不能删除新主。
+
+### Sleep 私人报告同步（2026-10-11）
+
+个人报告 API 以稳定 snapshot_id 幂等保存；新增本人 detail/PUT/DELETE、personal-sync/state、固定边界 restore、提交有序 changes，并将 report_preferences 接入相同修订协议。历史 GET 使用完整数据库分页，无前500条截断。写入支持 X-Sync-Epoch、Idempotency-Key、If-Match，409冲突/410墓碑不可盲目覆盖或复活。旧无epoch兼容仅限未重建的账号。范围是报告摘要与报告偏好，完整睡眠原始历史、游客云升级和客户端2B恢复不属于已完成能力。接入细则、保留策略、开关和回滚见 [私人同步专题](docs/public-frogsleep-personal-sync.md)。

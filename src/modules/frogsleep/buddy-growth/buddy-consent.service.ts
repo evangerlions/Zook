@@ -1,4 +1,6 @@
-import { randomUUID } from "node:crypto";
+import { closeBuddySharedSessions } from "./buddy-relationship-cleanup.ts";
+import { buddyRelationshipSlotKeys, requireBuddyRelationship } from "./buddy-relationship-facts.ts";
+import { createHash, randomUUID } from "node:crypto";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { ApplicationError, badRequest, conflict, forbidden } from "../../../shared/errors.ts";
@@ -43,17 +45,18 @@ export class BuddyConsentService {
   }
 
   async list(userId: string, relationshipId: string) {
-    await this.authorizedRelationship(userId, relationshipId);
+    const relationship = await this.authorizedRelationship(userId, relationshipId, false);
     const grants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
-    return { relationship_id: relationshipId, viewer_user_id: userId, grants: grants.map(toPayload) };
+    return { relationship_id: relationshipId, viewer_user_id: userId, grants: (relationship.payload.canonical ? this.completeGrants(relationship, grants) : grants).map(toPayload) };
   }
 
   async update(userId: string, relationshipId: string, grantId: string, expectedVersion: number, state: string) {
     if (!Number.isInteger(expectedVersion) || expectedVersion < 1 || !["granted", "revoked"].includes(state)) {
       badRequest("REQ_INVALID_BODY", "Invalid grant state or expected version.");
     }
-    await this.authorizedRelationship(userId, relationshipId);
-    return await this.database.withExclusiveSession(async () => {
+    const relationship = await this.authorizedRelationship(userId, relationshipId, state === "granted");
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+      await this.authorizedRelationship(userId, relationshipId, state === "granted");
       const grant = await this.database.findFrogSleepBuddySharingGrant(FROGSLEEP_APP_ID, grantId);
       if (!grant || grant.relationshipId !== relationshipId) throw unavailable();
       if (grant.grantorUserId !== userId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Only the grantor can update this grant.");
@@ -63,6 +66,9 @@ export class BuddyConsentService {
       );
       if (!updated) conflict("REQ_INVALID_BODY", "Buddy sharing grant version conflict.");
       await this.recordAudit(updated, "buddy_grant_updated");
+      if (updated.category === "shared_activity" && updated.state === "revoked") {
+        await closeBuddySharedSessions(this.database, relationshipId);
+      }
       return toPayload(updated);
     });
   }
@@ -71,8 +77,12 @@ export class BuddyConsentService {
     const relationship = await this.authorizedRelationship(userId, relationshipId);
     const otherUserId = relationship.ownerUserId === userId ? relationship.partnerUserId : relationship.ownerUserId;
     let grants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
-    if (grants.length === 0 && !relationship.payload.domain_relationship) {
-      grants = await this.backfillLegacyRelationshipGrants(relationship);
+    if (grants.length === 0 && !relationship.payload.canonical) {
+      grants = await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+        const current = await this.authorizedRelationship(userId, relationshipId);
+        const existing = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
+        return existing.length ? existing : await this.backfillLegacyRelationshipGrants(current);
+      });
     }
     const current = await this.authorizedRelationship(userId, relationshipId);
     const currentGrants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
@@ -105,23 +115,62 @@ export class BuddyConsentService {
     return grants;
   }
 
-  private async authorizedRelationship(userId: string, relationshipId: string): Promise<FrogSleepEntityRecord> {
-    const relationship = await this.findRelationship(relationshipId);
-    if (!relationship || !relationship.ownerUserId || !relationship.partnerUserId ||
-        ![relationship.ownerUserId, relationship.partnerUserId].includes(userId)) throw unavailable();
-    if (!["active", "accepted"].includes(relationship.status ?? "")) throw unavailable();
-    await assertBuddyPairNotBlocked(this.database, relationship.ownerUserId, relationship.partnerUserId);
+  private async authorizedRelationship(userId: string, relationshipId: string, active = true): Promise<FrogSleepEntityRecord> {
+    const relationship = await requireBuddyRelationship(this.database, userId, relationshipId);
+    const allowed = active ? ["active", "accepted"] : ["active", "accepted", "paused"];
+    if (!allowed.includes(relationship.status ?? "")) throw unavailable();
+    await assertBuddyPairNotBlocked(this.database, relationship.ownerUserId!, relationship.partnerUserId!);
     return relationship;
   }
 
-  private async findRelationship(relationshipId: string): Promise<FrogSleepEntityRecord | undefined> {
-    const canonical = await this.database.findFrogSleepBuddyDomainRelationship(FROGSLEEP_APP_ID, relationshipId);
-    if (canonical) return { id: canonical.id, appId: canonical.appId,
-      kind: canonical.domain === "sleep" ? "sleep_relationship" : "focus_relationship",
-      ownerUserId: canonical.userIdLow, partnerUserId: canonical.userIdHigh, status: canonical.status,
-      payload: { domain_relationship: true }, createdAt: canonical.createdAt, updatedAt: canonical.updatedAt };
-    return await this.database.findFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, relationshipId)
-      ?? await this.database.findFrogSleepEntity("focus_relationship", FROGSLEEP_APP_ID, relationshipId);
+  async replaceOwn(userId: string, relationshipId: string, domain: string, categories: string[], versions: Record<string, number>) {
+    if (!["sleep", "focus"].includes(domain) || categories.some((value) => !buddySharingCategories.includes(value as BuddySharingCategory))
+      || buddySharingCategories.some((value) => !Number.isInteger(versions[value]) || versions[value]! < 0)) {
+      badRequest("REQ_INVALID_BODY", "Invalid sharing categories or expected versions.");
+    }
+    const row = await this.authorizedRelationship(userId, relationshipId, false);
+    if (domain !== (row.kind === "sleep_relationship" ? "sleep" : "focus")) badRequest("REQ_INVALID_BODY", "Relationship domain mismatch.");
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(row), async () => {
+      const current = await this.authorizedRelationship(userId, relationshipId, false);
+      const actual = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
+      const own = this.completeGrants(current, actual).filter((grant) => grant.grantorUserId === userId);
+      if (own.some((grant) => categories.includes(grant.category) && grant.state !== "granted")) {
+        await this.authorizedRelationship(userId, relationshipId, true);
+      }
+      if (own.some((grant) => grant.version !== versions[grant.category])) conflict("REQ_INVALID_BODY", "Buddy grant version conflict.");
+      for (const grant of own) await this.replaceGrant(grant, categories.includes(grant.category));
+      if (own.some(grant => grant.category === "shared_activity" && grant.state === "granted" && !categories.includes("shared_activity"))) {
+        await closeBuddySharedSessions(this.database, relationshipId);
+      }
+      return await this.list(userId, relationshipId);
+    });
+  }
+
+  private async replaceGrant(grant: FrogSleepBuddySharingGrantRecord, selected: boolean) {
+    const state = selected ? "granted" : "revoked";
+    if (grant.state === state) return;
+    const updated = grant.version === 0
+      ? await this.database.upsertFrogSleepBuddySharingGrant({ ...grant, version: 1, state,
+        grantedAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+      : await this.database.updateFrogSleepBuddySharingGrant(FROGSLEEP_APP_ID, grant.id, grant.version, state);
+    if (!updated) conflict("REQ_INVALID_BODY", "Buddy grant version conflict.");
+    await this.recordAudit(updated, "buddy_grant_updated");
+  }
+
+  private completeGrants(row: FrogSleepEntityRecord, actual: FrogSleepBuddySharingGrantRecord[]) {
+    const domain = row.kind === "sleep_relationship" ? "sleep" : "focus";
+    const result: FrogSleepBuddySharingGrantRecord[] = [];
+    for (const grantor of [row.ownerUserId!, row.partnerUserId!]) {
+      const grantee = grantor === row.ownerUserId ? row.partnerUserId! : row.ownerUserId!;
+      for (const category of buddySharingCategories) {
+        const found = actual.find((value) => value.grantorUserId === grantor && value.granteeUserId === grantee && value.category === category && value.domain === domain);
+        const id = createHash("sha256").update(`${FROGSLEEP_APP_ID}|${row.id}|${grantor}|${grantee}|${category}`).digest("hex");
+        result.push(found ?? { id: `buddy_grant_${id}`, appId: FROGSLEEP_APP_ID, relationshipId: row.id,
+          domain, category, grantorUserId: grantor, granteeUserId: grantee, state: "revoked", version: 0,
+          createdAt: row.createdAt, updatedAt: row.updatedAt });
+      }
+    }
+    return result;
   }
 
   private validCategories(values: string[]): BuddySharingCategory[] {

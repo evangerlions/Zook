@@ -1,12 +1,19 @@
+import { createHash } from "node:crypto";
+import { generateSharedMorningArtifacts } from "./sleep-shared-morning.ts";
+import { isBuddyAuthorizationDenied } from "../buddy-growth/buddy-artifact-redaction.ts";
+import { buddyRelationshipMute } from "../buddy-growth/buddy-relationship-lifecycle.service.ts";
+import { buddyRelationshipSlotKeys, currentBuddyRelationships, findBuddyRelationship } from "../buddy-growth/buddy-relationship-facts.ts";
+import { BuddyRelationshipLifecycleService } from "../buddy-growth/buddy-relationship-lifecycle.service.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
-import { conflict, forbidden } from "../../../shared/errors.ts";
+import { badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import { buildFrogSleepNotificationPayload } from "../frogsleep-notifications.ts";
 import { assertBuddyDataAuthorized } from "../buddy-growth/buddy-protected-access.ts";
-import { isBuddyAuthorizationDenied, latestAuthorizedSleepArtifact } from "../buddy-growth/buddy-artifact-redaction.ts";
+import { latestAuthorizedSleepArtifact } from "../buddy-growth/buddy-artifact-redaction.ts";
+import { optionalIsoTimestamp } from "../frogsleep-validation.ts";
 import {
   acceptSleepInviteByCode,
   acceptSleepInviteById,
@@ -18,20 +25,29 @@ import {
   trackSleepInviteOpenByToken,
 } from "./sleep-buddy-invites.ts";
 import {
+  buildSleepRecapArtifact,
+  buildSleepSummaryArtifact,
+} from "./sleep-buddy-artifacts.ts";
+import {
   toSleepRelationshipResponse,
   toSleepSessionResponse,
 } from "./sleep-buddy-mappers.ts";
-
-import { SleepSessionEventService } from "./sleep-session-event.service.ts";
-import { queueSleepPush } from "./sleep-notification-policy.ts";
-import { SleepPreferenceService } from "./sleep-preference.service.ts";
-import { SleepRelationshipService } from "./sleep-relationship.service.ts";
 
 function nowIso(): string {
   return new Date().toISOString();
 }
 
-/** Coordinates sleep invitations, relationships and shared-session runtime operations. */
+const SLEEP_EVENT_TYPES = new Set(["sleep_started", "ritual_completed", "interrupted", "returned", "paused_tonight", "morning_completed"]);
+const GUARD_LEVELS = new Set(["relaxed", "standard", "strict"]);
+const VISIBILITY_SCOPES = new Set(["summary", "detailed", "private"]);
+const PREFERENCE_KEYS = new Set([
+  "guard_level",
+  "visibility_scope",
+  "mute_for_tonight",
+  "allow_morning_summary_push",
+  "allow_recovery_nudges",
+]);
+
 export class FrogSleepSleepBuddyService {
   constructor(
     private readonly database: ApplicationDatabase,
@@ -80,13 +96,45 @@ export class FrogSleepSleepBuddyService {
   }
 
   async relationshipAction(userId: string, relationshipId: string, action: "pause" | "resume" | "revoke") {
-    const relationship = await new SleepRelationshipService(this.database).act(userId, relationshipId, action);
-    return toSleepRelationshipResponse(relationship, userId);
+    const relationship = await this.requireRelationship(userId, relationshipId);
+    await new BuddyRelationshipLifecycleService(this.database).execute(userId, relationshipId, action);
+    const updated = await findBuddyRelationship(this.database, relationshipId);
+    return toSleepRelationshipResponse(updated as FrogSleepEntityRecord, userId);
   }
 
   async updatePreferences(userId: string, relationshipId: string, preferences: Record<string, unknown>) {
     await this.requireRelationship(userId, relationshipId);
-    return await new SleepPreferenceService(this.database).update(userId, relationshipId, preferences);
+    const validated = this.validatePreferences(preferences);
+    const existing = (await this.database.listFrogSleepEntities({
+      appId: FROGSLEEP_APP_ID,
+      kind: "guardianship_preference",
+      ownerUserId: userId,
+      relationshipId,
+      limit: 100,
+    })).find(row => row.status !== "buddy_relationship_notifications");
+    if (existing) {
+      const updated = await this.database.updateFrogSleepEntity("guardianship_preference", FROGSLEEP_APP_ID, existing.id, {
+        payload: {
+          ...existing.payload,
+          ...validated,
+        },
+      });
+      return updated?.payload ?? validated;
+    }
+
+    const createdAt = nowIso();
+    const record: FrogSleepEntityRecord = {
+      id: randomId("sleep_pref"),
+      appId: FROGSLEEP_APP_ID,
+      kind: "guardianship_preference",
+      ownerUserId: userId,
+      relationshipId,
+      payload: this.defaultPreferences(validated),
+      createdAt,
+      updatedAt: createdAt,
+    };
+    await this.database.insertFrogSleepEntity(record);
+    return record.payload;
   }
 
   async statusSnapshot(userId: string) {
@@ -104,18 +152,47 @@ export class FrogSleepSleepBuddyService {
   }
 
   async beginSession(userId: string, relationshipId: string, dateAnchor?: string) {
-    return await new SleepRelationshipService(this.database).withSession(userId, relationshipId, async () => {
+    const initial = await this.requireRelationship(userId, relationshipId);
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(initial), async () => {
       const relationship = await this.requireRelationship(userId, relationshipId);
-      if (relationship.status !== "active") conflict("REQ_INVALID_BODY", "Shared sleep session requires an active relationship.");
+      if (relationship.status !== "active") {
+        conflict("REQ_INVALID_BODY", "Shared sleep session requires an active relationship.");
+      }
       await assertBuddyDataAuthorized(this.database, userId, relationshipId, "shared_activity");
-      const normalizedDateAnchor = dateAnchor || nowIso().slice(0, 10);
+      const createdAt = nowIso();
+      const normalizedDateAnchor = dateAnchor || createdAt.slice(0, 10);
       const existing = await this.findOpenSessionForDate(relationshipId, normalizedDateAnchor);
-      if (existing) return toSleepSessionResponse(existing, userId);
+      if (existing) {
+        return toSleepSessionResponse(existing, userId);
+      }
       const partnerUserId = this.otherUserId(relationship, userId);
-      const session = newSleepSession(userId, partnerUserId, relationshipId, normalizedDateAnchor);
+      const session: FrogSleepEntityRecord = {
+        id: randomId("sleep_session"),
+        appId: FROGSLEEP_APP_ID,
+        kind: "sleep_session",
+        ownerUserId: userId,
+        partnerUserId,
+        relationshipId,
+        status: "pending",
+        startsAt: createdAt,
+        payload: {
+          dateAnchor: normalizedDateAnchor,
+          date_anchor: normalizedDateAnchor,
+          participantStates: {
+            [userId]: "started",
+            [partnerUserId]: "pending",
+          },
+        },
+        createdAt,
+        updatedAt: createdAt,
+      };
       await this.database.insertFrogSleepEntity(session);
       await this.queuePush(partnerUserId, buildFrogSleepNotificationPayload({
-        type: "shared_session_invite", entityId: session.id, relationshipId, sessionId: session.id }));
+        type: "shared_session_invite",
+        entityId: session.id,
+        relationshipId,
+        sessionId: session.id,
+      }));
       return toSleepSessionResponse(session, userId);
     });
   }
@@ -123,8 +200,7 @@ export class FrogSleepSleepBuddyService {
   async activeSession(userId: string) {
     const relationships = await this.relationshipsForUser(userId, ["active"]);
     for (const relationship of relationships) {
-      try { await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity"); }
-      catch (error) { if (isBuddyAuthorizationDenied(error)) continue; throw error; }
+      await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
       const sessions = await this.database.listFrogSleepEntities({
         appId: FROGSLEEP_APP_ID,
         kind: "sleep_session",
@@ -150,21 +226,105 @@ export class FrogSleepSleepBuddyService {
   }
 
   async acceptSession(userId: string, sessionId: string) {
+    return await this.withSharedSessionLock(userId, sessionId, () => this.acceptSessionLocked(userId, sessionId));
+  }
+
+  private async acceptSessionLocked(userId: string, sessionId: string) {
     const session = await this.requireSession(userId, sessionId);
     if (!session.relationshipId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Session relationship is unavailable.");
-    return await new SleepRelationshipService(this.database).withSession(userId, session.relationshipId, async () => {
-      const current = await this.requireSession(userId, sessionId);
-      await assertBuddyDataAuthorized(this.database, userId, session.relationshipId!, "shared_activity");
-      const participantStates = { ...((current.payload.participantStates as Record<string, string> | undefined) ?? {}), [userId]: "accepted" };
-      const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
-        status: "active", payload: { ...current.payload, participantStates } });
-      return toSleepSessionResponse(updated as FrogSleepEntityRecord, userId);
+    await assertBuddyDataAuthorized(this.database, userId, session.relationshipId, "shared_activity");
+    if (!["pending", "active"].includes(session.status ?? "")) conflict("REQ_INVALID_BODY", "Shared session is terminal.");
+    const participantStates = {
+      ...((session.payload.participantStates as Record<string, string> | undefined) ?? {}),
+      [userId]: "accepted",
+    };
+    const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
+      status: "active",
+      payload: {
+        ...session.payload,
+        participantStates,
+      },
     });
+    return toSleepSessionResponse(updated as FrogSleepEntityRecord, userId);
   }
 
   async recordEvent(userId: string, sessionId: string, eventType: string, metadata: Record<string, unknown> = {}, occurredAt = nowIso()) {
-    return await new SleepSessionEventService(this.database, this.notificationService)
-      .record(userId, sessionId, eventType, metadata, occurredAt);
+    return await this.withSharedSessionLock(userId, sessionId,
+      () => this.recordEventLocked(userId, sessionId, eventType, metadata, occurredAt));
+  }
+
+  private async recordEventLocked(userId: string, sessionId: string, eventType: string, metadata: Record<string, unknown>, occurredAt: string) {
+    if (!SLEEP_EVENT_TYPES.has(eventType)) {
+      badRequest("REQ_INVALID_BODY", "Unsupported sleep event type.");
+    }
+    const normalizedOccurredAt = optionalIsoTimestamp(occurredAt, "occurred_at") ?? nowIso();
+    const session = await this.requireSession(userId, sessionId);
+    const relationship = session.relationshipId
+      ? await this.requireRelationship(userId, session.relationshipId)
+      : undefined;
+    if (!relationship || relationship.status !== "active") {
+      forbidden("AUTH_APP_SCOPE_MISMATCH", "Session relationship is not visible to the current user.");
+    }
+    await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
+    const currentStates = (session.payload.participantStates as Record<string, string> | undefined) ?? {};
+    if (currentStates[userId] === eventType && ["morning_completed", "paused_tonight"].includes(eventType)) return toSleepSessionResponse(session, userId);
+    if (session.status === "completed" || currentStates[userId] === "morning_completed") conflict("REQ_INVALID_BODY", "Shared participant is terminal.");
+    const createdAt = nowIso();
+    const eventId = `sleep_event_${createHash("sha256").update(JSON.stringify([sessionId, userId, eventType, normalizedOccurredAt])).digest("hex")}`;
+    if (await this.database.findFrogSleepEntity("sleep_event", FROGSLEEP_APP_ID, eventId)) return toSleepSessionResponse(session, userId);
+    await this.database.insertFrogSleepEntity({
+      id: eventId,
+      appId: FROGSLEEP_APP_ID,
+      kind: "sleep_event",
+      ownerUserId: userId,
+      partnerUserId: this.otherUserId(session, userId),
+      relationshipId: session.relationshipId,
+      sessionId,
+      status: eventType,
+      occurredAt: normalizedOccurredAt,
+      payload: metadata,
+      createdAt,
+      updatedAt: createdAt,
+    });
+
+    const participantStates = {
+      ...((session.payload.participantStates as Record<string, string> | undefined) ?? {}),
+      [userId]: eventType,
+    };
+    const bothCompleted = [session.ownerUserId, session.partnerUserId].every(user => user && participantStates[user] === "morning_completed");
+    const nextStatus = eventType === "paused_tonight" || bothCompleted ? "completed" : "active";
+    const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
+      status: nextStatus,
+      endsAt: nextStatus === "completed" ? normalizedOccurredAt : undefined,
+      occurredAt: normalizedOccurredAt,
+      payload: {
+        ...session.payload,
+        participantStates,
+        lastEventType: eventType,
+      },
+    });
+
+    if (eventType === "morning_completed" || eventType === "paused_tonight") {
+      await generateSharedMorningArtifacts(this.database, updated as FrogSleepEntityRecord);
+    }
+    if (eventType === "morning_completed") {
+      await this.queuePush(this.otherUserId(session, userId), buildFrogSleepNotificationPayload({
+        type: "morning_summary",
+        entityId: session.id,
+        relationshipId: session.relationshipId,
+        sessionId: session.id,
+      }));
+    }
+    if (eventType === "interrupted" || eventType === "returned") {
+      await this.queuePush(this.otherUserId(session, userId), buildFrogSleepNotificationPayload({
+        type: eventType === "interrupted" ? "shared_session_interrupted" : "shared_session_returned",
+        entityId: session.id,
+        relationshipId: session.relationshipId,
+        sessionId: session.id,
+      }));
+    }
+
+    return toSleepSessionResponse(updated as FrogSleepEntityRecord, userId);
   }
 
   async pauseTonight(userId: string, sessionId: string) {
@@ -190,15 +350,46 @@ export class FrogSleepSleepBuddyService {
   }
 
   private async queuePush(userId: string, payload: Record<string, unknown>) {
-    await queueSleepPush(this.database, this.notificationService, userId, payload);
+    if (!this.notificationService) {
+      return;
+    }
+    const relationshipId = typeof payload.relationshipId === "string" ? payload.relationshipId : undefined;
+    if (relationshipId) {
+      if ((await buddyRelationshipMute(this.database, userId, relationshipId))?.payload.muted === true) return;
+      try { await assertBuddyDataAuthorized(this.database, userId, relationshipId,
+        payload.type === "morning_summary" ? "daily_summary" : "shared_activity"); }
+      catch (error) { if (isBuddyAuthorizationDenied(error)) return; throw error; }
+    }
+    await this.notificationService.queueNotification({
+      appId: FROGSLEEP_APP_ID,
+      recipientUserId: userId,
+      channel: "push",
+      payload,
+    });
   }
 
   private async relationshipsForUser(userId: string, statuses: string[]) {
-    return await new SleepRelationshipService(this.database).list(userId, statuses);
+    return (await currentBuddyRelationships(this.database, userId)).filter((row) =>
+      row.kind === "sleep_relationship" && statuses.includes(row.status ?? ""));
   }
 
   private async requireRelationship(userId: string, relationshipId: string) {
-    return await new SleepRelationshipService(this.database).require(userId, relationshipId);
+    const relationship = await findBuddyRelationship(this.database, relationshipId);
+    if (!relationship || relationship.kind !== "sleep_relationship" || (relationship.ownerUserId !== userId && relationship.partnerUserId !== userId)) {
+      forbidden("AUTH_APP_SCOPE_MISMATCH", "Relationship is not visible to the current user.");
+    }
+    return relationship;
+  }
+
+  private async withSharedSessionLock<T>(userId: string, id: string, operation: () => Promise<T>): Promise<T> {
+    const initial = await this.requireSession(userId, id);
+    if (!initial.relationshipId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Shared session is unavailable.");
+    const relationship = await this.requireRelationship(userId, initial.relationshipId);
+    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
+      const current = await this.requireSession(userId, id);
+      if (current.status === "cancelled") conflict("REQ_INVALID_BODY", "Shared session was terminated.");
+      return await operation();
+    });
   }
 
   private async requireSession(userId: string, sessionId: string) {
@@ -235,6 +426,59 @@ export class FrogSleepSleepBuddyService {
         : (session.startsAt ?? session.createdAt).slice(0, 10);
   }
 
+  private validatePreferences(input: Record<string, unknown>) {
+    const next: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(input)) {
+      if (!PREFERENCE_KEYS.has(key)) {
+        badRequest("REQ_INVALID_BODY", `Unsupported preference field: ${key}.`);
+      }
+      if (key === "guard_level") {
+        if (typeof value !== "string" || !GUARD_LEVELS.has(value)) {
+          badRequest("REQ_INVALID_BODY", "guard_level is invalid.");
+        }
+        next[key] = value;
+        continue;
+      }
+      if (key === "visibility_scope") {
+        if (typeof value !== "string" || !VISIBILITY_SCOPES.has(value)) {
+          badRequest("REQ_INVALID_BODY", "visibility_scope is invalid.");
+        }
+        next[key] = value;
+        continue;
+      }
+      if (typeof value !== "boolean") {
+        badRequest("REQ_INVALID_BODY", `${key} must be a boolean.`);
+      }
+      next[key] = value;
+    }
+    return next;
+  }
+
+  private defaultPreferences(overrides: Record<string, unknown> = {}) {
+    return {
+      guard_level: "standard",
+      visibility_scope: "summary",
+      mute_for_tonight: false,
+      allow_morning_summary_push: true,
+      allow_recovery_nudges: true,
+      ...overrides,
+    };
+  }
+
+  private async createDefaultPreference(relationshipId: string, userId: string) {
+    const createdAt = nowIso();
+    await this.database.insertFrogSleepEntity({
+      id: randomId("sleep_pref"),
+      appId: FROGSLEEP_APP_ID,
+      kind: "guardianship_preference",
+      ownerUserId: userId,
+      relationshipId,
+      payload: this.defaultPreferences(),
+      createdAt,
+      updatedAt: createdAt,
+    });
+  }
+
   private deps() {
     return {
       database: this.database,
@@ -242,12 +486,4 @@ export class FrogSleepSleepBuddyService {
     };
   }
 
-}
-
-function newSleepSession(userId: string, partnerUserId: string, relationshipId: string, dateAnchor: string): FrogSleepEntityRecord {
-  const now = nowIso();
-  return { id: randomId("sleep_session"), appId: FROGSLEEP_APP_ID, kind: "sleep_session",
-    ownerUserId: userId, partnerUserId, relationshipId, status: "pending", startsAt: now,
-    payload: { dateAnchor, date_anchor: dateAnchor, participantStates: { [userId]: "started", [partnerUserId]: "pending" } },
-    createdAt: now, updatedAt: now };
 }

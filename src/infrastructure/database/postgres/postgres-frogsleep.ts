@@ -58,7 +58,7 @@ function parseDevice(row: QueryResultRow): FrogSleepDeviceRecord {
   };
 }
 
-function parseEntity(kind: FrogSleepEntityKind, row: QueryResultRow): FrogSleepEntityRecord {
+export function parseEntity(kind: FrogSleepEntityKind, row: QueryResultRow): FrogSleepEntityRecord {
   return {
     id: String(row.id),
     appId: String(row.app_id),
@@ -84,11 +84,16 @@ export class PostgresFrogSleepStore {
   constructor(private readonly query: PostgresQuery) {}
 
   async upsertDevice(record: FrogSleepDeviceRecord): Promise<FrogSleepDeviceRecord> {
+    const conflict = record.appId === "frogsleep"
+      ? "(app_id, platform, push_token) WHERE deleted_at IS NULL AND app_id='frogsleep'"
+      : "(app_id, user_id, push_token) WHERE app_id<>'frogsleep'";
+    const ownerUpdate = record.appId === "frogsleep" ? "user_id = EXCLUDED.user_id," : "";
     const result = await this.query(
       `INSERT INTO zook_frogsleep_devices
          (id, app_id, user_id, platform, push_token, app_version, timezone, push_enabled, created_at, updated_at, deleted_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::timestamptz, $10::timestamptz, $11::timestamptz)
-       ON CONFLICT (app_id, user_id, push_token) DO UPDATE SET
+       ON CONFLICT ${conflict} DO UPDATE SET
+         ${ownerUpdate}
          platform = EXCLUDED.platform,
          app_version = EXCLUDED.app_version,
          timezone = EXCLUDED.timezone,

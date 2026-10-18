@@ -1,3 +1,4 @@
+import { authorizeBuddyNotificationTarget } from "./buddy-notification-target.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { NotificationService } from "../../../services/notification.service.ts";
 import type { FrogSleepBuddyNotificationOutboxRecord } from "../../../shared/types.ts";
@@ -26,8 +27,12 @@ export class BuddyNotificationWorkerService {
     const entries = await this.database.listReadyFrogSleepBuddyNotificationOutbox(new Date().toISOString(), limit);
     let processed = 0; let failed = 0;
     for (const entry of entries) {
-      try { await this.process(entry); processed += 1; }
-      catch { await this.fail(entry); failed += 1; }
+      await this.database.withFrogSleepNotificationLock(`outbox:${entry.id}`, async () => {
+        const current = (await this.database.listReadyFrogSleepBuddyNotificationOutbox(new Date().toISOString(), 500)).find(value => value.id === entry.id);
+        if (!current) return;
+        try { await this.process(current); processed += 1; }
+        catch { await this.fail(current); failed += 1; }
+      });
     }
     return { processed, failed };
   }
@@ -46,11 +51,8 @@ export class BuddyNotificationWorkerService {
       });
       return;
     }
-    const decision = entry.attemptCount === 0
-      ? await this.preferenceService.deliveryDecision(
-        entry.recipientUserId, entry.eventType, entry.targetId, new Date(now),
-      )
-      : {};
+    const decision = await this.preferenceService.deliveryDecision(
+      entry.recipientUserId, entry.eventType, entry.targetId, new Date(now), `buddy_notification_${entry.id}`);
     if (decision.suppressAll) {
       await this.database.updateFrogSleepBuddyNotificationOutbox(entry.id, {
         status: "delivered", attemptCount: attempt, processedAt: now,
@@ -64,7 +66,7 @@ export class BuddyNotificationWorkerService {
       targetType: entry.targetType, targetId: entry.targetId, safeRoute,
       createdAt: entry.createdAt, updatedAt: now,
     });
-    if (attempt === 1) {
+    {
       await this.database.insertFrogSleepBuddyNotificationDelivery({ id: randomId("buddy_delivery"),
         appId: FROGSLEEP_APP_ID, notificationId: notification.id, channel: "in_app", status: "delivered",
         attempt: 1, deliveredAt: now, createdAt: now });
@@ -75,19 +77,19 @@ export class BuddyNotificationWorkerService {
     if (pushSuppression) {
       await this.database.insertFrogSleepBuddyNotificationDelivery({ id: randomId("buddy_delivery"),
         appId: FROGSLEEP_APP_ID, notificationId: notification.id, channel: "apns", status: "suppressed",
-        attempt, errorCode: pushSuppression, createdAt: now });
+        attempt: 1, errorCode: pushSuppression, createdAt: now });
       await this.database.updateFrogSleepBuddyNotificationOutbox(entry.id, {
         status: "delivered", processedAt: now, lastErrorCode: pushSuppression, updatedAt: now,
       });
       return;
     }
     const queued = await this.notificationService.queueNotification({ appId: FROGSLEEP_APP_ID,
-      recipientUserId: entry.recipientUserId, channel: "push",
+      recipientUserId: entry.recipientUserId, channel: "push", deduplicationKey: `buddy-outbox:${entry.id}`,
       payload: buildFrogSleepNotificationPayload({ type: "buddy_notification", entityId: notification.id,
         data: sanitizeBuddySafeRoute({ notification_id: notification.id, ...safeRoute }) }) });
     await this.database.insertFrogSleepBuddyNotificationDelivery({ id: randomId("buddy_delivery"),
       appId: FROGSLEEP_APP_ID, notificationId: notification.id, channel: "apns",
-      status: queued.queued ? "pending" : "failed", attempt, errorCode: queued.queued ? undefined : "ENQUEUE_FAILED",
+      status: queued.queued ? "pending" : "failed", attempt: 1, errorCode: queued.queued ? undefined : "ENQUEUE_FAILED",
       createdAt: now });
     if (!queued.queued) throw new Error("APNs enqueue failed");
     await this.database.updateFrogSleepBuddyNotificationOutbox(entry.id,
@@ -103,7 +105,11 @@ export class BuddyNotificationWorkerService {
   }
 
   private async targetSuppressionCode(entry: FrogSleepBuddyNotificationOutboxRecord): Promise<string | undefined> {
-    if (entry.targetType !== "buddy_invitation") return undefined;
+    if (entry.targetType !== "buddy_invitation") {
+      try { await authorizeBuddyNotificationTarget(this.database, entry.recipientUserId, entry, true); }
+      catch { return "TARGET_UNAUTHORIZED"; }
+      return undefined;
+    }
     const invite = await this.database.findFrogSleepEntity("sleep_invite", FROGSLEEP_APP_ID, entry.targetId)
       ?? await this.database.findFrogSleepEntity("focus_invite", FROGSLEEP_APP_ID, entry.targetId);
     const bundle = invite ? undefined
@@ -115,10 +121,16 @@ export class BuddyNotificationWorkerService {
       try { await assertBuddyPairNotBlocked(this.database, inviterUserId, inviteeUserId); }
       catch { return "TARGET_BLOCKED"; }
     }
-    if (entry.eventType !== "invitation_created") return undefined;
+    if (entry.eventType !== "invitation_created") {
+      try { await authorizeBuddyNotificationTarget(this.database, entry.recipientUserId, entry, true); }
+      catch { return "TARGET_UNAUTHORIZED"; }
+      return undefined;
+    }
     const status = invite?.status ?? bundle?.status;
     const expiresAt = String(invite?.payload.expires_at ?? bundle?.expiresAt ?? "");
     if (status !== "pending" || (expiresAt && expiresAt <= new Date().toISOString())) return "TARGET_EXPIRED";
+    try { await authorizeBuddyNotificationTarget(this.database, entry.recipientUserId, entry, true); }
+    catch { return "TARGET_UNAUTHORIZED"; }
     return undefined;
   }
 }

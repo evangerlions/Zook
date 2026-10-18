@@ -8,6 +8,7 @@ export default [
     route("auth-rate-limits", "routes/auth-rate-limits.tsx"),
     route("config", "routes/config.tsx"),
     route("ai-routing", "routes/ai-routing.tsx"),
+    route("frogsleep", "routes/frogsleep.tsx"),
     route("lighttick", "routes/lighttick.tsx"),
     route("bodylog", "routes/bodylog.tsx"),
     route("bodylog/records", "routes/bodylog-records.tsx"),

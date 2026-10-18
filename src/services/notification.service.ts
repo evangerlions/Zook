@@ -1,4 +1,5 @@
-import { sleepPushSuppression } from "../modules/frogsleep/sleep-buddy/sleep-notification-policy.ts";
+import { deliverFrogSleepPush } from "./frogsleep-push-delivery.ts";
+import { queueFrogSleepNotification, enqueueExistingFrogSleepNotification } from "./frogsleep-notification-queue.ts";
 import { deliverBodyLogPush } from "./bodylog-push-delivery.ts";
 import { ApplicationDatabase } from "../infrastructure/database/application-database.ts";
 import { StructuredLogger } from "../infrastructure/logging/pino-logger.module.ts";
@@ -55,6 +56,10 @@ export class NotificationService {
     private readonly pushDispatcher: PushDispatcher = new LoggingPushDispatcher(logger),
   ) {}
 
+  async requeueFrogSleepNotification(id: string) {
+    return enqueueExistingFrogSleepNotification(this.database, this.queue, id);
+  }
+
   async dispatchPush(request: PushDispatchRequest): Promise<void> {
     await this.pushDispatcher.dispatch(request);
   }
@@ -64,7 +69,9 @@ export class NotificationService {
     recipientUserId: string;
     channel: "email" | "sms" | "push";
     payload: Record<string, unknown>;
+    deduplicationKey?: string;
   }): Promise<NotificationQueueResult> {
+    if (command.appId === FROGSLEEP_APP_ID) return await queueFrogSleepNotification(this.database, this.queue, command);
     const notificationJobId = randomId("notification");
     await this.database.insertNotificationJob({
       id: notificationJobId,
@@ -149,7 +156,7 @@ export class NotificationService {
       return;
     }
     if (record.appId === FROGSLEEP_APP_ID && record.channel === "push") {
-      await this.processFrogSleepPushJob(job, record);
+      await deliverFrogSleepPush(this.database, this.pushDispatcher, record.id);
       return;
     }
 
@@ -165,75 +172,4 @@ export class NotificationService {
     });
   }
 
-  private async processFrogSleepPushJob(
-    job: { id: string; name: string; payload: Record<string, unknown> },
-    record: {
-      id: string;
-      appId: string;
-      recipientUserId: string;
-      payload: Record<string, unknown>;
-      retryCount: number;
-    },
-  ): Promise<void> {
-    const suppression = await sleepPushSuppression(this.database, record.recipientUserId, record.payload);
-    if (suppression) {
-      await this.database.updateNotificationJob(record.id, { status: "SUPPRESSED", retryCount: record.retryCount + 1 });
-      this.logger.info("frogsleep push suppressed", { appId: record.appId, jobId: job.id, reason: suppression });
-      return;
-    }
-    const payload = record.payload as unknown as PushNotificationPayload;
-    const devices = await this.database.listFrogSleepDevices({
-      appId: record.appId,
-      userId: record.recipientUserId,
-      pushEnabled: true,
-    });
-
-    if (devices.length === 0) {
-      await this.database.updateNotificationJob(record.id, {
-        status: "SUPPRESSED",
-        retryCount: record.retryCount + 1,
-      });
-      this.logger.info("frogsleep push skipped without active devices", {
-        appId: record.appId,
-        jobId: job.id,
-        jobName: job.name,
-        userId: record.recipientUserId,
-      });
-      return;
-    }
-
-    try {
-      for (const device of devices) {
-        await this.pushDispatcher.dispatch({
-          appId: record.appId,
-          userId: record.recipientUserId,
-          platform: device.platform,
-          pushToken: device.pushToken,
-          payload,
-        });
-      }
-      await this.database.updateNotificationJob(record.id, {
-        status: "SENT",
-        retryCount: record.retryCount + 1,
-      });
-    } catch (error) {
-      await this.database.updateNotificationJob(record.id, {
-        status: "FAILED",
-        retryCount: record.retryCount + 1,
-      });
-      await this.database.insertFailedEvent({
-        id: randomId("failed_event"),
-        appId: record.appId,
-        eventType: "notification.send",
-        payload: {
-          notificationJobId: record.id,
-          jobPayload: job.payload,
-        },
-        errorMessage: error instanceof Error ? error.message : "Push dispatch failed",
-        retryCount: 0,
-        nextRetryAt: new Date(Date.now() + 60 * 1000).toISOString(),
-        createdAt: new Date().toISOString(),
-      });
-    }
-  }
 }

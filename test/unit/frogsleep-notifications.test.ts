@@ -8,7 +8,7 @@ import { NotificationService, type PushDispatchRequest } from "../../src/service
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
 
 test("FrogSleep push notifications dispatch to active app-scoped devices", async () => {
-  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const database = await notificationDatabase();
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger("test", { emitToConsole: false });
   const dispatched: PushDispatchRequest[] = [];
@@ -50,7 +50,7 @@ test("FrogSleep push notifications dispatch to active app-scoped devices", async
 });
 
 test("FrogSleep push notifications with no devices do not block worker processing", async () => {
-  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const database = await notificationDatabase();
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger("test", { emitToConsole: false });
   const service = new NotificationService(database, queue, logger, {
@@ -76,7 +76,7 @@ test("FrogSleep push notifications with no devices do not block worker processin
 });
 
 test("FrogSleep push provider failures preserve failed event behavior", async () => {
-  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const database = await notificationDatabase();
   const queue = new InMemoryJobQueue();
   const logger = new StructuredLogger("test", { emitToConsole: false });
   const service = new NotificationService(database, queue, logger, {
@@ -111,3 +111,13 @@ test("FrogSleep push provider failures preserve failed event behavior", async ()
   assert.equal((await database.findNotificationJob(result.notificationJobId))?.status, "FAILED");
   assert.equal((await database.listFailedEvents("frogsleep")).length, 1);
 });
+
+async function notificationDatabase() {
+  process.env.FROGSLEEP_BUDDY_PUSH_ENABLED = "true";
+  const database = new InMemoryDatabase(buildDefaultSeed(undefined, { includeFrogSleep: true }));
+  const now = new Date().toISOString();
+  await database.insertAppUser({ id: "notification_alice", appId: "frogsleep", userId: "user_alice", status: "ACTIVE", accountRegion: "UNKNOWN", joinedAt: now });
+  await database.insertFrogSleepEntity({ id: "invite_1", appId: "frogsleep", kind: "sleep_invite", ownerUserId: "user_bob",
+    partnerUserId: "user_alice", status: "pending", payload: {}, createdAt: now, updatedAt: now });
+  return database;
+}
