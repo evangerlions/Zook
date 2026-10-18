@@ -25,11 +25,19 @@ export interface LightTickProfileRow extends LightTickOwner, LightTickVersioned 
   onboardingDraft: Record<string, unknown>;
 }
 
+export type LightTickReviewCadence = "day" | "week" | "month";
+export type LightTickReviewCadencePreference = {
+  /** Selected layers. Empty means reviews are turned off for this goal. */
+  layers: LightTickReviewCadence[];
+};
+
 export interface LightTickGoalRow extends LightTickOwner, LightTickVersioned {
   id: string; title: string; description?: string; status: string;
   constraints: Record<string, unknown>; targetDate?: string;
   pauseMetadata?: LightTickPauseMetadata;
   recoveryStartedAt?: string;
+  /** Goal-level review cadence. Absent = fall back to default (weekly). */
+  reviewCadence?: LightTickReviewCadencePreference;
 }
 
 export interface LightTickPauseMetadata {
@@ -89,7 +97,7 @@ export interface LightTickDnaInsightRow extends LightTickOwner, LightTickVersion
 }
 
 export interface LightTickReviewRow extends LightTickOwner, LightTickVersioned {
-  id: string; goalId: string; period: "week" | "month"; status: string;
+  id: string; goalId: string; period: "day" | "week" | "month"; status: string;
   periodStart: string; periodEnd: string; facts: Record<string, unknown>;
   output: Record<string, unknown>; dataSufficiency: string;
 }

@@ -6,7 +6,7 @@ import { randomId } from "../../shared/utils.ts";
 export class LightTickReviewService {
   constructor(private readonly repository: LightTickRepository, private readonly clock = () => new Date()) {}
 
-  async create(owner: LightTickOwner, goalId: string, period: "week" | "month", periodStart: string,
+  async create(owner: LightTickOwner, goalId: string, period: "day" | "week" | "month", periodStart: string,
     periodEnd: string): Promise<LightTickReviewRow> {
     if (periodEnd < periodStart) throw new ApplicationError(400, "REQ_INVALID_BODY", "Review window is invalid.");
     const existing = (await this.repository.listReviews(owner)).find(review => review.goalId === goalId &&
@@ -18,11 +18,14 @@ export class LightTickReviewService {
     toDate.setUTCDate(toDate.getUTCDate() + 1); const events = await this.repository.listExecutionEvents(owner, from, toDate.toISOString());
     const counts = Object.fromEntries([...new Set(events.map(event => event.eventType))]
       .map(type => [type, events.filter(event => event.eventType === type).length]));
+    // Daily review uses a lower bar: any fact from the day is enough to ground a
+    // light-touch reflection. Weekly/monthly keep the ≥3 fact threshold.
+    const sufficient = period === "day" ? events.length >= 1 : events.length >= 3;
     const timestamp = this.clock().toISOString();
     return await this.repository.saveReview({ ...owner, id: randomId("lighttick_review"), goalId, period,
       status: "ready", periodStart, periodEnd, facts: { event_count: events.length, event_counts: counts,
         source_event_ids: events.map(event => event.id), source_max_aggregate_version: Math.max(0, ...events.map(event => event.aggregateVersion)) },
-      output: {}, dataSufficiency: events.length >= 3 ? "sufficient" : "insufficient",
+      output: {}, dataSufficiency: sufficient ? "sufficient" : "insufficient",
       version: 1, createdAt: timestamp, updatedAt: timestamp });
   }
 }

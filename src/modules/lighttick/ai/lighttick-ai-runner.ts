@@ -71,7 +71,7 @@ export class LightTickAiRunner {
     output: Record<string, unknown>, source: "ai" | "template"): Promise<string | undefined> {
     if (["onboarding_plan", "month_plan", "week_plan", "day_plan"].includes(sceneName))
       return await this.materializePlan(owner, run, sceneName, output, source);
-    if (["weekly_review", "monthly_review"].includes(sceneName)) {
+    if (["weekly_review", "monthly_review", "daily_review"].includes(sceneName)) {
       const review = (await this.repository.listReviews(owner)).find(item => item.id === run.resourceId);
       if (!review) return undefined;
       await this.repository.saveReview({ ...review, output: { insights: output.insights ?? [], recommendations: output.recommendations ?? [] },
@@ -133,7 +133,7 @@ export class LightTickAiRunner {
         throw new ApplicationError(422, "LIGHTTICK_PLAN_CONSTRAINT_FAILED", "Scheduling requires an explicit period.");
       return validatePlanOutput(output, this.planConstraints(context));
     }
-    if (["weekly_review", "monthly_review"].includes(scene)) return validateReviewOutput(output);
+    if (["weekly_review", "monthly_review", "daily_review"].includes(scene)) return validateReviewOutput(output);
     if (scene === "change_proposal") return validateProposalOutput(output, new Set(context.tasks.map((task: any) => task.id)));
     if (typeof output.message !== "string" || output.message.length > 2000)
       throw new ApplicationError(502, "LIGHTTICK_AI_RUN_FAILED", "Coach output does not match its schema.");

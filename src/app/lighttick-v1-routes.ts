@@ -50,6 +50,16 @@ function stringOf(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new ApplicationError(400, "REQ_FIELD_REQUIRED", `${field} is required.`);
   return value.trim();
 }
+function reviewCadenceOf(value: unknown): { layers: ("day" | "week" | "month")[] } | undefined {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", "review_cadence is invalid.");
+  const layers = (value as Json).layers;
+  if (!Array.isArray(layers) ||
+    layers.some(layer => !["day", "week", "month"].includes(layer as string)))
+    throw new ApplicationError(400, "REQ_FIELD_INVALID", "review_cadence.layers is invalid.");
+  return { layers: [...new Set(layers as ("day" | "week" | "month")[])] };
+}
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value && typeof value === "object") return `{${Object.entries(value as Json).sort(([a], [b]) => a.localeCompare(b))
@@ -82,7 +92,9 @@ function goalData(row: any) { return { id: row.id, title: row.title, description
     reason: row.pauseMetadata.reason, paused_at: row.pauseMetadata.pausedAt,
     expected_resume_at: row.pauseMetadata.expectedResumeAt, keep_light_tasks: row.pauseMetadata.keepLightTasks,
     notification_policy: row.pauseMetadata.notificationPolicy } : undefined,
-  recovery_started_at: row.recoveryStartedAt, version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
+  recovery_started_at: row.recoveryStartedAt,
+  review_cadence: row.reviewCadence ?? { layers: ["week"] },
+  version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
 function variantData(definition: any) { return { title: definition.title,
   estimated_duration_minutes: definition.estimatedMinutes, completion_criteria: definition.completionCriteria }; }
 function variantsData(definitions: any) { return definitions ? Object.fromEntries(Object.entries(definitions)
@@ -99,7 +111,8 @@ function planData(row: any, tasks?: any[]) { return { id: row.id, goal_id: row.g
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, source: row.source,
   proposal: row.proposal,
   ...(tasks ? { tasks: tasks.map(task => taskData(task, task.steps)) } : {}), version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
-function reviewData(row: any) { return { id: row.id, goal_id: row.goalId, period: row.period === "week" ? "weekly" : "monthly",
+function reviewData(row: any) { return { id: row.id, goal_id: row.goalId,
+  period: row.period === "week" ? "weekly" : row.period === "day" ? "daily" : "monthly",
   status: row.status, period_start: row.periodStart, period_end: row.periodEnd, facts: row.facts,
   insights: row.output?.insights ?? [], recommendations: row.output?.recommendations ?? [], data_sufficiency: row.dataSufficiency,
   version: row.version, created_at: row.createdAt, updated_at: row.updatedAt }; }
@@ -326,7 +339,8 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
     const body = bodyOf(request); const data = await idempotent(runtime, owner, request, "goal", goalMatch[1]!, "update", async () =>
       goalData(await runtime.goals.update(owner, goalMatch[1]!, numberOf(body.base_version, "base_version"), {
         title: body.title as string | undefined, description: body.description as string | undefined,
-        targetDate: body.target_date as string | undefined, constraints: body.constraints as Json | undefined })));
+        targetDate: body.target_date as string | undefined, constraints: body.constraints as Json | undefined,
+        reviewCadence: reviewCadenceOf(body.review_cadence) })));
     return response(context, request, data);
   }
   const lifecycleMatch = request.path.match(/^\/api\/v1\/lighttick\/goals\/([^/]+)\/lifecycle$/);
@@ -450,11 +464,12 @@ export async function tryHandleLightTickV1Routes(context: BackendRouteContext, e
 
   if (request.path === `${PREFIX}review-runs` && request.method === "POST") {
     const body = bodyOf(request); const period = stringOf(body.period, "period");
-    if (!["weekly", "monthly"].includes(period))
+    if (!["weekly", "monthly", "daily"].includes(period))
       throw new ApplicationError(400, "REQ_FIELD_INVALID", "period is invalid.");
-    const reviewScene = period === "monthly" ? "monthly_review" : "weekly_review";
+    const reviewScene = period === "monthly" ? "monthly_review" : period === "daily" ? "daily_review" : "weekly_review";
+    const reviewPeriod = period === "monthly" ? "month" : period === "daily" ? "day" : "week";
     const data = await idempotent(runtime, owner, request, "review", String(body.goal_id), "generate", async () => {
-      const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), period === "monthly" ? "month" : "week",
+      const review = await runtime.reviews.create(owner, stringOf(body.goal_id, "goal_id"), reviewPeriod,
         stringOf(body.period_start, "period_start"), stringOf(body.period_end, "period_end"));
       const run = await createRun(runtime, owner, "review", reviewScene, review.id, body);
       return runData(run);

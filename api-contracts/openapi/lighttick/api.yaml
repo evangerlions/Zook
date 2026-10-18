@@ -2792,9 +2792,19 @@ components:
             keep_light_tasks: { type: boolean }
             notification_policy: { enum: [suppress, light_only] }
         recovery_started_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+        review_cadence:
+          $ref: "#/components/schemas/LightTickReviewCadence"
         version: { $ref: "#/components/schemas/LightTickVersion" }
         created_at: { $ref: "#/components/schemas/LightTickTimestamp" }
         updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
+    LightTickReviewCadence:
+      type: object
+      required: [layers]
+      properties:
+        layers:
+          type: array
+          items: { enum: [day, week, month] }
+      additionalProperties: false
     LightTickGoalConstraints:
       type: object
       required: [weekly_available_minutes, pace]
@@ -2816,6 +2826,7 @@ components:
         target_date: { type: string, format: date }
         motivation: { type: string, maxLength: 4000 }
         constraints: { $ref: "#/components/schemas/LightTickGoalConstraints" }
+        review_cadence: { $ref: "#/components/schemas/LightTickReviewCadence" }
       additionalProperties: false
     LightTickGoalUpdateRequest:
       type: object
@@ -2827,6 +2838,7 @@ components:
         target_date: { type: string, format: date }
         motivation: { type: string, maxLength: 4000 }
         constraints: { $ref: "#/components/schemas/LightTickGoalConstraints" }
+        review_cadence: { $ref: "#/components/schemas/LightTickReviewCadence" }
       additionalProperties: false
     LightTickGoalLifecycleRequest:
       type: object
@@ -3000,7 +3012,7 @@ components:
         snapshot_version: { type: integer, minimum: 0 }
     LightTickReviewPeriod:
       type: string
-      enum: [weekly, monthly]
+      enum: [weekly, monthly, daily]
     LightTickReviewStatus:
       type: string
       enum: [generating, ready, acknowledged, failed]

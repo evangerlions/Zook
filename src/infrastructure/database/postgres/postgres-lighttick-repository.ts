@@ -255,9 +255,9 @@ export class PostgresLightTickRepository implements LightTickRepository {
   }
   async saveGoal(row: LightTickGoalRow, write: LightTickAtomicWrite, expectedVersion?: number): Promise<LightTickGoalRow> {
     return await this.saveAggregate(row, write, expectedVersion, "zook_lighttick_goals",
-      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at"],
+      ["title", "description", "status", "constraints", "target_date", "pause_metadata", "recovery_started_at", "review_cadence"],
       [row.title, row.description ?? null, row.status, JSON.stringify(row.constraints), row.targetDate ?? null,
-        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null]);
+        JSON.stringify(row.pauseMetadata ?? {}), row.recoveryStartedAt ?? null, row.reviewCadence ? JSON.stringify(row.reviewCadence) : null]);
   }
 
   async getPlan(owner: LightTickOwner, id: string): Promise<LightTickPlanRow | undefined> {
@@ -402,7 +402,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
         result = await this.query(`INSERT INTO ${table} (id,app_id,user_id,${columns.join(",")},version,created_at,updated_at)
           VALUES ($1,$2,$3,${placeholders},1,NOW(),NOW()) RETURNING *`, [row.id, row.appId, row.userId, ...values]);
       } else {
-        const assignments = columns.map((column, index) => `${column}=$${index + 1}${["constraints", "proposal", "pause_metadata", "variant_definitions"].includes(column) ? "::jsonb" : ""}`).join(",");
+        const assignments = columns.map((column, index) => `${column}=$${index + 1}${["constraints", "proposal", "pause_metadata", "variant_definitions", "review_cadence"].includes(column) ? "::jsonb" : ""}`).join(",");
         result = await this.query(`UPDATE ${table} SET ${assignments},version=version+1,updated_at=NOW()
           WHERE app_id=$${values.length + 1} AND user_id=$${values.length + 2} AND id=$${values.length + 3}
           AND version=$${values.length + 4} RETURNING *`, [...values, row.appId, row.userId, row.id, expectedVersion]);
