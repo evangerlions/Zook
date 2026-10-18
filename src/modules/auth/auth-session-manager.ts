@@ -145,22 +145,20 @@ export class AuthSessionManager {
       app.id,
       command.userId,
     );
-    return await this.database.withExclusiveSession(async () => {
-      await this.database.deleteAppUserRuntimeData(app.id, command.userId);
-      await this.database.updateAppUserStatus(
-        app.id,
-        command.userId,
-        "DELETED",
-      );
-      const revokedSessions = await this.revokeAllSessions(
-        app.id,
-        command.userId,
-        now,
-      );
-      return {
-        deleted: true,
-        revokedSessions,
-      };
+    const operation = async () => await this.deleteAppAccountData(app.id, command.userId, now);
+    if (app.id !== "frogsleep") return await operation();
+    return await this.database.withFrogSleepBuddyCommandTransaction([
+      { appId: app.id, userId: command.userId, domain: "focus" },
+      { appId: app.id, userId: command.userId, domain: "sleep" },
+    ], operation);
+  }
+
+  private async deleteAppAccountData(appId: string, userId: string, now: Date): Promise<AccountDeletionResult> {
+    return await this.database.withAppUserDataTransaction(appId, userId, async () => {
+      await this.database.deleteAppUserRuntimeData(appId, userId);
+      await this.database.updateAppUserStatus(appId, userId, "DELETED");
+      const revokedSessions = await this.revokeAllSessions(appId, userId, now);
+      return { deleted: true, revokedSessions };
     });
   }
 

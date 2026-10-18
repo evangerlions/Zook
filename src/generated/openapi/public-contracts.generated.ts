@@ -20220,8 +20220,8 @@ export type FrogSleepFocusProfileRequest = (
 
 export const FrogSleepFocusSessionRequestSchema = {
   "type": "object",
-  "additionalProperties": true,
   "description": "Optional client ID enables per-app/per-user replay deduplication; the two ID aliases must match if both are present.",
+  "additionalProperties": true,
   "properties": {
     "session_id": {
       "type": "string",
@@ -20839,8 +20839,35 @@ export type FrogSleepPersonalSyncError = {
 
 export const FrogSleepSleepReportRequestSchema = {
   "type": "object",
+  "description": "Immutable snapshot_id is scoped to the authenticated owner. Identical retries return the original record; conflicting content returns HTTP 409.",
   "additionalProperties": true,
   "properties": {
+    "owner_user_id": {
+      "type": "string",
+      "description": "Optional assertion; must match authenticated user."
+    },
+    "binding": {
+      "type": "object",
+      "description": "Metadata of a user-confirmed import job. Send only explicitly selected completed records; device and active locking state are not imported. The server derives ownership from authentication.",
+      "required": [
+        "owner_user_id",
+        "job_id",
+        "confirmed_at"
+      ],
+      "properties": {
+        "owner_user_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
     "snapshot_id": {
       "type": "string"
     },
@@ -20954,6 +20981,12 @@ export const FrogSleepSleepReportRequestSchema = {
 
 export type FrogSleepSleepReportRequest = (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -20976,6 +21009,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id": string;
   "report_id"?: string;
   "id"?: string;
@@ -20997,6 +21036,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id": string;
   "id"?: string;
@@ -21018,6 +21063,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id": string;
@@ -21041,6 +21092,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -21062,6 +21119,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -21085,6 +21148,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -21106,6 +21175,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -21129,6 +21204,12 @@ export type FrogSleepSleepReportRequest = (
 ) & (
 (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;
@@ -21150,6 +21231,12 @@ export type FrogSleepSleepReportRequest = (
 }
 ) | (
 {
+  "owner_user_id"?: string;
+  "binding"?: {
+  "owner_user_id": string;
+  "job_id": string;
+  "confirmed_at": string;
+};
   "snapshot_id"?: string;
   "report_id"?: string;
   "id"?: string;

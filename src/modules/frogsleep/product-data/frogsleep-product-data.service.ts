@@ -1,3 +1,4 @@
+import { buildSleepReportUpload } from "./sleep-report-upload.ts";
 import { PersonalSyncService } from "../personal-sync/personal-sync.service.ts";
 import { reportPayload, sleepReportDocument } from "../personal-sync/personal-report.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
@@ -44,6 +45,7 @@ export class FrogSleepProductDataService {
   constructor(private readonly database: ApplicationDatabase) {}
 
   async createSleepReport(userId: string, input: Record<string, unknown>) {
+    buildSleepReportUpload(userId, input);
     const payload = reportPayload(input);
     if (!payload.snapshot_id || !payload.schema_version) badRequest("REQ_INVALID_BODY", "snapshot_id and schema_version are required.");
     requiredRecord(payload.data, "data");

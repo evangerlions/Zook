@@ -209,6 +209,15 @@ export class PostgresFrogSleepStore {
     return result.rows[0] ? parseEntity(kind, result.rows[0]) : undefined;
   }
 
+  async findPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): Promise<FrogSleepEntityRecord | undefined> {
+    const key = kind === "focus_session" ? "client_session_id" : "snapshot_id";
+    const terminal = kind === "focus_session" ? "AND status IN ('completed','abandoned','interrupted','cancelled')" : "";
+    const result = await this.query(`SELECT * FROM ${tableFor(kind)}
+      WHERE app_id = 'frogsleep' AND owner_user_id = $1 AND payload->>$2 = $3
+      AND deleted_at IS NULL ${terminal} ORDER BY created_at LIMIT 1`, [ownerUserId, key, clientId]);
+    return result.rows[0] ? parseEntity(kind, result.rows[0]) : undefined;
+  }
+
   async listEntities(filter: FrogSleepEntityFilter): Promise<FrogSleepEntityRecord[]> {
     const kind = filter.kind ?? "sleep_invite";
     const query = buildFrogSleepEntityListQuery(filter, tableFor(kind));

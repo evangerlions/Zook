@@ -2,6 +2,8 @@ import { recordFocusSharedMoment, viewerFocusMoment } from "./focus-shared-momen
 import { findBuddyRelationship } from "../buddy-growth/buddy-relationship-facts.ts";
 import { BuddyRelationshipLifecycleService } from "../buddy-growth/buddy-relationship-lifecycle.service.ts";
 import { buildFocusSessionReport } from "./focus-session-report.ts";
+import { buildFocusSessionUpload } from "./focus-session-upload.ts";
+import { insertPersonalRecord, personalRecordId } from "../product-data/personal-record-upload.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
 import { ContentSafetyService } from "../../../services/content-safety.service.ts";
@@ -83,6 +85,7 @@ export class FrogSleepFocusBuddyService {
   }
 
   async reportSession(userId: string, input: Record<string, unknown>) {
+    buildFocusSessionUpload(userId, input);
     const candidate = buildFocusSessionReport(userId, input);
     const result = candidate.payload.client_session_id === undefined
       ? await this.insertLegacySession(candidate)

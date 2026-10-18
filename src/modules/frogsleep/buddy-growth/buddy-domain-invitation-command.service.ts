@@ -48,12 +48,7 @@ export class BuddyDomainInvitationCommandService {
     if (decision.status !== "pending" || decision.version !== input.expectedVersion) {
       conflict("REQ_INVALID_BODY", "Buddy invitation decision version conflict.");
     }
-    const slots = await this.availableSlots(bundle, domain);
-    const relationship = this.relationship(bundle, domain);
-    await this.database.insertFrogSleepBuddyDomainRelationship(relationship);
-    await this.occupySlots(slots, relationship.id);
-    await new BuddyConsentService(this.database).createIndependentGrants({ relationshipId: relationship.id,
-      domain, inviterUserId: bundle.inviterUserId, inviteeUserId: actorUserId });
+    const relationship = await this.createIndependentRelationship(bundle, domain);
     const accepted = await this.database.compareAndUpdateFrogSleepBuddyInvitationDomainDecision({
       appId: FROGSLEEP_APP_ID, invitationId, domain, expectedVersion: decision.version, status: "accepted",
       decidedByUserId: actorUserId, decidedAt: relationship.createdAt,
@@ -66,6 +61,16 @@ export class BuddyDomainInvitationCommandService {
     await enqueueBuddyInvitationEvent(this.database, { recipientUserId: bundle.inviterUserId, invitationId,
       domain, eventType: "invitation_accepted" });
     return this.payload(accepted, relationship);
+  }
+
+  private async createIndependentRelationship(bundle: FrogSleepBuddyInvitationBundleRecord, domain: Domain) {
+    const slots = await this.availableSlots(bundle, domain);
+    const relationship = this.relationship(bundle, domain);
+    await this.database.insertFrogSleepBuddyDomainRelationship(relationship);
+    await this.occupySlots(slots, relationship.id);
+    await new BuddyConsentService(this.database).createIndependentGrants({ relationshipId: relationship.id,
+      domain, inviterUserId: bundle.inviterUserId, inviteeUserId: bundle.inviteeUserId! });
+    return relationship;
   }
 
   private async requireBundleIdentity(invitationId: string, actorUserId: string, domain: Domain) {

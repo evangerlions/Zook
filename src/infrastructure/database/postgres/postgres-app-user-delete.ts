@@ -1,3 +1,5 @@
+import { deletePostgresFrogSleepBuddyUserData } from "./postgres-frogsleep-user-delete.ts";
+
 type QueryFn = (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
 
 const FROGSLEEP_USER_RUNTIME_TABLES = [
@@ -122,6 +124,7 @@ export async function deletePostgresAppUserRuntimeData(
   await query("DELETE FROM zook_frogsleep_personal_versions WHERE app_id=$1 AND user_id=$2", [appId,userId]);
   await query("DELETE FROM zook_frogsleep_personal_receipts WHERE app_id=$1 AND user_id=$2", [appId,userId]);
   await query("DELETE FROM zook_frogsleep_devices WHERE app_id = $1 AND user_id = $2", [appId, userId]);
+  await deletePostgresFrogSleepBuddyUserData(query, appId, userId, FROGSLEEP_USER_RUNTIME_TABLES);
   for (const tableName of FROGSLEEP_USER_RUNTIME_TABLES) {
     await query(
       `DELETE FROM ${tableName} WHERE app_id = $1 AND (owner_user_id = $2 OR partner_user_id = $2)`,

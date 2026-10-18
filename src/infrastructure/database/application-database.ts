@@ -93,6 +93,7 @@ export abstract class ApplicationDatabase {
   abstract getPersonalSyncRepository(): PersonalSyncRepository;
   abstract getFrogSleepAdminStore(): FrogSleepAdminStore;
   abstract withExclusiveSession<T>(fn: () => Promise<T> | T): Promise<T>;
+  abstract withAppUserDataTransaction<T>(appId: string, userId: string, fn: () => Promise<T> | T): Promise<T>;
   abstract withFrogSleepBuddyCommandTransaction<T>(
     slotKeys: FrogSleepBuddyCommandSlotKey[],
     fn: () => Promise<T> | T,
@@ -246,6 +247,7 @@ export abstract class ApplicationDatabase {
   abstract upsertFrogSleepFocusSession(record: FrogSleepEntityRecord): MaybePromise<FrogSleepFocusSessionWriteResult>;
   abstract insertFrogSleepEntity(record: FrogSleepEntityRecord): MaybePromise<void>;
   abstract findFrogSleepEntity(kind: FrogSleepEntityKind, appId: string, id: string): MaybePromise<FrogSleepEntityRecord | undefined>;
+  abstract findFrogSleepPersonalRecord(kind: FrogSleepEntityKind, ownerUserId: string, clientId: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract findFrogSleepEntityByCode(kind: FrogSleepEntityKind, appId: string, code: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract findFrogSleepEntityByToken(kind: FrogSleepEntityKind, appId: string, token: string): MaybePromise<FrogSleepEntityRecord | undefined>;
   abstract listFrogSleepEntities(filter: FrogSleepEntityFilter): MaybePromise<FrogSleepEntityRecord[]>;

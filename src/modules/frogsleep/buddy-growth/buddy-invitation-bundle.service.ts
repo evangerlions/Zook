@@ -14,6 +14,8 @@ import { BuddyInvitationService } from "./buddy-invitation.service.ts";
 import { enqueueBuddyInvitationEvent } from "./buddy-invitation-events.ts";
 import { limitBuddyPreview, limitBuddyResponse } from "./buddy-rate-limit.ts";
 
+import { buddyDomainDecisionPayload } from "./buddy-domain-decision-payload.ts";
+
 type BundleDomain = "sleep" | "focus";
 type BundleAction = "accept" | "decline" | "cancel";
 

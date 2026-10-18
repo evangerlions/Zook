@@ -10,6 +10,8 @@ import { assertBuddyPairNotBlocked } from "./buddy-safety.ts";
 import { buddySharingCategories, type BuddySharingCategory } from "./buddy-growth-contract.ts";
 import { limitBuddyUnauthorizedAccess } from "./buddy-rate-limit.ts";
 
+type ConsentRelationship = Pick<FrogSleepEntityRecord, "id" | "kind" | "ownerUserId" | "partnerUserId" | "status"> & { legacy: boolean };
+
 /** Owns directional buddy sharing grants and participant authorization. */
 export class BuddyConsentService {
   constructor(
@@ -99,7 +101,7 @@ export class BuddyConsentService {
   }
 
   private async backfillLegacyRelationshipGrants(
-    relationship: FrogSleepEntityRecord,
+    relationship: ConsentRelationship,
   ): Promise<FrogSleepBuddySharingGrantRecord[]> {
     const ownerUserId = relationship.ownerUserId as string;
     const partnerUserId = relationship.partnerUserId as string;
