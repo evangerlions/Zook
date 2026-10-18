@@ -83,3 +83,5 @@ schema_version 仅 `"1"`；status 仅 `completed,cancelled,interrupted`；sleep_
 不接收 active 状态。恢复的设备锁、暂停计时、后台状态只作为历史 data，客户端不得据此启动锁定或恢复运行中流程。该能力保存客户端提供的历史，不自动计算睡眠阶段、诊断或生成报告；也不自动把 shared-session 关系数据导入私人原始空间。
 
 报告和 report_preferences 的 DELETE 响应将完整墓碑回执放在 `data.resource`（含 revision、sequence、sync_epoch），同时保留顶层 metadata 兼容字段；内层私有 data 不再覆盖标准 envelope.data。原始睡眠 DELETE 使用 `data.sleep_session`。
+
+浏览器/H5 使用允许的 Origin 时，OPTIONS 预检支持 PUT 及 X-Sync-Epoch、Idempotency-Key、If-Match；客户端仍需发送 Bearer 和当前修订。删号后同一全局身份不会自动重入 FrogSleep，密码登录返回403 APP_MEMBER_DELETED，不能用旧令牌、旧epoch或旧游标恢复被删除的数据。本文“重新激活会员”仅指由独立明确流程授权的重建，当前公共接口未提供自动恢复或重新激活入口；新身份从空历史开始，不能继承旧游客或已删除账号的数据。

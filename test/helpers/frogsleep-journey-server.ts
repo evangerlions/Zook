@@ -1,3 +1,4 @@
+import { buildCorsHeaders, buildCorsPreflightHeaders, resolveCorsDecision } from "../../src/infrastructure/http/cors.ts";
 import { createServer } from "node:http";
 import { createApplication } from "../../src/app.module.ts";
 import { InMemoryDatabase } from "../../src/testing/in-memory-database.ts";
@@ -17,6 +18,13 @@ export async function createJourneyServer(port = 0) {
   const server = createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? "/", "http://127.0.0.1");
+      const origin = typeof request.headers.origin === "string" ? request.headers.origin : undefined;
+      if (!resolveCorsDecision(origin).allowed) { response.statusCode=403;response.end();return; }
+      if (request.method === "OPTIONS") {
+        for (const [key,value] of Object.entries(buildCorsPreflightHeaders(origin, request.headers["access-control-request-headers"] as string | undefined))) response.setHeader(key,value);
+        response.statusCode=204;response.end();return;
+      }
+      for (const [key,value] of Object.entries(buildCorsHeaders(origin))) response.setHeader(key,value);
       if (url.pathname === "/__test__/health") { response.end(JSON.stringify({ fixture: "frogsleep-2a-journey", database: "memory" })); return; }
       if (url.pathname === "/__test__/reset" && request.method === "POST") {
         runtime = await freshRuntime(); response.end(JSON.stringify({ reset: true })); return;
