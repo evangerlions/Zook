@@ -179,23 +179,7 @@ export interface FrogSleepEntityRecord {
   deletedAt?: string;
 }
 
-export interface FrogSleepEntityFilter {
-  appId: string;
-  kind?: FrogSleepEntityKind;
-  ownerUserId?: string;
-  partnerUserId?: string;
-  relationshipId?: string;
-  sessionId?: string;
-  status?: string;
-  code?: string;
-  token?: string;
-  startsAtFromIso?: string;
-  startsAtToIso?: string;
-  occurredAtFromIso?: string;
-  occurredAtToIso?: string;
-  includeDeleted?: boolean;
-  limit?: number;
-}
+export type { FrogSleepEntityFilter } from "./frogsleep-entity-filter.ts";
 
 export interface FrogSleepBuddySharingGrantRecord {
   id: string;

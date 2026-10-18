@@ -5,6 +5,7 @@ import { randomId } from "../../../shared/utils.ts";
 import { FROGSLEEP_APP_ID } from "../frogsleep-app.ts";
 import {
   paginateRecords,
+  decodeFrogSleepCursor,
   parseIsoTimestamp,
   type PaginationParams,
 } from "../frogsleep-validation.ts";
@@ -77,14 +78,16 @@ export class FrogSleepProductDataService {
     return this.toSleepReport(record);
   }
 
-  async listSleepReports(userId: string, pagination?: PaginationParams) {
+  async listSleepReports(userId: string, pagination: PaginationParams = { limit: 50 }) {
+    const before = decodeFrogSleepCursor(pagination.cursor);
     const records = await this.database.listFrogSleepEntities({
       appId: FROGSLEEP_APP_ID,
       kind: "sleep_report_snapshot",
       ownerUserId: userId,
-      limit: 500,
+      before,
+      limit: pagination.limit + 1,
     });
-    const page = paginateRecords(records, pagination ?? { limit: 50 });
+    const page = paginateRecords(records, pagination);
     return {
       sleep_reports: page.items.map((item) => this.toSleepReport(item)),
       reports: page.items.map((item) => this.toSleepReport(item)),

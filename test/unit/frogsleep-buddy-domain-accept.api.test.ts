@@ -68,7 +68,8 @@ test("domain accept atomically accepts only one decision, occupies both slots an
     assert.equal((await app.database.findFrogSleepBuddyDomainRelationship("frogsleep", relationshipId))?.status, "active");
     assert.equal(app.database.frogSleepBuddyNotificationOutbox.length, 1);
     assert.equal(app.database.frogSleepBuddyNotificationOutbox[0]?.recipientUserId, "user_alice");
-    assert.equal(app.database.frogSleepBuddySharingGrants.length, 0);
+    assert.equal(app.database.frogSleepBuddySharingGrants.length, 8);
+    assert.ok(app.database.frogSleepBuddySharingGrants.every(grant => grant.state === "revoked"));
     assert.equal(app.database.listFrogSleepEntities({ appId: "frogsleep", kind: "sleep_relationship" }).length, 0);
     assert.equal((await app.database.findFrogSleepBuddyInvitationBundle("frogsleep", "bundle_accept"))?.status, "pending");
   } finally { restore(); }

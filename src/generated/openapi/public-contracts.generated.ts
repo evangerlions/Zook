@@ -19571,19 +19571,22 @@ export const FrogSleepSleepPreferencesRequestSchema = {
       ]
     },
     "mute_for_tonight": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Suppresses recipient sleep-session and morning push at enqueue and delivery time"
     },
     "muteForTonight": {
       "type": "boolean"
     },
     "allow_morning_summary_push": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Whether recipient morning summary push is allowed"
     },
     "allowMorningSummaryPush": {
       "type": "boolean"
     },
     "allow_recovery_nudges": {
-      "type": "boolean"
+      "type": "boolean",
+      "description": "Whether recipient interrupted and returned push is allowed"
     },
     "allowRecoveryNudges": {
       "type": "boolean"

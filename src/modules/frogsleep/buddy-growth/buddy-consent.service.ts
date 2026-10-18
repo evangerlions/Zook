@@ -31,6 +31,17 @@ export class BuddyConsentService {
     return grants;
   }
 
+  async createIndependentGrants(input: {
+    relationshipId: string; domain: "sleep" | "focus"; inviterUserId: string; inviteeUserId: string;
+  }) {
+    for (const category of buddySharingCategories) {
+      for (const [grantor, grantee] of [[input.inviterUserId, input.inviteeUserId], [input.inviteeUserId, input.inviterUserId]]) {
+        const grant = await this.database.upsertFrogSleepBuddySharingGrant(this.newGrant(input, grantor!, grantee!, category, "revoked"));
+        await this.recordAudit(grant, "buddy_grant_created");
+      }
+    }
+  }
+
   async list(userId: string, relationshipId: string) {
     await this.authorizedRelationship(userId, relationshipId);
     const grants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
@@ -60,11 +71,15 @@ export class BuddyConsentService {
     const relationship = await this.authorizedRelationship(userId, relationshipId);
     const otherUserId = relationship.ownerUserId === userId ? relationship.partnerUserId : relationship.ownerUserId;
     let grants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
-    if (grants.length === 0) {
+    if (grants.length === 0 && !relationship.payload.domain_relationship) {
       grants = await this.backfillLegacyRelationshipGrants(relationship);
     }
-    const allowed = grants.some((grant) => grant.grantorUserId === otherUserId && grant.granteeUserId === userId &&
-      grant.category === category && grant.state === "granted");
+    const current = await this.authorizedRelationship(userId, relationshipId);
+    const currentGrants = await this.database.listFrogSleepBuddySharingGrants(FROGSLEEP_APP_ID, relationshipId);
+    const domain = current.kind === "sleep_relationship" ? "sleep" : "focus";
+    const allowed = currentGrants.some((grant) => grant.domain === domain && grant.grantorUserId === otherUserId && grant.granteeUserId === userId &&
+      grant.category === category && grant.state === "granted" &&
+      grants.some(initial => initial.id === grant.id && initial.version === grant.version && initial.state === "granted"));
     if (!allowed) {
       if (this.kvManager) {
         await limitBuddyUnauthorizedAccess(this.kvManager, userId);
@@ -99,7 +114,12 @@ export class BuddyConsentService {
     return relationship;
   }
 
-  private async findRelationship(relationshipId: string) {
+  private async findRelationship(relationshipId: string): Promise<FrogSleepEntityRecord | undefined> {
+    const canonical = await this.database.findFrogSleepBuddyDomainRelationship(FROGSLEEP_APP_ID, relationshipId);
+    if (canonical) return { id: canonical.id, appId: canonical.appId,
+      kind: canonical.domain === "sleep" ? "sleep_relationship" : "focus_relationship",
+      ownerUserId: canonical.userIdLow, partnerUserId: canonical.userIdHigh, status: canonical.status,
+      payload: { domain_relationship: true }, createdAt: canonical.createdAt, updatedAt: canonical.updatedAt };
     return await this.database.findFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, relationshipId)
       ?? await this.database.findFrogSleepEntity("focus_relationship", FROGSLEEP_APP_ID, relationshipId);
   }

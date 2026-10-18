@@ -13,7 +13,8 @@ export type NotificationStatus =
   | "QUEUED"
   | "SENT"
   | "FAILED"
-  | "ENQUEUE_FAILED";
+  | "ENQUEUE_FAILED"
+  | "SUPPRESSED";
 export type ClientType = "web" | "app";
 export type EventName =
   | "page_view"
