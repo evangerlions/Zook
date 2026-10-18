@@ -1,3 +1,4 @@
+import { SleepRelationshipService } from "../../src/modules/frogsleep/sleep-buddy/sleep-relationship.service.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplication } from "../../src/app.module.ts";
@@ -71,6 +72,11 @@ for (const domain of ["focus", "sleep"] as const) {
       assert.equal(current.body.data.relationship, null);
       const legacyGrants = await request(f.app, token, "GET", `/buddy/relationships/${f.legacyId}/grants`);
       assert.equal(legacyGrants.statusCode, 404, "knowing the legacy ID cannot bypass a canonical revocation");
+      if (domain === "sleep") {
+        const oldSession = await request(f.app, token, "POST", "/sleep-buddy/shared-sessions", { relationship_id: f.legacyId });
+        assert.equal(oldSession.statusCode, 403);
+        await assert.rejects(new SleepRelationshipService(f.app.database).require(token === f.alice ? "user_alice" : "user_bob", f.legacyId), { statusCode: 403 });
+      }
     }
   });
 }

@@ -477,6 +477,11 @@ paths:
         "200": { $ref: "#/components/responses/FrogSleepOk" }
   /api/v1/frogsleep/sleep-buddy/shared-sessions/{sessionId}/events:
     post:
+      description: >-
+        A participant morning_completed is terminal and retries preserve its state.
+        The session stays available for the other participant until both participants
+        are morning_completed or paused_tonight. Viewer summaries expose their own
+        completion fact. Accept replay never reopens an ended session.
       operationId: frogSleepRecordSharedSleepSessionEvent
       tags: [frogsleep, frogsleep-sleep-buddy]
       description: Both participants acknowledge mornings independently; the session completes only after both morning acknowledgements or an explicit pause. Exact event retries and terminal morning replays are idempotent. Terminal participants cannot reopen a completed session.
