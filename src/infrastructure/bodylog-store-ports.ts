@@ -25,6 +25,9 @@ import type {
   UpdateGrowthMissionInput,
   UpdateGrowthPlanInput,
   UpdateGrowthRewardInput,
+  BodyLogGrowthDailyAggregate,
+  UpsertGrowthDailyAggregateInput,
+  ApplyGrowthDailyAggregateResult,
 } from "../modules/bodylog/bodylog-growth.types.ts";
 import type {
   NotificationPreferencesRecord,
@@ -103,6 +106,7 @@ export interface BodyLogSubscriptionStore {
 }
 
 export interface BodyLogGrowthStore {
+  applyGrowthDailyAggregate(planId: string, day: number, input: UpsertGrowthDailyAggregateInput, completed: boolean, completedAt: string): MaybePromise<ApplyGrowthDailyAggregateResult>;
   createGrowthPlan(input: CreateGrowthPlanInput): MaybePromise<BodyLogGrowthPlan>;
   findGrowthPlanById(planId: string): MaybePromise<BodyLogGrowthPlan | null>;
   findLatestGrowthPlan(userId: string): MaybePromise<BodyLogGrowthPlan | null>;

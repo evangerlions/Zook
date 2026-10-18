@@ -26,6 +26,16 @@ function requestBody(request: HttpRequest): Record<string, unknown> {
     : {};
 }
 
+function isRouteUnder(path: string, roots: string[]): boolean {
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
+}
+
+function requireEnabledFeature(enabled: boolean, feature: string): void {
+  if (!enabled) {
+    throw new ApplicationError(404, "BODYLOG_FEATURE_DISABLED", `${feature} is not available.`);
+  }
+}
+
 export async function tryHandleBodyLogV1Routes(
   context: BackendRouteContext,
   profileService: BodyLogProfileService,
@@ -52,8 +62,24 @@ export async function tryHandleBodyLogV1Routes(
   }
 
   const auth = await context.authenticateProductRequest(request, BODYLOG_APP_ID);
-  if (request.path.startsWith("/api/v1/bodylog/seven-day-plan/") && !(await featureFlagService.isEnabled("growth"))) {
-    throw new ApplicationError(404, "BODYLOG_FEATURE_DISABLED", "Feature is not available.");
+  const bodyLogPath = request.path.slice("/api/v1/bodylog".length);
+  if (isRouteUnder(bodyLogPath, [
+    "/profile", "/friends", "/friend-requests", "/blocks", "/reports", "/invitations",
+    "/buddies", "/groups", "/notification-preferences", "/push-devices",
+  ])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("accountSocial"), "BodyLog social");
+  }
+  if (isRouteUnder(bodyLogPath, ["/friends", "/friend-requests", "/blocks", "/reports"])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("friends"), "BodyLog friends");
+  }
+  if (isRouteUnder(bodyLogPath, ["/leaderboards", "/challenges"])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("competition"), "BodyLog competition");
+  }
+  if (bodyLogPath === "/challenges" && request.method === "POST") {
+    requireEnabledFeature(await featureFlagService.isEnabled("challengeCreation"), "BodyLog challenge creation");
+  }
+  if (isRouteUnder(bodyLogPath, ["/seven-day-plan"])) {
+    requireEnabledFeature(await featureFlagService.isEnabled("growth"), "BodyLog growth");
   }
   if (request.path === "/api/v1/bodylog/subscription/status" && request.method === "GET") {
     return context.ok(await buddyService.subscriptionStatus(auth.userId), request.requestId as string);
@@ -362,7 +388,9 @@ export async function tryHandleBodyLogV1Routes(
 
   // ===== Growth (7-day plan) routes =====
   if (request.path === "/api/v1/bodylog/seven-day-plan/enroll" && request.method === "POST") {
-    const plan = await growthService.enroll(auth.userId);
+    const body = requestBody(request);
+    const timeZone = validation.optionalString(body, "timeZone") ?? "UTC";
+    const plan = await growthService.enroll(auth.userId, timeZone);
     return context.ok(plan, request.requestId as string);
   }
   if (request.path === "/api/v1/bodylog/seven-day-plan/latest" && request.method === "GET") {
@@ -381,6 +409,19 @@ export async function tryHandleBodyLogV1Routes(
   if (missionsMatch && request.method === "GET") {
     const missions = await growthService.getMissions(auth.userId, missionsMatch[1] as string);
     return context.ok(missions, request.requestId as string);
+  }
+  const dailyAggregateMatch = request.path.match(/^\/api\/v1\/bodylog\/seven-day-plan\/([^/]+)\/daily-aggregate$/);
+  if (dailyAggregateMatch && request.method === "POST") {
+    const body = requestBody(request);
+    const aggregate = await growthService.submitDailyAggregate(auth.userId, dailyAggregateMatch[1] as string, {
+      localDate: validation.requireString(body, "localDate"),
+      timeZone: validation.requireString(body, "timeZone"),
+      completedGoalCount: validation.requireNumber(body, "completedGoalCount"),
+      eligibleGoalCount: validation.requireNumber(body, "eligibleGoalCount"),
+      definitionVersion: validation.requireNumber(body, "definitionVersion"),
+      eventId: validation.requireString(body, "eventId"),
+    });
+    return context.ok(aggregate, request.requestId as string);
   }
   const completeMissionMatch = request.path.match(/^\/api\/v1\/bodylog\/seven-day-plan\/([^/]+)\/missions\/([^/]+)\/complete$/);
   if (completeMissionMatch && request.method === "POST") {

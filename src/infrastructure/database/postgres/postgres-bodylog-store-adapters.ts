@@ -52,6 +52,7 @@ const groupStore = (pool: Pool): BodyLogGroupStore => ({
 });
 
 const growthStore = (pool: Pool): BodyLogGrowthStore => ({
+  applyGrowthDailyAggregate: (planId, day, input, completed, completedAt) => growthSql.applyPostgresGrowthDailyAggregate(pool, planId, day, input, completed, completedAt),
   createGrowthPlan: (input) => growthSql.createPostgresGrowthPlan(pool, input),
   findGrowthPlanById: (planId) => growthSql.findPostgresGrowthPlanById(pool, planId),
   findLatestGrowthPlan: (userId) => growthSql.findPostgresLatestGrowthPlan(pool, userId),

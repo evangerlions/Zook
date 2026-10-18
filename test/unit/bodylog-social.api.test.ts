@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildDefaultSeed } from "../../src/infrastructure/database/prisma/default-seed.ts";
 import type { DatabaseSeed } from "../../src/shared/types.ts";
 import { createApplication } from "../support/create-test-application.ts";
+import { resolveBodyLogStores } from "../../src/application-bodylog-stores.ts";
 
 function socialSeed(): DatabaseSeed {
   const seed = buildDefaultSeed();
@@ -23,6 +24,9 @@ function socialSeed(): DatabaseSeed {
 
 test("BodyLog friendship requires recipient acceptance", async () => {
   const runtime = await createApplication({ seed: socialSeed() });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  await flags.updateBodyLogFeatureFlag("accountSocial", true);
+  await flags.updateBodyLogFeatureFlag("friends", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const bob = runtime.services.tokenService.issueAccessToken("user_bob", "bodylog");
   const headers = (token: string) => ({
@@ -63,6 +67,9 @@ test("BodyLog friendship requires recipient acceptance", async () => {
 
 test("BodyLog block removes friendship and prevents new requests", async () => {
   const runtime = await createApplication({ seed: socialSeed() });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  await flags.updateBodyLogFeatureFlag("accountSocial", true);
+  await flags.updateBodyLogFeatureFlag("friends", true);
   const alice = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const bob = runtime.services.tokenService.issueAccessToken("user_bob", "bodylog");
   const headers = (token: string) => ({
@@ -94,6 +101,9 @@ test("BodyLog block removes friendship and prevents new requests", async () => {
 
 test("BodyLog reports accept fixed reasons and reject free-form values", async () => {
   const runtime = await createApplication({ seed: socialSeed() });
+  const flags = resolveBodyLogStores(runtime.database).flags;
+  await flags.updateBodyLogFeatureFlag("accountSocial", true);
+  await flags.updateBodyLogFeatureFlag("friends", true);
   const token = runtime.services.tokenService.issueAccessToken("user_alice", "bodylog");
   const headers = { authorization: `Bearer ${token}`, "x-app-id": "bodylog" };
 

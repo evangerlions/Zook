@@ -8,6 +8,23 @@ info:
   description: Canonical app-scoped profile, social, leaderboard, invitation, and challenge API for BodyLog.
 servers:
   - url: https://api.zook.dev
+x-bodylog-feature-gates:
+  description: >-
+    Each authenticated route is checked server-side after authentication. A
+    disabled gate returns 404 with code BODYLOG_FEATURE_DISABLED. Missing flag
+    records are treated as disabled. Route families are listed by their path
+    prefix; challengeCreation applies only to POST /challenges.
+  accountSocial:
+    paths: [/profile, /friends, /friend-requests, /blocks, /reports, /invitations, /buddies, /groups, /notification-preferences, /push-devices]
+  friends:
+    paths: [/friends, /friend-requests, /blocks, /reports]
+  competition:
+    paths: [/leaderboards, /challenges]
+  challengeCreation:
+    paths: [/challenges]
+    methods: [POST]
+  growth:
+    paths: [/seven-day-plan]
 security:
   - bearerAuth: []
 tags:
@@ -662,6 +679,11 @@ paths:
       tags: [bodylog-growth]
       summary: Enroll in a 7-day growth plan
       description: Requires the growth feature flag (disabled by default); returns 404 when disabled.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogGrowthPlanEnrollRequest" }
       responses:
         "200": { $ref: "#/components/responses/GrowthPlan" }
         "404": { $ref: "#/components/responses/Error" }
@@ -709,10 +731,32 @@ paths:
     post:
       operationId: completeBodyLogMission
       tags: [bodylog-growth]
-      summary: Mark a mission as completed
+      summary: Legacy manual completion endpoint; never marks a mission complete
+      description: Returns 409 BODYLOG_GROWTH_LOCAL_EVIDENCE_REQUIRED. Submit local daily goal aggregates instead.
       responses:
-        "200": { $ref: "#/components/responses/Mission" }
         "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /api/v1/bodylog/seven-day-plan/{planId}/daily-aggregate:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    post:
+      operationId: submitBodyLogGrowthDailyAggregate
+      tags: [bodylog-growth]
+      summary: Submit local-goal completion aggregate for one local calendar day
+      description: >-
+        Account-authenticated replacement by user and local date. One or more
+        eligible local goals completes that day's mission. Replaying the same
+        aggregate is idempotent; a changed aggregate for the same date replaces
+        prior progress. No habit IDs or raw check-in values are accepted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BodyLogGrowthDailyAggregateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/GrowthDailyAggregate" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
         "409": { $ref: "#/components/responses/Error" }
   /api/v1/bodylog/seven-day-plan/{planId}/rewards:
     parameters:
@@ -1062,6 +1106,11 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/BodyLogGrowthPlanResponse" }
+    GrowthDailyAggregate:
+      description: Persisted local-goal aggregate after mission progress recalculation
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BodyLogGrowthDailyAggregateResponse" }
     MissionList:
       description: List of missions
       content:
@@ -2142,6 +2191,14 @@ components:
         message: { type: string }
         data: { $ref: "#/components/schemas/BodyLogGrowthPlanData" }
         requestId: { type: string }
+    BodyLogGrowthDailyAggregateResponse:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        data: { $ref: "#/components/schemas/BodyLogGrowthDailyAggregateData" }
+        requestId: { type: string }
     BodyLogMissionListResponse:
       type: object
       required: [code, message, data]
@@ -2291,6 +2348,35 @@ components:
         totalMissions: { type: integer, minimum: 0 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        timeZone: { type: string }
+    BodyLogGrowthPlanEnrollRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        timeZone: { type: string, minLength: 1, maxLength: 64, example: Asia/Shanghai }
+    BodyLogGrowthDailyAggregateRequest:
+      type: object
+      additionalProperties: false
+      required: [localDate, timeZone, completedGoalCount, eligibleGoalCount, definitionVersion, eventId]
+      properties:
+        localDate: { type: string, format: date }
+        timeZone: { type: string, minLength: 1, maxLength: 64 }
+        completedGoalCount: { type: integer, minimum: 0, maximum: 500 }
+        eligibleGoalCount: { type: integer, minimum: 0, maximum: 500 }
+        definitionVersion: { type: integer, const: 1 }
+        eventId: { type: string, format: uuid }
+    BodyLogGrowthDailyAggregateData:
+      type: object
+      required: [userId, localDate, timeZone, completedGoalCount, eligibleGoalCount, definitionVersion, eventId, updatedAt]
+      properties:
+        userId: { type: string }
+        localDate: { type: string, format: date }
+        timeZone: { type: string }
+        completedGoalCount: { type: integer, minimum: 0 }
+        eligibleGoalCount: { type: integer, minimum: 0 }
+        definitionVersion: { type: integer, const: 1 }
+        eventId: { type: string, format: uuid }
+        updatedAt: { type: string, format: date-time }
     BodyLogMissionData:
       type: object
       required: [id, planId, day, type, target, completed, completedAt, createdAt]
@@ -2298,7 +2384,7 @@ components:
         id: { type: string }
         planId: { type: string }
         day: { type: integer, minimum: 1, maximum: 7 }
-        type: { type: string, enum: [steps, water, sleep] }
+        type: { type: string, enum: [steps, water, sleep, localGoal] }
         target: { type: integer, minimum: 0 }
         completed: { type: boolean }
         completedAt: { type: [string, "null"], format: date-time }
