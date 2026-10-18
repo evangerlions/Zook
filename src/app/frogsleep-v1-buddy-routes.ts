@@ -211,7 +211,7 @@ async function tryHandleBuddyHubRoutes(
     return frogSleepOk(context, await reportService.report(auth.userId, decodeURIComponent(reportMatch[1] as string)),
       request.requestId as string);
   }
-  const action = request.path.match(/^\/v1\/buddy\/joint-activities\/([^/]+)\/(accept|decline|cancel|complete)$/);
+  const action = request.path.match(/^\/v1\/buddy\/joint-activities\/([^/]+)\/(accept|decline|cancel|start|complete)$/);
   if (request.method === "POST" && action) {
     return frogSleepOk(context, await service.jointActivityAction(auth.userId,
       decodeURIComponent(action[1] as string), action[2] as string), request.requestId as string);

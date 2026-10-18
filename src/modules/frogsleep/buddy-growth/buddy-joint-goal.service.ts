@@ -1,3 +1,6 @@
+import { isBuddyAuthorizationDenied } from "./buddy-artifact-redaction.ts";
+import { completionFacts, goalProgress } from "./buddy-completion-facts.ts";
+import { buddyRelationships } from "./buddy-relationships.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { badRequest, conflict, forbidden } from "../../../shared/errors.ts";
 import type { FrogSleepEntityKind, FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -20,12 +23,24 @@ export class BuddyJointGoalService {
 
   async list(userId: string, relationshipId?: string) {
     const records = await this.repository.listGoals(userId, relationshipId);
-    return { goals: await Promise.all(records.map((item) => this.toGoal(userId, item))) };
+    const goals = [];
+    for (const record of records) {
+      try { goals.push(await this.database.withExclusiveSession(async () => {
+        const current = await this.repository.findGoal(record.id);
+        return await this.toGoal(userId, current!);
+      })); }
+      catch (error) { if (!isBuddyAuthorizationDenied(error)) throw error; }
+    }
+    return { goals };
   }
 
   async create(userId: string, input: Record<string, unknown>) {
     const relationship = await this.relationship(userId, requiredString(input.relationship_id));
     const type = goalType(input.type);
+    if ((type.startsWith("focus_") && relationship.kind !== "focus_relationship") ||
+      (type === "sleep_schedule_days" && relationship.kind !== "sleep_relationship")) {
+      badRequest("REQ_INVALID_BODY", "Goal type must match the relationship domain.");
+    }
     const target = goalTarget(type, input.target);
     const timezone = validTimezone(input.timezone);
     const idempotencyKey = requiredString(input.idempotency_key);
@@ -46,22 +61,39 @@ export class BuddyJointGoalService {
   }
 
   async act(userId: string, goalId: string, action: GoalAction, input: Record<string, unknown>) {
+    return await this.database.withExclusiveSession(async () => await this.actLocked(userId, goalId, action, input));
+  }
+
+  private async actLocked(userId: string, goalId: string, action: GoalAction, input: Record<string, unknown>) {
     const goal = await this.authorizedGoal(userId, goalId);
+    if (action === "adjust" && input.type !== undefined) {
+      const relationship = await this.relationship(userId, goal.relationshipId!);
+      const type = String(input.type);
+      if ((type.startsWith("focus_") && relationship.kind !== "focus_relationship") ||
+        (type === "sleep_schedule_days" && relationship.kind !== "sleep_relationship")) {
+        badRequest("REQ_INVALID_BODY", "Goal type must match the relationship domain.");
+      }
+    }
     const expectedVersion = positiveInteger(input.expected_version);
     const idempotencyKey = requiredString(input.idempotency_key);
     const actionKeys = objectValue(goal.payload.action_keys);
     if (actionKeys[idempotencyKey]) return await this.toGoal(userId, goal);
     if (Number(goal.payload.version) !== expectedVersion) conflict("REQ_INVALID_BODY", "Joint goal version conflict.");
+    if (action === "complete" && goal.status === "completed") return await this.toGoal(userId, goal);
+    if (action === "complete") {
+      if (goal.status !== "active" && goal.status !== "completed") conflict("REQ_INVALID_BODY", "Only active goals can complete.");
+      const progress = await this.toGoal(userId, goal);
+      if (!Object.values(progress.participant_progress).every(value => value >= Number(goal.payload.target))) {
+        conflict("REQ_INVALID_BODY", "Both participants must reach the goal target.");
+      }
+    }
     const updated = applyAction(goal, userId, action, input, idempotencyKey);
-    const stored = await this.database.withExclusiveSession(async () => {
-      const value = await this.repository.updateGoal(goal.id, updated);
-      if (!value) conflict("REQ_INVALID_BODY", "Joint goal is unavailable.");
-      await enqueueBuddyGrowthEvent(this.database, { recipientUserId: this.otherUserId(goal, userId),
-        eventType: "goal_updated", targetType: "buddy_joint_goal", targetId: goal.id,
-        relationshipId: goal.relationshipId!, deduplicationKey: `goal:${goal.id}:${expectedVersion + 1}` });
-      return value;
-    });
-    return await this.toGoal(userId, stored);
+    const value = await this.repository.updateGoal(goal.id, updated);
+    if (!value) conflict("REQ_INVALID_BODY", "Joint goal is unavailable.");
+    await enqueueBuddyGrowthEvent(this.database, { recipientUserId: this.otherUserId(goal, userId),
+      eventType: "goal_updated", targetType: "buddy_joint_goal", targetId: goal.id,
+      relationshipId: goal.relationshipId!, deduplicationKey: `goal:${goal.id}:${expectedVersion + 1}` });
+    return await this.toGoal(userId, value);
   }
 
   async recordVerifiedContribution(input: { relationshipId: string; userId: string; sourceEventId: string;
@@ -86,15 +118,17 @@ export class BuddyJointGoalService {
     if (!goal || !goal.relationshipId || ![goal.ownerUserId, goal.partnerUserId].includes(userId)) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Joint goal is unavailable.");
     }
-    await this.relationship(userId, goal.relationshipId);
+    const relationship = await this.relationship(userId, goal.relationshipId);
+    const type = String(goal.payload.type);
+    if ((type.startsWith("focus_") && relationship.kind !== "focus_relationship") ||
+      (type === "sleep_schedule_days" && relationship.kind !== "sleep_relationship")) {
+      badRequest("REQ_INVALID_BODY", "Goal type must match the relationship domain.");
+    }
     return goal;
   }
 
   private async relationship(userId: string, relationshipId: string) {
-    const kinds: FrogSleepEntityKind[] = ["sleep_relationship", "focus_relationship"];
-    const values = await Promise.all(kinds.map((kind) =>
-      this.database.findFrogSleepEntity(kind, FROGSLEEP_APP_ID, relationshipId)));
-    const relationship = values.find((item) => item && [item.ownerUserId, item.partnerUserId].includes(userId) &&
+    const relationship = (await buddyRelationships(this.database, userId)).find(item => item.id === relationshipId &&
       ["active", "accepted"].includes(item.status ?? ""));
     if (!relationship) forbidden("AUTH_APP_SCOPE_MISMATCH", "Buddy relationship is unavailable.");
     await assertBuddyDataAuthorized(this.database, userId, relationshipId, "shared_activity");
@@ -102,15 +136,44 @@ export class BuddyJointGoalService {
   }
 
   private async toGoal(userId: string, record: FrogSleepEntityRecord) {
-    const contributions = await this.repository.listContributions(record.relationshipId!,
-      String(record.payload.window_start), String(record.payload.window_end));
-    const participantProgress = Object.fromEntries([record.ownerUserId, record.partnerUserId].filter(Boolean).map((id) =>
-      [id!, contributions.filter((item) => item.ownerUserId === id).reduce((sum, item) => sum + Number(item.payload.amount ?? 0), 0)]));
+    const relationship = await this.relationship(userId, record.relationshipId!);
+    const participantProgress = await this.progress(record, relationship);
+    record = await this.finishIfReached(record, participantProgress);
     return { id: record.id, relationship_id: record.relationshipId, type: record.payload.type,
       target: record.payload.target, timezone: record.payload.timezone, window_start: record.payload.window_start,
       window_end: record.payload.window_end, status: record.status, version: record.payload.version,
       participant_consents: record.payload.participant_consents, participant_progress: participantProgress,
       viewer_user_id: userId, updated_at: record.updatedAt };
+  }
+
+  private async progress(record: FrogSleepEntityRecord, relationship: FrogSleepEntityRecord) {
+    const participantProgress: Record<string, number> = {};
+    const from = String(record.payload.accepted_at ?? record.payload.window_start);
+    const consents = objectValue(record.payload.participant_consents);
+    const consented = !!record.payload.accepted_at &&
+      [record.ownerUserId!, record.partnerUserId!].every(id => consents[id] === "accepted");
+    for (const id of [record.ownerUserId!, record.partnerUserId!]) {
+      participantProgress[id] = !consented || record.status === "proposed" ? 0 : goalProgress(
+        await completionFacts(this.database, relationship, id, from, String(record.payload.progress_until ?? record.payload.window_end)), String(record.payload.type),
+        String(record.payload.timezone), from, String(record.payload.progress_until ?? record.payload.window_end), !record.payload.progress_until);
+    }
+    return participantProgress;
+  }
+
+  private async finishIfReached(record: FrogSleepEntityRecord, participantProgress: Record<string, number>) {
+    if (record.status === "active" && Object.values(participantProgress).every(value => value >= Number(record.payload.target))) {
+      const updated = await this.repository.updateGoal(record.id, { status: "completed",
+        payload: { ...record.payload, version: Number(record.payload.version) + 1 }, updatedAt: new Date().toISOString() });
+      if (updated) {
+        record = updated;
+        for (const recipientUserId of [record.ownerUserId!, record.partnerUserId!]) {
+          await enqueueBuddyGrowthEvent(this.database, { recipientUserId, eventType: "goal_updated",
+            targetType: "buddy_joint_goal", targetId: record.id, relationshipId: record.relationshipId!,
+            deduplicationKey: `goal-completed:${record.id}:${recipientUserId}` });
+        }
+      }
+    }
+    return record;
   }
 
   private otherUserId(record: FrogSleepEntityRecord, userId: string) {
@@ -137,6 +200,8 @@ function applyAction(goal: FrogSleepEntityRecord, userId: string, action: GoalAc
   if (action === "accept") {
     if (goal.status !== "proposed" || consents[userId] !== "pending") conflict("REQ_INVALID_BODY", "Joint goal cannot be accepted.");
     consents[userId] = "accepted";
+    goal.payload.accepted_at = new Date().toISOString();
+    delete goal.payload.progress_until;
   } else if (action === "adjust") {
     const type = goalType(input.type ?? goal.payload.type);
     goal.payload.type = type; goal.payload.target = goalTarget(type, input.target);
@@ -146,6 +211,7 @@ function applyAction(goal: FrogSleepEntityRecord, userId: string, action: GoalAc
   } else if (action === "complete" && !["active", "paused"].includes(goal.status ?? "")) {
     conflict("REQ_INVALID_BODY", "Joint goal cannot be completed.");
   }
+  if (action === "pause") goal.payload.progress_until = new Date().toISOString();
   const status = action === "accept" ? "active" : action === "adjust" ? "proposed" : action === "pause" ? "paused" : "completed";
   const actionKeys = objectValue(goal.payload.action_keys); actionKeys[idempotencyKey] = action;
   return { status, payload: { ...goal.payload, participant_consents: consents, action_keys: actionKeys, version },

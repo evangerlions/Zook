@@ -1,3 +1,5 @@
+import { sleepJointActivity, linkSleepActivitySession } from "./sleep-joint-activity.ts";
+import { sleepDateAnchor } from "./sleep-date-anchor.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
 import { conflict, forbidden } from "../../../shared/errors.ts";
@@ -103,17 +105,20 @@ export class FrogSleepSleepBuddyService {
     };
   }
 
-  async beginSession(userId: string, relationshipId: string, dateAnchor?: string) {
+  async beginSession(userId: string, relationshipId: string, dateAnchor?: string, jointActivityId?: string) {
     return await new SleepRelationshipService(this.database).withSession(userId, relationshipId, async () => {
       const relationship = await this.requireRelationship(userId, relationshipId);
       if (relationship.status !== "active") conflict("REQ_INVALID_BODY", "Shared sleep session requires an active relationship.");
       await assertBuddyDataAuthorized(this.database, userId, relationshipId, "shared_activity");
-      const normalizedDateAnchor = dateAnchor || nowIso().slice(0, 10);
-      const existing = await this.findOpenSessionForDate(relationshipId, normalizedDateAnchor);
+      const normalizedDateAnchor = sleepDateAnchor(dateAnchor);
+      const link = jointActivityId ? await sleepJointActivity(this.database, userId, relationshipId, jointActivityId) : undefined;
+      const existing = link ? link.existing : await this.findOpenSessionForDate(relationshipId, normalizedDateAnchor);
       if (existing) return toSleepSessionResponse(existing, userId);
       const partnerUserId = this.otherUserId(relationship, userId);
       const session = newSleepSession(userId, partnerUserId, relationshipId, normalizedDateAnchor);
+      if (link) session.payload.joint_activity_id = link.activity.id;
       await this.database.insertFrogSleepEntity(session);
+      if (link) await linkSleepActivitySession(this.database, link.activity, session.id);
       await this.queuePush(partnerUserId, buildFrogSleepNotificationPayload({
         type: "shared_session_invite", entityId: session.id, relationshipId, sessionId: session.id }));
       return toSleepSessionResponse(session, userId);
@@ -155,6 +160,10 @@ export class FrogSleepSleepBuddyService {
     return await new SleepRelationshipService(this.database).withSession(userId, session.relationshipId, async () => {
       const current = await this.requireSession(userId, sessionId);
       await assertBuddyDataAuthorized(this.database, userId, session.relationshipId!, "shared_activity");
+      const ownState = (current.payload.participantStates as Record<string, string> | undefined)?.[userId];
+      if (current.status === "completed" || ["morning_completed", "accepted"].includes(ownState ?? "")) {
+        return toSleepSessionResponse(current, userId);
+      }
       const participantStates = { ...((current.payload.participantStates as Record<string, string> | undefined) ?? {}), [userId]: "accepted" };
       const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
         status: "active", payload: { ...current.payload, participantStates } });
@@ -224,7 +233,7 @@ export class FrogSleepSleepBuddyService {
         limit: 100,
       }));
     }
-    return sessions.find((session) => this.sessionDateAnchor(session) === dateAnchor);
+    return sessions.find((session) => sleepDateAnchor(this.sessionDateAnchor(session)) === dateAnchor);
   }
 
   private sessionDateAnchor(session: FrogSleepEntityRecord): string {

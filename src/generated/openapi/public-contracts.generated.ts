@@ -19618,13 +19618,37 @@ export const FrogSleepSharedSleepSessionRequestSchema = {
     "relationshipId": {
       "type": "string"
     },
-    "date_anchor": {
+    "joint_activity_id": {
       "type": "string",
-      "format": "date"
+      "description": "Accepted and started tonight_together activity; fixes the session across date changes and retries"
+    },
+    "jointActivityId": {
+      "type": "string"
+    },
+    "date_anchor": {
+      "description": "Native calendar day YYYY-MM-DD; legacy ISO timestamps normalize to their date part",
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
     },
     "dateAnchor": {
-      "type": "string",
-      "format": "date"
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ]
     }
   },
   "anyOf": [
@@ -19645,16 +19669,20 @@ export type FrogSleepSharedSleepSessionRequest = (
 {
   "relationship_id": string;
   "relationshipId"?: string;
-  "date_anchor"?: string;
-  "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
+  "date_anchor"?: string | string;
+  "dateAnchor"?: string | string;
   [key: string]: unknown;
 }
 ) | (
 {
   "relationship_id"?: string;
   "relationshipId": string;
-  "date_anchor"?: string;
-  "dateAnchor"?: string;
+  "joint_activity_id"?: string;
+  "jointActivityId"?: string;
+  "date_anchor"?: string | string;
+  "dateAnchor"?: string | string;
   [key: string]: unknown;
 }
 );

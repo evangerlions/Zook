@@ -76,7 +76,7 @@ function resultState(state: unknown, input: {
   if (normalized === "morning_completed") return "completed";
   if (normalized === "returned" || (input.interruptedCount > 0 && input.returnedCount > 0)) return "recovered";
   if (normalized === "interrupted" || input.interruptedCount > 0) return "interrupted";
-  return input.completed ? "completed" : "incomplete";
+  return "incomplete";
 }
 
 function combinedResultTypeFor(myResultState: string, partnerResultState: string | null, input: {

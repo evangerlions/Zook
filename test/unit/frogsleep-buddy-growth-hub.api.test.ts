@@ -67,7 +67,7 @@ test("structured shares, bounded reactions, joint activities, pagination, and re
   assert.equal(reaction.body.data.payload.type, "encouragement");
   assert.equal("custom_text" in reaction.body.data.payload, false);
   const joint = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/buddy/joint-activities",
-    headers: auth(alice), body: { relationship_id: relationshipId, type: "joint_focus",
+    headers: auth(alice), body: { relationship_id: relationshipId, type: "tonight_together",
       idempotency_key: "joint_once", planned_minutes: 25 },
     requestId: "hub_joint" } as never);
   const accepted = await app.app.handle({ method: "POST",

@@ -170,7 +170,7 @@ test("FrogSleep sleep buddy invite through morning recap flow", async () => {
     requestId: "req_sleep_session_event",
   } as never);
   assert.equal(eventResponse.statusCode, 200);
-  assert.equal(eventResponse.body.data.status, "completed");
+  assert.equal(eventResponse.body.data.status, "active");
 
   const summaryResponse = await runtime.app.handle({
     method: "GET",

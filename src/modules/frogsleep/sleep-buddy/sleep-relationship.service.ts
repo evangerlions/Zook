@@ -1,3 +1,4 @@
+import { buddyRelationships, projectBuddyRelationship } from "../buddy-growth/buddy-relationships.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepBuddyDomainRelationshipRecord, FrogSleepEntityRecord } from "../../../shared/types.ts";
 import { conflict, forbidden } from "../../../shared/errors.ts";
@@ -8,12 +9,7 @@ export class SleepRelationshipService {
   constructor(private readonly database: ApplicationDatabase) {}
 
   async list(userId: string, statuses: string[]) {
-    const current = await this.database.listCurrentFrogSleepBuddyDomainRelationships(FROGSLEEP_APP_ID, userId, "sleep");
-    const legacy = await Promise.all([
-      this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "sleep_relationship", ownerUserId: userId, limit: 100 }),
-      this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind: "sleep_relationship", partnerUserId: userId, limit: 100 }),
-    ]);
-    return [...current.map(projectSleepRelationship), ...legacy.flat()]
+    return (await buddyRelationships(this.database, userId, "sleep"))
       .filter(record => statuses.includes(record.status ?? ""));
   }
 
@@ -24,6 +20,10 @@ export class SleepRelationshipService {
       : await this.database.findFrogSleepEntity("sleep_relationship", FROGSLEEP_APP_ID, relationshipId);
     if (!relationship || relationship.deletedAt || ![relationship.ownerUserId, relationship.partnerUserId].includes(userId)) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Relationship is not visible to the current user.");
+    }
+    if (!relationship.payload.domain_relationship &&
+      !(await buddyRelationships(this.database, userId, "sleep")).some(item => item.id === relationship.id)) {
+      forbidden("AUTH_APP_SCOPE_MISMATCH", "Relationship has been superseded by its domain record.");
     }
     return relationship;
   }
@@ -80,10 +80,7 @@ export class SleepRelationshipService {
 }
 
 export function projectSleepRelationship(relationship: FrogSleepBuddyDomainRelationshipRecord): FrogSleepEntityRecord {
-  return { id: relationship.id, appId: relationship.appId, kind: "sleep_relationship",
-    ownerUserId: relationship.userIdLow, partnerUserId: relationship.userIdHigh, status: relationship.status,
-    payload: { domain_relationship: true, version: relationship.version, paused_by_user_ids: relationship.pausedByUserIds },
-    createdAt: relationship.createdAt, updatedAt: relationship.updatedAt };
+  return projectBuddyRelationship(relationship);
 }
 
 function legacyStatus(status: string | undefined, action: "pause" | "resume" | "revoke") {

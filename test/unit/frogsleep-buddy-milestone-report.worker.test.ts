@@ -44,7 +44,7 @@ test("worker deduplicates milestones and weekly reports while measuring meaningf
   await insertAction(app, { id: "interaction_1", kind: "buddy_interaction", relationshipId,
     owner: "user_alice", status: "sent", at: "2026-07-15T10:00:00.000Z" });
   await insertAction(app, { id: "joint_1", kind: "buddy_joint_activity", relationshipId,
-    owner: "user_bob", status: "accepted", at: "2026-07-16T10:00:00.000Z" });
+    owner: "user_bob", status: "completed", at: "2026-07-16T10:00:00.000Z" });
   const service = new BuddyMilestoneReportService(app.database);
   const first = await service.processBatch(new Date("2026-07-20T12:00:00.000Z"));
   assert.deepEqual(first, { relationships: 1, milestones: 3, reports: 2 });

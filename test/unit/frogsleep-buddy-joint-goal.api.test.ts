@@ -21,11 +21,11 @@ async function login(app: Awaited<ReturnType<typeof runtime>>, account: string) 
 const auth = (token: string) => ({ authorization: `Bearer ${token}` });
 
 async function relationship(app: Awaited<ReturnType<typeof runtime>>, alice: string, bob: string) {
-  const invite = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/sleep-buddy/invites",
-    headers: auth(alice), body: { invitee: "user_bob" }, requestId: "goal_invite" } as never);
-  const accepted = await app.app.handle({ method: "POST", path: "/api/v1/frogsleep/sleep-buddy/invites/accept-code",
-    headers: auth(bob), body: { code: invite.body.data.code }, requestId: "goal_accept_invite" } as never);
-  return String(accepted.body.data.relationship_id);
+  const now = new Date().toISOString();
+  await app.database.insertFrogSleepEntity({ id: "goal_focus_relationship", appId: "frogsleep",
+    kind: "focus_relationship", ownerUserId: "user_alice", partnerUserId: "user_bob", status: "accepted",
+    payload: {}, createdAt: now, updatedAt: now });
+  return "goal_focus_relationship";
 }
 
 test("joint goal proposal requires bilateral acceptance and versioned idempotent actions", async () => {
@@ -78,7 +78,7 @@ test("goal adjustment returns to bilateral consent and verified source events de
   const completed = await app.app.handle({ method: "POST",
     path: `/api/v1/frogsleep/buddy/goals/${created.body.data.id}/complete`, headers: auth(bob),
     body: { expected_version: 5, idempotency_key: "goal-complete" }, requestId: "goal_complete" } as never);
-  assert.equal(completed.body.data.status, "completed");
+  assert.equal(completed.statusCode, 409);
 
   const now = new Date().toISOString();
   await app.database.insertFrogSleepEntity({ id: "focus_verified", appId: "frogsleep", kind: "focus_session",
