@@ -1,3 +1,5 @@
+import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.service.ts";
+import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { NotificationService } from "../../../services/notification.service.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -26,8 +28,11 @@ export class SleepSessionEventService {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Session is not visible to the current user.");
     }
     if (!session.relationshipId) forbidden("AUTH_APP_SCOPE_MISMATCH", "Session relationship is unavailable.");
-    return await new SleepRelationshipService(this.database).withSession(userId, session.relationshipId,
+    const result = await new SleepRelationshipService(this.database).withSession(userId, session.relationshipId,
       async () => await this.recordSession(userId, sessionId, eventType, metadata, timestamp));
+    await new BuddyJointActivityService(this.database).refresh(userId);
+    await new BuddyJointGoalService(this.database).list(userId);
+    return result;
   }
 
   private async recordSession(userId: string, sessionId: string, eventType: string, metadata: Record<string, unknown>, timestamp: string) {

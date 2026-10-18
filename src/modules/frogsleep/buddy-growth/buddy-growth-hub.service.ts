@@ -1,4 +1,6 @@
 import { buddyRelationshipSlotKeys, currentBuddyRelationships } from "./buddy-relationship-facts.ts";
+import { BuddyJointActivityService } from "./buddy-joint-activity.service.ts";
+import { buddyRelationships } from "./buddy-relationships.ts";
 import type { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { KVManager } from "../../../infrastructure/kv/kv-manager.ts";
 import { badRequest, conflict, forbidden } from "../../../shared/errors.ts";
@@ -46,6 +48,7 @@ export class BuddyGrowthHubService {
   }
 
   async activity(userId: string, limit = 30, cursor?: string) {
+    await new BuddyJointActivityService(this.database).refresh(userId);
     const relationships = await this.relationships(userId);
     const ids = new Set(relationships.map((item) => item.id));
     const records = (await Promise.all(activityKinds.map((kind) => this.database.listFrogSleepEntities({
@@ -116,6 +119,9 @@ export class BuddyGrowthHubService {
     const type = String(input.type ?? "");
     if (!["joint_focus", "tonight_together"].includes(type)) badRequest("REQ_INVALID_BODY", "Unsupported joint activity type.");
     const relationship = await this.authorizedRelationship(userId, String(input.relationship_id ?? ""), "shared_activity");
+    if ((type === "joint_focus") !== (relationship.kind === "focus_relationship")) {
+      badRequest("REQ_INVALID_BODY", "Activity type must match the relationship domain.");
+    }
     const idempotencyKey = requiredIdempotencyKey(input.idempotency_key);
     return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
       await this.authorizedRelationship(userId, relationship.id, "shared_activity", false);
@@ -136,34 +142,12 @@ export class BuddyGrowthHubService {
   }
 
   async jointActivityAction(userId: string, activityId: string, action: string) {
-    const record = await this.database.findFrogSleepEntity("buddy_joint_activity", FROGSLEEP_APP_ID, activityId);
-    if (!record || !record.relationshipId || ![record.ownerUserId, record.partnerUserId].includes(userId)) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Joint activity is unavailable.");
-    }
-    const relationship = await this.authorizedRelationship(userId, record.relationshipId, "shared_activity");
-    const allowed = record.ownerUserId === userId ? ["cancel", "complete"] : ["accept", "decline", "complete"];
-    if (!allowed.includes(action)) forbidden("AUTH_APP_SCOPE_MISMATCH", "Joint activity action is unavailable.");
-    const status = { accept: "accepted", decline: "declined", cancel: "cancelled", complete: "completed" }[action];
-    return await this.database.withFrogSleepBuddyCommandTransaction(buddyRelationshipSlotKeys(relationship), async () => {
-      await this.authorizedRelationship(userId, relationship.id, "shared_activity");
-      const fresh = await this.database.findFrogSleepEntity("buddy_joint_activity", FROGSLEEP_APP_ID, activityId);
-      if (!fresh || ["cancelled", "declined", "completed"].includes(fresh.status ?? "") && fresh.status !== status) {
-        conflict("REQ_INVALID_BODY", "Joint activity is terminal.");
-      }
-      const updated = await this.database.updateFrogSleepEntity("buddy_joint_activity", FROGSLEEP_APP_ID,
-        record.id, { status, updatedAt: new Date().toISOString() });
-      await enqueueBuddyGrowthEvent(this.database, {
-        recipientUserId: record.ownerUserId === userId ? record.partnerUserId! : record.ownerUserId!,
-        eventType: "interaction_received", targetType: "buddy_joint_activity", targetId: record.id,
-        relationshipId: record.relationshipId!, deduplicationKey: `joint-activity:${record.id}:${action}`,
-      });
-      return toActivity(updated as FrogSleepEntityRecord);
-    });
+    return toActivity(await new BuddyJointActivityService(this.database).action(userId, activityId, action));
   }
 
   private async relationships(userId: string): Promise<FrogSleepEntityRecord[]> {
     return (await currentBuddyRelationships(this.database, userId))
-      .filter((item) => ["active", "accepted"].includes(item.status ?? ""));
+      .filter(item => ["active", "accepted"].includes(item.status ?? ""));
   }
 
   private async existingByKey(

@@ -4,6 +4,9 @@ import { BuddyRelationshipLifecycleService } from "../buddy-growth/buddy-relatio
 import { buildFocusSessionReport } from "./focus-session-report.ts";
 import { buildFocusSessionUpload } from "./focus-session-upload.ts";
 import { insertPersonalRecord, personalRecordId } from "../product-data/personal-record-upload.ts";
+import { allBuddyRecords } from "../buddy-growth/buddy-completion-facts.ts";
+import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.service.ts";
+import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import { NotificationService } from "../../../services/notification.service.ts";
 import { ContentSafetyService } from "../../../services/content-safety.service.ts";
@@ -95,6 +98,8 @@ export class FrogSleepFocusBuddyService {
 
     }
     await recordFocusSharedMoment(this.database, result.record).catch(() => undefined);
+    await new BuddyJointActivityService(this.database).refresh(userId);
+    await new BuddyJointGoalService(this.database).list(userId);
     return toFocusSessionResponse(result.record);
   }
 

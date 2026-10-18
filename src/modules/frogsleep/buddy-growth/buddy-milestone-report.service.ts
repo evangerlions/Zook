@@ -158,9 +158,10 @@ export class BuddyMilestoneReportService {
   }
 
   private async activeRelationships() {
-    const records = (await Promise.all((["sleep_relationship", "focus_relationship"] as FrogSleepEntityKind[])
-      .map((kind) => this.database.listFrogSleepEntities({ appId: FROGSLEEP_APP_ID, kind, limit: 500 })))).flat();
-    return records.filter((item) => ["active", "accepted"].includes(item.status ?? ""));
+    const users = await this.database.listAppUsers(FROGSLEEP_APP_ID);
+    const records = (await Promise.all(users.map(user => buddyRelationships(this.database, user.userId)))).flat();
+    return [...new Map(records.map(record => [record.id, record])).values()]
+      .filter(item => ["active", "accepted"].includes(item.status ?? ""));
   }
 
   private async viewerRelationships(userId: string, relationshipId?: string) {

@@ -1,3 +1,5 @@
+import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.service.ts";
+import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
 import { createHash } from "node:crypto";
 import { generateSharedMorningArtifacts } from "./sleep-shared-morning.ts";
 import { isBuddyAuthorizationDenied } from "../buddy-growth/buddy-artifact-redaction.ts";
@@ -324,6 +326,8 @@ export class FrogSleepSleepBuddyService {
       }));
     }
 
+    await new BuddyJointActivityService(this.database).refresh(userId);
+    await new BuddyJointGoalService(this.database).list(userId);
     return toSleepSessionResponse(updated as FrogSleepEntityRecord, userId);
   }
 
