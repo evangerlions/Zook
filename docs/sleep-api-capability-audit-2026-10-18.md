@@ -66,12 +66,12 @@ canonical OpenAPI为 `api-contracts/openapi/frogsleep/api.yaml`；统计121条�
 
 ## 验证记录
 
-首批代码整合提交 `8fad464` 与文档收尾 `b8a01f0` 已进入origin/main并完成下列复验。追加冻结的并行改动将单独复验，结果在本节补记。
+首批整合 `8fad464` / `b8a01f0` 之后，追加整合 `091bee6`、测试夹具 `31d12df` 与最终兼容helper防护 `bb69108` 均已合并main。验证结果如下；所有上线/provider/真机未完成项仍保留。
 
 | 检查 | 合并后main结果 |
 | --- | --- |
-| `npm test` | 1434项通过，0失败/取消/跳过 |
-| FrogSleep真实PostgreSQL | 11套文件、69项（含父测试）通过 |
+| `npm test` | 1457项通过，0失败/取消/跳过 |
+| FrogSleep真实PostgreSQL | 11套文件、70项（含父测试）通过 |
 | LightTick真实PostgreSQL | 6套文件、25项（含父测试）通过 |
 | BodyLog真实PostgreSQL | 2套文件、2项父测试通过；覆盖事务、并发、迁移重放 |
 | `npm run admin:typecheck` | 通过 |
@@ -81,8 +81,11 @@ canonical OpenAPI为 `api-contracts/openapi/frogsleep/api.yaml`；统计121条�
 | `git diff --check` | 通过 |
 | `npm run check:line-count` | 未通过，见下方既有9项维护问题 |
 
-PG共19套文件，最终TAP统计96项（含父测试），无失败/跳过。分别给每套测试新建一次性数据库，避免跨套污染；报告完整恢复、301条微秒边界、独立连接并发/删除/授权/通知专项未连接线上数据。FrogSleep与LightTick分项数量以TAP清单为准。
+PG共19套文件，累计TAP统计97项（含父测试），无失败/跳过。追加整合后FrogSleep的11套70项全部重新通过；LightTick/BodyLog代码与首批main相同，沿用已通过的25+2项数据库验证。最终兼容helper防护又在合并后main完成15项授权/旧ID/会话回归；全量1457项零失败。分别给每套测试新建一次性数据库，避免跨套污染；报告完整恢复、301条微秒边界、独立连接并发/删除/授权/通知专项未连接线上数据。
 
 可复验入口：`test/integration/frogsleep-*.test.ts`、`test/integration/lighttick-*.test.ts`、`bodylog-growth.postgres.test.ts`和`bodylog-postgres.test.ts`。按产品设置各自 `FROGSLEEP_TEST_DATABASE_URL` / `LIGHTTICK_TEST_DATABASE_URL` / `BODYLOG_TEST_DATABASE_URL` 到独立一次性库，运行 `node --experimental-transform-types --test <file>`。不要把测试URL指向已有业务数据库。
 
 源码行数门禁未通过：原main基线已有9个超限文件，整合后仍为同9个，两个旧数据库汇总文件因新增委托继续增长；没有放宽门禁或新增allowlist。该维护项与功能测试结果分别记录，不把“功能已验证”写成“所有仓库门禁全绿”。
+
+
+最终整合边界：末次原工作树快照 `598230d` 的旧ID授权补丁在main通过统一关系解析器实现，兼容SleepRelationshipService也补齐同一拒绝规则；避免重复维护两套授权真值。原工作树文件与index保持原样，快照及合并记录可追溯，不代表原工作树变成干净状态。主工作区已切到main；发布分支未修改。本次生成的一次性数据库已清理。

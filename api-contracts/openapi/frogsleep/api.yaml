@@ -484,7 +484,6 @@ paths:
         completion fact. Accept replay never reopens an ended session.
       operationId: frogSleepRecordSharedSleepSessionEvent
       tags: [frogsleep, frogsleep-sleep-buddy]
-      description: Both participants acknowledge mornings independently; the session completes only after both morning acknowledgements or an explicit pause. Exact event retries and terminal morning replays are idempotent. Terminal participants cannot reopen a completed session.
       summary: Record an event on a shared sleep session
       security:
         - bearerAuth: []
