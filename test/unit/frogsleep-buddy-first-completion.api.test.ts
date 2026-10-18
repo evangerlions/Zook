@@ -299,6 +299,123 @@ test("revoking shared activity consent denies goal and activity access immediate
   const revoked = await request(f.app, f.alice, "PATCH", `/buddy/relationships/${f.relationshipId}/grants/${grant.id}`,
     { expected_version: grant.version, state: "revoked" });
   assert.equal(revoked.statusCode, 200, JSON.stringify(revoked.body));
-  assert.equal((await request(f.app, f.bob, "GET", "/buddy/goals")).statusCode, 403);
+  const hidden = await request(f.app, f.bob, "GET", "/buddy/goals");
+  assert.equal(hidden.statusCode, 200);
+  assert.deepEqual(hidden.body.data.goals, []);
   assert.equal((await request(f.app, f.bob, "POST", `/buddy/joint-activities/${activityId}/start`)).statusCode, 403);
+});
+
+test("expired accepted activities reject a fresh start", async context => {
+  context.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-12T12:00:00.000Z") });
+  const f = await fixture("focus");
+  const created = await request(f.app, f.alice, "POST", "/buddy/joint-activities", {
+    relationship_id: f.relationshipId, type: "joint_focus", planned_minutes: 25, idempotency_key: "expired_activity" });
+  assert.equal(created.statusCode, 200);
+  const path = `/buddy/joint-activities/${created.body.data.id}`;
+  assert.equal((await request(f.app, f.bob, "POST", `${path}/accept`)).statusCode, 200);
+  context.mock.timers.tick(37 * 3600_000);
+  await renewTokens(f);
+  assert.equal((await request(f.app, f.alice, "POST", `${path}/start`)).statusCode, 409);
+  assert.equal((await activityFromFeed(f.app, f.bob, created.body.data.id)).status, "expired");
+});
+
+test("sleep partner can start the activity after the creator opened their shared session", async context => {
+  context.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-12T22:00:00.000Z") });
+  const f = await fixture("sleep");
+  const created = await request(f.app, f.alice, "POST", "/buddy/joint-activities", {
+    relationship_id: f.relationshipId, type: "tonight_together", idempotency_key: "asymmetric_sleep_start" });
+  assert.equal(created.statusCode, 200);
+  const activityId = String(created.body.data.id), path = `/buddy/joint-activities/${activityId}`;
+  assert.equal((await request(f.app, f.bob, "POST", `${path}/accept`)).statusCode, 200);
+  assert.equal((await request(f.app, f.alice, "POST", `${path}/start`)).statusCode, 200);
+  const shared = await request(f.app, f.alice, "POST", "/sleep-buddy/shared-sessions", { relationship_id: f.relationshipId });
+  assert.equal(shared.statusCode, 200);
+  context.mock.timers.tick(60_000);
+  assert.equal((await request(f.app, f.bob, "POST", `${path}/start`)).statusCode, 200);
+  const sessionPath = `/sleep-buddy/shared-sessions/${shared.body.data.session_id}`;
+  assert.equal((await request(f.app, f.bob, "POST", `${sessionPath}/accept`)).statusCode, 200);
+  for (const token of [f.alice, f.bob]) {
+    assert.equal((await request(f.app, token, "POST", `${sessionPath}/events`, { event_type: "morning_completed" })).statusCode, 200);
+  }
+  assert.equal((await activityFromFeed(f.app, f.bob, activityId)).status, "completed");
+});
+
+test("a stale goal version cannot overwrite a partner adjustment", async () => {
+  const f = await fixture("focus");
+  const goal = await activeGoal(f, "focus_days", 2);
+  const adjusted = await request(f.app, f.alice, "POST", `/buddy/goals/${goal.id}/adjust`, {
+    target: 3, expected_version: goal.version, idempotency_key: "first_adjustment" });
+  assert.equal(adjusted.statusCode, 200);
+  const stale = await request(f.app, f.bob, "POST", `/buddy/goals/${goal.id}/adjust`, {
+    target: 4, expected_version: goal.version, idempotency_key: "stale_adjustment" });
+  assert.equal(stale.statusCode, 409);
+  const listed = await request(f.app, f.bob, "GET", "/buddy/goals");
+  assert.equal(listed.body.data.goals.find((item: any) => item.id === goal.id).target, 3);
+});
+
+test("concurrent goal adjustments using the same version permit only one mutation", async () => {
+  const f = await fixture("focus");
+  const goal = await activeGoal(f, "focus_days", 2);
+  const responses = await Promise.all([
+    request(f.app, f.alice, "POST", `/buddy/goals/${goal.id}/adjust`, {
+      target: 3, expected_version: goal.version, idempotency_key: "concurrent_alice" }),
+    request(f.app, f.bob, "POST", `/buddy/goals/${goal.id}/adjust`, {
+      target: 4, expected_version: goal.version, idempotency_key: "concurrent_bob" }),
+  ]);
+  assert.deepEqual(responses.map(result => result.statusCode).sort(), [200, 409]);
+});
+
+test("pausing a relationship preserves personal upload while withholding shared goals", async context => {
+  context.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-12T12:00:00.000Z") });
+  const f = await fixture("focus");
+  await activeGoal(f, "focus_minutes", 25);
+  await startedActivity(f, "joint_focus");
+  const current = await f.app.database.findFrogSleepBuddyDomainRelationship("frogsleep", f.relationshipId);
+  assert.ok(current);
+  const paused = await f.app.database.compareAndUpdateFrogSleepBuddyDomainRelationship({
+    appId: "frogsleep", id: current.id, expectedVersion: current.version, status: "paused",
+    pausedByUserIds: ["user_alice"], updatedAt: new Date().toISOString() });
+  assert.equal(paused?.status, "paused");
+  const startedAt = new Date().toISOString();
+  context.mock.timers.tick(25 * 60_000);
+  await renewTokens(f);
+  await uploadTwice(f.app, f.alice, "personal_after_pause", startedAt, new Date().toISOString());
+  const hidden = await request(f.app, f.bob, "GET", "/buddy/goals");
+  assert.equal(hidden.statusCode, 200);
+  assert.deepEqual(hidden.body.data.goals, []);
+});
+
+test("the existing focus revoke command operates the canonical relationship", async () => {
+  const f = await fixture("focus");
+  await activeGoal(f);
+  const revoked = await request(f.app, f.alice, "POST", `/focus-buddy/relationships/${f.relationshipId}/revoke`);
+  assert.equal(revoked.statusCode, 200, JSON.stringify(revoked.body));
+  const stored = await f.app.database.findFrogSleepBuddyDomainRelationship("frogsleep", f.relationshipId);
+  assert.equal(stored?.status, "revoked");
+  const hidden = await request(f.app, f.bob, "GET", "/buddy/goals");
+  assert.equal(hidden.statusCode, 200);
+  assert.deepEqual(hidden.body.data.goals, []);
+});
+
+test("verified focus minutes are bounded by elapsed time and exclude future or interrupted sessions", async context => {
+  context.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-12T12:00:00.000Z") });
+  const f = await fixture("focus");
+  const goal = await activeGoal(f, "focus_minutes", 100);
+  const startedAt = new Date().toISOString();
+  context.mock.timers.tick(5 * 60_000);
+  const cases = [
+    { session_id: "overstated_minutes", status: "completed", ended_at: new Date().toISOString(), actual_minutes: 999 },
+    { session_id: "future_finish", status: "completed", ended_at: new Date(Date.now() + 60 * 60_000).toISOString(), actual_minutes: 60 },
+    { session_id: "interrupted_session", status: "interrupted", ended_at: new Date().toISOString(), actual_minutes: 5 },
+  ];
+  for (const input of cases) {
+    const uploaded = await request(f.app, f.alice, "POST", "/focus-buddy/sessions", {
+      ...input, started_at: startedAt, planned_minutes: 25, room: "reading", goal: "25m" });
+    assert.equal(uploaded.statusCode, 200, JSON.stringify(uploaded.body));
+  }
+  const listed = await request(f.app, f.alice, "GET", "/buddy/goals");
+  const actual = listed.body.data.goals.find((item: any) => item.id === goal.id);
+  assert.equal(actual.participant_progress.user_alice, 5);
+  assert.equal(actual.participant_progress.user_bob, 0);
+  assert.equal(actual.status, "active");
 });

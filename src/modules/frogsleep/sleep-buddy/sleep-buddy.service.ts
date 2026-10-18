@@ -155,6 +155,10 @@ export class FrogSleepSleepBuddyService {
     return await new SleepRelationshipService(this.database).withSession(userId, session.relationshipId, async () => {
       const current = await this.requireSession(userId, sessionId);
       await assertBuddyDataAuthorized(this.database, userId, session.relationshipId!, "shared_activity");
+      const ownState = (current.payload.participantStates as Record<string, string> | undefined)?.[userId];
+      if (current.status === "completed" || ["morning_completed", "accepted"].includes(ownState ?? "")) {
+        return toSleepSessionResponse(current, userId);
+      }
       const participantStates = { ...((current.payload.participantStates as Record<string, string> | undefined) ?? {}), [userId]: "accepted" };
       const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
         status: "active", payload: { ...current.payload, participantStates } });

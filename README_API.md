@@ -1140,3 +1140,13 @@ Android HttpURLConnection 可对会话 context 使用 POST + X-HTTP-Method-Overr
 - review facts新增`scope`、可选`plan_id/plan_version`、`planned_tasks`与`snapshot_at`。`current_status`是生成时状态，不是历史窗口内完成数；窗口事件仍为`source_event_ids/event_counts`。AI输出与个人原文分开保存，所有调整仍须显式确认。
 - 计划确认事务检查同目标、同本地日期的规范化重复任务标题，含草案内部重复；409 `LIGHTTICK_PLAN_CONSTRAINT_FAILED` 时修改草案或使用已有任务的调整提案。不同日期的重复练习仍允许；不是语义查重或跨目标预算承诺。
 - 历史分析按生成时间倒序展示。服务端笔记保存与原生本地草稿是两种状态，离线不能显示已云端保存。
+
+
+### FrogSleep 首次共同完成（P0，本地未发布）
+
+- 搭子中心、目标、专注与睡眠读取同一逐域关系事实；新关系默认关闭各类分享，显式授权后才可操作。活动/目标必须匹配关系域，`adjust` 也校验。
+- `POST /api/v1/frogsleep/buddy/joint-activities/{activityId}/start`：接受后参与者各自开始，开始时间持久化、重试不重置。接受后有效期36小时；先完成或由发起人取消当前活动，再开始新的同域活动。
+- `payload.participant_progress` 按用户 ID 返回 `status: pending|started|completed`、`completed_at`、`minutes`。只有双方实际完成才更新活动 `completed` 并产生去重通知。接受、点击完成或暂停今晚均不等于共同完成。
+- 专注按开始后真实 `completed` 会话且分钟达到 `planned_minutes`；`session_id` 是当前账号内稳定身份，重传返回已有记录，不重复计数。分钟上限取上报分钟与实际起止时长较小值，未来/未完成源不计。睡眠按本人 `morning_completed` 原始事件，不用对方摘要推定。
+- 目标只累计双方接受之后、目标时间窗内的对应域真实记录。分钟求和；天数以目标时区自然日去重；鼓励按发送自然日去重。`sleep_schedule_days` 当前表示完成共同睡眠的天数，不代表按时入睡，三端显示为共同睡眠天数。暂停后冻结截止时间，双方达标自动完成。
+- 共同活动读取与目标读取可修复离线重试后遗漏的衍生状态；真实会话写入同样触发刷新。撤权/解除后不返回受保护内容，个人专注保存不依赖共享权限。

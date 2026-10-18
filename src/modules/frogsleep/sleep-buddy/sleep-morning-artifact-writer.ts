@@ -14,9 +14,11 @@ export async function generateSleepMorningArtifacts(database: ApplicationDatabas
     completed: eventTypes.includes("morning_completed") || session.status === "completed" };
   for (const userId of [session.ownerUserId, session.partnerUserId].filter(Boolean) as string[]) {
     const partnerUserId = userId === session.ownerUserId ? session.partnerUserId : session.ownerUserId;
-    const summary = buildSleepSummaryArtifact({ session, userId, partnerUserId, ...facts });
+    const ownFacts = { ...facts, completed: facts.participantStates[userId] === "morning_completed",
+      pausedTonight: facts.participantStates[userId] === "paused_tonight" };
+    const summary = buildSleepSummaryArtifact({ session, userId, partnerUserId, ...ownFacts });
     await database.insertFrogSleepEntity(artifactRecord(session, "sleep_summary", userId, partnerUserId, {
-      ...commonPayload(session, facts), title: summary.headline,
+      ...commonPayload(session, ownFacts), title: summary.headline,
       participant_state: facts.participantStates[userId] ?? null,
       partner_state: partnerUserId ? facts.participantStates[partnerUserId] ?? null : null, ...summary }));
   }

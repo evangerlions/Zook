@@ -19,14 +19,17 @@ export async function completionFacts(database: ApplicationDatabase, relationshi
       const minutes = Math.min(elapsed, Number(record.payload.actual_minutes ?? record.payload.minutes ?? 0));
       if (record.status !== "completed" || !Number.isFinite(minutes) || minutes <= 0 ||
         Date.parse(record.endsAt!) > Date.now()) continue;
-      const id = String(record.payload.client_session_id ?? record.id);
+      const id = String(record.payload.client_session_id ?? `${record.startsAt}|${record.endsAt}`);
       if (!facts.some(fact => fact.id === id)) facts.push({ id, userId, kind: "focus", startsAt: start,
         occurredAt: record.endsAt!, minutes });
     } else {
       const states = record.payload.participantStates as Record<string, unknown> | undefined;
       if (states?.[userId] !== "morning_completed") continue;
-      facts.push({ id: record.id, userId, kind: "sleep", startsAt: start,
-        occurredAt: record.occurredAt ?? record.updatedAt, minutes: 0 });
+      const events = await allBuddyRecords(database, { kind: "sleep_event", sessionId: record.id,
+        ownerUserId: userId, status: "morning_completed" });
+      const occurredAt = events.map(event => event.occurredAt ?? event.createdAt).sort()[0];
+      if (!occurredAt || occurredAt < start || Date.parse(occurredAt) > Date.now()) continue;
+      facts.push({ id: record.id, userId, kind: "sleep", startsAt: start, occurredAt, minutes: 0 });
     }
   }
   const interactions = await allBuddyRecords(database, { kind: "buddy_interaction", ownerUserId: userId,

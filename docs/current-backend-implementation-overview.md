@@ -703,3 +703,8 @@ LightTick 通用规划增量：独立个人复盘（无需AI保存、版本冲�
 - 缺失 provider 或当前平台 dispatcher 明确 FAILED 并保留 failed-event 重投，日志不再伪装为 FrogSleep 成功发送；SENT 表示提供方接受，无设备为 SUPPRESSED。
 - 睡眠报告使用数据库游标分页，排序/边界与公开时间戳保持毫秒精度，稳定 ID 处理同时间戳；移除完整历史恢复的500条上限。
 - 专项验收入口：`test/unit/frogsleep-sleep-domain-loop.api.test.ts`、`frogsleep-sleep-notification-preferences.test.ts`、`frogsleep-push-provider-readiness.test.ts`、`frogsleep-sleep-history-pagination.test.ts`。真实 PostgreSQL 在一次性库运行 `FROGSLEEP_TEST_DATABASE_URL=postgresql://... node --experimental-transform-types --test test/integration/frogsleep-backend-loop-postgres.test.ts`；包含完整关系生命周期、1100条历史、微秒边界及投递补偿。本轮全量单元/API测试1331项通过；真实PostgreSQL七个子场景通过（TAP含父测试计8项），覆盖授权撤回后的通知抑制、错域/陌生人拒绝及会话与解除的真实锁竞争。OpenAPI生成一致性与lint通过。源码行数门禁仍有9个主线已存在的超限文件，本轮未修改这些文件。测试通过不代表真实邮件、设备推送或线上放行。
+
+
+### 2026-10-18 本地 P0 首次共同完成
+
+统一逐域关系投影已接入成长中心、目标、Focus runtime 与里程碑读取。共同活动新增持久化 start 与双方真实会话完成判定；目标自动按类型、接受时间窗及时区累计，双方达标后完成；专注稳定 session_id 重传去重。相关实现和合同仅本地验证，尚未推送或发布。

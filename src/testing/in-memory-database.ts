@@ -1467,10 +1467,10 @@ export class InMemoryDatabase extends ApplicationDatabase {
   }
 
   listCurrentFrogSleepBuddyDomainRelationships(
-    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"],
+    appId: string, userId: string, domain: FrogSleepBuddyDomainRelationshipRecord["domain"], includeRevoked = false,
   ): FrogSleepBuddyDomainRelationshipRecord[] {
     return structuredClone(this.frogSleepBuddyDomainRelationships.filter((item) =>
-      item.appId === appId && item.domain === domain && item.status !== "revoked" &&
+      item.appId === appId && item.domain === domain && (includeRevoked || item.status !== "revoked") &&
       (item.userIdLow === userId || item.userIdHigh === userId),
     ).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)));
   }

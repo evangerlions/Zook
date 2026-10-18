@@ -44,6 +44,8 @@ export class SleepSessionEventService {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Session relationship is not visible to the current user.");
     }
     await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
+    const prior = (session.payload.participantStates as Record<string, string> | undefined)?.[userId];
+    if (prior === "morning_completed") return toSleepSessionResponse(session, userId);
     await this.append(session, userId, eventType, metadata, timestamp);
     const updated = await this.update(session, userId, eventType, timestamp);
     if (["morning_completed", "paused_tonight"].includes(eventType)) await generateSleepMorningArtifacts(this.database, updated);
@@ -62,7 +64,8 @@ export class SleepSessionEventService {
   private async update(session: FrogSleepEntityRecord, userId: string, eventType: string, occurredAt: string) {
     const participantStates = { ...((session.payload.participantStates as Record<string, string> | undefined) ?? {}), [userId]: eventType };
     const updated = await this.database.updateFrogSleepEntity("sleep_session", FROGSLEEP_APP_ID, session.id, {
-      status: ["paused_tonight", "morning_completed"].includes(eventType) ? "completed" : "active", occurredAt,
+      status: [session.ownerUserId!, session.partnerUserId!].every(id =>
+        ["paused_tonight", "morning_completed"].includes(participantStates[id])) ? "completed" : "active", occurredAt,
       payload: { ...session.payload, participantStates, lastEventType: eventType } });
     return updated as FrogSleepEntityRecord;
   }

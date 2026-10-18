@@ -1,3 +1,4 @@
+import { badRequest } from "../../../shared/errors.ts";
 import { buddyRelationships } from "../buddy-growth/buddy-relationships.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
 import type { FrogSleepEntityRecord } from "../../../shared/types.ts";
@@ -23,3 +24,19 @@ export function focusSessionsOverlap(left: FrogSleepEntityRecord, right: FrogSle
   return new Date(left.startsAt).getTime() < new Date(right.endsAt).getTime() &&
     new Date(right.startsAt).getTime() < new Date(left.endsAt).getTime();
 }
+
+export function nextFocusRelationshipStatus(currentStatus: string | undefined, action: string): string {
+    if (currentStatus === "revoked") {
+      badRequest("REQ_INVALID_BODY", "Revoked focus relationship cannot be changed.");
+    }
+    if (action === "accept" && currentStatus === "pending") {
+      return "accepted";
+    }
+    if (action === "decline" && currentStatus === "pending") {
+      return "declined";
+    }
+    if (action === "revoke" && (currentStatus === "accepted" || currentStatus === "pending")) {
+      return "revoked";
+    }
+    badRequest("REQ_INVALID_BODY", "Focus relationship action is not valid for the current status.");
+  }

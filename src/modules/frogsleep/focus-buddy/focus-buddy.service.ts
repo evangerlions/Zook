@@ -1,4 +1,6 @@
-import { allBuddyRecords } from "../buddy-growth/buddy-completion-facts.ts";
+import { FocusBuddyQueries } from "./focus-buddy-queries.ts";
+import { storeFocusSession } from "./focus-session-writer.ts";
+import { buddyRelationships, revokeFocusDomainRelationship } from "../buddy-growth/buddy-relationships.ts";
 import { BuddyJointActivityService } from "../buddy-growth/buddy-joint-activity.service.ts";
 import { BuddyJointGoalService } from "../buddy-growth/buddy-joint-goal.service.ts";
 import { ApplicationDatabase } from "../../../infrastructure/database/application-database.ts";
@@ -38,6 +40,7 @@ import {
 import { buildFocusMatchProfilePayload } from "./focus-match-ranking.ts";
 import { validateFocusMessagePayload } from "./focus-buddy-message-validation.ts";
 import {
+  nextFocusRelationshipStatus,
   focusSessionsOverlap,
   otherFocusUserId,
   relationshipsForFocusUser,
@@ -67,8 +70,6 @@ function minutesBetween(startIso: string, endIso: string): number {
   return Math.max(0, Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000));
 }
 
-const FOCUS_SESSION_STATUSES = new Set(["completed", "abandoned", "interrupted", "cancelled"]);
-const MAX_FOCUS_SESSION_MINUTES = 24 * 60;
 
 export class FrogSleepFocusBuddyService {
   constructor(
@@ -91,63 +92,7 @@ export class FrogSleepFocusBuddyService {
   }
 
   async reportSession(userId: string, input: Record<string, unknown>) {
-    const startedAt = parseIsoTimestamp(input.started_at ?? input.startedAt ?? input.start_time ?? input.startTime ?? nowIso(), "started_at");
-    const endedAt = parseIsoTimestamp(input.ended_at ?? input.endedAt ?? input.end_time ?? input.endTime ?? nowIso(), "ended_at");
-    if (new Date(endedAt).getTime() < new Date(startedAt).getTime()) {
-      badRequest("REQ_INVALID_BODY", "ended_at must be after started_at.");
-    }
-    const room = input.room ?? input.room_id ?? input.roomId;
-    const goal = input.goal ?? input.goal_tag ?? input.goalTag;
-    const plannedMinutes = parseFiniteNumber(input.planned_minutes ?? input.plannedMinutes ?? input.minutes ?? 0, "planned_minutes", {
-      min: 0,
-      max: MAX_FOCUS_SESSION_MINUTES,
-    });
-    const actualMinutes = parseFiniteNumber(input.actual_minutes ?? input.actualMinutes ?? input.minutes ?? minutesBetween(startedAt, endedAt), "actual_minutes", {
-      min: 0,
-      max: MAX_FOCUS_SESSION_MINUTES,
-    });
-    const interruptCount = parseFiniteNumber(input.interrupt_count ?? input.interruptCount ?? 0, "interrupt_count", {
-      min: 0,
-      max: 1000,
-    });
-    const status = String(input.status ?? "completed");
-    if (!FOCUS_SESSION_STATUSES.has(status) && !isActiveFocusSessionStatus(status)) {
-      badRequest("REQ_INVALID_BODY", "Unsupported focus session status.");
-    }
-    const createdAt = nowIso();
-    const session: FrogSleepEntityRecord = {
-      id: randomId("focus_session"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_session",
-      ownerUserId: userId,
-      status,
-      startsAt: startedAt,
-      endsAt: endedAt,
-      payload: {
-        client_session_id: input.session_id ?? input.sessionId,
-        room,
-        room_id: room,
-        goal,
-        goal_tag: goal,
-        planned_minutes: plannedMinutes,
-        actual_minutes: actualMinutes,
-        interrupt_count: interruptCount,
-        minutes: actualMinutes,
-        session_type: input.session_type ?? input.sessionType,
-        result: input.result,
-      },
-      createdAt,
-      updatedAt: createdAt,
-    };
-    const stored = await this.database.withExclusiveSession(async () => {
-      const clientId = session.payload.client_session_id;
-      if (typeof clientId === "string" && clientId) {
-        const previous = (await allBuddyRecords(this.database, { kind: "focus_session", ownerUserId: userId })).find(item => item.payload.client_session_id === clientId);
-        if (previous) return previous;
-      }
-      await this.database.insertFrogSleepEntity(session);
-      return session;
-    });
+    const stored = await storeFocusSession(this.database, userId, input);
     await new BuddyJointActivityService(this.database).refresh(userId);
     await new BuddyJointGoalService(this.database).list(userId);
     await unlockFocusMilestone(this.database, userId, "first_session");
@@ -156,48 +101,15 @@ export class FrogSleepFocusBuddyService {
   }
 
   async sessions(userId: string, from?: string, to?: string, pagination?: PaginationParams) {
-    const sessions = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_session",
-      ownerUserId: userId,
-      startsAtFromIso: from,
-      startsAtToIso: to,
-      limit: 500,
-    });
-    const page = paginateRecords(sessions, pagination ?? { limit: 50 });
-    return {
-      sessions: page.items.map((session) => toFocusSessionResponse(session)),
-      pagination: page.pagination,
-    };
+    return await new FocusBuddyQueries(this.database).sessions(userId, from, to, pagination);
   }
 
   async weekStats(userId: string, weekStart?: string) {
-    const dateAnchor = weekStart ?? currentUtcWeekStart(this.clock());
-    const since = `${dateAnchor}T00:00:00.000Z`;
-    const until = new Date(new Date(since).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    const sessions = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_session",
-      ownerUserId: userId,
-      startsAtFromIso: since,
-      startsAtToIso: until,
-      limit: 200,
-    });
-    return buildFocusWeekStats(sessions, since);
+    return await new FocusBuddyQueries(this.database).weekStats(userId, weekStart);
   }
 
   async achievements(userId: string, pagination?: PaginationParams) {
-    const records = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_milestone",
-      ownerUserId: userId,
-      limit: 500,
-    });
-    const page = paginateRecords(records, pagination ?? { limit: 50 });
-    return {
-      achievements: page.items.map((item) => toFocusAchievementResponse(item)),
-      pagination: page.pagination,
-    };
+    return await new FocusBuddyQueries(this.database).achievements(userId, pagination);
   }
 
   async notifyAchievement(userId: string, milestoneId: string) {
@@ -318,11 +230,15 @@ export class FrogSleepFocusBuddyService {
   }
 
   async relationshipAction(userId: string, relationshipId: string, action: string) {
+    if (action === "revoke") {
+      const canonical = await revokeFocusDomainRelationship(this.database, userId, relationshipId);
+      if (canonical) return toFocusRelationshipResponse(canonical, userId);
+    }
     const relationship = await this.requireRelationship(userId, relationshipId);
     if (action !== "accept" && action !== "decline" && action !== "revoke") {
       badRequest("REQ_INVALID_BODY", "Unsupported focus relationship action.");
     }
-    const status = this.nextRelationshipStatus(relationship.status, action);
+    const status = nextFocusRelationshipStatus(relationship.status, action);
     const updated = await this.database.updateFrogSleepEntity("focus_relationship", FROGSLEEP_APP_ID, relationship.id, {
       status,
     });
@@ -391,85 +307,15 @@ export class FrogSleepFocusBuddyService {
   }
 
   async presence(userId: string, buddyUserId: string) {
-    const relationship = await this.acceptedRelationshipBetween(userId, buddyUserId);
-    if (!relationship) {
-      forbidden("AUTH_APP_SCOPE_MISMATCH", "Accepted focus buddy relationship is required.");
-    }
-    await assertBuddyDataAuthorized(this.database, userId, relationship.id, "presence");
-    return await deriveFocusPresence(this.database, buddyUserId, relationship.id, this.clock());
+    return await new FocusBuddyQueries(this.database).presence(userId, buddyUserId);
   }
 
   async comparison(userId: string, weekStart?: string) {
-    const relationship = await this.currentRelationshipRecord(userId);
-    if (!relationship) {
-      return null;
-    }
-    await assertBuddyDataAuthorized(this.database, userId, relationship.id, "weekly_trend");
-    const parsedWeekStart = parseWeekStart(weekStart);
-    const buddyUserId = otherFocusUserId(relationship, userId);
-    const mine = await this.weekStats(userId, parsedWeekStart);
-    const buddy = await this.weekStats(buddyUserId, parsedWeekStart);
-    const buddyByDate = new Map(buddy.daily.map((day) => [day.date, day]));
-    return {
-      buddy_user_id: buddyUserId,
-      my_minutes: mine.total_minutes,
-      my_sessions: mine.session_count,
-      buddy_minutes: buddy.total_minutes,
-      buddy_sessions: buddy.session_count,
-      buddy_name: buddyUserId,
-      trend: mine.total_minutes >= buddy.total_minutes ? "ahead" : "behind",
-      daily_breakdown: mine.daily.map((day) => {
-        const buddyDay = buddyByDate.get(day.date);
-        return {
-          date: day.date,
-          my_minutes: day.minutes,
-          my_sessions: day.session_count,
-          buddy_minutes: buddyDay?.minutes ?? 0,
-          buddy_sessions: buddyDay?.session_count ?? 0,
-        };
-      }),
-      mine,
-      buddy,
-    };
+    return await new FocusBuddyQueries(this.database).comparison(userId, weekStart);
   }
 
   async sharedMoments(userId: string, pagination?: PaginationParams, filters: { roomId?: string; from?: string; to?: string } = {}) {
-    const window = parseDateWindow({ from: filters.from, to: filters.to });
-    const relationships = await relationshipsForFocusUser(this.database, userId, ["accepted"]);
-    const records: FrogSleepEntityRecord[] = [];
-    for (const relationship of relationships) {
-      await assertBuddyDataAuthorized(this.database, userId, relationship.id, "shared_activity");
-      records.push(...await this.database.listFrogSleepEntities({
-        appId: FROGSLEEP_APP_ID,
-        kind: "focus_shared_moment",
-        relationshipId: relationship.id,
-        limit: 500,
-      }));
-    }
-    const filtered = records
-      .filter((item) => matchesSharedMomentRoom(item, filters.roomId))
-      .filter((item) => overlapsWindow(item, window.from, window.to));
-    const page = paginateRecords(filtered, pagination ?? { limit: 50 });
-    return {
-      moments: page.items.map((item) => item.payload),
-      pagination: page.pagination,
-    };
-  }
-
-  private nextRelationshipStatus(currentStatus: string | undefined, action: string): string {
-    if (currentStatus === "revoked") {
-      badRequest("REQ_INVALID_BODY", "Revoked focus relationship cannot be changed.");
-    }
-    if (action === "accept" && currentStatus === "pending") {
-      return "accepted";
-    }
-    if (action === "decline" && currentStatus === "pending") {
-      return "declined";
-    }
-    if (action === "revoke" && (currentStatus === "accepted" || currentStatus === "pending")) {
-      return "revoked";
-    }
-    badRequest("REQ_INVALID_BODY", "Focus relationship action is not valid for the current status.");
+    return await new FocusBuddyQueries(this.database).sharedMoments(userId, pagination, filters);
   }
 
   private async getProfileRecord(userId: string) {
@@ -495,43 +341,7 @@ export class FrogSleepFocusBuddyService {
   }
 
   private async detectSharedMoment(session: FrogSleepEntityRecord) {
-    const relationship = await this.currentRelationshipRecord(session.ownerUserId as string);
-    if (!relationship || relationship.status !== "accepted") {
-      return;
-    }
-    const buddyUserId = otherFocusUserId(relationship, session.ownerUserId as string);
-    const buddySessions = (await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_session",
-      ownerUserId: buddyUserId,
-      limit: 100,
-    })).filter((item) => focusSessionsOverlap(session, item));
-    if (!buddySessions[0]) {
-      return;
-    }
-    const createdAt = nowIso();
-    await this.database.insertFrogSleepEntity({
-      id: randomId("focus_shared_moment"),
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_shared_moment",
-      ownerUserId: session.ownerUserId,
-      partnerUserId: buddyUserId,
-      relationshipId: relationship.id,
-      startsAt: session.startsAt,
-      endsAt: session.endsAt,
-      status: "detected",
-      payload: {
-        session_id: session.id,
-        buddy_session_id: buddySessions[0].id,
-        room_id: session.payload.room_id ?? session.payload.room ?? buddySessions[0].payload.room_id ?? buddySessions[0].payload.room,
-        room_ids: [session.payload.room_id ?? session.payload.room, buddySessions[0].payload.room_id ?? buddySessions[0].payload.room]
-          .filter(Boolean),
-      },
-      createdAt,
-      updatedAt: createdAt,
-    });
-    await unlockFocusMilestone(this.database, session.ownerUserId as string, "buddy_shared_moment");
-    await unlockFocusMilestone(this.database, buddyUserId, "buddy_shared_moment");
+    return await new FocusBuddyQueries(this.database).detectSharedMoment(session);
   }
 
   private async currentRelationshipRecord(userId: string) {
@@ -539,7 +349,7 @@ export class FrogSleepFocusBuddyService {
   }
 
   private async requireRelationship(userId: string, relationshipId: string) {
-    const relationship = await this.database.findFrogSleepEntity("focus_relationship", FROGSLEEP_APP_ID, relationshipId);
+    const relationship = (await buddyRelationships(this.database, userId, "focus")).find(item => item.id === relationshipId);
     if (!relationship || (relationship.ownerUserId !== userId && relationship.partnerUserId !== userId)) {
       forbidden("AUTH_APP_SCOPE_MISMATCH", "Relationship is not visible to the current user.");
     }
@@ -552,22 +362,7 @@ export class FrogSleepFocusBuddyService {
   }
 
   private async assertMessageRateLimit(userId: string, receiverUserId: string) {
-    const recentMessages = await this.database.listFrogSleepEntities({
-      appId: FROGSLEEP_APP_ID,
-      kind: "focus_message",
-      ownerUserId: userId,
-      partnerUserId: receiverUserId,
-      limit: 20,
-    });
-    const now = Date.now();
-    const latest = recentMessages.find((item) => now - new Date(item.createdAt).getTime() < MESSAGE_RATE_LIMIT_MS);
-    if (!latest) {
-      return;
-    }
-    const elapsedMs = now - new Date(latest.createdAt).getTime();
-    tooManyRequests("AUTH_RATE_LIMITED", "Focus buddy message rate limit reached.", {
-      retry_after_seconds: Math.ceil((MESSAGE_RATE_LIMIT_MS - elapsedMs) / 1000),
-    });
+    return await new FocusBuddyQueries(this.database).assertMessageRateLimit(userId, receiverUserId);
   }
 
   private deps() {
@@ -577,8 +372,6 @@ export class FrogSleepFocusBuddyService {
     };
   }
 
-  private clock() {
-    return new Date();
-  }
+
 
 }
