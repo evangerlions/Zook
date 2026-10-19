@@ -1,4 +1,4 @@
-import { profileData, goalData, taskData, planData, reviewData, proposalData, runData } from "./lighttick-route-mappers.ts";
+import { profileData, goalData, variantsData, taskData, planData, reviewData, proposalData, runData } from "./lighttick-route-mappers.ts";
 import { handleRecordRequest } from "./lighttick-record-routes.ts";
 import { handleReflectionRequest } from "./lighttick-reflection-routes.ts";
 import { LIGHTTICK_APP_ID } from "../modules/lighttick/lighttick-app.ts";
