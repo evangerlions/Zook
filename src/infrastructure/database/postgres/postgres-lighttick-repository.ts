@@ -1,3 +1,4 @@
+import type {ActionWorkspaceRow,ActionTicket,ActionLink} from '../../../modules/lighttick/actions/action.types.ts';
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
 import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
 import type { PlanningSession } from "../../../modules/lighttick/planning/planning.types.ts";
@@ -52,6 +53,21 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return await (this.session.getStore() ?? this.connector).query(sql, values);
   }
 
+  async lockActionOwner(owner:LightTickOwner){await this.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`actions:${owner.appId}:${owner.userId}`]);}
+  async getActionWorkspace(owner:LightTickOwner):Promise<ActionWorkspaceRow|undefined>{
+    const r=await this.query('SELECT payload,version FROM zook_lighttick_action_workspaces WHERE app_id=$1 AND user_id=$2',[owner.appId,owner.userId]);
+    return r.rows[0]?{...owner,data:r.rows[0].payload as ActionWorkspaceRow['data'],version:Number(r.rows[0].version)}:undefined;}
+  async saveActionWorkspace(row:ActionWorkspaceRow){await this.query(`INSERT INTO zook_lighttick_action_workspaces VALUES ($1,$2,$3::jsonb,$4)
+    ON CONFLICT(app_id,user_id) DO UPDATE SET payload=EXCLUDED.payload,version=EXCLUDED.version`,[row.appId,row.userId,JSON.stringify(row.data),row.version]);}
+  async getActionTicket(hash:string):Promise<ActionTicket|undefined>{const r=await this.query('SELECT payload FROM zook_lighttick_action_tickets WHERE hash=$1',[hash]);return r.rows[0]?.payload as ActionTicket|undefined;}
+  async saveActionTicket(row:ActionTicket){await this.query(`INSERT INTO zook_lighttick_action_tickets VALUES ($1,$2,$3,$4::jsonb,$5)
+    ON CONFLICT(hash) DO UPDATE SET payload=EXCLUDED.payload`,[row.hash,row.appId,row.userId,JSON.stringify(row),row.expires_at]);}
+  async getActionLink(source:string):Promise<ActionLink|undefined>{const r=await this.query('SELECT payload FROM zook_lighttick_action_links WHERE source_account_id=$1',[source]);return r.rows[0]?.payload as ActionLink|undefined;}
+  async getOwnerActionLink(owner:LightTickOwner):Promise<ActionLink|undefined>{const r=await this.query('SELECT payload FROM zook_lighttick_action_links WHERE app_id=$1 AND user_id=$2',[owner.appId,owner.userId]);return r.rows[0]?.payload as ActionLink|undefined;}
+  async saveActionLink(row:ActionLink){try{const r=await this.query(`INSERT INTO zook_lighttick_action_links VALUES ($1,$2,$3,$4::jsonb)
+    ON CONFLICT(source_account_id) DO UPDATE SET payload=EXCLUDED.payload WHERE zook_lighttick_action_links.user_id=EXCLUDED.user_id RETURNING user_id`,[row.source_account_id,row.appId,row.userId,JSON.stringify(row)]);
+    if(!r.rows[0])versionConflict(row.binding_id);
+    }catch(e){if((e as {code?:string}).code==='23505')versionConflict(row.binding_id);throw e;}}
   async lockPlanningOwner(owner: LightTickOwner) {
     await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`planning:${owner.appId}:${owner.userId}`]);
     // Existing non-session mutations lock these same rows on write.
@@ -570,7 +586,7 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+    const tables = ["action_tickets","action_links","action_workspaces","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
       "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
