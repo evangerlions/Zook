@@ -28,6 +28,7 @@ export function dueAt(f:ActionFields):string {
 export const levels={year:0,month:1,week:2,day:3};
 export function fields(value:unknown):ActionFields {
  const v=object(value),period=v.period;
+ if(v.completion_mode!==undefined&&v.completion_mode!=='time')reject(422,'当前共享行动首版仅支持计时计划；原网页日程保留，请勿转换后接管。');
  if(!Object.hasOwn(levels,period))reject(422,'计划周期无效。');
  const f:ActionFields={title:text(v.title,160,true).trim(),period,horizon:v.horizon??(period==='year'?'long':'short'),
   start_date:date(v.start_date),end_date:date(v.end_date),timezone:text(v.timezone??'Asia/Shanghai',80,true),parent_id:v.parent_id??null,

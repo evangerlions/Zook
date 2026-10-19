@@ -38,3 +38,6 @@ iOS 本地通知在回到前台时按最新快照重新安排；账号切换、�
 ## 隔离验收
 
 `test/support/serve-action-link-fixture.ts` 使用显式 localhost PostgreSQL，建立独立数据库、合成公共登录账号和真实产品持久层；退出清理。模型使用确定性返回，无外部模型调用。对应 Grow fixture 为 `server/tests/serve_action_link_fixture.py`，使用真实 cookie 登录和独立 PostgreSQL schema。禁止对生产环境运行 fixture，未迁移真实账号。
+
+
+首版接管对象为计时计划。若 Grow 另有 `completion_mode=content/check` 的新日程，预览会拒绝接管并保持原数据可用，避免悄悄转换完成口径；这些新口径须单独扩展 canonical 合同和原生操作后才能接入。
