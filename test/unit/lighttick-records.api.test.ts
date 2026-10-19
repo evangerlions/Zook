@@ -25,5 +25,6 @@ test('independent records: ownership, retry, CAS, versions, archive, export and 
  const changes=(await call('GET','sync/pull')).body.data.changes.filter((x:any)=>x.entity_type==='record');assert.equal(changes.length,4);
  assert.equal((await call('GET','goals')).body.data.items.length,0);
  assert.equal((await call('PUT','records/record-test-003',{...input,record_date:'2026-02-30'},'records-invalid-001')).statusCode,400);
+ assert.equal((await call('PUT','records/record-test-003',{...input,record_date:'0000-01-01'},'records-invalid-year')).statusCode,400);
  assert.equal((await call('PUT','records/record-test-003',{...input,raw_text:'x'.repeat(10001)},'records-invalid-002')).statusCode,400);
 });

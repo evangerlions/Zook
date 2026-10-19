@@ -15,7 +15,7 @@ const invalid = () => new ApplicationError(400,'REQ_FIELD_INVALID','Record field
 export function validateRecord(input: Record<string,unknown>): RecordContent {
  const allowed=['raw_text','record_date','prompt_kind','guided_answers','tags','adopted_summary','summary_basis_version','base_version'];
  if(Object.keys(input).some(k=>!allowed.includes(k)) || typeof input.raw_text!=='string' || !input.raw_text.trim() || input.raw_text.length>10000 ||
- typeof input.record_date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(input.record_date) || !Number.isFinite(Date.parse(input.record_date)) || new Date(input.record_date).toISOString().slice(0,10)!==input.record_date ||
+ typeof input.record_date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(input.record_date) || input.record_date<'0001-01-01' || !Number.isFinite(Date.parse(input.record_date)) || new Date(input.record_date).toISOString().slice(0,10)!==input.record_date ||
  !['free','learning','difficulty','decision'].includes(String(input.prompt_kind ?? 'free'))) throw invalid();
  const answers=input.guided_answers ?? {}; const tags=input.tags ?? [];
  if(!answers || typeof answers!=='object' || Array.isArray(answers) || Object.keys(answers).length>12 || Object.entries(answers).some(([k,v])=>k.length>100 || typeof v!=='string' || v.length>2000) ||
@@ -43,10 +43,10 @@ export class LightTickRecordService {
  async list(owner:LightTickOwner,query:Record<string,string|undefined>={}) {
   const limit=query.limit===undefined?50:Number(query.limit);
   if(!Number.isInteger(limit)||limit<1||limit>200||!['true','false','all',undefined].includes(query.archived)|| (query.q?.length ?? 0)>200) throw invalid();
-  if(query.date && (!/^\d{4}-\d{2}-\d{2}$/.test(query.date)||!Number.isFinite(Date.parse(query.date))||new Date(query.date).toISOString().slice(0,10)!==query.date)) throw invalid();
+  if(query.date && (query.date<'0001-01-01'||!/^\d{4}-\d{2}-\d{2}$/.test(query.date)||!Number.isFinite(Date.parse(query.date))||new Date(query.date).toISOString().slice(0,10)!==query.date)) throw invalid();
   let after:string|undefined;
   if(query.cursor) { try {const v=JSON.parse(Buffer.from(query.cursor,'base64url').toString());
-   if(v.owner!==sha256(owner.appId+':'+owner.userId)||v.filter!==sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'}))||typeof v.after!=='string'||!/^\d{4}-\d{2}-\d{2}:[a-zA-Z0-9_-]{8,128}$/.test(v.after)||!Number.isFinite(Date.parse(v.after.slice(0,10)))||new Date(v.after.slice(0,10)).toISOString().slice(0,10)!==v.after.slice(0,10)) throw invalid(); after=v.after;
+   if(v.owner!==sha256(owner.appId+':'+owner.userId)||v.filter!==sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'}))||typeof v.after!=='string'||v.after<'0001-01-01:'||!/^\d{4}-\d{2}-\d{2}:[a-zA-Z0-9_-]{8,128}$/.test(v.after)||!Number.isFinite(Date.parse(v.after.slice(0,10)))||new Date(v.after.slice(0,10)).toISOString().slice(0,10)!==v.after.slice(0,10)) throw invalid(); after=v.after;
   } catch {throw invalid();} }
   const rows=(await this.repository.listRecords(owner,{date:query.date,q:query.q,archived:query.archived??'false',after,limit:limit+1})).map(r=>r.payload);
   const items=rows.slice(0,limit);
