@@ -16984,11 +16984,12 @@ export const LightTickSyncEntityTypeSchema = {
     "task",
     "task_step",
     "review",
-    "change_proposal"
+    "change_proposal",
+    "record"
   ]
 } as const;
 
-export type LightTickSyncEntityType = "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+export type LightTickSyncEntityType = "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
 
 export const LightTickSyncActionSchema = {
   "type": "string",
@@ -17042,7 +17043,8 @@ export const LightTickSyncOperationSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -17086,7 +17088,7 @@ export const LightTickSyncOperationSchema = {
 export type LightTickSyncOperation = {
   "operation_id": string;
   "device_id": string;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
   "base_version": number;
@@ -17140,7 +17142,8 @@ export const LightTickSyncPushRequestSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -17190,7 +17193,7 @@ export type LightTickSyncPushRequest = {
 {
   "operation_id": string;
   "device_id": string;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "action": "create" | "update" | "start" | "complete" | "skip" | "defer" | "cancel" | "accept" | "reject" | "delete";
   "base_version": number;
@@ -17247,7 +17250,8 @@ export const LightTickSyncOperationResultSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -17330,7 +17334,7 @@ export const LightTickSyncOperationResultSchema = {
 export type LightTickSyncOperationResult = {
   "operation_id": string;
   "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
-  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id"?: string;
   "version"?: number;
   "server_snapshot"?: {
@@ -17382,7 +17386,8 @@ export const LightTickSyncPushDataSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -17474,7 +17479,7 @@ export type LightTickSyncPushData = {
 {
   "operation_id": string;
   "status": "accepted" | "duplicate" | "conflict" | "rejected" | "retryable";
-  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type"?: "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id"?: string;
   "version"?: number;
   "server_snapshot"?: {
@@ -17512,7 +17517,8 @@ export const LightTickSyncChangeSchema = {
         "task",
         "task_step",
         "review",
-        "change_proposal"
+        "change_proposal",
+        "record"
       ]
     },
     "entity_id": {
@@ -17544,7 +17550,7 @@ export const LightTickSyncChangeSchema = {
 
 export type LightTickSyncChange = {
   "sequence": number;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "version": number;
   "operation": "upsert" | "delete";
@@ -17589,7 +17595,8 @@ export const LightTickSyncPullDataSchema = {
               "task",
               "task_step",
               "review",
-              "change_proposal"
+              "change_proposal",
+              "record"
             ]
           },
           "entity_id": {
@@ -17636,7 +17643,7 @@ export type LightTickSyncPullData = {
   "changes": (
 {
   "sequence": number;
-  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal";
+  "entity_type": "profile" | "goal" | "plan" | "task" | "task_step" | "review" | "change_proposal" | "record";
   "entity_id": string;
   "version": number;
   "operation": "upsert" | "delete";

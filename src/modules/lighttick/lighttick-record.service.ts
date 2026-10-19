@@ -46,11 +46,10 @@ export class LightTickRecordService {
   if(query.date && (!/^\d{4}-\d{2}-\d{2}$/.test(query.date)||!Number.isFinite(Date.parse(query.date))||new Date(query.date).toISOString().slice(0,10)!==query.date)) throw invalid();
   let after:string|undefined;
   if(query.cursor) { try {const v=JSON.parse(Buffer.from(query.cursor,'base64url').toString());
-   if(v.owner!==sha256(owner.appId+':'+owner.userId)||v.filter!==sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'}))||typeof v.after!=='string') throw invalid(); after=v.after;
+   if(v.owner!==sha256(owner.appId+':'+owner.userId)||v.filter!==sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'}))||typeof v.after!=='string'||!/^\d{4}-\d{2}-\d{2}:[a-zA-Z0-9_-]{8,128}$/.test(v.after)||!Number.isFinite(Date.parse(v.after.slice(0,10)))||new Date(v.after.slice(0,10)).toISOString().slice(0,10)!==v.after.slice(0,10)) throw invalid(); after=v.after;
   } catch {throw invalid();} }
-  const all=(await this.repository.listRecords(owner)).map(r=>r.payload).filter(r=> (query.archived==='all'||Boolean(r.archived_at)===(query.archived==='true'))&&(!query.date||r.record_date===query.date)&&(!query.q||r.raw_text.toLowerCase().includes(query.q.toLowerCase())||r.tags.some(t=>t.toLowerCase().includes(query.q!.toLowerCase()))))
-   .sort((a,b)=> { const x=a.record_date+":"+a.id,y=b.record_date+":"+b.id; return x===y?0:x<y?1:-1; });
-  const rows=all.filter(r=>!after||r.record_date+':'+r.id<after); const items=rows.slice(0,limit);
+  const rows=(await this.repository.listRecords(owner,{date:query.date,q:query.q,archived:query.archived??'false',after,limit:limit+1})).map(r=>r.payload);
+  const items=rows.slice(0,limit);
   return {items,has_more:rows.length>limit,next_cursor:rows.length>limit?Buffer.from(JSON.stringify({owner:sha256(owner.appId+':'+owner.userId),filter:sha256(canonical({date:query.date??'',q:query.q??'',archived:query.archived??'false'})),after:items.at(-1)!.record_date+':'+items.at(-1)!.id})).toString('base64url'):undefined};
  }
  async mutate(owner:LightTickOwner,id:string,action:'save'|'archive'|'restore',input:Record<string,unknown>,key:string) {
@@ -86,4 +85,12 @@ export class LightTickRecordService {
    return {format_version:1,exported_at:this.clock().toISOString(),records:await Promise.all(rows.map(async r=>({record:r.payload,versions:await this.repository.recordVersions(owner,r.id)})))};
   });
  }
+}
+
+export interface RecordQuery { date?:string; q?:string; archived:string; after?:string; limit:number; }
+export function selectRecordRows(rows:LightTickRecordRow[],query:RecordQuery):LightTickRecordRow[] {
+ return rows.filter(({payload:r})=>(query.archived==='all'||Boolean(r.archived_at)===(query.archived==='true'))&&
+  (!query.date||r.record_date===query.date)&&(!query.q||r.raw_text.toLowerCase().includes(query.q.toLowerCase())||r.tags.some(t=>t.toLowerCase().includes(query.q!.toLowerCase())))&&
+  (!query.after||r.record_date+':'+r.id<query.after))
+  .sort((a,b)=>{const x=a.payload.record_date+':'+a.id,y=b.payload.record_date+':'+b.id;return x===y?0:x<y?1:-1;}).slice(0,query.limit);
 }

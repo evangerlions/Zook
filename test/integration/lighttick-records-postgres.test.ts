@@ -24,6 +24,9 @@ test('records persist with atomic history, idempotency, change log, reconnect, C
  assert.equal((await repo.pullChanges(owner,0,100)).length,2);
  assert.equal((await service.export(owner)).records[0].versions.length,2);
  await runPostgresMigrations({connectionString,log:()=>{}});
+ for(const id of ['record-page-A','record-page-a','record-page-b']) await service.mutate(owner,id,'save',{...body,tags:['分页标签']},'page-'+id);
+ const page=await service.list(owner,{q:'分页标签',limit:'1'});assert.equal(page.has_more,true);
+ const next=await service.list(owner,{q:'分页标签',limit:'1',cursor:page.next_cursor});assert.notEqual(page.items[0].id,next.items[0].id);
  await repo.deleteOwnerData(owner);
  assert.equal((await service.export(owner)).records.length,0);
  assert.equal((await repo.pullChanges(owner,0,100)).length,0);

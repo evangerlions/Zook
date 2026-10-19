@@ -1,4 +1,4 @@
-import type { LightTickRecord, LightTickRecordRow } from "./lighttick-record.service.ts";
+import type { LightTickRecord, LightTickRecordRow, RecordQuery } from "./lighttick-record.service.ts";
 import type { LightTickReflectionRow } from "./lighttick-reflection.service.ts";
 import type { PlanningSession } from "./planning/planning.types.ts";
 import type {
@@ -19,7 +19,7 @@ export interface LightTickAtomicWrite {
 export interface LightTickRepository {
   lockRecordOwner(owner: LightTickOwner): Promise<void>;
   getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
-  listRecords(owner: LightTickOwner): Promise<LightTickRecordRow[]>;
+  listRecords(owner: LightTickOwner, query?: RecordQuery): Promise<LightTickRecordRow[]>;
   recordVersions(owner: LightTickOwner, id: string): Promise<LightTickRecord[]>;
   saveRecord(row: LightTickRecordRow, baseVersion: number): Promise<void>;
   lockPlanningOwner(owner: LightTickOwner): Promise<void>;

@@ -3796,7 +3796,7 @@ components:
         updated_at: { $ref: "#/components/schemas/LightTickTimestamp" }
     LightTickSyncEntityType:
       type: string
-      enum: [profile, goal, plan, task, task_step, review, change_proposal]
+      enum: [profile, goal, plan, task, task_step, review, change_proposal, record]
     LightTickSyncAction:
       type: string
       enum: [create, update, start, complete, skip, defer, cancel, accept, reject, delete]

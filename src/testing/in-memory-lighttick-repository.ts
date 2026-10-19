@@ -1,4 +1,5 @@
-import type { LightTickRecordRow, LightTickRecord } from "../modules/lighttick/lighttick-record.service.ts";
+import { selectRecordRows } from "../modules/lighttick/lighttick-record.service.ts";
+import type { LightTickRecordRow, LightTickRecord, RecordQuery } from "../modules/lighttick/lighttick-record.service.ts";
 import type { LightTickReflectionRow } from "../modules/lighttick/lighttick-reflection.service.ts";
 import type { PlanningSession } from "../modules/lighttick/planning/planning.types.ts";
 import type { LightTickAtomicWrite, LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
@@ -98,7 +99,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
 
   async lockRecordOwner(owner: LightTickOwner) { this.assertOwner(owner); }
   async getRecord(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.records.get(rowKey({...owner,id}))); }
-  async listRecords(owner: LightTickOwner) { this.assertOwner(owner); return clone([...this.records.values()].filter(r => ownerKey(r) === ownerKey(owner))); }
+  async listRecords(owner: LightTickOwner, query?: RecordQuery) { this.assertOwner(owner); const rows=[...this.records.values()].filter(r => ownerKey(r) === ownerKey(owner)); return clone(query?selectRecordRows(rows,query):rows); }
   async recordVersions(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.recordHistory.get(rowKey({...owner,id})) ?? []).reverse(); }
   async saveRecord(row: LightTickRecordRow, baseVersion: number) {
     const key=rowKey(row),current=this.records.get(key);
