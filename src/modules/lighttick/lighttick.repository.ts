@@ -1,3 +1,4 @@
+import type { LightTickRecord, LightTickRecordRow } from "./lighttick-record.service.ts";
 import type { LightTickReflectionRow } from "./lighttick-reflection.service.ts";
 import type { PlanningSession } from "./planning/planning.types.ts";
 import type {
@@ -16,6 +17,11 @@ export interface LightTickAtomicWrite {
 
 /** Product-owned persistence boundary; Common database services stay behavior-free. */
 export interface LightTickRepository {
+  lockRecordOwner(owner: LightTickOwner): Promise<void>;
+  getRecord(owner: LightTickOwner, id: string): Promise<LightTickRecordRow | undefined>;
+  listRecords(owner: LightTickOwner): Promise<LightTickRecordRow[]>;
+  recordVersions(owner: LightTickOwner, id: string): Promise<LightTickRecord[]>;
+  saveRecord(row: LightTickRecordRow, baseVersion: number): Promise<void>;
   lockPlanningOwner(owner: LightTickOwner): Promise<void>;
   getPlanningSession(owner: LightTickOwner, id: string): Promise<PlanningSession | undefined>;
   savePlanningSession(row: PlanningSession, expectedVersion?: number): Promise<PlanningSession>;

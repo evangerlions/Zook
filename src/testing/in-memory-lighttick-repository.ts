@@ -1,3 +1,4 @@
+import type { LightTickRecordRow, LightTickRecord } from "../modules/lighttick/lighttick-record.service.ts";
 import type { LightTickReflectionRow } from "../modules/lighttick/lighttick-reflection.service.ts";
 import type { PlanningSession } from "../modules/lighttick/planning/planning.types.ts";
 import type { LightTickAtomicWrite, LightTickRepository } from "../modules/lighttick/lighttick.repository.ts";
@@ -22,6 +23,8 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   private plans = new Map<string, LightTickPlanRow>();
   private tasks = new Map<string, LightTickTaskRow>();
   private taskSteps = new Map<string, LightTickTaskStepRow>();
+  private records = new Map<string, LightTickRecordRow>();
+  private recordHistory = new Map<string, LightTickRecord[]>();
   private reflections = new Map<string, LightTickReflectionRow>();
   private reviews = new Map<string, LightTickReviewRow>();
   private proposals = new Map<string, LightTickChangeProposalRow>();
@@ -52,7 +55,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
   }
 
   private async runTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    const snapshot = clone({ planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
+    const snapshot = clone({ records: [...this.records], recordHistory: [...this.recordHistory], planningSessions: [...this.planningSessions], profiles: [...this.profiles], goals: [...this.goals], plans: [...this.plans],
       tasks: [...this.tasks], taskSteps: [...this.taskSteps], reflections: [...this.reflections], reviews: [...this.reviews], proposals: [...this.proposals], aiRuns: [...this.aiRuns],
       operations: [...this.operations], devices: [...this.devices], guestIdentities: [...this.guestIdentities],
       upgradeOperations: [...this.upgradeOperations],
@@ -60,6 +63,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
       changes: this.changes, sequence: this.sequence });
     try { return await operation(); }
     catch (error) {
+      this.records = new Map(snapshot.records); this.recordHistory = new Map(snapshot.recordHistory);
       this.reflections = new Map(snapshot.reflections);
       this.planningSessions = new Map(snapshot.planningSessions);
       this.profiles = new Map(snapshot.profiles); this.goals = new Map(snapshot.goals); this.plans = new Map(snapshot.plans);
@@ -92,6 +96,16 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     this.changes.push(clone({ ...write.change, sequence: ++this.sequence }));
   }
 
+  async lockRecordOwner(owner: LightTickOwner) { this.assertOwner(owner); }
+  async getRecord(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.records.get(rowKey({...owner,id}))); }
+  async listRecords(owner: LightTickOwner) { this.assertOwner(owner); return clone([...this.records.values()].filter(r => ownerKey(r) === ownerKey(owner))); }
+  async recordVersions(owner: LightTickOwner, id: string) { this.assertOwner(owner); return clone(this.recordHistory.get(rowKey({...owner,id})) ?? []).reverse(); }
+  async saveRecord(row: LightTickRecordRow, baseVersion: number) {
+    const key=rowKey(row),current=this.records.get(key);
+    if ((current?.version ?? 0) !== baseVersion) throw new ApplicationError(409,"LIGHTTICK_VERSION_CONFLICT","Record version changed.");
+    this.records.set(key,clone(row)); this.recordHistory.set(key,[...(this.recordHistory.get(key)??[]),clone(row.payload)]);
+    this.changes.push({...row,entityType:"record",entityId:row.id,entityVersion:row.version,operation:"upsert",snapshot:clone(row.payload) as unknown as Record<string,unknown>,changedAt:row.payload.updated_at,sequence:++this.sequence});
+  }
   async lockPlanningOwner(owner: LightTickOwner) { this.assertOwner(owner); }
   async getPlanningSession(owner: LightTickOwner, id: string) {
     this.assertOwner(owner); return clone(this.planningSessions.get(rowKey({ ...owner, id })));
@@ -322,6 +336,7 @@ export class InMemoryLightTickRepository implements LightTickRepository {
     for (const [key, operation] of this.upgradeOperations)
       if (operation.result.guestUserId === owner.userId || operation.result.targetUserId === owner.userId)
         this.upgradeOperations.delete(key);
+    for (const key of this.records.keys()) if (key.startsWith(ownerKey(owner)+":")) { this.records.delete(key); this.recordHistory.delete(key); }
     for (const store of [this.planningSessions,this.goals,this.plans,this.tasks,this.taskSteps,this.reflections,this.reviews,this.proposals,this.aiRuns,this.operations,this.devices]) {
       for (const key of store.keys()) if (key.startsWith(prefix)) store.delete(key);
     }

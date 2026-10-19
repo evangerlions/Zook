@@ -1,0 +1,6 @@
+{
+  "code": "APP_SCOPE_FORBIDDEN",
+  "message": "Guest sessions cannot access records.",
+  "data": null,
+  "requestId": "fixture-records-forbidden"
+}

@@ -11,6 +11,8 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: lighttick-records
+    description: Independent personal records, versions, archive and export.
   - name: lighttick-planning
     description: Versioned planning conversations and explicit draft confirmation.
   - name: lighttick-phase2
@@ -36,6 +38,297 @@ tags:
   - name: lighttick-config
     description: Public, non-secret native client configuration.
 paths:
+  /api/v1/lighttick/records:
+    get:
+      operationId: listLightTickRecords
+      tags:
+      - lighttick-records
+      summary: listLightTickRecords
+      description: Registered LightTick owner only. No goal or AI call. Writes require
+        an immutable Idempotency-Key; same key with another body or resource returns
+        409. base_version protects edits, archive and restore. Optional adopted_summary
+        requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordPageEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: date
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: archived
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'false'
+          - 'true'
+          - all
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+  /api/v1/lighttick/records/export:
+    get:
+      operationId: exportLightTickRecords
+      tags:
+      - lighttick-records
+      summary: exportLightTickRecords
+      description: Registered LightTick owner only. No goal or AI call. Writes require
+        an immutable Idempotency-Key; same key with another body or resource returns
+        409. base_version protects edits, archive and restore. Optional adopted_summary
+        requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordExportEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+  /api/v1/lighttick/records/{recordId}:
+    get:
+      operationId: getLightTickRecord
+      tags:
+      - lighttick-records
+      summary: getLightTickRecord
+      description: Registered LightTick owner only. No goal or AI call. Writes require
+        an immutable Idempotency-Key; same key with another body or resource returns
+        409. base_version protects edits, archive and restore. Optional adopted_summary
+        requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+    put:
+      operationId: saveLightTickRecord
+      tags:
+      - lighttick-records
+      summary: saveLightTickRecord
+      description: Registered LightTick owner only. No goal or AI call. Writes require
+        an immutable Idempotency-Key; same key with another body or resource returns
+        409. base_version protects edits, archive and restore. Optional adopted_summary
+        requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickRecordWriteRequest'
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /api/v1/lighttick/records/{recordId}/versions:
+    get:
+      operationId: listLightTickRecordVersions
+      tags:
+      - lighttick-records
+      summary: listLightTickRecordVersions
+      description: Registered LightTick owner only. No goal or AI call. Writes require
+        an immutable Idempotency-Key; same key with another body or resource returns
+        409. base_version protects edits, archive and restore. Optional adopted_summary
+        requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordVersionsEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+  /api/v1/lighttick/records/{recordId}/archive:
+    post:
+      operationId: archiveLightTickRecord
+      tags:
+      - lighttick-records
+      summary: archiveLightTickRecord
+      description: Registered LightTick owner only. No goal or AI call. Writes require
+        an immutable Idempotency-Key; same key with another body or resource returns
+        409. base_version protects edits, archive and restore. Optional adopted_summary
+        requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickRecordVersionRequest'
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /api/v1/lighttick/records/{recordId}/restore:
+    post:
+      operationId: restoreLightTickRecord
+      tags:
+      - lighttick-records
+      summary: restoreLightTickRecord
+      description: Registered LightTick owner only. No goal or AI call. Writes require
+        an immutable Idempotency-Key; same key with another body or resource returns
+        409. base_version protects edits, archive and restore. Optional adopted_summary
+        requires summary_basis_version <= base_version. Dates must be real calendar
+        dates.
+      responses:
+        '200':
+          description: Owner scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LightTickRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/LightTickError'
+        '401':
+          $ref: '#/components/responses/LightTickError'
+        '403':
+          $ref: '#/components/responses/LightTickError'
+        '404':
+          $ref: '#/components/responses/LightTickError'
+        '409':
+          $ref: '#/components/responses/LightTickError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LightTickRecordVersionRequest'
+      parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[a-zA-Z0-9_-]+$
+      - $ref: '#/components/parameters/IdempotencyKey'
   /api/v1/lighttick/planning-sessions:
     post:
       operationId: createLightTickPlanningSession
@@ -1538,6 +1831,238 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/LightTickErrorEnvelope" }
   schemas:
+    LightTickRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        raw_text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        record_date:
+          type: string
+          format: date
+        prompt_kind:
+          type: string
+          enum:
+          - free
+          - learning
+          - difficulty
+          - decision
+          default: free
+        guided_answers:
+          type: object
+          maxProperties: 12
+          additionalProperties:
+            type: string
+            maxLength: 2000
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+        adopted_summary:
+          type: string
+          maxLength: 10000
+        summary_basis_version:
+          type: integer
+          minimum: 1
+        id:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        archived_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - raw_text
+      - record_date
+      - prompt_kind
+      - guided_answers
+      - tags
+      - version
+      - created_at
+      - updated_at
+    LightTickRecordWriteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        raw_text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        record_date:
+          type: string
+          format: date
+        prompt_kind:
+          type: string
+          enum:
+          - free
+          - learning
+          - difficulty
+          - decision
+          default: free
+        guided_answers:
+          type: object
+          maxProperties: 12
+          additionalProperties:
+            type: string
+            maxLength: 2000
+        tags:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+        adopted_summary:
+          type: string
+          maxLength: 10000
+        summary_basis_version:
+          type: integer
+          minimum: 1
+        base_version:
+          type: integer
+          minimum: 0
+      required:
+      - raw_text
+      - record_date
+      - base_version
+    LightTickRecordVersionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        base_version:
+          type: integer
+          minimum: 1
+      required:
+      - base_version
+    LightTickRecordEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LightTickRecord'
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    LightTickRecordPageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickRecord'
+            has_more:
+              type: boolean
+            next_cursor:
+              type: string
+          required:
+          - items
+          - has_more
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    LightTickRecordVersionsEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/LightTickRecord'
+          required:
+          - items
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    LightTickRecordExportEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+          properties:
+            format_version:
+              type: integer
+              const: 1
+            exported_at:
+              type: string
+              format: date-time
+            records:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                properties:
+                  record:
+                    $ref: '#/components/schemas/LightTickRecord'
+                  versions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LightTickRecord'
+                required:
+                - record
+                - versions
+          required:
+          - format_version
+          - exported_at
+          - records
+        requestId:
+          type: string
+      required:
+      - code
+      - message
+      - data
+      - requestId
     LightTickPlanningValue:
       type: object
       additionalProperties: false

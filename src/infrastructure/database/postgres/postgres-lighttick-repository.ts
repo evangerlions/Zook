@@ -1,3 +1,5 @@
+import { PostgresRecordStore } from "./postgres-lighttick-record-store.ts";
+import type { LightTickRecordRow } from "../../../modules/lighttick/lighttick-record.service.ts";
 import { PostgresReflectionStore } from "./postgres-lighttick-reflection-store.ts";
 import type { LightTickReflectionRow } from "../../../modules/lighttick/lighttick-reflection.service.ts";
 import type { PlanningSession } from "../../../modules/lighttick/planning/planning.types.ts";
@@ -52,6 +54,16 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return await (this.session.getStore() ?? this.connector).query(sql, values);
   }
 
+  async lockRecordOwner(owner: LightTickOwner) {
+    await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`records:${owner.appId}:${owner.userId}`]);
+  }
+  private recordStore() { return new PostgresRecordStore(this.query.bind(this)); }
+  async getRecord(owner: LightTickOwner, id: string) { return this.recordStore().getRecord(owner, id); }
+  async listRecords(owner: LightTickOwner) { return this.recordStore().listRecords(owner); }
+  async recordVersions(owner: LightTickOwner, id: string) { return this.recordStore().recordVersions(owner, id); }
+  async saveRecord(row: LightTickRecordRow, baseVersion: number) {
+    return this.transaction(row, () => this.recordStore().saveRecord(row, baseVersion));
+  }
   async lockPlanningOwner(owner: LightTickOwner) {
     await this.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`planning:${owner.appId}:${owner.userId}`]);
     // Existing non-session mutations lock these same rows on write.
@@ -570,10 +582,11 @@ export class PostgresLightTickRepository implements LightTickRepository {
     return Boolean(result.rowCount);
   }
   async deleteOwnerData(owner: LightTickOwner): Promise<void> {
-    const tables = ["reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
+    const tables = ["record_versions","records","reflections","planning_sessions","task_steps","tasks","change_proposals","reviews","plan_cycles",
       "outcome_evidence","milestones","goal_contexts","task_families","goals","execution_events",
       "ai_runs","change_log","operations","sync_cursors","devices","profiles","guest_identities","insight_audits","chat_messages","dna_insights"];
     await this.transaction(owner, async () => {
+      await this.lockRecordOwner(owner);
       await this.query(`DELETE FROM zook_lighttick_account_upgrades WHERE app_id=$1
         AND (guest_user_id=$2 OR target_user_id=$2)`, [owner.appId,owner.userId]);
       for (const suffix of tables) await this.query(`DELETE FROM zook_lighttick_${suffix} WHERE app_id=$1 AND user_id=$2`, [owner.appId,owner.userId]);

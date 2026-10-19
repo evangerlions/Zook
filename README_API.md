@@ -1292,3 +1292,20 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 允许的 Web Origin 发起 `OPTIONS` 预检后，服务端允许 `GET/POST/PUT/PATCH/DELETE/OPTIONS`。个人同步的 `Authorization`、`Content-Type`、`X-Sync-Epoch`、`Idempotency-Key`、`If-Match` 可用于跨域请求；响应会反映浏览器声明的请求头，默认请求头列表也包含这三个同步头。`PUT` 修正睡眠原始记录、报告和偏好不应被浏览器预检拦截。Origin allowlist、鉴权和账号归属规则仍独立生效。原始记录和升级协议见 [私人同步](docs/public-frogsleep-personal-sync.md) 与 [游客升级](docs/public-frogsleep-guest-upgrade.md)。
 
 私人同步与游客创建/升级由资源服务拥有数据库事务，HTTP 错误转换在其提交/回滚之后执行；升级冲突不能留下已迁入的部分记录。SQL 提交后才撤销游客会话；会话清理失败时可保留原请求重试，不能把5xx视为未提交。dev 专项入口与可删账号边界见 [验收记录](docs/frogsleep-dev-personal-sync-acceptance-2026-10-18.md)。
+
+### LightTick 独立记录（Grow I1）
+
+注册 LightTick 成员以 Token 中的 app/user 归属访问，无需 goal/plan；游客仅在客户端暂存。记录不会自动进入 AI 上下文。
+
+| 方法 | Canonical 路径 | 结果 |
+|---|---|---|
+| GET | `/api/v1/lighttick/records` | `items,has_more,next_cursor`；q/date/archived=false,true,all/limit(1–200)/cursor；日期降序后按 ID 降序，游标固定 owner 与筛选 |
+| GET | `/api/v1/lighttick/records/{recordId}` | 当前记录，他人或未知 ID 为 404 |
+| PUT | `/api/v1/lighttick/records/{recordId}` | 客户端稳定 ID，base_version=0 创建；之后使用当前版本 |
+| GET | `/api/v1/lighttick/records/{recordId}/versions` | 含归档/恢复操作的不可变历史，版本倒序 |
+| POST | `/api/v1/lighttick/records/{recordId}/archive`、`/restore` | body: `{base_version}`，产生新版本 |
+| GET | `/api/v1/lighttick/records/export` | format_version=1、exported_at、records[{record,versions}]，含归档及全部历史 |
+
+PUT 原文字段 raw_text（非空，最多 10000 UTF-16 code units），record_date 为真实 YYYY-MM-DD；prompt_kind 为 free/learning/difficulty/decision，guided_answers 可选（最多12项，每值2000字符），tags 可选（最多20项，每项50字符）。采用整理 adopted_summary 需提供 summary_basis_version（1至base_version）；本轮不生成 AI 整理。
+
+所有写请求必须携带 8–128 字符 Idempotency-Key；同键同请求返回原结果，不再增加版本或变化；同键更换正文、对象或操作返回 LIGHTTICK_IDEMPOTENCY_MISMATCH(409)。陈旧版本为 LIGHTTICK_VERSION_CONFLICT(409)，输入不得自动覆盖。写入、历史、请求结果与 sync change log 同事务；sync/pull 返回 entity_type=record 的完整快照，sync/push 仍仅承载已有任务事件。LightTick 应用删除覆盖新表、历史、操作及变化日志，其他产品保持原归属。无旧 Grow 数据迁移或账户自动合并。
