@@ -428,3 +428,26 @@ public struct PlanningSession: Codable, Equatable, Sendable {
     public let updated_at: String
 }
 // END GENERATED PLANNING SESSION
+
+// Shared action workspace. Canonical wire names follow action-plans OpenAPI.
+public struct LightTickActionTarget: Codable, Equatable, Sendable {
+    public var kind: String; public var course: String; public var plan_id: String; public var lesson_no: Int
+}
+public struct LightTickActionProgress: Codable, Equatable, Sendable {
+    public var minutes: Int; public var completed: Int; public var minimum: Int; public var interrupted: Int
+}
+public struct LightTickActionPlan: Codable, Identifiable, Equatable, Sendable {
+    public var id: String; public var revision: Int; public var title: String; public var period: String; public var horizon: String
+    public var start_date: String; public var end_date: String; public var timezone: String; public var parent_id: String?
+    public var target_minutes: Int; public var minimum_minutes: Int; public var target_count: Int; public var at: String; public var reminder: Bool
+    public var reason: String; public var if_then: String; public var target: LightTickActionTarget
+    public var status: String; public var reminder_at: String; public var progress: LightTickActionProgress; public var blocked: Bool
+}
+public struct LightTickActionExecution: Codable, Identifiable, Equatable, Sendable {
+    public var id: String; public var plan_id: String; public var title: String; public var started_at: String
+    public var actual_minutes: Int; public var outcome: String; public var note: String; public var business_date: String; public var planned_minutes: Int
+}
+public struct LightTickActionWorkspace: Codable, Equatable, Sendable {
+    public var plans: [LightTickActionPlan]; public var execution: LightTickActionExecution?
+    public var server_time: String; public var workspace_version: Int
+}

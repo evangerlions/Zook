@@ -1,3 +1,4 @@
+import {generateSummary,prepareSummary,publicReport,recoverSummaries,runSummary,type SummaryGenerator} from './action.summary.ts';
 import {randomUUID} from 'node:crypto';
 import type {LightTickRepository} from '../lighttick.repository.ts';
 import type {LightTickOwner} from '../lighttick.types.ts';
@@ -6,11 +7,13 @@ import {digest,object,text,integer,getPlan,reject,localParts,businessDay,activeA
 import {createPlans,mutatePlan} from './action.commands.ts';
 import {listing,reviewContext,calendar} from './action.projections.ts';
 export class ActionService {
- constructor(readonly repository:LightTickRepository,readonly clock=()=>new Date()){}
+ constructor(readonly repository:LightTickRepository,readonly clock=()=>new Date(),readonly generator:SummaryGenerator=generateSummary){}
  async readWorkspace(owner:LightTickOwner){return await this.repository.getActionWorkspace(owner)??{...owner,data:emptyWorkspace(),version:0};}
  async request(owner:LightTickOwner,method:string,path:string,body:unknown={},query:Json={}):Promise<Json|string>{
-  return this.repository.transaction(owner,async()=>{
+  let fresh:{report:Json;config:Json}|undefined;
+  const value=await this.repository.transaction(owner,async()=>{
    await this.repository.lockActionOwner(owner);const row=await this.readWorkspace(owner),w=row.data,now=this.clock(),b=object(body);
+   if(recoverSummaries(w,now)){row.version++;await this.repository.saveActionWorkspace(row);}
    if(method==='GET')return this.read(w,path,query,now,row.version,owner);
    if(method!=='POST')reject(405,'请求方式无效。');
    if(path==='/reviews/preview'){const facts=reviewContext(w,b);return {...facts,snapshot_hash:digest(facts)};}
@@ -20,12 +23,13 @@ export class ActionService {
     const notify=eligible&&!w.claims[identity];if(notify){w.claims[identity]=now.toISOString();row.version++;await this.repository.saveActionWorkspace(row);}return {notify};
    }
    const key=text(b.key,160,true);if(key.length<8)reject(422,'请求编号过短。');
-   const payloadHash=digest({method,path,body:b}),old=await this.repository.getOperation(owner,'action:'+key);
+   const payloadHash=digest({method,path,body:path==='/reviews/generate'?Object.fromEntries(Object.entries(b).filter(([k])=>k!=='ai_config')):b}),old=await this.repository.getOperation(owner,'action:'+key);
    if(old){if(old.payloadHash!==payloadHash)reject(409,'同一请求编号不能提交不同内容。');return old.resultPayload;}
    if(w.legacy_operations?.[key])reject(409,'这是接管前的请求，请刷新并核对已有计划后再操作。');
    let result:Json;
    if(path==='')result=createPlans(w,b,now);
    else if(/^\/action-[a-zA-Z0-9-]+\/operations$/.test(path))result=mutatePlan(w,path.split('/')[1],b,now);
+   else if(path==='/reviews/generate'){fresh=prepareSummary(w,b,now);result={report:publicReport(fresh.report)};}
    else if(path==='/reviews'){
     if(w.reviews.length>=2000)reject(422,'复盘数量已达首版容量上限。');
     const facts=reviewContext(w,b),review={...Object.fromEntries(['plan_id','start_date','end_date'].map(k=>[k,b[k]])),worked:text(b.worked??'',2000),obstacles:text(b.obstacles??'',2000),next_action:text(b.next_action??'',2000),id:'review-'+randomUUID().replaceAll('-',''),created_at:now.toISOString(),stats:facts.stats,plan_title:facts.plan.title};
@@ -35,6 +39,8 @@ export class ActionService {
    await this.repository.saveOperation({...owner,operationId:'action:'+key,deviceId:'actions',entityType:'action_workspace',entityId:'workspace',action:path,payloadHash,requestPayload:{},resultPayload:result!,status:'accepted',createdAt:now.toISOString(),updatedAt:now.toISOString()});
    return structuredClone(result!);
   });
+  if(fresh)void runSummary(this,owner,fresh.report,fresh.config,this.generator).catch(()=>{});
+  return value;
  }
  private async read(w:ActionWorkspace,path:string,q:Json,now:Date,version:number,owner:LightTickOwner):Promise<Json|string>{
   if(path==='')return listing(w,now,version);

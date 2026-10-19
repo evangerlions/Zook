@@ -1292,3 +1292,8 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 允许的 Web Origin 发起 `OPTIONS` 预检后，服务端允许 `GET/POST/PUT/PATCH/DELETE/OPTIONS`。个人同步的 `Authorization`、`Content-Type`、`X-Sync-Epoch`、`Idempotency-Key`、`If-Match` 可用于跨域请求；响应会反映浏览器声明的请求头，默认请求头列表也包含这三个同步头。`PUT` 修正睡眠原始记录、报告和偏好不应被浏览器预检拦截。Origin allowlist、鉴权和账号归属规则仍独立生效。原始记录和升级协议见 [私人同步](docs/public-frogsleep-personal-sync.md) 与 [游客升级](docs/public-frogsleep-guest-upgrade.md)。
 
 私人同步与游客创建/升级由资源服务拥有数据库事务，HTTP 错误转换在其提交/回滚之后执行；升级冲突不能留下已迁入的部分记录。SQL 提交后才撤销游客会话；会话清理失败时可保留原请求重试，不能把5xx视为未提交。dev 专项入口与可删账号边界见 [验收记录](docs/frogsleep-dev-personal-sync-acceptance-2026-10-18.md)。
+
+
+## LightTick 共享行动计划
+
+新增 `/api/v1/lighttick/action-plans`、`/action-plans/{id}/operations`、执行记录、复盘及AI历史、日历、`/action-link-tickets` 和受信 `/grow-bridge`。正式账号公共登录鉴权；功能开关 `LIGHTTICK_ACTIONS_ENABLED=1`，未开启返回503。完整方法、字段、幂等、签名、接管恢复与错误语义见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。

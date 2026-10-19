@@ -270,3 +270,19 @@ data class PlanningSession(
     val updated_at: String,
 )
 // END GENERATED PLANNING SESSION
+
+// Shared action workspace. Canonical wire names follow action-plans OpenAPI.
+data class LightTickActionTarget(val kind: String, val course: String, val plan_id: String, val lesson_no: Int)
+data class LightTickActionProgress(val minutes: Int, val completed: Int, val minimum: Int, val interrupted: Int)
+data class LightTickActionPlan(
+    val id: String, val revision: Int, val title: String, val period: String, val horizon: String,
+    val start_date: String, val end_date: String, val timezone: String, val parent_id: String?,
+    val target_minutes: Int, val minimum_minutes: Int, val target_count: Int, val at: String, val reminder: Boolean,
+    val reason: String, val if_then: String, val target: LightTickActionTarget,
+    val status: String, val reminder_at: String, val progress: LightTickActionProgress, val blocked: Boolean,
+)
+data class LightTickActionExecution(
+    val id: String, val plan_id: String, val title: String, val started_at: String,
+    val actual_minutes: Int, val outcome: String, val note: String, val business_date: String, val planned_minutes: Int,
+)
+data class LightTickActionWorkspace(val plans: List<LightTickActionPlan>, val execution: LightTickActionExecution?, val server_time: String, val workspace_version: Int)
