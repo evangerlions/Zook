@@ -20,7 +20,7 @@ process.env.GROW_ACTION_BRIDGE_SECRET='TEST_ONLY_BRIDGE_SECRET_01234567890123456
 const seed=buildDefaultSeed(undefined,{includeLightTick:true});
 const delivery=seed.appConfigs.find(c=>c.id==='cfg_lighttick_delivery_config')!;
 const deliveryValue=JSON.parse(delivery.configValue);
-delivery.configValue=JSON.stringify({...deliveryValue,enabled:true,featureFlags:{...deliveryValue.featureFlags,offlineSync:true,notifications:true}});
+delivery.configValue=JSON.stringify({...deliveryValue,enabled:true,minimumClientVersions:{ios:'1.0.0',android:'0.1.0'},featureFlags:{...deliveryValue.featureFlags,offlineSync:true,notifications:true}});
 for(const userId of ['user_alice','user_bob'])seed.appUsers.push({id:'action-qa-'+userId,appId:'lighttick',userId,status:'ACTIVE',accountRegion:'UNKNOWN',joinedAt:new Date().toISOString()});
 const runtime=await createApplication({seed,lighttickEnabled:true,lighttickRepository:repository,accessTokenSecret:'TEST_ONLY_ACTION_QA_SESSION_SECRET_0123456789'});
 const product=runtime.services.lighttickRuntime!;
