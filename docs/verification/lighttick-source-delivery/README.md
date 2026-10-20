@@ -1,5 +1,7 @@
 # LightTick P0 C2 来源投递验证
 
+> 后续修复：本报告记录 C2 原验收基线。8 个行数失败已全部修复，合同警告 212→197，最新测试与限制见 [工程门禁修复验收](../lighttick-source-repair/README.md)。
+
 日期：2026-10-21。基线 `71bb271`（C0/C1），C2 实施提交 `f6a6363`，沿用 `feature/lighttick-p0-v2-contract-runtime`；Grow 基线 `fc19fa0`、本轮提交 `110d36d`，工作树 `/Users/hao/.codex/worktrees/action-plans-p0/grow`。未合并、推送、部署或配对真实账号。
 
 ## 交付与信任边界
