@@ -756,4 +756,4 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 
 ### LightTick 行动计划联动（功能开关）
 
-新增 PostgreSQL 074 迁移与账号事务锁，支持年/月/周/日层级、执行事实、复盘、请求回执和 Grow 单写者接管。canonical API 见 README_API.md 和 docs/public-lighttick-actions.md；现有 goal/plan/task API 独立。未启用生产或迁移真实账号。
+沿用 PostgreSQL 074 JSONB workspace及账号事务锁；P0 v2内部运行时已支持nullable日程、time/content/check、累计分钟、completion/reversal、实际日期、来源证据消费与稳定错误码。公共写入与新接管硬关闭，既有开关仅提供读取；实际来源登记/投递和v2快照接管仍未完成，不声明可用content_receipts。canonical API见README_API.md和docs/public-lighttick-actions.md；现有goal/plan/task独立。原生未改，未发布或迁移真实账号。

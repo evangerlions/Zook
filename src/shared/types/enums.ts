@@ -90,6 +90,15 @@ export type ContentSafetyCheckMethod =
   | "failed_open";
 export type ContentSafetyDecision = "pass" | "block" | "failed_open";
 export type ErrorCode =
+  | "VALIDATION_ERROR"
+  | "REVISION_CONFLICT"
+  | "STATE_CONFLICT"
+  | "RUNNING_CONFLICT"
+  | "DUPLICATE_SCHEDULE"
+  | "FUTURE_ACTION"
+  | "UNSCHEDULED_ACTION"
+  | "COMPLETION_EVIDENCE_MISSING"
+  | "CONTRACT_UPGRADE_REQUIRED"
   | "FROGSLEEP_GUEST_UPGRADE_UNSUPPORTED"
   | "FROGSLEEP_JOB_NOT_FOUND"
   | "FROGSLEEP_RETRY_NOT_ALLOWED"

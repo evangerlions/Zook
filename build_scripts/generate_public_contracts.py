@@ -116,6 +116,11 @@ SPECS: dict[str, list[str]] = {
     ],
     "lighttick/api.yaml": [
         'LightTickActionTarget',
+        'LightTickActionCapabilities',
+        'LightTickActionScheduleRequest',
+        'LightTickActionCreateResult',
+        'LightTickActionMutationResult',
+        'LightTickActionScheduleResult',
         'LightTickActionFields',
         'LightTickActionCreateRequest',
         'LightTickActionProgress',

@@ -1296,4 +1296,4 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 
 ## LightTick 共享行动计划
 
-新增 `/api/v1/lighttick/action-plans`、`/action-plans/{id}/operations`、执行记录、复盘及AI历史、日历、`/action-link-tickets` 和受信 `/grow-bridge`。正式账号公共登录鉴权；功能开关 `LIGHTTICK_ACTIONS_ENABLED=1`，未开启返回503。完整方法、字段、幂等、签名、接管恢复与错误语义见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+`/api/v1/lighttick/action-plans` 及 `/schedules`、operations、执行记录、复盘/AI历史和日历已对齐P0 v2字段与内部完成语义。正式账号公共登录鉴权；`LIGHTTICK_ACTIONS_ENABLED=1`仅启用读取，**公共写入、新连接码与Grow claim/import保持关闭**。行动POST须声明 `X-Grow-Action-Schema: 2`，正确版本仍返回409/CONTRACT_UPGRADE_REQUIRED及CONNECTION_WRITES_DISABLED原因；签名桥接同样不放行。原生端、真实来源投递与v2接管尚未完成。完整字段、错误码和边界见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
