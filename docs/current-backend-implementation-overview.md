@@ -761,3 +761,7 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 ### 2026-10-21 LightTick 连接 P0 C2
 
 新增已绑定 Grow 私有来源证明、HMAC 行动上下文、确认事件 inbox/幂等回执和完成核对。复用现有 owner JSONB workspace/事务锁；没有新增独立后端。Grow 使用租户 publication journal + outbox 恢复投递，私密内容不进入事件载荷。普通连接写入、配对、v2 接管及公开消费者能力仍关闭。C3 接管与原生消费者、生产部署待后续验证；详见 docs/public-lighttick-actions.md 与 docs/verification/lighttick-source-delivery/README.md。
+
+### 2026-10-21 C2 验收工程门禁修复
+
+8 个超长文件已按现有职责拆分：基础设施装配、LightTick 响应投影、数据库 BodyLog 类型端口、RBAC 查询、成长后台查询、习惯模板 CRUD、小组查询/日记录/通知及后台 BodyLog/LLM API。外部方法、初始化顺序、SQL 查询和事务 query 回调保持不变；现有行数阈值/豁免名单未修改。详见 `docs/verification/lighttick-source-repair/README.md` 的回归与等价核对证据。本轮不实现 C3，不修改原生端或连接写入门禁。

@@ -1,3 +1,4 @@
+import type { ApplicationBodyLogDatabasePort } from './application-bodylog-database-port.ts';
 import type { SleepGuestStore } from "../../modules/frogsleep/guest/guest-store.ts";
 import type { PersonalSyncRepository } from "../../modules/frogsleep/personal-sync/personal-sync.types.ts";
 import type { FrogSleepAdminStore } from "../../modules/frogsleep/admin/frogsleep-admin.types.ts";
@@ -53,26 +54,6 @@ import type { LlmObservabilityStore } from "./llm-observability-store.ts";
 import type { AiNovelConversationStore } from "./ai-novel-conversation-store.ts";
 import type { FrogSleepBuddyCommandSlotKey } from "../../modules/frogsleep/buddy-growth/buddy-command-slot-keys.ts";
 import type { FrogSleepBuddyInvitationDecisionSafetyKey } from "../../modules/frogsleep/buddy-growth/buddy-decision-safety-key.ts";
-import type { BodyLogProfileRecord } from "../../modules/bodylog/bodylog-profile.types.ts";
-import type {
-  BodyLogBlockRecord,
-  BodyLogFriendRequestRecord,
-  BodyLogFriendshipRecord,
-  BodyLogReportRecord,
-} from "../../modules/bodylog/bodylog-social.types.ts";
-import type {
-  BodyLogDailyAggregate,
-  BodyLogLeaderboardEntryRecord,
-  BodyLogWeeklyGoalSnapshot,
-} from "../../modules/bodylog/bodylog-scoring.types.ts";
-import type {
-  BodyLogInvitationAttributionRecord,
-  BodyLogInvitationRecord,
-} from "../../modules/bodylog/bodylog-invitation.types.ts";
-import type {
-  BodyLogChallengeMemberRecord,
-  BodyLogChallengeRecord,
-} from "../../modules/bodylog/bodylog-challenge.types.ts";
 
 type MaybePromise<T> = T | Promise<T>;
 
@@ -130,47 +111,39 @@ export abstract class ApplicationDatabase {
   ): MaybePromise<AppUserRecord | undefined>;
   abstract deleteAppUserRuntimeData(appId: string, userId: string): MaybePromise<void>;
 
-  abstract findBodyLogProfile(
-    appId: string,
-    userId: string,
-  ): MaybePromise<BodyLogProfileRecord | undefined>;
-  abstract listBodyLogProfilesByIds(
-    appId: string,
-    userIds: string[],
-  ): MaybePromise<Map<string, BodyLogProfileRecord>>;
-  abstract upsertBodyLogProfile(
-    record: BodyLogProfileRecord,
-  ): MaybePromise<BodyLogProfileRecord>;
-  abstract listBodyLogFriendRequests(appId: string): MaybePromise<BodyLogFriendRequestRecord[]>;
-  abstract upsertBodyLogFriendRequest(record: BodyLogFriendRequestRecord): MaybePromise<BodyLogFriendRequestRecord>;
-  abstract listBodyLogFriendships(appId: string): MaybePromise<BodyLogFriendshipRecord[]>;
-  abstract insertBodyLogFriendship(record: BodyLogFriendshipRecord): MaybePromise<void>;
-  abstract deleteBodyLogFriendship(appId: string, userId: string, friendUserId: string): MaybePromise<void>;
-  abstract listBodyLogBlocks(appId: string): MaybePromise<BodyLogBlockRecord[]>;
-  abstract insertBodyLogBlock(record: BodyLogBlockRecord): MaybePromise<void>;
-  abstract deleteBodyLogBlock(appId: string, blockerUserId: string, blockedUserId: string): MaybePromise<void>;
-  abstract insertBodyLogReport(record: BodyLogReportRecord): MaybePromise<void>;
-  abstract listBodyLogReports(appId: string, reporterUserId: string): MaybePromise<BodyLogReportRecord[]>;
-  abstract findBodyLogWeeklyGoalSnapshot(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogWeeklyGoalSnapshot | undefined>;
-  abstract upsertBodyLogWeeklyGoalSnapshot(record: BodyLogWeeklyGoalSnapshot): MaybePromise<BodyLogWeeklyGoalSnapshot>;
-  abstract listBodyLogDailyAggregates(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogDailyAggregate[]>;
-  abstract upsertBodyLogDailyAggregate(record: BodyLogDailyAggregate): MaybePromise<BodyLogDailyAggregate>;
-  abstract findBodyLogLeaderboardEntry(appId: string, userId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord | undefined>;
-  abstract upsertBodyLogLeaderboardEntry(record: BodyLogLeaderboardEntryRecord): MaybePromise<BodyLogLeaderboardEntryRecord>;
-  abstract listBodyLogLeaderboardEntries(appId: string, seasonLabel: string): MaybePromise<BodyLogLeaderboardEntryRecord[]>;
-  abstract findBodyLogInvitationByTokenHash(appId: string, tokenHash: string): MaybePromise<BodyLogInvitationRecord | undefined>;
-  abstract findBodyLogInvitationByCode(appId: string, code: string): MaybePromise<BodyLogInvitationRecord | undefined>;
-  abstract insertBodyLogInvitation(record: BodyLogInvitationRecord): MaybePromise<void>;
-  abstract listBodyLogInvitations(appId: string, inviterUserId: string): MaybePromise<BodyLogInvitationRecord[]>;
-  abstract insertBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
-  abstract updateBodyLogInvitationAttribution(record: BodyLogInvitationAttributionRecord): MaybePromise<void>;
-  abstract listBodyLogInvitationAttributions(appId: string): MaybePromise<BodyLogInvitationAttributionRecord[]>;
-  abstract insertBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
-  abstract updateBodyLogChallenge(record: BodyLogChallengeRecord): MaybePromise<void>;
-  abstract listBodyLogChallenges(appId: string): MaybePromise<BodyLogChallengeRecord[]>;
-  abstract insertBodyLogChallengeMembers(records: BodyLogChallengeMemberRecord[]): MaybePromise<void>;
-  abstract updateBodyLogChallengeMember(record: BodyLogChallengeMemberRecord): MaybePromise<void>;
-  abstract listBodyLogChallengeMembers(appId: string): MaybePromise<BodyLogChallengeMemberRecord[]>;
+  abstract findBodyLogProfile(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogProfile']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogProfile']>;
+  abstract listBodyLogProfilesByIds(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogProfilesByIds']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogProfilesByIds']>;
+  abstract upsertBodyLogProfile(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogProfile']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogProfile']>;
+  abstract listBodyLogFriendRequests(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogFriendRequests']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogFriendRequests']>;
+  abstract upsertBodyLogFriendRequest(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogFriendRequest']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogFriendRequest']>;
+  abstract listBodyLogFriendships(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogFriendships']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogFriendships']>;
+  abstract insertBodyLogFriendship(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogFriendship']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogFriendship']>;
+  abstract deleteBodyLogFriendship(...args: Parameters<ApplicationBodyLogDatabasePort['deleteBodyLogFriendship']>): ReturnType<ApplicationBodyLogDatabasePort['deleteBodyLogFriendship']>;
+  abstract listBodyLogBlocks(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogBlocks']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogBlocks']>;
+  abstract insertBodyLogBlock(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogBlock']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogBlock']>;
+  abstract deleteBodyLogBlock(...args: Parameters<ApplicationBodyLogDatabasePort['deleteBodyLogBlock']>): ReturnType<ApplicationBodyLogDatabasePort['deleteBodyLogBlock']>;
+  abstract insertBodyLogReport(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogReport']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogReport']>;
+  abstract listBodyLogReports(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogReports']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogReports']>;
+  abstract findBodyLogWeeklyGoalSnapshot(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogWeeklyGoalSnapshot']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogWeeklyGoalSnapshot']>;
+  abstract upsertBodyLogWeeklyGoalSnapshot(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogWeeklyGoalSnapshot']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogWeeklyGoalSnapshot']>;
+  abstract listBodyLogDailyAggregates(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogDailyAggregates']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogDailyAggregates']>;
+  abstract upsertBodyLogDailyAggregate(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogDailyAggregate']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogDailyAggregate']>;
+  abstract findBodyLogLeaderboardEntry(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogLeaderboardEntry']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogLeaderboardEntry']>;
+  abstract upsertBodyLogLeaderboardEntry(...args: Parameters<ApplicationBodyLogDatabasePort['upsertBodyLogLeaderboardEntry']>): ReturnType<ApplicationBodyLogDatabasePort['upsertBodyLogLeaderboardEntry']>;
+  abstract listBodyLogLeaderboardEntries(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogLeaderboardEntries']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogLeaderboardEntries']>;
+  abstract findBodyLogInvitationByTokenHash(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogInvitationByTokenHash']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogInvitationByTokenHash']>;
+  abstract findBodyLogInvitationByCode(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogInvitationByCode']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogInvitationByCode']>;
+  abstract insertBodyLogInvitation(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogInvitation']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogInvitation']>;
+  abstract listBodyLogInvitations(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogInvitations']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogInvitations']>;
+  abstract insertBodyLogInvitationAttribution(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogInvitationAttribution']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogInvitationAttribution']>;
+  abstract updateBodyLogInvitationAttribution(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogInvitationAttribution']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogInvitationAttribution']>;
+  abstract listBodyLogInvitationAttributions(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogInvitationAttributions']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogInvitationAttributions']>;
+  abstract insertBodyLogChallenge(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogChallenge']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogChallenge']>;
+  abstract updateBodyLogChallenge(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogChallenge']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogChallenge']>;
+  abstract listBodyLogChallenges(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogChallenges']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogChallenges']>;
+  abstract insertBodyLogChallengeMembers(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogChallengeMembers']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogChallengeMembers']>;
+  abstract updateBodyLogChallengeMember(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogChallengeMember']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogChallengeMember']>;
+  abstract listBodyLogChallengeMembers(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogChallengeMembers']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogChallengeMembers']>;
   abstract listRoles(appId?: string): MaybePromise<RoleRecord[]>;
   abstract findRole(appId: string, roleCode: string): MaybePromise<RoleRecord | undefined>;
   abstract insertRoles(records: RoleRecord[]): MaybePromise<void>;
@@ -462,7 +435,6 @@ export abstract class ApplicationDatabase {
   }): MaybePromise<ContentSafetyCheckRecord[]>;
   abstract deleteContentSafetyCheckRecordsCreatedBefore(cutoffIso: string): MaybePromise<number>;
 
-
   abstract insertFeedback(
     record: FeedbackRecord,
     attachments: FeedbackAttachmentRecord[],
@@ -552,188 +524,29 @@ export abstract class ApplicationDatabase {
 
   // ─── BodyLog 后台打卡管理 ───
 
-  abstract getBodyLogCheckinDashboard(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-    timezone: string;
-  }): MaybePromise<{
-    summary: {
-      dau: number;
-      checkins_today: number;
-      active_groups: number;
-      total_groups: number;
-      total_members: number;
-      checkin_rate_daily: number;
-      checkin_rate_weekly: number;
-      checkin_rate_monthly: number;
-    };
-    trend: Array<{
-      date: string;
-      dau: number;
-      checkins: number;
-      completion_rate: number;
-    }>;
-    consecutive_distribution: Array<{
-      bucket: string;
-      users: number;
-    }>;
-    habit_distribution: Array<{
-      habit_id: string;
-      checkins: number;
-      share: number;
-    }>;
-  }>;
+  abstract getBodyLogCheckinDashboard(...args: Parameters<ApplicationBodyLogDatabasePort['getBodyLogCheckinDashboard']>): ReturnType<ApplicationBodyLogDatabasePort['getBodyLogCheckinDashboard']>;
 
-  abstract listBodyLogCheckinUserDates(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-  }): MaybePromise<Array<{ userId: string; date: string }>>;
+  abstract listBodyLogCheckinUserDates(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogCheckinUserDates']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogCheckinUserDates']>;
 
-  abstract searchBodyLogCheckinRecords(input: {
-    appId: string;
-    userId?: string;
-    groupId?: string;
-    fromDate?: string;
-    toDate?: string;
-    page: number;
-    limit: number;
-  }): MaybePromise<{
-    items: Array<{
-      recordId: string;
-      date: string;
-      groupId: string;
-      groupName: string;
-      userId: string;
-      completedCount: number;
-      totalMembers: number;
-      completionRate: number;
-      createdAt: string;
-    }>;
-    total: number;
-  }>;
+  abstract searchBodyLogCheckinRecords(...args: Parameters<ApplicationBodyLogDatabasePort['searchBodyLogCheckinRecords']>): ReturnType<ApplicationBodyLogDatabasePort['searchBodyLogCheckinRecords']>;
 
-  abstract listBodyLogGroupHealth(input: {
-    appId: string;
-    status?: string;
-    health?: "active" | "stale" | "dead";
-    fromDate: string;
-    toDate: string;
-    page: number;
-    limit: number;
-  }): MaybePromise<{
-    items: Array<{
-      groupId: string;
-      name: string;
-      status: string;
-      memberCount: number;
-      leaderUserId: string;
-      createdAt: string;
-      lastActiveDate: string;
-      checkins7d: number;
-      checkins30d: number;
-      activeMembers7d: number;
-      completionRate7d: number;
-    }>;
-    total: number;
-  }>;
+  abstract listBodyLogGroupHealth(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogGroupHealth']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogGroupHealth']>;
 
-  abstract listBodyLogGroupMemberContributions(input: {
-    groupId: string;
-    fromDate: string;
-    toDate: string;
-  }): MaybePromise<Array<{
-    userId: string;
-    nickname: string;
-    avatarKey: string | null;
-    role: string;
-    status: string;
-    checkinCount: number;
-    lastCheckinAt: string;
-  }>>;
+  abstract listBodyLogGroupMemberContributions(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogGroupMemberContributions']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogGroupMemberContributions']>;
 
-  abstract listBodyLogHabitUsage(input: {
-    appId: string;
-    fromDate: string;
-    toDate: string;
-  }): MaybePromise<Array<{
-    habitId: string;
-    checkins: number;
-    lastCheckinAt: string;
-  }>>;
+  abstract listBodyLogHabitUsage(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogHabitUsage']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogHabitUsage']>;
 
-  abstract listBodyLogHabitTemplates(appId: string): MaybePromise<Array<{
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  }>>;
+  abstract listBodyLogHabitTemplates(...args: Parameters<ApplicationBodyLogDatabasePort['listBodyLogHabitTemplates']>): ReturnType<ApplicationBodyLogDatabasePort['listBodyLogHabitTemplates']>;
 
-  abstract findBodyLogHabitTemplate(appId: string, id: string): MaybePromise<{
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  } | undefined>;
+  abstract findBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplate']>;
 
-  abstract findBodyLogHabitTemplateByKey(appId: string, key: string): MaybePromise<{
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  } | undefined>;
+  abstract findBodyLogHabitTemplateByKey(...args: Parameters<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplateByKey']>): ReturnType<ApplicationBodyLogDatabasePort['findBodyLogHabitTemplateByKey']>;
 
-  abstract insertBodyLogHabitTemplate(record: {
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  }): MaybePromise<void>;
+  abstract insertBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['insertBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['insertBodyLogHabitTemplate']>;
 
-  abstract updateBodyLogHabitTemplate(record: {
-    id: string;
-    appId: string;
-    templateKey: string;
-    category: string;
-    names: Record<string, string>;
-    icon: string | null;
-    defaultTargetCount: number;
-    sortOrder: number;
-    status: "active" | "archived";
-    createdAt: string;
-    updatedAt: string;
-  }): MaybePromise<void>;
+  abstract updateBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['updateBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['updateBodyLogHabitTemplate']>;
 
-  abstract deleteBodyLogHabitTemplate(appId: string, id: string): MaybePromise<boolean>;
+  abstract deleteBodyLogHabitTemplate(...args: Parameters<ApplicationBodyLogDatabasePort['deleteBodyLogHabitTemplate']>): ReturnType<ApplicationBodyLogDatabasePort['deleteBodyLogHabitTemplate']>;
 }
 
 export function buildManagedStateSnapshot(seed: DatabaseSeed = {}): ManagedStateSnapshot {
