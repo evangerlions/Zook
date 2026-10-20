@@ -757,3 +757,7 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 ### LightTick 行动计划联动（功能开关）
 
 沿用 PostgreSQL 074 JSONB workspace及账号事务锁；P0 v2内部运行时已支持nullable日程、time/content/check、累计分钟、completion/reversal、实际日期、来源证据消费与稳定错误码。公共写入与新接管硬关闭，既有开关仅提供读取；实际来源登记/投递和v2快照接管仍未完成，不声明可用content_receipts。canonical API见README_API.md和docs/public-lighttick-actions.md；现有goal/plan/task独立。原生未改，未发布或迁移真实账号。
+
+### 2026-10-21 LightTick 连接 P0 C2
+
+新增已绑定 Grow 私有来源证明、HMAC 行动上下文、确认事件 inbox/幂等回执和完成核对。复用现有 owner JSONB workspace/事务锁；没有新增独立后端。Grow 使用租户 publication journal + outbox 恢复投递，私密内容不进入事件载荷。普通连接写入、配对、v2 接管及公开消费者能力仍关闭。C3 接管与原生消费者、生产部署待后续验证；详见 docs/public-lighttick-actions.md 与 docs/verification/lighttick-source-delivery/README.md。

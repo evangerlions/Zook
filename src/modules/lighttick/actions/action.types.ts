@@ -19,10 +19,11 @@ export interface ActionExecution {
  planned_date:string|null;date_basis:'legacy_planned'|'actual_start'|'actual_confirmation';
  reverses_record_id?:string;source_event_id?:string;recorded_at?:string;
 }
-/** Private workspace inventory; no public route accepts or injects these objects. */
+/** Private inventory populated by the verified source bridge; never a raw client input. */
 export interface ActionContentEvent {
  event_id:string;owner_id:string;normalized_target:ActionTarget;confirmed_at:string;origin_action_id?:string|null;
  planned_date_at_confirmation?:string|null;timezone_at_confirmation?:string;consumed_by?:string;
+ delivery_hash?:string;binding_id?:string;delivery_reason?:string;
 }
 export interface ActionWorkspace {
  plans:ActionPlan[]; records:ActionExecution[]; reviews:Json[];reports:Json[];claims:Record<string,string>;

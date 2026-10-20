@@ -4,6 +4,7 @@ import type {HttpRequest,HttpResponse} from '../shared/types.ts';
 import type {LightTickOwner} from '../modules/lighttick/lighttick.types.ts';
 import {object,reject,text} from '../modules/lighttick/actions/action.validation.ts';
 import {requireActionSchema,rejectConnectionWrite,actionErrorResponse} from '../modules/lighttick/actions/action.gates.ts';
+import {ActionSourceService} from '../modules/lighttick/actions/action-source.service.ts';
 const prefix='/api/v1/lighttick/action-plans';
 
 export async function tryHandleLightTickActionRoutes(context:BackendRouteContext,enabled:boolean,runtime:LightTickRuntime|undefined,r:HttpRequest):Promise<HttpResponse<unknown>|undefined>{
@@ -28,12 +29,20 @@ async function handle(context:BackendRouteContext,enabled:boolean,runtime:LightT
    }
    const link=await runtime.actionLinks.linked(source);await requireMember(context,link.userId);
    if(data.action==='import')rejectConnectionWrite();
-   if(data.action!=='request')reject(422,'Unsupported bridge operation.');
    if(link.phase!=='active')reject(409,'Handoff is pending.');
-   const method=text(data.method,8,true),path=text(data.path,300);
-   if(method==='POST'){requireActionSchema(data.action_schema_version);if(path!=='/reviews/preview')rejectConnectionWrite();}
-   else if(method!=='GET')reject(405,'Unsupported request method.');
-   result=await runtime.actions.request(link,method,path,data.body??{},object(data.query??{}));
+   if(['source-context','source-confirmation','source-receipt','source-reconcile'].includes(data.action)){
+    if(Buffer.byteLength(JSON.stringify(data))>16000)reject(413,'Source event capacity exceeded.');
+    const sources=new ActionSourceService(runtime.actions,runtime.actionLinks.secret,runtime.actions.clock);
+    if(data.action==='source-context')result=await sources.context(link,data);
+    else if(data.action==='source-confirmation')result=await sources.receive(link,data);
+    else result=await sources.reconcile(link,data,data.action==='source-receipt');
+   }else{
+    if(data.action!=='request')reject(422,'Unsupported bridge operation.');
+    const method=text(data.method,8,true),path=text(data.path,300);
+    if(method==='POST'){requireActionSchema(data.action_schema_version);if(path!=='/reviews/preview')rejectConnectionWrite();}
+    else if(method!=='GET')reject(405,'Unsupported request method.');
+    result=await runtime.actions.request(link,method,path,data.body??{},object(data.query??{}));
+   }
   }
  }else {
   const auth=await context.authenticateProductRequest(r,'lighttick'),owner:LightTickOwner={appId:'lighttick',userId:auth.userId};

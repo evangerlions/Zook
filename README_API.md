@@ -1297,3 +1297,9 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 ## LightTick 共享行动计划
 
 `/api/v1/lighttick/action-plans` 及 `/schedules`、operations、执行记录、复盘/AI历史和日历已对齐P0 v2字段与内部完成语义。正式账号公共登录鉴权；`LIGHTTICK_ACTIONS_ENABLED=1`仅启用读取，**公共写入、新连接码与Grow claim/import保持关闭**。行动POST须声明 `X-Grow-Action-Schema: 2`，正确版本仍返回409/CONTRACT_UPGRADE_REQUIRED及CONNECTION_WRITES_DISABLED原因；签名桥接同样不放行。原生端、真实来源投递与v2接管尚未完成。完整字段、错误码和边界见 [共享行动计划接入](docs/public-lighttick-actions.md) 和 canonical OpenAPI。
+
+### LightTick：Grow 私有来源证明与可靠回执（C2）
+
+`POST /api/v1/lighttick/grow-bridge` 增加签名 source-context/source-confirmation/source-receipt/source-reconcile。仅已有 active 绑定和活跃注册会员可用；服务器生成的 article_read/lesson_completed 证明通过私有 outbox 投递，按不可变事件 ID/hash 去重，丢响应后查询/重放，running 结束后核对原事件完成。origin 证明保留原计划日期/时区；不复制正文/笔记。新增稳定错误 SOURCE_EVENT_CONFLICT、SOURCE_PROOF_INVALID、SOURCE_DELIVERY_UNAVAILABLE；详细字段、状态与恢复见 [共享行动协议](docs/public-lighttick-actions.md#c2-私有来源通道2026-10-21) 和唯一 OpenAPI 的 LightTickActionSource* schemas。
+
+此通道不放行普通 action 写入、新配对或 v2 接管，公共能力门槛保持关闭，未接入原生端或部署。验收见 [C2 验证报告](docs/verification/lighttick-source-delivery/README.md)。

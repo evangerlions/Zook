@@ -1992,7 +1992,7 @@ paths:
       summary: forwardVerifiedGrowActionCommand
       description: Registered account or signed bridge required. P0 v2 core semantics are implemented, but connection
         writes and new handoff remain disabled (409 CONTRACT_UPGRADE_REQUIRED). GET and review preview do not enable
-        writes. No native or source-delivery capability is implied.
+        writes. Signed source-context/confirmation/receipt/reconcile infrastructure is available only to an existing active binding and active registered membership. It does not enable action commands, new pairing or v2 import. Same event ID with different canonical payload returns 409 SOURCE_EVENT_CONFLICT; retry transport failures with the unchanged event payload and fresh transport signature.
       parameters:
       - name: X-Grow-Account-Id
         in: header
@@ -2020,7 +2020,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LightTickEnvelope'
+                allOf:
+                - $ref: '#/components/schemas/LightTickEnvelope'
+                - properties:
+                    data:
+                      description: Source actions return LightTickActionSourceReceipt or LightTickActionSourceContext; other actions retain their documented result.
+                      anyOf:
+                      - $ref: '#/components/schemas/LightTickActionSourceReceipt'
+                      - $ref: '#/components/schemas/LightTickActionSourceContext'
+                      - type: object
+                        additionalProperties: true
         '400':
           $ref: '#/components/responses/LightTickError'
         '401':
@@ -3243,6 +3252,9 @@ components:
       - UNSCHEDULED_ACTION
       - COMPLETION_EVIDENCE_MISSING
       - CONTRACT_UPGRADE_REQUIRED
+      - SOURCE_EVENT_CONFLICT
+      - SOURCE_PROOF_INVALID
+      - SOURCE_DELIVERY_UNAVAILABLE
     LightTickErrorData:
       type: object
       required:
@@ -5255,6 +5267,10 @@ components:
           - claim
           - import
           - request
+          - source-context
+          - source-confirmation
+          - source-receipt
+          - source-reconcile
         code:
           type: string
           maxLength: 80
@@ -5283,8 +5299,229 @@ components:
           type: integer
           const: 2
           description: Required for POST requests inside the signed bridge. Does not enable writes.
+        binding_id:
+          type: string
+          minLength: 1
+          maxLength: 160
+        origin_action_id:
+          type: string
+          pattern: ^action-[a-zA-Z0-9-]+$
+        normalized_target:
+          $ref: '#/components/schemas/LightTickActionSourceTarget'
+        event_id:
+          type: string
+          pattern: ^source-[a-f0-9]{32}$
+        event:
+          $ref: '#/components/schemas/LightTickActionSourceEvent'
+      allOf:
+      - if:
+          properties:
+            action:
+              enum: [source-context, source-confirmation, source-receipt, source-reconcile]
+        then:
+          required: [action_schema_version, binding_id]
+          properties:
+            code: false
+            snapshot: false
+            snapshot_hash: false
+            method: false
+            path: false
+            body: false
+            query: false
+      - if:
+          properties:
+            action:
+              const: source-context
+        then:
+          required: [origin_action_id, normalized_target]
+          properties:
+            event: false
+            event_id: false
+      - if:
+          properties:
+            action:
+              const: source-confirmation
+        then:
+          required: [event]
+          properties:
+            event_id: false
+            normalized_target: false
+            origin_action_id: false
+      - if:
+          properties:
+            action:
+              enum: [source-receipt, source-reconcile]
+        then:
+          required: [event_id]
+          properties:
+            event: false
+            normalized_target: false
+            origin_action_id: false
       required:
       - action
+      additionalProperties: false
+    LightTickActionSourceTarget:
+      oneOf:
+      - type: object
+        properties:
+          kind:
+            const: article
+          course:
+            type: string
+            pattern: ^article-[a-zA-Z0-9-]{1,100}$
+        required: [kind, course]
+        additionalProperties: false
+      - type: object
+        properties:
+          kind:
+            const: plan
+          plan_id:
+            type: string
+            pattern: ^plan-[a-zA-Z0-9-]{1,70}$
+          lesson_no:
+            type: integer
+            minimum: 1
+            maximum: 100000
+        required: [kind, plan_id, lesson_no]
+        additionalProperties: false
+    LightTickActionSourceEvent:
+      type: object
+      description: Server-generated after explicit source success. Never accepts body, notes, browser read flags, owner IDs or consumed_by.
+      properties:
+        event_id:
+          type: string
+          pattern: ^source-[a-f0-9]{32}$
+        normalized_target:
+          $ref: '#/components/schemas/LightTickActionSourceTarget'
+        confirmed_at:
+          type: string
+          format: date-time
+          maxLength: 40
+          pattern: 'Z$|\+00:00$'
+        origin_action_id:
+          type: [string, 'null']
+          pattern: ^action-[a-zA-Z0-9-]+$
+        origin_context:
+          type: string
+          maxLength: 6000
+          description: Zook HMAC context bound to active binding, source, action, planned date, timezone and issue/expiry time. Confirmation must occur within seven days; delivery may be delayed indefinitely.
+        source_proof:
+          type: object
+          properties:
+            version:
+              const: 1
+            confirmation:
+              enum: [article_read, lesson_completed]
+          required: [version, confirmation]
+          additionalProperties: false
+      required: [event_id, normalized_target, confirmed_at, source_proof]
+      additionalProperties: false
+      allOf:
+      - if:
+          properties:
+            origin_action_id:
+              type: string
+          required: [origin_action_id]
+        then:
+          required: [origin_context]
+        else:
+          not:
+            required: [origin_context]
+      - if:
+          properties:
+            normalized_target:
+              properties:
+                kind:
+                  const: article
+        then:
+          properties:
+            source_proof:
+              properties:
+                confirmation:
+                  const: article_read
+        else:
+          properties:
+            source_proof:
+              properties:
+                confirmation:
+                  const: lesson_completed
+    LightTickActionSourceReceipt:
+      type: object
+      properties:
+        accepted:
+          const: true
+        binding_id:
+          type: string
+        target_user_id:
+          type: string
+        event_id:
+          type: string
+          pattern: ^source-[a-f0-9]{32}$
+        payload_hash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        status:
+          enum: [pending, completed]
+        completed_arrangements:
+          type: array
+          maxItems: 1
+          items:
+            type: string
+            pattern: ^action-[a-zA-Z0-9-]+$
+        record_id:
+          type: [string, 'null']
+          pattern: ^execution-[a-zA-Z0-9-]+$
+        reason:
+          type: [string, 'null']
+      allOf:
+      - if:
+          properties:
+            status:
+              const: completed
+        then:
+          properties:
+            completed_arrangements:
+              minItems: 1
+            record_id:
+              type: string
+            reason:
+              type: 'null'
+        else:
+          properties:
+            completed_arrangements:
+              maxItems: 0
+            record_id:
+              type: 'null'
+      required: [accepted, binding_id, target_user_id, event_id, payload_hash, status, completed_arrangements, record_id, reason]
+      additionalProperties: false
+    LightTickActionSourceContext:
+      type: object
+      properties:
+        origin_context:
+          type: string
+        binding_id:
+          type: string
+        source_account_id:
+          type: string
+        origin_action_id:
+          type: string
+        normalized_target:
+          $ref: '#/components/schemas/LightTickActionSourceTarget'
+        planned_date_at_confirmation:
+          type: [string, 'null']
+          format: date
+        timezone_at_confirmation:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+      required: [origin_context, binding_id, source_account_id, origin_action_id, normalized_target, planned_date_at_confirmation, timezone_at_confirmation, revision, issued_at, expires_at]
       additionalProperties: false
     LightTickActionWorkspaceEnvelope:
       type: object

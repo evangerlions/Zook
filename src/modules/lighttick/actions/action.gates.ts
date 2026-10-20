@@ -3,7 +3,7 @@ import {ApplicationError} from '../../../shared/errors.ts';
 import {reject} from './action.validation.ts';
 
 export const actionErrorCodes=new Set(['LIGHTTICK_RESOURCE_NOT_FOUND','VALIDATION_ERROR','REVISION_CONFLICT','STATE_CONFLICT','RUNNING_CONFLICT',
- 'DUPLICATE_SCHEDULE','FUTURE_ACTION','UNSCHEDULED_ACTION','COMPLETION_EVIDENCE_MISSING','CONTRACT_UPGRADE_REQUIRED']);
+ 'DUPLICATE_SCHEDULE','FUTURE_ACTION','UNSCHEDULED_ACTION','COMPLETION_EVIDENCE_MISSING','CONTRACT_UPGRADE_REQUIRED','SOURCE_EVENT_CONFLICT','SOURCE_PROOF_INVALID','SOURCE_DELIVERY_UNAVAILABLE']);
 
 export function requireActionSchema(value:unknown) {
  if(value!==2&&value!=='2')reject(409,'行动合同版本需升级。','CONTRACT_UPGRADE_REQUIRED',{reason:'CONTRACT_SCHEMA_VERSION'});
@@ -16,7 +16,7 @@ export function rejectConnectionWrite():never {
 
 export function actionErrorResponse(error:unknown,requestId:string):HttpResponse<unknown>|undefined {
  if(!(error instanceof ApplicationError)||!actionErrorCodes.has(error.code))return;
- const details=error.details as Record<string,unknown>|undefined,data:Record<string,unknown>={retryable:false};
+ const details=error.details as Record<string,unknown>|undefined,data:Record<string,unknown>={retryable:error.statusCode>=500};
  if(details){
   if(typeof details.reason==='string')data.reason=details.reason;
   if(typeof details.existing_plan_id==='string')data.existing_plan_id=details.existing_plan_id;

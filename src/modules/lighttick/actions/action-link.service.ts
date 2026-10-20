@@ -5,7 +5,7 @@ import {canonical,digest,fields,validateParent,object,text,date,integer,reject} 
 export class ActionLinkService {
  constructor(readonly actions:ActionService,readonly secret:string,readonly clock=()=>new Date()){}
  get repository():LightTickRepository{return this.actions.repository;}
- requireConfigured(){if(this.secret.length<32)reject(503,'网页联动服务尚未配置。');}
+ requireConfigured(){if(this.secret.length<32)reject(503,'网页联动服务尚未配置。','SOURCE_DELIVERY_UNAVAILABLE');}
  verify(source:string,timestamp:string,nonce:string,signature:string,body:unknown){
   this.requireConfigured();text(source,160,true);
   if(!/^\d{10}$/.test(timestamp)||Math.abs(this.clock().getTime()/1000-Number(timestamp))>120||!/^[a-zA-Z0-9-]{16,100}$/.test(nonce)||!/^[a-f0-9]{64}$/.test(signature))reject(403,'联动请求已过期或签名无效。');

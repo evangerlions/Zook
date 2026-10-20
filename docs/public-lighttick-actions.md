@@ -81,3 +81,26 @@ AI 配置只在已明确确认的请求内使用，不持久化凭据、不使�
 
 
 阶段验证、剩余阻塞和复现命令见 [P0 v2实施记录](verification/lighttick-p0-v2/README.md)。仍需完成来源投递、v2接管、原生消费者及真实双端验收，当前不得开放连接写入。
+
+## C2 私有来源通道（2026-10-21）
+
+已生效绑定可以使用原 `POST /api/v1/lighttick/grow-bridge` 投递 Grow 服务端证明的来源确认。它不是通用行动命令入口：所有原生/普通 action POST、桥接 action request POST（只读 review preview 除外）、新配对和 v2 import 继续拒绝。公共能力开关保持关闭；私有投递可用不等于消费者可以开启连接写入。
+
+四类消息均要求原有 HMAC 头、`action_schema_version:2`、匹配的 `binding_id`、active 绑定与 active 注册会员：
+
+| action | 输入 | 输出/影响 |
+| --- | --- | --- |
+| source-context | normalized_target、origin_action_id | 已有 v2 content 行动的签名上下文；只读，不登记来源/生成完成 |
+| source-confirmation | event | 持久收件与合格行动匹配；来源、事实、绑定和操作回执同事务 |
+| source-receipt | event_id | 纯读当前持久回执；不消耗事件 |
+| source-reconcile | event_id | 再核对同一事件，不能选择另一 target/action 或结束 session |
+
+事件最小形状为 `event_id:source-<32hex>`、article/plan 的严格归一化 `normalized_target`、UTC `confirmed_at`、`source_proof:{version:1,confirmation:article_read|lesson_completed}`。可选 origin_action_id 非空时必须带 Zook 签发的 origin_context；证明覆盖绑定、来源、行动、原计划日期/时区和七日确认窗口，延迟投递不因七日到期丢失有效确认。来源成功后才由 Grow 的私有 journal 持久 outbox；客户端不能仅凭 target、已读位或笔记制造证明。传输不包含正文、标题、评论、笔记、AI 凭证或 Grow schema。
+
+回执包含 accepted、binding_id、target_user_id、event_id、payload_hash、status、completed_arrangements（最多一项）、record_id 和 reason。`accepted:true/status:pending` 只表示已收件；`completed` 才表示已生成完成事实。来源确认对 running 返回 pending/RUNNING_CONFLICT，不改变真实会话；保存投入后 source-reconcile 可恢复。无 origin 只匹配确认日；未来/未安排/暂停或祖先阻断不因重试被绕过。完成日期使用原确认时刻，分钟为零。
+
+同 event ID + canonical event SHA256 返回原事件当前结果；载荷变化返回 `409 SOURCE_EVENT_CONFLICT`。错误绑定/未连接返回 404；会员无效/签名无效返回 403；伪造上下文为 `SOURCE_PROOF_INVALID`，缺失/类型不合法为 422 VALIDATION_ERROR；未配置为 503 SOURCE_DELIVERY_UNAVAILABLE（可重试）。5xx、断网和丢响应重试原事件并重新签传输 timestamp/nonce，禁止换 event ID 猜测重建。接收后事务失败不保留半条 inbox、来源登记、事实或回执。
+
+Grow 使用租户私表 action_source_contexts/action_source_outbox，启动即扫描、每 30 秒恢复，退避上限一小时。`GET /api/action-link/source-deliveries` 查看本账号状态；同源 `POST /api/action-link/source-deliveries/retry` 触发最多三条安全重试。缺少上下文时来源仍成功，事件 blocked/ORIGIN_CONTEXT_REQUIRED，须恢复连接后重新打开来源明确确认；不能事后补造旧快照。后台扫描仅使用服务端账号身份，不接收请求里的账号/schema。
+
+C3 的 v2 全图接管、旧/新请求 key 路由与消费者放行仍未实施；没有真实配对、原生接入、部署或生产数据迁移。验证证据见 `docs/verification/lighttick-source-delivery/README.md`。
