@@ -1,0 +1,18 @@
+(node:51190) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ v2 nullable check fields and validation are atomic, with no fabricated time (16.356125ms)
+✔ time accumulates confirmed sessions, actual and planned dates stay distinct (3.365666ms)
+✔ interrupted threshold requires a zero-minute explicit completion, replayed atomically (0.791083ms)
+✔ check completion reversal preserves audit and counts the effective action once (0.867375ms)
+✔ running, stale versions, ancestor blocks and immutable fact configuration (1.856334ms)
+✔ content requires owner-scoped durable evidence and preserves a running timer (1.633583ms)
+✔ schedule deduplication, null bucket and conflicting reschedule do not overwrite (1.694167ms)
+✔ calendar and claims never fabricate a time or use a completion threshold for content (1.461917ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 185.174667
