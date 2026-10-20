@@ -4261,6 +4261,7 @@ components:
             plan_id:
               type: string
               pattern: ^plan-[a-zA-Z0-9-]{1,70}$
+            lesson_no: {}
       - if:
           properties:
             kind:
@@ -4268,7 +4269,7 @@ components:
         then:
           required:
           - lesson_no
-          properties: {}
+          properties: {lesson_no: {}}
       - if:
           properties:
             kind:
@@ -4453,6 +4454,7 @@ components:
             at:
               type: string
               pattern: ^([01]\d|2[0-3]):[0-5]\d$
+            end_date: {}
       - if:
           required:
           - completion_mode
@@ -4645,6 +4647,7 @@ components:
             at:
               type: string
               pattern: ^([01]\d|2[0-3]):[0-5]\d$
+            end_date: {}
       - if:
           required:
           - completion_mode
@@ -5015,6 +5018,7 @@ components:
               const: reopened
             completion_effect:
               const: reopen
+            reverses_record_id: {}
       - if:
           properties:
             record_kind:
@@ -5022,6 +5026,8 @@ components:
             completion_mode:
               const: content
         then:
+          properties:
+            source_event_id: {}
           required:
           - source_event_id
     LightTickActionMutationRequest:
@@ -5099,6 +5105,8 @@ components:
             action:
               const: reschedule
         then:
+          properties:
+            date: {}
           required:
           - date
     LightTickActionWorkspace:
@@ -5328,6 +5336,8 @@ components:
             path: false
             body: false
             query: false
+            action_schema_version: {}
+            binding_id: {}
       - if:
           properties:
             action:
@@ -5337,6 +5347,8 @@ components:
           properties:
             event: false
             event_id: false
+            origin_action_id: {}
+            normalized_target: {}
       - if:
           properties:
             action:
@@ -5347,6 +5359,7 @@ components:
             event_id: false
             normalized_target: false
             origin_action_id: false
+            event: {}
       - if:
           properties:
             action:
@@ -5357,6 +5370,7 @@ components:
             event: false
             normalized_target: false
             origin_action_id: false
+            event_id: {}
       required:
       - action
       additionalProperties: false
@@ -5423,9 +5437,13 @@ components:
               type: string
           required: [origin_action_id]
         then:
+          properties:
+            origin_context: {}
           required: [origin_context]
         else:
           not:
+            properties:
+              origin_context: {}
             required: [origin_context]
       - if:
           properties:

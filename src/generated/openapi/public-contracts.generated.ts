@@ -5643,7 +5643,8 @@ export const LightTickActionTargetSchema = {
           "plan_id": {
             "type": "string",
             "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-          }
+          },
+          "lesson_no": {}
         }
       }
     },
@@ -5659,7 +5660,9 @@ export const LightTickActionTargetSchema = {
         "required": [
           "lesson_no"
         ],
-        "properties": {}
+        "properties": {
+          "lesson_no": {}
+        }
       }
     },
     {
@@ -5896,7 +5899,8 @@ export const LightTickActionScheduleRequestSchema = {
                   "plan_id": {
                     "type": "string",
                     "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                  }
+                  },
+                  "lesson_no": {}
                 }
               }
             },
@@ -5912,7 +5916,9 @@ export const LightTickActionScheduleRequestSchema = {
                 "required": [
                   "lesson_no"
                 ],
-                "properties": {}
+                "properties": {
+                  "lesson_no": {}
+                }
               }
             },
             {
@@ -6236,7 +6242,8 @@ export const LightTickActionCreateResultSchema = {
                         "plan_id": {
                           "type": "string",
                           "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                        }
+                        },
+                        "lesson_no": {}
                       }
                     }
                   },
@@ -6252,7 +6259,9 @@ export const LightTickActionCreateResultSchema = {
                       "required": [
                         "lesson_no"
                       ],
-                      "properties": {}
+                      "properties": {
+                        "lesson_no": {}
+                      }
                     }
                   },
                   {
@@ -7002,7 +7011,8 @@ export const LightTickActionMutationResultSchema = {
                       "plan_id": {
                         "type": "string",
                         "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                      }
+                      },
+                      "lesson_no": {}
                     }
                   }
                 },
@@ -7018,7 +7028,9 @@ export const LightTickActionMutationResultSchema = {
                     "required": [
                       "lesson_no"
                     ],
-                    "properties": {}
+                    "properties": {
+                      "lesson_no": {}
+                    }
                   }
                 },
                 {
@@ -7404,7 +7416,8 @@ export const LightTickActionMutationResultSchema = {
                       "plan_id": {
                         "type": "string",
                         "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                      }
+                      },
+                      "lesson_no": {}
                     }
                   }
                 },
@@ -7420,7 +7433,9 @@ export const LightTickActionMutationResultSchema = {
                     "required": [
                       "lesson_no"
                     ],
-                    "properties": {}
+                    "properties": {
+                      "lesson_no": {}
+                    }
                   }
                 },
                 {
@@ -7589,7 +7604,8 @@ export const LightTickActionMutationResultSchema = {
               },
               "completion_effect": {
                 "const": "reopen"
-              }
+              },
+              "reverses_record_id": {}
             }
           }
         },
@@ -7605,6 +7621,9 @@ export const LightTickActionMutationResultSchema = {
             }
           },
           "then": {
+            "properties": {
+              "source_event_id": {}
+            },
             "required": [
               "source_event_id"
             ]
@@ -8388,7 +8407,8 @@ export const LightTickActionScheduleResultSchema = {
                       "plan_id": {
                         "type": "string",
                         "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                      }
+                      },
+                      "lesson_no": {}
                     }
                   }
                 },
@@ -8404,7 +8424,9 @@ export const LightTickActionScheduleResultSchema = {
                     "required": [
                       "lesson_no"
                     ],
-                    "properties": {}
+                    "properties": {
+                      "lesson_no": {}
+                    }
                   }
                 },
                 {
@@ -9153,7 +9175,8 @@ export const LightTickActionFieldsSchema = {
                   "plan_id": {
                     "type": "string",
                     "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                  }
+                  },
+                  "lesson_no": {}
                 }
               }
             },
@@ -9169,7 +9192,9 @@ export const LightTickActionFieldsSchema = {
                 "required": [
                   "lesson_no"
                 ],
-                "properties": {}
+                "properties": {
+                  "lesson_no": {}
+                }
               }
             },
             {
@@ -9359,7 +9384,8 @@ export const LightTickActionFieldsSchema = {
           "at": {
             "type": "string",
             "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
-          }
+          },
+          "end_date": {}
         }
       }
     },
@@ -9452,7 +9478,8 @@ export const LightTickActionFieldsSchema = {
                         "plan_id": {
                           "type": "string",
                           "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                        }
+                        },
+                        "lesson_no": {}
                       }
                     }
                   },
@@ -9468,7 +9495,9 @@ export const LightTickActionFieldsSchema = {
                       "required": [
                         "lesson_no"
                       ],
-                      "properties": {}
+                      "properties": {
+                        "lesson_no": {}
+                      }
                     }
                   },
                   {
@@ -10014,7 +10043,8 @@ export const LightTickActionCreateRequestSchema = {
                   "plan_id": {
                     "type": "string",
                     "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                  }
+                  },
+                  "lesson_no": {}
                 }
               }
             },
@@ -10030,7 +10060,9 @@ export const LightTickActionCreateRequestSchema = {
                 "required": [
                   "lesson_no"
                 ],
-                "properties": {}
+                "properties": {
+                  "lesson_no": {}
+                }
               }
             },
             {
@@ -10235,7 +10267,8 @@ export const LightTickActionCreateRequestSchema = {
           "at": {
             "type": "string",
             "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
-          }
+          },
+          "end_date": {}
         }
       }
     },
@@ -10328,7 +10361,8 @@ export const LightTickActionCreateRequestSchema = {
                         "plan_id": {
                           "type": "string",
                           "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                        }
+                        },
+                        "lesson_no": {}
                       }
                     }
                   },
@@ -10344,7 +10378,9 @@ export const LightTickActionCreateRequestSchema = {
                       "required": [
                         "lesson_no"
                       ],
-                      "properties": {}
+                      "properties": {
+                        "lesson_no": {}
+                      }
                     }
                   },
                   {
@@ -10942,7 +10978,8 @@ export const LightTickActionPlanSchema = {
                   "plan_id": {
                     "type": "string",
                     "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                  }
+                  },
+                  "lesson_no": {}
                 }
               }
             },
@@ -10958,7 +10995,9 @@ export const LightTickActionPlanSchema = {
                 "required": [
                   "lesson_no"
                 ],
-                "properties": {}
+                "properties": {
+                  "lesson_no": {}
+                }
               }
             },
             {
@@ -11671,7 +11710,8 @@ export const LightTickActionExecutionSchema = {
                   "plan_id": {
                     "type": "string",
                     "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                  }
+                  },
+                  "lesson_no": {}
                 }
               }
             },
@@ -11687,7 +11727,9 @@ export const LightTickActionExecutionSchema = {
                 "required": [
                   "lesson_no"
                 ],
-                "properties": {}
+                "properties": {
+                  "lesson_no": {}
+                }
               }
             },
             {
@@ -11856,7 +11898,8 @@ export const LightTickActionExecutionSchema = {
           },
           "completion_effect": {
             "const": "reopen"
-          }
+          },
+          "reverses_record_id": {}
         }
       }
     },
@@ -11872,6 +11915,9 @@ export const LightTickActionExecutionSchema = {
         }
       },
       "then": {
+        "properties": {
+          "source_event_id": {}
+        },
         "required": [
           "source_event_id"
         ]
@@ -12349,7 +12395,8 @@ export const LightTickActionMutationRequestSchema = {
                       "plan_id": {
                         "type": "string",
                         "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                      }
+                      },
+                      "lesson_no": {}
                     }
                   }
                 },
@@ -12365,7 +12412,9 @@ export const LightTickActionMutationRequestSchema = {
                     "required": [
                       "lesson_no"
                     ],
-                    "properties": {}
+                    "properties": {
+                      "lesson_no": {}
+                    }
                   }
                 },
                 {
@@ -12555,7 +12604,8 @@ export const LightTickActionMutationRequestSchema = {
               "at": {
                 "type": "string",
                 "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
-              }
+              },
+              "end_date": {}
             }
           }
         },
@@ -12648,7 +12698,8 @@ export const LightTickActionMutationRequestSchema = {
                             "plan_id": {
                               "type": "string",
                               "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                            }
+                            },
+                            "lesson_no": {}
                           }
                         }
                       },
@@ -12664,7 +12715,9 @@ export const LightTickActionMutationRequestSchema = {
                           "required": [
                             "lesson_no"
                           ],
-                          "properties": {}
+                          "properties": {
+                            "lesson_no": {}
+                          }
                         }
                       },
                       {
@@ -12787,6 +12840,9 @@ export const LightTickActionMutationRequestSchema = {
         }
       },
       "then": {
+        "properties": {
+          "date": {}
+        },
         "required": [
           "date"
         ]
@@ -13634,7 +13690,8 @@ export const LightTickActionWorkspaceSchema = {
                         "plan_id": {
                           "type": "string",
                           "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                        }
+                        },
+                        "lesson_no": {}
                       }
                     }
                   },
@@ -13650,7 +13707,9 @@ export const LightTickActionWorkspaceSchema = {
                       "required": [
                         "lesson_no"
                       ],
-                      "properties": {}
+                      "properties": {
+                        "lesson_no": {}
+                      }
                     }
                   },
                   {
@@ -14039,7 +14098,8 @@ export const LightTickActionWorkspaceSchema = {
                           "plan_id": {
                             "type": "string",
                             "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                          }
+                          },
+                          "lesson_no": {}
                         }
                       }
                     },
@@ -14055,7 +14115,9 @@ export const LightTickActionWorkspaceSchema = {
                         "required": [
                           "lesson_no"
                         ],
-                        "properties": {}
+                        "properties": {
+                          "lesson_no": {}
+                        }
                       }
                     },
                     {
@@ -14224,7 +14286,8 @@ export const LightTickActionWorkspaceSchema = {
                   },
                   "completion_effect": {
                     "const": "reopen"
-                  }
+                  },
+                  "reverses_record_id": {}
                 }
               }
             },
@@ -14240,6 +14303,9 @@ export const LightTickActionWorkspaceSchema = {
                 }
               },
               "then": {
+                "properties": {
+                  "source_event_id": {}
+                },
                 "required": [
                   "source_event_id"
                 ]
@@ -15387,12 +15453,18 @@ export const LightTickGrowBridgeRequestSchema = {
             ]
           },
           "then": {
+            "properties": {
+              "origin_context": {}
+            },
             "required": [
               "origin_context"
             ]
           },
           "else": {
             "not": {
+              "properties": {
+                "origin_context": {}
+              },
               "required": [
                 "origin_context"
               ]
@@ -15463,7 +15535,9 @@ export const LightTickGrowBridgeRequestSchema = {
           "method": false,
           "path": false,
           "body": false,
-          "query": false
+          "query": false,
+          "action_schema_version": {},
+          "binding_id": {}
         }
       }
     },
@@ -15482,7 +15556,9 @@ export const LightTickGrowBridgeRequestSchema = {
         ],
         "properties": {
           "event": false,
-          "event_id": false
+          "event_id": false,
+          "origin_action_id": {},
+          "normalized_target": {}
         }
       }
     },
@@ -15501,7 +15577,8 @@ export const LightTickGrowBridgeRequestSchema = {
         "properties": {
           "event_id": false,
           "normalized_target": false,
-          "origin_action_id": false
+          "origin_action_id": false,
+          "event": {}
         }
       }
     },
@@ -15523,7 +15600,8 @@ export const LightTickGrowBridgeRequestSchema = {
         "properties": {
           "event": false,
           "normalized_target": false,
-          "origin_action_id": false
+          "origin_action_id": false,
+          "event_id": {}
         }
       }
     }
@@ -16135,12 +16213,18 @@ export const LightTickActionSourceEventSchema = {
         ]
       },
       "then": {
+        "properties": {
+          "origin_context": {}
+        },
         "required": [
           "origin_context"
         ]
       },
       "else": {
         "not": {
+          "properties": {
+            "origin_context": {}
+          },
           "required": [
             "origin_context"
           ]
@@ -16659,7 +16743,8 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                             "plan_id": {
                               "type": "string",
                               "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                            }
+                            },
+                            "lesson_no": {}
                           }
                         }
                       },
@@ -16675,7 +16760,9 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                           "required": [
                             "lesson_no"
                           ],
-                          "properties": {}
+                          "properties": {
+                            "lesson_no": {}
+                          }
                         }
                       },
                       {
@@ -17064,7 +17151,8 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                               "plan_id": {
                                 "type": "string",
                                 "pattern": "^plan-[a-zA-Z0-9-]{1,70}$"
-                              }
+                              },
+                              "lesson_no": {}
                             }
                           }
                         },
@@ -17080,7 +17168,9 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                             "required": [
                               "lesson_no"
                             ],
-                            "properties": {}
+                            "properties": {
+                              "lesson_no": {}
+                            }
                           }
                         },
                         {
@@ -17249,7 +17339,8 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                       },
                       "completion_effect": {
                         "const": "reopen"
-                      }
+                      },
+                      "reverses_record_id": {}
                     }
                   }
                 },
@@ -17265,6 +17356,9 @@ export const LightTickActionWorkspaceEnvelopeSchema = {
                     }
                   },
                   "then": {
+                    "properties": {
+                      "source_event_id": {}
+                    },
                     "required": [
                       "source_event_id"
                     ]

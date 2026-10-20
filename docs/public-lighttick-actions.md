@@ -104,3 +104,7 @@ AI 配置只在已明确确认的请求内使用，不持久化凭据、不使�
 Grow 使用租户私表 action_source_contexts/action_source_outbox，启动即扫描、每 30 秒恢复，退避上限一小时。`GET /api/action-link/source-deliveries` 查看本账号状态；同源 `POST /api/action-link/source-deliveries/retry` 触发最多三条安全重试。缺少上下文时来源仍成功，事件 blocked/ORIGIN_CONTEXT_REQUIRED，须恢复连接后重新打开来源明确确认；不能事后补造旧快照。后台扫描仅使用服务端账号身份，不接收请求里的账号/schema。
 
 C3 的 v2 全图接管、旧/新请求 key 路由与消费者放行仍未实施；没有真实配对、原生接入、部署或生产数据迁移。验证证据见 `docs/verification/lighttick-source-delivery/README.md`。
+
+### C2 验收后的合同维护
+
+2026-10-21 补齐 P0 条件分支中已被 required 引用的 properties 声明，保留外层原有字段约束、null/省略语义及所有写入门禁。此变更不新增字段或放宽输入验证；生成合同同步更新，空声明归一化对比及 AJV 合同测试见 `docs/verification/lighttick-source-repair/`。
