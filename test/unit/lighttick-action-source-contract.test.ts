@@ -6,7 +6,7 @@ test('source contract requires explicit normalized proof, binding, version and s
  const e={event_id:'source-'+'a'.repeat(32),normalized_target:{kind:'article',course:'article-contract'},confirmed_at:'2026-10-21T10:00:00Z',source_proof:{version:1,confirmation:'article_read'}};
  assert.equal(event(e),true,JSON.stringify(event.errors));
  const b={action:'source-confirmation',action_schema_version:2,binding_id:'binding-contract',event:e};assert.equal(bridge(b),true,JSON.stringify(bridge.errors));
- for(const v of [{...b,action_schema_version:1},{action:'source-confirmation'}, {...b,event:undefined}])assert.equal(bridge(v),false);
+ for(const v of [{...b,action_schema_version:1},{action:'source-confirmation'}, {...b,event:undefined},{...b,target_version:0}])assert.equal(bridge(v),false);
  for(const v of [{...e,owner_id:'arbitrary'},{...e,consumed_by:'action-other'},{...e,private_note:'not allowed'}, {...e,source_proof:{version:1,confirmation:'lesson_completed'}},
   {...e,normalized_target:{kind:'book'}},{...e,origin_action_id:'action-a'},{...e,confirmed_at:'yesterday'}])assert.equal(event(v),false,JSON.stringify(v));
  assert.equal(event({...e,origin_action_id:'action-a',origin_context:'opaque-signed-context'}),true);

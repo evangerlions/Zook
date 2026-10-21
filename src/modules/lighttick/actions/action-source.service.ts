@@ -3,6 +3,7 @@ import {ApplicationError} from '../../../shared/errors.ts';
 import type {ActionLink,ActionContentEvent,ActionWorkspace,Json} from './action.types.ts';
 import type {ActionService} from './action.service.ts';
 import {canonical,digest,object,text,target,keys,getPlan,reject,sameTarget,businessDay} from './action.validation.ts';
+import {sourceReceipt} from './action.source-receipt.ts';
 import {reconcileContent} from './action.facts.ts';
 
 /** Private Grow infrastructure only. Ordinary action writes and handoff stay closed. */
@@ -57,24 +58,19 @@ export class ActionSourceService {
    catch(error){if(!(error instanceof ApplicationError)||!['RUNNING_CONFLICT','STATE_CONFLICT','FUTURE_ACTION','UNSCHEDULED_ACTION','COMPLETION_EVIDENCE_MISSING'].includes(error.code))throw error;event.delivery_reason=error.code;}
   }
  }
- private receipt(link:ActionLink,event:ActionContentEvent,w:ActionWorkspace):Json {
-  const fact=w.records.find(r=>r.source_event_id===event.event_id&&r.record_kind==='completion');
-  return {accepted:true,binding_id:link.binding_id,target_user_id:link.userId,event_id:event.event_id,payload_hash:event.delivery_hash,
-   status:event.consumed_by?'completed':'pending',completed_arrangements:event.consumed_by?[event.consumed_by]:[],record_id:fact?.id??null,reason:event.delivery_reason??null};
- }
  async receive(link:ActionLink,input:Json){
   keys(input,['action','action_schema_version','binding_id','event']);
   // Check the immutable inbox hash BEFORE expiring or revalidating an old proof.
   return this.actions.repository.transaction(link,async()=>{
    await this.actions.repository.lockActionOwner(link);await this.binding(link,input);
    const row=await this.actions.readWorkspace(link),w=structuredClone(row.data),id=text(object(input.event).event_id,80,true),hash=digest(input.event),old=w.content_events?.find(e=>e.event_id===id);
-   if(old){if(old.delivery_hash!==hash||old.binding_id!==link.binding_id)reject(409,'Event identity was used with different content.','SOURCE_EVENT_CONFLICT',{reason:'SOURCE_EVENT_CONFLICT'});return this.receipt(link,old,w);}
+   if(old){if(old.delivery_hash!==hash||old.binding_id!==link.binding_id)reject(409,'Event identity was used with different content.','SOURCE_EVENT_CONFLICT',{reason:'SOURCE_EVENT_CONFLICT'});return sourceReceipt(link,old,w);}
    if((w.content_events?.length??0)>=10000)reject(422,'Source inbox capacity exceeded.');
    const event=this.event(link,input.event);Object.assign(event,{delivery_hash:hash,binding_id:link.binding_id});
    w.content_sources??=[];if(!w.content_sources.some(t=>sameTarget(t,event.normalized_target)))w.content_sources.push(event.normalized_target);
    (w.content_events??=[]).push(event);this.complete(w,event,this.clock());
    row.data=w;row.version++;await this.actions.repository.saveActionWorkspace(row);
-   const receipt=this.receipt(link,event,w),now=this.clock().toISOString();
+   const receipt=sourceReceipt(link,event,w),now=this.clock().toISOString();
    await this.actions.repository.saveOperation({...link,operationId:'source:'+link.binding_id+':'+event.event_id,deviceId:'grow-source',entityType:'action_workspace',entityId:'workspace',action:'source-confirmation',payloadHash:hash,requestPayload:{},resultPayload:receipt,status:'accepted',createdAt:now,updatedAt:now});
    return receipt;
   });
@@ -89,9 +85,9 @@ export class ActionSourceService {
    if(!readOnly&&!event!.consumed_by){this.complete(w,event!,this.clock());row.data=w;row.version++;await this.actions.repository.saveActionWorkspace(row);
     const op=await this.actions.repository.getOperation(link,'source:'+link.binding_id+':'+event!.event_id);
     if(!op)reject(409,'Source operation receipt is missing.');
-    await this.actions.repository.saveOperation({...op!,resultPayload:this.receipt(link,event!,w),updatedAt:this.clock().toISOString()});
+    await this.actions.repository.saveOperation({...op!,resultPayload:sourceReceipt(link,event!,w),updatedAt:this.clock().toISOString()});
    }
-   return this.receipt(link,event!,w);
+   return sourceReceipt(link,event!,w);
   });
  }
 }

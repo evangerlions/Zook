@@ -37,6 +37,8 @@ test('registered API and signed bridge remain closed independently of old enable
    {action:'claim',code:ticket.code},{action:'import',snapshot:{},snapshot_hash:'0'.repeat(64)}]){
    const response=await bridge(body);assert.equal(response.statusCode,409);assert.equal((response.body.data as any).reason,'CONNECTION_WRITES_DISABLED');
   }
+  const preflight=await bridge({action:'import-preflight',binding_id:'binding-not-public',snapshot:{},snapshot_hash:'0'.repeat(64)});
+  assert.equal(preflight.statusCode,422,'internal preflight must not become a public route');
   const read=await bridge({action:'request',method:'GET',path:'',body:{},query:{}});
   assert.equal(read.statusCode,200);assert.equal((read.body.data as any).capabilities.connection_write_enabled,false);
   assert.deepEqual((read.body.data as any).capabilities.content_receipts,[]);

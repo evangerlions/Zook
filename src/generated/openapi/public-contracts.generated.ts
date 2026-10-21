@@ -16701,6 +16701,7 @@ export const LightTickGrowBridgeRequestSchema = {
           "code": false,
           "snapshot": false,
           "snapshot_hash": false,
+          "target_version": false,
           "method": false,
           "path": false,
           "body": false,
@@ -19249,6 +19250,132 @@ export type LightTickActionHandoffSnapshot = {
   "request_hash": string;
 }
 )[];
+};
+
+export const LightTickActionHandoffReceiptSchema = {
+  "type": "object",
+  "description": "Internal C3 preflight/import acknowledgment. Public pairing and import remain disabled; defining this shape does not enable a route.",
+  "additionalProperties": false,
+  "required": [
+    "binding_id",
+    "target_user_id",
+    "snapshot_hash",
+    "source_counts",
+    "target_version"
+  ],
+  "properties": {
+    "binding_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "target_user_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "target_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "validated": {
+      "type": "boolean",
+      "const": true
+    },
+    "imported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plans",
+        "records",
+        "reviews",
+        "reports",
+        "operations",
+        "claims",
+        "content_sources",
+        "content_events"
+      ],
+      "properties": {
+        "plans": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "reviews": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "reports": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "operations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "claims": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "content_sources": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "content_events": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "validated"
+      ],
+      "properties": {
+        "validated": {},
+        "imported_at": false
+      }
+    },
+    {
+      "required": [
+        "imported_at"
+      ],
+      "properties": {
+        "validated": false,
+        "imported_at": {}
+      }
+    }
+  ]
+} as const;
+
+export type LightTickActionHandoffReceipt = {
+  "validated": unknown;
+  "imported_at"?: unknown;
+} | {
+  "validated"?: unknown;
+  "imported_at": unknown;
 };
 
 export const LightTickActionSourceTargetSchema = {
@@ -38124,6 +38251,7 @@ export const GeneratedPublicContractNames = [
   "LightTickActionExecution",
   "LightTickActionFields",
   "LightTickActionHandoffEvent",
+  "LightTickActionHandoffReceipt",
   "LightTickActionHandoffSnapshot",
   "LightTickActionMutationRequest",
   "LightTickActionMutationResult",

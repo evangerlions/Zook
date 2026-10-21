@@ -135,6 +135,7 @@ SPECS: dict[str, list[str]] = {
         'LightTickGrowBridgeRequest',
         'LightTickActionHandoffEvent',
         'LightTickActionHandoffSnapshot',
+        'LightTickActionHandoffReceipt',
         'LightTickActionSourceTarget',
         'LightTickActionSourceEvent',
         'LightTickActionSourceReceipt',

@@ -766,4 +766,4 @@ Sleep追加快照整合：冻结任务期间新增的 `7dfbedd`，保留原主�
 
 8 个超长文件已按现有职责拆分：基础设施装配、LightTick 响应投影、数据库 BodyLog 类型端口、RBAC 查询、成长后台查询、习惯模板 CRUD、小组查询/日记录/通知及后台 BodyLog/LLM API。外部方法、初始化顺序、SQL 查询和事务 query 回调保持不变；现有行数阈值/豁免名单未修改。详见 `docs/verification/lighttick-source-repair/README.md` 的回归与等价核对证据。本轮不实现 C3，不修改原生端或连接写入门禁。
 
-2026-10-21 LightTick C3 增量：内部八类快照 v2 的只读全图预检、原子导入和持久幂等接管回执可在隔离环境验证；公开配对/导入/普通写入继续关闭，未增加运行时预检路由。Grow 接管前后回执查询已衔接。完整切换协调与来源确认屏障、原生 C4/C5 和真实环境验收仍未完成，不能标记全部 P0 通过。见 `docs/verification/lighttick-handoff-v2/README.md`。
+2026-10-21 LightTick C3 增量：内部八类快照 v2 的只读全图预检、原子导入和持久幂等接管回执可在隔离环境验证；公开配对/导入/普通写入继续关闭，未增加运行时预检路由。Grow 接管前后回执查询已衔接。私有协调与来源屏障已补齐：先等待在途来源、复核摘要、原子备份/冻结，再导入并核对回执；pending 暂停新确认，未完成来源日志阻断冻结，迁移事件延续 C2 outbox 核对。隔离 HTTP 与双方进程重启恢复见 `docs/verification/lighttick-handoff-cutover/README.md`。原生 C4/C5、真实环境与公开放行仍未完成，不能标记全部 P0 通过。

@@ -103,7 +103,7 @@ AI 配置只在已明确确认的请求内使用，不持久化凭据、不使�
 
 Grow 使用租户私表 action_source_contexts/action_source_outbox，启动即扫描、每 30 秒恢复，退避上限一小时。`GET /api/action-link/source-deliveries` 查看本账号状态；同源 `POST /api/action-link/source-deliveries/retry` 触发最多三条安全重试。缺少上下文时来源仍成功，事件 blocked/ORIGIN_CONTEXT_REQUIRED，须恢复连接后重新打开来源明确确认；不能事后补造旧快照。后台扫描仅使用服务端账号身份，不接收请求里的账号/schema。
 
-C3 的 v2 全图接管、旧/新请求 key 路由与消费者放行仍未实施；没有真实配对、原生接入、部署或生产数据迁移。验证证据见 `docs/verification/lighttick-source-delivery/README.md`。
+该 C2 阶段尚未实施 C3；后续内部 C3 结果见下节，消费者放行仍未执行；没有真实配对、原生接入、部署或生产数据迁移。验证证据见 `docs/verification/lighttick-source-delivery/README.md`。
 
 ### C2 验收后的合同维护
 
@@ -115,6 +115,8 @@ C3 的 v2 全图接管、旧/新请求 key 路由与消费者放行仍未实施�
 
 内部 `preflight(source,input)` 在账号事务锁中只读校验整个合并图，返回 binding_id、target_user_id、snapshot_hash、八类 source_counts、target_version；`import(source,{...input,target_version})` 重新验证，要求目标版本未变化，工作区和接管回执同事务提交。保存回执失败会回滚；相同 binding/hash 重试直接返回持久回执，不因目标后续版本变化重复导入；另一个快照拒绝覆盖。目标已有其他来源事件、重复对象/消费、断裂完成/撤销引用、运行冲突、旧请求 key 冲突、生成中报告均被拒绝。
 
-现有 grow-bridge 的 v2 import 输入合同引用该 schema；**运行时仍无条件通过 CONNECTION_WRITES_DISABLED 拒绝公开 import/claim/普通行动写入，未增加预检 HTTP 路由或新开关**。内部服务不代表完整切换已经可用：Grow 事务内导出一致性已验证；源写入冻结、跨切换来源确认屏障、正式备份/恢复协调和原生 C4/C5 仍未完成。详见 `docs/verification/lighttick-handoff-v2/README.md`。
+现有 grow-bridge 的 v2 import 输入合同引用该 schema；**运行时仍无条件通过 CONNECTION_WRITES_DISABLED 拒绝公开 import/claim/普通行动写入，未增加预检 HTTP 路由或新开关**。Grow 私有协调器已实现预检后重核摘要、来源发布屏障、原子封存备份/冻结、幂等导入及回执核对后激活；pending 新来源确认在发布前暂停，未完成发布日志阻断预检与冻结。迁移来源事件的持久核对回执与目标图同事务提交，Grow 的 C2 outbox 与本地激活同事务提交。目标版本变化返回 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED，只允许用同一冻结备份重预检。原生 C4/C5、真实账号和公开放行仍未完成。最新证据见 `docs/verification/lighttick-handoff-cutover/README.md`，历史基础设施报告保留。
 
 Grow 的 GET `/api/action-plans/requests/{key}` 现在优先查询当前账号已有本地回执；active 下本地未知 key 查询 Zook；pending 下未知 key 返回 503，表示结果未确认。远端失败或非法回执不返回伪造的 found=false。写入能力检查同时要求版本、nullable、三种模式、实际日期、文章/课程来源回执和显式写入开关；当前公开能力仍关闭。
+
+`LightTickActionHandoffReceipt` 定义八类非负整数 source_counts、绑定/目标身份、hash 和 target_version；预检 validated=true 与导入 imported_at 为互斥阶段。导入事件使用完整快照的可信来源证明，生成与 C2 相同的持久 receipt；未消费事件后续仅走 source-reconcile，不伪造新的来源确认。只在测试 fixture 暴露带测试 token + Grow HMAC 的 localhost HTTP 驱动，生产路由没有预检动作。

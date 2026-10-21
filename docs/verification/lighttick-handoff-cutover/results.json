@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-22",
+  "scope": "Internal C3 cutover only; public writes/pairing/import remain closed; no native/P1/P2 changes",
+  "c3": {
+    "suites": [
+      {
+        "suite": "grow-cutover-recovery",
+        "exit_code": 0,
+        "tests": 18,
+        "skipped": 0
+      },
+      {
+        "suite": "grow-snapshot-and-routing",
+        "exit_code": 0,
+        "tests": 4,
+        "skipped": 0
+      },
+      {
+        "suite": "zook-contracts-and-gates",
+        "exit_code": 0,
+        "tests": 15,
+        "skipped": 0
+      }
+    ],
+    "failed": []
+  },
+  "c2": {
+    "suites": [
+      {
+        "suite": "grow-source-recovery",
+        "exit_code": 0,
+        "tests": 12
+      },
+      {
+        "suite": "zook-source-contract-runtime",
+        "exit_code": 0,
+        "tests": 4
+      }
+    ],
+    "failed": []
+  },
+  "zook_unit": {
+    "tests": 1508,
+    "failed": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "postgres_integration": {
+    "tests": 3,
+    "failed": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "checks": {
+    "client_groups": 2,
+    "contract_generate": "passed",
+    "contract_check": "passed",
+    "contract_lint_errors": 0,
+    "contract_lint_existing_warnings": 197,
+    "action_domain_types": "passed",
+    "source_line_count_files": 670,
+    "admin_typecheck": "passed",
+    "admin_build": "passed",
+    "openspec": "passed"
+  },
+  "unverified": [
+    "Native C4/C5 consumers and real dual-client integration",
+    "Real accounts and devices, notification/calendar copies",
+    "Production rollout, migrations and public entrypoints",
+    "Unified whole-backend strict typecheck"
+  ],
+  "failed_attempts": "Historical interrupted low-space full run retained; seven isolated cases passed then current complete 1508 passed. Incorrect article test publisher hook fixed. Receipt phase/unknown-field acceptance reproduced red, corrected and full 37 C3 checks passed."
+}

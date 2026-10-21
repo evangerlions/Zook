@@ -1306,4 +1306,4 @@ outbox `delivered`只表示站内/队列协调已收口；内部通用job `SENT`
 
 ### LightTick 行动接管内部快照 v2（受控，尚未开放）
 
-唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对继续关闭，`CONTRACT_UPGRADE_REQUIRED / CONNECTION_WRITES_DISABLED` 行为不变，原生消费者也未修改。完整切换协调及切换期间来源确认屏障仍需后续实施；不能把内部导入成功视为可迁移真实账号。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。
+唯一 OpenAPI 新增 `LightTickActionHandoffSnapshot/Event`，覆盖行动、执行事实、复盘、总结、旧操作回执、提醒 claim、来源清单和确认事件。内部预检/原子导入验证身份、摘要、目标版本及整个关系图，同快照重试返回原回执；不新增公开预检端点。公开 grow-bridge import/claim、普通连接写入和新配对继续关闭，`CONTRACT_UPGRADE_REQUIRED / CONNECTION_WRITES_DISABLED` 行为不变，原生消费者也未修改。私有切换协调、来源确认屏障、不可变备份与故障恢复已隔离验收；新增 LightTickActionHandoffReceipt 严格区分预检和导入回执，并将迁移事件接入既有 C2 完成核对。目标版本冲突用 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED 拒绝，pending 仅可对同一备份重预检；未恢复来源发布日志会阻断冻结。实际 HTTP 驱动只存在于测试 fixture，未添加生产预检动作。原生/真实双端与生产放行仍待完成，不能据内部通过迁移真实账号；最新证据见 docs/verification/lighttick-handoff-cutover/README.md。字段与验证边界见 [行动协议](docs/public-lighttick-actions.md#c3-内部快照-v22026-10-21公开接管仍关闭)。
