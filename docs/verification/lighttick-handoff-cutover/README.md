@@ -1,5 +1,6 @@
 # C3 私有切换协调收尾验收
 
+已验证实现固定提交：Grow `f4ec0b97518699da4c41af36adfdec57daecf5f0`；Zook `e0d9807abec161f7294c2ac723311703a729b286`（唯一合同也固定至此 Zook SHA）。后续文档提交仅记录这些标识，不改变已验证运行时代码。
 2026-10-22；延续C3基础设施，不开放生产预检/接管/普通写入，不改原生端，不扩展P1/P2。基线 Zook `3af3048`、Grow `ec8ca3a`。
 
 内部导入新增与 C2 相同的持久来源操作回执，与全图和接管回执同事务；拒绝来源回执编号冲突。未消费事件接管后延续 source-reconcile；真实分钟与完成事实保持各自口径。目标版本变化返回 REVISION_CONFLICT / HANDOFF_TARGET_VERSION_CHANGED。唯一合同 LightTickActionHandoffReceipt 严格区分 validated/imported_at 阶段；生成资产同步，source请求不能混入 target_version。
